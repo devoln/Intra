@@ -1,4 +1,6 @@
-﻿#include "PerfTestArray.h"
+﻿#define INTRA_STL_INTERFACE
+#include "PerfTestArray.h"
+
 
 #include "Test/PerformanceTest.h"
 #include "Core/Time.h"

@@ -52,11 +52,15 @@ Platform/Platform.cpp
 
 Sound/Sound.cpp
 Sound/Music.cpp
+Sound/Midi.cpp
 Sound/SoundBuilder.cpp
 Sound/SoundProcessing.cpp
 Sound/SoundSource.cpp
 Sound/SynthesizedInstrument.cpp
 Sound/InstrumentLibrary.cpp
+Sound/Sound_DirectSound.cpp
+Sound/Sound_OpenAL.cpp
+Sound/Sound_Emscripten.cpp
 
 Test/PerformanceTest.cpp
 Test/UnitTest.cpp
@@ -66,4 +70,4 @@ Text/UtfConversion.cpp
 
 Threading/Job.cpp
 Threading/Thread.cpp
-}
+)

@@ -1,5 +1,7 @@
 ﻿#include "PerfTestMap.h"
 
+#define INTRA_STL_INTERFACE
+
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
 #include "Core/Time.h"

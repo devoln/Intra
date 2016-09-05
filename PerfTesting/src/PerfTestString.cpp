@@ -1,4 +1,6 @@
-﻿#include "PerfTestString.h"
+﻿#define INTRA_STL_INTERFACE
+#include "PerfTestString.h"
+
 
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"

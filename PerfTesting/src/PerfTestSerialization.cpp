@@ -1,4 +1,5 @@
 ﻿#include "PerfTestSerialization.h"
+
 #include "Meta/Preprocessor.h"
 #include "Data/BinarySerialization.h"
 #include "Data/TextSerialization.h"

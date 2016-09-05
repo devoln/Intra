@@ -176,7 +176,7 @@ int __cdecl main()
 
 	//Errors::InitSignals();
 
-	const String filePath = GetMidiPath("Numb.mid");
+	const String filePath = GetMidiPath("lady_gaga-paparazzi.mid");
 	
 	bool success = PrintMidiFileInfo(filePath);
 	if(!success) return false;

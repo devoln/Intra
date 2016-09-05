@@ -57,11 +57,15 @@
 
 #include "Sound/Sound.cpp"
 #include "Sound/Music.cpp"
+#include "Sound/Midi.cpp"
 #include "Sound/SoundBuilder.cpp"
 #include "Sound/SoundProcessing.cpp"
 #include "Sound/SoundSource.cpp"
 #include "Sound/SynthesizedInstrument.cpp"
 #include "Sound/InstrumentLibrary.cpp"
+#include "Sound/Sound_DirectSound.cpp"
+#include "Sound/Sound_OpenAL.cpp"
+#include "Sound/Sound_Emscripten.cpp"
 
 #include "Test/PerformanceTest.cpp"
 #include "Test/UnitTest.cpp"

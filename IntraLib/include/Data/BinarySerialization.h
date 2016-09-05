@@ -131,7 +131,7 @@ template<typename O, typename AnyArrayRange> forceinline Meta::EnableIf<
 > SerializeBinary(GenericBinarySerializer<O>& serializer, const AnyArrayRange& v)
 {
 	auto range = Range::AsRange(v);
-	serializer.SerializeArray(ArrayRange<const typename AnyArrayRange::value_type>(range.Data(), range.Length()));
+	serializer.SerializeArray(ArrayRange<const typename decltype(range)::value_type>(range.Data(), range.Length()));
 }
 
 
