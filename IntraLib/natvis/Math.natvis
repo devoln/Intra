@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+    <Type Name="Intra::Math::Vector2&lt;*&gt;">
+        <DisplayString>{{{x}, {y}}}</DisplayString>
+    </Type>
+
+	<Type Name="Intra::Math::Vector3&lt;*&gt;">
+        <DisplayString>{{{x}, {y}, {z}}}</DisplayString>
+    </Type>
+
+	<Type Name="Intra::Math::Vector4&lt;*&gt;">
+        <DisplayString>{{{x}, {y}, {z}, {w}}}</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Math::Matrix4&lt;*&gt;">
+    <DisplayString>{{{rows[0]}, {rows[1]}, {rows[2]}, {rows[3]}}}</DisplayString>
+    <Expand>
+      <ExpandedItem>rows</ExpandedItem>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

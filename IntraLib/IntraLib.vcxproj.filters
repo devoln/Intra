@@ -1,0 +1,757 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Файлы исходного кода">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Заголовочные файлы">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Algorithms">
+      <UniqueIdentifier>{f51481c2-1691-435f-b8e3-a9fea9fb6649}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\CompilerSpecific">
+      <UniqueIdentifier>{cdbb0b62-601e-40b6-bd85-9bccb253fc8a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Containers">
+      <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Core">
+      <UniqueIdentifier>{d58f3a8e-55c6-4066-a07b-941b184f5064}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Data">
+      <UniqueIdentifier>{68207ef6-4dd3-44d9-bacd-742de0b41161}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Algorithms">
+      <UniqueIdentifier>{862c24a5-bb8a-4515-ad74-0a2b6d250d7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\CompilerSpecific">
+      <UniqueIdentifier>{07106faa-f35a-49ff-bee9-a5863848be2d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Containers">
+      <UniqueIdentifier>{ef2279d2-dc06-4758-b685-4391bbcd56d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core">
+      <UniqueIdentifier>{3c74cfd5-3a4e-48f8-a8c4-eb3325d431c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Data">
+      <UniqueIdentifier>{7eaf3407-ccbe-44f6-b497-febbdc6bef79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\IO">
+      <UniqueIdentifier>{2b50c250-51a2-4845-b92a-4b1b09423e2a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Math">
+      <UniqueIdentifier>{fe834351-650f-44c0-816d-dd190bccf59e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Meta">
+      <UniqueIdentifier>{eaa60689-072a-4f14-8cae-7a2da97bd3ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Platform">
+      <UniqueIdentifier>{b5d3d486-4439-4913-9371-28edee13e59f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Sound">
+      <UniqueIdentifier>{433b5058-7f14-428d-add7-af2c4b44827c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Text">
+      <UniqueIdentifier>{1926e1d2-0954-48db-91ed-e57f154d067f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Threading">
+      <UniqueIdentifier>{773b06c0-30bc-4e39-985f-046c26275a08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Utils">
+      <UniqueIdentifier>{ba7797c5-7958-40ab-bc5d-7a9db9feb7e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\IO">
+      <UniqueIdentifier>{433133c3-68d7-4112-8b98-69240cd4d1e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Math">
+      <UniqueIdentifier>{9519445b-be56-44ce-a8d2-e24c15cffc4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Meta">
+      <UniqueIdentifier>{ad9569b3-4da0-4d90-ad3e-cac4bb5b03ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Platform">
+      <UniqueIdentifier>{6199a1c5-b9e8-4756-84b0-4b35de9755ab}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Sound">
+      <UniqueIdentifier>{f7c6451e-9f77-4b6f-b5cb-18abf43644bd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Text">
+      <UniqueIdentifier>{a42f59ca-b06f-4e20-897b-9b12eba6453b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Threading">
+      <UniqueIdentifier>{e73f2775-7352-4e75-95de-b46b9c125156}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Utils">
+      <UniqueIdentifier>{ad522f90-9bcb-4118-a4c2-70af5c839dc3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Engine">
+      <UniqueIdentifier>{bf274718-89e2-49d2-b2f6-e72c804ebe75}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Graphics">
+      <UniqueIdentifier>{cf0f5b9c-b7db-496a-a33e-5464e4f0f99c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Graphics">
+      <UniqueIdentifier>{eb27a8a3-dbd9-4421-a5f3-f80281fab651}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Engine">
+      <UniqueIdentifier>{210f29d3-4406-497a-bfd4-c1f4543501b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="natvis">
+      <UniqueIdentifier>{d1501a57-b575-4f1b-a482-f3c4444d6ed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Memory">
+      <UniqueIdentifier>{245539f5-596f-46fc-85e6-daa51aa4a886}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Memory">
+      <UniqueIdentifier>{b364f289-51bf-4bcd-b35c-bfb69ec22889}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Imaging">
+      <UniqueIdentifier>{5b0d0a56-7665-479e-bc89-576c76f3ee34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\GUI">
+      <UniqueIdentifier>{a883302a-f3d6-44d0-9fea-da5fdd86262b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\GUI">
+      <UniqueIdentifier>{101b369f-3d77-4476-a8cc-8d9896612fbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Imaging">
+      <UniqueIdentifier>{57d4f5b0-1695-4a8b-8add-32f984ff3842}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Imaging\Bindings">
+      <UniqueIdentifier>{5c95d531-54ac-4edd-b2fc-80241c0c370a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Imaging\Loaders">
+      <UniqueIdentifier>{7e3dc13b-f7e3-4bfe-8b79-5c350747cb63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Imaging\Loaders">
+      <UniqueIdentifier>{f0897ba7-3e98-4c4f-a662-5faf0be9502a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Imaging\Bindings">
+      <UniqueIdentifier>{b950bdad-8be3-47fe-87a1-6b9f44f7da5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Graphics\OpenGL">
+      <UniqueIdentifier>{770df50a-2100-43a1-af7c-053a76576487}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Test">
+      <UniqueIdentifier>{0b2f612d-a704-490f-ace2-3551f6f3385f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Test">
+      <UniqueIdentifier>{c6a63510-70e9-4aaf-ac8d-042e14571bb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Physics">
+      <UniqueIdentifier>{8d76d205-0330-43b9-8776-81b8c4be2937}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Physics">
+      <UniqueIdentifier>{37c41f20-3608-4ebc-afaf-2191bd26f639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Algorithms\Mixins">
+      <UniqueIdentifier>{6918b18e-ee4c-4bd6-bfe3-ff11198a55fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Graphics\OpenGL">
+      <UniqueIdentifier>{5e0e913a-d22b-4c04-8c50-ebb57098fa95}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\IntraAll.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Physics\AabbTree.cpp">
+      <Filter>Файлы исходного кода\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Algorithms\Algorithms.cpp">
+      <Filter>Файлы исходного кода\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Algorithms\AsciiString.cpp">
+      <Filter>Файлы исходного кода\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Algorithms\Hash.cpp">
+      <Filter>Файлы исходного кода\Algorithms</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CompilerSpecific\CompilerSpecific.cpp">
+      <Filter>Файлы исходного кода\CompilerSpecific</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Sound.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Sound_DirectSound.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Sound_Emscripten.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Sound_OpenAL.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\SoundBuilder.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\SoundProcessing.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\SoundSource.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Music.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\Midi.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\InstrumentLibrary.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Containers\AsciiSet.cpp">
+      <Filter>Файлы исходного кода\Containers</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Text\CharMap.cpp">
+      <Filter>Файлы исходного кода\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Text\UtfConversion.cpp">
+      <Filter>Файлы исходного кода\Text</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\Bindings\GLenumFormats.cpp">
+      <Filter>Файлы исходного кода\Imaging\Bindings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\Bindings\DXGI_Formats.cpp">
+      <Filter>Файлы исходного кода\Imaging\Bindings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\Image.cpp">
+      <Filter>Файлы исходного кода\Imaging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\ImagingTypes.cpp">
+      <Filter>Файлы исходного кода\Imaging</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Memory\Allocator.cpp">
+      <Filter>Файлы исходного кода\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Memory\Memory.cpp">
+      <Filter>Файлы исходного кода\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Debug.cpp">
+      <Filter>Файлы исходного кода\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\DocumentWriter.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\FontLoading.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\FontLoading_STB.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Errors.cpp">
+      <Filter>Файлы исходного кода\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\File.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\OpenGL\GLSL.cpp">
+      <Filter>Файлы исходного кода\Graphics\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\OpenGL\GLExtensions.cpp">
+      <Filter>Файлы исходного кода\Graphics\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\OpenGL\GLEnum.cpp">
+      <Filter>Файлы исходного кода\Graphics\OpenGL</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\GraphicsWindow.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\GraphicsWindow_Android.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\GraphicsWindow_Qt.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\GraphicsWindow_WinAPI.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\GraphicsWindow_X11.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\HardwareInfo.cpp">
+      <Filter>Файлы исходного кода\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Threading\Job.cpp">
+      <Filter>Файлы исходного кода\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\Loaders\LoaderDDS.cpp">
+      <Filter>Файлы исходного кода\Imaging\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Imaging\Loaders\LoaderKTX.cpp">
+      <Filter>Файлы исходного кода\Imaging\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\LogSystem.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\Random.cpp">
+      <Filter>Файлы исходного кода\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\Shapes.cpp">
+      <Filter>Файлы исходного кода\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\TextSerialization.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\BinarySerialization.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\Reflection.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\ValueType.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\Variable.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\Stream.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\Platform.cpp">
+      <Filter>Файлы исходного кода\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sound\SynthesizedInstrument.cpp">
+      <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\UniformType.cpp">
+      <Filter>Файлы исходного кода\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Math\MathEx.cpp">
+      <Filter>Файлы исходного кода\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Memory\SystemAllocators.cpp">
+      <Filter>Файлы исходного кода\Memory</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Core\Time.cpp">
+      <Filter>Файлы исходного кода\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\States.cpp">
+      <Filter>Файлы исходного кода\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Threading\Thread.cpp">
+      <Filter>Файлы исходного кода\Threading</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Test\UnitTest.cpp">
+      <Filter>Файлы исходного кода\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="src\GUI\MessageBox.cpp">
+      <Filter>Файлы исходного кода\GUI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Graphics\ObjectDescs.cpp">
+      <Filter>Файлы исходного кода\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Test\PerformanceTest.cpp">
+      <Filter>Файлы исходного кода\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Memory\VirtualMemory.cpp">
+      <Filter>Файлы исходного кода\Memory</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\IntraAll.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Physics\AabbTree.h">
+      <Filter>Заголовочные файлы\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Algorithms.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\Allocator.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\AllocatorInterface.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\Array.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\Array2D.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\AsciiSet.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\BidirectionalRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\ArrayRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\CharRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\ForwardRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\InputRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\AssociativeRange.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Threading\Atomic.h">
+      <Filter>Заголовочные файлы\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\BinarySerialization.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\AsciiString.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Callback.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\Caps.h">
+      <Filter>Заголовочные файлы\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Text\CharMap.h">
+      <Filter>Заголовочные файлы\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CompilerSpecific\CompilerSpecific.h">
+      <Filter>Заголовочные файлы\CompilerSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\Core.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\Debug.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\DocumentWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Imaging\Bindings\DXGI_Formats.h">
+      <Filter>Заголовочные файлы\Imaging\Bindings</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\DynamicSerializer.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\Endianess.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\Errors.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Event.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\File.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Fixed.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\FontLoading.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\FontLoadingDeclarations.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\ForwardDeclarations.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\FundamentalTypes.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\HardwareInfo.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\HashMap.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Imaging\Bindings\GLenumFormats.h">
+      <Filter>Заголовочные файлы\Imaging\Bindings</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Imaging\ImagingTypes.h">
+      <Filter>Заголовочные файлы\Imaging</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Imaging\Image.h">
+      <Filter>Заголовочные файлы\Imaging</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\OpenGL\GLSL.h">
+      <Filter>Заголовочные файлы\Graphics\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\OpenGL\GLEnum.h">
+      <Filter>Заголовочные файлы\Graphics\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\OpenGL\GLExtensions.h">
+      <Filter>Заголовочные файлы\Graphics\OpenGL</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\GraphicsWindow.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Hash.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\IdAllocator.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\CompilerSpecific\InitializerList.h">
+      <Filter>Заголовочные файлы\CompilerSpecific</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\InstrumentLibrary.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\Music.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\Sound.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\SoundBuilder.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\SoundProcessing.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\SoundSource.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\SoundTypes.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\SynthesizedInstrument.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\MathRanges.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Matrix.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\MathEx.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\LinAl.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\MessageBox.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\LogSystem.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Threading\Job.h">
+      <Filter>Заголовочные файлы\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\LinearMap.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\List.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\Memory.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Sound\Midi.h">
+      <Filter>Заголовочные файлы\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\MiscTypes.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\Mixins.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\Networking.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\ObjectDescs.h">
+      <Filter>Заголовочные файлы\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Optional.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Operations.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\Platform.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\PlatformInfo.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Test\PerformanceTest.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\Preprocessor.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Quaternion.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Random.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\RandomAccessRangeMixin.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Range.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\RangeConcept.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\RangeConstruct.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\RangeIteration.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Mixins\RangeMixins.h">
+      <Filter>Заголовочные файлы\Algorithms\Mixins</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\RangeAllocator.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Reflection.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\Set.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Simd.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Shapes.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\SmartRef.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\SparseArray.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\SparseHandledArray.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\SparseRange.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Sort.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\States.h">
+      <Filter>Заголовочные файлы\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\Stream.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\StaticStream.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\String.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\StringView.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\StructureOfArrays.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Containers\Tree.h">
+      <Filter>Заголовочные файлы\Containers</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Threading\Thread.h">
+      <Filter>Заголовочные файлы\Threading</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\Tuple.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\TextSerialization.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\TextSerializationParams.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Core\Time.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\TypeList.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\Type.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\SystemAllocators.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Text\UtfConversion.h">
+      <Filter>Заголовочные файлы\Text</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Graphics\UniformType.h">
+      <Filter>Заголовочные файлы\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Test\Unittest.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\ValueType.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Variable.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Math\Vector.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\VirtualMemory.h">
+      <Filter>Заголовочные файлы\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\WindowSystemApiDeclarations.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\GUI\WindowSystemApi.h">
+      <Filter>Заголовочные файлы\GUI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="natvis\Core.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="natvis\Data.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="natvis\Graphics.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="natvis\Imaging.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="natvis\Math.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="natvis\Resources.natvis">
+      <Filter>natvis</Filter>
+    </None>
+    <None Include="include\Algorithms\Algorithms.inl">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </None>
+    <None Include="include\Algorithms\SparseRange.inl">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </None>
+    <None Include="include\Algorithms\Sort.inl">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
+    </None>
+    <None Include="include\Data\TextSerialization.inl">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="natvis\Containers.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\Meta.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\Ranges.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+  </ItemGroup>
+</Project>

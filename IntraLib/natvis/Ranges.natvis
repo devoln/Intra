@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::Range::SimpleArrayRange&lt;*&gt;">
+    <DisplayString Condition="Begin==End">[]</DisplayString>
+    <DisplayString Condition="Begin+1==End">[{Begin[0]}]</DisplayString>
+    <DisplayString Condition="Begin+2==End">[{Begin[0]}, {Begin[1]}]</DisplayString>
+    <DisplayString Condition="Begin+3==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}]</DisplayString>
+    <DisplayString Condition="Begin+4==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}]</DisplayString>
+    <DisplayString Condition="Begin+5==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}, {Begin[4]}]</DisplayString>
+    <DisplayString>({End-Begin})[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}, {Begin[4]}, ...]</DisplayString>
+    <Expand>
+      <Item Name="First" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End-Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+    <Type Name="Intra::Range::ArrayRange&lt;*&gt;">
+        <DisplayString Condition="Begin==End">[]</DisplayString>
+        <DisplayString Condition="Begin+1==End">[{Begin[0]}]</DisplayString>
+        <DisplayString Condition="Begin+2==End">[{Begin[0]}, {Begin[1]}]</DisplayString>
+        <DisplayString Condition="Begin+3==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}]</DisplayString>
+        <DisplayString Condition="Begin+4==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}]</DisplayString>
+        <DisplayString Condition="Begin+5==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}, {Begin[4]}]</DisplayString>
+        <DisplayString>({End-Begin})[{Begin[0]}, {Begin[1]}, {Begin[2]}, {Begin[3]}, {Begin[4]}, ...]</DisplayString>
+        <Expand>
+            <Item Name="First" ExcludeView="simple">Begin</Item>
+            <Item Name="End" ExcludeView="simple">End</Item>
+            <ArrayItems>
+			          <Size>End-Begin</Size>
+                <ValuePointer>Begin</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+  
+    <Type Name="Intra::GenericStringView&lt;char&gt;">
+        <DisplayString>{cstart,[cend-cstart]s8}</DisplayString>
+        <StringView>cstart,[cend-cstart]s8b</StringView>
+        <Expand>
+            <Item Name="Length">cend-cstart</Item>
+            <Item Name="StartPtr">cstart</Item>
+            <Item Name="EndPtr">cend</Item>
+        </Expand>
+    </Type>
+
+  <Type Name="Intra::GenericStringView&lt;wchar&gt;">
+    <DisplayString>{cstart,[cend-cstart]s16}</DisplayString>
+    <StringView>cstart,[cend-cstart]s16b</StringView>
+    <Expand>
+      <Item Name="Length">cend-cstart</Item>
+      <Item Name="StartPtr">cstart</Item>
+      <Item Name="EndPtr">cend</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericStringView&lt;dchar&gt;">
+    <DisplayString>{cstart,[cend-cstart]s32}</DisplayString>
+    <StringView>cstart,[cend-cstart]s32b</StringView>
+    <Expand>
+      <Item Name="Length">cend-cstart</Item>
+      <Item Name="StartPtr">cstart</Item>
+      <Item Name="EndPtr">cend</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::TakeResult&lt;*&gt;">
+    <DisplayString Condition="len==0">[]</DisplayString>
+    <DisplayString>Take({len}, {r})</DisplayString>
+    <Expand>
+      <ExpandedItem>r</ExpandedItem>
+      <Item Name="LengthLimit">len</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::TakeRandomResult&lt;*&gt;">
+    <DisplayString Condition="len==0">[]</DisplayString>
+    <DisplayString>Take({len}, {r})</DisplayString>
+    <Expand>
+      <ExpandedItem>r</ExpandedItem>
+      <Item Name="LengthLimit">len</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::FilterResult&lt;*&gt;">
+    <DisplayString Condition="!predicate.not_null">[]</DisplayString>
+    <DisplayString>Filter({original_range})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::IotaResult&lt;*&gt;">
+    <DisplayString Condition="Step==0">[]</DisplayString>
+    <DisplayString>Iota({Begin}, {Step})[{Begin}, {Begin+Step}, {Begin+2*Step}, {Begin+3*Step}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::SequenceResult&lt;*&gt;">
+    <DisplayString Condition="!func.not_null">[]</DisplayString>
+    <DisplayString>Sequence[...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::Recurrence1Result&lt;*&gt;">
+    <DisplayString>Recurrence[{a}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::Recurrence2Result&lt;*&gt;">
+    <DisplayString>Recurrence[{a}, {b}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::CycleResult&lt;*&gt;">
+    <DisplayString Condition="counter==0">Cycle({original_range})</DisplayString>
+    <DisplayString>Cycle({counter} &lt;- {original_range})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::CycleRandomResult&lt;*&gt;">
+    <DisplayString Condition="counter==0">Cycle({original_range})</DisplayString>
+    <DisplayString>Cycle({counter} &lt;- {original_range})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RepeatResult&lt;*&gt;">
+    <DisplayString Condition="!value.not_null">[]</DisplayString>
+    <DisplayString>Repeat[{value}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::GenerateResult&lt;*&gt;">
+    <DisplayString Condition="!func.not_null">[]</DisplayString>
+    <DisplayString>Generate[{front}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::ChooseResult&lt;*&gt;">
+    <DisplayString>Choose({range1} or {range2})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::IndexedResult&lt;*&gt;">
+    <DisplayString>Indexed({ValueRange} by {IndexRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::FirstTransversalResult&lt;*&gt;">
+    <DisplayString>FirstTransversal({ranges})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::MapResult&lt;*,*&gt;">
+    <DisplayString Condition="!Function.not_null">[]</DisplayString>
+    <DisplayString>Map({OriginalRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::ChainResult&lt;*,*&gt;">
+    <DisplayString IncludeView="noparens">{range0}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">Chain({*this,view(noparens)})</DisplayString>
+    <Expand>
+      <Item Name="Range">range0</Item>
+      <ExpandedItem>next</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::ChainResult&lt;*&gt;">
+    <DisplayString>{range0}</DisplayString>
+    <Expand>
+      <Item Name="Range">range0</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::StrideResult&lt;*&gt;">
+    <DisplayString>Stride({step}, {original_range})</DisplayString>
+  </Type>
+  
+  <Type Name="Intra::Range::ZipResult&lt;*&gt;">
+    <DisplayString>Zip({OriginalRanges,view(noparens)})</DisplayString>
+    <Expand>
+      <Synthetic Name="[Zip]"><DisplayString>Ranges:</DisplayString></Synthetic>
+      <ExpandedItem>OriginalRanges</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::ReverseRange&lt;*&gt;">
+    <DisplayString>Reverse({OriginalRange})</DisplayString>
+    <Expand>
+      <Synthetic Name="[Reverse]"><DisplayString>Range:</DisplayString></Synthetic>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::InputRangeIterator&lt;*&gt;">
+    <DisplayString>InputIterator {OriginalRange}</DisplayString>
+    <Expand>
+      <Synthetic Name="[InputIterator]"><DisplayString>Referenced range:</DisplayString></Synthetic>
+      <ExpandedItem>Range</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  <Type Name="Intra::Range::ForwardRangeIterator&lt;*&gt;">
+    <DisplayString>Iterator {Range}</DisplayString>
+    <Expand>
+      <Synthetic Name="[Iterator]"><DisplayString>Range:</DisplayString></Synthetic>
+      <ExpandedItem>Range</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  
+
+
+  <Type Name="Intra::FListRange&lt;*&gt;">
+    <DisplayString Condition="First==nullptr || Last==nullptr">[]</DisplayString>
+    <DisplayString Condition="First==Last">[{First->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next==Last">[{First->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next==Last">[{First->Value}, {First->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next->Next==Last">[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next->Next->Next==Last">[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {First->Next->Next->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString>[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {First->Next->Next->Next->Value}, ..., {Last->Value}]"</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>First</HeadPointer>
+        <NextPointer>Next</NextPointer>
+        <ValueNode>Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::BListRange&lt;*&gt;">
+    <DisplayString Condition="First==nullptr || Last==nullptr">[]</DisplayString>
+    <DisplayString Condition="First==Last">[{First->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next==Last">[{First->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next==Last">[{First->Value}, {First->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next->Next==Last">[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString Condition="First->Next->Next->Next->Next==Last">[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {First->Next->Next->Next->Value}, {Last->Value}]"</DisplayString>
+    <DisplayString>[{First->Value}, {First->Next->Value}, {First->Next->Next->Value}, {First->Next->Next->Next->Value}, ..., {Last->Value}]"</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>First</HeadPointer>
+        <NextPointer>Next</NextPointer>
+        <ValueNode>Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::HashTableRange&lt;*&gt;" Priority="MediumLow">
+    <DisplayString Condition="first_node==null || first_node->prev==last_node">[]</DisplayString>
+    <DisplayString Condition="first_node==last_node">[{first_node->element}]</DisplayString>
+    <DisplayString Condition="first_node->next==last_node">[{first_node->element}, {first_node->next->element}]</DisplayString>
+    <DisplayString Condition="first_node->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}]</DisplayString>
+    <DisplayString Condition="first_node->next->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, {first_node->next->next->next->element}]</DisplayString>
+    <DisplayString>[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, ..., {last_node->element}]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>first_node</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>element</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::HashTableRange&lt;*&gt;" Priority="Medium">
+    <DisplayString Condition="first_node==null || first_node->prev==last_node">[]</DisplayString>
+    <DisplayString Condition="first_node==last_node">[{first_node->element}]</DisplayString>
+    <DisplayString Condition="first_node->next==last_node">[{first_node->element}, {first_node->next->element}]</DisplayString>
+    <DisplayString Condition="first_node->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}]</DisplayString>
+    <DisplayString Condition="first_node->next->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, {first_node->next->next->next->element}]</DisplayString>
+    <DisplayString>[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, ..., {last_node->element}]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>first_node</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode Name="[{element.Key}]">element.Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+
+
+
+  
+  
+  
+  
+  
+	
+</AutoVisualizer>

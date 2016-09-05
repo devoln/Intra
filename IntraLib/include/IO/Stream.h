@@ -1,0 +1,286 @@
+﻿#pragma once
+
+#include "Data/BinarySerialization.h"
+#include "Meta/Type.h"
+#include "Containers/String.h"
+
+namespace Intra {
+
+namespace IO {
+
+struct endl_t {};
+extern endl_t endl;
+
+}
+forceinline StringView ToString(IO::endl_t) {return "\r\n";}
+
+namespace IO
+{
+class IInputStream
+{
+public:
+	virtual ~IInputStream() {}
+
+	virtual bool EndOfStream() const=0;
+	virtual size_t ReadData(void* data, size_t bytes)=0;
+	virtual void UnreadData(const void* data, size_t bytes)=0;
+
+	String ReadToChar(const AsciiSet& stopCharset);
+
+	String ReadLine(bool consumeCRLF=true)
+	{
+		String result = ReadToChar("\n\r");
+		if(!consumeCRLF) return result;
+
+		char c = Read<char>();	
+		const bool endOfLineWasFullyConsumed = (c!='\n' && c!='\0');
+		if(endOfLineWasFullyConsumed && !EndOfStream()) UnreadData(&c, 1);
+
+		return result;
+	}
+
+	forceinline void SkipLine(bool consumeCRLF=true) {ReadLine(consumeCRLF);}
+
+	forceinline String ReadCStr() {return ReadToChar("");}
+
+	long64 ParseInteger(bool* error=null);
+	real ParseFloat(bool* error=null);
+
+	friend IInputStream& operator>>(IInputStream& stream, String& s) {s=stream.ReadLine(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, long64& n) {n=stream.ParseInteger(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, byte& n);
+	friend IInputStream& operator>>(IInputStream& stream, sbyte& n);
+	friend IInputStream& operator>>(IInputStream& stream, ushort& n);
+	friend IInputStream& operator>>(IInputStream& stream, short& n);
+	friend IInputStream& operator>>(IInputStream& stream, uint& n);
+	friend IInputStream& operator>>(IInputStream& stream, int& n);
+	friend IInputStream& operator>>(IInputStream& stream, real& n) {n=stream.ParseFloat(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, double& n) {n=(double)stream.ParseFloat(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, float& n) {n=(float)stream.ParseFloat(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, const char* r);
+
+	forceinline void Skip(ulong64 bytes) {SetPos(GetPos()+bytes);} //Правильно работает только для потоков с переопределёнными GetPos и SetPos
+	forceinline bool IsSeekable() const {return GetPos()!=(ulong64)-1;}
+	virtual void SetPos(ulong64) {}
+	virtual ulong64 GetSize() const {return (ulong64)-1;} //По умолчанию поток будет считаться бесконечным
+	virtual ulong64 GetPos() const {return (ulong64)-1;} //По умолчанию у потока нет позиции. Возвращаемое значение (ulong64)-1 говорит о том, что поток не seekable
+
+
+	String ReadNChars(size_t n)
+	{
+		String result;
+		result.SetLengthUninitialized(n);
+		ReadData(result.Data(), n);
+		return result;
+	}
+
+	template<typename T> Meta::EnableIfPod<T, Array<T>> ReadArray(size_t count)
+	{
+		Array<T> result;
+		result.SetCountUninitialized(count);
+		ReadData(result.Data(), count*sizeof(T));
+		return result;
+	}
+
+	forceinline String ReadBinString() {return ReadNChars(Read<uintLE>());}
+
+	template<typename T> forceinline T Read() {T n; ReadData(&n, sizeof(n)); return n;}
+
+	struct ByLineResult: Range::RangeMixin<ByLineResult, StringView, Range::TypeEnum::Input, true>
+	{
+		typedef StringView value_type;
+		typedef StringView return_value_type;
+
+		String CurLine;
+		String Terminator;
+		IInputStream* MyStream;
+		bool UseTerminator;
+		bool ConsumeCRLF;
+
+		ByLineResult(null_t=null): MyStream(null), UseTerminator(false), ConsumeCRLF(false), is_empty(true) {}
+
+		ByLineResult(IInputStream* stream, bool consumeCRLF, bool useTerminator, const String& terminator=null):
+			CurLine(stream->ReadLine(consumeCRLF)), Terminator(terminator),
+			MyStream(stream), UseTerminator(useTerminator), ConsumeCRLF(consumeCRLF)
+		{
+			is_empty = UseTerminator? (CurLine==Terminator): false;
+			if(CurLine.Empty() && MyStream->EndOfStream()) is_empty=true;
+		}
+
+		forceinline StringView First() const
+		{
+			INTRA_ASSERT(!Empty());
+			return CurLine;
+		}
+
+		void PopFirst()
+		{
+			INTRA_ASSERT(!Empty());
+			CurLine = MyStream->ReadLine(ConsumeCRLF);
+			if(UseTerminator && CurLine==Terminator) is_empty=true;
+		}
+
+		forceinline bool Empty() const {return is_empty;}
+
+		forceinline bool operator==(const ByLineResult& rhs) const
+		{
+			if(is_empty && rhs.is_empty) return true;
+			INTRA_ASSERT(MyStream!=rhs.MyStream || CurLine==rhs.CurLine);
+			return MyStream==rhs.MyStream;
+		}
+
+	private:
+		bool is_empty;
+	};
+
+	ByLineResult ByLine()
+	{
+		return ByLineResult(this, true, false);
+	}
+
+	ByLineResult ByLine(const String& terminator)
+	{
+		return ByLineResult(this, true, true, terminator);
+	}
+};
+
+class IOutputStream
+{
+public:
+	virtual void WriteData(const void* data, size_t bytes)=0;
+
+	template<typename T> Meta::EnableIfPod<T> Write(const T& value) {WriteData(&value, sizeof(T));}
+
+	template<typename T> Meta::EnableIfNotPod<T> Write(const T& value)
+	{
+		byte tempBuffer[4096];
+		Data::BinarySerializer serializer = Data::BinarySerializer(MemoryOutput(tempBuffer));
+		const size_t requiredBufferSize = serializer.SerializedSizeOf(value);
+		size_t allocatedBufferSize = requiredBufferSize;
+
+		if(requiredBufferSize>sizeof(tempBuffer))
+			serializer.Output = MemoryOutput({
+				(char*)Memory::GlobalHeap.Allocate(allocatedBufferSize, INTRA_SOURCE_INFO),
+				requiredBufferSize});
+
+		serializer(value);
+		WriteData(serializer.Output.Begin, serializer.Output.BytesWritten());
+
+		if(requiredBufferSize>sizeof(tempBuffer))
+			Memory::GlobalHeap.Free(tempBuffer, allocatedBufferSize);
+	}
+
+	//! Аналогично вызову Write<StringView>, но быстрее
+	void WriteString(StringView s)
+	{
+		Write<uintLE>((uint)s.Length());
+		WriteData(s.Data(), s.Length());
+	}
+
+	virtual ~IOutputStream() {}
+
+	forceinline void RawPrint(StringView s) {WriteData(s.Data(), s.Length());}
+	virtual void Print(StringView s) {RawPrint(s);}
+
+	template<typename Arg0> void Print(const Arg0& t)
+	{
+		Print(StringView(ToString(t)));
+	}
+
+	template<typename Arg0, typename Arg1, typename... Args>
+	void Print(const Arg0& arg0, const Arg1& arg1, const Args&... args)
+	{
+		Print(arg0);
+		Print(arg1, args...);
+	}
+
+	template<typename ...Args>
+	void PrintLine(const Args&... args)
+	{
+		Print(args..., endl);
+	}
+
+	template<typename T> friend IOutputStream& operator<<(IOutputStream& stream, const T& n)
+	{
+		stream.Print(ToString(n));
+		return stream;
+	}
+
+	virtual IOutputStream& operator<<(endl_t)
+	{
+		enum: bool {isPlatformCRLF = INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_WindowsPhone};
+		RawPrint(isPlatformCRLF? StringView("\r\n"): StringView("\n"));
+		return *this;
+	}
+
+	//! Сдвинуть текущую позицию записи на bytes байт
+	//! Для корректной работы этого метода требуются правильно переопределённые GetPos и SetPos
+	void Skip(ulong64 bytes)
+	{
+		auto curPos = GetPos();
+		INTRA_ASSERT(curPos != Meta::NumericLimits<ulong64>::Max());
+		SetPos(curPos+bytes);
+	}
+
+	bool IsSeekable() const {return GetPos()!=Meta::NumericLimits<ulong64>::Max();}
+	virtual void SetPos(ulong64) {}
+	virtual ulong64 GetSize() const {return Meta::NumericLimits<ulong64>::Max();} //По умолчанию поток будет считаться бесконечным
+	virtual ulong64 GetPos() const {return Meta::NumericLimits<ulong64>::Max();} //По умолчанию у потока нет позиции. Возвращаемое значение (ulong64)-1 говорит о том, что поток не seekable
+};
+
+class ConsoleStream: public IInputStream, public IOutputStream
+{
+public:
+	ConsoleStream(void* fout, void* fin);
+
+	void WriteData(const void* dst, size_t n) override final; //Консоль трактует все данные как текст в формате UTF-8
+	size_t ReadData(void* dst, size_t n) override final;
+	void UnreadData(const void* data, size_t bytes) override final;
+	void Skip(ulong64 bytes) {ReadNChars((size_t)bytes);}
+
+	dchar GetChar();
+
+private:
+	virtual bool EndOfStream() const override {return false;}
+
+	byte unread_buf_chars;
+	char unread_buf[5];
+	void* myfout;
+	void* myfin;
+};
+
+extern ConsoleStream Console, ConsoleError;
+
+class MemoryInputStream: public IInputStream
+{
+public:
+	MemoryInputStream(null_t=null) {pos=data=null; size=0;}
+	MemoryInputStream(const void* memory, size_t length): data((const byte*)memory) {pos=data; size=length;}
+	MemoryInputStream(const MemoryInputStream& rhs) = default;
+
+	size_t ReadData(void* dst, size_t bytes) override final
+	{
+		const auto bytesToRead = Math::Min(bytes, (size_t)(data+size-pos));
+		INTRA_ASSERT(bytesToRead<=bytes);
+		core::memcpy(dst, pos, bytesToRead); pos+=bytesToRead;
+		return bytesToRead;
+	}
+
+	void UnreadData(const void* src, size_t bytes) override final
+	{
+		(void)src;
+		INTRA_ASSERT(core::memcmp(pos-bytes, src, bytes)==0);
+		pos-=bytes;
+		INTRA_ASSERT(pos>=data);
+	}
+	bool EndOfStream() const override {return pos>=data+size;}
+
+	void SetPos(ulong64 bytes) override final {pos = data+bytes;}
+	ulong64 GetSize() const override final {return size;}
+	ulong64 GetPos() const override final {return ulong64(pos-data);}
+
+	const byte* data; const byte* pos;
+	size_t size;
+};
+
+}}

@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+  <Type Name="Intra::Meta::Tuple&lt;*&gt;">
+    <DisplayString IncludeView="noparens">{first}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
+      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
+      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
+      <Item Name="[9]">next.next.next.next.next.next.next.next.next.first</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Meta::Tuple&lt;*,*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+    <Expand>
+      <Item Name="[0]">first</Item>
+      <Item Name="[1]">next.first</Item>
+      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
+      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
+      <Item Name="[9]">next.next.next.next.next.next.next.next.next.first</Item>
+      <Synthetic Name="[...]">
+        <DisplayString>Next 10 elements:</DisplayString>
+      </Synthetic>
+      <ExpandedItem>next.next.next.next.next.next.next.next.next.next</ExpandedItem>
+    </Expand>
+  </Type>
+
+
+
+  <Type Name="Intra::Meta::KeyValuePair&lt;*,*&gt;">
+    <DisplayString>{Key} : {Value}</DisplayString>
+  </Type>
+
+</AutoVisualizer>

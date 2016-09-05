@@ -1,3 +1,25 @@
+Test/
+Resources/
+OldCode/
+EngineDemo/
+IntraLib/include/configs/
+IntraLib/src/configs
+IntraLib/include/Engine/
+IntraLib/src/Engine/
+.vs/
+LineCounter.exe
+
+*.iobj
+*.ipdb
+*.pdb
+Build/*/*.lib
+logs.html
+*.map
+EngineDemo1.exe
+Build/^(?!Release)
+Build/Release?*/
+
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

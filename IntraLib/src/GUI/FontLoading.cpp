@@ -1,0 +1,187 @@
+﻿#include "Core/Core.h"
+#include "GUI/FontLoading.h"
+#include "Containers/StringView.h"
+
+
+#if INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Dummy
+namespace Intra { namespace FontLoadingAPI {
+
+struct Font {};
+
+//TODO: заменить заглушку, чтобы она выдавала квадратики
+
+FontHandle FontCreate(StringView name, uint height, uint* yadvance)
+{
+	(void)name;
+	return FontCreateFromMemory(null, 0, height, yadvance);
+}
+
+FontHandle FontCreateFromMemory(const void* data, size_t length, uint height, uint* yadvance)
+{
+	(void)(data, length, height);
+	if(yadvance) *yadvance=1;
+	static detail::Font font;
+	return &font;
+}
+
+void FontDelete(FontHandle font) {(void)font;}
+
+const byte* FontGetCharBitmap(FontHandle font, int code, Math::SVec2* offset, Math::USVec2* size)
+{
+	(void)(font, code);
+	*offset = {0, 0};
+	*size = {1, 1};
+	static const byte whitePixel=255;
+	return &whitePixel;
+}
+
+void FontGetCharMetrics(FontHandle font, int code, short* xadvance, short* leftSideBearing)
+{
+	(void)(font, code);
+	if(leftSideBearing!=null) *leftSideBearing = 1;
+	if(xadvance!=null) *xadvance = 1;
+}
+
+short FontGetKerning(FontHandle font, int left, int right)
+{
+	(void)(font, left, right);
+	return 0;
+}
+
+}
+
+}}
+
+#elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_STB)
+
+//See FontLoading_STB.cxx
+
+#elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_FreeType)
+
+#include <ft2build.h>
+#include <freetype/freetype.h>
+
+namespace Intra { namespace FontLoadingAPI {
+
+static FT_Library ft=null;
+
+static struct Deinitor {~Deinitor() {if(ft!=null) FT_Done_FreeType(ft);}} Deinitor; //Деинициализация при выходе из программы
+
+struct Font
+{
+	FT_Face face;
+	void* dataCopy;
+};
+
+FontHandle FontCreate(StringView name, ushort height)
+{
+	if(ft==null) FT_Init_FreeType(&ft);
+	FontHandle desc = new detail::Font;
+	desc->dataCopy = null;
+	if(FT_New_Face(ft, String(name).CStr(), 0, &desc->face)!=0) return null;
+	FT_Set_Pixel_Sizes(desc->face, height, height);
+	return desc;
+}
+
+FontHandle FontCreateFromMemory(const void* data, size_t length, ushort height)
+{
+	if(ft==null) FT_Init_FreeType(&ft);
+	FontHandle desc = new detail::Font;
+	desc->dataCopy = Memory::Allocate(length);
+	core::memcpy(desc->dataCopy, data, length);
+	FT_New_Memory_Face(ft, (const FT_Byte*)desc->dataCopy, length, 0, &desc->face);
+	FT_Set_Pixel_Sizes(desc->face, height, height);
+	return desc;
+}
+
+void FontDelete(FontHandle font)
+{
+	if(font==null) return;
+	FT_Done_Face(font->face);
+	Memory::Free(font->dataCopy);
+	delete font;
+}
+
+const byte* FontGetCharBitmap(FontHandle desc, uint code, SVec2* offset, USVec2* size)
+{
+	FT_Face face = desc->face;
+	FT_Load_Char(face, code, FT_LOAD_RENDER);
+	auto glyph = face->glyph;
+	*offset = {(short)glyph->bitmap_left, (short)glyph->bitmap_top};
+	*size = {(ushort)glyph->bitmap.width, (ushort)glyph->bitmap.rows};
+	return glyph->bitmap.buffer;
+}
+
+}}
+
+#elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Gdiplus)
+
+using Intra::Math::GLSL::max;
+using Intra::Math::GLSL::min;
+
+struct IUnknown;
+#include <olectl.h>
+#pragma warning(push, 0)
+#include <gdiplus.h>
+#pragma warning(pop)
+
+using namespace Gdiplus;
+using namespace Gdiplus::DllExports;
+
+namespace Intra { namespace FontLoadingAPI {
+
+using namespace Math;
+
+
+//static FT_Library ft=null;
+
+struct Deinitor {~Deinitor() {/*if(ft!=null) FT_Done_FreeType(ft);}*/}} Deinitor; //Деинициализация при выходе из программы
+
+FontHandle FontCreate(StringView name, uint height, uint* yAdvance)
+{
+	(void)(name, height, yAdvance);
+	/*if(ft==null) FT_Init_FreeType(&ft);
+	FT_Face font;
+	if(FT_New_Face(ft, name, 0, &font)!=0) throw FileNotFoundException(name);
+	FT_Set_Pixel_Sizes(font, height, height);
+	return font;*/return null;
+}
+
+FontHandle FontCreateFromMemory(const void* data, size_t length, size_t height, uint* yadvance)
+{
+	(void)(data, length, height, yadvance);
+	/*if(ft==null) FT_Init_FreeType(&ft);
+	FT_Face font;
+	FT_New_Memory_Face(ft, (const FT_Byte*)data, length, 0, &font);
+	FT_Set_Pixel_Sizes(font, height, height);
+	return (handle)font;*/ return null;
+}
+
+void FontDelete(FontHandle font) {(void)font;/*if(font.ptr!=null) FT_Done_Face((FT_Face)font.ptr);*/}
+
+const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2* oSize)
+{
+	(void)(font, code);
+	static const byte whitePixel = 255;
+	/*FT_Load_Char((FT_Face)font.ptr, code, FT_LOAD_RENDER);
+	auto glyph=((FT_Face)font.ptr)->glyph;
+	*offset=spoint2((short)glyph->bitmap_left, (short)glyph->bitmap_top);
+	*size=ussize2((ushort)glyph->bitmap.width, (ushort)glyph->bitmap.rows);
+	return glyph->bitmap.buffer;*/
+	*oOffset = SVec2(0,0);
+	*oSize = USVec2(1,1);
+	return &whitePixel;
+}
+
+}}
+
+#elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Qt)
+
+#error "INTRA_LIBRARY_FONT_LOADING_Qt is not implemented!"
+
+#elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_SDL)
+
+#error "INTRA_LIBRARY_FONT_LOADING_SDL is not implemented!"
+
+#endif
+

@@ -1,0 +1,76 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+    <Type Name="Intra::GenericString&lt;char,*&gt;">
+        <DisplayString>{data,[len]s8}</DisplayString> 
+        <StringView>data,[len]s8b</StringView>
+        <Expand> 
+            <Item Name="Length">len</Item>
+            <Item Name="Data">data</Item>
+        </Expand> 
+    </Type>
+
+  <Type Name="Intra::GenericString&lt;char16_t,*&gt;">
+    <DisplayString>{data,[len]su}</DisplayString>
+    <StringView>data,[len]sub</StringView>
+    <Expand>
+      <Item Name="Length">len</Item>
+      <Item Name="Data">data</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;wchar_t,*&gt;">
+    <DisplayString>{data,[len]su}</DisplayString>
+    <StringView>data,[len]sub</StringView>
+    <Expand>
+      <Item Name="Length">len</Item>
+      <Item Name="Data">data</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;char32_t,*&gt;">
+    <DisplayString>{data,[len]s32}</DisplayString>
+    <StringView>data,[len]s32b</StringView>
+    <Expand>
+      <Item Name="Length">len</Item>
+      <Item Name="Data">data</Item>
+    </Expand>
+  </Type>
+
+  
+	
+    <Type Name="Intra::Array&lt;*&gt;">
+        <DisplayString>{range}</DisplayString>
+        <Expand>
+            <Item Name="Count" ExcludeView="simple">range.End-range.Begin</Item>
+            <Item Name="Capacity" ExcludeView="simple">buffer.End-buffer.Begin</Item>
+            <ExpandedItem>range</ExpandedItem>
+        </Expand>
+    </Type>
+	
+	  <Type Name="Intra::BList&lt;*&gt;">
+      <DisplayString Condition="count==0">[]</DisplayString>
+	    <DisplayString Condition="(range.First==null || range.Last==null) &amp;&amp; count!=0 || count==0 &amp;&amp; (range.First!=null || range.Last!=null)">&lt;INVALID&gt;</DisplayString>
+      <DisplayString>BList({count}){range}</DisplayString>
+      <Expand>
+          <Item Name="Count" ExcludeView="simple">count</Item>
+          <LinkedListItems>
+                <Size>count</Size>
+                <HeadPointer>range.First</HeadPointer>
+                <NextPointer>Next</NextPointer>
+                <ValueNode>Value</ValueNode>
+            </LinkedListItems>
+      </Expand>
+    </Type>
+
+  <Type Name="Intra::HashMap&lt;*&gt;">
+    <DisplayString>Map({(reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]}) {range}</DisplayString>
+    <Expand>
+      <Item Name="Count">bucket_heads!=null? (reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]: 0</Item>
+      <ExpandedItem>range</ExpandedItem>
+    </Expand>
+  </Type>
+	  
+	
+</AutoVisualizer>
+
