@@ -18,6 +18,7 @@ logs.html
 EngineDemo1.exe
 Build/^(?!Release)
 Build/Release?*/
+*.vcxproj.user
 
 
 # Windows image file caches
