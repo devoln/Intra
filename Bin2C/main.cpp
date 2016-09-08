@@ -141,7 +141,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 
 
 
-int __cdecl main(int argc, const char* argv[])
+int INTRA_CRTDECL main(int argc, const char* argv[])
 {
 	if(argc<2)
 	{

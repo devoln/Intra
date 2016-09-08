@@ -150,7 +150,7 @@ extern "C" void PlayUrl(const char* url)
 using namespace IO;
 using namespace Range;
 
-int __cdecl main()
+int INTRA_CRTDECL main()
 {
 
 #if INTRA_DISABLED

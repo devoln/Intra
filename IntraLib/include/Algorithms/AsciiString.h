@@ -5,9 +5,9 @@
 
 namespace Intra { namespace Algo {
 
-void StringFindAscii(StringView& str, ArrayRange<const StringView> subStrs, intptr* oWhichIndex=null);
+void StringFindAscii(StringView& str, ArrayRange<const StringView> subStrs, size_t* oWhichIndex=null);
 
-StringView StringReadUntilAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, intptr* oWhichIndex=null);
+StringView StringReadUntilAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, size_t* oWhichIndex=null);
 
 
 size_t StringMultiReplaceAsciiLength(StringView src,

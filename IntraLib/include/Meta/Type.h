@@ -462,8 +462,11 @@ template<typename T> struct NumericLimits<T, EnableIf<IsSignedIntegralType<T>::_
 	constexpr static NumericType Type() {return NumericType::Integral;}
 };
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning (disable: 4310) //Не ругаться на приведение констант с усечением значения
+
+#endif
 template<typename T> struct NumericLimits<T, EnableIf<IsUnsignedIntegralType<T>::_>>
 {
 	constexpr static T Min() {return 0;}
@@ -472,7 +475,10 @@ template<typename T> struct NumericLimits<T, EnableIf<IsUnsignedIntegralType<T>:
 	enum: bool {Signed = false};
 	constexpr static NumericType Type() {return NumericType::Integral;}
 };
+
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 template<> struct NumericLimits<float>
 {

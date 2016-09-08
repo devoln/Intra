@@ -259,7 +259,7 @@ struct LinearAllocator
 		return userPtr;
 	}
 
-	void Free(void* ptr, size_t size) {(void)(ptr, size);}
+	void Free(void* ptr, size_t size) {(void)ptr; (void)size;}
 
 	void Reset() {rest.Begin = start;}
 
@@ -396,8 +396,8 @@ private:
 
 struct PoolAllocator
 {
-	PoolAllocator(ArrayRange<byte> buf):
-		list(buf, element_size, alignment) {}
+	PoolAllocator(ArrayRange<byte> buf, size_t elementSize, size_t alignment):
+		list(buf, elementSize, alignment), element_size(ushort(elementSize)), alignment(ushort(alignment)) {}
 
 
 	size_t GetAlignment() const {return alignment;}
@@ -407,7 +407,7 @@ struct PoolAllocator
 		(void)sourceInfo;
 		INTRA_ASSERT(bytes <= element_size);
 		bytes = element_size;
-		list.Allocate();
+		return list.Allocate();
 	}
 
 	void Free(void* ptr, size_t size)
@@ -431,12 +431,12 @@ struct SegregatedTraits
     static size_t GetSizeClass(size_t size)
     {
 		auto Log = Math::Log2i((uint)size);
-        return Log>5? Log-5: 0;
+        return size_t(Log>5? Log-5: 0u);
     }
  
     static size_t GetSizeClassMaxSize(size_t sizeClass)
     {
-        return 32 << sizeClass;
+        return size_t(32u << sizeClass);
     }
 };
 
@@ -579,7 +579,7 @@ struct BufferAllocator
 
 	static forceinline size_t GetBufferSizeFromCategory(ushort category)
 	{
-		return 32*(category+1);
+		return 32u*(category+1u);
 	}
 
 	Buffer* AllocateBuffer(size_t& bytes, const SourceInfo& sourceInfo)
@@ -658,7 +658,7 @@ struct BufferAllocator
 		init_space_in_lists();
 	}
 
-	static forceinline BufferAllocator& Instance() {static BufferAllocator allocator; return allocator;}
+	static forceinline BufferAllocator& Instance() {INTRA_OPTIONAL_THREAD_LOCAL static BufferAllocator allocator; return allocator;}
 
 private:
 	void init_space_in_lists()

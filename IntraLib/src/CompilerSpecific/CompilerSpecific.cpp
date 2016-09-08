@@ -23,7 +23,7 @@ long long _cdecl _ftelli64(FILE* f)
 #include "Core/Debug.h"
 namespace std
 {
-	unsigned int __cdecl _Random_device()
+	unsigned int INTRA_CRTDECL _Random_device()
 	{	// return a random value
 		unsigned int ans;
 		if(rand_s(&ans))
@@ -55,10 +55,10 @@ extern "C"
 #ifndef _ACRTIMP
 #define _ACRTIMP
 #endif
-	_Check_return_ _ACRTIMP double __cdecl round(_In_ double x);
-	_Check_return_ _ACRTIMP float __cdecl roundf(_In_ float x);
-	_Check_return_ _ACRTIMP double __cdecl round(_In_ double x) {return ::floor(x+0.5);}
-	_Check_return_ _ACRTIMP float __cdecl roundf(_In_ float x) {return ::floorf(x+0.5f);}
+	_Check_return_ _ACRTIMP double INTRA_CRTDECL round(_In_ double x);
+	_Check_return_ _ACRTIMP float INTRA_CRTDECL roundf(_In_ float x);
+	_Check_return_ _ACRTIMP double INTRA_CRTDECL round(_In_ double x) {return ::floor(x+0.5);}
+	_Check_return_ _ACRTIMP float INTRA_CRTDECL roundf(_In_ float x) {return ::floorf(x+0.5f);}
 }
 #endif
 
@@ -86,7 +86,7 @@ extern "C"
 		return stds[id];
 	}
 
-	BOOL __cdecl __vcrt_InitializeCriticalSectionEx(LPCRITICAL_SECTION critical_section, DWORD spin_count, DWORD flags)
+	BOOL INTRA_CRTDECL __vcrt_InitializeCriticalSectionEx(LPCRITICAL_SECTION critical_section, DWORD spin_count, DWORD flags)
 	{
 		/*if(auto const initialize_critical_section_ex = try_get_InitializeCriticalSectionEx())
 		{
@@ -96,8 +96,8 @@ extern "C"
 		return InitializeCriticalSectionAndSpinCount(critical_section, spin_count);
 	}
 
-	void __cdecl terminate() {abort();}
-	void __cdecl _invalid_parameter_noinfo_noreturn() {abort();}
+	void INTRA_CRTDECL terminate() {abort();}
+	void INTRA_CRTDECL _invalid_parameter_noinfo_noreturn() {abort();}
 	void _fastcall _guard_check_icall(unsigned int) {}
 
 	//void _cdecl _except_handler4_common() {}
@@ -160,7 +160,7 @@ __declspec(naked) void _ftol2_sse()
 }
 
 
-extern "C" int __cdecl _purecall() {return 0;}
+extern "C" int INTRA_CRTDECL _purecall() {return 0;}
 
 
 extern "C"
@@ -185,7 +185,7 @@ extern "C"
 
 
 #define _CRTALLOC(x) __declspec(allocate(x))
-typedef void(__cdecl *_PVFV)();
+typedef void(INTRA_CRTDECL *_PVFV)();
 
 #pragma data_seg(".CRT$XIA")    /* C initializers */
 _PVFV __xi_a[] ={NULL};
@@ -219,7 +219,7 @@ extern _CRTALLOC(".CRT$XTZ") _PVFV __xt_z[];*/
 #ifndef CRTDLL
 static
 #endif
-void __cdecl _initterm(_PVFV* pfbegin, _PVFV* pfend)
+void INTRA_CRTDECL _initterm(_PVFV* pfbegin, _PVFV* pfend)
 {
 	while(pfbegin<pfend)
 	{
@@ -230,7 +230,7 @@ void __cdecl _initterm(_PVFV* pfbegin, _PVFV* pfend)
 
 HANDLE g_hHeap;
 
-extern "C" int __cdecl main(int argc, char* argv[]);
+extern "C" int INTRA_CRTDECL main(int argc, char* argv[]);
 extern "C" void mainCRTStartup()
 {
 	g_hHeap = HeapCreate(0, 8*1048576, 3072*1048576);
@@ -250,17 +250,17 @@ extern "C" void mainCRTStartup()
 #endif
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-void* __cdecl malloc(size_t bytes)
+void* INTRA_CRTDECL malloc(size_t bytes)
 {
 	return HeapAlloc(g_hHeap, 0, bytes);
 }
 
-void* __cdecl realloc(void* ptr, size_t bytes)
+void* INTRA_CRTDECL realloc(void* ptr, size_t bytes)
 {
 	return HeapReAlloc(g_hHeap, 0, ptr, bytes);
 }
 
-void __cdecl free(void* ptr)
+void INTRA_CRTDECL free(void* ptr)
 {
 	HeapFree(g_hHeap, 0, ptr);
 }
@@ -268,17 +268,17 @@ void __cdecl free(void* ptr)
 
 #endif
 
-void* __cdecl operator new(size_t bytes) noexcept
+void* INTRA_CRTDECL operator new(size_t bytes) noexcept
 {
 	return malloc(bytes);
 }
 
-void __cdecl operator delete(void* block) noexcept
+void INTRA_CRTDECL operator delete(void* block) noexcept
 {
 	free(block);
 }
 
-void __cdecl operator delete(void* block, size_t) noexcept
+void INTRA_CRTDECL operator delete(void* block, size_t) noexcept
 {
 	operator delete(block);
 }

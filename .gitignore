@@ -9,6 +9,7 @@ IntraLib/src/Engine/
 .vs/
 LineCounter.exe
 
+*.ilk
 *.iobj
 *.ipdb
 *.pdb
@@ -16,7 +17,7 @@ Build/*/*.lib
 logs.html
 *.map
 EngineDemo1.exe
-Build/^(?!Release)
+Build/Debug*/
 Build/Release?*/
 *.vcxproj.user
 

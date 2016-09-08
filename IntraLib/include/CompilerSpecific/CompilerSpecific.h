@@ -14,6 +14,12 @@
 
 #endif
 
+#ifdef _MSC_VER
+#define INTRA_CRTDECL __cdecl
+#else
+#define INTRA_CRTDECL
+#endif
+
 
 #ifdef __GNUC__
 
@@ -146,7 +152,6 @@
 #pragma warning(disable: 4714) //В дебаге не ругаться на то, что forceinline не сработал
 
 #pragma warning(disable: 4190) //Не ругаться на возврат структуры из extern "C" функции!
-#pragma warning(disable: 4577) //Чтобы не ругался на noexcept при отключённых исключениях
 #pragma warning(disable: 4063) //Не ругаться на недопустимые варианты в switch
 #pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
 #pragma warning(disable: 4307) //Не ругаться на переполнение целой константы, которое происходит при вычислении хеша в compile time в constexpr
@@ -154,8 +159,10 @@
 
 //Убираем ненужное из -Wall
 #if _MSC_VER>=1900
+#pragma warning(disable: 4577) //Чтобы не ругался на noexcept при отключённых исключениях
 #pragma warning(disable: 5026) //неявно удалённый конструктор перемещения
 #pragma warning(disable: 5027) //неявно удалённый оператор присваивания перемещением
+#pragma warning(disable: 4647) //__is_pod(...) имеет другое значение в предыдущих версиях
 #endif
 
 #pragma warning(disable: 4514) //подставляемая функция, не используемая в ссылках, была удалена
@@ -167,7 +174,6 @@
 #pragma warning(disable: 4711) //не сообщать об автоматическом inline
 #pragma warning(disable: 4710) //не сообщать об автоматическом не inline
 #pragma warning(disable: 4061) //не ругаться на необработанные явно case enum'а
-#pragma warning(disable: 4647) //__is_pod(...) имеет другое значение в предыдущих версиях
 #pragma warning(disable: 4555) //выражение не имеет результата
 
 #define _ALLOW_KEYWORD_MACROS

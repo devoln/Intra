@@ -10,7 +10,7 @@ struct RelativeIndex
 {
 	enum: size_t {MaxMultiplyer = size_t(-1)};
 
-	constexpr RelativeIndex(size_t plusValue, size_t multiplyer=0): multiplyer(multiplyer), plus_value(plusValue) {}
+	constexpr RelativeIndex(size_t plusValue, size_t multiplyer=0): multiplyer(multiplyer), plus_value(intptr(plusValue)) {}
 	constexpr RelativeIndex(const RelativeIndex& rhs) = default;
 	constexpr RelativeIndex operator/(intptr divisor) const {return RelativeIndex(size_t(plus_value/divisor), multiplyer/size_t(divisor));}
 	constexpr RelativeIndex operator+(intptr value) const {return RelativeIndex(size_t(plus_value+value), multiplyer);}

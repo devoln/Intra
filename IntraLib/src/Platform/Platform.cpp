@@ -56,7 +56,7 @@ Array<String> GetCommandLineArguments()
 }
 
 #ifndef INTRA_NO_WINDOWS_MAIN
-extern "C" int __cdecl main(int argc, const char* argv[]);
+extern "C" int INTRA_CRTDECL main(int argc, const char* argv[]);
 int WINAPI WinMain(__in HINSTANCE, __in_opt HINSTANCE, __in LPSTR, __in int)
 {
 	using namespace Intra;

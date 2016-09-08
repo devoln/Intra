@@ -53,17 +53,17 @@ namespace Intra { namespace core {
 
 	extern "C"
 	{
-		const void* __cdecl memchr(const void* buf, int val, size_t maxCount);
-		int __cdecl memcmp(const void* buf1, const void* buf2, size_t size);
-		void* __cdecl memcpy(void* dst, const void* src, size_t size);
-		void* __cdecl memmove(void* _Dst, const void* src, size_t size);
-		void* __cdecl memset(void*, int val, size_t size);
-		size_t __cdecl strlen(const char* str);
-		size_t __cdecl wcslen(const wchar_t* str);
+		const void* INTRA_CRTDECL memchr(const void* buf, int val, size_t maxCount);
+		int INTRA_CRTDECL memcmp(const void* buf1, const void* buf2, size_t size);
+		void* INTRA_CRTDECL memcpy(void* dst, const void* src, size_t size);
+		void* INTRA_CRTDECL memmove(void* _Dst, const void* src, size_t size);
+		void* INTRA_CRTDECL memset(void*, int val, size_t size);
+		size_t INTRA_CRTDECL strlen(const char* str);
+		size_t INTRA_CRTDECL wcslen(const wchar_t* str);
 
-		void* __cdecl malloc(size_t bytes);
-		void* __cdecl realloc(void* oldPtr, size_t bytes);
-		void __cdecl free(void* ptr);
+		void* INTRA_CRTDECL malloc(size_t bytes);
+		void* INTRA_CRTDECL realloc(void* oldPtr, size_t bytes);
+		void INTRA_CRTDECL free(void* ptr);
 	}
 }}
 

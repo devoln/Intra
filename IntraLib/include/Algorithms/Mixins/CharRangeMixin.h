@@ -136,7 +136,7 @@ public:
 	{
 		T reversed[20];
 		T* rev = reversed;
-		do *rev++ = number%10+'0', number/=10;
+		do *rev++ = T(number%10+'0'), number/=10;
 		while(number!=0);
 		while(rev!=reversed)
 			me().Put(*--rev);

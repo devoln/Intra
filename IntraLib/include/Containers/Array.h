@@ -36,7 +36,7 @@ public:
 		Memory::CopyInit(range, ArrayRange<const T>(values));
 	}
 
-	Array(ArrayRange<const T> values, Allocator& allocator): AllocatorRef(allocator)
+	explicit Array(ArrayRange<const T> values, Allocator& allocator): AllocatorRef(allocator)
 	{
 		SetCountUninitialized(values.Count());
 		Memory::CopyInit(range, values.AsConstRange());
@@ -47,7 +47,8 @@ public:
 		SetCountUninitialized(rhs.Count());
 		Memory::CopyInit(range, rhs.AsConstRange());
 	}
-	Array(const Array& rhs, Allocator& allocator): Array(rhs.AsConstRange(), allocator) {}
+
+	explicit Array(const Array& rhs, Allocator& allocator): Array(rhs.AsConstRange(), allocator) {}
 	Array(Array&& rhs): buffer(rhs.buffer), range(rhs.range), AllocatorRef(rhs) {rhs.buffer = null; rhs.range = null;}
 	~Array() {operator=(null);}
 
@@ -298,7 +299,7 @@ public:
 	//! их в конец и имеет leftSpace места для добавления в начало.
 	void Reserve(size_t rightPart, size_t leftSpace=0)
 	{
-		const size_t currentRightPartSize = buffer.End-range.Begin;
+		const size_t currentRightPartSize = size_t(buffer.End-range.Begin);
 		const size_t currentLeftSpace = LeftSpace();
 		if(rightPart<=currentRightPartSize && leftSpace<=currentLeftSpace) return;
 
@@ -319,13 +320,13 @@ public:
 	forceinline bool Empty() const {return range.Empty();}
 
 	//! Количество элементов, которые можно вставить в начало массива до перераспределения буфера.
-	forceinline size_t LeftSpace() const {return range.Begin-buffer.Begin;}
+	forceinline size_t LeftSpace() const {return size_t(range.Begin-buffer.Begin);}
 
 	//! Возвращает true, если массив не имеет свободного места для вставки элемента в начало массива.
 	forceinline bool NoLeftSpace() const {return range.Begin==buffer.Begin;}
 
 	//! Количество элементов, которые можно вставить в конец массива до перераспределения буфера.
-	forceinline size_t RightSpace() const {return buffer.End-range.End;}
+	forceinline size_t RightSpace() const {return size_t(buffer.End-range.End);}
 
 	//! Возвращает true, если массив не имеет свободного места для вставки элемента в конец массива.
 	forceinline bool NoRightSpace() const {return buffer.End==range.End;}

@@ -2,6 +2,8 @@
 
 #include "Core/Core.h"
 
+#ifdef _MSC_VER
+
 #ifndef _INITIALIZER_LIST_
 #define _INITIALIZER_LIST_
 
@@ -34,5 +36,11 @@ template<class T> inline constexpr const T* begin(initializer_list<T> list) thro
 template<class T> inline constexpr const T* end(initializer_list<T> list) throw() {return list.end();}
 
 }
+
+#endif
+
+#else
+
+#include <initializer_list>
 
 #endif

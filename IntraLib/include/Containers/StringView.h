@@ -242,7 +242,7 @@ template<typename Char> struct GenericStringView:
 		GenericStringView result = *this;
 		PopFirst();
 		while(!Empty() && !notIdentifierChars.Contains(First())) PopFirst();
-		return result.Take(Data()-result.Data());
+		return result.Take(size_t(Data()-result.Data()));
 	}
 
 	//! Заменить все вхождения subStr на newSubStr

@@ -32,7 +32,7 @@
 #define _ACRTIMP
 #endif
 extern "C"
-_ACRTIMP int __cdecl _stat(
+_ACRTIMP int INTRA_CRTDECL _stat(
 	_In_z_ char const*     _FileName,
 	_Out_  struct _stat32* _Stat
 	);

@@ -3,12 +3,12 @@
 
 namespace Intra { namespace Algo {
 
-void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, intptr* oWhichIndex)
+void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	if(stopSubStrSet.Empty())
 	{
 		str.TailAdvance(0);
-		if(oWhichIndex) *oWhichIndex = -1;
+		if(oWhichIndex) *oWhichIndex = 0;
 		return;
 	}
 	AsciiSet firstChars;
@@ -16,7 +16,7 @@ void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet
 	{
 		if(stopSubStrSet[i].Empty())
 		{
-			if(oWhichIndex) *oWhichIndex = intptr(i);
+			if(oWhichIndex) *oWhichIndex = i;
 			return;
 		}
 		firstChars.Set(stopSubStrSet[i].First());
@@ -26,20 +26,20 @@ void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet
 		str.FindAdvance(firstChars);
 		if(str.Empty())
 		{
-			if(oWhichIndex) *oWhichIndex = -1;
+			if(oWhichIndex) *oWhichIndex = stopSubStrSet.Length();
 			return;
 		}
 		str.PopFirst();
 		for(size_t i=0; i<stopSubStrSet.Length(); i++)
 		{
 			if(!str.StartsWith(stopSubStrSet[i].Drop())) continue;
-			if(oWhichIndex) *oWhichIndex = intptr(i);
+			if(oWhichIndex) *oWhichIndex = i;
 			return;
 		}
 	}
 }
 
-forceinline StringView StringReadUntilAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, intptr* oWhichIndex)
+forceinline StringView StringReadUntilAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	const char* begin = str.Data();
 	StringFindAscii(str, stopSubStrSet, oWhichIndex);
@@ -50,7 +50,7 @@ size_t StringMultiReplaceAsciiLength(StringView src,
 	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
 {
 	INTRA_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
-	intptr substrIndex;
+	size_t substrIndex = 0;
 	size_t len = 0;
 	while(len += StringReadUntilAscii(src, fromSubStrs, &substrIndex).Length(), !src.Empty())
 	{
@@ -65,7 +65,7 @@ StringView StringMultiReplaceAscii(StringView src, ArrayRange<char>& dstBuffer,
 {
 	INTRA_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	char* begin = dstBuffer.Begin;
-	intptr substrIndex;
+	size_t substrIndex=0;
 	while(StringReadUntilAscii(src, fromSubStrs, &substrIndex).CopyToAdvance(dstBuffer), !src.Empty())
 	{
 		toSubStrs[substrIndex].CopyToAdvance(dstBuffer);

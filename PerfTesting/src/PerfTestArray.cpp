@@ -1,4 +1,8 @@
-﻿#define INTRA_STL_INTERFACE
+﻿
+#ifndef INTRA_STL_INTERFACE
+#define INTRA_STL_INTERFACE
+#endif
+
 #include "PerfTestArray.h"
 
 

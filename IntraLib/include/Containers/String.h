@@ -583,7 +583,7 @@ private:
 	private:
 		void init()
 		{
-			size_t initialSize = rest.End() - format+8;
+			size_t initialSize = rest.End() - format+8u;
 			data = AllocatorRef::Allocate(initialSize, INTRA_SOURCE_INFO);
 			buffer_rest = {data, initialSize};
 			if(format!=null) WriteNextPart();

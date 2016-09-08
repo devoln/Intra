@@ -6,7 +6,7 @@
 
 namespace Intra {
 
-static void __cdecl on_crash(int signum)
+static void INTRA_CRTDECL on_crash(int signum)
 {
 	if(Errors::CrashHandler!=null)
 		Errors::CrashHandler(signum);
