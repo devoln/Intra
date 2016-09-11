@@ -19,9 +19,9 @@ void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<con
 	
 	logger.PrintLine();
 
-	logger.PushUnderline();
+	logger.PushFont(Math::Vec3(Math::NaN), Math::NaN, false, false, true);
 	logger.PrintLine("В тесте \"", testName, '"');
-	logger.PopUnderline();
+	logger.PopFont();
 
 	for(size_t i=0; i<otherTimes.Length(); i++)
 	{
@@ -30,31 +30,23 @@ void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<con
 			const bool faster = (times[j]<otherTimes[i]);
 			const double timesBetter = faster? otherTimes[i]/times[j]: times[j]/otherTimes[i];
 
-			logger.PushBold();
-			if(faster) logger.PushFont(intraColor);
-			else logger.PushFont(otherColor);
+			logger.PushFont(faster? intraColor: otherColor, 3, true, false, false);
 			logger << comparedTypes[faster? otherTimes.Length()+j: i];
 			logger.PopFont();
-			logger.PopBold();
 
 			logger << " быстрее, чем ";
 
-			logger.PushBold();
-			if(!faster) logger.PushFont(intraColor);
-			else logger.PushFont(otherColor);
+			logger.PushFont(!faster? intraColor: otherColor, 3, true, false, false);
 			logger << comparedTypes[faster? i: otherTimes.Length()+j];
 			logger.PopFont();
-			logger.PopBold();
 
 			logger << ", в ";
-			logger.PushBold();
-			if(timesBetter>2) logger.PushUnderline();
-			if(!faster) logger.PushFont(timesBetter>1.25? goodOtherColor: otherColor);
-			else logger.PushFont(timesBetter>1.25? goodIntraColor: intraColor);
+			logger.PushFont(!faster?
+				(timesBetter>1.25? goodOtherColor: otherColor):
+				(timesBetter>1.25? goodIntraColor: intraColor),
+				3, true, false, timesBetter>2);
 			logger << ToString(timesBetter, 2);
 			logger.PopFont();
-			if(timesBetter>2) logger.PopUnderline();
-			logger.PopBold();
 			logger.PrintLine(" раз(а).");
 		}
 	}
@@ -65,11 +57,9 @@ void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<con
 	{
 		bool isOtherTime = i<otherTimes.Length();
 		double time = isOtherTime? otherTimes[i]: times[i-otherTimes.Length()];
-		logger.PushBold();
-		logger.PushFont(isOtherTime? otherColor: intraColor);
+		logger.PushFont(isOtherTime? otherColor: intraColor, 3, true);
 		logger << comparedTypes[i];
 		logger.PopFont();
-		logger.PopBold();
 		logger.PrintLine(" - ", ToString(time*1000, 2));
 	}
 
@@ -106,7 +96,7 @@ TestGroup::TestGroup(Logger& Log, StringView category): logger(Log)
 				yes = true;
 				break;
 			}
-			if(c=='\r' || c=='n')
+			if(c=='\r' || c=='\n')
 			{
 				yes = false;
 				break;

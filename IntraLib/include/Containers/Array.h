@@ -9,10 +9,10 @@
 
 namespace Intra {
 
-template<typename T, class Allocator> class Array: Memory::AllocatorRef<Allocator>
+template<typename T, class AllocatorType> class Array: Memory::AllocatorRef<AllocatorType>
 {
-	typedef Memory::AllocatorRef<Allocator> AllocatorRef;
-	typedef Allocator Allocator;
+	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
+	typedef AllocatorType Allocator;
 public:
 	typedef T value_type;
 	typedef T* Iterator;
@@ -49,7 +49,7 @@ public:
 	}
 
 	explicit Array(const Array& rhs, Allocator& allocator): Array(rhs.AsConstRange(), allocator) {}
-	Array(Array&& rhs): buffer(rhs.buffer), range(rhs.range), AllocatorRef(rhs) {rhs.buffer = null; rhs.range = null;}
+	Array(Array&& rhs): AllocatorRef(rhs), buffer(rhs.buffer), range(rhs.range) {rhs.buffer = null; rhs.range = null;}
 	~Array() {operator=(null);}
 
 	Array& operator=(const Array& rhs)
@@ -202,7 +202,7 @@ public:
 		if(Count()+valuesCount>Capacity())
 		{
 			size_t newCapacity = Count()+valuesCount+Capacity()/2;
-			ArrayRange<T> newBuffer = AllocatorRef::AllocateRangeUninitialized<T>(newCapacity, INTRA_SOURCE_INFO);
+			ArrayRange<T> newBuffer = AllocatorRef::template AllocateRangeUninitialized<T>(newCapacity, INTRA_SOURCE_INFO);
 			ArrayRange<T> newRange = newBuffer.Drop(LeftSpace()).Take(Count()+valuesCount);
 			Memory::MoveInitDelete(newRange.Take(pos), range.Take(pos));
 			Memory::MoveInitDelete(newRange.Drop(pos+valuesCount), range.Drop(pos));
@@ -282,7 +282,7 @@ public:
 		if(rightPartSize <= Count()) Memory::Destruct(range.Drop(rightPartSize));
 
 		size_t newCapacity = rightPartSize+leftPartSize;
-		ArrayRange<T> newBuffer = AllocatorRef::AllocateRangeUninitialized<T>(newCapacity, INTRA_SOURCE_INFO);
+		ArrayRange<T> newBuffer = AllocatorRef::template AllocateRangeUninitialized<T>(newCapacity, INTRA_SOURCE_INFO);
 		ArrayRange<T> newRange = newBuffer.Drop(leftPartSize).Take(Count());
 
 		if(!buffer.Empty())

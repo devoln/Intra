@@ -112,7 +112,7 @@
 #include "Sound/InstrumentLibrary.h"
 
 #include "Test/PerformanceTest.h"
-#include "Test/Unittest.h"
+#include "Test/UnitTest.h"
 
 #include "Text/CharMap.h"
 #include "Text/UtfConversion.h"

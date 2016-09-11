@@ -364,6 +364,7 @@ void StreamedBufferSetDeleteOnStop(StreamedBufferHandle snd, bool del)
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
+	INTRA_ASSERT(snd==null);
 	snd->looping = loop;
 	snd->stop_soon = 0;
 	snd->buffer->Play(0, 0, DSBPLAY_LOOPING);

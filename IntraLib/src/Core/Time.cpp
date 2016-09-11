@@ -2,6 +2,8 @@
 #include "Containers/String.h"
 #include <time.h>
 
+
+
 namespace Intra {
 
 DateTime DateTime::Now()
@@ -19,7 +21,11 @@ String ToString(const DateTime& datetime)
 		(datetime.Hour, 2, '0')(":")(datetime.Minute, 2, '0')(":")(datetime.Second, 2, '0');
 }
 
+}
+
 #if(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_Dummy)
+
+namespace Intra {
 
 Timer::Timer() = default;
 Timer::~Timer() = default;
@@ -28,12 +34,16 @@ double Timer::GetTime() {return 0;}
 double Timer::GetTimeAndReset() {return 0;}
 void Timer::Wait(uint msec) {}
 
+}
+
 #elif(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_QPC)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+
+namespace Intra {
 
 static ulong64 g_timer_frequency;
 
@@ -65,9 +75,14 @@ double Timer::GetTimeAndReset()
 	return result;
 }
 
+}
+
 #elif(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_CPPLIB)
+
 #include <chrono>
 #include <thread>
+
+namespace Intra {
 
 Timer::Timer()
 {
@@ -106,10 +121,13 @@ void Timer::Reset()
 
 //void Timer::Wait(uint msec) {std::this_thread::sleep_for(std::chrono::milliseconds(msec));}
 
+}
 
 #elif INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_Qt
 #include <QtCore/QElapsedTimer>
 #include <QtCore/QThread>
+
+namespace Intra {
 
 Timer::Timer()
 {
@@ -140,7 +158,11 @@ double Timer::GetTimeAndReset()
 	SleepThread::msleep(msec);
 }*/
 
+}
+
 #elif INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_CLIB
+
+namespace Intra {
 
 Timer::Timer() {hndl = clock();}
 Timer::~Timer() = default;
@@ -155,6 +177,8 @@ double Timer::GetTimeAndReset()
 	return result;
 }
 
+}
+
 #else
 #error "INTRA_LIBRARY_TIMER define is invalid!"
 #endif
@@ -165,18 +189,26 @@ double Timer::GetTimeAndReset()
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+
+namespace Intra {
+
 void Timer::Wait(uint msec) {Sleep(msec);}
+
+}
 
 #elif defined(INTRA_PLATFORM_IS_POSIX)
 
 #include <unistd.h>
+
+namespace Intra {
+
 void Timer::Wait(uint msec)
 {
 	if(msec < (1 << 29)/125 ) usleep(msec*1000);
 	else sleep((msec+999)/1000);
 }
 
-#endif
-
 }
+
+#endif
 

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "matrix.h"
+#include "Math/Matrix.h"
 
 namespace Intra { namespace Math {
 

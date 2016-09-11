@@ -1,4 +1,6 @@
-﻿#include "Core/Core.h"
+﻿#if INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console
+
+#include "Core/Core.h"
 #include "GUI/MessageBox.h"
 #include "Containers/StringView.h"
 #include "Containers/String.h"
@@ -14,13 +16,13 @@ using namespace Math;
 #include <EGL/egl.h>
 #include <GLES/gl.h>
 #else
-#if(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_Windows)
+#if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #include <GL/gl.h>
-#elif(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_X11)
+#elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 #include <GL/glx.h>
 #include <GL/gl.h>
 #endif
@@ -550,3 +552,4 @@ else caps.texture_3D=true;
 
 }
 
+#endif

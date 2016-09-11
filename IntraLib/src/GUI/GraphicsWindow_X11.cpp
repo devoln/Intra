@@ -162,7 +162,7 @@ WindowHandle ws_create_window(StringView caption, WindowType type, SVec2 pos, US
 
 void WindowDelete(WindowHandle wnd)
 {
-	ws_on_destroy(wnd->wndObj);
+	OnDestroy(wnd->wndObj);
 	XDestroyWindow(display, wnd->window);
 	if(wnd->minmax) XFree(wnd->minmax);
 	windows.FindAndRemoveUnordered(wnd); delete wnd;

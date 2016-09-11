@@ -422,11 +422,13 @@ template<typename R> void TextDeserializer::DeserializeRange(R& outputRange)
 	}
 
 	SkipAllSpacesAndComments();
-	if(Lang.ArrayClose.Empty() && !Input.Rest.StartsWith(Lang.RightFieldNameBeginQuote) || !Input.Rest.StartsWith(Lang.ArrayClose))
+	if( (Lang.ArrayClose.Empty() && !Input.Rest.StartsWith(Lang.RightFieldNameBeginQuote)) ||
+		!Input.Rest.StartsWith(Lang.ArrayClose) )
 	{
 		outputRange.Put(Deserialize<T>());
 		SkipAllSpacesAndComments();
-		while(Lang.ArrayClose.Empty() && !Input.Rest.StartsWith(Lang.RightFieldNameBeginQuote) || !Input.Rest.StartsWith(Lang.ArrayClose))
+		while( (Lang.ArrayClose.Empty() && !Input.Rest.StartsWith(Lang.RightFieldNameBeginQuote)) ||
+			!Input.Rest.StartsWith(Lang.ArrayClose) )
 		{
 			if(NextField(TextSerializerParams::TypeFlags_Array))
 				outputRange.Put(Deserialize<T>());

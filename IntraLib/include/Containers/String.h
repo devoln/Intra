@@ -9,13 +9,13 @@
 
 namespace Intra {
 
-template<typename Char, typename Allocator> class GenericString:
-	public Memory::AllocatorRef<Allocator, Meta::ComparableMixin<GenericString<Char, Allocator>>>
+template<typename Char, typename AllocatorType> class GenericString:
+	public Memory::AllocatorRef<AllocatorType, Meta::ComparableMixin<GenericString<Char, AllocatorType>>>
 {
-	typedef Memory::AllocatorRef<Allocator, Meta::ComparableMixin<GenericString<Char, Allocator>>> AllocatorRef;
+	typedef Memory::AllocatorRef<AllocatorType, Meta::ComparableMixin<GenericString<Char, AllocatorType>>> AllocatorRef;
 	class Formatter;
 public:
-	typedef Allocator Allocator;
+	typedef AllocatorType Allocator;
 
 	GenericString(const Char* str, Allocator& allocator):
 		GenericString(str, (str==null)? 0: CStringLength(str), allocator) {}
@@ -26,30 +26,39 @@ public:
 
 	template<size_t N> GenericString(const Char(&str)[N]): GenericString(str, N-1) {}
 
-	GenericString(null_t, Allocator& allocator): data(null), len(0), AllocatorRef(allocator) {}
+	GenericString(null_t, Allocator& allocator): AllocatorRef(allocator), len(0), data(null) {}
 
-	GenericString(null_t=null): data(null), len(0), AllocatorRef(null) {}
+	GenericString(null_t=null): AllocatorRef(null), len(0), data(null) {}
 
-	explicit GenericString(const Char* str, size_t len, Allocator& allocator): data(null), AllocatorRef(allocator)
+	explicit GenericString(const Char* str, size_t len, Allocator& allocator): AllocatorRef(allocator), data(null)
 	{
 		SetLengthUninitialized(len);
 		core::memcpy(data, str, len*sizeof(Char));
 	}
 
-	explicit GenericString(const Char* str, size_t len): data(null), len(0)
+	explicit GenericString(const Char* str, size_t len): len(0), data(null)
 	{
 		SetLengthUninitialized(len);
 		core::memcpy(data, str, len*sizeof(Char));
 	}
 
-	explicit forceinline GenericString(const Char* begin, const Char* end): GenericString(begin, end-begin) {}
-	explicit forceinline GenericString(const Char* begin, const Char* end, Allocator& allocator): GenericString(begin, end-begin, allocator) {}
-	explicit forceinline GenericString(size_t len, Char filler): data(null), len(0) {SetLength(len, filler);}
-	forceinline GenericString(StringView rhs): GenericString(rhs.Data(), rhs.Length()) {}
-	forceinline GenericString(const GenericString& rhs): GenericString(rhs.Data(), rhs.Length()) {}
+	explicit forceinline GenericString(const Char* begin, const Char* end):
+		GenericString(begin, end-begin) {}
+
+	explicit forceinline GenericString(const Char* begin, const Char* end, Allocator& allocator):
+		GenericString(begin, end-begin, allocator) {}
+	
+	explicit forceinline GenericString(size_t len, Char filler):
+		len(0), data(null) {SetLength(len, filler);}
+
+	forceinline GenericString(StringView rhs):
+		GenericString(rhs.Data(), rhs.Length()) {}
+
+	forceinline GenericString(const GenericString& rhs):
+		GenericString(rhs.Data(), rhs.Length()) {}
 	
 	forceinline GenericString(GenericString&& rhs):
-		data(rhs.data), len(rhs.len), AllocatorRef(rhs)
+		AllocatorRef(rhs), len(rhs.len), data(rhs.data)
 	{
 		rhs.data = null;
 		rhs.len = 0;
@@ -449,7 +458,8 @@ private:
 		~Formatter() {INTRA_ASSERT(buffer_rest.Empty());}
 
 		template<typename T, typename... Args> Meta::EnableIf<
-			Meta::IsFundamentalType<T>::_ ||
+			Meta::IsArithmeticType<T>::_ ||
+			Meta::IsPointerType<T>::_ ||
 			Range::IsFiniteForwardRangeOf<T, Char>::_ ||
 			Meta::IsTuple<T>::_,
 		Formatter&> operator()(const T& value, Args&&... args)
@@ -462,7 +472,7 @@ private:
 		}
 
 		template<typename T, typename CharRange=StringView> Meta::EnableIf<
-			!(Meta::IsFundamentalType<T>::_ ||
+			!(Meta::IsArithmeticType<T>::_ ||
 				Range::IsFiniteInputRangeOf<T, Char>::_ ||
 				Meta::IsTuple<T>::_) &&
 			Data::HasReflection<T>::_ &&
@@ -710,8 +720,9 @@ forceinline StringView ToString(const StringView& value) {return value;}
 forceinline StringView ToString(const char* value) {return StringView(value);}
 template<size_t N> forceinline StringView ToString(const char(&value)[N]) {return StringView(value);}
 
-template<typename Char, typename Allocator> template<typename R> GenericString<Char, Allocator> GenericString<Char, Allocator>::Join(const R& strs,
-	GenericStringView<Char> delim=" ", GenericStringView<Char> prefix=null, GenericStringView<Char> postfix=null)
+template<typename Char, typename Allocator> template<typename R> GenericString<Char, Allocator>
+	GenericString<Char, Allocator>::Join(const R& strs,
+	GenericStringView<Char> delim, GenericStringView<Char> prefix, GenericStringView<Char> postfix)
 {
 	if(strs.Empty()) return null;
 	R strRange = strs;

@@ -47,7 +47,7 @@ template<uint MaxDataSize, typename R, typename... Args> class FixedDelegate<R(A
 
 	static R fun_call_helper(FreeFunc f, Args... args) {return f(args...);}
 	template<typename T> static R call_helper(const T& data, Args... args) {return data(args...);}
-	template<typename T> static void destructor_helper(void* data) {data; ((T*)data)->~T();}
+	template<typename T> static void destructor_helper(void* data) {(void)data; ((T*)data)->~T();}
 	template<typename T> static void copy_helper(void* dst, const void* src) {new(dst) T(*(const T*)src);}
 
 public:

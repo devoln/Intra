@@ -245,9 +245,8 @@ template<typename T> void Interleave(ArrayRange<T> dst, ArrayRange<const ArrayRa
 	INTRA_ASSERT(!dst.Empty());
 	INTRA_ASSERT(!src.Empty());
 	const size_t channelCount = src.Length();
-	const size_t totalValueCount = dst.Length();
 	const size_t valuesPerChannel = src.First().Length();
-	INTRA_ASSERT(totalValueCount==valuesPerChannel*channelCount);
+	INTRA_ASSERT(dst.Length() == valuesPerChannel*channelCount);
 
 	for(size_t i=0; i<valuesPerChannel; i++)
 	{
@@ -264,9 +263,8 @@ template<typename T> void Deinterleave(ArrayRange<const ArrayRange<T>> dst, Arra
 	INTRA_ASSERT(!dst.Empty());
 	INTRA_ASSERT(!src.Empty());
 	const size_t channelCount = dst.Length();
-	size_t totalValueCount = src.Length();
 	const size_t valuesPerChannel = dst.First().Length();
-	INTRA_ASSERT(totalValueCount==valuesPerChannel*channelCount);
+	INTRA_ASSERT(src.Length() == valuesPerChannel*channelCount);
 
 	for(size_t i=0; i<valuesPerChannel; i++)
 		for(size_t c=0; c<channelCount; c++)

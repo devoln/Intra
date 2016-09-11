@@ -21,7 +21,7 @@ struct Job
 
 	Job(const Job& rhs):
 		function(rhs.function), parent(rhs.parent),
-		unfinishedJobs(rhs.unfinishedJobs.load())
+		unfinishedJobs(rhs.unfinishedJobs.Load())
 	{
 		core::memcpy(data, rhs.data, sizeof(data));
 	}

@@ -60,6 +60,7 @@ Sound/SynthesizedInstrument.cpp
 Sound/InstrumentLibrary.cpp
 Sound/Sound_DirectSound.cpp
 Sound/Sound_OpenAL.cpp
+Sound/Sound_Dummy.cpp
 Sound/Sound_Emscripten.cpp
 
 Test/PerformanceTest.cpp

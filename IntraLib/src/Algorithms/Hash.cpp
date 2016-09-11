@@ -47,7 +47,7 @@ uint Murmur3_32(StringView key, uint seed)
 		hash ^= k1;
 	}
 
-	hash ^= key.Length();
+	hash ^= uint(key.Length());
 	hash ^= (hash >> 16);
 	hash *= 0x85ebca6bU;
 	hash ^= (hash >> 13);

@@ -57,7 +57,7 @@ Array<CharMap::Block> CharMap::GetBlocks(char c, BlockType type) const
 
 			uint i2=i+1;
 
-			if((type==Vertical || type==HorizontalOrVertical) && j2-j==1 || type==Area)
+			if( ((type==Vertical || type==HorizontalOrVertical) && j2-j==1) || type==Area )
 			{
 				if(j2-j==1) while(i2<Height() && m(j, i2)==c) i2++;
 				else while(i2<Height() && core::memcmp(&m(j, i2-1), &m(j, i2), j2-j)==0) i2++;

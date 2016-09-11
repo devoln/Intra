@@ -341,8 +341,8 @@ public:
 
 
 	template<typename OR> Meta::EnableIf<
-		IsOutputRange<OR>::_
-	> CopyAdvanceToAdvance(OR& dst)
+		IsOutputRange<OR>::_ && !Meta::IsConst<OR>::_
+	> CopyAdvanceToAdvance(OR&& dst)
 	{
 		while(!me().Empty())
 		{
@@ -360,7 +360,7 @@ public:
 	}
 
 	template<typename OR, typename P> Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
 	> CopyAdvanceToAdvance(OR&& dst, P pred)
 	{
 		while(!me().Empty())

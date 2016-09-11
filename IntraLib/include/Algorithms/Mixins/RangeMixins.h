@@ -134,15 +134,15 @@ public:
 
 
 	template<typename OR> forceinline Meta::EnableIf<
-		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
-	> CopyAdvanceToAdvance(OR& dst)
+		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_ && !Meta::IsConst<OR>::_
+	> CopyAdvanceToAdvance(OR&& dst)
 	{
 		BaseRandomAccess::CopyAdvanceToAdvance(dst);
 	}
 
 	template<typename OR> forceinline Meta::EnableIf<
 		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
-	> CopyAdvanceTo(OR& dst)
+	> CopyAdvanceTo(const OR& dst)
 	{
 		BaseRandomAccess::CopyAdvanceTo(dst);
 	}
@@ -155,8 +155,8 @@ public:
 	}
 
 	template<typename OR> forceinline Meta::EnableIf<
-		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
-	> CopyToAdvance(OR& dst) const
+		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_ && !Meta::IsConst<OR>::_
+	> CopyToAdvance(OR&& dst) const
 	{
 		BaseRandomAccess::CopyToAdvance(dst);
 	}
@@ -164,8 +164,8 @@ public:
 
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
-	> CopyAdvanceToAdvance(OR& dst, P pred)
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
+	> CopyAdvanceToAdvance(OR&& dst, P pred)
 	{
 		BaseRandomAccess::CopyAdvanceToAdvance(dst, pred);
 	}
@@ -178,8 +178,8 @@ public:
 	}
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
-	> CopyToAdvance(OR& dst, P pred) const
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
+	> CopyToAdvance(OR&& dst, P pred) const
 	{
 		BaseRandomAccess::CopyToAdvance(dst, pred);
 	}
@@ -201,8 +201,8 @@ public:
 	}
 
 	template<typename DstRange> forceinline Meta::EnableIf<
-		IsArrayRangeOfExactly<DstRange, T>::_
-	> CopyAdvanceToAdvance(DstRange& dst)
+		IsArrayRangeOfExactly<DstRange, T>::_ && !Meta::IsConst<DstRange>::_
+	> CopyAdvanceToAdvance(DstRange&& dst)
 	{
 		BaseArray::CopyAdvanceToAdvance(dst);
 	}
@@ -215,8 +215,8 @@ public:
 	}
 
 	template<typename DstRange> forceinline Meta::EnableIf<
-		IsArrayRangeOfExactly<DstRange, T>::_
-	> CopyToAdvance(DstRange& dst) const
+		IsArrayRangeOfExactly<DstRange, T>::_ && !Meta::IsConst<DstRange>::_
+	> CopyToAdvance(DstRange&& dst) const
 	{
 		BaseArray::CopyToAdvance(dst);
 	}
@@ -266,7 +266,7 @@ template<typename R0> struct CommonRangeCategoryAnyFinite<R0>
 template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAnyFinite<R0, R1, RANGES...>
 {
 	typedef CommonRangeCategoryAnyFinite<R1, RANGES...> Rest;
-	enum: byte {Type = Rest::Type? R0::RangeType: Rest::Type};
+	enum: byte {Type = (byte)Rest::Type>(byte)R0::RangeType? (byte)R0::RangeType: (byte)Rest::Type};
 	enum: byte {Finite = Rest::Finite || R0::RangeIsFinite};
 };
 
@@ -275,15 +275,15 @@ template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategor
 template<typename... RANGES> struct CommonRangeCategoryAllFinite;
 template<typename R0> struct CommonRangeCategoryAllFinite<R0>
 {
-	enum: byte {Type = R0::RangeType==TypeEnum::Array? TypeEnum::RandomAccess: R0::RangeType};
+	enum: byte {Type = (byte)R0::RangeType==TypeEnum::Array? (byte)TypeEnum::RandomAccess: (byte)R0::RangeType};
 	enum: bool {Finite = R0::RangeIsFinite};
 };
 
 template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAllFinite<R0, R1, RANGES...>
 {
 	typedef CommonRangeCategoryAllFinite<R1, RANGES...> Rest;
-	enum: byte {Type = Rest::Type? R0::RangeType: Rest::Type};
-	enum: byte {Finite = Rest::Finite && R0::RangeIsFinite};
+	enum: byte {Type = (byte)Rest::Type? (byte)R0::RangeType: (byte)Rest::Type};
+	enum: bool {Finite = Rest::Finite && R0::RangeIsFinite};
 };
 
 

@@ -65,7 +65,7 @@ constexpr forceinline const char* past_last_slash(const char* str)
 
 #ifdef INTRA_DEBUG
 #define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT; PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
-#define INTRA_ASSERT(expression) (expression) || (\
+#define INTRA_ASSERT(expression) (expression)? (void)0: (void)(\
     (INTRA_INTERNAL_ERROR("Assertion (" # expression ") failed!"), true))
 #define INTRA_NAN_CHECK(val) INTRA_ASSERT(val!=Math::NaN)
 #define INTRA_DEBUG_CODE(...) {__VA_ARGS___};
@@ -77,7 +77,7 @@ constexpr forceinline const char* past_last_slash(const char* str)
 
 #else
 #define INTRA_DEBUG_WARNING_CHECK
-#define INTRA_ASSERT
+#define INTRA_ASSERT(expr) (void)0
 #define INTRA_NAN_CHECK(val) {if(val==Intra::Math::NaN) {(val)=0;}}
 #define DEBUG_CODE(x)
 #define HEAP_CHECK

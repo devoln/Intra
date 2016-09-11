@@ -27,9 +27,9 @@ public:
 
 		forceinline core::pair<const K&, V&> operator*() const {INTRA_ASSERT(index<mymap->Count()); return {mymap->keys[index], mymap->values[index]};}
 		forceinline iterator& operator++() {INTRA_ASSERT(index<mymap->Count()); index++; return *this;}
-		forceinline iterator operator++(int) const {INTRA_ASSERT(index<mymap->Count()); iterator result = *this; index++; return result;}
+		forceinline iterator operator++(int) {INTRA_ASSERT(index<mymap->Count()); iterator result = *this; index++; return result;}
 		forceinline iterator& operator--() {INTRA_ASSERT(index>0); index--; return *this;}
-		forceinline iterator operator--(int) const {INTRA_ASSERT(index>0); iterator result = *this; index++; return result;}
+		forceinline iterator operator--(int) {INTRA_ASSERT(index>0); iterator result = *this; index++; return result;}
 
 		forceinline bool operator==(const iterator& rhs) const {return mymap==rhs.mymap && index==rhs.index;}
 		forceinline bool operator!=(const iterator& rhs) const {return !operator==(rhs);}
@@ -45,9 +45,9 @@ public:
 	{
 		forceinline const core::pair<const K&, V&> operator*() const {INTRA_ASSERT(index<mymap->Count()); return {mymap->keys[index], mymap->values[index]};}
 		forceinline const_iterator& operator++() {INTRA_ASSERT(index<mymap->Count()); index++; return *this;}
-		forceinline const_iterator operator++(int) const {INTRA_ASSERT(index<mymap->Count()); const_iterator result = *this; index++; return result;}
+		forceinline const_iterator operator++(int) {INTRA_ASSERT(index<mymap->Count()); const_iterator result = *this; index++; return result;}
 		forceinline const_iterator& operator--() {INTRA_ASSERT(index>0); index--; return *this;}
-		forceinline const_iterator operator--(int) const {INTRA_ASSERT(index>0); const_iterator result = *this; index++; return result;}
+		forceinline const_iterator operator--(int) {INTRA_ASSERT(index>0); const_iterator result = *this; index++; return result;}
 
 		forceinline bool operator==(const const_iterator& rhs) const {return mymap==rhs.mymap && index==rhs.index;}
 		forceinline bool operator!=(const const_iterator& rhs) const {return !operator==(rhs);}

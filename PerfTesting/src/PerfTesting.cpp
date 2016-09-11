@@ -17,7 +17,6 @@
 
 using namespace Intra;
 using namespace Intra::IO;
-using ::size_t;
 
 
 DiskFile::Writer logFile;
@@ -51,10 +50,8 @@ void InitLogSystem(int argc, const char* argv[])
 
 	Errors::CrashHandler=[](int signum)
 	{
-		logWriter.PushFont({1, 0, 0}, 5);
-		logWriter.PushBold();
+		logWriter.PushFont({1, 0, 0}, 5, true);
 		logWriter.Print(Errors::CrashSignalDesc(signum));
-		logWriter.PopBold();
 		logWriter.PopFont();
 		logWriter.EndAllSpoilers();
 		logFile=null;
@@ -71,11 +68,17 @@ void InitLogSystem(int argc, const char* argv[])
 	logWriter.BeginSpoiler("Информация о системе", "[Скрыть] Информация о системе");
 	auto memInfo = SystemMemoryInfo::Get();
 	auto procInfo = ProcessorInfo::Get();
-	logWriter.PrintCode(*String::Format("Процессор: <^>\r\n"
+	logWriter.PrintCode(*String::Format("Процессор:\r\n<^>\r\n"
+		"Число ядер: <^>\r\n"
+		"Число логических процессоров: <^>\r\n"
+		"Частота: <^> МГц\r\n\r\n"
 		"Свободно физической памяти: <^> ГиБ из <^> ГиБ\r\n")
 		(procInfo.BrandString)
-		(memInfo.FreePhysicalMemory/float(1 << 30))
-		(memInfo.TotalPhysicalMemory/float(1 << 30))
+		(procInfo.CoreNumber)
+		(procInfo.LogicalProcessorNumber)
+		(double(procInfo.Frequency)/1000000.0, 1)
+		(double(memInfo.FreePhysicalMemory)/double(1 << 30), 2)
+		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);
 	logWriter.EndSpoiler();
 #endif
@@ -85,13 +88,13 @@ void InitLogSystem(int argc, const char* argv[])
 
 
 
-
+#include "Containers/Array.h"
 #include "Containers/HashMap.h"
 #include "Containers/List.h"
 #include <unordered_map>
 #include <vector>
 
-void main(int argc, const char* argv[])
+int main(int argc, const char* argv[])
 {
 	Errors::InitSignals();
 	InitLogSystem(argc, argv);
@@ -142,5 +145,11 @@ void main(int argc, const char* argv[])
 	if(TestGroup gr{logger, "Сортировка"})
 		RunSortPerfTests(logger);
 
-	if(argc<2 || StringView(argv[1])!="-a") system("pause");
+	if(argc<2 || StringView(argv[1])!="-a")
+	{
+		Console.PrintLine("Для продолжения нажмите любую клавишу...");
+		Console.GetChar();
+	}
+
+	return 0;
 }

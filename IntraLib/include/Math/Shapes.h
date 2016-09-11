@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "CompilerSpecific/InitializerList.h"
-#include "vector.h"
-#include "matrix.h"
+#include "Math/Vector.h"
+#include "Math/Matrix.h"
 
 namespace Intra { namespace Math {
 
@@ -771,7 +771,7 @@ template<typename T> bool TestIntersection(const Triangle<T>& tri, const Sphere<
 
 template<typename T> bool TestIntersection(const Triangle<T>& tri1, const Triangle<T>& tri2)
 {
-	(void)(tri1, tri2);
+	(void)tri1; (void)tri2;
 	INTRA_ASSERT(!"Not implemented!");
 	return false;
 }

@@ -16,11 +16,11 @@ forceinline size_t CStringLength(const char* str) {return core::strlen(str);}
 forceinline size_t CStringLength(const wchar_t* str) {return core::wcslen(str);}
 
 template<typename U=wchar> forceinline Meta::EnableIf<
-	Meta::TypeEquals<U, wchar_t>::_,
+	sizeof(U)==sizeof(wchar_t),
 size_t> CStringLength(const wchar* str) {return core::wcslen((const wchar_t*)str);}
 
 template<typename U=wchar> forceinline Meta::EnableIf<
-	sizeof(U)==sizeof(wchar_t),
+	sizeof(U)!=sizeof(wchar_t),
 size_t> CStringLength(const wchar* str) {const wchar* ptr = str-1; while(*++ptr!=0); return ptr-str;}
 
 template<typename U=dchar> forceinline Meta::EnableIf<
@@ -48,8 +48,7 @@ template<typename Char> struct GenericStringView:
 
 	constexpr forceinline GenericStringView(const GenericStringView& rhs): cstart(rhs.cstart), cend(rhs.cend) {}
 
-	//TODO: некорректно работает для sizeof(Char)>1
-	forceinline explicit GenericStringView(const Char* cstr):
+	forceinline GenericStringView(const Char* cstr):
 		cstart(cstr), cend(cstr==null? null: cstr+CStringLength(cstr)) {}
 
 	constexpr forceinline const Char* Data() const {return cstart;}
@@ -66,8 +65,8 @@ template<typename Char> struct GenericStringView:
 	//Сравнение строк
 	bool operator==(const Char* rhs) const
 	{
-		return Empty() && (rhs==null || *rhs=='\0') ||
-			rhs!=null && core::memcmp(cstart, rhs, Length()*sizeof(Char))==0 && rhs[Length()]=='\0';
+		return (Empty() && (rhs==null || *rhs=='\0')) ||
+			(rhs!=null && core::memcmp(cstart, rhs, Length()*sizeof(Char))==0 && rhs[Length()]=='\0');
 	}
 
 	bool operator==(const GenericStringView& rhs) const
@@ -85,7 +84,7 @@ template<typename Char> struct GenericStringView:
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
 	forceinline GenericStringView& operator=(null_t) {cstart=cend=null; return *this;}
-	forceinline GenericStringView& operator=(const GenericStringView&) = default;
+	forceinline GenericStringView& operator=(const GenericStringView& rhs) {cstart = rhs.cstart; cend = rhs.cend; return *this;}
 
 	bool operator<(const GenericStringView& rhs) const
 	{
@@ -137,7 +136,7 @@ template<typename Char> struct GenericStringView:
 		if(!Empty() && uint(cstart[0]-'0')<=9)
 		{
 			GenericStringView nextPart = *this;
-			const long64 result = nextPart.ParseAdvance<long64>();
+			const long64 result = nextPart.template ParseAdvance<long64>();
 			if(nextPart.Empty()) return result;
 		}
 
@@ -157,7 +156,7 @@ template<typename Char> struct GenericStringView:
 		if(uint(cstart[size_t(minus)]-'0')>9 && cstart[size_t(minus)]!='.')
 			return Math::NaN;
 		GenericStringView nextPart = *this;
-		real result = nextPart.ParseAdvance<float>();
+		real result = nextPart.template ParseAdvance<float>();
 		if(nextPart.Empty()) return result;
 		return Math::NaN;
 	}
@@ -188,7 +187,7 @@ template<typename Char> struct GenericStringView:
 			{
 				for(const Char* p = cstart+pos; p<cend; p++)
 				{
-					if((*p & 0xFFFFFF80) || !isSpaceDelimiter[*p] && !isPunctDelimiter[*p]) continue;
+					if((*p & 0xFFFFFF80) || (!isSpaceDelimiter[*p] && !isPunctDelimiter[*p])) continue;
 					newpos = p-cstart;
 					break;
 				}
@@ -209,6 +208,9 @@ template<typename Char> struct GenericStringView:
 		StringView src = *this;
 		size_t len = 0;
 		AsciiSet charset = AsciiSet(chars);
+		static_assert(!Range::IsFiniteForwardRangeOfFiniteForwardRanges<ArrayRange<const char>>::_, "ERROR!");
+		static_assert(Range::IsInputRange<ArrayRange<const char>>::_, "ERROR!");
+		static_assert(Meta::IsConvertible<char, char>::_, "ERROR!");
 		while(len += src.CountUntilAdvanceAny(chars), !src.Empty())
 		{
 			size_t index = 0;

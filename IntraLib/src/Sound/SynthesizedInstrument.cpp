@@ -36,8 +36,8 @@ namespace SoundPostEffects
 		Array<float> copy(inOutSamples);
 		float omega = Frequency*2*(float)Math::PI;
 		double duration = (double)inOutSamples.Length()/sampleRate;
-		float t = 0;
-		float dt = 1.0f/sampleRate;
+		float t = 0.0f;
+		float dt = 1.0f/float(sampleRate);
 		Math::SineRange<float> sineRange(MaxDelay, 0, omega*dt);
 		auto ptr=inOutSamples.Begin;
 		while(ptr<inOutSamples.End)
@@ -46,7 +46,7 @@ namespace SoundPostEffects
 			sineRange.PopFirst();
 			if(t>=-st && t<duration-st)
 			{
-				size_t index = ptr-inOutSamples.Begin+size_t(st*sampleRate);
+				size_t index = ptr-inOutSamples.Begin+size_t(st*float(sampleRate));
 				if(index>=copy.Count()) index = copy.Count()-1;
 				*ptr = *ptr*MainVolume + copy[index]*SecondaryVolume;
 			}
@@ -62,14 +62,14 @@ namespace SoundPostEffects
 	{
 		Array<float> copy(inOutSamples);
 		double duration=(double)inOutSamples.Length()/sampleRate;
-		float t=0, dt=1.0f/sampleRate;
+		float t=0, dt=1.0f/float(sampleRate);
 		while(!inOutSamples.Empty())
 		{
 			float st = t+Delay;
 			if(st>=0 && st<duration)
 			{
 				inOutSamples.First() *= MainVolume;
-				inOutSamples.First() += copy[uint(st*sampleRate)]*SecondaryVolume;
+				inOutSamples.First() += copy[uint(st*float(sampleRate))]*SecondaryVolume;
 			}
 			t+=dt;
 			inOutSamples.PopFirst();
@@ -227,7 +227,7 @@ static void repeat_fragment_in_buffer(ArrayRange<const float> fragmentSamples, A
 
 static void fast_sawtooth(double upPercent, float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
-	const double samplesPerPeriod = sampleRate/freq;
+	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = get_good_signal_period(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
@@ -260,7 +260,7 @@ static void perfect_sine(float volume, float freq, uint sampleRate, ArrayRange<f
 
 static void fast_sine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
-	const double samplesPerPeriod = sampleRate/freq;
+	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = get_good_signal_period(samplesPerPeriod, Math::Max((uint)(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
@@ -498,21 +498,21 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 	}
 #endif
 //#if INTRA_DISABLED
-	const double samplesPerPeriod = sampleRate/freq;
+	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = get_good_signal_period(samplesPerPeriod, Math::Max((uint)(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
 	auto sampleCount = (uint)Math::Round(samplesPerPeriod*count), N=(500/sampleCount+1);
 	SoundBuffer samples;
-	samples.SampleRate=sampleRate;
+	samples.SampleRate = sampleRate;
 	samples.Samples.SetCountUninitialized(sampleCount*N);
 	perfect_sine(volume, freq, sampleRate, samples.Samples(0, sampleCount), false);
 
 	//Если этот фрагмент короче 500 семплов, то повторим его, там как экспоненциальное затухание эффективнее для больших массивов
 	for(uint i=1; i<N; i++) samples.CopyFrom(i*sampleCount, sampleCount, &samples, 0);
 
-	float ek = Math::Exp(-coeff/sampleRate);
-	float exp = 1;
+	float ek = Math::Exp(-coeff/float(sampleRate));
+	float exp = 1.0f;
 	auto ptr=inOutSamples.Begin;
 	if(!add) while(ptr<inOutSamples.End-samples.Samples.Count()+1)
 		exponent_attenuation(ptr, samples.Samples.begin(), ptr+samples.Samples.Count(), exp, ek);
@@ -548,7 +548,7 @@ void SynthesizedInstrument::functionSawtoothSynthPass(const SawtoothParams& para
 	for(ushort h=1; h<params.harmonics; h++)
 	{
 		newVolume/=2;
-		float frequency=newFreq*(1 << h);
+		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
 		size_t randomSampleOffset = Math::Min<size_t>(Math::Random<ushort>::Global(20), inOutSamples.Length());
 		sawtooth(updownPercent, newVolume, frequency, sampleRate, inOutSamples.Drop(randomSampleOffset), true);
@@ -570,7 +570,7 @@ void SynthesizedInstrument::functionSineSynthPass(const SineParams& params,
 	for(ushort h=1; h<params.harmonics; h++)
 	{
 		newVolume/=2;
-		float frequency = newFreq*(1 << h);
+		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
 		sine_generate(newVolume, frequency, sampleRate, inOutSamples.Drop(Math::Random<ushort>::Global(20)), true);
 	}
@@ -627,7 +627,7 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	float du4;
 
 	u = 0;
-	du = 0.707107f/halfAttackSamples;
+	du = 0.707107f/float(halfAttackSamples);
 	du4 = 4*du;
 	while(ptr<endHalfAttack-3)
 	{
@@ -641,8 +641,8 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	while(ptr<endHalfAttack) *ptr++ *= u*u, u += du;
 
 	u = 0;
-	du = 0.25f/halfAttackSamples;
-	du4 = 4*du;
+	du = 0.25f/float(halfAttackSamples);
+	du4 = 4.0f*du;
 	while(ptr<endAttack-3)
 	{
 		float u2 = Math::Sqrt(u)+0.5f;
@@ -655,9 +655,9 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	while(ptr<endAttack) *ptr++ *= Math::Sqrt(u)+0.5f, u+=du;
 
 	ptr=beginDecay;
-	u=0.25f;
-	du=-0.25f/halfDecaySamples;
-	du4=4*du;
+	u = 0.25f;
+	du = -0.25f/float(halfDecaySamples);
+	du4 = 4.0f*du;
 	while(ptr<beginHalfDecay-3)
 	{
 		float u2 = Math::Sqrt(u)+0.5f;
@@ -670,8 +670,8 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	while(ptr<beginHalfDecay) *ptr++ *= Math::Sqrt(u)+0.5f, u+=du;
 
 	u = 0.707107f;
-	du = -0.707107f/halfDecaySamples;
-	du4 = 4*du;
+	du = -0.707107f/float(halfDecaySamples);
+	du4 = 4.0f*du;
 	while(ptr<inOutSamples.End-3)
 	{
 		float u2 = u*u;
@@ -778,10 +778,10 @@ void SynthesizedInstrument::functionExpAttenuationPass(const float& coeff,
 {
 	auto ptr = inOutSamples.Begin;
 	auto end = inOutSamples.End;
-	float ek = Math::Exp(-coeff/sampleRate);
-	float exp = 1;
+	float ek = Math::Exp(-coeff/float(sampleRate));
+	float exp = 1.0f;
 	exponent_attenuation(ptr, ptr, end, exp, ek);
-	noteDuration;
+	(void)noteDuration;
 }
 
 void SynthesizedInstrument::functionTableAttenuationPass(const TableAttenuatorParams& table,
@@ -789,17 +789,17 @@ void SynthesizedInstrument::functionTableAttenuationPass(const TableAttenuatorPa
 {
 	INTRA_ASSERT(table.len>=2);
 	const size_t samplesPerValue = inOutSamples.Length()/(table.len-1);
-	auto pos=inOutSamples.Begin;
+	auto pos = inOutSamples.Begin;
 
 	for(uint i=0; i<table.len-1u; i++)
 	{
 		double v = (double)table.table[i];
-		double dv = ((double)table.table[i+1]-v)/samplesPerValue;
+		double dv = (double(table.table[i+1])-double(v))/double(samplesPerValue);
 		for(size_t s=0; s<samplesPerValue; s++) *pos++ *= (float)v, v+=dv;
 	}
 	while(pos<inOutSamples.End) (*pos++) *= (float)table.table[table.len-1];
 
-	(void)(sampleRate, noteDuration);
+	(void)sampleRate; (void)noteDuration;
 }
 
 

@@ -81,7 +81,7 @@ Sound Sound::FromFile(StringView fileName)
 		source = new VorbisSoundSampleSource(fileData);
 	else 
 #endif
-#ifndef NO_MUSIC_LOADER
+#ifndef INTRA_NO_MUSIC_LOADER
 	if(fileData.StartsWith(StringView("MThd")))
 		source = new MusicSoundSampleSource(ReadMidiFile(fileData), 44100);
 	else
@@ -213,11 +213,11 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(fileData.StartsWith("OggS"))
+	if(fileData.StartsWith(StringView("OggS")))
 		source = SourceRef(new VorbisSoundSampleSource(fileData));
 	else 
 #endif
-#ifndef NO_MUSIC_LOADER
+#ifndef INTRA_NO_MUSIC_LOADER
 	if(fileData.StartsWith(StringView("MThd")))
 		source = SourceRef(new MusicSoundSampleSource(ReadMidiFile(fileData), 44100));
 	else

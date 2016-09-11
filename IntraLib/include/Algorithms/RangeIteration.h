@@ -461,7 +461,7 @@ template<typename... RANGES> struct ZipResult:
 	forceinline ZipResult(const RANGES&... ranges): OriginalRanges(ranges...) {}
 	forceinline ZipResult(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
 
-	forceinline return_value_type First() const {return OriginalRanges.TransformEach<Fronter>(Fronter());}
+	forceinline return_value_type First() const {return OriginalRanges.template TransformEach<Fronter>(Fronter());}
 	forceinline void PopFirst() {OriginalRanges.ForEachField(PopFronter());}
 	forceinline bool Empty() const {return AnyEmpty(OriginalRanges);}
 

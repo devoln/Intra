@@ -36,42 +36,98 @@ const char* const HtmlWriter::CssLoggerCode = "<style type=\"text/css\">"
 	".perf {color: #aaaa00; font-size: 75%;}\r\n"
 	"</style>";
 
-static void set_console_font_color(Math::Vec3 color, bool underline)
+
+void HtmlWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
+	auto curFont = GetCurrentFont();
+	if(color==Math::NaN) color = {0,0,0};
+	if(size==Math::NaN) size=3;
+	font_stack.AddLast({color, size, bold, italic, underline, false});
+	if(curFont.Underline && !underline) RawPrint("</ins>");
+	if(curFont.Italic && !italic) RawPrint("</i>");
+	if(curFont.Bold && !bold) RawPrint("</b>");
+	if(curFont.Color!=color || curFont.Size!=size)
+	{
+		const auto c = Math::USVec3(Math::Min(color*255.0f, 255.0f));
+		String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
+		RawPrint("<font color="+colstr+" size="+ToString(size)+">");
+	}
+	if(!curFont.Bold && bold) RawPrint("<b>");
+	if(!curFont.Italic && italic) RawPrint("<i>");
+	if(!curFont.Underline && underline) RawPrint("<ins>");
+}
+
+void HtmlWriter::PopFont()
+{
+	auto oldFont = GetCurrentFont();
+	font_stack.RemoveLast();
+	auto newFont = GetCurrentFont();
+	if(oldFont.Bold && !newFont.Bold) RawPrint("</b>");
+	if(oldFont.Italic && !newFont.Italic) RawPrint("</i>");
+	if(oldFont.Underline && !newFont.Underline) RawPrint("</ins>");
+	RawPrint("</font>");
+	if(!oldFont.Bold && newFont.Bold) RawPrint("<b>");
+	if(!oldFont.Italic && newFont.Italic) RawPrint("<i>");
+	if(!oldFont.Underline && newFont.Underline) RawPrint("<ins>");
+}
+
+void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, float size, bool bold, bool italic, bool underline)
+{
+	if(color==Math::NaN) color=Math::Vec3(0.499f);
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
-	ushort consoleCode = 0;
-	if(color.z>=0.25f) consoleCode |= FOREGROUND_BLUE;
-	if(color.y>=0.25f) consoleCode |= FOREGROUND_GREEN;
-	if(color.x>=0.25f) consoleCode |= FOREGROUND_RED;
-	if(color.x>=0.5f || color.y>=0.5f || color.z>=0.5f) consoleCode |= FOREGROUND_INTENSITY;
-	if(underline) consoleCode |= COMMON_LVB_UNDERSCORE;
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), consoleCode);
+	if(oldFont.Color!=color || oldFont.Underline!=underline)
+	{
+		ushort consoleCode = 0;
+		if(color!=Math::NaN)
+		{
+			if(color.z>=0.25f) consoleCode |= FOREGROUND_BLUE;
+			if(color.y>=0.25f) consoleCode |= FOREGROUND_GREEN;
+			if(color.x>=0.25f) consoleCode |= FOREGROUND_RED;
+			if(color.x>=0.5f || color.y>=0.5f || color.z>=0.5f) consoleCode |= FOREGROUND_INTENSITY;
+		}
+		else
+		{
+			consoleCode |= FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_RED;
+		}
+		if(underline) consoleCode |= COMMON_LVB_UNDERSCORE;
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), consoleCode);
+	}
+#else
+	color*=2.0f;
+	if(oldFont.Color!=color || oldFont.Bold!=bold || oldFont.Underline!=underline)
+	{
+		s << "\x1B[0m";
+		s << "\x1B[0m";
+		s << "\x1B[0;37m";
+		if(oldFont.Color!=color && oldFont.Color!=Math::NaN)
+		{
+			int code = 0;
+			int colorCode = 30;
+			if(color.x>=0.25f) colorCode += 1;
+			if(color.y>=0.25f) colorCode += 2;
+			if(color.z>=0.25f) colorCode += 4;
+			if(color.x<0.5f && color.y<0.5f && color.z<0.5f) code = 2;
+			s << "\x1B[" << code << ';' << colorCode << 'm';
+		}
+		if(bold) s << "\x1B[1m";
+		if(underline) s << "\x1B[4m";
+	}
 #endif
 }
 
-void ConsoleTextWriter::PushFont(Math::Vec3 color, float size)
+void ConsoleTextWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
-	(void)size;
-	set_console_font_color(color, underline);
-	colorStack.AddLast(color);
+	auto oldFont = GetCurrentFont();
+	font_stack.AddLast({color, size, bold, italic, underline});
+	set_font(*this, oldFont, color, size, bold, italic, underline);
 }
 
 void ConsoleTextWriter::PopFont()
 {
-	colorStack.RemoveLast();
-	set_console_font_color(colorStack.Empty()? Math::Vec3(0.499f): colorStack.Last(), underline);
-}
-
-void ConsoleTextWriter::PushUnderline()
-{
-	underline = true;
-	set_console_font_color(colorStack.Empty()? Math::Vec3(0.499f): colorStack.Last(), underline);
-}
-
-void ConsoleTextWriter::PopUnderline()
-{
-	underline = false;
-	set_console_font_color(colorStack.Empty()? Math::Vec3(0.499f): colorStack.Last(), underline);
+	FontDesc oldFont = font_stack.Last();
+	font_stack.RemoveLast();
+	auto font = GetCurrentFont();
+	set_font(*this, oldFont, font.Color, font.Size, font.Bold, font.Italic, font.Underline);
 }
 
 }}

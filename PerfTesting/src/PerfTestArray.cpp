@@ -14,7 +14,7 @@
 #include "IO/LogSystem.h"
 
 #include <vector>
-#include <String>
+#include <string>
 #include <deque>
 #include <list>
 
@@ -86,10 +86,10 @@ template<typename T> forceinline void pop_front(std::deque<T>& arr) {arr.pop_fro
 template<typename T> forceinline void pop_front(std::list<T>& arr) {arr.pop_front();}
 
 template<typename T> forceinline void reserve(std::vector<T>& arr, size_t newSize) {arr.reserve(newSize);}
-template<typename T> forceinline void reserve(std::deque<T>& arr, size_t newSize) {(void)(arr, newSize);}
-template<typename T> forceinline void reserve(std::list<T>& arr, size_t newSize) {(void)(arr, newSize);}
+template<typename T> forceinline void reserve(std::deque<T>& arr, size_t newSize) {(void)arr; (void)newSize;}
+template<typename T> forceinline void reserve(std::list<T>& arr, size_t newSize) {(void)arr; (void)newSize;}
 template<typename T> forceinline void reserve(Array<T>& arr, size_t newSize) {arr.Reserve(newSize);}
-template<typename T> forceinline void reserve(BList<T>& arr, size_t newSize) {(void)(arr, newSize);}
+template<typename T> forceinline void reserve(BList<T>& arr, size_t newSize) {(void)arr; (void)newSize;}
 
 template<typename ARR> double TestContainerFirstElementRemove(uint size)
 {

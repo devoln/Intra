@@ -86,9 +86,9 @@ static Array<float> get_sine_periods(uint sampleRate, float phase, uint frequenc
 	uint nod = Math::GreatestCommonDivisor(sampleRate, frequency);
 	const uint fpsamples = Math::Min(sampleRate/nod, (uint)maxSamples);
 	Array<float> fullPeriods(fpsamples);
-	const float da = 2*(float)PI*frequency/sampleRate;
+	const float da = float(PI*2.0*frequency/sampleRate);
 	for(uint q=0; q<fpsamples; q++)
-		fullPeriods.AddLast(Sin(da*q+phase));
+		fullPeriods.AddLast(Sin(da*float(q)+phase));
 	return fullPeriods;
 }
 

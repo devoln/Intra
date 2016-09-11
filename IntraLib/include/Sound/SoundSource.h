@@ -44,8 +44,8 @@ public:
 	virtual Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
 	{
-		maxSamplesToRead;
-		if(outType!=null) *outType=ValueType::Void;
+		(void)maxSamplesToRead;
+		if(outType!=null) *outType = ValueType::Void;
 		if(outInterleaved!=null) *outInterleaved=false;
 		if(outSamplesRead!=null) *outSamplesRead=0;
 		return null;
@@ -62,8 +62,9 @@ protected:
 };
 
 
+//#define INTRA_LIBRARY_VORBIS_DECODER INTRA_LIBRARY_VORBIS_DECODER_libvorbis
 
-#ifndef NO_VORBIS_DECODER
+#if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
 
 class VorbisSoundSampleSource: public ASoundSampleSource
 {

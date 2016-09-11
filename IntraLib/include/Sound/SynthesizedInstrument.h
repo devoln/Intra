@@ -59,7 +59,7 @@ namespace SoundSamplers
 
 		forceinline float NextSample() {PopFirst(); return First();}
 		void PopFirst() {t+=dt;}
-		float First() const {return int(t*twoFreqs)%2*2.0f*amplitude-amplitude;}
+		float First() const {return (float(int(t*twoFreqs)%2)*2.0f - 1.0f)*amplitude;}
 		bool Empty() const {return false;}
 
 	private:
@@ -83,7 +83,7 @@ namespace SoundSamplers
 			{
 				float s = 230/Math::Pow(2.0f, (note-12)/12);
 				Len = Math::Max(4u, (uint)s);
-				Frc = 1.5f*(Len/s)*(Len/s);
+				Frc = 1.5f*(float(Len)/s)*(float(Len)/s);
 				kDemp = 0.12f/(note+12);
 			}
 			K1 = 1-kDemp*0.333f*Frc;
@@ -222,7 +222,7 @@ namespace SoundSamplers
 		AbsModTimeSine() = default;
 
 		AbsModTimeSine(float modFrequency, float tstart, float koeff):
-			t0(tstart), modOmega(2*(float)Math::PI*modFrequency), k(koeff) {}
+			modOmega(2*(float)Math::PI*modFrequency), k(koeff), t0(tstart) {}
 		
 		void SetParams(float frequency, float amplitude, double step)
 		{
@@ -247,7 +247,7 @@ namespace SoundSamplers
 	public:
 		RelModTimeSine() = default;
 
-		RelModTimeSine(float modKoeff, float tstart, float koeff): t0(tstart), modK(modKoeff), k(koeff) {}
+		RelModTimeSine(float modKoeff, float tstart, float koeff): modK(modKoeff), k(koeff), t0(tstart) {}
 
 		void SetParams(float frequency, float amplitude, double step)
 		{
@@ -283,7 +283,7 @@ namespace SoundSamplers
 			dt = (float)step;
 		}
 
-		forceinline float NextSample() {const auto result=operator()(time); time+=dt; return result;}
+		forceinline float NextSample() {const auto result = operator()(time); time+=dt; return result;}
 		forceinline float operator()(float t) {return generator(freq, t)*ampl;}
 	};
 
@@ -444,16 +444,16 @@ namespace SoundPostEffects
 			(void)sampleRate;
 			if(FadeIn>0)
 			{
-				float k = 1.0f/(FadeIn*FadeIn);
+				float k = 1.0f/float(FadeIn*FadeIn);
 				for(size_t i=0; i<inOutSamples.Length(); i++)
-					inOutSamples[i] *= (i+1)*(i+1)*k;
+					inOutSamples[i] *= float(Math::Sqr(i+1))*k;
 			}
 			if(FadeOut>0)
 			{
 				size_t a = inOutSamples.Length()>FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
-				float k = 1.0f/(FadeOut*FadeOut);
+				float k = 1.0f/float(Math::Sqr(FadeOut));
 				for(uint i=1; i<FadeOut; i++)
-					inOutSamples[a+i] *= (FadeOut-i)*(FadeOut-i)*k;
+					inOutSamples[a+i] *= float(Math::Sqr(FadeOut-i))*k;
 			}
 		}
 	};
@@ -561,7 +561,7 @@ private:
 		Array<float> in(inOutSamples);
 		auto out = inOutSamples;
 
-		float c = Math::Tan((float)Math::PI*params.cutoffFreq/sampleRate);
+		float c = Math::Tan((float)Math::PI*params.cutoffFreq/float(sampleRate));
 		float a1, a2, a3, b1, b2;
 		if(params.highPass)
 		{
@@ -608,7 +608,7 @@ public:
 		auto noteDuration = note.AbsDuration(tempo);
 		if(noteDuration<0.00001 || note.IsPause()) return 0;
 		noteDuration = Math::Max(noteDuration, MinNoteDuration)+FadeOffTime;
-		return uint(noteDuration*sampleRate);
+		return uint(noteDuration*float(sampleRate));
 	}
 
 	static SoundSynthFunction CreateSawtoothSynthPass(float updownRatio=1, float scale=1, ushort harmonics=1, float freqMultiplyer=1);

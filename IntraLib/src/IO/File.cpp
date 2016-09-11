@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 
 
-#if(INTRA_PLATFORM_IS_POSIX || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(defined(INTRA_PLATFORM_IS_POSIX) || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 #include <unistd.h>
 #include <sys/mman.h>
 #elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
@@ -140,10 +140,9 @@ namespace Intra { namespace IO
 		int length = WideCharToMultiByte(CP_UTF8, 0, wpath, (int)wlength, path, (int)core::numof(path), null, null);
 		const String result = StringView(path, length);
 #else
-		char path[MAX_PATH];
-		path[0] = 0;
-		getcwd(path, MAX_PATH);
-		const String result = String(path, strlen(path));
+		char path[2048];
+		path[0] = '\0';
+		String result = StringView(getcwd(path, sizeof(path)));
 #endif
 		return AddTrailingSlash(result);
 	}
@@ -227,7 +226,14 @@ namespace Intra { namespace IO
 		Reader file(fileName);
 		if(fileOpened!=null) *fileOpened = (file!=null);
 		if(file==null) return null;
-		return file.ReadNChars((size_t)file.GetSize());
+		size_t size = (size_t)file.GetSize();
+		if(size==0)
+		{
+			String result;
+			while(!file.EndOfStream()) result += file.Read<char>();
+			return result;
+		}
+		return file.ReadNChars(size);
 	}
 
 
@@ -255,7 +261,7 @@ namespace Intra { namespace IO
 		StringView(modes[append][writeAccess][readAccess]).CopyTo(ArrayRange<wchar_t>(utf16Mode));
 		hndl = _wfopen(utf16Name, utf16Mode);
 #else
-		hndl = fopen(Name.CStr(), modes[append][writeAccess][readAccess]);
+		hndl = fopen(name.CStr(), modes[append][writeAccess][readAccess]);
 #endif
 		if(hndl==null)
 		{

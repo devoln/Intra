@@ -156,13 +156,13 @@ public:
 			for(uint j=i+1; j<events.Count(); j++)
 			{
 				time2InTicks+=events[j].delay;
-				if((events[j].status >> 4)==8 && events[j].data[0]==events[i].data[0] ||
-					(events[j].status >> 4)==9 && events[j].data[1]==0 && events[j].data[0]==events[i].data[0])
+				if(((events[j].status >> 4)==8 && events[j].data[0]==events[i].data[0]) ||
+					((events[j].status >> 4)==9 && events[j].data[1]==0 && events[j].data[0]==events[i].data[0]))
 				{
 					while(tempoChangeIndex<tempoChanges.Count() && time1InTicks>=tempoChanges[tempoChangeIndex].tick)
 						currentTickDuration=tempoChanges[tempoChangeIndex++].tickDuration;
 					MusicNote note;
-					note.Octave = (byte)((events[i].data[0])/12);
+					note.Octave = byte((events[i].data[0])/12);
 					note.Note = MusicNote::NoteType((events[i].data[0])%12);
 					//else note.Octave=4, note.Note=MusicNote::C;
 					note.Duration = ushort(currentTickDuration*time2InTicks*2048);
@@ -234,6 +234,7 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	for(auto code: {68}) reader.instruments[code] = &instr->Oboe;
 	for(auto code: {64, 65, 66, 67}) reader.instruments[code] = &instr->Sax;
 	for(auto code: {61, 62, 63, 84}) reader.instruments[code] = &instr->SynthBrass;
+	for(auto code: {84}) reader.instruments[code] = &instr->Lead5Charang;
 	for(auto code: {82}) reader.instruments[code] = &instr->Calliope;
 	reader.instruments[35] = &instr->FretlessBass;
 	reader.instruments[55] = &instr->OrchestraHit;

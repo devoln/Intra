@@ -60,7 +60,7 @@ struct DrumPhysicalModel: Range::RangeMixin<DrumPhysicalModel, float, Range::Typ
 	{
 		const float maxP = 0.3f;
 
-		const ushort maxX = DX-1, maxY = DY-1;
+		const uint maxX = DX-1, maxY = DY-1;
 
 		for(uint i=0; i<Cnt; i++)
 		{
@@ -85,8 +85,8 @@ struct DrumPhysicalModel: Range::RangeMixin<DrumPhysicalModel, float, Range::Typ
 					P(x, y) += S(x, y);
 
 			for(uint x=0; x<DX; x+=4)
-				if(P(x, 0)>maxP && S(x, 0)>0 ||
-					P(x, 0)<maxP && S(x, 0)<0)
+				if((P(x, 0)>maxP && S(x, 0)>0) ||
+					(P(x, 0)<maxP && S(x, 0)<0))
 						S(x, 0) *= -0.5f;
 
 			P(1, 1) *= 0.5f;
@@ -277,6 +277,9 @@ MusicalInstruments::MusicalInstruments()
 
 	SynthBrass.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(20, 0.12f, 3, 0.5f);
 	SynthBrass.AttenuationPass = SynthesizedInstrument::CreateADPass(0.05, 0.1);
+
+	Lead5Charang.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(20, 0.22f, 3, 0.5f);
+	Lead5Charang.AttenuationPass = SynthesizedInstrument::CreateADPass(0.03, 0.05);
 
 	/*SynthesizedInstrument InterestingInstrument1={ //Интересный звук типа скрипки. Может пригодится
 		SynthesizedInstrument::CreateSawtoothSynthPass(0.75, 1, 3, 1),
@@ -543,8 +546,8 @@ SynthesizedInstrument MusicalInstruments::CreateGuitar(int n, float c, float d, 
 	SynthesizedInstrument::SineExpHarmonic harmonics[23];
 	for(int i=1; i<=n; i++)
 	{
-		auto scale = Abs( ((Mod(c*i*i+37.0f*i, 397.0f)/200.0f)-1.0f)/Pow((float)i, f) );
-		harmonics[i-1] = {scale * 0.5f*volume,   d+e*(i-1),   freqMult*i};
+		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f)/Pow((float)i, f) );
+		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i)};
 	}
 	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, (size_t)n});
 	return result;

@@ -332,7 +332,7 @@ public:
 
 
 	template<typename OR> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ || HasAsRange<OR>::_
+		(IsOutputRange<OR>::_ || HasAsRange<Meta::RemoveConstRef<OR>>::_) && !Meta::IsConst<OR>::_
 	> CopyToAdvance(OR&& dst) const
 	{
 		auto r = me();
@@ -349,8 +349,8 @@ public:
 
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
-	> CopyToAdvance(OR& dst, P pred) const
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
+	> CopyToAdvance(OR&& dst, P pred) const
 	{
 		auto r = me();
 		r.CopyAdvanceToAdvance(dst, pred);

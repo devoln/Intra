@@ -382,7 +382,7 @@ struct RasterizationStateDesc
 {
 	bool DepthClampEnable, RasterizerDiscard;
 	PolyMode PolygonMode;
-	CullMode CullMode;
+	CullMode CullingMode;
 	Winding FrontFace;
 	bool DepthBiasEnable;
 	float DepthBiasConstantFactor, DepthBiasClamp, DepthBiasSlopeFactor;

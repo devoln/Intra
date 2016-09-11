@@ -32,13 +32,17 @@ namespace Intra { namespace core {
 		b = move(temp);
 	}
 
+#ifdef _MSC_VER
 #pragma warning(push, 0)
+#endif
 	template<typename T1, typename T2> struct pair
 	{
 		T1 first;
 		T2 second;
 	};
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 	template<typename T, size_t N> constexpr forceinline size_t numof(const T(&)[N]) {return N;}
 	template<class T, typename U> constexpr forceinline size_t member_offset(U T::* member)
@@ -66,6 +70,24 @@ namespace Intra { namespace core {
 		void INTRA_CRTDECL free(void* ptr);
 	}
 }}
+
+#ifdef _MSC_VER
+
+#ifndef __PLACEMENT_NEW_INLINE
+#define __PLACEMENT_NEW_INLINE
+inline void* operator new(size_t, void* dst) {return dst;}
+inline void operator delete(void*, void*) {return;}
+#endif
+
+#ifndef __PLACEMENT_VEC_NEW_INLINE
+#define __PLACEMENT_VEC_NEW_INLINE
+inline void* operator new[](size_t, void* dst) {return dst;}
+inline void operator delete[](void*, void*) {}
+#endif
+
+#else
+#include <new>
+#endif
 
 #define INTRA_CHECK_TABLE_SIZE(table, expectedSize) static_assert(sizeof(table)/sizeof(table[0])==size_t(expectedSize), "Table is outdated!")
 

@@ -83,13 +83,11 @@ ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 	static_assert(sizeof(basicFormatTable)/sizeof(basicFormatTable[0])==ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic, "Table is outdated!");
 
 	GLenum result;
-	bool compressed=false;
 	if(format.value<ImageFormat::EndOfUncompressed)
 		result=uncompressedTable[format.value];
 	else if(format.value<ImageFormat::EndOfCompressed)
 	{
 		result=compressedTable[format.value-ImageFormat::FirstOfCompressed];
-		compressed=true;
 	}
 	else if(format.value<ImageFormat::EndOfBasic)
 		result=basicFormatTable[format.value-ImageFormat::FirstOfBasic];
@@ -291,7 +289,7 @@ ushort ImageTypeToGLTarget(ImageType type)
 	return imageTypeConvertTable[type];
 }
 
-ushort CubeFaceToGLTarget(CubeFace cf) {return GL::TEXTURE_CUBE_MAP_POSITIVE_X+(ushort)cf;}
+ushort CubeFaceToGLTarget(CubeFace cf) {return ushort(GL::TEXTURE_CUBE_MAP_POSITIVE_X+(byte)cf);}
 
 ImageType GLTargetToImageType(ushort gl_Target)
 {

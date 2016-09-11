@@ -51,9 +51,11 @@ bool IsDebuggerConnected()
 #endif
 }
 
+}
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
+namespace Intra {
 
 String GetStackWalk(size_t framesToSkip)
 {
@@ -92,11 +94,43 @@ String GetStackWalk(size_t framesToSkip)
 #endif
 }
 
+}
+
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+#include <execinfo.h>
+
+namespace Intra {
+
+String GetStackWalk(size_t framesToSkip)
+{
+	void* pointerArr[50];
+	size_t size = backtrace(pointerArr, 50);
+	char** strings = backtrace_symbols(pointerArr, int(size));
+
+	String result;
+	for(size_t i=0; i<size; i++)
+	{
+		result += StringView(strings[i]);
+		result += '\n';
+	}
+
+	free(strings);
+
+	return result;
+}
+
+}
 #else
-String GetStackWalk() {return null;}
+
+namespace Intra {
+
+String GetStackWalk(size_t framesToSkip) {(void)framesToSkip; return null;}
+
+}
+
 #endif
 
-
+namespace Intra {
 
 void InternalError(const char* func, const char* file, int line, const char* info)
 {

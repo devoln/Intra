@@ -57,6 +57,7 @@
 #define INTRA_CONSTEXPR_SUPPORT
 #define INTRA_UNRESTRICTED_UNION_SUPPORT
 #define INTRA_RANGE_BASED_FOR_SUPPORT
+#define INTRA_NOEXCEPT_SUPPORT
 #endif
 
 
@@ -66,6 +67,7 @@
 #define INTRA_NON_STATIC_DATA_INITIALIZER_SUPPORT
 #define INTRA_TEMPLATE_USING_SUPPORT
 #define INTRA_OVERRIDE_SUPPORT
+#define INTRA_FINAL_SUPPORT
 #endif
 
 #if __GNUC__==4 && __GNUC_MINOR__>=8 || __GNUC__>=5
@@ -211,6 +213,7 @@
 
 #if __has_feature(cxx_override_control)
 #define INTRA_OVERRIDE_SUPPORT
+#define INTRA_FINAL_SUPPORT
 #endif
 
 #if __has_feature(cxx_range_for)

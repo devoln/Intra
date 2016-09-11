@@ -40,7 +40,7 @@ struct UniformType: ValueType
 	UniformType(ValueType::I val): ValueType(val) {}
 
 	bool IsSampler() const {return (int)value>=FirstOfSamplers && (int)value<EndOfSamplers;}
-	bool IsValid() const {return ValueType::IsValid() || (int)value>=(int)ValueType::End && (int)value<(int)UniformType::End;}
+	bool IsValid() const {return ValueType::IsValid() || ((int)value>=(int)ValueType::End && (int)value<(int)UniformType::End);}
 
 	ushort Size() const
 	{

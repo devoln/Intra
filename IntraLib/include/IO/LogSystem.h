@@ -20,14 +20,18 @@ public:
 	bool operator!=(null_t) const {return attached!=null;}
 	operator bool() const {return *this!=null;}
 
-	void PushFont(Math::Vec3 color={0,0,0}, float size=3) override {for(auto stream: attached) stream->PushFont(color, size);}
+	void PushFont(Math::Vec3 color={0,0,0}, float size=3, bool bold=false, bool italic=false, bool underline=false) override
+	{
+		for(auto stream: attached) stream->PushFont(color, size, bold, italic, underline);
+	}
+
 	void PopFont() override {for(auto stream: attached) stream->PopFont();}
-	void PushUnderline() override {for(auto stream: attached) stream->PushUnderline();}
-	void PopUnderline() override {for(auto stream: attached) stream->PopUnderline();}
-	void PushBold() override {for(auto stream: attached) stream->PushBold();}
-	void PopBold() override {for(auto stream: attached) stream->PopBold();}
-	void PushItalic() override {for(auto stream: attached) stream->PushItalic();}
-	void PopItalic() override {for(auto stream: attached) stream->PopItalic();}
+
+	virtual FontDesc GetCurrentFont() const override
+	{
+		if(attached.Empty()) return {{1,1,1}, 3, false, false, false, false};
+		return attached.First()->GetCurrentFont();
+	}
 
 	void PushStyle(StringView style) override {for(auto stream: attached) stream->PushStyle(style);}
 	void PopStyle() override {for(auto stream: attached) stream->PopStyle();}
@@ -64,16 +68,17 @@ struct DummyLogger
 
 	forceinline operator bool() const {return false;}
 
-	forceinline void PushFont() {}
-	forceinline void PushFont(const Math::Vec3&, float) {}
+	forceinline void PushFont(Math::Vec3={1,1,1}, float=3, bool=false, bool=false, bool=false) {}
 	forceinline void PopFont() {}
-	forceinline void BeginSpoiler() {}
-	forceinline void BeginSpoiler(StringView) {}
-	forceinline void BeginSpoiler(StringView, StringView) {}
+	forceinline FontDesc GetCurrentFont() const {return {{1,1,1}, 3, false, false, false, false};}
+
+	forceinline void BeginSpoiler(StringView=null, StringView=null) {}
 	forceinline void EndSpoiler() {}
 	forceinline void EndAllSpoilers() {}
 	forceinline void BeginCode() {}
 	forceinline void EndCode() {}
+
+
 
 	forceinline void PushStyle(StringView) {}
 	forceinline void PopStyle() {}

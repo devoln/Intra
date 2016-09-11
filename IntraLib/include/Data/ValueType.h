@@ -52,10 +52,8 @@ struct ValueType
 		DMat2, DMat2x3, DMat2x4, DMat3x2, DMat3, DMat3x4, DMat4x2, DMat4x3, DMat4,
 
 		Char,
-		String, StringView, StructureInstance, StructureType
-	};
+		String, StringView, StructureInstance, StructureType,
 
-	enum: byte {
 		First = Float, FirstOfVectors=Float, FirstOfFloat=FirstOfVectors, EndOfFloat=HVec4+1,
 		FirstOfPackedFloat=Vec11f11f10f, EndOfPackedFloat=Vec11f11f10f+1,
 		FirstOfInteger=Int, EndOfInteger=UBVec4+1,
@@ -101,20 +99,20 @@ struct ValueType
 	constexpr bool IsPacked() const
 	{
 		return (value==Vec11f11f10f ||
-			value>=FirstOfPackedInt && value<EndOfPackedInt ||
-			value>=FirstOfPackedNorm && value<EndOfPackedNorm);
+			(value>=FirstOfPackedInt && value<EndOfPackedInt) ||
+			(value>=FirstOfPackedNorm && value<EndOfPackedNorm));
 	}
 
 	constexpr bool IsNormalized() const
 	{
-		return value>=FirstOfNormalized && value<EndOfNormalized ||
-			value>=FirstOfPackedNorm && value<EndOfPackedNorm;
+		return (value>=FirstOfNormalized && value<EndOfNormalized) ||
+			(value>=FirstOfPackedNorm && value<EndOfPackedNorm);
 	}
 
 	constexpr bool IsInteger() const
 	{
-		return value>=FirstOfInteger && value<EndOfInteger ||
-			value>=FirstOfPackedInt && value<EndOfPackedInt;
+		return (value>=FirstOfInteger && value<EndOfInteger) ||
+			(value>=FirstOfPackedInt && value<EndOfPackedInt);
 	}
 
 	//Возвращает размерность вектора или 1 если это скаляр. Для матриц не работает

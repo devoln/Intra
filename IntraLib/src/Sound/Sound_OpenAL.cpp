@@ -4,9 +4,20 @@
 
 #include "Sound/SoundApi.h"
 
+#ifdef __APPLE__
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
+#elif __linux
+#include <AL/al.h>
+#include <AL/alc.h>
+#else
 #include <al.h>
 #include <alc.h>
+#endif
+
+#ifdef _MSC_VER
 #pragma comment(lib, "OpenAL32.lib")
+#endif
 
 
 namespace Intra {
@@ -23,7 +34,7 @@ struct Buffer
 	Buffer(uint buf, uint sample_count, uint sample_rate, uint ch, ushort format):
 		buffer(buf), sampleCount(sample_count), sampleRate(sample_rate), channels(ch), alformat(format) {}
 
-	uint SizeInBytes() const {return sampleCount*channels*sizeof(short);}
+	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
 
 	uint buffer;
 	uint sampleCount;
@@ -50,7 +61,7 @@ struct StreamedBuffer
 	//StreamedBuffer(uint bufs[2], StreamingCallback callback, uint sample_count, uint sample_rate, ushort ch):
 		//buffers{bufs[0], bufs[1]}, streamingCallback(callback), sampleCount(sampleCount), sampleRate(sample_rate), channels(ch) {}
 
-	uint SizeInBytes() const {return sampleCount*channels*sizeof(short);}
+	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
 
 	uint buffers[2];
 	uint source;
@@ -75,7 +86,7 @@ struct Context
 		if(alc==null) return;
 		alcMakeContextCurrent(null);
 		alcDestroyContext(alc);
-		alc=null;
+		alc = null;
 		if(ald==null) return;
 		alcCloseDevice(ald);
 	}
@@ -113,7 +124,7 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 	context.Prepare();
 	uint buffer;
 	alGenBuffers(1, &buffer);
-	return new Buffer(buffer, sampleCount, sampleRate, channels, get_format(channels));
+	return new Buffer(buffer, uint(sampleCount), sampleRate, channels, get_format(channels));
 }
 
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
@@ -207,7 +218,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	StreamedBufferHandle result = new StreamedBuffer;
 	alGenBuffers(2, result->buffers);
 	alGenSources(1, &result->source);
-	result->sampleCount = sampleCount;
+	result->sampleCount = uint(sampleCount);
 	result->sampleRate = sampleRate;
 	result->channels = channels;
 	result->streamingCallback = callback;
@@ -246,6 +257,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
+	INTRA_ASSERT(snd!=null);
 	load_buffer(snd, 0);
 	if(!snd->stop_soon) load_buffer(snd, 1);
 	alSourceQueueBuffers(snd->source, 2, snd->buffers);

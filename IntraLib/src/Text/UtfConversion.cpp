@@ -64,7 +64,7 @@ dchar UTF8::NextChar(size_t* bytesRead) const
 	}
 	ch += (*source++) - offsetsFromUTF8[bytesToRead-1];
 
-	if(ch>UTF32::MaxLegalChar || ch>=SurrogateHighStart && ch<=SurrogateLowEnd)
+	if( ch>UTF32::MaxLegalChar || (ch>=SurrogateHighStart && ch<=SurrogateLowEnd) )
 		ch = UTF32::ReplacementChar;
 
 	if(bytesRead!=null) *bytesRead = bytesToRead;

@@ -14,7 +14,7 @@ template<typename O> class GenericTextSerializer
 {
 public:
 	GenericTextSerializer(const DataLanguageParams& langParams, const TextSerializerParams& serializerParams, const O& output):
-		Lang(langParams), Params(serializerParams),
+		Params(serializerParams), Lang(langParams),
 		NestingLevel(0), Output(output) {}
 
 	void NextField(TextSerializerParams::TypeFlags typeFlag);
@@ -66,7 +66,7 @@ class TextDeserializer
 {
 public:
 	TextDeserializer(const DataLanguageParams& langParams, const IO::MemoryInput& input):
-		Lang(langParams), NestingLevel(0), Input(input), Line(0) {}
+		Lang(langParams), NestingLevel(0), Line(0), Input(input) {}
 
 
 	bool IgnoreField();

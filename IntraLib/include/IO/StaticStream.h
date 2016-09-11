@@ -19,7 +19,7 @@ public:
 		Rest(dstBuf), Begin(dstBuf.Begin) {}
 
 	MemoryOutput(ArrayRange<char> dstBuf, char* pos):
-		Begin(dstBuf.Begin), Rest(pos, dstBuf.End)
+		Rest(pos, dstBuf.End), Begin(dstBuf.Begin)
 	{
 		INTRA_ASSERT(pos>=dstBuf.Begin && pos<=dstBuf.End);
 	}
@@ -108,7 +108,7 @@ public:
 	forceinline void WriteShortRaw(StringView src) {counter.Counter += src.Length();}
 
 	//! Вспомогательная функция для текстовой сериализации, которая просто записывает символ
-	forceinline void WriteCharRaw(char src) {src; counter.Counter++;}
+	forceinline void WriteCharRaw(char src) {(void)src; counter.Counter++;}
 
 	forceinline void WriteFloatText(real v, int preciseness, char decimalSeparator)
 	{

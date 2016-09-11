@@ -9,7 +9,7 @@ template<typename T> class Array2D
 public:
 	Array2D(null_t=null): width(0) {}
 	Array2D(size_t width, size_t height): width(width) {data.SetCount(width*height);}
-	Array2D(const Array2D& rhs): width(rhs.width), data(rhs.data) {}
+	Array2D(const Array2D& rhs): data(rhs.data), width(rhs.width) {}
 
 	forceinline T& operator()(size_t x, size_t y)
 	{

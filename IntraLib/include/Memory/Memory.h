@@ -7,23 +7,10 @@
 #include "Memory/Allocator.h"
 
 
-#ifndef __PLACEMENT_NEW_INLINE
-#define __PLACEMENT_NEW_INLINE
-inline void* operator new(size_t, void* dst) {return dst;}
-inline void operator delete(void*, void*) {return;}
-#endif
-
-#ifndef __PLACEMENT_VEC_NEW_INLINE
-#define __PLACEMENT_VEC_NEW_INLINE
-inline void* operator new[](size_t, void* dst) {return dst;}
-inline void operator delete[](void*, void*) {}
-#endif
-
-
 namespace Intra { namespace Memory {
 
 //Вызов конструкторов
-template<typename T> Meta::EnableIfNotPod<T> Initialize(ArrayRange<T> dst)
+template<typename T> Meta::EnableIfNotTrivConstructible<T> Initialize(ArrayRange<T> dst)
 {
 	while(!dst.Empty())
 	{
@@ -67,7 +54,7 @@ template<typename T> Meta::EnableIfTrivDestructible<T, void> Destruct(ArrayRange
 	if(dst.Begin < dst.End)\
 		core::memset(dst.Begin, 0xDEDEDEDE, dst.Length()*sizeof(T));
 #endif
-	dst;
+	(void)dst;
 }
 
 //Вызов деструктора
@@ -81,7 +68,7 @@ template<typename T> Meta::EnableIfTrivDestructible<T, void> DestructObj(T& dst)
 #ifdef INTRA_DEBUG
 	core::memset(&dst, 0xDEDEDEDE, sizeof(T));
 #endif
-	dst;
+	(void)dst;
 }
 
 //Побитовое копирование

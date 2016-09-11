@@ -1,5 +1,4 @@
-﻿
-#include "IO/Stream.h"
+﻿#include "IO/Stream.h"
 #include "IO/File.h"
 #include "Sound/Midi.h"
 #include "Sound/Music.h"
@@ -19,9 +18,11 @@ using namespace Intra::IO;
 String GetMidiPath(StringView fileName)
 {
 	String ResDir = "Resources/";
-	if(!DiskFile::Exists(ResDir)) ResDir = "../"+ResDir;
-	if(!DiskFile::Exists(ResDir)) ResDir = "../"+ResDir;
-	if(!DiskFile::Exists(ResDir)) ResDir = "../"+ResDir;
+	for(size_t i=0; i<5; i++)
+	{
+		if(DiskFile::Exists(ResDir)) break;
+		ResDir = "../"+ResDir;
+	}
 	String filePath = fileName;
 	if(!DiskFile::Exists(filePath)) filePath = ResDir+"Music/Midi/"+fileName;
 	auto args = GetCommandLineArguments();
@@ -159,7 +160,7 @@ int INTRA_CRTDECL main()
 		buf.Samples[t] = ((byte)( ( (((((t>>3)|(t>>7))*5)|(t>>4))&0xff)/4 + (((((t>>3)|(t>>12))*5)|(t>>7))&0xff)*3/4 ) )-128)/127.0f;
 	Sound snd = Sound(&buf);
 	snd.CreateInstance().Play();
-	Console.Read<char>();
+	Console.GetChar();
 #endif
 
 #if INTRA_DISABLED

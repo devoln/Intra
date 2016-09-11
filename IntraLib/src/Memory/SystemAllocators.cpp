@@ -42,8 +42,8 @@ AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sou
 	(void)sourceInfo;
 #ifdef INTRA_PLATFORM_IS_POSIX
 	void* result;
-	posix_memalign(&result, alignment, size);
-	return result;
+	if(posix_memalign(&result, alignment, bytes)==0) return result;
+	return null;
 #else
 #ifdef _MSC_VER
 	return _aligned_malloc(bytes, alignment);

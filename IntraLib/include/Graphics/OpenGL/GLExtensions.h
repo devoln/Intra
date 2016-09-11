@@ -10,10 +10,10 @@
 #elif defined(__ANDROID__)
 #   include <sys/cdefs.h>
 #ifndef KHRONOS_APICALL
-#   define KHRONOS_APICALL __NDK_FPABI__
+#define KHRONOS_APICALL __NDK_FPABI__
 #endif
 #else
-#   define KHRONOS_APICALL
+#define KHRONOS_APICALL
 #endif
 
 #if !defined(OPENSTEP) && (defined(__WIN32__) && !defined(__CYGWIN__))
@@ -909,7 +909,7 @@ enum: ushort {
 void(GLCALL *BindImageTexture)(uint unit, uint texture, int level, GLboolean layered, int layer, GLenum access, GLenum format);
 void(GLCALL *MemoryBarrier)(uint barriers);
 
-const byte*(GLCALL *GetStringi)(GLenum name​, uint index​);
+const byte*(GLCALL *GetStringi)(GLenum name, uint index);
 
 enum: ushort {CLEAR_TEXTURE=0x9365};
 void(GLCALL *ClearTexImage)(uint texture, int level, GLenum format, GLenum type, const void* data);

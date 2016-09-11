@@ -51,6 +51,7 @@ size_t VirtualMemoryPageSize()
 
 #elif defined(INTRA_PLATFORM_IS_POSIX)
 #include <unistd.h>
+#include <sys/mman.h>
 
 namespace Intra { namespace Memory {
 
@@ -59,7 +60,7 @@ static uint translate_access(Access access)
 	static const uint accessTable[] =
 	{
 		PROT_NONE, PROT_READ, PROT_WRITE, PROT_READ|PROT_WRITE,
-		PROT_EXECUTE, PROT_EXEC|PROT_READ, PROT_EXEC|PROT_WRITE, PROT_EXEC|PROT_READ|PROT_WRITE
+		PROT_EXEC, PROT_EXEC|PROT_READ, PROT_EXEC|PROT_WRITE, PROT_EXEC|PROT_READ|PROT_WRITE
 	};
 	INTRA_CHECK_TABLE_SIZE(accessTable, (byte)Access::End);
 	return accessTable[(byte)access];
@@ -74,8 +75,8 @@ AnyPtr VirtualAlloc(size_t bytes, Access access)
  
 void VirtualCommit(void* ptr, size_t bytes, Access access)
 {
-    mmap(ptr, size, translate_access(access), MAP_FIXED|MAP_ANON|(access==Access::None? MAP_PRIVATE: MAP_SHARED), -1, 0);
-    msync(ptr, size, MS_SYNC|MS_INVALIDATE);
+    mmap(ptr, bytes, translate_access(access), MAP_FIXED|MAP_ANON|(access==Access::None? MAP_PRIVATE: MAP_SHARED), -1, 0);
+    msync(ptr, bytes, MS_SYNC|MS_INVALIDATE);
 }
 
 void VirtualFree(void* ptr, size_t size)

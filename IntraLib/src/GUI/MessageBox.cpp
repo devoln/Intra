@@ -1,10 +1,9 @@
 ﻿#include "Core/Core.h"
+#include "GUI/MessageBox.h"
+#include "Containers/StringView.h"
+
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-
-#include "Containers/StringView.h"
-#include "Containers/Array.h"
-#include "GUI/MessageBox.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -54,6 +53,8 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 }
 
 #else
+
+#include "IO/Stream.h"
 
 namespace Intra {
 

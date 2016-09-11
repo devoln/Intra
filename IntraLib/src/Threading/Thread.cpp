@@ -54,6 +54,8 @@ void Thread::Detach()
 	handle = null;
 }
 
+void Thread::Yield() {}
+
 
 struct Mutex::Handle {std::mutex mut;};
 Mutex::Mutex() {handle = new Handle;}
@@ -244,22 +246,28 @@ void Thread::Detach()
 	handle = null;
 }
 
+void Thread::Yield() {}
 
-
-static_assert(sizeof(pthread_mutex_t)==sizeof(void*), "sizeof(pthread_mutex_t)!=sizeof(void*)!");
 
 Mutex::Mutex(bool processPrivate)
 {
+	pthread_mutex_t* mutex = new pthread_mutex_t;
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	if(!processPrivate) pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-	pthread_mutex_init((pthread_mutex_t*)&handle, &attr);
+	pthread_mutex_init(mutex, &attr);
+	handle = (Handle*)mutex;
 }
 
-Mutex::~Mutex() {pthread_mutex_destroy((pthread_mutex_t*)&handle);}
-void Mutex::Lock() {pthread_mutex_lock((pthread_mutex_t*)&handle);}
-bool Mutex::TryLock() {return pthread_mutex_trylock((pthread_mutex_t*)&handle)!=0;}
-void Mutex::Unlock() {pthread_mutex_unlock((pthread_mutex_t*)&handle);}
+Mutex::~Mutex()
+{
+	pthread_mutex_destroy((pthread_mutex_t*)handle);
+	delete (pthread_mutex_t*)handle;
+}
+
+void Mutex::Lock() {pthread_mutex_lock((pthread_mutex_t*)handle);}
+bool Mutex::TryLock() {return pthread_mutex_trylock((pthread_mutex_t*)handle)!=0;}
+void Mutex::Unlock() {pthread_mutex_unlock((pthread_mutex_t*)handle);}
 
 }
 

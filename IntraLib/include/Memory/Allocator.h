@@ -58,7 +58,7 @@ template<typename Allocator> struct AbortOnError: Allocator
 		char errorMsg[256];
 		auto msgRange = ArrayRange<char>(errorMsg);
 		ArrayRange<const char>("Недостаточно памяти!\nНе удаётся выделить блок ").DropBack().CopyToAdvance(msgRange);
-		//Algo::ConvertUIntToString(bytes, msgRange.Begin);
+		msgRange.AppendAdvance(bytes);
 		ArrayRange<const char>(" байт памяти.").CopyToAdvance(msgRange);
 		return INTRA_INTERNAL_ERROR(errorMsg), null;
 	}
@@ -200,8 +200,7 @@ template<class Allocator> struct SizedAllocator: Allocator
 
 	void Free(void* ptr, size_t size)
 	{
-		auto allocationSize = GetAllocationSize(ptr);
-		INTRA_ASSERT(allocationSize==size);
+		INTRA_ASSERT(GetAllocationSize(ptr)==size);
 		size_t* originalPtr = (size_t*)ptr-1;
 		Allocator::Free(originalPtr, size+sizeof(size_t));
 	}
@@ -361,7 +360,7 @@ template<typename Allocator> struct GrowingFreeList: Allocator
 	{
 		if(!list.HasFree())
 		{
-			auto newBlock = Allocator::Allocate(block_size(capacity), {__FILE__, __LINE__});
+			auto newBlock = Allocator::Allocate(block_size(capacity), INTRA_SOURCE_INFO);
 			*(void**)newBlock = first_block;
 			first_block = newBlock;
 			new(&list) FreeList(ArrayRange<byte>((byte*)first_block+block_size(0), capacity), element_size, element_alignment);

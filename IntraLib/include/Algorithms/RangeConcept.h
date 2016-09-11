@@ -138,7 +138,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsInputRangeOfPod, Meta::Val<type
 	(IsInputRange<T>::_ && Meta::IsPod<typename T::value_type>::_));
 
 INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsInputRangeOfTrivial, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && Meta::IsTrivial<typename T::value_type>::_));
+	(IsInputRange<T>::_ && Meta::IsAlmostPod<typename T::value_type>::_));
 
 INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteInputRangeOf, Meta::Val<typename T1::value_type>(),
 	(IsFiniteInputRange<T1>::_ && Meta::IsConvertible<typename T1::value_type, T2>::_),,);

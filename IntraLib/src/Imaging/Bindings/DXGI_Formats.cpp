@@ -46,7 +46,7 @@ INTRA_CHECK_TABLE_SIZE(dxgiFormatConvertTable, DXGI_FORMAT_B4G4R4A4_UNORM+1);
 ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* swapRB)
 {
 	if(swapRB!=null) *swapRB = (
-		fmt>=DXGI_FORMAT_B5G6R5_UNORM && fmt<=DXGI_FORMAT_B8G8R8X8_UNORM_SRGB ||
+		(fmt>=DXGI_FORMAT_B5G6R5_UNORM && fmt<=DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) ||
 		fmt==DXGI_FORMAT_B4G4R4A4_UNORM);
 	if(fmt>=core::numof(dxgiFormatConvertTable)) return null;
 	return dxgiFormatConvertTable[fmt];

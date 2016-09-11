@@ -19,16 +19,16 @@ template<typename K> struct KeyWrapper {K Key;};
 template<typename T> struct HashNode:
 	private Meta::SelectType<
 		Meta::EmptyType, Meta::WrapperStruct<uint>,
-		Meta::IsFundamentalType<decltype(Meta::Val<T>().Key)>::_>
+		Meta::IsScalarType<decltype(Meta::Val<T>().Key)>::_>
 {
-	template<typename T> friend struct Intra::HashTableRange;
+	template<typename T1> friend struct Intra::HashTableRange;
 	template<typename K, typename V, class Allocator> friend class Intra::HashMap;
 private:
 	template<typename... Args> HashNode(Args&&... args): element(core::forward<Args>(args)...) {}
 	~HashNode() {}
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		Meta::IsFundamentalType<U>::_,
+		Meta::IsScalarType<U>::_,
 	bool> compare_keys(const U& key, uint keyHash)
 	{
 		(void)keyHash;
@@ -36,7 +36,7 @@ private:
 	}
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		!Meta::IsFundamentalType<U>::_,
+		!Meta::IsScalarType<U>::_,
 	bool> compare_keys(const U& key, uint keyHash)
 	{
 		if(Meta::WrapperStruct<uint>::value==keyHash) return true;
@@ -44,11 +44,11 @@ private:
 	}
 		
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		Meta::IsFundamentalType<U>::_
+		Meta::IsScalarType<U>::_
 	> init_key(uint keyHash) {(void)keyHash;}
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		!Meta::IsFundamentalType<U>::_
+		!Meta::IsScalarType<U>::_
 	> init_key(uint keyHash) {Meta::WrapperStruct<uint>::value = keyHash;}
 
 
@@ -94,13 +94,13 @@ private:
 };
 
 
-template<typename K, typename V, typename Allocator>
-class HashMap: Memory::AllocatorRef<Allocator>
+template<typename K, typename V, typename AllocatorType>
+class HashMap: Memory::AllocatorRef<AllocatorType>
 {
-	typedef Memory::AllocatorRef<Allocator> AllocatorRef;
+	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
 	typedef detail::HashNode<KeyValuePair<const K, V>> Node;
 public:
-	typedef Allocator Allocator;
+	typedef AllocatorType Allocator;
 
 	typedef K key_type;
 	typedef V mapped_type;
@@ -159,9 +159,9 @@ public:
  
 
 
-	HashMap(): bucket_heads(null), range(null) {}
+	HashMap(): range(null), bucket_heads(null) {}
 
-	HashMap(const HashMap& rhs): bucket_heads(null), range(null) {operator=(rhs);}
+	HashMap(const HashMap& rhs): range(null), bucket_heads(null) {operator=(rhs);}
 
 	~HashMap() {Clear();}
 

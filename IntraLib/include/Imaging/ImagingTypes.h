@@ -67,10 +67,8 @@ struct ImageFormat
 		Ri,                                      RGi, RGBi, RGBAi, //Целые знаковые
 		Rf, Luminancef,                          RGf, RGBf, RGBAf, //С плавающей запятой
 		sRGB, sRGB_A, //sRGB
-		Depth, DepthF, DepthStencil, DepthF_Stencil
-	};
+		Depth, DepthF, DepthStencil, DepthF_Stencil,
 
-	enum: byte {
 		FirstOfNormalized=Red8, FirstOfUncompressed=FirstOfNormalized, EndOfNormalized=sRGB8_A8+1,
 		FirstOfFloatingPoint=Red16f, EndOfFloatingPoint=RGBE8+1,
 		FirstOfUnsignedIntegral=Red8u, FirstOfIntegral=FirstOfUnsignedIntegral, EndOfUnsignedIntegral=RGB10A2u+1,

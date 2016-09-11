@@ -14,13 +14,13 @@ class Sound
 {
 	friend class SoundInstance;
 public:
-	Sound(null_t=null): info{0,0,0,ValueType::Void},
-		data(null), locked_bits(null), locked_size(0) {}
+	Sound(null_t=null): data(null), locked_bits(null),
+		info{0,0,0,ValueType::Void}, locked_size(0) {}
 
 	explicit Sound(const SoundBuffer* data);
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 
-	Sound(Sound&& rhs): info(rhs.info), data(null) {operator=(core::move(rhs)); rhs.data=null;}
+	Sound(Sound&& rhs): data(null), info(rhs.info) {operator=(core::move(rhs)); rhs.data=null;}
 
 	~Sound();
 

@@ -15,21 +15,21 @@ template<> struct Random<byte>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 255]
 	forceinline byte operator()()
 	{
-		return (Seed*=16807) >> 24;
+		return byte((Seed*=16807) >> 24);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline byte operator()(byte max)
 	{
 		INTRA_ASSERT(0 < max);
-		return operator()() % max;
+		return byte(operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline byte operator()(byte min, byte max)
 	{
 		INTRA_ASSERT(min < max);
-		return min + operator()(max-min);
+		return byte(min + operator()(byte(max-min)));
 	}
 
 	uint Seed;
@@ -58,7 +58,7 @@ template<> struct Random<sbyte>: Random<byte>
 	forceinline sbyte operator()(sbyte min, sbyte max)
 	{
 		INTRA_ASSERT(min < max);
-		return sbyte(min + (sbyte)Random<byte>::operator()(max-min));
+		return sbyte(min + (sbyte)Random<byte>::operator()(sbyte(max-min)));
 	}
 
 	uint Seed;
@@ -73,7 +73,7 @@ template<> struct Random<ushort>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline ushort operator()()
 	{
-		return (Seed*=16807) >> 16;
+		return ushort((Seed*=16807) >> 16);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
@@ -87,7 +87,7 @@ template<> struct Random<ushort>
 	forceinline ushort operator()(ushort min, ushort max)
 	{
 		INTRA_ASSERT(min < max);
-		return min + operator()(max-min);
+		return ushort(min + operator()(ushort(max-min)));
 	}
 
 	uint Seed;
@@ -109,14 +109,14 @@ template<> struct Random<short>: Random<ushort>
 	forceinline short operator()(short max)
 	{
 		INTRA_ASSERT(0 < max);
-		return Random<ushort>::operator()() % max;
+		return short(Random<ushort>::operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline short operator()(short min, short max)
 	{
 		INTRA_ASSERT(min < max);
-		return min + (short)Random<ushort>::operator()(max-min);
+		return short(min + (short)Random<ushort>::operator()(short(max-min)));
 	}
 
 	uint Seed;
@@ -244,6 +244,23 @@ template<> struct Random<long64>: Random<ulong64>
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
 
+template<> struct Random<long>: Random<Meta::SelectType<int, long64, sizeof(long)==4>>
+{
+private:
+	typedef Random<Meta::SelectType<int, long64, sizeof(long)==4>> base;
+public:
+	Random(uint seed=157898685): base(seed) {}
+};
+
+template<> struct Random<unsigned long>: Random<Meta::SelectType<uint, ulong64, sizeof(unsigned long)==4>>
+{
+private:
+	typedef Random<Meta::SelectType<uint, ulong64, sizeof(unsigned long)==4>> base;
+public:
+	Random(uint seed=157898685): base(seed) {}
+};
+
+
 template<> struct Random<float>
 {
 	Random(uint seed=157898685): Seed(seed) {}
@@ -252,7 +269,7 @@ template<> struct Random<float>
 	forceinline float operator()()
 	{
 		Seed *= 16807;
-		return (int)Seed * 2.32830645e-10f + 0.5f;
+		return (float)(int)Seed * 2.32830645e-10f + 0.5f;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; maxOrMin], maxOrMin>=0, или [maxOrMin, 0], maxOrMin<0
@@ -272,7 +289,7 @@ template<> struct Random<float>
 	float SignedNext()
 	{
 		Seed *= 16807;
-		return (int)Seed * 4.6566129e-10f;
+		return (float)(int)Seed * 4.6566129e-10f;
 	}
 
 	uint Seed;

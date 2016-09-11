@@ -1,4 +1,4 @@
-﻿#include "Math/linal.h"
+﻿#include "Math/LinAl.h"
 #include "Data/ValueType.h"
 #include "Containers/StringView.h"
 #include "Containers/HashMap.h"

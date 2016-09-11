@@ -77,8 +77,8 @@ double Mod(double x, double y) {return fmod(x, y);}
 #endif
 
 
-bool _NaN::operator==(float rhs) const {return isnan(rhs)!=0;}
-bool _NaN::operator==(double rhs) const {return isnan(rhs)!=0;}
-bool _NaN::operator==(real rhs) const {return isnan((double)rhs)!=0;}
+bool NaNType::operator==(float rhs) const {return isnan(rhs)!=0;}
+bool NaNType::operator==(double rhs) const {return isnan(rhs)!=0;}
+bool NaNType::operator==(real rhs) const {return isnan((double)rhs)!=0;}
 
 }}

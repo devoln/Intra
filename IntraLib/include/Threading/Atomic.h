@@ -8,9 +8,9 @@ template<typename T> struct Atomic: public std::atomic<T>
 {
 	Atomic() noexcept {}
 	Atomic(T val) noexcept: value(val) {}
-	Atomic(const T&) = delete;
+	Atomic(const Atomic&) = delete;
 
-	forceinline T Load() noexcept {return load();}
+	forceinline T Load() const noexcept {return load();}
 	forceinline T Exchange(T val) noexcept {return exchange(val);}
 	forceinline void Store(T val) noexcept {store(val);}
 	forceinline bool CompareExchangeWeak(T& expected, T desired) {compare_exchange_weak(expected, desired);}
@@ -28,10 +28,10 @@ template<typename T> struct Atomic
 {
 	Atomic() noexcept {}
 	Atomic(T val) noexcept: value(val) {}
-	Atomic(const T&) = delete;
+	Atomic(const Atomic&) = delete;
 
-	T Load() noexcept {return value;}
-	T load() noexcept {return Load();}
+	T Load() const noexcept {return value;}
+	T load() const noexcept {return Load();}
 	T Exchange(T val) noexcept {T result = value; value=val; return result;}
 	T exchange(T val) noexcept {return Exchange(val);}
 	void Store(T val) noexcept {value = val;}

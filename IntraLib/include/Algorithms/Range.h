@@ -109,7 +109,7 @@ template<typename T> struct ArrayRange:
 	constexpr forceinline ArrayRange(null_t=null): Begin(null), End(null) {}
 	constexpr forceinline ArrayRange(std::initializer_list<Meta::RemoveConst<T>> list): Begin(list.begin()), End(list.end()) {}
 	template<size_t len> constexpr forceinline ArrayRange(T(&arr)[len]): Begin(arr), End(arr+len) {}
-	constexpr forceinline ArrayRange(T* start, T* end): Begin(start), End(end) {INTRA_ASSERT(End >= Begin);}
+	forceinline ArrayRange(T* start, T* end): Begin(start), End(end) {INTRA_ASSERT(End >= Begin);}
 	constexpr forceinline ArrayRange(T* start, size_t length): Begin(start), End(start+length) {}
 	constexpr forceinline ArrayRange(const ArrayRange& rhs): Begin(rhs.Begin), End(rhs.End) {}
 
@@ -150,10 +150,11 @@ template<typename T> struct ArrayRange:
 	}
 
 
+	//! Сравниваются только указатели, но не содержимое.
 	bool operator==(const ArrayRange& rhs) const
 	{
-		return Empty() && rhs.Empty() ||
-			Begin==rhs.Begin && End==rhs.End;
+		return (Empty() && rhs.Empty()) ||
+			(Begin==rhs.Begin && End==rhs.End);
 	}
 
 	forceinline bool operator==(null_t) const {return Empty();}

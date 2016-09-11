@@ -44,8 +44,8 @@ template<typename T> struct Vector2
 
 	constexpr bool operator==(const Vector2& rhs) const {return (x==rhs.x && y==rhs.y);}
 	constexpr bool operator!=(const Vector2& rhs) const {return !operator==(rhs);}
-	bool operator==(_NaN) const {return x+y==NaN;}
-	bool operator!=(_NaN) const {return !operator==(NaN);}
+	bool operator==(NaNType) const {return x+y==NaN;}
+	bool operator!=(NaNType) const {return !operator==(NaN);}
 
 	constexpr Vector2 operator<<(uint rhs) const {return {x << rhs, y << rhs};}
 	constexpr Vector2 operator>>(uint rhs) const {return {x >> rhs, y >> rhs};}
@@ -73,8 +73,8 @@ template<typename T> struct Vector2
 	T x, y;
 };
 
-template<typename T> bool operator==(_NaN, const Vector2<T>& rhs) {return rhs==NaN;}
-template<typename T> bool operator!=(_NaN, const Vector2<T>& rhs) {return rhs!=NaN;}
+template<typename T> bool operator==(NaNType, const Vector2<T>& rhs) {return rhs==NaN;}
+template<typename T> bool operator!=(NaNType, const Vector2<T>& rhs) {return rhs!=NaN;}
 
 template<typename T> struct Vector3
 {
@@ -112,8 +112,8 @@ template<typename T> struct Vector3
 
 	constexpr bool operator==(const Vector3& rhs) const {return (x==rhs.x && y==rhs.y && z==rhs.z);}
 	constexpr bool operator!=(const Vector3& rhs) const {return !operator==(rhs);}
-	bool operator==(_NaN) const {return x+y+z==NaN;}
-	bool operator!=(_NaN) const {return !operator==(NaN);}
+	bool operator==(NaNType) const {return x+y+z==NaN;}
+	bool operator!=(NaNType) const {return !operator==(NaN);}
 
 
 	constexpr T DistanceToPlane(const Plane<T>& plane) const {return -Dot(*this, plane.normal);}
@@ -164,8 +164,8 @@ template<typename T> struct Vector3
 	};
 };
 
-template<typename T> bool operator==(_NaN, const Vector3<T>& rhs) {return rhs==NaN;}
-template<typename T> bool operator!=(_NaN, const Vector3<T>& rhs) {return rhs!=NaN;}
+template<typename T> bool operator==(NaNType, const Vector3<T>& rhs) {return rhs==NaN;}
+template<typename T> bool operator!=(NaNType, const Vector3<T>& rhs) {return rhs!=NaN;}
 
 template<typename T> struct Vector4
 {
@@ -240,8 +240,8 @@ public:
 
 	constexpr bool operator==(const Vector4& rhs) const {return (x==rhs.x && y==rhs.y && z==rhs.z && w==rhs.w);}
 	constexpr bool operator!=(const Vector4& rhs) const {return !operator==(rhs);}
-	bool operator==(_NaN) const {return x+y+z+w==NaN;}
-	bool operator!=(_NaN) const {return !operator==(NaN);}
+	bool operator==(NaNType) const {return x+y+z+w==NaN;}
+	bool operator!=(NaNType) const {return !operator==(NaN);}
 
 
 	constexpr Vector4 operator<<(uint rhs) const {return {x << rhs, y << rhs, z << rhs, w << rhs};}
@@ -304,8 +304,8 @@ template<typename T> constexpr Vector2<T> operator*(T n, const Vector2<T>& v) {r
 template<typename T> constexpr Vector3<T> operator*(T n, const Vector3<T>& v) {return v*n;}
 template<typename T> constexpr Vector4<T> operator*(T n, const Vector4<T>& v) {return v*n;}
 
-template<typename T> bool operator==(_NaN, const Vector4<T>& rhs) {return rhs==NaN;}
-template<typename T> bool operator!=(_NaN, const Vector4<T>& rhs) {return rhs!=NaN;}
+template<typename T> bool operator==(NaNType, const Vector4<T>& rhs) {return rhs==NaN;}
+template<typename T> bool operator!=(NaNType, const Vector4<T>& rhs) {return rhs!=NaN;}
 
 
 template<typename T> constexpr T Dot(const Vector2<T>& l, const Vector2<T>& r) {return l.x*r.x+l.y*r.y;}

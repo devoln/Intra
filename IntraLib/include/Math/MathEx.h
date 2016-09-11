@@ -25,9 +25,9 @@ template<typename T> struct Vector3;
 template<typename T> struct Vector4;
 template<typename T> struct Quaternion;
 
-struct _NaN
+struct NaNType
 {
-	_NaN() {}
+	NaNType() {}
 
 	bool operator==(float rhs) const;
 	bool operator==(double rhs) const;
@@ -52,12 +52,12 @@ struct _NaN
 	operator byte() const {return 0;}
 } const NaN;
 
-inline bool operator==(float l, _NaN) {return NaN==l;}
-inline bool operator!=(float l, _NaN) {return NaN!=l;}
-inline bool operator==(double l, _NaN) {return NaN==l;}
-inline bool operator!=(double l, _NaN) {return NaN!=l;}
-inline bool operator==(real l, _NaN) {return NaN==l;}
-inline bool operator!=(real l, _NaN) {return NaN!=l;}
+inline bool operator==(float l, NaNType) {return NaN==l;}
+inline bool operator!=(float l, NaNType) {return NaN!=l;}
+inline bool operator==(double l, NaNType) {return NaN==l;}
+inline bool operator!=(double l, NaNType) {return NaN!=l;}
+inline bool operator==(real l, NaNType) {return NaN==l;}
+inline bool operator!=(real l, NaNType) {return NaN!=l;}
 
 
 
@@ -529,14 +529,14 @@ inline uint CeilToNextPow2(uint v)
 //Логарифм целого числа по основанию 2, округлённый вниз
 inline byte Log2i(uint x)
 {
-	if(x==0) return byte(-1);
-	byte n = 31;
+	if(x==0) return byte(255);
+	uint n = 31;
 	if(x<=0x0000ffff) n -= 16, x <<= 16;
 	if(x<=0x00ffffff) n -= 8, x <<= 8;
 	if(x<=0x0fffffff) n -= 4, x <<= 4;
 	if(x<=0x3fffffff) n -= 2, x <<= 2;
 	if(x<=0x7fffffffu) n--;
-	return n;
+	return byte(n);
 }
 
 forceinline bool IsPow2(size_t x) {return x!=0 && ((x&(x-1))==0);}

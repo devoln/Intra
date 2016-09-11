@@ -161,7 +161,7 @@ real IInputStream::ParseFloat(bool* error)
 	}
 }
 
-String IInputStream::ReadToChar(const AsciiSet& stopCharset)
+String IInputStream::ReadToChar(const AsciiSet& stopCharset, char* oStopChar)
 {
 	String token;
 	const AsciiSet stopCharsetAnd0 = stopCharset|'\0';
@@ -169,7 +169,10 @@ String IInputStream::ReadToChar(const AsciiSet& stopCharset)
 	{
 		const char readChar = Read<char>();
 		if(EndOfStream() || stopCharsetAnd0.Contains(readChar))
+		{
+			if(oStopChar!=null) *oStopChar = readChar;
 			return token;
+		}
 		token += readChar;
 	}
 }
@@ -197,10 +200,10 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 	char* pdst = pbegin;
 	char* pend = pbegin+bytes;
 	byte unreadedBytesToRead = (byte)Math::Min<size_t>(unread_buf_chars, bytes);
-	memcpy(pdst, unread_buf, unreadedBytesToRead);
+	core::memcpy(pdst, unread_buf, unreadedBytesToRead);
 	pdst += unreadedBytesToRead;
 	unread_buf_chars-=unreadedBytesToRead;
-	memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
+	core::memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
 
 	const auto hndl = (HANDLE)_get_osfhandle(_fileno((FILE*)myfin));
 	while(pdst<pend)
@@ -212,8 +215,8 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 		//if(c[0]>) ReadConsoleW(hndl, c+1, 1, &read, null), read++;
 		int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, c, read, u8, sizeof(u8), null, null);
 		size_t bytesToRead = Math::Min<size_t>(bytesPerChar, pend-pdst);
-		memcpy(pdst, u8, bytesToRead);
-		memcpy(unread_buf, u8+bytesToRead, bytesPerChar-bytesToRead);
+		core::memcpy(pdst, u8, bytesToRead);
+		core::memcpy(unread_buf, u8+bytesToRead, bytesPerChar-bytesToRead);
 		unread_buf_chars = byte(bytesPerChar-bytesToRead);
 		pdst+=bytesToRead;
 	}
@@ -227,8 +230,8 @@ void ConsoleStream::UnreadData(const void* src, size_t bytes)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	INTRA_ASSERT(bytes+unread_buf_chars<sizeof(unread_buf));
-	memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
-	memcpy(unread_buf, src, bytes);
+	core::memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
+	core::memcpy(unread_buf, src, bytes);
 #else
 	for(byte* ptr=(byte*)src+bytes; ptr>src;)
 		ungetc(*--ptr, (FILE*)myfin);
@@ -238,7 +241,8 @@ void ConsoleStream::UnreadData(const void* src, size_t bytes)
 dchar ConsoleStream::GetChar()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	return dchar(_getwch());
+	auto ch = _getwch();
+	return ch=='\r'? '\n': dchar(ch);
 #else
 	termios oldt, newt;
 	int ch;
@@ -247,6 +251,7 @@ dchar ConsoleStream::GetChar()
 	newt.c_lflag &= ~(ICANON|ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	ch = getc((FILE*)myfin); //TODO: добавить поддержку ввода UTF-8 символа
+	if(ch=='\r') ch='\n';
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	return dchar(ch);
 #endif
@@ -258,3 +263,5 @@ ConsoleStream Console(stdout, stdin);
 ConsoleStream ConsoleError(stderr, stdin);
 
 }}
+
+int add(int x, int y) {return x+y;}

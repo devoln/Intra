@@ -55,9 +55,9 @@ template<typename T> Meta::EnableIf<
 
 template<size_t N> void GenerateRandomValue(Big<N>& dst)
 {
-	static_assert(N % sizeof(uint)==0, "Big must have size which is multiple of uint!");
+	static_assert(N % sizeof(size_t)==0, "Big must have size which is multiple of uint!");
 	size_t* ptr = reinterpret_cast<size_t*>(dst.c);
-	for(size_t i=0; i<N/sizeof(uint); i++) GenerateRandomValue(*ptr++);
+	for(size_t i=0; i<N/sizeof(size_t); i++) GenerateRandomValue(*ptr++);
 }
 
 template<typename Char, typename Allocator> void GenerateRandomValue(GenericString<Char, Allocator>& dst)

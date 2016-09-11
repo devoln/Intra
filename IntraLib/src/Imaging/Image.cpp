@@ -446,7 +446,7 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 			for(int k=0; k<8; k++)
 			{
 				core::memcpy(linePos, palette + ((colorIndices & 0x80) >> 7)*bytesPerPixel, bytesPerPixel);
-				colorIndices <<= 1;
+				colorIndices = byte(colorIndices << 1);
 				linePos += bytesPerPixel;
 			}
 		}
@@ -492,7 +492,8 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 
 	s->Skip(2); //Предполагается, что идентификатор формата уже проверен
 
-	uint fileSize = s->Read<uintLE>(); fileSize;
+	uint fileSize = s->Read<uintLE>();
+	(void)fileSize;
 	s->Read<uint>();
 	const uint dataPos = s->Read<uintLE>();
 
@@ -589,7 +590,7 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 //Загрузить изображение из файла в формате tga
 void Image::loadTGA(IInputStream* s, uint bytes)
 {
-	bytes;
+	(void)bytes;
 
 	byte header[18];
 	s->ReadData(header, 18);
@@ -619,7 +620,7 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 	byte* pos = Data.end() - Info.Size.x*bytesPerPixel;
 	for(uint currentPixel=0; currentPixel<pixelcount;)
 	{
-		ushort chunkheader = s->Read<byte>();
+		int chunkheader = s->Read<byte>();
 		if(chunkheader<128)
 		{
 			chunkheader++;
@@ -631,7 +632,7 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 			}
 			continue;
 		}
-		chunkheader-=127;
+		chunkheader -= 127;
 		byte colorBuffer[4];
 		s->ReadData(colorBuffer, bytesPerPixel);
 		for(; chunkheader--!=0; currentPixel++)
@@ -663,8 +664,8 @@ void Image::load_with_library(IO::IInputStream* s, uint bytes)
 	Info.MipmapCount = 1;
 
 	uint white = 0xFFFFFFFF;
-	Data.SetBounds(4);
-	Data.SetBytes(0, &white, sizeof(white));
+	Data.Clear();
+	Data.AddLastRange(ArrayRange<const byte>((byte*)&white, sizeof(white)));
 }
 
 }

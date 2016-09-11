@@ -10,10 +10,12 @@
 #include "Algorithms/Mixins/RandomAccessRangeMixin.h"
 #include "Algorithms/Mixins/ArrayRangeMixin.h"
 
-
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4512)
 #pragma warning(disable: 4610)
+#endif
+
 namespace Intra { namespace Range {
 
 template<typename T> struct SimpleArrayRange:
@@ -122,7 +124,7 @@ public:
 		Meta::IsUnsignedIntegralType<X>::_,
 	size_t> MaxLengthOf(X number, int minWidth, T filler=' ', uint base=10, T minus='\0')
 	{
-		(void)(number, filler);
+		(void)number; (void)filler;
 		size_t maxLog;
 		if(base<8) maxLog = sizeof(X)*8;
 		else if(base<16) maxLog = (sizeof(X)*8+2)/3;
@@ -180,7 +182,7 @@ public:
 		if(number<0)
 		{
 			me().Put('-');
-			number = -number;
+			number = X(-number);
 		}
 		return me().AppendAdvance(Meta::MakeUnsignedType<X>(number));
 	}
@@ -276,7 +278,7 @@ public:
 		Meta::IsFloatType<X>::_,
 	size_t> MaxLengthOf(X number, int preciseness=2, T dot='.', bool appendAllDigits=false)
 	{
-		(void)(number, dot, appendAllDigits);
+		(void)number; (void)dot; (void)appendAllDigits;
 		return 20+1+(preciseness+1);
 	}
 
@@ -454,7 +456,7 @@ public:
 	{
 		const bool minus = me().ParseSignAdvance();
 		X result = (X)ParseAdvance<Meta::MakeUnsignedType<X>>();
-		return minus? -result: result;
+		return minus? X(-result): result;
 	}
 
 	template<typename X> Meta::EnableIf<
@@ -491,7 +493,7 @@ public:
 		while(!me().Empty() && IsSpace(me().First()))
 		{
 			char c = me().First();
-			if(c=='\r' || c=='\n' && !wasCR)
+			if(c=='\r' || (c=='\n' && !wasCR))
 				lines++;
 			wasCR = (c=='\r');
 			me().PopFirst();
@@ -506,7 +508,7 @@ public:
 		while(!me().Empty())
 		{
 			char c = me().First();
-			if(c=='\r' || c=='\n' && !wasCR)
+			if(c=='\r' || (c=='\n' && !wasCR))
 				lines++;
 			wasCR = c=='\r';
 			me().PopFirst();
@@ -528,4 +530,6 @@ public:
 
 }}
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif

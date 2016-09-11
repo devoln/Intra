@@ -4,6 +4,8 @@
 
 namespace Intra { namespace Meta {
 
+template<typename T> T&& Val();
+
 template<typename T, T value> struct TypeFromValue {enum {_=value};};
 
 template<typename T> struct AddReference
@@ -24,37 +26,32 @@ template<typename T> using AddRValueReference = typename AddReference<T>::RValue
 
 template<typename T> using AddConst = const T;
 
-template<typename T> struct IsPod: TypeFromValue<bool, __is_pod(T)> {};
-template<typename T> struct IsAbstractClass: TypeFromValue<bool, __is_abstract(T)> {};
-template<typename T> struct IsUnion: TypeFromValue<bool, __is_union(T)> {};
-template<typename T> struct IsClass: TypeFromValue<bool, __is_class(T)> {};
-template<typename T> struct IsEmptyClass: TypeFromValue<bool, __is_empty(T)> {};
+template<typename T1, typename T2> struct TypeEquals: TypeFromValue<bool, false> {};
+template<typename T> struct TypeEquals<T, T>: TypeFromValue<bool, true> {};
 
-template<typename T> struct IsTriviallyCopyable: TypeFromValue<bool, IsPod<T>::_ || __is_trivially_copyable(T)> {};
-template<typename T> struct IsTriviallyDestructible: TypeFromValue<bool, __has_trivial_destructor(T)> {};
-
-template<typename SRC, typename DST> struct IsConvertible: TypeFromValue<bool, __is_convertible_to(SRC, DST)> {};
-
-template<typename T, typename... Args> struct IsConstructible: TypeFromValue<bool, __is_constructible(T, Args...)> {};
-template<typename T, typename... Args> struct IsTriviallyConstructible: TypeFromValue<bool, __is_trivially_constructible(T, Args...)> {};
-
-template<typename T> struct IsCopyConstructible: IsConstructible<T, AddLValueReference<AddConst<T>>> {};
-template<typename T> struct IsDefaultConstructible: IsConstructible<T> {};
-template<typename T> struct IsMoveConstructible: IsConstructible<T, AddRValueReference<T>> {};
-
-template<typename T> struct IsTriviallyCopyConstructible: IsTriviallyConstructible<T, AddLValueReference<AddConst<T>>> {};
-template<typename T> struct IsTriviallyDefaultConstructible: IsTriviallyConstructible<T> {};
-template<typename T> struct IsTriviallyMoveConstructible: IsTriviallyConstructible<T, AddRValueReference<T>> {};
-
-template<typename T> struct IsArray: TypeFromValue<bool, false> {};
-template<typename T, size_t N> struct IsArray<T[N]>: TypeFromValue<bool, true> {};
-template<typename T> struct IsArray<T[]>: TypeFromValue<bool, true> {};
+template<typename T> struct IsArrayType: TypeFromValue<bool, false> {};
+template<typename T, size_t N> struct IsArrayType<T[N]>: TypeFromValue<bool, true> {};
+template<typename T> struct IsArrayType<T[]>: TypeFromValue<bool, true> {};
 
 template<typename T> struct IsLValueReference: TypeFromValue<bool, false> {};
 template<typename T> struct IsLValueReference<T&>: TypeFromValue<bool, true> {};
 template<typename T> struct IsRValueReference: TypeFromValue<bool, false> {};
 template<typename T> struct IsRValueReference<T&&>: TypeFromValue<bool, true> {};
 template<typename T> struct IsReference: TypeFromValue<bool, IsLValueReference<T>::_ || IsRValueReference<T>::_> {};
+
+template<typename T> struct IsConst: TypeFromValue<bool, false> {};
+template<typename T> struct IsConst<const T>: TypeFromValue<bool, true> {};
+template<typename T> struct IsConst<const T&>: TypeFromValue<bool, true> {};
+template<typename T> struct IsConst<const T&&>: TypeFromValue<bool, true> {};
+
+namespace detail
+{
+template<typename IfTrue, typename IfFalse, bool COND> struct SelectType {typedef IfTrue _;};
+template<typename IfTrue, typename IfFalse> struct SelectType<IfTrue, IfFalse, false> {typedef IfFalse _;};
+}
+
+template<typename IfTrue, typename IfFalse, bool COND>
+using SelectType = typename Meta::detail::SelectType<IfTrue, IfFalse, COND>::_;
 
 namespace detail {
 template<typename T> struct RemoveReference {typedef T _;};
@@ -97,11 +94,317 @@ template<typename T> struct IsFunction: Meta::detail::IsFunctionPointer<RemoveCo
 template<typename T> struct IsFunction<T&>: TypeFromValue<bool, false> {};
 template<typename T> struct IsFunction<T&&>: TypeFromValue<bool, false> {};
 
-template<typename T> AddRValueReference<T> Val();
+template<class T, size_t N=0> struct Extent: TypeFromValue<size_t, 0> {};
+template<class T> struct Extent<T[], 0>: TypeFromValue<size_t, 0> {};
+template<class T, size_t N> struct Extent<T[], N>: Extent<T, N-1> {};
+template<class T, size_t N> struct Extent<T[N], 0>: TypeFromValue<size_t, N> {};
+template<class T, size_t I, size_t N> struct Extent<T[I], N>: Extent<T, N-1> {};
+
+namespace detail {
+template<typename T> struct Decay
+{
+	typedef Meta::RemoveReference<T> T1;
+	typedef Meta::SelectType<
+		Meta::RemoveExtent<T1>*,
+		Meta::SelectType<
+		    Meta::AddPointer<T1>,
+		    Meta::RemoveConstVolatile<T1>,
+		    Meta::IsFunction<T1>::_>,
+		Meta::IsArrayType<T1>::_> _;
+};
+}
+template<typename T> using Decay = typename Meta::detail::Decay<T>::_;
+
+
+
+
+template<typename T> struct IsUnsignedIntegralType: TypeFromValue<bool,
+    TypeEquals<T, byte>::_ || TypeEquals<T, ushort>::_ || TypeEquals<T, uint>::_ ||
+	TypeEquals<T, ulong64>::_ || TypeEquals<T, unsigned long>::_
+> {};
+
+template<typename T> struct IsSignedIntegralType: TypeFromValue<bool,
+    TypeEquals<T, sbyte>::_ || TypeEquals<T, short>::_ ||
+	TypeEquals<T, int>::_ || TypeEquals<T, long>::_ || TypeEquals<T, long64>::_
+> {};
+
+template<typename T> struct IsIntegralType: TypeFromValue<bool,
+	IsUnsignedIntegralType<T>::_ || IsSignedIntegralType<T>::_
+> {};
+
+template<typename T> struct IsFloatType: TypeFromValue<bool,
+	TypeEquals<T, float>::_ || TypeEquals<T, double>::_ || TypeEquals<T, real>::_
+> {};
+
+template<typename T> struct IsSignedType: TypeFromValue<bool,
+	IsSignedIntegralType<T>::_ || IsFloatType<T>::_
+> {};
+
+template<typename T> struct IsCharTypeExactly: TypeFromValue<bool,
+	TypeEquals<T, char>::_ || TypeEquals<T, wchar>::_ || TypeEquals<T, dchar>::_ || TypeEquals<T, wchar_t>::_
+> {};
+
+template<typename T> struct IsCharType: IsCharTypeExactly<RemoveConstVolatile<T>> {};
+
+namespace detail {
+
+template<typename T> struct is_pointer_helper: TypeFromValue<bool, false> {};
+template<typename T> struct is_pointer_helper<T*>: TypeFromValue<bool, true> {};
+
+}
+template<typename T> struct IsPointerType: detail::is_pointer_helper<RemoveConstVolatile<T>> {};
+
+namespace detail {
+
+template<typename T> struct is_member_pointer_helper: TypeFromValue<bool, false> {};
+template<class T, class U> struct is_member_pointer_helper<T U::*>: TypeFromValue<bool, true> {};
+
+}
+template<typename T> struct IsMemberPointerType: detail::is_member_pointer_helper<RemoveConstVolatile<T>> {};
+
+template<typename T> struct IsArithmeticType: TypeFromValue<bool,
+	TypeEquals<RemoveConstRef<T>, bool>::_ ||
+	IsCharType<RemoveConstRef<T>>::_ ||
+	IsIntegralType<RemoveConstRef<T>>::_ ||
+	IsFloatType<RemoveConstRef<T>>::_
+> {};
+
+
+
+
+
+
+namespace detail {
+
+template<typename T> struct RemoveAllExtents {typedef T type;};
+template<typename T> struct RemoveAllExtents<T[]>
+{
+	typedef typename RemoveAllExtents<T>::type type;
+};
+ 
+template<typename T, size_t N> struct RemoveAllExtents<T[N]>
+{
+	typedef typename RemoveAllExtents<T>::type type;
+};
+
+}
+
+template<typename T> using RemoveAllExtents = typename detail::RemoveAllExtents<T>::type;
+
+
+template<typename T> struct IsPod: TypeFromValue<bool, __is_pod(T)> {};
+template<typename T> struct IsAbstractClass: TypeFromValue<bool, __is_abstract(T)> {};
+template<typename T> struct IsUnion: TypeFromValue<bool, __is_union(T)> {};
+template<typename T> struct IsClass: TypeFromValue<bool, __is_class(T)> {};
+template<typename T> struct IsEnumType: TypeFromValue<bool, __is_enum(T)> {};
+template<typename T> struct IsEmptyClass: TypeFromValue<bool, __is_empty(T)> {};
+template<typename T> struct IsTriviallyDestructible: TypeFromValue<bool, __has_trivial_destructor(T)> {};
+template<class T, class From> struct IsInherited: TypeFromValue<bool, IsClass<T>::_ && __is_base_of(From, T)> {};
+
+
+template<typename T> struct IsScalarType: TypeFromValue<bool,
+	IsArithmeticType<T>::_ ||
+	IsPointerType<T>::_ ||
+	IsEnumType<T>::_ ||
+	IsMemberPointerType<T>::_ ||
+	TypeEquals<RemoveConstRef<T>, null_t>::_
+> {};
+
+
+#ifdef _MSC_VER
+
+template<typename T> struct IsDestructible: TypeFromValue<bool, __is_destructible(T)> {};
+
+#else
+
+namespace detail {
+
+struct do_is_destructible_impl
+{
+	template<typename T, typename = decltype(Val<T&>().~T())>
+	static TypeFromValue<bool, true> test(int);
+
+	template<typename> static TypeFromValue<bool, false> test(...);
+};
+
+template<typename T> struct is_destructible_impl: do_is_destructible_impl
+{
+	typedef decltype(test<T>(0)) type;
+};
+
+template<typename T,
+	bool = TypeEquals<T, void>::_ || (Extent<T>::_>0) || IsFunction<T>::_,
+	bool = IsReference<T>::_ || IsScalarType<T>::_>
+struct is_destructible_safe;
+
+template<typename T> struct is_destructible_safe<T, false, false>: is_destructible_impl<RemoveAllExtents<T>>::type {};
+template<typename T> struct is_destructible_safe<T, true, false>: TypeFromValue<bool, false> { };
+
+}
+
+template<typename T> struct IsDestructible: detail::is_destructible_safe<T> {};
+
+
+#endif
+
+
+namespace detail {
+
+struct do_is_static_castable_impl
+{
+	template<typename SRC, typename DST, typename = decltype(static_cast<DST>(Val<SRC>()))> static TypeFromValue<bool, true> test(int);
+    template<typename, typename> static Meta::TypeFromValue<bool, false> test(...);
+};
+
+template<typename SRC, typename DST> struct is_static_castable_impl: do_is_static_castable_impl
+{
+      typedef decltype(test<SRC, DST>(0)) type;
+};
+
+}
+
+template<typename SRC, typename DST> struct IsStaticCastable: detail::is_static_castable_impl<SRC, DST>::type {};
+
+#ifdef _MSC_VER
+template<typename T, typename... Args> struct IsConstructible: TypeFromValue<bool, __is_constructible(T, Args...)> {};
+template<typename T> struct IsDefaultConstructible: IsConstructible<T> {};
+#else
+
+namespace detail {
+
+struct do_is_default_constructible_impl
+{
+	template<typename _Tp, typename = decltype(_Tp())>
+	static TypeFromValue<bool, true> test(int);
+	template<typename> static TypeFromValue<bool, false> test(...);
+};
+
+template<typename T> struct is_default_constructible_impl: do_is_default_constructible_impl
+{
+	typedef decltype(test<T>(0)) type;
+};
+
+template<typename T> struct is_default_constructible_atom: TypeFromValue<bool,
+	!TypeEquals<T, void>::_ && is_default_constructible_impl<T>::type::_
+> {};
+
+template<typename T, bool = IsArrayType<T>::_> struct is_default_constructible_safe;
+
+template<typename T> struct is_default_constructible_safe<T, true>: TypeFromValue<bool,
+	(Extent<T>::_>0) && is_default_constructible_atom<RemoveAllExtents<T>>::_
+> {};
+
+template<typename T> struct is_default_constructible_safe<T, false>: is_default_constructible_atom<T> {};
+
+}
+
+template<typename T> struct IsDefaultConstructible: detail::is_default_constructible_safe<T> {};
+
+namespace detail {
+
+struct do_is_direct_constructible_impl
+{
+	template<typename T, typename Arg, typename = decltype(::new T(Val<Arg>()))> static TypeFromValue<bool, true> test(int);
+	template<typename, typename> static TypeFromValue<bool, false> test(...);
+};
+
+template<typename T, typename Arg> struct is_direct_constructible_impl: do_is_direct_constructible_impl
+{
+	typedef decltype(test<T, Arg>(0)) type;
+};
+
+template<typename T, typename Arg> struct is_direct_constructible_new_safe: Meta::TypeFromValue<bool,
+	IsDestructible<T>::_ && is_direct_constructible_impl<T, Arg>::type::_
+> {};
+
+template<typename SRC, typename DST, bool = !TypeEquals<SRC, void>::_ && !IsFunction<SRC>::_> struct is_base_to_derived_ref {};
+
+template<typename SRC, typename DST> struct is_base_to_derived_ref<SRC, DST, true>
+{
+	typedef RemoveConstVolatile<RemoveReference<SRC>> src_t;
+	typedef RemoveConstVolatile<RemoveReference<DST>> dst_t;
+	enum: bool {_ = !TypeEquals<src_t, dst_t>::_ && IsInherited<dst_t, src_t>::_};
+};
+
+template<typename SRC, typename DST> struct is_base_to_derived_ref<SRC, DST, false>: TypeFromValue<bool, false> {};
+
+template<typename SRC, typename DST, bool = IsLValueReference<SRC>::_ && IsRValueReference<DST>::_> struct is_lvalue_to_rvalue_ref;
+
+template<typename SRC, typename DST> struct is_lvalue_to_rvalue_ref<SRC, DST, true>
+{
+	typedef RemoveConstVolatile<RemoveReference<SRC>> src_t;
+	typedef RemoveConstVolatile<RemoveReference<DST>> dst_t;
+	enum: bool {_ = !IsFunction<src_t>::_ && TypeEquals<src_t, dst_t>::_ || IsInherited<src_t, dst_t>::_};
+};
+
+template<typename SRC, typename DST> struct is_lvalue_to_rvalue_ref<SRC, DST, false>: TypeFromValue<bool, false> {};
+
+
+
+template<typename T, typename Arg> struct is_direct_constructible_ref_cast: TypeFromValue<bool,
+	IsStaticCastable<Arg, T>::_ && !is_base_to_derived_ref<Arg, T>::_ && !is_lvalue_to_rvalue_ref<Arg, T>::_
+> {};
+
+template<typename T, typename Arg> struct is_direct_constructible:
+	Meta::SelectType<
+		is_direct_constructible_ref_cast<T, Arg>,
+		is_direct_constructible_new_safe<T, Arg>,
+		IsReference<T>::_
+> {};
+
+
+struct do_is_nary_constructible_impl
+{
+	template<typename T, typename... Args, typename = decltype(T(Val<Args>()...))>
+	static TypeFromValue<bool, true> test(int);
+
+	template<typename, typename...> static TypeFromValue<bool, false> test(...);
+};
+
+template<typename T, typename... Args> struct is_nary_constructible_impl: do_is_nary_constructible_impl
+{
+	typedef decltype(test<T, Args...>(0)) type;
+};
+
+template<typename T, typename... Args> struct is_nary_constructible: is_nary_constructible_impl<T, Args...>::type
+{
+	static_assert(sizeof...(Args)>1, "Only useful for > 1 arguments");
+};
+
+template<typename T, typename... Args> struct is_constructible_impl: is_nary_constructible<T, Args...> {};
+
+template<typename T, typename Arg> struct is_constructible_impl<T, Arg>: is_direct_constructible<T, Arg> {};
+template<typename T> struct is_constructible_impl<T>: IsDefaultConstructible<T> {};
+
+
+
+}
+
+template<typename T, typename... Args> struct IsConstructible: detail::is_constructible_impl<T, Args...> {};
+
+
+
+#endif
+
+
+
+
+#if defined(_MSC_VER)
+template<typename T, typename... Args> struct IsTriviallyConstructible: TypeFromValue<bool, __is_trivially_constructible(T, Args...)> {};
+#else
+template<typename T, typename... Args> struct IsTriviallyConstructible: TypeFromValue<bool, __has_trivial_copy(T)> {};
+#endif
+
+template<typename T> struct IsCopyConstructible: IsConstructible<T, const T&> {};
+template<typename T> struct IsMoveConstructible: IsConstructible<T, AddRValueReference<T>> {};
+
+template<typename T> struct IsTriviallyCopyConstructible: IsTriviallyConstructible<T, AddLValueReference<AddConst<T>>> {};
+template<typename T> struct IsTriviallyDefaultConstructible: IsTriviallyConstructible<T> {};
+template<typename T> struct IsTriviallyMoveConstructible: IsTriviallyConstructible<T, AddRValueReference<T>> {};
 
 template<typename T, typename... Args> struct IsCallable
 {
-	template<typename T> struct dummy;
+	template<typename T1> struct dummy;
 
 	template<typename CheckType> static short check(dummy<decltype(
 		Val<CheckType>()(Val<Args>()...))>*);
@@ -113,7 +416,7 @@ template<typename T, typename... Args> struct IsCallable
 template<typename T, typename... Args> using ResultOf = decltype(Val<T>()(Meta::Val<Args>()...));
 
 
-#if defined(__clang__) || defined(_MSC_VER) && _MSC_VER<=1800
+#if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) && _MSC_VER<=1800
 namespace detail
 {
 
@@ -133,32 +436,35 @@ template<typename To, typename From> struct IsAssignable: Meta::detail::_Is_assi
 template<typename To, typename From> struct IsAssignable: TypeFromValue<bool, __is_assignable(To, From)> {};
 #endif
 
+#ifdef _MSC_VER
 template<typename To, typename From> struct IsTriviallyAssignable: TypeFromValue<bool, __is_trivially_assignable(To, From)> {};
+template<typename T> struct IsTriviallyCopyAssignable: IsTriviallyAssignable<AddLValueReference<T>, AddLValueReference<AddConst<T>>> {};
+#else
+template<typename T> struct IsTriviallyCopyAssignable: TypeFromValue<bool, __has_trivial_assign(T)> {};
+#endif
 
 template<typename T> struct IsCopyAssignable: IsAssignable<AddLValueReference<T>, AddLValueReference<AddConst<T>>> {};
 template<typename T> struct IsMoveAssignable: IsAssignable<AddLValueReference<T>, AddRValueReference<T>> {};
 
-template<typename T> struct IsTriviallyCopyAssignable: IsTriviallyAssignable<AddLValueReference<T>, AddLValueReference<AddConst<T>>> {};
-template<typename T> struct IsTriviallyMoveAssignable: IsTriviallyAssignable<AddLValueReference<T>, AddRValueReference<T>> {};
+
+template<typename T> struct IsTriviallyCopyable: TypeFromValue<bool,
+	IsTriviallyCopyConstructible<T>::_ || IsTriviallyCopyAssignable<T>::_> {};
 
 //! Отличается от IsPod тем, что не требует тривиального конструктора по умолчанию.
-template<typename T> struct IsTrivial: TypeFromValue<bool,
+template<typename T> struct IsAlmostPod: TypeFromValue<bool,
 	IsTriviallyCopyable<T>::_ &&
 	IsTriviallyDestructible<T>::_
 > {};
 
-//! Отличается от IsTrivial тем, что для классов и структур, содержащих указатели, он будет переопределяться на false.
-template<typename T> struct IsTriviallySerializable: IsTrivial<T> {};
-
-
-template<class T, class From> struct IsInherited: TypeFromValue<bool, IsClass<T>::_ && __is_base_of(From, T)> {};
+//! Отличается от IsAlmostPod тем, что для классов и структур, содержащих указатели, он будет переопределяться на false.
+template<typename T> struct IsTriviallySerializable: IsAlmostPod<T> {};
 
 //template<template<typename> F, typename T, typename... Args> struct ForeachType;
 //template<template<typename> F, typename T, typename H, typename... Args> struct ForeachType;
 
 
 template<typename T> struct IsTriviallyMovable: TypeFromValue<bool,
-	IsTriviallyCopyable<T>::_ || IsTriviallyMoveConstructible<T>::_ || IsTriviallyMoveAssignable<T>::_> {};
+	IsTriviallyCopyable<T>::_ || IsTriviallyMoveConstructible<T>::_ || IsTriviallyCopyAssignable<T>::_> {};
 
 template<typename T> struct IsTriviallyRelocatable: IsTriviallyMovable<T> {};
 
@@ -224,75 +530,39 @@ template<typename U1 default1, typename U2 default2> struct checker_name\
 DEFINE_EXPRESSION_CHECKER2(HasIndexOperator, Val<T1>()[Val<T2>()], , = size_t);
 
 
-template<typename T1, typename T2> struct TypeEquals: TypeFromValue<bool, false> {};
-template<typename T> struct TypeEquals<T, T>: TypeFromValue<bool, true> {};
-
 template<typename T1, typename T2> struct TypeEqualsIgnoreCV: TypeEquals<RemoveConstVolatile<T1>, RemoveConstVolatile<T2>> {};
 template<typename T1, typename T2> struct TypeEqualsIgnoreCVRef: TypeEqualsIgnoreCV<RemoveReference<T1>, RemoveReference<T2>> {};
 
-template<typename T> struct IsUnsignedIntegralType: TypeFromValue<bool,
-    TypeEquals<T, byte>::_ || TypeEquals<T, ushort>::_ || TypeEquals<T, uint>::_ ||
-	TypeEquals<T, ulong64>::_ || TypeEquals<T, unsigned long>::_
-> {};
 
-template<typename T> struct IsSignedIntegralType: TypeFromValue<bool,
-    TypeEquals<T, sbyte>::_ || TypeEquals<T, short>::_ ||
-	TypeEquals<T, int>::_ || TypeEquals<T, long>::_ || TypeEquals<T, long64>::_
-> {};
-
-template<typename T> struct IsIntegralType: TypeFromValue<bool,
-	IsUnsignedIntegralType<T>::_ || IsSignedIntegralType<T>::_
-> {};
-
-template<typename T> struct IsFloatType: TypeFromValue<bool,
-	TypeEquals<T, float>::_ || TypeEquals<T, double>::_ || TypeEquals<T, real>::_
-> {};
-
-template<typename T> struct IsSignedType: TypeFromValue<bool,
-	IsSignedIntegralType<T>::_ || IsFloatType<T>::_
-> {};
-
-template<typename T> struct IsCharTypeExactly: TypeFromValue<bool,
-	TypeEquals<T, char>::_ || TypeEquals<T, wchar>::_ || TypeEquals<T, dchar>::_ || TypeEquals<T, wchar_t>::_
-> {};
-
-template<typename T> struct IsCharType: IsCharTypeExactly<RemoveConstVolatile<T>> {};
-
-template<typename T> struct IsPointerType: TypeFromValue<bool, false> {};
-template<typename T> struct IsPointerType<T*>: TypeFromValue<bool, true> {};
-
-template<typename T> struct IsFundamentalType: TypeFromValue<bool,
-	TypeEquals<RemoveConstRef<T>, bool>::_ ||
-	IsCharType<RemoveConstRef<T>>::_ ||
-	IsIntegralType<RemoveConstRef<T>>::_ ||
-	IsFloatType<RemoveConstRef<T>>::_ ||
-	IsPointerType<RemoveConstRef<T>>::_
-> {};
-
-namespace detail
-{
-template<typename IfTrue, typename IfFalse, bool COND> struct SelectType {typedef IfTrue _;};
-template<typename IfTrue, typename IfFalse> struct SelectType<IfTrue, IfFalse, false> {typedef IfFalse _;};
-}
-
-template<typename IfTrue, typename IfFalse, bool COND>
-using SelectType = typename Meta::detail::SelectType<IfTrue, IfFalse, COND>::_;
-
+#ifdef _MSC_VER
+template<typename SRC, typename DST> struct IsConvertible: TypeFromValue<bool, __is_convertible_to(SRC, DST)> {};
+#else
 
 namespace detail {
-template<typename T> struct Decay
+
+template<typename SRC, typename DST,
+	bool = TypeEquals<SRC, void>::_ || IsFunction<DST>::_ || IsArrayType<DST>::_>
+	struct IsConvertible: Meta::TypeEquals<DST, void> {};
+
+
+template<typename SRC, typename DST> struct IsConvertible<SRC, DST, false>
 {
-	typedef Meta::RemoveReference<T> T1;
-	typedef Meta::SelectType<
-		Meta::RemoveExtent<T1>*,
-		Meta::SelectType<
-		    Meta::AddPointer<T1>,
-		    Meta::RemoveConstVolatile<T1>,
-		    Meta::IsFunction<T1>::_>,
-		Meta::IsArray<T1>::_> _;
+	template<typename DST1> static void test_aux(DST1);
+
+	template<typename SRC1, typename DST1>
+	static decltype(test_aux<DST1>(Val<SRC1>()), char()) test(int);
+
+	template<typename, typename> static short test(...);
+
+public:
+	enum: bool {_=sizeof(test<SRC, DST>(0))==1};
 };
+
 }
-template<typename T> using Decay = typename Meta::detail::Decay<T>::_;
+template<typename SRC, typename DST> struct IsConvertible: detail::IsConvertible<SRC, DST> {};
+
+
+#endif
 
 
 
@@ -434,9 +704,6 @@ namespace detail
 	template<typename T, typename F> struct GetMemberFieldType<F T::*> {typedef F _;};
 }
 template<typename T> using GetMemberFieldType = typename Meta::detail::GetMemberFieldType<T>::_;
-
-template<typename T> struct IsArrayType: TypeFromValue<bool, false> {};
-template<typename T, size_t N> struct IsArrayType<T[N]>: TypeFromValue<bool, true> {};
 
 
 namespace detail

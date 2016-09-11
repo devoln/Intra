@@ -17,10 +17,10 @@ struct MusicNote
 	operator NoteType() const {return Note;}
 	bool operator==(const MusicNote& rhs) const {return Octave==rhs.Octave && Note==rhs.Note && Duration==rhs.Duration;}
 	bool operator!=(const MusicNote& rhs) const {return !operator==(rhs);}
-	bool operator==(null_t) const {return Duration==0 || Octave!=255 && (Octave>=8 || Note>=12);}
+	bool operator==(null_t) const {return Duration==0 || (Octave!=255 && (Octave>=8 || Note>=12));}
 	bool operator!=(null_t) const {return !operator==(null);}
 
-	float Frequency() const {return BasicFrequencies[Note]*(1 << Octave);}
+	float Frequency() const {return BasicFrequencies[Note]*float(1 << Octave);}
 	float AbsDuration(float tempo) const {return Duration*tempo/2048;}
 
 	byte Octave; //0 - субконтроктава, дальше по порядку. Если Octave==255, то это не нота, а пауза
@@ -91,7 +91,7 @@ struct Music
 
 
 
-#ifndef NO_MUSIC_LOADER
+#ifndef INTRA_NO_MUSIC_LOADER
 
 class MusicSoundSampleSource: public ASoundSampleSource
 {

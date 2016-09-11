@@ -32,7 +32,7 @@ MusicNote MusicTrack::operator[](uint index) const
 		result.Note = MusicNote::NoteType(result.Note-12);
 		result.Octave++;
 	}
-	result.Octave += byte(ToneOffset/12);
+	result.Octave = byte(result.Octave + ToneOffset/12);
 	return result;
 }
 
@@ -78,7 +78,7 @@ SoundBuffer Music::GetSamples(uint sampleRate) const
 
 
 
-#ifndef NO_MUSIC_LOADER
+#ifndef INTRA_NO_MUSIC_LOADER
 
 
 MusicSoundSampleSource::MusicSoundSampleSource(const Music& mydata, uint sampleRate):
@@ -184,7 +184,7 @@ size_t MusicSoundSampleSource::GetUninterleavedSamples(ArrayRange<const ArrayRan
 Array<const void*> MusicSoundSampleSource::GetRawSamplesData(size_t maxSamplesToRead,
 	ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
 {
-	maxSamplesToRead;
+	(void)maxSamplesToRead;
 	if(outType!=null) *outType=ValueType::Void;
 	if(outInterleaved!=null) *outInterleaved=false;
 	if(outSamplesRead!=null) *outSamplesRead=0;

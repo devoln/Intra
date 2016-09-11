@@ -8,17 +8,27 @@
 
 namespace Intra { namespace IO {
 
+struct FontDesc
+{
+	Math::Vec3 Color;
+	float Size;
+	bool Bold, Italic, Underline, Strike;
+
+	bool operator==(const FontDesc& rhs) const
+	{
+		return Color==rhs.Color && Size==rhs.Size &&
+			Bold==rhs.Bold && Italic==rhs.Italic &&
+			Underline==rhs.Underline && Strike==rhs.Strike;
+	}
+
+	bool operator!=(const FontDesc& rhs) const {return !operator==(rhs);}
+};
+
 class IDocumentWriter: public IOutputStream
 {
 public:
-	virtual void PushFont(Math::Vec3 color={0,0,0}, float size=3) = 0;
+	virtual void PushFont(Math::Vec3 color={0,0,0}, float size=3, bool bold=false, bool italic=false, bool underline=false) = 0;
 	virtual void PopFont() = 0;
-	virtual void PushUnderline() = 0;
-	virtual void PopUnderline() = 0;
-	virtual void PushBold() = 0;
-	virtual void PopBold() = 0;
-	virtual void PushItalic() = 0;
-	virtual void PopItalic() = 0;
 	virtual void BeginSpoiler(StringView show="Show", StringView hide="Hide") = 0;
 	virtual void EndSpoiler() = 0;
 	virtual void EndAllSpoilers() = 0;
@@ -28,31 +38,66 @@ public:
 	virtual void PushStyle(StringView style) = 0;
 	virtual void PopStyle() = 0;
 
+	virtual FontDesc GetCurrentFont() const = 0;
+
 	void PrintCode(StringView code) {BeginCode(); Print(code); EndCode();}
 };
 
-class HtmlWriter: public IDocumentWriter
+class DocumentWriterBase: public IDocumentWriter
 {
+protected:
 	IOutputStream* my_s;
 	size_t spoiler_nesting;
+	Array<FontDesc> font_stack;
 public:
-	HtmlWriter(IOutputStream* s): my_s(s), spoiler_nesting(0) {}
+	DocumentWriterBase(IOutputStream* s) {my_s=s;}
 	void WriteData(const void* data, size_t bytes) override {my_s->WriteData(data, bytes);}
-		
-	void PushFont(Math::Vec3 color={0,0,0}, float size=3) override
-	{
-		const auto c = Math::USVec3(Math::Min(color*255.0f, 255.0f));
-		String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
-		RawPrint("<font color="+colstr+" size="+ToString(size)+">");
-	}
-	void PopFont() override {RawPrint("</font>");}
 
-	void PushUnderline() override {RawPrint("<ins>");}
-	void PopUnderline() override {RawPrint("</ins>");}
-	void PushBold() override {RawPrint("<b>");}
-	void PopBold() override {RawPrint("</b>");}
-	void PushItalic() override {RawPrint("<i>");}
-	void PopItalic() override {RawPrint("</i>");}
+	void PushFont(Math::Vec3 color={1,1,1}, float size=3, bool bold=false, bool italic=false, bool underline=false) override
+	{
+		font_stack.AddLast({color, size, bold, italic, underline, false});
+	}
+
+	void PopFont() override
+	{
+		font_stack.RemoveLast();
+	}
+
+	FontDesc GetCurrentFont() const override
+	{
+		if(font_stack.Empty()) return {{0,0,0}, 0, false, false, false, false};
+		return font_stack.Last();
+	}
+
+	void PushStyle(StringView) override {}
+	void PopStyle() override {}
+
+	void BeginSpoiler(StringView show="Show", StringView hide="Hide") override
+	{
+		(void)show; (void)hide;
+		spoiler_nesting++;
+	}
+
+	void EndSpoiler() override {INTRA_ASSERT(spoiler_nesting!=0); spoiler_nesting--;}
+	void EndAllSpoilers() override {while(spoiler_nesting!=0) EndSpoiler();}
+
+	void BeginCode() override {}
+	void EndCode() override   {}
+
+	void Print(StringView s) override {RawPrint(s);}
+
+protected:
+	~DocumentWriterBase() {}
+};
+
+class HtmlWriter: public DocumentWriterBase
+{
+public:
+	HtmlWriter(IOutputStream* s): DocumentWriterBase(s) {}
+	void WriteData(const void* data, size_t bytes) override {my_s->WriteData(data, bytes);}
+	
+	void PushFont(Math::Vec3 color={0,0,0}, float size=3, bool bold=false, bool italic=false, bool underline=false) override;
+	void PopFont() override;
 
 	void PushStyle(StringView style) override {RawPrint(StringView("<span class='") + style + "'>");}
 	void PopStyle() override {RawPrint("</span>");}
@@ -66,12 +111,9 @@ public:
 
 	void EndSpoiler() override
 	{
-		INTRA_ASSERT(spoiler_nesting>0);
-		spoiler_nesting--;
+		DocumentWriterBase::EndSpoiler();
 		RawPrint("\n</blockquote></div></div>\n");
 	}
-
-	void EndAllSpoilers() override {while(spoiler_nesting!=0) EndSpoiler();}
 
 	void BeginCode() override {RawPrint("\n<pre>\n");}
 	void EndCode() override {RawPrint("\n</pre>\n");}
@@ -91,30 +133,14 @@ public:
 	static const char* const CssLoggerCode;
 };
 
-class PlainTextWriter: public IDocumentWriter
+class PlainTextWriter: public DocumentWriterBase
 {
-	IOutputStream* my_s;
-	size_t spoiler_nesting;
 public:
-	PlainTextWriter(IOutputStream* s) {my_s=s;}
-	void WriteData(const void* data, size_t bytes) override {my_s->WriteData(data, bytes);}
-
-	void PushFont(Math::Vec3={}, float=3) override {}
-	void PopFont() override {}
-
-	void PushUnderline() override {}
-	void PopUnderline() override {}
-	void PushBold() override {}
-	void PopBold() override {}
-	void PushItalic() override {}
-	void PopItalic() override {}
-
-	void PushStyle(StringView) override {}
-	void PopStyle() override {}
+	PlainTextWriter(IOutputStream* s): DocumentWriterBase(s) {}
 
 	void BeginSpoiler(StringView show="Show", StringView=null) override
 	{
-		spoiler_nesting++;
+		DocumentWriterBase::BeginSpoiler(show, null);
 		PrintLine();
 		RawPrint(show);
 		PrintLine();
@@ -124,11 +150,9 @@ public:
 
 	void EndSpoiler() override
 	{
-		INTRA_ASSERT(spoiler_nesting!=0);
-		spoiler_nesting--;
+		DocumentWriterBase::EndSpoiler();
 		*this << endl << "}" << endl;
 	}
-	void EndAllSpoilers() override {while(spoiler_nesting!=0) EndSpoiler();}
 
 	void BeginCode() override {PrintLine(endl, "___________________");}
 	void EndCode() override   {PrintLine(endl, "___________________");}
@@ -138,15 +162,18 @@ public:
 
 class ConsoleTextWriter: public PlainTextWriter
 {
-	Array<Math::Vec3> colorStack;
-	bool underline;
 public:
-	ConsoleTextWriter(IOutputStream* s): PlainTextWriter(s), underline(false) {}
+	ConsoleTextWriter(IOutputStream* s): PlainTextWriter(s) {}
 
-	void PushFont(Math::Vec3 color={}, float size=3) override;
+	void PushFont(Math::Vec3 color={1,1,1}, float size=3, bool bold=false, bool italic=false, bool underline=false) override;
 	void PopFont() override;
-	void PushUnderline() override;
-	void PopUnderline() override;
+	
+	FontDesc GetCurrentFont() const override
+	{
+		if(font_stack.Empty()) return {{0.499f,0.499f,0.499f}, 3, false, false, false, false};
+		return font_stack.Last();
+	}
+
 };
 
 }}

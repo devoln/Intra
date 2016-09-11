@@ -51,14 +51,20 @@ template<typename T> struct BListRange:
 {
 	typedef T& return_value_type;
 
+#ifdef _MSC_VER
 #pragma warning(push, 0)
+#endif
+
 	struct Node
 	{
 		Node* Prev;
 		Node* Next;
 		T Value;
 	};
+
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 
 	forceinline BListRange(null_t=null): FirstNode(null), LastNode(null) {}
 	forceinline BListRange(Node* first, Node* last): FirstNode(first), LastNode(last) {}
@@ -106,22 +112,22 @@ private:
 	Node* LastNode;
 };
 
-template<typename T, typename Allocator> class BList:
-	public Memory::AllocatorRef<Allocator>
+template<typename T, typename AllocatorType> class BList:
+	public Memory::AllocatorRef<AllocatorType>
 {
-	typedef Memory::AllocatorRef<Allocator> AllocatorRef;
+	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
 public:
 	typedef T value_type;
-	typedef Allocator Allocator;
+	typedef AllocatorType Allocator;
 	typedef Range::ForwardRangeIterator<BListRange<T>> iterator;
 	typedef Range::ForwardRangeIterator<BListRange<const T>> const_iterator;
 	typedef typename BListRange<T>::Node Node;
 
 
-	forceinline BList(null_t=null): count(0), range(null) {}
+	forceinline BList(null_t=null): range(null), count(0) {}
 
 	forceinline BList(Allocator& allocator):
-		AllocatorRef(allocator), count(0), range(null) {}
+		AllocatorRef(allocator), range(null), count(0) {}
 
 	forceinline BList(BList&& rhs):
 		AllocatorRef(rhs), range(rhs.range), count(rhs.count)

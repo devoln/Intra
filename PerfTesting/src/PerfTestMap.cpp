@@ -1,6 +1,8 @@
 ﻿#include "PerfTestMap.h"
 
+#ifndef INTRA_STL_INTERFACE
 #define INTRA_STL_INTERFACE
+#endif
 
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
@@ -120,7 +122,6 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 void RunMapPerfTests(IO::Logger& logger)
 {
 	static const StringView comparedContainers[] = {"std::map", "std::unordered_map", "LinearMap", "HashMap"};
-	static const StringView comparedContainersWithoutLinear[] = {"std::map", "std::unordered_map", "HashMap"};
 
 	if(TestGroup gr{logger, "Заполнение случайными ключами uint и значениями uint"})
 	{

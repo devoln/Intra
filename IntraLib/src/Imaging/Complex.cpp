@@ -2,7 +2,9 @@
 #include "Imaging/Image.h"
 #include "Containers/Array2D.h"
 
-using namespace math;
+#if INTRA_DISABLED
+
+using namespace Math;
 
 
 Image CreateMapImage(cfloat(*mapping)(cfloat z), cfloat(*srcPoint)(vec2 xy),
@@ -31,3 +33,5 @@ Image CreateMapImage(cfloat(*mapping)(cfloat z), cfloat(*srcPoint)(vec2 xy),
 	img.Data = planeW.MoveToByteBuffer();
 	return img;
 }
+
+#endif

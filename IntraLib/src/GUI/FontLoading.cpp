@@ -1,10 +1,16 @@
 ﻿#include "Core/Core.h"
 #include "GUI/FontLoading.h"
 #include "Containers/StringView.h"
+#include "Containers/String.h"
+#include "Math/Vector.h"
 
 
 #if INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Dummy
-namespace Intra { namespace FontLoadingAPI {
+namespace Intra {
+
+using namespace Math;
+
+namespace FontLoadingAPI {
 
 struct Font {};
 
@@ -18,9 +24,9 @@ FontHandle FontCreate(StringView name, uint height, uint* yadvance)
 
 FontHandle FontCreateFromMemory(const void* data, size_t length, uint height, uint* yadvance)
 {
-	(void)(data, length, height);
+	(void)data; (void)length; (void)height;
 	if(yadvance) *yadvance=1;
-	static detail::Font font;
+	static Font font;
 	return &font;
 }
 
@@ -28,7 +34,7 @@ void FontDelete(FontHandle font) {(void)font;}
 
 const byte* FontGetCharBitmap(FontHandle font, int code, Math::SVec2* offset, Math::USVec2* size)
 {
-	(void)(font, code);
+	(void)font; (void)code;
 	*offset = {0, 0};
 	*size = {1, 1};
 	static const byte whitePixel=255;
@@ -37,20 +43,20 @@ const byte* FontGetCharBitmap(FontHandle font, int code, Math::SVec2* offset, Ma
 
 void FontGetCharMetrics(FontHandle font, int code, short* xadvance, short* leftSideBearing)
 {
-	(void)(font, code);
+	(void)font; (void)code;
 	if(leftSideBearing!=null) *leftSideBearing = 1;
 	if(xadvance!=null) *xadvance = 1;
 }
 
 short FontGetKerning(FontHandle font, int left, int right)
 {
-	(void)(font, left, right);
+	(void)font; (void)left; (void)right;
 	return 0;
 }
 
 }
 
-}}
+}
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_STB)
 
@@ -59,9 +65,13 @@ short FontGetKerning(FontHandle font, int left, int right)
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_FreeType)
 
 #include <ft2build.h>
-#include <freetype/freetype.h>
+#include <freetype.h>
 
-namespace Intra { namespace FontLoadingAPI {
+namespace Intra {
+
+using namespace Math;
+
+namespace FontLoadingAPI {
 
 static FT_Library ft=null;
 
@@ -76,7 +86,7 @@ struct Font
 FontHandle FontCreate(StringView name, ushort height)
 {
 	if(ft==null) FT_Init_FreeType(&ft);
-	FontHandle desc = new detail::Font;
+	FontHandle desc = new Font;
 	desc->dataCopy = null;
 	if(FT_New_Face(ft, String(name).CStr(), 0, &desc->face)!=0) return null;
 	FT_Set_Pixel_Sizes(desc->face, height, height);
@@ -86,8 +96,9 @@ FontHandle FontCreate(StringView name, ushort height)
 FontHandle FontCreateFromMemory(const void* data, size_t length, ushort height)
 {
 	if(ft==null) FT_Init_FreeType(&ft);
-	FontHandle desc = new detail::Font;
-	desc->dataCopy = Memory::Allocate(length);
+	FontHandle desc = new Font;
+	size_t bytesToAllocate = length;
+	desc->dataCopy = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	core::memcpy(desc->dataCopy, data, length);
 	FT_New_Memory_Face(ft, (const FT_Byte*)desc->dataCopy, length, 0, &desc->face);
 	FT_Set_Pixel_Sizes(desc->face, height, height);
@@ -98,7 +109,7 @@ void FontDelete(FontHandle font)
 {
 	if(font==null) return;
 	FT_Done_Face(font->face);
-	Memory::Free(font->dataCopy);
+	Memory::GlobalHeap.Free(font->dataCopy);
 	delete font;
 }
 

@@ -1,13 +1,13 @@
 ﻿#include "Core/Core.h"
 
-#if(PLATFORM_OS==PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
 #include "IO/Networking.h"
 #include <emscripten.h>
 
 namespace IO {
 
-ByteBuffer DownloadFile(StringView path)
+Array<byte> DownloadFile(StringView path)
 {
 	size_t dataSize;
 	auto data = (void*)EM_ASM_INT({

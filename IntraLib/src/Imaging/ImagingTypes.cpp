@@ -342,15 +342,15 @@ byte ImageFormat::BitsPerComponent() const
 
 byte ImageFormat::ComponentCount() const
 {
-	auto info=get_format_info(*this);
-	return (byte)(info.Type==0? 0: info.ComponentCount+1);
+	auto info = get_format_info(*this);
+	return byte(info.Type==0? 0: info.ComponentCount+1);
 }
 
 bool ImageFormat::IsValid() const
 {
-	return (value>=FirstOfUncompressed && value<EndOfUncompressed ||
-		value>=FirstOfCompressed && value<EndOfCompressed ||
-		value>=FirstOfBasic && value<EndOfBasic);
+	return ((value>=FirstOfUncompressed && value<EndOfUncompressed) ||
+		(value>=FirstOfCompressed && value<EndOfCompressed) ||
+		(value>=FirstOfBasic && value<EndOfBasic));
 }
 
 bool ImageFormat::IsNormalized() const {return get_format_info(*this).Type==1;}
@@ -358,9 +358,9 @@ bool ImageFormat::IsCompressed() const {return value>=FirstOfCompressed && value
 
 bool ImageFormat::IsCompressedBC1_BC7() const
 {
-	return value>=DXT1_RGB && value<=DXT5_sRGB_A ||
-		value>=RGTC_Red && value<=LATC_SignedLuminanceAlpha ||
-		value>=BPTC_RGBA && value<=BPTC_RGBuf;
+	return (value>=DXT1_RGB && value<=DXT5_sRGB_A) ||
+		(value>=RGTC_Red && value<=LATC_SignedLuminanceAlpha) ||
+		(value>=BPTC_RGBA && value<=BPTC_RGBuf);
 }
 
 bool ImageFormat::IsFloatingPoint() const {return get_format_info(*this).Type==2;}
@@ -440,8 +440,8 @@ ushort ImageInfo::CalculateMaxMipmapCount() const
 	ushort maxDimension = Max(Size.x, Size.y);
 	if(Type!=ImageType_2DArray) maxDimension = Max(maxDimension, Size.z);
 	const short maxUncompressedLevel = maxDimension==1? 0: Log2i(Max(1u, (uint)maxDimension));
-	short numLevels = maxUncompressedLevel+1;
-	return Max(numLevels, (short)0);
+	ushort numLevels = ushort(maxUncompressedLevel+1);
+	return Max(numLevels, (ushort)0);
 }
 
 USVec3 CalculateMipmapSize(USVec3 size, ImageType type, uint mip)
@@ -468,13 +468,14 @@ USVec3 ImageInfo::CalculateMipmapSize(uint mip) const
 
 size_t ImageInfo::CalculateMipmapDataSize(uint mip, uint lineAlignment) const
 {
-	Math::USVec3 sz=CalculateMipmapSize(mip);
-	const ushort dims=2+(Type==ImageType_3D);
-	uint alignmentBytes=0, bpp=Format.BitsPerPixel();
+	Math::USVec3 sz = CalculateMipmapSize(mip);
+	const ushort dims = 2+(Type==ImageType_3D);
+	uint alignmentBytes = 0;
+	const uint bpp = Format.BitsPerPixel();
 	if(!Format.IsCompressed())
 		alignmentBytes = lineAlignment-1-(sz.x*bpp/8+lineAlignment-1)%lineAlignment;
 	else for(uint k=0; k<dims; k++)
-		if(sz[k]%4!=0) sz[k]=(sz[k]/4+1)*4;
+		if(sz[k]%4!=0) sz[k] = short((sz[k]/4+1)*4);
 	return (sz.x*bpp/8+alignmentBytes)*sz.y*sz.z;
 }
 

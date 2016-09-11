@@ -25,12 +25,13 @@ public:
 	virtual size_t ReadData(void* data, size_t bytes)=0;
 	virtual void UnreadData(const void* data, size_t bytes)=0;
 
-	String ReadToChar(const AsciiSet& stopCharset);
+	String ReadToChar(const AsciiSet& stopCharset, char* oStopChar=null);
 
 	String ReadLine(bool consumeCRLF=true)
 	{
-		String result = ReadToChar("\n\r");
-		if(!consumeCRLF) return result;
+		char stopChar='\0';
+		String result = ReadToChar("\n\r", &stopChar);
+		if(stopChar=='\n' || !consumeCRLF) return result;
 
 		char c = Read<char>();	
 		const bool endOfLineWasFullyConsumed = (c!='\n' && c!='\0');
@@ -254,33 +255,40 @@ extern ConsoleStream Console, ConsoleError;
 class MemoryInputStream: public IInputStream
 {
 public:
-	MemoryInputStream(null_t=null) {pos=data=null; size=0;}
-	MemoryInputStream(const void* memory, size_t length): data((const byte*)memory) {pos=data; size=length;}
+	MemoryInputStream(null_t=null): data(null), rest(null) {}
+	MemoryInputStream(const void* memory, size_t length): data((const byte*)memory), rest((const byte*)memory, length) {}
+	MemoryInputStream(ArrayRange<const byte> memory): data(memory.Begin), rest(memory) {}
 	MemoryInputStream(const MemoryInputStream& rhs) = default;
 
 	size_t ReadData(void* dst, size_t bytes) override final
 	{
-		const auto bytesToRead = Math::Min(bytes, (size_t)(data+size-pos));
+		const auto bytesToRead = Math::Min(bytes, rest.Length());
 		INTRA_ASSERT(bytesToRead<=bytes);
-		core::memcpy(dst, pos, bytesToRead); pos+=bytesToRead;
+		core::memcpy(dst, rest.Begin, bytesToRead);
+		rest.Begin+=bytesToRead;
 		return bytesToRead;
 	}
 
 	void UnreadData(const void* src, size_t bytes) override final
 	{
 		(void)src;
-		INTRA_ASSERT(core::memcmp(pos-bytes, src, bytes)==0);
-		pos-=bytes;
-		INTRA_ASSERT(pos>=data);
+		INTRA_ASSERT(core::memcmp(rest.Begin-bytes, src, bytes)==0);
+		rest.Begin-=bytes;
+		INTRA_ASSERT(rest.Begin>=data);
 	}
-	bool EndOfStream() const override {return pos>=data+size;}
+	bool EndOfStream() const override {return rest.Empty();}
 
-	void SetPos(ulong64 bytes) override final {pos = data+bytes;}
-	ulong64 GetSize() const override final {return size;}
-	ulong64 GetPos() const override final {return ulong64(pos-data);}
+	void SetPos(ulong64 bytes) override final
+	{
+		rest.Begin = data+bytes;
+		if(rest.Begin>rest.End) rest.Begin=rest.End;
+	}
 
-	const byte* data; const byte* pos;
-	size_t size;
+	ulong64 GetSize() const override final {return rest.End-data;}
+	ulong64 GetPos() const override final {return ulong64(rest.Begin-data);}
+
+	const byte* data;
+	ArrayRange<const byte> rest;
 };
 
 }}

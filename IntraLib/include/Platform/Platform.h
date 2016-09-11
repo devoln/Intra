@@ -4,6 +4,6 @@
 
 namespace Intra {
 
-Array<String> GetCommandLineArguments();
+ArrayRange<const StringView> GetCommandLineArguments();
 
 }

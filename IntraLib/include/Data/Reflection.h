@@ -108,7 +108,7 @@ private:
 		{\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD, A, __VA_ARGS__)\
 		};\
-		return fields;\
+		return AsRange(fields);\
 	}\
 	static ArrayRange<const StringView> ReflectionFieldNames()\
 	{\
@@ -116,7 +116,7 @@ private:
 		{\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_NAME, A, __VA_ARGS__)\
 		};\
-		return fieldNames;\
+		return AsRange(fieldNames);\
 	}\
 	static const Data::StructReflection& Reflection()\
 	{\

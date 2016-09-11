@@ -38,12 +38,12 @@ public:
 
 
 	template<typename OR> forceinline Meta::EnableIf<
-		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
-	> CopyAdvanceToAdvance(OR& dst) {PARENT::CopyAdvanceToAdvance(dst);}
+		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_ && !Meta::IsConst<OR>::_
+	> CopyAdvanceToAdvance(OR&& dst) {PARENT::CopyAdvanceToAdvance(dst);}
 
 	template<typename OR> forceinline Meta::EnableIf<
 		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
-	> CopyAdvanceTo(OR& dst) {PARENT::CopyAdvanceTo(dst);}
+	> CopyAdvanceTo(const OR& dst) {PARENT::CopyAdvanceTo(dst);}
 
 	template<typename OR> forceinline Meta::EnableIf<
 		!IsArrayRangeOfExactly<OR, T>::_ && IsOutputRange<OR>::_
@@ -52,16 +52,16 @@ public:
 
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
-	> CopyAdvanceToAdvance(OR& dst, P pred) {PARENT::CopyAdvanceToAdvance(dst, pred);}
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
+	> CopyAdvanceToAdvance(OR&& dst, P pred) {PARENT::CopyAdvanceToAdvance(dst, pred);}
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
 	> CopyAdvanceTo(const OR& dst, P pred) {PARENT::CopyAdvanceTo(dst, pred);}
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
-		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
-	> CopyToAdvance(OR& dst, P pred) const {PARENT::CopyToAdvance(dst, pred);}
+		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
+	> CopyToAdvance(OR&& dst, P pred) const {PARENT::CopyToAdvance(dst, pred);}
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
@@ -78,8 +78,8 @@ public:
 	}
 
 	template<typename DstRange> forceinline Meta::EnableIf<
-		IsArrayRangeOfExactly<DstRange, T>::_
-	> CopyAdvanceToAdvance(DstRange& dst)
+		IsArrayRangeOfExactly<DstRange, T>::_ && !Meta::IsConst<DstRange>::_
+	> CopyAdvanceToAdvance(DstRange&& dst)
 	{
 		me().CopyToAdvance(dst);
 		me().PopFirstExactly(me().Length());
@@ -94,8 +94,8 @@ public:
 	}
 
 	template<typename DstRange> forceinline Meta::EnableIf<
-		IsArrayRangeOfExactly<DstRange, T>::_
-	> CopyToAdvance(DstRange& dst) const
+		IsArrayRangeOfExactly<DstRange, T>::_ && !Meta::IsConst<DstRange>::_
+	> CopyToAdvance(DstRange&& dst) const
 	{
 		me().CopyTo(dst);
 		dst.PopFirstExactly(me().Length());

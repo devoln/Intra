@@ -98,7 +98,7 @@ void RadixSort(ArrayRange<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
 template<typename T, typename ExtractKeyFunc = size_t(*)(T*), size_t RadixLog=8>
 void RadixSort(ArrayRange<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
 {
-	RadixSort(arr.Reinterpret<size_t>(), extractKey);
+	RadixSort(arr.template Reinterpret<size_t>(), extractKey);
 }
 
 //! Пирамидальная сортировка массива array с предикатом сравнения comparer.

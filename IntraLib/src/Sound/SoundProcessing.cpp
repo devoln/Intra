@@ -7,7 +7,7 @@ void DiscreteFourierTransform(ArrayRange<float> outFreqs, ArrayRange<const short
 {
     for(size_t i=0; i<outFreqs.Length(); i++)
     {
-        const float wi = i*(2.0f*float(Math::PI)/samples.Length());
+        const float wi = float(i)*(2.0f*float(Math::PI)/float(samples.Length()));
         const float sii = Math::Sin(wi), coi = Math::Cos(wi);
 
         float co=1, si=0, acco=0, acsi=0;

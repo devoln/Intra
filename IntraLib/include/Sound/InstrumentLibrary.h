@@ -16,7 +16,7 @@ struct MusicalInstruments
 	SynthesizedInstrument Bass1, Bass2, Bass3, ElectricBassFinger;
 	CombinedSynthesizedInstrument ElectricBassPick;
 	SynthesizedInstrument SynthBass1, SynthBass2;
-	SynthesizedInstrument SynthBrass;
+	SynthesizedInstrument SynthBrass, Lead5Charang;
 	SynthesizedInstrument Birds, SynthVoice, SoundTrackFX2;
 	SynthesizedInstrument Pad7Halo, Pad8Sweep, PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble;
 	CombinedSynthesizedInstrument Flute, PanFlute;

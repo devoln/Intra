@@ -28,11 +28,33 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 
 #else
 
+#include <unistd.h>
+#include <sys/sysinfo.h>
+
 namespace Intra {
 
 SystemMemoryInfo SystemMemoryInfo::Get()
 {
-	return {0}
+	SystemMemoryInfo result;
+/*#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
+    result.TotalPhysicalMemory = ulong64(sysconf(_SC_PHYS_PAGES))*sysconf(_SC_PAGE_SIZE);
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_MacOS)
+	ulong64 mem=0;
+	size_t len = sizeof(mem);
+	sysctlbyname("hw.memsize", &result.TotalPhysicalMemory, &len, null, 0);
+#endif*/
+
+	struct sysinfo info;
+	sysinfo(&info);
+
+	result.TotalPhysicalMemory = info.totalram;
+	result.FreePhysicalMemory = info.freeram;
+	result.TotalSwapMemory = info.totalswap;
+	result.FreeSwapMemory = info.freeswap;
+	result.TotalVirtualMemory = result.TotalPhysicalMemory+result.TotalSwapMemory;
+	result.FreeVirtualMemory = result.FreePhysicalMemory+result.FreeSwapMemory;
+
+	return result;
 }
 
 }
@@ -42,6 +64,7 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 
 #if((INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64) && !defined(__clang__) && defined(_MSC_VER))
 #include <intrin.h>
+#pragma comment(lib, "Advapi32.lib")
 
 namespace Intra {
 
@@ -53,6 +76,29 @@ ProcessorInfo ProcessorInfo::Get()
 	__cpuid(cpuInfo+8, 0x80000004u);
 	ProcessorInfo result;
 	result.BrandString = String((const char*)cpuInfo);
+
+	SYSTEM_INFO sysInfo;
+	GetSystemInfo(&sysInfo);
+	result.LogicalProcessorNumber = (ushort)sysInfo.dwNumberOfProcessors;
+//#ifdef INTRA_XP_SUPPORT
+	result.CoreNumber = result.LogicalProcessorNumber;
+/*#else
+	SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX logicalProcInfoEx[16];
+	DWORD bufferLength = 16*sizeof(logicalProcInfoEx);
+	GetLogicalProcessorInformationEx(RelationProcessorPackage, logicalProcInfoEx, &bufferLength);
+	result.CoreNumber = ushort(bufferLength/sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX));
+#endif*/
+	
+	HKEY hKey;
+	long lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey);
+    
+	if(lError==ERROR_SUCCESS)
+	{
+		DWORD dwMHz, size=sizeof(dwMHz);
+		lError = RegQueryValueExA(hKey, "~MHz", null, null, (LPBYTE)&dwMHz, &size);
+		if(lError==ERROR_SUCCESS) result.Frequency = dwMHz*1000000ull;
+	}
+
 	return result;
 }
 
@@ -60,9 +106,29 @@ ProcessorInfo ProcessorInfo::Get()
 
 #else
 
+#include <IO/File.h>
+
 namespace Intra {
 
-ProcessorInfo ProcessorInfo::Get() {return {};}
+ProcessorInfo ProcessorInfo::Get()
+{
+	ProcessorInfo result;
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
+
+	result.BrandString = allCpuInfo().Find(StringView("model name"))
+		.Find(':').Drop(2).ReadUntil('\n');
+
+	result.CoreNumber = allCpuInfo().Find(StringView("cpu cores"))
+		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
+
+	result.LogicalProcessorNumber = result.CoreNumber;
+
+	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("cpu MHz"))
+		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
+#endif
+	return result;
+}
 
 }
 
