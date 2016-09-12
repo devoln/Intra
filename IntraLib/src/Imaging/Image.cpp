@@ -125,7 +125,7 @@ void Image::load(IO::IInputStream* s, uint bytes)
 #else
 		null,
 #endif
-#ifndef NO_KTX_LOADER
+#ifndef INTRA_NO_KTX_LOADER
 		&Image::loadKTX,
 #else
 		null,

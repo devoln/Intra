@@ -44,7 +44,7 @@ ImageInfo pe_get_ktx_info(byte header[64])
 	return GetImageInfoFromHeader(*(KtxHeader*)(header+16));
 }
 
-#ifndef NO_KTX_LOADER
+#ifndef INTRA_NO_KTX_LOADER
 void Image::loadKTX(IInputStream* s, uint bytes)
 {
 	auto startPos=s->GetPos();

@@ -121,7 +121,7 @@ SoundSynthFunction SynthesizedInstrument::CreateMultiSineSynthPass(ArrayRange<co
 	MultiSineParams params;
 	params.len = (byte)harmonics.Length();
 	core::memcpy(params.harmonics, harmonics.Begin, params.len*sizeof(SineHarmonic));
-	return SoundSynthFunction(functionMultiSineSynthPass, MultiSineParams{params});
+	return SoundSynthFunction(functionMultiSineSynthPass, params);
 }
 
 SoundSynthFunction SynthesizedInstrument::CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics)
