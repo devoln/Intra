@@ -116,15 +116,15 @@ ProcessorInfo ProcessorInfo::Get()
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
 
-	result.BrandString = allCpuInfo().Find(StringView("model name"))
+	result.BrandString = allCpuInfo().Find(StringView("\nmodel name"))
 		.Find(':').Drop(2).ReadUntil('\n');
 
-	result.CoreNumber = allCpuInfo().Find(StringView("cpu cores"))
+	result.CoreNumber = allCpuInfo().Find(StringView("\ncpu cores"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
 
-	result.LogicalProcessorNumber = result.CoreNumber;
+	result.LogicalProcessorNumber = (ushort)allCpuInfo().Count(StringView("processor "));
 
-	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("cpu MHz"))
+	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
 #endif
 	return result;

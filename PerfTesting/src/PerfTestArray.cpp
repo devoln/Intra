@@ -280,7 +280,9 @@ template<typename ARR> double TestContainerStringCopying(uint times, uint size)
 
 void RunContainerPerfTests(Logger& logger)
 {
-	//TestContainerMiddleElementRemove<Array<uint>>(1000000);
+	//TestContainerMiddleStringRemove<std::vector<String>>(100000);
+	//TestContainerMiddleStringRemove<std::deque<String>>(100000);
+	TestContainerMiddleStringRemove<Array<String>>(100000);
 
 	StringView comparedArrays[] = {"std::vector", "Array"};
 	StringView comparedContainers[] = {"std::vector", "std::deque", "std::list", "Array", "BList"};

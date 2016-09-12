@@ -116,6 +116,14 @@ SoundSynthFunction SynthesizedInstrument::CreateSineSynthPass(float scale, ushor
 	return SoundSynthFunction(functionSineSynthPass, SineParams{scale, harmonics, freqMultiplyer});
 }
 
+SoundSynthFunction SynthesizedInstrument::CreateMultiSineSynthPass(ArrayRange<const SineHarmonic> harmonics)
+{
+	MultiSineParams params;
+	params.len = (byte)harmonics.Length();
+	core::memcpy(params.harmonics, harmonics.Begin, params.len*sizeof(SineHarmonic));
+	return SoundSynthFunction(functionMultiSineSynthPass, MultiSineParams{params});
+}
+
 SoundSynthFunction SynthesizedInstrument::CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics)
 {
 	SineExpParams params;
@@ -576,16 +584,47 @@ void SynthesizedInstrument::functionSineSynthPass(const SineParams& params,
 	}
 }
 
-void SynthesizedInstrument::functionSineExpSynthPass(const SineExpParams& params,
+void SynthesizedInstrument::functionMultiSineSynthPass(const MultiSineParams& params,
 	float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	auto start = Math::Min<size_t>(Math::Random<ushort>::Global(20), inOutSamples.Length());
+	size_t start = Math::Random<ushort>::Global(20);
+	if(start>inOutSamples.Length()) start=inOutSamples.Length();
 	if(!add) core::memset(inOutSamples.Begin, 0, start*sizeof(float));
 	for(ushort h=0; h<params.len; h++)
 	{
 		auto& harm = params.harmonics[h];
-		sinexp_generate(volume*(float)harm.scale, (float)params.harmonics[h].attenCoeff, freq*(float)harm.freqMultiplyer, sampleRate, inOutSamples(start, $), add || h>0);
+		sine_generate(volume*(float)harm.scale,
+			freq*(float)harm.freqMultiplyer, sampleRate,
+			inOutSamples.Drop(start),
+			add || h>0);
+	}
+}
+
+void SynthesizedInstrument::functionSineExpSynthPass(const SineExpParams& params,
+	float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
+{
+	if(inOutSamples==null) return;
+	size_t start = Math::Random<ushort>::Global(20);
+	if(start>inOutSamples.Length()) start=inOutSamples.Length();
+	if(!add)
+	{
+		core::memset(inOutSamples.Begin, 0, start*sizeof(float));
+		if(params.harmonics[0].lengthMultiplyer<norm8s(1))
+		{
+			size_t samplesToProcess = size_t(float(inOutSamples.Length()-start)*(float)params.harmonics[0].lengthMultiplyer);
+			size_t freeSamplesLeft = inOutSamples.Length()-start-samplesToProcess;
+			core::memset(inOutSamples.Begin+start+samplesToProcess, 0, freeSamplesLeft*sizeof(float));
+		}
+	}
+	for(ushort h=0; h<params.len; h++)
+	{
+		auto& harm = params.harmonics[h];
+		size_t samplesToProcess = size_t(float(inOutSamples.Length()-start)*(float)harm.lengthMultiplyer);
+		sinexp_generate(volume*(float)harm.scale, (float)harm.attenCoeff,
+			freq*(float)harm.freqMultiplyer, sampleRate,
+			inOutSamples.Drop(start).Take(samplesToProcess),
+			add || h>0);
 	}
 }
 

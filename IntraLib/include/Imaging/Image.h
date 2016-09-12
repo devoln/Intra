@@ -78,7 +78,7 @@ private:
 #ifndef NO_KTX_LOADER
 	void loadKTX(IO::IInputStream* s, uint bytes);
 #endif
-#ifndef NO_DDS_LOADER
+#ifndef INTRA_NO_DDS_LOADER
 	void loadDDS(IO::IInputStream* s, uint bytes);
 	void saveDDS(IO::IOutputStream* s) const;
 #endif

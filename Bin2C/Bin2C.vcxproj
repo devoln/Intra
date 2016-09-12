@@ -77,14 +77,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -135,7 +135,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)Build\$(Configuration) $(Platform)\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(SolutionDir)Build\$(Configuration) $(Platform)\;F:/Libs/lib</LibraryPath>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraLib/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
@@ -150,7 +150,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraLib/include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(SolutionDir)Build\$(Configuration)\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);F:\Libs\lib;$(SolutionDir)Build\$(Configuration)\</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
@@ -166,21 +166,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)Build\$(Configuration) $(Platform)\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(SolutionDir)Build\$(Configuration) $(Platform)\;F:/Libs/lib</LibraryPath>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraLib/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)Build\$(Configuration) $(Platform)\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(SolutionDir)Build\$(Configuration) $(Platform)\;F:/Libs/lib</LibraryPath>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraLib/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(SolutionDir)Build\$(Configuration) $(Platform)\</LibraryPath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(SolutionDir)Build\$(Configuration) $(Platform)\;F:/Libs/lib</LibraryPath>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraLib/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
@@ -317,7 +317,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>
       </PrecompiledHeader>
       <Optimization>Full</Optimization>
@@ -327,6 +327,10 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>false</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -334,6 +338,8 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>IntraLib.lib</AdditionalDependencies>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <FixedBaseAddress>true</FixedBaseAddress>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">

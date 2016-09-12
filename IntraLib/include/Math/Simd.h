@@ -1,36 +1,38 @@
 ﻿#pragma once
 
+#include "Core/Core.h"
+
 #if(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64)
 
-#define SIMD_NONE 0
-#define SIMD_MMX 1
-#define SIMD_SSE 2
-#define SIMD_SSE2 3
-#define SIMD_SSE3 4
-#define SIMD_SSSE3 5
-#define SIMD_SSE4_1 6
-#define SIMD_SSE4_2 7
-#define SIMD_AVX 8
+#define INTRA_SIMD_NONE 0
+#define INTRA_SIMD_MMX 1
+#define INTRA_SIMD_SSE 2
+#define INTRA_SIMD_SSE2 3
+#define INTRA_SIMD_SSE3 4
+#define INTRA_SIMD_SSSE3 5
+#define INTRA_SIMD_SSE4_1 6
+#define INTRA_SIMD_SSE4_2 7
+#define INTRA_SIMD_AVX 8
 
-#ifndef MIN_SIMD_SUPPORT
-#define MIN_SIMD_SUPPORT SIMD_SSE2
+#ifndef INTRA_MIN_SIMD_SUPPORT
+#define INTRA_MIN_SIMD_SUPPORT INTRA_SIMD_SSE2
 #endif
 
-#if(MIN_SIMD_SUPPORT>SIMD_NONE)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_NONE)
 #include <mmintrin.h>  //MMX
-#if(MIN_SIMD_SUPPORT>SIMD_MMX)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_MMX)
 #include <xmmintrin.h> //SSE
-#if(MIN_SIMD_SUPPORT>SIMD_SSE)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE)
 #include <emmintrin.h> //SSE2
-#if(MIN_SIMD_SUPPORT>SIMD_SSE2)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE2)
 #include <pmmintrin.h> //SSE3
-#if(MIN_SIMD_SUPPORT>SIMD_SSE3)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE3)
 #include <tmmintrin.h> //SSSE3
-#if(MIN_SIMD_SUPPORT>SIMD_SSSE3)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSSE3)
 #include <smmintrin.h> //SSE4.1
-#if(MIN_SIMD_SUPPORT>SIMD_SSE4_1)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE4_1)
 #include <nmmintrin.h> //SSE4.2
-#if(MIN_SIMD_SUPPORT>SIMD_SSE4_2)
+#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE4_2)
 #include <immintrin.h> //AVX
 #endif
 #endif
@@ -41,13 +43,13 @@
 #endif
 #endif
 
-#elif PLATFORM==INTRA_PLATFORM_ARM
+#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
 #include <arm_neon.h>
 #endif
 
 
 namespace Intra { namespace Simd {
-	forceinline bool ToBool(int x) {return *(bool*)&x;} //Быстрый перевод в bool, если x принимает значения только 0 или 1
+
 #if INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 	typedef __m128i int4;
 	typedef int4 int4arg;
@@ -217,62 +219,62 @@ namespace Intra { namespace Simd {
 
 	forceinline bool EqualX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comieq_ss(a, b));
+		return _mm_comieq_ss(a, b)!=0;
 	}
 
 	forceinline bool EqualX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comieq_sd(a, b));
+		return _mm_comieq_sd(a, b)!=0;
 	}
 
 	forceinline bool NotEqualX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comineq_ss(a, b));
+		return _mm_comineq_ss(a, b)!=0;
 	}
 
 	forceinline bool NotEqualX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comineq_sd(a, b));
+		return _mm_comineq_sd(a, b)!=0;
 	}
 
 	forceinline bool LessX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comilt_ss(a, b));
+		return _mm_comilt_ss(a, b)!=0;
 	}
 
 	forceinline bool LessX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comilt_sd(a, b));
+		return _mm_comilt_sd(a, b)!=0;
 	}
 
 	forceinline bool LessEqualX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comile_ss(a, b));
+		return _mm_comile_ss(a, b)!=0;
 	}
 
 	forceinline bool LessEqualX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comile_sd(a, b));
+		return _mm_comile_sd(a, b)!=0;
 	}
 
 	forceinline bool GreaterX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comigt_ss(a, b));
+		return _mm_comigt_ss(a, b)!=0;
 	}
 
 	forceinline bool GreaterX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comigt_sd(a, b));
+		return _mm_comigt_sd(a, b)!=0;
 	}
 
 	forceinline bool GreaterEqualX(float4arg a, float4arg b)
 	{
-		return ToBool(_mm_comige_ss(a, b));
+		return _mm_comige_ss(a, b)!=0;
 	}
 
 	forceinline bool GreaterEqualX(double2arg a, double2arg b)
 	{
-		return ToBool(_mm_comige_sd(a, b));
+		return _mm_comige_sd(a, b)!=0;
 	}
 
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_PowerPC

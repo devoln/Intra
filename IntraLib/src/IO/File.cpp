@@ -106,8 +106,8 @@ namespace Intra { namespace IO
 		struct stat attrib;
 		result.Exist = stat(fn.CStr(), &attrib)==0;
 #endif
-		result.LastModified=attrib.st_mtime;
-		result.Size=attrib.st_size;
+		result.LastModified = result.Exist? attrib.st_mtime: 0;
+		result.Size = result.Exist? attrib.st_size: 0;
 		return result;
 	}
 
@@ -227,12 +227,6 @@ namespace Intra { namespace IO
 		if(fileOpened!=null) *fileOpened = (file!=null);
 		if(file==null) return null;
 		size_t size = (size_t)file.GetSize();
-		if(size==0)
-		{
-			String result;
-			while(!file.EndOfStream()) result += file.Read<char>();
-			return result;
-		}
 		return file.ReadNChars(size);
 	}
 
@@ -242,11 +236,11 @@ namespace Intra { namespace IO
 		return DiskFile::GetFileTime(name);
 	}
 
-	void CommonFileImpl::open(StringView file, bool readAccess, bool writeAccess, bool append, Error* oError)
+	void CommonFileImpl::open(StringView fileName, bool readAccess, bool writeAccess, bool append, Error* oError)
 	{
 		close();
-		if(file==null) return;
-		name = file;
+		if(fileName==null) return;
+		name = fileName;
 		const char* const modes[2][2][2]={{{null, "rb"}, {"wb", "w+b"}}, {{null, null}, {"ab", "a+b"}}};
 		if(modes[append][writeAccess][readAccess]==null)
 		{
@@ -319,6 +313,7 @@ namespace Intra { namespace IO
 
 	size_t Reader::ReadData(void* data, size_t bytes)
 	{
+		if(bytes==0) return 0;
 		INTRA_ASSERT(hndl!=null);
 		INTRA_ASSERT(data!=null);
 		size_t bytesRead = fread(data, 1, bytes, (FILE*)hndl);
@@ -366,11 +361,7 @@ namespace Intra { namespace IO
 	ulong64 Reader::GetSize() const
 	{
 		if(hndl==null) return 0;
-		const ulong64 oldpos = GetPos();
-		fseek((FILE*)hndl, 0, SEEK_END);
-		const ulong64 size = GetPos();
-		const_cast<Reader*>(this)->SetPos(oldpos);
-		return size;
+		return DiskFile::GetInfo(name).Size;
 	}
 
 	//Установить позицию записи

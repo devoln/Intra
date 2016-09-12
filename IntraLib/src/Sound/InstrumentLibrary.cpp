@@ -1,4 +1,4 @@
-﻿#ifndef NO_MIDI_SYNTH
+﻿#ifndef INTRA_NO_MIDI_SYNTH
 
 #include "Sound/InstrumentLibrary.h"
 #include "Containers/Array2D.h"
@@ -211,7 +211,7 @@ MusicalInstruments::MusicalInstruments()
 	Piano.Combination.AddLast(pianoInstr2);
 
 
-	//Piano=CreateGuitar(20, 1, 2.15f, 1.3f, 1.3f, 0.5f, 1.2f);
+	//Piano=CreateGuitar(20, 1, 2.15f, 1.3f, 1.3f, 1.0f, 1.2f);
 
 	
 
@@ -421,8 +421,8 @@ MusicalInstruments::MusicalInstruments()
 	Rain.AttenuationPass = SynthesizedInstrument::CreateTableAttenuationPass(
 			{norm8(0.7), 0.96, 0.7, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
 
-	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 0.5f, 1.7f, 0.35f);//CreateGuitar(15, 128, 2.2f, 1.1f);
-	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 0.5f, 1.7f, 0.3f);//CreateGuitar(15, 224, 2.1f, 1.7f);
+	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 0.5f, 3.0f, 0.35f);//CreateGuitar(15, 128, 3.5f, 1.1f);
+	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 0.5f, 3.0f, 0.3f);//CreateGuitar(15, 224, 3.5f, 1.7f);
 
 	OverdrivenGuitar.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(9.5, 0.35f, 1, 1);
 	
@@ -482,6 +482,22 @@ MusicalInstruments::MusicalInstruments()
 	Vibraphone.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(7);
 	Vibraphone.MinNoteDuration = 0.8f;
 
+
+	SynthesizedInstrument::SineHarmonic glockenspielHarmonics[]=
+	{
+		{0.125f, 0.75f},
+		{1.0f, 3.0f},
+		{0.03125f, 1.25f},
+		{1.0f, 1.75f},
+		{1.0f, 4.0f},
+		{0.125f, 4.5f},
+		{0.25f, 5.75f}
+	};
+	Glockenspiel.SynthPass = SynthesizedInstrument::CreateMultiSineSynthPass(glockenspielHarmonics);
+	Glockenspiel.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(7);
+	Glockenspiel.MinNoteDuration = 0.8f;
+
+
 	NewAge.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.15f, 5, 0.5f);
 	NewAge.AttenuationPass = SynthesizedInstrument::CreateTableAttenuationPass(
 	    {norm8(0.8), 0.995, 0.7, 0.5, 0.4, 0.05});
@@ -529,25 +545,14 @@ MusicalInstruments::MusicalInstruments()
 
 SynthesizedInstrument MusicalInstruments::CreateGuitar(int n, float c, float d, float e, float f, float freqMult, float duration, float volume)
 {
-	//Другая гитара:
-	/*
-	var f=256*A;
-	var w=2*pi*f;
-	var y=0;
-	var k=(C*256)|0;
-	var n=50;
-	for(var i=1;i<=n;++i)
-	y+=Exp(-2.5*B*(1+D*i)*t)*((k*i%1337)/1377-0.5)*Sin(i*w*t)/i;
-	return y*(1+E*Sin(100*F*t));
-	*/
-
+	if(n>20) n=20;
 	SynthesizedInstrument result;
 	result.FadeOffTime = duration;
-	SynthesizedInstrument::SineExpHarmonic harmonics[23];
+	SynthesizedInstrument::SineExpHarmonic harmonics[20];
 	for(int i=1; i<=n; i++)
 	{
-		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f)/Pow((float)i, f) );
-		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i)};
+		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow((float)i, -f);
+		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/float(i*2-1)};
 	}
 	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, (size_t)n});
 	return result;

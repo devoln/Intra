@@ -21,7 +21,44 @@ elseif(MSVC)
 
         set(CMAKE_CXX_FLAGS_${OUTPUTCONFIG} "${CMAKE_CXX_FLAGS_${OUTPUTCONFIG}} /MP")
     endforeach()
+
 endif()
 
+
 add_executable(MusicSynthesizer MusicSynthesizer.cpp)
+
+
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+option(LIBRARY_SOUND_SYSTEM_DirectSound "Use DirectSound" ON)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+option(LIBRARY_SOUND_SYSTEM_WebAudio "Use WebAudio" ON)
+endif()
+
+find_package(OpenAL)
+if(OPENAL_FOUND)
+if(UNIX)
+option(LIBRARY_SOUND_SYSTEM_OpenAL "Use OpenAL" ON)
+else()
+option(LIBRARY_SOUND_SYSTEM_OpenAL "Use OpenAL" OFF)
+endif()
+endif()
+
+if(LIBRARY_SOUND_SYSTEM_DirectSound)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_DirectSound)
+target_link_libraries(MusicSynthesizer dsound)
+elseif(LIBRARY_SOUND_SYSTEM_OpenAL)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
+include_directories(${OPENAL_INCLUDE_DIRS})
+target_link_libraries(MusicSynthesizer ${OPENAL_LIBRARIES})
+elseif(LIBRARY_SOUND_SYSTEM_WebAudio)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_WebAudio)
+else()
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
+endif()
+
+
 target_link_libraries(MusicSynthesizer IntraLib)

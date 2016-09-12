@@ -74,7 +74,11 @@ void HtmlWriter::PopFont()
 void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
 	if(color==Math::NaN) color=Math::Vec3(0.499f);
+	(void)size;
+	(void)italic;
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+	(void)s;
+	(void)bold;
 	if(oldFont.Color!=color || oldFont.Underline!=underline)
 	{
 		ushort consoleCode = 0;
@@ -118,7 +122,7 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 void ConsoleTextWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
 	auto oldFont = GetCurrentFont();
-	font_stack.AddLast({color, size, bold, italic, underline});
+	font_stack.AddLast({color, size, bold, italic, underline, false});
 	set_font(*this, oldFont, color, size, bold, italic, underline);
 }
 

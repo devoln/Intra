@@ -562,14 +562,16 @@ struct Half
 private:
 	static ushort fromFloat(float f)
 	{
-		int i32 = *(int*)&f;
+		union {float f32; int i32;};
+		f32 = f;
 		return ushort( (((i32 & 0x7fffffff) >> 13) - (0x38000000 >> 13)) | ((i32 & 0x80000000) >> 16) );
 	}
 
 	static float toFloat(ushort h)
 	{
-		int result = ((h & 0x8000) << 16) | ( ((h & 0x7fff) << 13) + 0x38000000 );
-		return *(float*)&result;
+		union {float f32; int i32;};
+		i32 = ((h & 0x8000) << 16) | ( ((h & 0x7fff) << 13) + 0x38000000 );
+		return f32;
 	}
 };
 

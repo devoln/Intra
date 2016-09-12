@@ -197,13 +197,18 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	const byte* data = (const byte*)key.Data();
 	const size_t nblocks = key.Length()/16;
 
-	uint h[4] = {seed, seed, seed, seed};
+	union
+	{
+		hash128 result;
+		uint h[4];
+	};
+	h[0] = h[1] = h[2] = h[3] = seed;
 	uint& h1 = h[0];
 	uint& h2 = h[1];
 	uint& h3 = h[2];
 	uint& h4 = h[3];
 
-	const uint c1 = 0x239b961bU, c2 = 0xab0e9789U, c3 = 0x38b34ae5U, c4 = 0xa1e38b93U;
+	enum: uint {c1 = 0x239b961bU, c2 = 0xab0e9789U, c3 = 0x38b34ae5U, c4 = 0xa1e38b93U};
 
 	const uint* blocks = (const uint*)(data + nblocks*16);
 
@@ -258,7 +263,7 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	{
 	case 15: k4 ^= tail[14] << 16;
 	case 14: k4 ^= tail[13] << 8;
-	case 13: k4 ^= tail[12] << 0;
+	case 13: k4 ^= tail[12];
 		k4 *= c4;
 		k4  = ROTL32(k4, 18);
 		k4 *= c1;
@@ -267,7 +272,7 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	case 12: k3 ^= tail[11] << 24;
 	case 11: k3 ^= tail[10] << 16;
 	case 10: k3 ^= tail[9] << 8;
-	case 9: k3 ^= tail[8] << 0;
+	case 9: k3 ^= tail[8];
 		k3 *= c3;
 		k3  = ROTL32(k3, 17);
 		k3 *= c4;
@@ -276,7 +281,7 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	case 8: k2 ^= tail[7] << 24;
 	case 7: k2 ^= tail[6] << 16;
 	case 6: k2 ^= tail[5] << 8;
-	case 5: k2 ^= tail[4] << 0;
+	case 5: k2 ^= tail[4];
 		k2 *= c2;
 		k2  = ROTL32(k2, 16);
 		k2 *= c3;
@@ -285,7 +290,7 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	case 4: k1 ^= tail[3] << 24;
 	case 3: k1 ^= tail[2] << 16;
 	case 2: k1 ^= tail[1] << 8;
-	case 1: k1 ^= tail[0] << 0;
+	case 1: k1 ^= tail[0];
 		k1 *= c1;
 		k1  = ROTL32(k1, 15);
 		k1 *= c2;
@@ -318,7 +323,7 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	h3 += h1;
 	h4 += h1;
 
-	return *(hash128*)h;
+	return result;
 }
 
 //-----------------------------------------------------------------------------
@@ -372,7 +377,7 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 	case 12: k2 ^= ulong64(tail[11]) << 24;
 	case 11: k2 ^= ulong64(tail[10]) << 16;
 	case 10: k2 ^= ulong64(tail[9]) << 8;
-	case  9: k2 ^= ulong64(tail[8]) << 0;
+	case  9: k2 ^= ulong64(tail[8]);
 		k2 *= c2;
 		k2  = ROTL64(k2, 33);
 		k2 *= c1;
@@ -385,7 +390,7 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 	case  4: k1 ^= ulong64(tail[3]) << 24;
 	case  3: k1 ^= ulong64(tail[2]) << 16;
 	case  2: k1 ^= ulong64(tail[1]) << 8;
-	case  1: k1 ^= ulong64(tail[0]) << 0;
+	case  1: k1 ^= ulong64(tail[0]);
 		k1 *= c1;
 		k1  = ROTL64(k1, 31);
 		k1 *= c2;

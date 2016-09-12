@@ -121,6 +121,18 @@ static const FormatDescriptor D3d9Formats[] =
 	{ImageFormat::LuminanceAlpha8, false, {0xFF, 0xFF, 0xFF, 0xFF00}}
 };
 
+inline uint to_fourcc(const char* c)
+{
+	return uint(c[0])|(c[1] << 8u)|(c[2] << 16u)|(c[3] << 24u);
+}
+
+inline void from_fourcc(char* dst, uint f)
+{
+	dst[0] = char(f & 255);
+	dst[1] = char((f >> 8) & 255);
+	dst[2] = char((f >> 16) & 255);
+	dst[3] = char((f >> 24) & 255);
+}
 
 static ImageFormat GetFormat(const DDS_HEADER& header, const DDS_HEADER_DXT10& dx10header, bool* swapRB)
 {
@@ -128,8 +140,8 @@ static ImageFormat GetFormat(const DDS_HEADER& header, const DDS_HEADER_DXT10& d
 
 	if(header.ddspf.flags & DDPF_FOURCC)
 	{
-		const uint fourcc = *(uint*)header.ddspf.fourCC;
-		if(fourcc==*(uint*)"DX10")
+		uint fourcc = to_fourcc(header.ddspf.fourCC);
+		if(to_fourcc("DX10"))
 			return DXGI_ToImageFormat(dx10header.dxgiFormat, swapRB);
 
 		for(auto& v: FourCC_ImageFormat) if(v.fourcc==fourcc) return v.format;
@@ -169,13 +181,13 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	for(auto& v: FourCC_ImageFormat)
 	{
 		if(v.format!=format.value) continue;
-		*(uint*)pf.fourCC = v.fourcc;
+		from_fourcc(pf.fourCC, v.fourcc);
 		return;
 	}
 
 
 	//Ищем формат среди форматов DX10
-	*(uint*)pf.fourCC = *(uint*)"DX10"; //Если это не установлено, то DX10 заголовок записывать не надо
+	core::memcpy(pf.fourCC, "DX10", 4); //Если это не установлено, то DX10 заголовок записывать не надо
 	dx10header.dxgiFormat = DXGI_FromImageFormat(format, swapRB);
 }
 
@@ -205,7 +217,7 @@ static ImageType GetImageTypeFromDX10Header(const DDS_HEADER_DXT10& dx10header)
 
 static ImageType GetImageTypeFromHeaders(const DDS_HEADER& header, const DDS_HEADER_DXT10& dx10header)
 {
-	if(*(uint*)header.ddspf.fourCC==*(uint*)"DX10")
+	if(to_fourcc(header.ddspf.fourCC)==to_fourcc("DX10"))
 		return GetImageTypeFromDX10Header(dx10header);
 
 	if(header.caps2 & DDSCAPS2_VOLUME)
@@ -288,7 +300,7 @@ ImageInfo pe_get_dds_info(byte header[148])
 }
 
 
-#ifndef NO_DDS_LOADER
+#ifndef INTRA_NO_DDS_LOADER
 void Image::loadDDS(IO::IInputStream* s, uint bytes)
 {
 	auto startPos = s->GetPos();

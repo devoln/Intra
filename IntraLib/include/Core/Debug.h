@@ -34,7 +34,7 @@ void InternalError(StringView func, StringView file, int line, StringView info);
 #define INTRA_DEBUG
 #endif
 
-bool IsDebuggerConnected();
+bool IsDebuggerAttached();
 
 #ifdef _MSC_VER
 #define INTRA_DEBUG_BREAK __debugbreak()
@@ -45,7 +45,7 @@ bool IsDebuggerConnected();
 #define INTRA_DEBUG_BREAK raise(SIGTRAP)
 #endif
 
-#define INTRA_DEBUGGER_BREAKPOINT (Intra::IsDebuggerConnected()? (INTRA_DEBUG_BREAK, true): true)
+#define INTRA_DEBUGGER_BREAKPOINT (Intra::IsDebuggerAttached()? (INTRA_DEBUG_BREAK, true): true)
 
 namespace detail {
 
@@ -59,30 +59,35 @@ constexpr forceinline const char* past_last_slash(const char* str)
     return past_last_slash(str, str);
 }
 
-}
+}}
 
 #define __SHORT_FILE__ Intra::detail::past_last_slash(__FILE__)
 
 #ifdef INTRA_DEBUG
-#define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT; PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
+#define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT; Intra::PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
 #define INTRA_ASSERT(expression) (expression)? (void)0: (void)(\
     (INTRA_INTERNAL_ERROR("Assertion (" # expression ") failed!"), true))
 #define INTRA_NAN_CHECK(val) INTRA_ASSERT(val!=Math::NaN)
 #define INTRA_DEBUG_CODE(...) {__VA_ARGS___};
+
+#ifdef _MSC_VER
+#include <malloc.h>
 #define INTRA_HEAP_CHECK INTRA_ASSERT(_heapchk()==_HEAPOK)
+#else
+#define INTRA_HEAP_CHECK
+#endif
 
 #define INTRA_ASSERT_WARNING(expression) ((expression) || (INTRA_DEBUGGER_BREAKPOINT && \
-    (PrintDebugMessage("Warning (" __FILE__ ":" + ToString(__LINE__) + " in function " + \
-        StringView(__FUNCTION__) + "): assertion (" # expression ") failed!\r\n" __FILE__ "\r\n"), false)))
+    (Intra::PrintDebugMessage("Warning (" __FILE__ ":" + Intra::ToString(__LINE__) + " in function " + \
+        Intra::StringView(__FUNCTION__) + "): assertion (" # expression ") failed!\r\n" __FILE__ "\r\n"), false)))
 
 #else
 #define INTRA_DEBUG_WARNING_CHECK
 #define INTRA_ASSERT(expr) (void)0
 #define INTRA_NAN_CHECK(val) {if(val==Intra::Math::NaN) {(val)=0;}}
 #define DEBUG_CODE(x)
-#define HEAP_CHECK
+#define INTRA_HEAP_CHECK
 #define INTRA_ASSERT_WARNING
 #endif
 
-}
 

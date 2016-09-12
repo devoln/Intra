@@ -468,11 +468,18 @@ typedef Utils::FixedDelegate<void(ArrayRange<float> inOutSamples, uint sampleRat
 class SynthesizedInstrument: public IMusicalInstrument
 {
 public:
+	struct SineHarmonic
+	{
+		FixedPoint<byte, 512> scale;
+		FixedPoint<byte, 16> freqMultiplyer;
+	};
+
 	struct SineExpHarmonic
 	{
-		FixedPoint<ushort, 4096> scale;
+		FixedPoint<byte, 512> scale;
 		FixedPoint<byte, 8> attenCoeff;
 		FixedPoint<byte, 16> freqMultiplyer;
+		norm8s lengthMultiplyer;
 	};
 
 	template<typename T> struct impl_SamplerPassParams
@@ -497,8 +504,13 @@ private:
 	static void functionSineSynthPass(const SineParams& params,
 		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
 
+	struct MultiSineParams {byte len; SineHarmonic harmonics[20];};
+	static void functionMultiSineSynthPass(const MultiSineParams& params,
+		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
+
 	struct SineExpParams {byte len; SineExpHarmonic harmonics[20];};
-	static void functionSineExpSynthPass(const SineExpParams& params, float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
+	static void functionSineExpSynthPass(const SineExpParams& params,
+		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
 
 	
 	template<typename T> static void functionSynthPass(const impl_SamplerPassParams<T>& params, float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
@@ -613,6 +625,8 @@ public:
 
 	static SoundSynthFunction CreateSawtoothSynthPass(float updownRatio=1, float scale=1, ushort harmonics=1, float freqMultiplyer=1);
 	static SoundSynthFunction CreateSineSynthPass(float scale=1, ushort harmonics=1, float freqMultiplyer=1);
+	
+	static SoundSynthFunction CreateMultiSineSynthPass(ArrayRange<const SineHarmonic> harmonics);
 	static SoundSynthFunction CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics);
 
 	template<typename T> static SoundSynthFunction CreateSynthPass(T sampler, float scale=1, ushort harmonics=1, float freqMultiplyer=1)

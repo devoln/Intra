@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#ifndef NO_MIDI_SYNTH
+#ifndef INTRA_NO_MIDI_SYNTH
 
 #include "SynthesizedInstrument.h"
 
@@ -11,7 +11,7 @@ struct MusicalInstruments
 	MusicalInstruments();
 
 	CombinedSynthesizedInstrument Piano, ElectricPiano, ElectricPiano2;
-	SynthesizedInstrument Vibraphone, NewAge, Crystal;
+	SynthesizedInstrument Vibraphone, Glockenspiel, NewAge, Crystal;
 	CombinedSynthesizedInstrument Kalimba;
 	SynthesizedInstrument Bass1, Bass2, Bass3, ElectricBassFinger;
 	CombinedSynthesizedInstrument ElectricBassPick;

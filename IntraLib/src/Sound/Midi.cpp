@@ -193,7 +193,7 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	MidiReader reader(fileData.Begin, (uint)fileData.Length());
 	Music result;
 
-#ifndef NO_MIDI_SYNTH
+#ifndef INTRA_NO_MIDI_SYNTH
 	MusicalInstruments* instr = new MusicalInstruments;
 	for(byte i=0; i<128; i++) reader.instruments[i] = &instr->Sine2Exp;
 	reader.instruments[117] = null; //Melodic Tom не реализован, а пищание плохо звучит
@@ -224,7 +224,8 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	for(auto code: {89, 90, 93, 94, 95, 102}) reader.instruments[code] = &instr->Pad8Sweep;
 	for(auto code: {119}) reader.instruments[code] = &instr->ReverseCymbal;
 	for(auto code: {99}) reader.instruments[code] = &instr->Atmosphere;
-	for(auto code: {8, 9, 10,  11, 12, 88, 92, 108}) reader.instruments[code] = &instr->Vibraphone;
+	for(auto code: {8, 10,  11, 12, 88, 92, 108}) reader.instruments[code] = &instr->Vibraphone;
+	for(auto code: {9}) reader.instruments[code] = &instr->Glockenspiel;
 	for(auto code: {88, 92}) reader.instruments[code] = &instr->NewAge;
 	for(auto code: {98}) reader.instruments[code] = &instr->Crystal;
 	for(auto code: {13, 15, 108, 112}) reader.instruments[code] = &instr->Kalimba;
@@ -254,8 +255,8 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	{
 		auto track = reader.ReadTrack();
 		if(track.Notes==null) continue;
-		result.Tracks.AddLast(track);
-#ifndef NO_MIDI_SYNTH
+		result.Tracks.AddLast(core::move(track));
+#ifndef INTRA_NO_MIDI_SYNTH
 		if(result.Tracks.Last().Instrument==null)
 			result.Tracks.Last().Instrument = &instr->Sine2Exp;
 #endif

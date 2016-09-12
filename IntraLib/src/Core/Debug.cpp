@@ -11,7 +11,7 @@
 #endif
 #include <windows.h>
 
-#if(INTRA_MINEXE>=3)
+#ifndef INTRA_DBGHELP
 
 #else
 #include <DbgHelp.h>
@@ -42,7 +42,7 @@ void PrintDebugMessage(StringView message, StringView file, int line)
 	PrintDebugMessage(*String::Format()(file)("(")(line)("): ")(message));
 }
 
-bool IsDebuggerConnected()
+bool IsDebuggerAttached()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return IsDebuggerPresent()!=FALSE;
@@ -59,7 +59,7 @@ namespace Intra {
 
 String GetStackWalk(size_t framesToSkip)
 {
-#if(INTRA_MINEXE>=3)
+#ifndef INTRA_DBGHELP
 	(void)framesToSkip;
 	return null;
 #else
@@ -153,8 +153,12 @@ void InternalError(const char* func, const char* file, int line, const char* inf
 	msg += StringView(func);
 	msg += "\n";
 	msg += StringView(info);
-	msg += "\n\nStack trace:\n";
-	msg += GetStackWalk(1);
+	String stackTrace = GetStackWalk(1);
+	if(stackTrace!=null)
+	{
+		msg += "\n\nStack trace:\n";
+		msg += stackTrace;
+	}
 
 #ifndef INTRA_NO_LOGGING
 	if(IO::ErrorLog!=null)
