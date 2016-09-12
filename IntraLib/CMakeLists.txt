@@ -80,7 +80,7 @@ else()
 option(LIBRARY_FONT_LOADING_STB "Use STB_TrueType" OFF)
 endif()
 
-find_package(FreeType)
+find_package(Freetype)
 if(FREETYPE_FOUND)
 if(UNIX)
 option(LIBRARY_FONT_LOADING_FreeType "Use FreeType" ON)
