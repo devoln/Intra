@@ -35,3 +35,67 @@ endforeach(FILE)
 
 add_library(IntraLib STATIC ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
 
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+option(LIBRARY_SOUND_SYSTEM_DirectSound "Use DirectSound" ON)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+option(LIBRARY_SOUND_SYSTEM_WebAudio "Use WebAudio" ON)
+endif()
+
+find_package(OpenAL)
+if(OPENAL_FOUND)
+if(UNIX)
+option(LIBRARY_SOUND_SYSTEM_OpenAL "Use OpenAL" ON)
+else()
+option(LIBRARY_SOUND_SYSTEM_OpenAL "Use OpenAL" OFF)
+endif()
+endif()
+
+if(LIBRARY_SOUND_SYSTEM_DirectSound)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_DirectSound)
+target_link_libraries(IntraLib dsound)
+elseif(LIBRARY_SOUND_SYSTEM_OpenAL)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
+include_directories(${OPENAL_INCLUDE_DIRS})
+target_link_libraries(IntraLib ${OPENAL_LIBRARIES})
+elseif(LIBRARY_SOUND_SYSTEM_WebAudio)
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_WebAudio)
+else()
+add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
+endif()
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Emscripten")
+option(LIBRARY_SOUND_SYSTEM_WebAudio "Use WebAudio" ON)
+endif()
+
+
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+option(LIBRARY_FONT_LOADING_STB "Use STB_TrueType" ON)
+else()
+option(LIBRARY_FONT_LOADING_STB "Use STB_TrueType" OFF)
+endif()
+
+find_package(FreeType)
+if(FREETYPE_FOUND)
+if(UNIX)
+option(LIBRARY_FONT_LOADING_FreeType "Use FreeType" ON)
+else()
+option(LIBRARY_FONT_LOADING_FreeType "Use FreeType" OFF)
+endif()
+endif()
+
+if(LIBRARY_FONT_LOADING_FreeType)
+add_definitions(-DINTRA_LIBRARY_FONT_LOADING=INTRA_LIBRARY_FONT_LOADING_FreeType)
+include_directories(${FREETYPE_INCLUDE_DIRS})
+target_link_libraries(IntraLib ${FREETYPE_LIBRARIES})
+elseif(LIBRARY_FONT_LOADING_STB)
+add_definitions(-DINTRA_LIBRARY_FONT_LOADING=INTRA_LIBRARY_FONT_LOADING_STB)
+else()
+add_definitions(-DINTRA_LIBRARY_FONT_LOADING=INTRA_LIBRARY_FONT_LOADING_Dummy)
+endif()
+
