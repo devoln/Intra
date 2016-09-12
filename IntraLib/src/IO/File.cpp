@@ -226,7 +226,7 @@ namespace Intra { namespace IO
 		Reader file(fileName);
 		if(fileOpened!=null) *fileOpened = (file!=null);
 		if(file==null) return null;
-		size_t size = (size_t)file.GetSize();
+		size_t size = (size_t)DiskFile::GetInfo(fileName).Size;
 		return file.ReadNChars(size);
 	}
 

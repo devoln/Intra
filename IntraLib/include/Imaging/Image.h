@@ -75,7 +75,7 @@ public:
 private:
 	void load(IO::IInputStream* s, uint bytes);
 
-#ifndef NO_KTX_LOADER
+#ifndef INTRA_NO_KTX_LOADER
 	void loadKTX(IO::IInputStream* s, uint bytes);
 #endif
 #ifndef INTRA_NO_DDS_LOADER
