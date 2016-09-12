@@ -75,6 +75,34 @@ endif()
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+option(LIBRARY_VORBIS_DECODER_STB "Use STB_Vorbis" OFF)
+endif()
+
+find_package(VorbisFile)
+if(VORBISFILE_FOUND)
+if(UNIX)
+option(LIBRARY_VORBIS_DECODER_libvorbis "Use libvorbis" ON)
+else()
+option(LIBRARY_VORBIS_DECODER_libvorbis "Use libvorbis" OFF)
+endif()
+endif()
+
+if(LIBRARY_VORBIS_DECODER_STB)
+add_definitions(-DINTRA_LIBRARY_VORBIS_DECODER=INTRA_LIBRARY_VORBIS_DECODER_STB)
+target_link_libraries(IntraLib dsound)
+elseif(LIBRARY_VORBIS_DECODER_libvorbis)
+add_definitions(-DINTRA_LIBRARY_VORBIS_DECODER=INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
+include_directories(${VORBISFILE_INCLUDE_DIRS})
+target_link_libraries(IntraLib ${VORBISFILE_LIBRARIES})
+else()
+add_definitions(-DINTRA_LIBRARY_VORBIS_DECODER=INTRA_LIBRARY_VORBIS_DECODER_None)
+endif()
+
+
+
+
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 option(LIBRARY_FONT_LOADING_STB "Use STB_TrueType" ON)
 else()
 option(LIBRARY_FONT_LOADING_STB "Use STB_TrueType" OFF)
