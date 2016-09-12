@@ -1,4 +1,4 @@
-﻿set(INTRA_LIB_HEADERS
+set(INTRA_LIB_HEADERS
 Algorithms/Algorithms.h
 Algorithms/Hash.h
 Algorithms/Operations.h

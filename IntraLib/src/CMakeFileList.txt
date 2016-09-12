@@ -1,4 +1,4 @@
-﻿set(INTRA_LIB_SOURCE
+set(INTRA_LIB_SOURCE
 Algorithms/Algorithms.cpp
 Algorithms/Hash.cpp
 Algorithms/AsciiString.cpp
