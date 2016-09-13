@@ -1,15 +1,48 @@
 
 # IntraLib
 
+## English description
+
+This library contains the following functionality:
+- Containers: Array, BList, HashMap, LinearMap, String and others. Array is different from existing implementations of dynamic arrays by fast O(1) appending to the beginning of array.
+- Ranges and algorithms working with them. Range are implemented in the style of D language standard library. Range concept replaces iterator concept. Unlike iterators ranges can be combined forming complex ranges. It let us to write in functional style. See examples [here](PerfTesting/src/PerfTestRanges.cpp).
+- Serialization. See examples [here](PerfTesting/src/PerfTestSerialization.cpp).
+- Math functions and classes: FixedPoint, vectors, matrices, quaternions, geometric primitives.
+- Window creation and unified OpenGL core\extension loading.
+- Multiple image format loading.
+- Sound system and music intrument synthesis.
+- etc: timer, IO streams, multithreading.
+
+ In addition to the [library](IntraLib) this repository also contains:
+ - [MusicSynthesizer](MusicSynthesizer) - MIDI synthesizer. This project consist only of one file with main function. Most of the synthesizer code is located at IntraLib/Sound.
+ - [PerfTesting](PerfTesting) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL. This project's source code contains many examples of IntraLib usage.
+ - [Bin2C](Bin2C) - Utility to convert any file into byte array in C code.
+ 
+### Supported compilers:
+- MSVC 2013+;
+- Expected soon: g++ 4.8+;
+- Expected: Clang 3.3+.
+
+ ### Supported platforms:
+ - Windows;
+ - Expected soon: Linux;
+ - Expected: FreeBSD, Android, Emscripten.
+ 
+
+For now the library is unstable and lacks tests and documentation. It is not recommended to use in production.
+
+
+## Описание на русском языке
+
 Библиотека содержит в себе следующий функционал:
- - Контейнеры: Array, BList, HashMap, LinearMap, String и другие. Отличительная черта Array от существующих реализаций динамических массивов - такое быстрое добавление элементов в начало массива, как и в конец.
- - Диапазоны и алгоритмы работы с ними. Диапазоны реализованы в стиле стандартной библиотеки Phobos языка D. Концепция диапазонов заменяет собой итераторы. В отличие от итераторов, диапазоны могут комбинироваться, образуя сложные диапазоны. Это позволяет писать в функциональном стиле. Примеры [здесь](PerfTesting/src/PerfTestRanges.cpp).
- - Сериализация
+ - Контейнеры: Array, BList, HashMap, LinearMap, String и другие. Отличительная черта Array от существующих реализаций динамических массивов - быстрое O(1) добавление элементов в начало массива. При этом массив не теряет никаких преимуществ перед другими контейнерами, имея во всех остальных случаях производительность, схожую с std::vector.
+ - Диапазоны и алгоритмы для работы с ними. Диапазоны реализованы в стиле стандартной библиотеки Phobos языка D. Концепция диапазонов заменяет собой итераторы. В отличие от итераторов, диапазоны могут комбинироваться, образуя сложные диапазоны. Это позволяет писать в функциональном стиле. Примеры [здесь](PerfTesting/src/PerfTestRanges.cpp).
+ - Сериализация. Примеры [здесь](PerfTesting/src/PerfTestSerialization.cpp).
  - Математика: FixedPoint, векторы, матрицы, кватернионы, геометрические примитивы
- - Создание окна и унифицированная загрузка расширений\ядра OpenGL
- - Загрузка множества форматов изображений
- - Звук и синтез различных музыкальных инструментов
- - Другое: таймер, функции для работы с потоками
+ - Создание окна и унифицированная загрузка расширений\ядра OpenGL.
+ - Загрузка множества форматов изображений.
+ - Звук и синтез различных музыкальных инструментов.
+ - Другое: таймер, потоки ввода-вывода, многопоточность.
 
  Кроме [самой библиотеки](IntraLib) в репозитории также находятся:
  - [MusicSynthesizer](MusicSynthesizer) - синтезатор MIDI. Этот проект состоит только из одного файла с функцией main, а основной код синтезатора находится в IntraLib/Sound.
