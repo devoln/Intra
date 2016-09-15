@@ -2,7 +2,6 @@
 #include "Containers/String.h"
 
 #include <time.h>
-#include <cstdio>
 
 
 namespace Intra {
@@ -79,6 +78,8 @@ double Timer::GetTimeAndReset()
 }
 
 #elif(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_CPPLIB)
+
+char* gets(char* str);
 
 #include <chrono>
 #include <thread>
