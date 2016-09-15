@@ -73,7 +73,6 @@ void HtmlWriter::PopFont()
 
 void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
-	if(color==Math::NaN) color=Math::Vec3(0.499f);
 	(void)size;
 	(void)italic;
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
@@ -100,15 +99,16 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 	if(oldFont.Color!=color || oldFont.Bold!=bold || oldFont.Underline!=underline)
 	{
 		s << "\x1B[0m";
-		s << "\x1B[0m";
-		s << "\x1B[0;30m";
-		int code = 0;
-		int colorCode = 30;
-		if(color.x>=0.25f) colorCode += 1;
-		if(color.y>=0.25f) colorCode += 2;
-		if(color.z>=0.25f) colorCode += 4;
-		if(color.x<0.5f && color.y<0.5f && color.z<0.5f) code = 2;
-		s << "\x1B[" << code << ';' << colorCode << 'm';
+		if(color!=Math::NaN)
+		{
+			int code = 0;
+			int colorCode = 30;
+			if(color.x>=0.25f) colorCode += 1;
+			if(color.y>=0.25f) colorCode += 2;
+			if(color.z>=0.25f) colorCode += 4;
+			if(color.x<0.5f && color.y<0.5f && color.z<0.5f) code = 2;
+			s << "\x1B[" << code << ';' << colorCode << 'm';
+		}
 		if(bold) s << "\x1B[1m";
 		if(underline) s << "\x1B[4m";
 	}
