@@ -170,7 +170,7 @@ public:
 	
 	FontDesc GetCurrentFont() const override
 	{
-		if(font_stack.Empty()) return {{0.499f,0.499f,0.499f}, 3, false, false, false, false};
+		if(font_stack.Empty()) return {Math::Vec3(Math::NaN), 3, false, false, false, false};
 		return font_stack.Last();
 	}
 
