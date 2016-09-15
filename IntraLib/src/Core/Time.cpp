@@ -79,8 +79,6 @@ double Timer::GetTimeAndReset()
 
 #elif(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_CPPLIB)
 
-char* gets(char* str);
-
 #include <chrono>
 #include <thread>
 
