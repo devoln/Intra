@@ -65,9 +65,9 @@ namespace Intra { namespace core {
 		size_t INTRA_CRTDECL strlen(const char* str);
 		size_t INTRA_CRTDECL wcslen(const wchar_t* str);
 
-		void* INTRA_CRTDECL malloc(size_t bytes);
-		void* INTRA_CRTDECL realloc(void* oldPtr, size_t bytes);
-		void INTRA_CRTDECL free(void* ptr);
+		void* INTRA_CRTDECL malloc(size_t bytes) throw();
+		void* INTRA_CRTDECL realloc(void* oldPtr, size_t bytes) throw();
+		void INTRA_CRTDECL free(void* ptr) throw();
 	}
 }}
 

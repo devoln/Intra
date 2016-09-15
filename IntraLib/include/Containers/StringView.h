@@ -21,7 +21,12 @@ size_t> CStringLength(const wchar* str) {return core::wcslen((const wchar_t*)str
 
 template<typename U=wchar> forceinline Meta::EnableIf<
 	sizeof(U)!=sizeof(wchar_t),
-size_t> CStringLength(const wchar* str) {const wchar* ptr = str-1; while(*++ptr!=0); return ptr-str;}
+size_t> CStringLength(const wchar* str)
+{
+	const wchar* ptr = str-1;
+	while(*++ptr!=0) {}
+	return ptr-str;
+}
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)==sizeof(wchar_t),
@@ -29,7 +34,12 @@ size_t> CStringLength(const dchar* str) {return core::wcslen((const wchar_t*)str
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)!=sizeof(wchar_t),
-size_t> CStringLength(const dchar* str) {const dchar* ptr = str-1; while(*++ptr!=0); return ptr-str;}
+size_t> CStringLength(const dchar* str)
+{
+	const dchar* ptr = str-1;
+	while(*++ptr!=0) {}
+	return ptr-str;
+}
 
 template<typename Char> struct GenericStringView:
 	Meta::ComparableMixin<GenericStringView<Char>, Range::RangeMixin<GenericStringView<Char>, Char, Range::TypeEnum::Array, true>>
@@ -208,9 +218,6 @@ template<typename Char> struct GenericStringView:
 		StringView src = *this;
 		size_t len = 0;
 		AsciiSet charset = AsciiSet(chars);
-		static_assert(!Range::IsFiniteForwardRangeOfFiniteForwardRanges<ArrayRange<const char>>::_, "ERROR!");
-		static_assert(Range::IsInputRange<ArrayRange<const char>>::_, "ERROR!");
-		static_assert(Meta::IsConvertible<char, char>::_, "ERROR!");
 		while(len += src.CountUntilAdvanceAny(chars), !src.Empty())
 		{
 			size_t index = 0;
