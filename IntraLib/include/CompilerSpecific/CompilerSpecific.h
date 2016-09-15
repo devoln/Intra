@@ -187,8 +187,6 @@
 
 #ifdef INTRA_MINIMIZE_CRT
 #define _NO_CRT_STDIO_INLINE
-#elif(defined(__clang__))
-char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке glibc, из-за которой clang не компилирует
 #endif
 
 //#define _USE_32BIT_TIME_T
@@ -197,6 +195,8 @@ char* gets(char* str); //Затыкаем ошибку в стандартной
 
 #define INTRA_COMPILER_ASSUME(hint)   __assume(hint)
 #define INTRA_COMPILER_PRAGMA(pragma) __pragma(pragma)
+#elif(defined(__clang__))
+char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке glibc, из-за которой clang не компилирует
 #endif
 
 #ifdef __clang__
