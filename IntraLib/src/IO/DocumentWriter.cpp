@@ -100,9 +100,9 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 	color*=2.0f;
 	if(oldFont.Color!=color || oldFont.Bold!=bold || oldFont.Underline!=underline)
 	{
-		s << "\x1B[0;37m";
-		s << "\x1B[0;37m";
-		s << "\x1B[0;37m";
+		s << "\x1B[0m";
+		s << "\x1B[0m";
+		s << "\x1B[0m";
 		if(oldFont.Color!=color && oldFont.Color!=Math::NaN)
 		{
 			int code = 0;
