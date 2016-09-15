@@ -1,7 +1,8 @@
 ﻿#include "Core/Time.h"
 #include "Containers/String.h"
-#include <time.h>
 
+#include <time.h>
+#include <cstdio>
 
 
 namespace Intra {
