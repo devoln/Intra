@@ -97,7 +97,6 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), consoleCode);
 	}
 #else
-	color*=2.0f;
 	if(oldFont.Color!=color || oldFont.Bold!=bold || oldFont.Underline!=underline)
 	{
 		s << "\x1B[0m";
