@@ -102,7 +102,7 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 	{
 		s << "\x1B[0m";
 		s << "\x1B[0m";
-		s << "\x1B[0m";
+		s << "\x1B[0;30m";
 		if(oldFont.Color!=color && oldFont.Color!=Math::NaN)
 		{
 			int code = 0;
