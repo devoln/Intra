@@ -1,5 +1,10 @@
 ﻿#pragma once
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
+#endif
+
 #if(INTRA_LIBRARY_THREADING==INTRA_LIBRARY_THREADING_CPPLIB)
 #include <atomic>
 namespace Intra {
@@ -119,6 +124,10 @@ private:
 	T value;
 	mutable Mutex mutex;
 };
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 }
 

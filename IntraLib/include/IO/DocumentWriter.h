@@ -50,7 +50,7 @@ protected:
 	size_t spoiler_nesting;
 	Array<FontDesc> font_stack;
 public:
-	DocumentWriterBase(IOutputStream* s) {my_s=s;}
+	DocumentWriterBase(IOutputStream* s): my_s(s), spoiler_nesting(0), font_stack(null) {}
 	void WriteData(const void* data, size_t bytes) override {my_s->WriteData(data, bytes);}
 
 	void PushFont(Math::Vec3 color={1,1,1}, float size=3, bool bold=false, bool italic=false, bool underline=false) override

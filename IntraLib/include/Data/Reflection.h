@@ -28,8 +28,8 @@ private:
 		const StructReflection*> get_reflection() {return null;}
 public:
 	template<typename T, typename F> constexpr StructField(F T::*field):
-		Offset((ushort)core::member_offset(field)),
-		Type(ValueType::Of<F>()), Size((ushort)sizeof(F)), SubstructReflection(get_reflection<F>()) {}
+		Offset(ushort(core::member_offset(field))),
+		Type(ValueType::Of<F>()), Size(ushort(sizeof(F))), SubstructReflection(get_reflection<F>()) {}
 
 	//! Смещение поля структуры в байтах относительно её начала
 	ushort Offset;

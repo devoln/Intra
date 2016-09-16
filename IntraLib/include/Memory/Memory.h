@@ -193,7 +193,7 @@ template<typename T, typename U> Meta::EnableIfNotTrivCopyable<T> CopyInit(Array
 	INTRA_ASSERT(dst.Count()==src.Count());
 	while(!src.Empty())
 	{
-		new(&dst.First()) T((T)src.First());
+		new(&dst.First()) T(src.First());
 		dst.PopFirst();
 		src.PopFirst();
 	}
@@ -209,7 +209,7 @@ template<typename T, typename U> Meta::EnableIfNotTrivCopyable<T> CopyInitBackwa
 	INTRA_ASSERT(dst.Count()==src.Count());
 	while(!src.Empty())
 	{
-		new(&dst.Last()) T((T)src.Last());
+		new(&dst.Last()) T(src.Last());
 		dst.PopLast();
 		src.PopLast();
 	}
@@ -342,7 +342,7 @@ template<typename T, typename Allocator> ArrayRange<T> AllocateRangeUninitialize
 {
 	(void)allocator; //Чтобы устранить ложное предупреждение MSVC
 	size_t size = count*sizeof(T);
-	auto result = (T*)allocator.Allocate(size, sourceInfo);
+	T* result = allocator.Allocate(size, sourceInfo);
 	count = size/sizeof(T);
 	return ArrayRange<T>(result, count);
 }

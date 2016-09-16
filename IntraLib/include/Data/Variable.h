@@ -81,9 +81,9 @@ struct Variable
 class VariableArray
 {
 public:
-	VariableArray() {}
+	VariableArray(): data(null), variables(null) {}
 	VariableArray(const VariableArray& rhs) = default;
-	VariableArray(VariableArray&& rhs) {operator=(core::move(rhs));}
+	VariableArray(VariableArray&& rhs): data(core::move(rhs.data)), variables(core::move(rhs.variables)) {}
 
 	VariableArray& operator=(const VariableArray& rhs) = default;
 	VariableArray& operator=(VariableArray&& rhs)
@@ -95,17 +95,17 @@ public:
 
 	const Variable& operator[](size_t index) const
 	{
-		return *(const Variable*)(data.Data() + variables[index].offset);
+		return *reinterpret_cast<const Variable*>(data.Data() + variables[index].offset);
 	}
 
 	template<typename T> T& Get(size_t index, size_t arrIndex)
 	{
-		return *(T*)(data.Data()+variables[index].offset+arrIndex*sizeof(T));
+		return *reinterpret_cast<T*>(data.Data()+variables[index].offset+arrIndex*sizeof(T));
 	}
 
 	template<typename T> const T& Get(size_t index, size_t arrIndex) const
 	{
-		return ((const T*)GetPtr(index))[arrIndex];
+		return reinterpret_cast<const T*>(GetPtr(index))[arrIndex];
 	}
 
 	const void* GetPtr(size_t index) const
@@ -120,13 +120,13 @@ public:
 
 	void Add(const void* value, size_t bytes)
 	{
-		variables.EmplaceLast((uint)data.Count());
+		variables.EmplaceLast(uint(data.Count()));
 		data.AddLastRange(ArrayRange<const byte>((byte*)value, bytes));
 	}
 
 	void* AddData(size_t bytes)
 	{
-		variables.EmplaceLast((uint)data.Count());
+		variables.EmplaceLast(uint(data.Count()));
 		data.SetCountUninitialized(data.Count()+bytes);
 		return data.end()-bytes;
 	}
@@ -138,14 +138,14 @@ public:
 
 	template<typename T> void Add(const T& value)
 	{
-		variables.EmplaceLast((uint)data.Count());
+		variables.EmplaceLast(uint(data.Count()));
 		data.AddLastRange(ArrayRange<const byte>((byte*)&value, sizeof(T)));
 	}
 
 	void Add(const Variable& value, ValueType type)
 	{
-		variables.EmplaceLast((uint)data.Count());
-		data.AddLastRange(ArrayRange<const byte>((byte*)&value, type.Size()));
+		variables.EmplaceLast(uint(data.Count()));
+		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<byte*>(&value), type.Size()));
 	}
 
 	template<typename T> void Set(size_t index, ArrayRange<const T> arr, size_t first=0)

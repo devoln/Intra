@@ -9,14 +9,14 @@ namespace Intra {
 
 struct SoundBuffer
 {
-	SoundBuffer(null_t=null): SampleRate(0) {}
+	SoundBuffer(null_t=null): SampleRate(0), Samples(null) {}
 	SoundBuffer(size_t sampleCount, uint sampleRate=44100, ArrayRange<const float> initData=null);
 	SoundBuffer(const SoundBuffer& rhs): SampleRate(rhs.SampleRate), Samples(rhs.Samples) {}
 	SoundBuffer(SoundBuffer&& rhs): SampleRate(rhs.SampleRate), Samples(core::move(rhs.Samples)) {}
 
-	double Duration() const {return SampleRate==0? 0: (double)Samples.Count()/SampleRate;}
+	double Duration() const {return SampleRate==0? 0: double(Samples.Count())/double(SampleRate);}
 	uint TimeToSamples(double time) const {return uint(time*SampleRate);}
-	double SamplesToTime(size_t samples) const {return (double)samples/SampleRate;}
+	double SamplesToTime(size_t samples) const {return double(samples)/double(SampleRate);}
 
 	void ConvertToShorts(size_t first, ArrayRange<short> outSamples) const;
 	void CastToShorts(size_t first, ArrayRange<short> outSamples) const;
@@ -28,8 +28,8 @@ struct SoundBuffer
 		const size_t endSample = startSample+sampleCount;
 		if(endSample>Samples.Count()) Samples.SetCount(endSample);
 		double t = t0, dt = 1.0/SampleRate;
-		for(size_t i = startSample; i<endSample; i++)
-			Samples[i] = callable((float)t), t+=dt;
+		for(size_t i = startSample; i<endSample; i++, t+=dt)
+			Samples[i] = callable((float)t);
 	}
 
 	template<typename T> void Operate(T callable, const SoundBuffer* rhs,
@@ -38,8 +38,8 @@ struct SoundBuffer
 		const size_t endLhsSample = startLhsSample+sampleCount;
 		const intptr offset = (intptr)(startRhsSample-startLhsSample);
 		double t = t0, dt = 1.0/SampleRate;
-		for(size_t i = startLhsSample; i<endLhsSample; i++)
-			Samples[i] = callable((float)t, Samples[i], rhs->Samples[i+offset]), t+=dt;
+		for(size_t i = startLhsSample; i<endLhsSample; i++, t+=dt)
+			Samples[i] = callable((float)t, Samples[i], rhs->Samples[size_t(intptr(i)+offset)]);
 	}
 
 	template<typename T> void Modify(T callable, size_t startSample, size_t sampleCount, double t0=0.0)

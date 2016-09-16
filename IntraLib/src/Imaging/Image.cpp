@@ -413,9 +413,9 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 	if(srcFormat==ImageFormat::RGBA8 && dstFormat==ImageFormat::RGB8)
 		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels = (UBVec3*)pos;
+			auto pixels = reinterpret_cast<UBVec3*>(pos);
 			if(swapRB) for(uint x=0; x<sizes.x; x++) *pixels++ = s->Read<UBVec4>().swizzle(2,1,0);
-			else for(uint x=0; x<sizes.x; x++) *pixels++ = (UBVec3)s->Read<UBVec4>();
+			else for(uint x=0; x<sizes.x; x++) *pixels++ = s->Read<UBVec4>().xyz;
 			pos += dstLineBytes*flipSign;
 			s->Skip(srcLineBytes-usefulSrcLineBytes);
 		}
@@ -428,12 +428,12 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 {
 	INTRA_ASSERT(s->IsSeekable());
 	const ushort bytesPerPixel = format.BytesPerPixel();
-	const uint usefulSrcLineBytes = sizes.x*bpp/8, usefulDstLineBytes=sizes.x*bytesPerPixel;
-	const uint srcLineBytes = (usefulSrcLineBytes+srcAlignment-1)&~(srcAlignment-1);
-	const uint dstLineBytes = (usefulDstLineBytes+dstAlignment-1)&~(dstAlignment-1);
+	const uint usefulSrcLineBytes = uint(sizes.x*bpp)/8u;
+	const uint usefulDstLineBytes = uint(sizes.x*bytesPerPixel);
+	const uint srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~(srcAlignment-1u);
+	const uint dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~(dstAlignment-1u);
 	const size_t dstDataSize = sizes.x*dstLineBytes;
 
-	const int flipSign = 1-2*int(flipVert);
 	byte* pos = dstBuf;
 	if(flipVert) pos += dstDataSize-dstLineBytes;
 
@@ -464,7 +464,8 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 			core::memcpy(linePos, palette + colorIndex*bytesPerPixel, bytesPerPixel);
 			linePos+=bytesPerPixel;
 		}
-		pos += dstLineBytes*flipSign;
+		if(!flipVert) pos += dstLineBytes;
+		else pos -= dstLineBytes;
 		s->Skip(srcLineBytes-usefulSrcLineBytes);
 	}
 }
@@ -515,7 +516,7 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 	}
 	else if(bmpHdr.bitCount<=8) //Если палитра отсутствует, то сделаем её сами из оттенков серого. Такие случаи вроде бы не были описаны, но paint создаёт такие bmp
 		for(int i=0; i<(1<<bmpHdr.bitCount); i++)
-			colorTable[i]=UBVec4(UBVec3((byte)( 255*i >> bmpHdr.bitCount )), 255);
+			colorTable[i] = UBVec4(UBVec3(byte( 255*i >> bmpHdr.bitCount )), 255);
 
 	LineAlignment = 1;
 	Info.Type = ImageType_2D;
@@ -544,13 +545,14 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 		if(bmpHdr.bitCount==32) return read_pixel_data_block(s, size,
 			ImageFormat::RGBA8,  Info.Format, false, true, 4, LineAlignment, Data.Data());
 
-		read_paletted_pixel_data_block(s, (byte*)colorTable, bmpHdr.bitCount, size, Info.Format, true, 4, LineAlignment, Data.Data());
+		read_paletted_pixel_data_block(s, reinterpret_cast<byte*>(colorTable),
+				bmpHdr.bitCount, size, Info.Format, true, 4, LineAlignment, Data.Data());
 		return;
 	}
 
 	//Битовые поля
 	//Предполагается, что маски цветовых компонентов могут находиться в любом порядке
-	const uint lineWidth = ((Info.Size.x*bmpHdr.bitCount/8)+3)&~3;
+	const uint lineWidth = ((Info.Size.x*bmpHdr.bitCount/8u)+3u)&~3u;
 	Array<byte> line;
 	line.SetCountUninitialized(lineWidth);
 	UVec4 bitCount, bitPositions;
@@ -559,7 +561,7 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 		bitCount[k] = bit_count_by_mask(bmpHdr.RgbaMasks[k]);
 		bitPositions[k] = bit_position_by_mask(bmpHdr.RgbaMasks[k]);
 	}
-	UBVec4* pixels = (UBVec4*)Data.end();
+	UBVec4* pixels = reinterpret_cast<UBVec4*>(Data.end());
 
 	for(uint i=0; i<Info.Size.y; i++)
 	{
@@ -572,14 +574,18 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 		for(uint j=0; j<Info.Size.x; j++)
 		{
 			uint Color=0;
-			if(bmpHdr.bitCount==16) Color = *(ushortLE*)linePtr;
-			else if(bmpHdr.bitCount==32) Color = *(uintLE*)linePtr;
+			if(bmpHdr.bitCount==16) Color = *reinterpret_cast<ushortLE*>(linePtr);
+			else if(bmpHdr.bitCount==32) Color = *reinterpret_cast<uintLE*>(linePtr);
 			else
 			{
 				// Other formats are not valid
 			}
 			linePtr+=bmpHdr.bitCount/8;
-			for(int k=0; k<4; k++) pixels[index][k] = (byte)convert((Color & bmpHdr.RgbaMasks[k]) >> bitPositions[k], bitCount[k], 8);
+			for(int k=0; k<4; k++)
+			{
+				uint pixel = convert((Color & bmpHdr.RgbaMasks[k]) >> bitPositions[k], bitCount[k], 8);
+				pixels[index][k] = byte(pixel);
+			}
 			index++;
 		}
 	}
@@ -615,7 +621,7 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 		return;
 	}
 
-	const uint pixelcount = Info.Size.x*Info.Size.y;
+	const uint pixelcount = uint(Info.Size.x*Info.Size.y);
 	uint index=0;
 	byte* pos = Data.end() - Info.Size.x*bytesPerPixel;
 	for(uint currentPixel=0; currentPixel<pixelcount;)
@@ -648,12 +654,13 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 
 
 
-#if(INTRA_LIBRARY_IMAGE_LOADING==INTRA_LIBRARY_IMAGE_LOADING_Dummy) //TODO: сделать загрузку текстур через JNI
+#if(INTRA_LIBRARY_IMAGE_LOADING==INTRA_LIBRARY_IMAGE_LOADING_Dummy)
 
 namespace Intra {
 
 void Image::load_with_library(IO::IInputStream* s, uint bytes)
 {
+	(void)bytes; (void)s;
 	INTRA_ASSERT(s!=null);
 
 	Info.Size = {1, 1, 1};
@@ -665,7 +672,7 @@ void Image::load_with_library(IO::IInputStream* s, uint bytes)
 
 	uint white = 0xFFFFFFFF;
 	Data.Clear();
-	Data.AddLastRange(ArrayRange<const byte>((byte*)&white, sizeof(white)));
+	Data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<byte*>(&white), sizeof(white)));
 }
 
 }

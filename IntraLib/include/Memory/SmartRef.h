@@ -8,7 +8,7 @@ template<typename T> struct IntrusiveRefCounted
 {
 	forceinline IntrusiveRefCounted(): refs(0) {}
 	forceinline void AddRef() {++refs;}
-	forceinline void Release() {INTRA_ASSERT(refs>0); if(--refs==0) delete (T*)this;}
+	forceinline void Release() {INTRA_ASSERT(refs>0); if(--refs==0) delete static_cast<T*>(this);}
 	forceinline uint GetRefCount() {return refs;}
 
 private:
@@ -62,9 +62,9 @@ template<typename T> uint ToHash(const IntrusiveReference<T>& rhs) {return ToHas
 
 template<typename T> struct UniqueReference
 {
-	forceinline UniqueReference(T* b=null) {ptr=b;}
+	forceinline UniqueReference(T* b=null): ptr(b) {}
 	forceinline UniqueReference(const UniqueReference& rhs) = delete;
-	forceinline UniqueReference(UniqueReference&& rhs) {ptr=rhs.ptr; rhs.ptr=null;}
+	forceinline UniqueReference(UniqueReference&& rhs): ptr(rhs.ptr) {rhs.ptr=null;}
 	forceinline ~UniqueReference() {if(ptr!=null) delete ptr;}
 
 	UniqueReference& operator=(const UniqueReference& rhs) = delete;

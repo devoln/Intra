@@ -16,7 +16,7 @@ public:
 
 	Thread(null_t=null): handle(null) {}
 	Thread(Thread&& rhs): handle(rhs.handle) {rhs.handle=null;}
-	Thread(const Func& func) {create_thread(func);}
+	Thread(const Func& func): handle(null) {create_thread(func);}
 	~Thread() {delete_thread();}
 
 	Thread& operator=(Thread&& rhs)

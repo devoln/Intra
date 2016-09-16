@@ -27,7 +27,8 @@ inline byte* Aligned(void* value, size_t alignment, size_t offset=0)
 
 
 
-INTRA_DEFINE_EXPRESSION_CHECKER(AllocatorHasGetAllocationSize, static_cast<size_t>(Meta::Val<T>().GetAllocationSize((void*)null)));
+INTRA_DEFINE_EXPRESSION_CHECKER(AllocatorHasGetAllocationSize,\
+	static_cast<size_t>(Meta::Val<T>().GetAllocationSize(static_cast<void*>(null))));
 
 
 template<typename Allocator> struct BreakpointOnError: Allocator
@@ -78,12 +79,12 @@ public:
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
 		size_t totalBytes = bytes + 2*sizeof(uint);
-		byte* plainMemory = (byte*)Allocator::Allocate(totalBytes, sourceInfo);
+		byte* plainMemory = Allocator::Allocate(totalBytes, sourceInfo);
 		if(plainMemory!=null)
 		{
 			bytes = totalBytes - 2*sizeof(uint);
-			*(uint*)plainMemory = BoundValue;
-			*(uint*)(plainMemory+sizeof(uint)+bytes) = BoundValue;
+			*reinterpret_cast<uint*>(plainMemory) = BoundValue;
+			*reinterpret_cast<uint*>(plainMemory+sizeof(uint)+bytes) = BoundValue;
 			return plainMemory+sizeof(uint);
 		}
 		bytes = 0;
@@ -93,13 +94,13 @@ public:
 	void Free(void* ptr, size_t size)
 	{
 		if(ptr==null) return;
-		byte* plainMemory = (byte*)ptr-sizeof(uint);
+		byte* plainMemory = reinterpret_cast<byte*>(ptr)-sizeof(uint);
 
-		uint leftBoundValue = *(uint*)plainMemory;
+		uint leftBoundValue = *reinterpret_cast<uint*>(plainMemory);
 		if(leftBoundValue!=BoundValue)
 			INTRA_INTERNAL_ERROR("Allocator left bound check failed!");
 
-		uint rightBoundValue = *(uint*)(plainMemory+size+sizeof(uint));
+		uint rightBoundValue = *reinterpret_cast<uint*>(plainMemory+size+sizeof(uint));
 		if(rightBoundValue!=BoundValue)
 			INTRA_INTERNAL_ERROR("Allocator right bound check failed!");
 
@@ -110,7 +111,8 @@ public:
 		AllocatorHasGetAllocationSize<U>::_,
 	size_t> GetAllocationSize(void* ptr) const
 	{
-		return Allocator::GetAllocationSize((byte*)ptr-sizeof(uint)) - sizeof(uint)*2;
+		byte* bptr = reinterpret_cast<byte*>(ptr);
+		return Allocator::GetAllocationSize(bptr-sizeof(uint)) - sizeof(uint)*2;
 	}
 };
 
@@ -120,9 +122,9 @@ template<typename Allocator> struct AllocationCounted: Allocator
 {
 	size_t counter;
 public:
-	template<typename... Args> explicit AllocationCounted(Args&&... args): Allocator(core::forward<Args>(args)...) {}
-	AllocationCounted(const AllocationCounted& rhs): Allocator(rhs) {}
-	AllocationCounted(AllocationCounted&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	template<typename... Args> explicit AllocationCounted(Args&&... args): Allocator(core::forward<Args>(args)...), counter(0) {}
+	AllocationCounted(const AllocationCounted& rhs): Allocator(rhs), counter(rhs.counter) {}
+	AllocationCounted(AllocationCounted&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))), counter(rhs.counter) {}
 
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
@@ -201,13 +203,13 @@ template<class Allocator> struct SizedAllocator: Allocator
 	void Free(void* ptr, size_t size)
 	{
 		INTRA_ASSERT(GetAllocationSize(ptr)==size);
-		size_t* originalPtr = (size_t*)ptr-1;
+		size_t* originalPtr = reinterpret_cast<size_t*>(ptr)-1;
 		Allocator::Free(originalPtr, size+sizeof(size_t));
 	}
 
 	forceinline size_t GetAllocationSize(void* ptr) const
 	{
-		return *((size_t*)ptr-1);
+		return *(reinterpret_cast<size_t*>(ptr)-1);
 	}
 };
 
@@ -289,7 +291,7 @@ private:
 struct FreeList
 {
 	FreeList(null_t=null): next(null) {}
-	FreeList(ArrayRange<byte> buf, size_t elementSize, size_t alignment)
+	FreeList(ArrayRange<byte> buf, size_t elementSize, size_t alignment): next(null)
 	{
 		InitBuffer(buf, elementSize, alignment);
 	}
@@ -306,7 +308,7 @@ struct FreeList
 
 	void Free(void* ptr)
 	{
-		FreeList* head = (FreeList*)ptr;
+		FreeList* head = reinterpret_cast<FreeList*>(ptr);
 		head->next = next;
 		next = head;
 	}
@@ -345,10 +347,10 @@ template<typename Allocator> struct GrowingFreeList: Allocator
 			return;
 		}
 		first_block = Allocator::Allocate(block_size(initialSize), sourceInfo);
-		list.InitBuffer(ArrayRange<byte>((byte*)first_block+block_size(0), initialSize), elementSize, alignment),
+		list.InitBuffer(ArrayRange<byte>(reinterpret_cast<byte*>(first_block)+block_size(0), initialSize), elementSize, alignment),
 		capacity = initialSize;
-		element_size = (ushort)elementSize;
-		element_alignment = (ushort)alignment;
+		element_size = ushort(elementSize);
+		element_alignment = ushort(alignment);
 		next_block() = null;
 	}
 

@@ -440,10 +440,10 @@ private:
 
 	public:
 		Formatter(GenericStringView<Char> format):
-			format(format.Data()), rest(format), data(null), isEnded(false) {init();}
+			format(format.Data()), rest(format), data(null), buffer_rest(null), isEnded(false) {init();}
 
 		Formatter(GenericStringView<Char> format, Allocator& allocator): AllocatorRef(allocator),
-			format(format.Data()), rest(format), data(null), isEnded(false) {init();}
+			format(format.Data()), rest(format), data(null), buffer_rest(null), isEnded(false) {init();}
 
 		Formatter(Formatter&& rhs): AllocatorRef(rhs), format(rhs.format),
 			rest(rhs.rest), data(rhs.data), buffer_rest(rhs.buffer_rest), isEnded(rhs.isEnded)
@@ -593,7 +593,7 @@ private:
 	private:
 		void init()
 		{
-			size_t initialSize = rest.End() - format+8u;
+			size_t initialSize = size_t(rest.End()-format)+8u;
 			data = AllocatorRef::Allocate(initialSize, INTRA_SOURCE_INFO);
 			buffer_rest = {data, initialSize};
 			if(format!=null) WriteNextPart();

@@ -510,7 +510,7 @@ template<typename ReturnType, typename... Expressions> using EnableIfCompiles = 
 	template<typename T> static Meta::TypeFromValue<bool, false> func(...);\
 	using type = decltype(func<U>(null));\
 	enum {_=type::_};\
-};
+}
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER(checker_name, expr) \
 	INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(checker_name, expr, true)
@@ -522,7 +522,7 @@ template<typename U1 default1, typename U2 default2> struct checker_name\
 	template<typename T1, typename T2> static Meta::TypeFromValue<bool, false> func(...);\
 	using type = decltype(func<U1, U2>(null, null));\
 	enum {_=type::_};\
-};
+}
 
 #define DEFINE_EXPRESSION_CHECKER2(checker_name, expr, default1, default2) \
 	INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, true, default1, default2)

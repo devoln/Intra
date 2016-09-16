@@ -17,7 +17,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLast, Meta::Val<T>().PopLast());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasSlicing, Meta::Val<T>().opSlice(size_t(), size_t()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPut, Meta::Val<T>().Put(Meta::Val<typename T::value_type>()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasIndex, Meta::Val<T>()[size_t()]);
-INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==(typename T::value_type*)null);
+INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==static_cast<typename T::value_type*>(null));
 
 namespace TypeEnum
 {

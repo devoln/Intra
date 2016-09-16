@@ -13,10 +13,10 @@ template<typename T> struct Vector2
 {
 	Vector2() = default;
 	constexpr explicit Vector2(T XY): x(XY), y(XY) {}
-	template<typename U, typename V> constexpr Vector2(U X, V Y): x((T)X), y((T)Y) {}
-	template<typename U> constexpr Vector2(const Vector2<U>& v): x((T)v.x), y((T)v.y) {}
-	template<typename U> constexpr explicit Vector2(const Vector3<U>& v): x((T)v.x), y((T)v.y) {}
-	template<typename U> constexpr explicit Vector2(const Vector4<U>& v): x((T)v.x), y((T)v.y) {}
+	template<typename U, typename V> constexpr Vector2(U X, V Y): x(T(X)), y(T(Y)) {}
+	template<typename U> constexpr Vector2(const Vector2<U>& v): x(T(v.x)), y(T(v.y)) {}
+	template<typename U> constexpr explicit Vector2(const Vector3<U>& v): x(T(v.x)), y(T(v.y)) {}
+	template<typename U> constexpr explicit Vector2(const Vector4<U>& v): x(T(v.x)), y(T(v.y)) {}
 
 	template<typename U> constexpr Vector2 operator+(const Vector2<U>& rhs) const {return Vector2(x+rhs.x, y+rhs.y);}
 	template<typename U> Vector2& operator+=(const Vector2<U>& rhs) {x+=rhs.x, y+=rhs.y; return *this;}
@@ -83,7 +83,7 @@ template<typename T> struct Vector3
 	template<typename U, typename V, typename S> constexpr Vector3(U X, V Y, S Z): x((T)X), y((T)Y), z((T)Z) {}
 	template<typename U> explicit constexpr Vector3(const Vector2<U>& v, T Z=0): x((T)v.x), y((T)v.y), z(Z) {}
 	template<typename U> constexpr Vector3(const Vector3<U>& v): x((T)v.x), y((T)v.y), z((T)v.z) {}
-	template<typename U> constexpr explicit Vector3(Vector4<U> v): x((T)v.x), y((T)v.y), z((T)v.z) {}
+	template<typename U> constexpr explicit Vector3(Vector4<U> v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
 
 	template<typename U> constexpr Vector3 operator+(const Vector3<U>& rhs) const {return Vector3(x+rhs.x, y+rhs.y, z+rhs.z);}
 	template<typename U> Vector3& operator+=(const Vector3<U>& rhs) {x+=rhs.x, y+=rhs.y, z+=rhs.z; return *this;}

@@ -279,7 +279,7 @@ public:
 	size_t> MaxLengthOf(X number, int preciseness=2, T dot='.', bool appendAllDigits=false)
 	{
 		(void)number; (void)dot; (void)appendAllDigits;
-		return 20+1+(preciseness+1);
+		return size_t(20+1+(preciseness+1));
 	}
 
 

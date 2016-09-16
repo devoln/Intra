@@ -26,7 +26,7 @@ String GetMidiPath(StringView fileName)
 	String filePath = fileName;
 	if(!DiskFile::Exists(filePath)) filePath = ResDir+"Music/Midi/"+fileName;
 	auto args = GetCommandLineArguments();
-	if(args.Count()>=2) filePath = args[1];
+	if(args.Length()>=2) filePath = args[1];
 	return filePath;
 }
 
@@ -35,7 +35,7 @@ void PrintMusicInfo(const Music& music)
 	uint noteCount=0;
 	for(auto&& track: music.Tracks)
 		for(auto&& note: track.Notes)
-			noteCount += int(!note.Note.IsPause());
+			noteCount += uint(!note.Note.IsPause());
 
 	Console.PrintLine("Длительность музыки: ", ToString(music.Duration(), 2), " с.");
 	Console.PrintLine("Число нот: ", noteCount);

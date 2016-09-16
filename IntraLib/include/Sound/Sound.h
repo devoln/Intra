@@ -101,12 +101,17 @@ public:
 	typedef Memory::UniqueReference<ASoundSampleSource> SourceRef;
 	typedef Utils::Callback<void()> OnCloseCallback;
 
-	StreamedSound(null_t=null) {}
+	StreamedSound(null_t=null): sample_source(null), on_close(null), data(null) {}
+
 	StreamedSound(SourceRef&& src, size_t bufferSizeInSamples=16384, OnCloseCallback onClose=null);
+
 	StreamedSound(StreamedSound&& rhs): sample_source(core::move(rhs.sample_source)),
 		on_close(rhs.on_close), data(rhs.data) {rhs.data=null; rhs.on_close=null;}
 	~StreamedSound() {release();}
+
+
 	static StreamedSound FromFile(StringView fileName, size_t bufferSizeInSamples=16384);
+
 
 	StreamedSound& operator=(StreamedSound&& rhs)
 	{
@@ -139,7 +144,7 @@ public:
 private:
 	SourceRef sample_source;
 	OnCloseCallback on_close;
-	SoundAPI::StreamedBufferHandle data=null;
+	SoundAPI::StreamedBufferHandle data;
 
 	StreamedSound(const StreamedSound&) = delete;
 

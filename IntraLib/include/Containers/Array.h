@@ -18,13 +18,13 @@ public:
 	typedef T* Iterator;
 	typedef const T* ConstIterator;
 
-	Array(null_t=null) {}
-	explicit Array(size_t size) {Reserve(size);}
-	explicit Array(size_t size, Allocator& allocator): AllocatorRef(allocator) {Reserve(size);}
+	Array(null_t=null): buffer(null), range(null) {}
+	explicit Array(size_t size): buffer(null), range(null) {Reserve(size);}
+	explicit Array(size_t size, Allocator& allocator): AllocatorRef(allocator), buffer(null), range(null) {Reserve(size);}
 	Array(std::initializer_list<T> values): Array(ArrayRange<const T>(values)) {}
 	Array(std::initializer_list<T> values, Allocator& allocator): Array(ArrayRange<const T>(values), allocator) {}
 	
-	Array(ArrayRange<const T> values)
+	Array(ArrayRange<const T> values): buffer(null), range(null)
 	{
 		SetCountUninitialized(values.Count());
 		Memory::CopyInit(range, values.AsConstRange());
@@ -36,13 +36,13 @@ public:
 		Memory::CopyInit(range, ArrayRange<const T>(values));
 	}
 
-	explicit Array(ArrayRange<const T> values, Allocator& allocator): AllocatorRef(allocator)
+	explicit Array(ArrayRange<const T> values, Allocator& allocator): AllocatorRef(allocator), buffer(null), range(null)
 	{
 		SetCountUninitialized(values.Count());
 		Memory::CopyInit(range, values.AsConstRange());
 	}
 
-	Array(const Array& rhs): AllocatorRef(rhs.GetRef())
+	Array(const Array& rhs): AllocatorRef(rhs.GetRef()), buffer(null), range(null)
 	{
 		SetCountUninitialized(rhs.Count());
 		Memory::CopyInit(range, rhs.AsConstRange());
@@ -480,6 +480,9 @@ public:
 
 	forceinline T* Data() {return begin();}
 	forceinline const T* Data() const {return begin();}
+
+	forceinline T* End() {return end();}
+	forceinline const T* End() const {return end();}
 
 	//! Возвращает байтовый буфер с данными этого массива. При этом сам массив становится пустым. Деструкторы не вызываются!
 	//ByteBuffer MoveToByteBuffer() {return core::move(data);}

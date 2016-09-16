@@ -11,7 +11,7 @@ struct SourceInfo
 	unsigned line;
 };
 
-#define INTRA_SOURCE_INFO SourceInfo{__FILE__, (uint)__LINE__}
+#define INTRA_SOURCE_INFO SourceInfo{__FILE__, uint(__LINE__)}
 
 template<typename Char> struct GenericStringView;
 typedef GenericStringView<char> StringView;

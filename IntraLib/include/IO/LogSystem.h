@@ -10,8 +10,8 @@ namespace Intra { namespace IO {
 class Logger: public IDocumentWriter
 {
 public:
-	Logger() {}
-	Logger(ArrayRange<IDocumentWriter* const> streams) {attached.Insert($, streams);}
+	Logger(): attached(null) {}
+	Logger(ArrayRange<IDocumentWriter* const> streams): attached(streams) {}
 
 	void Attach(IDocumentWriter* stream) {attached.AddLast(stream);}
 	void Detach(IDocumentWriter* stream) {attached.FindAndRemoveUnordered(stream);}
@@ -178,7 +178,7 @@ struct ChannelFilter
 
 	bool Filter(const NewLogger::Criteria& criteria)
 	{
-		return (criteria.channel & Channels.value)==criteria.channel;
+		return size_t(criteria.channel & Channels.value)==criteria.channel;
 	}
 
 	LogChannels Channels;

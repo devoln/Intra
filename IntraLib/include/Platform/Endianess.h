@@ -36,34 +36,34 @@ private:
 
 static_assert(Meta::IsAlmostPod<AnotherEndian<int>>::_, "AnotherEndian must be POD.");
 
-template<typename T, typename U> auto operator+(U lhs, AnotherEndian<T> rhs) -> decltype(lhs+(T)rhs) {return lhs+(T)rhs;}
-template<typename T, typename U> auto operator+(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs+rhs) {return (T)lhs+rhs;}
-template<typename T, typename U> auto operator-(U lhs, AnotherEndian<T> rhs) -> decltype(lhs-(T)rhs) {return lhs-(T)rhs;}
-template<typename T, typename U> auto operator-(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs-rhs) {return (T)lhs-rhs;}
-template<typename T, typename U> auto operator*(U lhs, AnotherEndian<T> rhs) -> decltype(lhs*(T)rhs) {return lhs*(T)rhs;}
-template<typename T, typename U> auto operator*(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs*rhs) {return (T)lhs*rhs;}
-template<typename T, typename U> auto operator/(U lhs, AnotherEndian<T> rhs) -> decltype(lhs/(T)rhs) {return lhs/(T)rhs;}
-template<typename T, typename U> auto operator/(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs/rhs) {return (T)lhs/rhs;}
+template<typename T, typename U> auto operator+(U lhs, AnotherEndian<T> rhs) -> decltype(lhs + T(rhs)) {return lhs + T(rhs);}
+template<typename T, typename U> auto operator+(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs) + rhs) {return T(lhs) + rhs;}
+template<typename T, typename U> auto operator-(U lhs, AnotherEndian<T> rhs) -> decltype(lhs - T(rhs)) {return lhs - T(rhs);}
+template<typename T, typename U> auto operator-(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs) - rhs) {return T(lhs)-rhs;}
+template<typename T, typename U> auto operator*(U lhs, AnotherEndian<T> rhs) -> decltype(lhs * T(rhs)) {return lhs * T(rhs);}
+template<typename T, typename U> auto operator*(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs) * rhs) {return T(lhs) * rhs;}
+template<typename T, typename U> auto operator/(U lhs, AnotherEndian<T> rhs) -> decltype(lhs / T(rhs)) {return lhs / T(rhs);}
+template<typename T, typename U> auto operator/(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs) / rhs) {return T(lhs) / rhs;}
 
-template<typename T, typename U> auto operator^(U lhs, AnotherEndian<T> rhs) -> decltype(lhs^(T)rhs) {return lhs^(T)rhs;}
-template<typename T, typename U> auto operator^(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs^rhs) {return (T)lhs^rhs;}
-template<typename T, typename U> auto operator&(U lhs, AnotherEndian<T> rhs) -> decltype(lhs&(T)rhs) {return lhs&(T)rhs;}
-template<typename T, typename U> auto operator&(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs&rhs) {return (T)lhs&rhs;}
-template<typename T, typename U> auto operator|(U lhs, AnotherEndian<T> rhs) -> decltype(lhs|(T)rhs) {return lhs|(T)rhs;}
-template<typename T, typename U> auto operator|(AnotherEndian<T> lhs, U rhs) -> decltype((T)lhs|rhs) {return (T)lhs|rhs;}
+template<typename T, typename U> auto operator^(U lhs, AnotherEndian<T> rhs) -> decltype(lhs ^ T(rhs)) {return lhs ^ T(rhs);}
+template<typename T, typename U> auto operator^(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs)^rhs) {return T(lhs) ^ rhs;}
+template<typename T, typename U> auto operator&(U lhs, AnotherEndian<T> rhs) -> decltype(lhs & T(rhs)) {return lhs & T(rhs);}
+template<typename T, typename U> auto operator&(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs) & rhs) {return T(lhs) & rhs;}
+template<typename T, typename U> auto operator|(U lhs, AnotherEndian<T> rhs) -> decltype(lhs | T(rhs)) {return lhs | T(rhs);}
+template<typename T, typename U> auto operator|(AnotherEndian<T> lhs, U rhs) -> decltype(T(lhs)|rhs) {return T(lhs) | rhs;}
 
-template<typename T, typename U> bool operator<(U lhs, AnotherEndian<T> rhs) {return lhs<(T)rhs;}
-template<typename T, typename U> bool operator<(AnotherEndian<T> lhs, U rhs) {return (T)lhs<rhs;}
-template<typename T, typename U> bool operator>(U lhs, AnotherEndian<T> rhs) {return lhs>(T)rhs;}
-template<typename T, typename U> bool operator>(AnotherEndian<T> lhs, U rhs) {return (T)lhs>rhs;}
-template<typename T, typename U> bool operator<=(U lhs, AnotherEndian<T> rhs) {return lhs<=(T)rhs;}
-template<typename T, typename U> bool operator<=(AnotherEndian<T> lhs, U rhs) {return (T)lhs<=rhs;}
-template<typename T, typename U> bool operator>=(U lhs, AnotherEndian<T> rhs) {return lhs>=(T)rhs;}
-template<typename T, typename U> bool operator>=(AnotherEndian<T> lhs, U rhs) {return (T)lhs>=rhs;}
-template<typename T, typename U> bool operator==(U lhs, AnotherEndian<T> rhs) {return lhs==(T)rhs;}
-template<typename T, typename U> bool operator==(AnotherEndian<T> lhs, U rhs) {return (T)lhs==rhs;}
-template<typename T, typename U> bool operator!=(U lhs, AnotherEndian<T> rhs) {return lhs!=(T)rhs;}
-template<typename T, typename U> bool operator!=(AnotherEndian<T> lhs, U rhs) {return (T)lhs!=rhs;}
+template<typename T, typename U> bool operator<(U lhs, AnotherEndian<T> rhs) {return lhs<T(rhs);}
+template<typename T, typename U> bool operator<(AnotherEndian<T> lhs, U rhs) {return T(lhs)<rhs;}
+template<typename T, typename U> bool operator>(U lhs, AnotherEndian<T> rhs) {return lhs>T(rhs);}
+template<typename T, typename U> bool operator>(AnotherEndian<T> lhs, U rhs) {return T(lhs)>rhs;}
+template<typename T, typename U> bool operator<=(U lhs, AnotherEndian<T> rhs) {return lhs<=T(rhs);}
+template<typename T, typename U> bool operator<=(AnotherEndian<T> lhs, U rhs) {return T(lhs)<=rhs;}
+template<typename T, typename U> bool operator>=(U lhs, AnotherEndian<T> rhs) {return lhs>=T(rhs);}
+template<typename T, typename U> bool operator>=(AnotherEndian<T> lhs, U rhs) {return T(lhs)>=rhs;}
+template<typename T, typename U> bool operator==(U lhs, AnotherEndian<T> rhs) {return lhs==T(rhs);}
+template<typename T, typename U> bool operator==(AnotherEndian<T> lhs, U rhs) {return T(lhs)==rhs;}
+template<typename T, typename U> bool operator!=(U lhs, AnotherEndian<T> rhs) {return lhs!=T(rhs);}
+template<typename T, typename U> bool operator!=(AnotherEndian<T> lhs, U rhs) {return T(lhs)!=rhs;}
 
 
 

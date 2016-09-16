@@ -79,7 +79,7 @@ template<typename T, typename N, typename X>
 auto Clamp(T v, N minv, X maxv) -> decltype(Max(minv, Min(maxv, v))) {return Max(minv, Min(maxv, v));}
 
 inline int IFloor(float x) {return (int)x-int(x<0);}
-inline intptr IFloor(double x) {return (intptr)x-intptr(x<0);}
+inline intptr IFloor(double x) {return intptr(x)-intptr(x<0);}
 
 #ifndef INTRA_INLINE_MATH
 
@@ -448,14 +448,14 @@ template<typename T> struct Vector4;
 
 
 //Линейная интерполяция скаляров и векторов
-template<typename T, typename U> T LinearMix(T x, T y, U factor) {return (T)(x*(U(1)-factor)+y*factor);}
+template<typename T, typename U> T LinearMix(T x, T y, U factor) {return T(x*(U(1)-factor)+y*factor);}
 
 template<typename T> T Step(T edge, T value) {return T(value>=edge);}
 
 template<typename T> T SmoothStep(T edge0, T edge1, T value)
 {
 	const T t = Clamp((value-edge0)/(edge1-edge0), T(0), T(1));
-	return t*t*((T)3-t*2);
+	return t*t*(T(3)-t*2);
 }
 
 namespace GLSL {
@@ -548,13 +548,13 @@ struct Half
 
 	Half(ushort s): data(s) {}
 	Half(float f): data(fromFloat(f)) {}
-	Half(double d): data(fromFloat((float)d)) {}
+	Half(double d): data(fromFloat(float(d))) {}
 
 	operator float() const {return toFloat(data);}
 	operator double() const {return toFloat(data);}
 
 	Half& operator=(float rhs) {data=fromFloat(rhs); return *this;}
-	Half& operator=(double rhs) {data=fromFloat((float)rhs); return *this;}
+	Half& operator=(double rhs) {data=fromFloat(float(rhs)); return *this;}
 	Half& operator=(const Half& rhs) = default;
 
 	ushort data;
@@ -562,9 +562,9 @@ struct Half
 private:
 	static ushort fromFloat(float f)
 	{
-		union {float f32; int i32;};
+		union {float f32; uint i32;};
 		f32 = f;
-		return ushort( (((i32 & 0x7fffffff) >> 13) - (0x38000000 >> 13)) | ((i32 & 0x80000000) >> 16) );
+		return ushort( (((i32 & 0x7fffffffu) >> 13u) - (0x38000000u >> 13u)) | ((i32 & 0x80000000u) >> 16u) );
 	}
 
 	static float toFloat(ushort h)

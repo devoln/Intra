@@ -36,6 +36,9 @@ endforeach(FILE)
 add_library(IntraLib STATIC ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
 
 
+set(CMAKE_C_FLAGS_DEBUG "-DINTRA_DEBUG")
+
+
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 option(LIBRARY_SOUND_SYSTEM_DirectSound "Use DirectSound" ON)

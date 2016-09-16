@@ -25,8 +25,8 @@ struct RelativeIndex
 	forceinline size_t GetRealIndex(size_t containerItemCount) const
 	{
 		if(multiplyer==0) return size_t(plus_value);
-		if(multiplyer==MaxMultiplyer) return containerItemCount+plus_value;
-		return size_t((ulong64)multiplyer*containerItemCount/MaxMultiplyer)+plus_value;
+		if(multiplyer==MaxMultiplyer) return size_t(intptr(containerItemCount)+plus_value);
+		return size_t(intptr(ulong64(multiplyer)*containerItemCount/MaxMultiplyer)+plus_value);
 	}
 
 private:

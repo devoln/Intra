@@ -194,7 +194,7 @@ size_t StreamingLoadCallback(void** dstSamples, uint channels,
 
 
 StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples, OnCloseCallback onClose):
-	sample_source(core::move(src)), on_close(onClose)
+	sample_source(core::move(src)), on_close(onClose), data(null)
 {
 	data = SoundAPI::StreamedBufferCreate(bufferSizeInSamples, sample_source->ChannelCount(),
 		sample_source->SampleRate(), {StreamingLoadCallback, sample_source.ptr});

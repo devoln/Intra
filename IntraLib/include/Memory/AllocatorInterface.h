@@ -11,6 +11,7 @@ class IAllocator
 public:
 	virtual AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo) = 0;
 	virtual void Free(void* ptr) = 0;
+	virtual ~IAllocator() {}
 };
 
 class ISizedAllocator: public IAllocator
@@ -102,7 +103,7 @@ template<typename Allocator> struct AllocatorRef<Allocator, Meta::EmptyType, tru
 
 	AllocatorRef& operator=(const AllocatorRef&) {return *this;}
 
-	Allocator& GetRef() const {return *(Allocator*)this;}
+	Allocator& GetRef() const {return *static_cast<Allocator*>(this);}
 
 	template<typename T> ArrayRange<T> AllocateRangeUninitialized(size_t& count, const SourceInfo& sourceInfo)
 	{
