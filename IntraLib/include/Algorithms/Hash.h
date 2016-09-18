@@ -3,6 +3,11 @@
 #include "Algorithms/Range.h"
 #include "Containers/StringView.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4307)
+#endif
+
 namespace Intra {
 
 struct hash128
@@ -157,15 +162,15 @@ namespace Hash
 
 		constexpr inline byte getU8(const char* str, size_t n)
 		{
-			return (byte)str[n];
+			return byte(str[n]);
 		}
 
 		constexpr inline ulong64 getU64(const char* str, size_t n)
 		{
-			return ulong64((byte)str[n*8])         | ulong64((byte)str[n*8+1]) << 8 |
-				   ulong64((byte)str[n*8+2]) << 16 | ulong64((byte)str[n*8+3]) << 24 |
-				   ulong64((byte)str[n*8+4]) << 32 | ulong64((byte)str[n*8+5]) << 40 |
-				   ulong64((byte)str[n*8+6]) << 48 | ulong64((byte)str[n*8+7]) << 56;
+			return ulong64(byte(str[n*8]))         | ulong64(byte(str[n*8+1])) << 8 |
+				   ulong64(byte(str[n*8+2])) << 16 | ulong64(byte(str[n*8+3])) << 24 |
+				   ulong64(byte(str[n*8+4])) << 32 | ulong64(byte(str[n*8+5])) << 40 |
+				   ulong64(byte(str[n*8+6])) << 48 | ulong64(byte(str[n*8+7])) << 56;
 		}
 
 		constexpr inline ulong64 rotl64c(ulong64 x, sbyte r)
@@ -329,11 +334,35 @@ namespace Hash
 	ulong64 Murmur2_64_x64(StringView key, uint seed);
 	ulong64 Murmur2_64_x32(StringView key, uint seed);
 
-	inline uint Murmur3_32(const char* key, uint seed) {return Murmur3_32({key, (const char*)core::memchr(key, 0, 0xFFFFFFFF)}, seed);}
-	inline hash128 Murmur3_128_x64(const char* key, uint seed) {return Murmur3_128_x64({key, (const char*)core::memchr(key, 0, 0xFFFFFFFF)}, seed);}
-	inline hash128 Murmur3_128_x32(const char* key, uint seed) {return Murmur3_128_x32({key, (const char*)core::memchr(key, 0, 0xFFFFFFFF)}, seed);}
-	inline ulong64 Murmur2_64_x64(const char* key, uint seed) {return Murmur2_64_x64({key, (const char*)core::memchr(key, 0, 0xFFFFFFFF)}, seed);}
-	inline ulong64 Murmur2_64_x32(const char* key, uint seed) {return Murmur2_64_x32({key, (const char*)core::memchr(key, 0, 0xFFFFFFFF)}, seed);}
+	inline uint Murmur3_32(const char* key, uint seed)
+	{
+		auto src = StringView(key, reinterpret_cast<const char*>(core::memchr(key, 0, 0xFFFFFFFF)));
+		return Murmur3_32(src, seed);
+	}
+
+	inline hash128 Murmur3_128_x64(const char* key, uint seed)
+	{
+		auto src = StringView(key, reinterpret_cast<const char*>(core::memchr(key, 0, 0xFFFFFFFF)));
+		return Murmur3_128_x64(src, seed);
+	}
+
+	inline hash128 Murmur3_128_x32(const char* key, uint seed)
+	{
+		auto src = StringView(key, reinterpret_cast<const char*>(core::memchr(key, 0, 0xFFFFFFFF)));
+		return Murmur3_128_x32(src, seed);
+	}
+
+	inline ulong64 Murmur2_64_x64(const char* key, uint seed)
+	{
+		auto src = StringView(key, reinterpret_cast<const char*>(core::memchr(key, 0, 0xFFFFFFFF)));
+		return Murmur2_64_x64(src, seed);
+	}
+
+	inline ulong64 Murmur2_64_x32(const char* key, uint seed)
+	{
+		auto src = StringView(key, reinterpret_cast<const char*>(core::memchr(key, 0, 0xFFFFFFFF)));
+		return Murmur2_64_x32(src, seed);
+	}
 }
 
 template<int len> constexpr inline StringHash::StringHash(const char(&str)[len]):
@@ -343,9 +372,8 @@ template<int len> constexpr inline StringHash::StringHash(const char(&str)[len])
 #endif
 {}
 
-inline StringHash::StringHash(StringView sv)
+inline StringHash::StringHash(StringView sv): hash(Hash::Murmur3_32(sv, 0))
 {
-	hash = Hash::Murmur3_32(sv, 0);
 #ifdef _DEBUG
 	if(sv.Length()>12) core::memcpy(strEnd, sv($-12, $).Data(), 12);
 	else
@@ -359,10 +387,13 @@ inline StringHash::StringHash(StringView sv)
 template<typename T> constexpr inline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_,
 uint> ToHash(T k) {return uint(k*2659435761u);}
-template<typename T> inline uint ToHash(T* k) {return uint((size_t)k*2659435761u);}
+template<typename T> inline uint ToHash(T* k) {return uint(reinterpret_cast<size_t>(k)*2659435761u);}
 inline uint ToHash(StringView k) {return Hash::Murmur3_32(k, 0);}
 
 template<typename T> struct HasherObject {uint operator()(const T& k) const {return ToHash(k);}};
 
 }
 
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

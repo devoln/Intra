@@ -66,7 +66,7 @@ class TextDeserializer
 {
 public:
 	TextDeserializer(const DataLanguageParams& langParams, const IO::MemoryInput& input):
-		Lang(langParams), NestingLevel(0), Line(0), Input(input) {}
+		Lang(langParams), NestingLevel(0), Line(0), Input(input), Log() {}
 
 
 	bool IgnoreField();

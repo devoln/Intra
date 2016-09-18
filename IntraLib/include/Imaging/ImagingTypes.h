@@ -83,9 +83,9 @@ struct ImageFormat
 
 	I value;
 
-	explicit ImageFormat(ushort val): value((I)val) {}
-	ImageFormat(I vt=None): value(vt) {}
-	ImageFormat(null_t): value(None) {}
+	explicit ImageFormat(ushort val): value(I(val)) {}
+	ImageFormat(I vt): value(vt) {}
+	ImageFormat(null_t=null): value(None) {}
 	ImageFormat(const ImageFormat& rhs) = default;
 
 	ImageFormat& operator=(null_t) {value=None; return *this;}
@@ -169,9 +169,9 @@ struct ImageInfo
 	ImageType Type;
 
 	ushort CalculateMaxMipmapCount() const;
-	Math::USVec3 CalculateMipmapSize(uint mip) const;
-	size_t CalculateMipmapDataSize(uint mip, uint lineAlignment) const;
-	size_t CalculateFullDataSize(uint lineAlignment) const;
+	Math::USVec3 CalculateMipmapSize(size_t mip) const;
+	size_t CalculateMipmapDataSize(size_t mip, size_t lineAlignment) const;
+	size_t CalculateFullDataSize(size_t lineAlignment) const;
 };
 
 }

@@ -30,11 +30,18 @@ Array<String> GetCommandLineArguments()
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
+#include <Windows.h>
 #include <ShellAPI.h>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Shell32.lib")
+#pragma warning(pop)
 #endif
 
 namespace Intra {

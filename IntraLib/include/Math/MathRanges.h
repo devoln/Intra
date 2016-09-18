@@ -48,7 +48,7 @@ template<typename T, typename F> struct Recurrence1Result:
 	typedef T return_value_type;
 
 	forceinline Recurrence1Result(null_t=null): func(), a(0) {}
-	forceinline Recurrence1Result(F function, T f1, T f2): func(function), a(f1) {}
+	forceinline Recurrence1Result(F function, T f1): func(function), a(f1) {}
 
 	forceinline T First() const {return a;}
 	forceinline void PopFirst() {a = func()(a);}
@@ -92,27 +92,33 @@ template<typename T, typename F> forceinline Recurrence2Result<T, F> Recurrence(
 }
 
 
-template<typename T> struct SineRange: Range::RangeMixin<SineRange<T>, T, Range::TypeEnum::Forward, false>
+template<typename T> struct SineRange:
+	Range::RangeMixin<SineRange<T>, T, Range::TypeEnum::Forward, false>
 {
-	SineRange() = default;
-	SineRange(T amplitude, T phi0=0, T dphi=0)
-	{
-		S[0] = amplitude*Math::Sin(phi0);
-		S[1] = amplitude*Math::Sin(dphi);
-		K = 2*Math::Cos(dphi);
-	}
+	SineRange(null_t=null): s1(0), s2(0), k(0) {}
+
+	SineRange(T amplitude, T phi0, T dphi):
+		s1(amplitude*Math::Sin(phi0)),
+		s2(amplitude*Math::Sin(dphi)),
+		k(2*Math::Cos(dphi)) {}
 
 	forceinline bool Empty() const {return false;}
-	forceinline T First() const {return S[1];}
-	forceinline void PopFirst() {const T newS = K*S[1]-S[0]; S[0]=S[1]; S[1]=newS;}
+	forceinline T First() const {return s2;}
+	
+	forceinline void PopFirst()
+	{
+		const T newS = k*s2-s1;
+		s1 = s2;
+		s2 = newS;
+	}
 
 private:
-	T S[2], K;
+	T s1, s2, k;
 };
 
 template<typename T> struct ExponentRange: Range::RangeMixin<ExponentRange<T>, T, Range::TypeEnum::Forward, false>
 {
-	ExponentRange(T scale=0, double step=0, T k=0): ek_sr((T)Exp(-k*step)) {exponent = scale/ek_sr;}
+	ExponentRange(T scale=0, double step=0, T k=0): ek_sr(T(Exp(-k*step))), exponent(scale/ek_sr) {}
 
 	forceinline bool Empty() const {return false;}
 	forceinline void PopFirst() {exponent*=ek_sr;}

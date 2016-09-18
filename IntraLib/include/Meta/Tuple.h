@@ -5,7 +5,7 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4512)
+#pragma warning(disable: 4512 4626 5026 5027)
 #endif
 
 namespace Intra { namespace Meta {
@@ -128,7 +128,6 @@ public:
 };
 
 template<typename... Args> Tuple<Args...> TupleL(Args&&... args) {return Tuple<Args...>(core::forward<Args>(args)...);}
-
 
 
 template<typename K, typename V> struct KeyValuePair
@@ -255,13 +254,13 @@ template<size_t N, typename T> forceinline TupleElementEqualsFunctor<N, T> Tuple
 {return TupleElementEqualsFunctor<N, T>(value);}
 
 
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 }
 
 using Meta::KeyValuePair;
 
 }
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+

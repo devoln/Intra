@@ -32,10 +32,10 @@ void StackAllocator::Free(void* ptr, size_t size)
 {
 	(void)size;
 	INTRA_ASSERT(ptr!=null);
-	INTRA_ASSERT((byte*)ptr < rest.Begin);
+	INTRA_ASSERT(reinterpret_cast<byte*>(ptr) < rest.Begin);
 
 	// grab the allocation offset from the 4 bytes right before the given pointer
-	const uint allocationOffset = *--(uint*&)ptr;
+	const uint allocationOffset = *--reinterpret_cast<uint*&>(ptr);
 
 	rest.Begin = start+allocationOffset;
 }
@@ -44,7 +44,9 @@ void StackAllocator::Free(void* ptr, size_t size)
 
 void FreeList::InitBuffer(ArrayRange<byte> buf, size_t elementSize, size_t alignment)
 {
-	if(elementSize<sizeof(FreeList*)) elementSize=sizeof(FreeList*);
+	if(elementSize<sizeof(FreeList*))
+		elementSize = sizeof(FreeList*);
+
 	size_t numElements = buf.Length()/elementSize;
 
 	union

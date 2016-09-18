@@ -17,8 +17,11 @@ namespace SoundSamplers
 {
 	struct Sawtooth
 	{
-		Sawtooth() = default;
-		Sawtooth(float updownRatio) {updown_value=updownRatio/(updownRatio+1);}
+		Sawtooth(float updownRatio):
+			p(0), dp(0), freq(0),
+			updown_value(updownRatio/(updownRatio+1)),
+			c1(0), c2(0), amplitude(0) {}
+
 		void SetParams(float newFreq, float newAmplitude, double step)
 		{
 			freq = newFreq;
@@ -35,7 +38,7 @@ namespace SoundSamplers
 
 		float First() const
 		{
-			float sawPos = (float)Math::Fract(p);
+			float sawPos = float(Math::Fract(p));
 			return sawPos<updown_value?
 				sawPos*c1-amplitude:
 				amplitude-(sawPos-updown_value)*c2;
@@ -44,17 +47,20 @@ namespace SoundSamplers
 		bool Empty() const {return false;}
 
 	private:
-		double p=0, dp=0;
-		float freq=0;
+		double p, dp;
+		float freq;
 		float updown_value, c1, c2, amplitude;
 	};
 
 	struct Rectangular
 	{
+		Rectangular(): twoFreqs(0), amplitude(0), t(0), dt(0) {}
+
 		void SetParams(float frequency, float ampl, double step)
 		{
-			twoFreqs=frequency*2; this->amplitude=ampl;
-			dt=(float)step;
+			twoFreqs = frequency*2;
+			amplitude = ampl;
+			dt = float(step);
 		}
 
 		forceinline float NextSample() {PopFirst(); return First();}
@@ -63,15 +69,20 @@ namespace SoundSamplers
 		bool Empty() const {return false;}
 
 	private:
-		float twoFreqs=0, amplitude;
-		float t=0, dt=0;
+		float twoFreqs, amplitude;
+		float t, dt;
 	};
 
 	struct ViolinPhysicalModel
 	{
-		void SetParams(float frequency, float amplitude, double step)
+		ViolinPhysicalModel():
+			amplitude(0), dt(0), sineRange(0,0,0),
+			Len(0), Frc(0), K1(0), K2(0),
+			P(), S(), bowIndex(0), soundIndex(0) {}
+
+		void SetParams(float frequency, float ampl, double step)
 		{
-			float note=(float)(Math::Log((double)frequency/MusicNote::BasicFrequencies[0]*44100*step)*12/0.6931471805599453)-14;
+			float note = float(Math::Log(frequency/MusicNote::BasicFrequencies[0]*44100.0*step)*12/0.6931471805599453)-14;
 			float kDemp;
 			if(note<13)
 			{
@@ -82,12 +93,12 @@ namespace SoundSamplers
 			else
 			{
 				float s = 230/Math::Pow(2.0f, (note-12)/12);
-				Len = Math::Max(4u, (uint)s);
+				Len = Math::Max(4u, uint(s));
 				Frc = 1.5f*(float(Len)/s)*(float(Len)/s);
 				kDemp = 0.12f/(note+12);
 			}
-			K1 = 1-kDemp*0.333f*Frc;
-			K2 = (1-K1)*0.5f;
+			K1 = 1.0f - kDemp*0.333f*Frc;
+			K2 = (1.0f-K1)*0.5f;
 			bowIndex = Len*9/10-3;
 			soundIndex = Len/100+1;
 			
@@ -96,8 +107,8 @@ namespace SoundSamplers
 			P.SetCount(Len+1u);
 			S.SetCount(Len+1u);
 
-			ampl = amplitude/40;
-			dt = (float)step;
+			amplitude = ampl*0.025f;
+			dt = float(step);
 
 			for(int i=0; i<0.15/step; i++) PopFirst();
 		}
@@ -110,7 +121,7 @@ namespace SoundSamplers
 
 		float First() const
 		{
-			return P[soundIndex]*ampl;
+			return P[soundIndex]*amplitude;
 		}
 
 		void PopFirst()
@@ -134,8 +145,8 @@ namespace SoundSamplers
 		}
 
 	private:
-		float ampl=0;
-		float dt=0;
+		float amplitude;
+		float dt;
 
 		Math::SineRange<float> sineRange;
 
@@ -144,8 +155,8 @@ namespace SoundSamplers
 		float K1, K2; //Коэффициенты, определяющие затухание звука в струне
 
 		//TODO: Здесь могут быть проблемы с многопоточностью
-		static Array<float> P; //Позиция участка струны
-		static Array<float> S; //Скорость участка струны
+		Array<float> P; //Позиция участка струны
+		Array<float> S; //Скорость участка струны
 
 		uint bowIndex;   //Участок струны, где работает смычок
 		uint soundIndex; //Участок струны, где снимается звук
@@ -153,42 +164,59 @@ namespace SoundSamplers
 
 	struct Noise
 	{
-		void SetParams(float frequency, float amplitude, double step)
+		Noise(): amplitude(0), ds(0), s(0) {}
+
+		void SetParams(float frequency, float ampl, double step)
 		{
-			ampl=amplitude;
-			ds=(float)(frequency*step);
+			amplitude = ampl;
+			ds = float(frequency*step);
 		}
+
 		forceinline float NextSample() {PopFirst(); return First();}
 		forceinline void PopFirst() {s+=ds;}
-		forceinline float First() const {return ampl*Math::RandomNoise::Linear(s);}
+		forceinline float First() const {return amplitude*Math::RandomNoise::Linear(s);}
 		bool Empty() const {return false;}
 
 	private:
-		float ampl=0;
-		float ds=0, s=0;
+		float amplitude;
+		float ds;
+		float s;
 	};
 
 	class AbsModSine
 	{
-		float modOmega, k, ampl;
+		float modOmega, k, amplitude;
 		float phi, dphi;
 		Math::SineRange<float> sine_range;
 	public:
-		AbsModSine() = default;
-		
-		AbsModSine(float koeff, float modFrequency) {k=koeff; modOmega=2*(float)Math::PI*modFrequency;}
+		AbsModSine(float koeff, float modFrequency):
+			modOmega(2*float(Math::PI)*modFrequency), k(koeff),
+			amplitude(0), phi(0), dphi(0), sine_range(0,0,0) {}
 
-		void SetParams(float frequency, float amplitude, double step)
+		void SetParams(float frequency, float ampl, double step)
 		{
-			ampl = amplitude;
+			amplitude = ampl;
 			dphi = float(2*Math::PI*frequency*step);
-			sine_range = Math::SineRange<float>(k, 0, (float)(modOmega*step));
-			phi=0;
+			sine_range = Math::SineRange<float>(k, 0, float(modOmega*step));
+			phi = 0;
 		}
 
-		forceinline float NextSample() {PopFirst(); return First();}
-		forceinline void PopFirst() {sine_range.PopFirst(); phi += dphi;}
-		forceinline float First() const {return ampl*Math::Sin(phi + sine_range.First());}
+		forceinline float NextSample()
+		{
+			PopFirst();
+			return First();
+		}
+
+		forceinline void PopFirst()
+		{
+			sine_range.PopFirst();
+			phi += dphi;
+		}
+
+		forceinline float First() const
+		{
+			return amplitude*Math::Sin(phi + sine_range.First());
+		}
 	};
 
 	class RelModSine
@@ -196,47 +224,78 @@ namespace SoundSamplers
 		float modK, k, ampl;
 		float phi, dphi;
 		Math::SineRange<float> sine_range;
+
 	public:
-		RelModSine() = default;
-		RelModSine(float koeff, float modKoeff) {k=koeff; modK=modKoeff;}
+		RelModSine(float koeff, float modKoeff):
+			modK(modKoeff), k(koeff),
+			ampl(0), phi(0), dphi(0), sine_range(0,0,0) {}
+
 		void SetParams(float frequency, float amplitude, double step)
 		{
 			ampl = amplitude;
-			const double omega = 2*Math::PI*frequency;
-			dphi = (float)(omega*step);
+			const double radFreq = 2*Math::PI*frequency;
+			dphi = float(radFreq*step);
 			phi=0;
-			sine_range = Math::SineRange<float>(k, 0, float(omega*modK*step));
+			sine_range = Math::SineRange<float>(k, 0, float(radFreq*modK*step));
 		}
 
-		forceinline float NextSample() {PopFirst(); return First();}
-		forceinline float First() const {return ampl*Math::Sin(phi + sine_range.First());}
-		forceinline void PopFirst() {sine_range.PopFirst(); phi+=dphi;}
+		forceinline float NextSample()
+		{
+			PopFirst();
+			return First();
+		}
+
+		forceinline float First() const
+		{
+			return ampl*Math::Sin(phi + sine_range.First());
+		}
+
+		forceinline void PopFirst()
+		{
+			sine_range.PopFirst();
+			phi+=dphi;
+		}
 	};
 
 	class AbsModTimeSine
 	{
-		float modOmega, k, t0, t1, dt, ampl;
+		float modOmega, k, t0, t1, dt, amplitude;
 		float phi, dphi;
 		Math::SineRange<float> sine_range;
 	public:
 		AbsModTimeSine() = default;
 
 		AbsModTimeSine(float modFrequency, float tstart, float koeff):
-			modOmega(2*(float)Math::PI*modFrequency), k(koeff), t0(tstart) {}
+			modOmega(float(2*Math::PI*modFrequency)), k(koeff), t0(tstart),
+			t1(t0), dt(0), amplitude(0), phi(0), dphi(0), sine_range(0,0,0) {}
 		
-		void SetParams(float frequency, float amplitude, double step)
+		void SetParams(float frequency, float ampl, double step)
 		{
-			ampl = amplitude;
+			amplitude = ampl;
 			dphi = float(2*Math::PI*frequency*step);
-			sine_range = Math::SineRange<float>(k, 0, (float)(modOmega*step));
-			phi=0;
+			sine_range = Math::SineRange<float>(k, 0, float(modOmega*step));
+			phi = 0;
 			t1 = t0;
-			dt = (float)step;
+			dt = float(step);
 		}
 
-		forceinline float NextSample() {PopFirst(); return First();}
-		forceinline void PopFirst() {sine_range.PopFirst(); phi += dphi; t1 -= dt;}
-		forceinline float First() const {return ampl*Math::Sin(phi + t1 * sine_range.First());}
+		forceinline float NextSample()
+		{
+			PopFirst();
+			return First();
+		}
+
+		forceinline void PopFirst()
+		{
+			sine_range.PopFirst();
+			phi += dphi;
+			t1 -= dt;
+		}
+
+		forceinline float First() const
+		{
+			return amplitude*Math::Sin(phi + t1 * sine_range.First());
+		}
 	};
 
 	class RelModTimeSine
@@ -245,9 +304,9 @@ namespace SoundSamplers
 		float phi, dphi;
 		Math::SineRange<float> sine_range;
 	public:
-		RelModTimeSine() = default;
-
-		RelModTimeSine(float modKoeff, float tstart, float koeff): modK(modKoeff), k(koeff), t0(tstart) {}
+		RelModTimeSine(float modKoeff, float tstart, float koeff):
+			modK(modKoeff), k(koeff), t0(tstart),
+			t1(0), dt(0), ampl(0), phi(0), dphi(0), sine_range() {}
 
 		void SetParams(float frequency, float amplitude, double step)
 		{
@@ -255,7 +314,8 @@ namespace SoundSamplers
 			const double omega = 2*Math::PI*frequency;
 			dphi = float(omega*step);
 			phi = 0;
-			t1=t0; dt=(float)step;
+			t1 = t0;
+			dt = float(step);
 			sine_range = Math::SineRange<float>(k, 0, float(omega*modK*step));
 		}
 
@@ -269,24 +329,29 @@ namespace SoundSamplers
 	template<typename T> class SoundSampler
 	{
 		float freq, ampl;
-		float time=0, dt=0;
+		float time, dt;
 		T generator;
 	public:
-		SoundSampler() = default;
 		SoundSampler(const SoundSampler&) = default;
-		SoundSampler(T myGenerator): generator(myGenerator) {}
+		SoundSampler(T myGenerator):
+			freq(0), ampl(0), time(0), dt(0), generator(myGenerator) {}
 
 		void SetParams(float frequency, float amplitude, double step)
 		{
 			freq = frequency;
 			ampl = amplitude;
-			dt = (float)step;
+			dt = float(step);
 		}
 
-		forceinline float NextSample() {const auto result = operator()(time); time+=dt; return result;}
+		forceinline float NextSample()
+		{
+			const float result = operator()(time);
+			time += dt;
+			return result;
+		}
+
 		forceinline float operator()(float t) {return generator(freq, t)*ampl;}
 	};
-
 
 	template<typename T> SoundSampler<T> CreateSampler(T generator) {return SoundSampler<T>(generator);}
 }
@@ -296,7 +361,9 @@ namespace SoundModifiers
 	struct AbsPulsator
 	{
 		AbsPulsator() = default;
-		AbsPulsator(float frequency, float baseAmplitude=0, float sinAmplitude=1) {freq=frequency; base_amplitude=baseAmplitude; sin_amplitude=sinAmplitude;}
+		AbsPulsator(float frequency, float baseAmplitude=0, float sinAmplitude=1): oscillator(),
+			freq(frequency), base_amplitude(baseAmplitude), sin_amplitude(sinAmplitude) {}
+
 		void SetParams(float, double step)
 		{
 			oscillator = Math::SineRange<float>(sin_amplitude, 0, float(2*Math::PI*freq*step));
@@ -304,7 +371,7 @@ namespace SoundModifiers
 
 		forceinline float NextSample(float sample)
 		{
-			auto result = sample*(base_amplitude+sin_amplitude * oscillator.First());
+			const float result = sample*(base_amplitude+sin_amplitude * oscillator.First());
 			oscillator.PopFirst();
 			return result;
 		}
@@ -317,16 +384,17 @@ namespace SoundModifiers
 
 	struct AddPulsator
 	{
-		AddPulsator() = default;
-		AddPulsator(float frequency, float basicVolume, float amplitude) {basic_volume=basicVolume; freq=frequency; ampl=amplitude;}
+		AddPulsator(float frequency, float basicVolume, float ampl): oscillator(),
+			freq(frequency), basic_volume(basicVolume), amplitude(ampl) {}
+
 		void SetParams(float, double step)
 		{
-			oscillator = Math::SineRange<float>(ampl, 0, float(2*Math::PI*freq*step));
+			oscillator = Math::SineRange<float>(amplitude, 0, float(2*Math::PI*freq*step));
 		}
 
 		forceinline float NextSample(float sample)
 		{
-			auto result = sample*(basic_volume + oscillator.First());
+			const float result = sample*(basic_volume + oscillator.First());
 			oscillator.PopFirst();
 			return result;
 		}
@@ -334,13 +402,12 @@ namespace SoundModifiers
 	private:
 		Math::SineRange<float> oscillator;
 		float freq, basic_volume;
-		float ampl;
+		float amplitude;
 	};
 
 	struct RelPulsator
 	{
-		RelPulsator() = default;
-		RelPulsator(float koeff) {k=koeff;}
+		RelPulsator(float koeff): k(koeff), oscillator() {}
 
 		void SetParams(float baseFrequency, double step)
 		{
@@ -349,7 +416,7 @@ namespace SoundModifiers
 
 		forceinline float NextSample(float sample)
 		{
-			auto result=sample * oscillator.First();
+			auto result = sample * oscillator.First();
 			oscillator.PopFirst();
 			return result;
 		}
@@ -368,8 +435,9 @@ namespace SoundPostEffects
 		float Frequency;
 		float MainVolume, SecondaryVolume;
 
-		Chorus() = default;
-		Chorus(float maxDelay, float frequency=3, float mainVolume=0.5f, float secondaryVolume=0.5f);
+		Chorus(float maxDelay=0.03f, float frequency=3, float mainVolume=0.5f, float secondaryVolume=0.5f):
+			MaxDelay(maxDelay), Frequency(frequency), MainVolume(mainVolume), SecondaryVolume(secondaryVolume) {}
+
 		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const;
 	};
 
@@ -378,7 +446,9 @@ namespace SoundPostEffects
 		float Delay;
 		float MainVolume, SecondaryVolume;
 
-		Echo(float delay=0.03f, float mainVolume=0.5f, float secondaryVolume=0.5f);
+		Echo(float delay=0.03f, float mainVolume=0.5f, float secondaryVolume=0.5f):
+			Delay(delay), MainVolume(mainVolume), SecondaryVolume(secondaryVolume) {}
+
 		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const;
 	};
 
@@ -387,12 +457,7 @@ namespace SoundPostEffects
 		float K;
 		FilterDrive(float k): K(k) {}
 
-		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
-		{
-			(void)sampleRate;
-			for(float& sample: inOutSamples)
-				sample = Math::Atan(sample*K);
-		}
+		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const;
 	};
 
 	struct FilterHP
@@ -400,17 +465,7 @@ namespace SoundPostEffects
 		float K;
 		FilterHP(float k): K(k) {}
 
-		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
-		{
-			(void)sampleRate;
-			float S = 0;
-			for(float& sample: inOutSamples)
-			{
-				S *= K;
-				S += sample - K*sample;
-				sample -= S;
-			}
-		}
+		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const;
 	};
 
 
@@ -419,43 +474,17 @@ namespace SoundPostEffects
 		float Frq, K;
 		FilterQ(float frq, float k): Frq(frq), K(k) {}
 
-		void operator()(ArrayRange<float> samples, uint sampleRate) const
-		{
-			(void)sampleRate;
-			float F = Frq/7019.0f, P = 0, S = 0;
-			for(float& sample: samples)
-			{
-				P += S*F+sample;
-				S = (S-P*F)*K;
-				sample = P;
-				//INTRA_ASSERT(sample!=Math::NaN);
-				//INTRA_ASSERT(sample>-1 && sample<1);
-			}
-		}
+		void operator()(ArrayRange<float> samples, uint sampleRate) const;
 	};
 
 	struct Fade
 	{
 		uint FadeIn, FadeOut;
-		Fade(uint fadeIn=0, uint fadeOut=0): FadeIn(fadeIn), FadeOut(fadeOut) {}
 
-		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
-		{
-			(void)sampleRate;
-			if(FadeIn>0)
-			{
-				float k = 1.0f/float(FadeIn*FadeIn);
-				for(size_t i=0; i<inOutSamples.Length(); i++)
-					inOutSamples[i] *= float(Math::Sqr(i+1))*k;
-			}
-			if(FadeOut>0)
-			{
-				size_t a = inOutSamples.Length()>FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
-				float k = 1.0f/float(Math::Sqr(FadeOut));
-				for(uint i=1; i<FadeOut; i++)
-					inOutSamples[a+i] *= float(Math::Sqr(FadeOut-i))*k;
-			}
-		}
+		Fade(uint fadeIn=0, uint fadeOut=0):
+			FadeIn(fadeIn), FadeOut(fadeOut) {}
+
+		void operator()(ArrayRange<float> inOutSamples, uint sampleRate) const;
 	};
 }
 
@@ -484,6 +513,12 @@ public:
 
 	template<typename T> struct impl_SamplerPassParams
 	{
+		impl_SamplerPassParams(const T& sampler_, ushort harmonics_, float scale_, float freqMultiplyer_):
+			sampler(sampler_), harmonics(harmonics_), scale(scale_), freqMultiplyer(freqMultiplyer_) {}
+
+		impl_SamplerPassParams(T&& sampler_, ushort harmonics_, float scale_, float freqMultiplyer_):
+			sampler(core::move(sampler_)), harmonics(harmonics_), scale(scale_), freqMultiplyer(freqMultiplyer_) {}
+
 		T sampler;
 		ushort harmonics;
 		float scale;
@@ -513,7 +548,8 @@ private:
 		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
 
 	
-	template<typename T> static void functionSynthPass(const impl_SamplerPassParams<T>& params, float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
+	template<typename T> static void functionSynthPass(const impl_SamplerPassParams<T>& params,
+		float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
 	{
 		const float dt=1.0f/sampleRate;
 
@@ -522,7 +558,7 @@ private:
 		for(ushort h=1; h<params.harmonics; h++) maxValue+=(harmVal/=2);
 		float newVolume = volume*params.scale/maxValue;
 
-		auto frequency=freq*params.freqMultiplyer;
+		float frequency = freq*params.freqMultiplyer;
 
 		Math::Random<float> frandom(988959283);
 		for(ushort h=0; h<params.harmonics; h++)
@@ -542,11 +578,7 @@ private:
 	static void functionNoiseSynthPass(const NoisePassParams& params,
 		float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
 	{
-		impl_SamplerPassParams<SoundSamplers::Noise> p;
-		p.freqMultiplyer = params.freqMultiplyer;
-		p.harmonics = params.harmonics;
-		p.scale = params.scale;
-		p.sampler = SoundSamplers::Noise();
+		impl_SamplerPassParams<SoundSamplers::Noise> p(SoundSamplers::Noise(), params.harmonics, params.scale, params.freqMultiplyer);
 		functionSynthPass(p, freq, volume, outSamples, sampleRate, add);
 	}
 
@@ -567,13 +599,14 @@ private:
 	//f = cutoff frequency
 	//(from ~0 Hz to SampleRate/2 - though many synths seem to filter only up to SampleRate/4)
 	struct HLPassParams {float rezAmount, cutoffFreq; bool highPass;};
-	static void functionHLPass(const HLPassParams& params, float /*freq*/, ArrayRange<float> inOutSamples, uint sampleRate)
+	static void functionHLPass(const HLPassParams& params,
+		float /*freq*/, ArrayRange<float> inOutSamples, uint sampleRate)
 	{
 		double t = 0.0, dt = 1.0/sampleRate;
 		Array<float> in(inOutSamples);
 		auto out = inOutSamples;
 
-		float c = Math::Tan((float)Math::PI*params.cutoffFreq/float(sampleRate));
+		float c = Math::Tan(float(Math::PI)*params.cutoffFreq/float(sampleRate));
 		float a1, a2, a3, b1, b2;
 		if(params.highPass)
 		{
@@ -603,12 +636,31 @@ private:
 		}
 	}
 public:
-	SynthesizedInstrument() {}
-	SynthesizedInstrument(SoundSynthFunction synth, ArrayRange<const SoundModifierFunction> modifiers=null,
-		SoundAttenuationFunction attenuator=null, ArrayRange<const SoundPostEffectFunction> postEffects=null, float minNoteDuration=0, float fadeOffTime=0);
+	SynthesizedInstrument():
+		SynthPass(), ModifierPasses(), AttenuationPass(), PostEffects(),
+		MinNoteDuration(0), FadeOffTime(0) {}
 
-	SynthesizedInstrument(SynthesizedInstrument&& rhs) {operator=(core::move(rhs));}
-	SynthesizedInstrument(const SynthesizedInstrument& rhs) {operator=(rhs);}
+	SynthesizedInstrument(SoundSynthFunction synth,
+		ArrayRange<const SoundModifierFunction> modifiers=null,
+		SoundAttenuationFunction attenuator=null,
+		ArrayRange<const SoundPostEffectFunction> postEffects=null,
+		float minNoteDuration=0, float fadeOffTime=0);
+
+	SynthesizedInstrument(SynthesizedInstrument&& rhs):
+		SynthPass(core::move(rhs.SynthPass)),
+		ModifierPasses(core::move(rhs.ModifierPasses)),
+		AttenuationPass(core::move(rhs.AttenuationPass)),
+		PostEffects(core::move(rhs.PostEffects)),
+		MinNoteDuration(rhs.MinNoteDuration),
+		FadeOffTime(rhs.FadeOffTime) {}
+
+	SynthesizedInstrument(const SynthesizedInstrument& rhs):
+		SynthPass(rhs.SynthPass),
+		ModifierPasses(rhs.ModifierPasses),
+		AttenuationPass(rhs.AttenuationPass),
+		PostEffects(rhs.PostEffects),
+		MinNoteDuration(rhs.MinNoteDuration),
+		FadeOffTime(rhs.FadeOffTime) {}
 
 	SynthesizedInstrument& operator=(const SynthesizedInstrument& rhs);
 	SynthesizedInstrument& operator=(SynthesizedInstrument&& rhs);
@@ -667,7 +719,7 @@ public:
 	Array<SoundModifierFunction> ModifierPasses;
 	SoundAttenuationFunction AttenuationPass;
 	Array<SoundPostEffectFunction> PostEffects;
-	float MinNoteDuration=0, FadeOffTime=0;
+	float MinNoteDuration, FadeOffTime;
 };
 //DEFINE_AS_POD1(SynthesizedInstrument::impl_SamplerPassParams<T1>);
 
@@ -678,8 +730,11 @@ public:
 	SoundAttenuationFunction AttenuationPass; //Not implemented yet
 	SoundPostEffectFunction PostEffectPass; //Not implemented yet
 
-	CombinedSynthesizedInstrument(ArrayRange<const SynthesizedInstrument> instruments=null): Combination(instruments) {/*for(auto& instr: instruments) Combination.push_back(instr);*/}
-	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const override;
+	CombinedSynthesizedInstrument(ArrayRange<const SynthesizedInstrument> instruments=null):
+		Combination(instruments), AttenuationPass(), PostEffectPass() {}
+
+	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo,
+		float volume=1, uint sampleRate=44100, bool add=false) const override;
 
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override
 	{
@@ -695,24 +750,29 @@ public:
 class DrumInstrument: public IMusicalInstrument
 {
 public:
-	DrumInstrument() = default;
-	DrumInstrument(DrumInstrument&& rhs): SamplesCache(core::move(rhs.SamplesCache)), Generators(core::move(rhs.Generators)) {}
+	DrumInstrument():
+		SamplesCache(), Generators() {}
+
+	DrumInstrument(DrumInstrument&& rhs):
+		SamplesCache(core::move(rhs.SamplesCache)), Generators(core::move(rhs.Generators)) {}
+
 	DrumInstrument(const DrumInstrument& rhs) = default;
 	DrumInstrument& operator=(const DrumInstrument& rhs) = default;
+
 	DrumInstrument& operator=(DrumInstrument&& rhs)
 	{
-		SamplesCache=core::move(rhs.SamplesCache);
-		Generators=core::move(rhs.Generators);
+		SamplesCache = core::move(rhs.SamplesCache);
+		Generators = core::move(rhs.Generators);
 		return *this;
 	}
 
 	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const override;
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override
 	{
-		uint id=note.Octave*12+uint(note.Note);
+		uint id = note.Octave*12+uint(note.Note);
 		auto gen = Generators.Get(id);
 		auto result = SamplesCache.Get(gen).Samples.Count();
-		if(result!=0) return (uint)result;
+		if(result!=0) return uint(result);
 		return gen->GetNoteSampleCount(MusicNote(4, MusicNote::NoteType::C, ushort(note.Duration*tempo)), 1, sampleRate);
 	}
 

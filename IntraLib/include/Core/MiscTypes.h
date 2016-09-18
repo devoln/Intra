@@ -31,7 +31,7 @@ struct uint24LE
 
 	uint24LE& operator=(const uint24LE&) = default;
 
-	operator uint() const {return data[0] | (data[1] << 8) | (data[2] << 16);}
+	operator uint() const {return uint(data[0]) | (uint(data[1]) << 8u) | (uint(data[2]) << 16u);}
 
 private:
 	byte data[3];
@@ -72,7 +72,14 @@ struct uint40LE
 
 	uint40LE& operator=(const uint40LE&) = default;
 
-	operator ulong64() const {return data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24) | ((ulong64)data[4] << 32);}
+	operator ulong64() const
+	{
+		return data[0] |
+			(uint(data[1]) << 8) |
+			(uint(data[2]) << 16) |
+			(uint(data[3]) << 24) |
+			(ulong64(data[4]) << 32);
+	}
 
 private:
 	byte data[5];

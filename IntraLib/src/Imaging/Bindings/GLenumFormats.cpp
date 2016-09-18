@@ -39,7 +39,7 @@ ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 
 		GL::DEPTH_COMPONENT16, GL::DEPTH_COMPONENT24, GL::DEPTH24_STENCIL8, GL::DEPTH_COMPONENT32, GL::DEPTH_COMPONENT32F, GL::DEPTH32F_STENCIL8
 	};
-	static_assert(sizeof(uncompressedTable)/sizeof(uncompressedTable[0])==ImageFormat::EndOfUncompressed, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(uncompressedTable, ImageFormat::EndOfUncompressed);
 
 	static const ushort compressedTable[]=
 	{
@@ -68,7 +68,7 @@ ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 		//PVRTC
 		GL::COMPRESSED_RGB_PVRTC_4BPPV1_IMG, GL::COMPRESSED_RGB_PVRTC_2BPPV1_IMG, GL::COMPRESSED_RGBA_PVRTC_4BPPV1_IMG, GL::COMPRESSED_RGBA_PVRTC_2BPPV1_IMG,
 	};
-	static_assert(sizeof(compressedTable)/sizeof(compressedTable[0])==ImageFormat::EndOfCompressed-ImageFormat::FirstOfCompressed, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(compressedTable, ImageFormat::EndOfCompressed-ImageFormat::FirstOfCompressed);
 
 	static const ushort basicFormatTable[]= //Пользователю неважно, какой именно будет формат из соответствующих указанному базовому, поэтому реализация выбирает автоматически
 	{
@@ -80,21 +80,21 @@ ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 		GL::SRGB8, GL::SRGB8_ALPHA8,
 		GL::DEPTH_COMPONENT, GL::DEPTH_COMPONENT, GL::DEPTH_STENCIL, GL::DEPTH_STENCIL
 	};
-	static_assert(sizeof(basicFormatTable)/sizeof(basicFormatTable[0])==ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(basicFormatTable, ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic);
 
-	GLenum result;
+	ushort result;
 	if(format.value<ImageFormat::EndOfUncompressed)
-		result=uncompressedTable[format.value];
+		result = uncompressedTable[format.value];
 	else if(format.value<ImageFormat::EndOfCompressed)
 	{
-		result=compressedTable[format.value-ImageFormat::FirstOfCompressed];
+		result = compressedTable[format.value-ImageFormat::FirstOfCompressed];
 	}
 	else if(format.value<ImageFormat::EndOfBasic)
-		result=basicFormatTable[format.value-ImageFormat::FirstOfBasic];
-	else
-		return 0;
+		result = basicFormatTable[format.value-ImageFormat::FirstOfBasic];
+	else return 0;
 
-	if(useSwizzling && (format.HasLuminance() || format.IsAlpha())) switch(result)
+	if(useSwizzling && (format.HasLuminance() || format.IsAlpha()))
+		switch(result)
 	{
 	case GL::LUMINANCE: case GL::ALPHA:
 		return GL::RED;
@@ -131,8 +131,10 @@ ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 
 	case GL::COMPRESSED_SIGNED_LUMINANCE_ALPHA_LATC2_EXT:
 		return GL::COMPRESSED_SIGNED_RG_RGTC2;
+
+	default:;
 	}
-	return (ushort)result;
+	return result;
 }
 
 ushort ImageFormatToGLExternal(ImageFormat format, bool swapRB, bool useSwizzling)
@@ -167,7 +169,7 @@ ushort ImageFormatToGLExternal(ImageFormat format, bool swapRB, bool useSwizzlin
 
 		GL::DEPTH_COMPONENT, GL::DEPTH_COMPONENT, GL::DEPTH_STENCIL, GL::DEPTH_COMPONENT, GL::DEPTH_COMPONENT, GL::DEPTH_STENCIL
 	};
-	static_assert(sizeof(uncompressedTable)/sizeof(uncompressedTable[0])==ImageFormat::EndOfUncompressed, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(uncompressedTable, ImageFormat::EndOfUncompressed);
 
 	static const ushort basicFormatTable[]= //Пользователю неважно, какой именно будет формат из соответствующих указанному базовому, поэтому реализация выбирает автоматически
 	{
@@ -180,8 +182,8 @@ ushort ImageFormatToGLExternal(ImageFormat format, bool swapRB, bool useSwizzlin
 		GL::DEPTH_COMPONENT, GL::DEPTH_COMPONENT, GL::DEPTH_STENCIL, GL::DEPTH_STENCIL
 	};
 
-	bool basic=format.IsBasic();
-	GLenum result=basic? basicFormatTable[format.value-ImageFormat::FirstOfBasic]: uncompressedTable[format.value];
+	bool basic = format.IsBasic();
+	ushort result = basic? basicFormatTable[format.value-ImageFormat::FirstOfBasic]: uncompressedTable[format.value];
 	if(useSwizzling)
 	{
 		if(result==GL::LUMINANCE || result==GL::ALPHA) return GL::RED;
@@ -194,7 +196,7 @@ ushort ImageFormatToGLExternal(ImageFormat format, bool swapRB, bool useSwizzlin
 		if(result==GL::RGB_INTEGER) return GL::BGR_INTEGER;
 		if(result==GL::RGBA_INTEGER) return GL::BGRA_INTEGER;
 	}
-	return (ushort)result;
+	return result;
 }
 
 ushort ImageFormatToGLType(ImageFormat format)
@@ -240,7 +242,7 @@ ushort ImageFormatToGLType(ImageFormat format)
 
 		GL::UNSIGNED_SHORT, GL::UNSIGNED_INT, GL::UNSIGNED_INT, GL::UNSIGNED_INT, GL::FLOAT, GL::FLOAT_32_UNSIGNED_INT_24_8_REV
 	};
-	static_assert(sizeof(uncompressedFormatTable)/sizeof(uncompressedFormatTable[0])==ImageFormat::EndOfUncompressed, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(uncompressedFormatTable, ImageFormat::EndOfUncompressed);
 
 	if(format.IsCompressed()) return 0;
 
@@ -253,7 +255,7 @@ ushort ImageFormatToGLType(ImageFormat format)
 		GL::UNSIGNED_BYTE, GL::UNSIGNED_BYTE,
 		GL::UNSIGNED_INT, GL::FLOAT, GL::UNSIGNED_INT, GL::FLOAT_32_UNSIGNED_INT_24_8_REV
 	};
-	static_assert(sizeof(basicFormatTable)/sizeof(basicFormatTable[0])==ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic, "Table is outdated!");
+	INTRA_CHECK_TABLE_SIZE(basicFormatTable, ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic);
 
 	if(format.IsBasic()) return basicFormatTable[format.value-ImageFormat::FirstOfBasic];
 	return uncompressedFormatTable[format.value];
@@ -271,7 +273,7 @@ ImageFormat GLenumToImageFormat(ushort internalFormat)
 	if(imageFormatFromGLInternal==null)
 		for(ushort i=1; i<ImageFormat::End; i++)
 		{
-			const auto t=ImageFormatToGLInternal(ImageFormat(i), false);
+			const auto t = ImageFormatToGLInternal(ImageFormat(i), false);
 			if(t!=0) imageFormatFromGLInternal[t]=ImageFormat(i);
 		}
 	auto found = imageFormatFromGLInternal.Find(internalFormat);
@@ -289,7 +291,7 @@ ushort ImageTypeToGLTarget(ImageType type)
 	return imageTypeConvertTable[type];
 }
 
-ushort CubeFaceToGLTarget(CubeFace cf) {return ushort(GL::TEXTURE_CUBE_MAP_POSITIVE_X+(byte)cf);}
+ushort CubeFaceToGLTarget(CubeFace cf) {return ushort(GL::TEXTURE_CUBE_MAP_POSITIVE_X+byte(cf));}
 
 ImageType GLTargetToImageType(ushort gl_Target)
 {

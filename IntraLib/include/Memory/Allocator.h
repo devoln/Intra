@@ -22,7 +22,7 @@ inline size_t Aligned(size_t value, size_t alignment, size_t offset=0)
 
 inline byte* Aligned(void* value, size_t alignment, size_t offset=0)
 {
-	return (byte*)value+AlignmentBytes((size_t)value+offset, alignment);
+	return reinterpret_cast<byte*>(value)+AlignmentBytes(reinterpret_cast<size_t>(value)+offset, alignment);
 }
 
 
@@ -48,8 +48,7 @@ template<typename Allocator> struct BreakpointOnError: Allocator
 template<typename Allocator> struct AbortOnError: Allocator
 {
 	template<typename... Args> explicit AbortOnError(Args&&... args): Allocator(core::forward<Args>(args)...) {}
-	AbortOnError(const AbortOnError& rhs): Allocator(rhs) {}
-	AbortOnError(AbortOnError&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	AbortOnError(const AbortOnError& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
@@ -71,8 +70,7 @@ private:
 	enum: uint {BoundValue = 0xbcbcbcbc};
 public:
 	template<typename... Args> explicit BoundsChecked(Args&&... args): Allocator(core::forward<Args>(args)...) {}
-	BoundsChecked(const BoundsChecked& rhs): Allocator(rhs) {}
-	BoundsChecked(BoundsChecked&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	BoundsChecked(const BoundsChecked& rhs) = default;
 
 	size_t GetAlignment() const {return sizeof(uint);}
 
@@ -123,8 +121,7 @@ template<typename Allocator> struct AllocationCounted: Allocator
 	size_t counter;
 public:
 	template<typename... Args> explicit AllocationCounted(Args&&... args): Allocator(core::forward<Args>(args)...), counter(0) {}
-	AllocationCounted(const AllocationCounted& rhs): Allocator(rhs), counter(rhs.counter) {}
-	AllocationCounted(AllocationCounted&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))), counter(rhs.counter) {}
+	AllocationCounted(const AllocationCounted& rhs) = default;
 
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
@@ -148,8 +145,7 @@ public:
 template<typename Allocator, typename SyncPrimitive> struct Synchronized: Allocator
 {
 	template<typename... Args> explicit Synchronized(Args&&... args): Allocator(core::forward<Args>(args)...) {}
-	Synchronized(const Synchronized& rhs): Allocator(rhs) {}
-	Synchronized(Synchronized&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	Synchronized(const Synchronized& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
@@ -167,6 +163,9 @@ template<typename Allocator, typename SyncPrimitive> struct Synchronized: Alloca
 		primitive.Unlock();
 	}
 
+	Synchronized& operator=(const Synchronized& rhs) = default;
+	Synchronized& operator=(Synchronized&& rhs) {Allocator::operator=(core::move(rhs)); primitive=rhs.primitive; return *this;}
+
 private:
 	SyncPrimitive primitive;
 };
@@ -177,8 +176,7 @@ template<class Allocator> struct SizedAllocator: Allocator
 	size_t GetAlignment() const {return sizeof(size_t);}
 
 	template<typename... Args> explicit SizedAllocator(Args&&... args): Allocator(core::forward<Args>(args)...) {}
-	SizedAllocator(const SizedAllocator& rhs): Allocator(rhs) {}
-	SizedAllocator(SizedAllocator&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	SizedAllocator(const SizedAllocator& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
@@ -245,7 +243,8 @@ template<typename Allocator> struct StaticAllocator
 
 struct LinearAllocator
 {
-	LinearAllocator(ArrayRange<byte> buf, size_t alignment=16): start(buf.Begin), rest(buf), alignment(alignment) {}
+	LinearAllocator(ArrayRange<byte> buf, size_t allocatorAlignment=16):
+		start(buf.Begin), rest(buf), alignment(allocatorAlignment) {}
 
 	size_t GetAlignment() const {return alignment;}
 
@@ -273,7 +272,9 @@ private:
 
 struct StackAllocator
 {
-	StackAllocator(ArrayRange<byte> buf, size_t alignment): start(buf.Begin), rest(buf), alignment(alignment) {}
+	StackAllocator(ArrayRange<byte> buf, size_t allocatorAlignment):
+		start(buf.Begin), rest(buf), alignment(allocatorAlignment) {}
+	
 	size_t GetAlignment() const {return alignment;}
 	AnyPtr Allocate(size_t size, const SourceInfo& sourceInfo);
 	void Free(void* ptr, size_t size);
@@ -363,9 +364,9 @@ template<typename Allocator> struct GrowingFreeList: Allocator
 		if(!list.HasFree())
 		{
 			auto newBlock = Allocator::Allocate(block_size(capacity), INTRA_SOURCE_INFO);
-			*(void**)newBlock = first_block;
+			*reinterpret_cast<void**>(newBlock) = first_block;
 			first_block = newBlock;
-			new(&list) FreeList(ArrayRange<byte>((byte*)first_block+block_size(0), capacity), element_size, element_alignment);
+			new(&list) FreeList(ArrayRange<byte>(reinterpret_cast<byte*>(first_block)+block_size(0), capacity), element_size, element_alignment);
 			capacity*=2;
 		}
 		return list.Allocate();
@@ -373,7 +374,7 @@ template<typename Allocator> struct GrowingFreeList: Allocator
 
 	AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo)
 	{
-		(void)sourceInfo;
+		(void)sourceInfo; (void)bytes;
 		INTRA_ASSERT(bytes<=element_size);
 		return Allocate();
 	}
@@ -391,14 +392,16 @@ private:
 	size_t capacity;
 	ushort element_size, element_alignment;
 
-	void*& next_block() {return *(void**)first_block;}
+	void*& next_block() {return *reinterpret_cast<void**>(first_block);}
 	static size_t block_size(size_t bytes) {return bytes+sizeof(void**);}
 };
 
 struct PoolAllocator
 {
-	PoolAllocator(ArrayRange<byte> buf, size_t elementSize, size_t alignment):
-		list(buf, elementSize, alignment), element_size(ushort(elementSize)), alignment(ushort(alignment)) {}
+	PoolAllocator(ArrayRange<byte> buf, size_t elementSize, size_t allocatorAlignment):
+		list(buf, elementSize, allocatorAlignment),
+		element_size(ushort(elementSize)),
+		alignment(ushort(allocatorAlignment)) {}
 
 
 	size_t GetAlignment() const {return alignment;}
@@ -431,7 +434,7 @@ struct SegregatedTraits
 {
     static size_t GetSizeClass(size_t size)
     {
-		auto Log = Math::Log2i((uint)size);
+		auto Log = Math::Log2i(uint(size));
         return size_t(Log>5? Log-5: 0u);
     }
  
@@ -542,13 +545,13 @@ struct Buffer
 {
 	Buffer() = default;
 
-	const byte* Data() const {return (byte*)(this+1);}
-	byte* Data() {return (byte*)(this+1);}
+	const byte* Data() const {return reinterpret_cast<const byte*>(this+1);}
+	byte* Data() {return reinterpret_cast<byte*>(this+1);}
 	const byte* End() const {return Data()+Size();}
 	byte* End() {return Data()+Size();}
 	size_t Size() const {return size;}
-	template<typename T> ArrayRange<T> AsRange() {return {(T*)Data(), size/sizeof(T)};}
-	template<typename T> ArrayRange<const T> AsRange() const {return {(T*)Data(), size/sizeof(T)};}
+	template<typename T> ArrayRange<T> AsRange() {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
+	template<typename T> ArrayRange<const T> AsRange() const {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
 
 private:
 	size_t size;
@@ -632,14 +635,14 @@ struct BufferAllocator
 
 	void Free(void* ptr, size_t size)
 	{
-		if(ptr==null) return;
-		Buffer* buf = (Buffer*)ptr-1;
 		(void)size;
+		if(ptr==null) return;
+		Buffer* buf = reinterpret_cast<Buffer*>(ptr)-1;
 		INTRA_ASSERT(size == buf->Size());
 		FreeBuffer(buf);
 	}
 
-	forceinline size_t GetAllocationSize(void* ptr) const {return ((Buffer*)ptr-1)->Size();}
+	forceinline size_t GetAllocationSize(void* ptr) const {return (reinterpret_cast<Buffer*>(ptr)-1)->Size();}
 
 	void ClearFreeLists()
 	{
@@ -685,3 +688,4 @@ typedef StaticAllocator<BufferAllocator> StaticBufferAllocator;
 
 #define INTRA_NEW_ARRAY(type, n, allocator) Intra::Memory::AllocateRange<type>((allocator), (n), INTRA_SOURCE_INFO)
 #define INTRA_DELETE_ARRAY(range, allocator) Intra::Memory::FreeRange((allocator), (range))
+

@@ -9,6 +9,7 @@
 #include "Containers/String.h"
 #include "Containers/IdAllocator.h"
 
+
 namespace Intra { namespace Graphics {
 
 struct SamplerDesc
@@ -152,33 +153,12 @@ typedef CheckedId<ushort, ushort, VertexAttribStateDesc> VertexAttribStateId;
 struct DrawCallDesc
 {
 	VertexAttribStateId VertexState;
-	flag32 EnabledAttribs;
-	uint FirstVertex, VertexCount;
-	uint FirstIndex, IndexCount;
-	uint Instances;
-	bool Clockwise;
-	PrimitiveTopology Topology;
-
-	void SetDefault()
-	{
-		VertexState = null;
-		EnabledAttribs = 0;
-		FirstVertex = 0, VertexCount = 0;
-		FirstIndex = 0, IndexCount = 0;
-		Instances = 1;
-		Clockwise = false;
-		Topology = PrimitiveTopology::Triangles;
-	}
-
-	static const DrawCallDesc& Default()
-	{
-		static DrawCallDesc dcd;
-		static bool inited=false;
-		if(inited) return dcd;
-		dcd.SetDefault();
-		inited=true;
-		return dcd;
-	}
+	flag32 EnabledAttribs = 0;
+	uint FirstVertex = 0, VertexCount = 0;
+	uint FirstIndex = 0, IndexCount = 0;
+	uint Instances = 1;
+	bool Clockwise = false;
+	PrimitiveTopology Topology = PrimitiveTopology::Triangles;
 };
 
 enum class AttachmentLoadOp: byte {Load, Clear, DontCare};
@@ -380,15 +360,13 @@ struct ViewportDesc
 
 struct RasterizationStateDesc
 {
-	bool DepthClampEnable, RasterizerDiscard;
-	PolyMode PolygonMode;
-	CullMode CullingMode;
-	Winding FrontFace;
-	bool DepthBiasEnable;
-	float DepthBiasConstantFactor, DepthBiasClamp, DepthBiasSlopeFactor;
-	float LineWidth;
-
-	static const RasterizationStateDesc Default;
+	bool DepthClampEnable = false, RasterizerDiscard = false;
+	PolyMode PolygonMode = PolyMode::Fill;
+	CullMode CullingMode = CullMode::Back;
+	Winding FrontFace = Winding::CCW;
+	bool DepthBiasEnable = false;
+	float DepthBiasConstantFactor = 0.0f, DepthBiasClamp = 0.0f, DepthBiasSlopeFactor = 0.0f;
+	float LineWidth = 1.0f;
 };
 
 struct MultisampleStateDesc
@@ -505,3 +483,4 @@ inline uint ToHash(const Graphics::SamplerDesc& desc)
 }
 
 }
+

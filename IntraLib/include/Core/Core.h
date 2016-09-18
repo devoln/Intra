@@ -45,9 +45,10 @@ namespace Intra { namespace core {
 #endif
 
 	template<typename T, size_t N> constexpr forceinline size_t numof(const T(&)[N]) {return N;}
+
 	template<class T, typename U> constexpr forceinline size_t member_offset(U T::* member)
 	{
-		return reinterpret_cast<size_t>(&(((T*)nullptr)->*member));
+		return reinterpret_cast<size_t>(&((static_cast<T*>(nullptr))->*member));
 	}
 
 	template<class T> forceinline T* addressof(T& arg)
@@ -89,7 +90,8 @@ inline void operator delete[](void*, void*) {}
 #include <new>
 #endif
 
-#define INTRA_CHECK_TABLE_SIZE(table, expectedSize) static_assert(sizeof(table)/sizeof(table[0])==size_t(expectedSize), "Table is outdated!")
+#define INTRA_CHECK_TABLE_SIZE(table, expectedSize) static_assert(\
+	sizeof(table)/sizeof(table[0])==size_t(expectedSize), "Table is outdated!")
 
 
 #include "Debug.h"

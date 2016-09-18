@@ -76,11 +76,11 @@ ValueType ValueType::ToScalarType() const
 
 ValueType ValueType::ToShaderType() const
 {
-	if(value>=Half && value<=HVec4) return ValueType(Float+(value-Half));
+	if(value>=Half && value<=HVec4) return ValueType(Float+uint(value-Half));
 	if(value==Vec11f11f10f) return Vec3;
 	if(value<=UVec4) return *this;
 	if(value>=FMat2 && value<=DMat4) return *this;
-	if(value>=Norm8 && value<=S32Vec4) return ValueType(Float+(Dimensions()-1));
+	if(value>=Norm8 && value<=S32Vec4) return ValueType(Float+(Dimensions()-1u));
 	if(value>=UVec4444 && value<=UVec9995) return UVec4;
 
 	static const ValueType::I table[]={

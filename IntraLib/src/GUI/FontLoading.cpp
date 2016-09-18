@@ -131,8 +131,8 @@ using Intra::Math::GLSL::max;
 using Intra::Math::GLSL::min;
 
 struct IUnknown;
-#include <olectl.h>
 #pragma warning(push, 0)
+#include <olectl.h>
 #include <gdiplus.h>
 #pragma warning(pop)
 
@@ -150,7 +150,7 @@ struct Deinitor {~Deinitor() {/*if(ft!=null) FT_Done_FreeType(ft);}*/}} Deinitor
 
 FontHandle FontCreate(StringView name, uint height, uint* yAdvance)
 {
-	(void)(name, height, yAdvance);
+	(void)name; (void)height; (void)yAdvance;
 	/*if(ft==null) FT_Init_FreeType(&ft);
 	FT_Face font;
 	if(FT_New_Face(ft, name, 0, &font)!=0) throw FileNotFoundException(name);
@@ -160,7 +160,7 @@ FontHandle FontCreate(StringView name, uint height, uint* yAdvance)
 
 FontHandle FontCreateFromMemory(const void* data, size_t length, size_t height, uint* yadvance)
 {
-	(void)(data, length, height, yadvance);
+	(void)data; (void)length; (void)height; (void)yadvance;
 	/*if(ft==null) FT_Init_FreeType(&ft);
 	FT_Face font;
 	FT_New_Memory_Face(ft, (const FT_Byte*)data, length, 0, &font);
@@ -172,8 +172,8 @@ void FontDelete(FontHandle font) {(void)font;/*if(font.ptr!=null) FT_Done_Face((
 
 const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2* oSize)
 {
-	(void)(font, code);
-	static const byte whitePixel = 255;
+	(void)font; (void)code;
+	const byte whitePixel = 255;
 	/*FT_Load_Char((FT_Face)font.ptr, code, FT_LOAD_RENDER);
 	auto glyph=((FT_Face)font.ptr)->glyph;
 	*offset=spoint2((short)glyph->bitmap_left, (short)glyph->bitmap_top);

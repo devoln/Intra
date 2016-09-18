@@ -125,9 +125,9 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Заполнение случайными ключами uint и значениями uint"})
 	{
-		for(int count=1; count<=1000000; count*=10)
+		for(uint count=1; count<=1000000; count*=10)
 		{
-			uint times = 1000000/count;
+			uint times = 1000000u/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
@@ -143,7 +143,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Заполнение случайными ключами String и значениями uint"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -161,7 +161,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Заполнение случайными ключами Big<64> и значениями uint"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -179,7 +179,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=1000000; count*=10)
+		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -197,7 +197,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -215,7 +215,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -235,7 +235,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=1000000; count*=10)
+		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -251,7 +251,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -267,7 +267,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -285,7 +285,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов по ключу uint с вычислением суммы всех найденных значений"})
 	{
-		for(int count=1; count<=1000000; count*=10)
+		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -303,7 +303,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов с ключом String с вычислением суммы всех найденных значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -321,7 +321,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов по ключу Big<64> с вычислением суммы всех найденных значений"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -340,7 +340,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск несуществующих в контейнере uint элементов по ключу uint"})
 	{
-		for(int count=1; count<=1000000; count*=10)
+		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -358,7 +358,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск несуществующих в контейнере uint элементов по ключу String"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
@@ -376,7 +376,7 @@ void RunMapPerfTests(IO::Logger& logger)
 
 	if(TestGroup gr{logger, "Поиск несуществующих в контейнере с ключом Big<64> и значением uint"})
 	{
-		for(int count=1; count<=100000; count*=10)
+		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
 			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),

@@ -3,6 +3,11 @@
 #include "Core/Core.h"
 #include "Meta/Type.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4191)
+#endif
+
 namespace Intra { namespace Utils {
 
 template<typename TFuncSignature> class Callback;
@@ -55,7 +60,7 @@ public:
 
 	template<typename T> FixedDelegate(R(*f)(const T&, Args...), const T& callData,
 		void(*d)(void*), void(*cc)(void*, const void*)):
-		func((TFunc)f), destructor(d), copy_constructor(cc)
+		func(reinterpret_cast<TFunc>(f)), destructor(d), copy_constructor(cc)
 	{
 		static_assert(sizeof(T)<=MaxDataSize, "Too big struct of delegate parameters!");
 		new(data) T(callData);
@@ -117,3 +122,7 @@ private:
 };
 
 }}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

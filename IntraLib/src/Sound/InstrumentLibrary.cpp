@@ -10,7 +10,7 @@ using namespace Math;
 static float DrumSample(float freq, float t)
 {
 	float e = 0.5f, f = 0.5f;
-	float x = 2*(float)PI*t;
+	float x = 2*float(PI)*t;
 	float resonanse = 20*0.00390625f;
 	float cutoff = 5*0.0019531f;
 	auto exponent = Exp(-20*t);
@@ -20,10 +20,10 @@ static float DrumSample(float freq, float t)
 	a += Sin(625*x)*0.1831055f;
 	a *= exponent;
 
-	float k3 = (float)PI*cutoff;
+	float k3 = float(PI)*cutoff;
 	k3 = 1.0f/Tan(k3);
-	resonanse*=k3;
-	k3*=k3;
+	resonanse *= k3;
+	k3 *= k3;
 	float km = 1.0f/(1.0f+resonanse+k3);
 	resonanse = (1.0f-resonanse+k3)/(1.0f-k3);
 	k3 = 2.0f*(1.0f-k3)*km;
@@ -60,73 +60,86 @@ struct DrumPhysicalModel: Range::RangeMixin<DrumPhysicalModel, float, Range::Typ
 	{
 		const float maxP = 0.3f;
 
-		const uint maxX = DX-1, maxY = DY-1;
+		const uint maxX = DX-1u;
+		const uint maxY = DY-1u;
 
 		for(uint i=0; i<Cnt; i++)
 		{
 			for(uint y=0; y<DY; y++)
+			{
 				for(uint x=0; x<DX; x++)
 				{
 					S(x, y) += ((P((x-1) & maxX, y) + P((x+1) & maxX, y) +
 								 P(x, (y-1) & maxY) + P(x, (y+1) & maxY))*0.25f - P(x, y)
 						)*F(x, y);
 				}
+			}
 
 			for(uint y=0; y<DY; y++)
+			{
 				for(uint x=0; x<DX; x++)
 				{
 					S(x, y) = S(x, y)*K1 +
 						(S((x-1) & maxX, y) + S((x+1) & maxX, y) +
 						S(x, (y-1) & maxY) + S(x, (y+1) & maxY))*K2;
 				}
+			}
 
 			for(uint y=0; y<DY; y++)
 				for(uint x=0; x<DX; x++)
 					P(x, y) += S(x, y);
 
 			for(uint x=0; x<DX; x+=4)
-				if((P(x, 0)>maxP && S(x, 0)>0) ||
-					(P(x, 0)<maxP && S(x, 0)<0))
+			{
+				if((P(x, 0)>maxP && S(x, 0)>0) || (P(x, 0)<maxP && S(x, 0)<0))
 						S(x, 0) *= -0.5f;
+			}
 
 			P(1, 1) *= 0.5f;
 			S(0, 0) = sRand()*0.00001f;
 		}
 	}
 
-	float First() const {return P(1, DY/2)*ampl;}
+	float First() const {return P(1, DY/2u)*ampl;}
 
 	bool Empty() const {return P.Width()==0;}
 
-	DrumPhysicalModel(null_t=null): Cnt(0), DX(0), DY(0), Frc(0), ampl(1), dt(0) {}
+	DrumPhysicalModel(null_t=null):
+		Cnt(0), DX(0), DY(0),
+		Frc(0), K1(0), K2(0),
+		P(), S(), F(),
+		ampl(1), dt(0), frandom() {}
 
 	DrumPhysicalModel(byte count, byte dx, byte dy, float frc, float kDemp, float kRand):
-		Cnt(count), DX(dx), DY(dy), Frc(frc),
+		Cnt(count), DX(dx), DY(dy),
+		Frc(frc), K1(0), K2(0),
 		P(dx, dy), S(dx, dy), F(dx, dy),
-		ampl(1), dt(1.0f/44100.0f)
+		ampl(1), dt(1.0f/44100.0f), frandom()
 	{
-		K1 = 1.0f-kDemp*0.333f*frc;
+		K1 = 1.0f - kDemp*0.333f*frc;
 		K2 = (1.0f-K1)*0.25f;
 
 		for(uint y=0; y<dy; y++)
+		{
 			for(uint x=0; x<dx; x++)
 			{
 				float v = 1.0f+sRand()*kRand;
 				F(x, y) = Frc*v;
 			}
+		}
 		F(0, 0) = frc;
-		F(dx/2, dy/2) = frc;
-		F(1, dy/2) = frc;
-		F(dx/2, 1) = frc;
+		F(dx/2u, dy/2u) = frc;
+		F(1, dy/2u) = frc;
+		F(dx/2u, 1) = frc;
 		S(0, 0) = 10;
-		S(dx/2, dy/2) = -10;
+		S(dx/2u, dy/2u) = -10;
 	}
 
 	void SetParams(float frequency, float amplitude, double step)
 	{
 		(void)frequency;
 		ampl = amplitude;
-		dt = (float)step;
+		dt = float(step);
 	}
 
 	float sRand()
@@ -171,7 +184,7 @@ static DrumInstrument CreateDrums()
 	ClosedHiHat->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
 	ClosedHiHat->MinNoteDuration = 0.25f;
 
-	for(uint id: {41}) result.Generators[id] = ClosedHiHat;
+	for(uint id: {41u}) result.Generators[id] = ClosedHiHat;
 
 	auto AcousticBassDrum = new SynthesizedInstrument;
 	AcousticBassDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 0.03f, 1, 0.35f);
@@ -180,7 +193,7 @@ static DrumInstrument CreateDrums()
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
 	AcousticBassDrum->MinNoteDuration = 0.2f;
 
-	for(uint id: {34, 35}) result.Generators[id]=AcousticBassDrum;
+	for(uint id: {34u, 35u}) result.Generators[id]=AcousticBassDrum;
 
 	//auto instr1 = new SynthesizedInstrument;
 	//instr1->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.05f, 1, 0.35f);
@@ -222,7 +235,7 @@ MusicalInstruments::MusicalInstruments()
 	epiano2Instr1.MinNoteDuration = 0.5f;*/
 
 	SynthesizedInstrument epiano2Instr2;
-	epiano2Instr2.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({{0.48f*0.3f, 5, 1.0f}});
+	epiano2Instr2.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({{0.48f*0.3f, 5, 1.0f, 1.0f}});
 	epiano2Instr2.MinNoteDuration = 0.4f;
 
 	ElectricPiano2 = Piano;//{{epiano2Instr1/*, epianoInstr2*/}};
@@ -534,7 +547,7 @@ MusicalInstruments::MusicalInstruments()
 	kalimba.MinNoteDuration = 0.3f;*/
 
 	SynthesizedInstrument kalimba;
-	kalimba.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({{0.48f*0.5f, 8, 0.5f}});
+	kalimba.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({{0.48f*0.5f, 8, 0.5f, 1}});
 	kalimba.MinNoteDuration = 0.2f;
 
 	Kalimba.Combination.AddLast(kalimba);
@@ -543,18 +556,19 @@ MusicalInstruments::MusicalInstruments()
 }
 
 
-SynthesizedInstrument MusicalInstruments::CreateGuitar(int n, float c, float d, float e, float f, float freqMult, float duration, float volume)
+SynthesizedInstrument MusicalInstruments::CreateGuitar(size_t n, float c,
+	float d, float e, float f, float freqMult, float duration, float volume)
 {
 	if(n>20) n=20;
 	SynthesizedInstrument result;
 	result.FadeOffTime = duration;
 	SynthesizedInstrument::SineExpHarmonic harmonics[20];
-	for(int i=1; i<=n; i++)
+	for(size_t i=1; i<=n; i++)
 	{
-		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow((float)i, -f);
-		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/float(i*2-1)};
+		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow(float(i), -f);
+		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*2.0f-1.0f)};
 	}
-	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, (size_t)n});
+	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, n});
 	return result;
 }
 

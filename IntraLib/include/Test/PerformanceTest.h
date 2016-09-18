@@ -87,7 +87,7 @@ template<typename MAP> void PopulateMapRandom(MAP& map, size_t count)
 
 template<typename String> String GenerateRandomString(size_t len)
 {
-	Math::Random<uint> rand(uint(len)^Math::Random<uint>::Global());
+	Math::Random<int> rand(uint(len)^Math::Random<uint>::Global());
 	String result;
 	result.resize(len);
 	for(char& c: result)

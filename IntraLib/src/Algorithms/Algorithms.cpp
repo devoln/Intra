@@ -41,7 +41,7 @@ template<> void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 		Simd::GetU(dst, Simd::Add(Simd::SetU(dst), Simd::SetU(src)));
 		dst+=4; src+=4;
 	}
-#elif PLATFORM==INTRA_PLATFORM_ARM
+#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
 	//#error Not implemented!
 #else
 	//#error Not implemented!
@@ -193,16 +193,16 @@ template<> void Cast(ArrayRange<short> dst, ArrayRange<const float> src)
 #else
 	while(dst.Begin<dst.End-3)
 	{
-		*dst.Begin++ = (short)*src.Begin++;
-		*dst.Begin++ = (short)*src.Begin++;
-		*dst.Begin++ = (short)*src.Begin++;
-		*dst.Begin++ = (short)*src.Begin++;
+		*dst.Begin++ = short(*src.Begin++);
+		*dst.Begin++ = short(*src.Begin++);
+		*dst.Begin++ = short(*src.Begin++);
+		*dst.Begin++ = short(*src.Begin++);
 	}
 	#endif
 	while(dst.Begin<dst.End)
 	{
 		//INTRA_ASSERT(*src>=-32768.0f && *src<=32767.0f);
-		*dst.Begin++ = (short)*src.Begin++;
+		*dst.Begin++ = short(*src.Begin++);
 	}
 }
 

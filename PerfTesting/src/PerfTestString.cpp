@@ -30,7 +30,7 @@ template<typename String> double TestStringReading(uint times, size_t strsize)
 	{
 		for(size_t i=0; i<strsize; i++)
 			c += str[i];
-		srand(c); //Препятствуем оптимизации, удаляющей внешний цикл
+		srand(uint(c)); //Препятствуем оптимизации, удаляющей внешний цикл
 	}
 	return timer.GetTime();
 }
@@ -259,7 +259,7 @@ double TestWStringStackFormatting(uint times)
 {
 	byte stackBuffer[1024];
 	typedef GenericString<wchar, Memory::SizedAllocator<Memory::LinearAllocator>> WStackString;
-	WStackString::Allocator arena(stackBuffer, 2);
+	WStackString::Allocator arena(stackBuffer, 2u);
 	Timer timer;
 	for(uint i=0; i<times; i++)
 	{
@@ -291,7 +291,7 @@ template<typename String> double TestStringSubStr(uint times)
 void RunStringPerfTests(Logger& logger)
 {
 	size_t sizeToAllocate = 2000;
-	auto mem = Memory::StaticBufferAllocator::Allocate(sizeToAllocate, {__FILE__, (uint)__LINE__});
+	auto mem = Memory::StaticBufferAllocator::Allocate(sizeToAllocate, INTRA_SOURCE_INFO);
 	Memory::StaticBufferAllocator::Free(mem, sizeToAllocate);
 
 	StringView comparedStrings[2]={"std::string", "String"};

@@ -8,6 +8,8 @@ namespace Intra { namespace Data {
 //! Интерфейс для сериализации runtime класса или структуры (не-POD)
 struct IDynamicSerializer
 {
+	virtual ~IDynamicSerializer() {}
+
 	virtual void operator()(DummyBinarySerializer& serializer, const void* src) const = 0;
 
 	virtual void operator()(BinarySerializer& serializer, const void* src) const = 0;

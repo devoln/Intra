@@ -10,8 +10,15 @@ struct MusicNote
 	static const float BasicFrequencies[12]; //Таблица соответствия нот субконтроктавы частотам
 
 	MusicNote(byte octave, NoteType note, ushort duration): Octave(octave), Note(note), Duration(duration) {}
-	MusicNote(null_t=null): Octave(255) {(byte&)Note=255;}
-	static MusicNote Pause(ushort duration) {MusicNote result=null; result.Duration=duration; return result;}
+	MusicNote(null_t=null): Octave(255), Note(NoteType(255)), Duration(0) {}
+
+	static MusicNote Pause(ushort duration)
+	{
+		MusicNote result;
+		result.Duration = duration;
+		return result;
+	}
+
 	bool IsPause() const {return Octave==255 && Duration!=0;}
 
 	operator NoteType() const {return Note;}
@@ -77,7 +84,7 @@ struct MusicTrack
 
 struct Music
 {
-	Music(null_t=null) {}
+	Music(null_t=null): Tracks() {}
 	Music(ArrayRange<const MusicTrack> tracks): Tracks(tracks) {}
 
 	double Duration() const;
@@ -100,6 +107,7 @@ class MusicSoundSampleSource: public ASoundSampleSource
 	size_t current_sample_pos, sample_count;
 
 	struct Position { uint samplePos; uint noteId; };
+
 	Array<Position> currentPositions;
 	float maxVolume;
 	size_t processedSamplesToFlush;
@@ -129,6 +137,9 @@ public:
 
 	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* outType, bool* outInterleaved, size_t* outSamplesRead) override;
+
+
+	MusicSoundSampleSource& operator=(const MusicSoundSampleSource&) = delete;
 };
 
 #endif

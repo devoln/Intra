@@ -12,8 +12,12 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4512)
-#pragma warning(disable: 4610)
+#pragma warning(disable: 4512 4610 4365)
+#endif
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
 
 namespace Intra { namespace Range {
@@ -38,7 +42,10 @@ template<typename T> struct SimpleArrayRange:
 	typedef T& return_value_type;
 
 	SimpleArrayRange(null_t=null): Begin(null), End(null) {}
-	SimpleArrayRange(T* begin, T* end): Begin(begin), End(end) {}
+	
+	SimpleArrayRange(T* startPtr, T* endPtr):
+		Begin(startPtr), End(endPtr) {}
+	
 	template<size_t N> SimpleArrayRange(T(&arr)[N]): Begin(arr), End(arr+N) {}
 	template<size_t N> SimpleArrayRange(T(&arr)[N], null_t): Begin(arr), End(arr+N-1) {}
 
@@ -53,7 +60,7 @@ template<typename T> struct SimpleArrayRange:
 	forceinline T* Data() const {return Begin;}
 	forceinline T* begin() const {return Begin;}
 	forceinline T* end() const {return End;}
-	forceinline SimpleArrayRange opSlice(size_t start, size_t end) const {return {Begin+start, Begin+end};}
+	forceinline SimpleArrayRange opSlice(size_t startIndex, size_t endIndex) const {return {Begin+startIndex, Begin+endIndex};}
 };
 
 template<typename Char> forceinline Meta::EnableIf<
@@ -85,15 +92,20 @@ private:
 
 	template<typename Range, typename OtherCharRange> struct TupleAppender
 	{
-		bool first;
-		Range& range;
-		const OtherCharRange& separator;
+		bool First;
+		Range& DstRange;
+		const OtherCharRange& Separator;
+
+		TupleAppender(bool first, Range& dstRange, const OtherCharRange& elementSeparator):
+			First(first), DstRange(dstRange), Separator(elementSeparator) {}
+
+		TupleAppender& operator=(const TupleAppender&) = delete;
 
 		template<typename V> void operator()(const V& value)
 		{
-			if(!first) range.AppendAdvance(separator);
-			range.AppendAdvance(value);
-			first = false;
+			if(!First) DstRange.AppendAdvance(Separator);
+			DstRange.AppendAdvance(value);
+			First = false;
 		}
 	};
 
@@ -202,7 +214,7 @@ public:
 		intptr digitPos = sizeof(X)*2;
 		while(digitPos --> 0)
 		{
-			int value = (number >> (digitPos*4)) & 15;
+			int value = int(number >> (digitPos*4)) & 15;
 			if(value>9) value += 'A'-10;
 			else value += '0';
 			me().Put(T(value));
@@ -213,7 +225,7 @@ public:
 
 	template<typename X> forceinline R& AppendAdvance(X* pointer)
 	{
-		return me().AppendHexIntAdvance((size_t)pointer);
+		return me().AppendHexIntAdvance(reinterpret_cast<size_t>(pointer));
 	}
 
 	template<typename X> static forceinline size_t MaxLengthOf(X* pointer) {(void)pointer; return sizeof(X*)*2;}
@@ -251,7 +263,7 @@ public:
 			number = -number;
 		}
 
-		const ulong64 integralPart = (ulong64)number;
+		const ulong64 integralPart = ulong64(number);
 		real fractional = number-integralPart;
 		if(fractional>0.99)
 		{
@@ -266,7 +278,7 @@ public:
 		do
 		{
 			fractional *= 10;
-			int digit = (int)fractional;
+			int digit = int(fractional);
 			fractional -= digit;
 			if(fractional>0.99) fractional=0, digit++;
 			me().Put(T('0'+digit));
@@ -287,7 +299,7 @@ public:
 		Meta::IsCharType<Char2>::_,
 	R&> AppendAdvance(Char2 character, size_t repeat=1)
 	{
-		while(repeat --> 0) me().Put((T)character);
+		while(repeat --> 0) me().Put(T(character));
 		return me();
 	}
 
@@ -313,7 +325,7 @@ public:
 	R& AppendAdvance(bool value)
 	{
 		static const char* const boolStr[2] = {"false", "true"};
-		const char* str = boolStr[(size_t)value];
+		const char* str = boolStr[+value];
 		while(*str!='\0') me().Put(*str++);
 		return me();
 	}
@@ -384,7 +396,7 @@ public:
 		const OtherCharRange& rBracket=SimpleArrayRange<const T>("}", null))
 	{
 		me().AppendAdvance(lBracket);
-		TupleAppender<R, OtherCharRange> appender{true, me(), separator};
+		TupleAppender<R, OtherCharRange> appender(true, me(), separator);
 		tuple.ForEachField(appender);
 		me().AppendAdvance(rBracket);
 		return me();
@@ -400,7 +412,7 @@ public:
 	{
 		CountRange<T> counter;
 		counter.AppendAdvance(lBracket);
-		TupleAppender<CountRange<T>, OtherCharRange> appender{false, counter, separator};
+		TupleAppender<CountRange<T>, OtherCharRange> appender(false, counter, separator);
 		tuple.ForEachField(appender);
 		counter.AppendAdvance(rBracket);
 		return counter.Counter;
@@ -455,7 +467,7 @@ public:
 	X> ParseAdvance()
 	{
 		const bool minus = me().ParseSignAdvance();
-		X result = (X)ParseAdvance<Meta::MakeUnsignedType<X>>();
+		X result = X(ParseAdvance<Meta::MakeUnsignedType<X>>());
 		return minus? X(-result): result;
 	}
 
@@ -529,6 +541,10 @@ public:
 
 
 }}
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 
 #ifdef _MSC_VER
 #pragma warning(pop)

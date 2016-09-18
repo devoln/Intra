@@ -9,15 +9,28 @@
 
 
 #if(defined(INTRA_PLATFORM_IS_POSIX) || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+
 #include <unistd.h>
 #include <sys/mman.h>
+
 #elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #include <io.h>
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include <Windows.h>
 #undef GetCurrentDirectory
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #else
 
 #endif
@@ -53,7 +66,7 @@ _ACRTIMP int INTRA_CRTDECL _stat(
 
 void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
 {
-	(void)(addr, flags);
+	(void)addr; (void)flags;
 
 	HANDLE fileHandle = (HANDLE)_get_osfhandle(fd);
 	DWORD flProtect=0, dwDesiredAccess=0;
@@ -61,11 +74,11 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
 	else if(prot==PROT_WRITE) flProtect=PAGE_READWRITE, dwDesiredAccess=FILE_MAP_WRITE;
 	else return (void*)-1;
 
-	HANDLE hnd = CreateFileMappingW(fileHandle, nullptr, flProtect, 0, (DWORD)length, nullptr);
+	HANDLE hnd = CreateFileMappingW(fileHandle, nullptr, flProtect, 0, DWORD(length), nullptr);
 	void* map = nullptr;
     if(hnd!=nullptr)
     {
-        map = MapViewOfFile(hnd, dwDesiredAccess, 0, offset, length);
+        map = MapViewOfFile(hnd, dwDesiredAccess, 0, DWORD(offset), length);
         CloseHandle(hnd);
     }
 
@@ -106,8 +119,8 @@ namespace Intra { namespace IO
 		struct stat attrib;
 		result.Exist = stat(fn.CStr(), &attrib)==0;
 #endif
-		result.LastModified = result.Exist? attrib.st_mtime: 0;
-		result.Size = result.Exist? attrib.st_size: 0;
+		result.LastModified = result.Exist? ulong64(attrib.st_mtime): 0ull;
+		result.Size = result.Exist? ulong64(attrib.st_size): 0ull;
 		return result;
 	}
 
@@ -137,8 +150,8 @@ namespace Intra { namespace IO
 		wchar_t wpath[MAX_PATH];
 		uint wlength = GetCurrentDirectoryW(MAX_PATH, (LPWSTR)wpath);
 		char path[MAX_PATH*3];
-		int length = WideCharToMultiByte(CP_UTF8, 0, wpath, (int)wlength, path, (int)core::numof(path), null, null);
-		const String result = StringView(path, length);
+		int length = WideCharToMultiByte(CP_UTF8, 0u, wpath, int(wlength), path, int(core::numof(path)), null, null);
+		const String result = StringView(path, size_t(length));
 #else
 		char path[2048];
 		path[0] = '\0';
@@ -226,7 +239,7 @@ namespace Intra { namespace IO
 		Reader file(fileName);
 		if(fileOpened!=null) *fileOpened = (file!=null);
 		if(file==null) return null;
-		size_t size = (size_t)DiskFile::GetInfo(fileName).Size;
+		size_t size = size_t(DiskFile::GetInfo(fileName).Size);
 		if(size==0)
 		{
 			String result;
@@ -274,13 +287,13 @@ namespace Intra { namespace IO
 	void CommonFileImpl::close()
 	{
 		if(hndl==null) return;
-		fclose((FILE*)hndl);
+		fclose(reinterpret_cast<FILE*>(hndl));
 		hndl=null;
 	}
 
 	int CommonFileImpl::GetFileDescriptor() const
 	{
-		return fileno((FILE*)hndl);
+		return fileno(reinterpret_cast<FILE*>(hndl));
 	}
 
 
@@ -290,7 +303,7 @@ namespace Intra { namespace IO
 		if(bytes==Meta::NumericLimits<size_t>::Max() || firstByte+bytes>size)
 			bytes = size_t(size-firstByte);
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-		mapping.data = (byte*)mmap(null, bytes, PROT_READ, MAP_SHARED, GetFileDescriptor(), (long)firstByte);
+		mapping.data = reinterpret_cast<byte*>(mmap(null, bytes, PROT_READ, MAP_SHARED, GetFileDescriptor(), long(firstByte)));
 #else
 		mapping.data = Memory::Allocate(bytes);
 		auto pos = GetPos();
@@ -316,30 +329,30 @@ namespace Intra { namespace IO
 	}
 
 
-	bool Reader::EndOfStream() const {return feof((FILE*)hndl)!=0;}
+	bool Reader::EndOfStream() const {return feof(reinterpret_cast<FILE*>(hndl))!=0;}
 
 	size_t Reader::ReadData(void* data, size_t bytes)
 	{
 		if(bytes==0) return 0;
 		INTRA_ASSERT(hndl!=null);
 		INTRA_ASSERT(data!=null);
-		size_t bytesRead = fread(data, 1, bytes, (FILE*)hndl);
-		//if(bytesRead<bytes) memset((byte*)data+bytesRead, 0, bytes-bytesRead);
+		size_t bytesRead = fread(data, 1, bytes, reinterpret_cast<FILE*>(hndl));
+		//if(bytesRead<bytes) memset(reinterpret_cast<byte*>(data)+bytesRead, 0, bytes-bytesRead);
 		return bytesRead;
 	}
 
 	void Reader::UnreadData(const void* src, size_t bytes)
 	{
-		for(byte* ptr = (byte*)src+bytes; ptr>src;)
-			ungetc(*--ptr, (FILE*)hndl);
+		for(const byte* ptr = reinterpret_cast<const byte*>(src)+bytes; ptr>src;)
+			ungetc(*--ptr, reinterpret_cast<FILE*>(hndl));
 	}
 
 
 	void Writer::WriteData(const void* data, size_t bytes)
 	{
 		INTRA_ASSERT(hndl!=null);
-		fwrite(data, 1, bytes, (FILE*)hndl);
-		//fflush((FILE*)hndl);
+		fwrite(data, 1, bytes, reinterpret_cast<FILE*>(hndl));
+		//fflush(reinterpret_cast<FILE*>(hndl));
 	}
 
 
@@ -349,9 +362,9 @@ namespace Intra { namespace IO
 	{
 		if(hndl==null) return;
 #ifdef _MSC_VER
-		fseeko64((FILE*)hndl, bytes, SEEK_SET);
+		fseeko64(reinterpret_cast<FILE*>(hndl), bytes, SEEK_SET);
 #else
-		fseek((FILE*)hndl, (long)bytes, SEEK_SET);
+		fseek(reinterpret_cast<FILE*>(hndl), long(bytes), SEEK_SET);
 #endif
 	}
 
@@ -359,9 +372,9 @@ namespace Intra { namespace IO
 	{
 		if(hndl==null) return 0;
 #ifdef _MSC_VER
-		return ftello64((FILE*)hndl);
+		return ulong64(ftello64(reinterpret_cast<FILE*>(hndl)));
 #else
-		return ftell((FILE*)hndl);
+		return ulong64(ftell(reinterpret_cast<FILE*>(hndl)));
 #endif
 	}
 
@@ -376,9 +389,9 @@ namespace Intra { namespace IO
 	{
 		if(hndl==null) return;
 #ifdef _MSC_VER
-		fseeko64((FILE*)hndl, bytes, SEEK_SET);
+		fseeko64(reinterpret_cast<FILE*>(hndl), bytes, SEEK_SET);
 #else
-		fseek((FILE*)hndl, (long)bytes, SEEK_SET);
+		fseek(reinterpret_cast<FILE*>(hndl), long(bytes), SEEK_SET);
 #endif
 	}
 
@@ -386,9 +399,9 @@ namespace Intra { namespace IO
 	{
 		if(hndl==null) return 0;
 #ifdef _MSC_VER
-		return ftello64((FILE*)hndl);
+		return ulong64(ftello64(reinterpret_cast<FILE*>(hndl)));
 #else
-		return ftell((FILE*)hndl);
+		return ulong64(ftell(reinterpret_cast<FILE*>(hndl)));
 #endif
 	}
 
@@ -396,7 +409,7 @@ namespace Intra { namespace IO
 	{
 		if(hndl==null) return 0;
 		const auto oldpos = GetPos();
-		fseek((FILE*)hndl, 0, SEEK_END);
+		fseek(reinterpret_cast<FILE*>(hndl), 0, SEEK_END);
 		const auto size = GetPos();
 		const_cast<Writer*>(this)->SetPos(oldpos);
 		return size;

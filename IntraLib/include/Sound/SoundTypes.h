@@ -21,7 +21,7 @@ struct SoundInfo
 		SampleCount(sampleCount), SampleRate(sampleRate), Channels(channels), SampleType(sampleType) {}
 
 	size_t GetBufferSize() const {return SampleCount*Channels*SampleType.Size();}
-	double Duration() const {return (double)SampleCount/SampleRate;}
+	double Duration() const {return double(SampleCount)/SampleRate;}
 };
 
 }

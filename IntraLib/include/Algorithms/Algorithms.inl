@@ -279,7 +279,7 @@ template<typename To, typename From> void Cast(ArrayRange<To> dst, ArrayRange<co
 	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		dst.First() = (To)src.First();
+		dst.First() = To(src.First());
 		src.PopFirst();
 		dst.PopFirst();
 	}
@@ -292,7 +292,7 @@ template<typename To, typename From> Meta::EnableIf<
 	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		dst.First() = (To)src.First() / (To)Meta::NumericLimits<From>::Max();
+		dst.First() = To(src.First()) / To(Meta::NumericLimits<From>::Max());
 		dst.PopFirst();
 		src.PopFirst();
 	}

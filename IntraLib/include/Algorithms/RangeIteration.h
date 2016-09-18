@@ -4,6 +4,7 @@
 #include "Utils/Optional.h"
 #include "Meta/Type.h"
 
+
 namespace Intra { namespace Range {
 
 
@@ -167,12 +168,12 @@ template<typename T, typename R0, typename R1, typename... RANGES> struct ChainR
 
 	template<typename U=R0> forceinline Meta::EnableIf<
 		U::RangeType>=TypeEnum::RandomAccess,
-	ChainResult> opSlice(size_t start, size_t end) const
+	ChainResult> opSlice(size_t startIndex, size_t endIndex) const
 	{
 		const size_t len = range0.Length();
 		return ChainResult(
-			range0.opSlice(start>len? len: start, len>end? end: len),
-			next.opSlice(start>len? start-len: 0, end>len? end-len: 0)
+			range0.opSlice(startIndex>len? len: startIndex, len>endIndex? endIndex: len),
+			next.opSlice(startIndex>len? startIndex-len: 0, endIndex>len? endIndex-len: 0)
 		);
 	}
 
@@ -231,7 +232,7 @@ template<typename T, typename R0> struct ChainResult<T, R0>:
 
 	template<typename U=R0> forceinline Meta::EnableIf<
 		U::RangeType>=TypeEnum::RandomAccess,
-	ChainResult> opSlice(size_t start, size_t end) const {return ChainResult(range0.opSlice(start, end));}
+	ChainResult> opSlice(size_t startIndex, size_t endIndex) const {return ChainResult(range0.opSlice(startIndex, endIndex));}
 
 	forceinline bool operator==(const ChainResult& rhs) const {return range0==rhs.range0;}
 
@@ -475,7 +476,7 @@ template<typename... RANGES> struct ZipResult:
 
 	template<typename U=ZipResult> Meta::EnableIf<
 		U::RangeType>=TypeEnum::RandomAccess,
-	ZipResult> opSlice(size_t start, size_t end) const {return OriginalRanges.TransformEach(Slicer{start, end});}
+	ZipResult> opSlice(size_t startIndex, size_t endIndex) const {return OriginalRanges.TransformEach(Slicer{startIndex, endIndex});}
 
 	forceinline bool operator==(const ZipResult& rhs) const {return OriginalRanges==rhs.OriginalRanges;}
 };
@@ -541,7 +542,7 @@ template<size_t N, typename RangeOfTuples> struct UnzipResult:
 	}
 
 	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasPopLast<U>::_> PopLast(size_t start, size_t end) const
+		HasPopLast<U>::_> PopLast() const
 	{
 		OriginalRange.PopLast();
 	}
@@ -552,3 +553,4 @@ template<size_t N, typename RangeOfTuples> struct UnzipResult:
 
 
 }}
+

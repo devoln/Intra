@@ -9,24 +9,24 @@ CharMap::CharMap(const Array2D<char>& arr):
 
 CharMap::CharMap(ArrayRange<const Array<char>> arr, char filler)
 {
-	uintptr columns=0;
+	size_t columns=0;
 	for(auto& line: arr) columns = Max(columns, line.Count());
-	super result({arr.Count(), columns});
-	for(uintptr i=0; i<arr.Count(); i++)
-		for(uintptr j=0; j<columns; j++)
+	Array2D<char> result({arr.Count(), columns});
+	for(size_t i=0; i<arr.Count(); i++)
+		for(size_t j=0; j<columns; j++)
 			operator()(j, i) = j<arr[i].Count()? arr[i][j]: filler;
-	super::operator=(core::move(result));
+	Array2D<char>::operator=(core::move(result));
 }
 
 CharMap::CharMap(ArrayRange<const String> arr, char filler)
 {
-	uintptr columns=0;
+	size_t columns=0;
 	for(auto& line: arr) columns = Max(columns, line.Length());
-	super result({columns, arr.Count()});
-	for(uintptr i=0; i<arr.Count(); i++)
-		for(uintptr j=0; j<columns; j++)
+	Array2D<char> result({columns, arr.Count()});
+	for(size_t i=0; i<arr.Count(); i++)
+		for(size_t j=0; j<columns; j++)
 			result(j, i) = j<arr[i].Length()? arr[i][j]: filler;
-	super::operator=(core::move(result));
+	Array2D<char>::operator=(core::move(result));
 }
 
 Array<CharMap::Block> CharMap::GetBlocks(char c, BlockType type) const
@@ -44,7 +44,7 @@ Array<CharMap::Block> CharMap::GetBlocks(char c, BlockType type) const
 		return result;
 	}
 
-	auto m = (super)*this;
+	Array2D<char> m = *this;
 
 	for(uint i=0; i<Height(); i++)
 		for(uint j=0; j<Width(); j++)

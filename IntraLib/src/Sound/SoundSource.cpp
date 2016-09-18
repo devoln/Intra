@@ -214,7 +214,7 @@ Array<const void*> VorbisSoundSampleSource::GetRawSamplesData(size_t maxSamplesT
 
 
 
-#ifndef NO_WAVE_LOADER
+#ifndef INTRA_NO_WAVE_LOADER
 
 struct WaveHeader
 {
@@ -234,9 +234,9 @@ struct WaveHeader
 
 
 WaveSoundSampleSource::WaveSoundSampleSource(ArrayRange<const byte> srcFileData):
-	data(srcFileData), current_data_pos(0)
+	data(srcFileData), sample_count(0), current_data_pos(0)
 {
-	WaveHeader& header = *(WaveHeader*)data.Begin;
+	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(data.Begin);
 
 	if(core::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF))!=0 ||
 		core::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE))!=0 ||
@@ -244,19 +244,20 @@ WaveSoundSampleSource::WaveSoundSampleSource(ArrayRange<const byte> srcFileData)
 		core::memcmp(header.data, "data", sizeof(header.data))!=0) return;
 	if(data.Length()!=header.DataSize+sizeof(WaveHeader)) return;
 
-	channelCount = (ushort)header.Channels;
-	sampleRate = header.SampleRate;
-	sample_count = header.DataSize/sizeof(short)/channelCount;
+	channel_count = ushort(header.Channels);
+	sample_rate = header.SampleRate;
+	sample_count = header.DataSize/sizeof(short)/channel_count;
 }
 
 size_t WaveSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
 	INTRA_ASSERT(!outShorts.Empty());
-	const auto shortsToRead = Min(outShorts.Length(), sample_count*channelCount-current_data_pos);
-	core::memcpy(outShorts.Begin, (short*)(data.Begin+sizeof(WaveHeader))+current_data_pos, shortsToRead*sizeof(short));
-	current_data_pos+=shortsToRead;
+	const auto shortsToRead = Min(outShorts.Length(), sample_count*channel_count-current_data_pos);
+	const short* const streamStart = reinterpret_cast<const short*>(data.Begin+sizeof(WaveHeader));
+	core::memcpy(outShorts.Begin, streamStart+current_data_pos, shortsToRead*sizeof(short));
+	current_data_pos += shortsToRead;
 	if(shortsToRead<outShorts.Length()) current_data_pos=0;
-	return shortsToRead/channelCount;
+	return shortsToRead/channel_count;
 }
 
 size_t WaveSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloats)
@@ -272,35 +273,36 @@ size_t WaveSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 
 size_t WaveSoundSampleSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
-	INTRA_ASSERT(outFloats.Length()==channelCount);
+	INTRA_ASSERT(outFloats.Length()==channel_count);
 	const size_t outSamplesCount = outFloats.First().Length();
-	for(size_t i=1; i<channelCount; i++)
+	for(size_t i=1; i<channel_count; i++)
 	{
 		INTRA_ASSERT(outFloats[i].Length()==outSamplesCount);
 	}
 
 	Array<float> outShorts;
-	outShorts.SetCountUninitialized(outSamplesCount*channelCount);
+	outShorts.SetCountUninitialized(outSamplesCount*channel_count);
 	auto result = GetInterleavedSamples(outShorts);
 	for(size_t i=0, j=0; i<outShorts.Count(); i++)
 	{
-		for(ushort c=0; c<channelCount; c++)
+		for(ushort c=0; c<channel_count; c++)
 			outFloats[c][i] = (outShorts[j++]+0.5f)/32767.5f;
 	}
 	return result;
 }
 
 Array<const void*> WaveSoundSampleSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
+	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
-	const auto shortsToRead = Min(maxSamplesToRead, sample_count*channelCount-current_data_pos);
-	if(outSamplesRead!=null) *outSamplesRead = shortsToRead/channelCount;
-	if(outInterleaved!=null) *outInterleaved = true;
-	if(outType!=null) *outType = ValueType::Short;
+	const auto shortsToRead = Min(maxSamplesToRead, sample_count*channel_count-current_data_pos);
+	if(oSamplesRead!=null) *oSamplesRead = shortsToRead/channel_count;
+	if(oInterleaved!=null) *oInterleaved = true;
+	if(oType!=null) *oType = ValueType::Short;
 	Array<const void*> resultPtrs;
-	resultPtrs.AddLast((short*)(data.Begin+sizeof(WaveHeader))+current_data_pos);
-	current_data_pos+=shortsToRead;
-	if(shortsToRead<maxSamplesToRead) current_data_pos=0;
+	const short* const streamStart = reinterpret_cast<const short*>(data.Begin+sizeof(WaveHeader));
+	resultPtrs.AddLast(streamStart+current_data_pos);
+	current_data_pos += shortsToRead;
+	if(shortsToRead<maxSamplesToRead) current_data_pos = 0;
 	return resultPtrs;
 }
 

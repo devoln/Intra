@@ -23,22 +23,23 @@ template<typename T> Ray<T> operator*(const Mat4& mat, const Ray<T>& r)
 
 template<typename T> struct Line
 {
-	Vector2<T> normal;
-	T c;
+	Vector2<T> Normal;
+	T C;
 
 	Line(Vector2<T> p1, Vector2<T> p2)
 	{
-		normal.x=(p2.y-p1.y); normal.y=(p1.x-p2.x);
-		c=p1.x*(p1.y-p2.y)+p1.y*(p2.x-p1.x);
-		auto nl=Length(normal);
-		normal/=nl;
-		c/=nl;
+		Normal.x = (p2.y-p1.y);
+		Normal.y = (p1.x-p2.x);
+		C = p1.x*(p1.y-p2.y)+p1.y*(p2.x-p1.x);
+		auto nl = Length(Normal);
+		Normal /= nl;
+		C /= nl;
 	}
 
 	//Функция предполагает, что уравнение нормировано
 	bool Contains(Vector2<T> pt)
 	{
-		return Abs(normal.x*pt.x+normal.y*pt.y+c*pt.z)<=0.0001;
+		return Abs(Dot(Normal, pt)+C)<=0.0001;
 	}
 };
 
@@ -70,22 +71,22 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	T Diagonal() const {return Length(Size());}
 
 	T SqrDistance(const Vector3<T>& pt, Vector3<T>* nearestPoint=null) const;
-	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=null) const {return (T)Sqrt(SqrDistance(pt, nearestPoint));}
+	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=null) const {return T(Sqrt(SqrDistance(pt, nearestPoint)));}
 
 	//Диаметр вписанной сферы
 	T MinSizeAxis(int* axis=null) const
 	{
-		auto size=Size();
-		T minSize=size.x;
+		auto size = Size();
+		T minSize = size.x;
 		if(axis!=null) *axis=0;
 		if(size.y<minSize)
 		{
-			minSize=size.y;
+			minSize = size.y;
 			if(axis!=null) *axis=1;
 		}
 		if(size.z<minSize)
 		{
-			minSize=size.z;
+			minSize = size.z;
 			if(axis!=null) *axis=2;
 		}
 		return minSize;
@@ -98,28 +99,28 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	}
 
 	//Диаметр описанной сферы
-	T MaxSizeAxis(int* axis=null) const
+	T MaxSizeAxis(int* oAxis=null) const
 	{
-		auto size=Size();
-		T maxSize=size.x;
-		if(axis!=null) *axis=0;
+		auto size = Size();
+		T maxSize = size.x;
+		if(oAxis!=null) *oAxis = 0;
 		if(size.y>maxSize)
 		{
 			maxSize=size.y;
-			if(axis!=null) *axis=1;
+			if(oAxis!=null) *oAxis=1;
 		}
 		if(size.z>maxSize)
 		{
 			maxSize=size.z;
-			if(axis!=null) *axis=2;
+			if(oAxis!=null) *oAxis=2;
 		}
 		return maxSize;
 	}
 
 	//Радиус описанной сферы
-	T MaxExtentAxis(int* axis=null)
+	T MaxExtentAxis(int* oAxis=null)
 	{
-		return MaxSizeAxis(axis)/T(2);
+		return MaxSizeAxis(oAxis)/T(2);
 	}
 
 	void AddTriangle(const Triangle<T>& tri) {for(int i=0; i<3; i++) AddPoint(tri.vertices[i]);}
@@ -138,7 +139,9 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 
 	bool Contains(const Vector3<T>& pt) const
 	{
-		return pt.x>=min.x && pt.x<=max.x && pt.y>=min.y && pt.y<=max.y && pt.z>=min.z && pt.z<=max.z;
+		return pt.x>=min.x && pt.x<=max.x &&
+			pt.y>=min.y && pt.y<=max.y &&
+			pt.z>=min.z && pt.z<=max.z;
 	}
 
 	bool Contains(const AABB<T>& aabb) const {return Contains(aabb.min) && Contains(aabb.max);}
@@ -258,23 +261,23 @@ template<typename T> OBB<T> operator*(const Mat4& m, const OBB<T>& obb)
 
 template<typename T> struct Sphere
 {
-	Vector3<T> center;
-	T radius;
+	Vector3<T> Center;
+	T Radius;
 
 	Sphere() = default;
-	Sphere(null_t): center(0,0,0), radius(0) {}
-	Sphere(const Vector3<T>& c, T r): center(c), radius(r) {}
+	Sphere(null_t): Center(0,0,0), Radius(0) {}
+	Sphere(const Vector3<T>& c, T r): Center(c), Radius(r) {}
 
 	void AddPoint(const Vector3<T>& p)
 	{
-		auto distSqr = LengthSqr(p-center);
-		if(distSqr>radius*radius) radius = Sqrt(distSqr);
+		const T distSqr = LengthSqr(p-Center);
+		if(distSqr>Radius*Radius) Radius = T(Sqrt(distSqr));
 	}
 
 	void AddSphere(const Sphere<T>& s)
 	{
-		auto dist = Distance(s.center, center)+s.radius;
-		if(dist>radius) radius = dist;
+		const T dist = Distance(s.Center, Center)+s.Radius;
+		if(dist>Radius) Radius = dist;
 	}
 
 	//! Проверка пересечения луча со сферой
@@ -282,10 +285,10 @@ template<typename T> struct Sphere
 	//! \returns Произошло ли пересечение (true или false)
 	bool CheckRayIntersection(const Ray<T>& ray) const
 	{
-		const Vector3<T> l = center-ray.origin;
+		const Vector3<T> l = Center-ray.origin;
 		const T d = Dot(l, ray.dir);
 		const T squaredLen = LengthSqr(l);
-		const T squaredRadius = radius*radius;
+		const T squaredRadius = Radius*Radius;
 		if(d<0 && squaredLen>squaredRadius) return false;
 		return squaredLen-d*d <= squaredRadius;
 	}
@@ -295,9 +298,9 @@ template<typename T> struct Sphere
 	//! \returns Параметр t для нахождения точки пересечения ray.origin + t*ray.dir. Если пересечения не было, то NaN для floating point типов или 0 для integer типов
 	T GetRayIntersectionPoint(const Ray<T>& ray) const
 	{
-		Vector3<T> l = center-ray.origin;
+		Vector3<T> l = Center-ray.origin;
 		const T d = Dot(l, ray.dir);
-		const T D2 = radius*radius - LengthSqr(l) + d*d;
+		const T D2 = Radius*Radius - LengthSqr(l) + d*d;
 		if(D2<0) return NaN;
 		const T D = Sqrt(D2);
 		const T t0 = d-D;
@@ -307,15 +310,15 @@ template<typename T> struct Sphere
 		return NaN;
 	}
 
-	AABB<T> GetAABB() const {return {center-Vector3<T>(radius), center+Vector3<T>(radius)};}
+	AABB<T> GetAABB() const {return {Center-Vector3<T>(Radius), Center+Vector3<T>(Radius)};}
 };
 
 template<typename T> Sphere<T> operator*(const Matrix4<T>& m, const Sphere<T>& s)
 {
 	Sphere<T> result;
-	result.center = Vector3<T>(m*Vector4<T>(s.center, 1));
+	result.Center = Vector3<T>(m*Vector4<T>(s.Center, 1));
 	auto scale = m.GetScaling();
-	result.radius = Max(Max(scale.x, scale.y), scale.z)*s.radius;
+	result.Radius = Max(Max(scale.x, scale.y), scale.z)*s.Radius;
 	return result;
 }
 
@@ -323,7 +326,7 @@ typedef Sphere<float> SphereF;
 
 template<typename T> Sphere<T> OBB<T>::BoundingSphere() const
 {
-	T maxdiagSqr=0;
+	T maxdiagSqr = 0;
 	for(bool b1: {false, true}) for(bool b2: {false, true})
 		maxdiagSqr = Max(maxdiagSqr, Distance(GetPoint(b1, b2, false), GetPoint(!b1, !b2, true)));
 	return Sphere<T>(position, Sqrt(maxdiagSqr)/2);
@@ -337,61 +340,61 @@ template<typename T> struct Plane
 	Plane() = default;
 
 	Plane(const Vector3<T>& point1, const Vector3<T>& point2, const Vector3<T>& point3):
-		normal( Normalize(Cross(point2-point1, point3-point1)) ),
-		d( -Dot(point1, normal) ) {}
+		Normal( Normalize(Cross(point2-point1, point3-point1)) ),
+		D( -Dot(point1, Normal) ) {}
 
-	Plane(const Vector3<T>& normal, const Vector3<T>& pointOnPlane):
-		normal(normal), d(-Dot(pointOnPlane, normal)) {}
+	Plane(const Vector3<T>& planeNormal, const Vector3<T>& pointOnPlane):
+		Normal(planeNormal), D(-Dot(pointOnPlane, Normal)) {}
 
-	Plane(const Vector3<T>& normal, T d):
-		normal(normal), d(d) {}
+	Plane(const Vector3<T>& planeNormal, T distanceFromZero):
+		Normal(planeNormal), D(distanceFromZero) {}
 
 	Plane(const Vector4<T>& asVec4):
-		normal(asVec4.xyz), d(asVec4.w) {}
+		Normal(asVec4.xyz), D(asVec4.w) {}
 
 	Plane(T a, T b, T c, T d):
-		normal(a, b, c), d(d) {}
+		Normal(a, b, c), D(d) {}
 
 	short ClassifySphere(Sphere<T> sphere) const
 	{
-		const T dist = Dot(sphere.center, normal)+d;
-		if(Abs(dist)<sphere.radius) return 0;
-		if(dist>=sphere.radius) return 1;
+		const T dist = Dot(sphere.Center, Normal)+D;
+		if(Abs(dist)<sphere.Radius) return 0;
+		if(dist>=sphere.Radius) return 1;
 		return -1;
 	}
 
 	Vector3<T> GetIntersectionWithLine(const Vector3<T>& lineA, const Vector3<T>& lineB) const
 	{
 		const Vector3<T> dir = Normalize(lineB-lineA);
-		const T denominator = Dot(normal, dir); //Косинус угла между прямой и плоскостью
+		const T denominator = Dot(Normal, dir); //Косинус угла между прямой и плоскостью
 		if(Abs(denominator)<=T(0.00001)) return lineA;  //Прямая лежит на плоскости
-		return lineA+dir*((lineA.DistanceToPlane(*this)+d)/denominator);
+		return lineA+dir*((lineA.DistanceToPlane(*this)+D)/denominator);
 	}
 
 	bool IsIntersectedByLine(Vector3<T> lineA, Vector3<T> lineB) const //Определить, пересекается ли прямая с плоскостью
 	{
-		return (Dot(normal, lineA)<-d) == (Dot(normal, lineB)<-d);
+		return (Dot(Normal, lineA)<-D) == (Dot(Normal, lineB)<-D);
 	}
 
 	Vector4<T>& AsVec4() {return *reinterpret_cast<Vector4<T>*>(this);}
 	const Vector4<T>& AsVec4() const {return *reinterpret_cast<const Vector4<T>*>(this);}
 
-	Vector3<T> normal;
-	T d;
+	Vector3<T> Normal;
+	T D;
 };
 
 typedef Plane<float> PlaneF;
 
 template<typename T> Plane<T> Normalize(const Plane<T>& p)
 {
-	auto l = Length(p.normal);
-	return Plane<T>(p.normal/l, p.d/l);
+	auto l = Length(p.Normal);
+	return Plane<T>(p.Normal/l, p.D/l);
 }
 
 //Найти смещение центра сферы при столкновении с плоскостью
-template<typename T> Vector3<T> GetCollisionOffset(const Plane<T>& plane, T radius, T distanceOfSphereCenter)
+template<typename T> Vector3<T> GetCollisionOffset(const Plane<T>& plane, T Radius, T distanceOfSphereCenter)
 {
-	return plane.normal*(Sign(distanceOfSphereCenter)*radius-distanceOfSphereCenter);
+	return plane.Normal*(Sign(distanceOfSphereCenter)*Radius-distanceOfSphereCenter);
 }
 
 
@@ -412,9 +415,9 @@ template<typename T> struct Triangle
 	//Проверка пересечения сферы с рёбрами треугольника
 	bool EdgeSphereCollision(Sphere<T> sph) const
 	{
-		return (Distance(sph.center, sph.center.ClosestPointOnLine(vertices[0], vertices[1]))<sph.radius ||
-			    Distance(sph.center, sph.center.ClosestPointOnLine(vertices[1], vertices[2]))<sph.radius ||
-			    Distance(sph.center, sph.center.ClosestPointOnLine(vertices[2], vertices[0]))<sph.radius);
+		return (Distance(sph.Center, sph.Center.ClosestPointOnLine(vertices[0], vertices[1]))<sph.Radius ||
+			    Distance(sph.Center, sph.Center.ClosestPointOnLine(vertices[1], vertices[2]))<sph.Radius ||
+			    Distance(sph.Center, sph.Center.ClosestPointOnLine(vertices[2], vertices[0]))<sph.Radius);
 	}
 
 	Vector3<T> CheckCollisionWithSphere(Sphere<T> sphere) const
@@ -424,10 +427,10 @@ template<typename T> struct Triangle
 		//Если плоскость не пересекает сферу, то сфера не может пересекать треугольник
 		if(plane.ClassifySphere(sphere)!=0) return Vector3<T>(0);
 
-		const T distance = Dot(sphere.center, plane.normal)+plane.d;
-		if((sphere.center-plane.normal*distance).IsInsideTriangle(*this) ||
-			EdgeSphereCollision(Sphere<T>(sphere.center, sphere.radius*0.3f)))
-				return GetCollisionOffset(plane, sphere.radius, distance);
+		const T distance = Dot(sphere.Center, plane.Normal)+plane.D;
+		if((sphere.Center-plane.Normal*distance).IsInsideTriangle(*this) ||
+			EdgeSphereCollision(Sphere<T>(sphere.Center, sphere.Radius*0.3f)))
+				return GetCollisionOffset(plane, sphere.Radius, distance);
 		return Vector3<T>(0);
 	}
 
@@ -503,9 +506,9 @@ template<typename T> struct Frustum
 	{
 		for(int i=0; i<6; i++)
 		{
-			T dist = Dot(planes[i].normal, refSphere.center)+planes[i].d;
-			if(dist<-refSphere.radius) return CollisionSide::Outside;
-			if(Abs(dist)<refSphere.radius) return CollisionSide::Intersect;
+			T dist = Dot(planes[i].Normal, refSphere.Center)+planes[i].D;
+			if(dist<-refSphere.Radius) return CollisionSide::Outside;
+			if(Abs(dist)<refSphere.Radius) return CollisionSide::Intersect;
 		}
 		return CollisionSide::Inside;
 	}
@@ -513,7 +516,7 @@ template<typename T> struct Frustum
     bool Contains(const Sphere<T>& sphere) const
 	{
 		for(byte p=0; p<6; p++)
-			if(Dot(sphere.center, planes[p].normal) + planes[p].d + sphere.radius <= 0) return false;
+			if(Dot(sphere.Center, planes[p].Normal) + planes[p].D + sphere.Radius <= 0) return false;
 		return true;
 		//return SphereTest(sphere)!=CollisionSide::Outside;
 	}
@@ -524,14 +527,14 @@ template<typename T> struct Frustum
 	{
 		for(int i=0; i<6; i++)
 		{
-			if(Dot(planes[i].normal, box.min) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.max.x, box.min.y, box.min.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.min.x, box.max.y, box.min.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.max.x, box.max.y, box.min.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.min.x, box.min.y, box.max.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.max.x, box.min.y, box.max.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, Vector3<T>(box.min.x, box.max.y, box.max.z)) >= -planes[i].d) continue;
-			if(Dot(planes[i].normal, box.max) >= -planes[i].d) continue;
+			if(Dot(planes[i].Normal, box.min) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.max.x, box.min.y, box.min.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.min.x, box.max.y, box.min.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.max.x, box.max.y, box.min.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.min.x, box.min.y, box.max.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.max.x, box.min.y, box.max.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, Vector3<T>(box.min.x, box.max.y, box.max.z)) >= -planes[i].D) continue;
+			if(Dot(planes[i].Normal, box.max) >= -planes[i].D) continue;
 			return false;
 		}
 		return true;
@@ -555,7 +558,7 @@ template<typename T> struct Frustum
 
 template<typename T> struct Ellipse
 {
-	Vector2<T> center;
+	Vector2<T> Center;
 	T a, b;
 
 
@@ -564,28 +567,28 @@ template<typename T> struct Ellipse
 template<typename T> Frustum<T>::Frustum(const Matrix4<T>& vp)
 {
 	//right
-	planes[0].normal = {vp[0][3]-vp[0][0], vp[1][3]-vp[1][0], vp[2][3]-vp[2][0]};
-	planes[0].d = vp[3][3]-vp[3][0];
+	planes[0].Normal = {vp[0][3]-vp[0][0], vp[1][3]-vp[1][0], vp[2][3]-vp[2][0]};
+	planes[0].D = vp[3][3]-vp[3][0];
 
 	//left
-	planes[1].normal = {vp[0][3]+vp[0][0], vp[1][3]+vp[1][0], vp[2][3]+vp[2][0]};
-	planes[1].d = vp[3][3]+vp[3][0];
+	planes[1].Normal = {vp[0][3]+vp[0][0], vp[1][3]+vp[1][0], vp[2][3]+vp[2][0]};
+	planes[1].D = vp[3][3]+vp[3][0];
 
 	//bottom
-	planes[2].normal = {vp[0][3]+vp[0][1], vp[1][3]+vp[1][1], vp[2][3]+vp[2][1]};
-	planes[2].d = vp[3][3]+vp[3][1];
+	planes[2].Normal = {vp[0][3]+vp[0][1], vp[1][3]+vp[1][1], vp[2][3]+vp[2][1]};
+	planes[2].D = vp[3][3]+vp[3][1];
 
 	//top
-	planes[3].normal = {vp[0][3]-vp[0][1], vp[1][3]-vp[1][1], vp[2][3]-vp[2][1]};
-	planes[3].d = vp[3][3]-vp[3][1];
+	planes[3].Normal = {vp[0][3]-vp[0][1], vp[1][3]-vp[1][1], vp[2][3]-vp[2][1]};
+	planes[3].D = vp[3][3]-vp[3][1];
 
 	//far
-	planes[4].normal = {vp[0][3]-vp[0][2], vp[1][3]-vp[1][2], vp[2][3]-vp[2][2]};
-	planes[4].d = vp[3][3]-vp[3][2];
+	planes[4].Normal = {vp[0][3]-vp[0][2], vp[1][3]-vp[1][2], vp[2][3]-vp[2][2]};
+	planes[4].D = vp[3][3]-vp[3][2];
 
 	//near
-	planes[5].normal = {vp[0][3]+vp[0][2], vp[1][3]+vp[1][2], vp[2][3]+vp[2][2]};
-	planes[5].d = vp[3][3]+vp[3][2];
+	planes[5].Normal = {vp[0][3]+vp[0][2], vp[1][3]+vp[1][2], vp[2][3]+vp[2][2]};
+	planes[5].D = vp[3][3]+vp[3][2];
 
 	for(auto& p: planes) p = Normalize(p);
 }
@@ -596,10 +599,10 @@ template<typename T> Vector3<T> CheckBoxSphereCollision(const OBB<T>& box, const
 	/*auto boxTransform=box.GetFullTransform();
 	const auto boxSizes=box.transform.GetScaling3();
 	boxTransform=(Mat4::Scaling(Vec3(1)/boxSizes)*boxTransform);
-	//if(Distance(box.position, sph.center)>=sph.radius+Sqrt(T(3))) return {0};
+	//if(Distance(box.position, sph.Center)>=sph.Radius+Sqrt(T(3))) return {0};
 
-	const Vector4<T> localCenter=Inverse(boxTransform)*Vector4<T>(sph.center, 1.0);
-	auto dist=-Sqr(sph.radius);
+	const Vector4<T> localCenter=Inverse(boxTransform)*Vector4<T>(sph.Center, 1.0);
+	auto dist=-Sqr(sph.Radius);
 	for(ushort i=0; i<3; i++)
 	{
 		if(localCenter[i]<-boxSizes[i]*0.5f) dist+=Sqr(localCenter[i]+boxSizes[i]*0.5f);
@@ -620,11 +623,11 @@ template<typename T> Vector3<T> CheckBoxSphereCollision(const OBB<T>& box, const
 template<typename T> Vector3<T> CheckBoxSphereCollision(const Vector3<T>& boxSizes, const Matrix4<T>& transform, const Sphere<T>& sph)
 {
 	T halfDiagSqr = LengthSqr(boxSizes)/4;
-	T radiusSqr = sph.radius*sph.radius;
-	if(DistanceSqr(Vec3(transform.Row(3)), sph.center) >= radiusSqr+2*sph.radius*Sqrt(halfDiagSqr)+halfDiagSqr)
+	T radiusSqr = sph.Radius*sph.Radius;
+	if(DistanceSqr(Vec3(transform.Row(3)), sph.Center) >= radiusSqr+2*sph.Radius*Sqrt(halfDiagSqr)+halfDiagSqr)
 		return {0,0,0};
 
-	const Vector4<T> localCenter = Inverse(transform)*Vector4<T>(sph.center, 1.0);
+	const Vector4<T> localCenter = Inverse(transform)*Vector4<T>(sph.Center, 1.0);
 	auto dist = -radiusSqr;
 	for(ushort i=0; i<3; i++)
 	{
@@ -637,16 +640,16 @@ template<typename T> Vector3<T> CheckBoxSphereCollision(const Vector3<T>& boxSiz
 	Vector3<T> d = Abs(localCenter.xyz)-boxSizes/2;
 	auto ld = Length(Max(d, T(0)));
 	T dist1 = Clamp(Max(d.y, d.z), d.x, T(0))+ld;
-	dist1 -= sph.radius;
+	dist1 -= sph.Radius;
 
 	Vector3<T> result={0,0,0};
 	int c=0;
 	for(ushort i=0; i<3; i++)
 	{
 		if(localCenter[i]<-boxSizes[i]/2)
-			result[i] = -sph.radius+d[i], c++;
+			result[i] = -sph.Radius+d[i], c++;
 		else if(localCenter[i]>boxSizes[i]/2)
-			result[i] = sph.radius-d[i], c++;
+			result[i] = sph.Radius-d[i], c++;
 	}
 	if(c>1)
 	{
@@ -663,9 +666,10 @@ template<typename T> Vector3<T> CheckBoxSphereCollision(const Vector3<T>& boxSiz
     return Matrix3<T>(transform)*result;
 }
 
-template<typename T> Vector3<T> CheckPlaneSphereCollision(const Vector2<T>& planeSizes, const Matrix4<T>& planeTransform, const Sphere<T>& sph)
+template<typename T> Vector3<T> CheckPlaneSphereCollision(const Vector2<T>& planeSizes,
+	const Matrix4<T>& planeTransform, const Sphere<T>& sph)
 {
-	const Vector3<T> localCenter = Vector3<T>(Inverse(planeTransform)*Vector4<T>(sph.center, 1.0));
+	const Vector3<T> localCenter = Vector3<T>(Inverse(planeTransform)*Vector4<T>(sph.Center, 1.0));
 
 	static const Vector3<T> points[4] = {
 		{-planeSizes.x/2, -planeSizes.y/2, 0},
@@ -674,33 +678,33 @@ template<typename T> Vector3<T> CheckPlaneSphereCollision(const Vector2<T>& plan
 		{-planeSizes.x/2, planeSizes.y/2, 0}
 	};
 	const Plane<T> planePlane = {points[0], points[1], points[2]};
-	const Sphere<T> localSphere = {localCenter, sph.radius};
+	const Sphere<T> localSphere = {localCenter, sph.Radius};
 
     //Если плоскость не пересекает сферу, то сфера не может пересекать треугольник
 	if(planePlane.ClassifySphere(localSphere)!=0) return {0,0,0};
 
 
-    const T distance = Dot(localCenter, planePlane.normal)+planePlane.d;
-    const Vector3<T> pointOnPlane = localSphere.center-planePlane.normal*distance;
+    const T distance = Dot(localCenter, planePlane.Normal)+planePlane.D;
+    const Vector3<T> pointOnPlane = localSphere.Center-planePlane.Normal*distance;
 
     /*if(pointOnPlane.x<-planeSizes.x/2)
-    	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[3], points[0]))<sphere.radius) return Vec3(-1, 0, -1);
+    	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[3], points[0]))<sphere.Radius) return Vec3(-1, 0, -1);
     	else return {0};
     if(pointOnPlane.x>size.x/2)
-        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[1], points[2]))<sphere.radius) return Vec3(1, 0, -1);
+        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[1], points[2]))<sphere.Radius) return Vec3(1, 0, -1);
         	else return {0};
     if(pointOnPlane.y<-size.y/2)
-        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[0], points[1]))<sphere.radius) return Vec3(0, -1, -1);
+        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[0], points[1]))<sphere.Radius) return Vec3(0, -1, -1);
         	else return {0};
     if(pointOnPlane.y>size.y/2)
-        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[3], points[2]))<sphere.radius) return Vec3(0, 1, -1);
+        	if(relCenter.DistanceTo(relCenter.ClosestPointOnLine(points[3], points[2]))<sphere.Radius) return Vec3(0, 1, -1);
         	else return {0};*/
 
-    if(pointOnPlane.x<-planeSizes.x/2-localSphere.radius/2 || pointOnPlane.x>planeSizes.x/2+localSphere.radius/2 ||
-    		pointOnPlane.y<-planeSizes.y/2-localSphere.radius/2 || pointOnPlane.y>planeSizes.y/2+localSphere.radius/2)
+    if(pointOnPlane.x<-planeSizes.x/2-localSphere.Radius/2 || pointOnPlane.x>planeSizes.x/2+localSphere.Radius/2 ||
+    		pointOnPlane.y<-planeSizes.y/2-localSphere.Radius/2 || pointOnPlane.y>planeSizes.y/2+localSphere.Radius/2)
 			return {0,0,0};
 
-    const Vector3<T> result = GetCollisionOffset(planePlane, sph.radius, distance);
+    const Vector3<T> result = GetCollisionOffset(planePlane, sph.Radius, distance);
 
     return Matrix3<T>(planeTransform)*result;
 }
@@ -708,17 +712,17 @@ template<typename T> Vector3<T> CheckPlaneSphereCollision(const Vector2<T>& plan
 
 template<typename T> T Distance(const Vector2<T>& pt, const Ellipse<T>& ellipse)
 {
-	pt -= ellipse.center;
-    Vector2<T> p = Abs(pt);
-	if(p.x>p.y)
+	pt -= ellipse.Center;
+    Vector2<T> ptAbs = Abs(pt);
+	if(ptAbs.x>ptAbs.y)
 	{
 		core::swap(pt.x, pt.y);
 		core::swap(ellipse.a, ellipse.b);
 	}
 	
     T l = ellipse.b*ellipse.b - ellipse.a*ellipse.a;
-    T m = ellipse.a*p.x/l, m2=m*m;
-    T n = ellipse.b*p.y/l, n2=n*n;
+    T m = ellipse.a*ptAbs.x/l, m2=m*m;
+    T n = ellipse.b*ptAbs.y/l, n2=n*n;
     T c = (m2+n2-1)/3, c3=c*c*c;
     T q = c3+m2*n2*2;
     T d = c3+m2*n2;
@@ -749,7 +753,7 @@ template<typename T> T Distance(const Vector2<T>& pt, const Ellipse<T>& ellipse)
 
     T si = Sqrt(1-co*co);
     Vector2<T> closestPoint = Vector2<T>(ellipse.a*co, ellipse.b*si);
-    return Distance(closestPoint, p)*Sign(p.y-closestPoint.y);
+    return Distance(closestPoint, ptAbs)*Sign(ptAbs.y-closestPoint.y);
 }
 
 template<typename T, typename U> bool TestIntersection(const T& lhs, const U& rhs)
@@ -764,9 +768,9 @@ template<typename T> bool TestIntersection(const Triangle<T>& tri, const Sphere<
 	//Если плоскость не пересекает сферу, то сфера не может пересекать треугольник
 	if(plane.ClassifySphere(sph)!=0) return false;
 
-	const float distance = Dot(sph.center, plane.normal)+plane.d;
-	return Vec3(sph.center-plane.normal*distance).IsInsideTriangle(tri) ||
-		tri.EdgeSphereCollision(Sphere<T>(sph.center, sph.radius*0.3f));
+	const float distance = Dot(sph.Center, plane.Normal)+plane.D;
+	return Vec3(sph.Center-plane.Normal*distance).IsInsideTriangle(tri) ||
+		tri.EdgeSphereCollision(Sphere<T>(sph.Center, sph.Radius*0.3f));
 }
 
 template<typename T> bool TestIntersection(const Triangle<T>& tri1, const Triangle<T>& tri2)
@@ -802,7 +806,7 @@ template<typename T> T AABB<T>::SqrDistance(const Vector3<T>& pt, Vector3<T>* ne
 }
 
 template<typename T> T DistanceSqr(const Vector3<T>& pt, const AABB<T>& aabb) {return aabb.SqrDistance(pt);}
-template<typename T> T Distance(const Vector3<T>& pt, const AABB<T>& aabb) {return (T)Sqrt(DistanceSqr(pt, aabb));}
+template<typename T> T Distance(const Vector3<T>& pt, const AABB<T>& aabb) {return T(Sqrt(DistanceSqr(pt, aabb)));}
 
 template<typename T> T DistanceSqr(const Vector3<T>& pt, const OBB<T>& obb)
 {
@@ -813,13 +817,13 @@ template<typename T> T DistanceSqr(const Vector3<T>& pt, const OBB<T>& obb)
 	return aabb.SqrDistance( (pt-obb.position)*rot ); //Умножение справа, потому что точка поворачивается вокруг aabb в противоположную повороту obb сторону
 }
 
-template<typename T> T Distance(const Vector3<T>& pt, const OBB<T>& obb) {return (T)Sqrt(DistanceSqr(pt, obb));}
+template<typename T> T Distance(const Vector3<T>& pt, const OBB<T>& obb) {return T(Sqrt(DistanceSqr(pt, obb)));}
 
 template<typename T> bool TestIntersection(const AABB<T>& aabb, const Sphere<T>& sph)
 {
-	float sqrDist = aabb.SqrDistance(sph.center);
-	float rr=sph.radius*sph.radius;
-	return sqrDist<=rr;
+	const T sqrDist = aabb.SqrDistance(sph.Center);
+	const T sphSqrRadius = sph.Radius*sph.Radius;
+	return sqrDist<=sphSqrRadius;
 }
 
 

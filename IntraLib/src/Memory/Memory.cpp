@@ -18,7 +18,7 @@ namespace Memory {
 AnyPtr Allocate(size_t bytes, size_t alignment)
 {
 	(void)alignment;
-	return GlobalHeap.Allocate(bytes, {__FILE__, (uint)__LINE__});
+	return GlobalHeap.Allocate(bytes, INTRA_SOURCE_INFO);
 }
 
 void Free(void* data)

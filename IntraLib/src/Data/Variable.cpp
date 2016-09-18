@@ -22,10 +22,10 @@ void Variable::ConvertType(Variable& dst, ValueType srcType, ValueType dstType) 
 	{
 	case ValueType::Void: break;
 
-	case ValueType::Bool: d4.x = (double)AsBool; break;
-	case ValueType::BVec2: d4.xy = (DVec2)AsBVec2; break;
-	case ValueType::BVec3: d4.xyz = (DVec3)AsBVec3; break;
-	case ValueType::BVec4: d4 = (DVec4)AsBVec4; break;
+	case ValueType::Bool: d4.x = double(AsBool); break;
+	case ValueType::BVec2: d4.xy = DVec2(AsBVec2); break;
+	case ValueType::BVec3: d4.xyz = DVec3(AsBVec3); break;
+	case ValueType::BVec4: d4 = DVec4(AsBVec4); break;
 
 	case ValueType::Norm8: d4.x = AsByte/255.0; break;
 	case ValueType::SNorm8: d4.x = AsSByte/127.0; break;
@@ -130,26 +130,26 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::Void: break;
 
 	case ValueType::Bool: r.AsBool = d4.x!=0; break;
-	case ValueType::BVec2: r.AsBVec2 ={d4.x!=0, d4.y!=0}; break;
-	case ValueType::BVec3: r.AsBVec3 ={d4.x!=0, d4.y!=0, d4.z!=0}; break;
-	case ValueType::BVec4: r.AsBVec4 ={d4.x!=0, d4.y!=0, d4.z!=0, d4.w!=0}; break;
+	case ValueType::BVec2: r.AsBVec2 = {d4.x!=0, d4.y!=0}; break;
+	case ValueType::BVec3: r.AsBVec3 = {d4.x!=0, d4.y!=0, d4.z!=0}; break;
+	case ValueType::BVec4: r.AsBVec4 = {d4.x!=0, d4.y!=0, d4.z!=0, d4.w!=0}; break;
 
-	case ValueType::Norm8: r.AsByte = (byte)(d4.x*255.0); break;
-	case ValueType::SNorm8: r.AsSByte = (sbyte)(d4.x*127.0); break;
-	case ValueType::Norm16: r.AsUShort = (ushort)(d4.x*65535.0); break;
-	case ValueType::SNorm16: r.AsShort = (short)(d4.x*32767.0); break;
-	case ValueType::Norm32: r.AsUInt = (uint)(d4.x*uint_MAX); break;
-	case ValueType::SNorm32: r.AsInt = (int)(d4.x*int_MAX); break;
+	case ValueType::Norm8: r.AsByte = byte(d4.x*255.0); break;
+	case ValueType::SNorm8: r.AsSByte = sbyte(d4.x*127.0); break;
+	case ValueType::Norm16: r.AsUShort = ushort(d4.x*65535.0); break;
+	case ValueType::SNorm16: r.AsShort = short(d4.x*32767.0); break;
+	case ValueType::Norm32: r.AsUInt = uint(d4.x*uint_MAX); break;
+	case ValueType::SNorm32: r.AsInt = int(d4.x*int_MAX); break;
 
-	case ValueType::SByte: r.AsByte = (byte)d4.x; break;
-	case ValueType::Byte: r.AsSByte = (sbyte)d4.x; break;
-	case ValueType::UShort: r.AsUShort = (ushort)d4.x; break;
-	case ValueType::Short: r.AsShort = (short)d4.x; break;
-	case ValueType::UInt: r.AsUInt = (uint)d4.x; break;
-	case ValueType::Int: r.AsInt = (int)d4.x; break;
+	case ValueType::SByte: r.AsByte = byte(d4.x); break;
+	case ValueType::Byte: r.AsSByte = sbyte(d4.x); break;
+	case ValueType::UShort: r.AsUShort = ushort(d4.x); break;
+	case ValueType::Short: r.AsShort = short(d4.x); break;
+	case ValueType::UInt: r.AsUInt = uint(d4.x); break;
+	case ValueType::Int: r.AsInt = int(d4.x); break;
 
-	case ValueType::Half: r.AsHalf = (Half)d4.x; break;
-	case ValueType::Float: r.AsFloat = (float)d4.x; break;
+	case ValueType::Half: r.AsHalf = Half(d4.x); break;
+	case ValueType::Float: r.AsFloat = float(d4.x); break;
 	case ValueType::Double: r.AsDouble = d4.x; break;
 
 
@@ -160,15 +160,15 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::N32Vec2: r.AsUVec2 = UVec2(d4.xy*uint_MAX); break;
 	case ValueType::S32Vec2: r.AsIVec2 = IVec2(d4.xy*int_MAX); break;
 
-	case ValueType::UBVec2: r.AsUBVec2 = (UBVec2)d4.xy; break;
-	case ValueType::SBVec2: r.AsSBVec2 = (SBVec2)d4.xy; break;
-	case ValueType::USVec2: r.AsUSVec2 = (USVec2)d4.xy; break;
-	case ValueType::SVec2: r.AsSVec2 = (SVec2)d4.xy; break;
-	case ValueType::UVec2: r.AsUVec2 = (UVec2)d4.xy; break;
-	case ValueType::IVec2: r.AsIVec2 = (IVec2)d4.xy; break;
+	case ValueType::UBVec2: r.AsUBVec2 = UBVec2(d4.xy); break;
+	case ValueType::SBVec2: r.AsSBVec2 = SBVec2(d4.xy); break;
+	case ValueType::USVec2: r.AsUSVec2 = USVec2(d4.xy); break;
+	case ValueType::SVec2: r.AsSVec2 = SVec2(d4.xy); break;
+	case ValueType::UVec2: r.AsUVec2 = UVec2(d4.xy); break;
+	case ValueType::IVec2: r.AsIVec2 = IVec2(d4.xy); break;
 
-	case ValueType::HVec2: r.AsHVec2 = (HVec2)d4.xy; break;
-	case ValueType::Vec2: r.AsVec2 = (Vec2)d4.xy; break;
+	case ValueType::HVec2: r.AsHVec2 = HVec2(d4.xy); break;
+	case ValueType::Vec2: r.AsVec2 = Vec2(d4.xy); break;
 	case ValueType::DVec2: r.AsDVec2 = d4.xy; break;
 
 
@@ -179,15 +179,15 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::N32Vec3: r.AsUVec3 = UVec3(d4.xyz*uint_MAX); break;
 	case ValueType::S32Vec3: r.AsIVec3 = IVec3(d4.xyz*int_MAX); break;
 
-	case ValueType::UBVec3: r.AsUBVec3 = (UBVec3)d4.xyz; break;
-	case ValueType::SBVec3: r.AsSBVec3 = (SBVec3)d4.xyz; break;
-	case ValueType::USVec3: r.AsUSVec3 = (USVec3)d4.xyz; break;
-	case ValueType::SVec3: r.AsSVec3 = (SVec3)d4.xyz; break;
-	case ValueType::UVec3: r.AsUVec3 = (UVec3)d4.xyz; break;
-	case ValueType::IVec3: r.AsIVec3 = (IVec3)d4.xyz; break;
+	case ValueType::UBVec3: r.AsUBVec3 = UBVec3(d4.xyz); break;
+	case ValueType::SBVec3: r.AsSBVec3 = SBVec3(d4.xyz); break;
+	case ValueType::USVec3: r.AsUSVec3 = USVec3(d4.xyz); break;
+	case ValueType::SVec3: r.AsSVec3 = SVec3(d4.xyz); break;
+	case ValueType::UVec3: r.AsUVec3 = UVec3(d4.xyz); break;
+	case ValueType::IVec3: r.AsIVec3 = IVec3(d4.xyz); break;
 
-	case ValueType::HVec3: r.AsHVec3 = (HVec3)d4.xyz; break;
-	case ValueType::Vec3: r.AsVec3 = (Vec3)d4.xyz; break;
+	case ValueType::HVec3: r.AsHVec3 = HVec3(d4.xyz); break;
+	case ValueType::Vec3: r.AsVec3 = Vec3(d4.xyz); break;
 	case ValueType::DVec3: r.AsDVec3 = d4.xyz; break;
 
 
@@ -198,15 +198,15 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::N32Vec4: r.AsUVec4 = d4*uint_MAX; break;
 	case ValueType::S32Vec4: r.AsIVec4 = d4*int_MAX; break;
 
-	case ValueType::UBVec4: r.AsUBVec4 = (UBVec4)d4; break;
-	case ValueType::SBVec4: r.AsSBVec4 = (SBVec4)d4; break;
-	case ValueType::USVec4: r.AsUSVec4 = (USVec4)d4; break;
-	case ValueType::SVec4: r.AsSVec4 = (SVec4)d4; break;
-	case ValueType::UVec4: r.AsUVec4 = (UVec4)d4; break;
-	case ValueType::IVec4: r.AsIVec4 = (IVec4)d4; break;
+	case ValueType::UBVec4: r.AsUBVec4 = UBVec4(d4); break;
+	case ValueType::SBVec4: r.AsSBVec4 = SBVec4(d4); break;
+	case ValueType::USVec4: r.AsUSVec4 = USVec4(d4); break;
+	case ValueType::SVec4: r.AsSVec4 = SVec4(d4); break;
+	case ValueType::UVec4: r.AsUVec4 = UVec4(d4); break;
+	case ValueType::IVec4: r.AsIVec4 = IVec4(d4); break;
 
-	case ValueType::HVec4: r.AsHVec4 = (HVec4)d4; break;
-	case ValueType::Vec4: r.AsVec4 = (Vec4)d4; break;
+	case ValueType::HVec4: r.AsHVec4 = HVec4(d4); break;
+	case ValueType::Vec4: r.AsVec4 = Vec4(d4); break;
 	case ValueType::DVec4: r.AsDVec4 = d4; break;
 
 	default:;

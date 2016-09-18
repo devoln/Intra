@@ -4,6 +4,12 @@
 #include "Meta/Type.h"
 #include "Algorithms/RangeConcept.h"
 
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4365)
+#endif
+
 namespace Intra { namespace Range {
 
 template<typename R, typename P> struct FilterResult;
@@ -442,4 +448,8 @@ public:
 
 
 }}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 

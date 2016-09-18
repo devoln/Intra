@@ -71,17 +71,29 @@ enum: uint {
 	DDPF_ALPHAPIXELS=1, DDPF_ALPHA=2, DDPF_FOURCC=4, DDPF_RGB=0x40, DDPF_LUMINANCE=0x20000
 };
 
+inline uint to_fourcc(const char* c)
+{
+	return uint(c[0])|(uint(c[1]) << 8u)|(uint(c[2]) << 16u)|(uint(c[3]) << 24u);
+}
+
+inline void from_fourcc(char* dst, uint f)
+{
+	dst[0] = char(f & 255);
+	dst[1] = char((f >> 8) & 255);
+	dst[2] = char((f >> 16) & 255);
+	dst[3] = char((f >> 24) & 255);
+}
 
 static const struct {uint fourcc; ImageFormat::I format;} FourCC_ImageFormat[]={
-	{*(uint*)"DXT1", ImageFormat::DXT1_RGBA},
-	{*(uint*)"DXT3", ImageFormat::DXT3_RGBA},
-	{*(uint*)"DXT5", ImageFormat::DXT5_RGBA},
-	{*(uint*)"ATI1", ImageFormat::LATC_Luminance},
-	{*(uint*)"ATI2", ImageFormat::LATC_LuminanceAlpha},
-	{*(uint*)"BC4U", ImageFormat::RGTC_Red},
-	{*(uint*)"BC4S", ImageFormat::RGTC_SignedRed},
-	{*(uint*)"BC5U", ImageFormat::RGTC_RG},
-	{*(uint*)"BC5S", ImageFormat::RGTC_SignedRG}
+	{to_fourcc("DXT1"), ImageFormat::DXT1_RGBA},
+	{to_fourcc("DXT3"), ImageFormat::DXT3_RGBA},
+	{to_fourcc("DXT5"), ImageFormat::DXT5_RGBA},
+	{to_fourcc("ATI1"), ImageFormat::LATC_Luminance},
+	{to_fourcc("ATI2"), ImageFormat::LATC_LuminanceAlpha},
+	{to_fourcc("BC4U"), ImageFormat::RGTC_Red},
+	{to_fourcc("BC4S"), ImageFormat::RGTC_SignedRed},
+	{to_fourcc("BC5U"), ImageFormat::RGTC_RG},
+	{to_fourcc("BC5S"), ImageFormat::RGTC_SignedRG}
 };
 
 struct FormatDescriptor
@@ -121,24 +133,13 @@ static const FormatDescriptor D3d9Formats[] =
 	{ImageFormat::LuminanceAlpha8, false, {0xFF, 0xFF, 0xFF, 0xFF00}}
 };
 
-inline uint to_fourcc(const char* c)
-{
-	return uint(c[0])|(c[1] << 8u)|(c[2] << 16u)|(c[3] << 24u);
-}
 
-inline void from_fourcc(char* dst, uint f)
-{
-	dst[0] = char(f & 255);
-	dst[1] = char((f >> 8) & 255);
-	dst[2] = char((f >> 16) & 255);
-	dst[3] = char((f >> 24) & 255);
-}
 
 static ImageFormat GetFormat(const DDS_HEADER& header, const DDS_HEADER_DXT10& dx10header, bool* swapRB)
 {
 	if(swapRB!=null) *swapRB=false;
 
-	if(header.ddspf.flags & DDPF_FOURCC)
+	if( (header.ddspf.flags & DDPF_FOURCC) && dx10header.resourceDimension!=D3D10_RESOURCE_DIMENSION_UNKNOWN)
 	{
 		uint fourcc = to_fourcc(header.ddspf.fourCC);
 		if(to_fourcc("DX10"))
@@ -161,7 +162,7 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	const bool isCompressed = format.IsCompressed();
 	pf.size = sizeof(DDS_PIXELFORMAT);
 	pf.RGBBitCount = format.BitsPerPixel();
-	pf.flags=0;
+	pf.flags = 0;
 	if(format.HasLuminance()) pf.flags |= DDPF_LUMINANCE;
 	if(format.HasAlpha()) pf.flags |= DDPF_ALPHAPIXELS;
 	if(format.HasColor() && !isCompressed) pf.flags |= DDPF_RGB;
@@ -173,8 +174,11 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	{
 		if(fd.format!=format.value || fd.swapRB!=swapRB) continue;
 		pf.rgbaBitMasks = fd.masks;
+		core::memset(pf.fourCC, 0, sizeof(pf.fourCC));
 		return;
 	}
+
+	pf.rgbaBitMasks = {0,0,0,0};
 
 	//Ищем среди сжатых форматов DX9
 	pf.flags |= DDPF_FOURCC;
@@ -184,7 +188,6 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 		from_fourcc(pf.fourCC, v.fourcc);
 		return;
 	}
-
 
 	//Ищем формат среди форматов DX10
 	core::memcpy(pf.fourCC, "DX10", 4); //Если это не установлено, то DX10 заголовок записывать не надо
@@ -278,49 +281,54 @@ bool has_dx10_header(const DDS_PIXELFORMAT& ddspf)
 ImageInfo pe_get_dds_info(byte header[148])
 {
 	ImageInfo errResult = {{0,0,0}, null, ImageType_End, 0};
+
 	const bool isDDS = (header[0]=='D' && header[1]=='D' && header[2]=='S' && header[3]==' ');
 	if(!isDDS) return errResult;
 
-	const DDS_HEADER& hdr = *(DDS_HEADER*)(header+4);
+	const DDS_HEADER& hdr = *reinterpret_cast<DDS_HEADER*>(header+4);
 	if(hdr.size!=124) return errResult;
 
-	DDS_HEADER_DXT10 dx10header={};
+	DDS_HEADER_DXT10 dx10header;
 	if(has_dx10_header(hdr.ddspf))
-		dx10header = *(DDS_HEADER_DXT10*)(header+4+sizeof(DDS_HEADER));
+		dx10header = *reinterpret_cast<DDS_HEADER_DXT10*>(header+4+sizeof(DDS_HEADER));
+	else dx10header.resourceDimension=D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	ImageInfo result;
-	result.Size = {hdr.width, hdr.height, Max<ushort>(1, (ushort)hdr.depth)};
+	result.Size = {hdr.width, hdr.height, Max(ushort(1), ushort(hdr.depth))};
 	result.Format = GetFormat(hdr, dx10header, null);
 	result.Type = GetImageTypeFromHeaders(hdr, dx10header);
-	if(result.Type==ImageType_2DArray) result.Size.z=(ushort)dx10header.arraySize;
-	result.MipmapCount=0;
-	if(hdr.flags & DDSD_MIPMAPCOUNT) result.MipmapCount=Max<ushort>(1, (ushort)hdr.mipMapCount);
-	if(result.Format==null || result.Type==ImageType_End || result.Size.x*result.Size.y*result.Size.z==0) return errResult;
+	if(result.Type==ImageType_2DArray) result.Size.z = ushort(dx10header.arraySize);
+	result.MipmapCount = 0;
+	if(hdr.flags & DDSD_MIPMAPCOUNT)
+		result.MipmapCount = Max(ushort(1), ushort(hdr.mipMapCount));
+	if(result.Format==null || result.Type==ImageType_End || result.Size.x*result.Size.y*result.Size.z==0)
+		return errResult;
 	return result;
 }
 
 
 #ifndef INTRA_NO_DDS_LOADER
-void Image::loadDDS(IO::IInputStream* s, uint bytes)
+void Image::loadDDS(IO::IInputStream* s, size_t bytes)
 {
 	auto startPos = s->GetPos();
 	s->Skip(4); //Пропускаем идентификатор, предполагая, что он уже проверен
 
 	DDS_HEADER header = s->Read<DDS_HEADER>();
-	DDS_HEADER_DXT10 dx10header={};
 	if(header.size!=124) return;
+	DDS_HEADER_DXT10 dx10header;
 
 	if(has_dx10_header(header.ddspf))
 		dx10header = s->Read<DDS_HEADER_DXT10>();
+	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	bool swapRB;
 	ImageInfo iInfo;
 	iInfo.Size = {header.width, header.height, Max(1u, header.depth)};
 	iInfo.Format = GetFormat(header, dx10header, &swapRB);
 	iInfo.Type = GetImageTypeFromHeaders(header, dx10header);
-	if(iInfo.Type==ImageType_2DArray) iInfo.Size.z=(ushort)dx10header.arraySize;
+	if(iInfo.Type==ImageType_2DArray) iInfo.Size.z = ushort(dx10header.arraySize);
 	iInfo.MipmapCount=0;
-	if(header.flags & DDSD_MIPMAPCOUNT) iInfo.MipmapCount = Max((ushort)1, (ushort)header.mipMapCount);
+	if(header.flags & DDSD_MIPMAPCOUNT) iInfo.MipmapCount = Max(ushort(1), ushort(header.mipMapCount));
 	if(iInfo.Format==null || iInfo.Type==ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z==0)
 	{
 		s->SetPos(startPos+bytes);
@@ -333,9 +341,9 @@ void Image::loadDDS(IO::IInputStream* s, uint bytes)
 	}
 	else if(Max(1, iInfo.size.x/4)!=(int)header.pitchOrLinearSize) return;*/
 
-	SwapRB=swapRB;
-	Info=iInfo;
-	LineAlignment=1;
+	SwapRB = swapRB;
+	Info = iInfo;
+	LineAlignment = 1;
 
 	if(iInfo.MipmapCount==0) iInfo.MipmapCount=1;
 	size_t dataSize = iInfo.CalculateFullDataSize(LineAlignment);
@@ -349,20 +357,27 @@ void Image::saveDDS(IO::IOutputStream* s) const
 {
 	s->WriteData("DDS ", 4);
 
-	DDS_HEADER header = {0};
+	DDS_HEADER header;
 	header.size = sizeof(header);
+	header.flags = DDSD_WIDTH|DDSD_HEIGHT|DDSD_CAPS|DDSD_PIXELFORMAT;
 	header.width = Info.Size.x;
 	header.height = Info.Size.y;
 	header.depth = Info.Size.z;
-	header.mipMapCount = Info.MipmapCount==0? 1: Info.MipmapCount;
-	header.flags = DDSD_WIDTH|DDSD_HEIGHT|DDSD_CAPS|DDSD_PIXELFORMAT;
+	header.mipMapCount = Info.MipmapCount==0? ushort(1): Info.MipmapCount;
 	if(!Info.Format.IsCompressed()) header.flags |= DDSD_PITCH;
 	else header.flags |= DDSD_LINEARSIZE;
 	header.caps = DDSCAPS_TEXTURE;
-	DDS_HEADER_DXT10 dx10header={};
-	dx10header.arraySize = Info.Size.z;
-	if(Info.Type==ImageType_Cube) dx10header.arraySize/=6;
+	header.caps4 = header.caps3 = header.caps2 = 0;
+	core::memset(header.reserved1, 0, sizeof(header.reserved1));
+	header.reserved2 = 0;
 
+	DDS_HEADER_DXT10 dx10header;
+	core::memset(dx10header.unused1, 0, sizeof(dx10header.unused1));
+	core::memset(dx10header.unused2, 0, sizeof(dx10header.unused2));
+	dx10header.miscFlag = dx10header.miscFlags2 = 0;
+	dx10header.arraySize = Info.Size.z;
+	if(Info.Type==ImageType_Cube)
+		dx10header.arraySize /= 6;
 
 	SetFormat(Info.Format, header.ddspf, dx10header, SwapRB);
 	SetHeadersImageType(Info.Type, header, dx10header);
@@ -371,6 +386,7 @@ void Image::saveDDS(IO::IOutputStream* s) const
 		dx10header.arraySize = Info.Size.z;
 		header.depth = 1;
 	}
+
 	if(Info.MipmapCount>1)
 	{
 		header.flags |= DDSD_MIPMAPCOUNT;
@@ -385,10 +401,10 @@ void Image::saveDDS(IO::IOutputStream* s) const
 
 	if(Info.Format.IsCompressedBC1_BC7())
 	{
-		uint blockSize = Info.Format.BitsPerPixel()*4*4/8; //4*4 верно не для всех сжатых форматов, но верно для BC1-BC7
+		uint blockSize = Info.Format.BitsPerPixel()*4u*4u/8u; //4*4 верно не для всех сжатых форматов, но верно для BC1-BC7
 		header.pitchOrLinearSize = Max(1u, ((Info.Size.x+3u)/4u)) * blockSize;
 	}
-	else header.pitchOrLinearSize = (Info.Size.x*Info.Format.BitsPerPixel()+7)/8;
+	else header.pitchOrLinearSize = (Info.Size.x*Info.Format.BitsPerPixel()+7u)/8u;
 
 	s->Write<DDS_HEADER>(header);
 	if(has_dx10_header(header.ddspf)) s->Write<DDS_HEADER_DXT10>(dx10header);

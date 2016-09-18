@@ -14,8 +14,19 @@
 #endif
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #include <Windows.h>
 #include <conio.h>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #else
 #include <termios.h>
 #include <unistd.h>
@@ -35,42 +46,42 @@ IInputStream& operator>>(IInputStream& stream, byte& n)
 {
 	long64 x = stream.ParseInteger();
 	//if(x<byte_MIN || x>byte_MAX) throw InputRangeException(byte_MIN, byte_MAX);
-	n=(byte)x;
+	n = byte(x);
 	return stream;
 }
 
 IInputStream& operator>>(IInputStream& stream, sbyte& n)
 {
 	long64 x = stream.ParseInteger();
-	n=(sbyte)x;
+	n = sbyte(x);
 	return stream;
 }
 
 IInputStream& operator>>(IInputStream& stream, ushort& n)
 {
 	long64 x = stream.ParseInteger();
-	n=(ushort)x;
+	n = ushort(x);
 	return stream;
 }
 
 IInputStream& operator>>(IInputStream& stream, short& n)
 {
 	long64 x = stream.ParseInteger();
-	n=(short)x;
+	n = short(x);
 	return stream;
 }
 
 IInputStream& operator>>(IInputStream& stream, uint& n)
 {
 	long64 x = stream.ParseInteger();
-	n=(uint)x;
+	n = uint(x);
 	return stream;
 }
 
 IInputStream& operator>>(IInputStream& stream, int& n)
 {
 	long64 x = stream.ParseInteger();
-	n=(int)x;
+	n = int(x);
 	return stream;
 }
 
@@ -96,9 +107,9 @@ IInputStream& operator>>(IInputStream& stream, const char* r)
 //Прочитать число. Если это не число, вернёт 0
 long64 IInputStream::ParseInteger(bool* error)
 {
-	long64 result=0;
-	bool wasnumber=false;
-	int sign=1;
+	long64 result = 0;
+	bool wasnumber = false;
+	int sign = 1;
 	for(;;)
 	{
 		int c = EndOfStream()? -1: Read<char>();
@@ -109,8 +120,8 @@ long64 IInputStream::ParseInteger(bool* error)
 				if(error!=null) *error=true;
 				return 0;
 			}
-			if(c=='-') sign=-sign;
-			if(AsciiSet::Spaces.Contains((char)c) || c=='+' || c=='-') continue;
+			if(c=='-') sign = -sign;
+			if(AsciiSet::Spaces.Contains(char(c)) || c=='+' || c=='-') continue;
 		}
 		if(unsigned(c-'0')<='9')
 		{
@@ -119,7 +130,7 @@ long64 IInputStream::ParseInteger(bool* error)
 			continue;
 		}
 		if(error!=null) *error = !wasnumber;
-		if(c!=-1) {byte ch=(byte)c; UnreadData(&ch, 1);}
+		if(c!=-1) {byte ch = byte(c); UnreadData(&ch, 1);}
 		return result*sign;
 	}
 }
@@ -139,11 +150,11 @@ real IInputStream::ParseFloat(bool* error)
 				return Math::NaN;
 			}
 			if(c=='-') sign=-sign;
-			if(AsciiSet::Spaces.Contains((char)c) || c=='+' || c=='-') continue;
+			if(AsciiSet::Spaces.Contains(char(c)) || c=='+' || c=='-') continue;
 		}
 		if(c=='.' && !waspoint)
 		{
-			waspoint=true;
+			waspoint = true;
 			continue;
 		}
 		if(unsigned(c-'0')<='9')
@@ -154,7 +165,7 @@ real IInputStream::ParseFloat(bool* error)
 			wasnumber = true;
 			continue;
 		}
-		if(c!=-1) {byte ch=(byte)c; UnreadData(&ch, 1);}
+		if(c!=-1) {byte ch = byte(c); UnreadData(&ch, 1);}
 		if(error!=null) *error = !wasnumber;
 		if(!wasnumber) return Math::NaN;
 		return result*sign;
@@ -181,31 +192,31 @@ String IInputStream::ReadToChar(const AsciiSet& stopCharset, char* oStopChar)
 void ConsoleStream::WriteData(const void* src, size_t bytes)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	const auto hndl=(HANDLE)_get_osfhandle(_fileno((FILE*)myfout));
+	const auto hndl = HANDLE(_get_osfhandle(_fileno(reinterpret_cast<FILE*>(myfout))));
 	wchar_t wbuf[512];
 	wchar_t* wsrc = bytes<=core::numof(wbuf)? wbuf: new wchar_t[bytes];
-	int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, (LPCSTR)src, (int)bytes, wsrc, (int)bytes);
+	int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, LPCSTR(src), int(bytes), wsrc, int(bytes));
 	DWORD written;
-	WriteConsoleW(hndl, wsrc, wsrcLength, &written, null);
+	WriteConsoleW(hndl, wsrc, DWORD(wsrcLength), &written, null);
 	if(bytes>core::numof(wbuf)) delete[] wsrc;
 #else
-	fwrite(src, 1, bytes, (FILE*)myfout);
+	fwrite(src, 1, bytes, reinterpret_cast<FILE*>(myfout));
 #endif
 }
 
 size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	char* pbegin = (char*)dst;
+	char* pbegin = reinterpret_cast<char*>(dst);
 	char* pdst = pbegin;
 	char* pend = pbegin+bytes;
-	byte unreadedBytesToRead = (byte)Math::Min<size_t>(unread_buf_chars, bytes);
+	byte unreadedBytesToRead = byte(Math::Min<size_t>(unread_buf_chars, bytes));
 	core::memcpy(pdst, unread_buf, unreadedBytesToRead);
 	pdst += unreadedBytesToRead;
-	unread_buf_chars-=unreadedBytesToRead;
+	unread_buf_chars -= unreadedBytesToRead;
 	core::memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
 
-	const auto hndl = (HANDLE)_get_osfhandle(_fileno((FILE*)myfin));
+	const auto hndl = HANDLE(_get_osfhandle(_fileno(reinterpret_cast<FILE*>(myfin))));
 	while(pdst<pend)
 	{
 		DWORD read;
@@ -213,8 +224,8 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 		char u8[5];
 		ReadConsoleW(hndl, c, 1, &read, null);
 		//if(c[0]>) ReadConsoleW(hndl, c+1, 1, &read, null), read++;
-		int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, c, read, u8, sizeof(u8), null, null);
-		size_t bytesToRead = Math::Min<size_t>(bytesPerChar, pend-pdst);
+		int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, c, int(read), u8, sizeof(u8), null, null);
+		size_t bytesToRead = Math::Min(size_t(bytesPerChar), size_t(pend-pdst));
 		core::memcpy(pdst, u8, bytesToRead);
 		core::memcpy(unread_buf, u8+bytesToRead, bytesPerChar-bytesToRead);
 		unread_buf_chars = byte(bytesPerChar-bytesToRead);
@@ -222,7 +233,7 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 	}
 	return bytes;
 #else
-	return fread(dst, 1, bytes, (FILE*)myfin);
+	return fread(dst, 1, bytes, reinterpret_cast<FILE*>(myfin));
 #endif
 }
 
@@ -233,8 +244,8 @@ void ConsoleStream::UnreadData(const void* src, size_t bytes)
 	core::memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
 	core::memcpy(unread_buf, src, bytes);
 #else
-	for(byte* ptr=(byte*)src+bytes; ptr>src;)
-		ungetc(*--ptr, (FILE*)myfin);
+	for(const byte* ptr = reinterpret_cast<const byte*>(src)+bytes; ptr>src;)
+		ungetc(*--ptr, reinterpret_cast<FILE*>(myfin));
 #endif
 }
 
@@ -248,20 +259,22 @@ dchar ConsoleStream::GetChar()
 	int ch;
 	tcgetattr(STDIN_FILENO, &oldt);
 	newt = oldt;
-	newt.c_lflag &= ~(ICANON|ECHO);
+	newt.c_lflag &= ~uint(ICANON|ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-	ch = getc((FILE*)myfin); //TODO: добавить поддержку ввода UTF-8 символа
+	ch = getc(reinterpret_cast<FILE*>(myfin)); //TODO: добавить поддержку ввода UTF-8 символа
 	if(ch=='\r') ch='\n';
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 	return dchar(ch);
 #endif
 }
 
-ConsoleStream::ConsoleStream(void* fout, void* fin) {myfout=fout; myfin=fin; unread_buf_chars=0;}
+ConsoleStream::ConsoleStream(void* fout, void* fin):
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+	unread_buf_chars(0),
+#endif
+	myfout(fout), myfin(fin) {}
 
 ConsoleStream Console(stdout, stdin);
 ConsoleStream ConsoleError(stderr, stdin);
 
 }}
-
-int add(int x, int y) {return x+y;}

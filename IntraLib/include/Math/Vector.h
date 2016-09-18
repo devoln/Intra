@@ -3,6 +3,11 @@
 #include "Core/Core.h"
 #include "Math/MathEx.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#endif
+
 namespace Intra { namespace Math {
 
 template<typename T> struct Matrix2;
@@ -67,8 +72,8 @@ template<typename T> struct Vector2
 		return lineA+AB*t;
 	}
 
-	operator T*() {return (T*)this;}
-	operator const T*() const {return (T*)this;}
+	operator T*() {return &x;}
+	operator const T*() const {return &x;}
 
 	T x, y;
 };
@@ -80,43 +85,81 @@ template<typename T> struct Vector3
 {
 	Vector3() = default;
 	constexpr explicit Vector3(T XYZ): x(XYZ), y(XYZ), z(XYZ) {}
-	template<typename U, typename V, typename S> constexpr Vector3(U X, V Y, S Z): x((T)X), y((T)Y), z((T)Z) {}
-	template<typename U> explicit constexpr Vector3(const Vector2<U>& v, T Z=0): x((T)v.x), y((T)v.y), z(Z) {}
-	template<typename U> constexpr Vector3(const Vector3<U>& v): x((T)v.x), y((T)v.y), z((T)v.z) {}
+	template<typename U, typename V, typename S> constexpr Vector3(U X, V Y, S Z): x(T(X)), y(T(Y)), z(T(Z)) {}
+	template<typename U> explicit constexpr Vector3(const Vector2<U>& v, T Z=0): x(T(v.x)), y(T(v.y)), z(Z) {}
+	template<typename U> constexpr Vector3(const Vector3<U>& v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
 	template<typename U> constexpr explicit Vector3(Vector4<U> v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
 
-	template<typename U> constexpr Vector3 operator+(const Vector3<U>& rhs) const {return Vector3(x+rhs.x, y+rhs.y, z+rhs.z);}
-	template<typename U> Vector3& operator+=(const Vector3<U>& rhs) {x+=rhs.x, y+=rhs.y, z+=rhs.z; return *this;}
+	template<typename U> constexpr Vector3 operator+(const Vector3<U>& rhs) const
+	{return Vector3(x+rhs.x, y+rhs.y, z+rhs.z);}
 
-	constexpr Vector3 operator-() const {return {-x, -y, -z};}
-	template<typename U> constexpr Vector3 operator-(const Vector3<U>& rhs) const {return Vector3(x-rhs.x, y-rhs.y, z-rhs.z);}
-	template<typename U> Vector3& operator-=(const Vector3<U>& rhs) {x-=rhs.x, y-=rhs.y, z-=rhs.z; return *this;}
+	template<typename U> Vector3& operator+=(const Vector3<U>& rhs)
+	{x+=rhs.x, y+=rhs.y, z+=rhs.z; return *this;}
 
-	constexpr Vector3 operator*(T n) const {return {x*n, y*n, z*n};}
-	Vector3& operator*=(T n) {x*=n, y*=n, z*=n; return *this;}
-	template<typename U> constexpr Vector3 operator*(const Vector3<U>& rhs) const {return Vector3(x*rhs.x, y*rhs.y, z*rhs.z);}
-	template<typename U> Vector3& operator*=(const Vector3<U>& rhs) {x*=rhs.x, y*=rhs.y, z*=rhs.z; return *this;}
+	constexpr Vector3 operator-() const
+	{return {-x, -y, -z};}
+
+	template<typename U> constexpr Vector3 operator-(const Vector3<U>& rhs) const
+	{return Vector3(x-rhs.x, y-rhs.y, z-rhs.z);}
+
+	template<typename U> Vector3& operator-=(const Vector3<U>& rhs)
+	{x-=rhs.x, y-=rhs.y, z-=rhs.z; return *this;}
+
+	constexpr Vector3 operator*(T n) const
+	{return {x*n, y*n, z*n};}
+
+	Vector3& operator*=(T n)
+	{x*=n, y*=n, z*=n; return *this;}
+
+	template<typename U> constexpr Vector3 operator*(const Vector3<U>& rhs) const
+	{return Vector3(x*rhs.x, y*rhs.y, z*rhs.z);}
+
+	template<typename U> Vector3& operator*=(const Vector3<U>& rhs)
+	{x*=rhs.x, y*=rhs.y, z*=rhs.z; return *this;}
+
 
 	Vector3 operator*(const Matrix3<T>& m) const;
 
-	Vector3& operator*=(const Matrix3<T>& m) {*this=*this*m; return *this;}
+	Vector3& operator*=(const Matrix3<T>& m)
+	{*this=*this*m; return *this;}
 
-	constexpr Vector3 operator/(T n) const {return {x/n, y/n, z/n};}
-	Vector3& operator/=(T n) {x /= n, y /= n, z /= n; return *this;}
-	template<typename U> constexpr Vector3 operator/(const Vector3<U>& rhs) const {return {x/rhs.x, y/rhs.y, z/rhs.z};}
-	template<typename U> Vector3& operator/=(const Vector3<U>& rhs) {x /= rhs.x, y /= rhs.y, z /= rhs.z; return *this;}
 
-	Vector2<T> swizzle(byte X, byte Y) const {INTRA_ASSERT((X|Y)<3); return {(*this)[X], (*this)[Y]};}
-	Vector3 swizzle(byte X, byte Y, byte Z) const {INTRA_ASSERT((X|Y|Z)<3); return {(*this)[X], (*this)[Y], (*this)[Z]};}
-	Vector4<T> swizzle(byte X, byte Y, byte Z, byte W) const {INTRA_ASSERT((X|Y|Z|W)<3); return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};}
+	constexpr Vector3 operator/(T n) const
+	{return {x/n, y/n, z/n};}
 
-	constexpr bool operator==(const Vector3& rhs) const {return (x==rhs.x && y==rhs.y && z==rhs.z);}
-	constexpr bool operator!=(const Vector3& rhs) const {return !operator==(rhs);}
+	Vector3& operator/=(T n)
+	{x /= n, y /= n, z /= n; return *this;}
+
+	template<typename U> constexpr Vector3 operator/(const Vector3<U>& rhs) const
+	{return {x/rhs.x, y/rhs.y, z/rhs.z};}
+
+	template<typename U> Vector3& operator/=(const Vector3<U>& rhs)
+	{x /= rhs.x, y /= rhs.y, z /= rhs.z; return *this;}
+
+
+	Vector2<T> swizzle(byte X, byte Y) const
+	{INTRA_ASSERT((X|Y)<3); return {(*this)[X], (*this)[Y]};}
+
+	Vector3 swizzle(byte X, byte Y, byte Z) const
+	{INTRA_ASSERT((X|Y|Z)<3); return {(*this)[X], (*this)[Y], (*this)[Z]};}
+
+	Vector4<T> swizzle(byte X, byte Y, byte Z, byte W) const
+	{INTRA_ASSERT((X|Y|Z|W)<3); return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};}
+
+
+	constexpr bool operator==(const Vector3& rhs) const
+	{return (x==rhs.x && y==rhs.y && z==rhs.z);}
+
+	constexpr bool operator!=(const Vector3& rhs) const
+	{return !operator==(rhs);}
+
 	bool operator==(NaNType) const {return x+y+z==NaN;}
 	bool operator!=(NaNType) const {return !operator==(NaN);}
 
 
-	constexpr T DistanceToPlane(const Plane<T>& plane) const {return -Dot(*this, plane.normal);}
+	constexpr T DistanceToPlane(const Plane<T>& plane) const
+	{return -Dot(*this, plane.normal);}
+
 
 	//Проверить, лежит ли точка внутри треугольника
 	bool IsInsideTriangle(const Triangle<T>& triangle) const
@@ -136,18 +179,33 @@ template<typename T> struct Vector3
 		return lineA+AB*t;
 	}
 
-	constexpr Vector3 operator<<(uint rhs) const {return {x << rhs, y << rhs, z << rhs};}
-	constexpr Vector3 operator>>(uint rhs) const {return {x >> rhs, y >> rhs, z >> rhs};}
-	constexpr Vector3 operator&(T rhs) const {return {(x & rhs), (y & rhs), (z & rhs)};}
-	constexpr Vector3 operator|(T rhs) const {return {(x | rhs), (y | rhs), (z | rhs)};}
-	constexpr Vector3 operator^(T rhs) const {return {(x ^ rhs), (y ^ rhs), (z ^ rhs)};}
+	constexpr Vector3 operator<<(uint rhs) const
+	{return {x << rhs, y << rhs, z << rhs};}
 
-	constexpr Vector3 operator&(const Vector3& rhs) const {return {(x & rhs.x), (y & rhs.y), (z & rhs.z)};}
-	constexpr Vector3 operator|(const Vector3& rhs) const {return {(x | rhs.x), (y | rhs.y), (z | rhs.y)};}
-	constexpr Vector3 operator^(const Vector3& rhs) const {return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z)};}
+	constexpr Vector3 operator>>(uint rhs) const
+	{return {x >> rhs, y >> rhs, z >> rhs};}
 
-	operator T*() {return (T*)this;}
-	operator const T*() const {return (T*)this;}
+	constexpr Vector3 operator&(T rhs) const
+	{return {(x & rhs), (y & rhs), (z & rhs)};}
+
+	constexpr Vector3 operator|(T rhs) const
+	{return {(x | rhs), (y | rhs), (z | rhs)};}
+
+	constexpr Vector3 operator^(T rhs) const
+	{return {(x ^ rhs), (y ^ rhs), (z ^ rhs)};}
+
+
+	constexpr Vector3 operator&(const Vector3& rhs) const
+	{return {(x & rhs.x), (y & rhs.y), (z & rhs.z)};}
+
+	constexpr Vector3 operator|(const Vector3& rhs) const
+	{return {(x | rhs.x), (y | rhs.y), (z | rhs.y)};}
+
+	constexpr Vector3 operator^(const Vector3& rhs) const
+	{return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z)};}
+
+	operator T*() {return &x;}
+	operator const T*() const {return &x;}
 
 	union
 	{
@@ -177,23 +235,23 @@ public:
 
 	template<typename U, typename V, typename S, typename R> forceinline
 	Vector4(U X, V Y, S Z, R W=1):
-		x((T)X), y((T)Y), z((T)Z), w((T)W) {}
+		x(T(X)), y(T(Y)), z(T(Z)), w(T(W)) {}
 
 	template<typename U> constexpr forceinline
 	explicit Vector4(const Vector2<U>& v, T Z=0, T W=1):
-		x((T)v.x), y((T)v.y), z(Z), w(W) {}
+		x(T(v.x)), y(T(v.y)), z(Z), w(W) {}
 
 	template<typename U> constexpr forceinline
 	explicit Vector4(const Vector2<U>& v1, const Vector2<U>& v2):
-		x((T)v1.x), y((T)v1.y), z((T)v2.x), w((T)v2.y) {}
+		x(T(v1.x)), y(T(v1.y)), z(T(v2.x)), w(T(v2.y)) {}
 
 	template<typename U> constexpr forceinline
 	explicit Vector4(const Vector3<U>& v, T W=1):
-		x((T)v.x), y((T)v.y), z((T)v.z), w(W) {}
+		x(T(v.x)), y(T(v.y)), z(T(v.z)), w(W) {}
 
 	template<typename U> constexpr forceinline
 	Vector4(const Vector4<U>& v):
-		x((T)v.x), y((T)v.y), z((T)v.z), w((T)v.w) {}
+		x(T(v.x)), y(T(v.y)), z(T(v.z)), w(T(v.w)) {}
 
 	template<typename U> constexpr forceinline
 	Vector4 operator+(const Vector4<U>& rhs) const
@@ -234,25 +292,58 @@ public:
 	template<typename U> forceinline Vector4& operator/=(const Vector4<U>& rhs)
 		{x/=rhs.x, y/=rhs.y, z/=rhs.z, w/=rhs.w; return *this;}
 
-	Vector2<T> swizzle(uint X, uint Y) const {INTRA_ASSERT((X|Y)<4); return {(*this)[X], (*this)[Y]};}
-	Vector3<T> swizzle(uint X, uint Y, uint Z) const {INTRA_ASSERT((X|Y|Z)<4); return {(*this)[X], (*this)[Y], (*this)[Z]};}
-	Vector4 swizzle(uint X, uint Y, uint Z, uint W) const {INTRA_ASSERT((X|Y|Z|W)<4); return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};}
 
-	constexpr bool operator==(const Vector4& rhs) const {return (x==rhs.x && y==rhs.y && z==rhs.z && w==rhs.w);}
-	constexpr bool operator!=(const Vector4& rhs) const {return !operator==(rhs);}
+	Vector2<T> swizzle(uint X, uint Y) const
+	{
+		INTRA_ASSERT((X|Y)<4);
+		return {(*this)[X], (*this)[Y]};
+	}
+
+	Vector3<T> swizzle(uint X, uint Y, uint Z) const
+	{
+		INTRA_ASSERT((X|Y|Z)<4);
+		return {(*this)[X], (*this)[Y], (*this)[Z]};
+	}
+
+	Vector4 swizzle(uint X, uint Y, uint Z, uint W) const
+	{
+		INTRA_ASSERT((X|Y|Z|W)<4);
+		return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};
+	}
+
+	constexpr bool operator==(const Vector4& rhs) const
+		{return (x==rhs.x && y==rhs.y && z==rhs.z && w==rhs.w);}
+
+	constexpr bool operator!=(const Vector4& rhs) const
+		{return !operator==(rhs);}
+
 	bool operator==(NaNType) const {return x+y+z+w==NaN;}
 	bool operator!=(NaNType) const {return !operator==(NaN);}
 
 
-	constexpr Vector4 operator<<(uint rhs) const {return {x << rhs, y << rhs, z << rhs, w << rhs};}
-	constexpr Vector4 operator>>(uint rhs) const {return {x >> rhs, y >> rhs, z >> rhs, w >> rhs};}
-	constexpr Vector4 operator&(T rhs) const {return {(x & rhs), (y & rhs), (z & rhs), (w & rhs)};}
-	constexpr Vector4 operator|(T rhs) const {return {(x | rhs), (y | rhs), (z | rhs), (w | rhs)};}
-	constexpr Vector4 operator^(T rhs) const {return {(x ^ rhs), (y ^ rhs), (z ^ rhs), (w ^ rhs)};}
+	constexpr Vector4 operator<<(uint rhs) const
+	{return {x << rhs, y << rhs, z << rhs, w << rhs};}
 
-	constexpr Vector4 operator&(const Vector4& rhs) const {return {(x & rhs.x), (y & rhs.y), (z & rhs.z), (w & rhs.w)};}
-	constexpr Vector4 operator|(const Vector4& rhs) const {return {(x | rhs.x), (y | rhs.y), (z | rhs.z), (w | rhs.w)};}
-	constexpr Vector4 operator^(const Vector4& rhs) const {return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z), (w ^ rhs.w)};}
+	constexpr Vector4 operator>>(uint rhs) const
+		{return {x >> rhs, y >> rhs, z >> rhs, w >> rhs};}
+
+	constexpr Vector4 operator&(T rhs) const
+		{return {(x & rhs), (y & rhs), (z & rhs), (w & rhs)};}
+
+	constexpr Vector4 operator|(T rhs) const
+		{return {(x | rhs), (y | rhs), (z | rhs), (w | rhs)};}
+
+	constexpr Vector4 operator^(T rhs) const
+		{return {(x ^ rhs), (y ^ rhs), (z ^ rhs), (w ^ rhs)};}
+
+	constexpr Vector4 operator&(const Vector4& rhs) const
+		{return {(x & rhs.x), (y & rhs.y), (z & rhs.z), (w & rhs.w)};}
+	
+	constexpr Vector4 operator|(const Vector4& rhs) const
+		{return {(x | rhs.x), (y | rhs.y), (z | rhs.z), (w | rhs.w)};}
+	
+	constexpr Vector4 operator^(const Vector4& rhs) const
+		{return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z), (w ^ rhs.w)};}
 
 
 	Vector4 ClosestPointOnLine(const Vector4& lineA, const Vector4& lineB) const
@@ -264,8 +355,8 @@ public:
 		return lineA+AB*t;
 	}
 
-	forceinline operator T*() {return (T*)this;}
-	forceinline operator const T*() const {return (T*)this;}
+	forceinline operator T*() {return &x;}
+	forceinline operator const T*() const {return &x;}
 
 	union
 	{
@@ -287,18 +378,66 @@ public:
 };
 
 #define NOMINMAX
-template<typename T> constexpr Vector2<T> Min(const Vector2<T>& v1, T v2) {return {Min(v1.x, v2), Min(v1.y, v2)};}
-template<typename T> constexpr Vector3<T> Min(const Vector3<T>& v1, T v2) {return {Min(v1.x, v2), Min(v1.y, v2), Min(v1.z, v2)};}
-template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, T v2) {return {Min(v1.x, v2), Min(v1.y, v2), Min(v1.z, v2), Min(v1.w, v2)};}
-template<typename T> constexpr Vector2<T> Min(const Vector2<T>& v1, const Vector2<T>& v2) {return {Min(v1.x, v2.x), Min(v1.y, v2.y)};}
-template<typename T> constexpr Vector3<T> Min(const Vector3<T>& v1, const Vector3<T>& v2) {return {Min(v1.x, v2.x), Min(v1.y, v2.y), Min(v1.z, v2.z)};}
-template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, const Vector4<T>& v2) {return {Min(v1.x, v2.x), Min(v1.y, v2.y), Min(v1.z, v2.z), Min(v1.w, v2.w)};}
-template<typename T> constexpr Vector2<T> Max(const Vector2<T>& v1, T v2) {return {Max(v1.x, v2), Max(v1.y, v2)};}
-template<typename T> constexpr Vector3<T> Max(const Vector3<T>& v1, T v2) {return {Max(v1.x, v2), Max(v1.y, v2), Max(v1.z, v2)};}
-template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, T v2) {return {Max(v1.x, v2), Max(v1.y, v2), Max(v1.z, v2), Max(v1.w, v2)};}
-template<typename T> constexpr Vector2<T> Max(const Vector2<T>& v1, const Vector2<T>& v2) {return {Max(v1.x, v2.x), Max(v1.y, v2.y)};}
-template<typename T> constexpr Vector3<T> Max(const Vector3<T>& v1, const Vector3<T>& v2) {return {Max(v1.x, v2.x), Max(v1.y, v2.y), Max(v1.z, v2.z)};}
-template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, const Vector4<T>& v2) {return {Max(v1.x, v2.x), Max(v1.y, v2.y), Max(v1.z, v2.z), Max(v1.w, v2.w)};}
+template<typename T> constexpr Vector2<T> Min(const Vector2<T>& v1, T v2)
+{
+	return {Min(v1.x, v2), Min(v1.y, v2)};
+}
+
+template<typename T> constexpr Vector3<T> Min(const Vector3<T>& v1, T v2)
+{
+	return {Min(v1.x, v2), Min(v1.y, v2), Min(v1.z, v2)};
+}
+
+template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, T v2)
+{
+	return {Min(v1.x, v2), Min(v1.y, v2), Min(v1.z, v2), Min(v1.w, v2)};
+}
+
+template<typename T> constexpr Vector2<T> Min(const Vector2<T>& v1, const Vector2<T>& v2)
+{
+	return {Min(v1.x, v2.x), Min(v1.y, v2.y)};
+}
+
+template<typename T> constexpr Vector3<T> Min(const Vector3<T>& v1, const Vector3<T>& v2)
+{
+	return {Min(v1.x, v2.x), Min(v1.y, v2.y), Min(v1.z, v2.z)};
+}
+
+template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, const Vector4<T>& v2)
+{
+	return {Min(v1.x, v2.x), Min(v1.y, v2.y), Min(v1.z, v2.z), Min(v1.w, v2.w)};
+}
+
+template<typename T> constexpr Vector2<T> Max(const Vector2<T>& v1, T v2)
+{
+	return {Max(v1.x, v2), Max(v1.y, v2)};
+}
+
+template<typename T> constexpr Vector3<T> Max(const Vector3<T>& v1, T v2)
+{
+	return {Max(v1.x, v2), Max(v1.y, v2), Max(v1.z, v2)};
+}
+
+template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, T v2)
+{
+	return {Max(v1.x, v2), Max(v1.y, v2), Max(v1.z, v2), Max(v1.w, v2)};
+}
+
+template<typename T> constexpr Vector2<T> Max(const Vector2<T>& v1, const Vector2<T>& v2)
+{
+	return {Max(v1.x, v2.x), Max(v1.y, v2.y)};
+}
+
+template<typename T> constexpr Vector3<T> Max(const Vector3<T>& v1, const Vector3<T>& v2)
+{
+	return {Max(v1.x, v2.x), Max(v1.y, v2.y), Max(v1.z, v2.z)};
+}
+
+template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, const Vector4<T>& v2)
+{
+	return {Max(v1.x, v2.x), Max(v1.y, v2.y), Max(v1.z, v2.z), Max(v1.w, v2.w)};
+}
+
 
 template<typename T> constexpr Vector2<T> operator*(T n, const Vector2<T>& v) {return v*n;}
 template<typename T> constexpr Vector3<T> operator*(T n, const Vector3<T>& v) {return v*n;}
@@ -357,36 +496,92 @@ template<typename T> Vector4<T> Refract(const Vector4<T>& I, const Vector4<T>& N
 	if(k<0) return Vector4<T>(0); else return eta*I-(eta*NI+Sqrt(k))*N;
 }
 
-template<typename T> constexpr Vector2<T> FaceForward(const Vector2<T>& N, const Vector2<T>& I, const Vector2<T>& Nref) {return N*Sign(-Dot(Nref, I));}
-template<typename T> constexpr Vector3<T> FaceForward(const Vector3<T>& N, const Vector3<T>& I, const Vector3<T>& Nref) {return N*Sign(-Dot(Nref, I));}
-template<typename T> constexpr Vector4<T> FaceForward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref) {return N*Sign(-Dot(Nref, I));}
+template<typename T> constexpr Vector2<T> FaceForward(const Vector2<T>& N, const Vector2<T>& I, const Vector2<T>& Nref)
+{
+	return N*Sign(-Dot(Nref, I));
+}
+
+template<typename T> constexpr Vector3<T> FaceForward(const Vector3<T>& N, const Vector3<T>& I, const Vector3<T>& Nref)
+{
+	return N*Sign(-Dot(Nref, I));
+}
+
+template<typename T> constexpr Vector4<T> FaceForward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref)
+{
+	return N*Sign(-Dot(Nref, I));
+}
 
 template<typename T> constexpr Vector3<T> Cross(const Vector3<T>& v1, const Vector3<T>& v2)
 {
 	return {v1.y*v2.z-v1.z*v2.y, v1.z*v2.x-v1.x*v2.z, v1.x*v2.y-v1.y*v2.x};
 }
 
-template<typename T> Vector2<T> Floor(const Vector2<T>& v) {return {Floor(v.x), Floor(v.y)};}
-template<typename T> Vector3<T> Floor(const Vector3<T>& v) {return {Floor(v.x), Floor(v.y), Floor(v.z)};}
-template<typename T> Vector4<T> Floor(const Vector4<T>& v) {return {Floor(v.x), Floor(v.y), Floor(v.z), Floor(v.w)};}
+template<typename T> Vector2<T> Floor(const Vector2<T>& v)
+{
+	return {Floor(v.x), Floor(v.y)};
+}
 
-template<typename T> Vector2<T> Fract(const Vector2<T>& v) {return {Fract(v.x), Fract(v.y)};}
-template<typename T> Vector3<T> Fract(const Vector3<T>& v) {return {Fract(v.x), Fract(v.y), Fract(v.z)};}
-template<typename T> Vector4<T> Fract(const Vector4<T>& v) {return {Fract(v.x), Fract(v.y), Fract(v.z), Fract(v.w)};}
+template<typename T> Vector3<T> Floor(const Vector3<T>& v)
+{
+	return {Floor(v.x), Floor(v.y), Floor(v.z)};
+}
 
-template<typename T> Vector2<T> Round(const Vector2<T>& val) {return {Round(val.x), Round(val.y)};}
-template<typename T> Vector3<T> Round(const Vector3<T>& val) {return {Round(val.x), Round(val.y), Round(val.z)};}
-template<typename T> Vector4<T> Round(const Vector4<T>& val) {return {Round(val.x), Round(val.y), Round(val.z), Round(val.w)};}
+template<typename T> Vector4<T> Floor(const Vector4<T>& v)
+{
+	return {Floor(v.x), Floor(v.y), Floor(v.z), Floor(v.w)};
+}
+
+template<typename T> Vector2<T> Fract(const Vector2<T>& v)
+{
+	return {Fract(v.x), Fract(v.y)};
+}
+
+template<typename T> Vector3<T> Fract(const Vector3<T>& v)
+{
+	return {Fract(v.x), Fract(v.y), Fract(v.z)};
+}
+
+template<typename T> Vector4<T> Fract(const Vector4<T>& v)
+{
+	return {Fract(v.x), Fract(v.y), Fract(v.z), Fract(v.w)};
+}
 
 
-template<typename T> Vector2<T> Exp(const Vector2<T>& v) {return {(T)Exp(v.x), (T)Exp(v.y)};}
-template<typename T> Vector3<T> Exp(const Vector3<T>& v) {return {(T)Exp(v.x), (T)Exp(v.y), (T)Exp(v.z)};}
-template<typename T> Vector4<T> Exp(const Vector4<T>& v) {return {(T)Exp(v.x), (T)Exp(v.y), (T)Exp(v.z), (T)Exp(v.w)};}
+template<typename T> Vector2<T> Round(const Vector2<T>& val)
+{
+	return {Round(val.x), Round(val.y)};
+}
+
+template<typename T> Vector3<T> Round(const Vector3<T>& val)
+{
+	return {Round(val.x), Round(val.y), Round(val.z)};
+}
+
+template<typename T> Vector4<T> Round(const Vector4<T>& val)
+{
+	return {Round(val.x), Round(val.y), Round(val.z), Round(val.w)};
+}
+
+
+template<typename T> Vector2<T> Exp(const Vector2<T>& v)
+{
+	return {T(Exp(v.x)), T(Exp(v.y))};
+}
+
+template<typename T> Vector3<T> Exp(const Vector3<T>& v)
+{
+	return {T(Exp(v.x)), T(Exp(v.y)), T(Exp(v.z))};
+}
+
+template<typename T> Vector4<T> Exp(const Vector4<T>& v)
+{
+	return {T(Exp(v.x)), T(Exp(v.y)), T(Exp(v.z)), T(Exp(v.w))};
+}
 
 #if INTRA_DISABLED
 template<typename T> T random(const Vector2<T>& seed)
 {
-	return (T)(Fract(Sin(Dot(seed, Vector2<T>((T)12.9898, (T)78.233)))*(T)43758.5453));
+	return T(Fract(Sin(Dot(seed, Vector2<T>(T(12.9898), T(78.233))))*T(43758.5453)));
 }
 
 //Получить случайный вектор с компонентами не больше x
@@ -429,24 +624,66 @@ template<typename T> constexpr Vector3<T> Step(const Vector3<T>& edge, const Vec
     {return {T(value.x>=edge.x), T(value.y>=edge.y), T(value.z>=edge.z)};}
 
 template<typename T> constexpr Vector4<T> Step(const Vector4<T>& edge, const Vector4<T>& value)
-    {return {T(value.x>=edge.x), T(value.y>=edge.y), T(value.z>=edge.z), T(value.w>=edge.w)};}
+{
+	return {
+		T(value.x>=edge.x),
+		T(value.y>=edge.y),
+		T(value.z>=edge.z),
+		T(value.w>=edge.w)
+	};
+}
 	
 template<typename T> Vector2<T> SmoothStep(T edge0, T edge1, const Vector2<T>& value)
-	{const Vector2<T> t=Clamp((value-Vector2<T>(edge0))/(edge1-edge0), 0, 1); return t*t*((T)3-t*2);}
+{
+	const Vector2<T> t = Clamp((value-Vector2<T>(edge0))/(edge1-edge0), 0, 1);
+	return t*t*T(3-t*2);
+}
 
 template<typename T> Vector3<T> SmoothStep(T edge0, T edge1, const Vector3<T>& value)
-	{const Vector2<T> t=Clamp((value-Vector3<T>(edge0))/(edge1-edge0), 0, 1); return t*t*((T)3-t*2);}
+{
+	const Vector2<T> t = Clamp((value-Vector3<T>(edge0))/(edge1-edge0), 0, 1);
+	return t*t*T(3-t*2);
+}
+
 
 template<typename T> Vector4<T> SmoothStep(T edge0, T edge1, const Vector4<T>& value)
-	{const Vector2<T> t=Clamp((value-Vector4<T>(edge0))/(edge1-edge0), 0, 1); return t*t*((T)3-t*2);}
+{
+	const Vector2<T> t = Clamp((value-Vector4<T>(edge0))/(edge1-edge0), 0, 1);
+	return t*t*T(3-t*2);
+}
 
-template<typename T> constexpr Vector2<T> Sign(const Vector2<T>& v) {return {Sign(v.x), Sign(v.y)};}
-template<typename T> constexpr Vector3<T> Sign(const Vector3<T>& v) {return {Sign(v.x), Sign(v.y), Sign(v.z)};}
-template<typename T> constexpr Vector4<T> Sign(const Vector4<T>& v) {return {Sign(v.x), Sign(v.y), Sign(v.z), Sign(v.w)};}
 
-template<typename T> Vector2<T> Abs(const Vector2<T>& v) {return Vector2<T>(Abs(v.x), Abs(v.y));}
-template<typename T> Vector3<T> Abs(const Vector3<T>& v) {return Vector3<T>(Abs(v.x), Abs(v.y), Abs(v.z));}
-template<typename T> Vector4<T> Abs(const Vector4<T>& v) {return Vector4<T>(Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w));}
+
+template<typename T> constexpr Vector2<T> Sign(const Vector2<T>& v)
+{
+	return {Sign(v.x), Sign(v.y)};
+}
+
+template<typename T> constexpr Vector3<T> Sign(const Vector3<T>& v)
+{
+	return {Sign(v.x), Sign(v.y), Sign(v.z)};
+}
+
+template<typename T> constexpr Vector4<T> Sign(const Vector4<T>& v)
+{
+	return {Sign(v.x), Sign(v.y), Sign(v.z), Sign(v.w)};
+}
+
+
+template<typename T> Vector2<T> Abs(const Vector2<T>& v)
+{
+	return Vector2<T>(Abs(v.x), Abs(v.y));
+}
+
+template<typename T> Vector3<T> Abs(const Vector3<T>& v)
+{
+	return Vector3<T>(Abs(v.x), Abs(v.y), Abs(v.z));
+}
+
+template<typename T> Vector4<T> Abs(const Vector4<T>& v)
+{
+	return Vector4<T>(Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w));
+}
 
 
 namespace GLSL
@@ -553,3 +790,8 @@ namespace GLSL
 
 
 }}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#endif

@@ -35,7 +35,7 @@ struct NaNType
 
 	bool operator!=(float rhs) const {return !operator==(rhs);}
 	bool operator!=(double rhs) const {return !operator==(rhs);}
-	bool operator!=(real rhs) const {return !operator==((double)rhs);}
+	bool operator!=(real rhs) const {return !operator==(double(rhs));}
 
 	operator float() const {return float(Infinity-Infinity);}
 	operator double() const {return double(Infinity-Infinity);}
@@ -73,12 +73,12 @@ template<typename T> constexpr forceinline T Min(const T& t1, const T& t2) {retu
 template<typename T> constexpr forceinline T Max(const T& t1, const T& t2) {return t1<t2? t2: t1;}
 
 template<typename T> constexpr int ISign(T x) {return (x>0)-(x<0);}
-template<typename T> constexpr T Sign(T x) {return (T)ISign(x);}
+template<typename T> constexpr T Sign(T x) {return T(ISign(x));}
 
 template<typename T, typename N, typename X>
 auto Clamp(T v, N minv, X maxv) -> decltype(Max(minv, Min(maxv, v))) {return Max(minv, Min(maxv, v));}
 
-inline int IFloor(float x) {return (int)x-int(x<0);}
+inline int IFloor(float x) {return int(x)-int(x<0);}
 inline intptr IFloor(double x) {return intptr(x)-intptr(x<0);}
 
 #ifndef INTRA_INLINE_MATH
@@ -401,7 +401,7 @@ inline double Pow(double v, double power) {return power==0.0? 1.0f: exp(Log(v)*p
 
 template<typename T> T Pow(T x, int y)
 {
-	uint n = y>0? y: -y;
+	uint n = uint(y>0? y: -y);
 	for(T z = T(1); ; x*=x)
 	{
 		if((n & 1) != 0) z*=x;

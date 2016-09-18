@@ -8,13 +8,12 @@ namespace Intra {
 
 class CharMap: public Array2D<char>
 {
-	typedef Array2D<char> super;
 public:
 	CharMap(const Array2D<char>& arr);
 	CharMap(ArrayRange<const Array<char>> arr, char filler='\0');
 	CharMap(ArrayRange<const String> arr, char filler='\0');
-	CharMap(const CharMap& rhs): super(rhs) {}
-	CharMap(CharMap&& rhs): super(core::move(rhs)) {}
+	CharMap(const CharMap& rhs): Array2D<char>(rhs) {}
+	CharMap(CharMap&& rhs): Array2D<char>(core::move(rhs)) {}
 
 	struct Block
 	{
@@ -28,8 +27,17 @@ public:
 	static CharMap FromStream(IO::IInputStream& s);
 	static CharMap FromFile(StringView filename);
 
-	CharMap& operator=(const CharMap& rhs) {super::operator=(rhs); return *this;}
-	CharMap& operator=(CharMap&& rhs) {super::operator=(core::move((super&)rhs)); return *this;}
+	CharMap& operator=(const CharMap& rhs)
+	{
+		Array2D<char>::operator=(rhs);
+		return *this;
+	}
+
+	CharMap& operator=(CharMap&& rhs)
+	{
+		Array2D<char>::operator=(static_cast<Array2D<char>&&>(rhs));
+		return *this;
+	}
 };
 
 }

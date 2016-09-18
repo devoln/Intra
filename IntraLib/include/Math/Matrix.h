@@ -189,8 +189,8 @@ public:
 		const T len = Length(axis);
 		axis /= len;
 
-		const T s = (T)Sin(angle);
-		const T c = (T)Cos(angle);
+		const T s = T(Sin(angle));
+		const T c = T(Cos(angle));
 
 		const T oc = 1-c;
 
@@ -393,7 +393,7 @@ template<typename T> struct Matrix4
 
 	static Matrix4 Perspective(T fovy, T znear, T zfar, T aspectRatio)
 	{
-		const T f=T(1)/(T)Tan(fovy/360*PI);
+		const T f = T(1)/T(Tan(fovy/360*PI));
 		return {f/aspectRatio, 0,            0,                0,
 		        0,             f,            0,                0,
 				0,             0, (zfar+znear)/(znear-zfar),  -1,
@@ -411,7 +411,7 @@ template<typename T> struct Matrix4
 
 	static Matrix4 Translation(const Vector3<T>& translation)
 	{
-		Matrix4 result=I;
+		Matrix4 result = I;
 		result[3].xyz = translation;
 		return result;
 	}

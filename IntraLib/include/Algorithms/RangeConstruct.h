@@ -3,6 +3,7 @@
 #include "Algorithms/Range.h"
 #include "Utils/Optional.h"
 
+
 namespace Intra { namespace Range {
 
 template<typename T, typename S> struct IotaResult:
@@ -89,11 +90,11 @@ template<typename R> struct TakeResult:
 	template<typename U=R, typename = Meta::EnableIf<
 		U::RangeType==TypeEnum::RandomAccess
 		>> forceinline 
-	decltype(Meta::Val<U>().opSlice(1, 2)) opSlice(size_t start, size_t end) const
+	decltype(Meta::Val<U>().opSlice(1, 2)) opSlice(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(start<=end);
-		INTRA_ASSERT(end<=len);
-		return r.opSlice(start, end);
+		INTRA_ASSERT(startIndex <= endIndex);
+		INTRA_ASSERT(endIndex <= len);
+		return r.opSlice(startIndex, endIndex);
 	}
 
 private:
@@ -198,12 +199,12 @@ template<typename R> struct CycleRandomResult:
 		return original_range==rhs.original_range && counter==rhs.counter;
 	}
 
-	forceinline TakeResult<CycleRandomResult<R>> opSlice(size_t start, size_t end) const
+	forceinline TakeResult<CycleRandomResult<R>> opSlice(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(start<=end);
+		INTRA_ASSERT(startIndex <= endIndex);
 		CycleRandomResult<R> result(original_range);
-		result.counter = (counter+start) % original_range.Length();
-		return result.Take(end-start);
+		result.counter = (counter+startIndex) % original_range.Length();
+		return result.Take(endIndex-startIndex);
 	}
 
 private:
@@ -507,6 +508,5 @@ private:
 
 
 }}
-
 
 

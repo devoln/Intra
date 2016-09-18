@@ -53,8 +53,8 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 	if(tris.Count()==1) //Это лист
 	{
 		node.tri = tris[0];
-		nodeId = (int)nodes.Count();
-		node.positiveId=nodeId-1;
+		nodeId = int(nodes.Count());
+		node.positiveId = nodeId-1;
 		nodes.AddLast(node);
 		return;
 	}
@@ -127,8 +127,8 @@ void AabbTree::GetIntersection(const AabbTree& ABBTree, const Mat4& m, Array<Tri
 void AabbTree::recursive_get_intersection(int myNodeId, const AabbTree* outside,
 	int outsideNodeId, const Mat4& m, Array<Tri>& contacts) const
 {
-	const auto pMyNode=&nodes[myNodeId];
-	const auto pOutsideNode=&outside->nodes[outsideNodeId];
+	const auto pMyNode = &nodes[size_t(myNodeId)];
+	const auto pOutsideNode = &outside->nodes[size_t(outsideNodeId)];
 	if(pMyNode->IsLeaf())
 	{
 		// pMyNode-лист, pOutsideNode-узел или лист

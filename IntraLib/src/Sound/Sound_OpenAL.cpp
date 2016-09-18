@@ -94,7 +94,7 @@ struct Context
 	void Prepare()
 	{
 		if(alc!=null) return;
-		ALCchar* defaultDevice = (ALCchar*)alcGetString(null, ALC_DEFAULT_DEVICE_SPECIFIER);
+		const ALCchar* defaultDevice = reinterpret_cast<const ALCchar*>(alcGetString(null, ALC_DEFAULT_DEVICE_SPECIFIER));
 		if(ald==null) ald = alcOpenDevice(defaultDevice);
 		alc = alcCreateContext(ald, null);
 		alcMakeContextCurrent(alc);
@@ -103,6 +103,9 @@ struct Context
 		//alListenerfv(AL_VELOCITY, Vec3(0,0,0));
 		//alListenerfv(AL_ORIENTATION, Vec3(0,0,0));
 	}
+
+	Context(const Context&) = delete;
+	Context& operator=(const Context&) = delete;
 
 
 	ALCdevice* ald;
@@ -129,9 +132,10 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
+	(void)type;
 	INTRA_ASSERT(data!=null);
 	INTRA_ASSERT(type==ValueType::Short);
-    alBufferData(snd->buffer, snd->alformat, data, snd->SizeInBytes(), snd->sampleRate);
+    alBufferData(snd->buffer, snd->alformat, data, int(snd->SizeInBytes()), int(snd->sampleRate));
     INTRA_ASSERT(alGetError()==AL_NO_ERROR);
 }
 
@@ -145,7 +149,7 @@ void* BufferLock(BufferHandle snd)
 void BufferUnlock(BufferHandle snd)
 {
 	INTRA_ASSERT(snd!=null);
-    alBufferData(snd->buffer, snd->alformat, snd->locked_bits, snd->SizeInBytes(), snd->sampleRate);
+    alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
     INTRA_ASSERT(alGetError()==AL_NO_ERROR);
     Memory::SystemHeapAllocator::Free(snd->locked_bits);
     snd->locked_bits=null;
@@ -168,7 +172,7 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	//alSource3f(source, AL_DIRECTION, 0, 0, 0);
 	//alSourcef(source, AL_ROLLOFF_FACTOR, 0);
 	//alSourcei(source, AL_SOURCE_RELATIVE, true);
-	alSourcei(source, AL_BUFFER, snd->buffer);
+	alSourcei(source, AL_BUFFER, int(snd->buffer));
 	INTRA_ASSERT(alGetError()==AL_NO_ERROR);
 	return new Instance(source, snd);
 }
@@ -242,7 +246,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 static void load_buffer(StreamedBufferHandle snd, size_t index)
 {
 	const int alFmt = snd->channels==1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16;
-	const size_t samplesProcessed = snd->streamingCallback.CallbackFunction((void**)&snd->temp_buffer,
+	const size_t samplesProcessed = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&snd->temp_buffer),
 		snd->channels, ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
 	if(samplesProcessed<snd->sampleCount)
 	{
@@ -251,7 +255,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 		core::memset(endOfData, 0, totalSamplesInBuffer*sizeof(short));
 		snd->stop_soon = true;
 	}
-	alBufferData(snd->buffers[index], alFmt, snd->temp_buffer, snd->SizeInBytes(), snd->sampleRate);
+	alBufferData(snd->buffers[index], alFmt, snd->temp_buffer, int(snd->SizeInBytes()), int(snd->sampleRate));
 }
 
 

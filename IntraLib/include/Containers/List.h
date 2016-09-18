@@ -371,11 +371,11 @@ public:
 
 	forceinline void push_back(const T& value) {AddLast(value);}
 	forceinline void push_back(T&& value) {AddLast(core::move(value));}
-	template<typename... Args> forceinline void emplace_back(const_iterator pos, Args&&... args) {EmplaceLast(core::forward<Args>(args)...);}
+	template<typename... Args> forceinline void emplace_back(Args&&... args) {EmplaceLast(core::forward<Args>(args)...);}
 
 	forceinline void push_front(const T& value) {AddFirst(value);}
 	forceinline void push_front(T&& value) {AddFirst(core::move(value));}
-	template<typename... Args> forceinline void emplace_front(const_iterator pos, Args&&... args) {EmplaceFirst(core::forward<Args>(args)...);}
+	template<typename... Args> forceinline void emplace_front(Args&&... args) {EmplaceFirst(core::forward<Args>(args)...);}
 
 	forceinline iterator erase(const_iterator pos) {Remove(pos);}
 
@@ -397,7 +397,7 @@ private:
 	Node* add_first_node()
 	{
 		size_t nodeSize = sizeof(Node);
-		Node* node = AllocatorRef::Allocate(nodeSize, {__FILE__, (uint)__LINE__});
+		Node* node = AllocatorRef::Allocate(nodeSize, INTRA_SOURCE_INFO);
 		INTRA_ASSERT(nodeSize==sizeof(Node));
 		node->Prev = null;
 		node->Next = range.FirstNode;
@@ -411,7 +411,7 @@ private:
 	Node* add_last_node()
 	{
 		size_t nodeSize = sizeof(Node);
-		Node* node = AllocatorRef::Allocate(nodeSize, {__FILE__, (uint)__LINE__});
+		Node* node = AllocatorRef::Allocate(nodeSize, INTRA_SOURCE_INFO);
 		node->Prev = range.LastNode;
 		node->Next = null;
 		if(range.LastNode!=null) range.LastNode->Next = node;

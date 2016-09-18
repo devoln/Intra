@@ -22,12 +22,15 @@ namespace
 class WorkStealingQueue
 {
 public:
-	WorkStealingQueue()
+	WorkStealingQueue(): jobs(), bottom(0), top(0), mutex()
 	{
 		queues.AddLast(this);
 	}
 
-	static const uint NUMBER_OF_JOBS = 4096;
+	WorkStealingQueue(const WorkStealingQueue&) = delete;
+	WorkStealingQueue& operator=(const WorkStealingQueue&) = delete;
+
+	enum: uint {NUMBER_OF_JOBS = 4096};
 
 	void Push(Job* job)
 	{
@@ -41,7 +44,7 @@ public:
 	{
 		Mutex::Locker lock(mutex);
 
-		const int jobCount = bottom-top;
+		const int jobCount = int(bottom)-int(top);
 		if(jobCount <= 0)
 		{
 			// no job left in the queue
@@ -56,7 +59,7 @@ public:
 	{
 		Mutex::Locker lock(mutex);
 
-		const int jobCount = bottom - top;
+		const int jobCount = int(bottom)-int(top);
 		if(jobCount <= 0)
 		{
 			// no job there to steal
@@ -70,7 +73,7 @@ public:
 
 private:
 	Array<Job*> jobs;
-	int bottom, top;
+	uint bottom, top;
 	Mutex mutex;
 };
 #else
@@ -211,7 +214,7 @@ Job* Job::Get()
 	if(job->IsEmpty())
 	{
 		// this is not a valid job because our own queue is empty, so try stealing from some other queue
-		uint randomIndex = Random<uint>::Global((uint)queues.Count());
+		uint randomIndex = Random<uint>::Global(uint(queues.Count()));
 		WorkStealingQueue* stealQueue = queues[randomIndex];
 		if(stealQueue == &wsqueue)
 		{

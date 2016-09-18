@@ -6,7 +6,7 @@ namespace Intra { namespace Utils {
 
 template<typename T> struct Optional
 {
-	struct ConstructT {} DefaultConstruct;
+	static struct ConstructT {} DefaultConstruct;
 	union storage
 	{
 		char value[sizeof(T)];
@@ -35,9 +35,19 @@ template<typename T> struct Optional
 	template<typename Arg0, typename... Args> Optional(const Arg0& arg0, const Args&... args):
 		val(arg0, args...), not_null(true) {}
 
-	Optional(Optional&& rhs): val(null), not_null(rhs.not_null) {if(not_null) new((void*)&val) T(core::move((T&&)*(T*)&rhs.val));}
-	Optional(const Optional& rhs): val(null), not_null(rhs.not_null) {if(not_null) new((void*)&val) T(*(const T*)&rhs.val);}
-	~Optional() {if(not_null) ((T*)&val)->~T();}
+	Optional(Optional&& rhs):
+		val(null), not_null(rhs.not_null)
+	{
+		if(not_null) new(&val) T(core::move(rhs.value()));
+	}
+
+	Optional(const Optional& rhs):
+		val(null), not_null(rhs.not_null)
+	{
+		if(not_null) new(&val) T(rhs.value());
+	}
+
+	~Optional() {if(not_null) value().~T();}
 
 	Optional<T>& operator=(const T& rhs)
 	{
@@ -48,8 +58,8 @@ template<typename T> struct Optional
 
 	Optional<T>& operator=(const Optional<T>& rhs)
 	{
-		if(rhs.not_null) return operator=((const T&)rhs.val);
-		if(not_null) ((T&)val).~T();
+		if(rhs.not_null) return operator=(rhs.value());
+		if(not_null) value().~T();
 		not_null = false;
 		return *this;
 	}
@@ -63,8 +73,8 @@ template<typename T> struct Optional
 
 	Optional<T>& operator=(Optional<T>&& rhs)
 	{
-		if(rhs.not_null) return operator=(core::move((T&)rhs.val));
-		if(not_null) ((T&)val).~T();
+		if(rhs.not_null) return operator=(core::move(reinterpret_cast<T&>(rhs.val)));
+		if(not_null) value().~T();
 		not_null = false;
 		return *this;
 	}
@@ -72,16 +82,16 @@ template<typename T> struct Optional
 	bool operator==(null_t) const {return !not_null;}
 	bool operator!=(null_t) const {return not_null;}
 	
-	T& value()
+	T& Value()
 	{
 		INTRA_ASSERT(not_null);
-		return (T&)val;
+		return value();
 	}
 
-	const T& value() const
+	const T& Value() const
 	{
 		INTRA_ASSERT(not_null);
-		return (const T&)val;
+		return value();
 	}
 
 	T& operator()() {return value();}
@@ -93,18 +103,28 @@ private:
 
 	template<typename U=T> Meta::EnableIf<Meta::IsCopyAssignable<U>::_> assign(const T& rhs)
 	{
-		(T&)val = rhs;
+		value() = rhs;
 	}
 
 	template<typename U=T> Meta::EnableIf<!Meta::IsCopyAssignable<U>::_> assign(const T& rhs)
 	{
-		((T&)val).~T();
+		value().~T();
 		new(&val) T(rhs);
 	}
 
 	template<typename U=T> Meta::EnableIf<Meta::IsMoveAssignable<U>::_> assign(T&& rhs)
 	{
-		(T&)val = core::move(rhs);
+		value() = core::move(rhs);
+	}
+
+	forceinline T& value()
+	{
+		return reinterpret_cast<T&>(val);
+	}
+
+	forceinline const T& value() const
+	{
+		return reinterpret_cast<const T&>(val);
 	}
 };
 

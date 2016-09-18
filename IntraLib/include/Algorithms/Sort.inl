@@ -12,18 +12,18 @@ namespace detail
 		enum: size_t {Radix = 1 << RadixLog, RadixMask = Radix-1};
 		const size_t count = arr.Count();
 
-		int c[Radix] = {0};
+		uint c[Radix] = {0};
 		for(size_t j = 0; j<count; j++)
 		{
 			const auto key = extractKey(arr[j]);
-			const size_t keyRadix = (key >> radixOffset) & RadixMask;
+			const size_t keyRadix = size_t((key >> radixOffset) & RadixMask);
 			c[keyRadix]++;
 		}
 		for(size_t j=1; j<Radix; j++) c[j] += c[j-1];
 		for(size_t j = count-1; j!=Meta::NumericLimits<size_t>::Max(); j--)
 		{
 			const auto key = extractKey(arr[j]);
-			const size_t keyRadix = (key >> radixOffset) & RadixMask;
+			const size_t keyRadix = size_t((key >> radixOffset) & RadixMask);
 			const size_t tempIndex = --c[keyRadix];
 			temp[tempIndex] = arr[j];
 		}
@@ -104,7 +104,7 @@ namespace detail
 		}
 
 		// median of nine
-		const size_t step = (last-first+1)/8;
+		const size_t step = size_t(last-first+1)/8;
 		med3(first, first+step, first+2*step, comparer);
 		med3(mid-step, mid, mid+step, comparer);
 		med3(last-2*step, last-step, last, comparer);
@@ -207,7 +207,7 @@ template<typename ArrRange, typename C> Meta::EnableIf<
 	Range::IsRangeElementAssignable<ArrRange>::_
 > QuickSort(const ArrRange& range, C comparer)
 {
-	detail::sort_pass(ArrayRange<typename ArrRange::value_type>(range.Data(), range.Length()), range.Length(), comparer);
+	detail::sort_pass(ArrayRange<typename ArrRange::value_type>(range.Data(), range.Length()), intptr(range.Length()), comparer);
 }
 
 

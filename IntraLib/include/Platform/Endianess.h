@@ -11,7 +11,7 @@ template<typename T> struct AnotherEndian
 	AnotherEndian(const AnotherEndian& rhs) = default;
 	AnotherEndian& operator=(const AnotherEndian& rhs) = default;
 
-	AnotherEndian& operator=(T rhs) {swap_bytes(bytes, (byte*)&rhs); return *this;}
+	AnotherEndian& operator=(T rhs) {swap_bytes(bytes, reinterpret_cast<byte*>(&rhs)); return *this;}
 	AnotherEndian& operator+=(T rhs) {return operator=(*this+rhs);}
 	AnotherEndian& operator-=(T rhs) {return operator=(*this-rhs);}
 	AnotherEndian& operator*=(T rhs) {return operator=(*this*rhs);}
@@ -21,14 +21,14 @@ template<typename T> struct AnotherEndian
 	AnotherEndian& operator|=(T rhs) {return operator=(*this|rhs);}
 	AnotherEndian& operator^=(T rhs) {return operator=(*this^rhs);}
 
-	operator T() const {T result; swap_bytes((byte*)&result, bytes); return result;}
+	operator T() const {T result; swap_bytes(reinterpret_cast<byte*>(&result), bytes); return result;}
 	template<typename U> operator U() const {return static_cast<U>(operator T());}
 
 private:
 	static void swap_bytes(byte* dst, const byte* src)
 	{
 		for(uint i=0; i<sizeof(T); i++)
-			dst[i]=src[sizeof(T)-1-i];
+			dst[i] = src[sizeof(T)-1-i];
 	}
 
 	byte bytes[sizeof(T)];

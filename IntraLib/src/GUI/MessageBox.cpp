@@ -5,10 +5,14 @@
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
+#ifdef _MSC_VER
+#pragma warning(disable: 4668)
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include <Windows.h>
 
 #ifdef _MSC_VER
 #pragma comment(lib, "user32.lib")
@@ -22,11 +26,11 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 	wchar_t* buffer = new wchar_t[message.Length()+1+caption.Length()+1];
 	LPWSTR wmessage = buffer;
 	LPWSTR wcaption = buffer+message.Length()+1;
-	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), (int)message.Length(), wmessage, (int)message.Length());
-	int wcaptionLength = MultiByteToWideChar(CP_UTF8, 0, caption.Data(), (int)caption.Length(), wcaption, (int)caption.Length());
+	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), int(message.Length()), wmessage, int(message.Length()));
+	int wcaptionLength = MultiByteToWideChar(CP_UTF8, 0, caption.Data(), int(caption.Length()), wcaption, int(caption.Length()));
 	wmessage[wmessageLength] = L'\0';
 	wcaption[wcaptionLength] = L'\0';
-	MessageBoxW(null, wmessage, wcaption, iconTable[(byte)icon]);
+	MessageBoxW(null, wmessage, wcaption, iconTable[byte(icon)]);
 	delete[] buffer;
 }
 

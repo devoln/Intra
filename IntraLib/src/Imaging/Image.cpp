@@ -11,7 +11,8 @@ using namespace IO;
 Image Image::FromData(USVec3 size, ImageFormat format, ImageType type,
 	const void* data, ushort borderLeft, ushort borderTop, ushort borderRight, ushort borderBottom)
 {
-	if(data==null || size.x*size.y*size.z==0 || format==ImageFormat::End || type==ImageType_End) return null; //Переданы неверные параметры!
+	if(data==null || size.x*size.y*size.z==0 || format==ImageFormat::End || type==ImageType_End)
+		return null; //Переданы неверные параметры!
 
 	Image result({size.x+borderLeft+borderRight, size.y+borderTop+borderBottom, 1}, format, 0, type);
 	result.Data.SetCountUninitialized(result.Info.CalculateFullDataSize(1));
@@ -19,12 +20,13 @@ Image Image::FromData(USVec3 size, ImageFormat format, ImageType type,
 		core::memset(result.Data.Data(), 0, result.Data.SizeInBytes());
 
 	result.LineAlignment=1;
-	for(int y=borderTop; y<size.y+borderTop; y++)
+	for(uint y=borderTop; y<uint(size.y+borderTop); y++)
 	{
-		const uint dstOffset = y*result.Info.Size.x+borderLeft, srcOffset=y*size.x;
+		const uint dstOffset = y*result.Info.Size.x+borderLeft;
+		const uint srcOffset = y*size.x;
 		const uint bpp = format.BytesPerPixel();
 		const uint lineSize = size.x*bpp;
-		core::memcpy(result.Data.Data()+dstOffset*bpp, (byte*)data+srcOffset*bpp, lineSize);
+		core::memcpy(result.Data.Data()+dstOffset*bpp, reinterpret_cast<const byte*>(data)+srcOffset*bpp, lineSize);
 	}
 
 	return result;
@@ -41,18 +43,19 @@ Image Image::ExtractChannel(char channelName, ImageFormat compatibleFormat, usho
 	const auto channelWidth = channelType.Size();
 	const auto channelCount = Info.Format.ComponentCount();
 
-	ushort channelIndex=0;
-	if(channelName=='r' || channelName=='x') channelIndex=0;
-	else if(channelName=='g' || channelName=='y') channelIndex=1;
-	else if(channelName=='b' || channelName=='z') channelIndex=2;
-	else if(channelName=='a' || channelName=='w') channelIndex=3;
+	ushort channelIndex = 0;
+	if(channelName=='r' || channelName=='x') channelIndex = 0;
+	else if(channelName=='g' || channelName=='y') channelIndex = 1;
+	else if(channelName=='b' || channelName=='z') channelIndex = 2;
+	else if(channelName=='a' || channelName=='w') channelIndex = 3;
 	else return null;
 
-	const size_t usefulSrcLineBytes = Info.Size.x*Info.Format.BytesPerPixel();
-	const size_t usefulDstLineBytes = Info.Size.x*compatibleFormat.BytesPerPixel();
+	const size_t usefulSrcLineBytes = size_t( Info.Size.x*Info.Format.BytesPerPixel() );
+	const size_t usefulDstLineBytes = size_t( Info.Size.x*compatibleFormat.BytesPerPixel() );
 	const size_t srcLineBytes = (usefulSrcLineBytes+LineAlignment-1)&~(LineAlignment-1);
 	const size_t dstLineBytes = (usefulDstLineBytes+newLineAlignment-1)&~(newLineAlignment-1);
-	const size_t srcDataSize = Info.Size.y*srcLineBytes, dstDataSize=Info.Size.y*dstLineBytes;
+	const size_t srcDataSize = Info.Size.y*srcLineBytes;
+	const size_t dstDataSize = Info.Size.y*dstLineBytes;
 
 	Image result(Info.Size, compatibleFormat, Info.MipmapCount, Info.Type);
 	result.Data.SetCountUninitialized(dstDataSize);
@@ -62,30 +65,30 @@ Image Image::ExtractChannel(char channelName, ImageFormat compatibleFormat, usho
 	return result;
 }
 
-const void* Image::GetMipmapDataPtr(ushort mip) const
+const void* Image::GetMipmapDataPtr(size_t mip) const
 {
 	const byte* ptr = Data.Data();
-	for(ushort i=0; i<mip; i++)
+	for(size_t i=0; i<mip; i++)
 		ptr += Info.CalculateMipmapDataSize(i, LineAlignment);
 	return ptr;
 }
 
 Array<const void*> Image::GetMipmapPointers() const
 {
-	ushort mc = Max<ushort>(Info.MipmapCount, (ushort)1);
+	ushort mc = Max<ushort>(Info.MipmapCount, ushort(1));
 	Array<const void*> result(mc);
 	for(ushort i=0; i<mc; i++) result.AddLast(GetMipmapDataPtr(i));
 	return result;
 }
 
-#ifndef NO_IMAGE_LOADING
+#ifndef INTRA_NO_IMAGE_LOADING
 
 
 Image Image::FromFile(StringView filename)
 {
 	DiskFile::Reader file(filename);
 	if(file==null) return null;
-	return FromStream(&file, (uint)file.GetSize());
+	return FromStream(&file, size_t(file.GetSize()));
 }
 
 void Image::SaveToFileDDS(StringView filename) const
@@ -96,7 +99,7 @@ void Image::SaveToFileDDS(StringView filename) const
 }
 
 //Загрузить изображение из файла FileName
-void Image::load(IO::IInputStream* s, uint bytes)
+void Image::load(IO::IInputStream* s, size_t bytes)
 {
 	INTRA_ASSERT(s->IsSeekable());
 	auto startPos=s->GetPos();
@@ -107,14 +110,14 @@ void Image::load(IO::IInputStream* s, uint bytes)
 	decltype(&Image::load) loaders[] = {
 		&Image::load_with_library,
 
-#ifdef IMAGE_BMP_LOADER
+#ifdef INTRA_IMAGE_BMP_LOADER
 		&Image::loadBMP,
 #else
 		&Image::load_with_library,
 #endif
 		&Image::load_with_library,
 		&Image::load_with_library,
-#ifndef IMAGE_DDS_LOADER
+#ifndef INTRA_IMAGE_DDS_LOADER
 		&Image::loadDDS,
 #else
 		null,
@@ -131,18 +134,18 @@ void Image::load(IO::IInputStream* s, uint bytes)
 		null,
 #endif
 	};
-	static_assert(sizeof(loaders)/sizeof(loaders[0])==(ushort)FileFormat::Unknown, "Table is outdated!");
-	(this->*loaders[(uint)fmt])(s, bytes);
+	INTRA_CHECK_TABLE_SIZE(loaders, FileFormat::Unknown);
+	(this->*loaders[size_t(fmt)])(s, bytes);
 	INTRA_ASSERT(s->GetPos()==startPos+bytes);
 	s->SetPos(startPos+bytes);
 }
 
 //Определение формата файла по заголовку
-static bool is_valid_jpeg_header(byte header[2]) {return header[0]==0xFF && header[1]==0xD8;}
-static bool is_valid_bmp_header(byte header[2]) {return header[0]=='B' && header[1]=='M';}
-static bool is_valid_gif_header(byte header[3]) {return header[0]=='G' && header[1]=='I' && header[2]=='F';}
-static bool is_valid_tiff_header(byte header[3]) {return header[0]=='I' && header[1]=='I' && header[2]=='*';}
-static bool is_valid_dds_header(byte header[4]) {return header[0]=='D' && header[1]=='D' && header[2]=='S' && header[3]==' ';}
+inline bool is_valid_jpeg_header(byte header[2]) {return header[0]==0xFF && header[1]==0xD8;}
+inline bool is_valid_bmp_header(byte header[2]) {return header[0]=='B' && header[1]=='M';}
+inline bool is_valid_gif_header(byte header[3]) {return header[0]=='G' && header[1]=='I' && header[2]=='F';}
+inline bool is_valid_tiff_header(byte header[3]) {return header[0]=='I' && header[1]=='I' && header[2]=='*';}
+inline bool is_valid_dds_header(byte header[4]) {return header[0]=='D' && header[1]=='D' && header[2]=='S' && header[3]==' ';}
 
 static bool is_valid_png_header(byte header[8])
 {
@@ -169,10 +172,11 @@ Image::FileFormat Image::DetectFileFormatByHeader(byte header[12])
 		is_valid_jpeg_header, is_valid_bmp_header,
 		is_valid_gif_header, is_valid_tiff_header,
 		is_valid_dds_header, is_valid_png_header,
-		is_valid_tga_header, is_valid_ktx_header};
+		is_valid_tga_header, is_valid_ktx_header
+	};
 	INTRA_CHECK_TABLE_SIZE(validators, FileFormat::Unknown);
 
-	for(ushort i=0; i<(ushort)FileFormat::Unknown; i++)
+	for(ushort i=0; i<ushort(FileFormat::Unknown); i++)
 		if(validators[i]!=null && validators[i](header)) return FileFormat(i);
 
 	return FileFormat::Unknown;
@@ -191,7 +195,7 @@ static ImageInfo get_jpg_info(IInputStream* s)
 	{
 		s->Skip(1);
 		byte chunkName = s->Read<byte>();
-		ushort chunkSize = ushort((ushort)s->Read<ushortBE>()-2u);
+		ushort chunkSize = ushort(s->Read<ushortBE>()-2u);
 		if(chunkName==0xC0 || chunkName==0xC2) // baseline/progressive (huffman)
 		{
 			s->Skip(1); // precision
@@ -211,30 +215,45 @@ static ImageInfo get_png_info(byte header[26])
 {
 	auto data = header+8; //Пропускаем сигнатуру
 	data += 2*sizeof(intBE); //Переходим к данным блока
-	struct { Vector2<uintBE> size; byte bitsPerComponent, colorType; } ihdrPart;
+	struct
+	{
+		Vector2<uintBE> size;
+		byte bitsPerComponent, colorType;
+	} ihdrPart;
 	core::memcpy(&ihdrPart, data, sizeof(ihdrPart));
+
 	ImageFormat fmt = null;
 	if(ihdrPart.bitsPerComponent==8)
 	{
-		if(ihdrPart.colorType==0) fmt=ImageFormat::Luminance8;
-		else if(ihdrPart.colorType==4) fmt=ImageFormat::LuminanceAlpha8;
-		else if(ihdrPart.colorType==2) fmt=ImageFormat::RGB8;
-		else if(ihdrPart.colorType==6) fmt=ImageFormat::RGBA8;
+		if(ihdrPart.colorType==0) fmt = ImageFormat::Luminance8;
+		else if(ihdrPart.colorType==4) fmt = ImageFormat::LuminanceAlpha8;
+		else if(ihdrPart.colorType==2) fmt = ImageFormat::RGB8;
+		else if(ihdrPart.colorType==6) fmt = ImageFormat::RGBA8;
 	}
 	else if(ihdrPart.bitsPerComponent==16)
 	{
-		if(ihdrPart.colorType==0) fmt=ImageFormat::Luminance16;
-		//else if(ihdrPart.colorType==4) fmt=ImageFormat::LuminanceAlpha16;
-		else if(ihdrPart.colorType==2) fmt=ImageFormat::RGB16;
+		if(ihdrPart.colorType==0) fmt = ImageFormat::Luminance16;
+		//else if(ihdrPart.colorType==4) fmt = ImageFormat::LuminanceAlpha16;
+		else if(ihdrPart.colorType==2) fmt = ImageFormat::RGB16;
 		else if(ihdrPart.colorType==6) fmt=ImageFormat::RGBA16;
 	}
-	return {USVec3(ihdrPart.size.x, ihdrPart.size.y, 1), fmt, ImageType_2D, 0};
+	return {
+		USVec3(ihdrPart.size.x, ihdrPart.size.y, 1),
+		fmt, ImageType_2D, 0
+	};
 }
 
 static ImageInfo get_bmp_info(byte data[30])
 {
-	struct {uint infoSize; UVec2 size; ushort colorPlanes; ushort bitsPerPixel;} hdrPart;
+	struct
+	{
+		uint infoSize;
+		UVec2 size;
+		ushort colorPlanes;
+		ushort bitsPerPixel;
+	} hdrPart;
 	core::memcpy(&hdrPart, data+14, sizeof(hdrPart));
+
 	ImageFormat fmt;
 	if(hdrPart.bitsPerPixel==32) fmt = ImageFormat::RGBA8;
 	else if(hdrPart.bitsPerPixel==24) fmt = ImageFormat::RGB8;
@@ -251,10 +270,14 @@ ImageInfo pe_get_ktx_info(byte header[64]);
 
 static ImageInfo get_tga_info(byte header[18])
 {
-	USVec2 size={(header[13]<<8)+header[12], (header[15]<<8)+header[14]};
-	static const ImageFormat formatsFromComponents[] = {ImageFormat::Luminance8, ImageFormat::RG8, ImageFormat::RGB8, ImageFormat::RGBA8};
+	USVec2 size = {(header[13] << 8)+header[12], (header[15] << 8)+header[14]};
+	static const ImageFormat formatsFromComponents[] = {
+		ImageFormat::Luminance8, ImageFormat::RG8, ImageFormat::RGB8, ImageFormat::RGBA8};
 	ImageFormat format = formatsFromComponents[header[16]/8-1];
-	return {USVec3(size.x, size.y, 1), format, ImageType_2D, 0};
+	return {
+		USVec3(size.x, size.y, 1),
+		format, ImageType_2D, 0
+	};
 }
 
 ImageInfo Image::GetImageInfo(IInputStream* s, Image::FileFormat* format)
@@ -333,14 +356,14 @@ static uint convert(uint color, uint fromBitCount, uint toBitCount)
 	return color;
 }
 
-template<typename T> static void swap_red_blue_typed(ushort lineUnused, ushort components, USVec2 sizes, T* data)
+template<typename T> static void swap_red_blue_typed(size_t lineUnused, size_t componentCount, USVec2 sizes, T* data)
 {
 	for(int y=0; y<sizes.y; y++)
 	{
 		for(int x=0; x<sizes.x; x++)
 		{
 			core::swap(data[0], data[2]);
-			data += components;
+			data += componentCount;
 		}
 		data += lineUnused;
 	}
@@ -352,8 +375,8 @@ static void swap_red_blue(ImageFormat format, ushort lineAlignment, USVec2 sizes
 	const auto bytesPerComp = format.GetComponentType().Size();
 	const ushort lineUnusedBytes = ushort(lineAlignment-sizes.x*format.BytesPerPixel()%lineAlignment);
 	if(bytesPerComp==1) swap_red_blue_typed<byte>(lineUnusedBytes, components, sizes, data);
-	else if(bytesPerComp==2) swap_red_blue_typed<ushort>(lineUnusedBytes/2, components, sizes, (ushort*)data);
-	else if(bytesPerComp==4) swap_red_blue_typed<uint>(lineUnusedBytes/4, components, sizes, (uint*)data);
+	else if(bytesPerComp==2) swap_red_blue_typed<ushort>(lineUnusedBytes/2u, components, sizes, reinterpret_cast<ushort*>(data));
+	else if(bytesPerComp==4) swap_red_blue_typed<uint>(lineUnusedBytes/4u, components, sizes, reinterpret_cast<uint*>(data));
 	else INTRA_ASSERT(!"swap_red_blue пока не поддерживает пакованные форматы!");
 }
 
@@ -362,7 +385,8 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 {
 	INTRA_ASSERT(s->IsSeekable());
 	INTRA_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
-	const size_t usefulSrcLineBytes = sizes.x*srcFormat.BytesPerPixel(), usefulDstLineBytes=sizes.x*dstFormat.BytesPerPixel();
+	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
+	const size_t usefulDstLineBytes = size_t(sizes.x*dstFormat.BytesPerPixel());
 	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1)&~(srcAlignment-1);
 	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1)&~(dstAlignment-1);
 	const size_t srcDataSize = sizes.y*srcLineBytes, dstDataSize=sizes.y*dstLineBytes;
@@ -371,7 +395,6 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 	if(srcFormat==dstFormat && srcLineBytes==dstLineBytes && !swapRB && !flipVert)
 		{s->ReadData(dstBuf, srcDataSize); return;}
 
-	const int flipSign = 1-2*int(flipVert);
 	byte* pos = dstBuf;
 	if(flipVert) pos += dstDataSize-dstLineBytes;
 
@@ -381,32 +404,35 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 		s->ReadData(pos, usefulSrcLineBytes);
 		s->Skip(srcLineBytes-usefulSrcLineBytes);
 		//core::memset(pos+usefulSrcLineBytes, 0, dstLineBytes-usefulSrcLineBytes);
-		pos+=dstLineBytes*flipSign;
+		if(flipVert) pos -= dstLineBytes;
+		else pos += dstLineBytes;
 	}
 
 	if(srcFormat==ImageFormat::A1_BGR5 && dstFormat==ImageFormat::RGB8)
 		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels=(UBVec3*)pos;
+			auto pixels = reinterpret_cast<UBVec3*>(pos);
 			for(uint x=0; x<sizes.x; x++)
 			{
 				ushort color = s->Read<ushortLE>();
 				*pixels++ = {(color >> 11) << 3, ((color >> 6) & 0x1f) << 3, ((color >> 1) & 0x1f) << 3};
 			}
-			pos+=dstLineBytes*flipSign;
+			if(flipVert) pos -= dstLineBytes;
+			else pos += dstLineBytes;
 			s->Skip(srcLineBytes-usefulSrcLineBytes);
 		}
 
 	if(srcFormat==ImageFormat::RGB5A1 && dstFormat==ImageFormat::RGB8)
 		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels=(UBVec3*)pos;
+			auto pixels = reinterpret_cast<UBVec3*>(pos);
 			for(uint x=0; x<sizes.x; x++)
 			{
-				ushort color=s->Read<ushortLE>();
-				*pixels++={((color >> 10) & 0x1f) << 3, ((color >> 5) & 0x1f) << 3, (color & 0x1f) << 3};
+				ushort color = s->Read<ushortLE>();
+				*pixels++ = {((color >> 10) & 0x1f) << 3, ((color >> 5) & 0x1f) << 3, (color & 0x1f) << 3};
 			}
-			pos+=dstLineBytes*flipSign;
+			if(flipVert) pos -= dstLineBytes;
+			else pos += dstLineBytes;
 			s->Skip(srcLineBytes-usefulSrcLineBytes);
 		}
 
@@ -414,9 +440,12 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 		for(int y=0; y<sizes.y; y++)
 		{
 			auto pixels = reinterpret_cast<UBVec3*>(pos);
-			if(swapRB) for(uint x=0; x<sizes.x; x++) *pixels++ = s->Read<UBVec4>().swizzle(2,1,0);
-			else for(uint x=0; x<sizes.x; x++) *pixels++ = s->Read<UBVec4>().xyz;
-			pos += dstLineBytes*flipSign;
+			if(swapRB) for(uint x=0; x<sizes.x; x++)
+				*pixels++ = s->Read<UBVec4>().swizzle(2,1,0);
+			else for(uint x=0; x<sizes.x; x++)
+				*pixels++ = s->Read<UBVec4>().xyz;
+			if(flipVert) pos -= dstLineBytes;
+			else pos += dstLineBytes;
 			s->Skip(srcLineBytes-usefulSrcLineBytes);
 		}
 
@@ -470,7 +499,7 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 	}
 }
 
-void Image::loadBMP(IInputStream* s, uint bytes)
+void Image::loadBMP(IInputStream* s, size_t bytes)
 {
 	(void)bytes;
 
@@ -594,7 +623,7 @@ void Image::loadBMP(IInputStream* s, uint bytes)
 
 #ifndef INTRA_NO_TGA_LOADER
 //Загрузить изображение из файла в формате tga
-void Image::loadTGA(IInputStream* s, uint bytes)
+void Image::loadTGA(IInputStream* s, size_t bytes)
 {
 	(void)bytes;
 
@@ -608,7 +637,7 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 
 	Info = fileInfo;
 	SwapRB = true;
-	LineAlignment = compressedRLE? 1: 4;
+	LineAlignment = compressedRLE? byte(1): byte(4);
 
 	const ushort bytesPerPixel = Info.Format.BytesPerPixel();
 	const size_t newSize = Info.CalculateMipmapDataSize(0, LineAlignment);
@@ -658,7 +687,7 @@ void Image::loadTGA(IInputStream* s, uint bytes)
 
 namespace Intra {
 
-void Image::load_with_library(IO::IInputStream* s, uint bytes)
+void Image::load_with_library(IO::IInputStream* s, size_t bytes)
 {
 	(void)bytes; (void)s;
 	INTRA_ASSERT(s!=null);
@@ -670,9 +699,9 @@ void Image::load_with_library(IO::IInputStream* s, uint bytes)
 	Info.Type = ImageType_2D;
 	Info.MipmapCount = 1;
 
-	uint white = 0xFFFFFFFF;
+	const byte white[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 	Data.Clear();
-	Data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<byte*>(&white), sizeof(white)));
+	Data.AddLastRange(AsRange(white));
 }
 
 }
@@ -689,7 +718,7 @@ void Image::load_with_library(IO::IInputStream* s, uint bytes)
 namespace Intra {
 
 //Загрузить изображение из BMP, JPG или GIF файла
-void Image::load_with_library(IO::IInputStream* s, uint bytes)
+void Image::load_with_library(IO::IInputStream* s, size_t bytes)
 {
 	ilInit();
 	auto handle = ilGenImage();
@@ -725,8 +754,8 @@ using Intra::Math::GLSL::min;
 using Intra::Math::GLSL::max;
 
 struct IUnknown;
-#include <olectl.h>
 #pragma warning(push, 0)
+#include <olectl.h>
 #include <gdiplus.h> //Поддерживает BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, и EMF. Не работает в WinRT \ Windows Phone
 #pragma warning(pop)
 
@@ -737,7 +766,7 @@ struct IUnknown;
 namespace Intra {
 
 //Загрузить изображение из BMP, JPG или GIF файла
-void Image::load_with_library(IO::IInputStream* s, uint bytes)
+void Image::load_with_library(IO::IInputStream* s, size_t bytes)
 {
 	using namespace Gdiplus;
 	using namespace Gdiplus::DllExports;
@@ -821,9 +850,9 @@ void Image::load_with_library(IO::IInputStream* s, uint bytes)
 namespace Intra {
 
 //Загрузить изображение из BMP, JPG, PNG или GIF файла
-void Image::load_with_library(IInputStream* s, uint bytes)
+void Image::load_with_library(IInputStream* s, size_t bytes)
 {
-	const auto startPos=s->GetPos();
+	const auto startPos = s->GetPos();
 
 	ByteBuffer buf;
 	buf.Extend(bytes);

@@ -7,9 +7,13 @@ namespace Intra {
 template<typename T> class Array2D
 {
 public:
-	Array2D(null_t=null): width(0) {}
-	Array2D(size_t width, size_t height): width(width) {data.SetCount(width*height);}
+	Array2D(null_t=null): data(), width(0) {}
+	
+	Array2D(size_t lineWidth, size_t columnHeight):
+		data(), width(lineWidth) {data.SetCount(lineWidth*columnHeight);}
+	
 	Array2D(const Array2D& rhs): data(rhs.data), width(rhs.width) {}
+	Array2D(Array2D&& rhs): data(core::move(rhs.data)), width(rhs.width) {}
 
 	forceinline T& operator()(size_t x, size_t y)
 	{
@@ -20,7 +24,7 @@ public:
 	forceinline const T& operator()(size_t x, size_t y) const
 	{
 		INTRA_ASSERT(x<Width() && y<Height());
-		return data[y*Width()+x];
+		return data[y*width+x];
 	}
 
 	forceinline T* Data() {return data.Data();}

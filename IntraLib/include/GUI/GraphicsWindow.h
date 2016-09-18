@@ -48,8 +48,8 @@ public:
 
 	void impl_on_key_release(Key key)
 	{
-		pressed_keys[(byte)key/32] &= ~( 1 << ((byte)key%32) );
-		was_released_keys[(byte)key/32] |= 1 << ((byte)key%32);
+		pressed_keys[byte(key)/32] &= ~( 1 << (byte(key)%32) );
+		was_released_keys[byte(key)/32] |= 1 << (byte(key)%32);
 		OnKeyRelease(key);
 	}
 
@@ -57,8 +57,8 @@ public:
 
 	void impl_on_key_press(Key key)
 	{
-		pressed_keys[(byte)key/32] |= 1 << ((byte)key%32);
-		was_pressed_keys[(byte)key/32] |= 1 << ((byte)key%32);
+		pressed_keys[byte(key)/32] |= 1 << (byte(key)%32);
+		was_pressed_keys[byte(key)/32] |= 1 << (byte(key)%32);
 		OnKeyPress(key);
 	}
 
@@ -78,18 +78,18 @@ public:
 	Math::SVec2 Position() const {return position;}
 	Math::USVec2 Size() const {return size;}
 	
-	bool IsKeyPressed(Key key) {return (pressed_keys[(byte)key/32] & (1 << ((byte)key % 32))) != 0;}
+	bool IsKeyPressed(Key key) {return (pressed_keys[byte(key)/32] & (1 << (byte(key) % 32))) != 0;}
 	bool KeyWasPressed(Key key)
 	{
-		const bool result = (was_pressed_keys[(byte)key/32] & (1 << ((byte)key % 32)))!=0 && IsKeyPressed(key);
-		was_pressed_keys[(byte)key/32] &= ~( 1 << ((byte)key % 32) );
+		const bool result = (was_pressed_keys[byte(key)/32] & (1 << (byte(key) % 32)))!=0 && IsKeyPressed(key);
+		was_pressed_keys[byte(key)/32] &= ~( 1 << (byte(key) % 32) );
 		return result;
 	}
 
 	bool KeyWasReleased(Key key)
 	{
-		const bool result = (was_released_keys[(byte)key/32] & ( 1 << ((byte)key % 32)))!=0 && IsKeyPressed(key);
-		was_released_keys[(byte)key/32] &= ~(1 << ((byte)key % 32));
+		const bool result = (was_released_keys[byte(key)/32] & ( 1 << (byte(key) % 32)))!=0 && IsKeyPressed(key);
+		was_released_keys[byte(key)/32] &= ~(1 << (byte(key) % 32));
 		return result;
 	}
 

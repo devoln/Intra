@@ -11,19 +11,20 @@ enum: ushort {SurrogateHighStart=0xD800, SurrogateHighEnd=0xDBFF, SurrogateLowSt
 
 const char UTF8::BOM[] = "\xef\xbb\xbf";
 
-static bool isLegalUTF8(const char* source, size_t length, size_t* bytesRead)
+static bool isLegalUTF8(const char* source, size_t length, size_t* oBytesRead)
 {
-    byte a;
-    const byte* srcptr = (const byte*)source+length;
-	if(bytesRead!=null) *bytesRead = length;
+	byte a;
+	const byte* srcBegin = reinterpret_cast<const byte*>(source);
+	const byte* srcPtr = reinterpret_cast<const byte*>(source)+length;
+	if(oBytesRead!=null) *oBytesRead = length;
     switch(length)
     {
     default: return false;
 	// Everything else falls through when "true"...
-	case 4: if((a=(*--srcptr))<0x80 || a>0xBF) goto illegal_char;
-	case 3: if((a=(*--srcptr))<0x80 || a>0xBF) goto illegal_char;
-	case 2: if((a=(*--srcptr))>0xBF) goto illegal_char;
-		switch((byte)*source)
+	case 4: if((a=(*--srcPtr))<0x80 || a>0xBF) goto illegal_char;
+	case 3: if((a=(*--srcPtr))<0x80 || a>0xBF) goto illegal_char;
+	case 2: if((a=(*--srcPtr))>0xBF) goto illegal_char;
+		switch(*srcBegin)
 		{
 		//no fall-through in this inner switch
 		case 0xE0: if(a<0xA0) goto illegal_char; break;
@@ -32,42 +33,43 @@ static bool isLegalUTF8(const char* source, size_t length, size_t* bytesRead)
 		case 0xF4: if(a>0x8F) goto illegal_char; break;
 		default:   if(a<0x80) goto illegal_char;
 		}
-	case 1: if((byte)*source>=0x80 && (byte)*source<0xC2) goto illegal_char;
+	case 1: if(*srcBegin>=0x80 && *srcBegin<0xC2) goto illegal_char;
     }
-    return ((byte)*source<=0xF4);
+    return (*srcBegin<=0xF4);
 illegal_char:
-	if(bytesRead!=null) *bytesRead = size_t((const char*)srcptr-source);
+	if(oBytesRead!=null) *oBytesRead = size_t(srcPtr-srcBegin);
 	return false;
 }
 
-dchar UTF8::NextChar(size_t* bytesRead) const
+dchar UTF8::NextChar(size_t* oBytesRead) const
 {
-	const byte* source = (const byte*)Text.Begin;
+	const byte* srcPtr = reinterpret_cast<const byte*>(Text.Begin);
+	const byte* srcEnd = reinterpret_cast<const byte*>(Text.End);
 	uint ch=0;
-	size_t bytesToRead = UTF8::SequenceBytes(*source);
+	size_t bytesToRead = UTF8::SequenceBytes(*srcPtr);
 
-	if((const char*)source+bytesToRead>Text.End)
+	if(srcPtr+bytesToRead>srcEnd)
 	{
-		if(bytesRead!=null)
-			*bytesRead = size_t(Text.End-(const char*)source);
+		if(oBytesRead!=null)
+			*oBytesRead = size_t(srcEnd-srcPtr);
 		return UTF32::ReplacementChar;
 	}
 
-	if(!isLegalUTF8((const char*)source, bytesToRead, bytesRead))
+	if(!isLegalUTF8(reinterpret_cast<const char*>(srcPtr), bytesToRead, oBytesRead))
 		return UTF32::ReplacementChar;
 
 	static const uint offsetsFromUTF8[6] = {0, 0x00003080, 0x000E2080, 0x03C82080, 0xFA082080, 0x82082080};
 	for(size_t i=bytesToRead; i>1; i--)
 	{
-		ch += *source++;
+		ch += *srcPtr++;
 		ch <<= 6;
 	}
-	ch += (*source++) - offsetsFromUTF8[bytesToRead-1];
+	ch += (*srcPtr++) - offsetsFromUTF8[bytesToRead-1];
 
 	if( ch>UTF32::MaxLegalChar || (ch>=SurrogateHighStart && ch<=SurrogateLowEnd) )
 		ch = UTF32::ReplacementChar;
 
-	if(bytesRead!=null) *bytesRead = bytesToRead;
+	if(oBytesRead!=null) *oBytesRead = bytesToRead;
 	return ch;
 }
 
@@ -144,7 +146,7 @@ dchar UTF16::NextChar(size_t* wcharsRead) const
 
 	if(wcharsRead!=null) *wcharsRead = 2;
 	if(*source<SurrogateLowStart || *source>SurrogateLowEnd) return ch;
-	return ((ch-SurrogateHighStart) << HalfShift) + (*source-SurrogateLowStart)+HalfBase;
+	return (uint(ch-SurrogateHighStart) << HalfShift) + uint(*source-SurrogateLowStart) + HalfBase;
 }
 
 void UTF16::PopFirst()
@@ -195,7 +197,7 @@ bool UTF32::CharToUTF16Pair(dchar code, wchar* first, wchar* second)
 		if(code>=SurrogateHighStart && code<=SurrogateLowEnd)
 			*first = UTF16::ReplacementChar;
 		else
-			*first = (wchar)code;
+			*first = wchar(code);
 		return false;
 	}
 	
@@ -207,8 +209,8 @@ bool UTF32::CharToUTF16Pair(dchar code, wchar* first, wchar* second)
 
 	enum {halfMask=0x3FF};
 	uint ch=code-HalfBase;
-	*first=(wchar)((ch >> HalfShift)+SurrogateHighStart);
-	*second=(wchar)((ch & halfMask)+SurrogateLowStart);
+	*first = wchar((ch >> HalfShift)+SurrogateHighStart);
+	*second = wchar((ch & halfMask)+SurrogateLowStart);
 	return true;
 }
 
@@ -222,15 +224,15 @@ size_t UTF32::CharToUTF8Sequence(dchar code, char dst[5])
 	else bytesToWrite=3, code = UTF32::ReplacementChar;
 
 	enum {byteMask=0xBF, byteMark=0x80};
-	static const byte firstByteMark[7]={0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC};
-	dst[bytesToWrite]=0;
-	byte* ptr = (byte*)dst+bytesToWrite;
+	static const byte firstByteMark[7] = {0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC};
+	dst[bytesToWrite] = 0;
+	byte* ptr = reinterpret_cast<byte*>(dst)+bytesToWrite;
 	for(size_t i=bytesToWrite; i>1; i--)
 	{
-		*--ptr = (byte)((code | byteMark) & byteMask);
+		*--ptr = byte((code | byteMark) & byteMask);
 		code >>= 6;
 	}
-	*--ptr = (byte)(code | firstByteMark[bytesToWrite]);
+	*--ptr = byte(code | firstByteMark[bytesToWrite]);
 	return bytesToWrite;
 }
 
@@ -242,7 +244,7 @@ String UTF16::ToUTF8() const
     {
 		char temp[5];
 		UTF32::CharToUTF8Sequence(ch, temp);
-		result += StringView((const char*)temp);
+		result += StringView(temp, core::strlen(temp));
     }
     return result;
 }
@@ -255,7 +257,7 @@ String UTF32::ToUTF8() const
     {
 		char temp[5];
 		CharToUTF8Sequence(ch, temp);
-		result += StringView((const char*)temp);
+		result += StringView(temp, core::strlen(temp));
     }
     return result;
 }

@@ -5,7 +5,6 @@
 #include "Meta/Tuple.h"
 #include "Meta/Preprocessor.h"
 
-
 namespace Intra { namespace Range {
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasEmpty, static_cast<bool>(Meta::Val<T>().Empty()));
@@ -15,9 +14,11 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirst, Meta::Val<T>().PopFirst());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLast, Meta::Val<T>().PopLast());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasSlicing, Meta::Val<T>().opSlice(size_t(), size_t()));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPut, Meta::Val<T>().Put(Meta::Val<typename T::value_type>()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasIndex, Meta::Val<T>()[size_t()]);
 INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==static_cast<typename T::value_type*>(null));
+
+INTRA_DEFINE_EXPRESSION_CHECKER(HasPut, Meta::Val<T>().Put(Meta::Val<typename T::value_type>()));
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasTypedPut, Meta::Val<T1>().Put(Meta::Val<T2>()),,);
 
 namespace TypeEnum
 {
@@ -322,7 +323,14 @@ template<typename T> struct NullRange
 	void PopFirst() {INTRA_ASSERT(false);}
 	void PopLast() {INTRA_ASSERT(false);}
 	T operator[](size_t) {INTRA_ASSERT(false); return T();}
-	NullRange opSlice(size_t start, size_t end) const {INTRA_ASSERT(start==0 && end==0); return NullRange();}
+	
+	NullRange opSlice(size_t startIndex, size_t endIndex) const
+	{
+		(void)startIndex; (void)endIndex;
+		INTRA_ASSERT(startIndex==0 && endIndex==0);
+		return NullRange();
+	}
+
 	void Put(const T&) {}
 };
 
@@ -365,4 +373,3 @@ using Range::AsRange;
 using Range::AsConstRange;
 
 }
-

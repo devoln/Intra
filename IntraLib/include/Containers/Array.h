@@ -7,6 +7,7 @@
 #include "CompilerSpecific/InitializerList.h"
 #include "Memory/AllocatorInterface.h"
 
+
 namespace Intra {
 
 template<typename T, class AllocatorType> class Array: Memory::AllocatorRef<AllocatorType>
@@ -18,11 +19,20 @@ public:
 	typedef T* Iterator;
 	typedef const T* ConstIterator;
 
-	Array(null_t=null): buffer(null), range(null) {}
-	explicit Array(size_t size): buffer(null), range(null) {Reserve(size);}
-	explicit Array(size_t size, Allocator& allocator): AllocatorRef(allocator), buffer(null), range(null) {Reserve(size);}
-	Array(std::initializer_list<T> values): Array(ArrayRange<const T>(values)) {}
-	Array(std::initializer_list<T> values, Allocator& allocator): Array(ArrayRange<const T>(values), allocator) {}
+	Array(null_t=null):
+		buffer(null), range(null) {}
+
+	explicit Array(size_t initialCapacity):
+		buffer(null), range(null) {Reserve(initialCapacity);}
+
+	explicit Array(size_t initialCapacity, Allocator& allocator):
+		AllocatorRef(allocator), buffer(null), range(null) {Reserve(initialCapacity);}
+
+	Array(std::initializer_list<T> values):
+		Array(ArrayRange<const T>(values)) {}
+
+	Array(std::initializer_list<T> values, Allocator& allocator):
+		Array(ArrayRange<const T>(values), allocator) {}
 	
 	Array(ArrayRange<const T> values): buffer(null), range(null)
 	{
@@ -36,21 +46,28 @@ public:
 		Memory::CopyInit(range, ArrayRange<const T>(values));
 	}
 
-	explicit Array(ArrayRange<const T> values, Allocator& allocator): AllocatorRef(allocator), buffer(null), range(null)
+	explicit Array(ArrayRange<const T> values, Allocator& allocator):
+		AllocatorRef(allocator), buffer(null), range(null)
 	{
 		SetCountUninitialized(values.Count());
 		Memory::CopyInit(range, values.AsConstRange());
 	}
 
-	Array(const Array& rhs): AllocatorRef(rhs.GetRef()), buffer(null), range(null)
+	Array(const Array& rhs):
+		AllocatorRef(rhs.GetRef()), buffer(null), range(null)
 	{
 		SetCountUninitialized(rhs.Count());
 		Memory::CopyInit(range, rhs.AsConstRange());
 	}
 
-	explicit Array(const Array& rhs, Allocator& allocator): Array(rhs.AsConstRange(), allocator) {}
-	Array(Array&& rhs): AllocatorRef(rhs), buffer(rhs.buffer), range(rhs.range) {rhs.buffer = null; rhs.range = null;}
+	explicit Array(const Array& rhs, Allocator& allocator):
+		Array(rhs.AsConstRange(), allocator) {}
+
+	Array(Array&& rhs):
+		AllocatorRef(rhs), buffer(rhs.buffer), range(rhs.range) {rhs.buffer = null; rhs.range = null;}
+	
 	~Array() {operator=(null);}
+
 
 	Array& operator=(const Array& rhs)
 	{
@@ -563,38 +580,38 @@ public:
 	forceinline ArrayRange<T> operator()() {return AsRange();}
 	forceinline ArrayRange<const T> operator()() const {return AsConstRange();}
 
-	forceinline ArrayRange<T> operator()(size_t first, size_t end)
+	forceinline ArrayRange<T> operator()(size_t firstIndex, size_t endIndex)
 	{
-		INTRA_ASSERT(first <= end);
-		INTRA_ASSERT(end <= Count());
-		return range(first, end);
+		INTRA_ASSERT(firstIndex <= endIndex);
+		INTRA_ASSERT(endIndex <= Count());
+		return range(firstIndex, endIndex);
 	}
 
-	forceinline ArrayRange<const T> operator()(size_t first, size_t end) const
+	forceinline ArrayRange<const T> operator()(size_t firstIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(first <= end);
-		INTRA_ASSERT(end <= Count());
-		return AsConstRange()(first, end);
+		INTRA_ASSERT(firstIndex <= endIndex);
+		INTRA_ASSERT(endIndex <= Count());
+		return AsConstRange()(firstIndex, endIndex);
 	}
 
-	ArrayRange<T> operator()(Range::RelativeIndex first, Range::RelativeIndex end)
+	ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex)
 	{
-		return range(first.GetRealIndex(Count()), end.GetRealIndex(Count()));
+		return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));
 	}
 
-	ArrayRange<const T> operator()(Range::RelativeIndex first, Range::RelativeIndex end) const
+	ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex) const
 	{
-		return range(first.GetRealIndex(Count()), end.GetRealIndex(Count()));
+		return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));
 	}
 
-	ArrayRange<T> operator()(Range::RelativeIndex first, Range::RelativeIndexEnd)
+	ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd)
 	{
-		return range(first.GetRealIndex(Count()), $);
+		return range(firstIndex.GetRealIndex(Count()), $);
 	}
 
-	ArrayRange<const T> operator()(Range::RelativeIndex first, Range::RelativeIndexEnd) const
+	ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd) const
 	{
-		return range(first.GetRealIndex(Count()), $);
+		return range(firstIndex.GetRealIndex(Count()), $);
 	}
 
 	struct BackInserter
@@ -639,16 +656,34 @@ public:
 	forceinline T* insert(const T* pos, T&& value) {Insert(size_t(pos-Data()), core::move(value));}
 	forceinline T* insert(const T* pos, size_t count, const T& value);
 	template<typename InputIt> forceinline T* insert(const T* pos, InputIt first, InputIt last);
-	forceinline T* insert(const T* pos, std::initializer_list<T> ilist) {Insert(size_t(pos-Data()), ArrayRange<const T>(ilist));}
+
+	forceinline T* insert(const T* pos, std::initializer_list<T> ilist)
+	{
+		Insert(size_t(pos-Data()), ArrayRange<const T>(ilist));
+	}
 
 	//! Отличается от std::vector<T>::erase тем, что инвалидирует все итераторы, а не только те, которые идут после удаляемого элемента.
-	forceinline T* erase(const T* pos) {Remove(size_t(pos-Data())); return Data()+(pos-Data());}
-	forceinline T* erase(const T* first, const T* end) {Remove(size_t(first-Data()), size_t(end-Data())); return Data()+(first-Data());}
+	forceinline T* erase(const T* pos)
+	{
+		Remove(size_t(pos-Data()));
+		return Data()+(pos-Data());
+	}
 
-	void reserve(size_t capacity) {Reserve(capacity);}
-	void resize(size_t count) {SetCount(count);}
+	forceinline T* erase(const T* firstPtr, const T* endPtr)
+	{
+		Remove(size_t(firstPtr-Data()), size_t(endPtr-Data()));
+		return Data()+(firstPtr-Data());
+	}
+
+	void reserve(size_t newCapacity) {Reserve(newCapacity);}
+	void resize(size_t newCount) {SetCount(newCount);}
 	//void resize(size_t count, const T& value);
-	void swap(Array& rhs) {core::swap(range, rhs.range); core::swap(buffer, rhs.buffer);}
+
+	void swap(Array& rhs)
+	{
+		core::swap(range, rhs.range);
+		core::swap(buffer, rhs.buffer);
+}
 #endif
 
 private:
@@ -684,3 +719,5 @@ template<typename T> using Deque = Array<T>;
 namespace Meta {template<typename T, class Allocator> struct IsTriviallyRelocatable<Array<T, Allocator>>: TypeFromValue<bool, true> {};}
 
 }
+
+

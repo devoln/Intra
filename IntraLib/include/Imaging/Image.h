@@ -10,13 +10,17 @@ namespace Intra {
 class Image
 {
 public:
-	Image(null_t=null) {}
+	Image(null_t=null):
+		Data(), Info(), SwapRB(false), LineAlignment(1) {}
 
 	Image(const Image& rhs) = default;
-	Image(Image&& rhs): Data(core::move(rhs.Data)), Info(rhs.Info),
+
+	Image(Image&& rhs):
+		Data(core::move(rhs.Data)), Info(rhs.Info),
 		SwapRB(rhs.SwapRB), LineAlignment(rhs.LineAlignment) {}
+
 	Image(Math::USVec3 size, ImageFormat format, ushort mipmapCount=0, ImageType type=ImageType_2D):
-		Info(size, format, type, mipmapCount), SwapRB(false), LineAlignment(1) {}
+		Data(), Info(size, format, type, mipmapCount), SwapRB(false), LineAlignment(1) {}
 
 	Image& operator=(const Image& rhs) = default;
 
@@ -39,11 +43,12 @@ public:
 
 	Array<byte> Data;
 	ImageInfo Info;
-	bool SwapRB=false;
-	byte LineAlignment=1;
+	bool SwapRB;
+	byte LineAlignment;
 
-	const void* GetMipmapDataPtr(ushort mip) const;
-	void* GetMipmapDataPtr(ushort mip)
+	const void* GetMipmapDataPtr(size_t mip) const;
+
+	void* GetMipmapDataPtr(size_t mip)
 	{
 		return const_cast<void*>( const_cast<const Image*>(this)->GetMipmapDataPtr(mip) );
 	}
@@ -60,7 +65,7 @@ public:
 	static Image FromFile(StringView filename);
 	void SaveToFileDDS(StringView filename) const;
 
-	static Image FromStream(IO::IInputStream* s, uint bytes)
+	static Image FromStream(IO::IInputStream* s, size_t bytes)
 	{
 		Image result;
 		result.load(s, bytes);
@@ -73,22 +78,22 @@ public:
 	}
 
 private:
-	void load(IO::IInputStream* s, uint bytes);
+	void load(IO::IInputStream* s, size_t bytes);
 
 #ifndef INTRA_NO_KTX_LOADER
-	void loadKTX(IO::IInputStream* s, uint bytes);
+	void loadKTX(IO::IInputStream* s, size_t bytes);
 #endif
 #ifndef INTRA_NO_DDS_LOADER
-	void loadDDS(IO::IInputStream* s, uint bytes);
+	void loadDDS(IO::IInputStream* s, size_t bytes);
 	void saveDDS(IO::IOutputStream* s) const;
 #endif
 #ifndef INTRA_NO_BMP_LOADER
-	void loadBMP(IO::IInputStream* s, uint bytes);
+	void loadBMP(IO::IInputStream* s, size_t bytes);
 #endif
 #ifndef INTRA_NO_TGA_LOADER
-	void loadTGA(IO::IInputStream* s, uint bytes);
+	void loadTGA(IO::IInputStream* s, size_t bytes);
 #endif
-	void load_with_library(IO::IInputStream* s, uint bytes);
+	void load_with_library(IO::IInputStream* s, size_t bytes);
 
 #endif
 };

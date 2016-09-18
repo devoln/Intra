@@ -14,16 +14,25 @@ public:
 
 	IMusicalInstrument* instruments[128];
 	IMusicalInstrument* drumsInstrument=null;
-	struct MidiHeader { shortBE type=0, tracks=0, timeFormat=0; };
-	MidiHeader header;
-	byte status=0;
-	double startTickDuration=0, globalTickDuration=0, speed=1;
-	byte track=0;
 
-	MidiReader(const void* fileData, uint size): s(fileData, size)
+	struct MidiHeader
+	{
+		MidiHeader(): type(0), tracks(0), timeFormat(0) {}
+		shortBE type, tracks, timeFormat;
+	};
+	MidiHeader header;
+
+	byte status;
+	double startTickDuration, globalTickDuration, speed;
+	byte track;
+
+	MidiReader(const void* fileData, size_t size):
+		s(fileData, size),
+		drumsInstrument(null), header(),
+		status(0), startTickDuration(0), globalTickDuration(0), speed(1), track(0)
 	{
 		if(s.ReadNChars(4)!="MThd") { s=null; return; }
-		for(auto& instr: instruments) instr=null;
+		core::memset(instruments, 0, sizeof(instruments));
 		uint chunkSize = s.Read<uintBE>();
 		if(chunkSize!=6) { s=null; return; }
 		header = s.Read<MidiHeader>();
@@ -66,13 +75,13 @@ public:
 	struct TempoChange { uint tick; double tickDuration; };
 	Array<TempoChange> tempoChanges;
 
-	static ushort GetEventLength(byte status)
+	static size_t GetEventLength(byte status)
 	{
 		INTRA_ASSERT(status & 0x80);
 		if(status<0xC0) return 2;
 		if(status<0xE0) return 1;
 		if(status<0xF0) return 2;
-		return status==0xF2? 2: status==0xF3? 1: 0;
+		return status==0xF2? 2u: status==0xF3? 1u: 0u;
 	}
 
 	MidiEvent ReadEvent(uint* readBytes)
@@ -83,10 +92,11 @@ public:
 		byte firstByte = s.Read<byte>();
 		if(firstByte & 0x80) status = firstByte;
 		event.status = status;
-		ushort bytesToRead = GetEventLength(status), bytesRead=0;
+		size_t bytesToRead = GetEventLength(status);
+		size_t bytesRead = 0;
 		if((firstByte & 0x80)==0) event.data[bytesRead++]=firstByte;
 		s.ReadData(event.data+bytesRead, bytesToRead-bytesRead);
-		if(readBytes!=null) *readBytes=((firstByte&0x80)!=0)+delayBytes+bytesToRead;
+		if(readBytes!=null) *readBytes = uint(((firstByte&0x80)!=0)+delayBytes+bytesToRead);
 
 		if(status==0xF0 || status==0xF7 || status==0xFF)
 		{
@@ -159,8 +169,11 @@ public:
 				if(((events[j].status >> 4)==8 && events[j].data[0]==events[i].data[0]) ||
 					((events[j].status >> 4)==9 && events[j].data[1]==0 && events[j].data[0]==events[i].data[0]))
 				{
-					while(tempoChangeIndex<tempoChanges.Count() && time1InTicks>=tempoChanges[tempoChangeIndex].tick)
-						currentTickDuration=tempoChanges[tempoChangeIndex++].tickDuration;
+					while(tempoChangeIndex<tempoChanges.Count() &&
+						time1InTicks>=tempoChanges[tempoChangeIndex].tick)
+					{
+						currentTickDuration = tempoChanges[tempoChangeIndex++].tickDuration;
+					}
 					MusicNote note;
 					note.Octave = byte((events[i].data[0])/12);
 					note.Note = MusicNote::NoteType((events[i].data[0])%12);
@@ -173,7 +186,7 @@ public:
 						result.Notes.EmplaceLast(MusicNote::Pause(65534), ushort(65534), 1.0f);
 						delay -= 65534;
 					}
-					result.Notes.EmplaceLast(note, (ushort)delay, currentVolume*events[i].data[1]/127.0f);
+					result.Notes.EmplaceLast(note, ushort(delay), currentVolume*events[i].data[1]/127.0f);
 					lastTime1InTicks=time1InTicks;
 					break;
 				}
@@ -190,7 +203,7 @@ public:
 
 Music ReadMidiFile(ArrayRange<const byte> fileData)
 {
-	MidiReader reader(fileData.Begin, (uint)fileData.Length());
+	MidiReader reader(fileData.Begin, fileData.Length());
 	Music result;
 
 #ifndef INTRA_NO_MIDI_SYNTH

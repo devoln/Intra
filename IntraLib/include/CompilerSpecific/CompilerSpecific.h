@@ -152,31 +152,22 @@
 #define forceinline __forceinline
 
 #pragma warning(disable: 4714) //В дебаге не ругаться на то, что forceinline не сработал
-
-#pragma warning(disable: 4190) //Не ругаться на возврат структуры из extern "C" функции!
 #pragma warning(disable: 4063) //Не ругаться на недопустимые варианты в switch
-#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
-#pragma warning(disable: 4307) //Не ругаться на переполнение целой константы, которое происходит при вычислении хеша в compile time в constexpr
-#pragma warning(disable: 4396) //Видимо баг, потому что ругается даже тогда, когда inline нет: "если дружественное объявление ссылается на специализацию функции-шаблона, встроенный спецификатор использовать невозможно"
+//#pragma warning(disable: 4396) //Видимо баг, потому что ругается даже тогда, когда inline нет: "если дружественное объявление ссылается на специализацию функции-шаблона, встроенный спецификатор использовать невозможно"
 
 //Убираем ненужное из -Wall
 #if _MSC_VER>=1900
 #pragma warning(disable: 4577) //Чтобы не ругался на noexcept при отключённых исключениях
-#pragma warning(disable: 5026) //неявно удалённый конструктор перемещения
-#pragma warning(disable: 5027) //неявно удалённый оператор присваивания перемещением
-#pragma warning(disable: 4647) //__is_pod(...) имеет другое значение в предыдущих версиях
 #endif
 
 #pragma warning(disable: 4514) //подставляемая функция, не используемая в ссылках, была удалена
 #pragma warning(disable: 4820) //не ругаться на выравнивание
-#pragma warning(disable: 4510) //не удалось создать конструктор по умолчанию
-#pragma warning(disable: 4623) //неявно удалённый конструктор по умолчанию
-#pragma warning(disable: 4625) //неявно удалённый конструктор копирования
-#pragma warning(disable: 4626) //неявно удалённый оператор присваивания
+#pragma warning(disable: 4574) //... определяется как "0": имелось в виду использование "#if ..."?
 #pragma warning(disable: 4711) //не сообщать об автоматическом inline
 #pragma warning(disable: 4710) //не сообщать об автоматическом не inline
 #pragma warning(disable: 4061) //не ругаться на необработанные явно case enum'а
-#pragma warning(disable: 4555) //выражение не имеет результата
+
+#pragma warning(disable: 4868) //компилятор не может принудительно применить порядок вычисления "слева направо" для списка инициализаторов, заключенных в фигурные скобки
 
 #define _ALLOW_KEYWORD_MACROS
 
@@ -196,7 +187,7 @@
 #define INTRA_COMPILER_ASSUME(hint)   __assume(hint)
 #define INTRA_COMPILER_PRAGMA(pragma) __pragma(pragma)
 #elif(defined(__clang__))
-char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке glibc, из-за которой clang не компилирует
+extern "C" char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке glibc, из-за которой clang не компилирует
 #endif
 
 #ifdef __clang__

@@ -8,6 +8,7 @@
 #include "Meta/Tuple.h"
 #include "Containers/ForwardDeclarations.h"
 
+
 namespace Intra {
 
 template<typename T> struct HashTableRange;
@@ -63,6 +64,7 @@ private:
 
 }
 
+
 template<typename T> struct HashTableRange: Range::RangeMixin<HashTableRange<T>, T, Range::TypeEnum::Bidirectional, true>
 {
 	typedef T& return_value_type;
@@ -115,7 +117,7 @@ public:
 
 	struct iterator
     {
-        forceinline iterator(Node* node=null): node(node) {}
+        forceinline iterator(Node* nodePtr=null): node(nodePtr) {}
 		forceinline iterator(const Range& r): node(r.first_node) {}
  
 		forceinline bool operator==(const iterator& rhs) const {return node==rhs.node;}
@@ -136,7 +138,7 @@ public:
  
     struct const_iterator
     {
-        forceinline const_iterator(Node* node=null): node(node) {}
+        forceinline const_iterator(Node* nodePtr=null): node(nodePtr) {}
 		forceinline const_iterator(const Range& r): node(r.first_node) {}
 		forceinline const_iterator(const ConstRange& r): node(r.first_node) {}
         forceinline const_iterator(const iterator& rhs): node(rhs.node) {}
@@ -161,7 +163,7 @@ public:
 
 	HashMap(): range(null), bucket_heads(null) {}
 
-	HashMap(const HashMap& rhs): range(null), bucket_heads(null) {operator=(rhs);}
+	HashMap(const HashMap& rhs): AllocatorRef(rhs), range(null), bucket_heads(null) {operator=(rhs);}
 
 	~HashMap() {Clear();}
 
@@ -411,8 +413,8 @@ public:
 		if(oExists!=null) *oExists = !found.Empty();
 		if(found.Empty())
 		{
-			static V empty;
-			return empty;
+			static V defaultValue;
+			return defaultValue;
 		}
 		return found.First().Value;
 	}
@@ -506,13 +508,13 @@ public:
 	}
 
 private:
-	void allocate_buckets(size_t size, size_t numBuckets)
+	void allocate_buckets(size_t elementCount, size_t numBuckets)
 	{
 		delete[] bucket_heads;
 
 		Node** ptrs = new Node*[numBuckets+2];
 		size_t* data = reinterpret_cast<size_t*>(ptrs);
-		data[0] = size;
+		data[0] = elementCount;
 		data[1] = numBuckets;
 		bucket_heads = ptrs;
 

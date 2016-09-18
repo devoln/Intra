@@ -34,7 +34,8 @@ typedef MallocAllocator SystemHeapAllocator;
 
 struct AlignedSystemHeapAllocator
 {
-	AlignedSystemHeapAllocator(size_t alignment=16): alignment(Math::Max(alignment, sizeof(void*)*2)) {}
+	AlignedSystemHeapAllocator(size_t allocatorAlignment=16):
+		alignment(Math::Max(allocatorAlignment, sizeof(void*)*2)) {}
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo);
 	void Free(void* ptr, size_t size);

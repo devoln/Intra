@@ -15,8 +15,15 @@ uint Murmur3_32(StringView key, uint seed)
 
 	uint hash = seed;
 
+	union
+	{
+		const char* chars;
+		const byte* bytes;
+		const uint* blocks;
+	};
+
 	const uint nblocks = uint(key.Length()/4);
-	const uint* blocks = (const uint*)key.Data();
+	chars = key.Data();
 	uint k;
 	for(uint i = 0; i < nblocks; i++)
 	{
@@ -29,15 +36,15 @@ uint Murmur3_32(StringView key, uint seed)
 		hash = ROTL32(hash, r2) * m + n;
 	}
 
-	const byte* tail = (const byte*)(key.Data() + nblocks*4);
+	const byte* tail = bytes + nblocks*4;
 	uint k1 = 0;
 
 	switch(key.Length() & 3)
 	{
 	case 3:
-		k1 ^= tail[2] << 16;
+		k1 ^= uint(tail[2]) << 16u;
 	case 2:
-		k1 ^= tail[1] << 8;
+		k1 ^= uint(tail[1]) << 8u;
 	case 1:
 		k1 ^= tail[0];
 
@@ -45,6 +52,8 @@ uint Murmur3_32(StringView key, uint seed)
 		k1 = ROTL32(k1, r1);
 		k1 *= c2;
 		hash ^= k1;
+
+	default:;
 	}
 
 	hash ^= uint(key.Length());
@@ -66,7 +75,14 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 
 	ulong64 h = seed ^ (key.Length() * m);
 
-	const ulong64* data = (const ulong64*)key.Data();
+	union
+	{
+		const char* chars;
+		const byte* bytes;
+		const ulong64* data;
+	};
+
+	chars = key.Data();
 	const ulong64* end = data + (key.Length()/8);
 
 	while(data != end)
@@ -81,18 +97,18 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 		h *= m;
 	}
 
-	const byte* data2 = (const byte*)data;
-
 	switch(key.Length() & 7)
 	{
-	case 7: h ^= ulong64(data2[6]) << 48;
-	case 6: h ^= ulong64(data2[5]) << 40;
-	case 5: h ^= ulong64(data2[4]) << 32;
-	case 4: h ^= ulong64(data2[3]) << 24;
-	case 3: h ^= ulong64(data2[2]) << 16;
-	case 2: h ^= ulong64(data2[1]) << 8;
-	case 1: h ^= ulong64(data2[0]);
+	case 7: h ^= ulong64(bytes[6]) << 48;
+	case 6: h ^= ulong64(bytes[5]) << 40;
+	case 5: h ^= ulong64(bytes[4]) << 32;
+	case 4: h ^= ulong64(bytes[3]) << 24;
+	case 3: h ^= ulong64(bytes[2]) << 16;
+	case 2: h ^= ulong64(bytes[1]) << 8;
+	case 1: h ^= ulong64(bytes[0]);
 		h *= m;
+
+	default:;
 	};
 
 	h ^= h >> r;
@@ -107,12 +123,18 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 	const uint m = 0x5bd1e995;
 	const int r = 24;
 
-	uint h1 = seed ^ (uint)key.Length();
+	uint h1 = seed ^ uint(key.Length());
 	uint h2 = 0;
 
-	const uint* data = (const uint*)key.Data();
+	union
+	{
+		const char* chars;
+		const byte* bytes;
+		const uint* data;
+	};
+	chars = key.Data();
 
-	while(key.End()-(char*)data>=8)
+	while(key.End()-chars>=8)
 	{
 		uint k1 = *data++;
 		k1 *= m;
@@ -129,7 +151,7 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 		h2 ^= k2;
 	}
 
-	if(key.End()-(char*)data>=4)
+	if(key.End()-chars>=4)
 	{
 		uint k1 = *data++;
 		k1 *= m;
@@ -139,12 +161,14 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 		h1 ^= k1;
 	}
 
-	switch(key.End()-(char*)data)
+	switch(key.End()-chars)
 	{
-	case 3: h2 ^= ((byte*)data)[2] << 16;
-	case 2: h2 ^= ((byte*)data)[1] << 8;
-	case 1: h2 ^= ((byte*)data)[0];
+	case 3: h2 ^= uint(bytes[2]) << 16u;
+	case 2: h2 ^= uint(bytes[1]) << 8u;
+	case 1: h2 ^= bytes[0];
 		h2 *= m;
+
+	default:;
 	};
 
 	h1 ^= h2 >> 18;
@@ -163,12 +187,12 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 
 forceinline uint getblock(const uint* p, intptr i)
 {
-	return ((uintLE*)p)[i];
+	return reinterpret_cast<const uintLE*>(p)[i];
 }
 
 forceinline ulong64 getblock(const ulong64* p, intptr i)
 {
-	return ((ulong64LE*)p)[i];
+	return reinterpret_cast<const ulong64LE*>(p)[i];
 }
 
 
@@ -194,7 +218,12 @@ forceinline ulong64 fmix(ulong64 k)
 
 hash128 Murmur3_128_x32(StringView key, uint seed)
 {
-	const byte* data = (const byte*)key.Data();
+	union
+	{
+		const char* chars;
+		const byte* data;
+	};
+	chars = key.Data();
 	const size_t nblocks = key.Length()/16;
 
 	union
@@ -210,9 +239,9 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 
 	enum: uint {c1 = 0x239b961bU, c2 = 0xab0e9789U, c3 = 0x38b34ae5U, c4 = 0xa1e38b93U};
 
-	const uint* blocks = (const uint*)(data + nblocks*16);
+	const uint* blocks = reinterpret_cast<const uint*>(data + nblocks*16);
 
-	for(intptr i=-(intptr)nblocks; i!=0; i++)
+	for(intptr i = -intptr(nblocks); i!=0; i++)
 	{
 		uint k1 = getblock(blocks, i*4);
 		uint k2 = getblock(blocks, i*4+1);
@@ -256,52 +285,54 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 	}
 
 
-	const byte* tail = (const byte*)(data + nblocks*16);
+	const byte* tail = data + nblocks*16;
 
 	uint k1=0, k2=0, k3=0, k4=0;
 	switch(key.Length() & 15)
 	{
-	case 15: k4 ^= tail[14] << 16;
-	case 14: k4 ^= tail[13] << 8;
+	case 15: k4 ^= uint(tail[14]) << 16u;
+	case 14: k4 ^= uint(tail[13]) << 8u;
 	case 13: k4 ^= tail[12];
 		k4 *= c4;
 		k4  = ROTL32(k4, 18);
 		k4 *= c1;
 		h4 ^= k4;
 
-	case 12: k3 ^= tail[11] << 24;
-	case 11: k3 ^= tail[10] << 16;
-	case 10: k3 ^= tail[9] << 8;
+	case 12: k3 ^= uint(tail[11]) << 24u;
+	case 11: k3 ^= uint(tail[10]) << 16u;
+	case 10: k3 ^= uint(tail[9]) << 8u;
 	case 9: k3 ^= tail[8];
 		k3 *= c3;
 		k3  = ROTL32(k3, 17);
 		k3 *= c4;
 		h3 ^= k3;
 
-	case 8: k2 ^= tail[7] << 24;
-	case 7: k2 ^= tail[6] << 16;
-	case 6: k2 ^= tail[5] << 8;
+	case 8: k2 ^= uint(tail[7]) << 24u;
+	case 7: k2 ^= uint(tail[6]) << 16u;
+	case 6: k2 ^= uint(tail[5]) << 8u;
 	case 5: k2 ^= tail[4];
 		k2 *= c2;
 		k2  = ROTL32(k2, 16);
 		k2 *= c3;
 		h2 ^= k2;
 
-	case 4: k1 ^= tail[3] << 24;
-	case 3: k1 ^= tail[2] << 16;
-	case 2: k1 ^= tail[1] << 8;
+	case 4: k1 ^= uint(tail[3]) << 24u;
+	case 3: k1 ^= uint(tail[2]) << 16u;
+	case 2: k1 ^= uint(tail[1]) << 8u;
 	case 1: k1 ^= tail[0];
 		k1 *= c1;
 		k1  = ROTL32(k1, 15);
 		k1 *= c2;
 		h1 ^= k1;
+
+	default:;
 	};
 
 
-	h1 ^= (uint)key.Length();
-	h2 ^= (uint)key.Length();
-	h3 ^= (uint)key.Length();
-	h4 ^= (uint)key.Length();
+	h1 ^= uint(key.Length());
+	h2 ^= uint(key.Length());
+	h3 ^= uint(key.Length());
+	h4 ^= uint(key.Length());
 
 	h1 += h2;
 	h1 += h3;
@@ -330,15 +361,19 @@ hash128 Murmur3_128_x32(StringView key, uint seed)
 
 hash128 Murmur3_128_x64(StringView key, uint seed)
 {
-	const byte* data = (const byte*)key.Data();
+	union
+	{
+		const char* chars;
+		const byte* bytes;
+		const ulong64* blocks;
+	};
+	chars = key.Data();
 	const size_t nblocks = key.Length()/16;
 
 	ulong64 h1 = seed, h2 = seed;
 
-	const ulong64 c1 = 0x87c37b91114253d5ULL, c2 = 0x4cf5ad432745937fULL;
-
-
-	const ulong64* blocks = (const ulong64*)data;
+	const ulong64 c1 = 0x87c37b91114253d5ULL;
+	const ulong64 c2 = 0x4cf5ad432745937fULL;
 
 	for(intptr i=0; i<intptr(nblocks); i++)
 	{
@@ -365,7 +400,7 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 	}
 
 
-	const byte* tail = (const byte*)(data + nblocks*16);
+	const byte* tail = bytes + nblocks*16;
 
 	ulong64 k1=0, k2=0;
 
@@ -395,10 +430,11 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 		k1  = ROTL64(k1, 31);
 		k1 *= c2;
 		h1 ^= k1;
+
+	default:;
 	};
 
-	//----------
-	// finalization
+
 
 	h1 ^= key.Length();
 	h2 ^= key.Length();

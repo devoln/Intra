@@ -9,6 +9,12 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #include <windows.h>
 
 #ifndef INTRA_DBGHELP
@@ -18,6 +24,10 @@
 #ifdef _MSC_VER
 #pragma comment(lib, "DbgHelp.lib")
 #endif
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
 
 #endif
@@ -81,7 +91,7 @@ String GetStackWalk(size_t framesToSkip)
 		info->MaxNameLen = 1024;
 
 		DWORD64 displacement = 0;
-		if(SymFromAddr(GetCurrentProcess(), (ulong64)addrs[i], &displacement, info))
+		if(SymFromAddr(GetCurrentProcess(), size_t(addrs[i]), &displacement, info))
 		{
 			result += StringView(info->Name, info->NameLen);
 			result += "\n";
@@ -103,12 +113,12 @@ namespace Intra {
 
 String GetStackWalk(size_t framesToSkip)
 {
-	void* pointerArr[50];
-	size_t size = backtrace(pointerArr, 50);
-	char** strings = backtrace_symbols(pointerArr, int(size));
+	void* pointerArr[100];
+	size_t size = size_t(backtrace(pointerArr, 100));
+	char** strings = backtrace_symbols(pointerArr, int(size+framesToSkip));
 
 	String result;
-	for(size_t i=0; i<size; i++)
+	for(size_t i=framesToSkip; i<size+framesToSkip; i++)
 	{
 		result += StringView(strings[i]);
 		result += '\n';

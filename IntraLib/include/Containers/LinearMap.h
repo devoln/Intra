@@ -58,40 +58,48 @@ public:
 		size_t index;
 	};
 
-	explicit LinearMap(size_t size): keys(size), values(size) {}
-	LinearMap(null_t=null) {}
+	explicit LinearMap(size_t initialCapacity):
+		keys(initialCapacity), values(initialCapacity) {}
 
-	LinearMap(ArrayRange<const Pair> pairs)
+	LinearMap(null_t=null): keys(), values() {}
+
+	LinearMap(ArrayRange<const Pair> pairs):
+		keys(), values()
 	{
 		for(auto& p: pairs) Insert(p);
 	}
 
-	LinearMap(ArrayRange<const K> keys, ArrayRange<const V> values)
+	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V> valueRange):
+		keys(), values()
 	{
-		INTRA_ASSERT(keys.Count()==values.Count());
-		Reserve(keys.Count());
-		for(size_t i=0; i<keys.Count(); i++)
-			Insert({keys[i], values[i]});
+		INTRA_ASSERT(keyRange.Length()==valuePtrRange.Length());
+		Reserve(keyRange.Length());
+		for(size_t i=0; i<keyRange.Length(); i++)
+			Insert({keyRange[i], valueRange[i]});
 	}
 
-	LinearMap(ArrayRange<const K> keys, ArrayRange<const V* const> values)
+	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V* const> valuePtrRange):
+		keys(), values()
 	{
-		INTRA_ASSERT(keys.Count()==values.Count());
-		Reserve(keys.Count());
-		for(size_t i=0; i<keys.Count(); i++)
-			Insert(keys[i], *values[i]);
+		INTRA_ASSERT(keyRange.Length()==valuePtrRange.Length());
+		Reserve(keyRange.Length());
+		for(size_t i=0; i<keyRange.Length(); i++)
+			Insert(keyRange[i], *valuePtrRange[i]);
 	}
 
-	LinearMap(ArrayRange<const K> keys, ArrayRange<V* const> values)
+	LinearMap(ArrayRange<const K> keyRange, ArrayRange<V* const> valuePtrRange):
+		keys(), values()
 	{
-		INTRA_ASSERT(keys.Count()==values.Count());
-		Reserve(keys.Count());
-		for(size_t i=0; i<keys.Count(); i++)
-			Insert(keys[i], *values[i]);
+		INTRA_ASSERT(keyRange.Count()==valuePtrRange.Count());
+		Reserve(keyRange.Count());
+		for(size_t i=0; i<keyRange.Count(); i++)
+			Insert(keyRange[i], *valuePtrRange[i]);
 	}
 
 	LinearMap(const LinearMap& rhs) = default;
-	forceinline LinearMap(LinearMap&& rhs): keys(core::move(rhs.keys)), values(core::move(rhs.values)) {}
+
+	forceinline LinearMap(LinearMap&& rhs):
+		keys(core::move(rhs.keys)), values(core::move(rhs.values)) {}
 
 	forceinline bool Empty() const {return keys.Empty();}
 	forceinline bool operator==(null_t) const {return Empty();}
@@ -195,8 +203,8 @@ public:
 		if(exists!=null) *exists = (i!=Count());
 		if(i==Count())
 		{
-			static V empty;
-			return empty;
+			static const V defaultValue;
+			return defaultValue;
 		}
 		return values[i];
 	}

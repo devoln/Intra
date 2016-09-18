@@ -20,7 +20,7 @@ void RunRandomPerfTests(IO::Logger& logger)
 
 	Timer tim;
 
-	for(int i=0; i<100000000; i++) g_A += float(mt19937())/(float)mt19937.max();
+	for(int i=0; i<100000000; i++) g_A += float(mt19937())/float(mt19937.max());
 	double time2 = tim.GetTimeAndReset();
 
 	for(int i=0; i<100000000; i++) g_A += float(rand())/32767.0f;

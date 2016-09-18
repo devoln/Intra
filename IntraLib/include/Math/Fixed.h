@@ -3,6 +3,11 @@
 #include "Meta/Type.h"
 #include "Vector.h"
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
+
 namespace Intra {
 
 template<typename T, uint DIV> struct FixedPoint
@@ -26,10 +31,10 @@ template<typename T, uint DIV> struct FixedPoint
 	constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(data*DIV/rhs.data);}
 	constexpr forceinline FixedPoint operator-() const {return CastFromInt(-data);}
 
-	template<typename U> constexpr forceinline FixedPoint operator+(U rhs) const {return FixedPoint(data+rhs*DIV);}
-	template<typename U> constexpr forceinline FixedPoint operator-(U rhs) const {return FixedPoint(data-rhs*DIV);}
-	template<typename U> constexpr forceinline FixedPoint operator*(U rhs) const {return FixedPoint(data*rhs);}
-	template<typename U> constexpr forceinline FixedPoint operator/(U rhs) const {return FixedPoint(data/rhs);}
+	template<typename U> constexpr forceinline FixedPoint operator+(U rhs) const {return FixedPoint(data+T(rhs*DIV));}
+	template<typename U> constexpr forceinline FixedPoint operator-(U rhs) const {return FixedPoint(data-T(rhs*DIV));}
+	template<typename U> constexpr forceinline FixedPoint operator*(U rhs) const {return FixedPoint(data*T(rhs));}
+	template<typename U> constexpr forceinline FixedPoint operator/(U rhs) const {return FixedPoint(data/T(rhs));}
 
 
 	constexpr forceinline bool operator==(FixedPoint rhs) const {return data==rhs.data;}
@@ -51,8 +56,8 @@ private:
 
 	constexpr forceinline FixedPoint(T v, null_t): data(v) {}
 
-	template<typename T2> Meta::EnableIf<Meta::IsFloatType<T2>::_, T2> cast() const {return (T2)data/DIV;}
-	template<typename T2> Meta::EnableIf<Meta::IsIntegralType<T2>::_, T2> cast() const {return T2((long64)data/DIV);}
+	template<typename T2> Meta::EnableIf<Meta::IsFloatType<T2>::_, T2> cast() const {return T2(data)/DIV;}
+	template<typename T2> Meta::EnableIf<Meta::IsIntegralType<T2>::_, T2> cast() const {return T2(long64(data)/DIV);}
 };
 
 template<typename T, uint DIV> const FixedPoint<T, DIV> FixedPoint<T, DIV>::Max = FixedPoint<T, DIV>::CastFromInt(max_t);
@@ -159,3 +164,7 @@ typedef Vector4<snorm32s> S32Vec4;
 }
 
 }
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif

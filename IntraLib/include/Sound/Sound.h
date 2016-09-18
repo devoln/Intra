@@ -14,13 +14,18 @@ class Sound
 {
 	friend class SoundInstance;
 public:
-	Sound(null_t=null): data(null), locked_bits(null),
+	Sound(null_t=null): data(null), instances(), locked_bits(null),
 		info{0,0,0,ValueType::Void}, locked_size(0) {}
 
 	explicit Sound(const SoundBuffer* data);
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 
-	Sound(Sound&& rhs): data(null), info(rhs.info) {operator=(core::move(rhs)); rhs.data=null;}
+	Sound(Sound&& rhs): data(null), instances(), locked_bits(null),
+		info(rhs.info), locked_size(0)
+	{
+		operator=(core::move(rhs));
+		rhs.data=null;
+	}
 
 	~Sound();
 
@@ -46,7 +51,6 @@ public:
 
 private:
 	SoundAPI::BufferHandle data;
-
 	Array<SoundInstance*> instances;
     short* locked_bits;
 	SoundInfo info;
@@ -65,7 +69,7 @@ private:
 	SoundInstance(Sound* mySound, SoundAPI::InstanceHandle inst);
 public:
 	SoundInstance(null_t=null): my_sound(null), data(null) {}
-	SoundInstance(SoundInstance&& rhs): my_sound(null) {operator=(core::move(rhs));}
+	SoundInstance(SoundInstance&& rhs): my_sound(null), data(null) {operator=(core::move(rhs));}
 
 	SoundInstance& operator=(SoundInstance&& rhs)
 	{
@@ -105,8 +109,14 @@ public:
 
 	StreamedSound(SourceRef&& src, size_t bufferSizeInSamples=16384, OnCloseCallback onClose=null);
 
-	StreamedSound(StreamedSound&& rhs): sample_source(core::move(rhs.sample_source)),
-		on_close(rhs.on_close), data(rhs.data) {rhs.data=null; rhs.on_close=null;}
+	StreamedSound(StreamedSound&& rhs):
+		sample_source(core::move(rhs.sample_source)),
+		on_close(rhs.on_close), data(rhs.data)
+	{
+		rhs.data=null;
+		rhs.on_close=null;
+	}
+
 	~StreamedSound() {release();}
 
 
@@ -126,6 +136,8 @@ public:
 		if(data!=null) register_instance();
 		return *this;
 	}
+
+	StreamedSound& operator=(const StreamedSound& rhs) = delete;
 
 	void Play(bool loop=false) const;
 	bool IsPlaying() const;

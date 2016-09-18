@@ -20,34 +20,36 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 	ImageInfo result = {{0,0,0}, null, ImageType_End, 0};
 	if(header.sizes.y==0 && header.sizes.z==0) return result; //1D текстуры не поддерживаются
 	if(header.numberOfFaces!=1 && header.numberOfFaces!=6) return result; //Текстуры либо кубические и содержат 6 граней, либо некубические
-	result.Format = GLenumToImageFormat((ushort)header.glInternalFormat);
+	result.Format = GLenumToImageFormat(ushort(header.glInternalFormat));
 	if(result.Format==null) return result;
-	result.MipmapCount=(ushort)header.numberOfMipmapLevels;
+	result.MipmapCount = ushort(header.numberOfMipmapLevels);
 	if(header.sizes.z==0)
 	{
 		if(header.numberOfFaces==1)
-			if(header.numberOfArrayElements==0) result.Type=ImageType_2D;
-			else result.Type=ImageType_2DArray;
+			if(header.numberOfArrayElements==0)
+				result.Type = ImageType_2D;
+			else result.Type = ImageType_2DArray;
 		else if(header.numberOfFaces==6)
-			if(header.numberOfArrayElements==0) result.Type=ImageType_Cube;
-			else result.Type=ImageType_CubeArray;
+			if(header.numberOfArrayElements==0)
+				result.Type = ImageType_Cube;
+			else result.Type = ImageType_CubeArray;
 		else return {{0,0,0}, null, ImageType_End, 0};
 	}
 	else result.Type = ImageType_3D;
-	result.Size = Max((USVec3)header.sizes, USVec3(1));
+	result.Size = Max(USVec3(header.sizes), USVec3(1));
 	return result;
 }
 
 ImageInfo pe_get_ktx_info(byte header[64])
 {
 	//if(memcmp(header, "DDS ", 4)!=0) return errResult;
-	return GetImageInfoFromHeader(*(KtxHeader*)(header+16));
+	return GetImageInfoFromHeader(*reinterpret_cast<KtxHeader*>(header+16));
 }
 
 #ifndef INTRA_NO_KTX_LOADER
-void Image::loadKTX(IInputStream* s, uint bytes)
+void Image::loadKTX(IInputStream* s, size_t bytes)
 {
-	auto startPos=s->GetPos();
+	auto startPos = s->GetPos();
 
 	s->Skip(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
 
@@ -57,8 +59,8 @@ void Image::loadKTX(IInputStream* s, uint bytes)
 		return;
 	}
 
-	auto header=s->Read<KtxHeader>();
-	auto info=GetImageInfoFromHeader(header);
+	auto header = s->Read<KtxHeader>();
+	auto info = GetImageInfoFromHeader(header);
 	if(info.Type==ImageType_End)
 	{
 		s->SetPos(startPos+bytes);
@@ -67,7 +69,7 @@ void Image::loadKTX(IInputStream* s, uint bytes)
 
 	LineAlignment = 4;
 	Info = info;
-	SwapRB = GLFormatSwapRB((ushort)header.glFormat);
+	SwapRB = GLFormatSwapRB(ushort(header.glFormat));
 	if(info.MipmapCount==0) info.MipmapCount=1;
 	const size_t fullDataSize = info.CalculateFullDataSize(LineAlignment);
 	Data.Clear();

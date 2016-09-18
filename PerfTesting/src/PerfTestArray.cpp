@@ -127,7 +127,7 @@ template<typename ARR> double TestContainerMiddleElementRemove(uint size)
 
 	Timer timer;
 	for(uint i=size; i>0; i--)
-		arr.erase(arr.begin()+(i-1)/2);
+		arr.erase(arr.begin()+intptr((i-1u)/2u));
 	return timer.GetTime();
 }
 
@@ -139,7 +139,7 @@ template<typename ARR> double TestContainerRemoveRange(uint size, uint elementsT
 
 	Timer timer;
 	for(uint i=size-elementsToRemove; i>=elementsToRemove; i-=elementsToRemove)
-		arr.erase(arr.begin()+(i/2-elementsToRemove/2+1), arr.begin()+(i/2+elementsToRemove/2));
+		arr.erase(arr.begin()+intptr(i/2u-elementsToRemove/2u+1u), arr.begin()+intptr(i/2u+elementsToRemove/2u));
 	return timer.GetTime();
 }
 
@@ -246,7 +246,7 @@ template<typename ARR> double TestContainerMiddleStringRemove(uint size)
 
 	Timer timer;
 	for(uint i=size; i>0; i--)
-		arr.erase(arr.begin()+(i-1)/2);
+		arr.erase(arr.begin()+intptr((i-1u)/2u));
 	return timer.GetTime();
 }
 
@@ -259,7 +259,7 @@ template<typename ARR> double TestContainerStringRemoveRange(size_t size, size_t
 
 	Timer timer;
 	for(size_t i=size-elementsToRemove/2-1; i>elementsToRemove/2; i-=elementsToRemove)
-		arr.erase(arr.begin() + (i/2-elementsToRemove/2+1), arr.begin() + (i/2+elementsToRemove/2));
+		arr.erase(arr.begin() + intptr(i/2-elementsToRemove/2+1), arr.begin() + intptr(i/2+elementsToRemove/2));
 	return timer.GetTime();
 }
 

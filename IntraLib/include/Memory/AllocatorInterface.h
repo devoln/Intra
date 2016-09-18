@@ -4,6 +4,7 @@
 #include "Memory/Memory.h"
 #include "Memory/Allocator.h"
 
+
 namespace Intra { namespace Memory {
 
 class IAllocator
@@ -103,7 +104,7 @@ template<typename Allocator> struct AllocatorRef<Allocator, Meta::EmptyType, tru
 
 	AllocatorRef& operator=(const AllocatorRef&) {return *this;}
 
-	Allocator& GetRef() const {return *static_cast<Allocator*>(this);}
+	Allocator& GetRef() const {return *const_cast<Allocator*>(static_cast<const Allocator*>(this));}
 
 	template<typename T> ArrayRange<T> AllocateRangeUninitialized(size_t& count, const SourceInfo& sourceInfo)
 	{
@@ -123,4 +124,3 @@ template<typename Allocator, typename PARENT> struct AllocatorRef<Allocator, PAR
 };
 
 }}
-

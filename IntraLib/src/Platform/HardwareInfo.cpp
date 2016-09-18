@@ -2,10 +2,21 @@
 
 
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #include <Windows.h>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 namespace Intra {
 
@@ -122,7 +133,7 @@ ProcessorInfo ProcessorInfo::Get()
 	result.CoreNumber = allCpuInfo().Find(StringView("\ncpu cores"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
 
-	result.LogicalProcessorNumber = (ushort)allCpuInfo().Count(StringView("processor "));
+	result.LogicalProcessorNumber = ushort(allCpuInfo().Count(StringView("processor ")));
 
 	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());

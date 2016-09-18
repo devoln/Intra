@@ -9,9 +9,9 @@ using namespace Math;
 StringView ToString(ImageType t)
 {
 	INTRA_ASSERT(t<ImageType_End);
-	static const StringView values[]={"1D", "1DArray", "2D", "2DArray", "3D", "Cube", "CubeArray"};
+	static const StringView values[] = {"1D", "1DArray", "2D", "2DArray", "3D", "Cube", "CubeArray"};
 	INTRA_CHECK_TABLE_SIZE(values, ImageType_End);
-	return values[(byte)t];
+	return values[byte(t)];
 }
 
 #pragma pack(push, 1)
@@ -337,7 +337,7 @@ byte ImageFormat::BitsPerPixel() const
 byte ImageFormat::BitsPerComponent() const
 {
 	auto fi = get_format_info(*this);
-	return (byte)(fi.BitsPerPixel/(fi.ComponentCount+1));
+	return byte(fi.BitsPerPixel/(fi.ComponentCount+1));
 }
 
 byte ImageFormat::ComponentCount() const
@@ -439,50 +439,50 @@ ushort ImageInfo::CalculateMaxMipmapCount() const
 {
 	ushort maxDimension = Max(Size.x, Size.y);
 	if(Type!=ImageType_2DArray) maxDimension = Max(maxDimension, Size.z);
-	const short maxUncompressedLevel = maxDimension==1? 0: Log2i(Max(1u, (uint)maxDimension));
+	const short maxUncompressedLevel = maxDimension==1? 0: Log2i(Max<uint>(1u, maxDimension));
 	ushort numLevels = ushort(maxUncompressedLevel+1);
-	return Max(numLevels, (ushort)0);
+	return Max(numLevels, ushort(0));
 }
 
-USVec3 CalculateMipmapSize(USVec3 size, ImageType type, uint mip)
+USVec3 CalculateMipmapSize(USVec3 size, ImageType type, size_t mip)
 {
 	USVec3 result;
 	result.z=size.z;
-	const ushort dims = 2+(type==ImageType_3D);
+	const ushort dims = ushort(2+(type==ImageType_3D));
 	for(ushort i=0; i<dims; i++)
-		result[i] = Max<ushort>(1, ushort(size[i] >> mip));
+		result[i] = Max(ushort(1), ushort(size[i] >> mip));
 	return result;
 }
 
-USVec3 CalculateMipmapOffset(USVec3 offset, ImageType type, uint mip)
+USVec3 CalculateMipmapOffset(USVec3 offset, ImageType type, size_t mip)
 {
 	USVec3 result = CalculateMipmapSize(offset, type, mip);
 	return Min(result, USVec3(offset));
 }
 
-USVec3 ImageInfo::CalculateMipmapSize(uint mip) const
+USVec3 ImageInfo::CalculateMipmapSize(size_t mip) const
 {
 	if(mip>=MipmapCount && mip!=0) return {0,0,0};
 	return Intra::CalculateMipmapSize(Size, Type, mip);
 }
 
-size_t ImageInfo::CalculateMipmapDataSize(uint mip, uint lineAlignment) const
+size_t ImageInfo::CalculateMipmapDataSize(size_t mip, size_t lineAlignment) const
 {
 	Math::USVec3 sz = CalculateMipmapSize(mip);
-	const ushort dims = 2+(Type==ImageType_3D);
-	uint alignmentBytes = 0;
+	const ushort dims = ushort(2+(Type==ImageType_3D));
+	size_t alignmentBytes = 0;
 	const uint bpp = Format.BitsPerPixel();
 	if(!Format.IsCompressed())
 		alignmentBytes = lineAlignment-1-(sz.x*bpp/8+lineAlignment-1)%lineAlignment;
 	else for(uint k=0; k<dims; k++)
-		if(sz[k]%4!=0) sz[k] = short((sz[k]/4+1)*4);
+		if(sz[k]%4!=0) sz[k] = ushort((sz[k]/4+1)*4);
 	return (sz.x*bpp/8+alignmentBytes)*sz.y*sz.z;
 }
 
-size_t ImageInfo::CalculateFullDataSize(uint lineAlignment) const
+size_t ImageInfo::CalculateFullDataSize(size_t lineAlignment) const
 {
 	size_t size=0;
-	for(ushort i=0, mips=MipmapCount==0? 1: MipmapCount; i<mips; i++)
+	for(size_t i=0, mips=MipmapCount==0? 1u: MipmapCount; i<mips; i++)
 		size += CalculateMipmapDataSize(i, lineAlignment);
 	return size;
 }

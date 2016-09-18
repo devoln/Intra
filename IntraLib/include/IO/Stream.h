@@ -47,24 +47,24 @@ public:
 	long64 ParseInteger(bool* error=null);
 	real ParseFloat(bool* error=null);
 
-	friend IInputStream& operator>>(IInputStream& stream, String& s) {s=stream.ReadLine(); return stream;}
-	friend IInputStream& operator>>(IInputStream& stream, long64& n) {n=stream.ParseInteger(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, String& s) {s = stream.ReadLine(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, long64& n) {n = stream.ParseInteger(); return stream;}
 	friend IInputStream& operator>>(IInputStream& stream, byte& n);
 	friend IInputStream& operator>>(IInputStream& stream, sbyte& n);
 	friend IInputStream& operator>>(IInputStream& stream, ushort& n);
 	friend IInputStream& operator>>(IInputStream& stream, short& n);
 	friend IInputStream& operator>>(IInputStream& stream, uint& n);
 	friend IInputStream& operator>>(IInputStream& stream, int& n);
-	friend IInputStream& operator>>(IInputStream& stream, real& n) {n=stream.ParseFloat(); return stream;}
-	friend IInputStream& operator>>(IInputStream& stream, double& n) {n=(double)stream.ParseFloat(); return stream;}
-	friend IInputStream& operator>>(IInputStream& stream, float& n) {n=(float)stream.ParseFloat(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, real& n) {n = stream.ParseFloat(); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, double& n) {n = double(stream.ParseFloat()); return stream;}
+	friend IInputStream& operator>>(IInputStream& stream, float& n) {n = float(stream.ParseFloat()); return stream;}
 	friend IInputStream& operator>>(IInputStream& stream, const char* r);
 
 	forceinline void Skip(ulong64 bytes) {SetPos(GetPos()+bytes);} //Правильно работает только для потоков с переопределёнными GetPos и SetPos
-	forceinline bool IsSeekable() const {return GetPos()!=(ulong64)-1;}
+	forceinline bool IsSeekable() const {return GetPos()!=~0ull;}
 	virtual void SetPos(ulong64) {}
-	virtual ulong64 GetSize() const {return (ulong64)-1;} //По умолчанию поток будет считаться бесконечным
-	virtual ulong64 GetPos() const {return (ulong64)-1;} //По умолчанию у потока нет позиции. Возвращаемое значение (ulong64)-1 говорит о том, что поток не seekable
+	virtual ulong64 GetSize() const {return ~0ull;} //По умолчанию поток будет считаться бесконечным
+	virtual ulong64 GetPos() const {return ~0ull;} //По умолчанию у потока нет позиции. Возвращаемое значение (ulong64)-1 говорит о том, что поток не seekable
 
 
 	String ReadNChars(size_t n)
@@ -87,7 +87,9 @@ public:
 
 	template<typename T> forceinline T Read() {T n; ReadData(&n, sizeof(n)); return n;}
 
-	struct ByLineResult: Range::RangeMixin<ByLineResult, StringView, Range::TypeEnum::Input, true>
+
+	struct ByLineResult:
+		Range::RangeMixin<ByLineResult, StringView, Range::TypeEnum::Input, true>
 	{
 		typedef StringView value_type;
 		typedef StringView return_value_type;
@@ -98,7 +100,9 @@ public:
 		bool UseTerminator;
 		bool ConsumeCRLF;
 
-		ByLineResult(null_t=null): MyStream(null), UseTerminator(false), ConsumeCRLF(false), is_empty(true) {}
+		ByLineResult(null_t=null):
+			CurLine(null), Terminator(null), MyStream(null),
+			UseTerminator(false), ConsumeCRLF(false), is_empty(true) {}
 
 		ByLineResult(IInputStream* stream, bool consumeCRLF, bool useTerminator, const String& terminator=null):
 			CurLine(stream->ReadLine(consumeCRLF)), Terminator(terminator),
@@ -160,9 +164,9 @@ public:
 		size_t allocatedBufferSize = requiredBufferSize;
 
 		if(requiredBufferSize>sizeof(tempBuffer))
-			serializer.Output = MemoryOutput({
-				(char*)Memory::GlobalHeap.Allocate(allocatedBufferSize, INTRA_SOURCE_INFO),
-				requiredBufferSize});
+			serializer.Output = MemoryOutput(ArrayRange<byte>(
+				Memory::GlobalHeap.Allocate(allocatedBufferSize, INTRA_SOURCE_INFO),
+				requiredBufferSize));
 
 		serializer(value);
 		WriteData(serializer.Output.Begin, serializer.Output.BytesWritten());
@@ -174,7 +178,7 @@ public:
 	//! Аналогично вызову Write<StringView>, но быстрее
 	void WriteString(StringView s)
 	{
-		Write<uintLE>((uint)s.Length());
+		Write<uintLE>(uint(s.Length()));
 		WriteData(s.Data(), s.Length());
 	}
 
@@ -209,8 +213,13 @@ public:
 
 	virtual IOutputStream& operator<<(endl_t)
 	{
-		enum: bool {isPlatformCRLF = INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_WindowsPhone};
-		RawPrint(isPlatformCRLF? StringView("\r\n"): StringView("\n"));
+		RawPrint(
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_WindowsPhone)
+			"\r\n"
+#else
+			"\n"
+#endif
+		);
 		return *this;
 	}
 
@@ -237,17 +246,23 @@ public:
 	void WriteData(const void* dst, size_t n) override final; //Консоль трактует все данные как текст в формате UTF-8
 	size_t ReadData(void* dst, size_t n) override final;
 	void UnreadData(const void* data, size_t bytes) override final;
-	void Skip(ulong64 bytes) {ReadNChars((size_t)bytes);}
+	void Skip(ulong64 bytes) {ReadNChars(size_t(bytes));}
 
 	dchar GetChar();
 
 private:
 	virtual bool EndOfStream() const override {return false;}
 
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	byte unread_buf_chars;
 	char unread_buf[5];
+#endif
+
 	void* myfout;
 	void* myfin;
+
+	ConsoleStream(const ConsoleStream&) = delete;
+	ConsoleStream& operator=(const ConsoleStream&) = delete;
 };
 
 extern ConsoleStream Console, ConsoleError;
@@ -256,9 +271,16 @@ class MemoryInputStream: public IInputStream
 {
 public:
 	MemoryInputStream(null_t=null): data(null), rest(null) {}
-	MemoryInputStream(const void* memory, size_t length): data((const byte*)memory), rest((const byte*)memory, length) {}
-	MemoryInputStream(ArrayRange<const byte> memory): data(memory.Begin), rest(memory) {}
+
+	MemoryInputStream(const void* memory, size_t length):
+		data(reinterpret_cast<const byte*>(memory)),
+		rest(reinterpret_cast<const byte*>(memory), length) {}
+
+	MemoryInputStream(ArrayRange<const byte> memory):
+		data(memory.Begin), rest(memory) {}
+
 	MemoryInputStream(const MemoryInputStream& rhs) = default;
+	MemoryInputStream& operator=(const MemoryInputStream& rhs) = default;
 
 	size_t ReadData(void* dst, size_t bytes) override final
 	{
@@ -284,7 +306,7 @@ public:
 		if(rest.Begin>rest.End) rest.Begin=rest.End;
 	}
 
-	ulong64 GetSize() const override final {return rest.End-data;}
+	ulong64 GetSize() const override final {return ulong64(rest.End-data);}
 	ulong64 GetPos() const override final {return ulong64(rest.Begin-data);}
 
 	const byte* data;

@@ -8,9 +8,9 @@
 
 #include "Math/Simd.h"
 
-#if PLATFORM==INTRA_PLATFORM_X86 || PLATFORM==INTRA_PLATFORM_X86_64
+#if INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 
-#elif PLATFORM==INTRA_PLATFORM_ARM
+#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
 #undef OPTIMIZE
 #else
 #undef OPTIMIZE
@@ -23,7 +23,7 @@ namespace Intra {
 using namespace Math;
 
 SoundBuffer::SoundBuffer(size_t sampleCount, uint sampleRate, ArrayRange<const float> initData):
-	SampleRate(sampleRate)
+	SampleRate(sampleRate), Samples()
 {
 	if(!initData.Empty()) Samples.AddLastRange(initData);
 	Samples.SetCount(sampleCount);
@@ -54,27 +54,28 @@ void SoundBuffer::CastToShorts(size_t first, ArrayRange<short> outSamples) const
 		return;
 	}
 	const auto numSamples = Math::Min(outSamples.Length(), Samples.Count()-first);
-	Algo::Cast(outSamples.Take(numSamples), Samples(first, first+numSamples));
+	Algo::Cast(outSamples.Take(numSamples), Samples(first, $).Take(numSamples));
 }
 
 void SoundBuffer::ShiftSamples(intptr samplesToShift)
 {
 	if(samplesToShift==0 || Samples==null) return;
-	if((size_t)Math::Abs(samplesToShift)>=Samples.Count()) {Clear(); return;}
+	if(size_t(Math::Abs(samplesToShift))>=Samples.Count()) {Clear(); return;}
 	if(samplesToShift<0)
 	{
-		core::memmove(&Samples[0], &Samples[-samplesToShift], ((int)Samples.Count()+samplesToShift)*sizeof(float));
-		core::memset(&Samples[(int)Samples.Count()+samplesToShift], 0, -samplesToShift*sizeof(float));
+		const size_t firstFreeSampleIndex = size_t(intptr(Samples.Count())+samplesToShift);
+		core::memmove(Samples.Data(), Samples.Data()-samplesToShift, firstFreeSampleIndex*sizeof(float));
+		core::memset(Samples.Data()+firstFreeSampleIndex, 0, size_t(-samplesToShift)*sizeof(float));
 		return;
 	}
-	core::memmove(&Samples[samplesToShift], &Samples[0], (Samples.Count()-samplesToShift)*sizeof(float));
-	core::memset(&Samples[0], 0, samplesToShift*sizeof(float));
+	core::memmove(Samples.Data()+samplesToShift, Samples.Data(), (Samples.Count()-size_t(samplesToShift))*sizeof(float));
+	core::memset(Samples.Data(), 0, size_t(samplesToShift)*sizeof(float));
 }
 
 void SoundBuffer::Clear(size_t startSample, size_t sampleCount)
 {
 	if(startSample>=Samples.Count()) return;
-	if(sampleCount==size_t(-1)) sampleCount = Samples.Count()-startSample;
+	if(sampleCount == ~size_t(0)) sampleCount = Samples.Count()-startSample;
 	core::memset(&Samples[startSample], 0, sampleCount*sizeof(float));
 }
 
@@ -84,7 +85,7 @@ void SoundBuffer::Clear(size_t startSample, size_t sampleCount)
 static Array<float> get_sine_periods(uint sampleRate, float phase, uint frequency, size_t maxSamples)
 {
 	uint nod = Math::GreatestCommonDivisor(sampleRate, frequency);
-	const uint fpsamples = Math::Min(sampleRate/nod, (uint)maxSamples);
+	const uint fpsamples = Math::Min(sampleRate/nod, uint(maxSamples));
 	Array<float> fullPeriods(fpsamples);
 	const float da = float(PI*2.0*frequency/sampleRate);
 	for(uint q=0; q<fpsamples; q++)
@@ -96,7 +97,7 @@ void SoundBuffer::Pulse(uint frequency, float phase, size_t startSample, size_t 
 {
 	if(sampleCount==Meta::NumericLimits<size_t>::Max()) sampleCount = Samples.Count()-startSample;
 	const size_t endSample = startSample+sampleCount;
-	const auto fullPeriods = get_sine_periods((int)SampleRate, phase, (int)frequency, sampleCount);
+	const auto fullPeriods = get_sine_periods(SampleRate, phase, frequency, sampleCount);
 	const size_t fpsamples = fullPeriods.Count(), fpcount=sampleCount/fpsamples;
 
 	size_t s = startSample;

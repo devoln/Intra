@@ -75,10 +75,10 @@ public:
 			count--;
 			for(;;)
 			{
-				intptr loc = free_list.Find(T(count-1));
-				if(loc==-1) return;
+				size_t loc = free_list().CountUntil(T(count-1));
+				if(loc==free_list.Count()) return;
 				count--;
-				free_list.RemoveUnordered((size_t)loc);
+				free_list.RemoveUnordered(loc);
 			}
 		}
 		free_list.AddLast(id);
@@ -105,8 +105,7 @@ private:
 template<typename T, typename G, typename TYPE=void> struct CheckedId
 {
 	operator T() const {return value;}
-	CheckedId() = default;
-	CheckedId(null_t): value(Meta::NumericLimits<T>::Max()), generation(Meta::NumericLimits<G>::Max()) {}
+	CheckedId(null_t=null): value(Meta::NumericLimits<T>::Max()), generation(Meta::NumericLimits<G>::Max()) {}
 
 	bool operator==(null_t) const {return value==Meta::NumericLimits<T>::Max() && generation==Meta::NumericLimits<G>::Max();}
 	bool operator!=(null_t) const {return !operator==(null);}

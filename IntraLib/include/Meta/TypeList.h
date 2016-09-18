@@ -2,7 +2,6 @@
 
 #include "Type.h"
 
-//#if INTRA_DISABLED
 
 namespace Intra { namespace Meta {
 
@@ -318,5 +317,5 @@ using TypeListReplaceType = typename Meta::detail::ReplaceType<OldValue, NewValu
 
 }
 
-//#endif
 }
+

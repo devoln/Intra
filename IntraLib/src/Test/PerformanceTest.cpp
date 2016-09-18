@@ -70,7 +70,7 @@ void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<con
 int TestGroup::nestingLevel=0;
 int TestGroup::YesForNestingLevel=1000000000;
 
-TestGroup::TestGroup(Logger& Log, StringView category): logger(Log)
+TestGroup::TestGroup(Logger& Log, StringView category): yes(false), logger(Log)
 {
 	if(YesForNestingLevel<=nestingLevel) yes = true;
 	else
@@ -96,15 +96,11 @@ TestGroup::TestGroup(Logger& Log, StringView category): logger(Log)
 				yes = true;
 				break;
 			}
-			if(c=='\r' || c=='\n')
-			{
-				yes = false;
-				break;
-			}
+			if(c=='\r' || c=='\n') break;
 		}
 	}
 	if(yes) logger.BeginSpoiler(category, "Скрыть [ "+category+" ]");
-	else logger << "Тест [ "+category+" ] пропущен!" << endl;
+	else logger.PrintLine("Тест [ "+category+" ] пропущен!");
 	nestingLevel++;
 }
 

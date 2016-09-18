@@ -2,6 +2,11 @@
 
 #include "Math/Matrix.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#endif
+
 namespace Intra { namespace Math {
 
 template<typename T> struct Quaternion
@@ -16,27 +21,36 @@ template<typename T> struct Quaternion
 		Vector4<T> xyzw;
 	};
 
-	Quaternion() = default;
-	Quaternion(T X, T Y=0, T Z=0, T W=1): x(X), y(Y), z(Z), w(W) {}
-	Quaternion(const Quaternion& q) = default;
-	Quaternion(const Vector3<T>& v): xyzw(v, 1) {}
+	forceinline Quaternion() = default;
+	forceinline Quaternion(T X, T Y=0, T Z=0, T W=1): x(X), y(Y), z(Z), w(W) {}
+	forceinline Quaternion(const Quaternion& q) = default;
+	forceinline Quaternion(const Vector3<T>& v): xyzw(v, 1) {}
 
 	Quaternion(T angle, const Vector3<T>& axis)
 	{
-		const T sine=(T)Sin(angle/2), cosine=(T)Cos(angle/2);
-		xyz*=sine; w=cosine;
+		xyz = axis*T(Sin(angle/2));
+		w = T(Cos(angle/2));
 	}
 
 	Quaternion(const Matrix3<T>& mat);
 
-	Quaternion operator+() const {return *this;}
-	Quaternion operator-() const {return {-x, -y, -z, -w};}
+	forceinline Quaternion operator+() const {return *this;}
+	
+	forceinline Quaternion operator-() const
+		{return {-x, -y, -z, -w};}
 
-	Quaternion operator*(T rhs) const {return {x*rhs, y*rhs, z*rhs, w*rhs};}
-	Quaternion operator/(T rhs) const {return {x/rhs, y/rhs, z/rhs, w/rhs};}
+	forceinline Quaternion operator*(T rhs) const
+		{return {x*rhs, y*rhs, z*rhs, w*rhs};}
 
-	Quaternion operator+(const Quaternion& rhs) const {return {x+rhs.x, y+rhs.y, z+rhs.z, w+rhs.w};}
-	Quaternion operator-(const Quaternion& rhs) const {return {x-rhs.x, y-rhs.y, z-rhs.z, w-rhs.w};}
+	forceinline Quaternion operator/(T rhs) const
+		{return {x/rhs, y/rhs, z/rhs, w/rhs};}
+
+	forceinline Quaternion operator+(const Quaternion& rhs) const
+		{return {x+rhs.x, y+rhs.y, z+rhs.z, w+rhs.w};}
+
+	forceinline Quaternion operator-(const Quaternion& rhs) const
+		{return {x-rhs.x, y-rhs.y, z-rhs.z, w-rhs.w};}
+
 	Quaternion operator*(const Quaternion& rhs) const
 	{
 		return {y*rhs.z - z*rhs.y + w*rhs.x + x*rhs.w,
@@ -45,13 +59,13 @@ template<typename T> struct Quaternion
 			    w*rhs.w - x*rhs.x - y*rhs.y - z*rhs.z};
 	}
 
-	Quaternion& operator+=(const Quaternion& q) {xyzw+=q.xyzw; return *this;}
-	Quaternion& operator-=(const Quaternion& q) {xyzw-=q.xyzw; return *this;}
-	Quaternion& operator*=(T rhs) {xyzw*=rhs; return *this;}
-	Quaternion& operator/=(T rhs) {xyzw/=rhs; return *this;}
-	Quaternion& operator*=(const Quaternion& q) {return *this = *this*q;}
+	forceinline Quaternion& operator+=(const Quaternion& q) {xyzw += q.xyzw; return *this;}
+	forceinline Quaternion& operator-=(const Quaternion& q) {xyzw -= q.xyzw; return *this;}
+	forceinline Quaternion& operator*=(T rhs) {xyzw *= rhs; return *this;}
+	forceinline Quaternion& operator/=(T rhs) {xyzw /= rhs; return *this;}
+	forceinline Quaternion& operator*=(const Quaternion& q) {return *this = *this*q;}
 
-	Quaternion& operator=(const Quaternion& rhs) = default;
+	forceinline Quaternion& operator=(const Quaternion& rhs) = default;
 
 	//Порядок аналогичен умножению матрицы на вектор
 	Vector3<T> operator*(const Vector3<T>& v) const //Поворот вектора кватернионом
@@ -64,21 +78,21 @@ template<typename T> struct Quaternion
 		return v + w*t + Cross(t, xyz);
 	}
 
-	bool operator==(const Quaternion& rhs) const {return xyzw==rhs.xyzw;}
-	bool operator!=(const Quaternion& rhs) const {return !operator==(rhs);}
+	forceinline bool operator==(const Quaternion& rhs) const {return xyzw==rhs.xyzw;}
+	forceinline bool operator!=(const Quaternion& rhs) const {return !operator==(rhs);}
 
 	static Quaternion RotationEulerRad(T yaw, T pitch, T roll)
 	{
-		const T cx=(T)Cos(yaw/2), cy=(T)Cos(pitch/2), cz=(T)Cos(roll/2);
-		const T sx=-(T)Sin(yaw/2), sy=-(T)Sin(pitch/2), sz=-(T)Sin(roll/2);
-		const T cc=cx*cz, cs=cx*sz, sc=sx*cz, ss=sx*sz;
+		const T cx = T(Cos(yaw/2)), cy = T(Cos(pitch/2)), cz = T(Cos(roll/2));
+		const T sx = -T(Sin(yaw/2)), sy = -T(Sin(pitch/2)), sz = -T(Sin(roll/2));
+		const T cc = cx*cz, cs = cx*sz, sc = sx*cz, ss = sx*sz;
 		return Quat(cy*sc-sy*cs, cy*ss+sy*cc, cy*cs-sy*sc, cy*cc+sy*ss);
 	}
 
 	static Quaternion FromAngleAndAxis(T angle, const Vector3<T>& axis)
 	{
-		T s=(T)Sin(angle/2);
-		return {axis.x*s, axis.y*s, axis.z*s, (T)Cos(angle/2)};
+		T s = T(Sin(angle/2));
+		return {axis.x*s, axis.y*s, axis.z*s, T(Cos(angle/2))};
 	}
 
 	static Quaternion RotationEulerDeg(T yaw, T pitch, T roll)
@@ -89,19 +103,21 @@ template<typename T> struct Quaternion
 	//Ещё не протестировано
 	static Quaternion RotationBetweenVectors(Vector3<T> start, Vector3<T> dest)
 	{
-		start=Normalize(start), dest=Normalize(dest);
+		start = Normalize(start);
+		dest = Normalize(dest);
 
 		T cosTheta = Dot(start, dest);
 		if(cosTheta < T(-1 + 0.0001))
 		{
 			Vector3<T> rotationAxis = Cross(Vector3<T>(0,0,1), start);
-			if(Length(rotationAxis)<0.01) rotationAxis=Cross(Vector3<T>(1,0,0), start);
+			if(Length(rotationAxis)<0.01)
+				rotationAxis = Cross(Vector3<T>(1,0,0), start);
 			return FromAngleAndAxis(T(180), Normalize(rotationAxis));
 		}
 
 		Vector3<T> rotationAxis=Cross(start, dest);
 
-		const T s=(T)Sqrt((1+cosTheta)*2);
+		const T s = T(Sqrt((1+cosTheta)*2));
 		return {s/2,
 			    rotationAxis.x/s,
 			    rotationAxis.y/s,
@@ -120,17 +136,42 @@ template<typename T> struct Quaternion
 		return rot2*rot1;
 	}
 
-	Vector3<T> GetRightVectorNorm() const {return {1-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y)};}
-	Vector3<T> GetUpVectorNorm() const {return {2*(x*y+w*z), 1-2*(x*x+z*z), 2*(y*z-w*x)};}
-	Vector3<T> GetForwardVectorNorm() const {return {2*(x*z-w*y), 2*(y*z+w*x), 1-2*(x*x+y*y)};}
+	Vector3<T> GetRightVectorNorm() const
+	{
+		return {1-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y)};
+	}
 
-	Vector3<T> GetRightVector() const {auto l = LengthSqr(xyzw); return {l-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y)};}
-	Vector3<T> GetUpVector() const {auto l = LengthSqr(xyzw); return {2*(x*y+w*z), l-2*(x*x+z*z), 2*(y*z-w*x)};}
-	Vector3<T> GetForwardVector() const {auto l = LengthSqr(xyzw); return {2*(x*z-w*y), 2*(y*z+w*x), l-2*(x*x+y*y)};}
+	Vector3<T> GetUpVectorNorm() const
+	{
+		return {2*(x*y+w*z), 1-2*(x*x+z*z), 2*(y*z-w*x)};
+	}
+
+	Vector3<T> GetForwardVectorNorm() const
+	{
+		return {2*(x*z-w*y), 2*(y*z+w*x), 1-2*(x*x+y*y)};
+	}
+
+	Vector3<T> GetRightVector() const
+	{
+		const T l = LengthSqr(xyzw);
+		return {l-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y)};
+	}
+
+	Vector3<T> GetUpVector() const
+	{
+		const T l = LengthSqr(xyzw);
+		return {2*(x*y+w*z), l-2*(x*x+z*z), 2*(y*z-w*x)};
+	}
+
+	Vector3<T> GetForwardVector() const
+	{
+		const T l = LengthSqr(xyzw);
+		return {2*(x*z-w*y), 2*(y*z+w*x), l-2*(x*x+y*y)};
+	}
 
 	explicit operator Matrix3<T>() const
 	{
-		auto l = LengthSqr(xyzw);
+		const T l = LengthSqr(xyzw);
 		return Matrix3<T>(l-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y),
 			              2*(x*y+w*z), l-2*(x*x+z*z), 2*(y*z-w*x),
 			              2*(x*z-w*y), 2*(y*z+w*x), l-2*(x*x+y*y));
@@ -145,7 +186,7 @@ template<typename T> struct Quaternion
 
 	explicit operator Matrix4<T>() const
 	{
-		auto l=LengthSqr(xyzw);
+		const T l = LengthSqr(xyzw);
 		return Matrix4<T>(l-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y), 0,
 			              2*(x*y+w*z), l-2*(x*x+z*z), 2*(y*z-w*x), 0,
 			              2*(x*z-w*y), 2*(y*z+w*x), l-2*(x*x+y*y), 0,
@@ -194,7 +235,7 @@ template<typename T> Quaternion<T>::Quaternion(const Matrix3<T>& mat)
 	const T trace = mat[0][0]+mat[1][1]+mat[2][2];
 	if(trace>0)
 	{
-		T s = (T)Sqrt(trace+1);
+		T s = T(Sqrt(trace+1));
 		w = s/2;
 		s = 0.5f/s;
 		x = (mat[2][1]-mat[1][2])*s;
@@ -207,7 +248,7 @@ template<typename T> Quaternion<T>::Quaternion(const Matrix3<T>& mat)
 	if(mat[2][2]>mat[i][i]) i=2;
 
 	uint j = (i+1)%3, k = (j+1)%3;
-	T s = (T)Sqrt(mat[i][i]-mat[j][j]-mat[k][k]+1);
+	T s = T(Sqrt(mat[i][i]-mat[j][j]-mat[k][k]+1));
 	T* q = &x;
 	q[i] = s/2;
 	if(s!=0) s = 0.5f/s;
@@ -262,3 +303,7 @@ inline QuatTransform Inverse(const QuatTransform& qt)
 }
 
 }}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif

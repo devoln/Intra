@@ -71,7 +71,17 @@ void Mutex::Unlock() {handle->mut.unlock();}
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
+#include <Windows.h>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #ifdef Yield
 #undef Yield
@@ -204,7 +214,7 @@ enum: size_t {ThreadStackSize=1048576};
 
 static void* ThreadProc(void* lpParam)
 {
-	ThreadData* data = (ThreadData*)lpParam;
+	ThreadData* data = reinterpret_cast<ThreadData*>(lpParam);
 	data->myFunction();
 	//data->thread.p=null;
 	if(data->isDetached) delete data;
@@ -213,10 +223,10 @@ static void* ThreadProc(void* lpParam)
 
 void Thread::create_thread(const Thread::Func& func)
 {
-	handle = (Handle*)new ThreadData;
-	handle->isJoinable=true;
-	handle->isDetached=false;
-	handle->myFunction=func;
+	handle = static_cast<Handle*>(new ThreadData);
+	handle->isJoinable = true;
+	handle->isDetached = false;
+	handle->myFunction = func;
 	pthread_attr_t attribute;
 	pthread_attr_init(&attribute);
 	pthread_attr_setstacksize(&attribute, ThreadStackSize);
@@ -227,13 +237,13 @@ void Thread::delete_thread()
 {
 	if(handle==null) return;
 	INTRA_ASSERT(!Joinable());
-	delete (ThreadData*)handle;
+	delete static_cast<ThreadData*>(handle);
 }
 
 void Thread::Join()
 {
 	pthread_join(handle->thread, null);
-	handle->isJoinable=false;
+	handle->isJoinable = false;
 }
 
 bool Thread::Joinable() const {return handle!=null && handle->isJoinable;}
@@ -242,32 +252,32 @@ void Thread::Detach()
 {
 	if(handle==null) return;
 	pthread_detach(handle->thread);
-	handle->isDetached=true;
+	handle->isDetached = true;
 	handle = null;
 }
 
 void Thread::Yield() {}
 
 
-Mutex::Mutex(bool processPrivate)
+Mutex::Mutex(bool processPrivate): handle(null)
 {
 	pthread_mutex_t* mutex = new pthread_mutex_t;
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
 	if(!processPrivate) pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
 	pthread_mutex_init(mutex, &attr);
-	handle = (Handle*)mutex;
+	handle = reinterpret_cast<Handle*>(mutex);
 }
 
 Mutex::~Mutex()
 {
-	pthread_mutex_destroy((pthread_mutex_t*)handle);
-	delete (pthread_mutex_t*)handle;
+	pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(handle));
+	delete reinterpret_cast<pthread_mutex_t*>(handle);
 }
 
-void Mutex::Lock() {pthread_mutex_lock((pthread_mutex_t*)handle);}
-bool Mutex::TryLock() {return pthread_mutex_trylock((pthread_mutex_t*)handle)!=0;}
-void Mutex::Unlock() {pthread_mutex_unlock((pthread_mutex_t*)handle);}
+void Mutex::Lock() {pthread_mutex_lock(reinterpret_cast<pthread_mutex_t*>(handle));}
+bool Mutex::TryLock() {return pthread_mutex_trylock(reinterpret_cast<pthread_mutex_t*>(handle))!=0;}
+void Mutex::Unlock() {pthread_mutex_unlock(reinterpret_cast<pthread_mutex_t*>(handle));}
 
 }
 

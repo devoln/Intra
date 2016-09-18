@@ -10,8 +10,8 @@ DateTime DateTime::Now()
 {
 	const time_t t = time(0);
 	tm* now = localtime(&t);
-	return {ushort(now->tm_year+1900), byte(now->tm_mon+1), (byte)now->tm_mday,
-		(byte)now->tm_hour, (byte)now->tm_min, (byte)now->tm_sec};
+	return {ushort(now->tm_year+1900), byte(now->tm_mon+1), byte(now->tm_mday),
+		byte(now->tm_hour), byte(now->tm_min), byte(now->tm_sec)};
 }
 
 String ToString(const DateTime& datetime)
@@ -37,6 +37,10 @@ void Timer::Wait(uint msec) {}
 }
 
 #elif(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_QPC)
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4668)
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -84,14 +88,12 @@ double Timer::GetTimeAndReset()
 
 namespace Intra {
 
-Timer::Timer()
-{
-	hndl = (ulong64)new std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now());
-}
+Timer::Timer():
+	hndl(size_t(new std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()))) {}
 
 Timer::~Timer()
 {
-	delete (std::chrono::high_resolution_clock::time_point*)hndl;
+	delete reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl);
 }
 
 
@@ -99,16 +101,16 @@ Timer::~Timer()
 double Timer::GetTimeAndReset()
 {
 	auto current = std::chrono::high_resolution_clock::now();
-	auto& prev = *(std::chrono::high_resolution_clock::time_point*)hndl;
+	auto& prev = *reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl);
 	auto result = std::chrono::duration<double, std::ratio<1,1>>(current-prev).count();
-	*(std::chrono::high_resolution_clock::time_point*)hndl = current;
+	*reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl) = current;
 	return result;
 }
 
 double Timer::GetTime()
 {
 	auto current = std::chrono::high_resolution_clock::now();
-	auto& prev = *(std::chrono::high_resolution_clock::time_point*)hndl;
+	auto& prev = *reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl);
 	auto result = std::chrono::duration<double, std::ratio<1, 1>>(current-prev).count();
 	return result;
 }
@@ -116,7 +118,7 @@ double Timer::GetTime()
 void Timer::Reset()
 {
 	auto current = std::chrono::high_resolution_clock::now();
-	*(std::chrono::high_resolution_clock::time_point*)hndl = current;
+	*reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl) = current;
 }
 
 //void Timer::Wait(uint msec) {std::this_thread::sleep_for(std::chrono::milliseconds(msec));}
@@ -131,18 +133,17 @@ namespace Intra {
 
 Timer::Timer()
 {
-	hndl = (ulong64)new QElapsedTimer;
+	hndl = reinterpret_cast<size_t>(new QElapsedTimer);
 	Reset();
 }
 
-Timer::~Timer() {delete (QElapsedTimer*)hndl;}
+Timer::~Timer() {delete reinterpret_cast<QElapsedTimer*>(hndl);}
 
-void Timer::Reset() {((QElapsedTimer*)hndl)->start();}
+void Timer::Reset() {reinterpret_cast<QElapsedTimer*>(hndl)->start();}
 
 double Timer::GetTime()
 {
-	const double result = (double)((QElapsedTimer*)hndl)->nsecsElapsed()/1000000000;
-	return result;
+	return double(reinterpret_cast<QElapsedTimer*>(hndl)->nsecsElapsed())/1000000000.0;
 }
 
 double Timer::GetTimeAndReset()
@@ -188,7 +189,7 @@ double Timer::GetTimeAndReset()
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include <Windows.h>
 
 namespace Intra {
 

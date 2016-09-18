@@ -29,15 +29,16 @@ public:
 	const FileMapping& GetMapping() const {return mapping;}
 
 protected:
-	CommonFileImpl(): hndl(null) {}
+	CommonFileImpl(): hndl(null), name(), mapping() {}
 
-	CommonFileImpl(StringView fileName, bool readAccess, bool writeAccess, bool append, Error* oError): hndl(null)
+	CommonFileImpl(StringView fileName, bool readAccess, bool writeAccess, bool append, Error* oError):
+		hndl(null), name(), mapping()
 	{
 		open(fileName, readAccess, writeAccess, append, oError);
 	}
 
 	CommonFileImpl(CommonFileImpl&& rhs):
-		hndl(rhs.hndl), name(core::move(rhs.name)) {rhs.hndl = null;}
+		hndl(rhs.hndl), name(core::move(rhs.name)), mapping(core::move(rhs.mapping)) {rhs.hndl = null;}
 
 	~CommonFileImpl() {close();}
 
@@ -72,7 +73,7 @@ public:
 		if(elements == Meta::NumericLimits<size_t>::Max())
 			elements = size_t((GetSize()-firstByte)/sizeof(T));
 		map(firstByte, elements*sizeof(T));
-		return {(const T*)mapping.data, elements};
+		return {reinterpret_cast<const T*>(mapping.data), elements};
 	}
 
 	void Unmap() const;
@@ -138,7 +139,7 @@ template<typename T> Array<T> ReadAsArray(StringView fileName, bool* fileOpened)
 	Reader file(fileName);
 	if(fileOpened!=null) *fileOpened = (file!=null);
 	if(file==null) return null;
-	const auto bytes = (size_t)file.GetSize();
+	const size_t bytes = size_t(file.GetSize());
 	Array<T> result;
 	result.SetCountUninitialized(bytes/sizeof(T));
 	file.ReadData(result.Data(), bytes-bytes%sizeof(T));

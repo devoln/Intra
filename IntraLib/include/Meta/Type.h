@@ -2,6 +2,16 @@
 
 #include "Core/FundamentalTypes.h"
 
+#ifdef _MSC_VER
+
+#pragma warning(push)
+#pragma warning(disable: 4310) //Не ругаться на приведение констант с усечением значения
+#if _MSC_VER>=1900
+#pragma warning(disable: 4647) //__is_pod(...) имеет другое значение в предыдущих версиях
+#endif
+
+#endif
+
 namespace Intra { namespace Meta {
 
 template<typename T> T&& Val();
@@ -524,10 +534,10 @@ template<typename U1 default1, typename U2 default2> struct checker_name\
 	enum {_=type::_};\
 }
 
-#define DEFINE_EXPRESSION_CHECKER2(checker_name, expr, default1, default2) \
+#define INTRA_DEFINE_EXPRESSION_CHECKER2(checker_name, expr, default1, default2) \
 	INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, true, default1, default2)
 
-DEFINE_EXPRESSION_CHECKER2(HasIndexOperator, Val<T1>()[Val<T2>()], , = size_t);
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasIndexOperator, Val<T1>()[Val<T2>()], , = size_t);
 
 
 template<typename T1, typename T2> struct TypeEqualsIgnoreCV: TypeEquals<RemoveConstVolatile<T1>, RemoveConstVolatile<T2>> {};
@@ -586,7 +596,13 @@ template<typename T> struct CommonTypeRef<T> {typedef T _;};
 
 template<typename T, typename U> struct CommonTypeRef<T, U>
 {
-	typedef decltype(true? Val<T>(): Val<U>()) _;
+private:
+	typedef decltype(true? Val<T>(): Val<U>()) common_type_base;
+public:
+	typedef Meta::SelectType<
+		common_type_base,
+		Meta::RemoveReference<common_type_base>,
+		Meta::IsReference<T>::_ && Meta::IsReference<U>::_> _;
 };
 
 template<typename T, typename U, typename... V> struct CommonTypeRef<T, U, V...>
@@ -729,11 +745,6 @@ template<typename T> struct NumericLimits<T, EnableIf<IsSignedIntegralType<T>::_
 	constexpr static NumericType Type() {return NumericType::Integral;}
 };
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning (disable: 4310) //Не ругаться на приведение констант с усечением значения
-
-#endif
 template<typename T> struct NumericLimits<T, EnableIf<IsUnsignedIntegralType<T>::_>>
 {
 	constexpr static T Min() {return 0;}
@@ -742,10 +753,6 @@ template<typename T> struct NumericLimits<T, EnableIf<IsUnsignedIntegralType<T>:
 	enum: bool {Signed = false};
 	constexpr static NumericType Type() {return NumericType::Integral;}
 };
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 template<> struct NumericLimits<float>
 {
@@ -793,3 +800,8 @@ namespace detail
 template<size_t SIZE> using TypeFromSize = typename Meta::detail::TypeFromSize<SIZE>::type;
 
 }}
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+

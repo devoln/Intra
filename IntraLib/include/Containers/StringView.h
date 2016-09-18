@@ -17,7 +17,7 @@ forceinline size_t CStringLength(const wchar_t* str) {return core::wcslen(str);}
 
 template<typename U=wchar> forceinline Meta::EnableIf<
 	sizeof(U)==sizeof(wchar_t),
-size_t> CStringLength(const wchar* str) {return core::wcslen((const wchar_t*)str);}
+size_t> CStringLength(const wchar* str) {return core::wcslen(reinterpret_cast<const wchar_t*>(str));}
 
 template<typename U=wchar> forceinline Meta::EnableIf<
 	sizeof(U)!=sizeof(wchar_t),
@@ -25,12 +25,12 @@ size_t> CStringLength(const wchar* str)
 {
 	const wchar* ptr = str-1;
 	while(*++ptr!=0) {}
-	return ptr-str;
+	return size_t(ptr-str);
 }
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)==sizeof(wchar_t),
-size_t> CStringLength(const dchar* str) {return core::wcslen((const wchar_t*)str);}
+size_t> CStringLength(const dchar* str) {return core::wcslen(reinterpret_cast<const wchar_t*>(str));}
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)!=sizeof(wchar_t),
@@ -54,7 +54,7 @@ template<typename Char> struct GenericStringView:
 	constexpr forceinline GenericStringView(null_t=null): cstart(null), cend(null) {}
 	template<size_t N> constexpr forceinline GenericStringView(const Char(&str)[N]): cstart(str), cend(str+(N-1)) {}
 	constexpr forceinline GenericStringView(const Char* str, size_t len): cstart(str), cend(str+len) {}
-	constexpr forceinline GenericStringView(const Char* begin, const Char* end): cstart(begin), cend(end) {}
+	constexpr forceinline GenericStringView(const Char* startPtr, const Char* endPtr): cstart(startPtr), cend(endPtr) {}
 
 	constexpr forceinline GenericStringView(const GenericStringView& rhs): cstart(rhs.cstart), cend(rhs.cend) {}
 
@@ -184,31 +184,28 @@ template<typename Char> struct GenericStringView:
 			return result;
 		}
 
-		AsciiSet isSpaceDelimiter(spaceDelimiters);
-		AsciiSet isPunctDelimiter(punctDelimiters);
-
 		Array<GenericStringView> result;
-		intptr pos=0;
+		size_t pos = 0;
 		const size_t len = Length();
-		while(pos<cend-cstart)
+		while(pos<len)
 		{
-			intptr newpos=-1;
-			if((size_t)pos<len)
+			size_t newpos = ~size_t(0);
+			if(pos<len)
 			{
 				for(const Char* p = cstart+pos; p<cend; p++)
 				{
-					if((*p & 0xFFFFFF80) || (!isSpaceDelimiter[*p] && !isPunctDelimiter[*p])) continue;
-					newpos = p-cstart;
+					if((uint(*p) & 0xFFFFFF80u) || (!spaceDelimiters[*p] && !punctDelimiters[*p])) continue;
+					newpos = size_t(p-cstart);
 					break;
 				}
 			}
-			if(newpos==-1) newpos = cend-cstart;
-			if(newpos>pos) result.AddLast(opSlice((size_t)pos, (size_t)newpos));
-			if((size_t)newpos<len && isPunctDelimiter(cstart[newpos]))
+			if(newpos == ~size_t(0)) newpos = len;
+			if(newpos>pos) result.AddLast(opSlice(pos, newpos));
+			if(newpos<len && punctDelimiters(cstart[newpos]))
 			{
 				result.AddLast(opSlice(newpos, newpos+1));
 			}
-			pos=newpos+1;
+			pos = newpos+1;
 		}
 		return result;
 	}
@@ -231,7 +228,7 @@ template<typename Char> struct GenericStringView:
 		ArrayRange<const GenericStringView> escapeSequences, ArrayRange<const Char> chars)
 	{
 		GenericStringView src = *this;
-		char* begin = dstBuffer.Begin;
+		char* dstBegin = dstBuffer.Begin;
 		AsciiSet charset = AsciiSet(chars);
 		while(src.ReadUntilAdvance([charset](Char c){return charset.Contains(c);}).CopyToAdvance(dstBuffer), !src.Empty())
 		{
@@ -240,7 +237,7 @@ template<typename Char> struct GenericStringView:
 			chars.Find(src.First(), &index);
 			escapeSequences[index].CopyToAdvance(dstBuffer);
 		}
-		return {begin, dstBuffer.Begin};
+		return {dstBegin, dstBuffer.Begin};
 	}
 
 
@@ -376,5 +373,4 @@ ArrayRange<const T>> AsConstRange(const T(&arr)[N]) {return ArrayRange<const T>(
 
 
 }
-
 

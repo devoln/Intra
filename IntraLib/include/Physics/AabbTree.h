@@ -13,7 +13,7 @@ public:
 	typedef Math::Triangle<float> Tri;
 	typedef Math::AABB<float> Box;
 
-	AabbTree(): rootId(-1) {}
+	AabbTree(): rootId(-1), nodes() {}
 	~AabbTree() {}
 
 	void Build(ArrayRange<Tri> tris);
@@ -28,13 +28,13 @@ public:
 
 	void GetIntersection(const AabbTree& tree, const Math::Mat4& m, Array<Tri>& contacts) const;
 
-	AabbTree(AabbTree&& rhs) {operator=(core::move(rhs));}
-	AabbTree(const AabbTree& rhs) { operator=(rhs); }
+	AabbTree(AabbTree&& rhs): rootId(rhs.rootId), nodes(core::move(rhs.nodes)) {}
+	AabbTree(const AabbTree& rhs): rootId(rhs.rootId), nodes(rhs.nodes) {}
 
 	AabbTree& operator=(AabbTree&& rhs)
 	{
-		rootId=rhs.rootId;
-		nodes=core::move(rhs.nodes);
+		rootId = rhs.rootId;
+		nodes = core::move(rhs.nodes);
 		return *this;
 	}
 
@@ -71,7 +71,7 @@ template<class GEOM_PRIMITIVE> void AabbTree::recursive_get_intersection(
 {
 	INTRA_ASSERT(nodeId!=-1);
 
-	auto pNode = &nodes[nodeId];
+	auto pNode = &nodes[size_t(nodeId)];
 	if(pNode->IsLeaf())
 	{
 		if(!TestIntersection(pNode->tri, gp)) return;

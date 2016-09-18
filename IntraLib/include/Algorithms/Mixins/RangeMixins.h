@@ -103,7 +103,8 @@ template<typename R, typename T> struct RangeMixin<R, T, TypeEnum::RandomAccess,
 	RangeMixin<R, T, TypeEnum::Bidirectional, true>>>
 {
 private:
-	typedef FiniteRandomAccessRangeMixin<R, T, RandomAccessRangeMixin<R, T, RangeMixin<R, T, TypeEnum::Bidirectional, true>>> BaseRandomAccess;
+	typedef FiniteRandomAccessRangeMixin<R, T,
+		RandomAccessRangeMixin<R, T, RangeMixin<R, T, TypeEnum::Bidirectional, true>>> BaseRandomAccess;
 public:
 	enum {RangeType = TypeEnum::RandomAccess};
 	enum: bool {RangeIsFinite=true};
@@ -266,7 +267,7 @@ template<typename R0> struct CommonRangeCategoryAnyFinite<R0>
 template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAnyFinite<R0, R1, RANGES...>
 {
 	typedef CommonRangeCategoryAnyFinite<R1, RANGES...> Rest;
-	enum: byte {Type = (byte)Rest::Type>(byte)R0::RangeType? (byte)R0::RangeType: (byte)Rest::Type};
+	enum: byte {Type = byte(Rest::Type)>byte(R0::RangeType)? byte(R0::RangeType): byte(Rest::Type)};
 	enum: byte {Finite = Rest::Finite || R0::RangeIsFinite};
 };
 
@@ -275,14 +276,14 @@ template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategor
 template<typename... RANGES> struct CommonRangeCategoryAllFinite;
 template<typename R0> struct CommonRangeCategoryAllFinite<R0>
 {
-	enum: byte {Type = (byte)R0::RangeType==TypeEnum::Array? (byte)TypeEnum::RandomAccess: (byte)R0::RangeType};
+	enum: byte {Type = byte(R0::RangeType)==TypeEnum::Array? byte(TypeEnum::RandomAccess): byte(R0::RangeType)};
 	enum: bool {Finite = R0::RangeIsFinite};
 };
 
 template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAllFinite<R0, R1, RANGES...>
 {
 	typedef CommonRangeCategoryAllFinite<R1, RANGES...> Rest;
-	enum: byte {Type = (byte)Rest::Type? (byte)R0::RangeType: (byte)Rest::Type};
+	enum: byte {Type = byte(Rest::Type)? byte(R0::RangeType): byte(Rest::Type)};
 	enum: bool {Finite = Rest::Finite && R0::RangeIsFinite};
 };
 
@@ -319,4 +320,3 @@ template<typename R, typename T, typename... RANGES> struct CommonTypedAnyFinite
 
 
 }
-

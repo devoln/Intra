@@ -10,8 +10,8 @@ class ASoundSampleSource
 {
 	ASoundSampleSource& operator=(const ASoundSampleSource& rhs) = delete;
 protected:
-	ASoundSampleSource(uint sample_rate=0, ushort channel_count=0):
-		sampleRate(sample_rate), channelCount(channel_count) {}
+	ASoundSampleSource(uint sampleRate=0, ushort channelCount=0):
+		sample_rate(sampleRate), channel_count(channelCount) {}
 
 	ASoundSampleSource(const ASoundSampleSource& rhs) = default;
 
@@ -53,12 +53,12 @@ public:
 
 	//! Сколько непрочитанных семплов осталось в потоке
 	size_t SamplesLeft() const {return SampleCount()-CurrentSamplePosition();}
-	uint SampleRate() const {return sampleRate;}
-	uint ChannelCount() const {return channelCount;}
+	uint SampleRate() const {return sample_rate;}
+	uint ChannelCount() const {return channel_count;}
 
 protected:
-	uint sampleRate;
-	ushort channelCount;
+	uint sample_rate;
+	ushort channel_count;
 };
 
 
@@ -90,7 +90,7 @@ public:
 
 
 
-#ifndef NO_WAVE_LOADER
+#ifndef INTRA_NO_WAVE_LOADER
 
 class WaveSoundSampleSource: public ASoundSampleSource
 {
@@ -98,16 +98,17 @@ class WaveSoundSampleSource: public ASoundSampleSource
 	size_t sample_count, current_data_pos;
 public:
 	WaveSoundSampleSource(ArrayRange<const byte> srcFileData);
-	~WaveSoundSampleSource() {}
 
 	size_t SampleCount() const override {return sample_count;}
-	size_t CurrentSamplePosition() const override {return current_data_pos/channelCount;}
+	size_t CurrentSamplePosition() const override {return current_data_pos/channel_count;}
 
 	size_t GetInterleavedSamples(ArrayRange<short> outShorts) override;
 	size_t GetInterleavedSamples(ArrayRange<float> outFloats) override;
 	size_t GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats) override;
 	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override;
+
+	WaveSoundSampleSource& operator=(const WaveSoundSampleSource& rhs) = delete;
 };
 
 #endif

@@ -9,7 +9,7 @@ static_assert(sizeof(char)==1 && sizeof(short)==2 &&
 	sizeof(int)==4 && sizeof(long long)==8, "Some of fundamental types have unexpected size!");
 
 enum: short {short_MIN=-32768, short_MAX=32767};
-enum: int {int_MIN=(int)0x80000000u, int_MAX=0x7fffffff};
+enum: int {int_MIN=int(0x80000000u), int_MAX=0x7fffffff};
 
 typedef unsigned char byte;
 enum: byte {byte_MIN=0, byte_MAX=255};
@@ -31,7 +31,7 @@ enum: ulong64 {ulong_MIN=0, ulong64_MAX=18446744073709551615ULL};
 
 constexpr const float float_MAX = 3.402823466e+38F, float_MIN = 1.175494351e-38F;
 
-typedef decltype((char*)1-(char*)0) intptr; //Знаковый целочисленный тип, размер зависит от платформы
+typedef decltype(reinterpret_cast<char*>(1)-reinterpret_cast<char*>(0)) intptr; //Знаковый целочисленный тип, размер зависит от платформы
 typedef decltype(sizeof(int)) uintptr;      //Беззнаковый целочисленный тип, размер зависит от платформы
 
 typedef byte flag8;                     //8-битовый флаг
@@ -84,8 +84,8 @@ struct AnyPtr
 	void* ptr;
 
 	forceinline AnyPtr(void* p): ptr(p) {}
-	explicit forceinline AnyPtr(const void* p): ptr((void*)p) {}
-	template<typename T> forceinline operator T*() const {return (T*)ptr;}
+	explicit forceinline AnyPtr(const void* p): ptr(const_cast<void*>(p)) {}
+	template<typename T> forceinline operator T*() const {return reinterpret_cast<T*>(ptr);}
 	forceinline bool operator==(null_t) const {return ptr==null;}
 	forceinline bool operator!=(null_t) const {return ptr!=null;}
 };

@@ -44,7 +44,7 @@ template<> struct Random<sbyte>: Random<byte>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline sbyte operator()()
 	{
-		return (sbyte)Random<byte>::operator()();
+		return sbyte(Random<byte>::operator()());
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
@@ -58,10 +58,8 @@ template<> struct Random<sbyte>: Random<byte>
 	forceinline sbyte operator()(sbyte min, sbyte max)
 	{
 		INTRA_ASSERT(min < max);
-		return sbyte(min + (sbyte)Random<byte>::operator()(sbyte(max-min)));
+		return sbyte(min + sbyte(Random<byte>::operator()(byte(max-min))));
 	}
-
-	uint Seed;
 
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
@@ -80,7 +78,7 @@ template<> struct Random<ushort>
 	forceinline ushort operator()(ushort max)
 	{
 		INTRA_ASSERT(0 < max);
-		return operator()() % max;
+		return ushort(operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
@@ -102,7 +100,7 @@ template<> struct Random<short>: Random<ushort>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline short operator()()
 	{
-		return (short)Random<ushort>::operator()();
+		return short(Random<ushort>::operator()());
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
@@ -116,10 +114,8 @@ template<> struct Random<short>: Random<ushort>
 	forceinline short operator()(short min, short max)
 	{
 		INTRA_ASSERT(min < max);
-		return short(min + (short)Random<ushort>::operator()(short(max-min)));
+		return short(min + short(Random<ushort>::operator()(ushort(max-min))));
 	}
-
-	uint Seed;
 
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
@@ -162,7 +158,7 @@ template<> struct Random<int>: Random<uint>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline int operator()()
 	{
-		return (int)Random<uint>::operator()();
+		return int(Random<uint>::operator()());
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
@@ -179,14 +175,12 @@ template<> struct Random<int>: Random<uint>
 		return min + operator()(max-min);
 	}
 
-	uint Seed;
-
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
 
 template<> struct Random<ulong64>: Random<uint>
 {
-	Random(uint seed=157898685): Seed(seed) {}
+	Random(uint seed=157898685): Random<uint>(seed) {}
 
 	//! Возвращает псевдослучайное целое число в диапазоне [0; UINT_MAX]
 	forceinline ulong64 operator()()
@@ -210,8 +204,6 @@ template<> struct Random<ulong64>: Random<uint>
 		return min + operator()(max-min);
 	}
 
-	uint Seed;
-
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
 
@@ -222,7 +214,7 @@ template<> struct Random<long64>: Random<ulong64>
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline long64 operator()()
 	{
-		return (long64)Random<ulong64>::operator()();
+		return long64(Random<ulong64>::operator()());
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
@@ -238,8 +230,6 @@ template<> struct Random<long64>: Random<ulong64>
 		INTRA_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
-
-	uint Seed;
 
 	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
 };
@@ -269,7 +259,7 @@ template<> struct Random<float>
 	forceinline float operator()()
 	{
 		Seed *= 16807;
-		return (float)(int)Seed * 2.32830645e-10f + 0.5f;
+		return float(int(Seed)) * 2.32830645e-10f + 0.5f;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; maxOrMin], maxOrMin>=0, или [maxOrMin, 0], maxOrMin<0
@@ -289,7 +279,7 @@ template<> struct Random<float>
 	float SignedNext()
 	{
 		Seed *= 16807;
-		return (float)(int)Seed * 4.6566129e-10f;
+		return float(int(Seed)) * 4.6566129e-10f;
 	}
 
 	uint Seed;
@@ -306,7 +296,7 @@ template<> struct Random<double>
 	forceinline double operator()()
 	{
 		Seed *= 16807;
-		return (int)Seed * 2.32830645e-10 + 0.5;
+		return double(int(Seed)) * 2.32830645e-10 + 0.5;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; maxOrMin], maxOrMin>=0, или [maxOrMin, 0], maxOrMin<0
@@ -326,7 +316,7 @@ template<> struct Random<double>
 	double SignedNext()
 	{
 		Seed *= 16807;
-		return (int)Seed * 4.6566129e-10;
+		return double(int(Seed)) * 4.6566129e-10;
 	}
 
 	uint Seed;

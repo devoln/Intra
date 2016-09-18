@@ -4,21 +4,45 @@
 #include "Meta/Type.h"
 #include "Algorithms/RangeConcept.h"
 
+
 namespace Intra { namespace Range {
 
 struct RelativeIndex
 {
 	enum: size_t {MaxMultiplyer = size_t(-1)};
 
-	constexpr RelativeIndex(size_t plusValue, size_t multiplyer=0): multiplyer(multiplyer), plus_value(intptr(plusValue)) {}
+	constexpr RelativeIndex(size_t plusValue, size_t sizeMultiplyer=0):
+		multiplyer(sizeMultiplyer), plus_value(intptr(plusValue)) {}
+
 	constexpr RelativeIndex(const RelativeIndex& rhs) = default;
-	constexpr RelativeIndex operator/(intptr divisor) const {return RelativeIndex(size_t(plus_value/divisor), multiplyer/size_t(divisor));}
-	constexpr RelativeIndex operator+(intptr value) const {return RelativeIndex(size_t(plus_value+value), multiplyer);}
-	constexpr RelativeIndex operator+(RelativeIndex rhs) const {return RelativeIndex(size_t(plus_value+rhs.plus_value), multiplyer+rhs.multiplyer);}
-	constexpr RelativeIndex operator-(intptr value) const {return RelativeIndex(size_t(plus_value-value), multiplyer);}
-	constexpr RelativeIndex operator-(RelativeIndex rhs) const {return RelativeIndex(size_t(plus_value-rhs.plus_value), multiplyer-rhs.multiplyer);}
+
+	constexpr RelativeIndex operator/(intptr divisor) const
+	{
+		return RelativeIndex(size_t(plus_value/divisor), multiplyer/size_t(divisor));
+	}
+
+	constexpr RelativeIndex operator+(intptr value) const
+	{
+		return RelativeIndex(size_t(plus_value+value), multiplyer);
+	}
+
+	constexpr RelativeIndex operator+(RelativeIndex rhs) const
+	{
+		return RelativeIndex(size_t(plus_value+rhs.plus_value), multiplyer+rhs.multiplyer);
+	}
+
+	constexpr RelativeIndex operator-(intptr value) const
+	{
+		return RelativeIndex(size_t(plus_value-value), multiplyer);
+	}
+
+	constexpr RelativeIndex operator-(RelativeIndex rhs) const
+	{
+		return RelativeIndex(size_t(plus_value-rhs.plus_value), multiplyer-rhs.multiplyer);
+	}
+
 	friend RelativeIndex operator+(intptr value, RelativeIndex pos) {return pos+value;}
-	friend RelativeIndex operator-(intptr value, RelativeIndex pos) {return 0-pos+value;}
+	friend RelativeIndex operator-(intptr value, RelativeIndex pos) {return RelativeIndex(0)-pos+value;}
 
 	RelativeIndex& operator=(const RelativeIndex& rhs) = default;
 
@@ -79,25 +103,27 @@ public:
 		return operator[](pos.GetRealIndex(me().Length()));
 	}
 
-	forceinline R operator()(size_t first, size_t end) const
+	forceinline R operator()(size_t firstIndex, size_t endIndex) const
 	{
-		return me().opSlice(first, end);
+		return me().opSlice(firstIndex, endIndex);
 	}
 
 
-	forceinline R operator()(RelativeIndex first, RelativeIndex end) const
+	forceinline R operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
 	{
-		return me().opSlice(first.GetRealIndex(me().Length()), end.GetRealIndex(me().Length()));
+		return me().opSlice(
+			firstIndex.GetRealIndex(me().Length()),
+			endIndex.GetRealIndex(me().Length()));
 	}
 
-	forceinline R operator()(size_t first, RelativeIndex end) const
+	forceinline R operator()(size_t firstIndex, RelativeIndex endIndex) const
 	{
-		return me().opSlice(first, end.GetRealIndex(me().Length()));
+		return me().opSlice(firstIndex, endIndex.GetRealIndex(me().Length()));
 	}
 
-	forceinline R operator()(RelativeIndex first, size_t end) const
+	forceinline R operator()(RelativeIndex firstIndex, size_t endIndex) const
 	{
-		return me().opSlice(first.GetRealIndex(me().Length()), end);
+		return me().opSlice(firstIndex.GetRealIndex(me().Length()), endIndex);
 	}
 
 	forceinline size_t PopFirstN(size_t n)
@@ -154,3 +180,4 @@ public:
 using Range::$;
 
 }
+

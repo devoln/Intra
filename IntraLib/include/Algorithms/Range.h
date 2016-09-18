@@ -107,11 +107,21 @@ template<typename T> struct ArrayRange:
 	typedef T& return_value_type;
 
 	constexpr forceinline ArrayRange(null_t=null): Begin(null), End(null) {}
-	constexpr forceinline ArrayRange(std::initializer_list<Meta::RemoveConst<T>> list): Begin(list.begin()), End(list.end()) {}
-	template<size_t len> constexpr forceinline ArrayRange(T(&arr)[len]): Begin(arr), End(arr+len) {}
-	forceinline ArrayRange(T* start, T* end): Begin(start), End(end) {INTRA_ASSERT(End >= Begin);}
-	constexpr forceinline ArrayRange(T* start, size_t length): Begin(start), End(start+length) {}
-	constexpr forceinline ArrayRange(const ArrayRange& rhs): Begin(rhs.Begin), End(rhs.End) {}
+
+	constexpr forceinline ArrayRange(std::initializer_list<Meta::RemoveConst<T>> list):
+		Begin(list.begin()), End(list.end()) {}
+
+	template<size_t len> constexpr forceinline ArrayRange(T(&arr)[len]):
+		Begin(arr), End(arr+len) {}
+
+	forceinline ArrayRange(T* startPtr, T* endPtr):
+		Begin(startPtr), End(endPtr) {INTRA_ASSERT(End >= Begin);}
+
+	constexpr forceinline ArrayRange(T* startPtr, size_t length):
+		Begin(startPtr), End(startPtr+length) {}
+
+	constexpr forceinline ArrayRange(const ArrayRange& rhs):
+		Begin(rhs.Begin), End(rhs.End) {}
 
 	forceinline ArrayRange<const T>& AsConstRange() {return *reinterpret_cast<ArrayRange<const T>*>(this);}
 	forceinline constexpr const ArrayRange<const T>& AsConstRange() const {return *reinterpret_cast<const ArrayRange<const T>*>(this);}
@@ -119,7 +129,12 @@ template<typename T> struct ArrayRange:
 	forceinline constexpr operator const ArrayRange<const T>&() const {return AsConstRange();}
 
 	forceinline bool ContainsSubrange(const ArrayRange& subrange) const {return Begin<=subrange.Begin && End>=subrange.End;}
-	template<typename U> bool ContainsAddress(const U* address) const {return (const T*)address>=Begin && (const T*)address<End;}
+
+	template<typename U> bool ContainsAddress(const U* address) const
+	{
+		return reinterpret_cast<const T*>(address)>=Begin && reinterpret_cast<const T*>(address)<End;
+	}
+
 	bool Overlaps(ArrayRange<const T> rhs) const {return Begin<rhs.End && End>rhs.Begin && !Empty() && !rhs.Empty();}
 
 	forceinline constexpr T* begin() const {return Begin;}
@@ -168,16 +183,19 @@ template<typename T> struct ArrayRange:
 		return Begin[index];
 	}
 
-	forceinline ArrayRange opSlice(size_t first, size_t end) const
+	forceinline ArrayRange opSlice(size_t firstIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(end>=first && Begin+end<=End);
-		return ArrayRange(Begin+first, Begin+end);
+		INTRA_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
+		return ArrayRange(Begin+firstIndex, Begin+endIndex);
 	}
 
 	forceinline constexpr ArrayRange TakeNone() const {return {Begin, Begin};}
 
 
-	template<typename U> constexpr ArrayRange<U> Reinterpret() const {return {(U*)Begin, (U*)End};}
+	template<typename U> constexpr ArrayRange<U> Reinterpret() const
+	{
+		return {reinterpret_cast<U*>(Begin), reinterpret_cast<U*>(End)};
+	}
 
 	T* Begin;
 	T* End;
@@ -235,3 +253,4 @@ template<typename T> struct IsTriviallySerializable<ArrayRange<T>>: TypeFromValu
 }
 
 }
+

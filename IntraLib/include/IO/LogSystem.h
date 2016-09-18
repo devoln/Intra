@@ -200,6 +200,7 @@ template<typename T1, typename T2> class CombineFilters
 {
 	T1 t1;
 	T2 t2;
+public:
 	bool Filter(const NewLogger::Criteria& criteria)
 	{
 		return t1.Filter(criteria) && t2.Filter(criteria);

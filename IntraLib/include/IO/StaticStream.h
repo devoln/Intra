@@ -13,7 +13,8 @@ class MemoryOutput
 {
 public:
 	MemoryOutput(ArrayRange<byte> dstBuf):
-		Rest((char*)dstBuf.Begin, (char*)dstBuf.End), Begin((char*)dstBuf.Begin) {}
+		Rest(reinterpret_cast<char*>(dstBuf.Begin), reinterpret_cast<char*>(dstBuf.End)),
+		Begin(reinterpret_cast<char*>(dstBuf.Begin)) {}
 
 	MemoryOutput(ArrayRange<char> dstBuf):
 		Rest(dstBuf), Begin(dstBuf.Begin) {}
@@ -100,7 +101,7 @@ public:
 class DummyOutput
 {
 public:
-	DummyOutput() {}
+	DummyOutput(): counter(0) {}
 
 	forceinline void WriteRaw(StringView src) {counter.Counter += src.Length();}
 	forceinline void WriteRaw(const void* src, size_t bytes) {(void)src; counter.Counter += bytes;}
@@ -166,7 +167,7 @@ public:
 
 	forceinline uint SkipAllSpaces()
 	{
-		return (uint)Rest.SkipSpacesCountLinesAdvance();
+		return uint(Rest.SkipSpacesCountLinesAdvance());
 	}
 
 

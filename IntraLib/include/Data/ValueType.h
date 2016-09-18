@@ -65,10 +65,9 @@ struct ValueType
 
 	I value;
 
-	explicit constexpr ValueType(uint vt): value((I)vt) {}
-	constexpr ValueType(I vt/*=ValueType::Void*/): value(vt) {}
-	ValueType() = default;
-	constexpr ValueType(null_t): value(Void) {}
+	explicit constexpr ValueType(uint vt): value(I(vt)) {}
+	constexpr ValueType(I vt): value(vt) {}
+	constexpr ValueType(null_t=null): value(Void) {}
 	constexpr ValueType(const ValueType& rhs): value(rhs.value) {}
 
 	ValueType& operator=(const ValueType& rhs) {value=rhs.value; return *this;}

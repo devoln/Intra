@@ -9,19 +9,31 @@ namespace detail
 {
 	template<typename R, class T, typename... Args> struct DeduceConstMemCallback
 	{
-		template<R(T::*Func)(Args...) const> static Callback<R(Args...)> Bind(T* o)
+		template<R(T::*Func)(Args...) const> static Callback<R(Args...)> Bind(T* object)
 		{
-			struct _ { static R wrapper(void* o, Args... a) { return (static_cast<T*>(o)->*Func)(core::forward<Args>(a)...); } };
-			return Callback<R(Args...)>(o, (R(*)(void*, Args...)) _::wrapper);
+			struct _
+			{
+				static R wrapper(void* obj, Args... args)
+				{
+					return (static_cast<T*>(obj)->*Func)(core::forward<Args>(args)...);
+				}
+			};
+			return Callback<R(Args...)>(object, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
 		}
 	};
 
 	template<typename R, class T, typename... Args> struct DeduceMemCallback
 	{
-		template<R(T::*Func)(Args...)> static Callback<R(Args...)> Bind(T* o)
+		template<R(T::*Func)(Args...)> static Callback<R(Args...)> Bind(T* object)
 		{
-			struct _ {static R wrapper(void* o, Args... a) {return (static_cast<T*>(o)->*Func)(core::forward<Args>(a)...);}};
-			return Callback<R(Args...)>(o, (R(*)(void*, Args...)) _::wrapper);
+			struct _
+			{
+				static R wrapper(void* obj, Args... args)
+				{
+					return (static_cast<T*>(obj)->*Func)(core::forward<Args>(args)...);
+				}
+			};
+			return Callback<R(Args...)>(object, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
 		}
 	};
 
@@ -29,8 +41,14 @@ namespace detail
 	{
 		template<R(*Func)(Args...)> static Callback<R(Args...)> Bind()
 		{
-			struct _ {static R wrapper(void*, Args... a) {return (*Func)(core::forward<Args>(a)...);}};
-			return Callback<R(Args...)>(0, (R(*)(void*, Args...)) _::wrapper);
+			struct _
+			{
+				static R wrapper(void*, Args... args)
+				{
+					return (*Func)(core::forward<Args>(args)...);
+				}
+			};
+			return Callback<R(Args...)>(0, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
 		}
 	};
 }
@@ -57,7 +75,10 @@ template <typename... T1> class GenericEvent
 	typedef Array<TCallback> InvocationTable;
 
 	typedef void(*CB)(T1...);
-	static void WrapperCall(void* o, T1... args) {((CB)o)(core::forward<T1>(args)...);}
+	static void WrapperCall(void* o, T1... args)
+	{
+		reinterpret_cast<CB>(o)(core::forward<T1>(args)...);
+	}
 
 protected:
 	InvocationTable invocations;

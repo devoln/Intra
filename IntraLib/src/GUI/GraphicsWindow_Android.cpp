@@ -311,7 +311,7 @@ void AppProcessMessages()
 
 #if INTRA_DISABLED
 //Оконная процедура для всех окон
-static uintptr WINAPI StaticWndProc(HWND hWnd, uint uMsg, uintptr wParam, intptr lParam)
+static size_t WINAPI StaticWndProc(HWND hWnd, uint uMsg, size_t wParam, intptr lParam)
 {
 	if(uMsg==WM_NCCREATE)
 	{

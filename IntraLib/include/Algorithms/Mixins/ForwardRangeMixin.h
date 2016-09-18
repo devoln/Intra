@@ -7,7 +7,6 @@
 #include "Algorithms/Operations.h"
 
 
-
 namespace Intra { namespace Range {
 
 template<typename T> struct ArrayRange;
@@ -32,15 +31,15 @@ Meta::TypeListAt<N, Meta::TypeList<RANGES...>> Unzip(const ZipResult<RANGES...>&
 
 template<typename R1, typename R2> forceinline Meta::EnableIf<
 	IsFiniteRange<R1>::_ != IsFiniteRange<R2>::_,
-bool> Equals(R1 r1, R2 r2) {return false;}
+bool> Equals(R1 r1, R2 r2) {(void)r1; (void)r2; return false;}
 
 namespace detail {
 
-template<typename R1, typename R2> bool Equals(R1 r1, R2 r2)
+template<typename R1, typename R2, typename P> bool Equals(R1 r1, R2 r2, P pred)
 {
 	while(!r1.Empty() && !r2.Empty())
 	{
-		if(r1.First()==r2.First())
+		if(pred(r1.First(), r2.First()))
 		{
 			r1.PopFirst();
 			r2.PopFirst();
@@ -58,16 +57,16 @@ template<typename R1, typename R2> forceinline Meta::EnableIf<
 	!(Range::HasLength<R1>::_ && Range::HasLength<R2>::_),
 bool> Equals(R1 r1, R2 r2)
 {
-	return detail::Equals(r1, r2);
+	return detail::Equals(r1, r2, Op::Equal);
 }
 
 template<typename R1, typename R2, typename P> forceinline Meta::EnableIf<
 	Range::IsFiniteRange<R1>::_ && Range::IsFiniteRange<R2>::_ &&
 	Range::HasLength<R1>::_ && Range::HasLength<R2>::_,
-bool> Equals(R1 r1, R2 r2, P pred = Op::Equal)
+bool> Equals(R1 r1, R2 r2, P pred)
 {
 	if(r1.Length()!=r2.Length()) return false;
-	return detail::Equals(r1, r2);
+	return detail::Equals(r1, r2, pred);
 }
 
 template<typename ArrayRange1, typename ArrayRange2> inline Meta::EnableIf<
@@ -87,8 +86,8 @@ int> LexCompare(R1 r1, R2 r2, P pred = Op::Less)
 {
 	while(!r1.Empty() && !r2.Empty())
 	{
-		if(r1.First()<r2.First()) return -1;
-		if(r2.First()<r1.First()) return 1;
+		if(pred(r1.First(), r2.First())) return -1;
+		if(pred(r2.First(), r1.First())) return 1;
 	}
 	if(r1.Empty())
 	{
@@ -1042,3 +1041,4 @@ public:
 
 
 }}
+

@@ -40,10 +40,10 @@ SoundBuffer MusicTrack::GetSamples(uint sampleRate) const
 {
 	INTRA_ASSERT(Instrument!=null);
 	const auto duration = Duration();
-	SoundBuffer result((uint)(duration*sampleRate), sampleRate);
+	SoundBuffer result(size_t(duration*sampleRate), sampleRate);
 	if(result.Samples==null) return result;
-	core::memset(&result.Samples[0], 0, result.Samples.Count()*sizeof(result.Samples[0]));
-	uint samplePos=0;
+	core::memset(result.Samples.Data(), 0, result.Samples.Count()*sizeof(result.Samples[0]));
+	uint samplePos = 0;
 	for(uint i=0; i<Notes.Count(); i++)
 	{
 		samplePos += uint(GetNoteTimeOffset(i)*sampleRate);
@@ -82,18 +82,19 @@ SoundBuffer Music::GetSamples(uint sampleRate) const
 
 
 MusicSoundSampleSource::MusicSoundSampleSource(const Music& mydata, uint sampleRate):
-	ASoundSampleSource(sampleRate, 1), data(mydata), currentPositions(mydata.Tracks.Count()), processedSamplesToFlush(0)
+	ASoundSampleSource(sampleRate, 1),
+	data(mydata), buffer(), current_sample_pos(0),
+	sample_count(size_t(data.Duration()*sampleRate)),
+	currentPositions(mydata.Tracks.Count()),
+	maxVolume(-1000000), processedSamplesToFlush(0)
 {
-	maxVolume = -1000000;
-	sample_count = uint(data.Duration()*this->sampleRate);
 	for(uint i=0; i<data.Tracks.Count(); i++)
 		currentPositions.AddLast(Position{0,0});
-	current_sample_pos = 0;
 }
 
 size_t MusicSoundSampleSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 {
-	const uint floatsToRead = Math::Min(maxFloatsToGet, uint(sample_count*channelCount-current_sample_pos));
+	const uint floatsToRead = Math::Min(maxFloatsToGet, uint(sample_count*channel_count-current_sample_pos));
 
 	for(uint i=0; i<data.Tracks.Count(); i++)
 	{
@@ -101,7 +102,7 @@ size_t MusicSoundSampleSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 		auto& trackPosition = currentPositions[i];
 		while(trackPosition.noteId<track.Notes.Count())
 		{
-			const auto sampleOffset = uint(track.GetNoteTimeOffset(trackPosition.noteId)*sampleRate);
+			const auto sampleOffset = uint(track.GetNoteTimeOffset(trackPosition.noteId)*sample_rate);
 			if(trackPosition.samplePos+sampleOffset>=floatsToRead) break;
 			trackPosition.samplePos += sampleOffset;
 			const auto noteInfo = track.Notes[trackPosition.noteId];
@@ -109,11 +110,12 @@ size_t MusicSoundSampleSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			const float volume = track.Volume*noteInfo.Volume;
 			if(!note.IsPause() && volume>0.0001f)
 			{
-				INTRA_ASSERT((int)trackPosition.samplePos>=0);
-				auto sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, sampleRate);
+				INTRA_ASSERT(int(trackPosition.samplePos)>=0);
+				size_t sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, sample_rate);
 				if(buffer.Samples.Count()<trackPosition.samplePos+sampleCount)
 					buffer.Samples.SetCount(sampleCount+trackPosition.samplePos);
-				track.Instrument->GetNoteSamples(buffer.Samples(trackPosition.samplePos, $).Take(sampleCount), note, track.Tempo, volume, sampleRate, true);
+				auto dstRange = buffer.Samples(trackPosition.samplePos, $).Take(sampleCount);
+				track.Instrument->GetNoteSamples(dstRange, note, track.Tempo, volume, sample_rate, true);
 			}
 			trackPosition.noteId++;
 		}
@@ -147,47 +149,47 @@ size_t MusicSoundSampleSource::LoadNextNormalizedSamples(uint maxFloatsToGet)
 
 void MusicSoundSampleSource::FlushProcessedSamples()
 {
-	buffer.ShiftSamples(-(intptr)processedSamplesToFlush);
+	buffer.ShiftSamples(-intptr(processedSamplesToFlush));
 	current_sample_pos += processedSamplesToFlush;
 	processedSamplesToFlush = 0;
 }
 
 size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
-	size_t floatsRead = LoadNextNonNormalizedSamples((uint)outShorts.Length());
+	size_t floatsRead = LoadNextNonNormalizedSamples(uint(outShorts.Length()));
 	auto minmax = buffer.GetMinMax(0, Math::Min(floatsRead, buffer.Samples.Count()));
 	maxVolume = Math::Max(maxVolume, Math::Abs(minmax.first));
 	maxVolume = Math::Max(maxVolume, Math::Abs(minmax.second));
 	buffer.SetMinMax(-32767.9f, 32766.9f, 0, floatsRead, {-maxVolume, maxVolume});
-	buffer.CastToShorts(0, outShorts(0, floatsRead));
+	buffer.CastToShorts(0, outShorts.Take(floatsRead));
 	processedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
-	return floatsRead/channelCount;
+	return floatsRead/channel_count;
 }
 
 size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
-	size_t floatsRead = LoadNextNormalizedSamples((uint)outFloats.Length());
+	size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
 	processedSamplesToFlush = floatsRead;
 	Memory::CopyBits(outFloats, buffer.Samples(0, floatsRead).AsConstRange());
 	FlushProcessedSamples();
-	return floatsRead/channelCount;
+	return floatsRead/channel_count;
 }
 
 size_t MusicSoundSampleSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
-	INTRA_ASSERT(channelCount==outFloats.Length());
-	INTRA_ASSERT(channelCount==1); //TODO: убрать это ограничение
-	return GetInterleavedSamples(outFloats[0]);
+	INTRA_ASSERT(channel_count==outFloats.Length());
+	INTRA_ASSERT(channel_count==1); //TODO: убрать это ограничение
+	return GetInterleavedSamples(outFloats.First());
 }
 
 Array<const void*> MusicSoundSampleSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
+	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	(void)maxSamplesToRead;
-	if(outType!=null) *outType=ValueType::Void;
-	if(outInterleaved!=null) *outInterleaved=false;
-	if(outSamplesRead!=null) *outSamplesRead=0;
+	if(oType!=null) *oType=ValueType::Void;
+	if(oInterleaved!=null) *oInterleaved=false;
+	if(oSamplesRead!=null) *oSamplesRead=0;
 	return null; //На предпоследнем шаге сэмплы имеют тип float, но не нормированы
 }
 

@@ -20,7 +20,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_
 	> SerializeArray(ArrayRange<T> v)
 	{
-		Output.template WriteRaw<uintLE>((uint)v.Length());
+		Output.template WriteRaw<uintLE>(uint(v.Length()));
 		Output.WriteRaw(v.Begin, v.Length()*sizeof(T));
 	}
 
@@ -32,7 +32,7 @@ public:
 	//! Сериализовать ForwardRange поэлементно.
 	template<typename ForwardRange> void SerializeRange(const ForwardRange& v)
 	{
-		Output.template WriteRaw<uintLE>((uint)v.Count());
+		Output.template WriteRaw<uintLE>(uint(v.Count()));
 		ForwardRange range = v;
 		while(!range.Empty())
 		{

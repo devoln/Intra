@@ -6,6 +6,11 @@
 
 #define INITGUID
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -13,10 +18,13 @@ struct IUnknown;
 #include <windows.h>
 #include <MMSystem.h>
 #include <dsound.h>
+
 #ifdef _MSC_VER
 #pragma comment(lib, "dsound.lib")
 #pragma comment(lib, "user32.lib")
+#pragma warning(pop)
 #endif
+
 
 namespace Intra { namespace SoundAPI {
 
@@ -287,7 +295,7 @@ void InstanceDelete(InstanceHandle si)
 
 void InstancePlay(InstanceHandle si, bool loop)
 {
-	si->dupBuffer->Play(0, 0, DSBPLAY_LOOPING*int(loop));
+	si->dupBuffer->Play(0, 0, DSBPLAY_LOOPING*uint(loop));
 }
 
 bool InstanceIsPlaying(InstanceHandle si)
@@ -482,7 +490,7 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 	while(bufsProcessed!=0)
 	{
 		fill_next_buffer_data(snd);
-		snd->next_buffer_to_fill = 1 - snd->next_buffer_to_fill;
+		snd->next_buffer_to_fill = byte(1 - snd->next_buffer_to_fill);
 		bufsProcessed--;
 	}
 }

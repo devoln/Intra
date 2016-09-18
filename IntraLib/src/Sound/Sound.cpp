@@ -15,14 +15,21 @@ using namespace IO;
 
 
 Sound::Sound(const SoundInfo& bufferInfo, const void* initData):
-	info(bufferInfo)
+	data(SoundAPI::BufferCreate(bufferInfo.SampleCount, bufferInfo.Channels, bufferInfo.SampleRate)),
+	instances(),
+	locked_bits(null),
+	info(bufferInfo),
+	locked_size(0)
 {
-	data = SoundAPI::BufferCreate(info.SampleCount, info.Channels, info.SampleRate);
 	if(initData!=null) SoundAPI::BufferSetDataInterleaved(data, initData, info.SampleType);
 }
 
-Sound::Sound(const SoundBuffer* dataBuffer): 
-	info(dataBuffer==null? SoundInfo(): dataBuffer->Info())
+Sound::Sound(const SoundBuffer* dataBuffer):
+	data(null),
+	instances(),
+	locked_bits(null),
+	info(dataBuffer==null? SoundInfo(): dataBuffer->Info()),
+	locked_size(0)
 {
 	data = SoundAPI::BufferCreate(info.SampleCount, info.Channels, info.SampleRate);
 	SoundAPI::BufferSetDataInterleaved(data, dataBuffer->Samples.begin(), info.SampleType);
@@ -71,7 +78,7 @@ Sound Sound::FromFile(StringView fileName)
 	auto fileData = file.Map<byte>();
 	ASoundSampleSource* source=null;
 
-#ifndef NO_WAVE_LOADER
+#ifndef INTRA_NO_WAVE_LOADER
 	if(fileData.StartsWith(StringView("RIFF")))
 		source = new WaveSoundSampleSource(fileData);
 	else
@@ -96,20 +103,20 @@ Sound Sound::FromFile(StringView fileName)
 
 Sound Sound::FromSource(ASoundSampleSource* src)
 {
-	Sound result = Sound({src->SampleCount(), src->SampleRate(), (ushort)src->ChannelCount(), SoundAPI::InternalBufferType}, null);
+	Sound result = Sound({src->SampleCount(), src->SampleRate(), ushort(src->ChannelCount()), SoundAPI::InternalBufferType}, null);
 	auto lockedData = result.Lock();
 	if(SoundAPI::InternalBufferType==ValueType::Short && (SoundAPI::InternalChannelsInterleaved || result.Info().Channels==1))
 	{
-		ArrayRange<short> dst = ArrayRange<short>((short*)lockedData, result.Info().SampleCount*src->ChannelCount());
+		ArrayRange<short> dst = ArrayRange<short>(lockedData, result.Info().SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	else if(SoundAPI::InternalBufferType==ValueType::Float && (SoundAPI::InternalChannelsInterleaved || result.Info().Channels==1))
 	{
-		ArrayRange<float> dst = ArrayRange<float>((float*)lockedData, result.Info().SampleCount*src->ChannelCount());
+		ArrayRange<float> dst = ArrayRange<float>(lockedData, result.Info().SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	//else if(SoundAPI::InternalBufferType==ValueType::Float && !SoundAPI::InternalChannelsInterleaved)
-		//src->GetUninterleavedSamples({(float*)lockedData, result.SampleCount*src->ChannelCount()});
+		//src->GetUninterleavedSamples(ArrayRange<float>(lockedData, result.SampleCount*src->ChannelCount()));
 	result.Unlock();
 	return result;
 }
@@ -166,26 +173,28 @@ void SoundInstance::Stop() const
 size_t StreamingLoadCallback(void** dstSamples, uint channels,
 	ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData)
 {
-	auto src = (ASoundSampleSource*)additionalData;
+	auto src = reinterpret_cast<ASoundSampleSource*>(additionalData);
 	if(interleaved || channels==1)
 	{
 		if(type==ValueType::Float)
-			return src->GetInterleavedSamples({(float*)dstSamples[0], sampleCount*src->ChannelCount()});
+			return src->GetInterleavedSamples({reinterpret_cast<float*>(dstSamples[0]), sampleCount*src->ChannelCount()});
 		if(type==ValueType::Short)
-			return src->GetInterleavedSamples({(short*)dstSamples[0], sampleCount*src->ChannelCount()});
+			return src->GetInterleavedSamples({reinterpret_cast<short*>(dstSamples[0]), sampleCount*src->ChannelCount()});
 	}
 	else
 	{
 		if(type==ValueType::Float)
 		{
 			ArrayRange<float> ranges[16];
-			for(ushort c=0; c<channels; c++) ranges[c] = ArrayRange<float>((float*)dstSamples[c], sampleCount);
+			for(ushort c=0; c<channels; c++)
+				ranges[c] = ArrayRange<float>(reinterpret_cast<float*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});
 		}
 		if(type==ValueType::Short)
 		{
 			/*ArrayRange<short> ranges[16];
-			for(ushort c=0; c<channels; c++) ranges[c] = ArrayRange<short>((short*)dstSamples[c], sampleCount);
+			for(ushort c=0; c<channels; c++)
+				ranges[c] = ArrayRange<short>(reinterpret_cast<short*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});*/
 		}
 	}
@@ -207,7 +216,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	if(*file==null) {delete file; return null;}
 	auto fileData = file->Map<byte>();
 	SourceRef source=null;
-#ifndef NO_WAVE_LOADER
+#ifndef INTRA_NO_WAVE_LOADER
 	if(fileData.StartsWith(StringView("RIFF")))
 		source = SourceRef(new WaveSoundSampleSource(fileData));
 	else
@@ -227,11 +236,12 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 		delete file;
 		return null;
 	}
+
 	return StreamedSound(core::move(source), bufSize, StreamedSound::OnCloseCallback(file, [](void* o)
 	{
-		auto file = (DiskFile::Reader*)o;
-		file->Unmap();
-		delete file;
+		auto mappedFile = reinterpret_cast<DiskFile::Reader*>(o);
+		mappedFile->Unmap();
+		delete mappedFile;
 	}));
 }
 

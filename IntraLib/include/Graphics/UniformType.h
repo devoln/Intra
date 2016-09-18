@@ -4,6 +4,7 @@
 #include "Containers/ForwardDeclarations.h"
 #include "Data/ValueType.h"
 
+
 namespace Intra {
 
 enum ImageType: byte;
@@ -34,13 +35,13 @@ struct UniformType: ValueType
 	};
 
 	UniformType() = default;
-	explicit UniformType(uint val): ValueType((ValueType::I)val) {}
-	UniformType(I val): ValueType((ValueType::I)val) {}
+	explicit UniformType(uint val): ValueType(ValueType::I(val)) {}
+	UniformType(I val): ValueType(ValueType::I(val)) {}
 	UniformType(ValueType val): ValueType(val) {}
 	UniformType(ValueType::I val): ValueType(val) {}
 
-	bool IsSampler() const {return (int)value>=FirstOfSamplers && (int)value<EndOfSamplers;}
-	bool IsValid() const {return ValueType::IsValid() || ((int)value>=(int)ValueType::End && (int)value<(int)UniformType::End);}
+	bool IsSampler() const {return int(value)>=FirstOfSamplers && int(value)<EndOfSamplers;}
+	bool IsValid() const {return ValueType::IsValid() || (int(value)>=int(ValueType::End) && int(value)<int(UniformType::End));}
 
 	ushort Size() const
 	{
@@ -58,3 +59,4 @@ struct UniformType: ValueType
 };
 
 }}
+

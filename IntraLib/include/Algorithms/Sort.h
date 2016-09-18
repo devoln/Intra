@@ -84,15 +84,15 @@ template<typename ArrRange, typename C = Comparers::Function<typename ArrRange::
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<T>::_,
-T> ExtractKey(T t) {return t ^ T(1ull << (sizeof(T)*8-1));}
+Meta::MakeUnsignedType<T>> ExtractKey(T t) {return Meta::MakeUnsignedType<T>(t ^ T(1ull << (sizeof(T)*8-1)));}
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<T>::_,
 T> ExtractKey(T t) {return t;}
 
-template<typename T> forceinline size_t ExtractKey(T* t) {return (size_t)t;}
+template<typename T> forceinline size_t ExtractKey(T* t) {return reinterpret_cast<size_t>(t);}
 
-template<typename T, typename ExtractKeyFunc = T(*)(T), size_t RadixLog=8>
+template<typename T, typename ExtractKeyFunc = Meta::MakeUnsignedType<T>(*)(T), size_t RadixLog=8>
 void RadixSort(ArrayRange<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
 
 template<typename T, typename ExtractKeyFunc = size_t(*)(T*), size_t RadixLog=8>

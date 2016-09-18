@@ -4,6 +4,7 @@
 #include "Meta/Type.h"
 #include "Algorithms/RangeConcept.h"
 
+
 namespace Intra { namespace Range {
 
 template<typename R> struct ReverseRange;
@@ -185,4 +186,5 @@ public:
 
 
 }}
+
 

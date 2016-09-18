@@ -1,6 +1,7 @@
-﻿#if INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console
+﻿#include "Core/Core.h"
 
-#include "Core/Core.h"
+#if INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console
+
 #include "GUI/MessageBox.h"
 #include "Containers/StringView.h"
 #include "Containers/String.h"
@@ -17,11 +18,23 @@ using namespace Math;
 #include <GLES/gl.h>
 #else
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
+
 #include <windows.h>
 #include <GL/gl.h>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 #include <GL/glx.h>
 #include <GL/gl.h>
@@ -37,11 +50,11 @@ namespace Intra {
 
 inline AnyPtr get_proc_address(const char* name)
 {
-#if(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_Windows)
+#if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
 	return (void*)wglGetProcAddress(name);
-#elif(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_X11)
+#elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 	return (void*)glXGetProcAddress((const byte*)name);
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
+#elif(INTRA_LIBRARY_OS==INTRA_LIBRARY_OS_Android)
 	return (void*)eglGetProcAddress(name);
 #endif
 }
@@ -50,15 +63,15 @@ inline AnyPtr get_proc_address(const char* name)
 //Проверка на поддержку расширения оконной системы
 bool IsWSGLExtensionSupported(StringView extension)
 {
-#if(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_Windows)
+#if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
 	const auto wglGetExtensionsStringARB = (const char*(*)(HDC))get_proc_address("wglGetExtensionsStringARB");
 	if(wglGetExtensionsStringARB==null) return false;
 	const String allSupportedExtensions = " " + StringView(wglGetExtensionsStringARB(wglGetCurrentDC())) + " ";
-#elif(INTRA_PLATFORM_WINDOW_SYSTEM==INTRA_PLATFORM_WINDOW_SYSTEM_X11)
+#elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 	const auto glXGetExtensionsStringARB=(const char*(*)(HDC))get_proc_address("glXGetExtensionsStringARB");
 	if(glXGetExtensionsStringARB==null) return false;
 	const String allSupportedExtensions = " " + StringView(glXGetExtensionsStringARB()) + " ";
-#elif defined(EGL)
+#elif defined(INTRA_EGL)
 	const String allSupportedExtensions = " " + StringView(eglQueryString(eglGetCurrentDisplay(), EGL_EXTENSIONS))+" ";
 #endif
 	return allSupportedExtensions().Contains(" " + extension + " ");
@@ -364,7 +377,7 @@ else
 	static const Function vboFunctions[]={
 		F(GenBuffers), F(DeleteBuffers), F(BindBuffer),
 		F(VertexAttribPointer), F(BufferData), F(BufferSubData),
-#if(!EGL)
+#if(!INTRA_EGL)
 		F(GetBufferSubData),
 #endif
 		F(DisableVertexAttribArray), F(EnableVertexAttribArray)
@@ -429,7 +442,7 @@ else
 
 	caps.multisampling = LoadExtension({255, 10, "ARB_multisample", {F(SampleCoverage)}, AllExtSuffices}, gl);
 
-#if(INTRA_PLATFORM_OS!=PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Windows)
 if(gl.GLES)
 #endif
 	caps.texture_3D = LoadExtension({12, 30, "EXT_texture3D|OES_texture_3D",
