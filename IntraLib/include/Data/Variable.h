@@ -95,12 +95,12 @@ public:
 
 	const Variable& operator[](size_t index) const
 	{
-		return *reinterpret_cast<const Variable*>(data.Data() + variables[index].offset);
+		return *reinterpret_cast<const Variable*>(data.Data() + variables[index].Offset);
 	}
 
 	template<typename T> T& Get(size_t index, size_t arrIndex)
 	{
-		return *reinterpret_cast<T*>(data.Data()+variables[index].offset+arrIndex*sizeof(T));
+		return *reinterpret_cast<T*>(data.Data()+variables[index].Offset+arrIndex*sizeof(T));
 	}
 
 	template<typename T> const T& Get(size_t index, size_t arrIndex) const
@@ -110,18 +110,18 @@ public:
 
 	const void* GetPtr(size_t index) const
 	{
-		return data.Data()+variables[index].offset;
+		return data.Data()+variables[index].Offset;
 	}
 
 	AnyPtr GetPtr(size_t index)
 	{
-		return data.Data()+variables[index].offset;
+		return data.Data()+variables[index].Offset;
 	}
 
 	void Add(const void* value, size_t bytes)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>((byte*)value, bytes));
+		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(value), bytes));
 	}
 
 	void* AddData(size_t bytes)
@@ -133,19 +133,19 @@ public:
 
 	void Set(size_t index, const void* arrData, size_t start, size_t bytes)
 	{
-		core::memcpy(&data[variables[index].offset+start], arrData, bytes);
+		core::memcpy(&data[variables[index].Offset+start], arrData, bytes);
 	}
 
 	template<typename T> void Add(const T& value)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>((byte*)&value, sizeof(T)));
+		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(&value), sizeof(T)));
 	}
 
 	void Add(const Variable& value, ValueType type)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<byte*>(&value), type.Size()));
+		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(&value), type.Size()));
 	}
 
 	template<typename T> void Set(size_t index, ArrayRange<const T> arr, size_t first=0)
@@ -172,14 +172,14 @@ private:
 	struct VarEntry
 	{
 		VarEntry() = default;
-		VarEntry(uint offset): offset(offset) {}
+		VarEntry(uint offset): Offset(offset) {}
 		VarEntry(const VarEntry&) = default;
 		VarEntry& operator=(const VarEntry&) = default;
 
-		bool operator==(const VarEntry& rhs) const {return offset==rhs.offset;}
+		bool operator==(const VarEntry& rhs) const {return Offset==rhs.Offset;}
 		bool operator!=(const VarEntry& rhs) const {return !operator==(rhs);}
 
-		uint offset;
+		uint Offset;
 	};
 
 	Array<byte> data;
