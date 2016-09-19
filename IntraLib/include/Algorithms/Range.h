@@ -15,6 +15,8 @@ public:
 	typedef Meta::RemoveConstRef<T> value_type;
 	typedef T return_value_type;
 
+	virtual ~IInputRange() {}
+
 	virtual bool Empty() const = 0;
 	virtual T First() const = 0;
 	virtual void PopFirst() = 0;
@@ -30,6 +32,7 @@ template<typename T> struct IFiniteInputRange:
 private:
 	typedef RangeMixin<IFiniteInputRange<T>, Meta::RemoveConstRef<T>, TypeEnum::Input, true> base;
 public:
+	virtual ~IFiniteInputRange() {}
 	virtual void FillAdvance(const T& value) {base::FillAdvance(value);}
 };
 

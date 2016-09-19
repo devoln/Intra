@@ -8,27 +8,27 @@ using namespace Math;
 
 namespace WindowAPI {
 
-void OnKeyRelease(void* wnd, Key key) {((GraphicsWindow*)wnd)->impl_on_key_release(key);}
-void OnKeyPress(void* wnd, Key key) {((GraphicsWindow*)wnd)->impl_on_key_press(key);}
+void OnKeyRelease(void* wnd, Key key) {reinterpret_cast<GraphicsWindow*>(wnd)->impl_on_key_release(key);}
+void OnKeyPress(void* wnd, Key key) {reinterpret_cast<GraphicsWindow*>(wnd)->impl_on_key_press(key);}
 
 void OnMove(void* wnd, SVec2 newPos)
 {
-	auto window = (GraphicsWindow*)wnd;
+	auto window = reinterpret_cast<GraphicsWindow*>(wnd);
 	window->position = newPos;
 	window->OnMove();
 }
 	
 void OnResize(void* wnd, USVec2 newSize)
 {
-	auto window = (GraphicsWindow*)wnd;
+	auto window = reinterpret_cast<GraphicsWindow*>(wnd);
 	window->size = newSize;
 	window->OnResize();
 }
 
-bool OnClose(void* wnd) {return ((GraphicsWindow*)wnd)->OnClose();}
-void OnDestroy(void* wnd) {((GraphicsWindow*)wnd)->impl_on_destroy();}
+bool OnClose(void* wnd) {return reinterpret_cast<GraphicsWindow*>(wnd)->OnClose();}
+void OnDestroy(void* wnd) {reinterpret_cast<GraphicsWindow*>(wnd)->impl_on_destroy();}
 
-void OnMouseMove(void* wnd, Math::SVec2 mousepos) {((GraphicsWindow*)wnd)->OnMouseMove(mousepos);}
+void OnMouseMove(void* wnd, Math::SVec2 mousepos) {reinterpret_cast<GraphicsWindow*>(wnd)->OnMouseMove(mousepos);}
 
 }
 

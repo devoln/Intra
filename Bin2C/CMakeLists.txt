@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
+include(../CMakeCommon.txt)
+
 project(Bin2C)
 
 if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles"  OR ${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")

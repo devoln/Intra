@@ -551,7 +551,7 @@ private:
 	template<typename T> static void functionSynthPass(const impl_SamplerPassParams<T>& params,
 		float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
 	{
-		const float dt=1.0f/sampleRate;
+		const float dt = 1.0f/float(sampleRate);
 
 		//Считаем громкость основной гармоники так, чтобы суммарная громкость по всем гармоникам не превышала scale
 		float maxValue=1, harmVal=1;
@@ -586,7 +586,7 @@ private:
 		float freq, ArrayRange<float> inOutSamples, uint sampleRate)
 	{
 		auto modifierCopy = modifier;
-		float t = 0.0f, dt = 1.0f/sampleRate;
+		float t = 0.0f, dt = 1.0f/float(sampleRate);
 		modifierCopy.SetParams(freq, dt);
 		for(size_t i=0; i<inOutSamples.Length(); i++)
 		{
@@ -707,7 +707,7 @@ public:
 			{
 				inOutSamples[i]*=attenuatorCopy.NextSample();
 			}
-			noteDuration;
+			(void)noteDuration;
 		};
 	}
 
@@ -769,7 +769,7 @@ public:
 	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const override;
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override
 	{
-		uint id = note.Octave*12+uint(note.Note);
+		uint id = note.Octave*12u+uint(note.Note);
 		auto gen = Generators.Get(id);
 		auto result = SamplesCache.Get(gen).Samples.Count();
 		if(result!=0) return uint(result);

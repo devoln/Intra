@@ -871,7 +871,7 @@ void SynthesizedInstrument::functionTableAttenuationPass(const TableAttenuatorPa
 	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
 {
 	INTRA_ASSERT(table.len>=2);
-	const size_t samplesPerValue = inOutSamples.Length()/(table.len-1);
+	const size_t samplesPerValue = inOutSamples.Length()/size_t(table.len-1);
 
 	for(uint i=0; i<table.len-1u; i++)
 	{
@@ -912,7 +912,7 @@ SoundAttenuationFunction SynthesizedInstrument::CreateTableAttenuationPass(Array
 void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
-	uint id = note.Octave*12+uint(note.Note);
+	uint id = note.Octave*12u+uint(note.Note);
 	SoundBuffer buf;
 	bool exists;
 	auto gen = Generators.Get(id);

@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Core/Core.h"
+
 
 #if(INTRA_LIBRARY_THREADING==INTRA_LIBRARY_THREADING_CPPLIB)
 #include <atomic>

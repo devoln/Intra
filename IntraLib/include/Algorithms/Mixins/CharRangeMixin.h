@@ -76,7 +76,7 @@ template<typename Char> forceinline Meta::EnableIf<
 Char> ToUpperAscii(Char c)
 {
 	if(unsigned(c-'a')>'z'-'a') return c;
-	return c-('a'-'A');
+	return Char(int(c)-('a'-'A'));
 }
 
 template<typename Char> forceinline bool IsHorSpace(Char c) {return c==' ' || c=='\t';}
@@ -491,8 +491,8 @@ public:
 			uint digit = uint(c)-'0';
 			if(digit>9) break;
 
-			if(!waspoint) result = result*10+digit;
-			else pos*=10, result += digit/pos;
+			if(!waspoint) result = X(result*10+X(digit));
+			else pos*=10, result += X(digit)/X(pos);
 		}
 		return minus? -result: result;
 	}

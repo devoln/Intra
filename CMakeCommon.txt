@@ -1,16 +1,10 @@
-cmake_minimum_required(VERSION 2.8)
-
-include(../CMakeCommon.txt)
-
-project(MusicSynthesizer)
-
-include_directories(../IntraLib/include)
-
+ 
 if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles"  OR ${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
+    set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
     set(CMAKE_MAKE_PROGRAM      "${CMAKE_MAKE_PROGRAM} -j{PROCESSOR_COUNT}")
-    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS}         -std=c++1y -pthread"     )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1y -pthread -O3" )
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG}   -std=c++1y -pthread -O0 -g3 -pedantic -Wall -Weffc++ -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ALL_WARNINGS} -std=c++11 -pthread -fno-exceptions -fno-rtti -fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Ofast -funroll-loops -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections" )
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${ALL_WARNINGS}  -std=c++11 -pthread -O0 -g3")
+    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS_RELEASE}")
 elseif(MSVC)
 
     foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES}       )
@@ -23,10 +17,4 @@ elseif(MSVC)
 
         set(CMAKE_CXX_FLAGS_${OUTPUTCONFIG} "${CMAKE_CXX_FLAGS_${OUTPUTCONFIG}} /MP")
     endforeach()
-
 endif()
-
-
-add_executable(MusicSynthesizer MusicSynthesizer.cpp)
-
-target_link_libraries(MusicSynthesizer IntraLib)

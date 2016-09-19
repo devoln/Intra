@@ -348,7 +348,7 @@ static uint bit_position_by_mask(uint mask)
 
 static uint bit_count_to_mask(uint bitCount)
 {
-	return (bitCount==32)? 0xFFFFFFFF: (1 << bitCount)-1;
+	return (bitCount==32)? 0xFFFFFFFFu: (1u << bitCount)-1u;
 }
 
 static uint convert(uint color, uint fromBitCount, uint toBitCount)
@@ -393,8 +393,8 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 	INTRA_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
 	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
 	const size_t usefulDstLineBytes = size_t(sizes.x*dstFormat.BytesPerPixel());
-	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1)&~(srcAlignment-1);
-	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1)&~(dstAlignment-1);
+	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~(srcAlignment-1u);
+	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~(dstAlignment-1u);
 	const size_t srcDataSize = sizes.y*srcLineBytes, dstDataSize=sizes.y*dstLineBytes;
 	if(dstBuf==null) return s->Skip(srcDataSize);
 
@@ -587,7 +587,7 @@ void Image::loadBMP(IInputStream* s, size_t bytes)
 
 	//Битовые поля
 	//Предполагается, что маски цветовых компонентов могут находиться в любом порядке
-	const uint lineWidth = ((Info.Size.x*bmpHdr.bitCount/8u)+3u)&~3u;
+	const uint lineWidth = ((uint(Info.Size.x)*bmpHdr.bitCount/8u)+3u)&~3u;
 	Array<byte> line;
 	line.SetCountUninitialized(lineWidth);
 	UVec4 bitCount, bitPositions;

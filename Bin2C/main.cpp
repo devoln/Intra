@@ -83,12 +83,12 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 
 
 
-inline int ByteToStr(byte x, char* dst)
+inline size_t ByteToStr(byte x, char* dst)
 {
-	int len=0;
-	if(x>=100) dst[len++] = '0'+x/100;
-	if(x>=10) dst[len++] = '0'+x/10%10;
-	dst[len++] = '0'+x%10;
+	size_t len = 0;
+	if(x>=100) dst[len++] = char('0'+x/100);
+	if(x>=10) dst[len++] = char('0'+x/10%10);
+	dst[len++] = char('0'+x%10);
 	return len;
 }
 
@@ -113,20 +113,20 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	}
 	char dataToPrint[10]={',', ' '};
 	static const char dataToPrintPerLine[4]="\r\n\t";
-	const int sizeToPrintPerLineCount = 3-int(notabs);
-	int sizeToPrint = 2-int(nospaces);
+	const size_t sizeToPrintPerLineCount = 3u-size_t(notabs);
+	size_t sizeToPrint = 2u-size_t(nospaces);
 
-	if(src!=null) dst << (int)srcBytes[0];
-	if(singleline) for(size_t i=1; i<src.Count(); i++)
+	if(src!=null) dst << int(srcBytes[0]);
+	if(singleline) for(size_t i=1; i<src.Length(); i++)
 	{
-		int n = sizeToPrint;
+		size_t n = sizeToPrint;
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
 		dst.WriteData(dataToPrint, n);
 	}
-	else for(size_t i=1; i<src.Count(); i++)
+	else for(size_t i=1; i<src.Length(); i++)
 	{
-		int n = sizeToPrint;
-		if(!singleline && i%valuesPerLine==0)
+		size_t n = sizeToPrint;
+		if(!singleline && i%size_t(valuesPerLine)==0)
 		{
 			core::memcpy(dataToPrint+n, dataToPrintPerLine, sizeToPrintPerLineCount);
 			n += sizeToPrintPerLineCount;

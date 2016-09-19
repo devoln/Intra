@@ -322,7 +322,7 @@ private:
 
 template<typename Allocator> struct GrowingFreeList: Allocator
 {
-	GrowingFreeList(null_t=null): first_block(null) {}
+	GrowingFreeList(null_t=null): first_block(null), list(), capacity(0), element_size(0), element_alignment(0) {}
 	GrowingFreeList(size_t initialSize, size_t elementSize, size_t alignment, const SourceInfo& sourceInfo)
 	{
 		Init(initialSize, elementSize, alignment, sourceInfo);
@@ -435,7 +435,7 @@ struct SegregatedTraits
     static size_t GetSizeClass(size_t size)
     {
 		auto Log = Math::Log2i(uint(size));
-        return size_t(Log>5? Log-5: 0u);
+        return size_t(Log>5? Log-5u: 0u);
     }
  
     static size_t GetSizeClassMaxSize(size_t sizeClass)

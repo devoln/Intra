@@ -407,7 +407,7 @@ void Image::saveDDS(IO::IOutputStream* s) const
 		uint blockSize = Info.Format.BitsPerPixel()*4u*4u/8u; //4*4 верно не для всех сжатых форматов, но верно для BC1-BC7
 		header.pitchOrLinearSize = Max(1u, ((Info.Size.x+3u)/4u)) * blockSize;
 	}
-	else header.pitchOrLinearSize = (Info.Size.x*Info.Format.BitsPerPixel()+7u)/8u;
+	else header.pitchOrLinearSize = (uint(Info.Size.x)*Info.Format.BitsPerPixel()+7u)/8u;
 
 	s->Write<DDS_HEADER>(header);
 	if(has_dx10_header(header.ddspf)) s->Write<DDS_HEADER_DXT10>(dx10header);

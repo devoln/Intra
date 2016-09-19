@@ -178,7 +178,7 @@ struct ChannelFilter
 
 	bool Filter(const NewLogger::Criteria& criteria)
 	{
-		return size_t(criteria.channel & Channels.value)==criteria.channel;
+		return (criteria.channel & size_t(Channels.value))==criteria.channel;
 	}
 
 	LogChannels Channels;

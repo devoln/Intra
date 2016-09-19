@@ -2,6 +2,10 @@
 
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
 #include "GUI/WindowSystemApi.h"
 #include "IO/Stream.h"
 #include "Containers/Array.h"
@@ -22,12 +26,13 @@ static Atom atom_fullscreen, atom_state, atom_delete_window, atom_max_horz, atom
 struct Window
 {
 	Window(void* wnd, USVec2 position):
-		pos(position), is_fullscreen(false),
-		is_cursor_visible(true), minmax(null),
-		wndObj(wnd), is_hidden(true) {}
+		glcontext(), window(), pos(position),
+		is_fullscreen(false), is_cursor_visible(true), is_hidden(true),
+		minmax(null),
+		wndObj(wnd) {}
 
 	GLXContext glcontext;
-	Window window;
+	::Window window;
 
 	USVec2 pos;
 	bool is_fullscreen, is_cursor_visible, is_hidden;
@@ -40,9 +45,11 @@ static void StaticWndProc(WindowHandle impl, XEvent event);
 
 static Array<WindowHandle> windows;
 
-WindowHandle ws_create_window(StringView caption, WindowType type, SVec2 pos, USVec2 size, void* wndObj)
+WindowHandle WindowCreate(StringView caption, WindowType type, SVec2 pos, USVec2 size, void* wndObj)
 {
-	static Display* const display = XOpenDisplay(null); ::display=display;
+	(void)type;
+
+	static Display* const display = XOpenDisplay(null); WindowAPI::display=display;
 	static const Atom atom_fullscreen = XInternAtom(display, "_NET_WM_STATE_FULLSCREEN", true),
 		atom_state = XInternAtom(display, "_NET_WM_STATE", true),
 		atom_delete_window = XInternAtom(display, "WM_DELETE_WINDOW", true),
@@ -120,22 +127,23 @@ WindowHandle ws_create_window(StringView caption, WindowType type, SVec2 pos, US
 	}
 
 	WindowSetCaption(impl, caption);
-	XSetWMProtocols(display, impl->window, &::atom_delete_window, 1);
+	XSetWMProtocols(display, impl->window, &WindowAPI::atom_delete_window, 1);
 
 	//Создание невидимого курсора
 	XColor black = {0,  0,0,0,  0, 0};
 	const char noData=0;
 	Pixmap invPixmap = XCreateBitmapFromData(display, impl->window, &noData, 1, 1);
-	::empty_cursor = XCreatePixmapCursor(display, invPixmap, invPixmap, &black, &black, 0, 0);
+	WindowAPI::empty_cursor = XCreatePixmapCursor(display, invPixmap, invPixmap, &black, &black, 0, 0);
 
 	impl->glcontext = glXCreateContext(display, vi, 0, true);
 	glXMakeCurrent(display, impl->window, impl->glcontext);
 
 	typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
-	auto glXCreateContextAttribs = (glXCreateContextAttribsARBProc)glXGetProcAddress((const byte*)"glXCreateContextAttribsARB");
+	auto glXCreateContextAttribs = reinterpret_cast<glXCreateContextAttribsARBProc>(glXGetProcAddress(
+			reinterpret_cast<const byte*>("glXCreateContextAttribsARB")));
 	if(false)//if(glXCreateContextAttribs!=null)
 	{
-		const char* version=(const char*)glGetString(GL_VERSION);
+		auto version = glGetString(GL_VERSION);
 		glXMakeCurrent(display, 0, 0);
 		glXDestroyContext(display, impl->glcontext);
 
@@ -160,6 +168,8 @@ WindowHandle ws_create_window(StringView caption, WindowType type, SVec2 pos, US
 	return impl;
 }
 
+AnyPtr WindowGetHandle(WindowHandle wnd) {return reinterpret_cast<void*>(wnd->window);}
+
 void WindowDelete(WindowHandle wnd)
 {
 	OnDestroy(wnd->wndObj);
@@ -170,33 +180,34 @@ void WindowDelete(WindowHandle wnd)
 
 void WindowSetState(WindowHandle wnd, WindowState state)
 {
-	if(!wnd->is_fullscreen && state==WindowState::FullScreen || wnd->is_fullscreen && state!=WindowState::FullScreen)
+	if((!wnd->is_fullscreen && state==WindowState::FullScreen) ||
+			(wnd->is_fullscreen && state!=WindowState::FullScreen))
 	{
-		XClientMessageEvent event = {ClientMessage, 0, true, display, wnd->window, atom_state, 32};
+		XClientMessageEvent event = {ClientMessage, 0, true, display, wnd->window, atom_state, 32, {}};
 		event.data.l[0] = wnd->is_fullscreen = (state==WindowState::FullScreen);
-		event.data.l[1] = atom_fullscreen;
+		event.data.l[1] = long(atom_fullscreen);
 		event.data.l[2] = 0;
 		XSendEvent(display, DefaultRootWindow(display), false,
 		SubstructureRedirectMask|SubstructureNotifyMask, (XEvent*)&event);
-		if(!wnd->is_fullscreen) ws_set_pos(wnd, wnd->pos);
+		if(!wnd->is_fullscreen) WindowSetPos(wnd, wnd->pos);
 	}
-	const WindowState curstate=ws_get_state(wnd);
+	const WindowState curstate = WindowGetState(wnd);
 	if((curstate==WindowState::Maximized)!=(state==WindowState::Maximized))
 	{
-		XClientMessageEvent event = {ClientMessage, 0, true, display, wnd->window, atom_state, 32};
+		XClientMessageEvent event = {ClientMessage, 0, true, display, wnd->window, atom_state, 32, {}};
 		event.data.l[0] = (state==WindowState::Maximized);
-		event.data.l[1] = atom_max_horz;
-		event.data.l[2] = atom_max_vert;
+		event.data.l[1] = long(atom_max_horz);
+		event.data.l[2] = long(atom_max_vert);
 		XSendEvent(display, DefaultRootWindow(display), false,
 			SubstructureRedirectMask|SubstructureNotifyMask, (XEvent*)&event);
-		if(state!=WindowState::Maximized) ws_set_pos(wnd, wnd->pos);
+		if(state!=WindowState::Maximized) WindowSetPos(wnd, wnd->pos);
 	}
 	if(state!=WindowState::Hidden)
 	{
 		if(state!=WindowState::Minimized)
 		{
 			XMapWindow(display, wnd->window);
-			ws_set_pos(wnd, wnd->pos);
+			WindowSetPos(wnd, wnd->pos);
 		}
 	}
 	else XUnmapWindow(display, wnd->window);
@@ -216,7 +227,7 @@ WindowState WindowGetState(WindowHandle wnd)
 	unsigned long num_items, bytes_after;
 	Atom* atoms;
 	XGetWindowProperty(display, wnd->window, atom_state, 0, 1024, false, XA_ATOM,
-		&actual_type, &actual_format, &num_items, &bytes_after, (unsigned char**)&atoms);
+		&actual_type, &actual_format, &num_items, &bytes_after, reinterpret_cast<unsigned char**>(&atoms));
 
 	WindowState state=WindowState::Normal;
 	for(ushort i=0; i<num_items; i++)
@@ -240,20 +251,20 @@ WindowState WindowGetState(WindowHandle wnd)
 void WindowSetCaption(WindowHandle wnd, StringView caption)
 {
 	XChangeProperty(display, wnd->window, atom_name, atom_utf8,
-		8, PropModeReplace, (byte*)caption.Data(), caption.Length());
+		8, PropModeReplace, reinterpret_cast<const byte*>(caption.Data()), int(caption.Length()));
 }
 
 bool WindowIsActive(WindowHandle wnd)
 {
 	int unused;
-	Window focused;
+	::Window focused;
 	XGetInputFocus(display, &focused, &unused);
 	return focused==wnd->window;
 }
 
 void WindowShowCursor(WindowHandle wnd, bool visible)
 {
-	XDefineCursor(display, wnd->window, visible? None: ::empty_cursor);
+	XDefineCursor(display, wnd->window, visible? None: WindowAPI::empty_cursor);
 }
 
 void WindowSetPos(WindowHandle wnd, SVec2 newpos)
@@ -270,12 +281,12 @@ void WindowSetSize(WindowHandle wnd, USVec2 newsize)
 
 SVec2 WindowGetCursorPos(WindowHandle wnd)
 {
-	Window root_ret, child_ret;
+	::Window root_ret, child_ret;
 	int global_x, global_y;
 	uint mask; //unused
 	int rel_x, rel_y;
 	XQueryPointer(display, wnd->window, &root_ret, &child_ret, &global_x, &global_y, &rel_x, &rel_y, &mask);
-	return SVec2((short)rel_x, (short)rel_y);
+	return SVec2(short(rel_x), short(rel_y));
 }
 
 void WindowSetCursorPos(WindowHandle wnd, SVec2 pos)
@@ -296,7 +307,7 @@ void WindowSetSizeLimits(WindowHandle wnd, USVec2 minsize, USVec2 maxsize)
 void WindowGLSwapBuffers(WindowHandle wnd) {/*glFinish(); */glXSwapBuffers(display, wnd->window);}
 void WindowGLMakeCurrent(WindowHandle wnd) {glXMakeCurrent(display, wnd->window, wnd->glcontext);}
 
-USVec2 WindowGetScreenResolution()
+USVec2 GetScreenResolution()
 {
 	Screen* screen = XScreenOfDisplay(display, 0);
 	return USVec2(ushort(XWidthOfScreen(screen)), ushort(XHeightOfScreen(screen)));
@@ -335,12 +346,12 @@ namespace Intra { namespace WindowAPI {
 static Key convert_from_xkey(KeySym key)
 {
 	if(key>=XK_BackSpace && key<=XK_Escape) return Key(key & 0xFF);
-	if(key>=XK_Home && key<=XK_Down) return Key((byte)Key::Home+(key-XK_Home));
-	if(key>=XK_Page_Up && key<=XK_End) return Key((byte)Key::PageUp+(key-XK_Page_Up));
+	if(key>=XK_Home && key<=XK_Down) return Key(byte(Key::Home)+(key-XK_Home));
+	if(key>=XK_Page_Up && key<=XK_End) return Key(byte(Key::PageUp)+(key-XK_Page_Up));
 	if(key>=XK_KP_Multiply && key<=XK_KP_Divide) return Key(key-0xFF40);
-	if(key>=XK_KP_0 && key<=XK_KP_9) return Key((byte)Key::Numpad0+(key-XK_KP_0));
-	if(key>=XK_F1 && key<=XK_F12) return Key((byte)Key::F1+key-XK_F1);
-	if(key>='0' && key<='9' || key>='A' && key<='Z') return Key(key);
+	if(key>=XK_KP_0 && key<=XK_KP_9) return Key(byte(Key::Numpad0)+(key-XK_KP_0));
+	if(key>=XK_F1 && key<=XK_F12) return Key(byte(Key::F1)+key-XK_F1);
+	if((key>='0' && key<='9') || (key>='A' && key<='Z')) return Key(key);
 
 	switch(key)
 	{
@@ -361,7 +372,7 @@ static Key convert_from_xkey(KeySym key)
 	case XK_Control_L: case XK_Control_R: return Key::Control;
 	}
 	key = XkbKeycodeToKeysym(display, XKeysymToKeycode(display, key), 0, 1);
-	if(key>='0' && key<='9' || key>='A' && key<='Z') return Key(key);
+	if((key>='0' && key<='9') || (key>='A' && key<='Z')) return Key(key);
 	return Key::Unknown;
 }
 
@@ -371,23 +382,23 @@ static void StaticWndProc(WindowHandle impl, XEvent event)
 	switch(event.type)
 	{
 	case ClientMessage:
-		if(event.xclient.format==32 && (Atom)event.xclient.data.l[0]==atom_delete_window) //Сообщение закрытия окна (кнопка "X")
-			if(ws_on_close(impl->wndObj)) ws_delete_window(impl); //Если закрытие разрешено, то закрываем окно
+		if(event.xclient.format==32 && Atom(event.xclient.data.l[0])==atom_delete_window) //Сообщение закрытия окна (кнопка "X")
+			if(OnClose(impl->wndObj)) WindowDelete(impl); //Если закрытие разрешено, то закрываем окно
 	return;
 
 	case ConfigureNotify:
-		if(ws_get_state(impl)==WindowState::Normal)
-			impl->pos=SVec2((short)event.xconfigure.x, (short)event.xconfigure.y);
-		ws_on_move(impl->wndObj, SVec2((short)event.xconfigure.x, (short)event.xconfigure.y));
-		ws_on_resize(impl->wndObj, USVec2((ushort)event.xconfigure.width, (ushort)event.xconfigure.height));
+		if(WindowGetState(impl)==WindowState::Normal)
+			impl->pos = SVec2(short(event.xconfigure.x), short(event.xconfigure.y));
+		OnMove(impl->wndObj, SVec2(short(event.xconfigure.x), short(event.xconfigure.y)));
+		OnResize(impl->wndObj, USVec2(ushort(event.xconfigure.width), ushort(event.xconfigure.height)));
 	return;
 
 	case KeyPress:
 	{
 		KeySym xkey;
 		XLookupString(&event.xkey, null, 0, &xkey, null);
-		const Key key=convert_from_xkey(xkey);
-		ws_on_key_press(impl->wndObj, key);
+		const Key key = convert_from_xkey(xkey);
+		OnKeyPress(impl->wndObj, key);
 	}
 	return;
 
@@ -408,21 +419,21 @@ static void StaticWndProc(WindowHandle impl, XEvent event)
 
 		KeySym xkey;
 		XLookupString(&event.xkey, null, 0, &xkey, null);
-		const Key key=convert_from_xkey(xkey);
-		ws_on_key_release(impl->wndObj, key);
+		const Key key = convert_from_xkey(xkey);
+		OnKeyRelease(impl->wndObj, key);
 	}
 	return;
 
 	case ButtonPress:
-		ws_on_key_press(impl->wndObj, mouseKeys[event.xbutton.button-1]);
+		OnKeyPress(impl->wndObj, mouseKeys[event.xbutton.button-1]);
 	return;
 
 	case ButtonRelease:
-		ws_on_key_release(impl->wndObj, mouseKeys[event.xbutton.button-1]);
+		OnKeyRelease(impl->wndObj, mouseKeys[event.xbutton.button-1]);
 	return;
 
 	case MotionNotify:
-		ws_on_mouse_move(impl->wndObj, SVec2((short)event.xmotion.x, (short)event.xmotion.y));
+		OnMouseMove(impl->wndObj, SVec2(short(event.xmotion.x), short(event.xmotion.y)));
 	return;
 	}
 }

@@ -1,6 +1,11 @@
-﻿#include "Data/Data.h"
+﻿
+#if 0
 
-#if DISABLED
+#include "Data/Data.h"
+
+#if INTRA_DISABLED
+
+
 data::Value data::Bin::GetValue(const string& name) const
 {
 	auto names = name.Split("./\\:", "[]");
@@ -358,3 +363,6 @@ DataBin FromTextStream(IO::IInputStream& s)
 
 	return bin;
 }
+
+#endif
+

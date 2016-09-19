@@ -504,7 +504,7 @@ public:
 			if(bucketLoad<bucketLoadsCount) oBucketLoads[bucketLoad]++;
 			if(oMaxBucketLoad && *oMaxBucketLoad<bucketLoad) *oMaxBucketLoad = bucketLoad;
 		}
-		if(oAverageBucketLoad) *oAverageBucketLoad = double(loadSum)/num;
+		if(oAverageBucketLoad) *oAverageBucketLoad = double(loadSum)/double(num);
 	}
 
 private:

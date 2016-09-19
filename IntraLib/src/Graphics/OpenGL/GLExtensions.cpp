@@ -6,6 +6,7 @@
 #include "Containers/StringView.h"
 #include "Containers/String.h"
 #include "Graphics/OpenGL/GLExtensions.h"
+#include <string.h>
 
 namespace Intra {
 
@@ -51,11 +52,11 @@ namespace Intra {
 inline AnyPtr get_proc_address(const char* name)
 {
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
-	return (void*)wglGetProcAddress(name);
+	return reinterpret_cast<void*>(wglGetProcAddress(name));
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
-	return (void*)glXGetProcAddress((const byte*)name);
+	return reinterpret_cast<void*>(glXGetProcAddress(reinterpret_cast<const byte*>(name)));
 #elif(INTRA_LIBRARY_OS==INTRA_LIBRARY_OS_Android)
-	return (void*)eglGetProcAddress(name);
+	return reinterpret_cast<void*>(eglGetProcAddress(name));
 #endif
 }
 
@@ -64,11 +65,11 @@ inline AnyPtr get_proc_address(const char* name)
 bool IsWSGLExtensionSupported(StringView extension)
 {
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
-	const auto wglGetExtensionsStringARB = (const char*(*)(HDC))get_proc_address("wglGetExtensionsStringARB");
+	const auto wglGetExtensionsStringARB = static_cast<const char*(*)(HDC)>(get_proc_address("wglGetExtensionsStringARB"));
 	if(wglGetExtensionsStringARB==null) return false;
 	const String allSupportedExtensions = " " + StringView(wglGetExtensionsStringARB(wglGetCurrentDC())) + " ";
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
-	const auto glXGetExtensionsStringARB=(const char*(*)(HDC))get_proc_address("glXGetExtensionsStringARB");
+	const auto glXGetExtensionsStringARB = static_cast<const char*(*)()>(get_proc_address("glXGetExtensionsStringARB"));
 	if(glXGetExtensionsStringARB==null) return false;
 	const String allSupportedExtensions = " " + StringView(glXGetExtensionsStringARB()) + " ";
 #elif defined(INTRA_EGL)
@@ -80,12 +81,12 @@ bool IsWSGLExtensionSupported(StringView extension)
 //Получение версии OpenGL
 ushort GetGLVersion(bool* gles=null)
 {
-	StringView ver = StringView((const char*)glGetString(GL_VERSION));
+	StringView ver = StringView(reinterpret_cast<const char*>(glGetString(GL_VERSION)));
 	//В обычном OpenGL формат строки следующий: "<major>.<minor>[.<release_number>][ <vendor_specific>]"
     //В OpenGL ES формат строки другой: "OpenGL ES[-<profile>] <major>.<minor>[ <vendor_specific>]". Её парсить суть посложнее
 	if(ver.Take(9)=="OpenGL ES")
 	{
-		if(gles) *gles=true;
+		if(gles) *gles = true;
 		auto verPtr = ver.Data();
 		verPtr += 9;
 		if(*verPtr=='-') while(*verPtr!=' ' && *verPtr!='\0') verPtr++; //Пропускаем <profile>, если он присутсвует
@@ -173,16 +174,16 @@ void InitExtensions(ushort version, bool noExtensions, OpenGL& gl)
 {
 	OpenGL& GL = gl;
 	auto& caps = gl.Caps;
-	gl.Vendor = (const char*)glGetString(GL_VENDOR);
+	gl.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
 	gl.Version = Min(GetGLVersion(&gl.GLES), version);
 
 	auto glslstr = glGetString(GL.SHADING_LANGUAGE_VERSION);
 	gl.GLSLVersion = ushort( 100*(glslstr[0]-'0')+10*(glslstr[2]-'0')+(glslstr[3]-'0') );
-	gl.Renderer = (const char*)glGetString(GL_RENDERER);
-	gl.VersionString = (const char*)glGetString(GL_VERSION);
+	gl.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+	gl.VersionString = reinterpret_cast<const char*>(glGetString(GL_VERSION));
 	gl.IsCoreContext = false;
 
-	bool allNeededExtensionsSupported=true;
+	bool allNeededExtensionsSupported = true;
 
 #define I(f) gl.f = gl ## f
 	I(Clear); I(ClearColor);
@@ -243,16 +244,16 @@ void InitExtensions(ushort version, bool noExtensions, OpenGL& gl)
 	{
 		if(gl.GetStringi==null)
 		{
-			GL.Extensions = StringView((const char*)gl.GetString(GL_EXTENSIONS));
+			GL.Extensions = StringView(reinterpret_cast<const char*>(gl.GetString(GL_EXTENSIONS)));
 			GL.Extensions += ' ';
 		}
 		else
 		{
 			int count=0;
 			glGetIntegerv(GL.NUM_EXTENSIONS, &count);
-			for(uint i=0; i<(uint)count; i++)
+			for(uint i=0; i<uint(count); i++)
 			{
-				gl.Extensions += StringView((const char*)gl.GetStringi(GL_EXTENSIONS, i));
+				gl.Extensions += StringView(reinterpret_cast<const char*>(gl.GetStringi(GL_EXTENSIONS, i)));
 				gl.Extensions += ' ';
 			}
 		}
@@ -263,8 +264,8 @@ void InitExtensions(ushort version, bool noExtensions, OpenGL& gl)
 	caps.texture_depth_comparison_modes = LoadExtension({14, 30, "ARB_depth_texture", null, null}, gl);
 	caps.point_sprite = LoadExtension({20, 10, "ARB_point_sprite", null, null}, gl);
 
-	if(!gl.GLES && gl.Version>=14 || SUPPORTED("ARB_depth_texture"))
-		caps.texture_depth16=caps.texture_depth24=caps.texture_depth32=true;
+	if((!gl.GLES && gl.Version>=14) || SUPPORTED("ARB_depth_texture"))
+		caps.texture_depth16 = caps.texture_depth24=caps.texture_depth32=true;
 	else //В GLES glCopyTexImage с текстурами глубины не работает
 	{
 		caps.texture_depth16 = gl.Version>=30 || SUPPORTED("OES_depth_texture");
@@ -314,7 +315,7 @@ else
 
 	caps.explicit_attrib_location = LoadExtension({33, 30, "ARB_explicit_attrib_location", null, null}, gl); //TODO: Насчёт версии GLES не уверен
 
-#define F(func) {(void**)&gl.func, #func }
+#define F(func) {reinterpret_cast<void**>(&gl.func), #func }
 	//Шейдеры
 	static const Function glslFunctions[]={
 		F(CreateShader), F(ShaderSource), F(CompileShader),
@@ -335,7 +336,7 @@ else
 	{
 		F(Uniform1dv), F(Uniform2dv), F(Uniform3dv), F(Uniform4dv),
 		F(UniformMatrix2dv), F(UniformMatrix3dv), F(UniformMatrix4dv), F(GetUniformdv)
-	}, AllExtSuffices}, gl);
+	}, AsRange(AllExtSuffices)}, gl);
 #endif
 
 	caps.gpu_shader4 = LoadExtension({30, 30, "EXT_gpu_shader4",
@@ -347,7 +348,7 @@ else
 		F(VertexAttribI1iv), F(VertexAttribI2iv), F(VertexAttribI3iv), F(VertexAttribI4iv),
 		F(VertexAttribI1uiv), F(VertexAttribI2uiv), F(VertexAttribI3uiv), F(VertexAttribI4uiv),
 		F(VertexAttribI4bv), F(VertexAttribI4sv), F(VertexAttribI4ubv), F(VertexAttribI4usv)
-	}, AllExtSuffices}, gl);
+	}, AsRange(AllExtSuffices)}, gl);
 
 	caps.texture_gather = LoadExtension({40, 31, "ARB_texture_gather", null, null}, gl);
 
@@ -361,7 +362,7 @@ else
 		F(UniformMatrix2x3dv), F(UniformMatrix2x4dv),
 		F(UniformMatrix3x2dv), F(UniformMatrix3x4dv),
 		F(UniformMatrix4x2dv), F(UniformMatrix4x3dv)
-	}, AllExtSuffices}, gl);
+	}, AsRange(AllExtSuffices)}, gl);
 #endif
 
 	if(!load_functions(glslFunctions, CoreSuffix)) allNeededExtensionsSupported=false;
@@ -382,29 +383,29 @@ else
 #endif
 		F(DisableVertexAttribArray), F(EnableVertexAttribArray)
 	};
-	caps.vertex_buffer_object = LoadExtension({15, 10, "ARB_vertex_buffer_object", vboFunctions, AllExtSuffices}, gl);
+	caps.vertex_buffer_object = LoadExtension({15, 10, "ARB_vertex_buffer_object", AsRange(vboFunctions), AsRange(AllExtSuffices)}, gl);
 	if(!caps.vertex_buffer_object) allNeededExtensionsSupported=false;
 
 //#ifndef INTRA_MINIMIZE_GL
 	caps.vertex_array_object = LoadExtension({30, 30, "ARB_vertex_array_object",
 	    {F(GenVertexArrays), F(BindVertexArray), F(DeleteVertexArrays)},
-		AllExtSuffices}, gl);
+		AsRange(AllExtSuffices)}, gl);
 //#endif
 
 	caps.map_buffer = !gl.GLES && caps.vertex_buffer_object &&
-		LoadExtension({15, 255, null, {F(MapBuffer), F(UnmapBuffer)}, AllExtSuffices}, gl);
+		LoadExtension({15, 255, null, {F(MapBuffer), F(UnmapBuffer)}, AsRange(AllExtSuffices)}, gl);
 
 	caps.map_buffer_range = LoadExtension({30, 30, "ARB_map_buffer_range|NV_map_buffer_range",
-	    {F(MapBufferRange), F(UnmapBuffer), F(FlushMappedBufferRange)}, AllExtSuffices}, gl);
+	    {F(MapBufferRange), F(UnmapBuffer), F(FlushMappedBufferRange)}, AsRange(AllExtSuffices)}, gl);
 
 	caps.sync = LoadExtension({32, 30, "ARB_sync",
 	{
 		F(FenceSync), F(IsSync), F(DeleteSync), F(ClientWaitSync),
 		F(WaitSync), F(GetInteger64v), F(GetSynciv)
-	}, AllExtSuffices}, gl);
+	}, AsRange(AllExtSuffices)}, gl);
 
 	caps.copy_buffer = LoadExtension({31, 30, "ARB_copy_buffer|EXT_copy_buffer|NV_copy_buffer",
-		{F(CopyBufferSubData)}, AllExtSuffices}, gl);
+		{F(CopyBufferSubData)}, AsRange(AllExtSuffices)}, gl);
 
 	caps.uniform_buffer_object = LoadExtension({31, 30, "ARB_uniform_buffer_object|NV_uniform_buffer_object",
 	{
@@ -424,7 +425,8 @@ else
 		F(RenderbufferStorage), F(FramebufferRenderbuffer), F(CheckFramebufferStatus), F(FramebufferTexture2D),
 		F(GenerateMipmap),  F(DrawBuffers)};
 	caps.framebuffer_object = LoadExtension({30, 10, "ARB_draw_buffers&ARB_framebuffer_object|"
-		"EXT_framebuffer_object&EXT_framebuffer_blit&EXT_framebuffer_multisample&EXT_packed_depth_stencil", fboFunctions, AllExtSuffices}, gl);
+		"EXT_framebuffer_object&EXT_framebuffer_blit&EXT_framebuffer_multisample&EXT_packed_depth_stencil",
+		AsRange(fboFunctions), AsRange(AllExtSuffices)}, gl);
 	if(!caps.framebuffer_object) allNeededExtensionsSupported=false;
 
 	caps.draw_instanced = LoadExtension({31, 30, "ARB_draw_instanced|EXT_draw_instanced|NV_draw_instanced",
@@ -435,18 +437,18 @@ else
 //#ifndef MINIMIZE_GL
 	//TODO: Ещё base vertex можно использовать в GLES 3.1 через glDrawElementsIndirect из VBO
 	caps.draw_elements_base_vertex = LoadExtension({32, 32, "ARB_draw_elements_base_vertex|OES_draw_elements_base_vertex",
-	    {F(DrawElementsBaseVertex), F(DrawRangeElementsBaseVertex), F(DrawElementsInstancedBaseVertex)}, StdExtSuffices}, gl);
+	    {F(DrawElementsBaseVertex), F(DrawRangeElementsBaseVertex), F(DrawElementsInstancedBaseVertex)}, AsRange(StdExtSuffices)}, gl);
 //#endif
 
-	load_functions({F(FramebufferTexture1D), F(FramebufferTexture3D), F(FramebufferTextureLayer)}, AllExtSuffices);
+	load_functions({F(FramebufferTexture1D), F(FramebufferTexture3D), F(FramebufferTextureLayer)}, AsRange(AllExtSuffices));
 
-	caps.multisampling = LoadExtension({255, 10, "ARB_multisample", {F(SampleCoverage)}, AllExtSuffices}, gl);
+	caps.multisampling = LoadExtension({255, 10, "ARB_multisample", {F(SampleCoverage)}, AsRange(AllExtSuffices)}, gl);
 
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Windows)
 if(gl.GLES)
 #endif
 	caps.texture_3D = LoadExtension({12, 30, "EXT_texture3D|OES_texture_3D",
-	    {F(TexImage3D), F(TexSubImage3D), F(CopyTexSubImage3D)}, StdExtSuffices}, gl);
+	    {F(TexImage3D), F(TexSubImage3D), F(CopyTexSubImage3D)}, AsRange(StdExtSuffices)}, gl);
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Windows)
 else caps.texture_3D=true;
 #endif
@@ -472,11 +474,11 @@ else caps.texture_3D=true;
 	static const Function vsyncFunction[]=
 	{
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
-	{(void**)&gl.SwapInterval, "wglSwapInterval"}
+	{reinterpret_cast<void**>(&gl.SwapInterval), "wglSwapInterval"}
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
-	{(void**)&gl.SwapInterval, "glXSwapInterval"}
+	{reinterpret_cast<void**>(&gl.SwapInterval), "glXSwapInterval"}
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
-	{(void**)&gl.SwapInterval, "eglSwapInterval"}
+	{reinterpret_cast<void**>(&gl.SwapInterval), "eglSwapInterval"}
 #else
 
 #endif
@@ -489,15 +491,15 @@ else caps.texture_3D=true;
 
 	static const Function samplerObjFunctions[]={F(GenSamplers), F(DeleteSamplers), F(IsSampler), F(BindSampler),
 		F(SamplerParameteri), F(SamplerParameterf), F(SamplerParameteriv), F(SamplerParameterfv), F(GetSamplerParameteriv), F(GetSamplerParameterfv)};
-	caps.sampler_objects = LoadExtension({33, 30, "ARB_sampler_objects", samplerObjFunctions, StdExtSuffices}, gl);
+	caps.sampler_objects = LoadExtension({33, 30, "ARB_sampler_objects", AsRange(samplerObjFunctions), AsRange(StdExtSuffices)}, gl);
 
 	caps.tessellation_shader = LoadExtension({40, 32, "ARB_tessellation_shader|EXT_tessellation_shader",
-	    {F(PatchParameteri), F(PatchParameterfv)}, AllExtSuffices}, gl);
+	    {F(PatchParameteri), F(PatchParameterfv)}, AsRange(AllExtSuffices)}, gl);
 
 	caps.texture_shared_exponent = LoadExtension({30, 30, "EXT_texture_shared_exponent", null, null}, gl);
 	caps.texture_snorm = LoadExtension({31, 30, "EXT_texture_snorm", null, null}, gl);
 
-	caps.texture_storage = (!gl.Vendor().Contains("AMD") && !gl.Vendor().Contains("ATI") || gl.Version>=40) && //На Radeon HD 4600 даже на самых новых драйверах обнаружены баги. Так мы их отсечём
+	caps.texture_storage = ((!gl.Vendor().Contains("AMD") && !gl.Vendor().Contains("ATI")) || gl.Version>=40) && //На Radeon HD 4600 даже на самых новых драйверах обнаружены баги. Так мы их отсечём
 		LoadExtension({42, 255, "ARB_texture_storage|EXT_texture_storage",
 		    {F(TexStorage1D), F(TexStorage2D), F(TexStorage3D)}, {"", "ARB", "EXT"}}, gl);
 
@@ -522,7 +524,7 @@ else caps.texture_3D=true;
 	{
 		F(BindBuffersBase), F(BindBuffersRange), F(BindTextures),
 		F(BindSamplers), F(BindImageTextures), F(BindVertexBuffers)
-	}, StdExtSuffices}, gl);
+	}, AsRange(StdExtSuffices)}, gl);
 #endif
 
 	
@@ -540,8 +542,7 @@ else caps.texture_3D=true;
 #if(INTRA_MINEXE<=1)
 	if(!allNeededExtensionsSupported)
 	{
-		String vendor = (const char*)glGetString(GL_VENDOR);
-		vendor = vendor().ToUpperAscii();
+		String vendor = StringView(reinterpret_cast<const char*>(glGetString(GL_VENDOR))).ToUpperAscii();
 		String message;
 		if(vendor().Contains("NVIDIA"))
 			message = "www.nvidia.ru/Download/index.aspx";
