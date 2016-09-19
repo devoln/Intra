@@ -173,7 +173,7 @@ void FontDelete(FontHandle font) {(void)font;/*if(font.ptr!=null) FT_Done_Face((
 const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2* oSize)
 {
 	(void)font; (void)code;
-	const byte whitePixel = 255;
+	static const byte whitePixel = 255;
 	/*FT_Load_Char((FT_Face)font.ptr, code, FT_LOAD_RENDER);
 	auto glyph=((FT_Face)font.ptr)->glyph;
 	*offset=spoint2((short)glyph->bitmap_left, (short)glyph->bitmap_top);

@@ -109,7 +109,7 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 	recursive_build(node.positiveId, {pBeginPositive, tris.End});
 
 	nodeId = node.Id();
-	INTRA_ASSERT(nodes.Count()==(uint)node.Id());
+	INTRA_ASSERT(nodes.Count()==size_t(node.Id()));
 	nodes.AddLast(node);
 }
 

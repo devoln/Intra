@@ -73,6 +73,7 @@ IO/LogSystem.h
 IO/StaticStream.h
 IO/Stream.h
 
+Math/Bit.h
 Math/Fixed.h
 Math/LinAl.h
 Math/MathEx.h

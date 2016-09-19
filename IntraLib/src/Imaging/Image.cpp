@@ -32,6 +32,9 @@ Image Image::FromData(USVec3 size, ImageFormat format, ImageType type,
 	return result;
 }
 
+
+#if INTRA_DISABLED
+
 Image Image::ExtractChannel(char channelName, ImageFormat compatibleFormat, ushort newLineAlignment) const
 {
 	if(newLineAlignment==0) newLineAlignment=LineAlignment;
@@ -64,6 +67,9 @@ Image Image::ExtractChannel(char channelName, ImageFormat compatibleFormat, usho
 
 	return result;
 }
+
+#endif
+
 
 const void* Image::GetMipmapDataPtr(size_t mip) const
 {

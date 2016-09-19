@@ -74,6 +74,7 @@
 #include "IO/StaticStream.h"
 #include "IO/Stream.h"
 
+#include "Math/Bit.h"
 #include "Math/Fixed.h"
 #include "Math/LinAl.h"
 #include "Math/MathEx.h"

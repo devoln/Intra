@@ -83,11 +83,10 @@ option(LIBRARY_VORBIS_DECODER_STB "Use STB_Vorbis" OFF)
 endif()
 
 
+option(LIBRARY_VORBIS_DECODER_libvorbis "Use libvorbis" OFF)
 if(UNIX)
-option(LIBRARY_VORBIS_DECODER_libvorbis "Use libvorbis" ON)
 set(VORBIS_LIBRARIES vorbis vorbisfile)
 else()
-option(LIBRARY_VORBIS_DECODER_libvorbis "Use libvorbis" OFF)
 set(VORBIS_INCLUDE_DIRS NOT_FOUND)
 set(VORBIS_LIBRARIES NOT_FOUND)
 endif()

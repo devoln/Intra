@@ -221,7 +221,10 @@ static ImageType GetImageTypeFromDX10Header(const DDS_HEADER_DXT10& dx10header)
 static ImageType GetImageTypeFromHeaders(const DDS_HEADER& header, const DDS_HEADER_DXT10& dx10header)
 {
 	if(to_fourcc(header.ddspf.fourCC)==to_fourcc("DX10"))
+	{
+		if(dx10header.resourceDimension==D3D10_RESOURCE_DIMENSION_UNKNOWN) return ImageType_End;
 		return GetImageTypeFromDX10Header(dx10header);
+	}
 
 	if(header.caps2 & DDSCAPS2_VOLUME)
 		return ImageType_3D;
@@ -291,7 +294,7 @@ ImageInfo pe_get_dds_info(byte header[148])
 	DDS_HEADER_DXT10 dx10header;
 	if(has_dx10_header(hdr.ddspf))
 		dx10header = *reinterpret_cast<DDS_HEADER_DXT10*>(header+4+sizeof(DDS_HEADER));
-	else dx10header.resourceDimension=D3D10_RESOURCE_DIMENSION_UNKNOWN;
+	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	ImageInfo result;
 	result.Size = {hdr.width, hdr.height, Max(ushort(1), ushort(hdr.depth))};

@@ -382,7 +382,7 @@ private:
 	public:
 		operator GenericString()
 		{
-			INTRA_ASSERT(format==null || rest.Empty());
+			INTRA_ASSERT(format_begin==null || format_rest.Empty());
 			GenericString result;
 			result.data = data;
 			result.len = size_t(buffer_rest.Begin-data);

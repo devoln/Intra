@@ -72,7 +72,7 @@ public:
 	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V> valueRange):
 		keys(), values()
 	{
-		INTRA_ASSERT(keyRange.Length()==valuePtrRange.Length());
+		INTRA_ASSERT(keyRange.Length()==valueRange.Length());
 		Reserve(keyRange.Length());
 		for(size_t i=0; i<keyRange.Length(); i++)
 			Insert({keyRange[i], valueRange[i]});

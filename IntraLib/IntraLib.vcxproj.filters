@@ -710,6 +710,9 @@
     <ClInclude Include="include\GUI\WindowSystemApi.h">
       <Filter>Заголовочные файлы\GUI</Filter>
     </ClInclude>
+    <ClInclude Include="include\Math\Bit.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">
