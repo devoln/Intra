@@ -20,8 +20,8 @@ In addition to the [library](IntraLib) this repository also contains:
  
 ### Supported compilers:
 - MSVC 2013+;
-- Expected soon: g++ 4.8+;
-- Expected: Clang 3.3+.
+- g++ 4.8+;
+- Clang 3.3+.
 
 ### Supported platforms:
 - Windows;
@@ -52,8 +52,8 @@ For now the library is unstable and lacks tests and documentation. It is not rec
 
 ### Поддерживаемые компиляторы:
 - MSVC 2013+;
-- В ближайшее время ожидается g++ 4.8+;
-- Ожидается Clang 3.3+.
+- g++ 4.8+;
+- Clang 3.3+.
  
 
 ### Поддерживаемые платформы:
