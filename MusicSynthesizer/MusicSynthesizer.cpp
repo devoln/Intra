@@ -146,6 +146,17 @@ extern "C" void PlayUrl(const char* url)
 #endif
 
 
+#if INTRA_DISABLED
+void SoundTest()
+{
+	SoundBuffer buf(2000000, 44100);
+	for(uint t=0; t<buf.Samples.Count(); t++)
+		buf.Samples[t] = (byte( ( (((((t>>3)|(t>>7))*5)|(t>>4))&0xff)/4 + (((((t>>3)|(t>>12))*5)|(t>>7))&0xff)*3/4 ) )-128)/127.0f;
+	Sound snd = Sound(&buf);
+	snd.CreateInstance().Play();
+	Console.GetChar();
+}
+#endif
 
 
 using namespace IO;
@@ -154,30 +165,14 @@ using namespace Range;
 int INTRA_CRTDECL main()
 {
 
-#if INTRA_DISABLED
-	SoundBuffer buf(2000000, 44100);
-	for(uint t=0; t<buf.Samples.Count(); t++)
-		buf.Samples[t] = ((byte)( ( (((((t>>3)|(t>>7))*5)|(t>>4))&0xff)/4 + (((((t>>3)|(t>>12))*5)|(t>>7))&0xff)*3/4 ) )-128)/127.0f;
-	Sound snd = Sound(&buf);
-	snd.CreateInstance().Play();
-	Console.GetChar();
-#endif
-
-#if INTRA_DISABLED
-	const String filePath1 = GetMidiPath("music_vibraphone_only.mid");
-	auto music = ReadMidiFile(filePath1);
-	for(auto n: music.Tracks[0].Notes)
-		IO::Console << int(n.Note.Note+n.Note.Octave*12-69) << ", ";
-	IO::Console << IO::endl;
-#endif
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
-	PlayUrl("http://gammaker.my.to/site-storage/Midi/lady_gaga-paparazzi.mid");
+	PlayUrl("http://gammaker.my.to/site-storage/Midi/ABBA-Mamma_Mia.mid");
 #else
 
 	//Errors::InitSignals();
 
-	const String filePath = GetMidiPath("lady_gaga-paparazzi.mid");
+	const String filePath = GetMidiPath("ABBA-Mamma_Mia.mid");
 	
 	bool success = PrintMidiFileInfo(filePath);
 	if(!success) return false;
