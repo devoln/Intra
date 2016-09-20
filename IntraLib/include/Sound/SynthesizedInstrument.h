@@ -235,7 +235,7 @@ namespace SoundSamplers
 			ampl = amplitude;
 			const double radFreq = 2*Math::PI*frequency;
 			dphi = float(radFreq*step);
-			phi=0;
+			phi = 0;
 			sine_range = Math::SineRange<float>(k, 0, float(radFreq*modK*step));
 		}
 
@@ -253,7 +253,7 @@ namespace SoundSamplers
 		forceinline void PopFirst()
 		{
 			sine_range.PopFirst();
-			phi+=dphi;
+			phi += dphi;
 		}
 	};
 

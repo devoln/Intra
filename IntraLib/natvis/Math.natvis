@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+    <Type Name="Intra::FixedPoint&lt;*,*&gt;">
+      <DisplayString>{(long double)data/Divisor}</DisplayString>
+    </Type>
+  
     <Type Name="Intra::Math::Vector2&lt;*&gt;">
         <DisplayString>{{{x}, {y}}}</DisplayString>
     </Type>

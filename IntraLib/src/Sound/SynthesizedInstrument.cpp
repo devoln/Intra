@@ -877,7 +877,12 @@ void SynthesizedInstrument::functionTableAttenuationPass(const TableAttenuatorPa
 	{
 		double v = double(table.table[i]);
 		double dv = (double(table.table[i+1])-double(v))/double(samplesPerValue);
-		for(size_t s=0; s<samplesPerValue; s++) inOutSamples.First() *= float(v), v+=dv;
+		for(size_t s=0; s<samplesPerValue; s++)
+		{
+			inOutSamples.First() *= float(v);
+			v += dv;
+			inOutSamples.PopFirst();
+		}
 	}
 	while(!inOutSamples.Empty())
 	{
