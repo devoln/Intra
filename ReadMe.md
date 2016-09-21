@@ -25,11 +25,20 @@ In addition to the [library](IntraLib) this repository also contains:
 
 ### Supported platforms:
 - Windows;
-- Expected soon: Linux;
+- Linux;
 - Expected: FreeBSD, Android, Emscripten.
 
 
 For now the library is unstable and lacks tests and documentation. It is not recommended to use in production.
+
+### Setup and compilation on Unix-like systems:
+```bash
+sudo apt-get install libopenal-dev git cmake
+git clone https://github.com/gammaker/Intra
+cd Intra
+cmake -G"Unix Makefiles"
+make -j4
+```
 
 
 ## Описание на русском языке
@@ -58,8 +67,16 @@ For now the library is unstable and lacks tests and documentation. It is not rec
 
 ### Поддерживаемые платформы:
 - Windows;
-- В ближайшее время ожидается Linux;
+- Linux;
 - Ожидаются FreeBSD, Android, Emscripten.
- 
+
+### Установка и компиляция на Unix-подобных ОС
+```bash
+sudo apt-get install libopenal-dev git cmake
+git clone https://github.com/gammaker/Intra
+cd Intra
+cmake -G"Unix Makefiles"
+make -j4
+```
 
 На данный момент библиотека находится в нестабильном состоянии и недостаточно хорошо протестирована и документирована. На данном этапе она не рекомендуется для использования в production.
