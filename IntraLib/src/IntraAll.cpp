@@ -35,10 +35,12 @@
 #endif
 #include "GUI/MessageBox.cpp"
 
+#if(INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
 #include "GUI/GraphicsWindow_Android.cpp"
 #include "GUI/GraphicsWindow_Qt.cpp"
 #include "GUI/GraphicsWindow_X11.cpp"
 #include "GUI/GraphicsWindow_WinAPI.cpp"
+#endif
 
 
 #include "Imaging/Image.cpp"

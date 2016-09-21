@@ -41,7 +41,7 @@ struct Buffer
 		sampleRate = sample_rate;
 	}
 
-	uint SizeInBytes() const {return sampleCount*channels*sizeof(short);}
+	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
 
 	IDirectSoundBuffer* buffer;
 	uint sampleCount;
@@ -81,7 +81,7 @@ struct StreamedBuffer
 	}
 
 	//! Размер в байтах половины буфера
-	uint SizeInBytes() const {return sampleCount*channels*sizeof(short);}
+	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
 
 	IDirectSoundBuffer* buffer;
 	uint sampleCount; //Размер половины буфера
@@ -171,7 +171,7 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 	init_context();
 	if(context==null) return null;
 
-	auto result = new Buffer(null, (uint)sampleCount, sampleRate, channels);
+	auto result = new Buffer(null, uint(sampleCount), sampleRate, channels);
 
 	const ushort blockAlign = ushort(sizeof(ushort)*channels);
 	WAVEFORMATEX wfx = {WAVE_FORMAT_PCM, ushort(channels), sampleRate, sampleRate*blockAlign, blockAlign, 16, sizeof(WAVEFORMATEX)};
@@ -186,13 +186,13 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
 	if(snd==null || data==null) return;
-	auto lockedData = (short*)BufferLock(snd);
+	auto lockedData = reinterpret_cast<short*>(BufferLock(snd));
 	if(type==ValueType::Short)
 		core::memcpy(lockedData, data, snd->sampleCount*type.Size());
 	else if(type==ValueType::Float)
 	{
 		for(size_t i=0; i<snd->sampleCount; i++)
-			lockedData[i] = short(((float*)data)[i]*32767.5f-0.5f);
+			lockedData[i] = short((reinterpret_cast<const float*>(data))[i]*32767.5f-0.5f);
 	}
 	BufferUnlock(snd);
 }
@@ -205,18 +205,24 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 		return;
 	}
 
-	auto lockedData = (short*)BufferLock(snd);
+	auto lockedData = reinterpret_cast<short*>(BufferLock(snd));
 	if(type==ValueType::Short)
 	{
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
-				lockedData[j++] = ((short*)data[c])[i];
+			{
+				const short* const channelSamples = reinterpret_cast<const short*>(data[c]);
+				lockedData[j++] = channelSamples[i];
+			}
 	}
 	else if(type==ValueType::Float)
 	{
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
-				lockedData[j++] = short(((float*)data[c])[i]*32767.5f-0.5f);
+			{
+				const float* const channelSamples = reinterpret_cast<const float*>(data[c]);
+				lockedData[j++] = short(channelSamples[i]*32767.5f-0.5f);
+			}
 	}
 	BufferUnlock(snd);
 }
@@ -246,7 +252,7 @@ void BufferDelete(BufferHandle snd)
 
 static void CALLBACK DeleteInstanceOnStopCallback(_In_  void* lpParameter, _In_  byte /*timerOrWaitFired*/)
 {
-	auto impl = (InstanceHandle)lpParameter;
+	auto impl = reinterpret_cast<InstanceHandle>(lpParameter);
 	if(impl->deleteOnStop) if(context!=null) InstanceDelete(impl);
 }
 
@@ -258,7 +264,7 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	auto result = new Instance(bufferDup, snd);
 
 	IDirectSoundNotify* notify; 
-	if(SUCCEEDED(bufferDup->QueryInterface(IID_IDirectSoundNotify, (void**)&notify))) 
+	if(SUCCEEDED(bufferDup->QueryInterface(IID_IDirectSoundNotify, reinterpret_cast<void**>(&notify))))
 	{
 		result->notifyOnStopEvent = CreateEventW(null, false, false, null);
 		if(result->notifyOnStopEvent==null)
@@ -266,7 +272,7 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 			delete result;
 			return null;
 		}
-		const DSBPOSITIONNOTIFY stopNotify = {DSBPN_OFFSETSTOP, result->notifyOnStopEvent};
+		const DSBPOSITIONNOTIFY stopNotify = {DWORD(DSBPN_OFFSETSTOP), result->notifyOnStopEvent};
 		RegisterWaitForSingleObject(&result->notifyOnStopWait,
 			result->notifyOnStopEvent, DeleteInstanceOnStopCallback, result, INFINITE, 0);
 		notify->SetNotificationPositions(1, &stopNotify);
@@ -317,7 +323,7 @@ void InstanceStop(InstanceHandle si)
 
 static void CALLBACK WaitLoadCallback(_In_  void* lpParameter, _In_  byte /*timerOrWaitFired*/)
 {
-	auto snd = (StreamedBufferHandle)lpParameter;
+	auto snd = reinterpret_cast<StreamedBufferHandle>(lpParameter);
 	EnterCriticalSection(&snd->critsec);
 	snd->buffers_processed++;
 	//StreamedSoundUpdate(snd);
@@ -330,7 +336,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	if(sampleCount==0 || channels==0 || sampleRate==0 || callback.CallbackFunction==null) return null;
 	init_context();
 
-	const auto result = new StreamedBuffer(null, callback, (uint)sampleCount, sampleRate, channels);
+	const auto result = new StreamedBuffer(null, callback, uint(sampleCount), sampleRate, channels);
 
 	const ushort blockAlign = ushort(sizeof(ushort)*channels);
 	WAVEFORMATEX wfx = {WAVE_FORMAT_PCM, ushort(channels), sampleRate, sampleRate*blockAlign, blockAlign, 16, sizeof(WAVEFORMATEX)};
@@ -344,7 +350,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	result->buffer->Unlock(lockedData, result->SizeInBytes()*2, null, 0);
 
 	IDirectSoundNotify* notify;
-	if(SUCCEEDED(result->buffer->QueryInterface(IID_IDirectSoundNotify, (void**)&notify)))
+	if(SUCCEEDED(result->buffer->QueryInterface(IID_IDirectSoundNotify, reinterpret_cast<void**>(&notify))))
 	{
 		result->notifyLoadEvent = CreateEventW(null, false, false, null);
 		if(result->notifyLoadEvent==null)
@@ -427,7 +433,7 @@ void unlock_buffer(StreamedBufferHandle snd)
 
 void fill_next_buffer_data(StreamedBufferHandle snd)
 {
-	auto data = lock_buffer(snd, snd->next_buffer_to_fill);
+	short* data = lock_buffer(snd, snd->next_buffer_to_fill);
 	if(data==null) return;
 
 	if(snd->stop_soon!=0)
@@ -438,11 +444,11 @@ void fill_next_buffer_data(StreamedBufferHandle snd)
 		return;
 	}
 
-	const size_t samplesRead = snd->streamingCallback.CallbackFunction((void**)&data, snd->channels,
+	const size_t samplesRead = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&data), snd->channels,
 		ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
 	if(samplesRead<snd->sampleCount)
 	{
-		void* ptr = (short*)data+samplesRead;
+		void* ptr = data+samplesRead;
 		if(snd->looping)
 		{
 			snd->streamingCallback.CallbackFunction(&ptr, 1, ValueType::Short, true,

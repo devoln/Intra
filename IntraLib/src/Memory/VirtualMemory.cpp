@@ -26,8 +26,8 @@ static uint translate_access(Access access)
 		PAGE_NOACCESS, PAGE_READONLY, PAGE_WRITECOPY, PAGE_READWRITE,
 		PAGE_EXECUTE, PAGE_EXECUTE_READ, PAGE_EXECUTE_WRITECOPY, PAGE_EXECUTE_READWRITE
 	};
-	INTRA_CHECK_TABLE_SIZE(accessTable, (byte)Access::End);
-	return accessTable[(byte)access];
+	INTRA_CHECK_TABLE_SIZE(accessTable, Access::End);
+	return accessTable[byte(access)];
 }
 
 AnyPtr VirtualAlloc(size_t bytes, Access access)

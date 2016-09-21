@@ -36,21 +36,6 @@
 #endif
 
 
-#ifdef _stat
-#undef _stat
-#endif
-
-#if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
-#ifndef _ACRTIMP
-#define _ACRTIMP
-#endif
-extern "C"
-_ACRTIMP int INTRA_CRTDECL _stat(
-	_In_z_ char const*     _FileName,
-	_Out_  struct _stat32* _Stat
-	);
-#endif
-
 #ifdef _MSC_VER
 #define access _access
 #define fileno _fileno
@@ -68,11 +53,11 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
 {
 	(void)addr; (void)flags;
 
-	HANDLE fileHandle = (HANDLE)_get_osfhandle(fd);
+	HANDLE fileHandle = HANDLE(_get_osfhandle(fd));
 	DWORD flProtect=0, dwDesiredAccess=0;
 	if(prot==PROT_READ) flProtect=PAGE_READONLY, dwDesiredAccess=FILE_MAP_READ;
 	else if(prot==PROT_WRITE) flProtect=PAGE_READWRITE, dwDesiredAccess=FILE_MAP_WRITE;
-	else return (void*)-1;
+	else return reinterpret_cast<void*>(-1);
 
 	HANDLE hnd = CreateFileMappingW(fileHandle, nullptr, flProtect, 0, DWORD(length), nullptr);
 	void* map = nullptr;
@@ -82,7 +67,7 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
         CloseHandle(hnd);
     }
 
-    return map!=nullptr? map: (void*)-1;
+    return map!=nullptr? map: reinterpret_cast<void*>(-1);
 }
 
 int munmap(void* addr, size_t length)
@@ -111,16 +96,24 @@ namespace Intra { namespace IO
 	Info GetInfo(StringView fileName)
 	{
 		Info result;
-		String fn=fileName;
+		String fn = fileName;
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
-		struct _stat32 attrib;
-		result.Exist = _stat(fn.CStr(), &attrib)==0;
+		wchar_t buf[MAX_PATH+1];
+		int wstrLength = MultiByteToWideChar(CP_UTF8, 0, fileName.Data(), int(fileName.Length()), buf, MAX_PATH);
+		buf[wstrLength]=0;
+
+		WIN32_FILE_ATTRIBUTE_DATA fad;
+		if(!GetFileAttributesExW(buf, GetFileExInfoStandard, &fad)) return {false, 0, 0};
+		result.Exist = Exists(fileName);
+		result.Size = (ulong64(fad.nFileSizeHigh) << 32)|fad.nFileSizeLow;
+		result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32)|fad.ftLastWriteTime.dwLowDateTime;
+
 #else
 		struct stat attrib;
 		result.Exist = stat(fn.CStr(), &attrib)==0;
-#endif
 		result.LastModified = result.Exist? ulong64(attrib.st_mtime): 0ull;
 		result.Size = result.Exist? ulong64(attrib.st_size): 0ull;
+#endif
 		return result;
 	}
 
@@ -148,7 +141,7 @@ namespace Intra { namespace IO
 	{
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 		wchar_t wpath[MAX_PATH];
-		uint wlength = GetCurrentDirectoryW(MAX_PATH, (LPWSTR)wpath);
+		uint wlength = GetCurrentDirectoryW(MAX_PATH, reinterpret_cast<LPWSTR>(wpath));
 		char path[MAX_PATH*3];
 		int length = WideCharToMultiByte(CP_UTF8, 0u, wpath, int(wlength), path, int(core::numof(path)), null, null);
 		const String result = StringView(path, size_t(length));
@@ -269,7 +262,7 @@ namespace Intra { namespace IO
 		}
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows) //Поддержка UTF-8 путей в Windows
 		wchar_t utf16Name[MAX_PATH+1];
-		int wnameLength = MultiByteToWideChar(CP_UTF8, 0, name.Data(), (int)name.Length(), utf16Name, int(core::numof(utf16Name)-1));
+		int wnameLength = MultiByteToWideChar(CP_UTF8, 0, name.Data(), int(name.Length()), utf16Name, int(core::numof(utf16Name)-1));
 		utf16Name[wnameLength] = L'\0';
 		wchar_t utf16Mode[4] = {0};
 		StringView(modes[append][writeAccess][readAccess]).CopyTo(ArrayRange<wchar_t>(utf16Mode));
@@ -301,7 +294,9 @@ namespace Intra { namespace IO
 	{
 		auto size = GetSize();
 		if(bytes==Meta::NumericLimits<size_t>::Max() || firstByte+bytes>size)
+		{
 			bytes = size_t(size-firstByte);
+		}
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 		mapping.data = reinterpret_cast<byte*>(mmap(null, bytes, PROT_READ, MAP_SHARED, GetFileDescriptor(), long(firstByte)));
 #else

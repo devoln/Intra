@@ -184,7 +184,11 @@ public:
 	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
 	template<typename... Args> BListRange<T> Emplace(const_iterator pos, Args&&... args)
 	{
-		if(pos.Range.FirstNode==null) {AddLast(core::forward<Args>(args)...); return;}
+		if(pos.Range.FirstNode==null)
+		{
+			AddLast(core::forward<Args>(args)...);
+			return range;
+		}
 		Node* node = insert_node(pos.Range.FirstNode);
 		new(&node->Value) T(core::forward<Args>(args)...);
 		return BListRange<T>(node, range.LastNode);
@@ -196,7 +200,11 @@ public:
 	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
 	BListRange<T> Insert(const_iterator it, const T& value)
 	{
-		if(it.Range.FirstNode==null) {AddLast(value); return;}
+		if(it.Range.FirstNode==null)
+		{
+			AddLast(value);
+			return range;
+		}
 		Node* node = insert_node(it.Range.FirstNode);
 		new(&node->Value) T(value);
 		return BListRange<T>(node, range.LastNode);
@@ -208,7 +216,11 @@ public:
 	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
 	BListRange<T> Insert(const_iterator it, T&& value)
 	{
-		if(it.Range.FirstNode==null) {AddLast(core::move(value)); return;}
+		if(it.Range.FirstNode==null)
+		{
+			AddLast(core::move(value));
+			return range;
+		}
 		Node* node = insert_node(it.Range.FirstNode);
 		new(&node->Value) T(core::move(value));
 		return BListRange<T>(node, range.LastNode);

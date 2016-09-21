@@ -53,7 +53,7 @@ static ulong64 g_timer_frequency;
 
 Timer::Timer()
 {
-	QueryPerformanceFrequency((LARGE_INTEGER*)&g_timer_frequency);
+	QueryPerformanceFrequency(reinterpret_cast<LARGE_INTEGER*>(&g_timer_frequency));
 	Reset();
 }
 
@@ -73,8 +73,8 @@ double Timer::GetTime()
 double Timer::GetTimeAndReset()
 {
 	ulong64 current;
-	QueryPerformanceCounter((LARGE_INTEGER*)&current);
-	double result = double(current-hndl)/g_timer_frequency;
+	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&current));
+	double result = double(current-hndl)/double(g_timer_frequency);
 	hndl = current;
 	return result;
 }

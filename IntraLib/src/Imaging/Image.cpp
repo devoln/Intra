@@ -393,8 +393,8 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 	INTRA_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
 	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
 	const size_t usefulDstLineBytes = size_t(sizes.x*dstFormat.BytesPerPixel());
-	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~(srcAlignment-1u);
-	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~(dstAlignment-1u);
+	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~size_t(srcAlignment-1u);
+	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~size_t(dstAlignment-1u);
 	const size_t srcDataSize = sizes.y*srcLineBytes, dstDataSize=sizes.y*dstLineBytes;
 	if(dstBuf==null) return s->Skip(srcDataSize);
 
@@ -760,12 +760,16 @@ using Intra::Math::GLSL::min;
 using Intra::Math::GLSL::max;
 
 struct IUnknown;
-#pragma warning(push, 0)
-#include <olectl.h>
-#include <gdiplus.h> //Поддерживает BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, и EMF. Не работает в WinRT \ Windows Phone
-#pragma warning(pop)
 
 #ifdef _MSC_VER
+#pragma warning(push, 0)
+#endif
+
+#include <olectl.h>
+#include <gdiplus.h> //Поддерживает BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, и EMF. Не работает в WinRT \ Windows Phone
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #pragma comment(lib, "gdiplus.lib")
 #endif
 

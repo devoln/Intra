@@ -10,6 +10,12 @@
 #pragma warning(disable: 4365)
 #endif
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
+
+
 namespace Intra { namespace Range {
 
 template<typename R, typename P> struct FilterResult;
@@ -448,6 +454,12 @@ public:
 
 
 }}
+
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 
 #ifdef _MSC_VER
 #pragma warning(pop)

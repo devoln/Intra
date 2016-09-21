@@ -5,7 +5,12 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4512 4626 5026 5027)
+#pragma warning(disable: 4512 4626)
+
+#if _MSC_VER>=1900
+#pragma warning(disable: 5026 5027)
+#endif
+
 #endif
 
 namespace Intra { namespace Meta {

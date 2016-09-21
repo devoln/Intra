@@ -55,11 +55,7 @@ AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sou
 	if(posix_memalign(&result, alignment, bytes)==0) return result;
 	return null;
 #else
-#ifdef _MSC_VER
 	return _aligned_malloc(bytes, alignment);
-#else
-	return aligned_malloc(bytes, alignment);
-#endif
 #endif
 }
 
@@ -69,11 +65,7 @@ void AlignedSystemHeapAllocator::Free(void* ptr, size_t size)
 #ifdef INTRA_PLATFORM_IS_POSIX
 	free(ptr);
 #else
-#ifdef _MSC_VER
 	_aligned_free(ptr);
-#else
-
-#endif
 #endif
 }
 

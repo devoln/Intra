@@ -6,21 +6,30 @@ project(IntraLib)
 
 include_directories(include)
 
+add_definitions(-DINTRA_LIBRARY_WINDOW_SYSTEM=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
+
+option(UNITY_BUILD "Use fast unity build." ON)
+
 include(include/CMakeFileList.txt)
 foreach(FILE ${INTRA_LIB_HEADERS})
 	set(INTRA_LIB_HEADERS1 ${INTRA_LIB_HEADERS1} include/${FILE})
 endforeach(FILE)
+
+if(UNITY_BUILD)
+
+set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/IntraAll.cpp)
+add_definitions(-DINTRA_UNITY_BUILD)
+
+else()
 
 include(src/CMakeFileList.txt)
 foreach(FILE ${INTRA_LIB_SOURCE})
 	set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/${FILE})
 endforeach(FILE)
 
+endif()
+
 add_library(IntraLib STATIC ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
-
-
-set(CMAKE_C_FLAGS_DEBUG "-DINTRA_DEBUG")
-set(CMAKE_CXX_FLAGS_DEBUG "-DINTRA_DEBUG")
 
 
 
@@ -44,7 +53,7 @@ endif()
 
 if(LIBRARY_SOUND_SYSTEM_DirectSound)
 add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_DirectSound)
-target_link_libraries(IntraLib dsound)
+target_link_libraries(IntraLib dsound dxguid)
 elseif(LIBRARY_SOUND_SYSTEM_OpenAL)
 add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
 include_directories(${OPENAL_INCLUDE_DIRS})
@@ -116,6 +125,23 @@ add_definitions(-DINTRA_LIBRARY_FONT_LOADING=INTRA_LIBRARY_FONT_LOADING_Dummy)
 endif()
 
 
+#find_package(Threads)
+#if(THREADS_FOUND)
+#if(UNIX)
+#option(LIBRARY_THREADING_PThread "Use pthread" ON)
+#else()
+#option(LIBRARY_THREADING_PThread "Use pthread" OFF)
+#endif()
+#endif()
+
+#if(LIBRARY_THREADING_PThread)
+#add_definitions(-DINTRA_LIBRARY_THREADING=INTRA_LIBRARY_THREADING_PThread)
+#include_directories(${THREADS_INCLUDE_DIRS})
+#target_link_libraries(IntraLib ${CMAKE_THREAD_LIBS_INIT})
+#else()
+#add_definitions(-DINTRA_LIBRARY_THREADING=INTRA_LIBRARY_THREADING_Dummy)
+#endif()
+
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
@@ -147,3 +173,7 @@ target_link_libraries(IntraLib ${QT4_LIBRARIES})
 else()
 add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_Dummy)
 endif()
+
+
+
+

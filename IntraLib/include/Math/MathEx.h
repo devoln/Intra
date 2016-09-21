@@ -60,8 +60,17 @@ inline bool operator==(real l, NaNType) {return NaN==l;}
 inline bool operator!=(real l, NaNType) {return NaN!=l;}
 
 
+#ifndef NOMINMAX
+#define NOMINMAX 1
+#endif
 
-#define NOMINMAX
+#ifdef min
+#undef min
+#endif
+
+#ifdef max
+#undef max
+#endif
 
 template<typename T> T Sqr(T n) {return n*n;}
 template<typename T> T Abs(T v) {return v>=0? v: -v;}

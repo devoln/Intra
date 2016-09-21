@@ -50,13 +50,13 @@ ArrayRange<const StringView> GetCommandLineArguments()
 {
 	auto cmd = GetCommandLineW();
 	int argc=0;
-	const wchar** argvW = (const wchar**)CommandLineToArgvW(cmd, &argc);
-	static Array<String> args((size_t)argc);
-	static Array<StringView> result((size_t)argc);
+	wchar** const argvW = reinterpret_cast<wchar**>(CommandLineToArgvW(cmd, &argc));
+	static Array<String> args(static_cast<size_t>(argc));
+	static Array<StringView> result(static_cast<size_t>(argc));
 	if(!result.Empty()) return result;
 	for(int i=0; i<argc; i++)
 	{
-		UTF16 utf16range(argvW[i], argvW[i]+wcslen((const wchar_t*)argvW[i]));
+		UTF16 utf16range(argvW[i], argvW[i]+wcslen(reinterpret_cast<const wchar_t*>(argvW[i])));
 		String str = utf16range.ToUTF8();
 		args.AddLast(str);
 		result.AddLast(args.Last());
@@ -68,14 +68,15 @@ ArrayRange<const StringView> GetCommandLineArguments()
 
 #ifndef INTRA_NO_WINDOWS_MAIN
 extern "C" int INTRA_CRTDECL main(int argc, const char* argv[]);
-int WINAPI WinMain(__in HINSTANCE, __in_opt HINSTANCE, __in LPSTR, __in int)
+
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	using namespace Intra;
 	auto args = GetCommandLineArguments();
-	Array<const char*> argv(args.Count());
-	for(::size_t i=0; i<args.Count(); i++) argv.AddLast(String(args[i]).CStr());
+	Array<const char*> argv(args.Length());
+	for(::size_t i=0; i<args.Length(); i++) argv.AddLast(String(args[i]).CStr());
 	if(argv==null) argv.AddLast("");
-	return main((int)args.Count(), &argv[0]);
+	return main(int(args.Count()), &argv[0]);
 }
 #endif
 

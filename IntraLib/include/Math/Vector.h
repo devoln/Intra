@@ -377,7 +377,8 @@ public:
 	};
 };
 
-#define NOMINMAX
+
+
 template<typename T> constexpr Vector2<T> Min(const Vector2<T>& v1, T v2)
 {
 	return {Min(v1.x, v2), Min(v1.y, v2)};

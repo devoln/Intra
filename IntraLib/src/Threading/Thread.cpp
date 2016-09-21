@@ -78,6 +78,7 @@ void Mutex::Unlock() {handle->mut.unlock();}
 #endif
 
 #include <Windows.h>
+#include <xmmintrin.h>
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -103,7 +104,7 @@ enum: size_t {ThreadStackSize=1048576};
 
 static DWORD WINAPI ThreadProc(void* lpParam)
 {
-	ThreadData* data = (ThreadData*)lpParam;
+	ThreadData* data = reinterpret_cast<ThreadData*>(lpParam);
 	data->myFunction();
 	data->thread = null;
 	if(data->isDetached) delete data;
@@ -112,7 +113,7 @@ static DWORD WINAPI ThreadProc(void* lpParam)
 
 void Thread::create_thread(const Thread::Func& func)
 {
-	handle = (Handle*)new ThreadData;
+	handle = static_cast<Handle*>(new ThreadData);
 	handle->isJoinable = true;
 	handle->isDetached = false;
 	handle->myFunction = func;
@@ -123,7 +124,7 @@ void Thread::delete_thread()
 {
 	if(handle==null) return;
 	INTRA_ASSERT(!Joinable());
-	delete (ThreadData*)handle;
+	delete static_cast<ThreadData*>(handle);
 }
 
 void Thread::Join()

@@ -38,7 +38,7 @@ void PrintDebugMessage(StringView message)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	LPWSTR wmessage = new wchar_t[message.Length()+1];
-	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), (int)message.Length(), wmessage, (int)message.Length());
+	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), int(message.Length()), wmessage, int(message.Length()));
 	wmessage[wmessageLength] = L'\0';
 	OutputDebugStringW(wmessage);
 	delete[] wmessage;

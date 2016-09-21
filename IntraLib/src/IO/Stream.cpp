@@ -2,18 +2,13 @@
 
 #include <stdio.h>
 
-
-#ifdef _MSC_VER
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 
 #endif
 
 #include <io.h>
-
-#endif
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -213,7 +208,7 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 	byte unreadedBytesToRead = byte(Math::Min<size_t>(unread_buf_chars, bytes));
 	core::memcpy(pdst, unread_buf, unreadedBytesToRead);
 	pdst += unreadedBytesToRead;
-	unread_buf_chars -= unreadedBytesToRead;
+	unread_buf_chars = byte(int(unread_buf_chars)-int(unreadedBytesToRead));
 	core::memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
 
 	const auto hndl = HANDLE(_get_osfhandle(_fileno(reinterpret_cast<FILE*>(myfin))));
@@ -227,8 +222,8 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 		int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, c, int(read), u8, sizeof(u8), null, null);
 		size_t bytesToRead = Math::Min(size_t(bytesPerChar), size_t(pend-pdst));
 		core::memcpy(pdst, u8, bytesToRead);
-		core::memcpy(unread_buf, u8+bytesToRead, bytesPerChar-bytesToRead);
-		unread_buf_chars = byte(bytesPerChar-bytesToRead);
+		core::memcpy(unread_buf, u8+bytesToRead, size_t(bytesPerChar)-bytesToRead);
+		unread_buf_chars = byte(size_t(bytesPerChar)-bytesToRead);
 		pdst+=bytesToRead;
 	}
 	return bytes;

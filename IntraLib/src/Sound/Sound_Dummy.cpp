@@ -145,6 +145,7 @@ void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 
 bool StreamedSoundIsPlaying(StreamedBufferHandle si)
 {
+	(void)si;
 	return false;
 }
 

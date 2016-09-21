@@ -73,7 +73,7 @@ GLInit::GLInit()
 	wglCreateContextAttribsARB=null; wglChoosePixelFormatARB=null;
 
 	WNDCLASSW wc = {
-		CS_HREDRAW|CS_VREDRAW, (WNDPROC)DefWindowProcW, 0, 0,
+		CS_HREDRAW|CS_VREDRAW, DefWindowProcW, 0, 0,
 		GetModuleHandle(null), LoadIcon(null, IDI_APPLICATION),
 		LoadCursor(null, IDC_ARROW), null, 0, cname
 	};
@@ -94,8 +94,8 @@ GLInit::GLInit()
 	bool gles;
 	version = GetGLVersion(&gles);
 
-	wglCreateContextAttribsARB = (WGLCCA)wglGetProcAddress("wglCreateContextAttribsARB");
-	wglChoosePixelFormatARB = (WGLCPF)wglGetProcAddress("wglChoosePixelFormatARB");
+	wglCreateContextAttribsARB = reinterpret_cast<WGLCCA>(wglGetProcAddress("wglCreateContextAttribsARB"));
+	wglChoosePixelFormatARB = reinterpret_cast<WGLCPF>(wglGetProcAddress("wglChoosePixelFormatARB"));
 }
 
 GLInit::~GLInit()
@@ -115,15 +115,16 @@ WindowHandle WindowCreate(StringView caption, WindowType type, SVec2 pos, USVec2
 	const String className = "P_Window"+ToString(windowsCreated);
 
 	wchar_t wclassName[20];
-	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), (int)className.Length(), wclassName, (int)core::numof(wclassName));
+	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(core::numof(wclassName)));
 	wclassName[size_t(wclassNameLength)] = L'\0';
 	WString wcaption;
 	wcaption.Reserve(caption.Length()+1);
-	int wcaptionLength = MultiByteToWideChar(CP_UTF8, 0, caption.Data(), (int)caption.Length(), (LPWSTR)wcaption.Data(), (int)caption.Length());
+	int wcaptionLength = MultiByteToWideChar(CP_UTF8, 0, caption.Data(),
+			int(caption.Length()), reinterpret_cast<LPWSTR>(wcaption.Data()), int(caption.Length()));
 	wcaption.SetLengthUninitialized(size_t(wcaptionLength));
 
     WNDCLASSW wc = {
-		CS_HREDRAW|CS_VREDRAW, (WNDPROC)StaticWndProc, 0, 0,
+		CS_HREDRAW|CS_VREDRAW, StaticWndProc, 0, 0,
 		GetModuleHandle(null), LoadIcon(null, IDI_APPLICATION),
 		LoadCursor(null, IDC_ARROW), null, 0, wclassName
 	};
@@ -137,13 +138,21 @@ WindowHandle WindowCreate(StringView caption, WindowType type, SVec2 pos, USVec2
 	impl->id = windowsCreated++;
 
 	impl->winstyle = WS_CLIPCHILDREN|WS_CLIPSIBLINGS|WS_OVERLAPPEDWINDOW;
-	if(type & WindowType_Popup) impl->winstyle &= ~WS_OVERLAPPEDWINDOW, impl->winstyle|=WS_POPUP;
-	if(type & WindowType_NoMaximize) impl->winstyle &= ~WS_MAXIMIZEBOX;
-	if(type & WindowType_NoMinimize) impl->winstyle &= ~WS_MINIMIZEBOX;
-	if(type & WindowType_NoResize) impl->winstyle &= ~WS_THICKFRAME;
-	if(type & WindowType_NoCaption) impl->winstyle &= ~WS_CAPTION;
+	if(type & WindowType_Popup)
+	{
+		impl->winstyle &= ~uint(WS_OVERLAPPEDWINDOW);
+		impl->winstyle|=WS_POPUP;
+	}
+	if(type & WindowType_NoMaximize)
+		impl->winstyle &= ~uint(WS_MAXIMIZEBOX);
+	if(type & WindowType_NoMinimize)
+		impl->winstyle &= ~uint(WS_MINIMIZEBOX);
+	if(type & WindowType_NoResize)
+		impl->winstyle &= ~uint(WS_THICKFRAME);
+	if(type & WindowType_NoCaption)
+		impl->winstyle &= ~uint(WS_CAPTION);
 
-	impl->hwnd=CreateWindowExW(0, wclassName, (LPCWSTR)wcaption.CStr(),
+	impl->hwnd=CreateWindowExW(0, wclassName, reinterpret_cast<LPCWSTR>(wcaption.CStr()),
 		impl->winstyle, pos.x, pos.y, size.x, size.y, null, null, wc.hInstance, impl);
 
 	impl->prev_cursor=null;
@@ -175,12 +184,12 @@ GLContextHandle WindowCreateGLContext(WindowHandle wnd, uint msaaSamples, bool v
 			WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,  WGL_COLOR_BITS_ARB, 32,  WGL_DEPTH_BITS_ARB, 24,
 			WGL_STENCIL_BITS_ARB, 8,
 			(msaaSamples>1? WGL_SAMPLE_BUFFERS_ARB: 0 /*end*/), 1,
-			WGL_SAMPLES_ARB, (int)msaaSamples,
+			WGL_SAMPLES_ARB, int(msaaSamples),
 			0
 		};
 
 		uint numFormats;
-		for(int i=(int)msaaSamples; i>=0; i--)
+		for(int i = int(msaaSamples); i>=0; i--)
 		{
 			attribList[17]=i;
 			if(i<=1) attribList[14]=0;
@@ -224,7 +233,7 @@ GLContextHandle WindowCreateGLContext(WindowHandle wnd, uint msaaSamples, bool v
 	if(gl.SwapInterval!=null) gl.SwapInterval(vsync);
 	if(gl.Caps.multisampling && msaaSamples>1) glEnable(OpenGL::MULTISAMPLE);
 
-	return (GLContextHandle)wnd->gl;
+	return reinterpret_cast<GLContextHandle>(wnd->gl);
 }
 
 void WindowDeleteGLContext(WindowHandle wnd)
@@ -243,7 +252,7 @@ void WindowDelete(WindowHandle wnd)
 	if(wnd->hwnd!=null) DestroyWindow(wnd->hwnd);
 	const String className = "P_Window"+ToString(wnd->id);
 	wchar_t wclassName[20];
-	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), (int)className.Length(), wclassName, (int)core::numof(wclassName));
+	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(core::numof(wclassName)));
 	wclassName[wclassNameLength]=L'\0';
 	UnregisterClassW(wclassName, GetModuleHandleW(null));
 	delete wnd;
@@ -255,7 +264,7 @@ void WindowSetState(WindowHandle wnd, WindowState state)
 	if(state==WindowState::FullScreen && !wnd->is_fullscreen)	//Из оконного в полноэкранный
 	{
 		//Отключим WS_OVERLAPPEDWINDOW и добавим WS_POPUP
-		SetWindowLong(wnd->hwnd, GWL_STYLE, LONG((LONG(wnd->winstyle) & ~WS_OVERLAPPEDWINDOW)|WS_POPUP));
+		SetWindowLong(wnd->hwnd, GWL_STYLE, (LONG(wnd->winstyle) & ~LONG(WS_OVERLAPPEDWINDOW))|LONG(WS_POPUP));
 		RECT rect; GetWindowRect(wnd->hwnd, &rect);
 		wnd->preFSpos = SVec2(short(rect.left), short(rect.top));
 		wnd->preFSsizes = USVec2(ushort(rect.right-rect.left), ushort(rect.bottom-rect.top)); //Сохраняем размеры для возврата из полноэкранного режима
@@ -276,7 +285,7 @@ void WindowSetState(WindowHandle wnd, WindowState state)
 	}
 
 	static const int winapi_states[] = {SW_MAXIMIZE, SW_MINIMIZE, SW_SHOW, SW_SHOW, SW_HIDE};
-	ShowWindow(wnd->hwnd, winapi_states[(byte)state]);
+	ShowWindow(wnd->hwnd, winapi_states[byte(state)]);
 }
 
 WindowState WindowGetState(WindowHandle wnd)
@@ -293,16 +302,19 @@ void WindowSetCaption(WindowHandle wnd, StringView caption)
 {
 	WString wcaption;
 	wcaption.Reserve(caption.Length()+1);
-	MultiByteToWideChar(CP_UTF8, 0, caption.Data(), (int)caption.Length(), (LPWSTR)wcaption.Data(), (int)wcaption.Capacity());
-	SetWindowTextW(wnd->hwnd, (LPCWSTR)wcaption.CStr());
+	MultiByteToWideChar(CP_UTF8, 0, caption.Data(), int(caption.Length()),
+		reinterpret_cast<LPWSTR>(wcaption.Data()), int(wcaption.Capacity()));
+
+	SetWindowTextW(wnd->hwnd, reinterpret_cast<LPCWSTR>(wcaption.CStr()));
 }
 
 bool WindowIsActive(WindowHandle wnd) {return GetActiveWindow()==wnd->hwnd;}
 
 void WindowShowCursor(WindowHandle wnd, bool visible)
 {
-	if(!visible) wnd->prev_cursor = (HCURSOR)SetClassLongPtrW(wnd->hwnd, GCLP_HCURSOR, (LONG_PTR)empty_cursor);
-	else SetClassLongPtrW(wnd->hwnd, GCLP_HCURSOR, (LONG_PTR)wnd->prev_cursor);
+	if(!visible) wnd->prev_cursor = reinterpret_cast<HCURSOR>(SetClassLongPtrW(wnd->hwnd,
+			GCLP_HCURSOR, reinterpret_cast<LONG_PTR>(empty_cursor)));
+	else SetClassLongPtrW(wnd->hwnd, GCLP_HCURSOR, reinterpret_cast<LONG_PTR>(wnd->prev_cursor));
 }
 
 void WindowSetPos(WindowHandle wnd, SVec2 newpos)
@@ -342,8 +354,8 @@ void WindowGLMakeCurrent(WindowHandle wnd) {wglMakeCurrent(wnd->dc, wnd->gl);}
 USVec2 WindowGetScreenResolution()
 {
 	return USVec2(
-		(ushort)GetSystemMetrics(SM_CXSCREEN),
-		(ushort)GetSystemMetrics(SM_CYSCREEN)
+		ushort(GetSystemMetrics(SM_CXSCREEN)),
+		ushort(GetSystemMetrics(SM_CYSCREEN))
 	);
 }
 
@@ -365,12 +377,13 @@ static LRESULT WINAPI StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 {
 	if(uMsg==WM_NCCREATE)
 	{
-		WindowHandle wnd = (WindowHandle)((CREATESTRUCT*)lParam)->lpCreateParams;
+		WindowHandle wnd = reinterpret_cast<WindowHandle>(
+				reinterpret_cast<CREATESTRUCT*>(lParam)->lpCreateParams);
 		INTRA_ASSERT(wnd!=null);
 		SetWindowLongPtrW(hWnd, GWLP_USERDATA, reinterpret_cast<intptr>(wnd));
 		return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 	}
-	WindowHandle wnd = (WindowHandle)GetWindowLongPtrW(hWnd, GWLP_USERDATA);
+	WindowHandle wnd = reinterpret_cast<WindowHandle>(GetWindowLongPtrW(hWnd, GWLP_USERDATA));
 	if(wnd==null) return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 
 	switch(uMsg)
@@ -397,7 +410,7 @@ static LRESULT WINAPI StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 
 		case WM_GETMINMAXINFO:
 		{
-			MINMAXINFO* info = (MINMAXINFO*)lParam;
+			MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(lParam);
 			info->ptMinTrackSize = {wnd->min_size.x, wnd->min_size.y};
 			info->ptMaxTrackSize = {wnd->max_size.x, wnd->max_size.y};
 		}
@@ -410,6 +423,8 @@ static LRESULT WINAPI StaticWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 			else OnResize(wnd->wndObj, USVec2(ushort(rect.right-rect.left), ushort(rect.bottom-rect.top) ));
 		}
 		return 0;
+
+		default: return 0;
 	}
 	return DefWindowProcW(hWnd, uMsg, wParam, lParam);
 }

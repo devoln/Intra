@@ -28,7 +28,6 @@ void WindowGLSwapBuffers(WindowHandle wnd);
 void WindowGLMakeCurrent(WindowHandle wnd);
 Math::USVec2 GetScreenResolution();
 
-void AppProcessMessages();
 extern bool AppIsRunning;
 
 //Определяется снаружи

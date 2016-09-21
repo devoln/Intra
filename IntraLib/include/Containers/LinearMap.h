@@ -109,11 +109,11 @@ public:
 	//! Вставка за линейное время O(n)
 	iterator Insert(const Pair& p)
 	{
-		auto i = keys.FindIndex(p.first);
+		size_t i = keys.FindIndex(p.first);
 		if(i!=Count())
 		{
 			values[i] = p.second;
-			return;
+			return iterator(this, i);
 		}
 		keys.AddLast(p.first);
 		values.AddLast(p.second);
@@ -122,7 +122,7 @@ public:
 
 	iterator Insert(const K& key, V&& value)
 	{
-		auto i = FindIndex(key);
+		size_t i = FindIndex(key);
 		if(i!=Count()) return values[i] = core::move(value);
 		keys.AddLast(key);
 		values.AddLast(core::move(value));

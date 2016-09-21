@@ -1,10 +1,41 @@
- 
-if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles"  OR ${CMAKE_GENERATOR} MATCHES "MinGW Makefiles")
-    set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
-    set(CMAKE_MAKE_PROGRAM      "${CMAKE_MAKE_PROGRAM} -j{PROCESSOR_COUNT}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${ALL_WARNINGS} -std=c++11 -pthread -fno-exceptions -fno-rtti -fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Ofast -funroll-loops -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections" )
-    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${ALL_WARNINGS}  -std=c++11 -pthread -O0 -g3")
+
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DINTRA_DEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DINTRA_DEBUG")
+
+option(OUTPUT_MAP "Output .map file." OFF)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
+    set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor \
+		-Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
+	set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11")
+	
+	if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
+		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
+	endif()
+	
+	option(COMPILE_32_BIT "Compile as 32 bit application." OFF)
+	option(COMPILE_64_BIT "Compile as 64 bit application." OFF)
+	
+	if(COMPILE_64_BIT)
+		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m64")
+	if(COMPILE_32_BIT)
+		message("Selected both options 64 and 32 bit. 64 bit build is chosen.")
+	endif()
+	elseif(COMPILE_32_BIT)
+		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m32")
+	endif()
+	
+	if(OUTPUT_MAP)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
+	endif()
+	
+    set(CMAKE_MAKE_PROGRAM      "${CMAKE_MAKE_PROGRAM} -j4")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} -g0 -fno-exceptions -fno-rtti \
+		-fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Os -fno-unroll-loops \
+		-fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-s" )
+    set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_PARAMETERS} -O0 -g3")
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS_RELEASE}")
+	
 elseif(MSVC)
 
     foreach( OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES}       )
@@ -17,4 +48,10 @@ elseif(MSVC)
 
         set(CMAKE_CXX_FLAGS_${OUTPUTCONFIG} "${CMAKE_CXX_FLAGS_${OUTPUTCONFIG}} /MP")
     endforeach()
+	
+	if(OUTPUT_MAP)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP" CACHE INTERNAL "" FORCE)
+	endif()
+	
 endif()
+

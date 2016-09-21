@@ -77,8 +77,18 @@ double Mod(double x, double y) {return fmod(x, y);}
 #endif
 
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+
 bool NaNType::operator==(float rhs) const {return isnan(rhs)!=0;}
 bool NaNType::operator==(double rhs) const {return isnan(float(rhs))!=0;}
 bool NaNType::operator==(real rhs) const {return isnan(float(rhs))!=0;}
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 
 }}

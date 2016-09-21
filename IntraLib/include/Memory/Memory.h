@@ -52,7 +52,7 @@ template<typename T> Meta::EnableIfTrivDestructible<T, void> Destruct(ArrayRange
 {
 #ifdef INTRA_DEBUG
 	if(dst.Begin < dst.End)\
-		core::memset(dst.Begin, 0xDEDEDEDE, dst.Length()*sizeof(T));
+		core::memset(dst.Begin, 0xDE, dst.Length()*sizeof(T));
 #endif
 	(void)dst;
 }

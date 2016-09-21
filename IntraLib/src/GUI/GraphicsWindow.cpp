@@ -34,8 +34,8 @@ void OnMouseMove(void* wnd, Math::SVec2 mousepos) {reinterpret_cast<GraphicsWind
 
 
 //Создание окна и инициализация в нём OpenGL
-GraphicsWindow::GraphicsWindow(StringView caption, WindowType type, SVec2 pos, USVec2 size, WindowState state):
-	my_graphics(null), is_cursor_visible(true), position(pos), size(size)
+GraphicsWindow::GraphicsWindow(StringView caption, WindowType type, SVec2 pos, USVec2 sizes, WindowState state):
+	my_graphics(null), is_cursor_visible(true), position(pos), size(sizes)
 {
 	core::memset(was_pressed_keys, 0, sizeof(was_pressed_keys));
 	core::memset(was_released_keys, 0, sizeof(was_released_keys));

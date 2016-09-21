@@ -131,10 +131,18 @@ using Intra::Math::GLSL::max;
 using Intra::Math::GLSL::min;
 
 struct IUnknown;
+
+#ifdef _MSC_VER
 #pragma warning(push, 0)
+#endif
+
 #include <olectl.h>
 #include <gdiplus.h>
+
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
+
 
 using namespace Gdiplus;
 using namespace Gdiplus::DllExports;
