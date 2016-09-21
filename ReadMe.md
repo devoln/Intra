@@ -31,7 +31,7 @@ In addition to the [library](IntraLib) this repository also contains:
 
 For now the library is unstable and lacks tests and documentation. It is not recommended to use in production.
 
-### Setup and compilation on Unix-like systems:
+### Setup and compilation on Debian based linux:
 ```bash
 sudo apt-get install libopenal-dev git cmake
 git clone https://github.com/gammaker/Intra
@@ -70,7 +70,7 @@ make -j4
 - Linux;
 - Ожидаются FreeBSD, Android, Emscripten.
 
-### Установка и компиляция на Unix-подобных ОС
+### Установка и компиляция на Debian-based ОС:
 ```bash
 sudo apt-get install libopenal-dev git cmake
 git clone https://github.com/gammaker/Intra
