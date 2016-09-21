@@ -5,8 +5,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DINTRA_DEBUG")
 option(OUTPUT_MAP "Output .map file." OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
-    set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor \
-		-Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
+    set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
+    set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
 	set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11")
 	
 	if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
@@ -30,9 +30,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
 	endif()
 	
     set(CMAKE_MAKE_PROGRAM      "${CMAKE_MAKE_PROGRAM} -j4")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} -g0 -fno-exceptions -fno-rtti \
-		-fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Os -fno-unroll-loops \
-		-fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-s" )
+    
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} -g0 -fno-exceptions -fno-rtti")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Os")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-unroll-loops -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-s" )
+    
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_PARAMETERS} -O0 -g3")
     set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS_RELEASE}")
 	
