@@ -75,8 +75,8 @@ template<typename T> Meta::EnableIfTrivDestructible<T, void> DestructObj(T& dst)
 template<typename T> void CopyBits(ArrayRange<T> dst, ArrayRange<const T> src)
 {
 	INTRA_ASSERT(dst.Length()>=src.Length());
-	//core::memmove(dst.Begin, src.Begin, src.Count()*sizeof(T));
-	core::memcpy(dst.Begin, src.Begin, src.Count()*sizeof(T));
+	core::memmove(dst.Begin, src.Begin, src.Count()*sizeof(T));
+	//core::memcpy(dst.Begin, src.Begin, src.Count()*sizeof(T));
 }
 
 template<typename T> void CopyBits(T* dst, const T* src, size_t count)
