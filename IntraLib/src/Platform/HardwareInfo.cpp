@@ -37,15 +37,9 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 
 }
 
-#else
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 
 #include <unistd.h>
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
-#include <sys/sysinfo.h>
-#else
-#include <sys/systeminfo.h>
-#endif
 
 namespace Intra {
 
@@ -75,6 +69,46 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 
 }
 
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <sys/vmmeter.h>
+#include <sys/limits.h>
+#include <vm/vm_param.h>
+
+static vmtotal getVMinfo()
+{
+  vmtotal vm_info;
+  int mib[2] = {CTL_VM, VM_TOTAL};
+  size_t len = sizeof(vm_info);
+  sysctl(mib, 2, &vm_info, &len, null, 0);
+  return vm_info;
+}
+
+static int getSysCtl(int top_level, int next_level)
+{
+	int mib[2] = {top_level, next_level}
+	size_t len = sizeof(ctlvalue);
+	int ctlvalue;
+	sysctl(mib, 2, &ctlvalue, &len, NULL, 0);	
+	return ctlvalue;
+}
+
+SystemMemoryInfo SystemMemoryInfo::Get()
+{
+	SystemMemoryInfo result;
+		
+	vmtotal vmsize = getVMinfo();
+	result.TotalPhysicalMemory = vmsize.t_rm;
+	result.FreePhysicalMemory = getSysCtl(CTL_HW, HW_REALMEM);
+	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
+	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
+	result.TotalVirtualMemory = vmsize.t_vm;
+	result.FreeVirtualMemory = vmsize.t_free*getSysCtl(CTL_HW, HW_PAGESIZE);
+
+	return result;
+}
 
 #endif
 
