@@ -11,9 +11,18 @@
 #include "Containers/String.h"
 #include "Core/Time.h"
 
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4350)
+#endif
+
 #include <string>
 #ifndef INTRA_MINIMIZE_CRT
 #include <sstream>
+#endif
+
+#ifdef _MSC_VER
+#pragma warning(pop)
 #endif
 
 using namespace Intra;

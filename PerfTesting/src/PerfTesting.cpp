@@ -1,4 +1,5 @@
-﻿#include "Core/Time.h"
+﻿
+#include "Core/Time.h"
 #include "Platform/HardwareInfo.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
@@ -12,6 +13,10 @@
 #include "PerfTestRanges.h"
 #include "PerfTestRandom.h"
 #include "PerfTestSort.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4350)
+#endif
 
 #include <stdlib.h>
 
@@ -91,8 +96,11 @@ void InitLogSystem(int argc, const char* argv[])
 #include "Containers/Array.h"
 #include "Containers/HashMap.h"
 #include "Containers/List.h"
+
+#if INTRA_DISABLED
 #include <unordered_map>
 #include <vector>
+#endif
 
 int main(int argc, const char* argv[])
 {

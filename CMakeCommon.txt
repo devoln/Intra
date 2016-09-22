@@ -26,28 +26,27 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
 	endif()
 	
-    set(CMAKE_MAKE_PROGRAM      "${CMAKE_MAKE_PROGRAM} -j4")
+    set(CMAKE_MAKE_PROGRAM "${CMAKE_MAKE_PROGRAM} -j4")
+	
+	set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-exceptions -fno-rtti")
+	set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -Wl,-s -fno-asynchronous-unwind-tables")
     
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} -g0 -fno-exceptions -fno-rtti")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-stack-protector -fomit-frame-pointer -fno-math-errno -fmerge-all-constants -Os")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-unroll-loops -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections -Wl,--gc-sections -Wl,-s" )
-    
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Wl,-s -Ofast")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -Os")
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_PARAMETERS} -O0 -g3")
-    set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS_RELEASE}")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO   "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Ofast -g3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
 	
 elseif(MSVC)
-
-    foreach( OUTPUTCONFIG "${CMAKE_CONFIGURATION_TYPES}")
-        set(CMAKE_CXX_FLAGS_${OUTPUTCONFIG} "/Wall /MP")
-    endforeach()
 	
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O3 /Ot /Oi /GT /GL /MT /fp:fast")
-	set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} /O1 /Os /Oi /GT /GL /Gs- /MT /fp:fast")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /O3 /Ot /Oi /GT /GL /MT /fp:fast /Zi")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /O0 /MDd /fp:fast /Zi /D_DEBUG")
+	set(CMAKE_CXX_FLAGS_RELEASE "/Wall /MP /Ox /Ot /Oi /GT /GL /GF /MT /fp:fast")
+	set(CMAKE_CXX_FLAGS_MINSIZEREL "/Wall /MP /O1 /Os /Oi /GT /GL /GF /Gs- /MT /fp:fast")
+	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Wall /MP /O3 /Ot /Oi /GT /GL /GF /MT /fp:fast /Zi /DINTRA_DEBUG")
+	set(CMAKE_CXX_FLAGS_DEBUG "/Wall /MP /Od /MDd /fp:fast /Zi /D_DEBUG")
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
 	
 	if(OUTPUT_MAP)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP" CACHE INTERNAL "" FORCE)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP")
 	endif()
 	
 endif()

@@ -3,6 +3,11 @@
 #include "Test/PerformanceTest.h"
 
 #include "Math/Random.h"
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4350)
+#endif
+
 #include <random>
 #include <stdlib.h>
 

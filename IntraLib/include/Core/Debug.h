@@ -30,7 +30,7 @@ void InternalError(StringView func, StringView file, int line, StringView info);
 #define INTRA_INTERNAL_ERROR(msg) (INTRA_DEBUGGER_BREAKPOINT, Intra::InternalError(__func__, __FILE__, __LINE__, msg))
 #endif
 
-#ifdef _DEBUG
+#if defined(_DEBUG) && !defined(INTRA_DEBUG)
 #define INTRA_DEBUG
 #endif
 

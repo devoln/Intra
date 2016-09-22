@@ -8,8 +8,16 @@
 #include "IO/LogSystem.h"
 #include "Core/Time.h"
 
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4350 4702)
+#endif
 #include <map>
 #include <unordered_map>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include "Containers/LinearMap.h"
 #include "Containers/HashMap.h"

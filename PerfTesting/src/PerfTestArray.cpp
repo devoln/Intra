@@ -13,10 +13,19 @@
 #include "Containers/List.h"
 #include "IO/LogSystem.h"
 
+
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4350)
+#endif
 #include <vector>
 #include <string>
 #include <deque>
 #include <list>
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 using namespace Intra;
 using namespace Intra::IO;

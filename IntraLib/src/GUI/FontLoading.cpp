@@ -65,7 +65,7 @@ short FontGetKerning(FontHandle font, int left, int right)
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_FreeType)
 
 #include <ft2build.h>
-#include <freetype.h>
+#include <freetype/freetype.h>
 
 namespace Intra {
 
@@ -75,7 +75,13 @@ namespace FontLoadingAPI {
 
 static FT_Library ft=null;
 
-static struct Deinitor {~Deinitor() {if(ft!=null) FT_Done_FreeType(ft);}} Deinitor; //Деинициализация при выходе из программы
+static struct Deinitor
+{
+	~Deinitor()
+	{
+		if(ft!=null) FT_Done_FreeType(ft);
+	}
+} Deinitor; //Деинициализация при выходе из программы
 
 struct Font
 {
@@ -100,7 +106,7 @@ FontHandle FontCreateFromMemory(const void* data, size_t length, ushort height)
 	size_t bytesToAllocate = length;
 	desc->dataCopy = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	core::memcpy(desc->dataCopy, data, length);
-	FT_New_Memory_Face(ft, (const FT_Byte*)desc->dataCopy, length, 0, &desc->face);
+	FT_New_Memory_Face(ft, reinterpret_cast<const FT_Byte*>(desc->dataCopy), long(length), 0, &desc->face);
 	FT_Set_Pixel_Sizes(desc->face, height, height);
 	return desc;
 }
@@ -118,8 +124,8 @@ const byte* FontGetCharBitmap(FontHandle desc, uint code, SVec2* offset, USVec2*
 	FT_Face face = desc->face;
 	FT_Load_Char(face, code, FT_LOAD_RENDER);
 	auto glyph = face->glyph;
-	*offset = {(short)glyph->bitmap_left, (short)glyph->bitmap_top};
-	*size = {(ushort)glyph->bitmap.width, (ushort)glyph->bitmap.rows};
+	*offset = {short(glyph->bitmap_left), short(glyph->bitmap_top)};
+	*size = {ushort(glyph->bitmap.width), ushort(glyph->bitmap.rows)};
 	return glyph->bitmap.buffer;
 }
 

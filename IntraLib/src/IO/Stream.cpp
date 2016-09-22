@@ -248,7 +248,7 @@ dchar ConsoleStream::GetChar()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	auto ch = _getwch();
-	return ch=='\r'? '\n': dchar(ch);
+	return ch=='\r'? dchar('\n'): dchar(ch);
 #else
 	termios oldt, newt;
 	int ch;
