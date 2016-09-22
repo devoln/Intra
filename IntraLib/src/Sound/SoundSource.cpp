@@ -28,21 +28,21 @@ struct VorbisSoundSampleSource::Decoder
 
 static size_t stream_read_func(void* ptr, size_t size, size_t nmemb, void* datasource)
 {
-	auto stream = (IInputStream*)datasource;
+	auto stream = reinterpret_cast<IInputStream*>(datasource);
 	stream->ReadData(ptr, size*nmemb);
 	return stream->EndOfStream()? 0: size*nmemb;
 }
 
 static int stream_seek_func(void* datasource, ogg_int64_t offset, int whence)
 {
-	auto stream = (IInputStream*)datasource;
+	auto stream = reinterpret_cast<IInputStream>(datasource);
 	if(whence==SEEK_SET) stream->SetPos(offset);
-	if(whence==SEEK_CUR) stream->SetPos(stream->GetPos()+offset);
-	if(whence==SEEK_END) stream->SetPos(stream->GetSize()+offset);
+	if(whence==SEEK_CUR) stream->SetPos(ulong64(long64(stream->GetPos())+offset));
+	if(whence==SEEK_END) stream->SetPos(ulong64(long64(stream->GetSize())+offset));
 	return 0;
 }
 
-static long stream_tell_func(void* datasource) {return ((IInputStream*)datasource)->GetPos();}
+static long stream_tell_func(void* datasource) {return reinterpret_cast<IInputStream*>(datasource)->GetPos();}
 
 VorbisSoundSampleSource::VorbisSoundSampleSource(ArrayRange<const byte> srcFileData): data(srcFileData)
 {
@@ -53,8 +53,8 @@ VorbisSoundSampleSource::VorbisSoundSampleSource(ArrayRange<const byte> srcFileD
 	decoder->current_section = 0;
 
 	auto info = ov_info(&decoder->file, -1);
-	channelCount = (ushort)info->channels;
-	sampleRate = (uint)info->rate;
+	channelCount = ushort(info->channels);
+	sampleRate = uint(info->rate);
 }
 
 VorbisSoundSampleSource::~VorbisSoundSampleSource()
@@ -63,7 +63,7 @@ VorbisSoundSampleSource::~VorbisSoundSampleSource()
 	delete decoder;
 }
 
-size_t VorbisSoundSampleSource::SampleCount() const {return (size_t)ov_pcm_total(&decoder->file, -1);}
+size_t VorbisSoundSampleSource::SampleCount() const {return size_t(ov_pcm_total(&decoder->file, -1));}
 size_t VorbisSoundSampleSource::CurrentSamplePosition() const {return decoder->current_position;}
 
 size_t VorbisSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
@@ -71,7 +71,7 @@ size_t VorbisSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShort
 	size_t totalSamplesRead=0;
 	while(!outShorts.Empty())
 	{
-		auto ret = ov_read(&decoder->file, (char*)outShorts.Begin, (int)outShorts.Length(),
+		auto ret = ov_read(&decoder->file, reinterpret_cast<char*>(outShorts.Begin), int(outShorts.Length()),
 			false, sizeof(short), true, &decoder->current_section);
 		if(ret==0) break;
 		if(ret<0)
@@ -93,13 +93,14 @@ size_t VorbisSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloat
 	while(!outFloats.Empty())
 	{
 		float** pcm;
-		auto bytesRead = ov_read_float(&decoder->file, &pcm, (int)outFloats.Length(), &decoder->current_section);
+		auto bytesRead = ov_read_float(&decoder->file, &pcm, int(outFloats.Length()), &decoder->current_section);
 		if(bytesRead<=0) return 0;
 		size_t samplesRead = size_t(bytesRead)/sizeof(float);
 		decoder->current_position += samplesRead;
 		totalSamplesRead += samplesRead;
 		ArrayRange<const float> inputChannels[8];
-		for(size_t i=0; i<channelCount; i++) inputChannels[i] = ArrayRange<const float>(pcm[i], samplesRead);
+		for(size_t i=0; i<channelCount; i++)
+			inputChannels[i] = ArrayRange<const float>(pcm[i], samplesRead);
 		Algo::Interleave(outFloats.Take(samplesRead), ArrayRange<const ArrayRange<const float>>(inputChannels, channelCount));
 		outFloats.PopFirstExactly(samplesRead);
 	}
@@ -116,7 +117,7 @@ size_t VorbisSoundSampleSource::GetUninterleavedSamples(ArrayRange<const ArrayRa
 	while(!outFloats1[0].Empty())
 	{
 		float** pcm;
-		auto bytesRead = ov_read_float(&decoder->file, &pcm, (int)outFloats1[0].Length(), &decoder->current_section);
+		auto bytesRead = ov_read_float(&decoder->file, &pcm, int(outFloats1[0].Length()), &decoder->current_section);
 		if(bytesRead<=0) return 0;
 		size_t samplesRead = size_t(bytesRead)/sizeof(float);
 		decoder->current_position += samplesRead;
@@ -147,31 +148,32 @@ Array<const void*> VorbisSoundSampleSource::GetRawSamplesData(size_t maxSamplesT
 
 VorbisSoundSampleSource::VorbisSoundSampleSource(ArrayRange<const byte> srcFileData): data(srcFileData)
 {
-	decoder = (DecoderHandle)stb_vorbis_open_memory((byte*)srcFileData.Begin, (uint)srcFileData.Count(), null, null);
-	stb_vorbis_info info = stb_vorbis_get_info((stb_vorbis*)decoder);
-	channelCount = (ushort)info.channels;
+	decoder = reinterpret_cast<DecoderHandle>(stb_vorbis_open_memory(
+		reinterpret_cast<byte*>(srcFileData.Begin), uint(srcFileData.Count()), null, null));
+	stb_vorbis_info info = stb_vorbis_get_info(reinterpret_cast<stb_vorbis*>(decoder));
+	channelCount = ushort(info.channels);
 	sampleRate = info.sample_rate;
 }
 
 VorbisSoundSampleSource::~VorbisSoundSampleSource()
 {
-	stb_vorbis_close((stb_vorbis*)decoder);
+	stb_vorbis_close(reinterpret_cast<stb_vorbis*>(decoder));
 }
 
 size_t VorbisSoundSampleSource::SampleCount() const
 {
-	return stb_vorbis_stream_length_in_samples((stb_vorbis*)decoder);
+	return stb_vorbis_stream_length_in_samples(reinterpret_cast<stb_vorbis*>(decoder));
 }
 
 size_t VorbisSoundSampleSource::CurrentSamplePosition() const
 {
-	return stb_vorbis_get_sample_offset((stb_vorbis*)decoder);
+	return stb_vorbis_get_sample_offset(reinterpret_cast<stb_vorbis*>(decoder));
 }
 
 size_t VorbisSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
-	const auto dec = (stb_vorbis*)decoder;
-	size_t samplesRead = stb_vorbis_get_samples_short_interleaved(dec, channelCount, outShorts.Begin, (int)outShorts.Count());
+	const auto dec = reinterpret_cast<stb_vorbis*>(decoder);
+	size_t samplesRead = stb_vorbis_get_samples_short_interleaved(dec, channelCount, outShorts.Begin, int(outShorts.Count()));
 	if(channelCount*samplesRead<outShorts.Count()) stb_vorbis_seek_start(dec);
 	return samplesRead;
 }
