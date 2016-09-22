@@ -65,7 +65,7 @@ short FontGetKerning(FontHandle font, int left, int right)
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_FreeType)
 
 #include <ft2build.h>
-#include <freetype/freetype.h>
+#include <freetype.h>
 
 namespace Intra {
 
