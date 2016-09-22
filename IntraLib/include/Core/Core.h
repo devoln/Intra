@@ -10,6 +10,7 @@
 
 #ifndef _MSC_VER
 #include <string.h>
+#include <stdlib.h>
 #endif
 
 namespace Intra { namespace core {
