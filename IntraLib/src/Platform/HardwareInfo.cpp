@@ -40,6 +40,7 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 
 #include <unistd.h>
+#include <sys/sysinfo.h>
 
 namespace Intra {
 
