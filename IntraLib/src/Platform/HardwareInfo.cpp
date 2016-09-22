@@ -88,26 +88,30 @@ static vmtotal getVMinfo()
 
 static int getSysCtl(int top_level, int next_level)
 {
-	int mib[2] = {top_level, next_level}
+	int mib[2] = {top_level, next_level};
 	size_t len = sizeof(ctlvalue);
 	int ctlvalue;
-	sysctl(mib, 2, &ctlvalue, &len, NULL, 0);	
+	sysctl(mib, 2, &ctlvalue, &len, null, 0);	
 	return ctlvalue;
 }
+
+namespace Intra {
 
 SystemMemoryInfo SystemMemoryInfo::Get()
 {
 	SystemMemoryInfo result;
 		
 	vmtotal vmsize = getVMinfo();
-	result.TotalPhysicalMemory = vmsize.t_rm;
-	result.FreePhysicalMemory = getSysCtl(CTL_HW, HW_REALMEM);
-	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
+	result.TotalPhysicalMemory = ulong64(vmsize.t_rm);
+	result.FreePhysicalMemory = ulong64(getSysCtl(CTL_HW, HW_REALMEM));
+	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory);
 	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
-	result.TotalVirtualMemory = vmsize.t_vm;
-	result.FreeVirtualMemory = vmsize.t_free*getSysCtl(CTL_HW, HW_PAGESIZE);
+	result.TotalVirtualMemory = ulong64(vmsize.t_vm);
+	result.FreeVirtualMemory = ulong64(vmsize.t_free)*ulong64(getSysCtl(CTL_HW, HW_PAGESIZE));
 
 	return result;
+}
+
 }
 
 #endif
