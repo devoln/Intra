@@ -4,7 +4,6 @@
 #include "IO/Stream.h"
 #include "Threading/Atomic.h"
 
-#include <malloc.h>
 #include <stdlib.h>
 
 namespace Intra {
