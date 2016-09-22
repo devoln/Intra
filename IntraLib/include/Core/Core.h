@@ -11,6 +11,7 @@
 #ifndef _MSC_VER
 #include <string.h>
 #include <stdlib.h>
+#include <wchar.h>
 #endif
 
 namespace Intra { namespace core {
