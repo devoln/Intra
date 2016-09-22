@@ -137,6 +137,14 @@
 
 #endif
 
+#ifdef __FreeBSD__
+
+#ifndef INTRA_PLATFORM_OS
+#define INTRA_PLATFORM_OS INTRA_PLATFORM_OS_FreeBSD
+#endif
+
+#endif
+
 #ifndef INTRA_PLATFORM_ARCH
 
 #if defined(WIN64) || defined(_WIN64)
