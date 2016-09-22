@@ -82,7 +82,7 @@ static vmtotal getVMinfo()
   vmtotal vm_info;
   int mib[2] = {CTL_VM, VM_TOTAL};
   size_t len = sizeof(vm_info);
-  sysctl(mib, 2, &vm_info, &len, null, 0);
+  sysctl(mib, 2, &vm_info, &len, nullptr, 0);
   return vm_info;
 }
 
@@ -91,7 +91,7 @@ static int getSysCtl(int top_level, int next_level)
 	int mib[2] = {top_level, next_level};
 	size_t len = sizeof(ctlvalue);
 	int ctlvalue;
-	sysctl(mib, 2, &ctlvalue, &len, null, 0);	
+	sysctl(mib, 2, &ctlvalue, &len, nullptr, 0);	
 	return ctlvalue;
 }
 
