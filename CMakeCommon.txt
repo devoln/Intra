@@ -4,50 +4,54 @@ option(OUTPUT_MAP "Output .map file." OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
     set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
     set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
-	set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11")
-	
-	if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
-		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
-	endif()
-	
-	option(COMPILE_32_BIT "Compile as 32 bit application." OFF)
-	option(COMPILE_64_BIT "Compile as 64 bit application." OFF)
-	
-	if(COMPILE_64_BIT)
-		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m64")
-	if(COMPILE_32_BIT)
-		message("Selected both options 64 and 32 bit. 64 bit build is chosen.")
-	endif()
-	elseif(COMPILE_32_BIT)
-		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m32")
-	endif()
-	
-	if(OUTPUT_MAP)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
-	endif()
-	
+    set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11")
+
+    if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
+        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
+    endif()
+
+    option(COMPILE_32_BIT "Compile as 32 bit application." OFF)
+    option(COMPILE_64_BIT "Compile as 64 bit application." OFF)
+
+    if(COMPILE_64_BIT)
+        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m64")
+    if(COMPILE_32_BIT)
+        message("Selected both options 64 and 32 bit. 64 bit build is chosen.")
+    endif()
+    elseif(COMPILE_32_BIT)
+        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m32")
+    endif()
+
+    if(OUTPUT_MAP)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
+    endif()
+
     set(CMAKE_MAKE_PROGRAM "${CMAKE_MAKE_PROGRAM} -j4")
-	
-	set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-exceptions -fno-rtti")
-	set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -Wl,-s -fno-asynchronous-unwind-tables")
+    
+    set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-exceptions -fno-rtti")
+    set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -Wl,-s -fno-asynchronous-unwind-tables")
     
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Wl,-s -Ofast")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -Os")
     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_PARAMETERS} -O0 -g3")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO   "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Ofast -g3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
-	
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO   "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Ofast -g3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_PARAMETERS}")
+    
+    if(CMAKE_BUILD_TYPE STREQUAL "")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_MINSIZEREL}")
+    endif()
+    
 elseif(MSVC)
+
+    set(CMAKE_CXX_FLAGS_RELEASE "/Wall /MP /Ox /Ot /Oi /GT /GL /GF /MT /fp:fast")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "/Wall /MP /O1 /Os /Oi /GT /GL /GF /Gs- /MT /fp:fast")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Wall /MP /O3 /Ot /Oi /GT /GL /GF /MT /fp:fast /Zi /DINTRA_DEBUG")
+    set(CMAKE_CXX_FLAGS_DEBUG "/Wall /MP /Od /MDd /fp:fast /Zi /D_DEBUG")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
 	
-	set(CMAKE_CXX_FLAGS_RELEASE "/Wall /MP /Ox /Ot /Oi /GT /GL /GF /MT /fp:fast")
-	set(CMAKE_CXX_FLAGS_MINSIZEREL "/Wall /MP /O1 /Os /Oi /GT /GL /GF /Gs- /MT /fp:fast")
-	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/Wall /MP /O3 /Ot /Oi /GT /GL /GF /MT /fp:fast /Zi /DINTRA_DEBUG")
-	set(CMAKE_CXX_FLAGS_DEBUG "/Wall /MP /Od /MDd /fp:fast /Zi /D_DEBUG")
-	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LTCG")
-	
-	if(OUTPUT_MAP)
-		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP")
-	endif()
+    if(OUTPUT_MAP)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP")
+    endif()
 	
 endif()
 

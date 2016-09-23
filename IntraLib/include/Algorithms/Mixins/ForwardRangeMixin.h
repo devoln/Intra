@@ -229,6 +229,7 @@ public:
 
 	forceinline R Drop() const
 	{
+		if(me().Empty()) return me();
 		auto range = me();
 		range.PopFirst();
 		return range;
@@ -238,6 +239,20 @@ public:
 	{
 		auto range = me();
 		range.PopFirstN(n);
+		return range;
+	}
+
+	forceinline R DropExactlyOne() const
+	{
+		auto range = me();
+		range.PopFirst();
+		return range;
+	}
+
+	forceinline R DropExactly(size_t n) const
+	{
+		auto range = me();
+		range.PopFirstExactly(n);
 		return range;
 	}
 

@@ -156,7 +156,8 @@ namespace Intra { namespace IO
 
 	void SplitPath(StringView fullPath, StringView* oDirectoryPath, StringView* oNameOnly, StringView* oExtension, StringView* oName)
 	{
-		size_t extLength=0;
+                size_t extLength = 0;
+
 		StringView pathWithoutExt = fullPath.Retro().Find('.', &extLength).Drop().Retro();
 		if(oExtension)
 		{

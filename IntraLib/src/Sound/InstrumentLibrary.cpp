@@ -491,23 +491,12 @@ MusicalInstruments::MusicalInstruments()
 	Sine2Exp.SynthPass = SynthesizedInstrument::CreateSineSynthPass(1, 2);
 	Sine2Exp.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(9);
 
-	Vibraphone.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.35f, 5, 0.5f);
+	Vibraphone.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.3f, 5, 0.5f);
 	Vibraphone.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(7);
 	Vibraphone.MinNoteDuration = 0.8f;
 
-
-	SynthesizedInstrument::SineHarmonic glockenspielHarmonics[]=
-	{
-		{0.125f, 0.75f},
-		{1.0f, 3.0f},
-		{0.03125f, 1.25f},
-		{1.0f, 1.75f},
-		{1.0f, 4.0f},
-		{0.125f, 4.5f},
-		{0.25f, 5.75f}
-	};
-	Glockenspiel.SynthPass = SynthesizedInstrument::CreateMultiSineSynthPass(glockenspielHarmonics);
-	Glockenspiel.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(7);
+	Glockenspiel.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.35f, 6, 0.5f);
+	Glockenspiel.AttenuationPass = SynthesizedInstrument::CreateExpAttenuationPass(8);
 	Glockenspiel.MinNoteDuration = 0.8f;
 
 
@@ -566,7 +555,7 @@ SynthesizedInstrument MusicalInstruments::CreateGuitar(size_t n, float c,
 	for(size_t i=1; i<=n; i++)
 	{
 		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow(float(i), -f);
-		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*2.0f-1.0f)};
+		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*1.7f-0.7f)};
 	}
 	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, n});
 	return result;

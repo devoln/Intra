@@ -87,6 +87,7 @@ struct Font
 {
 	FT_Face face;
 	void* dataCopy;
+	size_t dataSize;
 };
 
 FontHandle FontCreate(StringView name, ushort height)
@@ -94,6 +95,7 @@ FontHandle FontCreate(StringView name, ushort height)
 	if(ft==null) FT_Init_FreeType(&ft);
 	FontHandle desc = new Font;
 	desc->dataCopy = null;
+	desc->dataSize = 0;
 	if(FT_New_Face(ft, String(name).CStr(), 0, &desc->face)!=0) return null;
 	FT_Set_Pixel_Sizes(desc->face, height, height);
 	return desc;
@@ -105,6 +107,7 @@ FontHandle FontCreateFromMemory(const void* data, size_t length, ushort height)
 	FontHandle desc = new Font;
 	size_t bytesToAllocate = length;
 	desc->dataCopy = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
+	desc->dataSize = bytesToAllocate;
 	core::memcpy(desc->dataCopy, data, length);
 	FT_New_Memory_Face(ft, reinterpret_cast<const FT_Byte*>(desc->dataCopy), long(length), 0, &desc->face);
 	FT_Set_Pixel_Sizes(desc->face, height, height);
@@ -115,7 +118,7 @@ void FontDelete(FontHandle font)
 {
 	if(font==null) return;
 	FT_Done_Face(font->face);
-	Memory::GlobalHeap.Free(font->dataCopy);
+	Memory::GlobalHeap.Free(font->dataCopy, font->dataSize);
 	delete font;
 }
 

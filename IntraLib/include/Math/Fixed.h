@@ -31,10 +31,20 @@ template<typename T, uint DIV> struct FixedPoint
 	constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(data*DIV/rhs.data);}
 	constexpr forceinline FixedPoint operator-() const {return CastFromInt(-data);}
 
+	forceinline FixedPoint& operator+=(FixedPoint rhs) {data = T(data+rhs.data); return *this;}
+	forceinline FixedPoint& operator-=(FixedPoint rhs) {data = T(data-rhs.data); return *this;}
+	forceinline FixedPoint& operator*=(FixedPoint rhs) {data = T(data*rhs.data/DIV); return *this;}
+	forceinline FixedPoint& operator/=(FixedPoint rhs) {data = (data*DIV/rhs.data); return *this;}
+
 	template<typename U> constexpr forceinline FixedPoint operator+(U rhs) const {return FixedPoint(data+T(rhs*DIV));}
 	template<typename U> constexpr forceinline FixedPoint operator-(U rhs) const {return FixedPoint(data-T(rhs*DIV));}
 	template<typename U> constexpr forceinline FixedPoint operator*(U rhs) const {return FixedPoint(data*T(rhs));}
 	template<typename U> constexpr forceinline FixedPoint operator/(U rhs) const {return FixedPoint(data/T(rhs));}
+
+	template<typename U> forceinline FixedPoint& operator+=(U rhs) {data = T(data+T(rhs*DIV)); return *this;}
+	template<typename U> forceinline FixedPoint& operator-=(U rhs) {data = T(data-T(rhs*DIV)); return *this;}
+	template<typename U> forceinline FixedPoint& operator*=(U rhs) {data = T(data*T(rhs)); return *this;}
+	template<typename U> forceinline FixedPoint& operator/=(U rhs) {data = T(data/T(rhs)); return *this;}
 
 
 	constexpr forceinline bool operator==(FixedPoint rhs) const {return data==rhs.data;}

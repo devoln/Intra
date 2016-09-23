@@ -50,8 +50,34 @@ public:
 		for(size_t i=0; i<elementsToPop; i++) me().PopLast();
 	}
 
-	forceinline R DropBack() const {auto result = me(); result.PopLast(); return result;}
-	forceinline R DropBack(size_t n) const {auto result = me(); result.PopLastN(n); return result;}
+	forceinline R DropBack() const
+	{
+		if(me().Empty()) return me();
+		auto result = me();
+		result.PopLast();
+		return result;
+	}
+
+	forceinline R DropBack(size_t n) const
+	{
+		auto result = me();
+		result.PopLastN(n);
+		return result;
+	}
+
+	forceinline R DropBackExactly() const
+	{
+		auto result = me();
+		result.PopLast();
+		return result;
+	}
+
+	forceinline R DropBackExactly(size_t n) const
+	{
+		auto result = me();
+		result.PopLastExactly(n);
+		return result;
+	}
 
 	template<typename IndexRange> R Remove(IndexRange indices)
 	{
