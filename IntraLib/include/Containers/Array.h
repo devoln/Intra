@@ -259,7 +259,10 @@ public:
 	}
 
 
-	template<typename U> forceinline void Insert(Range::RelativeIndex pos, ArrayRange<const U> values) {Insert(pos.GetRealIndex(Count()), values);}
+	template<typename U> forceinline void Insert(Range::RelativeIndex pos, ArrayRange<const U> values)
+	{
+		Insert(pos.GetRealIndex(Count()), values);
+	}
 
 
 	//! Добавить новый элемент в конец.

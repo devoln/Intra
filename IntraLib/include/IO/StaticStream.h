@@ -29,7 +29,7 @@ public:
 	{
 		INTRA_ASSERT(Begin <= Rest.Begin);
 		INTRA_ASSERT(bytes <= Rest.Length());
-		core::memcpy(Rest.Begin, src, bytes);
+		core::memmove(Rest.Begin, src, bytes);
 		Rest.Begin += bytes;
 	}
 
@@ -154,7 +154,7 @@ public:
 	{
 		INTRA_ASSERT(Begin <= Rest.Data());
 		INTRA_ASSERT(Rest.Length() >= bytes);
-		core::memcpy(dst, Rest.Data(), bytes);
+		core::memmove(dst, Rest.Data(), bytes);
 		Rest.PopFirstN(bytes);
 	}
 
