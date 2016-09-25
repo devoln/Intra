@@ -103,12 +103,14 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 	SystemMemoryInfo result;
 		
 	vmtotal vmsize = getVMinfo();
-	result.TotalPhysicalMemory = ulong64(vmsize.t_rm);
-	result.FreePhysicalMemory = ulong64(getSysCtl(CTL_HW, HW_REALMEM));
+	uint pageSize = getSysCtl(CTL_HW, HW_PAGESIZE);
+
+	result.TotalPhysicalMemory = ulong64(vmsize.t_rm)*pageSize;
+	result.FreePhysicalMemory = ulong64(vmsize.t_free)*pageSize;
 	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
 	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
-	result.TotalVirtualMemory = ulong64(vmsize.t_vm);
-	result.FreeVirtualMemory = ulong64(vmsize.t_free)*ulong64(getSysCtl(CTL_HW, HW_PAGESIZE));
+	result.TotalVirtualMemory = ulong64(vmsize.t_vm)*pageSize;
+	result.FreeVirtualMemory = ulong64(vmsize.t_free)*pageSize;
 
 	return result;
 }
