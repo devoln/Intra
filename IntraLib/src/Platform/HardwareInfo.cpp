@@ -218,10 +218,16 @@ ProcessorInfo ProcessorInfo::Get()
 	len=63;
 	sysctl(mib, 2, brandString, &len, null, 0);
 
+	int freq;
+	mib[1] = HW_CLOCKRATE;
+	len = sizeof(freq);
+	sysctl(mib, 2, &freq, &len, null, 0);
+
 	ProcessorInfo result;
-	result.BrandString = String(brandString, len);
+	result.BrandString = String(brandString, len-1);
 	result.LogicalProcessorNumber = ushort(numCPU);
 	result.CoreNumber = result.LogicalProcessorNumber; //TODO: разобраться, что из этого логические процессоры, а что - ядра, и исправить
+	result.Frequency = ulong64(freq)*1000000;
 	return result;
 }
 
