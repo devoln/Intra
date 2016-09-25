@@ -26,7 +26,9 @@ In addition to the [library](IntraLib) this repository also contains:
 ### Supported platforms:
 - Windows;
 - Linux;
-- Expected: FreeBSD, Android, Emscripten.
+- FreeBSD;
+- Emscripten;
+- Expected: Android.
 
 
 For now the library is unstable and lacks tests and documentation. It is not recommended to use in production.
@@ -68,7 +70,10 @@ make -j4
 ### Поддерживаемые платформы:
 - Windows;
 - Linux;
-- Ожидаются FreeBSD, Android, Emscripten.
+- FreeBSD;
+- Emscripten;
+- Ожидается Android.
+
 
 ### Установка и компиляция на Debian-based ОС:
 ```bash
