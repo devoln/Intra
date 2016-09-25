@@ -211,6 +211,7 @@ ProcessorInfo ProcessorInfo::Get()
 	result.BrandString = String(brandString);
 	result.LogicalProcessorNumber = ushort(numCPU);
 	result.CoreNumber = result.LogicalProcessorNumber; //TODO: разобраться, что из этого логические процессоры, а что - ядра, и исправить
+	return result;
 }
 
 }
