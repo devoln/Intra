@@ -7,7 +7,7 @@
 #ifdef __APPLE__
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
-#elif(INTRA_PLATFORM_OS==PLATFORM_OS_Linux || INTRA_PLATFORM_OS==PLATFORM_OS_FreeBSD)
+#elif(INTRA_PLATFORM_OS==PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
 #include <AL/al.h>
 #include <AL/alc.h>
 #else
