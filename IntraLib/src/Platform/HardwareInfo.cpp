@@ -191,6 +191,7 @@ ProcessorInfo ProcessorInfo::Get()
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
 
 #include <sys/sysctl.h>
+#include <sys/param.h>
 
 namespace Intra {
 
