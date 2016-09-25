@@ -211,7 +211,7 @@ ProcessorInfo ProcessorInfo::Get()
 	int numCPU;
 	size_t len = sizeof(numCPU);
 	sysctl(mib, 2, &numCPU, &len, null, 0);
-	if(numCPU<1) numCPU=1;
+	if(numCPU<1) numCPU = 1;
 
 	char brandString[64]={0};
 	mib[1] = HW_MODEL;
@@ -219,9 +219,8 @@ ProcessorInfo ProcessorInfo::Get()
 	sysctl(mib, 2, brandString, &len, null, 0);
 
 	int freq;
-	mib[1] = HW_CLOCKRATE;
 	len = sizeof(freq);
-	sysctl(mib, 2, &freq, &len, null, 0);
+	sysctlbyname("hw.clockrate", &freq, &len, null, 0);
 
 	ProcessorInfo result;
 	result.BrandString = String(brandString, len-1);
