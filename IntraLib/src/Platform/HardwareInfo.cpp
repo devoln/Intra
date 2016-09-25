@@ -87,10 +87,10 @@ static vmtotal getVMinfo()
   return vm_info;
 }
 
-static int getSysCtl(int top_level, int next_level)
+static unsigned long long getSysCtl(int top_level, int next_level)
 {
 	int mib[2] = {top_level, next_level};
-	int ctlvalue;
+	unsigned long long ctlvalue;
 	size_t len = sizeof(ctlvalue);
 	sysctl(mib, 2, &ctlvalue, &len, nullptr, 0);	
 	return ctlvalue;
@@ -103,14 +103,23 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 	SystemMemoryInfo result;
 		
 	vmtotal vmsize = getVMinfo();
-	uint pageSize = getSysCtl(CTL_HW, HW_PAGESIZE);
+	uint pageSize = uint(getSysCtl(CTL_HW, HW_PAGESIZE));
 
-	result.TotalPhysicalMemory = ulong64(vmsize.t_rm)*pageSize;
-	result.FreePhysicalMemory = ulong64(vmsize.t_free)*pageSize;
-	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
-	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
+	uint activePages, wirePages;
+	uint cachePages, inactivePages, freePages;
+	size_t len = sizeof(uint);
+	sysctlbyname("vm.stats.vm.v_active_count", &activePages, &len, null, 0);
+	sysctlbyname("vm.stats.vm.v_wire_count", &wirePages, &len, null, 0);
+	sysctlbyname("vm.stats.vm.v_cache_count", &cachePages, &len, null, 0);
+	sysctlbyname("vm.stats.vm.v_inactive_count", &inactivePages, &len, null, 0);
+	sysctlbyname("vm.stats.vm.v_free_count", &freePages, &len, null, 0);
+
+	result.TotalPhysicalMemory = getSysCtl(CTL_HW, HW_PHYSMEM);
+	result.FreePhysicalMemory = result.TotalPhysicalMemory-ulong64(activePages+wirePages)*pageSize;
 	result.TotalVirtualMemory = ulong64(vmsize.t_vm)*pageSize;
 	result.FreeVirtualMemory = ulong64(vmsize.t_free)*pageSize;
+	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
+	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
 
 	return result;
 }
@@ -210,7 +219,7 @@ ProcessorInfo ProcessorInfo::Get()
 	sysctl(mib, 2, brandString, &len, null, 0);
 
 	ProcessorInfo result;
-	result.BrandString = String(brandString);
+	result.BrandString = String(brandString, len);
 	result.LogicalProcessorNumber = ushort(numCPU);
 	result.CoreNumber = result.LogicalProcessorNumber; //TODO: разобраться, что из этого логические процессоры, а что - ядра, и исправить
 	return result;
