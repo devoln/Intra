@@ -56,7 +56,7 @@ add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_DirectSo
 target_link_libraries(IntraLib dsound dxguid)
 elseif(LIBRARY_SOUND_SYSTEM_OpenAL)
 add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
-include_directories(${OPENAL_INCLUDE_DIRS})
+include_directories(${OPENAL_INCLUDE_DIR})
 target_link_libraries(IntraLib ${OPENAL_LIBRARIES})
 elseif(LIBRARY_SOUND_SYSTEM_WebAudio)
 add_definitions(-DINTRA_LIBRARY_SOUND_SYSTEM=INTRA_LIBRARY_SOUND_SYSTEM_WebAudio)
