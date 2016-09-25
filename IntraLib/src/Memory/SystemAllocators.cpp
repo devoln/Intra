@@ -50,7 +50,7 @@ void SystemHeapAllocator::Free(void* ptr)
 AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
-#ifdef INTRA_PLATFORM_IS_POSIX
+#ifdef INTRA_PLATFORM_IS_UNIX
 	void* result;
 	if(posix_memalign(&result, alignment, bytes)==0) return result;
 	return null;
@@ -62,7 +62,7 @@ AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sou
 void AlignedSystemHeapAllocator::Free(void* ptr, size_t size)
 {
 	(void)size;
-#ifdef INTRA_PLATFORM_IS_POSIX
+#ifdef INTRA_PLATFORM_IS_UNIX
 	free(ptr);
 #else
 	_aligned_free(ptr);

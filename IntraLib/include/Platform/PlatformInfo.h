@@ -239,11 +239,12 @@
 
 
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
-#define INTRA_PLATFORM_IS_POSIX
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD ||\
+	defined(unix) || defined(__unix) || defined(__unix__))
+#define INTRA_PLATFORM_IS_UNIX
 #endif
 
-#if defined(INTRA_PLATFORM_IS_POSIX) && !defined(INTRA_LIBRARY_WINDOW_SYSTEM)
+#if defined(INTRA_PLATFORM_IS_UNIX) && !defined(INTRA_LIBRARY_WINDOW_SYSTEM)
 #define INTRA_LIBRARY_WINDOW_SYSTEM INTRA_LIBRARY_WINDOW_SYSTEM_X11 //Может быть несколько вариантов, но это вариант по умолчанию
 #endif
 

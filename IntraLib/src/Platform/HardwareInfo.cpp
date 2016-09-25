@@ -159,7 +159,7 @@ ProcessorInfo ProcessorInfo::Get()
 
 }
 
-#else
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 
 #include <IO/File.h>
 
@@ -168,7 +168,7 @@ namespace Intra {
 ProcessorInfo ProcessorInfo::Get()
 {
 	ProcessorInfo result;
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+
 	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
 
 	result.BrandString = allCpuInfo().Find(StringView("\nmodel name"))
@@ -182,10 +182,42 @@ ProcessorInfo ProcessorInfo::Get()
 
 	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
-#endif
+
 	return result;
 }
 
 }
 
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
+
+#include <sys/sysctl.h>
+
+namespace Intra {
+
+ProcessorInfo ProcessorInfo::Get()
+{
+	int mib[4] = {CTL_HW, HW_AVAILCPU, 0, 0};
+	int numCPU;
+	size_t len = sizeof(numCPU);
+	sysctl(mib, 2, &numCPU, &len, null, 0);
+
+	if(numCPU<1) 
+	{
+		mib[1] = HW_NCPU;
+		sysctl(mib, 2, &numCPU, &len, null, 0);
+		if(numCPU<1) numCPU=1;
+	}
+
+	char brandString[64]={0};
+	mib[1] = HW_MODEL;
+	len=63;
+	sysctl(mib, 2, brandString, &len, null, 0);
+
+	ProcessorInfo result;
+	result.BrandString = String(brandString);
+	result.LogicalProcessorNumber = ushort(numCPU);
+	result.CoreNumber = result.LogicalProcessorNumber; //TODO: разобраться, что из этого логические процессоры, а что - ядра, и исправить
+}
+
+}
 #endif

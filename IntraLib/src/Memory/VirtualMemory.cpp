@@ -60,7 +60,7 @@ size_t VirtualMemoryPageSize()
 
 }}
 
-#elif defined(INTRA_PLATFORM_IS_POSIX)
+#elif defined(INTRA_PLATFORM_IS_UNIX)
 #include <unistd.h>
 #include <sys/mman.h>
 

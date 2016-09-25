@@ -97,12 +97,18 @@ ArrayRange<const StringView> GetCommandLineArguments()
 
 }
 
-#elif(defined(INTRA_PLATFORM_IS_POSIX))
+#elif(defined(INTRA_PLATFORM_IS_UNIX))
 namespace Intra {
 
 ArrayRange<const StringView> GetCommandLineArguments()
 {
-	static const String cmdline = IO::DiskFile::ReadAsString("/proc/self/cmdline");
+	static const String cmdline = IO::DiskFile::ReadAsString(
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
+"/proc/curproc/cmdline"
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+"/proc/self/cmdline"
+#endif
+	);
 	static const Array<StringView> args = cmdline().Split("\0");
 	return args;
 }

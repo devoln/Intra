@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 
 
-#if(defined(INTRA_PLATFORM_IS_POSIX) || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(defined(INTRA_PLATFORM_IS_UNIX) || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
 #include <unistd.h>
 #include <sys/mman.h>
