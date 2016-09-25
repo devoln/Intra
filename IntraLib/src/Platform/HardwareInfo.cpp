@@ -191,23 +191,16 @@ ProcessorInfo ProcessorInfo::Get()
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
 
 #include <sys/sysctl.h>
-#include <sys/param.h>
 
 namespace Intra {
 
 ProcessorInfo ProcessorInfo::Get()
 {
-	int mib[4] = {CTL_HW, HW_AVAILCPU, 0, 0};
+	int mib[2] = {CTL_HW, HW_NCPU};
 	int numCPU;
 	size_t len = sizeof(numCPU);
 	sysctl(mib, 2, &numCPU, &len, null, 0);
-
-	if(numCPU<1) 
-	{
-		mib[1] = HW_NCPU;
-		sysctl(mib, 2, &numCPU, &len, null, 0);
-		if(numCPU<1) numCPU=1;
-	}
+	if(numCPU<1) numCPU=1;
 
 	char brandString[64]={0};
 	mib[1] = HW_MODEL;
