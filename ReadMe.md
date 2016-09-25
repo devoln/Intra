@@ -28,7 +28,7 @@ In addition to the [library](IntraLib) this repository also contains:
 - Linux;
 - FreeBSD;
 - Emscripten;
-- Expected: Android.
+- Expected soon: Android.
 
 
 For now the library is unstable and lacks tests and documentation. It is not recommended to use in production.
@@ -72,7 +72,7 @@ make -j4
 - Linux;
 - FreeBSD;
 - Emscripten;
-- Ожидается Android.
+- Ожидается в ближайшее время Android.
 
 
 ### Установка и компиляция на Debian-based ОС:
