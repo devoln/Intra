@@ -488,10 +488,10 @@ namespace SoundPostEffects
 	};
 }
 
-typedef Utils::FixedDelegate<void(float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add), 168> SoundSynthFunction;
-typedef Utils::FixedDelegate<void(float freq, ArrayRange<float> inOutSamples, uint sampleRate)> SoundModifierFunction;
-typedef Utils::FixedDelegate<void(float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)> SoundAttenuationFunction;
-typedef Utils::FixedDelegate<void(ArrayRange<float> inOutSamples, uint sampleRate)> SoundPostEffectFunction;
+typedef Utils::Delegate<void(float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)> SoundSynthFunction;
+typedef Utils::Delegate<void(float freq, ArrayRange<float> inOutSamples, uint sampleRate)> SoundModifierFunction;
+typedef Utils::Delegate<void(float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)> SoundAttenuationFunction;
+typedef Utils::Delegate<void(ArrayRange<float> inOutSamples, uint sampleRate)> SoundPostEffectFunction;
 
 
 class SynthesizedInstrument: public IMusicalInstrument

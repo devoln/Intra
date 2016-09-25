@@ -208,7 +208,8 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 
 #ifndef INTRA_NO_MIDI_SYNTH
 	MusicalInstruments* instr = new MusicalInstruments;
-	for(byte i=0; i<128; i++) reader.instruments[i] = &instr->Sine2Exp;
+	for(byte i=0; i<128; i++)
+		reader.instruments[i] = &instr->Sine2Exp;
 	reader.instruments[117] = null; //Melodic Tom не реализован, а пищание плохо звучит
 
 	for(auto code: {0,1,2,3,6,7, 105, 107}) reader.instruments[code] = &instr->Piano;
@@ -263,7 +264,6 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	reader.instruments[127] = &instr->GunShot;
 	reader.drumsInstrument = &instr->Drums;
 #endif
-
 	for(int i=0; i<reader.header.tracks; i++)
 	{
 		auto track = reader.ReadTrack();

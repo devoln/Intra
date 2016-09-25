@@ -326,20 +326,20 @@ static void exponent_attenuation_inplace(float*& ptr, float* end, float& exp, fl
 #ifndef OPTIMIZE
 
 #elif !defined(INTRA_USE_PDO)
-	float ek8=ek*ek;
-	ek8*=ek8;
-	ek8*=ek8;
+	float ek8 = ek*ek;
+	ek8 *= ek8;
+	ek8 *= ek8;
 	while(ptr<end-7)
 	{
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		*ptr++*=exp;
-		exp*=ek8;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		*ptr++ *= exp;
+		exp *= ek8;
 	}
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 	float ek4 = ek*ek;
@@ -366,9 +366,9 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 #ifndef OPTIMIZE
 
 #elif !defined(INTRA_USE_PDO)
-	float ek8=ek*ek;
-	ek8*=ek8;
-	ek8*=ek8;
+	float ek8 = ek*ek;
+	ek8 *= ek8;
+	ek8 *= ek8;
 	while(dst<dstend-7)
 	{
 		*dst++ = *src++ * exp;
@@ -484,7 +484,7 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 #endif
 #if INTRA_DISABLED
 	float phi0 = 0;
-	float dphi=(float)(2*Math::PI*freq/sampleRate);
+	float dphi = float(2*Math::PI*freq/sampleRate);
 	float S0 = volume*sinf(phi0);
 	float S1 = volume*sinf(dphi);
 	float K = 2.0f*Math::Exp(-coeff/sampleRate)*Math::Cos(dphi);
@@ -495,9 +495,15 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 #ifdef OPTIMIZE
 #ifndef INTRA_USE_PDO
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	float K4=2*expf(-4*coeff/sampleRate)*cosf(4*dphi), b4=expf(-8*coeff/sampleRate);
+	float K4 = 2*Math::Exp(-4*coeff/sampleRate)*Math::Cos(4*dphi);
+	float b4 = Math::Exp(-8*coeff/sampleRate);
 
-	Simd::float4 vS0 = Simd::Set(volume*Sin(phi0), volume*sinf(phi0+dphi)*expf(-2*coeff/sampleRate), volume*sinf(phi0+2*dphi)*expf(-4*coeff/sampleRate), volume*sinf(phi0+3*dphi)*expf(-6*coeff/sampleRate));
+	Simd::float4 vS0 = Simd::Set(
+		volume*Sin(phi0),
+		volume*sinf(phi0+dphi)*Math::Exp(-2*coeff/sampleRate),
+		volume*Math::Sin(phi0+2*dphi)*Math::Exp(-4*coeff/sampleRate),
+		volume*Math::Sin(phi0+3*dphi)*Math::Exp(-6*coeff/sampleRate));
+
 	Simd::float4 vS1 = Simd::Set(volume*sinf(4*dphi));
 	Simd::float4 vK4 = Simd::Set(K4);
 	Simd::float4 vb4 = Simd::Set(b4);
@@ -543,9 +549,9 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 	{
 		*ptr++ += S1;
 
-		const auto newS=K*S1-S0;
-		S0=S1*b;
-		S1=newS;
+		const auto newS = K*S1-S0;
+		S0 = S1*b;
+		S1 = newS;
 	}
 #endif
 //#if INTRA_DISABLED

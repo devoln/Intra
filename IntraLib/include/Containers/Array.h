@@ -69,6 +69,15 @@ public:
 	~Array() {operator=(null);}
 
 
+	template<typename U=T> static Meta::EnableIfPod<U, Array<T>>
+		CreateAsOwnerOf(ArrayRange<T> rangeToOwn)
+	{
+		Array<T> result;
+		result.range = result.buffer = rangeToOwn;
+		return result;
+	}
+
+
 	Array& operator=(const Array& rhs)
 	{
 		if(this==&rhs) return *this;

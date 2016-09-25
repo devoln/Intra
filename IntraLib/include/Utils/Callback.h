@@ -42,6 +42,111 @@ private:
 	};
 };
 
+template<typename FuncSignature> class ICallback;
+template<typename R, typename... Args> class ICallback<R(Args...)>
+{
+public:
+	virtual ICallback* Clone() = 0;
+	virtual ~ICallback() {}
+	virtual R Call(Args&&... args) = 0;
+};
+
+template<typename FuncSignature, typename T=FuncSignature*> class FunctorCallback;
+template<typename T, typename R, typename... Args> class FunctorCallback<R(Args...), T>: public ICallback<R(Args...)>
+{
+public:
+	FunctorCallback(T&& functor): Functor(core::move(functor)) {}
+	FunctorCallback(const T& functor): Functor(functor) {}
+	ICallback<R(Args...)>* Clone() override final {return new FunctorCallback(Functor);}
+	R Call(Args&&... args) override final {return Functor(core::forward<Args>(args)...);}
+
+	T Functor;
+};
+
+template<typename FuncSignature, typename T> class ObjectRefMethodCallback;
+template<typename T, typename R, typename... Args> class ObjectRefMethodCallback<R(Args...), T>: public ICallback<R(Args...)>
+{
+	typedef R(T::*MethodSignature)(Args...);
+public:
+	ObjectRefMethodCallback(const T& obj, MethodSignature method): ObjectRef(&obj), Method(method) {}
+	ICallback<R(Args...)>* Clone() override final {return new ObjectRefMethodCallback(*ObjectRef, Method);}
+	R Call(Args&&... args) override final {return ObjectRef->*Method(core::forward<Args>(args)...);}
+
+	const T* ObjectRef;
+	MethodSignature Method;
+};
+
+
+template<typename FuncSignature> class Delegate;
+template<typename R, typename... Args> class Delegate<R(Args...)>
+{
+	typedef R(*FreeFunc)(Args...);
+	template<typename T> class FreeFuncDataWrapper: public ICallback<R(Args...)>
+	{
+		typedef R(*FreeDataFunc)(const T&, Args...);
+	public:
+		FreeFuncDataWrapper(FreeDataFunc func, T&& params): Func(func), Params(core::move(params)) {}
+		FreeFuncDataWrapper(FreeDataFunc func, const T& params): Func(func), Params(params) {}
+		ICallback<R(Args...)>* Clone() override final {return new FreeFuncDataWrapper(Func, Params);}
+		R Call(Args&&... args) override final {return Func(Params, core::forward<Args>(args)...);}
+		
+		FreeDataFunc Func;
+		T Params;
+	};
+
+	ICallback<R(Args...)>* callback;
+
+public:
+	Delegate(null_t=null): callback(null) {}
+
+	template<typename T> Delegate(R(*func)(const T&, Args...), const T& params):
+		callback(new FreeFuncDataWrapper<T>(func, params)) {}
+
+	template<typename T> Delegate(const T& obj):
+		callback(new FunctorCallback<R(Args...), T>(obj)) {}
+
+	Delegate(FreeFunc f):
+		callback(f==null? null: new FunctorCallback<R(Args...)>(f)) {}
+
+	template<typename T> Delegate(const T& obj, R(T::*method)(Args...)):
+		callback(method==null? null: new ObjectRefMethodCallback<R(Args...), T>(obj, method)) {}
+
+	Delegate(const Delegate& rhs):
+		callback(rhs==null? null: rhs.callback->Clone()) {}
+
+	Delegate(Delegate&& rhs):
+		callback(rhs.callback) {rhs.callback=null;}
+
+	R operator()(Args... a) const
+	{
+		INTRA_ASSERT(callback!=null);
+		return callback->Call(core::forward<Args>(a)...);
+	}
+
+	bool operator==(null_t) const {return callback==null;}
+	bool operator!=(null_t) const {return !operator==(null);}
+	bool operator!() const {return operator==(null);}
+
+
+	Delegate& operator=(const Delegate& rhs)
+	{
+		if(callback!=null) delete callback;
+		callback = rhs.callback==null? null: rhs.callback->Clone();
+		return *this;
+	}
+
+	Delegate& operator=(Delegate&& rhs)
+	{
+		if(callback!=null) delete callback;
+		callback = rhs.callback;
+		rhs.callback = null;
+		return *this;
+	}
+};
+
+
+
+
 template<typename TFuncSignature, uint MaxDataSize=40> class FixedDelegate;
 template<uint MaxDataSize, typename R, typename... Args> class FixedDelegate<R(Args...), MaxDataSize>
 {

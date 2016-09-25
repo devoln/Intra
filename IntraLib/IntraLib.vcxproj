@@ -397,6 +397,7 @@
     <ClCompile Include="src\IO\DocumentWriter.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
     <ClCompile Include="src\IO\LogSystem.cpp" />
+    <ClCompile Include="src\IO\Networking.cpp" />
     <ClCompile Include="src\IO\Stream.cpp" />
     <ClCompile Include="src\Math\MathEx.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />

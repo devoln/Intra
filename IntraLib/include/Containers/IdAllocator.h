@@ -8,13 +8,18 @@ namespace Intra {
 template<typename T> class IdAllocator
 {
 public:
-	IdAllocator(null_t=null): max_count(0), count(0) {}
-	explicit IdAllocator(T maxCount): max_count(maxCount), count(0) {}
+	IdAllocator(null_t=null): count(0), max_count(0) {}
+	explicit IdAllocator(T maxCount): count(0), max_count(maxCount) {}
 
 	//Выделить любой свободный идентификатор
 	T Allocate()
 	{
-		if(free_list!=null) return free_list.PopLast();
+		if(free_list!=null)
+		{
+			T result = free_list.Last();
+			free_list.RemoveLast();
+			return result;
+		}
 		INTRA_ASSERT(count<max_count);
 		return count++;
 	}
@@ -27,8 +32,8 @@ public:
 			Algo::ShellSort<T>(free_list);
 			for(T i=0; i<free_list.Count(); i++)
 			{
-				T first=free_list[i];
-				T last=first;
+				T first = free_list[i];
+				T last = first;
 				for(T j=i+1; j<free_list.Count(); j++)
 				{
 					if(free_list[j]!=last+1 || last-first==n) break;
@@ -69,7 +74,7 @@ public:
 	//Освободить идентификатор
 	void Deallocate(T id)
 	{
-		INTRA_ASSERT(!free_list.Contains(id) && id<count);
+		INTRA_ASSERT(!free_list().Contains(id) && id<count);
 		if(id+1==count)
 		{
 			count--;

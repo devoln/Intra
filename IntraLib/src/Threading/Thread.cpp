@@ -9,7 +9,7 @@ struct Thread::Handle {};
 
 void Thread::create_thread(const Thread::Func& func) {func();}
 void Thread::delete_thread() {}
-void Thread::Join() {}
+void Thread::Join() {(void)handle;}
 bool Thread::Joinable() const {return true;}
 void Thread::Detach() {}
 

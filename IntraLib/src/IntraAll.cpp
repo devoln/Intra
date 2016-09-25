@@ -54,6 +54,7 @@
 #include "IO/File.cpp"
 #include "IO/LogSystem.cpp"
 #include "IO/Stream.cpp"
+#include "IO/Networking.cpp"
 
 #include "Math/MathEx.cpp"
 #include "Math/Shapes.cpp"

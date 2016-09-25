@@ -2,15 +2,16 @@
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
-#include "IO/Networking.h"
 #include <emscripten.h>
 
-namespace IO {
+#include "IO/Networking.h"
+
+namespace Intra { namespace IO {
 
 Array<byte> DownloadFile(StringView path)
 {
 	size_t dataSize;
-	auto data = (void*)EM_ASM_INT({
+	auto dataInt = EM_ASM_INT({
 		function stringToByteBufferData(str)
 	{
 		bbPtr = Module._malloc(str.length);
@@ -38,7 +39,7 @@ Array<byte> DownloadFile(StringView path)
 	//Для кроссдоменных запросов
 	//https://habrahabr.ru/post/130673/
 	//Использовать так: xdr.xget(url, callback);
-#if DISABLED
+#if INTRA_DISABLED
 	/* Requires _opera-xdr-engine.js to handle script-based requests in Opera*/
 	var xdr ={
 		/* request ID, JSONP counter*/
@@ -161,11 +162,13 @@ Array<byte> DownloadFile(StringView path)
 
 	alert('Something bad happen!\n(' + request.status + ') ' + request.statusText);
 	return 0;
-	}, path.data(), path.Length(), (size_t)&dataSize/sizeof(&dataSize));
-	return ByteBuffer::CreateAsOwnerOf(data, dataSize);
+	}, path.Data(), path.Length(), reinterpret_cast<size_t>(&dataSize)/sizeof(&dataSize)
+	);
+
+	return Array<byte>::CreateAsOwnerOf({reinterpret_cast<byte*>(dataInt), dataSize});
 }
 
-}
+}}
 
 
 #endif

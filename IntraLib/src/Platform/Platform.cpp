@@ -82,8 +82,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
-extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dso_symbol)
+extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dsoSymbol)
 {
+	(void)func; (void)obj; (void)dsoSymbol;
 	return 0;
 }
 

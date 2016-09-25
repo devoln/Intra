@@ -1,6 +1,7 @@
 ﻿#include "IO/File.h"
 #include "Algorithms/Range.h"
 #include "Containers/String.h"
+#include "Memory/Allocator.h"
 
 #include <stddef.h>
 
@@ -301,7 +302,7 @@ namespace Intra { namespace IO
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 		mapping.data = reinterpret_cast<byte*>(mmap(null, bytes, PROT_READ, MAP_SHARED, GetFileDescriptor(), long(firstByte)));
 #else
-		mapping.data = Memory::Allocate(bytes);
+		mapping.data = Memory::GlobalHeap.Allocate(bytes, INTRA_SOURCE_INFO);
 		auto pos = GetPos();
 		auto This = const_cast<Reader*>(this);
 		This->SetPos(firstByte);
@@ -317,7 +318,7 @@ namespace Intra { namespace IO
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 		munmap(mapping.data, mapping.Size);
 #else
-		Memory::Free(mapping.data);
+		Memory::GlobalHeap.Free(mapping.data, mapping.Size);
 #endif
 		mapping.data = null;
 		mapping.hndl = null;

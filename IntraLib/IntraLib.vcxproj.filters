@@ -354,6 +354,9 @@
     <ClCompile Include="src\Memory\VirtualMemory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\Networking.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\IntraAll.h">

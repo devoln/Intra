@@ -5,7 +5,7 @@
 
 #include <emscripten.h>
 
-#include "SoundAPI.h"
+#include "Sound/SoundAPI.h"
 #include "Containers/IdAllocator.h"
 
 
@@ -156,7 +156,8 @@ void* BufferLock(BufferHandle snd)
 	INTRA_ASSERT(snd!=null);
 	if(snd==null) return null;
 	if(snd->lockedData!=null) return snd->lockedData;
-	snd->lockedData = Memory::Allocate(snd->SizeInBytes());
+	size_t bytesToAllocate = snd->SizeInBytes();
+	snd->lockedData = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	return snd->lockedData;
 }
 
@@ -170,8 +171,8 @@ void BufferUnlock(BufferHandle snd)
 			bufferData.set(Module.HEAPF32.subarray($1, $1+$2));
 		}
 		else Module.gWebAudioBufferArray[$0].copyToChannel(Module.HEAPF32.subarray($1, $1+$2), 0);
-	}, snd->id, (size_t)snd->lockedData/sizeof(float), snd->sampleCount);
-	Memory::SystemHeapAllocator::Free(snd->lockedData);
+	}, snd->id, reinterpret_cast<size_t>(snd->lockedData)/sizeof(float), snd->sampleCount);
+	Memory::GlobalHeap.Free(snd->lockedData, snd->SizeInBytes());
 	snd->lockedData = null;
 }
 
@@ -203,47 +204,48 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	return result;
 }
 
-void InstanceSetDeleteOnStop(InstanceHandle si, bool del)
+void InstanceSetDeleteOnStop(InstanceHandle inst, bool del)
 {
-	//si->deleteOnStop = del;
+	(void)inst; (void)del;
+	//inst->deleteOnStop = del;
 }
 
-void InstanceDelete(InstanceHandle si)
+void InstanceDelete(InstanceHandle inst)
 {
 	EM_ASM_({
 		Module.gWebAudioInstanceArray[$0] = null;
-	}, si->id);
-	delete si;
+	}, inst->id);
+	delete inst;
 }
 
-void InstancePlay(InstanceHandle si, bool loop)
+void InstancePlay(InstanceHandle inst, bool loop)
 {
-	INTRA_ASSERT(si!=null);
+	INTRA_ASSERT(inst!=null);
 	EM_ASM_({
 		var src = Module.gWebAudioInstanceArray[$0];
 		src.loop = $1;
 		src.start();
 		src.__is_playing = true;
-	}, si->id, loop);
+	}, inst->id, loop);
 }
 
-bool InstanceIsPlaying(InstanceHandle si)
+bool InstanceIsPlaying(InstanceHandle inst)
 {
-	if(si==null) return false;
-	return (bool)EM_ASM_INT({return Module.gWebAudioInstanceArray[$0].__is_playing;}, si->id);
+	if(inst==null) return false;
+	return bool(EM_ASM_INT({return Module.gWebAudioInstanceArray[$0].__is_playing;}, inst->id));
 }
 
-void InstanceStop(InstanceHandle si)
+void InstanceStop(InstanceHandle inst)
 {
-	if(si==null) return;
-	EM_ASM_({Module.gWebAudioInstanceArray[$0].stop();}, si->id);
+	if(inst==null) return;
+	EM_ASM_({Module.gWebAudioInstanceArray[$0].stop();}, inst->id);
 }
 
 
 
 
 
-extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(SoundStreamedBufferHandle snd)
+extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(StreamedBufferHandle snd)
 {
 	void* tempPtrs[16];
 	for(size_t c=0; c<snd->channels; c++)

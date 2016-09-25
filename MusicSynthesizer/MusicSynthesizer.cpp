@@ -81,9 +81,13 @@ Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
 	return sound;
 }
 
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#include <emscripten.h>
+#endif
+
 void MainLoop()
 {
-#if INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten
+#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 
 	Console.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
 #ifdef ENABLE_STREAMING
@@ -137,8 +141,8 @@ void PlayMusic(const Music& music, bool printPerf)
 
 extern "C" void PlayUrl(const char* url)
 {
-	ByteBuffer bb = DownloadFile(StringView(url));
-	auto music = ReadMidiFile(bb.AsConstByteRange());
+	Array<byte> bb = DownloadFile(StringView(url));
+	auto music = ReadMidiFile(bb.AsConstRange());
 	PrintMusicInfo(music);
 	PlayMusic(music, true);
 }
@@ -164,12 +168,9 @@ using namespace Range;
 
 int INTRA_CRTDECL main()
 {
-
-
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
-	PlayUrl("http://gammaker.my.to/site-storage/Midi/ABBA-Mamma_Mia.mid");
+	PlayUrl("http://gammaker.github.io/midi/ABBA-Mamma_Mia.mid");
 #else
-
 	//Errors::InitSignals();
 
 	const String filePath = GetMidiPath("ABBA-Mamma_Mia.mid");

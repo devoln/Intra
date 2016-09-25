@@ -1,11 +1,12 @@
 ﻿#include "Core/Core.h"
 
-#if INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console
+#if(INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
 
 #include "GUI/MessageBox.h"
 #include "Containers/StringView.h"
 #include "Containers/String.h"
 #include "Graphics/OpenGL/GLExtensions.h"
+
 #include <string.h>
 
 namespace Intra {
@@ -14,11 +15,10 @@ using namespace Math;
 
 }
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 #include <EGL/egl.h>
 #include <GLES/gl.h>
-#else
-#if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
+#elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -39,7 +39,6 @@ using namespace Math;
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 #include <GL/glx.h>
 #include <GL/gl.h>
-#endif
 #endif
 
 #undef MemoryBarrier
@@ -477,7 +476,7 @@ else caps.texture_3D=true;
 	{reinterpret_cast<void**>(&gl.SwapInterval), "wglSwapInterval"}
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_X11)
 	{reinterpret_cast<void**>(&gl.SwapInterval), "glXSwapInterval"}
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
+#elif(defined(INTRA_EGL))
 	{reinterpret_cast<void**>(&gl.SwapInterval), "eglSwapInterval"}
 #else
 

@@ -3,7 +3,10 @@
 #include "Sound/InstrumentLibrary.h"
 #include "Containers/Array2D.h"
 
+#include "IO/Stream.h"
+
 namespace Intra {
+using namespace IO;
 
 using namespace Math;
 
@@ -317,8 +320,8 @@ MusicalInstruments::MusicalInstruments()
 	fluteSawtooth.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(0.5f, 0.15f, 1, 0.5f);
 	fluteSawtooth.AttenuationPass = SynthesizedInstrument::CreateADPass(0.1, 0.05);
 
-	Flute.Combination.AddLast(fluteSine);
-	Flute.Combination.AddLast(fluteSawtooth);
+	Flute.Combination.AddLast(core::move(fluteSine));
+	Flute.Combination.AddLast(core::move(fluteSawtooth));
 
 	SynthesizedInstrument panFluteSine;
 	panFluteSine.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.2f, 2, 0.5f);
