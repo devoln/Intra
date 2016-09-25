@@ -28,8 +28,21 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
 
     set(CMAKE_MAKE_PROGRAM "${CMAKE_MAKE_PROGRAM} -j4")
     
-    set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -Wl,--gc-sections -fno-exceptions -fno-rtti")
-    set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -Wl,-s -fno-asynchronous-unwind-tables")
+    set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti")
+    
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD" OR APPLE)
+      set(COMMON_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} ")
+    else()
+      set(COMMON_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -Wl,--gc-sections")
+    endif()
+    
+    set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -fno-asynchronous-unwind-tables")
+    
+    if(CMAKE_SYSTEM_NAME MATCHES "FreeBSD" OR APPLE)
+      set(COMMON_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} ")
+    else()
+      set(ALL_MINSIZE_OPTIMIZATIONS "${ALL_MINSIZE_OPTIMIZATIONS} -Wl,-s")
+    endif()
     
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -Wl,-s -Ofast")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -Os")
