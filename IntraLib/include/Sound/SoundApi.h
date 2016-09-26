@@ -40,5 +40,7 @@ bool StreamedSoundIsPlaying(StreamedBufferHandle snd);
 void StreamedSoundStop(StreamedBufferHandle snd);
 void StreamedSoundUpdate(StreamedBufferHandle snd);
 
+void SoundSystemCleanUp();
+
 }}
 

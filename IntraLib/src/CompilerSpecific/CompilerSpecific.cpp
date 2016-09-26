@@ -47,6 +47,7 @@ namespace std
 	const char* _cdecl _Syserror_map(int) { return "error"; }
 	const char* _cdecl _Winerror_map(int) { return "error"; }
 }
+extern "C" void _cdecl _except_handler4_common() {}
 
 #if !defined(INTRA_INLINE_MATH) && defined(INTRA_MINIMIZE_CRT)
 #include <math.h>
@@ -92,15 +93,13 @@ extern "C"
 		{
 			return initialize_critical_section_ex(critical_section, spin_count, flags);
 		}*/
-		flags;
+		(void)flags;
 		return InitializeCriticalSectionAndSpinCount(critical_section, spin_count);
 	}
 
 	void INTRA_CRTDECL terminate() {abort();}
 	void INTRA_CRTDECL _invalid_parameter_noinfo_noreturn() {abort();}
 	void _fastcall _guard_check_icall(unsigned int) {}
-
-	//void _cdecl _except_handler4_common() {}
 }
 
 #endif

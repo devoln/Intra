@@ -128,24 +128,18 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 
 #endif
 
-#if((INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64) && !defined(__clang__) && defined(_MSC_VER))
-#include <intrin.h>
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+
 #pragma comment(lib, "Advapi32.lib")
 
 namespace Intra {
 
 ProcessorInfo ProcessorInfo::Get()
 {
-	int cpuInfo[12] = {-1};
-	__cpuid(cpuInfo, 0x80000002u);
-	__cpuid(cpuInfo+4, 0x80000003u);
-	__cpuid(cpuInfo+8, 0x80000004u);
 	ProcessorInfo result;
-	result.BrandString = String((const char*)cpuInfo);
-
 	SYSTEM_INFO sysInfo;
 	GetSystemInfo(&sysInfo);
-	result.LogicalProcessorNumber = (ushort)sysInfo.dwNumberOfProcessors;
+	result.LogicalProcessorNumber = ushort(sysInfo.dwNumberOfProcessors);
 //#ifdef INTRA_XP_SUPPORT
 	result.CoreNumber = result.LogicalProcessorNumber;
 /*#else
@@ -160,9 +154,15 @@ ProcessorInfo ProcessorInfo::Get()
     
 	if(lError==ERROR_SUCCESS)
 	{
-		DWORD dwMHz, size=sizeof(dwMHz);
-		lError = RegQueryValueExA(hKey, "~MHz", null, null, (LPBYTE)&dwMHz, &size);
+		DWORD dwMHz;
+		DWORD size = sizeof(dwMHz);
+		lError = RegQueryValueExA(hKey, "~MHz", null, null, reinterpret_cast<LPBYTE>(&dwMHz), &size);
 		if(lError==ERROR_SUCCESS) result.Frequency = dwMHz*1000000ull;
+
+		char processorName[64] = {0};
+		size = sizeof(processorName);
+		lError = RegQueryValueExA(hKey, "ProcessorNameString", null, null, reinterpret_cast<LPBYTE>(processorName), &size);
+		if(lError==ERROR_SUCCESS) result.BrandString = StringView(processorName, size).TrimRight('\0');
 	}
 
 	return result;

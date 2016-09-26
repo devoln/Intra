@@ -350,21 +350,21 @@ inline double Floor(double x) {return (double)IFloor(x);}
 inline double Ceil(double x) {return Floor(x+0.999999);}
 inline double Round(double x) {return Floor(x+0.5);}
 
-inline float Fract(float x) {return x-(float)IFloor(x);}
-inline float Floor(float x) {return (float)IFloor(x);}
+inline float Fract(float x) {return x-float(IFloor(x));}
+inline float Floor(float x) {return float(IFloor(x));}
 inline float Ceil(float x) {return Floor(x+0.999999f);}
 inline float Round(float x) {return Floor(x+0.5f);}
 
-//forceinline float Floor(float x) {return (float)Floor((double)x);}
-//forceinline float Ceil(float x) {return (float)Ceil((double)x);}
-//forceinline float Round(float v) {return (float)Round((double)v);}
-inline float Sin(float x) {return (float)Sin((double)x);}
-inline float Cos(float x) {return (float)Cos((double)x);}
-inline float Tan(float x) {return (float)Tan((double)x);}
-inline float Atan(float x) {return (float)Atan((double)x);}
-inline float Sqrt(float x) {return (float)Sqrt((double)x);}
-inline float exp(float x) {return (float)exp((double)x);}
-inline float Mod(float x, float y) {return (float)Mod((double)x, (double)y);}
+//forceinline float Floor(float x) {return float(Floor(double(x)));}
+//forceinline float Ceil(float x) {return float(Ceil(double(x)));}
+//forceinline float Round(float v) {return float(Round(double(v)));}
+inline float Sin(float x) {return float(Sin(double(x)));}
+inline float Cos(float x) {return float(Cos(double(x)));}
+inline float Tan(float x) {return float(Tan(double(x)));}
+inline float Atan(float x) {return float(Atan(double(x)));}
+inline float Sqrt(float x) {return float(Sqrt(double(x)));}
+inline float Exp(float x) {return float(Exp(double(x)));}
+inline float Mod(float x, float y) {return float(Mod(double(x), double(y)));}
 
 
 inline double Acos(double x) {return Atan(Sqrt(1.0 - x*x)/x);}
@@ -396,15 +396,15 @@ template<typename T> T Log(T v)
 	do
 	{
 		A = N;
-		T L = (P / (exp(N - T(1.0))));
+		T L = (P / (Exp(N - T(1.0))));
 		T R = ((N - T(1.0)) * T(E));
 		N = ((L + R) / T(E));
 	} while(!(Abs(N-A)<T(0.01)));
 	return N;
 }
 
-inline float Pow(float v, float power) {return power==0.0f? 1.0f: exp(Log(v)*power);}
-inline double Pow(double v, double power) {return power==0.0? 1.0f: exp(Log(v)*power);}
+inline float Pow(float v, float power) {return power==0.0f? 1.0f: Exp(Log(v)*power);}
+inline double Pow(double v, double power) {return power==0.0? 1.0f: Exp(Log(v)*power);}
 
 #endif
 
@@ -562,8 +562,8 @@ struct Half
 	operator float() const {return toFloat(data);}
 	operator double() const {return toFloat(data);}
 
-	Half& operator=(float rhs) {data=fromFloat(rhs); return *this;}
-	Half& operator=(double rhs) {data=fromFloat(float(rhs)); return *this;}
+	Half& operator=(float rhs) {data = fromFloat(rhs); return *this;}
+	Half& operator=(double rhs) {data = fromFloat(float(rhs)); return *this;}
 	Half& operator=(const Half& rhs) = default;
 
 	ushort data;

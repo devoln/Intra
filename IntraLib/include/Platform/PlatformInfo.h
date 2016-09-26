@@ -61,6 +61,7 @@
 #define INTRA_LIBRARY_SOUND_SYSTEM_SDL 3
 #define INTRA_LIBRARY_SOUND_SYSTEM_Qt 4
 #define INTRA_LIBRARY_SOUND_SYSTEM_WebAudio 5
+#define INTRA_LIBRARY_SOUND_SYSTEM_ALSA 6
 
 
 //! Используемый декодер ogg vorbis

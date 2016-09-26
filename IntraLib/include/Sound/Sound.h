@@ -167,4 +167,6 @@ private:
 	void release();
 };
 
+void CleanUpSoundSystem();
+
 }

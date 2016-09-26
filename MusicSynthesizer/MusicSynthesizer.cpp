@@ -10,6 +10,12 @@
 #include "Platform/Platform.h"
 #include "Threading/Thread.h"
 
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#ifndef WIN32_MEAN_AND_LEAN
+#define WIN32_MEAN_AND_LEAN
+#include <windows.h>
+#endif
+
 using namespace Intra;
 using namespace Intra::IO;
 
@@ -52,7 +58,7 @@ bool PrintMidiFileInfo(StringView filePath)
 		Console.GetChar();
 		return false;
 	}
-	auto mapping = file.Map<byte>();
+	auto mapping = file.Map<Intra::byte>();
 	auto music = ReadMidiFile(mapping);
 	file.Unmap();
 
@@ -111,7 +117,7 @@ void LoadAndPlaySound(StringView filePath)
 {
 #ifdef ENABLE_STREAMING
 	Console.PrintLine("Инициализация...");
-	auto sound = StreamedSound::FromFile(filePath);
+	auto sound = StreamedSound::FromFile(filePath, 65536);
 	sound.Play();
 #else
 	Sound sound = SynthSoundFromMidi(filePath, true);
@@ -166,12 +172,26 @@ void SoundTest()
 using namespace IO;
 using namespace Range;
 
+BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
+{
+	(void)CtrlType;
+	CleanUpSoundSystem();
+	exit(0);
+	return true;
+}
+
+#endif
+
 int INTRA_CRTDECL main()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 	PlayUrl("http://gammaker.github.io/midi/ABBA-Mamma_Mia.mid");
 #else
 	//Errors::InitSignals();
+
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
+#endif
 
 	const String filePath = GetMidiPath("ABBA-Mamma_Mia.mid");
 	
@@ -180,6 +200,6 @@ int INTRA_CRTDECL main()
 
 	LoadAndPlaySound(filePath);
 #endif
-
+	CleanUpSoundSystem();
 	return 0;
 }

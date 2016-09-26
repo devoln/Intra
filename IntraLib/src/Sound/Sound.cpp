@@ -291,4 +291,9 @@ void StreamedSound::unregister_instance()
 
 Array<StreamedSound*> StreamedSound::all_existing_instances;
 
+void CleanUpSoundSystem()
+{
+	SoundAPI::SoundSystemCleanUp();
+}
+
 }

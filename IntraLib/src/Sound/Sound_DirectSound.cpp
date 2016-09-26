@@ -77,6 +77,8 @@ struct StreamedBuffer
 		sampleCount = sample_count;
 		channels = ch;
 		sampleRate = sample_rate;
+		notifyLoadEvents[0] = notifyLoadEvents[1] = null;
+		notifyLoadWaits[0] = notifyLoadWaits[1] = null;
 		InitializeCriticalSection(&critsec);
 	}
 
@@ -89,13 +91,13 @@ struct StreamedBuffer
 	uint channels;
 	StreamingCallback streamingCallback;
 
-	HANDLE notifyLoadEvent=null;
-	HANDLE notifyLoadWait=null;
+	HANDLE notifyLoadEvents[2];
+	HANDLE notifyLoadWaits[2];
 	bool deleteOnStop=false;
 	bool looping=false;
 	byte stop_soon=0;
 
-	byte buffers_processed=1;
+	byte buffers_processed=0;
 	byte next_buffer_to_fill=1;
 
 	CRITICAL_SECTION critsec;
@@ -117,10 +119,15 @@ struct context_deleter
 
 	~context_deleter()
 	{
+		clean();
+	}
+
+	void clean()
+	{
 		if(context==null) return;
 		EnterCriticalSection(&contextCritSect);
-		auto cont=context;
-		context=null;
+		auto cont = context;
+		context = null;
 		cont->Release();
 		LeaveCriticalSection(&contextCritSect);
 	}
@@ -352,18 +359,20 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	IDirectSoundNotify* notify;
 	if(SUCCEEDED(result->buffer->QueryInterface(IID_IDirectSoundNotify, reinterpret_cast<void**>(&notify))))
 	{
-		result->notifyLoadEvent = CreateEventW(null, false, false, null);
-		if(result->notifyLoadEvent==null)
+		result->notifyLoadEvents[0] = CreateEventW(null, false, false, null);
+		result->notifyLoadEvents[1] = CreateEventW(null, false, false, null);
+		if(result->notifyLoadEvents[0]==null || result->notifyLoadEvents[1]==null)
 		{
 			delete result;
 			return null;
 		}
 
 		DSBPOSITIONNOTIFY positionNotify[2] = {
-			{result->SizeInBytes(), result->notifyLoadEvent},
-			{result->SizeInBytes()*2-1, result->notifyLoadEvent}
+			{0, result->notifyLoadEvents[0]},
+			{result->SizeInBytes(), result->notifyLoadEvents[1]}
 		};
-		RegisterWaitForSingleObject(&result->notifyLoadWait, result->notifyLoadEvent, WaitLoadCallback, result, INFINITE, 0);
+		RegisterWaitForSingleObject(&result->notifyLoadWaits[0], result->notifyLoadEvents[0], WaitLoadCallback, result, INFINITE, 0);
+		RegisterWaitForSingleObject(&result->notifyLoadWaits[1], result->notifyLoadEvents[1], WaitLoadCallback, result, INFINITE, 0);
 		notify->SetNotificationPositions(2, positionNotify);
 		notify->Release();
 	}
@@ -400,13 +409,15 @@ void StreamedSoundStop(StreamedBufferHandle snd)
 
 void StreamedBufferDelete(StreamedBufferHandle snd)
 {
-	(void)UnregisterWait(snd->notifyLoadWait);
+	(void)UnregisterWait(snd->notifyLoadWaits[0]);
+	(void)UnregisterWait(snd->notifyLoadWaits[1]);
 	if(TryEnterCriticalSection(&contextCritSect))
 	{
 		if(context!=null)
 		{
 		EnterCriticalSection(&snd->critsec);
-			CloseHandle(snd->notifyLoadEvent);
+			CloseHandle(snd->notifyLoadEvents[0]);
+			CloseHandle(snd->notifyLoadEvents[1]);
 			snd->buffer->Stop();
 			snd->buffer->Release();
 		LeaveCriticalSection(&snd->critsec);
@@ -499,6 +510,11 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		snd->next_buffer_to_fill = byte(1 - snd->next_buffer_to_fill);
 		bufsProcessed--;
 	}
+}
+
+void SoundSystemCleanUp()
+{
+	context_deleter.clean();
 }
 
 
