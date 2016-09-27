@@ -128,10 +128,6 @@ int main(int argc, const char* argv[])
 	Console << map() << endl;
 #endif
 
-
-	if(argc>=2 && StringView(argv[1])=="-a")
-		TestGroup::YesForNestingLevel=0;
-
 	if(TestGroup gr{logger, "Диапазоны"})
 		RunRangeTests();
 
