@@ -416,7 +416,7 @@ namespace SoundModifiers
 
 		forceinline float NextSample(float sample)
 		{
-			auto result = sample * oscillator.First();
+			const float result = sample * oscillator.First();
 			oscillator.PopFirst();
 			return result;
 		}
@@ -766,7 +766,9 @@ public:
 		return *this;
 	}
 
-	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const override;
+	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo,
+		float volume=1, uint sampleRate=44100, bool add=false) const override;
+
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override
 	{
 		uint id = note.Octave*12u+uint(note.Note);
@@ -776,8 +778,14 @@ public:
 		return gen->GetNoteSampleCount(MusicNote(4, MusicNote::NoteType::C, ushort(note.Duration*tempo)), 1, sampleRate);
 	}
 
+	void PrepareToPlay(const MusicTrack& track, uint sampleRate) const override;
+
 	mutable HashMap<IMusicalInstrument*, SoundBuffer> SamplesCache;
 	HashMap<uint, IMusicalInstrument*> Generators;
+
+private:
+	//Убедиться, что в кеше присутствуют семплы для указанной ноты длины не менее указанной
+	SoundBuffer& cache_note(MusicNote note, float tempo, uint sampleRate) const;
 };
 
 

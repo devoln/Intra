@@ -9,8 +9,11 @@ struct MusicNote
 	enum NoteType: byte {C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, H};
 	static const float BasicFrequencies[12]; //Таблица соответствия нот субконтроктавы частотам
 
-	MusicNote(byte octave, NoteType note, ushort duration): Octave(octave), Note(note), Duration(duration) {}
-	MusicNote(null_t=null): Octave(255), Note(NoteType(255)), Duration(0) {}
+	MusicNote(byte octave, NoteType note, ushort duration):
+		Octave(octave), Note(note), Duration(duration) {}
+
+	MusicNote(null_t=null):
+		Octave(255), Note(NoteType(255)), Duration(0) {}
 
 	static MusicNote Pause(ushort duration)
 	{
@@ -35,17 +38,20 @@ struct MusicNote
 	ushort Duration; //Относительная длительность ноты в 1/2048 долях
 };
 
-struct SoundBuffer;
 
+
+struct MusicTrack;
 class IMusicalInstrument
 {
 public:
 	virtual ~IMusicalInstrument() {}
 	virtual void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const = 0;
 	virtual uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const = 0;
+	virtual void PrepareToPlay(const MusicTrack& track, uint sampleRate) const {(void)track; (void)sampleRate;}
 };
 
 
+struct SoundBuffer;
 struct MusicTrack
 {
 	struct NoteEntry

@@ -437,8 +437,8 @@ MusicalInstruments::MusicalInstruments()
 	Rain.AttenuationPass = SynthesizedInstrument::CreateTableAttenuationPass(
 			{norm8(0.7), 0.96, 0.7, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
 
-	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 0.5f, 3.0f, 0.35f);//CreateGuitar(15, 128, 3.5f, 1.1f);
-	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 0.5f, 3.0f, 0.3f);//CreateGuitar(15, 224, 3.5f, 1.7f);
+	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 0.5f, 5.0f, 0.35f);//CreateGuitar(15, 128, 3.5f, 1.1f);
+	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 0.5f, 5.0f, 0.3f);//CreateGuitar(15, 224, 3.5f, 1.7f);
 
 	OverdrivenGuitar.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(9.5, 0.35f, 1, 1);
 	
@@ -558,7 +558,7 @@ SynthesizedInstrument MusicalInstruments::CreateGuitar(size_t n, float c,
 	for(size_t i=1; i<=n; i++)
 	{
 		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow(float(i), -f);
-		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*1.7f-0.7f)};
+		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*2.0f-1.0f)};
 	}
 	result.SynthPass = SynthesizedInstrument::CreateSineExpSynthPass({harmonics, n});
 	return result;

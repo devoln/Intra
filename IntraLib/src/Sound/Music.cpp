@@ -90,6 +90,12 @@ MusicSoundSampleSource::MusicSoundSampleSource(const Music& mydata, uint sampleR
 {
 	for(uint i=0; i<data.Tracks.Count(); i++)
 		currentPositions.AddLast(Position{0,0});
+
+	for(auto&& track: mydata.Tracks)
+	{
+		if(track.Instrument==null) continue;
+		track.Instrument->PrepareToPlay(track, sampleRate);
+	}
 }
 
 size_t MusicSoundSampleSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
