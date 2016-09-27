@@ -11,6 +11,10 @@
 #include "Threading/Thread.h"
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4668)
+#endif
 #ifndef WIN32_MEAN_AND_LEAN
 #define WIN32_MEAN_AND_LEAN
 #include <windows.h>
