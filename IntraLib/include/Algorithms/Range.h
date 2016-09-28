@@ -126,8 +126,8 @@ template<typename T> struct ArrayRange:
 	constexpr forceinline ArrayRange(const ArrayRange& rhs):
 		Begin(rhs.Begin), End(rhs.End) {}
 
-	template<typename U=T> constexpr forceinline ArrayRange(const Meta::EnableIf<Meta::IsConst<U>::_, ArrayRange<value_type>>& rhs):
-		Begin(rhs.Begin), End(rhs.End) {}
+	//template<typename U=T> constexpr forceinline ArrayRange(const Meta::EnableIf<Meta::IsConst<U>::_, ArrayRange<value_type>>& rhs):
+		//Begin(rhs.Begin), End(rhs.End) {}
 
 	forceinline ArrayRange<const T>& AsConstRange() {return *reinterpret_cast<ArrayRange<const T>*>(this);}
 	forceinline constexpr const ArrayRange<const T>& AsConstRange() const {return *reinterpret_cast<const ArrayRange<const T>*>(this);}
