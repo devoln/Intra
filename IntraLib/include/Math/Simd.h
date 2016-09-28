@@ -255,7 +255,7 @@ typedef uint16x8_t ushort8;
 typedef uint8x16_t byte16;
 typedef int32x4_t int4;
 typedef int16x8_t short8;
-typedef int8x16_t byte16;
+typedef int8x16_t sbyte16;
 typedef uint64x2_t ullong2;
 typedef int64x2_t llong2;
 typedef float32x4_t float4;
@@ -305,8 +305,8 @@ forceinline float GetX(float2arg v) {float dst[2]; Get(dst, v); return dst[0];}
 forceinline float GetX(float4arg v) {float dst[4]; Get(dst, v); return dst[0];}
 forceinline void Get(int* dst, int2arg v) {vst1_s32(dst, v);}
 forceinline void Get(int* dst, int4arg v) {vst1q_s32(dst, v);}
-forceinline float GetX(int2arg v) {int dst[2]; Get(dst, v); return dst[0];}
-forceinline float GetX(int4arg v) {int dst[4]; Get(dst, v); return dst[0];}
+forceinline int GetX(int2arg v) {int dst[2]; Get(dst, v); return dst[0];}
+forceinline int GetX(int4arg v) {int dst[4]; Get(dst, v); return dst[0];}
 
 forceinline int2 Add(int2arg a, int2arg b) {return vadd_s32(a, b);}
 forceinline int4 Add(int4arg a, int4arg b) {return vaddq_s32(a, b);}
