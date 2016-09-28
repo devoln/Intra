@@ -16,14 +16,14 @@ namespace detail
 		for(size_t j = 0; j<count; j++)
 		{
 			const auto key = extractKey(arr[j]);
-			const size_t keyRadix = size_t((key >> radixOffset) & RadixMask);
+			const size_t keyRadix = size_t(key >> radixOffset) & RadixMask;
 			c[keyRadix]++;
 		}
 		for(size_t j=1; j<Radix; j++) c[j] += c[j-1];
 		for(size_t j = count-1; j!=Meta::NumericLimits<size_t>::Max(); j--)
 		{
 			const auto key = extractKey(arr[j]);
-			const size_t keyRadix = size_t((key >> radixOffset) & RadixMask);
+			const size_t keyRadix = size_t(key >> radixOffset) & RadixMask;
 			const size_t tempIndex = --c[keyRadix];
 			temp[tempIndex] = arr[j];
 		}

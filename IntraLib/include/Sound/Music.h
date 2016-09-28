@@ -47,7 +47,7 @@ public:
 	virtual ~IMusicalInstrument() {}
 	virtual void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo, float volume=1, uint sampleRate=44100, bool add=false) const = 0;
 	virtual uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const = 0;
-	virtual void PrepareToPlay(const MusicTrack& track, uint sampleRate) const {(void)track; (void)sampleRate;}
+	virtual void PrepareToPlay(const MusicTrack& /*track*/, uint /*sampleRate*/) const {}
 };
 
 
