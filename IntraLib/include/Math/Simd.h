@@ -226,7 +226,8 @@ namespace Intra { namespace Simd {
 		return _mm_comige_sd(a, b)!=0;
 	}
 
-}
+}}
+
 #elif(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_PowerPC)
 
 namespace Intra { namespace Simd {
@@ -234,8 +235,10 @@ namespace Intra { namespace Simd {
 	typedef __vector4 float4;
 	typedef float4 float4arg;
 
-}
+}}
+
 #elif(defined(__ARM_NEON) || defined(__ARM_NEON__))
+
 namespace Intra { namespace Simd {
 
 typedef uint32x2_t uint4;
@@ -394,12 +397,12 @@ namespace Intra { namespace Simd {
 
 	forceinline float4 Dot4(float4arg a, float4arg b)
 	{
-		return Set(Dot(a, b));
+		return SetFloat4(Dot(a, b));
 	}
 
 	forceinline double2 Dot2(double2arg a, double2arg b)
 	{
-		return Set(Dot(a, b));
+		return SetDouble2(Dot(a, b));
 	}
 
 
@@ -524,7 +527,7 @@ namespace Intra { namespace Simd {
 		return a.v[0]>=b.v[0];
 	}
 
-}
+}}
 
 #endif
 
@@ -540,3 +543,4 @@ namespace Intra { namespace Simd {
 	}
 	template<typename T> using simd4 = typename Impl::simd4<T>::Type;
 }}
+
