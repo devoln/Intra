@@ -332,6 +332,11 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 	delete snd;
 }
 
+void SoundSystemCleanUp()
+{
+
+}
+
 }}
 
 #endif

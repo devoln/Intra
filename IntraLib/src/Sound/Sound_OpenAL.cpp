@@ -83,12 +83,7 @@ struct Context
 
 	~Context()
 	{
-		if(alc==null) return;
-		alcMakeContextCurrent(null);
-		alcDestroyContext(alc);
-		alc = null;
-		if(ald==null) return;
-		alcCloseDevice(ald);
+		Clean();
 	}
 
 	void Prepare()
@@ -102,6 +97,16 @@ struct Context
 		//alListenerfv(AL_POSITION, Vec3(0,0,0));
 		//alListenerfv(AL_VELOCITY, Vec3(0,0,0));
 		//alListenerfv(AL_ORIENTATION, Vec3(0,0,0));
+	}
+
+	void Clean()
+	{
+		if(alc==null) return;
+		alcMakeContextCurrent(null);
+		alcDestroyContext(alc);
+		alc = null;
+		if(ald==null) return;
+		alcCloseDevice(ald);
 	}
 
 	Context(const Context&) = delete;
@@ -302,6 +307,11 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		alSourceQueueBuffers(snd->source, 1, snd->buffers);
 		core::swap(snd->buffers[0], snd->buffers[1]);
 	}
+}
+
+void SoundSystemCleanUp()
+{
+	context.Clean();
 }
 
 }}
