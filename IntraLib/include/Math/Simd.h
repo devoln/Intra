@@ -241,7 +241,7 @@ namespace Intra { namespace Simd {
 
 namespace Intra { namespace Simd {
 
-typedef uint32x2_t uint4;
+typedef uint32x2_t uint2;
 typedef uint16x4_t ushort4;
 typedef uint8x8_t byte8;
 typedef int32x2_t int2;
@@ -260,7 +260,7 @@ typedef uint64x2_t ullong2;
 typedef int64x2_t llong2;
 typedef float32x4_t float4;
 
-typedef uint32x2_t uint4arg;
+typedef uint32x2_t uint2arg;
 typedef uint16x4_t ushort4arg;
 typedef uint8x8_t byte8arg;
 typedef int32x2_t int2arg;
@@ -279,6 +279,11 @@ typedef uint64x2_t ullong2arg;
 typedef int64x2_t llong2arg;
 typedef float32x4_t float4arg;
 
+struct double2 {double v[2];};
+typedef const double2& double2arg;
+struct double4 {double v[4];};
+typedef const double4& double4arg;
+
 forceinline float2 SetFloat2(float s) {return vdup_n_f32(s);}
 forceinline float4 SetFloat4(float s) {return vdupq_n_f32(s);}
 forceinline int2 SetInt2(int s) {return vdup_n_s32(s);}
@@ -296,12 +301,12 @@ forceinline float4 SetFloat4(float x, float y, float z, float w) {float xyzw[]={
 
 forceinline void Get(float* dst, float2arg v) {vst1_f32(dst, v);}
 forceinline void Get(float* dst, float4arg v) {vst1q_f32(dst, v);}
-forceinline float GetX(float2arg v) {float dst[2]; Get(&dst, v); return dst[0];}
-forceinline float GetX(float4arg v) {float dst[4]; Get(&dst, v); return dst[0];}
+forceinline float GetX(float2arg v) {float dst[2]; Get(dst, v); return dst[0];}
+forceinline float GetX(float4arg v) {float dst[4]; Get(dst, v); return dst[0];}
 forceinline void Get(int* dst, int2arg v) {vst1_s32(dst, v);}
 forceinline void Get(int* dst, int4arg v) {vst1q_s32(dst, v);}
-forceinline float GetX(int2arg v) {int dst[2]; Get(&dst, v); return dst[0];}
-forceinline float GetX(int4arg v) {int dst[4]; Get(&dst, v); return dst[0];}
+forceinline float GetX(int2arg v) {int dst[2]; Get(dst, v); return dst[0];}
+forceinline float GetX(int4arg v) {int dst[4]; Get(dst, v); return dst[0];}
 
 forceinline int2 Add(int2arg a, int2arg b) {return vadd_s32(a, b);}
 forceinline int4 Add(int4arg a, int4arg b) {return vaddq_s32(a, b);}
