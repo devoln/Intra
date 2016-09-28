@@ -394,8 +394,8 @@ public:
 	forceinline T* Ptr() {return &x;}
 	forceinline const T* Ptr() const {return &x;}
 
-	T& operator[](size_t index) {return (&x)[index];}
-	const T& operator[](size_t index) const {return (&x)[index];}
+	template<typename Index> T& operator[](Index index) {return (&x)[index];}
+	template<typename Index> const T& operator[](Index index) const {return (&x)[index];}
 
 	union
 	{

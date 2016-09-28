@@ -616,7 +616,7 @@ void Image::loadBMP(IInputStream* s, size_t bytes)
 				// Other formats are not valid
 			}
 			linePtr+=bmpHdr.bitCount/8;
-			for(int k=0; k<4; k++)
+			for(size_t k=0; k<4; k++)
 			{
 				uint pixel = convert((Color & bmpHdr.RgbaMasks[k]) >> bitPositions[k], bitCount[k], 8);
 				pixels[index][k] = byte(pixel);
