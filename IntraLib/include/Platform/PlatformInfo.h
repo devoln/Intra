@@ -150,7 +150,7 @@
 
 #if defined(WIN64) || defined(_WIN64)
 #define INTRA_PLATFORM_ARCH INTRA_PLATFORM_X86_64
-#else
+#elif(defined(WIN32) || defined(_WIN32))
 #define INTRA_PLATFORM_ARCH INTRA_PLATFORM_X86
 #endif
 
