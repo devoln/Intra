@@ -24,7 +24,7 @@
 BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 {
 	(void)CtrlType;
-	CleanUpSoundSystem();
+	Intra::CleanUpSoundSystem();
 	exit(0);
 	return true;
 }
