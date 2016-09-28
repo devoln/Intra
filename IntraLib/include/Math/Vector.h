@@ -86,8 +86,10 @@ template<typename T> struct Vector2
 		return lineA+AB*t;
 	}
 
-	operator T*() {return &x;}
-	operator const T*() const {return &x;}
+	T* Ptr() {return &x;}
+	const T* Ptr() const {return &x;}
+	T& operator[](size_t index) {return (&x)[index];}
+	const T& operator[](size_t index) const {return (&x)[index];}
 
 	T x, y;
 	
@@ -231,8 +233,11 @@ template<typename T> struct Vector3
 	constexpr Vector3 operator^(const Vector3& rhs) const
 	{return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z)};}
 
-	operator T*() {return &x;}
-	operator const T*() const {return &x;}
+	T* Ptr() {return &x;}
+	const T* Ptr() const {return &x;}
+
+	T& operator[](size_t index) {return (&x)[index];}
+	T operator[](size_t index) const {return (&x)[index];}
 
 	union
 	{
@@ -386,8 +391,11 @@ public:
 		return lineA+AB*t;
 	}
 
-	forceinline operator T*() {return &x;}
-	forceinline operator const T*() const {return &x;}
+	forceinline T* Ptr() {return &x;}
+	forceinline const T* Ptr() const {return &x;}
+
+	T& operator[](size_t index) {return (&x)[index];}
+	const T& operator[](size_t index) const {return (&x)[index];}
 
 	union
 	{

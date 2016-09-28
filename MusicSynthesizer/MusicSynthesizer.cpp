@@ -174,9 +174,6 @@ void SoundTest()
 #endif
 
 
-using namespace IO;
-using namespace Range;
-
 BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 {
 	(void)CtrlType;
