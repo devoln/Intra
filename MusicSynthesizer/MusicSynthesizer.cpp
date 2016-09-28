@@ -1,4 +1,5 @@
-﻿#include "IO/Stream.h"
+﻿#include "Containers/String.h"
+#include "IO/Stream.h"
 #include "IO/File.h"
 #include "Sound/Midi.h"
 #include "Sound/Music.h"

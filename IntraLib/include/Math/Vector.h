@@ -43,9 +43,23 @@ template<typename T> struct Vector2
 	template<typename U> constexpr Vector2 operator/(const Vector2<U>& rhs) const {return Vector2(x/rhs.x, y/rhs.y);}
 	template<typename U> Vector2& operator/=(const Vector2<U>& rhs) {x/=rhs.x, y/=rhs.y; return *this;}
 
-	Vector2 swizzle(uint X, uint Y) const {INTRA_ASSERT((X|Y)<2); return {(*this)[X], (*this)[Y]};}
-	Vector3<T> swizzle(uint X, uint Y, uint Z) const {INTRA_ASSERT((X|Y|Z)<2); return {(*this)[X], (*this)[Y], (*this)[Z]};}
-	Vector4<T> swizzle(uint X, uint Y, uint Z, uint W) const {INTRA_ASSERT((X|Y|Z|W)<2); return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};}
+	Vector2 swizzle(uint X, uint Y) const
+	{
+		INTRA_ASSERT((X|Y)<2);
+		return {index(X), index(Y)};
+	}
+
+	Vector3<T> swizzle(uint X, uint Y, uint Z) const
+	{
+		INTRA_ASSERT((X|Y|Z)<2);
+		return {index(X), index(Y), index(Z)};
+	}
+
+	Vector4<T> swizzle(uint X, uint Y, uint Z, uint W) const
+	{
+		INTRA_ASSERT((X|Y|Z|W)<2);
+		return {index(X), index(Y), index(Z), index(W)};
+	}
 
 	constexpr bool operator==(const Vector2& rhs) const {return (x==rhs.x && y==rhs.y);}
 	constexpr bool operator!=(const Vector2& rhs) const {return !operator==(rhs);}
@@ -76,6 +90,10 @@ template<typename T> struct Vector2
 	operator const T*() const {return &x;}
 
 	T x, y;
+	
+private:
+	forceinline T& index(size_t index) {return (&x)[index];}
+	forceinline const T& index(size_t index) const {return (&x)[index];}
 };
 
 template<typename T> bool operator==(NaNType, const Vector2<T>& rhs) {return rhs==NaN;}
@@ -121,7 +139,7 @@ template<typename T> struct Vector3
 	Vector3 operator*(const Matrix3<T>& m) const;
 
 	Vector3& operator*=(const Matrix3<T>& m)
-	{*this=*this*m; return *this;}
+	{*this = *this*m; return *this;}
 
 
 	constexpr Vector3 operator/(T n) const
@@ -138,13 +156,22 @@ template<typename T> struct Vector3
 
 
 	Vector2<T> swizzle(byte X, byte Y) const
-	{INTRA_ASSERT((X|Y)<3); return {(*this)[X], (*this)[Y]};}
+	{
+		INTRA_ASSERT((X|Y)<3);
+		return {index(X), index(Y)};
+	}
 
 	Vector3 swizzle(byte X, byte Y, byte Z) const
-	{INTRA_ASSERT((X|Y|Z)<3); return {(*this)[X], (*this)[Y], (*this)[Z]};}
+	{
+		INTRA_ASSERT((X|Y|Z)<3);
+		return {index(X), index(Y), index(Z)};
+	}
 
 	Vector4<T> swizzle(byte X, byte Y, byte Z, byte W) const
-	{INTRA_ASSERT((X|Y|Z|W)<3); return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};}
+	{
+		INTRA_ASSERT((X|Y|Z|W)<3);
+		return {index(X), index(Y), index(Z), index(W)};
+	}
 
 
 	constexpr bool operator==(const Vector3& rhs) const
@@ -220,6 +247,10 @@ template<typename T> struct Vector3
 		};
 		Vector2<T> xy;
 	};
+
+private:
+	forceinline T& index(size_t index) {return (&x)[index];}
+	forceinline const T& index(size_t index) const {return (&x)[index];}
 };
 
 template<typename T> bool operator==(NaNType, const Vector3<T>& rhs) {return rhs==NaN;}
@@ -296,19 +327,19 @@ public:
 	Vector2<T> swizzle(uint X, uint Y) const
 	{
 		INTRA_ASSERT((X|Y)<4);
-		return {(*this)[X], (*this)[Y]};
+		return {index(X), index(Y)};
 	}
 
 	Vector3<T> swizzle(uint X, uint Y, uint Z) const
 	{
 		INTRA_ASSERT((X|Y|Z)<4);
-		return {(*this)[X], (*this)[Y], (*this)[Z]};
+		return {index(X), index(Y), index(Z)};
 	}
 
 	Vector4 swizzle(uint X, uint Y, uint Z, uint W) const
 	{
 		INTRA_ASSERT((X|Y|Z|W)<4);
-		return {(*this)[X], (*this)[Y], (*this)[Z], (*this)[W]};
+		return {index(X), index(Y), index(Z), index(W)};
 	}
 
 	constexpr bool operator==(const Vector4& rhs) const
@@ -375,6 +406,10 @@ public:
 		};
 		Vector3<T> xyz;
 	};
+	
+private:
+	forceinline T& index(size_t index) {return (&x)[index];}
+	forceinline const T& index(size_t index) const {return (&x)[index];}
 };
 
 

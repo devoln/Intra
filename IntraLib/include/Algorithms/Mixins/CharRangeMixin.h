@@ -264,7 +264,7 @@ public:
 		}
 
 		const ulong64 integralPart = ulong64(number);
-		real fractional = number-integralPart;
+		real fractional = number-real(integralPart);
 		if(fractional>0.99)
 		{
 			me().AppendAdvance(integralPart+1);
