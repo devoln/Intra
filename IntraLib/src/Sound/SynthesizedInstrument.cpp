@@ -946,7 +946,7 @@ void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 void DrumInstrument::PrepareToPlay(const MusicTrack& track, uint sampleRate) const
 {
 	for(size_t i=0; i<track.Notes.Count(); i++)
-		cache_note(track[i], track.Tempo, sampleRate);
+		cache_note(track.Notes[i].Note, track.Tempo, sampleRate);
 }
 
 SoundBuffer& DrumInstrument::cache_note(MusicNote note, float tempo, uint sampleRate) const

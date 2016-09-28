@@ -22,7 +22,7 @@ double MusicTrack::Duration() const
 	return result;
 }
 
-MusicNote MusicTrack::operator[](uint index) const
+MusicNote MusicTrack::operator[](size_t index) const
 {
 	auto result = Notes[index].Note;
 	if(result.IsPause() || ToneOffset==0) return result;

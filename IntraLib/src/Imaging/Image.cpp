@@ -591,7 +591,7 @@ void Image::loadBMP(IInputStream* s, size_t bytes)
 	Array<byte> line;
 	line.SetCountUninitialized(lineWidth);
 	UVec4 bitCount, bitPositions;
-	for(int k=0; k<4; k++)
+	for(size_t k=0; k<4; k++)
 	{
 		bitCount[k] = bit_count_by_mask(bmpHdr.RgbaMasks[k]);
 		bitPositions[k] = bit_position_by_mask(bmpHdr.RgbaMasks[k]);

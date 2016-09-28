@@ -60,6 +60,7 @@ struct MusicTrack
 			Note(note), TimeOffset(offset), Volume(volume) {}
 		NoteEntry(byte octave, MusicNote::NoteType note, ushort duration, ushort offset=0xFFFF, float volume=1):
 			Note(octave, note, duration), TimeOffset(offset), Volume(volume) {}
+
 		MusicNote Note;
 		ushort TimeOffset;
 		float Volume;
@@ -71,7 +72,7 @@ struct MusicTrack
 		Notes(notes), Instrument(instrument), Tempo(tempo), ToneOffset(toneOffset) {}
 
 	double Duration() const;
-	MusicNote operator[](uint index) const;
+	MusicNote operator[](size_t index) const;
 
 	SoundBuffer GetSamples(uint sampleRate=44100) const;
 
