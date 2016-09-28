@@ -185,6 +185,7 @@
       <EnablePREfast>false</EnablePREfast>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -198,6 +199,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -226,6 +228,7 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -254,7 +257,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
     </ClCompile>
@@ -317,6 +320,7 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -345,6 +349,7 @@
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <ForcedIncludeFiles>IntraAll.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>IntraAll.h</PrecompiledHeaderFile>
+      <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

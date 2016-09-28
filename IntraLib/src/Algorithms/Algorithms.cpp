@@ -38,7 +38,7 @@ template<> void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 	while(dst<dstOp1.End-3)
 	{
-		Simd::GetU(dst, Simd::Add(Simd::SetU(dst), Simd::SetU(src)));
+		Simd::GetU(dst, Simd::Add(Simd::SetFloat4U(dst), Simd::SetFloat4U(src)));
 		dst+=4; src+=4;
 	}
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
@@ -63,11 +63,11 @@ template<> void MulAdd(ArrayRange<float> dstOp1, float mul, float add)
 		*dst = *dst * mul + add; dst++;
 	}
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	Simd::float4 addps = Simd::Set(add);
-	Simd::float4 mulps = Simd::Set(mul);
+	Simd::float4 addps = Simd::SetFloat4(add);
+	Simd::float4 mulps = Simd::SetFloat4(mul);
 	while(dst<dstOp1.End-3)
 	{
-		Simd::float4 v = Simd::SetU(dst);
+		Simd::float4 v = Simd::SetFloat4U(dst);
 		v = Simd::Mul(v, mulps);
 		v = Simd::Add(v, addps);
 		Simd::GetU(dst, v);
@@ -96,10 +96,10 @@ template<> float Minimum(ArrayRange<const float> arr)
 #ifndef INTRA_USE_PDO
 	result = *ptr++;
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	Simd::float4 mini = Simd::Set(*ptr);
+	Simd::float4 mini = Simd::SetFloat4(*ptr);
 	while(ptr<arr.End-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		mini = Simd::Min(mini, v);
 		ptr+=4;
 	}
@@ -123,10 +123,10 @@ template<> float Maximum(ArrayRange<const float> arr)
 #ifndef INTRA_USE_PDO
 	result=*ptr++;
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	Simd::float4 maxi = Simd::Set(*ptr);
+	Simd::float4 maxi = Simd::SetFloat4(*ptr);
 	while(ptr<arr.End-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		maxi = Simd::Max(maxi, v);
 		ptr+=4;
 	}
@@ -160,10 +160,10 @@ template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maxi
 #ifndef INTRA_USE_PDO
 	*maximum = *minimum = *ptr++;
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	Simd::float4 mini = Simd::Set(*ptr), maxi = Simd::Set(*ptr);
+	Simd::float4 mini = Simd::SetFloat4(*ptr), maxi = Simd::SetFloat4(*ptr);
 	while(ptr<arr.End-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		mini = Simd::Min(mini, v);
 		maxi = Simd::Max(maxi, v);
 		ptr+=4;
@@ -186,7 +186,7 @@ template<> void Cast(ArrayRange<short> dst, ArrayRange<const float> src)
 #if(defined(INTRA_USE_PDO) && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
 	while(dst.Begin<dst.End-3)
 	{
-		*(__m64*)dst.Begin = _mm_cvtps_pi16(Simd::SetU(src.Begin));
+		*(__m64*)dst.Begin = _mm_cvtps_pi16(Simd::SetFloat4U(src.Begin));
 		src.Begin+=4; dst.Begin+=4;
 	}
 	_mm_empty();

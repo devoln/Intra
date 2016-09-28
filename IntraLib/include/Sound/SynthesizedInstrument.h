@@ -771,8 +771,10 @@ public:
 
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override
 	{
+		if(note.IsPause()) return 0;
 		uint id = note.Octave*12u+uint(note.Note);
 		auto gen = Generators.Get(id);
+		if(gen==null) return 0;
 		auto result = SamplesCache.Get(gen).Samples.Count();
 		if(result!=0) return uint(result);
 		return gen->GetNoteSampleCount(MusicNote(4, MusicNote::NoteType::C, ushort(note.Duration*tempo)), 1, sampleRate);

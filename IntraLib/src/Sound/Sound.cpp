@@ -12,7 +12,7 @@ namespace Intra {
 using namespace Math;
 using namespace IO;
 
-
+Array<Sound*> Sound::all_existing_sounds;
 
 Sound::Sound(const SoundInfo& bufferInfo, const void* initData):
 	data(SoundAPI::BufferCreate(bufferInfo.SampleCount, bufferInfo.Channels, bufferInfo.SampleRate)),
@@ -22,6 +22,7 @@ Sound::Sound(const SoundInfo& bufferInfo, const void* initData):
 	locked_size(0)
 {
 	if(initData!=null) SoundAPI::BufferSetDataInterleaved(data, initData, info.SampleType);
+	all_existing_sounds.AddLast(this);
 }
 
 Sound::Sound(const SoundBuffer* dataBuffer):
@@ -31,9 +32,11 @@ Sound::Sound(const SoundBuffer* dataBuffer):
 	info(dataBuffer==null? SoundInfo(): dataBuffer->Info()),
 	locked_size(0)
 {
+	if(dataBuffer==null) return;
 	data = SoundAPI::BufferCreate(info.SampleCount, info.Channels, info.SampleRate);
 	SoundAPI::BufferSetDataInterleaved(data, dataBuffer->Samples.begin(), info.SampleType);
 	info.SampleType = ValueType::Short;
+	all_existing_sounds.AddLast(this);
 }
 
 Sound::~Sound() {Release();}
@@ -51,9 +54,11 @@ void Sound::Unlock()
 void Sound::Release()
 {
 	if(data==null) return;
+	Sound::all_existing_sounds.FindAndRemoveUnordered(this);
 	while(!instances.Empty()) instances[0]->Release();
 	SoundAPI::BufferDelete(data);
-	data=null;
+	data = null;
+	info = SoundInfo();
 }
 
 Sound& Sound::operator=(Sound&& rhs)
@@ -67,6 +72,8 @@ Sound& Sound::operator=(Sound&& rhs)
 		inst->my_sound = this;
 	info = rhs.info;
 	rhs.data = null;
+	auto found = Sound::all_existing_sounds().Find(&rhs);
+	if(!found.Empty()) found.First() = this;
 	return *this;
 }
 
@@ -293,6 +300,7 @@ Array<StreamedSound*> StreamedSound::all_existing_instances;
 
 void CleanUpSoundSystem()
 {
+	Sound::DeleteAllSounds();
 	SoundAPI::SoundSystemCleanUp();
 }
 

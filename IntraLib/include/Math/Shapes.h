@@ -99,7 +99,7 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	}
 
 	//Диаметр описанной сферы
-	T MaxSizeAxis(int* oAxis=null) const
+	T MaxSizeAxis(size_t* oAxis=null) const
 	{
 		auto size = Size();
 		T maxSize = size.x;

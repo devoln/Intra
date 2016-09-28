@@ -384,12 +384,12 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 	float ek4=ek*ek;
 	ek4*=ek4;
-	Simd::float4 ek_4 = Simd::Set(ek4);
+	Simd::float4 ek_4 = Simd::SetFloat4(ek4);
 	//while(((size_t)dst)&15 && dst<dstend) *dst++ = *src++ * Exp, Exp*=ek;
-	Simd::float4 exp_4 = Simd::Set(exp, exp*ek, exp*ek*ek, exp*ek*ek*ek);
+	Simd::float4 exp_4 = Simd::SetFloat4(exp, exp*ek, exp*ek*ek, exp*ek*ek*ek);
 	/*while(dst<dstend-3)
 	{
-		Simd::GetU(dst, Simd::Mul(Simd::SetU(src), exp_4));
+		Simd::GetU(dst, Simd::Mul(Simd::SetFloat4U(src), exp_4));
 		exp_4 = Simd::Mul(exp_4, ek_4);
 		dst+=4; src+=4;
 	}
@@ -402,9 +402,9 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 	ek_8 = Simd::Mul(ek_8, ek_8);
 	while(dst<dstend-7)
 	{
-		r0 = Simd::Mul(Simd::SetU(src), r1);
+		r0 = Simd::Mul(Simd::SetFloat4U(src), r1);
 		r1 = Simd::Mul(r1, ek_8);
-		r3 = Simd::Mul(Simd::SetU(src+4), r4);
+		r3 = Simd::Mul(Simd::SetFloat4U(src+4), r4);
 		Simd::GetU(dst, r0);
 		r4 = Simd::Mul(r4, ek_8);
 		Simd::GetU(dst+4, r3);
@@ -444,8 +444,8 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 	//while(((size_t)dst)&15 && dst<dstend) *dst++ += *src++ * Exp, Exp*=ek;
 	float ek4 = ek*ek;
 	ek4 *= ek4;
-	Simd::float4 ek_4 = Simd::Set(ek4);
-	Simd::float4 exp_4 = Simd::Set(exp, exp*ek, exp*ek*ek, exp*ek*ek*ek);
+	Simd::float4 ek_4 = Simd::SetFloat4(ek4);
+	Simd::float4 exp_4 = Simd::SetFloat4(exp, exp*ek, exp*ek*ek, exp*ek*ek*ek);
 	/*while(dst<dstend-7)
 	{
 		Simd::GetU(dst, Simd::Add(Simd::SetU(dst), Simd::Mul(Simd::SetU(src), exp_4)));
@@ -461,12 +461,12 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 	ek_8 = Simd::Mul(ek_8, ek_8);
 	while(dst<dstend-7)
 	{
-		r0 = Simd::Mul(Simd::SetU(src), r1);
+		r0 = Simd::Mul(Simd::SetFloat4U(src), r1);
 		r1 = Simd::Mul(r1, ek_8);
-		r3 = Simd::Mul(Simd::SetU(src+4), r4);
-		Simd::GetU(dst, Simd::Add(Simd::SetU(dst), r0));
+		r3 = Simd::Mul(Simd::SetFloat4U(src+4), r4);
+		Simd::GetU(dst, Simd::Add(Simd::SetFloat4U(dst), r0));
 		r4 = Simd::Mul(r4, ek_8);
-		Simd::GetU(dst+4, Simd::Add(Simd::SetU(dst+4), r3));
+		Simd::GetU(dst+4, Simd::Add(Simd::SetFloat4U(dst+4), r3));
 		dst+=8; src+=8;
 	}
 	exp = Simd::GetX(r1);
@@ -479,14 +479,14 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 #if INTRA_DISABLED
-	if(!add) f1_sse(inOutSamples.Begin, inOutSamples.Count(), coeff/sampleRate, (float)(2*Math::PI*freq/sampleRate), volume, 0);
-	else f1_sse_add(inOutSamples.Begin, inOutSamples.Count(), coeff/sampleRate, (float)(2*Math::PI*freq/sampleRate), volume, 0);
+	if(!add) f1_sse(inOutSamples.Begin, inOutSamples.Count(), coeff/sampleRate, float(2*Math::PI*freq/sampleRate), volume, 0);
+	else f1_sse_add(inOutSamples.Begin, inOutSamples.Count(), coeff/sampleRate, float(2*Math::PI*freq/sampleRate), volume, 0);
 #endif
 #if INTRA_DISABLED
 	float phi0 = 0;
 	float dphi = float(2*Math::PI*freq/sampleRate);
-	float S0 = volume*sinf(phi0);
-	float S1 = volume*sinf(dphi);
+	float S0 = volume*Math::Sin(phi0);
+	float S1 = volume*Math::Sin(dphi);
 	float K = 2.0f*Math::Exp(-coeff/sampleRate)*Math::Cos(dphi);
 	float b = Math::Exp(-2*coeff/sampleRate);
 	auto ptr = inOutSamples.Begin;
@@ -498,15 +498,15 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 	float K4 = 2*Math::Exp(-4*coeff/sampleRate)*Math::Cos(4*dphi);
 	float b4 = Math::Exp(-8*coeff/sampleRate);
 
-	Simd::float4 vS0 = Simd::Set(
-		volume*Sin(phi0),
-		volume*sinf(phi0+dphi)*Math::Exp(-2*coeff/sampleRate),
+	Simd::float4 vS0 = Simd::SetFloat4(
+		volume*Math::Sin(phi0),
+		volume*Math::Sin(phi0+dphi)*Math::Exp(-2*coeff/sampleRate),
 		volume*Math::Sin(phi0+2*dphi)*Math::Exp(-4*coeff/sampleRate),
 		volume*Math::Sin(phi0+3*dphi)*Math::Exp(-6*coeff/sampleRate));
 
-	Simd::float4 vS1 = Simd::Set(volume*sinf(4*dphi));
-	Simd::float4 vK4 = Simd::Set(K4);
-	Simd::float4 vb4 = Simd::Set(b4);
+	Simd::float4 vS1 = Simd::SetFloat4(volume*Math::Sin(4*dphi));
+	Simd::float4 vK4 = Simd::SetFloat4(K4);
+	Simd::float4 vb4 = Simd::SetFloat4(b4);
 
 	if(!add) while(ptr<end-3)
 	{
@@ -524,7 +524,7 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 
 		Simd::float4 newvS = Simd::Sub(Simd::Mul(vK4, vS1), vS0);
 		vS0 = Simd::Mul(vS1, vb4);
-		vS1=newvS;
+		vS1 = newvS;
 	}
 
 	int i=0;
@@ -541,9 +541,9 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 	{
 		*ptr++ = S1;
 
-		const auto newS=K*S1-S0;
-		S0=S1*b;
-		S1=newS;
+		const auto newS = K*S1-S0;
+		S0 = S1*b;
+		S1 = newS;
 	}
 	else while(ptr<end)
 	{
@@ -597,8 +597,8 @@ void SynthesizedInstrument::functionSawtoothSynthPass(const SawtoothParams& para
 	double updownPercent = params.updownRatio/(params.updownRatio+1);
 	float newFreq=freq*params.freqMultiplyer;
 	float maxValue=1, harmVal=1;
-	for(ushort h=1; h<params.harmonics; h++) maxValue+=(harmVal/=2);
-	float newVolume=volume*params.scale/maxValue;
+	for(ushort h=1; h<params.harmonics; h++) maxValue += (harmVal/=2);
+	float newVolume = volume*params.scale/maxValue;
 
 	sawtooth(updownPercent, newVolume, newFreq, sampleRate, inOutSamples, add);
 
@@ -617,10 +617,10 @@ void SynthesizedInstrument::functionSineSynthPass(const SineParams& params,
 	float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	float newFreq=freq*params.freqMultiplyer;
+	const float newFreq = freq*params.freqMultiplyer;
 	float maxValue=1, harmVal=1;
-	for(ushort h=1; h<params.harmonics; h++) maxValue+=(harmVal/=2);
-	float newVolume=volume*params.scale/maxValue;
+	for(ushort h=1; h<params.harmonics; h++) maxValue += (harmVal/=2);
+	float newVolume = volume*params.scale/maxValue;
 
 	sine_generate(newVolume, newFreq, sampleRate, inOutSamples, add);
 
@@ -639,7 +639,7 @@ void SynthesizedInstrument::functionMultiSineSynthPass(const MultiSineParams& pa
 {
 	if(inOutSamples==null) return;
 	size_t start = Math::Random<ushort>::Global(20);
-	if(start>inOutSamples.Length()) start=inOutSamples.Length();
+	if(start>inOutSamples.Length()) start = inOutSamples.Length();
 	if(!add) core::memset(inOutSamples.Begin, 0, start*sizeof(float));
 	for(ushort h=0; h<params.len; h++)
 	{
@@ -698,20 +698,36 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 #if !defined(OPTIMIZE)
 	u = 0;
 	du = sqrtf(0.5f)/halfAttackSamples;
-	while(ptr<endHalfAttack) *ptr++*=u*u, u+=du;
+	while(ptr<endHalfAttack)
+	{
+		*ptr++ *= u*u;
+		u += du;
+	}
 
 	u = 0;
 	du = 0.25f/halfAttackSamples;
-	while(ptr<endAttack) *ptr++*=sqrtf(u)+0.5f, u+=du;
+	while(ptr<endAttack)
+	{
+		*ptr++ *= Math::Sqrt(u)+0.5f;
+		u += du;
+	}
 
 	ptr=beginDecay;
 	u = 0.25f;
 	du = -0.25f/halfDecaySamples;
-	while(ptr<beginHalfDecay) *ptr++*=sqrtf(u)+0.5f, u+=du;
+	while(ptr<beginHalfDecay)
+	{
+		*ptr++ *= Math::Sqrt(u)+0.5f;
+		u += du;
+	}
 
-	u = sqrtf(0.5f);
-	du = -sqrtf(0.5f)/halfDecaySamples;
-	while(ptr<inOutSamples.end) *ptr++*=u*u, u+=du;
+	u = Math::Sqrt(0.5f);
+	du = -Math::Sqrt(0.5f)/halfDecaySamples;
+	while(ptr<inOutSamples.end)
+	{
+		*ptr++ *= u*u;
+		u += du;
+	}
 #elif !defined(INTRA_USE_PDO)
 	float du4;
 
@@ -720,12 +736,12 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	du4 = 4*du;
 	while(ptr<endHalfAttack-3)
 	{
-		float u2 = u*u;
+		const float u2 = u*u;
 		*ptr++ *= u2;
 		*ptr++ *= u2;
 		*ptr++ *= u2;
 		*ptr++ *= u2;
-		u+=du4;
+		u += du4;
 	}
 	while(ptr<endHalfAttack) *ptr++ *= u*u, u += du;
 
@@ -741,7 +757,11 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 		*ptr++ *= u2;
 		u += du4;
 	}
-	while(ptr<endAttack) *ptr++ *= Math::Sqrt(u)+0.5f, u+=du;
+	while(ptr<endAttack)
+	{
+		*ptr++ *= Math::Sqrt(u)+0.5f;
+		u += du;
+	}
 
 	ptr=beginDecay;
 	u = 0.25f;
@@ -770,17 +790,21 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 		*ptr++ *= u2;
 		u += du4;
 	}
-	while(ptr<inOutSamples.End) *ptr++ *= u*u, u += du;
+	while(ptr<inOutSamples.End)
+	{
+		*ptr++ *= u*u;
+		u += du;
+	}
 #elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
 	//Атака
 	
 	//Первая половина атаки
 	du = 0.707107f/halfAttackSamples;
-	Simd::float4 u4 = Simd::Set(0, du, 2*du, 3*du);
-	Simd::float4 du4 = Simd::Set(4*du);
+	Simd::float4 u4 = Simd::SetFloat4(0, du, 2*du, 3*du);
+	Simd::float4 du4 = Simd::SetFloat4(4*du);
 	while(ptr<endHalfAttack-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		Simd::float4 res = Simd::Mul(u4, u4);
 		Simd::GetU(ptr, Simd::Mul(v, res));
 		u4 = Simd::Add(u4, du4);
@@ -790,17 +814,17 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	{
 		const float u_x = Simd::GetX(u4);
 		*ptr++ *= u_x*u_x;
-		u4 = Simd::Set(u_x+du);
+		u4 = Simd::SetFloat4(u_x+du);
 	}
 
 	//Вторая половина атаки
 	du = 0.25f/halfAttackSamples;
-	u4 = Simd::Set(0, du, 2*du, 3*du);
-	du4 = Simd::Set(4*du);
-	Simd::float4 half = Simd::Set(0.5f);
+	u4 = Simd::SetFloat4(0, du, 2*du, 3*du);
+	du4 = Simd::SetFloat4(4*du);
+	Simd::float4 half = Simd::SetFloat4(0.5f);
 	while(ptr<endAttack-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		Simd::float4 res = Simd::Add(Simd::Sqrt(u4), half);
 		Simd::GetU(ptr, Simd::Mul(v, res));
 		u4 = Simd::Add(u4, du4);
@@ -820,12 +844,12 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	//Первая половина спада
 	u = 0.25f;
 	du = -0.25f/halfDecaySamples;
-	//u4 = Simd::Set(0.5f, 0.5f-du/2, 0.5f-du, 0.5f-3*du/2);
-	u4 = Simd::Set(u, u+du, u+2*du, u+3*du);
-	du4 = Simd::Set(4*du);
+	//u4 = Simd::SetFloat4(0.5f, 0.5f-du/2, 0.5f-du, 0.5f-3*du/2);
+	u4 = Simd::SetFloat4(u, u+du, u+2*du, u+3*du);
+	du4 = Simd::SetFloat4(4*du);
 	while(ptr<beginHalfDecay-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		Simd::float4 Sqrt = Simd::Sqrt(u4);
 		Simd::float4 res = Simd::Add(Sqrt, half);
 		Simd::GetU(ptr, Simd::Mul(v, res));
@@ -843,15 +867,15 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	//Вторая половина спада
 	u = 0.707107f;
 	du = -0.707107f/halfDecaySamples;
-	u4 = Simd::Set(u, u+du, u+2*du, u+3*du);
-	du4 = Simd::Set(4*du);
+	u4 = Simd::SetFloat4(u, u+du, u+2*du, u+3*du);
+	du4 = Simd::SetFloat4(4*du);
 	while(ptr<inOutSamples.End-3)
 	{
-		Simd::float4 v = Simd::SetU(ptr);
+		Simd::float4 v = Simd::SetFloat4U(ptr);
 		Simd::float4 res = Simd::Mul(u4, u4);
 		Simd::GetU(ptr, Simd::Mul(v, res));
 		u4 = Simd::Add(u4, du4);
-		ptr+=4;
+		ptr += 4;
 	}
 	u4x = Simd::GetX(u4);
 	while(ptr<inOutSamples.End) *ptr++ *= u4x*u4x;

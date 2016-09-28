@@ -23,7 +23,7 @@ void AabbTree::Build(ArrayRange<Tri> tris)
 }
 
 // Относит треугольник к позитивному или негативному множеству
-float AabbTree::middle_point_of_triangle_proj(const Tri& tri, int maxDimIndex) const
+float AabbTree::middle_point_of_triangle_proj(const Tri& tri, size_t maxDimIndex) const
 {
 	const Vec3* const V = tri.vertices;
 	const float c0 = V[0][maxDimIndex], c1 = V[1][maxDimIndex], c2 = V[2][maxDimIndex];
@@ -34,7 +34,7 @@ float AabbTree::middle_point_of_triangle_proj(const Tri& tri, int maxDimIndex) c
 	return middlePointOfTriangleProj;
 }
 
-static float triangle_proj(const Triangle<float>& tri, int maxDimIndex)
+static float triangle_proj(const Triangle<float>& tri, size_t maxDimIndex)
 {
 	const Vec3* const V = tri.vertices;
 	const float c0 = V[0][maxDimIndex], c1 = V[1][maxDimIndex], c2 = V[2][maxDimIndex];
@@ -65,7 +65,7 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 	for(auto& tri: tris) node.box.AddTriangle(tri);
 
 	// Ищем максимальный размер
-	int maxDimIndex = 0;
+	size_t maxDimIndex = 0;
 	node.box.MaxSizeAxis(&maxDimIndex);
 
 	//Делим треугольники на два подмножества
@@ -89,14 +89,14 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 	if(pBeginPositive==tris.End)
 	{
 		float maxproj=0;
-		Tri* maxtri=tris.Begin;
-		for(Tri* tri=tris.Begin; tri<tris.End; tri++)
+		Tri* maxtri = tris.Begin;
+		for(Tri* tri = tris.Begin; tri<tris.End; tri++)
 		{
 			const float proj = triangle_proj(*pEndNegative, maxDimIndex);
 			if(proj>maxproj)
 			{
 				maxproj = proj;
-				maxtri=tri;
+				maxtri = tri;
 			}
 		}
 		pBeginPositive--, pEndNegative--;

@@ -56,7 +56,7 @@ private:
 	int rootId;
 	Array<Node> nodes;
 
-	float middle_point_of_triangle_proj(const Tri& tri, int indexOfMaxBoxDimension) const;
+	float middle_point_of_triangle_proj(const Tri& tri, size_t indexOfMaxBoxDimension) const;
 	void recursive_build(int& pNode, ArrayRange<Tri> tris);
 	template<class GEOM_PRIMITIVE> void recursive_get_intersection(int nodeId, const GEOM_PRIMITIVE& gp, Array<Tri>& contacts) const;
 	void recursive_get_intersection(int myNodeId, const AabbTree* outside,

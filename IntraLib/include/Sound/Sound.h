@@ -14,17 +14,19 @@ class Sound
 {
 	friend class SoundInstance;
 public:
-	Sound(null_t=null): data(null), instances(), locked_bits(null),
+	Sound(null_t=null):
+		data(null), instances(), locked_bits(null),
 		info{0,0,0,ValueType::Void}, locked_size(0) {}
 
 	explicit Sound(const SoundBuffer* data);
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 
-	Sound(Sound&& rhs): data(null), instances(), locked_bits(null),
+	Sound(Sound&& rhs):
+		data(null), instances(), locked_bits(null),
 		info(rhs.info), locked_size(0)
 	{
 		operator=(core::move(rhs));
-		rhs.data=null;
+		rhs.data = null;
 	}
 
 	~Sound();
@@ -38,6 +40,7 @@ public:
 	static Sound FromSource(ASoundSampleSource* src);
 
 	Sound& operator=(Sound&& rhs);
+	Sound& operator=(null_t) {Release(); return *this;}
 
 	bool operator==(null_t) const {return data==null;}
 	bool operator!=(null_t) const {return !operator==(null);}
@@ -49,12 +52,19 @@ public:
 
 	ArrayRange<SoundInstance* const> Instances() const {return instances;}
 
+	static void DeleteAllSounds()
+	{
+		for(auto sound: Sound::all_existing_sounds) *sound = null;;
+	}
+
 private:
 	SoundAPI::BufferHandle data;
 	Array<SoundInstance*> instances;
     short* locked_bits;
 	SoundInfo info;
 	uint locked_size;
+
+	static Array<Sound*> all_existing_sounds;
 
 
 private:

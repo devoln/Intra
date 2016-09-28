@@ -20,6 +20,8 @@ EngineDemo1.exe
 Build/Debug*/
 Build/Release?*/
 *.vcxproj.user
+*.psess
+*.vspx
 
 
 # Windows image file caches

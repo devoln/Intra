@@ -30,7 +30,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     endif()
 	
 	if(ENABLE_NEON)
-	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mfpu=neon")
+	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} --march=armv7-a -mfloat-abi=softfp -mfpu=neon")
     endif()
 
     if(OUTPUT_MAP)
