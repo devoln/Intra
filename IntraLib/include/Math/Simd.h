@@ -274,7 +274,7 @@ typedef uint16x8_t ushort8arg;
 typedef uint8x16_t byte16arg;
 typedef int32x4_t int4arg;
 typedef int16x8_t short8arg;
-typedef int8x16_t byte16arg;
+typedef int8x16_t sbyte16arg;
 typedef uint64x2_t ullong2arg;
 typedef int64x2_t llong2arg;
 typedef float32x4_t float4arg;
