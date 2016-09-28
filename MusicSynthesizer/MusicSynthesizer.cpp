@@ -21,6 +21,16 @@
 #include <windows.h>
 #endif
 
+BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
+{
+	(void)CtrlType;
+	CleanUpSoundSystem();
+	exit(0);
+	return true;
+}
+
+#endif
+
 using namespace Intra;
 using namespace Intra::IO;
 
@@ -174,16 +184,6 @@ void SoundTest()
 #endif
 
 
-BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
-{
-	(void)CtrlType;
-	CleanUpSoundSystem();
-	exit(0);
-	return true;
-}
-
-#endif
-
 int INTRA_CRTDECL main()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
@@ -195,7 +195,7 @@ int INTRA_CRTDECL main()
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 
-	const String filePath = GetMidiPath("ABBA-Mamma_Mia.mid");
+	const Intra::String filePath = GetMidiPath("ABBA-Mamma_Mia.mid");
 	
 	bool success = PrintMidiFileInfo(filePath);
 	if(!success) return false;
