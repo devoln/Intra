@@ -17,6 +17,8 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
 
     option(COMPILE_32_BIT "Compile as 32 bit application." OFF)
     option(COMPILE_64_BIT "Compile as 64 bit application." OFF)
+	
+	option(NATIVE_TUNE "Optimize for current processor (-mtune=native)." OFF)
 
     if(COMPILE_64_BIT)
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m64")
@@ -28,12 +30,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     endif()
 	
 	if(ENABLE_SSE)
-	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mfpu=sse2")
+	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mfpmath=sse2")
     endif()
 	
 	if(ENABLE_NEON)
-	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} --march=armv7-a -mfloat-abi=softfp -mfpu=neon")
+	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} --march=armv7-a -mfloat-abi=softfp -mfpmath=neon")
     endif()
+	
+	if(NATIVE_TUNE)
+		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mtune=native")
+	endif()
 
     if(OUTPUT_MAP)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
