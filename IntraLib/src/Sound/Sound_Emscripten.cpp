@@ -51,8 +51,8 @@ struct StreamedBuffer
 	StreamingCallback streamingCallback;
 	Array<float> tempBuffer;
 
-	bool deleteOnStop=false;
-	bool looping=false;
+	bool deleteOnStop = false;
+	bool looping = false;
 };
 
 static bool AudioContextInited=false;
@@ -109,7 +109,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 			for(var i=0; i<$2; i++)
 				for(var c=0; c<$0; c++)
 					bufferData[c][i] = Module.HEAPF32[$1 + j++];
-		}, snd->channels, (size_t)data/sizeof(float), snd->sampleCount, snd->id);
+		}, snd->channels, reinterpret_cast<size_t>(data)/sizeof(float), snd->sampleCount, snd->id);
 	}
 	else if(type==ValueType::Short)
 	{
@@ -120,7 +120,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 			for(var i=0; i<$2; i++)
 				for(var c=0; c<$0; c++)
 					bufferData[c][i] = (Module.HEAP16[$1+i]+0.5)/32767.5;
-		}, snd->channels, (size_t)data/sizeof(short), snd->sampleCount, snd->id);
+		}, snd->channels, reinterpret_cast<size_t>(data)/sizeof(short), snd->sampleCount, snd->id);
 	}
 }
 
@@ -138,7 +138,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 					bufferData.set(Module.HEAPF32, $1, $2);
 				}
 				else buffer.copyToChannel(Module.HEAPF32.subarray($1, $1+$2), $0);
-			}, c, (size_t)data[c]/sizeof(float), snd->sampleCount, snd->id);
+			}, c, reinterpret_cast<size_t>(data[c])/sizeof(float), snd->sampleCount, snd->id);
 		}
 		else if(type==ValueType::Short)
 		{
@@ -146,7 +146,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 				var buffer = Module.gWebAudioBufferArray[$3];
 				var bufferData = buffer.getChannelData($0);
 				for(var i=0; i<$2; i++) bufferData[i] = (Module.HEAP16[$1+i]+0.5)/32767.5;
-			}, c, (size_t)data[c]/sizeof(short), snd->sampleCount, snd->id);
+			}, c, reinterpret_cast<size_t>(data[c])/sizeof(short), snd->sampleCount, snd->id);
 		}
 	}
 }
@@ -182,7 +182,7 @@ void BufferDelete(BufferHandle snd)
 		EM_ASM_({
 		    Module.gWebAudioBufferArray[$0] = null;
 		}, snd->id);
-	BufferIdalloc.Deallocate(snd->id);
+	BufferIdalloc.Deallocate(ushort(snd->id));
 	delete snd;
 }
 
@@ -283,7 +283,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 				else outputBuffer.copyToChannel(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+samplesRead), ch);
 			}
 		}
-	}, result->id, sampleCount, channels, result, (size_t)result->tempBuffer.begin()/sizeof(float));
+	}, result->id, sampleCount, channels, result, reinterpret_cast<size_t>(result->tempBuffer.begin())/sizeof(float));
 
 	return result;
 }
@@ -307,7 +307,7 @@ void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 bool StreamedSoundIsPlaying(StreamedBufferHandle snd)
 {
 	if(snd==null) return false;
-	return (bool)EM_ASM_INT({return Module.gWebAudioStreamArray[$0].__is_playing;}, snd->id);
+	return bool(EM_ASM_INT({return Module.gWebAudioStreamArray[$0].__is_playing;}, snd->id));
 }
 
 void StreamedSoundStop(StreamedBufferHandle snd)

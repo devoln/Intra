@@ -24,19 +24,28 @@ using namespace Intra;
 using namespace Intra::IO;
 
 
-DiskFile::Writer logFile;
-HtmlWriter logWriter(&logFile);
+#ifndef INTRA_NO_FILE_LOGGING
+DiskFile::Writer g_LogFile;
+HtmlWriter g_LogWriter(&g_LogFile);
+#endif
+
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+HtmlWriter logConsoleWriter(&Console);
+#else
 ConsoleTextWriter logConsoleWriter(&Console);
+#endif
+
 Logger logger;
 
 void InitLogSystem(int argc, const char* argv[])
 {
 #ifndef INTRA_NO_LOGGING
+#ifndef INTRA_NO_FILE_LOGGING
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = DiskFile::Exists(logFileName);
-	logFile = DiskFile::Writer(logFileName, true);
-	if(!logExisted) logWriter.RawPrint("<meta charset='utf-8'>\n<title>Логи</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
+	g_LogFile = DiskFile::Writer(logFileName, true);
+	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Логи</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
 	const String datetime = ToString(DateTime::Now());
 	StringView appName = DiskFile::ExtractName(StringView(argv[0]));
 
@@ -47,19 +56,17 @@ void InitLogSystem(int argc, const char* argv[])
 		if(i+1<argc) cmdline+=' ';
 	}
 
-	logWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime, "Закрыть лог "+datetime);
-	atexit([](){logWriter.EndAllSpoilers(); logFile=null;});
+	g_LogWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime, "Закрыть лог "+datetime);
+	atexit([](){g_LogWriter.EndAllSpoilers(); g_LogFile=null;});
 	
-	logger.Attach(&logWriter);
-	logger.Attach(&logConsoleWriter);
 
 	Errors::CrashHandler=[](int signum)
 	{
-		logWriter.PushFont({1, 0, 0}, 5, true);
-		logWriter.Print(Errors::CrashSignalDesc(signum));
-		logWriter.PopFont();
-		logWriter.EndAllSpoilers();
-		logFile=null;
+		g_LogWriter.PushFont({1, 0, 0}, 5, true);
+		g_LogWriter.Print(Errors::CrashSignalDesc(signum));
+		g_LogWriter.PopFont();
+		g_LogWriter.EndAllSpoilers();
+		g_LogFile=null;
 	};
 
 	cmdline=null;
@@ -68,12 +75,12 @@ void InitLogSystem(int argc, const char* argv[])
 		cmdline += StringView(argv[i]);
 		if(i+1<argc) cmdline+='\n';
 	}
-	logWriter << "Параметры командной строки:";
-	logWriter.PrintCode(cmdline);
-	logWriter.BeginSpoiler("Информация о системе", "[Скрыть] Информация о системе");
+	g_LogWriter << "Параметры командной строки:";
+	g_LogWriter.PrintCode(cmdline);
+	g_LogWriter.BeginSpoiler("Информация о системе", "[Скрыть] Информация о системе");
 	auto memInfo = SystemMemoryInfo::Get();
 	auto procInfo = ProcessorInfo::Get();
-	logWriter.PrintCode(*String::Format("Процессор:\r\n<^>\r\n"
+	g_LogWriter.PrintCode(*String::Format("Процессор:\r\n<^>\r\n"
 		"Число ядер: <^>\r\n"
 		"Число логических процессоров: <^>\r\n"
 		"Частота: <^> МГц\r\n\r\n"
@@ -85,7 +92,12 @@ void InitLogSystem(int argc, const char* argv[])
 		(double(memInfo.FreePhysicalMemory)/double(1 << 30), 2)
 		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);
-	logWriter.EndSpoiler();
+	g_LogWriter.EndSpoiler();
+	logger.Attach(&g_LogWriter);
+#else
+	(void)argc; (void)argv;
+#endif
+	logger.Attach(&logConsoleWriter);
 #endif
 }
 
@@ -107,7 +119,9 @@ int main(int argc, const char* argv[])
 	Errors::InitSignals();
 	InitLogSystem(argc, argv);
 
+#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 	if(argc>=2 && StringView(argv[1])=="-a")
+#endif
         TestGroup::YesForNestingLevel=0;
 
 #if INTRA_DISABLED

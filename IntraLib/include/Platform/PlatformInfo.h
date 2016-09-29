@@ -287,6 +287,14 @@
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 #define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_WinAPI
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+
+#ifdef __EMSCRIPTEN_PTHREADS__ 
+#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_PThread
+#else
+#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_Dummy
+#endif
+
 #else
 #define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_PThread
 #endif
@@ -332,4 +340,14 @@
 
 #ifndef INTRA_PLATFORM_ENDIANESS
 #error Не удаётся определить порядок байтов для данной платформы!
+#endif
+
+
+
+#ifndef INTRA_NO_FILE_LOGGING
+
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#define INTRA_NO_FILE_LOGGING
+#endif
+
 #endif

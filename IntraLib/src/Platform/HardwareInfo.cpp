@@ -1,7 +1,7 @@
 ﻿#include "Platform/HardwareInfo.h"
 
 
-#if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -16,6 +16,7 @@
 
 #ifdef _MSC_VER
 #pragma warning(pop)
+#pragma comment(lib, "Advapi32.lib")
 #endif
 
 namespace Intra {
@@ -35,9 +36,46 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 	return result;
 }
 
+
+ProcessorInfo ProcessorInfo::Get()
+{
+	ProcessorInfo result;
+	SYSTEM_INFO sysInfo;
+	GetSystemInfo(&sysInfo);
+	result.LogicalProcessorNumber = ushort(sysInfo.dwNumberOfProcessors);
+//#ifdef INTRA_XP_SUPPORT
+	result.CoreNumber = result.LogicalProcessorNumber;
+/*#else
+	SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX logicalProcInfoEx[16];
+	DWORD bufferLength = 16*sizeof(logicalProcInfoEx);
+	GetLogicalProcessorInformationEx(RelationProcessorPackage, logicalProcInfoEx, &bufferLength);
+	result.CoreNumber = ushort(bufferLength/sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX));
+#endif*/
+	
+	HKEY hKey;
+	long lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey);
+    
+	if(lError==ERROR_SUCCESS)
+	{
+		DWORD dwMHz;
+		DWORD size = sizeof(dwMHz);
+		lError = RegQueryValueExA(hKey, "~MHz", null, null, reinterpret_cast<LPBYTE>(&dwMHz), &size);
+		if(lError==ERROR_SUCCESS) result.Frequency = dwMHz*1000000ull;
+
+		char processorName[64] = {0};
+		size = sizeof(processorName);
+		lError = RegQueryValueExA(hKey, "ProcessorNameString", null, null, reinterpret_cast<LPBYTE>(processorName), &size);
+		if(lError==ERROR_SUCCESS) result.BrandString = StringView(processorName, size).TrimRight('\0');
+	}
+
+	return result;
+}
+
 }
 
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+
+#include <IO/File.h>
 
 #include <unistd.h>
 #include <sys/sysinfo.h>
@@ -64,6 +102,27 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 	result.FreeSwapMemory = info.freeswap;
 	result.TotalVirtualMemory = result.TotalPhysicalMemory+result.TotalSwapMemory;
 	result.FreeVirtualMemory = result.FreePhysicalMemory+result.FreeSwapMemory;
+
+	return result;
+}
+
+ProcessorInfo ProcessorInfo::Get()
+{
+	ProcessorInfo result;
+
+	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
+
+	result.BrandString = allCpuInfo().Find(StringView("\nmodel name"))
+		.Find(':').Drop(2).ReadUntil('\n');
+
+	result.CoreNumber = allCpuInfo().Find(StringView("\ncpu cores"))
+		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
+
+	result.LogicalProcessorNumber = ushort(allCpuInfo().Count(StringView("\nprocessor")));
+	if(allCpuInfo().StartsWith(StringView("processor"))) result.LogicalProcessorNumber++;
+
+	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
+		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
 
 	return result;
 }
@@ -124,87 +183,6 @@ SystemMemoryInfo SystemMemoryInfo::Get()
 	return result;
 }
 
-}
-
-#endif
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-
-#pragma comment(lib, "Advapi32.lib")
-
-namespace Intra {
-
-ProcessorInfo ProcessorInfo::Get()
-{
-	ProcessorInfo result;
-	SYSTEM_INFO sysInfo;
-	GetSystemInfo(&sysInfo);
-	result.LogicalProcessorNumber = ushort(sysInfo.dwNumberOfProcessors);
-//#ifdef INTRA_XP_SUPPORT
-	result.CoreNumber = result.LogicalProcessorNumber;
-/*#else
-	SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX logicalProcInfoEx[16];
-	DWORD bufferLength = 16*sizeof(logicalProcInfoEx);
-	GetLogicalProcessorInformationEx(RelationProcessorPackage, logicalProcInfoEx, &bufferLength);
-	result.CoreNumber = ushort(bufferLength/sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX));
-#endif*/
-	
-	HKEY hKey;
-	long lError = RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0", 0, KEY_READ, &hKey);
-    
-	if(lError==ERROR_SUCCESS)
-	{
-		DWORD dwMHz;
-		DWORD size = sizeof(dwMHz);
-		lError = RegQueryValueExA(hKey, "~MHz", null, null, reinterpret_cast<LPBYTE>(&dwMHz), &size);
-		if(lError==ERROR_SUCCESS) result.Frequency = dwMHz*1000000ull;
-
-		char processorName[64] = {0};
-		size = sizeof(processorName);
-		lError = RegQueryValueExA(hKey, "ProcessorNameString", null, null, reinterpret_cast<LPBYTE>(processorName), &size);
-		if(lError==ERROR_SUCCESS) result.BrandString = StringView(processorName, size).TrimRight('\0');
-	}
-
-	return result;
-}
-
-}
-
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
-
-#include <IO/File.h>
-
-namespace Intra {
-
-ProcessorInfo ProcessorInfo::Get()
-{
-	ProcessorInfo result;
-
-	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
-
-	result.BrandString = allCpuInfo().Find(StringView("\nmodel name"))
-		.Find(':').Drop(2).ReadUntil('\n');
-
-	result.CoreNumber = allCpuInfo().Find(StringView("\ncpu cores"))
-		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
-
-	result.LogicalProcessorNumber = ushort(allCpuInfo().Count(StringView("\nprocessor")));
-	if(allCpuInfo().StartsWith(StringView("processor"))) result.LogicalProcessorNumber++;
-
-	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
-		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
-
-	return result;
-}
-
-}
-
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
-
-#include <sys/sysctl.h>
-
-namespace Intra {
-
 ProcessorInfo ProcessorInfo::Get()
 {
 	int mib[2] = {CTL_HW, HW_NCPU};
@@ -232,4 +210,27 @@ ProcessorInfo ProcessorInfo::Get()
 }
 
 }
+
+#else
+
+namespace Intra {
+
+SystemMemoryInfo SystemMemoryInfo::Get()
+{
+	SystemMemoryInfo result;
+	return result;
+}
+
+ProcessorInfo ProcessorInfo::Get()
+{
+	ProcessorInfo result;
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+	result.BrandString = "Emscripten";
 #endif
+	return result;
+}
+
+}
+
+#endif
+
