@@ -30,11 +30,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     endif()
 	
 	if(ENABLE_SSE)
-	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mfpmath=sse2")
+	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -msse2")
     endif()
 	
-	if(ENABLE_NEON)
-	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} --march=armv7-a -mfloat-abi=softfp -mfpmath=neon")
+	if(ENABLE_NEON AND NOT NATIVE_TUNE)
+	    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -march=armv7-a -mfloat-abi=softfp -mfpmath=neon")
     endif()
 	
 	if(NATIVE_TUNE)
