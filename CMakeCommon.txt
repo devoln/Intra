@@ -47,7 +47,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     
     set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -fno-exceptions -fno-rtti")
     
-    if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
       set(COMMON_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} ")
     else()
       set(COMMON_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -Wl,--gc-sections")
@@ -55,7 +55,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     
     set(ALL_MINSIZE_OPTIMIZATIONS "${COMMON_MINSIZE_OPTIMIZATIONS} -fno-stack-protector -g0 -fno-unroll-loops -fno-asynchronous-unwind-tables")
     
-    if(APPLE OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
       set(ALL_MINSIZE_OPTIMIZATIONS "${ALL_MINSIZE_OPTIMIZATIONS} ")
     else()
       set(ALL_MINSIZE_OPTIMIZATIONS "${ALL_MINSIZE_OPTIMIZATIONS} -Wl,-s")
