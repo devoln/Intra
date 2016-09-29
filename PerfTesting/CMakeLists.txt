@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-include(../CMakeCommon.txt)
-
 project(PerfTesting)
+
+include(../CMakeCommon.txt)
 
 include_directories(../IntraLib/include)
 

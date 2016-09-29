@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-include(../CMakeCommon.txt)
-
 project(IntraLib)
+
+include(../CMakeCommon.txt)
 
 include_directories(include)
 
