@@ -53,9 +53,10 @@ struct StreamedBuffer
 
 	bool deleteOnStop = false;
 	bool looping = false;
-};
+	bool stopSoon =false;
+}; 
 
-static bool AudioContextInited=false;
+static bool AudioContextInited = false;
 static IdAllocator<ushort> BufferIdalloc;
 static IdAllocator<ushort> InstanceIdalloc;
 static IdAllocator<ushort> StreamedSoundIdalloc;
@@ -74,6 +75,13 @@ static void init_context()
 		Module.gWebAudioStreamArray = [];
 	);
 }
+
+uint InternalSampleRate()
+{
+	init_context();
+	return uint(EM_ASM_INT({return Module.gWebAudioContext.sampleRate;}, 0));
+}
+
 
 BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 {
@@ -212,9 +220,11 @@ void InstanceSetDeleteOnStop(InstanceHandle inst, bool del)
 
 void InstanceDelete(InstanceHandle inst)
 {
+	InstanceStop(inst);
 	EM_ASM_({
 		Module.gWebAudioInstanceArray[$0] = null;
 	}, inst->id);
+	InstanceIdalloc.Deallocate(inst->id);
 	delete inst;
 }
 
@@ -247,11 +257,34 @@ void InstanceStop(InstanceHandle inst)
 
 extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(StreamedBufferHandle snd)
 {
+	if(snd->stopSoon)
+	{
+		snd->stopSoon = false;
+		StreamedSoundStop(snd);
+		return 0;
+	}
+
 	void* tempPtrs[16];
 	for(size_t c=0; c<snd->channels; c++)
 		tempPtrs[c] = snd->tempBuffer.begin()+snd->sampleCount*c;
 	size_t floatsRead = snd->streamingCallback.CallbackFunction(tempPtrs, snd->channels,
 		ValueType::Float, false, snd->sampleCount, snd->streamingCallback.CallbackData);
+	if(floatsRead<snd->sampleCount)
+	{
+		for(size_t i=0; i<snd->channels; i++)
+			reinterpret_cast<float*&>(tempPtrs[i]) += floatsRead;
+		if(!snd->looping)
+		{
+			snd->stopSoon = true;
+			for(size_t i=0; i<snd->channels; i++)
+				core::memset(tempPtrs[i], 0, (snd->sampleCount-floatsRead)*sizeof(float));
+		}
+		else
+		{
+			snd->streamingCallback.CallbackFunction(tempPtrs, snd->channels,
+				ValueType::Float, false, snd->sampleCount-floatsRead, snd->streamingCallback.CallbackData);
+		}
+	}
 	return floatsRead;
 }
 
@@ -260,6 +293,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 {
 	if(sampleCount==0 || channels==0 || sampleRate==0 || callback.CallbackFunction==null) return null;
 	init_context();
+	if(sampleCount>16384) sampleCount=16384;
 
 	StreamedBufferHandle result = new StreamedBuffer(StreamedSoundIdalloc.Allocate(), callback, sampleCount, sampleRate, channels);
 
@@ -329,6 +363,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 		snd.disconnect(Module.gWebAudioContext.destination);
 		Module.gWebAudioStreamArray[$0] = null;
 	}, snd->id);
+	StreamedSoundIdalloc.Deallocate(snd->id);
 	delete snd;
 }
 

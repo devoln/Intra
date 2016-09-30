@@ -121,6 +121,8 @@ ProcessorInfo ProcessorInfo::Get()
 	result.LogicalProcessorNumber = ushort(allCpuInfo().Count(StringView("\nprocessor")));
 	if(allCpuInfo().StartsWith(StringView("processor"))) result.LogicalProcessorNumber++;
 
+	if(result.CoreNumber==0) result.CoreNumber = result.LogicalProcessorNumber;
+
 	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
 		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
 

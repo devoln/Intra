@@ -320,7 +320,7 @@ static FormatInfo get_format_info(ImageFormat fmt)
 	if(fmt.value>=ImageFormat::FirstOfBasic && fmt.value<ImageFormat::EndOfBasic)
 		return basicFormatsInfoTable[fmt.value-ImageFormat::FirstOfBasic];
 
-	INTRA_ASSERT(!"Error in get_format_info!");
+	INTRA_INTERNAL_ERROR("Error in get_format_info!");
 	return {0,0,0,0,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::None, ""};
 }
 

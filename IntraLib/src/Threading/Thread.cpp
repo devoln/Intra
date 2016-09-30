@@ -5,17 +5,14 @@
 
 namespace Intra {
 
-struct Thread::Handle {};
-
 void Thread::create_thread(const Thread::Func& func) {func();}
 void Thread::delete_thread() {}
-void Thread::Join() {(void)handle;}
+void Thread::Join() {}
 bool Thread::Joinable() const {return true;}
 void Thread::Detach() {}
 
 void Thread::Yield() {}
 
-struct Mutex::Handle {};
 Mutex::Mutex(bool processPrivate) {(void)processPrivate;}
 Mutex::~Mutex() {}
 void Mutex::Lock() {}

@@ -129,13 +129,13 @@ private:
     template<typename V> void VisitFieldById(size_t index, V& visitor) {\
         switch(index) {\
             INTRA_MACRO2_FOR_EACH_INDEX( ( ; ), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
-			default: INTRA_ASSERT("Invalid id for VisitFieldById.");\
+			default: INTRA_ASSERT(true && "Invalid id for VisitFieldById.");\
         }\
     }\
     template<typename V> void VisitFieldById(size_t index, V& visitor) const {\
         switch(index) {\
             INTRA_MACRO2_FOR_EACH_INDEX( ( ; ), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
-			default: INTRA_ASSERT("Invalid id for VisitFieldById.");\
+			default: INTRA_ASSERT(true && "Invalid id for VisitFieldById.");\
         }\
     }
 

@@ -120,7 +120,7 @@ class MusicSoundSampleSource: public ASoundSampleSource
 	size_t processedSamplesToFlush;
 
 public:
-	MusicSoundSampleSource(const Music& mydata, uint sampleRate=11025);
+	MusicSoundSampleSource(const Music& mydata, uint sampleRate=48000);
 	~MusicSoundSampleSource() {}
 
 	size_t SampleCount() const override { return sample_count; }

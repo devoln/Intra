@@ -30,6 +30,7 @@ namespace Intra { namespace SoundAPI {
 
 const ValueType::I InternalBufferType = ValueType::Short;
 const int InternalChannelsInterleaved = true;
+uint InternalSampleRate() {return 48000;}
 
 struct Buffer
 {

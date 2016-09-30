@@ -63,7 +63,7 @@ Image Image::ExtractChannel(char channelName, ImageFormat compatibleFormat, usho
 	Image result(Info.Size, compatibleFormat, Info.MipmapCount, Info.Type);
 	result.Data.SetCountUninitialized(dstDataSize);
 
-	INTRA_ASSERT(!"Not implemented!");
+	INTRA_INTERNAL_ERROR("Not implemented!");
 
 	return result;
 }
@@ -383,7 +383,7 @@ static void swap_red_blue(ImageFormat format, ushort lineAlignment, USVec2 sizes
 	if(bytesPerComp==1) swap_red_blue_typed<byte>(lineUnusedBytes, components, sizes, data);
 	else if(bytesPerComp==2) swap_red_blue_typed<ushort>(lineUnusedBytes/2u, components, sizes, reinterpret_cast<ushort*>(data));
 	else if(bytesPerComp==4) swap_red_blue_typed<uint>(lineUnusedBytes/4u, components, sizes, reinterpret_cast<uint*>(data));
-	else INTRA_ASSERT(!"swap_red_blue пока не поддерживает пакованные форматы!");
+	else INTRA_INTERNAL_ERROR("swap_red_blue пока не поддерживает пакованные форматы!");
 }
 
 static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat srcFormat, ImageFormat dstFormat,

@@ -5,7 +5,10 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable: 4191)
+#pragma warning(disable: 4191 4626)
+#if(_MSC_VER>=1900)
+#pragma warning(disable: 5027)
+#endif
 #endif
 
 namespace Intra { namespace Utils {

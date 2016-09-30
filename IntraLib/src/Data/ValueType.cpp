@@ -48,7 +48,7 @@ ushort ValueType::Size() const
 	if(value<EndOfVectors) return scalarVecSizeTable[value];
 	if(value<EndOfMatrices) return matSizeTable[value-FirstOfMatrices];
 	if(value==ValueType::Char) return sizeof(char);
-	INTRA_ASSERT(!"Unknown type of this ValueType!");
+	INTRA_INTERNAL_ERROR("Unknown type of this ValueType!");
 	return 0;
 }
 

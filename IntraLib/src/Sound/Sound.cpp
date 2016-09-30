@@ -55,7 +55,7 @@ void Sound::Release()
 {
 	if(data==null) return;
 	Sound::all_existing_sounds.FindAndRemoveUnordered(this);
-	while(!instances.Empty()) instances[0]->Release();
+	while(!instances.Empty()) instances.Last()->Release(true);
 	SoundAPI::BufferDelete(data);
 	data = null;
 	info = SoundInfo();
@@ -97,7 +97,7 @@ Sound Sound::FromFile(StringView fileName)
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileData.StartsWith(StringView("MThd")))
-		source = new MusicSoundSampleSource(ReadMidiFile(fileData), 44100);
+		source = new MusicSoundSampleSource(ReadMidiFile(fileData), SoundAPI::InternalSampleRate());
 	else
 #endif
 		return null;
@@ -143,13 +143,13 @@ SoundInstance::SoundInstance(Sound* mySound, SoundAPI::InstanceHandle inst):
 	mySound->instances.AddLast(this);
 }
 
-void SoundInstance::Release()
+void SoundInstance::Release(bool force)
 {
 	if(data!=null)
 	{
-		if(IsPlaying()) SoundAPI::InstanceSetDeleteOnStop(data, true);
+		if(IsPlaying() && !force) SoundAPI::InstanceSetDeleteOnStop(data, true);
 		else SoundAPI::InstanceDelete(data);
-		data=null;
+		data = null;
 	}
 	my_sound->instances.FindAndRemoveUnordered(this);
 	my_sound = null;
@@ -235,7 +235,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileData.StartsWith(StringView("MThd")))
-		source = SourceRef(new MusicSoundSampleSource(ReadMidiFile(fileData), 44100));
+		source = SourceRef(new MusicSoundSampleSource(ReadMidiFile(fileData), 48000));
 	else
 #endif
 	{
@@ -284,6 +284,11 @@ void StreamedSound::UpdateBuffer() const
 	SoundAPI::StreamedSoundUpdate(data);
 }
 
+uint StreamedSound::InternalSampleRate()
+{
+	return SoundAPI::InternalSampleRate();
+}
+
 void StreamedSound::register_instance()
 {
 	INTRA_ASSERT(!all_existing_instances().Contains(this));
@@ -300,6 +305,7 @@ Array<StreamedSound*> StreamedSound::all_existing_instances;
 
 void CleanUpSoundSystem()
 {
+	StreamedSound::DeleteAllSounds();
 	Sound::DeleteAllSounds();
 	SoundAPI::SoundSystemCleanUp();
 }

@@ -8,6 +8,8 @@ namespace Intra { namespace SoundAPI {
 extern const ValueType::I InternalBufferType;
 extern const int InternalChannelsInterleaved;
 
+uint InternalSampleRate();
+
 BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate);
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type);
 void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType type);

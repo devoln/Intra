@@ -399,6 +399,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MusicSynthesizer.cpp" />
+    <ClCompile Include="MusicSynthesizerCommon.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="MusicSynthesizerCommon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

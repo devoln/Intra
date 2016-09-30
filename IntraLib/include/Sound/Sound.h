@@ -54,7 +54,7 @@ public:
 
 	static void DeleteAllSounds()
 	{
-		for(auto sound: Sound::all_existing_sounds) *sound = null;;
+		for(auto sound: Sound::all_existing_sounds) *sound = null;
 	}
 
 private:
@@ -93,7 +93,7 @@ public:
 	}
 
 	~SoundInstance();
-	void Release();
+	void Release(bool force=false);
 
 	void Play(bool loop=false) const;
 	bool IsPlaying() const;
@@ -161,6 +161,13 @@ public:
 	{
 		for(auto snd: AllExistingInstances())
 			snd->UpdateBuffer();
+	}
+
+	static uint InternalSampleRate();
+
+	static void DeleteAllSounds()
+	{
+		for(auto sound: StreamedSound::all_existing_instances) *sound = null;
 	}
 
 private:

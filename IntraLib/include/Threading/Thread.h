@@ -2,22 +2,23 @@
 
 #include "Utils/Callback.h"
 
-#ifdef Yield
 #undef Yield
-#endif
 
 namespace Intra {
 
 class Thread
 {
 	struct Handle;
+#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
+	Handle* handle;
+#endif
 public:
-	typedef Utils::FixedDelegate<void()> Func;
+	typedef Utils::Delegate<void()> Func;
 
+#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
 	Thread(null_t=null): handle(null) {}
 	Thread(Thread&& rhs): handle(rhs.handle) {rhs.handle=null;}
 	Thread(const Func& func): handle(null) {create_thread(func);}
-	~Thread() {delete_thread();}
 
 	Thread& operator=(Thread&& rhs)
 	{
@@ -26,6 +27,14 @@ public:
 		rhs.handle = null;
 		return *this;
 	}
+
+	~Thread() {delete_thread();}
+#else
+	Thread(null_t=null) {}
+	Thread(Thread&& rhs) {(void)rhs;}
+	Thread(const Func& func) {create_thread(func);}
+	Thread& operator=(Thread&& rhs) {(void)rhs; return *this;}
+#endif
 
 	void Join();
 	void Detach();
@@ -37,7 +46,6 @@ private:
 	void create_thread(const Func& func);
 	void delete_thread();
 
-	Handle* handle;
 
 	Thread(const Thread& rhs) = delete;
 	Thread& operator=(const Thread&) = delete;
@@ -45,6 +53,10 @@ private:
 
 class Mutex
 {
+	struct Handle;
+#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
+	Handle* handle;
+#endif
 public:
 	Mutex(bool processPrivate=true);
 	~Mutex();
@@ -70,8 +82,6 @@ public:
 	};
 
 private:
-	struct Handle;
-	Handle* handle;
 
 	Mutex(const Mutex&) = delete;
 	Mutex& operator=(const Mutex&) = delete;

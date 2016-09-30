@@ -7,6 +7,6 @@ project(MusicSynthesizer)
 include_directories(../IntraLib/include)
 
 
-add_executable(MusicSynthesizer MusicSynthesizer.cpp)
+add_executable(MusicSynthesizer MusicSynthesizer.cpp MusicSynthesizerCommon.cpp MusicSynthesizerCommon.h)
 
 target_link_libraries(MusicSynthesizer IntraLib)

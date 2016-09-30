@@ -23,7 +23,7 @@ public:
 	MidiHeader header;
 
 	byte status;
-	double startTickDuration, globalTickDuration, speed;
+	float startTickDuration, globalTickDuration, speed;
 	byte track;
 
 	MidiReader(const void* fileData, size_t size):
@@ -40,10 +40,10 @@ public:
 		short timeFormat = header.timeFormat;
 		if(timeFormat<0)
 		{
-			const double framesPerSecond = (timeFormat >> 8)==29? 29.97: (timeFormat >> 8);
-			startTickDuration = globalTickDuration = 1.0/framesPerSecond/(timeFormat & 0xFF);
+			const float framesPerSecond = (timeFormat >> 8)==29? 29.97f: (timeFormat >> 8);
+			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/(timeFormat & 0xFF);
 		}
-		else startTickDuration = globalTickDuration = 60.0/120/timeFormat;
+		else startTickDuration = globalTickDuration = 60.0f/120/timeFormat;
 	}
 
 	uint ReadVarInt(uint* readBytes=null)
@@ -55,8 +55,8 @@ public:
 		{
 			if(s.EndOfStream()) return result;
 			l = s.Read<byte>();
-			if(readBytes!=null)++*readBytes;
-			result=(result << 7)|(l&0x7F);
+			if(readBytes!=null) ++*readBytes;
+			result = (result << 7) | (l & 0x7F);
 		} while(l & 0x80);
 		return result;
 	}
@@ -72,7 +72,7 @@ public:
 		Array<byte> metadata;
 	};
 
-	struct TempoChange { uint tick; double tickDuration; };
+	struct TempoChange { uint tick; float tickDuration; };
 	Array<TempoChange> tempoChanges;
 
 	static size_t GetEventLength(byte status)
@@ -84,7 +84,7 @@ public:
 		return status==0xF2? 2u: status==0xF3? 1u: 0u;
 	}
 
-	MidiEvent ReadEvent(uint* readBytes)
+	MidiEvent ReadEvent(uint* oReadBytes)
 	{
 		MidiEvent event;
 		event.track = track;
@@ -96,16 +96,16 @@ public:
 		size_t bytesRead = 0;
 		if((firstByte & 0x80)==0) event.data[bytesRead++]=firstByte;
 		s.ReadData(event.data+bytesRead, bytesToRead-bytesRead);
-		if(readBytes!=null) *readBytes = uint(((firstByte&0x80)!=0)+delayBytes+bytesToRead);
+		if(oReadBytes!=null) *oReadBytes = uint(((firstByte & 0x80)!=0)+delayBytes+bytesToRead);
 
 		if(status==0xF0 || status==0xF7 || status==0xFF)
 		{
-			if(status==0xFF) event.data[0]=s.Read<byte>();
+			if(status==0xFF) event.data[0] = s.Read<byte>();
 			uint sizeRead;
 			uint msgLength = ReadVarInt(&sizeRead);
 			event.metadata = s.ReadArray<byte>(msgLength);
 			if(status==0xFF) event.metadata.AddLast(0);
-			if(readBytes!=null) *readBytes += sizeRead+msgLength + (status==0xFF);
+			if(oReadBytes!=null) *oReadBytes += sizeRead+msgLength + (status==0xFF);
 		}
 
 		return event;
@@ -115,11 +115,11 @@ public:
 	{
 		if(startTickDuration==0) return null; //Файл имеет неверный формат или не открыт
 		String chunkType = s.ReadNChars(4);
-		uint size=s.Read<uintBE>();
+		uint size = s.Read<uintBE>();
 		if(chunkType!="MTrk") {s.Skip(size); return null;}
 		uint bytesRemaining=size;
-		uint timeInTicks=0;
-		bool trackIsDrum=false;
+		uint timeInTicks = 0;
+		bool trackIsDrum = false;
 		Array<MidiEvent> events;
 		while(bytesRemaining>0 && !s.EndOfStream())
 		{
@@ -132,20 +132,20 @@ public:
 				if(header.timeFormat>0)
 			{
 				auto value = (event.metadata.Data()[0] << 16)|(event.metadata.Data()[1] << 8)|(event.metadata.Data()[2]);
-				tempoChanges.AddLast(TempoChange{timeInTicks, value/1000000.0/header.timeFormat*speed});
+				tempoChanges.AddLast(TempoChange{timeInTicks, value/1000000.0f/header.timeFormat*speed});
 			}
 			if(event.status==0x99)
-				trackIsDrum=true;
-			bytesRemaining-=eventSize;
+				trackIsDrum = true;
+			bytesRemaining -= eventSize;
 		}
 
 		track++;
 
 		MusicTrack result;
-		uint time1InTicks=0, lastTime1InTicks=0;
-		uint tempoChangeIndex=0;
-		double currentTickDuration=globalTickDuration;
-		float currentVolume=1;
+		uint time1InTicks = 0, lastTime1InTicks = 0;
+		uint tempoChangeIndex = 0;
+		double currentTickDuration = globalTickDuration;
+		float currentVolume = 1;
 		for(uint i=0; i<events.Count(); i++)
 		{
 			auto eventType = (events[i].status >> 4);
@@ -187,7 +187,7 @@ public:
 						delay -= 65534;
 					}
 					result.Notes.EmplaceLast(note, ushort(delay), currentVolume*events[i].data[1]/127.0f);
-					lastTime1InTicks=time1InTicks;
+					lastTime1InTicks = time1InTicks;
 					break;
 				}
 			}

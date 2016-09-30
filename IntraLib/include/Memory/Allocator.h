@@ -76,6 +76,7 @@ public:
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
+		bytes = Aligned(bytes, 4);
 		size_t totalBytes = bytes + 2*sizeof(uint);
 		byte* plainMemory = Allocator::Allocate(totalBytes, sourceInfo);
 		if(plainMemory!=null)
@@ -92,6 +93,7 @@ public:
 	void Free(void* ptr, size_t size)
 	{
 		if(ptr==null) return;
+		size = Aligned(size, 4);
 		byte* plainMemory = reinterpret_cast<byte*>(ptr)-sizeof(uint);
 
 		uint leftBoundValue = *reinterpret_cast<uint*>(plainMemory);
