@@ -26,7 +26,10 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#include <Shlwapi.h>
 #undef GetCurrentDirectory
+
+#pragma comment(lib, "Shlwapi.lib")
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -38,7 +41,6 @@
 
 
 #ifdef _MSC_VER
-#define access _access
 #define fileno _fileno
 
 
@@ -56,8 +58,16 @@ void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
 
 	HANDLE fileHandle = HANDLE(_get_osfhandle(fd));
 	DWORD flProtect=0, dwDesiredAccess=0;
-	if(prot==PROT_READ) flProtect=PAGE_READONLY, dwDesiredAccess=FILE_MAP_READ;
-	else if(prot==PROT_WRITE) flProtect=PAGE_READWRITE, dwDesiredAccess=FILE_MAP_WRITE;
+	if(prot==PROT_READ)
+	{
+		flProtect = PAGE_READONLY;
+		dwDesiredAccess = FILE_MAP_READ;
+	}
+	else if(prot==PROT_WRITE)
+	{
+		flProtect = PAGE_READWRITE;
+		dwDesiredAccess = FILE_MAP_WRITE;
+	}
 	else return reinterpret_cast<void*>(-1);
 
 	HANDLE hnd = CreateFileMappingW(fileHandle, nullptr, flProtect, 0, DWORD(length), nullptr);
@@ -85,8 +95,24 @@ namespace Intra { namespace IO
 {
 	namespace DiskFile
 	{
-	bool Exists(StringView fileName) {String fn=fileName; return access(fn.CStr(), 0)!=-1;}
+	bool Exists(StringView fileName)
+	{
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+		GenericString<wchar_t> wfn;
+		wfn.SetLengthUninitialized(fileName.Length());
+		int wlen = MultiByteToWideChar(CP_UTF8, 0, fileName.Data(),
+			int(fileName.Length()), wfn.Data(), int(wfn.Length()));
+		wfn.SetLengthUninitialized(size_t(wlen+1));
+		wfn.Last() = 0;
+		return PathFileExistsW(wfn.Data())!=0;
+#else
+		String fn = fileName;
+		return access(fn.CStr(), 0)!=-1;
+#endif
+	}
+
 	bool Delete(StringView fileName) {String fn=fileName; return remove(fn.CStr()) == 0;}
+
 	bool MoveOrRename(StringView oldFileName, StringView newFileName)
 	{
 		if(Exists(newFileName) || !Exists(oldFileName)) return false;

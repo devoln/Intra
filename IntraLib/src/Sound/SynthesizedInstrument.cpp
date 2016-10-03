@@ -961,7 +961,7 @@ void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 		return;
 	}
 
-	ArrayRange<const float> bufSampleRange = bufRef.Samples().Take(inOutSamples.Length());
+	ArrayRange<const float> bufSampleRange = bufRef.Samples().Take(inOutSamples.Length()).AsConstRange();
 	if(!add) Memory::CopyBits(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
 	else Algo::Add(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
 }

@@ -114,12 +114,16 @@ size_t MusicSoundSampleSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			const auto noteInfo = track.Notes[trackPosition.noteId];
 			const auto note = track[trackPosition.noteId];
 			const float volume = track.Volume*noteInfo.Volume;
+
+			size_t sampleCount;
+			if(!note.IsPause()) sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, sample_rate);
+			else sampleCount = floatsToRead;
+			INTRA_ASSERT(int(trackPosition.samplePos)>=0);
+			if(buffer.Samples.Count()<trackPosition.samplePos+sampleCount)
+				buffer.Samples.SetCount(trackPosition.samplePos+sampleCount);
+			
 			if(!note.IsPause() && volume>0.0001f)
 			{
-				INTRA_ASSERT(int(trackPosition.samplePos)>=0);
-				size_t sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, sample_rate);
-				if(buffer.Samples.Count()<trackPosition.samplePos+sampleCount)
-					buffer.Samples.SetCount(sampleCount+trackPosition.samplePos);
 				auto dstRange = buffer.Samples(trackPosition.samplePos, $).Take(sampleCount);
 				track.Instrument->GetNoteSamples(dstRange, note, track.Tempo, volume, sample_rate, true);
 			}
@@ -149,7 +153,7 @@ size_t MusicSoundSampleSource::LoadNextNormalizedSamples(uint maxFloatsToGet)
 	auto minmax = buffer.GetMinMax(0, Math::Min(floatsRead, buffer.Samples.Count()));
 	maxVolume = Math::Max( maxVolume, Math::Abs(minmax.first) );
 	maxVolume = Math::Max( maxVolume, Math::Abs(minmax.second) );
-	buffer.SetMinMax(-1.0f, 1.0f, 0, floatsRead, {-maxVolume, maxVolume});
+	if(maxVolume>=0.0025f) buffer.SetMinMax(-1.0f, 1.0f, 0, floatsRead, {-maxVolume, maxVolume});
 	return floatsRead;
 }
 
@@ -163,10 +167,10 @@ void MusicSoundSampleSource::FlushProcessedSamples()
 size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
 	size_t floatsRead = LoadNextNonNormalizedSamples(uint(outShorts.Length()));
-	auto minmax = buffer.GetMinMax(0, Math::Min(floatsRead, buffer.Samples.Count()));
+	auto minmax = buffer.GetMinMax(0, floatsRead);
 	maxVolume = Math::Max(maxVolume, Math::Abs(minmax.first));
 	maxVolume = Math::Max(maxVolume, Math::Abs(minmax.second));
-	buffer.SetMinMax(-32767.9f, 32766.9f, 0, floatsRead, {-maxVolume, maxVolume});
+	if(maxVolume>=0.0025f) buffer.SetMinMax(-32767.9f, 32766.9f, 0, floatsRead, {-maxVolume, maxVolume});
 	buffer.CastToShorts(0, outShorts.Take(floatsRead));
 	processedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
@@ -176,8 +180,10 @@ size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts
 size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
 	size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
+	Memory::CopyBits(outFloats, buffer.Samples().Take(floatsRead).AsConstRange());
+	if(buffer.Samples.Length()<floatsRead)
+		core::memset(outFloats.Begin+floatsRead, 0, (outFloats.Length()-floatsRead)*sizeof(float));
 	processedSamplesToFlush = floatsRead;
-	Memory::CopyBits(outFloats, buffer.Samples(0, floatsRead).AsConstRange());
 	FlushProcessedSamples();
 	return floatsRead/channel_count;
 }

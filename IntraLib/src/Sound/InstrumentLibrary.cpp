@@ -163,8 +163,8 @@ static DrumInstrument CreateDrums()
 	DrumInstrument result;
 
 	auto UniDrum = new SynthesizedInstrument;
-	UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.03f, 1, 0.35f);
-	//UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(SoundSamplers::SoundSampler<float(*)(float, float)>(DrumSample), 0.1f, 1, 0.35f);
+	UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.03f, 1, 0.2f);
+	//UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(SoundSamplers::SoundSampler<float(*)(float, float)>(DrumSample), 0.1f, 1, 0.2f);
 	UniDrum->PostEffects.AddLast(SoundPostEffects::FilterQ(4000, 0.6f));
 	//UniDrum->PostEffects.AddLast(SoundPostEffects::FilterHP(0.9f));
 	UniDrum->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
@@ -181,7 +181,7 @@ static DrumInstrument CreateDrums()
 	ClosedHiHat->MinNoteDuration = 0.25f;*/
 
 	auto ClosedHiHat = new SynthesizedInstrument;
-	ClosedHiHat->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 0.03f, 1, 0.35f);
+	ClosedHiHat->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 0.03f, 1, 0.25f);
 	ClosedHiHat->PostEffects.AddLast(SoundPostEffects::FilterQ(5000, 0.9f));
 	//ClosedHiHat->PostEffects.AddLast(SoundPostEffects::FilterHP(0.9f));
 	ClosedHiHat->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
@@ -190,7 +190,7 @@ static DrumInstrument CreateDrums()
 	for(uint id: {41u}) result.Generators[id] = ClosedHiHat;
 
 	auto AcousticBassDrum = new SynthesizedInstrument;
-	AcousticBassDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 0.03f, 1, 0.35f);
+	AcousticBassDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 0.03f, 1, 0.25f);
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::FilterQ(8500, 0.3f));
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::FilterHP(0.4f));
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));

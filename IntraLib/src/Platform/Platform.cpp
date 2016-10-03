@@ -49,7 +49,7 @@ namespace Intra {
 ArrayRange<const StringView> GetCommandLineArguments()
 {
 	auto cmd = GetCommandLineW();
-	int argc=0;
+	int argc = 0;
 	wchar** const argvW = reinterpret_cast<wchar**>(CommandLineToArgvW(cmd, &argc));
 	static Array<String> args(static_cast<size_t>(argc));
 	static Array<StringView> result(static_cast<size_t>(argc));
@@ -57,8 +57,7 @@ ArrayRange<const StringView> GetCommandLineArguments()
 	for(int i=0; i<argc; i++)
 	{
 		UTF16 utf16range(argvW[i], argvW[i]+wcslen(reinterpret_cast<const wchar_t*>(argvW[i])));
-		String str = utf16range.ToUTF8();
-		args.AddLast(str);
+		args.AddLast(utf16range.ToUTF8());
 		result.AddLast(args.Last());
 	}
 	return result;

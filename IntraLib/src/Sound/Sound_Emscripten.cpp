@@ -203,11 +203,11 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	result->id = InstanceIdalloc.Allocate();
 	EM_ASM_({
 		var source = Module.gWebAudioContext.createBufferSource();
-		Module.gWebAudioInstanceArray[$1] = source;
 		source.buffer = Module.gWebAudioBufferArray[$0];
 		source.connect(Module.gWebAudioContext.destination);
 		source.__is_playing = false;
 		source.onended = function() {source.__is_playing = false;};
+		Module.gWebAudioInstanceArray[$1] = source;
 	}, snd->id, result->id);
 	return result;
 }
@@ -224,7 +224,7 @@ void InstanceDelete(InstanceHandle inst)
 	EM_ASM_({
 		Module.gWebAudioInstanceArray[$0] = null;
 	}, inst->id);
-	InstanceIdalloc.Deallocate(inst->id);
+	InstanceIdalloc.Deallocate(ushort(inst->id));
 	delete inst;
 }
 
@@ -242,13 +242,17 @@ void InstancePlay(InstanceHandle inst, bool loop)
 bool InstanceIsPlaying(InstanceHandle inst)
 {
 	if(inst==null) return false;
-	return bool(EM_ASM_INT({return Module.gWebAudioInstanceArray[$0].__is_playing;}, inst->id));
+	return bool(EM_ASM_INT({
+		return Module.gWebAudioInstanceArray[$0].__is_playing;
+	}, inst->id));
 }
 
 void InstanceStop(InstanceHandle inst)
 {
 	if(inst==null) return;
-	EM_ASM_({Module.gWebAudioInstanceArray[$0].stop();}, inst->id);
+	EM_ASM_({
+		Module.gWebAudioInstanceArray[$0].stop();
+	}, inst->id);
 }
 
 
@@ -266,7 +270,7 @@ extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(Stre
 
 	void* tempPtrs[16];
 	for(size_t c=0; c<snd->channels; c++)
-		tempPtrs[c] = snd->tempBuffer.begin()+snd->sampleCount*c;
+		tempPtrs[c] = snd->tempBuffer.Data()+snd->sampleCount*c;
 	size_t floatsRead = snd->streamingCallback.CallbackFunction(tempPtrs, snd->channels,
 		ValueType::Float, false, snd->sampleCount, snd->streamingCallback.CallbackData);
 	if(floatsRead<snd->sampleCount)
@@ -281,7 +285,7 @@ extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(Stre
 		}
 		else
 		{
-			snd->streamingCallback.CallbackFunction(tempPtrs, snd->channels,
+			floatsRead += snd->streamingCallback.CallbackFunction(tempPtrs, snd->channels,
 				ValueType::Float, false, snd->sampleCount-floatsRead, snd->streamingCallback.CallbackData);
 		}
 	}
@@ -293,10 +297,9 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 {
 	if(sampleCount==0 || channels==0 || sampleRate==0 || callback.CallbackFunction==null) return null;
 	init_context();
-	if(sampleCount>16384) sampleCount=16384;
+	if(sampleCount>16384) sampleCount = 16384;
 
 	StreamedBufferHandle result = new StreamedBuffer(StreamedSoundIdalloc.Allocate(), callback, sampleCount, sampleRate, channels);
-
 	result->tempBuffer.SetCount(sampleCount*channels);
 
 	EM_ASM_({
@@ -305,19 +308,19 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 		Module.gWebAudioStreamArray[$0] = result;
 		result.onaudioprocess = function(audioProcessingEvent)
 		{
-			var samplesRead = Module._Emscripten_StreamedSoundLoadCallback($3);
+			Module._Emscripten_StreamedSoundLoadCallback($3);
 			var outputBuffer = audioProcessingEvent.outputBuffer;
 			for(var ch=0; ch<$2; ch++)
 			{
 				if(outputBuffer.copyToChannel===undefined)
 				{
 					var outputData = outputBuffer.getChannelData(ch);
-					outputData.set(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+samplesRead));
+					outputData.set(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+$1));
 				}
-				else outputBuffer.copyToChannel(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+samplesRead), ch);
+				else outputBuffer.copyToChannel(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+$1), ch);
 			}
 		}
-	}, result->id, sampleCount, channels, result, reinterpret_cast<size_t>(result->tempBuffer.begin())/sizeof(float));
+	}, result->id, sampleCount, channels, result, reinterpret_cast<size_t>(result->tempBuffer.Data())/sizeof(float));
 
 	return result;
 }
@@ -341,7 +344,9 @@ void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 bool StreamedSoundIsPlaying(StreamedBufferHandle snd)
 {
 	if(snd==null) return false;
-	return bool(EM_ASM_INT({return Module.gWebAudioStreamArray[$0].__is_playing;}, snd->id));
+	return bool(EM_ASM_INT({
+		return Module.gWebAudioStreamArray[$0].__is_playing;
+	}, snd->id));
 }
 
 void StreamedSoundStop(StreamedBufferHandle snd)
@@ -349,21 +354,19 @@ void StreamedSoundStop(StreamedBufferHandle snd)
 	if(snd==null) return;
 	EM_ASM_({
 		var snd = Module.gWebAudioStreamArray[$0];
+		if(snd.__is_playing) snd.disconnect(Module.gWebAudioContext.destination);
 		snd.__is_playing = false;
-		snd.disconnect(Module.gWebAudioContext.destination);
 	}, snd->id);
 }
 
 void StreamedBufferDelete(StreamedBufferHandle snd)
 {
 	if(snd==null) return;
+	StreamedSoundStop(snd);
 	EM_ASM_({
-		var snd = Module.gWebAudioStreamArray[$0];
-		snd.__is_playing = false;
-		snd.disconnect(Module.gWebAudioContext.destination);
 		Module.gWebAudioStreamArray[$0] = null;
 	}, snd->id);
-	StreamedSoundIdalloc.Deallocate(snd->id);
+	StreamedSoundIdalloc.Deallocate(ushort(snd->id));
 	delete snd;
 }
 

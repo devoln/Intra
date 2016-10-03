@@ -12,7 +12,7 @@
 
 #include "MusicSynthesizerCommon.h"
 
-#define ENABLE_STREAMING
+//#define ENABLE_STREAMING
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 #ifdef _MSC_VER
@@ -47,9 +47,10 @@ void MainLoop(bool enableStreaming)
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 
 	Console.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
+	Thread thr;
 	if(enableStreaming)
 	{
-		Thread thr([]()
+		thr = Thread([]()
 		{
 			for(;;)
 			{
@@ -102,11 +103,11 @@ void PlayMusic(const Music& music, bool printPerf)
 void PlayMusicStream(const Music& music)
 {
 	const auto sampleRate = StreamedSound::InternalSampleRate();
-	Console.PrintLine("Частота дискретизации: ", sampleRate);
+	Console.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
 	Console.PrintLine("Инициализация...");
 	static StreamedSound sound;
 	sound = StreamedSound(new MusicSoundSampleSource(music, sampleRate));
-	sound.Play(true);
+	sound.Play();
 }
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)

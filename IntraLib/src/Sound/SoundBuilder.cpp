@@ -129,7 +129,7 @@ void SoundBuffer::MixWith(const SoundBuffer* rhs, size_t lhsStartSample, size_t 
 core::pair<float, float> SoundBuffer::GetMinMax(size_t startSample, size_t sampleCount) const
 {
 	if(startSample>=Samples.Count()) return {-1,1};
-	if(sampleCount==Meta::NumericLimits<size_t>::Max()) sampleCount = Samples.Count()-startSample;
+	if(sampleCount>Samples.Count()-startSample) sampleCount = Samples.Count()-startSample;
 	size_t endSample = Math::Min(startSample+sampleCount, Samples.Count());
 
 	core::pair<float, float> result;
