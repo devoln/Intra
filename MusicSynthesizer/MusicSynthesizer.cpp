@@ -112,17 +112,22 @@ void PlayMusicStream(const Music& music)
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
-extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)
+extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size_t size, bool enableStreaming)
 {
 	StreamedSound::DeleteAllSounds();
 	Sound::DeleteAllSounds();
 
-	Array<byte> bb = DownloadFile(StringView(url));
-	auto music = ReadMidiFile(bb.AsConstRange());
+	auto music = ReadMidiFile({data, size});
 	PrintMusicInfo(music);
 	if(enableStreaming) PlayMusicStream(music);
 	else PlayMusic(music, true);
 	Console.PrintLine("Воспроизведение...");
+}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)
+{
+	Array<byte> bb = DownloadFile(StringView(url));
+	PlayMidiFileInMemory(bb.Data(), bb.Length(), enableStreaming);
 }
 
 #endif
