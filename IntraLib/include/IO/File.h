@@ -134,7 +134,7 @@ private:
 
 String ReadAsString(StringView fileName, bool* fileOpened=null);
 
-template<typename T> Array<T> ReadAsArray(StringView fileName, bool* fileOpened)
+template<typename T> Array<T> ReadAsArray(StringView fileName, bool* fileOpened=null)
 {
 	Reader file(fileName);
 	if(fileOpened!=null) *fileOpened = (file!=null);

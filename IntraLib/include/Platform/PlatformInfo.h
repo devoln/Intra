@@ -193,8 +193,17 @@
 #define INTRA_PLATFORM_ARCH INTRA_PLATFORM_X86_64
 #endif
 
-#if defined(__arm__) || defined(__thumb__) || defined(_M_ARM) || defined(_M_ARMT)
+
+#if(defined(__aarch64__) || defined(_M_ARM64) || defined(__arm64))
+#define INTRA_PLATFORM_ARCH INTRA_PLATFORM_ARM64
+#elif defined(__arm__) || defined(__thumb__) || defined(_M_ARM) || defined(_M_ARMT)
+
+#ifdef __LP64__
+#define INTRA_PLATFORM_ARCH INTRA_PLATFORM_ARM64
+#else
 #define INTRA_PLATFORM_ARCH INTRA_PLATFORM_ARM
+#endif
+
 #endif
 
 #if defined(__powerpc__) || defined(_M_PPC) || defined(__powerpc)

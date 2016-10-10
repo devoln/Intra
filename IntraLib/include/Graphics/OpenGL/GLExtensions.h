@@ -10,7 +10,7 @@
 #elif defined(__ANDROID__)
 #   include <sys/cdefs.h>
 #ifndef KHRONOS_APICALL
-#define KHRONOS_APICALL __NDK_FPABI__
+#define KHRONOS_APICALL /*__NDK_FPABI__*/
 #endif
 #else
 #define KHRONOS_APICALL

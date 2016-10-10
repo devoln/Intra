@@ -50,10 +50,12 @@ void SystemHeapAllocator::Free(void* ptr)
 AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
-#ifdef INTRA_PLATFORM_IS_UNIX
+#if(defined(INTRA_PLATFORM_IS_UNIX) && INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Android)
 	void* result;
 	if(posix_memalign(&result, alignment, bytes)==0) return result;
 	return null;
+#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
+    return memalign(alignment, bytes);
 #else
 	return _aligned_malloc(bytes, alignment);
 #endif

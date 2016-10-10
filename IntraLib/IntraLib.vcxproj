@@ -442,6 +442,7 @@
     <ClCompile Include="src\Sound\SoundProcessing.cpp" />
     <ClCompile Include="src\Sound\SoundSource.cpp" />
     <ClCompile Include="src\Sound\Sound_DirectSound.cpp" />
+    <ClCompile Include="src\Sound\Sound_Dummy.cpp" />
     <ClCompile Include="src\Sound\Sound_Emscripten.cpp" />
     <ClCompile Include="src\Sound\Sound_OpenAL.cpp" />
     <ClCompile Include="src\Sound\SynthesizedInstrument.cpp" />

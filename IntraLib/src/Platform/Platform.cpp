@@ -5,22 +5,32 @@
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
 
+#define INTRA_NO_CMAIN
 
-android_app* g_GlobalAndroidApp=null;
+struct android_app;
+
+namespace Intra {
+	android_app *g_GlobalAndroidApp = null;
+}
+
+#ifndef INTRA_NO_CMAIN
 
 extern "C" int main(int argc, const char* argv[]);
 void android_main(struct android_app* state)
 {
-	g_GlobalAndroidApp = state;
+	Intra::g_GlobalAndroidApp = state;
 	const char* argv[] = {"program"};
 	main(1, &argv[0]);
 }
 
+#endif
+
 namespace Intra {
 
-Array<String> GetCommandLineArguments()
+ArrayRange<const StringView> GetCommandLineArguments()
 {
-	return Array<String>({"program"});
+	StringView result[] = {"program"};
+	return result;
 }
 
 }

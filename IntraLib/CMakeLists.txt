@@ -29,8 +29,13 @@ endforeach(FILE)
 
 endif()
 
-add_library(IntraLib STATIC ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
+option(BUILD_DYNAMIC_LIB "Build a dynamic library instead of static." OFF)
 
+if(BUILD_DYNAMIC_LIB)
+add_library(IntraLib SHARED ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
+else()
+add_library(IntraLib STATIC ${INTRA_LIB_SOURCE1} ${INTRA_LIB_HEADERS1})
+endif()
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")

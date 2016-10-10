@@ -12,6 +12,7 @@ namespace SoundAPI {
 
 const ValueType::I InternalBufferType = ValueType::Void;
 const int InternalChannelsInterleaved = true;
+uint InternalSampleRate() {return 48000;}
 
 struct Buffer
 {
@@ -157,6 +158,10 @@ void StreamedSoundStop(StreamedBufferHandle snd)
 void StreamedSoundUpdate(StreamedBufferHandle snd)
 {
 	(void)snd;
+}
+
+void SoundSystemCleanUp()
+{
 }
 
 }}
