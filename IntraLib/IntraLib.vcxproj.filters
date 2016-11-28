@@ -159,9 +159,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\IntraAll.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="src\Physics\AabbTree.cpp">
       <Filter>Файлы исходного кода\Physics</Filter>
     </ClCompile>
@@ -359,6 +356,12 @@
     </ClCompile>
     <ClCompile Include="src\Sound\Sound_Dummy.cpp">
       <Filter>Файлы исходного кода\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\Object.cpp">
+      <Filter>Файлы исходного кода\Data</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IntraAll.cpp">
+      <Filter>Файлы исходного кода</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -718,6 +721,12 @@
     </ClInclude>
     <ClInclude Include="include\Math\Bit.h">
       <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Object.h">
+      <Filter>Заголовочные файлы\Data</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algorithms\Polymorphic.h">
+      <Filter>Заголовочные файлы\Algorithms</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

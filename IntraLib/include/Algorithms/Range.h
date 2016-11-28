@@ -7,37 +7,6 @@
 
 namespace Intra { namespace Range {
 
-template<typename T> struct IInputRange: RangeMixin<IInputRange<T>, Meta::RemoveConstRef<T>, TypeEnum::Input, false>
-{
-private:
-	typedef RangeMixin<IInputRange<T>, Meta::RemoveConstRef<T>, TypeEnum::Input, false> base;
-public:
-	typedef Meta::RemoveConstRef<T> value_type;
-	typedef T return_value_type;
-
-	virtual ~IInputRange() {}
-
-	virtual bool Empty() const = 0;
-	virtual T First() const = 0;
-	virtual void PopFirst() = 0;
-
-	virtual void PopFirstN(size_t count) {base::PopFirstN(count);}
-	virtual void PopFirstExactly(size_t count) {base::PopFirstExactly(count);}
-};
-
-template<typename T> struct IFiniteInputRange:
-	RangeMixin<IFiniteInputRange<T>, Meta::RemoveConstRef<T>, TypeEnum::Input, true>,
-	IInputRange<T>
-{
-private:
-	typedef RangeMixin<IFiniteInputRange<T>, Meta::RemoveConstRef<T>, TypeEnum::Input, true> base;
-public:
-	virtual ~IFiniteInputRange() {}
-	virtual void FillAdvance(const T& value) {base::FillAdvance(value);}
-};
-
-
-
 template<typename T> struct CountRange:
 	RangeMixin<CountRange<T>, T, TypeEnum::Forward, false>
 {

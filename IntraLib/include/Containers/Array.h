@@ -728,8 +728,8 @@ template<typename T, class Allocator> forceinline const T* end(const Array<T, Al
 
 template<typename T> using Deque = Array<T>;
 
-namespace Meta {template<typename T, class Allocator> struct IsTriviallyRelocatable<Array<T, Allocator>>: TypeFromValue<bool, true> {};}
-
+namespace Meta {
+template<typename T, class Allocator> struct IsTriviallyRelocatable<Array<T, Allocator>>: TypeFromValue<bool, true> {};
 }
 
-
+}

@@ -18,14 +18,14 @@ private:
 	Atomic<uint> refs;
 };
 
-template<typename T> struct IntrusiveReference
+template<typename T> struct IntrusiveRef
 {
-	forceinline IntrusiveReference(T* b=null) {ptr=b; if(ptr!=null) ptr->AddRef();}
-	forceinline IntrusiveReference(const IntrusiveReference& rhs) {ptr=rhs.ptr; if(ptr!=null) ptr->AddRef();}
-	forceinline IntrusiveReference(IntrusiveReference&& rhs) {ptr=rhs.ptr; rhs.ptr=null;}
-	forceinline ~IntrusiveReference() {if(ptr!=null) ptr->Release();}
+	forceinline IntrusiveRef(T* b=null) {ptr=b; if(ptr!=null) ptr->AddRef();}
+	forceinline IntrusiveRef(const IntrusiveRef& rhs) {ptr=rhs.ptr; if(ptr!=null) ptr->AddRef();}
+	forceinline IntrusiveRef(IntrusiveRef&& rhs) {ptr=rhs.ptr; rhs.ptr=null;}
+	forceinline ~IntrusiveRef() {if(ptr!=null) ptr->Release();}
 
-	IntrusiveReference& operator=(const IntrusiveReference& rhs)
+	IntrusiveRef& operator=(const IntrusiveRef& rhs)
 	{
 		if(ptr==rhs.ptr) return *this;
 		if(ptr!=null) ptr->Release();
@@ -34,7 +34,7 @@ template<typename T> struct IntrusiveReference
 		return *this;
 	}
 
-	IntrusiveReference& operator=(IntrusiveReference&& rhs)
+	IntrusiveRef& operator=(IntrusiveRef&& rhs)
 	{
 		if(ptr==rhs.ptr) return *this;
 		if(ptr!=null) ptr->Release();
@@ -51,25 +51,25 @@ template<typename T> struct IntrusiveReference
 
 	forceinline bool operator==(null_t) const {return ptr==null;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
-	forceinline bool operator==(const IntrusiveReference& rhs) const {return ptr==rhs.ptr;}
-	forceinline bool operator!=(const IntrusiveReference& rhs) const {return !operator==(rhs);}
+	forceinline bool operator==(const IntrusiveRef& rhs) const {return ptr==rhs.ptr;}
+	forceinline bool operator!=(const IntrusiveRef& rhs) const {return !operator==(rhs);}
 
 	T* ptr;
 };
 
-template<typename T> uint ToHash(const IntrusiveReference<T>& rhs) {return ToHash(rhs.ptr);}
+template<typename T> uint ToHash(const IntrusiveRef<T>& rhs) {return ToHash(rhs.ptr);}
 
 
-template<typename T> struct UniqueReference
+template<typename T> struct UniqueRef
 {
-	forceinline UniqueReference(T* b=null): ptr(b) {}
-	forceinline UniqueReference(const UniqueReference& rhs) = delete;
-	forceinline UniqueReference(UniqueReference&& rhs): ptr(rhs.ptr) {rhs.ptr=null;}
-	forceinline ~UniqueReference() {if(ptr!=null) delete ptr;}
+	forceinline UniqueRef(T* b=null): ptr(b) {}
+	forceinline UniqueRef(const UniqueRef& rhs) = delete;
+	forceinline UniqueRef(UniqueRef&& rhs): ptr(rhs.ptr) {rhs.ptr=null;}
+	forceinline ~UniqueRef() {if(ptr!=null) delete ptr;}
 
-	UniqueReference& operator=(const UniqueReference& rhs) = delete;
+	UniqueRef& operator=(const UniqueRef& rhs) = delete;
 
-	UniqueReference& operator=(UniqueReference&& rhs)
+	UniqueRef& operator=(UniqueRef&& rhs)
 	{
 		if(ptr!=null) delete ptr;
 		ptr = rhs.ptr;

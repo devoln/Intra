@@ -385,6 +385,7 @@
     <ClCompile Include="src\Core\Errors.cpp" />
     <ClCompile Include="src\Core\Time.cpp" />
     <ClCompile Include="src\Data\BinarySerialization.cpp" />
+    <ClCompile Include="src\Data\Object.cpp" />
     <ClCompile Include="src\Data\Reflection.cpp" />
     <ClCompile Include="src\Data\TextSerialization.cpp" />
     <ClCompile Include="src\Data\ValueType.cpp" />
@@ -410,14 +411,7 @@
     <ClCompile Include="src\Imaging\Loaders\LoaderDDS.cpp" />
     <ClCompile Include="src\Imaging\Loaders\LoaderKTX.cpp" />
     <ClCompile Include="src\IntraAll.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\IO\DocumentWriter.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
@@ -465,6 +459,7 @@
     <ClInclude Include="include\Algorithms\Mixins\RandomAccessRangeMixin.h" />
     <ClInclude Include="include\Algorithms\Mixins\RangeMixins.h" />
     <ClInclude Include="include\Algorithms\Operations.h" />
+    <ClInclude Include="include\Algorithms\Polymorphic.h" />
     <ClInclude Include="include\Algorithms\Range.h" />
     <ClInclude Include="include\Algorithms\RangeConstruct.h" />
     <ClInclude Include="include\Algorithms\RangeConcept.h" />
@@ -498,6 +493,7 @@
     <ClInclude Include="include\Core\Time.h" />
     <ClInclude Include="include\Data\BinarySerialization.h" />
     <ClInclude Include="include\Data\DynamicSerializer.h" />
+    <ClInclude Include="include\Data\Object.h" />
     <ClInclude Include="include\Data\Reflection.h" />
     <ClInclude Include="include\Data\TextSerialization.h" />
     <ClInclude Include="include\Data\TextSerializationParams.h" />

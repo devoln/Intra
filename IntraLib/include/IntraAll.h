@@ -19,7 +19,6 @@
 #include "Algorithms/AssociativeRange.h"
 
 #include "CompilerSpecific/CompilerSpecific.h"
-
 #include "Containers/Array.h"
 #include "Containers/Array2D.h"
 #include "Containers/List.h"

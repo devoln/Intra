@@ -1,14 +1,14 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Intra::Memory::IntrusiveReference&lt;*&gt;">
+  <Type Name="Intra::Memory::IntrusiveRef&lt;*&gt;">
     <DisplayString>Ref({(void*)ptr}) {{{*ptr}}}</DisplayString>
     <Expand>
       <ExpandedItem Condition="ptr!=nullptr">*ptr</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Memory::UniqueReference&lt;*&gt;">
+  <Type Name="Intra::Memory::UniqueRef&lt;*&gt;">
     <DisplayString>Ref({(void*)ptr}) {{{*ptr}}}</DisplayString>
     <Expand>
       <ExpandedItem Condition="ptr!=nullptr">*ptr</ExpandedItem>

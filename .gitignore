@@ -13,6 +13,8 @@ LineCounter.exe
 *.iobj
 *.ipdb
 *.pdb
+*.VC.db
+*.VC.VC.opendb
 Build/*/*.lib
 logs.html
 *.map
@@ -22,6 +24,7 @@ Build/Release?*/
 *.vcxproj.user
 *.psess
 *.vspx
+ipch/
 
 
 # Windows image file caches

@@ -112,7 +112,7 @@ private:
 class StreamedSound
 {
 public:
-	typedef Memory::UniqueReference<ASoundSampleSource> SourceRef;
+	typedef Memory::UniqueRef<ASoundSampleSource> SourceRef;
 	typedef Utils::Callback<void()> OnCloseCallback;
 
 	StreamedSound(null_t=null): sample_source(null), on_close(null), data(null) {}

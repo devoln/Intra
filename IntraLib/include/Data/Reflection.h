@@ -81,7 +81,7 @@ private:
 	//! 1) Type==End или Type==Struct
 	//! 2) SubstructReflection==null
 	//! 3) Сериализация не бинарная или тип не POD
-	UniqueReference<IDynamicSerializer> serializer;
+	UniqueRef<IDynamicSerializer> serializer;
 };
 
 }*/
