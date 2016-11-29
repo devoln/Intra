@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Containers/Array.h"
+#include "Algorithms/Polymorphic.h"
 
 namespace Intra { namespace Data {
 
@@ -23,7 +24,7 @@ public:
 	virtual ArrayRange<const String> GetStringArray(StringView key) const = 0;
 	virtual bool StringArrayExists(StringView key) const = 0;
 
-	virtual Range::IFiniteInputRange<IConstObject> GetObjectArray(StringView key, size_t index) const = 0;
+	virtual Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const = 0;
 	virtual bool ObjectArrayExists(StringView key) const = 0;
 
 
@@ -62,17 +63,20 @@ public:
 	Object& ObjectValue(StringView key) {return mObjects[key];}
 	bool ObjectExists(StringView key) const override final {return mObjects.KeyExists(key);}
 
-	ArrayRange<const double> GetDoubleArray(StringView key) const override final {return mNumberArrays.Get(key);}
-	Array<double>& DoubleArray(StringView key) {return mNumberArrays[key];}
-	bool DoubleArrayExists(StringView key) const override final {return mNumberArrays.KeyExists(key);}
+	ArrayRange<const double> GetNumberArray(StringView key) const override final {return mNumberArrays.Get(key);}
+	Array<double>& NumberArray(StringView key) {return mNumberArrays[key];}
+	bool NumberArrayExists(StringView key) const override final {return mNumberArrays.KeyExists(key);}
 
-	ArrayRange<const String> GetStringArray(StringView key) const {return mStringArrays.Get(key);}
+	ArrayRange<const String> GetStringArray(StringView key) const override final {return mStringArrays.Get(key);}
 	Array<String>& StringArray(StringView key) {return mStringArrays[key];}
 	bool StringArrayExists(StringView key) const {return mStringArrays.KeyExists(key);}
 
-	ArrayRange<const Object> GetObjectArray(StringView key) const {return mObjectArrays.Get(key);}
+	Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const override final
+	{
+		return Range::IIndexableRange<const IConstObject&>::Wrap(mObjectArrays.Get(key));
+	}
 	Array<Object>& ObjectArray(StringView key) {return mObjectArrays[key];}
-	bool ObjectArrayExists(StringView key) const {return mObjectArrays.KeyExists(key);}
+	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
 
 
 	Object() {}
@@ -94,7 +98,7 @@ public:
 	Object& operator=(Object&& rhs) = default;
 };
 
-class ObjectCRef
+class ObjectCRef: public IConstObject
 {
 private:
 	LinearMap<String, double> mNumbers;
@@ -105,28 +109,26 @@ private:
 	LinearMap<String, Array<Object>> mObjectArrays;
 
 public:
-	double GetDouble(StringView key, double defaultValue=0) const {return mNumbers.Get(key, defaultValue);}
-	bool NumberExists(StringView key) const {return mNumbers.KeyExists(key);}
+	double GetNumber(StringView key, double defaultValue=0) const override final {return mNumbers.Get(key, defaultValue);}
+	bool NumberExists(StringView key) const override final {return mNumbers.KeyExists(key);}
 
-	template<typename T> Meta::EnableIf<
-		Meta::IsFloatType<T>::_ || Meta::IsIntegralType<T>::_,
-	T> Get(StringView key, T defaultValue=T()) const
-		{return T(GetDouble(key, defaultValue));}
+	StringView GetString(StringView key, StringView defaultValue=null) const override final {return mStrings.Get(key, defaultValue);}
+	bool StringExists(StringView key) const override final {return mStrings.KeyExists(key);}
 
-	const String& GetString(StringView key, const String& defaultValue=null) const {return mStrings.Get(key, defaultValue);}
-	bool StringExists(StringView key) const {return mStrings.KeyExists(key);}
+	const IConstObject& GetObject(StringView key) const override final {return mObjects.Get(key);}
+	bool ObjectExists(StringView key) const override final {return mObjects.KeyExists(key);}
 
-	const Object& GetObject(StringView key) const {return mObjects.Get(key);}
-	bool ObjectExists(StringView key) const {return mObjects.KeyExists(key);}
+	ArrayRange<const double> GetNumberArray(StringView key) const override final {return mNumberArrays.Get(key);}
+	bool NumberArrayExists(StringView key) const override final {return mNumberArrays.KeyExists(key);}
 
-	ArrayRange<const double> GetDoubleArray(StringView key) const {return mNumberArrays.Get(key);}
-	bool DoubleArrayExists(StringView key) const {return mNumberArrays.KeyExists(key);}
+	ArrayRange<const String> GetStringArray(StringView key) const override final {return mStringArrays.Get(key);}
+	bool StringArrayExists(StringView key) const override final {return mStringArrays.KeyExists(key);}
 
-	ArrayRange<const String> GetStringArray(StringView key) const {return mStringArrays.Get(key);}
-	bool StringArrayExists(StringView key) const {return mStringArrays.KeyExists(key);}
-
-	ArrayRange<const Object> GetObjectArray(StringView key) const {return mObjectArrays.Get(key);}
-	bool ObjectArrayExists(StringView key) const {return mObjectArrays.KeyExists(key);}
+	Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const
+	{
+		return Range::IIndexableRange<const IConstObject&>::Wrap(mObjectArrays.Get(key));
+	}
+	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
 
 
 	ObjectCRef() {}
