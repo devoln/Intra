@@ -308,18 +308,18 @@ public:
 	size_t> MaxLengthOf(Char2 character, size_t repeat=1) {(void)character; return repeat;}
 
 
-	template<typename InputRange> forceinline Meta::EnableIf<
-		IsFiniteInputRangeOfExactly<InputRange, T>::_,
-	R&> AppendAdvance(const InputRange& range)
+	template<typename ForwardRange> forceinline Meta::EnableIf<
+		IsFiniteForwardRangeOfExactly<ForwardRange, T>::_,
+	R&> AppendAdvance(const ForwardRange& range)
 	{
 		auto r = range;
 		r.CopyAdvanceToAdvance(me());
 		return me();
 	}
 
-	template<typename InputRange> static forceinline Meta::EnableIf<
-		IsFiniteInputRangeOfExactly<InputRange, T>::_,
-	size_t> MaxLengthOf(const InputRange& range) {return range.Count();}
+	template<typename ForwardRange> static forceinline Meta::EnableIf<
+		IsFiniteForwardRangeOfExactly<ForwardRange, T>::_,
+	size_t> MaxLengthOf(const ForwardRange& range) {return range.Count();}
 
 
 	R& AppendAdvance(bool value)
@@ -332,12 +332,12 @@ public:
 
 	size_t MaxLengthOf(bool value) {(void)value; return 5;}
 
-	template<typename InputRange, typename OtherCharRange=SimpleArrayRange<const T>> Meta::EnableIf<
-		IsFiniteInputNonCharRange<InputRange>::_ && IsCharRange<OtherCharRange>::_,
-	R&> AppendAdvance(const InputRange& r, OtherCharRange separator=SimpleArrayRange<const T>(", ", null),
+	template<typename ForwardRange, typename OtherCharRange=SimpleArrayRange<const T>> Meta::EnableIf<
+		IsFiniteForwardNonCharRange<ForwardRange>::_ && IsCharRange<OtherCharRange>::_,
+	R&> AppendAdvance(const ForwardRange& r, OtherCharRange separator=SimpleArrayRange<const T>(", ", null),
 		OtherCharRange lBracket=SimpleArrayRange<const T>("[", null), OtherCharRange rBracket=SimpleArrayRange<const T>("]", null))
 	{
-		InputRange range = r;
+		ForwardRange range = r;
 		me().AppendAdvance(lBracket);
 		if(!range.Empty())
 		{
@@ -356,7 +356,7 @@ public:
 
 	template<typename ForwardRange, typename OtherCharRange=SimpleArrayRange<const T>> static forceinline Meta::EnableIf<
 		IsFiniteForwardNonCharRange<ForwardRange>::_ &&
-		!(IsRangeOfRanges<ForwardRange>::_ || IsRangeOfTuples<ForwardRange>::_) &&
+		!(IsRangeOfRanges<ForwardRange>::_ || IsRangeOfContainers<ForwardRange>::_ || IsRangeOfTuples<ForwardRange>::_) &&
 		IsCharRange<OtherCharRange>::_,
 	size_t> MaxLengthOf(const ForwardRange& range,
 		const OtherCharRange& separator=SimpleArrayRange<const T>(", ", null),
@@ -369,7 +369,7 @@ public:
 
 	template<typename ForwardRange, typename OtherCharRange=SimpleArrayRange<const T>> static forceinline Meta::EnableIf<
 		IsFiniteForwardNonCharRange<ForwardRange>::_ &&
-		(IsRangeOfRanges<ForwardRange>::_ || IsRangeOfTuples<ForwardRange>::_) &&
+		(IsRangeOfRanges<ForwardRange>::_ || IsRangeOfContainers<ForwardRange>::_  || IsRangeOfTuples<ForwardRange>::_) &&
 		IsCharRange<OtherCharRange>::_,
 	size_t> MaxLengthOf(const ForwardRange& range,
 		const OtherCharRange& separator=SimpleArrayRange<const T>(", ", null),

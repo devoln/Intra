@@ -728,6 +728,9 @@
     <ClInclude Include="include\Algorithms\Polymorphic.h">
       <Filter>Заголовочные файлы\Algorithms</Filter>
     </ClInclude>
+    <ClInclude Include="include\Utils\Wrapper.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">

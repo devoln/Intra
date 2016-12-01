@@ -40,22 +40,22 @@ public:
 		short timeFormat = header.timeFormat;
 		if(timeFormat<0)
 		{
-			const float framesPerSecond = (timeFormat >> 8)==29? 29.97f: (timeFormat >> 8);
-			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/(timeFormat & 0xFF);
+			const float framesPerSecond = (timeFormat >> 8)==29? 29.97f: float(timeFormat >> 8);
+			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/float(timeFormat & 0xFF);
 		}
-		else startTickDuration = globalTickDuration = 60.0f/120/timeFormat;
+		else startTickDuration = globalTickDuration = 60.0f/120/float(timeFormat);
 	}
 
-	uint ReadVarInt(uint* readBytes=null)
+	uint ReadVarInt(uint* oReadBytes=null)
 	{
 		uint result=0;
 		byte l;
-		if(readBytes!=null) *readBytes=0;
+		if(oReadBytes!=null) *oReadBytes=0;
 		do
 		{
 			if(s.EndOfStream()) return result;
 			l = s.Read<byte>();
-			if(readBytes!=null) ++*readBytes;
+			if(oReadBytes!=null) ++*oReadBytes;
 			result = (result << 7) | (l & 0x7F);
 		} while(l & 0x80);
 		return result;
@@ -132,7 +132,7 @@ public:
 				if(header.timeFormat>0)
 			{
 				auto value = (event.metadata.Data()[0] << 16)|(event.metadata.Data()[1] << 8)|(event.metadata.Data()[2]);
-				tempoChanges.AddLast(TempoChange{timeInTicks, value/1000000.0f/header.timeFormat*speed});
+				tempoChanges.AddLast(TempoChange{timeInTicks, float(value)/1000000.0f/float(header.timeFormat)*speed});
 			}
 			if(event.status==0x99)
 				trackIsDrum = true;

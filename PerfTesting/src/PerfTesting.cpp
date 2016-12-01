@@ -141,12 +141,15 @@ int main(int argc, const char* argv[])
 	map.SortByKey();
 	Console << map() << endl;
 #endif
+	
+	if(TestGroup gr{logger, "Генераторы случайных чисел"})
+		RunRandomPerfTests(logger);
 
 	if(TestGroup gr{logger, "Диапазоны"})
 		RunRangeTests();
 
-	if(TestGroup gr{logger, "Генераторы случайных чисел"})
-		RunRandomPerfTests(logger);
+	if(TestGroup gr{logger, "Сравнение скорости диапазонов"})
+		RunRangePerfTests(logger);
 
 	if(TestGroup gr{logger, "std::string vs String"})
 		RunStringPerfTests(logger);

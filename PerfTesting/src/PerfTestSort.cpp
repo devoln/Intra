@@ -8,7 +8,10 @@ using namespace Intra;
 
 #include <algorithm>
 
-static const short arrayForSortTesting[] = {2, 4234, -9788, 23, 5, 245, 2, 24, 5, -9890, 2, 5, 4552, 54, 3, -932, 123, 342, 24321, -234};
+static const short arrayForSortTesting[] = {
+	2, 4234, -9788, 23, 5, 245, 2, 24, 5, -9890,
+	2, 5, 4552, 54, 3, -932, 123, 342, 24321, -234
+};
 
 INTRA_UNITTEST("Sort algorithms unit tests")
 {
@@ -22,13 +25,13 @@ INTRA_UNITTEST("Sort algorithms unit tests")
 	Array<short> arrSelection = arrUnsorted;
 	Array<short> arrStdSort = arrUnsorted;
 
-	Algo::InsertionSort(arrInsertion.AsRange());
-	Algo::ShellSort(arrShell.AsRange());
-	Algo::QuickSort(arrQuick.AsRange());
-	Algo::RadixSort(arrRadix.AsRange());
-	Algo::MergeSort(arrMerge.AsRange());
-	Algo::HeapSort(arrHeap.AsRange());
-	Algo::SelectionSort(arrSelection.AsRange());
+	Algo::InsertionSort(arrInsertion());
+	Algo::ShellSort(arrShell());
+	Algo::QuickSort(arrQuick());
+	Algo::RadixSort(arrRadix());
+	Algo::MergeSort(arrMerge());
+	Algo::HeapSort(arrHeap());
+	Algo::SelectionSort(arrSelection());
 	std::sort(arrStdSort.begin(), arrStdSort.end());
 
 	INTRA_TEST_ASSERT_EQUALS(arrInsertion, arrStdSort);
@@ -44,7 +47,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::InsertionSort(arr.AsRange(), comparer);
+	Algo::InsertionSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -54,7 +57,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::ShellSort(arr.AsRange(), comparer);
+	Algo::ShellSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -64,7 +67,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::QuickSort(arr.AsRange(), comparer);
+	Algo::QuickSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -74,7 +77,7 @@ template<typename T> double TestRadixSorting(size_t size)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::RadixSort(arr.AsRange());
+	Algo::RadixSort(arr());
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -84,7 +87,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::MergeSort(arr.AsRange(), comparer);
+	Algo::MergeSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -94,7 +97,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::SelectionSort(arr.AsRange(), comparer);
+	Algo::SelectionSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -104,7 +107,7 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::HeapSort(arr.AsRange(), comparer);
+	Algo::HeapSort(arr(), comparer);
 	double result = tim.GetTime();
 	INTRA_ASSERT(arr().IsSorted());
 	return result;
@@ -120,8 +123,14 @@ template<typename T, typename Comparer = Algo::Comparers::Function<T>> double Te
 	return result;
 }
 
-static const StringView comparedSorts[] = {"std::sort", "InsertionSort", "ShellSort", "QuickSort", "MergeSort", "SelectionSort", "HeapSort", "RadixSort"};
-static const StringView comparedSortsWithoutSlow[] = {"std::sort", "ShellSort", "QuickSort", "MergeSort", "HeapSort", "RadixSort"};
+static const StringView comparedSorts[] = {
+	"std::sort", "InsertionSort", "ShellSort", "QuickSort",
+	"MergeSort", "SelectionSort", "HeapSort", "RadixSort"
+};
+static const StringView comparedSortsWithoutSlow[] = {
+	"std::sort", "ShellSort", "QuickSort",
+	"MergeSort", "HeapSort", "RadixSort"
+};
 
 template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, StringView typeName)
 {

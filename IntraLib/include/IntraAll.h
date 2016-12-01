@@ -17,6 +17,7 @@
 #include "Algorithms/AsciiString.h"
 #include "Algorithms/SparseRange.h"
 #include "Algorithms/AssociativeRange.h"
+#include "Algorithms/Polymorphic.h"
 
 #include "CompilerSpecific/CompilerSpecific.h"
 #include "Containers/Array.h"

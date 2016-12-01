@@ -6,7 +6,7 @@ namespace Intra {
 
 struct UnitTest
 {
-	template<typename F> UnitTest(F f)
+	template<typename F> forceinline UnitTest(F f)
 	{
 		(void)f;
 #ifdef INTRA_RUN_UNITTESTS
@@ -14,12 +14,14 @@ struct UnitTest
 #endif
 	}
 
-	static int Set(const char* file, uint line, const char* name)
+	struct Dummy {template<typename F> forceinline F operator*(F rhs) {return rhs;}};
+
+	static Dummy Set(const char* file, uint line, const char* name)
 	{
 		CurFile = file;
 		CurLine = line;
 		CurName = name;
-		return 0;
+		return Dummy();
 	}
 
 	static const char* CurFile;
@@ -30,9 +32,17 @@ struct UnitTest
 
 }
 
+//#ifdef INTRA_RUN_UNITTESTS
+
 #define INTRA_UNITTEST(name) \
-	static const int INTRA_CONCATENATE_TOKENS(UNITTEST_instance_setter_, __LINE__) = Intra::UnitTest::Set(__FILE__, __LINE__, (name));\
+	static const Intra::UnitTest INTRA_CONCATENATE_TOKENS(UNITTEST_instance_, __LINE__) = Intra::UnitTest::Set(__FILE__, __LINE__, (name)) * []()
+
+/*#else
+
+#define INTRA_UNITTEST(name) \
 	static const Intra::UnitTest INTRA_CONCATENATE_TOKENS(UNITTEST_instance_, __LINE__) = []()
+
+#endif*/
 
 #define INTRA_TEST_ASSERT(expression) {(expression) || (INTRA_DEBUGGER_BREAKPOINT && \
     (INTRA_INTERNAL_ERROR(Intra::StringView(Intra::UnitTest::CurFile) + " (" + Intra::ToString(Intra::UnitTest::CurLine) + ")\n" +\

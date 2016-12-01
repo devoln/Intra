@@ -16,6 +16,7 @@ Algorithms/Sort.h
 Algorithms/AsciiString.h
 Algorithms/SparseRange.h
 Algorithms/AssociativeRange.h
+Algorithms/Polymorphic.h
 
 CompilerSpecific/CompilerSpecific.h
 
@@ -48,6 +49,7 @@ Data/TextSerialization.h
 Data/DynamicSerializer.h
 Data/Variable.h
 Data/ValueType.h
+Data/Object.h
 
 Graphics/OpenGL/GLEnum.h
 Graphics/OpenGL/GLExtensions.h
@@ -124,4 +126,5 @@ Threading/Thread.h
 Utils/Callback.h
 Utils/Event.h
 Utils/Optional.h
+Utils/Wrapper.h
 )

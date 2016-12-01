@@ -159,6 +159,9 @@ INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsFiniteForwardNonCharRange, Meta
 INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteInputRangeOfExactly, Meta::Val<typename T1::value_type>(),
 	(IsFiniteInputRange<T1>::_ && Meta::TypeEquals<typename T1::value_type, T2>::_),,);
 
+INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteForwardRangeOfExactly, Meta::Val<typename T1::value_type>(),
+	(IsFiniteForwardRange<T1>::_ && Meta::TypeEquals<typename T1::value_type, T2>::_),,);
+
 INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteForwardRangeOf, Meta::Val<typename T1::value_type>(),
 	(IsFiniteForwardRange<T1>::_ && Meta::IsConvertible<typename T1::value_type, T2>::_),,);
 
@@ -365,6 +368,9 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasAsConstRange, Meta::Val<T>().AsConstRange());
 
 template<typename R> forceinline typename R::iterator begin(const R& r) {return r.begin();}
 template<typename R> forceinline typename R::iterator end(const R& r) {return r.end();}
+
+INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeOfContainers, Meta::Val<typename T::value_type>(),
+	(IsInputRange<T>::_ && IsInputRange<AsRangeResult<typename T::value_type>>::_));
 
 
 }

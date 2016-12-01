@@ -29,9 +29,8 @@
 #include <Shlwapi.h>
 #undef GetCurrentDirectory
 
-#pragma comment(lib, "Shlwapi.lib")
-
 #ifdef _MSC_VER
+#pragma comment(lib, "Shlwapi.lib")
 #pragma warning(pop)
 #endif
 

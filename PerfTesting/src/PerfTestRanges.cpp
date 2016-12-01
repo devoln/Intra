@@ -5,9 +5,24 @@
 #include "Algorithms/RangeIteration.h"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
+#include "Algorithms/Polymorphic.h"
 
 using namespace Intra;
 using namespace Intra::IO;
+
+template<typename T> void PrintPolymorphicRange(FiniteInputRange<T> range)
+{
+	Console.Print("[");
+	bool firstIteration = true;
+	while(!range.Empty())
+	{
+		if(!firstIteration) Console.Print(", ");
+		else firstIteration = false;
+		Console.Print(range.First());
+		range.PopFirst();
+	}
+	Console.PrintLine("]");
+}
 
 void RunRangeTests()
 {
@@ -50,6 +65,12 @@ void RunRangeTests()
 				Math::Recurrence(Op::Mul<ulong64>, 2ull, 3ull).Take(9)
 			);
 
+	Console.PrintLine(endl, "Полиморфные диапазоны:");
+	PrintPolymorphicRange<int>(someRecurrence);
+	PrintPolymorphicRange<StringView>(chain.Cycle().Take(100));
+	PrintPolymorphicRange<String>(someRecurrence.Map([](int x){return ToString(x);}));
+	PrintPolymorphicRange<StringView>(strs1);
+
 	Console.PrintLine(endl, "Объединяем элементы различных диапазонов в диапазоне кортежей: ", endl,
 		ToString(
 			megaZip,
@@ -86,24 +107,122 @@ void RunRangeTests()
 			));
 	
 
-	Console.PrintLine(endl, "Введите строки, которые войдут в диапазон строк. В конце введите \"end\".");
+	/*Console.PrintLine(endl, "Введите строки, которые войдут в диапазон строк. В конце введите \"end\".");
 
-	Console.PrintLine("Вы ввели следующие строки:", endl, "[", String::Join(Console.ByLine("end"), ", ", "\"", "\""), "]");
+	Console.PrintLine("Вы ввели следующие строки:", endl);
+	PrintPolymorphicRange<String>(Console.ByLine("end"));*/
 
 	int arr[]={1, 4, 11, 6, 8};
 	Console.PrintLine("max of ", arr, " = ", AsRange(arr).Reduce(Op::Max<int>));
 	Console.PrintLine("Генерация 100 случайных чисел от 0 до 999 и вывод квадратов тех из них, которые делятся на 7: ");
 
-	auto seq = Range::Generate([](){return Math::Random<uint>::Global(1000);}).Take(500)
+	FiniteInputRange<uint> seq = Range::Generate([](){return Math::Random<uint>::Global(1000);}).Take(500)
 		.Filter([](uint x) {return x%7==0;})
 		.Map(Math::Sqr<uint>);
-	Console.PrintLine("[", String::Join(seq, ", "), "]");
+	PrintPolymorphicRange(core::move(seq));
+
+	Console.PrintLine(endl, "Присвоили той же переменной диапазон другого типа:");
+	
+	seq = Range::Generate([](){return Math::Random<uint>::Global(1000);}).Take(50);
+	PrintPolymorphicRange(core::move(seq));
+}
+
+struct IRange
+{
+	virtual ~IRange() {}
+	virtual int First() = 0;
+	virtual void PopFirst() = 0;
+};
+
+class CycledRange: public IRange
+{
+	int* mBegin;
+	int* mEnd;
+	int* mPtr;
+public:
+	CycledRange(int* arr, size_t count): mBegin(arr), mEnd(arr+count), mPtr(arr) {}
+	int First() override final {return *mPtr;}
+	void PopFirst() override final {mPtr++; if(mPtr>=mEnd) mPtr=mBegin;}
+};
+
+#include "Algorithms/Polymorphic.h"
+
+int TestPolymorphicRange(IRange* range, size_t totalCount)
+{
+	int sum = 0;
+	for(size_t i=0; i<totalCount; i++)
+	{
+		sum += range->First();
+		range->PopFirst();
+	}
+	return sum;
+}
+
+int TestPolymorphicRange2(InputRange<int> range, size_t totalCount)
+{
+	int sum = 0;
+	for(size_t i=0; i<totalCount; i++)
+	{
+		sum += range.First();
+		range.PopFirst();
+	}
+	return sum;
+}
+
+int TestInlinedRange(int* arr, size_t count, size_t totalCount)
+{
+	int* mBegin = arr;
+	int* mEnd = arr+count;
+	int* mPtr = arr;
+	int sum = 0;
+	for(size_t i=0; i<totalCount; i++)
+	{
+		if(mPtr>=mEnd) mPtr=mBegin;
+		sum += *mPtr++;
+	}
+	return sum;
+}
+
+int TestStaticRange(int* arr, size_t count, size_t totalCount)
+{
+	auto cycle = ArrayRange<int>(arr, count).Cycle();
+	int sum = 0;
+	for(size_t i=0; i<totalCount; i++)
+	{
+		sum += cycle.First();
+		cycle.PopFirst();
+	}
+	return sum;
 }
 
 
+#include "Core/Time.h"
+#include "Test/PerformanceTest.h"
 
 void RunRangePerfTests(IO::Logger& logger)
 {
-	(void)logger;
+	Array<int> arr;
+	arr.SetCountUninitialized(1000);
+	IRange* range = new CycledRange(arr.Data(), arr.Count());
+
+	Timer tim;
+	int sum1 = TestPolymorphicRange(range, 100000000);
+	double time1 = tim.GetTimeAndReset();
+
+	int sum2 = TestPolymorphicRange2(arr.AsRange().Cycle(), 100000000);
+	double time2 = tim.GetTimeAndReset();
+
+	int sum3 = TestInlinedRange(arr.Data(), 1000, 100000000);
+	double time3 = tim.GetTimeAndReset();
+		
+	int sum4 = TestStaticRange(arr.Data(), 1000, 100000000);
+	double time4 = tim.GetTimeAndReset();
+
+	Console.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4);
+
+	PrintPerformanceResults(logger, "CycledRange 100000000 раз",
+		{"CycledRange*", "InputRange<int>", "manually inlined loop", "ArrayRange.Cycle"},
+		{time1, time2},
+		{time3, time4});
 }
 

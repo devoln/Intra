@@ -710,10 +710,6 @@ DECLARE_UNSIGNED_TYPE(long64, ulong64);
 }
 template<typename T> using MakeUnsignedType = typename Meta::detail::MakeUnsignedType<T>::_;
 
-
-template<typename T> struct IsRValueRef: TypeFromValue<bool, false> {};
-template<typename T> struct IsRValueRef<T&&>: TypeFromValue<bool, true> {};
-
 namespace detail
 {
 	template<typename T> struct GetMemberFieldType;

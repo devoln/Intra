@@ -131,12 +131,15 @@
 #endif
 
 #if _MSC_VER>=1600 //Visual Studio 2010
-#define INTRA_OVERRIDE_SUPPORT
 #define INTRA_FINAL_SUPPORT
 #define INTRA_STRONG_TYPED_ENUM_SUPPORT
 #define INTRA_TRAILING_RETURN_TYPE_SUPPORT
 #define INTRA_STATIC_ASSERT_SUPPORT
 #define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT //No destructors for thread_local objects
+#endif
+
+#if _MSC_VER>=1400
+#define INTRA_OVERRIDE_SUPPORT
 #endif
 
 #define _ATL_MIN_CRT
@@ -283,7 +286,13 @@ extern "C" char* gets(char* str); //Затыкаем ошибку в станд�
 #endif
 
 #ifndef INTRA_FINAL_SUPPORT
+
+#if _MSC_VER>=1400
+#define final sealed
+#else
 #define final
+#endif
+
 #endif
 
 #ifndef INTRA_CONSTEXPR_SUPPORT

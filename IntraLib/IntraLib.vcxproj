@@ -412,6 +412,13 @@
     <ClCompile Include="src\Imaging\Loaders\LoaderKTX.cpp" />
     <ClCompile Include="src\IntraAll.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="src\IO\DocumentWriter.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
@@ -569,6 +576,7 @@
     <ClInclude Include="include\Utils\Callback.h" />
     <ClInclude Include="include\Utils\Event.h" />
     <ClInclude Include="include\Utils\Optional.h" />
+    <ClInclude Include="include\Utils\Wrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="include\Algorithms\Algorithms.inl" />

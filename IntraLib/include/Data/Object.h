@@ -24,7 +24,7 @@ public:
 	virtual ArrayRange<const String> GetStringArray(StringView key) const = 0;
 	virtual bool StringArrayExists(StringView key) const = 0;
 
-	virtual Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const = 0;
+	virtual Range::IndexableRangeHolder<const IConstObject&> GetObjectArray(StringView key) const = 0;
 	virtual bool ObjectArrayExists(StringView key) const = 0;
 
 
@@ -71,9 +71,9 @@ public:
 	Array<String>& StringArray(StringView key) {return mStringArrays[key];}
 	bool StringArrayExists(StringView key) const {return mStringArrays.KeyExists(key);}
 
-	Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const override final
+	Range::IndexableRangeHolder<const IConstObject&> GetObjectArray(StringView key) const override final
 	{
-		return Range::IIndexableRange<const IConstObject&>::Wrap(mObjectArrays.Get(key));
+		return mObjectArrays.Get(key);
 	}
 	Array<Object>& ObjectArray(StringView key) {return mObjectArrays[key];}
 	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
@@ -124,9 +124,9 @@ public:
 	ArrayRange<const String> GetStringArray(StringView key) const override final {return mStringArrays.Get(key);}
 	bool StringArrayExists(StringView key) const override final {return mStringArrays.KeyExists(key);}
 
-	Memory::UniqueRef<Range::IIndexableRange<const IConstObject&>> GetObjectArray(StringView key) const
+	Range::IndexableRangeHolder<const IConstObject&> GetObjectArray(StringView key) const
 	{
-		return Range::IIndexableRange<const IConstObject&>::Wrap(mObjectArrays.Get(key));
+		return mObjectArrays.Get(key);
 	}
 	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
 

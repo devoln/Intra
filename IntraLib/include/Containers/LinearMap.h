@@ -82,7 +82,7 @@ public:
 
 		forceinline const_iterator& operator++()
 		{
-			INTRA_ASSERT(mIndex<mMymap->Count());
+			INTRA_ASSERT(mIndex < mMymap->Count());
 			mIndex++;
 			return *this;
 
@@ -262,7 +262,7 @@ public:
 	const V& Get(const K& key, bool* oExists=null) const
 	{
 		auto i = FindIndex(key);
-		if(exists!=null) *exists = (i!=Count());
+		if(oExists!=null) *oExists = (i!=Count());
 		if(i==Count())
 		{
 			static const V defaultValue;

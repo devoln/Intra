@@ -366,7 +366,9 @@ public:
 	//! \param delimiter Разделитель между объединяемыми строками
 	//! \param prefix Приставка, прибавляемая к началу каждой строки
 	//! \param postfix Постфикс, прибавляемый к концу каждой строки
-	template<typename R> static GenericString Join(const R& strs,
+	template<typename R> static Meta::EnableIf<
+		Range::IsFiniteForwardRange<R>::_,
+	GenericString> Join(const R& strs,
 		GenericStringView<Char> delim=" ", GenericStringView<Char> prefix=null, GenericStringView<Char> postfix=null);
 	//!@}
 
@@ -740,8 +742,9 @@ forceinline StringView ToString(const StringView& value) {return value;}
 forceinline StringView ToString(const char* value) {return StringView(value);}
 template<size_t N> forceinline StringView ToString(const char(&value)[N]) {return StringView(value);}
 
-template<typename Char, typename Allocator> template<typename R> GenericString<Char, Allocator>
-	GenericString<Char, Allocator>::Join(const R& strs,
+template<typename Char, typename Allocator> template<typename R> Meta::EnableIf<
+	Range::IsFiniteForwardRange<R>::_,
+GenericString<Char, Allocator>> GenericString<Char, Allocator>::Join(const R& strs,
 	GenericStringView<Char> delim, GenericStringView<Char> prefix, GenericStringView<Char> postfix)
 {
 	if(strs.Empty()) return null;

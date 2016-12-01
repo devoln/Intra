@@ -179,5 +179,6 @@ add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_Dummy)
 endif()
 
 
-
-
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+target_link_libraries(IntraLib Shlwapi)
+endif()

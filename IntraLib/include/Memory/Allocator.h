@@ -187,8 +187,8 @@ template<class Allocator> struct SizedAllocator: Allocator
 		size_t* data = Allocator::Allocate(totalBytes, sourceInfo);
 		if(data!=null)
 		{
-			*data++ = bytes;
 			bytes = totalBytes-sizeof(size_t);
+			*data++ = bytes;
 		}
 		return data;
 	}
