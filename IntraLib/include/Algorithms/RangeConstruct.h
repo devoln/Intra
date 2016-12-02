@@ -144,7 +144,8 @@ template<typename R> struct CycleResult:
 	typedef typename R::return_value_type return_value_type;
 
 	forceinline CycleResult(null_t=null): counter(0) {}
-	forceinline CycleResult(const R& range): original_range(range), offset_range(range), counter(0) {}
+	forceinline CycleResult(const R& range):
+		original_range(range), offset_range(range), counter(0) {}
 
 	forceinline bool Empty() const {return original_range.Empty();}
 	forceinline return_value_type First() const {return offset_range.First();}
@@ -160,7 +161,10 @@ template<typename R> struct CycleResult:
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		IsRandomAccessRange<U>::_,
-	return_value_type> operator[](size_t index) const {return original_range[(index+counter) % original_range.Length()];}
+	return_value_type> operator[](size_t index) const
+	{
+		return original_range[(index+counter) % original_range.Length()];
+	}
 
 	forceinline bool operator==(const CycleResult& rhs) const
 	{
@@ -192,7 +196,10 @@ template<typename R> struct CycleRandomResult:
 		if(counter==original_range.Length()) counter=0;
 	}
 
-	forceinline return_value_type operator[](size_t index) const {return original_range[(index+counter) % original_range.Length()];}
+	forceinline return_value_type operator[](size_t index) const
+	{
+		return original_range[(index+counter) % original_range.Length()];
+	}
 
 	forceinline bool operator==(const CycleRandomResult& rhs) const
 	{

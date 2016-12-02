@@ -72,6 +72,11 @@ struct IsRandomAccessRange: Meta::TypeFromValue<bool,
 	IsForwardRange<R>::_ && HasIndex<R>::_
 > {};
 
+template<typename R, typename T>
+struct IsRandomAccessRangeOf: Meta::TypeFromValue<bool,
+	IsRandomAccessRange<R>::_ && IsInputRangeOf<R, T>::_
+> {};
+
 template<typename R>
 struct IsRangeHasLength: Meta::TypeFromValue<bool,
 	IsInputRange<R>::_ && HasLength<R>::_
@@ -89,9 +94,19 @@ struct IsFiniteRandomAccessRange: Meta::TypeFromValue<bool,
 	IsRandomAccessRange<R>::_ && HasLength<R>::_
 > {};
 
+template<typename R, typename T>
+struct IsFiniteRandomAccessRangeOf: Meta::TypeFromValue<bool,
+	IsFiniteRandomAccessRange<R>::_ && IsInputRangeOf<R, T>::_
+> {};
+
 template<typename R>
 struct IsArrayRange: Meta::TypeFromValue<bool,
 	IsFiniteRandomAccessRange<R>::_ && HasData<R>::_
+> {};
+
+template<typename R, typename T>
+struct IsArrayRangeOf: Meta::TypeFromValue<bool,
+	IsArrayRange<R>::_ && IsInputRangeOf<R, T>::_
 > {};
 
 INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsArrayRangeOfExactly, Meta::Val<typename T1::value_type>(),

@@ -17,6 +17,7 @@ template<typename T> struct InputRange:
 		virtual bool Empty() const = 0;
 		virtual T First() const = 0;
 		virtual void PopFirst() = 0;
+		virtual T GetNext() = 0;
 
 		//Эти методы могут быть реализованы через методы выше, 
 		//но чтобы избежать многократных виртуальных вызовов их лучше переопределить
@@ -24,44 +25,51 @@ template<typename T> struct InputRange:
 		virtual void PopFirstExactly(size_t count) {while(count!=0) PopFirst(), count--;}
 	};
 
-	template<typename R> struct WrapperImpl: Interface
+	template<typename R, typename PARENT> struct ImplFiller: PARENT
 	{
 		R OriginalRange;
 
-		template<typename = Meta::EnableIf<
-			Meta::IsCopyConstructible<R>::_
-		>> WrapperImpl(const R& range): OriginalRange(range) {}
+		template<typename A> ImplFiller(A&& range): OriginalRange(core::forward<A>(range)) {}
 
-		WrapperImpl(R&& range): OriginalRange(core::move(range)) {}
+		bool Empty() const override {return OriginalRange.Empty();}
+		T First() const override {return OriginalRange.First();}
+		void PopFirst() override {OriginalRange.PopFirst();}
+		T GetNext() override {auto&& result = OriginalRange.First(); OriginalRange.PopFirst(); return result;}
 
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
+		void PopFirstN(size_t count) override {OriginalRange.PopFirstN(count);}
+		void PopFirstExactly(size_t count) override {OriginalRange.PopFirstExactly(count);}
+	};
 
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
-
-		WrapperImpl& operator=(const WrapperImpl&) = delete;
+	template<typename R> struct WrapperImpl: ImplFiller<R, Interface>
+	{
+		template<typename A> WrapperImpl(A&& range): ImplFiller<R, Interface>(core::forward<A>(range)) {}
 	};
 
 	template<typename R, typename = Meta::EnableIf<
-		IsInputRangeOf<R, T>::_
+		IsInputRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, InputRange>::_
 	>> forceinline InputRange(R&& range):
 		mInterface(new WrapperImpl<Meta::RemoveReference<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline InputRange(Meta::EnableIf<
-		!IsInputRange<R>::_ && HasAsRange<R>::_,
-	R> range): mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline InputRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
-	template<typename R> forceinline InputRange& operator=(Meta::RemoveConstRef<R>&& range)
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline InputRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>(core::move(AsRange(range)));
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline InputRange& operator=(R range)
+	template<typename R, typename = Meta::EnableIf<
+		IsInputRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, InputRange>::_
+	>> forceinline InputRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(AsRange(range));
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -81,6 +89,7 @@ template<typename T> struct InputRange:
 	forceinline bool Empty() const {return mInterface==null || mInterface->Empty();}
 	forceinline T First() const {return mInterface->First();}
 	forceinline void PopFirst() {mInterface->PopFirst();}
+	forceinline T GetNext() {return mInterface->GetNext();}
 
 	forceinline void PopFirstN(size_t count) {mInterface->PopFirstN(count);}
 	forceinline void PopFirstExactly(size_t count) {mInterface->PopFirstExactly(count);}
@@ -97,12 +106,13 @@ template<typename T> struct FiniteInputRange:
 	template<typename R> using WrapperImpl = typename InputRange<T>::template WrapperImpl<R>;
 
 	template<typename R, typename = Meta::EnableIf<
-		IsFiniteInputRange<Meta::RemoveConstRef<R>>::_ && !Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
+		IsFiniteInputRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
 	>> forceinline FiniteInputRange(R&& range):
 		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
 	template<typename R, typename = Meta::EnableIf<
-		!IsFiniteInputRange<R>::_ && HasAsRange<R>::_ && !Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
+		!IsInputRange<R>::_ && HasAsRange<R>::_
 	>> forceinline FiniteInputRange(R range):
 		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
@@ -115,7 +125,7 @@ template<typename T> struct FiniteInputRange:
 	FiniteInputRange(const FiniteInputRange& rhs) = delete;
 
 	template<typename R, typename = Meta::EnableIf<
-		!IsFiniteInputRange<R>::_ && HasAsRange<R>::_ && !Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
+		!IsInputRange<R>::_ && HasAsRange<R>::_
 	>> forceinline FiniteInputRange& operator=(R range)
 	{
 		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
@@ -123,7 +133,8 @@ template<typename T> struct FiniteInputRange:
 	}
 
 	template<typename R, typename = Meta::EnableIf<
-		IsFiniteInputRange<Meta::RemoveConstRef<R>>::_ && !Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
+		IsFiniteInputRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteInputRange>::_
 	>> forceinline FiniteInputRange& operator=(R&& range)
 	{
 		mInterface = new WrapperImpl<R>(core::move(range));
@@ -157,44 +168,48 @@ template<typename T> struct ForwardRange:
 		virtual Interface* Clone() const = 0;
 	};
 
-	template<typename R> struct WrapperImpl: Interface
+	template<typename R> struct WrapperImpl: InputRange<T>::template ImplFiller<R, Interface>
 	{
-		R OriginalRange;
+		typedef typename InputRange<T>::template ImplFiller<R, Interface> base;
+		template<typename A> WrapperImpl(A&& range): base(core::forward<A>(range)) {}
 
-		WrapperImpl(const R& range): OriginalRange(range) {}
-		WrapperImpl(R&& range): OriginalRange(core::move(range)) {}
-
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
-
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
-
-		WrapperImpl* Clone() const override final {return new WrapperImpl{OriginalRange};}
+		WrapperImpl* Clone() const override {return new WrapperImpl(base::OriginalRange);}
 	};
 
-	template<typename R> forceinline ForwardRange(const R& range):
-		mInterface(new WrapperImpl<R>{range}) {}
+	template<typename R, typename = Meta::EnableIf<
+		IsForwardRange<Meta::RemoveConstRef<R>>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, ForwardRange>::_
+	>> forceinline ForwardRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline ForwardRange(Meta::RemoveConstRef<R>&& range):
-		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>{core::move(range)}) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline ForwardRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
-	forceinline ForwardRange(const ForwardRange& range):
-		mInterface(range.mInterface->Clone()) {}
+	template<size_t N> forceinline ForwardRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
 
-	forceinline ForwardRange(ForwardRange&& range):
-		mInterface(core::move(range.mInterface)) {}
+	forceinline ForwardRange(ForwardRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
 
-	template<typename R> forceinline ForwardRange& operator=(R&& range)
+	forceinline ForwardRange(const ForwardRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline ForwardRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>{core::move(range)};
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline ForwardRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsForwardRange<Meta::RemoveConstRef<R>>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, ForwardRange>::_
+	>> forceinline ForwardRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>{range};
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -230,46 +245,49 @@ template<typename T> struct FiniteForwardRange:
 		virtual size_t Count() const = 0;
 	};
 
-	template<typename R> struct WrapperImpl: Interface
+	template<typename R> struct WrapperImpl: InputRange<T>::template ImplFiller<R, Interface>
 	{
-		R OriginalRange;
+		typedef typename InputRange<T>::template ImplFiller<R, Interface> base;
+		template<typename A> WrapperImpl(A&& range): base(core::forward<A>(range)) {}
 
-		WrapperImpl(const R& range): OriginalRange(range) {}
-		WrapperImpl(R&& range): OriginalRange(core::move(range)) {}
-
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
-
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
-
-		WrapperImpl* Clone() const override final {return new WrapperImpl{OriginalRange};}
-
-		size_t Count() const override final {return OriginalRange.Count();}
+		WrapperImpl* Clone() const override {return new WrapperImpl(base::OriginalRange);}
+		size_t Count() const override {return base::OriginalRange.Count();}
 	};
 
-	template<typename R> forceinline FiniteForwardRange(const R& range):
-		mInterface(new WrapperImpl<R>(range)) {}
+	template<typename R, typename = Meta::EnableIf<
+		IsFiniteForwardRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteForwardRange>::_
+	>> forceinline FiniteForwardRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline FiniteForwardRange(Meta::RemoveConstRef<R>&& range):
-		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::move(range))) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline FiniteForwardRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
-	forceinline FiniteForwardRange(const FiniteForwardRange& range):
-		mInterface(range.mInterface->Clone()) {}
+	template<size_t N> forceinline FiniteForwardRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
 
-	forceinline FiniteForwardRange(FiniteForwardRange&& range):
-		mInterface(core::move(range.mInterface)) {}
+	forceinline FiniteForwardRange(FiniteForwardRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
 
-	template<typename R> forceinline FiniteForwardRange& operator=(R&& range)
+	forceinline FiniteForwardRange(const FiniteForwardRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline FiniteForwardRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>(core::move(range));
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline FiniteForwardRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsFiniteForwardRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteForwardRange>::_
+	>> forceinline FiniteForwardRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(range);
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -310,50 +328,57 @@ template<typename T> struct BidirectionalRange:
 		virtual void PopLastExactly(size_t count) = 0;
 	};
 
-	template<typename R> struct WrapperImpl: Interface
+	template<typename R, typename PARENT> struct ImplFiller: PARENT
 	{
-		R OriginalRange;
+		size_t Count() const override {return PARENT::OriginalRange.Count();}
 
-		WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
-
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
-
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
-
-		WrapperImpl* Clone() const override final {return new WrapperImpl(OriginalRange);}
-
-		size_t Count() const override final {return OriginalRange.Count();}
-
-		T Last() const {return OriginalRange.Last();}
-		void PopLast() {OriginalRange.PopLast();}
-		void PopLastN(size_t count) {OriginalRange.PopLastN(count);}
-		void PopLastExactly(size_t count) {OriginalRange.PopLastExactly(count);}
+		T Last() const override {return PARENT::OriginalRange.Last();}
+		void PopLast() override {PARENT::OriginalRange.PopLast();}
+		void PopLastN(size_t count) override {PARENT::OriginalRange.PopLastN(count);}
+		void PopLastExactly(size_t count) override {PARENT::OriginalRange.PopLastExactly(count);}
 	};
 
-	template<typename R> forceinline BidirectionalRange(const R& range):
-		mInterface(new WrapperImpl<R>(range)) {}
-
-	template<typename R> forceinline BidirectionalRange(R&& range):
-		mInterface(new WrapperImpl<R>(core::move(range))) {}
-
-	forceinline BidirectionalRange(const BidirectionalRange& range):
-		mInterface(range.mInterface->Clone()) {}
-
-	forceinline BidirectionalRange(BidirectionalRange&& range):
-		mInterface(core::move(range.mInterface)) {}
-
-	template<typename R> forceinline BidirectionalRange& operator=(R&& range)
+	template<typename R> struct WrapperImpl: ImplFiller<R, typename InputRange<T>::template ImplFiller<R, Interface>>
 	{
-		mInterface = new WrapperImpl<R>(core::move(range));
+		typedef ImplFiller<R, typename InputRange<T>::template ImplFiller<R, Interface>> base;
+		template<typename A> WrapperImpl(A&& range): base(core::forward<A>(range)) {}
+		WrapperImpl* Clone() const override {return new WrapperImpl(base::OriginalRange);}
+	};
+
+	template<typename R, typename = Meta::EnableIf<
+		IsBidirectionalRange<Meta::RemoveConstRef<R>>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, BidirectionalRange>::_
+	>> forceinline BidirectionalRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline BidirectionalRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
+
+	template<size_t N> forceinline BidirectionalRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
+
+	forceinline BidirectionalRange(BidirectionalRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
+
+	forceinline BidirectionalRange(const BidirectionalRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline BidirectionalRange& operator=(R range)
+	{
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline BidirectionalRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsBidirectionalRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, BidirectionalRange>::_
+	>> forceinline BidirectionalRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(range);
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -404,41 +429,54 @@ public:
 	{
 		R OriginalRange;
 
-		WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
+		forceinline WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
 
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
+		bool Empty() const override {return OriginalRange.Empty();}
+		T First() const override {return OriginalRange.First();}
+		void PopFirst() override {OriginalRange.PopFirst();}
 
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
+		void PopFirstN(size_t count) override {OriginalRange.PopFirstN(count);}
+		void PopFirstExactly(size_t count) override {OriginalRange.PopFirstExactly(count);}
 
-		WrapperImpl* Clone() const override final {return new WrapperImpl(OriginalRange);}
+		WrapperImpl* Clone() const override {return new WrapperImpl(OriginalRange);}
 
-		T OpIndex(size_t index) const override final {return OriginalRange[index];}
+		T OpIndex(size_t index) const override {return OriginalRange[index];}
 	};
 
-	template<typename R> forceinline RandomAccessRange(const R& range):
-		mInterface(new WrapperImpl<R>(range)) {}
+	template<typename R, typename = Meta::EnableIf<
+		IsRandomAccessRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, RandomAccessRange>::_
+	>> forceinline RandomAccessRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline RandomAccessRange(R&& range):
-		mInterface(new WrapperImpl<R>(core::move(range))) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline RandomAccessRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
-	forceinline RandomAccessRange(const RandomAccessRange& range):
-		mInterface(range.mInterface->Clone()) {}
+	template<size_t N> forceinline RandomAccessRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
 
-	forceinline RandomAccessRange(RandomAccessRange&& range):
-		mInterface(core::move(range.mInterface)) {}
+	forceinline RandomAccessRange(RandomAccessRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
 
-	template<typename R> forceinline RandomAccessRange& operator=(R&& range)
+	forceinline RandomAccessRange(const RandomAccessRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline RandomAccessRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>(core::move(range));
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline RandomAccessRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsRandomAccessRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, RandomAccessRange>::_
+	>> forceinline RandomAccessRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(range);
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -487,43 +525,56 @@ template<typename T> struct FiniteRandomAccessRange:
 	{
 		R OriginalRange;
 
-		WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
+		forceinline WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
 
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
+		bool Empty() const override {return OriginalRange.Empty();}
+		T First() const override {return OriginalRange.First();}
+		void PopFirst() override {OriginalRange.PopFirst();}
 
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
+		void PopFirstN(size_t count) override {OriginalRange.PopFirstN(count);}
+		void PopFirstExactly(size_t count) override {OriginalRange.PopFirstExactly(count);}
 
-		WrapperImpl* Clone() const override final {return new WrapperImpl(OriginalRange);}
+		WrapperImpl* Clone() const override {return new WrapperImpl(OriginalRange);}
 
-		size_t Count() const override final {return OriginalRange.Count();}
+		size_t Count() const override {return OriginalRange.Count();}
 
-		T OpIndex(size_t index) const override final {return OriginalRange[index];}
+		T OpIndex(size_t index) const override {return OriginalRange[index];}
 	};
 
-	template<typename R> forceinline FiniteRandomAccessRange(const R& range):
-		mInterface(new WrapperImpl<R>(range)) {}
+	template<typename R, typename = Meta::EnableIf<
+		IsFiniteRandomAccessRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteRandomAccessRange>::_
+	>> forceinline FiniteRandomAccessRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline FiniteRandomAccessRange(R&& range):
-		mInterface(new WrapperImpl<R>(core::move(range))) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline FiniteRandomAccessRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(range.AsRange())) {}
 
-	forceinline FiniteRandomAccessRange(const FiniteRandomAccessRange& range):
-		mInterface(range.mInterface->Clone()) {}
+	template<size_t N> forceinline FiniteRandomAccessRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
 
-	forceinline FiniteRandomAccessRange(FiniteRandomAccessRange&& range):
-		mInterface(core::move(range.mInterface)) {}
+	forceinline FiniteRandomAccessRange(FiniteRandomAccessRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
 
-	template<typename R> forceinline FiniteRandomAccessRange& operator=(R&& range)
+	forceinline FiniteRandomAccessRange(const FiniteRandomAccessRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline FiniteRandomAccessRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>(core::move(range));
+		mInterface = new WrapperImpl<AsRangeResult<R>>(range.AsRange());
 		return *this;
 	}
 
-	template<typename R> forceinline FiniteRandomAccessRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsFiniteRandomAccessRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, FiniteRandomAccessRange>::_
+	>> forceinline FiniteRandomAccessRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(range);
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -567,45 +618,58 @@ template<typename T> struct AnyArrayRange:
 	{
 		R OriginalRange;
 
-		WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
+		forceinline WrapperImpl(R&& range): OriginalRange(core::move(OriginalRange)) {}
 
-		bool Empty() const override final {return OriginalRange.Empty();}
-		T First() const override final {return OriginalRange.First();}
-		void PopFirst() override final {OriginalRange.PopFirst();}
+		bool Empty() const override {return OriginalRange.Empty();}
+		T First() const override {return OriginalRange.First();}
+		void PopFirst() override {OriginalRange.PopFirst();}
 
-		void PopFirstN(size_t count) override final {OriginalRange.PopFirstN(count);}
-		void PopFirstExactly(size_t count) override final {OriginalRange.PopFirstExactly(count);}
+		void PopFirstN(size_t count) override {OriginalRange.PopFirstN(count);}
+		void PopFirstExactly(size_t count) override {OriginalRange.PopFirstExactly(count);}
 
-		WrapperImpl* Clone() const override final {return new WrapperImpl(OriginalRange);}
+		WrapperImpl* Clone() const override {return new WrapperImpl(OriginalRange);}
 
-		size_t Count() const override final {return OriginalRange.Count();}
+		size_t Count() const override {return OriginalRange.Count();}
 
-		T OpIndex(size_t index) const override final {return OriginalRange[index];}
+		T OpIndex(size_t index) const override {return OriginalRange[index];}
 
-		T* Data() const override final {return OriginalRange.Data();}
+		T* Data() const override {return OriginalRange.Data();}
 	};
 
-	template<typename R> forceinline AnyArrayRange(const R& range):
-		mInterface(new WrapperImpl<R>(range)) {}
+	template<typename R, typename = Meta::EnableIf<
+		IsArrayRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, AnyArrayRange>::_
+	>> forceinline AnyArrayRange(R&& range):
+		mInterface(new WrapperImpl<Meta::RemoveConstRef<R>>(core::forward<R>(range))) {}
 
-	template<typename R> forceinline AnyArrayRange(R&& range):
-		mInterface(new WrapperImpl<R>(core::move(range))) {}
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline AnyArrayRange(R range):
+		mInterface(new WrapperImpl<AsRangeResult<R>>(AsRange(range))) {}
 
-	forceinline AnyArrayRange(const AnyArrayRange& range):
-		mInterface(range.mInterface->Clone()) {}
+	template<size_t N> forceinline AnyArrayRange(T(&arr)[N]):
+		mInterface(new WrapperImpl<ArrayRange<T>>(ArrayRange<T>(arr))) {}
 
-	forceinline AnyArrayRange(AnyArrayRange&& range):
-		mInterface(core::move(range.mInterface)) {}
+	forceinline AnyArrayRange(AnyArrayRange&& rhs):
+		mInterface(core::move(rhs.mInterface)) {}
 
-	template<typename R> forceinline AnyArrayRange& operator=(R&& range)
+	forceinline AnyArrayRange(const AnyArrayRange& rhs):
+		mInterface(rhs.mInterface->Clone()) {}
+
+	template<typename R, typename = Meta::EnableIf<
+		!IsInputRange<R>::_ && HasAsRange<R>::_
+	>> forceinline AnyArrayRange& operator=(R range)
 	{
-		mInterface = new WrapperImpl<R>(core::move(range));
+		mInterface = new WrapperImpl<AsRangeResult<R>>(AsRange(range));
 		return *this;
 	}
 
-	template<typename R> forceinline AnyArrayRange& operator=(const R& range)
+	template<typename R, typename = Meta::EnableIf<
+		IsArrayRangeOf<Meta::RemoveConstRef<R>, T>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, AnyArrayRange>::_
+	>> forceinline AnyArrayRange& operator=(R&& range)
 	{
-		mInterface = new WrapperImpl<R>(range);
+		mInterface = new WrapperImpl<R>(core::move(range));
 		return *this;
 	}
 
@@ -632,7 +696,7 @@ template<typename T> struct AnyArrayRange:
 
 	forceinline T operator[](size_t index) const {return mInterface->OpIndex(index);}
 
-	T* Data() const override final {return mInterface->Data();}
+	T* Data() const {return mInterface->Data();}
 
 private:
 	Memory::UniqueRef<Interface> mInterface;

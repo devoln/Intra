@@ -169,6 +169,14 @@ int TestPolymorphicRange2(InputRange<int> range, size_t totalCount)
 	return sum;
 }
 
+int TestPolymorphicRange3(InputRange<int> range, size_t totalCount)
+{
+	int sum = 0;
+	for(size_t i=0; i<totalCount; i++)
+		sum += range.GetNext();
+	return sum;
+}
+
 int TestInlinedRange(int* arr, size_t count, size_t totalCount)
 {
 	int* mBegin = arr;
@@ -212,17 +220,20 @@ void RunRangePerfTests(IO::Logger& logger)
 	int sum2 = TestPolymorphicRange2(arr.AsRange().Cycle(), 100000000);
 	double time2 = tim.GetTimeAndReset();
 
-	int sum3 = TestInlinedRange(arr.Data(), 1000, 100000000);
+	int sum3 = TestPolymorphicRange3(arr.AsRange().Cycle(), 100000000);
 	double time3 = tim.GetTimeAndReset();
-		
-	int sum4 = TestStaticRange(arr.Data(), 1000, 100000000);
-	double time4 = tim.GetTimeAndReset();
 
-	Console.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4);
+	int sum4 = TestInlinedRange(arr.Data(), 1000, 100000000);
+	double time4 = tim.GetTimeAndReset();
+		
+	int sum5 = TestStaticRange(arr.Data(), 1000, 100000000);
+	double time5 = tim.GetTimeAndReset();
+
+	Console.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
 
 	PrintPerformanceResults(logger, "CycledRange 100000000 раз",
-		{"CycledRange*", "InputRange<int>", "manually inlined loop", "ArrayRange.Cycle"},
-		{time1, time2},
-		{time3, time4});
+		{"CycledRange*", "InputRange<int>", "InputRange<int>::GetNext", "manually inlined loop", "ArrayRange.Cycle"},
+		{time1, time2, time3},
+		{time4, time5});
 }
 
