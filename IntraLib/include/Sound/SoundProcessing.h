@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra {
 

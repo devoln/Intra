@@ -1,5 +1,5 @@
 ﻿#include "Imaging/ImagingTypes.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/HashMap.h"
 
 namespace Intra {

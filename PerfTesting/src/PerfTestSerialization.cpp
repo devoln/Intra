@@ -5,7 +5,7 @@
 #include "Data/TextSerialization.h"
 #include "Data/Reflection.h"
 #include "Core/Time.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "IO/Stream.h"
 #include "Test/PerformanceTest.h"
 

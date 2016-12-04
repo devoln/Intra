@@ -3,7 +3,7 @@
 #include "Core/Core.h"
 #include "Meta/Type.h"
 
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "Memory/Allocator.h"
 
 

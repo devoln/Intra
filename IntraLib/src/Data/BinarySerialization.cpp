@@ -1,6 +1,7 @@
 ﻿#include "Data/BinarySerialization.h"
 #include "Data/Reflection.h"
 #include "Test/UnitTest.h"
+#include "Algorithms/Comparison.h"
 
 namespace Intra { namespace Data {
 
@@ -148,7 +149,7 @@ INTRA_UNITTEST("Binary serialization and deserialization")
 	
 	int copyE[5];
 	deserializer(copyE);
-	INTRA_TEST_ASSERT(Range::Equals(AsRange(originalE), AsRange(copyE)));
+	INTRA_TEST_ASSERT(Algo::Equals(AsRange(originalE), AsRange(copyE)));
 	
 	ArrayRange<const int> copyF;
 	deserializer(copyF);

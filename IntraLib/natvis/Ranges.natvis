@@ -173,7 +173,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::ReverseRange&lt;*&gt;">
+  <Type Name="Intra::Range::RetroResult&lt;*&gt;">
     <DisplayString>Reverse({OriginalRange})</DisplayString>
     <Expand>
       <Synthetic Name="[Reverse]"><DisplayString>Range:</DisplayString></Synthetic>

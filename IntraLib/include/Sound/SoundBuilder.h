@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "Math/Vector.h"
 #include "Containers/Array.h"
 #include "Sound/SoundTypes.h"

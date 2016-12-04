@@ -1,6 +1,6 @@
 ﻿#include "Core/Core.h"
 #include "GUI/MessageBox.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -38,7 +38,7 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Qt)
 
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/String.h"
 #include <QtGui/QMessageBox>
 

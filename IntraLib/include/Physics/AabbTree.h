@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 #include "Math/Shapes.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "Containers/Array.h"
 
 namespace Intra {

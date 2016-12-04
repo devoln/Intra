@@ -1,5 +1,4 @@
 ﻿#include "Test/PerformanceTest.h"
-#include "Algorithms/RangeIteration.h"
 #include "IO/LogSystem.h"
 
 namespace Intra {

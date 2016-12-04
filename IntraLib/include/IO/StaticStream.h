@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include "Meta/Type.h"
-#include "Algorithms/Range.h"
-#include "Algorithms/RangeIteration.h"
-#include "Algorithms/RangeConstruct.h"
-#include "Containers/StringView.h"
+#include "Range/ArrayRange.h"
+#include "Range/Iteration/Iteration.h"
+#include "Range/Construction/Construction.h"
+#include "Range/StringView.h"
 #include "Algorithms/AsciiString.h"
 
 namespace Intra { namespace IO {

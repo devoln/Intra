@@ -2,9 +2,10 @@
 
 #include "Containers/ForwardDeclarations.h"
 #include "Algorithms/Algorithms.h"
-#include "Algorithms/Range.h"
-#include "Algorithms/RangeConstruct.h"
-#include "Algorithms/RangeIteration.h"
+#include "Range/ArrayRange.h"
+#include "Range/Construction/Construction.h"
+#include "Range/Iteration/Iteration.h"
+#include "Algorithms/Comparison.h"
 #include "Meta/Type.h"
 #include "Meta/Mixins.h"
 #include "Memory/Allocator.h"
@@ -83,9 +84,7 @@ template<typename Char> struct GenericStringView:
 	{
 		return Length()==rhs.Length() &&
 			(cstart==rhs.cstart ||
-				Range::Equals(
-					AsRange(), ArrayRange<const Char>(rhs.cstart, Length())
-				));
+				Algo::Equals(AsRange(), ArrayRange<const Char>(rhs.cstart, Length())));
 	}
 
 	bool operator!=(const GenericStringView& rhs) const {return !operator==(rhs);}
@@ -94,23 +93,24 @@ template<typename Char> struct GenericStringView:
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
 	forceinline GenericStringView& operator=(null_t) {cstart=cend=null; return *this;}
-	forceinline GenericStringView& operator=(const GenericStringView& rhs) {cstart = rhs.cstart; cend = rhs.cend; return *this;}
+	forceinline GenericStringView& operator=(const GenericStringView& rhs)
+	{cstart = rhs.cstart; cend = rhs.cend; return *this;}
 
 	bool operator<(const GenericStringView& rhs) const
 	{
-		return Range::LexCompare(AsRange(), rhs.AsRange())<0;
+		return Algo::LexCompare(AsRange(), rhs.AsRange())<0;
 	}
 
 	bool operator<(const Char* rhs) const
 	{
 		return (rhs!=null && *rhs!='\0') && (Length()==0 ||
-			Range::LexCompare(AsRange(), ArrayRange<const Char>(rhs, Length()))<0);
+			Algo::LexCompare(AsRange(), ArrayRange<const Char>(rhs, Length()))<0);
 	}
 
 	bool operator>(const Char* rhs) const
 	{
 		return cstart!=cend && (rhs==null || *rhs=='\0' ||
-			Range::LexCompare(AsRange(), ArrayRange<const Char>(rhs, Length()))>0);
+			Algo::LexCompare(AsRange(), ArrayRange<const Char>(rhs, Length()))>0);
 	}
 
 

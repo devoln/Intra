@@ -1,8 +1,9 @@
 ﻿#pragma once
 
 #include "Containers/ForwardDeclarations.h"
-#include "Algorithms/Range.h"
-#include "Containers/StringView.h"
+#include "Range/Mixins/RangeMixins.h"
+#include "Range/ArrayRange.h"
+#include "Range/StringView.h"
 #include "Meta/Type.h"
 
 namespace Intra {

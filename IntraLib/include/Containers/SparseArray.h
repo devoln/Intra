@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Algorithms/SparseRange.h"
+#include "Range/SparseRange.h"
 #include "Memory/Allocator.h"
 
 namespace Intra {

@@ -71,7 +71,11 @@ template<typename T> struct HashTableRange: Range::RangeMixin<HashTableRange<T>,
 
 	HashTableRange(null_t=null): first_node(null), last_node(null) {}
 
-	forceinline bool operator==(const HashTableRange& rhs) const {return Empty() && rhs.Empty() || first_node==rhs.first_node && last_node==rhs.last_node;}
+	forceinline bool operator==(const HashTableRange& rhs) const
+	{
+		return Empty() && rhs.Empty() ||
+			first_node==rhs.first_node && last_node==rhs.last_node;
+	}
 	forceinline bool operator!=(const HashTableRange& rhs) const {return !operator==(rhs);}
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator!=(null_t) const {return !Empty();}
@@ -198,14 +202,13 @@ public:
 	{
 		if(bucket_heads==null)
 		{
-			K keyCopy = key;
-			return insert_node(core::move(keyCopy), V(), false)->element.Value;
+			return insert_node(key, V(), false)->element.Value;
 		}
 		uint keyHash = ToHash(key);
 		Node* node = find_node(key, keyHash);
 		if(node!=null) return node->element.Value;
 		K keyCopy = key;
-		return insert_node(core::move(keyCopy), V(), false)->element.Value;
+		return insert_node(key, V(), false)->element.Value;
 	}
 
 	Range Insert(const value_type& pair)
@@ -220,9 +223,7 @@ public:
 
 	Range Insert(const K& key, const V& value)
 	{
-		K keyCopy = key;
-		V valueCopy = value;
-		return Range(insert_node(core::move(keyCopy), core::move(valueCopy)), range.last_node);
+		return Range(insert_node(key, value), range.last_node);
 	}
 
 	void Insert(const HashMap& map)
@@ -230,9 +231,7 @@ public:
 		Range rangeCopy = map.range;
 		while(!rangeCopy.Empty())
 		{
-			K keyCopy = rangeCopy.First().Key;
-			V valueCopy = rangeCopy.First().Value;
-			insert_node(core::move(keyCopy), core::move(valueCopy));
+			insert_node(rangeCopy.First().Key, rangeCopy.First().Value);
 			rangeCopy.PopFirst();
 		}
 	}
@@ -247,9 +246,7 @@ public:
 			auto node = find_node(key, keyHash);
 			if(node!=null) return Range(node, range.last_node);
 		}
-		K keyCopy = key;
-		V valueCopy = value;
-		return Range(insert_node(core::move(keyCopy), core::move(valueCopy), false), range.last_node);
+		return Range(insert_node(key, value, false), range.last_node);
 	}
 
 	iterator InsertNew(K&& key, V&& value)
@@ -562,7 +559,7 @@ private:
 		return null;
 	}
 
-	Node* insert_node(K&& key, V&& value, bool findExisting=true)
+	Node* insert_node_no_construct_or_assign(const K& key, bool* oExisting=null)
 	{
 		if(bucket_heads==null)
 		{
@@ -572,18 +569,14 @@ private:
 
 		uint keyHash = ToHash(key);
 
-		if(findExisting)
+		if(oExisting!=null)
 		{
 			Node* existing = find_node(key, keyHash);
-			if(existing!=null)
-			{
-				existing->element.Value = value;
-				return existing;
-			}
+			*oExisting = (existing!=null);
+			if(existing!=null) return existing;
 		}
 
 		Node* newNode = insert_node_after(range.last_node);
-		new(&newNode->element) value_type(core::move(key), core::move(value));
 		newNode->init_key(keyHash);
 		auto& bh = get_bucket_head(keyHash);
 		newNode->down = bh;
@@ -596,6 +589,24 @@ private:
 		}
 
 		return newNode;
+	}
+
+	Node* insert_node(K&& key, V&& value, bool findExisting=true)
+	{
+		bool existed;
+		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
+		if(!existed) new(&newNode->element) value_type(core::move(key), core::move(value));
+		else newNode->element.Value = core::move(value);
+		return newNode;
+	}
+
+	Node* insert_node(const K& key, const V& value, bool findExisting=true)
+	{
+		bool existed;
+		Node* node = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
+		if(!existed) new(&node->element) value_type(core::move(key), core::move(value));
+		else node->element.Value = value;
+		return node;
 	}
 
 	Node* insert_node_after(Node* dest)

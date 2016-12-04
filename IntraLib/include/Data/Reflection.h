@@ -1,13 +1,13 @@
 ﻿#pragma once
 
 #include "Data/ValueType.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "Meta/Type.h"
 #include "Meta/TypeList.h"
 #include "Meta/Tuple.h"
 #include "Meta/Preprocessor.h"
 #include "Memory/SmartRef.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 
 namespace Intra { namespace Data {
 

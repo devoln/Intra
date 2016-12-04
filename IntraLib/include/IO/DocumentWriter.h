@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "Algorithms/Range.h"
+#include "Math/Vector.h"
 #include "Containers/String.h"
 #include "Stream.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/Array.h"
 
 namespace Intra { namespace IO {

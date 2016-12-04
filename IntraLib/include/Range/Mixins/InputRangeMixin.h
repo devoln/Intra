@@ -2,7 +2,9 @@
 
 #include "Core/Core.h"
 #include "Meta/Type.h"
-#include "Algorithms/RangeConcept.h"
+#include "Range/Concepts.h"
+#include "Algorithms/Search.h"
+#include "Algorithms/Mutation.h"
 
 
 #ifdef _MSC_VER
@@ -20,18 +22,8 @@ namespace Intra { namespace Range {
 
 template<typename R, typename P> struct FilterResult;
 template<typename R, typename F> struct MapResult;
-template<typename R> struct TakeResult;
 template<typename R> struct StrideResult;
 template<typename Rs> struct FirstTransversalResult;
-
-namespace detail {
-
-template<typename R> struct ResultOfTake {typedef Meta::SelectType<R, TakeResult<R>, IsRandomAccessRange<R>::_> _;};
-template<typename R> struct ResultOfTake<TakeResult<R>> {typedef TakeResult<R> _;};
-
-}
-
-template<typename R> using ResultOfTake = typename detail::ResultOfTake<R>::_;
 
 template<typename R> struct InputRangeIterator
 {
@@ -98,32 +90,21 @@ public:
 		while(elementsToPop --> 0) me().PopFirst();
 	}
 
-	forceinline StrideResult<R> Stride(size_t step) const
-	{
-		return StrideResult<R>(me(), step);
-	}
+	forceinline StrideResult<R> Stride(size_t step) const {return StrideResult<R>(me(), step);}
 
 
 	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, равных x.
 	template<typename X> Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	R&> TrimLeftAdvance(const X& x)
-	{
-		while(!me().Empty() && me().First()==x)
-			me().PopFirst();
-		return me();
-	}
+	{return Algo::TrimLeftAdvance(me(), x);}
 	
 	//! Последовательно удаляет элементы из начала диапазона, пока выполняется предикат pred.
 	//! Останавливается на первом элементе, для которого это условие не выполнено.
 	template<typename P> Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	R&> TrimLeftAdvance(P pred)
-	{
-		while(!me().Empty() && pred(me().First()))
-			me().PopFirst();
-		return me();
-	}
+	{return Algo::TrimLeftAdvance(me(), pred);}
 
 	bool operator!=(const R& rhs) const {return !(me()==rhs);}
 };
@@ -163,16 +144,7 @@ public:
 	template<typename X> Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	R&> FindAdvance(const X& what, size_t* ioIndex=null)
-	{
-		size_t index=0;
-		while(!me().Empty() && !(me().First()==what))
-		{
-			me().PopFirst();
-			index++;
-		}
-		if(ioIndex!=null) *ioIndex += index;
-		return me();
-	}
+	{return Algo::FindAdvance(me(), what, ioIndex);}
 
 	//! Найти первое вхождение элемента, удовлетворяющего некоторому условию, в этот диапазон.
 	//! Изменяет диапазон в null, если значение не найдено. Иначе оставляет часть этого диапазона, начиная с позиции, на которой начинается первое вхождение искомого элемента.
@@ -181,16 +153,7 @@ public:
 	template<typename P> Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	R&> FindAdvance(P pred, size_t* ioIndex=null)
-	{
-		size_t index=0;
-		while(!me().Empty() && !pred(me().First()))
-		{
-			me().PopFirst();
-			index++;
-		}
-		if(ioIndex!=null) *ioIndex += index;
-		return me();
-	}
+	{return Algo::FindAdvance(me(), pred, ioIndex);}
 
 
 	//! Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
@@ -202,29 +165,7 @@ public:
 	template<typename Ws> Meta::EnableIf<
 		IsFiniteForwardRange<Ws>::_,
 	R&> FindAdvanceAnyAdvance(Ws& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
-	{
-		size_t index=0, whatIndex = whats.Count();
-		Ws whatsCopy = whats;
-		for(; !me().Empty(); me().PopFirst(), index++)
-		{
-			whats = whatsCopy;
-			whatIndex = 0;
-			while(!whats.Empty())
-			{
-				if(me().First()!=whats.First())
-				{
-					whats.PopFirst();
-					whatIndex++;
-					continue;
-				}
-				goto exit;
-			}
-		}
-	exit:
-		if(ioIndex!=null) *ioIndex += index;
-		if(oWhatIndex!=null) *oWhatIndex = whatIndex;
-		return me();
-	}
+	{return Algo::FindAdvanceAnyAdvance(me(), whats, ioIndex, oWhatIndex);}
 
 	//! Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
 	//! Начало этого диапазона смещается к найденному элементу или совмещается с концом в случае, когда элемент не найден.
@@ -235,10 +176,7 @@ public:
 	template<typename Ws> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<Ws, T>::_,
 	R&> FindAdvanceAny(const Ws& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
-	{
-		Ws whatCopy = whats;
-		return FindAdvanceAnyAdvance(whatCopy, ioIndex, oWhatIndex);
-	}
+	{return Algo::FindAdvanceAny(me(), whats, ioIndex, oWhatIndex);}
 
 
 
@@ -248,11 +186,7 @@ public:
 	template<typename X> forceinline Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	size_t> CountUntilAdvance(const X& x)
-	{
-		size_t index=0;
-		me().FindAdvance(x, &index);
-		return index;
-	}
+	{return Algo::CountUntilAdvance(me(), x);}
 	
 	//! Последовательно удаляет элементы из начала диапазона до тех пор,
 	//! пока не выполнится условие predicate или диапазон не станет пустым.
@@ -260,11 +194,7 @@ public:
 	template<typename P> forceinline Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	size_t> CountUntilAdvance(P predicate)
-	{
-		size_t index=0;
-		me().FindAdvance(predicate, &index);
-		return index;
-	}
+	{return Algo::CountUntilAdvance(me(), predicate);}
 
 	//! Последовательно удаляет элементы из начала диапазона до тех пор,
 	//! пока не встретится элемент, равный любому из элементов диапазона whats.
@@ -273,11 +203,7 @@ public:
 	template<typename Ws> forceinline Meta::EnableIf<
 		IsForwardRangeOf<Ws, T>::_,
 	size_t> CountUntilAdvanceAnyAdvance(Ws& whats)
-	{
-		size_t index=0;
-		me().FindAdvanceAnyAdvance(whats, &index);
-		return index;
-	}
+	{return Algo::CountUntilAdvanceAnyAdvance(me(), whats);}
 
 	//! Последовательно удаляет элементы из начала диапазона до тех пор,
 	//! пока не встретится элемент, равный любому из элементов диапазона whats.
@@ -286,11 +212,7 @@ public:
 	template<typename Ws> forceinline Meta::EnableIf<
 		IsForwardRangeOf<Ws, T>::_,
 	size_t> CountUntilAdvanceAny(const Ws& whats)
-	{
-		size_t index=0;
-		me().FindAdvanceAny(whats, &index);
-		return index;
-	}
+	{return Algo::CountUntilAdvanceAny(me(), whats);}
 
 
 	//! Удаляет из диапазона все элементы кроме последних n элементов.
@@ -323,9 +245,7 @@ public:
 
 
 	//! Последовательно удаляет все элементы из диапазона, подсчитывая количество элементов, равных x.
-	template<typename X> Meta::EnableIf<
-		Meta::IsConvertible<X, T>::_,
-	size_t> CountAdvance(X x)
+	template<typename X> size_t CountAdvance(X x)
 	{
 		size_t result=0;
 		while(!me().Empty())
@@ -355,99 +275,49 @@ public:
 	template<typename OR> Meta::EnableIf<
 		IsOutputRange<OR>::_ && !Meta::IsConst<OR>::_
 	> CopyAdvanceToAdvance(OR&& dst)
-	{
-		while(!me().Empty())
-		{
-			dst.Put(me().First());
-			me().PopFirst();
-		}
-	}
+	{return Algo::CopyAdvanceToAdvance(me(), core::forward<OR>(dst));}
 
 	template<typename OR> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_
 	> CopyAdvanceTo(const OR& dst)
-	{
-		OR dst2 = dst;
-		me().CopyAdvanceToAdvance(dst2);
-	}
+	{return Algo::CopyAdvanceTo(me(), dst);}
 
 	template<typename OR, typename P> Meta::EnableIf<
 		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
 	> CopyAdvanceToAdvance(OR&& dst, P pred)
-	{
-		while(!me().Empty())
-		{
-			auto value = me().First();
-			if(pred(value)) dst.Put(value);
-			me().PopFirst();
-		}
-	}
+	{return Algo::CopyAdvanceToAdvance(me(), core::forward<OR>(dst), pred);}
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_
 	> CopyAdvanceTo(const OR& dst, P pred)
-	{
-		auto dst2 = dst;
-		me().CopyAdvanceToAdvance(dst2, pred);
-	}
+	{return Algo::CopyAdvanceTo(me(), dst, pred);}
 
 	void FillAdvance(const T& value)
-	{
-		while(!me().Empty())
-		{
-			me().First() = value;
-			me().PopFirst();
-		}
-	}
+	{return Algo::FillAdvance(me(), value);}
 
 	
 
 	template<typename PatternRange, typename U=R> Meta::EnableIf<
 		(IsForwardRange<PatternRange>::_ || IsInfiniteRange<PatternRange>::_) && IsRangeElementAssignable<U>::_
 	> FillPatternAdvance(const PatternRange& pattern)
-	{
-		auto patternCopy = pattern.Cycle();
-		while(!me().Empty())
-		{
-			auto& ref = me().First();
-			ref = patternCopy.First();
-			me().PopFirst();
-			patternCopy.PopFirst();
-		}
-	}
+	{return Algo::FillPatternAdvance(me(), pattern);}
 
 	
 
 	template<typename F, typename U=R> Meta::EnableIf<
 		IsRangeElementAssignable<U>::_ && Meta::IsCallable<F, T&>::_
 	> TransformAdvance(F f)
-	{
-		while(!me().Empty())
-		{
-			auto& v = me().First();
-			v = f(v);
-			me().PopFirst();
-		}
-	}
+	{return Algo::TransformAdvance(me(), f);}
 
 	template<typename ResultRange, typename F> Meta::EnableIf<
 		IsOutputRange<ResultRange>::_ && Meta::IsCallable<F, T&>::_
 	> TransformAdvanceToAdvance(ResultRange& output, F f)
-	{
-		while(!me().Empty())
-		{
-			output.Put(f(me().First()));
-			me().PopFirst();
-		}
-	}
+	{return Algo::TransformAdvanceToAdvance(me(), output, f);}
 
 	template<typename ResultRange, typename F> Meta::EnableIf<
 		IsOutputRange<ResultRange>::_ && Meta::IsCallable<F, T&>::_
 	> TransformAdvanceTo(const ResultRange& output, F f)
-	{
-		ResultRange outputCopy = output;
-		me().TransformAdvanceToAdvance(outputCopy, f);
-	}
+	{return Algo::TransformAdvanceTo(me(), output, f);}
 
 };
 

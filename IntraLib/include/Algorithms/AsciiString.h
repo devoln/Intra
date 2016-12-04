@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Algorithms/Range.h"
-#include "Containers/StringView.h"
+#include "Range/ArrayRange.h"
+#include "Range/StringView.h"
 
 namespace Intra { namespace Algo {
 

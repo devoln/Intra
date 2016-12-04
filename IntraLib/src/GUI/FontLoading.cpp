@@ -1,6 +1,6 @@
 ﻿#include "Core/Core.h"
 #include "GUI/FontLoading.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/String.h"
 #include "Math/Vector.h"
 

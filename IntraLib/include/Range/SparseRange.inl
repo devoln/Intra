@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Algorithms/SparseRange.h"
+#include "Range/SparseRange.h"
 #include "Memory/Memory.h"
 #include "Containers/Array.h"
 
@@ -125,11 +125,6 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 	}
 	*prevEmpty = end_index();
 }
-
-
-
-
-
 
 
 

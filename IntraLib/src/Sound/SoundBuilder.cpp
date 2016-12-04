@@ -1,6 +1,6 @@
 ﻿#include "Sound/SoundBuilder.h"
 #include "Algorithms/Algorithms.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 
 #define OPTIMIZE
 

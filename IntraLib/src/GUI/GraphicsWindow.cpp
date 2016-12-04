@@ -1,5 +1,5 @@
 ﻿#include "GUI/GraphicsWindow.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "GUI/WindowSystemApi.h"
 
 namespace Intra {

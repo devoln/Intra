@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "Meta/Mixins.h"
-#include "Algorithms/Mixins/InputRangeMixin.h"
-#include "Algorithms/Mixins/ForwardRangeMixin.h"
-#include "Algorithms/Mixins/BidirectionalRangeMixin.h"
-#include "Algorithms/Mixins/RandomAccessRangeMixin.h"
-#include "Algorithms/Mixins/ArrayRangeMixin.h"
-#include "Algorithms/Mixins/CharRangeMixin.h"
+#include "InputRangeMixin.h"
+#include "ForwardRangeMixin.h"
+#include "BidirectionalRangeMixin.h"
+#include "RandomAccessRangeMixin.h"
+#include "ArrayRangeMixin.h"
+#include "CharRangeMixin.h"
 
 namespace Intra { namespace Range {
 

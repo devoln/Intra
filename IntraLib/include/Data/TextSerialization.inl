@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "TextSerialization.h"
-#include "Algorithms/RangeConstruct.h"
+//#include "Algorithms/RangeConstruct.h"
 #include "Algorithms/AsciiString.h"
 
 namespace Intra { namespace Data {

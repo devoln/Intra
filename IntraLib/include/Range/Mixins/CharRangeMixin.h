@@ -2,13 +2,13 @@
 
 #include "Core/Core.h"
 #include "Meta/Type.h"
-#include "Algorithms/RangeConcept.h"
+#include "Range/Concepts.h"
 
-#include "Algorithms/Mixins/InputRangeMixin.h"
-#include "Algorithms/Mixins/ForwardRangeMixin.h"
-#include "Algorithms/Mixins/BidirectionalRangeMixin.h"
-#include "Algorithms/Mixins/RandomAccessRangeMixin.h"
-#include "Algorithms/Mixins/ArrayRangeMixin.h"
+#include "InputRangeMixin.h"
+#include "ForwardRangeMixin.h"
+#include "BidirectionalRangeMixin.h"
+#include "RandomAccessRangeMixin.h"
+#include "ArrayRangeMixin.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)

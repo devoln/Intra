@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Containers/ForwardDeclarations.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra { namespace Range {
 

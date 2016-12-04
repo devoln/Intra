@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Algorithms/RangeConcept.h"
-#include "Range.h"
+#include "Range/Concepts.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra { namespace Algo {
 
@@ -32,18 +32,6 @@ template<typename T> void MulAdd(ArrayRange<T> dest, ArrayRange<const T> op1, T 
 template<typename T> T Minimum(ArrayRange<const T> arr);
 template<typename T> T Maximum(ArrayRange<const T> arr);
 template<typename T> void MiniMax(ArrayRange<const T> arr, T* minimum, T* maximum);
-
-
-template<typename T, typename C> auto Find(const C& container, const T& element) -> decltype(begin(container))
-{
-	auto it = begin(container);
-	while(it != end(container))
-	{
-		if(*it==element) return it;
-		++it;
-	}
-	return it;
-}
 
 
 

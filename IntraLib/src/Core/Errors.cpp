@@ -1,5 +1,5 @@
 ﻿#include "Core/Errors.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 
 #include <signal.h>
 #include <stdlib.h>

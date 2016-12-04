@@ -2,7 +2,7 @@
 
 #include "Memory/Allocator.h"
 #include "Memory/AllocatorInterface.h"
-#include "Algorithms/Range.h"
+#include "Range/Mixins/RangeMixins.h"
 #include "Containers/ForwardDeclarations.h"
 
 namespace Intra {

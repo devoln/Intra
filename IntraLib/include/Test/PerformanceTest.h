@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "IO/LogSystem.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Math/Random.h"
 #include "Algorithms/Hash.h"
 

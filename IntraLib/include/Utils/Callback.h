@@ -100,7 +100,7 @@ template<typename R, typename... Args> class Delegate<R(Args...)>
 	ICallback<R(Args...)>* callback;
 
 public:
-	Delegate(null_t=null): callback(null) {}
+	forceinline Delegate(null_t=null): callback(null) {}
 
 	template<typename T> Delegate(R(*func)(const T&, Args...), const T& params):
 		callback(new FreeFuncDataWrapper<T>(func, params)) {}

@@ -2,12 +2,12 @@
 
 #include "Core/Core.h"
 #include "Meta/Type.h"
-#include "Algorithms/RangeConcept.h"
+#include "Range/Concepts.h"
 
 
 namespace Intra { namespace Range {
 
-template<typename R> struct ReverseRange;
+template<typename R> struct RetroResult;
 
 template<typename R, typename T, class PARENT> struct BidirectionalRangeMixin: PARENT
 {
@@ -33,7 +33,7 @@ public:
 	template<typename U=R> forceinline decltype(Meta::Val<U>().Retro().begin()) rbegin() const {return me().Retro().begin();}
 	template<typename U=R> forceinline decltype(Meta::Val<U>().Retro().end()) rend() const {return me().Retro().end();}
 
-	forceinline ReverseRange<R> Retro() const {return ReverseRange<R>(me());}
+	forceinline RetroResult<R> Retro() const {return RetroResult<R>(me());}
 
 	forceinline size_t PopLastN(size_t n)
 	{

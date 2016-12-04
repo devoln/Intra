@@ -228,6 +228,7 @@ double TestSprintf(uint times)
 	return timer.GetTime();
 }
 
+#ifndef INTRA_MINIMIZE_CRT
 double TestStdToStringFormatting(uint times)
 {
 	Timer timer;
@@ -242,7 +243,6 @@ double TestStdToStringFormatting(uint times)
 	return timer.GetTime();
 }
 
-#ifndef INTRA_MINIMIZE_CRT
 double TestStreamFormatting(uint times)
 {
 	Timer timer;
@@ -395,13 +395,15 @@ void RunStringPerfTests(Logger& logger)
 	if(TestGroup gr{logger, "Форматирование строк"})
 	{
 		PrintPerformanceResults(logger, "Вставка int и double",
-			{"sprintf", "std::string + std::to_string", 
+			{"sprintf",
 #ifndef INTRA_MINIMIZE_CRT
+			 "std::string + std::to_string",
 			"stringstream",
 #endif
 			"String::Format", "WStackString::Format"},
-			{TestSprintf(1000000), TestStdToStringFormatting(1000000),
+			{TestSprintf(1000000),
 #ifndef INTRA_MINIMIZE_CRT
+			TestStdToStringFormatting(1000000),
 			TestStreamFormatting(1000000)
 #endif
 			},

@@ -1,6 +1,6 @@
 ﻿#include "Math/LinAl.h"
 #include "Data/ValueType.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/HashMap.h"
 
 
@@ -48,8 +48,7 @@ ushort ValueType::Size() const
 	if(value<EndOfVectors) return scalarVecSizeTable[value];
 	if(value<EndOfMatrices) return matSizeTable[value-FirstOfMatrices];
 	if(value==ValueType::Char) return sizeof(char);
-	INTRA_INTERNAL_ERROR("Unknown type of this ValueType!");
-	return 0;
+	return INTRA_INTERNAL_ERROR("Unknown type of this ValueType!"), ushort(0);
 }
 
 //Возвращает размерность вектора или 1 если это скаляр. Для матриц не работает

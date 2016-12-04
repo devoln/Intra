@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 #include "Meta/Type.h"
-#include "Algorithms/RangeConcept.h"
+#include "Range/Concepts.h"
 
 
 namespace Intra { namespace Range {

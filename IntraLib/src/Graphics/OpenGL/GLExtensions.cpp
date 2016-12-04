@@ -3,7 +3,7 @@
 #if(INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
 
 #include "GUI/MessageBox.h"
-#include "Containers/StringView.h"
+#include "Range/StringView.h"
 #include "Containers/String.h"
 #include "Graphics/OpenGL/GLExtensions.h"
 

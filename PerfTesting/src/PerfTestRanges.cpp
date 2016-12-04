@@ -1,11 +1,11 @@
 ﻿#include "PerfTestRanges.h"
 #include "IO/Stream.h"
-#include "Algorithms/Range.h"
-#include "Algorithms/RangeConstruct.h"
-#include "Algorithms/RangeIteration.h"
+#include "Range/ArrayRange.h"
+#include "Range/Construction/Construction.h"
+#include "Range/Iteration/Iteration.h"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
-#include "Algorithms/Polymorphic.h"
+#include "Range/Polymorphic.h"
 
 using namespace Intra;
 using namespace Intra::IO;
@@ -43,7 +43,7 @@ void RunRangeTests()
 	Console.PrintLine(endl, "Пример вывода initializer list:");
 	Console.PrintLine(AsRange<double>({4353.435, 3243.23, 21.421, 12355.5, 64532}));
 
-	auto fib = Math::Recurrence(Op::Add<int>, 1, 1);
+	auto fib = Range::Recurrence(Op::Add<int>, 1, 1);
 
 	Array<int> fibArr;
 	fibArr.SetCountUninitialized(15);
@@ -56,13 +56,13 @@ void RunRangeTests()
 	Console.PrintLine(fibArr());
 
 	auto chain = Chain(AsRange(strs), AsRange(strs1), AsRange(strs2)).Take(50);
-	auto someRecurrence = Math::Recurrence([](int a, int b){return a*2+b;}, 1, 1).Take(17).Cycle().Drop(3).Take(22);
+	auto someRecurrence = Range::Recurrence([](int a, int b){return a*2+b;}, 1, 1).Take(17).Cycle().Drop(3).Take(22);
 	auto megaZip = Zip(
 				fib.Take(30),
 				chain.Take(40).Stride(2).Retro(),
 				someRecurrence,
 				fib.Take(19).Cycle().Drop(5).Take(50).Stride(3),
-				Math::Recurrence(Op::Mul<ulong64>, 2ull, 3ull).Take(9)
+				Range::Recurrence(Op::Mul<ulong64>, 2ull, 3ull).Take(9)
 			);
 
 	Console.PrintLine(endl, "Полиморфные диапазоны:");
@@ -144,8 +144,6 @@ public:
 	int First() override final {return *mPtr;}
 	void PopFirst() override final {mPtr++; if(mPtr>=mEnd) mPtr=mBegin;}
 };
-
-#include "Algorithms/Polymorphic.h"
 
 int TestPolymorphicRange(IRange* range, size_t totalCount)
 {

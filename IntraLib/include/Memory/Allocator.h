@@ -3,7 +3,7 @@
 #include "Core/Core.h"
 #include "Threading/Thread.h"
 #include "Memory/SystemAllocators.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra { namespace Memory {
 

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Containers/ForwardDeclarations.h"
-#include "StringView.h"
+#include "Range/StringView.h"
 #include "Memory/Memory.h"
 #include "Memory/AllocatorInterface.h"
 #include "Text/UtfConversion.h"

@@ -365,7 +365,7 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 {
 #ifndef OPTIMIZE
 
-#elif !defined(INTRA_USE_PDO)
+#elif(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	float ek8 = ek*ek;
 	ek8 *= ek8;
 	ek8 *= ek8;
@@ -381,9 +381,9 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 		*dst++ = *src++ * exp;
 		exp*=ek8;
 	}
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
-	float ek4=ek*ek;
-	ek4*=ek4;
+#else
+	float ek4 = ek*ek;
+	ek4 *= ek4;
 	Simd::float4 ek_4 = Simd::SetFloat4(ek4);
 	//while(((size_t)dst)&15 && dst<dstend) *dst++ = *src++ * Exp, Exp*=ek;
 	Simd::float4 exp_4 = Simd::SetFloat4(exp, exp*ek, exp*ek*ek, exp*ek*ek*ek);
@@ -411,8 +411,6 @@ static void exponent_attenuation(float*& dst, float* src, float* dstend, float& 
 		dst+=8; src+=8;
 	}
 	exp = Simd::GetX(r1);
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
-
 #endif
 	while(dst<dstend)
 		*dst++ = *src++ * exp, exp*=ek;
@@ -424,7 +422,7 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 {
 #ifndef OPTIMIZE
 
-#elif !defined(INTRA_USE_PDO)
+#elif(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	float ek8 = ek*ek;
 	ek8 *= ek8;
 	ek8 *= ek8;
@@ -440,7 +438,7 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 		*dst++ += *src++ * exp;
 		exp*=ek8;
 	}
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
+#else
 	//while(((size_t)dst)&15 && dst<dstend) *dst++ += *src++ * Exp, Exp*=ek;
 	float ek4 = ek*ek;
 	ek4 *= ek4;
@@ -455,8 +453,8 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 	Exp = Simd::GetX(exp_4);*/
 
 	Simd::float4 r0, r1, ek_8, r3, r4;
-	r1=exp_4;
-	ek_8=ek_4;
+	r1 = exp_4;
+	ek_8 = ek_4;
 	r4 = Simd::Mul(ek_8, r1);
 	ek_8 = Simd::Mul(ek_8, ek_8);
 	while(dst<dstend-7)
@@ -470,8 +468,6 @@ static void exponent_attenuation_add(float*& dst, float* src, float* dstend, flo
 		dst+=8; src+=8;
 	}
 	exp = Simd::GetX(r1);
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
-
 #endif
 	while(dst<dstend) *dst++ += *src++ * exp, exp*=ek;
 }
@@ -527,7 +523,7 @@ static void fast_sinexp(float volume, float coeff, float freq, uint sampleRate, 
 		vS1 = newvS;
 	}
 
-	int i=0;
+	int i = 0;
 	if(!add) while(ptr<end)
 		*ptr++ = vS1.m128_f32[i++];
 	else while(ptr<end)
@@ -728,7 +724,7 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 		*ptr++ *= u*u;
 		u += du;
 	}
-#elif !defined(INTRA_USE_PDO)
+#elif(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	float du4;
 
 	u = 0;
@@ -795,7 +791,7 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 		*ptr++ *= u*u;
 		u += du;
 	}
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64
+#else
 	//Атака
 	
 	//Первая половина атаки
@@ -879,8 +875,6 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 	}
 	u4x = Simd::GetX(u4);
 	while(ptr<inOutSamples.End) *ptr++ *= u4x*u4x;
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
-
 #endif
 }
 

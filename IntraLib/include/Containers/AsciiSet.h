@@ -2,7 +2,8 @@
 
 #include "Core/Core.h"
 #include "Meta/Type.h"
-#include "Algorithms/Range.h"
+#include "Range/Concepts.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra {
 

@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 #include "Containers/ForwardDeclarations.h"
-#include "Algorithms/Range.h"
+#include "Range/ArrayRange.h"
 #include "Algorithms/Algorithms.h"
 #include "CompilerSpecific/InitializerList.h"
 #include "Memory/AllocatorInterface.h"
@@ -576,9 +576,7 @@ public:
 
 
 	forceinline bool operator==(const Array& rhs) const
-	{
-		return Range::Equals(AsConstRange(), rhs.AsConstRange());
-	}
+	{return Algo::Equals(AsConstRange(), rhs.AsConstRange());}
 
 	forceinline bool operator!=(const Array& rhs) const {return !operator==(rhs);}
 

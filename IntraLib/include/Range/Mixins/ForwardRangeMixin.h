@@ -3,8 +3,10 @@
 #include "Core/Core.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
-#include "Algorithms/RangeConcept.h"
+#include "Range/Concepts.h"
 #include "Algorithms/Operations.h"
+#include "Algorithms/Comparison.h"
+#include "Algorithms/Search.h"
 
 
 namespace Intra { namespace Range {
@@ -14,104 +16,6 @@ template<typename T> struct ArrayRange;
 template<typename R> struct CycleResult;
 template<typename... RANGES> struct ZipResult;
 template<size_t N, typename RangeOfRanges> struct UnzipResult;
-
-template<size_t N, typename RangeOfTuples> forceinline
-UnzipResult<N, RangeOfTuples> Unzip(const RangeOfTuples& range)
-{
-	return UnzipResult<N, RangeOfTuples>(range);
-}
-
-template<size_t N, typename... RANGES> forceinline
-Meta::TypeListAt<N, Meta::TypeList<RANGES...>> Unzip(const ZipResult<RANGES...>& range)
-{
-	return Meta::Get<N>(range.OriginalRanges);
-}
-
-
-
-template<typename R1, typename R2> forceinline Meta::EnableIf<
-	IsFiniteRange<R1>::_ != IsFiniteRange<R2>::_,
-bool> Equals(R1 r1, R2 r2) {(void)r1; (void)r2; return false;}
-
-namespace detail {
-
-template<typename R1, typename R2, typename P> bool Equals(R1 r1, R2 r2, P pred)
-{
-	while(!r1.Empty() && !r2.Empty())
-	{
-		if(pred(r1.First(), r2.First()))
-		{
-			r1.PopFirst();
-			r2.PopFirst();
-			continue;
-		}
-		return false;
-	}
-	return r1.Empty() && r2.Empty();
-}
-
-}
-
-template<typename R1, typename R2> forceinline Meta::EnableIf<
-	Range::IsFiniteRange<R1>::_ && Range::IsFiniteRange<R2>::_ &&
-	!(Range::HasLength<R1>::_ && Range::HasLength<R2>::_),
-bool> Equals(R1 r1, R2 r2)
-{
-	return detail::Equals(r1, r2, Op::Equal);
-}
-
-template<typename R1, typename R2, typename P> forceinline Meta::EnableIf<
-	Range::IsFiniteRange<R1>::_ && Range::IsFiniteRange<R2>::_ &&
-	Range::HasLength<R1>::_ && Range::HasLength<R2>::_,
-bool> Equals(R1 r1, R2 r2, P pred)
-{
-	if(r1.Length()!=r2.Length()) return false;
-	return detail::Equals(r1, r2, pred);
-}
-
-template<typename ArrayRange1, typename ArrayRange2> inline Meta::EnableIf<
-	IsInputRangeOfTrivial<ArrayRange1>::_ &&
-	ValueTypeEquals<ArrayRange1, ArrayRange2>::_ &&
-	IsArrayRange<ArrayRange1>::_ && IsArrayRange<ArrayRange2>::_,
-bool> Equals(const ArrayRange1& r1, const ArrayRange2& r2)
-{
-	if(r1.Length()!=r2.Length()) return false;
-	return core::memcmp(r1.Data(), r2.Data(), r1.Length()*sizeof(typename ArrayRange1::value_type))==0;
-}
-
-
-template<typename R1, typename R2, typename P> Meta::EnableIf<
-	IsInputRange<R1>::_ && IsInputRange<R2>::_,
-int> LexCompare(R1 r1, R2 r2, P pred = Op::Less)
-{
-	while(!r1.Empty() && !r2.Empty())
-	{
-		if(pred(r1.First(), r2.First())) return -1;
-		if(pred(r2.First(), r1.First())) return 1;
-	}
-	if(r1.Empty())
-	{
-		if(r2.Empty()) return 0;
-		return -1;
-	}
-	return 1;
-}
-
-template<typename ArrayRange1, typename ArrayRange2> inline Meta::EnableIf<
-	IsInputRangeOfPod<ArrayRange1>::_ &&
-	ValueTypeEquals<ArrayRange1, ArrayRange2>::_ &&
-	IsArrayRange<ArrayRange1>::_ && IsArrayRange<ArrayRange2>::_,// &&
-	//(sizeof(typename ArrayRange1::value_type)==1 || INTRA_PLATFORM_ENDIANESS==INTRA_PLATFORM_ENDIANESS_BigEndian),
-int> LexCompare(const ArrayRange1& r1, const ArrayRange2& r2)
-{
-	size_t minLen = Op::Min(r1.Length(), r2.Length());
-	int result = core::memcmp(r1.Data(), r2.Data(), minLen*sizeof(typename ArrayRange1::value_type));
-	if(result!=0) return result;
-	if(r1.Length()<r2.Length()) return -1;
-	if(r1.Length()>r2.Length()) return 1;
-	return 0;
-}
-
 
 
 template<typename R> struct ForwardRangeIterator
@@ -145,21 +49,6 @@ private:
 	forceinline const R& me() const {return *static_cast<const R*>(this);}
 	forceinline R& me() {return *static_cast<R*>(this);}
 
-	template<typename RW> Meta::EnableIf<
-		IsFiniteForwardRangeOf<RW, T>::_,
-	bool> starts_with(const RW& what) const
-	{
-		RW whatCopy = what;
-		auto temp = me();
-		while(!whatCopy.Empty())
-		{
-			if(temp.Empty()) return false;
-			if(temp.First()!=whatCopy.First()) return false;
-			temp.PopFirst();
-			whatCopy.PopFirst();
-		}
-		return true;
-	}
 public:
 	forceinline ForwardRangeIterator<R> begin() {return ForwardRangeIterator<R>(me());}
 	forceinline ForwardRangeIterator<R> begin() const {return ForwardRangeIterator<R>(me());}
@@ -168,63 +57,42 @@ public:
 
 	template<typename RW, typename U=R> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_ &&
-		!(HasLength<U>::_ && HasLength<RW>::_),
+		!(HasLength<U>::_ &&
+			HasLength<RW>::_),
 	bool> StartsWith(const RW& what) const
-	{
-		return starts_with(what);
-	}
+	{return Algo::StartsWith(what);}
 
 	template<typename RW, typename U=R> forceinline Meta::EnableIf<
-		IsFiniteForwardRangeOf<RW, T>::_ &&
-		HasLength<U>::_ && HasLength<RW>::_,
+		IsForwardRangeOf<RW, T>::_ &&
+		HasLength<U>::_ &&
+		HasLength<RW>::_,
 	bool> StartsWith(const RW& what) const
-	{
-		if(me().Length()<what.Length()) return false;
-		return starts_with(what);
-	}
+	{return Algo::StartsWith(me(), what);}
 
-	template<size_t N> forceinline bool StartsWith(const T(&rhs)[N]) {return me().StartsWith(AsRange(rhs));}
+	template<size_t N> forceinline
+	bool StartsWith(const T(&rhs)[N])
+	{return Algo::StartsWith(me(), rhs);}
 
 	template<typename RWs> Meta::EnableIf<
 		IsRangeOfFiniteForwardRangesOf<RWs, T>::_ && IsFiniteRange<RWs>::_,
 	bool> StartsWithAnyAdvance(RWs& subranges, size_t* oSubrangeIndex=null) const
-	{
-		if(oSubrangeIndex!=null) *oSubrangeIndex = 0;
-		while(!subranges.Empty())
-		{
-			if(StartsWith(subranges.First())) return true;
-			if(oSubrangeIndex!=null) ++*oSubrangeIndex;
-			subranges.PopFirst();
-		}
-		return false;
-	}
+	{return Algo::StartsWithAnyAdvance(me(), subranges, oSubrangeIndex);}
 
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsRangeOfFiniteForwardRangesOf<RWs, T>::_ && IsFiniteRange<RWs>::_,
 	bool> StartsWithAny(const RWs& subranges, size_t* ioIndex=null) const
-	{
-		RWs subrangesCopy = subranges;
-		return me().StartsWithAnyAdvance(subrangesCopy, ioIndex);
-	}
+	{return Algo::StartsWithAny(me(), subranges, ioIndex);}
 
 
 	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, равных x.
 	template<typename X> forceinline Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
-	R> TrimLeft(const X& x) const
-	{
-		R result = me();
-		return result.TrimLeftAdvance(x);
-	}
+	R> TrimLeft(const X& x) const {return Algo::TrimLeft(me(), x);}
 
 	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, для которых выполнен предикат pred.
 	template<typename P> forceinline Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
-	R> TrimLeft(P pred) const
-	{
-		R result = me();
-		return result.TrimLeftAdvance(pred);
-	}
+	R> TrimLeft(P pred) const {return Algo::TrimLeft(me(), pred);}
 
 
 	forceinline R Drop() const
@@ -305,79 +173,51 @@ public:
 	}
 
 	forceinline void Fill(const T& value) const
-	{
-		auto dst = me();
-		dst.FillAdvance(value);
-	}
+	{Algo::Fill(me(), value);}
 
 	template<typename PatternRange, typename U=R> forceinline Meta::EnableIf<
 		(IsForwardRange<PatternRange>::_ || IsInfiniteRange<PatternRange>::_) &&
 		IsRangeElementAssignable<U>::_
 	> FillPattern(const PatternRange& pattern) const
-	{
-		auto dst = me();
-		dst.FillPatternAdvance(pattern);
-	}
+	{Algo::FillPattern(me(), pattern);}
 
 	template<typename F, typename U=R> forceinline Meta::EnableIf<
 		IsRangeElementAssignable<U>::_ &&
 		Meta::IsCallable<F, T&>::_
-	> Transform(F f) const
-	{
-		auto range = me();
-		range.TransformAdvance(f);
-	}
+	> Transform(F f) const {Algo::Transform(me(), f);}
 
 	template<typename ResultRange, typename F> forceinline Meta::EnableIf<
 		IsOutputRange<ResultRange>::_ && Meta::IsCallable<F, T&>::_
 	> TransformToAdvance(ResultRange& output, F f) const
-	{
-		auto range = me();
-		range.TransformAdvanceToAdvance(output, f);
-	}
+	{Algo::TransformToAdvance(me(), output, f);}
 
 	template<typename ResultRange, typename F> forceinline Meta::EnableIf<
 		IsOutputRange<ResultRange>::_ && Meta::IsCallable<F, T&>::_
 	> TransformTo(const ResultRange& output, F f) const
-	{
-		auto outputCopy = output;
-		me().TransformToAdvance(outputCopy, f);
-	}
+	{return Algo::TransformTo(me(), output, f);}
 
 
 	template<typename OR> forceinline Meta::EnableIf<
 		(IsOutputRange<OR>::_ || HasAsRange<Meta::RemoveConstRef<OR>>::_) && !Meta::IsConst<OR>::_
 	> CopyToAdvance(OR&& dst) const
-	{
-		auto r = me();
-		r.CopyAdvanceToAdvance(dst);
-	}
+	{Algo::CopyToAdvance(me(), core::forward<OR>(dst));}
 
 	template<typename OR> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_ || HasAsRange<OR>::_
 	> CopyTo(OR&& dst) const
-	{
-		auto dst2 = AsRange(dst);
-		me().CopyToAdvance(dst2);
-	}
+	{return Algo::CopyTo(me(), core::forward<OR>(dst));}
 
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
 		IsOutputRange<OR>::_ && Meta::IsCallable<P, T>::_ && !Meta::IsConst<OR>::_
 	> CopyToAdvance(OR&& dst, P pred) const
-	{
-		auto r = me();
-		r.CopyAdvanceToAdvance(dst, pred);
-	}
+	{return Algo::CopyToAdvance(me(), core::forward<OR>(dst), pred);}
 
 
 	template<typename OR, typename P> forceinline Meta::EnableIf<
 		(IsOutputRange<OR>::_ || HasAsRange<OR>::_) && Meta::IsCallable<P, T>::_
 	> CopyTo(const OR& dst, P pred) const
-	{
-		auto dst2 = AsRange(dst);
-		me().CopyToAdvance(dst2, pred);
-	}
+	{return Algo::CopyTo(me(), dst, pred);}
 
 
 	//! Возвращает количество элементов в диапазоне. Имеет вычислительную сложность O(length).
@@ -414,10 +254,7 @@ public:
 	template<typename X> forceinline Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	size_t> CountUntil(const X& x) const
-	{
-		R range = me();
-		return range.CountUntilAdvance(x);
-	}
+	{return Algo::CountUntil(me(), x);}
 	
 	//! Последовательно просматривает элементы диапазона до тех пор, пока для элемента
 	//! не выполнится условие predicate или не будет достигнут конец диапазона.
@@ -425,10 +262,7 @@ public:
 	template<typename P> forceinline Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	size_t> CountUntil(P predicate) const
-	{
-		R range = me();
-		return range.CountUntilAdvance(predicate);
-	}
+	{return Algo::CountUntil(me(), predicate);}
 
 
 	//! Последовательно удаляет элементы диапазона до тех пор, пока не встретится элемент,
@@ -437,12 +271,7 @@ public:
 	template<typename X> forceinline Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	R> ReadUntilAdvance(const X& x, size_t* ioIndex=null)
-	{
-		auto range = me();
-		size_t index = me().CountUntilAdvance(x);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvance(me(), x, ioIndex);}
 	
 	//! Последовательно удаляет элементы диапазона до тех пор, пока для элемента
 	//! не выполнится условие predicate или не будет достигнут конец диапазона.
@@ -450,12 +279,7 @@ public:
 	template<typename P> forceinline Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	R> ReadUntilAdvance(P predicate, size_t* ioIndex=null)
-	{
-		auto range = me();
-		size_t index = me().CountUntilAdvance(predicate);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvance(me(), predicate, ioIndex);}
 
 	//! Последовательно просматривает элементы диапазона до тех пор,
 	//! пока не встретится элемент, равный x, или не будет достигнут конец диапазона.
@@ -463,11 +287,7 @@ public:
 	template<typename X, typename U=R> forceinline Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	ResultOfTake<U>> ReadUntil(const X& x, size_t* ioIndex=null) const
-	{
-		const size_t index = me().CountUntil(x);
-		if(ioIndex!=null) *ioIndex += index;
-		return me().Take(index);
-	}
+	{return Algo::ReadUntil(me(), x, ioIndex);}
 	
 	//! Последовательно просматривает элементы диапазона до тех пор,
 	//! пока для элемента не выполнится условие predicate или не будет достигнут конец диапазона.
@@ -475,11 +295,7 @@ public:
 	template<typename P, typename U=R> forceinline Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	ResultOfTake<U>> ReadUntil(P predicate, size_t* ioIndex=null) const
-	{
-		size_t index = me().CountUntil(predicate);
-		if(ioIndex!=null) *ioIndex += index;
-		return me().Take(index);
-	}
+	{return Algo::ReadUntil(me(), predicate, ioIndex);}
 
 
 	//! Найти первое вхождение элемента what в этот диапазон.
@@ -489,15 +305,11 @@ public:
 	template<typename X> Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
 	R> Find(const X& what, size_t* ioIndex=null) const
-	{
-		auto result = me();
-		result.FindAdvance(what, ioIndex);
-		return result;
-	}
+	{return Algo::Find(me(), what, ioIndex);}
 
 	template<typename X> Meta::EnableIf<
 		Meta::IsConvertible<X, T>::_,
-	bool> Contains(const X& what) const {return !me().Find(what).Empty();}
+	bool> Contains(const X& what) const {return Algo::Contains(me(), what);}
 
 	//! Найти первое вхождение элемента, удовлетворяющего некоторому условию, в этот диапазон.
 	//! \param pred Условие, которому должен удовлетворять искомый элемент.
@@ -505,32 +317,20 @@ public:
 	template<typename P> Meta::EnableIf<
 		Meta::IsCallable<P, T>::_,
 	R> Find(P pred, size_t* ioIndex=null) const
-	{
-		R range = me();
-		return range.FindAdvance(pred, ioIndex);
-	}
+	{return Algo::Find(me(), pred, ioIndex);}
 
-	bool Contains(const T& what) const {return !me().Find(what).Empty();}
+	bool Contains(const T& what) const {return Algo::Contains(me(), what);}
 	
 
 	template<typename Ws, typename U=R> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<Ws, T>::_,
 	ResultOfTake<U>> ReadUntilAdvanceAny(const Ws& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
-	{
-		R range = me();
-		size_t index = CountUntilAdvanceAny(whats, oWhatIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvanceAny(me(), whats, ioIndex, oWhatIndex);}
 
 	template<typename Ws, typename U=R> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<Ws, T>::_,
 	ResultOfTake<U>> ReadUntilAny(const Ws& whats, size_t* ioIndex=null, size_t* oWhatIndex=null) const
-	{
-		size_t index = me().CountUntilAny(whats, oWhatIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return me().Take(index);
-	}
+	{return Algo::ReadUntilAny(me(), whats, ioIndex, oWhatIndex);}
 
 	//! Найти первое вхождение диапазона what в этот диапазон.
 	//! Начало диапазона устанавливается на начало первого вхождения what или совпадает с концом, если диапазон не содержит what.
@@ -540,15 +340,7 @@ public:
 	template<typename RW> Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	R&> FindAdvance(const RW& what, size_t* ioIndex=null)
-	{
-		while(!me().Empty() && !me().StartsWith(what))
-		{
-			me().PopFirst();
-			if(ioIndex!=null) ++*ioIndex;
-			me().FindAdvance(what.First(), ioIndex);
-		}
-		return me();
-	}
+	{return Algo::FindAdvance(me(), what, ioIndex);}
 
 
 	//! Найти первое вхождение диапазона what в этот диапазон.
@@ -559,10 +351,7 @@ public:
 	template<typename RW> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	R> Find(const RW& what, size_t* ioIndex=null) const
-	{
-		auto result = me();
-		return result.FindAdvance(what, ioIndex);
-	}
+	{return Algo::Find(me(), what, ioIndex);}
 
 	//! Найти первое вхождение любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
 	//! Начало этого диапазона смещается к найденному поддиапазону или совмещается
@@ -578,17 +367,7 @@ public:
 	template<typename RWs> Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	R&> FindAdvanceAnyAdvance(RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
-	{
-		RWs subrangesCopy = subranges;
-		while(!me().Empty() && !me().StartsWithAnyAdvance(subranges, oSubrangeIndex))
-		{
-			subranges = subrangesCopy;
-			me().PopFirst();
-			if(ioIndex!=null) ++*ioIndex;
-			me().FindAdvanceAny(subranges.FirstTransversal(), ioIndex);
-		}
-		return me();
-	}
+	{return Algo::FindAdvanceAnyAdvance(me(), subranges, ioIndex, oSubrangeIndex);}
 
 	//! Найти количество символов, предшествующих первому вхождению любого диапазона
 	//! из диапазона поддиапазонов subranges в этот диапазон.
@@ -603,11 +382,7 @@ public:
 	template<typename RWs> Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	size_t> CountUntilAdvanceAnyAdvance(RWs& subranges, size_t* oSubrangeIndex=null)
-	{
-		size_t index = 0;
-		FindAdvanceAnyAdvance(subranges, &index, oSubrangeIndex);
-		return index;
-	}
+	{return Algo::CountUntilAdvanceAnyAdvance(me(), subranges, oSubrangeIndex);}
 
 	//! Прочитать количество символов, предшествующих первому вхождению любого диапазона
 	//! из диапазона поддиапазонов subranges в этот диапазон.
@@ -622,12 +397,7 @@ public:
 	template<typename RWs, typename U=R> Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	ResultOfTake<U>> ReadUntilAdvanceAnyAdvance(RWs& subranges, size_t* ioIndex, size_t* oSubrangeIndex=null)
-	{
-		auto range = me();
-		size_t index = CountUntilAdvanceAnyAdvance(subranges, oSubrangeIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvanceAnyAdvance(me(), subranges, ioIndex, oSubrangeIndex);}
 
 
 	//! Найти первое вхождение любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
@@ -641,10 +411,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	R&> FindAdvanceAny(const RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
-	{
-		auto subrangesCopy = subranges;
-		return FindAdvanceAnyAdvance(subrangesCopy, ioIndex, oSubrangeIndex);
-	}
+	{return Algo::FindAdvanceAny(me(), subranges, ioIndex, oSubrangeIndex);}
 
 	//! Найти количество символов, предшествующих первому вхождению любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
 	//! Начало этого диапазона смещается к найденному поддиапазону или совмещается
@@ -656,11 +423,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	size_t> CountUntilAdvanceAny(const RWs& subranges, size_t* oSubrangeIndex=null)
-	{
-		size_t index = 0;
-		FindAdvanceAny(subranges, &index, oSubrangeIndex);
-		return index;
-	}
+	{return Algo::CountUntilAdvanceAny(me(), subranges, oSubrangeIndex);}
 
 	//! Прочитать количество символов, предшествующих первому вхождению любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
 	//! Начало этого диапазона смещается к найденному поддиапазону или совмещается
@@ -674,12 +437,7 @@ public:
 	template<typename RWs, typename U=R> Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	ResultOfTake<U>> ReadUntilAdvanceAny(const RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
-	{
-		auto range = me();
-		size_t index = me().CountUntilAdvanceAny(subranges, oSubrangeIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvanceAny(me(), subranges, ioIndex, oSubrangeIndex);}
 
 
 
@@ -694,10 +452,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	R> FindAnyAdvance(RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null) const
-	{
-		R range = me();
-		return range.FindAdvanceAnyAdvance(subranges, ioIndex, oSubrangeIndex);
-	}
+	{return Algo::FindAnyAdvance(me(), subranges, ioIndex, oSubrangeIndex);}
 
 	//! Найти количество символов, предшествующих первому вхождению любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
 	//! \param subranges[inout] Диапазон искомых поддиапазонов.
@@ -709,11 +464,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	size_t> CountUntilAnyAdvance(RWs& subranges, size_t* oSubrangeIndex=null) const
-	{
-		size_t index = 0;
-		me().FindAnyAdvance(subranges, &index, oSubrangeIndex);
-		return index;
-	}
+	{return Algo::CountUntilAnyAdvance(me(), subranges, oSubrangeIndex);}
 
 	//! Прочитать количество символов, предшествующих первому вхождению любого диапазона
 	//! из диапазона поддиапазонов subranges в этот диапазон.
@@ -725,12 +476,7 @@ public:
 	template<typename RWs, typename U=R> Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	ResultOfTake<U>> ReadUntilAnyAdvance(RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null) const
-	{
-		auto range = me();
-		size_t index = me().CountUntilAnyAdvance(subranges, oSubrangeIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAnyAdvance(me(), subranges, ioIndex, oSubrangeIndex);}
 
 
 
@@ -742,10 +488,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	R> FindAny(const RWs& subranges, size_t* ioIndex=null, size_t* oWhatIndex=null) const
-	{
-		R result = me();
-		return result.FindAdvanceAny(subranges, ioIndex, oWhatIndex);
-	}
+	{return Algo::FindAny(me(), subranges, ioIndex, oWhatIndex);}
 
 	//! Найти количество символов, предшествующих первому вхождению любого диапазона из диапазона поддиапазонов subranges в этот диапазон.
 	//! \param subranges[inout] Диапазон искомых поддиапазонов.
@@ -757,11 +500,7 @@ public:
 	template<typename RWs> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	size_t> CountUntilAny(const RWs& subranges, size_t* oSubrangeIndex=null) const
-	{
-		size_t index = 0;
-		me().FindAny(subranges, &index, oSubrangeIndex);
-		return index;
-	}
+	{return Algo::CountUntilAny(me(), subranges, oSubrangeIndex);}
 
 	//! Прочитать количество символов, предшествующих первому вхождению любого диапазона
 	//! из диапазона поддиапазонов subranges в этот диапазон.
@@ -773,11 +512,7 @@ public:
 	template<typename RWs, typename U=R> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOfFiniteForwardRanges<RWs>::_,
 	ResultOfTake<U>> ReadUntilAny(const RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null) const
-	{
-		const size_t index = me().CountUntilAny(subranges, oSubrangeIndex);
-		if(ioIndex!=null) *ioIndex += index;
-		return me().Take(index);
-	}
+	{return Algo::ReadUntilAny(me(), subranges, ioIndex, oSubrangeIndex);}
 
 
 
@@ -788,11 +523,7 @@ public:
 	template<typename RW> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	size_t> CountUntilAdvance(const RW& what)
-	{
-		size_t index=0;
-		FindAdvance(what, &index);
-		return index;
-	}
+	{return Algo::CountUntilAdvance(me(), what);}
 
 	//! Прочитать элементы из начала диапазона, предшествующие первому вхождению диапазона what в этот диапазон.
 	//! \param what Искомый диапазон.
@@ -800,12 +531,7 @@ public:
 	template<typename RW, typename U=R> Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	ResultOfTake<U>> ReadUntilAdvance(const RW& what, size_t* ioIndex=null)
-	{
-		R range = me();
-		size_t index = me().CountUntilAdvance(what);
-		if(ioIndex!=null) *ioIndex += index;
-		return range.Take(index);
-	}
+	{return Algo::ReadUntilAdvance(me(), what, ioIndex);}
 
 	//! Найти количество элементов, предшествующих первому вхождению диапазона what в этот диапазон.
 	//! \param what Искомый диапазон.
@@ -813,10 +539,7 @@ public:
 	template<typename RW> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	size_t> CountUntil(const RW& what) const
-	{
-		R range = me();
-		return range.CountUntilAdvance(what);
-	}
+	{return Algo::CountUntil(me(), what);}
 
 	//! Прочитать элементы из начала диапазона, предшествующие первому вхождению диапазона what в этот диапазон.
 	//! \param what Искомый диапазон.
@@ -824,11 +547,7 @@ public:
 	template<typename RW, typename U=R> forceinline Meta::EnableIf<
 		IsFiniteForwardRangeOf<RW, T>::_,
 	ResultOfTake<U>> ReadUntil(const RW& what, size_t* ioIndex=null) const
-	{
-		size_t index = me().CountUntil(what);
-		if(ioIndex!=null) *ioIndex += index;
-		return me().Take(index);
-	}
+	{return Algo::ReadUntil(me(), what, ioIndex);}
 
 
 
@@ -836,13 +555,10 @@ public:
 
 	template<typename RW> forceinline Meta::EnableIf<
 		IsFiniteForwardRange<RW>::_ || HasAsRange<RW>::_,
-	bool> Contains(const RW& what) const {return !me().Find(Range::AsRange(what)).Empty();}
+	bool> Contains(const RW& what) const {return Algo::Contains(me(), what);}
 
 	template<size_t N> forceinline bool Contains(const T(&what)[N]) const
-	{
-		const size_t len = N-size_t(Meta::IsCharType<T>::_);
-		return !me().Contains(ArrayRange<const T>(what, len));
-	}
+	{return Algo::Contains(me(), what);}
 
 	template<typename P=bool(*)(const T&, const T&)> bool IsSorted(P comparer=&Op::Less<T>) const
 	{
