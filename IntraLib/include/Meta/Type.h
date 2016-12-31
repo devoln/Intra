@@ -388,7 +388,7 @@ template<typename SRC, typename DST> struct is_lvalue_to_rvalue_ref<SRC, DST, tr
 {
 	typedef RemoveConstVolatile<RemoveReference<SRC>> src_t;
 	typedef RemoveConstVolatile<RemoveReference<DST>> dst_t;
-	enum: bool {_ = !IsFunction<src_t>::_ && TypeEquals<src_t, dst_t>::_ || IsInherited<src_t, dst_t>::_};
+	enum: bool {_ = (!IsFunction<src_t>::_ && TypeEquals<src_t, dst_t>::_) || IsInherited<src_t, dst_t>::_};
 };
 
 template<typename SRC, typename DST> struct is_lvalue_to_rvalue_ref<SRC, DST, false>: TypeFromValue<bool, false> {};

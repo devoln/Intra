@@ -128,7 +128,7 @@ ReturnValueTypeOf<R>> AtIndex(const R& range, size_t index) {return range[index]
 template<typename R> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_ && !HasIndex<R>::_,
 ReturnValueTypeOf<R>> AtIndex(const R& range, size_t index)
-{return PopFirstExactly(range).First();}
+{return PopFirstExactly(range, index).First();}
 
 //! Удаляет из диапазона все элементы кроме последних n элементов.
 //! \return Возвращает ссылку на себя.
