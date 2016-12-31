@@ -4,6 +4,7 @@
 #include "Containers/Array.h"
 #include "Memory/AllocatorInterface.h"
 #include "Meta/Tuple.h"
+#include "Algo/Search/Single.h"
 
 namespace Intra {
 
@@ -14,8 +15,8 @@ public:
 	typedef KeyValuePair<const K, V> CPair;
 	typedef KeyValuePair<K&, V&> PairRef;
 	typedef KeyValuePair<const K&, V&> CPairRef;
-	typedef Intra::Range::ZipResult<ArrayRange<const K>, ArrayRange<V>> Range;
-	typedef Intra::Range::ZipResult<ArrayRange<const K>, ArrayRange<const V>> ConstRange;
+	typedef Intra::Range::RZip<ArrayRange<const K>, ArrayRange<V>> Range;
+	typedef Intra::Range::RZip<ArrayRange<const K>, ArrayRange<const V>> ConstRange;
 
 	typedef K key_type;
 	typedef V mapped_type;
@@ -26,7 +27,7 @@ public:
 		forceinline iterator(LinearMap<K,V>* mymap, size_t index):
 			mMymap(mymap), mIndex(index) {}
 
-		forceinline core::pair<const K&, V&> operator*() const
+		forceinline Meta::Pair<const K&, V&> operator*() const
 		{
 			INTRA_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
@@ -74,7 +75,7 @@ public:
 
 	struct const_iterator
 	{
-		forceinline const core::pair<const K&, V&> operator*() const
+		forceinline const Meta::Pair<const K&, V&> operator*() const
 		{
 			INTRA_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
@@ -161,7 +162,7 @@ public:
 	LinearMap(const LinearMap& rhs) = default;
 
 	forceinline LinearMap(LinearMap&& rhs):
-		mKeys(core::move(rhs.mKeys)), mValues(core::move(rhs.mValues)) {}
+		mKeys(Meta::Move(rhs.mKeys)), mValues(Meta::Move(rhs.mValues)) {}
 
 	forceinline bool Empty() const {return mKeys.Empty();}
 	forceinline bool operator==(null_t) const {return Empty();}
@@ -185,9 +186,9 @@ public:
 	iterator Insert(const K& key, V&& value)
 	{
 		size_t i = FindIndex(key);
-		if(i!=Count()) return mValues[i] = core::move(value);
+		if(i!=Count()) return mValues[i] = Meta::Move(value);
 		mKeys.AddLast(key);
-		mValues.AddLast(core::move(value));
+		mValues.AddLast(Meta::Move(value));
 		return iterator{this, Count()-1};
 	}
 
@@ -225,7 +226,7 @@ public:
 	{
 		INTRA_ASSERT(!KeyExists(key));
 		mKeys.AddLast(key);
-		return mValues.AddLast(core::move(value));
+		return mValues.AddLast(Meta::Move(value));
 	}
 
 	V& InsertNew(const K& key)
@@ -283,7 +284,7 @@ public:
 	forceinline size_t FindIndex(const K& key) const
 	{
 		size_t index = 0;
-		mKeys().Find(key, &index);
+		Algo::Find(mKeys(), key, &index);
 		return index;
 	}
 
@@ -293,7 +294,7 @@ public:
 	void Rename(const K& key, const K& newKey)
 	{
 		if(key==newKey) return;
-		INTRA_ASSERT(!keys.Contains(newKey));
+		INTRA_ASSERT(!Algo::Contains(mKeys, newKey));
 		auto i = FindIndex(key);
 		if(i==Count()) return;
 		mKeys[i] = newKey;
@@ -304,7 +305,7 @@ public:
 	forceinline void Reserve(size_t newSize) {mKeys.Reserve(newSize); mValues.Reserve(newSize);}
 	forceinline void Clear() {mKeys.Clear(); mValues.Clear();}
 
-	forceinline bool KeyExists(const K& key) const {return mKeys().Contains(key);}
+	forceinline bool KeyExists(const K& key) const {return Contains(mKeys(), key);}
 
 	void Remove(const K& key)
 	{
@@ -345,8 +346,8 @@ public:
 
 	LinearMap& operator=(LinearMap&& rhs)
 	{
-		mKeys = core::move(rhs.mKeys);
-		mValues = core::move(rhs.mValues);
+		mKeys = Meta::Move(rhs.mKeys);
+		mValues = Meta::Move(rhs.mValues);
 		return *this;
 	}
 
@@ -366,8 +367,8 @@ public:
 	forceinline const_iterator end() const {return const_iterator(this, Count());}
 
 #ifdef INTRA_STL_INTERFACE
-	forceinline iterator emplace(K&& key, V&& value) {return Insert(core::move(key), core::move(value));}
-	forceinline iterator insert(const core::pair<K,V>& pair) {return Insert(pair.first, pair.second);}
+	forceinline iterator emplace(K&& key, V&& value) {return Insert(Meta::Move(key), Meta::Move(value));}
+	forceinline iterator insert(const Meta::Pair<K,V>& pair) {return Insert(pair.first, pair.second);}
 	forceinline bool empty() const {return Empty();}
 	forceinline size_t size() const {return Count();}
 	forceinline void clear() {Clear();}

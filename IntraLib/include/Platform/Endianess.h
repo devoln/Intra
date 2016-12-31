@@ -1,6 +1,8 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "PlatformInfo.h"
+#include "Core/FundamentalTypes.h"
+#include "Meta/Type.h"
 
 namespace Intra {
 

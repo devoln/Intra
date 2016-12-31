@@ -4,7 +4,7 @@
 #include "IO/LogSystem.h"
 #include "Range/StringView.h"
 #include "Math/Random.h"
-#include "Algorithms/Hash.h"
+#include "Algo/Hash/Murmur.h"
 
 namespace Intra {
 
@@ -31,27 +31,24 @@ private:
 template<size_t N> struct Big
 {
 	char c[N];
-	forceinline bool operator==(const Big& rhs) const {return core::memcmp(c, rhs.c, N)==0;}
+	forceinline bool operator==(const Big& rhs) const {return C::memcmp(c, rhs.c, N)==0;}
 	forceinline bool operator!=(const Big& rhs) const {return !operator==(rhs);}
-	forceinline bool operator<(const Big& rhs) const {return core::memcmp(c, rhs.c, N)<0;}
+	forceinline bool operator<(const Big& rhs) const {return C::memcmp(c, rhs.c, N)<0;}
 	Big& operator+=(const Big& rhs) {c[0]+=rhs.c[0]; return *this;}
-};
 
-template<size_t N> uint ToHash(const Big<N>& b) {return Hash::Murmur3_32(StringView(b.c, N), 0);}
+	uint ToHash() const
+	{return Algo::Hash::Murmur3_32(StringView(c, N), 0);}
+};
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
 > GenerateRandomValue(T& dst)
-{
-	dst = Math::Random<T>::Global();
-}
+{dst = Math::Random<T>::Global();}
 
 template<typename T> Meta::EnableIf<
 	Meta::IsFloatType<T>::_
 > GenerateRandomValue(T& dst)
-{
-	dst = Math::Random<T>::Global.SignedNext()*1000;
-}
+{dst = Math::Random<T>::Global.SignedNext()*1000;}
 
 template<size_t N> void GenerateRandomValue(Big<N>& dst)
 {

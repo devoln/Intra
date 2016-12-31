@@ -27,7 +27,7 @@ template<typename T, typename Index> T& SparseRange<T, Index>::Add(T&& val, Inde
 {
 	INTRA_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
-	new(&result) T(core::move(val));
+	new(&result) T(Meta::Move(val));
 	return result;
 }
 
@@ -43,7 +43,7 @@ template<typename T, typename Index> template<typename... Args> T& SparseRange<T
 {
 	INTRA_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
-	new(&result) T(core::forward<Args>(args)...);
+	new(&result) T(Meta::Forward<Args>(args)...);
 	return result;
 }
 
@@ -110,7 +110,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 			continue;
 		}
 		//Переносим элемент из одного разреженного массива в другой
-		new(&dst.data[i]) T(core::move(data[i]));
+		new(&dst.data[i]) T(Meta::Move(data[i]));
 		data[i].~T();
 	}
 
@@ -167,7 +167,7 @@ template<typename Index> Array<flag32> SparseTypelessRange<Index>::DeadBitfield(
 {
 	enum {ValueBits = sizeof(flag32)*8};
 	Array<flag32> result;
-	result.SetCount(data.Count()/ValueBits); //Заполнит все биты нулями
+	result.SetCount(data.Length()/ValueBits); //Заполнит все биты нулями
 	size_t ff = first_free;
 	while(ff != end_index())
 	{
@@ -182,7 +182,7 @@ template<typename Index> Array<flag32> SparseTypelessRange<Index>::DeadBitfield(
 template<typename Index> void SparseTypelessRange<Index>::MoveTo(SparseTypelessRange& dst)
 {
 	INTRA_ASSERT(dst.data.Length()>=data.Length());
-	core::memcpy(dst.data.Begin, data.Begin, data.Length());
+	memcpy(dst.data.Begin, data.Begin, data.Length());
 	dst.node_size = node_size;
 
 	//Инициализируем список до конца

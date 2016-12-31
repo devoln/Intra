@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Core/Core.h"
+#include "Algo/Mutation/Copy.h"
 #include "Atomic.h"
 
 namespace Intra {
@@ -22,9 +23,7 @@ struct Job
 	Job(const Job& rhs):
 		function(rhs.function), parent(rhs.parent),
 		unfinishedJobs(rhs.unfinishedJobs.Load())
-	{
-		core::memcpy(data, rhs.data, sizeof(data));
-	}
+		{Algo::CopyTo(rhs.data, data);}
 
 
 	template<typename T, typename S> static Job* parallel_for(T* data, uint count, Function function, const S& splitter)

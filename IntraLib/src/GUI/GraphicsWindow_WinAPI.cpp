@@ -115,7 +115,7 @@ WindowHandle WindowCreate(StringView caption, WindowType type, SVec2 pos, USVec2
 	const String className = "P_Window"+ToString(windowsCreated);
 
 	wchar_t wclassName[20];
-	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(core::numof(wclassName)));
+	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(Meta::NumOf(wclassName)));
 	wclassName[size_t(wclassNameLength)] = L'\0';
 	WString wcaption;
 	wcaption.Reserve(caption.Length()+1);
@@ -252,7 +252,7 @@ void WindowDelete(WindowHandle wnd)
 	if(wnd->hwnd!=null) DestroyWindow(wnd->hwnd);
 	const String className = "P_Window"+ToString(wnd->id);
 	wchar_t wclassName[20];
-	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(core::numof(wclassName)));
+	int wclassNameLength = MultiByteToWideChar(CP_UTF8, 0, className.Data(), int(className.Length()), wclassName, int(Meta::NumOf(wclassName)));
 	wclassName[wclassNameLength]=L'\0';
 	UnregisterClassW(wclassName, GetModuleHandleW(null));
 	delete wnd;

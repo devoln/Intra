@@ -13,7 +13,7 @@ public:
 	CharMap(ArrayRange<const Array<char>> arr, char filler='\0');
 	CharMap(ArrayRange<const String> arr, char filler='\0');
 	CharMap(const CharMap& rhs): Array2D<char>(rhs) {}
-	CharMap(CharMap&& rhs): Array2D<char>(core::move(rhs)) {}
+	CharMap(CharMap&& rhs): Array2D<char>(Meta::Move(rhs)) {}
 
 	struct Block
 	{

@@ -2,8 +2,9 @@
 #include "IO/Stream.h"
 #include "IO/LogSystem.h"
 #include "GUI/MessageBox.h"
+#include "Algo/String/CStr.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -20,10 +21,13 @@
 #ifndef INTRA_DBGHELP
 
 #else
-#include <DbgHelp.h>
+
 #ifdef _MSC_VER
+#pragma warning(disable: 4091)
 #pragma comment(lib, "DbgHelp.lib")
 #endif
+#include <DbgHelp.h>
+
 #endif
 
 #ifdef _MSC_VER
@@ -144,7 +148,12 @@ namespace Intra {
 
 void InternalError(const char* func, const char* file, int line, const char* info)
 {
-#if(INTRA_MINEXE>=3)
+	InternalError(StringView(func), StringView(file), line, StringView(info));
+}
+
+void InternalError(StringView func, StringView file, int line, StringView info)
+{
+	#if(INTRA_MINEXE>=3)
 	(void)func, (void)file, (void)line, (void)info;
 	abort();
 #else
@@ -154,15 +163,15 @@ void InternalError(const char* func, const char* file, int line, const char* inf
 	was = true;
 
 	String msg;
-	msg.Reserve(150 + core::strlen(func) + core::strlen(file) + core::strlen(info));
-	msg += StringView(file);
+	msg.Reserve(100 + file.Length() + func.Length() + info.Length());
+	msg += file;
 	msg += "(";
 	msg += ToString(line);
 	msg +=  ")";
 	msg += ": обнаружена ошибка при вызове функции\n";
-	msg += StringView(func);
+	msg += func;
 	msg += "\n";
-	msg += StringView(info);
+	msg += info;
 	String stackTrace = GetStackWalk(1);
 	if(stackTrace!=null)
 	{
@@ -188,11 +197,6 @@ void InternalError(const char* func, const char* file, int line, const char* inf
 	ShowMessageBox(msg, "Критическая ошибка!", MessageIcon::Error);
 	exit(1);
 #endif
-}
-
-void InternalError(StringView func, StringView file, int line, StringView info)
-{
-	InternalError(String(func).CStr(), String(file).CStr(), line, String(info).CStr());
 }
 
 }

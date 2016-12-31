@@ -517,7 +517,7 @@ public:
 			sampler(sampler_), harmonics(harmonics_), scale(scale_), freqMultiplyer(freqMultiplyer_) {}
 
 		impl_SamplerPassParams(T&& sampler_, ushort harmonics_, float scale_, float freqMultiplyer_):
-			sampler(core::move(sampler_)), harmonics(harmonics_), scale(scale_), freqMultiplyer(freqMultiplyer_) {}
+			sampler(Meta::Move(sampler_)), harmonics(harmonics_), scale(scale_), freqMultiplyer(freqMultiplyer_) {}
 
 		T sampler;
 		ushort harmonics;
@@ -543,7 +543,11 @@ private:
 	static void functionMultiSineSynthPass(const MultiSineParams& params,
 		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
 
-	struct SineExpParams {byte len; SineExpHarmonic harmonics[20];};
+	struct SineExpParams
+	{
+		byte len;
+		SineExpHarmonic harmonics[20]; //Требуется, чтобы harmonics[0] имела наибольший lengthMultiplyer
+	};
 	static void functionSineExpSynthPass(const SineExpParams& params,
 		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add);
 
@@ -647,10 +651,10 @@ public:
 		float minNoteDuration=0, float fadeOffTime=0);
 
 	SynthesizedInstrument(SynthesizedInstrument&& rhs):
-		SynthPass(core::move(rhs.SynthPass)),
-		ModifierPasses(core::move(rhs.ModifierPasses)),
-		AttenuationPass(core::move(rhs.AttenuationPass)),
-		PostEffects(core::move(rhs.PostEffects)),
+		SynthPass(Meta::Move(rhs.SynthPass)),
+		ModifierPasses(Meta::Move(rhs.ModifierPasses)),
+		AttenuationPass(Meta::Move(rhs.AttenuationPass)),
+		PostEffects(Meta::Move(rhs.PostEffects)),
 		MinNoteDuration(rhs.MinNoteDuration),
 		FadeOffTime(rhs.FadeOffTime) {}
 
@@ -703,7 +707,7 @@ public:
 		{
 			auto attenuatorCopy=attenuator;
 			attenuatorCopy.SetAttenuationStep(1.0f/sampleRate);
-			for(size_t i=0; i<inOutSamples.Count(); i++)
+			for(size_t i=0; i<inOutSamples.Length(); i++)
 			{
 				inOutSamples[i]*=attenuatorCopy.NextSample();
 			}
@@ -754,15 +758,15 @@ public:
 		SamplesCache(), Generators() {}
 
 	DrumInstrument(DrumInstrument&& rhs):
-		SamplesCache(core::move(rhs.SamplesCache)), Generators(core::move(rhs.Generators)) {}
+		SamplesCache(Meta::Move(rhs.SamplesCache)), Generators(Meta::Move(rhs.Generators)) {}
 
 	DrumInstrument(const DrumInstrument& rhs) = default;
 	DrumInstrument& operator=(const DrumInstrument& rhs) = default;
 
 	DrumInstrument& operator=(DrumInstrument&& rhs)
 	{
-		SamplesCache = core::move(rhs.SamplesCache);
-		Generators = core::move(rhs.Generators);
+		SamplesCache = Meta::Move(rhs.SamplesCache);
+		Generators = Meta::Move(rhs.Generators);
 		return *this;
 	}
 

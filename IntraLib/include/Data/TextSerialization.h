@@ -1,12 +1,16 @@
 ﻿#pragma once
 
-#include "Algorithms/Algorithms.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
+#include "Meta/EachField.h"
+#include "Range/StringView.h"
+#include "Algo/Search.h"
 #include "IO/StaticStream.h"
 #include "Data/Reflection.h"
 #include "Data/TextSerializationParams.h"
 #include "Containers/String.h"
+#include "Range/Construction/TakeUntil.h"
+#include "Range/Construction/TakeUntilAny.h"
 
 namespace Intra { namespace Data {
 
@@ -96,7 +100,7 @@ public:
 				int counter = 1;
 				StringView commentBlock = Input.ReadRecursiveBlock(counter,
 					Lang.OneLineCommentBegin, "\n", null, null);
-				Line += commentBlock.CountLinesAdvance();
+				Line += Algo::CountLinesAdvance(commentBlock);
 				continue;
 			}
 			if(!Lang.MultiLineCommentBegin.Empty() && Input.Expect(Lang.MultiLineCommentBegin))
@@ -104,7 +108,7 @@ public:
 				int counter = 1;
 				StringView commentBlock = Input.ReadRecursiveBlock(counter,
 					Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd, null, null);
-				Line += commentBlock.CountLinesAdvance();
+				Line += Algo::CountLinesAdvance(commentBlock);
 				continue;
 			}
 			break;
@@ -121,7 +125,7 @@ public:
 			if(!Log().EndsWith(eofStr)) Log += eofStr;
 			return false;
 		}
-		LogExpectError(Input.Rest.ReadUntil(AsciiSet::Spaces), {stringToExpect});
+		LogExpectError(Range::TakeUntil(Input.Rest, AsciiSet::Spaces), {stringToExpect});
 		return false;
 	}
 
@@ -135,7 +139,7 @@ public:
 			if(maxStrLength<stringsToExpect[i].Length())
 				maxStrLength = stringsToExpect[i].Length();
 		}
-		LogExpectError(Input.Rest.ReadUntil(AsciiSet::Spaces), stringsToExpect);
+		LogExpectError(Range::TakeUntil(Input.Rest, AsciiSet::Spaces), stringsToExpect);
 		return -1;
 	}
 
@@ -245,7 +249,8 @@ struct TextDeserializerStructVisitor
 
 //! Сериализовать кортеж
 template<typename O, typename Tuple> Meta::EnableIf<
-	Meta::IsTuple<Tuple>::_
+	Meta::HasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
+	!HasReflection<Tuple>::_
 > SerializeText(GenericTextSerializer<O>& serializer,
 	const Tuple& src, ArrayRange<const StringView> fieldNames=null)
 {
@@ -253,7 +258,7 @@ template<typename O, typename Tuple> Meta::EnableIf<
 	if((serializer.Params.ValuePerLine & TextSerializerParams::TypeFlags_Tuple) == 0)
 		fieldNames = null;
 	GenericTextSerializerStructVisitor<O> visitor = {&serializer, false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
-	src.ForEachField(visitor);
+	Meta::ForEachField(src, visitor);
 	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 }
 
@@ -267,7 +272,7 @@ template<typename T, typename O> forceinline Meta::EnableIf<
 	if(!serializer.Params.FieldAssignments && !serializer.Lang.RequireFieldAssignments)
 		fieldNames=null;
 	GenericTextSerializerStructVisitor<O> visitor = {&serializer, false, fieldNames, TextSerializerParams::TypeFlags_Struct};
-	src.ForEachField(visitor);
+	Meta::ForEachField(src, visitor);
 	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
 }
 
@@ -277,50 +282,40 @@ template<typename T, typename O> forceinline Meta::EnableIf<
 template<typename T, typename O> Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
 > SerializeText(GenericTextSerializer<O>& serializer, T v)
-{
-	serializer.Output.WriteIntegerText(v);
-}
+{serializer.Output.WriteIntegerText(v);}
 
 //! Сериализация чисел с плавающей запятой
 template<typename T, typename O> Meta::EnableIf<
 	Meta::IsFloatType<T>::_
 > SerializeText(GenericTextSerializer<O>& serializer, const T& v)
-{
-	serializer.Output.WriteFloatText(v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
-}
+{serializer.Output.WriteFloatText(v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);}
 
 
 //! Сериализовать строку
-template<typename O, typename Char, typename Allocator> forceinline
-void SerializeText(GenericTextSerializer<O>& serializer, const GenericString<Char, Allocator>& v)
-{
-	SerializeText(serializer, GenericStringView<Char>(v));
-}
+template<typename O, typename Char, typename Allocator> forceinline void SerializeText(
+	GenericTextSerializer<O>& serializer, const GenericString<Char, Allocator>& v)
+{SerializeText(serializer, GenericStringView<Char>(v));}
 
 //! Сериализовать булевое значение
-template<typename O> forceinline void SerializeText(GenericTextSerializer<O>& serializer, bool v)
-{
-	serializer.SerializeBool(v);
-}
+template<typename O> forceinline void SerializeText(
+	GenericTextSerializer<O>& serializer, bool v)
+{serializer.SerializeBool(v);}
 
 //! Сериализовать диапазон
 template<typename R, typename O> forceinline Meta::EnableIf<
 	Range::IsInputRange<R>::_
 > SerializeText(GenericTextSerializer<O>& serializer, const R& range)
-{
-	serializer.SerializeRange(range);
-}
+{serializer.SerializeRange(range);}
 
 //! Десериализовать диапазон
 template<typename R> forceinline Meta::EnableIf<
 	Range::IsOutputRange<R>::_
 > DeserializeText(TextDeserializer& deserializer, R& range)
-{
-	deserializer.DeserializeRange(range);
-}
+{deserializer.DeserializeRange(range);}
 
 //! Десериализовать массив
-template<typename T, size_t N> forceinline void DeserializeText(TextDeserializer& deserializer, T(&arr)[N])
+template<typename T, size_t N> forceinline void DeserializeText(
+	TextDeserializer& deserializer, T(&arr)[N])
 {
 	ArrayRange<T> range = arr;
 	deserializer.DeserializeRange(range);
@@ -328,17 +323,15 @@ template<typename T, size_t N> forceinline void DeserializeText(TextDeserializer
 
 #if INTRA_DISABLED
 //! Сериализовать список
-template<typename T, typename O> forceinline void SerializeText(GenericTextSerializer<O>& serializer, const List<T>& list)
-{
-	serializer.SerializeRange(list.AsRange());
-}
+template<typename T, typename O> forceinline void SerializeText(
+	GenericTextSerializer<O>& serializer, const List<T>& list)
+{serializer.SerializeRange(list.AsRange());}
 #endif
 
 //! Сериализовать массив
-template<typename T, typename O> forceinline void SerializeText(GenericTextSerializer<O>& serializer, const Array<T>& arr)
-{
-	serializer.SerializeRange(arr.AsRange());
-}
+template<typename T, typename O> forceinline void SerializeText(
+	GenericTextSerializer<O>& serializer, const Array<T>& arr)
+{serializer.SerializeRange(arr.AsRange());}
 
 //! Десериализовать массив
 template<typename T> forceinline void DeserializeText(TextDeserializer& deserializer, Array<T>& arr)
@@ -349,10 +342,9 @@ template<typename T> forceinline void DeserializeText(TextDeserializer& deserial
 }
 
 //! Сериализовать массив фиксированной длины
-template<typename T, size_t N, typename O> forceinline void SerializeText(GenericTextSerializer<O>& serializer, const T(&src)[N])
-{
-	serializer.SerializeRange(AsRange(src));
-}
+template<typename T, size_t N, typename O> forceinline void SerializeText(
+	GenericTextSerializer<O>& serializer, const T(&src)[N])
+{serializer.SerializeRange(AsRange(src));}
 
 
 
@@ -360,40 +352,30 @@ template<typename T, size_t N, typename O> forceinline void SerializeText(Generi
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsFloatType<T>::_
 > DeserializeText(TextDeserializer& deserializer, T& v)
-{
-	v = deserializer.Input.Parse<T>(deserializer.Lang.DecimalSeparator);
-}
+{v = deserializer.Input.Parse<T>(deserializer.Lang.DecimalSeparator);}
 
 //! Десериализация целых чисел
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
 > DeserializeText(TextDeserializer& deserializer, T& v)
-{
-	v = deserializer.Input.Parse<T>();
-}
+{v = deserializer.Input.Parse<T>();}
 
 //! Десериализация bool
 forceinline void DeserializeText(TextDeserializer& deserializer, bool& v)
-{
-	v = deserializer.DeserializeBool();
-}
+{v = deserializer.DeserializeBool();}
 
 
 //! Десериализация структур
 template<typename T> forceinline Meta::EnableIf<
 	HasReflection<T>::_
 > DeserializeText(TextDeserializer& deserializer, T& v)
-{
-	deserializer.DeserializeStruct(v);
-}
+{deserializer.DeserializeStruct(v);}
 
 //! Десериализация кортежей
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsTuple<T>::_
 > DeserializeText(TextDeserializer& deserializer, T& v)
-{
-	deserializer.DeserializeTuple(v);
-}
+{deserializer.DeserializeTuple(v);}
 
 
 }}

@@ -1,5 +1,6 @@
 ﻿#include "Sound/Music.h"
 #include "Sound/SoundBuilder.h"
+#include "Algo/Mutation/Fill.h"
 
 namespace Intra {
 
@@ -42,14 +43,14 @@ SoundBuffer MusicTrack::GetSamples(uint sampleRate) const
 	const auto duration = Duration();
 	SoundBuffer result(size_t(duration*sampleRate), sampleRate);
 	if(result.Samples==null) return result;
-	core::memset(result.Samples.Data(), 0, result.Samples.Count()*sizeof(result.Samples[0]));
+	Algo::FillZeros(result.Samples());
 	uint samplePos = 0;
 	for(uint i=0; i<Notes.Count(); i++)
 	{
 		samplePos += uint(GetNoteTimeOffset(i)*sampleRate);
 		if(Notes[i].Note.IsPause()) continue;
-
-		Instrument->GetNoteSamples(result.Samples(samplePos, $), operator[](i), Tempo, Volume*Notes[i].Volume, sampleRate);
+		Instrument->GetNoteSamples(result.Samples(samplePos, $),
+			operator[](i), Tempo, Volume*Notes[i].Volume, sampleRate);
 	}
 	return result;
 }
@@ -180,9 +181,8 @@ size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts
 size_t MusicSoundSampleSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
 	size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
-	Memory::CopyBits(outFloats, buffer.Samples().Take(floatsRead).AsConstRange());
-	if(buffer.Samples.Length()<floatsRead)
-		core::memset(outFloats.Begin+floatsRead, 0, (outFloats.Length()-floatsRead)*sizeof(float));
+	Algo::CopyToAdvance(buffer.Samples().Take(floatsRead), outFloats);
+	Algo::FillZeros(outFloats);
 	processedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
 	return floatsRead/channel_count;

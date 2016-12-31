@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Core/Debug.h"
+#include "Meta/Type.h"
+#include "Math/MathEx.h"
 
 namespace Intra { namespace Math {
-
-
 
 template<typename T> struct Random;
 
@@ -34,7 +35,7 @@ template<> struct Random<byte>
 
 	uint Seed;
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<sbyte>: Random<byte>
@@ -61,7 +62,7 @@ template<> struct Random<sbyte>: Random<byte>
 		return sbyte(min + sbyte(Random<byte>::operator()(byte(max-min))));
 	}
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<ushort>
@@ -70,9 +71,7 @@ template<> struct Random<ushort>
 
 	//! Возвращает псевдослучайное целое число в диапазоне [0; 65535]
 	forceinline ushort operator()()
-	{
-		return ushort((Seed*=16807) >> 16);
-	}
+	{return ushort((Seed*=16807) >> 16);}
 
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline ushort operator()(ushort max)
@@ -90,7 +89,7 @@ template<> struct Random<ushort>
 
 	uint Seed;
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<short>: Random<ushort>
@@ -117,7 +116,7 @@ template<> struct Random<short>: Random<ushort>
 		return short(min + short(Random<ushort>::operator()(ushort(max-min))));
 	}
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<uint>
@@ -148,7 +147,7 @@ template<> struct Random<uint>
 
 	uint Seed;
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<int>: Random<uint>
@@ -175,7 +174,7 @@ template<> struct Random<int>: Random<uint>
 		return min + operator()(max-min);
 	}
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<ulong64>: Random<uint>
@@ -204,7 +203,7 @@ template<> struct Random<ulong64>: Random<uint>
 		return min + operator()(max-min);
 	}
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<long64>: Random<ulong64>
@@ -231,7 +230,7 @@ template<> struct Random<long64>: Random<ulong64>
 		return min + operator()(max-min);
 	}
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 template<> struct Random<long>: Random<Meta::SelectType<int, long64, sizeof(long)==4>>
@@ -284,7 +283,7 @@ template<> struct Random<float>
 
 	uint Seed;
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 
@@ -321,7 +320,7 @@ template<> struct Random<double>
 
 	uint Seed;
 
-	INTRA_OPTIONAL_THREAD_LOCAL static Random Global;
+	static Random Global;
 };
 
 

@@ -2,6 +2,7 @@
 #include "Sound/InstrumentLibrary.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
+#include "Algo/Mutation/Fill.h"
 
 namespace Intra {
 
@@ -32,7 +33,7 @@ public:
 		status(0), startTickDuration(0), globalTickDuration(0), speed(1), track(0)
 	{
 		if(s.ReadNChars(4)!="MThd") { s=null; return; }
-		core::memset(instruments, 0, sizeof(instruments));
+		Algo::FillZeros(instruments);
 		uint chunkSize = s.Read<uintBE>();
 		if(chunkSize!=6) { s=null; return; }
 		header = s.Read<MidiHeader>();
@@ -268,7 +269,7 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 	{
 		auto track = reader.ReadTrack();
 		if(track.Notes==null) continue;
-		result.Tracks.AddLast(core::move(track));
+		result.Tracks.AddLast(Meta::Move(track));
 #ifndef INTRA_NO_MIDI_SYNTH
 		if(result.Tracks.Last().Instrument==null)
 			result.Tracks.Last().Instrument = &instr->Sine2Exp;

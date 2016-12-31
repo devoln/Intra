@@ -88,11 +88,9 @@ public:
 	template<typename T> forceinline T Read() {T n; ReadData(&n, sizeof(n)); return n;}
 
 
-	struct ByLineResult:
-		Range::RangeMixin<ByLineResult, StringView, Range::TypeEnum::Input, true>
+	struct ByLineResult
 	{
-		typedef StringView value_type;
-		typedef StringView return_value_type;
+		enum: bool {RangeIsFinite = true};
 
 		String CurLine;
 		String Terminator;
@@ -102,14 +100,34 @@ public:
 
 		ByLineResult(null_t=null):
 			CurLine(null), Terminator(null), MyStream(null),
-			UseTerminator(false), ConsumeCRLF(false), is_empty(true) {}
+			UseTerminator(false), ConsumeCRLF(false), mIsEmpty(true) {}
 
 		ByLineResult(IInputStream* stream, bool consumeCRLF, bool useTerminator, const String& terminator=null):
 			CurLine(stream->ReadLine(consumeCRLF)), Terminator(terminator),
 			MyStream(stream), UseTerminator(useTerminator), ConsumeCRLF(consumeCRLF)
 		{
-			is_empty = UseTerminator? (CurLine==Terminator): false;
-			if(CurLine.Empty() && MyStream->EndOfStream()) is_empty=true;
+			mIsEmpty = UseTerminator? (CurLine==Terminator): false;
+			if(CurLine.Empty() && MyStream->EndOfStream()) mIsEmpty=true;
+		}
+
+		ByLineResult(const ByLineResult&) = delete;
+		ByLineResult& operator=(const ByLineResult&) = delete;
+
+		ByLineResult(ByLineResult&& rhs):
+			CurLine(Meta::Move(rhs.CurLine)),
+			Terminator(Meta::Move(rhs.Terminator)),
+			MyStream(rhs.MyStream),
+			UseTerminator(rhs.UseTerminator),
+			ConsumeCRLF(rhs.ConsumeCRLF) {}
+
+		ByLineResult& operator=(ByLineResult&& rhs)
+		{
+			CurLine = Meta::Move(rhs.CurLine);
+			Terminator = Meta::Move(rhs.Terminator);
+			MyStream = rhs.MyStream;
+			UseTerminator = rhs.UseTerminator;
+			ConsumeCRLF = rhs.ConsumeCRLF;
+			return *this;
 		}
 
 		forceinline StringView First() const
@@ -122,20 +140,20 @@ public:
 		{
 			INTRA_ASSERT(!Empty());
 			CurLine = MyStream->ReadLine(ConsumeCRLF);
-			if(UseTerminator && CurLine==Terminator) is_empty=true;
+			if(UseTerminator && CurLine==Terminator) mIsEmpty=true;
 		}
 
-		forceinline bool Empty() const {return is_empty;}
+		forceinline bool Empty() const {return mIsEmpty;}
 
 		forceinline bool operator==(const ByLineResult& rhs) const
 		{
-			if(is_empty && rhs.is_empty) return true;
+			if(mIsEmpty && rhs.mIsEmpty) return true;
 			INTRA_ASSERT(MyStream!=rhs.MyStream || CurLine==rhs.CurLine);
 			return MyStream==rhs.MyStream;
 		}
 
 	private:
-		bool is_empty;
+		bool mIsEmpty;
 	};
 
 	ByLineResult ByLine()
@@ -286,7 +304,7 @@ public:
 	{
 		const auto bytesToRead = Math::Min(bytes, rest.Length());
 		INTRA_ASSERT(bytesToRead<=bytes);
-		core::memcpy(dst, rest.Begin, bytesToRead);
+		C::memcpy(dst, rest.Begin, bytesToRead);
 		rest.Begin+=bytesToRead;
 		return bytesToRead;
 	}
@@ -294,7 +312,7 @@ public:
 	void UnreadData(const void* src, size_t bytes) override final
 	{
 		(void)src;
-		INTRA_ASSERT(core::memcmp(rest.Begin-bytes, src, bytes)==0);
+		INTRA_ASSERT(C::memcmp(rest.Begin-bytes, src, bytes)==0);
 		rest.Begin-=bytes;
 		INTRA_ASSERT(rest.Begin>=data);
 	}

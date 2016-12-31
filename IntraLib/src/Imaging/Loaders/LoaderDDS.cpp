@@ -174,7 +174,7 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	{
 		if(fd.format!=format.value || fd.swapRB!=swapRB) continue;
 		pf.rgbaBitMasks = fd.masks;
-		core::memset(pf.fourCC, 0, sizeof(pf.fourCC));
+		Algo::FillZeros(pf.fourCC);
 		return;
 	}
 
@@ -190,7 +190,7 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	}
 
 	//Ищем формат среди форматов DX10
-	core::memcpy(pf.fourCC, "DX10", 4); //Если это не установлено, то DX10 заголовок записывать не надо
+	C::memcpy(pf.fourCC, "DX10", 4); //Если это не установлено, то DX10 заголовок записывать не надо
 	dx10header.dxgiFormat = DXGI_FromImageFormat(format, swapRB);
 }
 
@@ -278,7 +278,7 @@ void SetHeadersImageType(ImageType type, DDS_HEADER& header, DDS_HEADER_DXT10& d
 
 bool has_dx10_header(const DDS_PIXELFORMAT& ddspf)
 {
-	return (ddspf.flags & DDPF_FOURCC) && core::memcmp(ddspf.fourCC, "DX10", sizeof(ddspf.fourCC))==0;
+	return (ddspf.flags & DDPF_FOURCC) && C::memcmp(ddspf.fourCC, "DX10", sizeof(ddspf.fourCC))==0;
 }
 
 ImageInfo pe_get_dds_info(byte header[148])
@@ -371,12 +371,12 @@ void Image::saveDDS(IO::IOutputStream* s) const
 	else header.flags |= DDSD_LINEARSIZE;
 	header.caps = DDSCAPS_TEXTURE;
 	header.caps4 = header.caps3 = header.caps2 = 0;
-	core::memset(header.reserved1, 0, sizeof(header.reserved1));
+	Algo::FillZeros(header.reserved1);
 	header.reserved2 = 0;
 
 	DDS_HEADER_DXT10 dx10header;
-	core::memset(dx10header.unused1, 0, sizeof(dx10header.unused1));
-	core::memset(dx10header.unused2, 0, sizeof(dx10header.unused2));
+	Algo::FillZeros(dx10header.unused1);
+	Algo::FillZeros(dx10header.unused2);
 	dx10header.miscFlag = dx10header.miscFlags2 = 0;
 	dx10header.arraySize = Info.Size.z;
 	if(Info.Type==ImageType_Cube)

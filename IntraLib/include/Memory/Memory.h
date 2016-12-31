@@ -3,6 +3,7 @@
 #include "Core/Core.h"
 #include "Meta/Type.h"
 
+#include "PlacementNew.h"
 #include "Range/ArrayRange.h"
 #include "Memory/Allocator.h"
 
@@ -21,22 +22,16 @@ template<typename T> Meta::EnableIfNotTrivConstructible<T> Initialize(ArrayRange
 
 //Для POD типов просто зануление памяти
 template<typename T> inline Meta::EnableIfTrivConstructible<T> Initialize(ArrayRange<T> dst)
-{
-	core::memset(dst.Begin, 0, dst.Length()*sizeof(T));
-}
+{C::memset(dst.Begin, 0, dst.Length()*sizeof(T));}
 
 
 //Вызов конструктора
 template<typename T> forceinline Meta::EnableIfNotTrivConstructible<T> InitializeObj(T& dst)
-{
-	new(&dst) T;
-}
+{new(&dst) T;}
 
 //Для POD типов просто зануление памяти
 template<typename T> forceinline Meta::EnableIfTrivConstructible<T> InitializeObj(T& dst)
-{
-	core::memset(&dst, 0, sizeof(T));
-}
+{C::memset(&dst, 0, sizeof(T));}
 
 //Вызов деструкторов
 template<typename T> Meta::EnableIfNotTrivDestructible<T> Destruct(ArrayRange<T> dst)
@@ -51,22 +46,19 @@ template<typename T> Meta::EnableIfNotTrivDestructible<T> Destruct(ArrayRange<T>
 template<typename T> Meta::EnableIfTrivDestructible<T, void> Destruct(ArrayRange<T> dst)
 {
 #ifdef INTRA_DEBUG
-	if(dst.Begin < dst.End)\
-		core::memset(dst.Begin, 0xDE, dst.Length()*sizeof(T));
+	C::memset(dst.Data(), 0xDE, dst.Length()*sizeof(dst.First()));
 #endif
 	(void)dst;
 }
 
 //Вызов деструктора
 template<typename T> forceinline Meta::EnableIfNotTrivDestructible<T, void> DestructObj(T& dst)
-{
-	dst.~T();
-}
+{dst.~T();}
 
 template<typename T> Meta::EnableIfTrivDestructible<T, void> DestructObj(T& dst)
 {
 #ifdef INTRA_DEBUG
-	core::memset(&dst, 0xDEDEDEDE, sizeof(T));
+	C::memset(&dst, 0xDE, sizeof(T));
 #endif
 	(void)dst;
 }
@@ -75,8 +67,8 @@ template<typename T> Meta::EnableIfTrivDestructible<T, void> DestructObj(T& dst)
 template<typename T> void CopyBits(ArrayRange<T> dst, ArrayRange<const T> src)
 {
 	INTRA_ASSERT(dst.Length()>=src.Length());
-	core::memmove(dst.Begin, src.Begin, src.Count()*sizeof(T));
-	//core::memcpy(dst.Begin, src.Begin, src.Count()*sizeof(T));
+	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
+	//C::memcpy(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
 
 template<typename T> void CopyBits(T* dst, const T* src, size_t count)
@@ -87,7 +79,7 @@ template<typename T> void CopyBits(T* dst, const T* src, size_t count)
 template<typename T> void CopyBitsBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
 	INTRA_ASSERT(dst.Length()>=src.Length());
-	core::memmove(dst.Begin, src.Begin, src.Count()*sizeof(T));
+	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
 
 template<typename T> void CopyBitsBackwards(T* dst, const T* src, size_t count)
@@ -102,14 +94,14 @@ template<typename T> void CopyObjectBits(T& dst, const T& src)
 
 //Копирование оператором присваивания
 template<typename DstRange, typename SrcRange> Meta::EnableIf<
-	Range::IsRangeElementAssignable<DstRange>::_ &&
-	Range::IsInputRange<SrcRange>::_ &&
-	!Meta::IsTriviallyCopyAssignable<typename DstRange::value_type>::_
+	Range::IsAssignableInputRange<DstRange>::_ &&
+	Range::IsForwardRange<SrcRange>::_ &&
+	!Meta::IsTriviallyCopyAssignable<Range::ValueTypeOf<DstRange>>::_
 > CopyAssign(const DstRange& dst, const SrcRange& src)
 {
 	DstRange dstCopy = dst;
 	SrcRange srcCopy = src;
-	INTRA_ASSERT(dst.Count()<=src.Count());
+	INTRA_ASSERT(Range::Count(dst)<=Range::Count(src));
 	while(!dstCopy.Empty())
 	{
 		dstCopy.First() = srcCopy.First();
@@ -121,18 +113,18 @@ template<typename DstRange, typename SrcRange> Meta::EnableIf<
 template<typename DstRange, typename SrcRange> Meta::EnableIf<
 	Range::IsArrayRange<DstRange>::_ &&
 	Range::IsArrayRange<SrcRange>::_ &&
-	Meta::IsTriviallyCopyAssignable<typename DstRange::value_type>::_ &&
-	Range::IsFiniteInputRangeOfExactly<SrcRange, typename DstRange::value_type>::_
+	Meta::IsTriviallyCopyAssignable<Range::ValueTypeOf<DstRange>>::_ &&
+	Range::IsFiniteInputRangeOfExactly<SrcRange, Range::ValueTypeOf<DstRange>>::_
 > CopyAssign(const DstRange& dst, const SrcRange& src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
-	CopyBits(dst.Data(), src.Data(), dst.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
+	CopyBits(dst.Data(), src.Data(), dst.Length());
 }
 
 //Копирование оператором присваивания
 template<typename T> Meta::EnableIfNotTrivCopyAssignable<T> CopyAssignBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Count()<=src.Count());
+	INTRA_ASSERT(dst.Length()<=src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last() = src.Last();
@@ -151,7 +143,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_ || !Meta::IsTriviallyDestructible<T>::_
 > CopyRecreate(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.First().~T();
@@ -172,7 +164,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_ || !Meta::IsTriviallyDestructible<T>::_
 > CopyRecreateBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last().~T();
@@ -190,7 +182,7 @@ template<typename T> Meta::EnableIf<
 
 template<typename T, typename U> Meta::EnableIfNotTrivCopyable<T> CopyInit(ArrayRange<T> dst, ArrayRange<const U> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
 	{
 		new(&dst.First()) T(src.First());
@@ -206,7 +198,7 @@ template<typename T> Meta::EnableIfTrivCopyable<T> CopyInit(ArrayRange<T> dst, A
 
 template<typename T, typename U> Meta::EnableIfNotTrivCopyable<T> CopyInitBackwards(ArrayRange<T> dst, ArrayRange<const U> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
 	{
 		new(&dst.Last()) T(src.Last());
@@ -223,10 +215,10 @@ template<typename T> Meta::EnableIfTrivCopyable<T> CopyInitBackwards(ArrayRange<
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIfNotTrivMovable<T> MoveInit(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		new(&dst.First()) T(core::move(src.First()));
+		new(&dst.First()) T(Meta::Move(src.First()));
 		dst.PopFirst();
 		src.PopFirst();
 	}
@@ -241,10 +233,10 @@ template<typename T> Meta::EnableIfTrivMovable<T> MoveInit(ArrayRange<T> dst, Ar
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIfNotTrivMovable<T> MoveInitBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		new(&dst.Last()) T(core::move(src.Last()));
+		new(&dst.Last()) T(Meta::Move(src.Last()));
 		dst.PopLast();
 		src.PopLast();
 	}
@@ -259,10 +251,10 @@ template<typename T> Meta::EnableIfTrivMovable<T> MoveInitBackwards(ArrayRange<T
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIfNotTrivRelocatable<T> MoveInitDelete(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		new(&dst.First()) T(core::move(src.First()));
+		new(&dst.First()) T(Meta::Move(src.First()));
 		src.First().~T();
 		dst.PopFirst();
 		src.PopFirst();
@@ -279,10 +271,10 @@ template<typename T> Meta::EnableIfTrivRelocatable<T> MoveInitDelete(ArrayRange<
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIfNotTrivRelocatable<T> MoveInitDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		new(&dst.Last()) T(core::move(src.Last()));
+		new(&dst.Last()) T(Meta::Move(src.Last()));
 		src.Last().~T();
 		dst.PopLast();
 		src.PopLast();
@@ -299,10 +291,10 @@ template<typename T> Meta::EnableIfTrivRelocatable<T> MoveInitDeleteBackwards(Ar
 //Перемещение оператором присваивания и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIfNotTrivMovable<T> MoveAssignDelete(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		dst.First() = core::move(src.First());
+		dst.First() = Meta::Move(src.First());
 		src.First().~T();
 		dst.PopFirst();
 		src.PopFirst();
@@ -318,10 +310,10 @@ template<typename T> Meta::EnableIfTrivMovable<T> MoveAssignDelete(ArrayRange<T>
 //Перемещение оператором присваивания и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIfNotTrivMovable<T> MoveAssignDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Count()==src.Count());
+	INTRA_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
-		dst.Last() = core::move(src.Last());
+		dst.Last() = Meta::Move(src.Last());
 		src.Last().~T();
 		dst.PopLast();
 		src.PopLast();

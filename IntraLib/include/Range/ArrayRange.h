@@ -1,23 +1,18 @@
 ﻿#pragma once
 
-#include "CompilerSpecific/InitializerList.h"
-#include "Mixins/RangeMixins.h"
+#include "Core/Debug.h"
+#include "Platform/InitializerList.h"
+#include "Range/Concepts.h"
+#include "Range/RelativeIndex.h"
 
 namespace Intra { namespace Range {
 
-template<typename T> struct ArrayRange:
-	RangeMixin<ArrayRange<T>, Meta::RemoveConst<T>, TypeEnum::Array, true>
+template<typename T> struct ArrayRange
 {
-	typedef T* iterator;
-	typedef const T* const_iterator;
-
-	typedef Meta::RemoveConst<T> value_type;
-	typedef T& return_value_type;
-
 	constexpr forceinline ArrayRange(null_t=null):
 		Begin(null), End(null) {}
 
-	constexpr forceinline ArrayRange(std::initializer_list<value_type> list):
+	constexpr forceinline ArrayRange(std::initializer_list<Meta::RemoveConst<T>> list):
 		Begin(list.begin()), End(list.end()) {}
 
 	template<size_t len> constexpr forceinline ArrayRange(T(&arr)[len]):
@@ -35,12 +30,11 @@ template<typename T> struct ArrayRange:
 	forceinline constexpr ArrayRange<const T> AsConstRange() const {return ArrayRange<const T>(Begin, End);}
 	forceinline constexpr operator ArrayRange<const T>() const {return AsConstRange();}
 
-	forceinline bool ContainsSubrange(const ArrayRange& subrange) const {return Begin<=subrange.Begin && End>=subrange.End;}
+	forceinline bool ContainsSubrange(const ArrayRange& subrange) const
+	{return Begin<=subrange.Begin && End>=subrange.End;}
 
 	template<typename U> forceinline bool ContainsAddress(const U* address) const
-	{
-		return size_t(reinterpret_cast<const T*>(address)-Begin) <= Length();
-	}
+	{return size_t(reinterpret_cast<const T*>(address)-Begin) <= Length();}
 
 	forceinline bool Overlaps(ArrayRange<const T> rhs) const
 	{
@@ -55,31 +49,57 @@ template<typename T> struct ArrayRange:
 	forceinline constexpr bool Empty() const {return End==Begin;}
 	forceinline constexpr T* Data() const {return Begin;}
 	forceinline T& First() const {INTRA_ASSERT(!Empty()); return *Begin;}
+	
 	forceinline void PopFirst() {INTRA_ASSERT(!Empty()); Begin++;}
+
 	forceinline T& Last() const {INTRA_ASSERT(!Empty()); return *(End-1);}
 	forceinline void PopLast() {INTRA_ASSERT(!Empty()); End--;}
 
-	forceinline void PopBackN(size_t count) {Begin+=count; if(Begin>End) Begin=End;}
-	forceinline void PopBackExactly(size_t count) {Begin+=count;}
+	forceinline size_t PopFirstN(size_t count)
+	{
+		if(count>Length()) count = Length();
+		Begin += count;
+		return count;
+	}
+	forceinline void PopFirstExactly(size_t count)
+	{INTRA_ASSERT(count<=Length()); Begin += count;}
 
-	forceinline ArrayRange<T> Drop(size_t count=1) const {return ArrayRange(Begin+count>End? End: Begin+count, End);}
-	forceinline ArrayRange<T> Take(size_t count) const {return ArrayRange(Begin, Begin+count>End? End: Begin+count);}
-	forceinline ArrayRange<T> Tail(size_t count) const {return ArrayRange(End-count<Begin? Begin: End-count, End);}
+	forceinline size_t PopBackN(size_t count)
+	{
+		if(count>Length()) count = Length();
+		End -= count;
+		return count;
+	}
 
-	template<typename U=T> forceinline Meta::EnableIf<
-		Meta::TypeEquals<U, value_type>::_
-	> Put(const T& v)
+	forceinline void PopBackExactly(size_t count)
+	{INTRA_ASSERT(count<=Length()); End -= count;}
+
+	forceinline ArrayRange<T> Drop(size_t count=1) const
+	{return ArrayRange(Begin+count>End? End: Begin+count, End);}
+
+	forceinline ArrayRange<T> DropBack(size_t count=1) const
+	{return ArrayRange(Begin, End-count<Begin? Begin: End-count);}
+
+	forceinline ArrayRange<T> Take(size_t count) const
+	{return ArrayRange(Begin, Begin+count>End? End: Begin+count);}
+
+	forceinline ArrayRange<T> TakeExactly(size_t count) const
+	{INTRA_ASSERT(count<=Length()); return ArrayRange(Begin, Begin+count);}
+
+	forceinline ArrayRange<T> Tail(size_t count) const
+	{return ArrayRange(End-count<Begin? Begin: End-count, End);}
+
+
+	void Put(const T& v)
 	{
 		INTRA_ASSERT(!Empty());
 		*Begin++ = v;
 	}
 
-	template<typename U=T> forceinline Meta::EnableIf<
-		Meta::TypeEquals<U, value_type>::_
-	> Put(T&& v)
+	void Put(T&& v)
 	{
 		INTRA_ASSERT(!Empty());
-		*Begin++ = core::move(v);
+		*Begin++ = Meta::Move(v);
 	}
 
 
@@ -101,10 +121,30 @@ template<typename T> struct ArrayRange:
 		return Begin[index];
 	}
 
-	forceinline ArrayRange opSlice(size_t firstIndex, size_t endIndex) const
+	forceinline T& operator[](RelativeIndex pos) const
+	{
+		return operator[](pos.GetRealIndex(Length()));
+	}
+
+	forceinline ArrayRange operator()(size_t firstIndex, size_t endIndex) const
 	{
 		INTRA_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
 		return ArrayRange(Begin+firstIndex, Begin+endIndex);
+	}
+
+	forceinline ArrayRange operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
+	{
+		return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));
+	}
+
+	forceinline ArrayRange operator()(size_t firstIndex, RelativeIndex endIndex) const
+	{
+		return operator()(firstIndex, endIndex.GetRealIndex(Length()));
+	}
+
+	forceinline ArrayRange operator()(RelativeIndex firstIndex, size_t endIndex) const
+	{
+		return operator()(firstIndex.GetRealIndex(Length()), endIndex);
 	}
 
 	forceinline constexpr ArrayRange TakeNone() const {return {Begin, Begin};}
@@ -112,7 +152,8 @@ template<typename T> struct ArrayRange:
 
 	template<typename U> constexpr forceinline ArrayRange<U> Reinterpret() const
 	{
-		return ArrayRange<U>(reinterpret_cast<U*>(Begin), reinterpret_cast<U*>(End));
+		typedef U* UPtr;
+		return ArrayRange<U>(UPtr(Begin), UPtr(End));
 	}
 
 	T* Begin;
@@ -120,7 +161,13 @@ template<typename T> struct ArrayRange:
 };
 
 static_assert(IsInputRange<ArrayRange<float>>::_, "Not input range???");
-static_assert(IsForwardRange<ArrayRange<const float>>::_, "Not forward range???");
+static_assert(IsForwardRange<ArrayRange<float>>::_, "Not forward range???");
+static_assert(HasPopFirst<ArrayRange<float>>::_, "Not input range???");
+static_assert(HasPopFirst<ArrayRange<const int>>::_, "Not input range???");
+static_assert(HasFirst<ArrayRange<const int>>::_, "Not input range???");
+static_assert(HasEmpty<ArrayRange<const float>>::_, "Not input range???");
+static_assert(IsInputRange<ArrayRange<const int>>::_, "Not input range???");
+static_assert(IsForwardRange<ArrayRange<const int>>::_, "Not forward range???");
 static_assert(IsRandomAccessRange<ArrayRange<const uint>>::_, "Not random access range???");
 static_assert(IsFiniteRandomAccessRange<ArrayRange<const int>>::_, "Not finite random access range???");
 static_assert(IsRandomAccessRange<ArrayRange<float>>::_, "IsRandomAccessRange error.");
@@ -146,6 +193,12 @@ template<typename T, size_t N> Meta::EnableIf<
 ArrayRange<T>> AsConstRange(T(&arr)[N]) {return ArrayRange<const T>(arr);}
 
 template<typename T> ArrayRange<const T> AsConstRange(std::initializer_list<T> arr) {return ArrayRange<const T>(arr);}
+
+template<typename T, size_t N> ArrayRange<T> Take(T(&arr)[N], size_t n)
+{
+	INTRA_ASSERT(n<=N);
+	return ArrayRange<T>(arr, n);
+}
 
 }
 

@@ -1,10 +1,9 @@
 ﻿#include "Physics/AabbTree.h"
 #include "IO/LogSystem.h"
-//#include "Core/Time.h"
+//#include "Platform/Time.h"
 
 namespace Intra {
 
-using namespace core;
 using namespace Math;
 
 void AabbTree::Build(ArrayRange<Tri> tris)
@@ -12,7 +11,7 @@ void AabbTree::Build(ArrayRange<Tri> tris)
 	//Timer tim;
 
 	nodes.SetCount(0);
-	nodes.Reserve(tris.Count()*2-1);
+	nodes.Reserve(tris.Length()*2-1);
 	rootId=-1;
 
 	if(tris!=null) recursive_build(rootId, tris);
@@ -50,7 +49,7 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 
 	Node node;
 
-	if(tris.Count()==1) //Это лист
+	if(tris.Length()==1) //Это лист
 	{
 		node.tri = tris[0];
 		nodeId = int(nodes.Count());
@@ -77,7 +76,7 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 		if(middle_point_of_triangle_proj(*pEndNegative, maxDimIndex)>middlePointOfBox)
 		{
 			pBeginPositive--;
-			swap(*pEndNegative, *pBeginPositive);
+			Meta::Swap(*pEndNegative, *pBeginPositive);
 			continue;
 		}
 		pEndNegative++;
@@ -100,7 +99,7 @@ void AabbTree::recursive_build(int& nodeId, ArrayRange<Tri> tris)
 			}
 		}
 		pBeginPositive--, pEndNegative--;
-		swap(*maxtri, *pBeginPositive);
+		Meta::Swap(*maxtri, *pBeginPositive);
 	}
 	INTRA_ASSERT(tris.Begin<pEndNegative && pEndNegative==pBeginPositive && pBeginPositive<tris.End);
 

@@ -5,6 +5,8 @@
 #include "Sound/SoundSource.h"
 #include "Sound/Music.h"
 #include "Sound/Midi.h"
+#include "Algo/Comparison.h"
+#include "Algo/Search/Single.h"
 
 
 namespace Intra {
@@ -67,12 +69,12 @@ Sound& Sound::operator=(Sound&& rhs)
 	data = rhs.data;
 	locked_bits = rhs.locked_bits;
 	locked_size = rhs.locked_size;
-	instances = core::move(rhs.instances);
+	instances = Meta::Move(rhs.instances);
 	for(auto inst: instances)
 		inst->my_sound = this;
 	info = rhs.info;
 	rhs.data = null;
-	auto found = Sound::all_existing_sounds().Find(&rhs);
+	auto found = Algo::Find(Sound::all_existing_sounds(), &rhs);
 	if(!found.Empty()) found.First() = this;
 	return *this;
 }
@@ -86,7 +88,7 @@ Sound Sound::FromFile(StringView fileName)
 	ASoundSampleSource* source=null;
 
 #ifndef INTRA_NO_WAVE_LOADER
-	if(fileData.StartsWith(StringView("RIFF")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("RIFF")))
 		source = new WaveSoundSampleSource(fileData);
 	else
 #endif
@@ -96,7 +98,7 @@ Sound Sound::FromFile(StringView fileName)
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(fileData.StartsWith(StringView("MThd")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("MThd")))
 		source = new MusicSoundSampleSource(ReadMidiFile(fileData), SoundAPI::InternalSampleRate());
 	else
 #endif
@@ -210,7 +212,7 @@ size_t StreamingLoadCallback(void** dstSamples, uint channels,
 
 
 StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples, OnCloseCallback onClose):
-	sample_source(core::move(src)), on_close(onClose), data(null)
+	sample_source(Meta::Move(src)), on_close(onClose), data(null)
 {
 	data = SoundAPI::StreamedBufferCreate(bufferSizeInSamples, sample_source->ChannelCount(),
 		sample_source->SampleRate(), {StreamingLoadCallback, sample_source.ptr});
@@ -224,7 +226,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	auto fileData = file->Map<byte>();
 	SourceRef source=null;
 #ifndef INTRA_NO_WAVE_LOADER
-	if(fileData.StartsWith(StringView("RIFF")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("RIFF")))
 		source = SourceRef(new WaveSoundSampleSource(fileData));
 	else
 #endif
@@ -234,7 +236,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(fileData.StartsWith(StringView("MThd")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("MThd")))
 		source = SourceRef(new MusicSoundSampleSource(ReadMidiFile(fileData), 48000));
 	else
 #endif
@@ -244,7 +246,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 		return null;
 	}
 
-	return StreamedSound(core::move(source), bufSize, StreamedSound::OnCloseCallback(file, [](void* o)
+	return StreamedSound(Meta::Move(source), bufSize, StreamedSound::OnCloseCallback(file, [](void* o)
 	{
 		auto mappedFile = reinterpret_cast<DiskFile::Reader*>(o);
 		mappedFile->Unmap();
@@ -291,13 +293,13 @@ uint StreamedSound::InternalSampleRate()
 
 void StreamedSound::register_instance()
 {
-	INTRA_ASSERT(!all_existing_instances().Contains(this));
+	INTRA_ASSERT(!Algo::Contains(all_existing_instances(), this));
 	all_existing_instances.AddLast(this);
 }
 
 void StreamedSound::unregister_instance()
 {
-	INTRA_ASSERT(all_existing_instances().Contains(this));
+	INTRA_ASSERT(Algo::Contains(all_existing_instances(), this));
 	all_existing_instances.FindAndRemoveUnordered(this);
 }
 

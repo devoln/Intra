@@ -1,11 +1,15 @@
 ﻿#include "PerfTestRandom.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 #include "Test/PerformanceTest.h"
 
 #include "Math/Random.h"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4350)
+#endif
+
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
 #endif
 
 #include <random>

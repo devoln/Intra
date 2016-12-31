@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Array.h"
-#include "Algorithms/Sort.h"
+#include "Algo/Sort.h"
 
 namespace Intra {
 

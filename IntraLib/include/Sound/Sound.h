@@ -7,6 +7,7 @@
 #include "Containers/SparseHandledArray.h"
 #include "Sound/SoundTypes.h"
 #include "Data/ValueType.h"
+#include "Algo/Search.h"
 
 namespace Intra {
 
@@ -25,7 +26,7 @@ public:
 		data(null), instances(), locked_bits(null),
 		info(rhs.info), locked_size(0)
 	{
-		operator=(core::move(rhs));
+		operator=(Meta::Move(rhs));
 		rhs.data = null;
 	}
 
@@ -79,7 +80,7 @@ private:
 	SoundInstance(Sound* mySound, SoundAPI::InstanceHandle inst);
 public:
 	SoundInstance(null_t=null): my_sound(null), data(null) {}
-	SoundInstance(SoundInstance&& rhs): my_sound(null), data(null) {operator=(core::move(rhs));}
+	SoundInstance(SoundInstance&& rhs): my_sound(null), data(null) {operator=(Meta::Move(rhs));}
 
 	SoundInstance& operator=(SoundInstance&& rhs)
 	{
@@ -88,7 +89,7 @@ public:
 		data = rhs.data;
 		rhs.my_sound = null;
 		rhs.data = null;
-		if(my_sound!=null) my_sound->instances().Find(&rhs).First()=this;
+		if(my_sound!=null) Algo::Find(my_sound->instances(), &rhs).First()=this;
 		return *this;
 	}
 
@@ -120,7 +121,7 @@ public:
 	StreamedSound(SourceRef&& src, size_t bufferSizeInSamples=16384, OnCloseCallback onClose=null);
 
 	StreamedSound(StreamedSound&& rhs):
-		sample_source(core::move(rhs.sample_source)),
+		sample_source(Meta::Move(rhs.sample_source)),
 		on_close(rhs.on_close), data(rhs.data)
 	{
 		rhs.data=null;
@@ -138,7 +139,7 @@ public:
 		INTRA_ASSERT(this!=&rhs);
 		release();
 		if(rhs.data!=null) rhs.unregister_instance();
-		sample_source = core::move(rhs.sample_source);
+		sample_source = Meta::Move(rhs.sample_source);
 		on_close = rhs.on_close;
 		rhs.on_close = null;
 		data = rhs.data;

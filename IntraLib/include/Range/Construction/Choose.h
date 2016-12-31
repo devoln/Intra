@@ -1,91 +1,104 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Range {
 
-template<typename R1, typename R2> struct ChooseResult:
-	CommonAllFiniteRangeMixin<ChooseResult<R1, R2>, R1, R2>
-{
-	typedef Meta::CommonType<typename R1::value_type, typename R2::value_type> value_type;
-	typedef Meta::CommonTypeRef<typename R1::return_value_type, typename R2::return_value_type> return_value_type;
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
-	ChooseResult(null_t=null): range1(null), range2(null) {}
-	ChooseResult(R1&& ifFalseRange, R2&& ifTrueRange, bool condition):
-		range1(condition? null: core::forward<R1>(ifFalseRange)),
-		range2(condition? core::forward<R2>(ifTrueRange): null) {}
+template<typename R1, typename R2> struct RChoose
+{
+private:
+	typedef Meta::CommonTypeRef<ReturnValueTypeOf<R1>, ReturnValueTypeOf<R2>> ReturnValueType;
+public:
+	enum: bool {RangeIsFinite = CommonRangeCategoryAllFinite<R1, R2>::Finite};
+
+	RChoose(null_t=null): mRange1(null), mRange2(null) {}
+
+	RChoose(R1&& ifFalseRange, R2&& ifTrueRange, bool condition):
+		mRange1(condition? null: Meta::Move(ifFalseRange)),
+		mRange2(condition? Meta::Move(ifTrueRange): null) {}
+
+	RChoose(const R1& ifFalseRange, const R2& ifTrueRange, bool condition):
+		mRange1(condition? null: ifFalseRange),
+		mRange2(condition? ifTrueRange: null) {}
 
 	forceinline bool Empty() const
-	{
-		return range1.Empty() && range2.Empty();
-	}
+	{return mRange1.Empty() && mRange2.Empty();}
 
-	forceinline return_value_type First() const
-	{
-		return range1.Empty()? range2.First(): range1.First();
-	}
+	forceinline ReturnValueType First() const
+	{return mRange1.Empty()? mRange2.First(): mRange1.First();}
 
 	forceinline void PopFirst()
 	{
-		if(!range1.Empty())
+		if(!mRange1.Empty())
 		{
-			range1.PopFirst();
+			mRange1.PopFirst();
 			return;
 		}
 		INTRA_ASSERT(!Empty());
-		range2.PopFirst();
+		mRange2.PopFirst();
 	}
 
 	template<typename U=R1> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_ && IsBidirectionalRange<R2>::_,
-	return_value_type> Last() const
-	{
-		return range1.Empty()? range2.Last(): range1.Last();
-	}
+		HasLast<U>::_ && HasLast<R2>::_,
+	ReturnValueType> Last() const
+	{return mRange1.Empty()? mRange2.Last(): mRange1.Last();}
 
 	template<typename U=R1> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_ && IsBidirectionalRange<R2>::_
+		HasPopLast<U>::_ && HasPopLast<R2>::_
 	> PopLast()
 	{
-		if(!range1.Empty())
+		if(!mRange1.Empty())
 		{
-			range1.PopLast();
+			mRange1.PopLast();
 			return;
 		}
 		INTRA_ASSERT(!Empty());
-		range2.PopLast();
+		mRange2.PopLast();
 	}
 
 	template<typename U=R1> forceinline Meta::EnableIf<
-		IsRandomAccessRange<U>::_ && IsRandomAccessRange<R2>::_,
-	return_value_type> operator[](size_t index) const
-	{
-		return range1.Empty()? range2[index]: range1[index];
-	}
+		HasIndex<U>::_ && HasIndex<R2>::_,
+	ReturnValueType> operator[](size_t index) const
+	{return mRange1.Empty()? mRange2[index]: mRange1[index];}
 
 	template<typename U=R1> forceinline Meta::EnableIf<
-		IsFiniteRandomAccessRange<U>::_ && IsFiniteRandomAccessRange<R2>::_,
-	ChooseResult> opSlice(size_t start, size_t end) const
+		HasSlicing<U>::_ && HasSlicing<R2>::_,
+	RChoose> operator()(size_t start, size_t end) const
 	{
-		return ChooseResult(
-			range1.Empty()? null: range1.opSlice(start, end),
-			range1.Empty()? null: range2.opSlice(start, end));
+		return {mRange1.Empty()? null: mRange1(start, end),
+			    mRange1.Empty()? null: mRange2(start, end)};
 	}
 
-	forceinline bool operator==(const ChooseResult& rhs) const
-	{
-		return range1==rhs.range1 && range2==rhs.range2;
-	}
+	forceinline bool operator==(const RChoose& rhs) const
+	{return mRange1==rhs.mRange1 && mRange2==rhs.mRange2;}
 
 private:
-	R1 range1;
-	R2 range2;
+	R1 mRange1;
+	R2 mRange2;
 };
 
+INTRA_WARNING_POP
+
 template<typename R1, typename R2> forceinline
-ChooseResult<R1, R2> Choose(R1&& ifFalseRange, R2&& ifTrueRange, bool condition)
-{
-	return ChooseResult<R1, R2>(core::forward<R1>(ifFalseRange), core::forward<R2>(ifTrueRange), condition);
-}
+RChoose<Meta::RemoveConstRef<R1>, Meta::RemoveConstRef<R2>> Choose(
+	R1&& ifFalseRange, R2&& ifTrueRange, bool condition)
+{return {Meta::Forward<R1>(ifFalseRange), Meta::Forward<R2>(ifTrueRange), condition};}
+
+template<typename R1, typename T2, size_t N2> forceinline
+RChoose<Meta::RemoveConstRef<R1>, AsRangeResult<T2(&)[N2]>> Choose(
+	R1&& ifFalseRange, T2(&ifTrueRange)[N2], bool condition)
+{return Choose(Meta::Forward<R1>(ifFalseRange), AsRange(ifTrueRange), condition);}
+
+template<typename T1, size_t N1, typename R2> forceinline
+RChoose<AsRangeResult<T1(&)[N1]>, Meta::RemoveConstRef<R2>> Choose(
+	T1(&ifFalseRange)[N1], R2&& ifTrueRange, bool condition)
+{return Choose(AsRange(ifFalseRange), Meta::Forward<R2>(ifTrueRange), condition);}
+
+template<typename T1, size_t N1, typename T2, size_t N2> forceinline
+RChoose<AsRangeResult<T1(&)[N1]>, AsRangeResult<T2(&)[N2]>> Choose(
+	T1(&ifFalseRange)[N1], T2(&ifTrueRange)[N2], bool condition)
+{return Choose(AsRange(ifFalseRange), AsRange(ifTrueRange), condition);}
 
 }}

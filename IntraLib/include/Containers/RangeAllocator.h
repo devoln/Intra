@@ -50,7 +50,7 @@ public:
 
 	Array<Interval> Compactify()
 	{
-		Array<Interval> oldIntervals = core::move(ranges);
+		Array<Interval> oldIntervals = Meta::Move(ranges);
 		ranges.Reserve(oldIntervals.Count());
 		T len=0;
 		for(auto&& oldInterval: oldIntervals)

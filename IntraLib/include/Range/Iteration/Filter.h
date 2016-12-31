@@ -1,93 +1,105 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/ForwardDecls.h"
+#include "Range/Concepts.h"
 #include "Utils/Optional.h"
 
 namespace Intra { namespace Range {
 
-template<typename R, typename P> struct FilterResult:
-	RangeMixin<FilterResult<R, P>, typename R::value_type,
-	R::RangeType>=TypeEnum::RandomAccess? TypeEnum::Bidirectional: R::RangeType, R::RangeIsFinite>
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+
+template<typename R, typename P> struct RFilter
 {
-	typedef typename R::value_type value_type;
-	typedef typename R::return_value_type return_value_type;
+	enum: bool {RangeIsFinite = IsFiniteRange<R>::_, RangeIsInfinite = IsInfiniteRange<R>::_};
 
-	forceinline FilterResult(null_t=null): original_range(null), predicate() {}
+	forceinline RFilter(null_t=null): mOriginalRange(null), mPredicate() {}
 
-	forceinline FilterResult(R&& range, P filterPredicate):
-		original_range(core::move(range)), predicate(filterPredicate)
-		{skip_falses_front(original_range, filterPredicate);}
+	forceinline RFilter(R&& range, P filterPredicate):
+		mOriginalRange(Meta::Move(range)), mPredicate(filterPredicate)
+		{skip_falses_front(mOriginalRange, filterPredicate);}
 
-	forceinline FilterResult(const R& range, P filterPredicate):
-		original_range(range), predicate(filterPredicate)
-		{skip_falses_front(original_range, filterPredicate);}
+	forceinline RFilter(const R& range, P filterPredicate):
+		mOriginalRange(range), mPredicate(filterPredicate)
+		{skip_falses_front(mOriginalRange, filterPredicate);}
 
-	forceinline return_value_type First() const
+	//Для совместимости с Visual Studio 2013:
+	RFilter(const RFilter&) = default;
+	RFilter& operator=(const RFilter&) = default;
+	forceinline RFilter(RFilter&& rhs):
+		mOriginalRange(Meta::Move(rhs.mOriginalRange)),
+		mPredicate(Meta::Move(rhs.mPredicate)) {}
+	forceinline RFilter& operator=(RFilter&& rhs)
+	{
+		mOriginalRange = Meta::Move(rhs.mOriginalRange);
+		mPredicate = Meta::Move(rhs.mPredicate);
+		return *this;
+	}
+
+	forceinline ReturnValueTypeOf<R> First() const
 	{
 		INTRA_ASSERT(!Empty());
-		return original_range.First();
+		return mOriginalRange.First();
 	}
 
 	forceinline void PopFirst()
 	{
-		original_range.PopFirst();
-		skip_falses_front(original_range, predicate());
+		mOriginalRange.PopFirst();
+		skip_falses_front(mOriginalRange, mPredicate());
 	}
 
 	template<typename U=R> Meta::EnableIf<
-		IsBidirectionalRange<U>::_,
-	return_value_type> Last() const
+		HasLast<U>::_ && HasPopLast<U>::_,
+	ReturnValueTypeOf<R>> Last() const
 	{
 		INTRA_ASSERT(!Empty());
-		auto&& b = original_range.Last();
-		if(predicate()(b)) return b;
+		auto&& b = mOriginalRange.Last();
+		if(mPredicate()(b)) return b;
 
-		auto copy = original_range;
+		auto copy = mOriginalRange;
 		copy.PopLast();
-		skip_falses_back(copy, predicate());
+		skip_falses_back(copy, mPredicate());
 		return copy.Last();
 	}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_
+		HasLast<U>::_ && HasPopLast<U>::_
 	> PopLast()
 	{
-		skip_falses_back(original_range, predicate());
-		original_range.PopLast();
+		skip_falses_back(mOriginalRange, mPredicate());
+		mOriginalRange.PopLast();
 	}
 
-	forceinline bool Empty() const {return original_range.Empty() || predicate==null;}
+	forceinline bool Empty() const {return mOriginalRange.Empty() || mPredicate==null;}
 
 	//TODO BUG: FilterResults with same range but different predicates are considered equal!
-	forceinline bool operator==(const FilterResult& rhs) const {return original_range==rhs.original_range;}
+	forceinline bool operator==(const RFilter& rhs) const {return mOriginalRange==rhs.mOriginalRange;}
 
 private:
-	static void forceinline skip_falses_front(R& original_range, const P& p)
-	{
-		while(!original_range.Empty() && !p(original_range.First())) original_range.PopFirst();
-	}
+	static void forceinline skip_falses_front(R& originalRange, const P& p)
+	{while(!originalRange.Empty() && !p(originalRange.First())) originalRange.PopFirst();}
 
-	static void forceinline skip_falses_back(R& original_range, const P& p)
-	{
-		while(!original_range.Empty() && !p(original_range.Last())) original_range.PopLast();
-	}
+	static void forceinline skip_falses_back(R& originalRange, const P& p)
+	{while(!originalRange.Empty() && !p(originalRange.Last())) originalRange.PopLast();}
 
-	R original_range;
-	Utils::Optional<P> predicate;
+	R mOriginalRange;
+	Utils::Optional<P> mPredicate;
 };
 
+INTRA_WARNING_POP
+
 template<typename R, typename P> forceinline Meta::EnableIf<
-	!Meta::IsReference<R>::_ && IsInputRange<R>::_,
-FilterResult<R, P>> Filter(R&& range, P predicate)
-{
-	return FilterResult<R, P>(core::move(range), predicate);
-}
+	!Meta::IsReference<R>::_ && !Meta::IsConst<R>::_ &&
+	IsInputRange<R>::_,
+RFilter<R, P>> Filter(R&& range, P predicate)
+{return {Meta::Move(range), predicate};}
 
 template<typename R, typename P> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_,
-FilterResult<R, P>> Filter(const R& range, P predicate)
-{
-	return FilterResult<R, P>(range, predicate);
-}
+RFilter<R, P>> Filter(const R& range, P predicate)
+{return {range, predicate};}
+
+template<typename T, size_t N, typename P> forceinline
+RFilter<AsRangeResult<T(&)[N]>, P> Filter(T(&arr)[N], P predicate)
+{return Filter(AsRange(arr), predicate);}
 
 }}

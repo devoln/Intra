@@ -7,8 +7,15 @@ namespace Intra { namespace Memory {
 template<typename T> struct IntrusiveRefCounted
 {
 	forceinline IntrusiveRefCounted(): refs(0) {}
+	
 	forceinline void AddRef() {++refs;}
-	forceinline void Release() {INTRA_ASSERT(refs>0); if(--refs==0) delete static_cast<T*>(this);}
+	
+	forceinline void Release()
+	{
+		INTRA_ASSERT(refs>0);
+		if(--refs==0) delete static_cast<T*>(this);
+	}
+
 	forceinline uint GetRefCount() {return refs;}
 
 private:
@@ -63,11 +70,13 @@ template<typename T> uint ToHash(const IntrusiveRef<T>& rhs) {return ToHash(rhs.
 template<typename T> struct UniqueRef
 {
 	forceinline UniqueRef(T* b=null): ptr(b) {}
-	forceinline UniqueRef(const UniqueRef& rhs) = delete;
-	forceinline UniqueRef(UniqueRef&& rhs): ptr(rhs.ptr) {rhs.ptr=null;}
 	forceinline ~UniqueRef() {if(ptr!=null) delete ptr;}
 
+	forceinline UniqueRef(const UniqueRef& rhs) = delete;
 	UniqueRef& operator=(const UniqueRef& rhs) = delete;
+
+	forceinline UniqueRef(UniqueRef&& rhs):
+		ptr(rhs.ptr) {rhs.ptr=null;}
 
 	UniqueRef& operator=(UniqueRef&& rhs)
 	{

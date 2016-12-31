@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Range/ForwardDecls.h"
 
 namespace Intra {
 

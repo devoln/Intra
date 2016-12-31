@@ -1,119 +1,120 @@
-#pragma once
-#include "Range/Mixins/RangeMixins.h"
+﻿#pragma once
+
+#include "Range/Concepts.h"
+#include "Range/TupleOperation.h"
+#include "Meta/Tuple.h"
+#include "Meta/EachField.h"
 
 namespace Intra { namespace Range {
 
-template<typename... RANGES> struct ZipResult:
-	RangeMixin<ZipResult<RANGES...>, TupleOfElement<RANGES...>,
-		CommonRangeCategoryAnyFinite<RANGES...>::Type, CommonRangeCategoryAnyFinite<RANGES...>::Finite>
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+
+template<typename... RANGES> struct RZip
 {
-	enum {RangeType = CommonRangeCategoryAnyFinite<RANGES...>::Type};
-	typedef TupleOfElement<RANGES...> value_type;
-	typedef TupleOfReturnElement<RANGES...> return_value_type;
+private:
+	typedef Meta::Tuple<ReturnValueTypeOf<RANGES>...> ReturnValueType;
 	typedef Meta::Tuple<RANGES...> OriginalRangeTuple;
+public:
+	enum: byte {RangeType = CommonRangeCategoryAnyFinite<RANGES...>::Type};
+	enum: bool {RangeIsFinite = CommonRangeCategoryAnyFinite<RANGES...>::Finite};
+
 	OriginalRangeTuple OriginalRanges;
 
-	forceinline ZipResult(null_t=null) {}
-	forceinline ZipResult(const RANGES&... ranges): OriginalRanges(ranges...) {}
-	forceinline ZipResult(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
+	forceinline RZip(null_t=null) {}
 
-	forceinline return_value_type First() const {return OriginalRanges.template TransformEach<Fronter>(Fronter());}
-	forceinline void PopFirst() {OriginalRanges.ForEachField(PopFronter());}
-	forceinline bool Empty() const {return AnyEmpty(OriginalRanges);}
+	template<typename R0, typename... RANGES1> forceinline RZip(R0&& r0, RANGES1&&... ranges):
+		OriginalRanges(Meta::Forward<R0>(r0), Meta::Forward<RANGES1>(ranges)...) {}
+	
+	forceinline RZip(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
 
-	template<typename U=OriginalRangeTuple> forceinline
-		Meta::EnableIfCompiles<size_t, decltype(MinLength(U()))>
-		Length() const {return MinLength(OriginalRanges);}
+	forceinline ReturnValueType First() const
+	{return Meta::TransformEachField(OriginalRanges, Fronter());}
+	
+	forceinline void PopFirst()
+	{Meta::ForEachField(OriginalRanges, PopFronter());}
+	
+	forceinline bool Empty() const
+	{return AnyEmpty(OriginalRanges);}
 
-	template<typename U=ZipResult> Meta::EnableIf<
+	template<typename U=size_t> forceinline Meta::EnableIf<
+		AllHasLength<RANGES...>::_,
+	U> Length() const
+	{return MinLength(OriginalRanges);}
+
+	template<typename U=RZip> Meta::EnableIf<
 		U::RangeType>=TypeEnum::RandomAccess,
-	return_value_type> operator[](size_t index) const {return OriginalRanges.TransformEach(Indexer{index});}
+	ReturnValueType> operator[](size_t index) const
+	{return Meta::TransformEachField(OriginalRanges, Indexer{index});}
 
-	template<typename U=ZipResult> Meta::EnableIf<
+	template<typename U=RZip> Meta::EnableIf<
 		U::RangeType>=TypeEnum::RandomAccess,
-	ZipResult> opSlice(size_t startIndex, size_t endIndex) const {return OriginalRanges.TransformEach(Slicer{startIndex, endIndex});}
+	RZip> operator()(size_t startIndex, size_t endIndex) const
+	{return Meta::TransformEachField(OriginalRanges, Slicer{startIndex, endIndex});}
 
-	forceinline bool operator==(const ZipResult& rhs) const {return OriginalRanges==rhs.OriginalRanges;}
+	forceinline bool operator==(const RZip& rhs) const {return OriginalRanges==rhs.OriginalRanges;}
 };
+
+INTRA_WARNING_POP
 
 
 template<typename R0, typename... RANGES> forceinline
-ZipResult<R0, RANGES...> Zip(const R0& range0, const RANGES&... ranges)
+RZip<Meta::RemoveConstRef<R0>, Meta::RemoveConstRef<RANGES>...> Zip(R0&& range0, RANGES&&... ranges)
+{return {Meta::Forward<R0>(range0), Meta::Forward<RANGES>(ranges)...};}
+
+
+
+template<size_t N, typename RangeOfTuples> struct RUnzip
 {
-	return ZipResult<R0, RANGES...>(range0, ranges...);
-}
-
-
-
-template<size_t N, typename RangeOfTuples> struct UnzipResult:
-	RangeMixin<UnzipResult<N, RangeOfTuples>, Meta::TypeListAt<N, typename RangeOfTuples::value_type::TL>,
-		RangeOfTuples::RangeType, RangeOfTuples::RangeIsFinite>
-{
-	typedef Meta::TypeListAt<N, typename RangeOfTuples::value_type::TL> value_type;
-	typedef decltype(Meta::Get<N>(Meta::Val<typename RangeOfTuples::value_type>())) return_value_type;
+private:
+	typedef decltype(Meta::Get<N>(Meta::Val<ValueTypeOf<RangeOfTuples>>())) ReturnValueType;
+public:
+	enum: bool {RangeIsFinite = IsFiniteRange<RangeOfTuples>::_, RangeIsInfinite = IsInfiniteRange<RangeOfTuples>::_};
 	
 	RangeOfTuples OriginalRange;
 
-	forceinline UnzipResult(null_t=null) {}
+	forceinline RUnzip(null_t=null) {}
 
-	forceinline UnzipResult(const RangeOfTuples& rangeOfTuples):
+	forceinline RUnzip(const RangeOfTuples& rangeOfTuples):
 		OriginalRange(rangeOfTuples) {}
 
-	forceinline return_value_type First() const
-	{
-		return Meta::Get<N>(OriginalRange.First());
-	}
-
-	forceinline void PopFirst()
-	{
-		OriginalRange.PopFirst();
-	}
-
-	forceinline bool Empty() const
-	{
-		return OriginalRange.Empty();
-	}
+	forceinline ReturnValueType First() const {return Meta::Get<N>(OriginalRange.First());}
+	forceinline void PopFirst() {OriginalRange.PopFirst();}
+	forceinline bool Empty() const {return OriginalRange.Empty();}
 
 	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
 		HasIndex<U>::_,
-	return_value_type> operator[](size_t index) const
-	{
-		return Meta::Get<N>(OriginalRange[index]);
-	}
+	ReturnValueType> operator[](size_t index) const
+	{return Meta::Get<N>(OriginalRange[index]);}
 
 	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
 		HasSlicing<U>::_,
-	UnzipResult> opSlice(size_t start, size_t end) const
-	{
-		return UnzipResult(OriginalRange.opSlice(start, end));
-	}
+	RUnzip> operator()(size_t start, size_t end) const
+	{return RUnzip(OriginalRange(start, end));}
 
 	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
 		HasLast<U>::_,
-	return_value_type> Last() const
-	{
-		return Meta::Get<N>(OriginalRange.Last());
-	}
+	ReturnValueType> Last() const
+	{return Meta::Get<N>(OriginalRange.Last());}
 
 	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasPopLast<U>::_> PopLast() const
-	{
-		OriginalRange.PopLast();
-	}
+		HasPopLast<U>::_
+	> PopLast() const {OriginalRange.PopLast();}
 
-	forceinline bool operator==(const UnzipResult& rhs) const {return OriginalRange==rhs.OriginalRange;}
+	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
+		HasLength<U>::_,
+	size_t> Length() const {OriginalRange.Length();}
+
+	forceinline bool operator==(const RUnzip& rhs) const
+	{return OriginalRange==rhs.OriginalRange;}
+
+	forceinline bool operator!=(const RUnzip& rhs) const {return !operator==(rhs);}
 };
 
 template<size_t N, typename RangeOfTuples> forceinline
-UnzipResult<N, RangeOfTuples> Unzip(const RangeOfTuples& range)
-{
-	return UnzipResult<N, RangeOfTuples>(range);
-}
+RUnzip<N, RangeOfTuples> Unzip(const RangeOfTuples& range) {return range;}
 
 template<size_t N, typename... RANGES> forceinline
-Meta::TypeListAt<N, Meta::TypeList<RANGES...>> Unzip(const ZipResult<RANGES...>& range)
-{
-	return Meta::Get<N>(range.OriginalRanges);
-}
+Meta::TypeListAt<N, Meta::TypeList<RANGES...>> Unzip(const RZip<RANGES...>& range)
+{return Meta::Get<N>(range.OriginalRanges);}
 
 }}

@@ -1,27 +1,41 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/ForwardDecls.h"
+#include "Range/Concepts.h"
 #include "Utils/Optional.h"
 
-namespace Intra { namespace Range
-{
+namespace Intra { namespace Range {
 
-template<typename R, typename F> struct MapResult:
-	RangeMixin<MapResult<R, F>,
-		Meta::ResultOf<F, typename R::value_type>,
-		R::RangeType, R::RangeIsFinite>
-{
-	typedef Meta::ResultOf<F, typename R::value_type> value_type;
-	typedef Meta::ResultOf<F, typename R::return_value_type> return_value_type;
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
-	forceinline MapResult(null_t=null):
+template<typename R, typename F> struct RMap
+{
+private:
+	typedef Meta::ResultOf<F, ReturnValueTypeOf<R>> return_value_type;
+public:
+	enum: bool {RangeIsFinite = IsFiniteRange<R>::_, RangeIsInfinite = IsInfiniteRange<R>::_};
+
+	forceinline RMap(null_t=null):
 		OriginalRange(null), Function() {}
 
-	forceinline MapResult(R&& range, F func):
-		OriginalRange(core::move(range)), Function(func) {}
+	forceinline RMap(R&& range, F func):
+		OriginalRange(Meta::Move(range)), Function(func) {}
 
-	forceinline MapResult(const R& range, F func):
+	forceinline RMap(const R& range, F func):
 		OriginalRange(range), Function(func) {}
+
+	//Для совместимости с Visual Studio 2013:
+	RMap(const RMap&) = default;
+	RMap& operator=(const RMap&) = default;
+	forceinline RMap(RMap&& rhs):
+		OriginalRange(Meta::Move(rhs.OriginalRange)),
+		Function(Meta::Move(rhs.Function)) {}
+	forceinline RMap& operator=(RMap&& rhs)
+	{
+		OriginalRange = Meta::Move(rhs.OriginalRange);
+		return *this;
+	}
+
 
 	forceinline return_value_type First() const
 	{return Function()(OriginalRange.First());}
@@ -33,18 +47,23 @@ template<typename R, typename F> struct MapResult:
 	{return OriginalRange.Empty() || Function==null;}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_,
+		HasLast<U>::_,
 	return_value_type> Last() const
 	{return Function()(OriginalRange.Last());}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_
+		HasPopLast<U>::_
 	> PopLast() {OriginalRange.PopLast();}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsRandomAccessRange<U>::_,
+		HasIndex<U>::_,
 	return_value_type> operator[](size_t index) const
 	{return Function()(OriginalRange[index]);}
+
+	template<typename U=R> forceinline Meta::EnableIf<
+		HasSlicing<U>::_,
+	RMap<SliceTypeOf<R>, F>> operator()(size_t start, size_t end) const
+	{return {OriginalRange(start, end), Function()};}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		HasLength<U>::_,
@@ -52,21 +71,27 @@ template<typename R, typename F> struct MapResult:
 	{return OriginalRange.Length();}
 
 	//TODO BUG: MapResults with same range but different functions are considered to be equal!
-	forceinline bool operator==(const MapResult& rhs) const
+	forceinline bool operator==(const RMap& rhs) const
 	{return OriginalRange==rhs.OriginalRange;}
 
 	R OriginalRange;
 	Utils::Optional<F> Function;
 };
 
+INTRA_WARNING_POP
+
 template<typename R, typename F> forceinline Meta::EnableIf<
 	!Meta::IsReference<R>::_ && IsInputRange<R>::_,
-MapResult<R, F>> Map(R&& range, F func)
-{return MapResult<R, F>(core::move(range), func);}
+RMap<R, F>> Map(R&& range, F func)
+{return {Meta::Move(range), func};}
 
 template<typename R, typename F> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_,
-MapResult<R, F>> Map(const R& range, F func)
-{return MapResult<R, F>(range, func);}
+RMap<R, F>> Map(const R& range, F func)
+{return {range, func};}
+
+template<typename T, size_t N, typename F> forceinline
+RMap<AsRangeResult<T(&)[N]>, F> Map(T(&arr)[N], F func)
+{return Map(AsRange(arr), func);}
 
 }}

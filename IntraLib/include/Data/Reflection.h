@@ -28,7 +28,7 @@ private:
 		const StructReflection*> get_reflection() {return null;}
 public:
 	template<typename T, typename F> constexpr StructField(F T::*field):
-		Offset(ushort(core::member_offset(field))),
+		Offset(ushort(Meta::MemberOffset(field))),
 		Type(ValueType::Of<F>()), Size(ushort(sizeof(F))), SubstructReflection(get_reflection<F>()) {}
 
 	//! Смещение поля структуры в байтах относительно её начала
@@ -91,32 +91,52 @@ private:
 
 #define INTRA_REFLECTION_FIELD(class, field) {&class::field}
 #define INTRA_REFLECTION_TUPLE_FIELD_POINTER(class, field) {&class::field}
-#define INTRA_REFLECTION_VISIT(class, field) visitor(field)
+#define INTRA_REFLECTION_VISIT(unused, field) visitor(field)
 #define INTRA_REFLECTION_VISIT_INDEX(index, field) case index: visitor(field); break
 #define INTRA_REFLECTION_TUPLE_FIELD(class, expr) Meta::GetMemberFieldType<decltype(&class::expr)>
 #define INTRA_REFLECTION_TUPLE_FIELD_POINTER_TYPE(class, expr) decltype(&class::expr)
 #define INTRA_REFLECTION_FIELD_NAME(class, field) #field
 //#define INTRA_REFLECTION_TUPLE_FIELD_TEST(class, field) static_assert(offsetof(class, field)==TupleOf::OffsetOf<>);
 
+#define INTRA_IMPLEMENT_FOR_EACH_FIELD(...) \
+	template<typename V> void ForEachField(V&& visitor) \
+	{INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_VISIT, , __VA_ARGS__);}\
+    template<typename V> void ForEachField(V&& visitor) const \
+	{INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_VISIT, , __VA_ARGS__);}
+
+#define INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(...) \
+	template<typename V> void VisitFieldById(size_t index, V& visitor) {\
+        switch(index) {\
+            INTRA_MACRO2_FOR_EACH_INDEX((;), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
+			default: INTRA_ASSERT(!"Invalid id for VisitFieldById.");\
+        }\
+    }\
+    template<typename V> void VisitFieldById(size_t index, V& visitor) const {\
+        switch(index) {\
+            INTRA_MACRO2_FOR_EACH_INDEX((;), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
+			default: INTRA_ASSERT(!"Invalid id for VisitFieldById.");\
+        }\
+    }
+	
+
 //! Добавить метаинформацию к структуре. Первым указывается имя типа, далее перечисляются поля.
 //! Требуется, чтобы были указаны все поля в порядке их объявления.
-	//typedef INTRA_SELECT_FIRST_ARG(__VA_ARGS__) ThisType;
 #define INTRA_ADD_REFLECTION(A, ...) \
 	static ArrayRange<const Data::StructField> ReflectionFields()\
 	{\
-		static const Data::StructField fields[] =\
+		static const Data::StructField fields[] = \
 		{\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD, A, __VA_ARGS__)\
 		};\
-		return AsRange(fields);\
+		return Range::AsRange(fields);\
 	}\
 	static ArrayRange<const StringView> ReflectionFieldNames()\
 	{\
-		static const StringView fieldNames[] =\
+		static const StringView fieldNames[] = \
 		{\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_NAME, A, __VA_ARGS__)\
 		};\
-		return AsRange(fieldNames);\
+		return Range::AsRange(fieldNames);\
 	}\
 	static const Data::StructReflection& Reflection()\
 	{\
@@ -124,18 +144,6 @@ private:
 		static const Data::StructReflection result(ReflectionFields(), ReflectionFieldNames(), /*fieldSerializers*/null);\
 		return result;\
 	}\
-    template<typename V> void ForEachField(V& visitor) {INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_VISIT, A, __VA_ARGS__);}\
-    template<typename V> void ForEachField(V& visitor) const {INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_VISIT, A, __VA_ARGS__);}\
-    template<typename V> void VisitFieldById(size_t index, V& visitor) {\
-        switch(index) {\
-            INTRA_MACRO2_FOR_EACH_INDEX( ( ; ), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
-			default: INTRA_ASSERT(true && "Invalid id for VisitFieldById.");\
-        }\
-    }\
-    template<typename V> void VisitFieldById(size_t index, V& visitor) const {\
-        switch(index) {\
-            INTRA_MACRO2_FOR_EACH_INDEX( ( ; ), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
-			default: INTRA_ASSERT(true && "Invalid id for VisitFieldById.");\
-        }\
-    }
+    INTRA_IMPLEMENT_FOR_EACH_FIELD(__VA_ARGS__)\
+    INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(__VA_ARGS__)
 

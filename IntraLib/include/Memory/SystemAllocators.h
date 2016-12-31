@@ -1,14 +1,18 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/Debug.h"
 #include "VirtualMemory.h"
+#include "Math/MathEx.h"
 
 namespace Intra { namespace Memory {
 
 struct NewAllocator
 {
-	static AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo) {(void)sourceInfo; return operator new(bytes);}
+	static AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
+	{(void)sourceInfo; return operator new(bytes);}
+	
 	static void Free(void* ptr, size_t size) {(void)size; operator delete(ptr);}
+	
 	static size_t GetAlignment() {return sizeof(void*)*2;}
 };
 

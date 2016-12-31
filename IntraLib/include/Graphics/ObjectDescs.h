@@ -3,7 +3,7 @@
 #include "Core/Core.h"
 #include "Graphics/States.h"
 #include "Math/Fixed.h"
-#include "Algorithms/Hash.h"
+#include "Algo/Hash/ToHash.h"
 #include "Graphics/UniformType.h"
 #include "Imaging/ImagingTypes.h"
 #include "Containers/String.h"
@@ -29,7 +29,7 @@ struct SamplerDesc
 	fixed8 MinMip = 0;
 	sfixed8 MipBias = 0;
 
-	bool operator==(const SamplerDesc& rhs) const {return core::memcmp(this, &rhs, sizeof(*this))==0;}
+	bool operator==(const SamplerDesc& rhs) const {return C::memcmp(this, &rhs, sizeof(*this))==0;}
 	bool operator!=(const SamplerDesc& rhs) const {return !operator==(rhs);}
 };
 
@@ -471,15 +471,14 @@ typedef CheckedId<ushort, ushort, FramebufferDesc> FramebufferId;
 
 }
 
+namespace Algo {
 
 inline uint ToHash(const Graphics::SamplerCompactDesc& s)
-{
-	return ToHash<uint>(s.v1)*(ToHash<uint>(s.v2)^0x87fa75df);
-}
+{return ToHash<uint>(s.v1)*(ToHash<uint>(s.v2)^0x87fa75df);}
 
 inline uint ToHash(const Graphics::SamplerDesc& desc)
-{
-	return ToHash(Graphics::SamplerCompactDesc(desc));
+{return ToHash(Graphics::SamplerCompactDesc(desc));}
+
 }
 
 }

@@ -11,22 +11,22 @@ CharMap::CharMap(ArrayRange<const Array<char>> arr, char filler)
 {
 	size_t columns=0;
 	for(auto& line: arr) columns = Max(columns, line.Count());
-	Array2D<char> result({arr.Count(), columns});
-	for(size_t i=0; i<arr.Count(); i++)
+	Array2D<char> result({arr.Length(), columns});
+	for(size_t i=0; i<arr.Length(); i++)
 		for(size_t j=0; j<columns; j++)
 			operator()(j, i) = j<arr[i].Count()? arr[i][j]: filler;
-	Array2D<char>::operator=(core::move(result));
+	Array2D<char>::operator=(Meta::Move(result));
 }
 
 CharMap::CharMap(ArrayRange<const String> arr, char filler)
 {
 	size_t columns=0;
 	for(auto& line: arr) columns = Max(columns, line.Length());
-	Array2D<char> result({columns, arr.Count()});
-	for(size_t i=0; i<arr.Count(); i++)
+	Array2D<char> result({columns, arr.Length()});
+	for(size_t i=0; i<arr.Length(); i++)
 		for(size_t j=0; j<columns; j++)
 			result(j, i) = j<arr[i].Length()? arr[i][j]: filler;
-	Array2D<char>::operator=(core::move(result));
+	Array2D<char>::operator=(Meta::Move(result));
 }
 
 Array<CharMap::Block> CharMap::GetBlocks(char c, BlockType type) const
@@ -60,7 +60,7 @@ Array<CharMap::Block> CharMap::GetBlocks(char c, BlockType type) const
 			if( ((type==Vertical || type==HorizontalOrVertical) && j2-j==1) || type==Area )
 			{
 				if(j2-j==1) while(i2<Height() && m(j, i2)==c) i2++;
-				else while(i2<Height() && core::memcmp(&m(j, i2-1), &m(j, i2), j2-j)==0) i2++;
+				else while(i2<Height() && C::memcmp(&m(j, i2-1), &m(j, i2), j2-j)==0) i2++;
 			}
 
 			for(uint ii=i; ii<i2; ii++)

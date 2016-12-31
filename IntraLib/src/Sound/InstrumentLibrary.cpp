@@ -1,13 +1,14 @@
 ﻿#ifndef INTRA_NO_MIDI_SYNTH
 
 #include "Sound/InstrumentLibrary.h"
+#include "Sound/DrumPhysicalModel.h"
 #include "Containers/Array2D.h"
 
 #include "IO/Stream.h"
 
 namespace Intra {
-using namespace IO;
 
+using namespace IO;
 using namespace Math;
 
 static float DrumSample(float freq, float t)
@@ -48,113 +49,7 @@ static float DrumSample(float freq, float t)
 
 
 
-struct DrumPhysicalModel: Range::RangeMixin<DrumPhysicalModel, float, Range::TypeEnum::Forward, false>
-{
-	byte Cnt;
-	byte DX, DY;
-	float Frc, K1, K2;
-	Array2D<float> P, S, F;
-	float ampl, dt;
-	Random<float> frandom;
 
-	float NextSample() {PopFirst(); return First();}
-
-	void PopFirst()
-	{
-		const float maxP = 0.3f;
-
-		const uint maxX = DX-1u;
-		const uint maxY = DY-1u;
-
-		for(uint i=0; i<Cnt; i++)
-		{
-			for(uint y=0; y<DY; y++)
-			{
-				for(uint x=0; x<DX; x++)
-				{
-					S(x, y) += ((P((x-1) & maxX, y) + P((x+1) & maxX, y) +
-								 P(x, (y-1) & maxY) + P(x, (y+1) & maxY))*0.25f - P(x, y)
-						)*F(x, y);
-				}
-			}
-
-			for(uint y=0; y<DY; y++)
-			{
-				for(uint x=0; x<DX; x++)
-				{
-					S(x, y) = S(x, y)*K1 +
-						(S((x-1) & maxX, y) + S((x+1) & maxX, y) +
-						S(x, (y-1) & maxY) + S(x, (y+1) & maxY))*K2;
-				}
-			}
-
-			for(uint y=0; y<DY; y++)
-				for(uint x=0; x<DX; x++)
-					P(x, y) += S(x, y);
-
-			for(uint x=0; x<DX; x+=4)
-			{
-				if((P(x, 0)>maxP && S(x, 0)>0) || (P(x, 0)<maxP && S(x, 0)<0))
-						S(x, 0) *= -0.5f;
-			}
-
-			P(1, 1) *= 0.5f;
-			S(0, 0) = sRand()*0.00001f;
-		}
-	}
-
-	float First() const {return P(1, DY/2u)*ampl;}
-
-	bool Empty() const {return P.Width()==0;}
-
-	DrumPhysicalModel(null_t=null):
-		Cnt(0), DX(0), DY(0),
-		Frc(0), K1(0), K2(0),
-		P(), S(), F(),
-		ampl(1), dt(0), frandom() {}
-
-	DrumPhysicalModel(byte count, byte dx, byte dy, float frc, float kDemp, float kRand):
-		Cnt(count), DX(dx), DY(dy),
-		Frc(frc), K1(0), K2(0),
-		P(dx, dy), S(dx, dy), F(dx, dy),
-		ampl(1), dt(1.0f/44100.0f), frandom()
-	{
-		K1 = 1.0f - kDemp*0.333f*frc;
-		K2 = (1.0f-K1)*0.25f;
-
-		for(uint y=0; y<dy; y++)
-		{
-			for(uint x=0; x<dx; x++)
-			{
-				float v = 1.0f+sRand()*kRand;
-				F(x, y) = Frc*v;
-			}
-		}
-		F(0, 0) = frc;
-		F(dx/2u, dy/2u) = frc;
-		F(1, dy/2u) = frc;
-		F(dx/2u, 1) = frc;
-		S(0, 0) = 10;
-		S(dx/2u, dy/2u) = -10;
-	}
-
-	void SetParams(float frequency, float amplitude, double step)
-	{
-		(void)frequency;
-		ampl = amplitude;
-		dt = float(step);
-	}
-
-	float sRand()
-	{
-		static float RR=0;
-		float R = frandom();
-		float result = R - RR;
-		RR = R;
-		return result;
-	}
-
-};
 
 
 
@@ -163,7 +58,8 @@ static DrumInstrument CreateDrums()
 	DrumInstrument result;
 
 	auto UniDrum = new SynthesizedInstrument;
-	UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.03f, 1, 0.2f);
+	UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(
+		DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.03f, 1, 0.2f);
 	//UniDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(SoundSamplers::SoundSampler<float(*)(float, float)>(DrumSample), 0.1f, 1, 0.2f);
 	UniDrum->PostEffects.AddLast(SoundPostEffects::FilterQ(4000, 0.6f));
 	//UniDrum->PostEffects.AddLast(SoundPostEffects::FilterHP(0.9f));
@@ -181,7 +77,8 @@ static DrumInstrument CreateDrums()
 	ClosedHiHat->MinNoteDuration = 0.25f;*/
 
 	auto ClosedHiHat = new SynthesizedInstrument;
-	ClosedHiHat->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 0.03f, 1, 0.25f);
+	ClosedHiHat->SynthPass = SynthesizedInstrument::CreateSynthPass(
+		DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 0.03f, 1, 0.25f);
 	ClosedHiHat->PostEffects.AddLast(SoundPostEffects::FilterQ(5000, 0.9f));
 	//ClosedHiHat->PostEffects.AddLast(SoundPostEffects::FilterHP(0.9f));
 	ClosedHiHat->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
@@ -190,7 +87,8 @@ static DrumInstrument CreateDrums()
 	for(uint id: {41u}) result.Generators[id] = ClosedHiHat;
 
 	auto AcousticBassDrum = new SynthesizedInstrument;
-	AcousticBassDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 0.03f, 1, 0.25f);
+	AcousticBassDrum->SynthPass = SynthesizedInstrument::CreateSynthPass(
+		DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 0.03f, 1, 0.25f);
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::FilterQ(8500, 0.3f));
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::FilterHP(0.4f));
 	AcousticBassDrum->PostEffects.AddLast(SoundPostEffects::Fade(0, 1000));
@@ -320,8 +218,8 @@ MusicalInstruments::MusicalInstruments()
 	fluteSawtooth.SynthPass = SynthesizedInstrument::CreateSawtoothSynthPass(0.5f, 0.15f, 1, 0.5f);
 	fluteSawtooth.AttenuationPass = SynthesizedInstrument::CreateADPass(0.1, 0.05);
 
-	Flute.Combination.AddLast(core::move(fluteSine));
-	Flute.Combination.AddLast(core::move(fluteSawtooth));
+	Flute.Combination.AddLast(Meta::Move(fluteSine));
+	Flute.Combination.AddLast(Meta::Move(fluteSawtooth));
 
 	SynthesizedInstrument panFluteSine;
 	panFluteSine.SynthPass = SynthesizedInstrument::CreateSineSynthPass(0.2f, 2, 0.5f);

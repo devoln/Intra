@@ -1,7 +1,8 @@
 ﻿#pragma once
 
 #include "Meta/Preprocessor.h"
-#include "CompilerSpecific/CompilerSpecific.h"
+#include "Platform/CppFeatures.h"
+#include "Range/ForwardDecls.h"
 
 namespace Intra {
 
@@ -13,8 +14,6 @@ struct SourceInfo
 
 #define INTRA_SOURCE_INFO SourceInfo{__FILE__, uint(__LINE__)}
 
-template<typename Char> struct GenericStringView;
-typedef GenericStringView<char> StringView;
 void PrintDebugMessage(StringView message);
 void PrintDebugMessage(StringView message, StringView file, int line);
 void InternalError(const char* func, const char* file, int line, const char* info);
@@ -47,7 +46,7 @@ bool IsDebuggerAttached();
 
 #define INTRA_DEBUGGER_BREAKPOINT (Intra::IsDebuggerAttached()? (INTRA_DEBUG_BREAK, true): true)
 
-namespace detail {
+namespace D {
 
 constexpr forceinline const char* past_last_slash(const char* str, const char* lastSlash)
 {
@@ -61,7 +60,7 @@ constexpr forceinline const char* past_last_slash(const char* str)
 
 }}
 
-#define __SHORT_FILE__ Intra::detail::past_last_slash(__FILE__)
+#define __SHORT_FILE__ Intra::D::past_last_slash(__FILE__)
 
 #ifdef INTRA_DEBUG
 #define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT; Intra::PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
@@ -89,5 +88,3 @@ constexpr forceinline const char* past_last_slash(const char* str)
 #define INTRA_HEAP_CHECK
 #define INTRA_ASSERT_WARNING
 #endif
-
-

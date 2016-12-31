@@ -1,10 +1,13 @@
 ﻿#include "PerfTestSort.h"
 #include "Test/UnitTest.h"
 #include "Test/PerformanceTest.h"
-#include "Algorithms/Sort.h"
-#include "Core/Time.h"
+#include "Algo/Sort.h"
+#include "Platform/Time.h"
 using namespace Intra;
 
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
 
 #include <algorithm>
 
@@ -43,33 +46,36 @@ INTRA_UNITTEST("Sort algorithms unit tests")
 	INTRA_TEST_ASSERT_EQUALS(arrSelection, arrStdSort);
 };
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::InsertionSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::ShellSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::QuickSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
@@ -79,47 +85,51 @@ template<typename T> double TestRadixSorting(size_t size)
 	Timer tim;
 	Algo::RadixSort(arr());
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::MergeSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::SelectionSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::HeapSort(arr(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 
-template<typename T, typename Comparer = Algo::Comparers::Function<T>> double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Comparers::Function<T>>
+double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	std::sort(arr.begin(), arr.end(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(arr().IsSorted());
+	INTRA_ASSERT(Algo::IsSorted(arr()));
 	return result;
 }
 

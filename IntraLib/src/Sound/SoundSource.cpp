@@ -240,10 +240,10 @@ WaveSoundSampleSource::WaveSoundSampleSource(ArrayRange<const byte> srcFileData)
 {
 	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(data.Begin);
 
-	if(core::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF))!=0 ||
-		core::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE))!=0 ||
-		core::memcmp(header.fmt, "fmt ", sizeof(header.fmt))!=0 ||
-		core::memcmp(header.data, "data", sizeof(header.data))!=0) return;
+	if(C::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF))!=0 ||
+		C::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE))!=0 ||
+		C::memcmp(header.fmt, "fmt ", sizeof(header.fmt))!=0 ||
+		C::memcmp(header.data, "data", sizeof(header.data))!=0) return;
 	if(data.Length()!=header.DataSize+sizeof(WaveHeader)) return;
 
 	channel_count = ushort(header.Channels);
@@ -256,7 +256,7 @@ size_t WaveSoundSampleSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 	INTRA_ASSERT(!outShorts.Empty());
 	const auto shortsToRead = Min(outShorts.Length(), sample_count*channel_count-current_data_pos);
 	const short* const streamStart = reinterpret_cast<const short*>(data.Begin+sizeof(WaveHeader));
-	core::memcpy(outShorts.Begin, streamStart+current_data_pos, shortsToRead*sizeof(short));
+	Algo::CopyTo(ArrayRange<const short>(streamStart+current_data_pos, shortsToRead), outShorts);
 	current_data_pos += shortsToRead;
 	if(shortsToRead<outShorts.Length()) current_data_pos=0;
 	return shortsToRead/channel_count;

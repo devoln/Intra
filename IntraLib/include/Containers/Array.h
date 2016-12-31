@@ -3,8 +3,9 @@
 #include "Core/Core.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Range/ArrayRange.h"
-#include "Algorithms/Algorithms.h"
-#include "CompilerSpecific/InitializerList.h"
+#include "Algo/Comparison.h"
+#include "Algo/Search/Single.h"
+#include "Platform/InitializerList.h"
 #include "Memory/AllocatorInterface.h"
 
 
@@ -22,6 +23,9 @@ public:
 	Array(null_t=null):
 		buffer(null), range(null) {}
 
+	Array(Allocator& allocator):
+		AllocatorRef(allocator), buffer(null), range(null) {}
+
 	explicit Array(size_t initialCapacity):
 		buffer(null), range(null) {Reserve(initialCapacity);}
 
@@ -36,8 +40,22 @@ public:
 	
 	Array(ArrayRange<const T> values): buffer(null), range(null)
 	{
-		SetCountUninitialized(values.Count());
-		Memory::CopyInit(range, values.AsConstRange());
+		SetCountUninitialized(values.Length());
+		Memory::CopyInit(range, values);
+	}
+
+	template<typename R, typename = Meta::EnableIf<
+		Range::IsFiniteForwardRange<R>::_
+	>> Array(R&& values): buffer(null), range(null)
+	{
+		SetCountUninitialized(Range::Count(values));
+		auto dst = range;
+		while(!values.Empty())
+		{
+			new(&dst.First()) T(values.First());
+			dst.PopFirst();
+			values.PopFirst();
+		}
 	}
 
 	template<size_t N> Array(const T(&values)[N])
@@ -49,7 +67,7 @@ public:
 	explicit Array(ArrayRange<const T> values, Allocator& allocator):
 		AllocatorRef(allocator), buffer(null), range(null)
 	{
-		SetCountUninitialized(values.Count());
+		SetCountUninitialized(values.Length());
 		Memory::CopyInit(range, values.AsConstRange());
 	}
 
@@ -64,15 +82,26 @@ public:
 		Array(rhs.AsConstRange(), allocator) {}
 
 	Array(Array&& rhs):
-		AllocatorRef(rhs), buffer(rhs.buffer), range(rhs.range) {rhs.buffer = null; rhs.range = null;}
+		AllocatorRef(rhs), buffer(rhs.buffer), range(rhs.range)
+		{rhs.buffer = null; rhs.range = null;}
 	
 	~Array() {operator=(null);}
 
 
-	template<typename U=T> static Meta::EnableIfPod<U, Array<T>>
-		CreateAsOwnerOf(ArrayRange<T> rangeToOwn)
+	//! Создать контейнер из уже выделенного диапазона.
+	//! Внимание: rangeToOwn должен быть выделен тем же аллокатором, что и шаблонный аргумент Allocator!
+	static Array CreateAsOwnerOf(ArrayRange<T> rangeToOwn)
 	{
-		Array<T> result;
+		Array result;
+		result.range = result.buffer = rangeToOwn;
+		return result;
+	}
+
+	//! Создать контейнер из уже выделенного диапазона с указанием аллокатора, которым он выделен.
+	//! Внимание: rangeToOwn должен быть выделен тем же аллокатором allocator!
+	static Array CreateAsOwnerOf(ArrayRange<T> rangeToOwn, Allocator& allocator)
+	{
+		Array result(allocator);
 		result.range = result.buffer = rangeToOwn;
 		return result;
 	}
@@ -90,11 +119,14 @@ public:
 		Clear();
 		range = rhs.range;
 		rhs.range.End = rhs.range.Begin;
-		core::swap(buffer, rhs.buffer);
+		Meta::Swap(buffer, rhs.buffer);
 		return *this;
 	}
 
 	Array& operator=(ArrayRange<const T> values) {return operator=(Array(values));}
+	template<typename R> Meta::EnableIf<
+		Range::IsFiniteForwardRange<R>::_,
+	Array&> operator=(R&& values) {return operator=(Array(values));}
 
 	//! Удалить все элементы и освободить память.
 	Array& operator=(null_t)
@@ -109,7 +141,7 @@ public:
 	template<typename U> void Assign(ArrayRange<const U> rhs)
 	{
 		Clear();
-		SetCountUninitialized(rhs.Count());
+		SetCountUninitialized(rhs.Length());
 		Memory::CopyInit(range, rhs);
 	}
 
@@ -118,14 +150,14 @@ public:
 	//! Добавить новый элемент в начало массива копированием или перемещением value.
 	forceinline T& AddFirst(T&& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(core::addressof(value)));
+		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoLeftSpace()) CheckSpace(0, 1);
-		return *new(--range.Begin) T(core::move(value));
+		return *new(--range.Begin) T(Meta::Move(value));
 	}
 
 	forceinline T& AddFirst(const T& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(core::addressof(value)));
+		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoLeftSpace()) CheckSpace(0, 1);
 		return *new(--range.Begin) T(value);
 	}
@@ -136,17 +168,18 @@ public:
 	T&> EmplaceFirst(Args&&... args)
 	{
 		if(NoLeftSpace()) CheckSpace(0, 1);
-		return *new(--range.Begin) T(core::forward<Args>(args)...);
+		return *new(--range.Begin) T(Meta::Forward<Args>(args)...);
 	}
 	
 	//! Добавить все значения указанного диапазона в начало массива
 	template<typename RangeOfValues> Meta::EnableIf<
-		Range::IsFiniteForwardRangeOf<RangeOfValues, T>::_
+		Range::IsFiniteForwardRange<RangeOfValues>::_ &&
+		Range::ValueTypeIsConvertible<RangeOfValues, T>::_
 	> AddFirstRange(const RangeOfValues& values)
 	{
 		RangeOfValues valueRange = values;
 		//INTRA_ASSERT(!range.Overlaps((ArrayRange<const byte>&)values));
-		const size_t valuesCount = values.Count();
+		const size_t valuesCount = Range::Count(values);
 		if(LeftSpace()<valuesCount) CheckSpace(0, valuesCount);
 		T* dst = (range.Begin -= valuesCount);
 		while(!valueRange.Empty())
@@ -159,15 +192,15 @@ public:
 	//! Добавить новый элемент в конец массива перемещением value.
 	forceinline T& AddLast(T&& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(core::addressof(value)));
+		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoRightSpace()) CheckSpace(1, 0);
-		return *new(range.End++) T(core::move(value));
+		return *new(range.End++) T(Meta::Move(value));
 	}
 
 	//! Добавить новый элемент в конец массива копированием value.
 	forceinline T& AddLast(const T& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(core::addressof(value)));
+		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoRightSpace()) CheckSpace(1, 0);
 		return *new(range.End++) T(value);
 	}
@@ -178,17 +211,18 @@ public:
 	T&> EmplaceLast(Args&&... args)
 	{
 		if(NoRightSpace()) CheckSpace(1, 0);
-		return *new(range.End++) T(core::forward<Args>(args)...);
+		return *new(range.End++) T(Meta::Forward<Args>(args)...);
 	}
 
 	//! Добавить все значения указанного диапазона в конец массива.
 	template<typename RangeOfValues> Meta::EnableIf<
-		Range::IsFiniteForwardRangeOf<RangeOfValues, T>::_
+		Range::IsFiniteForwardRange<RangeOfValues>::_ &&
+		Range::ValueTypeIsConvertible<RangeOfValues, T>::_
 	> AddLastRange(const RangeOfValues& values)
 	{
 		RangeOfValues valueRange = values;
 		//INTRA_ASSERT(!data.Overlaps((ArrayRange<const byte>&)values));
-		const size_t valuesCount = values.Count();
+		const size_t valuesCount = Range::Count(values);
 		if(RightSpace()<valuesCount) CheckSpace(valuesCount, 0);
 		while(!valueRange.Empty())
 		{
@@ -205,9 +239,9 @@ public:
 		{
 			Reserve(pos+1);
 			SetCount(pos);
-			return AddLast(core::forward<U>(value));
+			return AddLast(Meta::Forward<U>(value));
 		}
-		operator[](pos) = core::forward<U>(value);
+		operator[](pos) = Meta::Forward<U>(value);
 	}
 	
 
@@ -280,7 +314,7 @@ public:
 	//! Прочитать и удалить последний элемент.
 	forceinline Array& operator>>(T& value)
 	{
-		value = core::move(Last());
+		value = Meta::Move(Last());
 		RemoveLast();
 		return *this;
 	}
@@ -288,7 +322,7 @@ public:
 	//! Возвращает последний элемент, удаляя его из массива.
 	forceinline T PopLastElement()
 	{
-		T result = core::move(Last());
+		T result = Meta::Move(Last());
 		RemoveLast();
 		return result;
 	}
@@ -297,7 +331,7 @@ public:
 	//! Возвращает первый элемент, удаляя его из массива.
 	forceinline T PopFirstElement()
 	{
-		T result = core::move(First());
+		T result = Meta::Move(First());
 		RemoveFirst();
 		return result;
 	}
@@ -468,13 +502,13 @@ public:
 	forceinline void RemoveUnordered(size_t index)
 	{
 		INTRA_ASSERT(index<Count());
-		if(index<Count()-1) range[index] = core::move(*--range.End);
+		if(index<Count()-1) range[index] = Meta::Move(*--range.End);
 		RemoveLast();
 	}
 
 	void FindAndRemoveUnordered(const T& value)
 	{
-		size_t index = range.CountUntil(value);
+		size_t index = Algo::CountUntil(range, value);
 		if(index!=Count()) RemoveUnordered(index);
 	}
 	//!@}
@@ -514,10 +548,10 @@ public:
 	forceinline const T* End() const {return end();}
 
 	//! Возвращает байтовый буфер с данными этого массива. При этом сам массив становится пустым. Деструкторы не вызываются!
-	//ByteBuffer MoveToByteBuffer() {return core::move(data);}
+	//ByteBuffer MoveToByteBuffer() {return Meta::Move(data);}
 
 	//template<typename U=T> Meta::EnableIfPod<U, ByteBuffer> CopyToByteBuffer() {return data;}
-	template<typename U> forceinline Array<U, Allocator> MoveReinterpret() {return core::move(reinterpret_cast<Array<U, Allocator>&>(*this));}
+	template<typename U> forceinline Array<U, Allocator> MoveReinterpret() {return Meta::Move(reinterpret_cast<Array<U, Allocator>&>(*this));}
 
 
 	//! Возвращает суммарный размер в байтах элементов в массиве
@@ -631,7 +665,7 @@ public:
 		BackInserter(Array* dst): DstArr(dst) {}
 
 		Array* DstArr;
-		forceinline void Put(T&& v) {DstArr->AddLast(core::forward<T>(v));}
+		forceinline void Put(T&& v) {DstArr->AddLast(Meta::Forward<T>(v));}
 		forceinline void Put(const T& v) {DstArr->AddLast(v);}
 	};
 	BackInserter Insert(Range::RelativeIndexEnd) {return BackInserter(this);}
@@ -639,9 +673,9 @@ public:
 #ifdef INTRA_STL_INTERFACE
 	typedef T* iterator;
 	typedef const T* const_iterator;
-	forceinline void push_back(T&& value) {AddLast(core::move(value));}
+	forceinline void push_back(T&& value) {AddLast(Meta::Move(value));}
 	forceinline void push_back(const T& value) {AddLast(value);}
-	forceinline void push_front(T&& value) {AddFirst(core::move(value));}
+	forceinline void push_front(T&& value) {AddFirst(Meta::Move(value));}
 	forceinline void push_front(const T& value) {AddFirst(value);}
 	forceinline void pop_back() {RemoveLast();}
 	forceinline void pop_front() {RemoveFirst();}
@@ -663,7 +697,7 @@ public:
 	forceinline void clear() {Clear();}
 
 	forceinline T* insert(const T* pos, const T& value) {Insert(size_t(pos-Data()), value);}
-	forceinline T* insert(const T* pos, T&& value) {Insert(size_t(pos-Data()), core::move(value));}
+	forceinline T* insert(const T* pos, T&& value) {Insert(size_t(pos-Data()), Meta::Move(value));}
 	forceinline T* insert(const T* pos, size_t count, const T& value);
 	template<typename InputIt> forceinline T* insert(const T* pos, InputIt first, InputIt last);
 
@@ -691,9 +725,9 @@ public:
 
 	void swap(Array& rhs)
 	{
-		core::swap(range, rhs.range);
-		core::swap(buffer, rhs.buffer);
-}
+		Meta::Swap(range, rhs.range);
+		Meta::Swap(buffer, rhs.buffer);
+	}
 #endif
 
 private:

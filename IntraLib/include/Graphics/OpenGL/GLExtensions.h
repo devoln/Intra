@@ -2,6 +2,7 @@
 
 #include "Containers/Array.h"
 #include "Containers/String.h"
+#include "Range/Iterator.h"
 
 #if defined(_WIN32) && !defined(__SCITECH_SNAP__)
 #   define KHRONOS_APICALL __declspec(dllimport)
@@ -933,10 +934,11 @@ String ToString() const
 	else result += "compatibility";
 	if(IsDebugContext) result += " debug";
 	result += "\n\nСписок поддерживаемых расширений:\n";
+	static_assert(Meta::HasOpEquals<Range::ForwardIterator<Range::RSplit<StringView, AsciiSet, AsciiSet>>>::_, "ERROR!");
 	for(auto&& ext: Extensions().Split(" "))
 	{
-		result+=ext;
-		result+='\n';
+		result += ext;
+		result += '\n';
 	}
 	return result;
 }
@@ -967,7 +969,7 @@ Caps Caps;
 
     OpenGL()
 	{
-		core::memset(this, 0, sizeof(OpenGL));
+		C::memset(this, 0, sizeof(OpenGL));
 	}
 
 	OpenGL& operator=(const OpenGL&) = delete;

@@ -1,10 +1,14 @@
-﻿#include "PerfTestSerialization.h"
+﻿#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
+
+#include "PerfTestSerialization.h"
 
 #include "Meta/Preprocessor.h"
 #include "Data/BinarySerialization.h"
 #include "Data/TextSerialization.h"
 #include "Data/Reflection.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 #include "Range/ArrayRange.h"
 #include "IO/Stream.h"
 #include "Test/PerformanceTest.h"
@@ -73,6 +77,7 @@ struct SuperTest
 
 	INTRA_ADD_REFLECTION(SuperTest, strArr, foo, str, vals, dbl, tests, bar, tuple);
 };
+static_assert(Meta::HasForEachField<const SuperTest&, Data::BinaryDeserializer&>::_, "ERROR!");
 
 
 

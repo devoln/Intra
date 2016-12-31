@@ -7,140 +7,172 @@
 
 namespace Intra { namespace Range {
 
+
 INTRA_DEFINE_EXPRESSION_CHECKER(HasEmpty, static_cast<bool>(Meta::Val<T>().Empty()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLength, static_cast<size_t>(Meta::Val<T>().Length()));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasFirst, Meta::Val<T>().First());
-INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirst, Meta::Val<T>().PopFirst());
+INTRA_DEFINE_EXPRESSION_CHECKER(HasFirst, Meta::Val<T>().First());
+
+template<typename R> struct HasSlicing: Meta::IsCallable<R, size_t, size_t> {};
+
+namespace RD {
+
+INTRA_DEFINE_EXPRESSION_CHECKER(HasValueType, Meta::Val<typename T::value_type>());
+
+template<typename R, bool=HasFirst<Meta::RemoveConstRef<R>>::_> struct ReturnValueTypeOf2
+{
+	typedef Meta::RemoveConstRef<R> RMut;
+	typedef decltype(Meta::Val<RMut>().First()) _;
+};
+
+template<typename R> struct ReturnValueTypeOf2<R, false>
+{typedef void _;};
+
+template<typename R> struct ReturnValueTypeOf: ReturnValueTypeOf2<R> {};
+
+template<typename R, bool=HasSlicing<Meta::RemoveConstRef<R>>::_> struct SliceTypeOf
+{
+	typedef Meta::RemoveConstRef<R> RMut;
+	typedef Meta::ResultOf<RMut, size_t, size_t> _;
+};
+
+template<typename R> struct SliceTypeOf<R, false>
+{typedef void _;};
+
+template<typename R, bool=HasFirst<Meta::RemoveConstRef<R>>::_, bool=HasValueType<Meta::RemoveConstRef<R>>::_> struct ValueTypeOf
+{typedef Meta::RemoveConstRef<typename ReturnValueTypeOf<R>::_> _;};
+
+template<typename R> struct ValueTypeOf<R, false, true>
+{
+	typedef Meta::RemoveConstRef<R> Range;
+	typedef typename Range::value_type _;
+};
+
+template<typename R> struct ValueTypeOf<R, false, false>
+{typedef void _;};
+
+}
+
+template<typename R> using ReturnValueTypeOf = typename RD::ReturnValueTypeOf<R>::_;
+
+template<typename R> using ValueTypeOf = typename RD::ValueTypeOf<R>::_;
+template<typename R> using SliceTypeOf = typename RD::SliceTypeOf<R>::_;
+
+template<typename R> struct ValueTypeIsChar: Meta::IsCharType<ValueTypeOf<R>> {};
+template<typename R> struct ValueTypeIsTuple: Meta::IsTuple<ValueTypeOf<R>> {};
+template<typename R, typename T> struct ValueTypeIsConvertible: Meta::IsConvertible<ValueTypeOf<R>, T> {};
+
+INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLast, Meta::Val<T>().PopLast());
-INTRA_DEFINE_EXPRESSION_CHECKER(HasSlicing, Meta::Val<T>().opSlice(size_t(), size_t()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasIndex, Meta::Val<T>()[size_t()]);
-INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==static_cast<typename T::value_type*>(null));
+INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==static_cast<ValueTypeOf<T>*>(null));
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPut, Meta::Val<T>().Put(Meta::Val<typename T::value_type>()));
+INTRA_DEFINE_EXPRESSION_CHECKER(HasPut, Meta::Val<T>().Put(Meta::Val<ValueTypeOf<T>>()));
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasTypedPut, Meta::Val<T1>().Put(Meta::Val<T2>()),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER(HasTake, Meta::Val<T>().Take(size_t()));
 
 namespace TypeEnum
 {
 	typedef byte Type;
-	enum: Type {Input, Forward, Bidirectional, RandomAccess, Array, Error};
+	enum: Type {NotRange, Input, Forward, Bidirectional, RandomAccess, Array};
 }
 
-
-template<typename R, typename T, class PARENT> struct OutputRangeMixin;
-
-template<typename R, typename T, class PARENT> struct InputRangeMixin;
-template<typename R, typename T, class PARENT> struct FiniteInputRangeMixin;
-template<typename R, typename T, class PARENT> struct ForwardRangeMixin;
-template<typename R, typename T, class PARENT> struct FiniteForwardRangeMixin;
-template<typename R, typename T, class PARENT> struct BidirectionalRangeMixin;
-template<typename R, typename T, class PARENT> struct RandomAccessRangeMixin;
-template<typename R, typename T, class PARENT> struct FiniteRandomAccessRangeMixin;
-
 template<typename R>
-struct IsOutputRange: Meta::TypeFromValue<bool, HasPut<Meta::RemoveConstRef<R>>::_> {};
+struct IsOutputRange: Meta::TypeFromValue<bool,
+	HasPut<Meta::RemoveReference<R>>::_
+> {};
 
 template<typename R>
 struct IsInputRange: Meta::TypeFromValue<bool,
-	HasFirst<R>::_ && HasPopFirst<R>::_ && HasEmpty<R>::_
+	HasFirst<R>::_ && HasPopFirst<Meta::RemoveConstRef<R>>::_ && HasEmpty<R>::_
 > {};
 
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsForwardRange, Meta::Val<typename T::value_type>(),
-	IsInputRange<T>::_ && T::RangeType>=TypeEnum::Forward);
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsInputRangeOf, Meta::Val<typename T1::value_type>(),
-	(IsInputRange<T1>::_ && Meta::IsConvertible<typename T1::value_type, T2>::_),,);
-
-
-template<typename R, typename T>
-struct IsForwardRangeOf: Meta::TypeFromValue<bool,
-	IsInputRangeOf<R, T>::_ && IsForwardRange<R>::_
-> {};
+INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsForwardRange, Meta::Val<ValueTypeOf<T>>(),
+	IsInputRange<T>::_ && Meta::IsCopyConstructible<T>::_);
 
 template<typename R>
 struct IsBidirectionalRange: Meta::TypeFromValue<bool,
-	IsForwardRange<R>::_ && HasLast<R>::_ && HasPopLast<R>::_
-	> {};
-
-template<typename R, typename T>
-struct IsBidirectionalRangeOf: Meta::TypeFromValue<bool,
-	IsBidirectionalRange<R>::_ && IsInputRangeOf<R, T>::_
-	> {};
+	IsForwardRange<R>::_ &&
+	HasLast<R>::_ && HasPopLast<Meta::RemoveConstRef<R>>::_
+> {};
 
 template<typename R>
 struct IsRandomAccessRange: Meta::TypeFromValue<bool,
-	IsForwardRange<R>::_ && HasIndex<R>::_
+	IsForwardRange<R>::_ &&
+	HasIndex<R>::_
 > {};
-
-template<typename R, typename T>
-struct IsRandomAccessRangeOf: Meta::TypeFromValue<bool,
-	IsRandomAccessRange<R>::_ && IsInputRangeOf<R, T>::_
-> {};
-
-template<typename R>
-struct IsRangeHasLength: Meta::TypeFromValue<bool,
-	IsInputRange<R>::_ && HasLength<R>::_
-> {};
-
-template<typename R>
-struct IsSliceableRange: Meta::TypeFromValue<bool,
-	IsInputRange<R>::_ && HasSlicing<R>::_
-> {};
-
 
 
 template<typename R>
 struct IsFiniteRandomAccessRange: Meta::TypeFromValue<bool,
-	IsRandomAccessRange<R>::_ && HasLength<R>::_
-> {};
-
-template<typename R, typename T>
-struct IsFiniteRandomAccessRangeOf: Meta::TypeFromValue<bool,
-	IsFiniteRandomAccessRange<R>::_ && IsInputRangeOf<R, T>::_
+	IsRandomAccessRange<R>::_ &&
+	HasLength<R>::_
 > {};
 
 template<typename R>
 struct IsArrayRange: Meta::TypeFromValue<bool,
-	IsFiniteRandomAccessRange<R>::_ && HasData<R>::_
+	IsFiniteRandomAccessRange<R>::_ &&
+	HasData<R>::_
 > {};
 
-template<typename R, typename T>
-struct IsArrayRangeOf: Meta::TypeFromValue<bool,
-	IsArrayRange<R>::_ && IsInputRangeOf<R, T>::_
+template<typename T1, typename T2> struct IsArrayRangeOfExactly: Meta::TypeFromValue<bool,
+	IsArrayRange<T1>::_ && Meta::TypeEqualsIgnoreCV<ValueTypeOf<T1>, T2>::_
 > {};
 
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsArrayRangeOfExactly, Meta::Val<typename T1::value_type>(),
-	(IsArrayRange<T1>::_ && Meta::TypeEqualsIgnoreCV<typename T1::value_type, T2>::_),,);
 
-//INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsFiniteRange, T::RangeIsFinite,
-//	IsInputRange<T>::_ && T::RangeIsFinite);
+template<class R> struct GetRangeType: Meta::TypeFromValue<byte,
+	!IsInputRange<R>::_?
+		TypeEnum::NotRange:
+	!Meta::IsCopyConstructible<R>::_?
+		TypeEnum::Input:
+		(HasIndex<R>::_ && HasSlicing<R>::_)?
+			(HasData<R>::_?
+				TypeEnum::Array:
+				TypeEnum::RandomAccess):
+			(HasLast<R>::_ && HasPopLast<R>::_)?
+				TypeEnum::Bidirectional:
+				TypeEnum::Forward
+> {};
+
 
 template<class T> struct HasRangeIsFinite
 {
     template<bool> struct Helper {};
     template<typename U> static char HelpMe(...);
     template<typename U> static short HelpMe(Helper<U::RangeIsFinite>*);
-    enum: bool {_=(sizeof(HelpMe<T>(0))==sizeof(short))};
+    enum: bool {_=(sizeof(HelpMe<Meta::RemoveConstRef<T>>(0))==sizeof(short))};
 };
 
-template<typename R, bool=HasRangeIsFinite<R>::_> struct IsFiniteRange: Meta::TypeFromValue<bool, R::RangeIsFinite> {};
-template<typename R> struct IsFiniteRange<R, false>: Meta::TypeFromValue<bool, false> {};
+template<class T> struct HasRangeIsInfinite
+{
+    template<bool> struct Helper {};
+    template<typename U> static char HelpMe(...);
+    template<typename U> static short HelpMe(Helper<U::RangeIsInfinite>*);
+    enum: bool {_=(sizeof(HelpMe<Meta::RemoveConstRef<T>>(0))==sizeof(short))};
+};
+
+template<typename R, bool=HasRangeIsFinite<R>::_, typename Range=Meta::RemoveConstRef<R>> struct IsFiniteRange:
+	Meta::TypeFromValue<bool, Range::RangeIsFinite> {};
+template<typename R> struct IsFiniteRange<R, false>:
+	Meta::TypeFromValue<bool, HasLength<R>::_ || HasLast<R>::_ || HasPopLast<R>::_> {};
+
+template<typename R, bool=HasRangeIsInfinite<R>::_, typename Range=Meta::RemoveConstRef<R>> struct IsInfiniteRange:
+	Meta::TypeFromValue<bool, !IsFiniteRange<R>::_ && Range::RangeIsInfinite> {};
+template<typename R> struct IsInfiniteRange<R, false>:
+	Meta::TypeFromValue<bool, false> {};
 
 
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsCharRange, Meta::Val<typename T::value_type>(),
-	IsInputRange<T>::_ && Meta::IsCharType<typename T::value_type>::_);
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeElementAssignable, Meta::Val<typename T::return_value_type>(),
-	IsInputRange<T>::_ && Meta::IsLValueReference<typename T::return_value_type>::_);
-
-
-
-
-template<typename R> struct IsInfiniteRange: Meta::TypeFromValue<bool,
-	IsInputRange<R>::_ && !IsFiniteRange<R>::_
+template<typename T> struct IsCharRange: Meta::TypeFromValue<bool,
+	IsInputRange<T>::_ && Meta::IsCharType<ValueTypeOf<T>>::_
 > {};
+
+template<typename T> struct IsOutputCharRange: Meta::TypeFromValue<bool,
+	IsOutputRange<T>::_ && Meta::IsCharType<ValueTypeOf<T>>::_
+> {};
+
+template<typename T> struct IsAssignableInputRange: Meta::TypeFromValue<bool,
+	IsInputRange<T>::_ && Meta::IsLValueReference<ReturnValueTypeOf<T>>::_
+> {};
+
 
 template<typename R>
 struct IsFiniteInputRange: Meta::TypeFromValue<bool,
@@ -152,112 +184,64 @@ struct IsFiniteForwardRange: Meta::TypeFromValue<bool,
 	IsForwardRange<R>::_ && IsFiniteRange<R>::_
 > {};
 
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsInputRangeOfPod, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && Meta::IsPod<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsInputRangeOfTrivial, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && Meta::IsAlmostPod<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteInputRangeOf, Meta::Val<typename T1::value_type>(),
-	(IsFiniteInputRange<T1>::_ && Meta::IsConvertible<typename T1::value_type, T2>::_),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(ValueTypeEquals, (Meta::Val<typename T1::value_type>(), Meta::Val<typename T2::value_type>()),
-	(Meta::TypeEquals<typename T1::value_type, typename T2::value_type>::_),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsFiniteInputCharRange, Meta::Val<typename T::value_type>(),
-	(IsFiniteInputRange<T>::_ && Meta::IsCharType<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsFiniteInputNonCharRange, Meta::Val<typename T::value_type>(),
-	(IsFiniteInputRange<T>::_ && !Meta::IsCharType<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsFiniteForwardNonCharRange, Meta::Val<typename T::value_type>(),
-	(IsFiniteForwardRange<T>::_ && !Meta::IsCharType<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteInputRangeOfExactly, Meta::Val<typename T1::value_type>(),
-	(IsFiniteInputRange<T1>::_ && Meta::TypeEquals<typename T1::value_type, T2>::_),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteForwardRangeOfExactly, Meta::Val<typename T1::value_type>(),
-	(IsFiniteForwardRange<T1>::_ && Meta::TypeEquals<typename T1::value_type, T2>::_),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsFiniteForwardRangeOf, Meta::Val<typename T1::value_type>(),
-	(IsFiniteForwardRange<T1>::_ && Meta::IsConvertible<typename T1::value_type, T2>::_),,);
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeOfRanges, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && IsInputRange<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeOfTuples, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && Meta::IsTuple<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeOfFiniteForwardRanges, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && IsFiniteForwardRange<typename T::value_type>::_));
-
-INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(IsRangeOfFiniteForwardRangesOf, Meta::Val<typename T1::value_type::value_type>(),
-	(IsInputRange<T1>::_ && IsFiniteForwardRange<typename T1::value_type>::_) &&
-	(Meta::IsConvertible<typename T1::value_type::value_type, T2>::_),,);
-
-
-
 template<typename R>
-struct IsForwardRangeOfFiniteForwardRanges: Meta::TypeFromValue<bool,
-	IsForwardRange<R>::_ && IsRangeOfFiniteForwardRanges<R>::_
+struct IsInputRangeOfPod: Meta::TypeFromValue<bool,
+	IsInputRange<R>::_ && Meta::IsPod<ValueTypeOf<R>>::_
 > {};
 
-template<typename R>
-struct IsFiniteForwardRangeOfFiniteForwardRanges: Meta::TypeFromValue<bool,
-	IsFiniteForwardRange<R>::_ && IsRangeOfFiniteForwardRanges<R>::_
+template<typename R1, typename R2>
+struct ValueTypeEquals: Meta::TypeFromValue<bool,
+	Meta::TypeEquals<ValueTypeOf<R1>, ValueTypeOf<R2>>::_
 > {};
 
-template<typename R, typename T>
-struct IsFiniteInputRangeOfFiniteForwardRangesOf: Meta::TypeFromValue<bool,
-	IsFiniteInputRange<R>::_ && IsRangeOfFiniteForwardRangesOf<R, T>::_
+template<typename R, typename T> struct IsFiniteInputRangeOfExactly: Meta::TypeFromValue<bool, 
+	IsFiniteInputRange<R>::_ && Meta::TypeEquals<ValueTypeOf<R>, T>::_
 > {};
 
+template<typename R, typename T> struct IsFiniteForwardRangeOfExactly: Meta::TypeFromValue<bool, 
+	IsFiniteForwardRange<R>::_ && Meta::TypeEquals<ValueTypeOf<R>, T>::_
+> {};
 
-
-
-
-
-template<typename T> struct NullRange
+template<typename... RANGES> struct CommonRangeCategoryAnyFinite;
+template<typename R0> struct CommonRangeCategoryAnyFinite<R0>
 {
-	typedef T value_type;
-	typedef T return_value_type;
-	enum {RangeType=TypeEnum::RandomAccess};
-	enum: bool {RangeIsFinite=true};
+	enum: byte {Type = GetRangeType<R0>::_};
+	enum: bool {Finite = IsFiniteRange<R0>::_};
+};
 
-	T* begin() const {return null;}
-	T* end() const {return null;}
+template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAnyFinite<R0, R1, RANGES...>
+{
+	typedef CommonRangeCategoryAnyFinite<R1, RANGES...> Rest;
+	enum: byte {Type = byte(Rest::Type)>byte(GetRangeType<R0>::_)? byte(GetRangeType<R0>::_): byte(Rest::Type)};
+	enum: byte {Finite = Rest::Finite || IsFiniteRange<R0>::_};
+};
 
-	NullRange(null_t=null) {}
-	bool Empty() const {return true;}
-	size_t Length() const {return 0;}
-	size_t Count() const {return 0;}
-	T First() const {INTRA_ASSERT(false); return T();}
-	T Last() const {INTRA_ASSERT(false); return T();}
-	void PopFirst() {INTRA_ASSERT(false);}
-	void PopLast() {INTRA_ASSERT(false);}
-	T operator[](size_t) {INTRA_ASSERT(false); return T();}
-	
-	NullRange opSlice(size_t startIndex, size_t endIndex) const
-	{
-		(void)startIndex; (void)endIndex;
-		INTRA_ASSERT(startIndex==0 && endIndex==0);
-		return NullRange();
-	}
 
-	void Put(const T&) {}
+
+template<typename... RANGES> struct CommonRangeCategoryAllFinite;
+template<typename R0> struct CommonRangeCategoryAllFinite<R0>
+{
+	enum: byte {Type = byte(GetRangeType<R0>::_)==TypeEnum::Array? byte(TypeEnum::RandomAccess): byte(GetRangeType<R0>::_)};
+	enum: bool {Finite = IsFiniteRange<R0>::_};
+};
+
+template<typename R0, typename R1, typename... RANGES> struct CommonRangeCategoryAllFinite<R0, R1, RANGES...>
+{
+	typedef CommonRangeCategoryAllFinite<R1, RANGES...> Rest;
+	enum: byte {Type = byte(Rest::Type)? byte(GetRangeType<R0>::_): byte(Rest::Type)};
+	enum: bool {Finite = Rest::Finite && IsFiniteRange<R0>::_};
 };
 
 
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ || IsOutputRange<R>::_,
-R&> AsRange(R& r) {return r;}
+R&&> AsRange(R&& r) {return Meta::Forward<R>(r);}
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ || IsOutputRange<R>::_,
 const R&> AsRange(const R& r) {return r;}
 
-template<typename T> using AsRangeResult = decltype(AsRange(Meta::Val<T>()));
 
 template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_,
@@ -267,32 +251,52 @@ template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_,
 const R&> AsConstRange(const R& r) {return r;}
 
-template<typename T> decltype(Meta::Val<T>().AsRange()) AsRange(T& v) {return v.AsRange();}
-template<typename T> decltype(Meta::Val<T>().AsConstRange()) AsConstRange(T& v) {return v.AsConstRange();}
-
-template<typename T> using AsConstRangeResult = decltype(AsConstRange(Meta::Val<T>()));
-
 INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRange, Meta::Val<T>().AsRange());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasAsConstRange, Meta::Val<T>().AsConstRange());
 
+template<typename T, typename=Meta::EnableIf<
+	HasAsRange<T>::_
+>> decltype(Meta::Val<T>().AsRange()) AsRange(T&& v) {return v.AsRange();}
+template<typename T, typename=Meta::EnableIf<
+	HasAsRange<T>::_
+>> decltype(Meta::Val<T>().AsConstRange()) AsConstRange(T&& v) {return v.AsConstRange();}
 
-template<typename R> forceinline typename R::iterator begin(const R& r) {return r.begin();}
-template<typename R> forceinline typename R::iterator end(const R& r) {return r.end();}
+template<typename T> struct ArrayRange;
+template<typename Char> struct GenericStringView;
 
-INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsRangeOfContainers, Meta::Val<typename T::value_type>(),
-	(IsInputRange<T>::_ && IsInputRange<AsRangeResult<typename T::value_type>>::_));
+namespace RD {
 
+INTRA_DEFINE_EXPRESSION_CHECKER(AsRangeCompiles, AsRange(Meta::Val<T>()));
 
-template<typename R> struct TakeResult;
+template<typename T, int=AsRangeCompiles<T>::_? 1:
+	(Meta::IsArrayType<Meta::RemoveReference<T>>::_? 2: 0)
+> struct AsRangeResult;
+template<typename T> struct AsRangeResult<T, 1>
+{typedef decltype(AsRange(Meta::Val<T>())) _;};
 
-namespace detail {
+template<typename T> struct AsRangeResult<T, 0>
+{typedef void _;};
 
-template<typename R> struct ResultOfTake {typedef Meta::SelectType<R, TakeResult<R>, IsRandomAccessRange<R>::_> _;};
-template<typename R> struct ResultOfTake<TakeResult<R>> {typedef TakeResult<R> _;};
+template<typename T, size_t N> struct AsRangeResult<T(&)[N], 2>
+{typedef Meta::SelectType<GenericStringView<Meta::RemoveConst<T>>, ArrayRange<T>, Meta::IsCharType<T>::_> _;};
+
+INTRA_DEFINE_EXPRESSION_CHECKER(AsConstRangeCompiles, AsRange(Meta::Val<T>()));
+
+template<typename T, bool=AsConstRangeCompiles<T>::_> struct AsConstRangeResult
+{typedef decltype(AsConstRange(Meta::Val<T>())) _;};
+
+template<typename T> struct AsConstRangeResult<T, false>
+{typedef void _;};
 
 }
 
-template<typename R> using ResultOfTake = typename detail::ResultOfTake<R>::_;
+template<typename T> using AsRangeResult = typename RD::AsRangeResult<T>::_;
+template<typename T> using AsConstRangeResult = typename RD::AsConstRangeResult<T>::_;
+
+template<typename R>
+struct IsInputRangeOfContainers: Meta::TypeFromValue<bool,
+	IsInputRange<R>::_ && IsInputRange<AsRangeResult<ValueTypeOf<R> >>::_
+> {};
 
 }
 

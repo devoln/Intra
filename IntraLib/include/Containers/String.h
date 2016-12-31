@@ -1,11 +1,16 @@
 ﻿#pragma once
 
+#include "Meta/Mixins.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Range/StringView.h"
+#include "Algo/String/CStr.h"
 #include "Memory/Memory.h"
 #include "Memory/AllocatorInterface.h"
-#include "Text/UtfConversion.h"
+#include "Range/Unicode.h"
 #include "Data/Reflection.h"
+#include "Algo/Mutation/Fill.h"
+#include "Algo/Mutation/Copy.h"
+#include "Range/Construction/TakeUntil.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -20,38 +25,50 @@
 namespace Intra {
 
 template<typename Char, typename AllocatorType> class GenericString:
-	public Memory::AllocatorRef<AllocatorType, Meta::ComparableMixin<GenericString<Char, AllocatorType>>>
+	public Memory::AllocatorRef<AllocatorType,
+		Meta::ComparableMixin<GenericString<Char, AllocatorType>>>
 {
-	typedef Memory::AllocatorRef<AllocatorType, Meta::ComparableMixin<GenericString<Char, AllocatorType>>> AllocatorRef;
+	typedef Memory::AllocatorRef<AllocatorType,
+		Meta::ComparableMixin<GenericString<Char, AllocatorType>>> AllocatorRef;
 	class Formatter;
 public:
 	typedef AllocatorType Allocator;
 
 	GenericString(const Char* str, Allocator& allocator):
-		GenericString(str, (str==null)? 0: CStringLength(str), allocator) {}
+		GenericString(str, (str==null)? 0: Algo::CStringLength(str), allocator) {}
 
-	GenericString(const Char* str): GenericString(str, (str==null)? 0: CStringLength(str)) {}
+	GenericString(const Char* str):
+		GenericString(str, (str==null)? 0: Algo::CStringLength(str)) {}
 
-	template<size_t N> GenericString(const Char(&str)[N], Allocator& allocator): GenericString(str, N-1, allocator) {}
+	template<size_t N> GenericString(const Char(&str)[N], Allocator& allocator):
+		GenericString(str, N-1, allocator) {}
 
-	template<size_t N> GenericString(const Char(&str)[N]): GenericString(str, N-1) {}
+	template<size_t N> GenericString(const Char(&str)[N]):
+		GenericString(str, N-1) {}
 
-	GenericString(null_t, Allocator& allocator): AllocatorRef(allocator), len(0), data(null) {}
+	//Создать пустую строку с указанным аллокатором
+	GenericString(null_t, Allocator& allocator):
+		AllocatorRef(allocator), len(0), data(null) {}
 
-	GenericString(null_t=null): AllocatorRef(null), len(0), data(null) {}
+	//Создать пустую строку с тем же аллокатором, что и строка strWithAllocator
+	GenericString(null_t, const GenericString& strWithAllocator):
+		AllocatorRef(strWithAllocator), len(0), data(null) {}
+
+	GenericString(null_t=null):
+		AllocatorRef(null), len(0), data(null) {}
 
 	explicit GenericString(const Char* str, size_t strLength, Allocator& allocator):
 		AllocatorRef(allocator), len(0), data(null)
 	{
 		SetLengthUninitialized(strLength);
-		core::memcpy(data, str, strLength*sizeof(Char));
+		C::memcpy(data, str, strLength*sizeof(Char));
 	}
 
 	explicit GenericString(const Char* str, size_t strLength):
 		len(0), data(null)
 	{
 		SetLengthUninitialized(strLength);
-		core::memcpy(data, str, strLength*sizeof(Char));
+		C::memcpy(data, str, strLength*sizeof(Char));
 	}
 
 	explicit forceinline GenericString(const Char* startPtr, const Char* endPtr):
@@ -63,8 +80,17 @@ public:
 	explicit forceinline GenericString(size_t initialLength, Char filler):
 		len(0), data(null) {SetLength(initialLength, filler);}
 
-	forceinline GenericString(StringView rhs):
-		GenericString(rhs.Data(), rhs.Length()) {}
+	template<typename R=StringView, typename = Meta::EnableIf<
+		!Range::IsInfiniteRange<R>::_ &&
+		(Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ ||
+			Range::IsForwardRange<R>::_) &&
+		Meta::TypeEquals<Range::ValueTypeOf<R>, Char>::_
+	>> forceinline
+	GenericString(R&& rhs): len(0), data(null)
+	{
+		SetLengthUninitialized(Range::Count(rhs));
+		Algo::CopyTo(Meta::Forward<R>(rhs), AsRange());
+	}
 
 	forceinline GenericString(const GenericString& rhs):
 		GenericString(rhs.Data(), rhs.Length()) {}
@@ -149,7 +175,7 @@ public:
 	{
 		SetLengthUninitialized(0);
 		SetLengthUninitialized(rhs.Length());
-		core::memcpy(Data(), rhs.Data(), rhs.Length()*sizeof(Char));
+		C::memcpy(Data(), rhs.Data(), rhs.Length()*sizeof(Char));
 		return *this;
 	}
 
@@ -180,33 +206,37 @@ public:
 
 	//!@{
 	//! Конкатенация строк
-	friend GenericString operator+(GenericString&& lhs, GenericStringView<Char> rhs)
-	{
-		const size_t oldLength = lhs.Length();
-		lhs.SetLengthUninitialized(oldLength+rhs.Length());
-		core::memcpy(lhs.Data()+oldLength, rhs.Data(), rhs.Length()*sizeof(Char));
-		return core::move(lhs);
-	}
+	template<size_t N> friend forceinline GenericString operator+(const Char(&lhs)[N], const GenericString& rhs)
+	{return GenericStringView<Char>(lhs)+rhs;}
 
-	friend forceinline GenericString operator+(const GenericString& lhs, GenericStringView<Char> rhs) {return lhs.View()+rhs;}
+	template<size_t N> friend forceinline GenericString operator+(const GenericString& lhs, const Char(&rhs)[N])
+	{return lhs+GenericStringView<Char>(rhs);}
 
 	forceinline GenericString& operator+=(GenericStringView<Char> rhs)
 	{
 		size_t oldLen = Length();
 		SetLengthUninitialized(oldLen+rhs.Length());
-		core::memcpy(Data()+oldLen, rhs.Data(), rhs.Length()*sizeof(Char));
+		C::memcpy(Data()+oldLen, rhs.Data(), rhs.Length()*sizeof(Char));
 		return *this;
 	}
 
 	forceinline GenericString& operator+=(Formatter& rhs) {return operator+=(*rhs);}
 
-	template<size_t N> forceinline GenericString& operator+=(const Char(&rhs)[N]) {return operator+=(GenericStringView<Char>(rhs));}
+	template<size_t N> forceinline GenericString& operator+=(const Char(&rhs)[N])
+	{return operator+=(GenericStringView<Char>(rhs));}
 	//String& operator+=(const char* rhs) {return operator+=(View(), StringView(rhs));}
 	//!@}
 
 	//!@{
 	//! Добавление символа к строке
-	friend forceinline GenericString operator+(GenericString&& lhs, Char rhs) {return core::move(lhs+=rhs);}
+	GenericString operator+(GenericStringView<Char> rhs) const
+	{
+		GenericString<Char, Allocator> result;
+		result.Reserve(Length()+rhs.Length());
+		result = View();
+		result += rhs;
+		return result;
+	}
 
 	forceinline GenericString& operator+=(Char rhs)
 	{
@@ -215,7 +245,7 @@ public:
 		return *this;
 	}
 
-	//friend GenericString operator+(GenericString&& lhs, dchar rhs) {return core::move(lhs+=rhs);}
+	//friend GenericString operator+(GenericString&& lhs, dchar rhs) {return Meta::Move(lhs+=rhs);}
 
 	/*GenericString& operator+=(dchar rhs)
 	{
@@ -231,7 +261,6 @@ public:
 	template<size_t N> forceinline bool operator==(const Char(&rhs)[N]) const {return View()==GenericStringView<Char>(rhs);}
 	template<size_t N> friend forceinline bool operator==(const Char(&lhs)[N], const GenericString<Char, Allocator>& rhs) {return GenericStringView<Char>(rhs)==lhs.View();}
 	forceinline bool operator==(const GenericStringView<Char>& rhs) const {return View()==rhs;}
-	friend forceinline bool operator==(const GenericStringView<Char>& lhs, const GenericString& rhs) {return lhs==rhs.View();}
 
 	forceinline bool operator>(const GenericStringView<Char>& rhs) const {return View()>rhs;}
 	forceinline bool operator<(const Char* rhs) const {return View()<rhs;}
@@ -260,7 +289,7 @@ public:
 			return;
 		}
 		Char* newData = AllocatorRef::Allocate(newCapacityInBytes, INTRA_SOURCE_INFO);
-		core::memcpy(newData, data, len*sizeof(Char));
+		C::memcpy(newData, data, len*sizeof(Char));
 		AllocatorRef::Free(data, AllocatorRef::GetAllocationSize(data));
 		data = newData;
 	}
@@ -282,7 +311,7 @@ public:
 	{
 		const size_t oldLength = Length();
 		SetLengthUninitialized(newLen);
-		if(newLen>oldLength) core::memset(data+oldLength, filler, (newLen-oldLength)*sizeof(Char));
+		if(newLen>oldLength) Algo::Fill(AsRange().Drop(oldLength), filler);
 	}
 
 	//! Установить длину строки в newLen.
@@ -346,7 +375,7 @@ public:
 	{
 		GenericString result;
 		result.SetLengthUninitialized(chars.Length());
-		core::memcpy(result.Data(), chars.Begin, chars.Length()*sizeof(Char));
+		memcpy(result.Data(), chars.Begin, chars.Length()*sizeof(Char));
 		return result;
 	}
 
@@ -384,16 +413,16 @@ private:
 	public:
 		operator GenericString()
 		{
-			INTRA_ASSERT(format_begin==null || format_rest.Empty());
+			INTRA_ASSERT(mFormatBegin==null || mFormatRest.Empty());
 			GenericString result;
-			result.data = data;
-			result.len = size_t(buffer_rest.Begin-data);
+			result.data = mData;
+			result.len = size_t(mBufferRest.Begin-mData);
 			result.AllocatorRef::operator=(*this);
-			data = null;
-			buffer_rest = null;
-			format_rest = null;
-			format_begin = null;
-			isEnded = true;
+			mData = null;
+			mBufferRest = null;
+			mFormatRest = null;
+			mFormatBegin = null;
+			mIsEnded = true;
 			return result;
 		}
 		forceinline GenericString operator*() {return operator GenericString();}
@@ -401,224 +430,88 @@ private:
 	private:
 		void WriteNextPart()
 		{
-			GenericStringView<Char> str = format_rest.ReadUntilAdvance(StringView("<^>"));
+			const Char formatSeq[3] = {'<', '^', '>'};
+			GenericStringView<Char> str = Range::TakeUntilAdvance(mFormatRest, GenericStringView<Char>(formatSeq));
 			RequireSpace(str.Length());
-			str.CopyToAdvance(buffer_rest);
-			format_rest.PopFirstN(3);
+			Algo::CopyToAdvance(str, mBufferRest);
+			mFormatRest.PopFirstN(3);
 		}
 
 		void RequireSpace(size_t newChars)
 		{
-			if(buffer_rest.Length()>=newChars) return; //Места достаточно, увеличивать буфер не надо
-			size_t currentLength = size_t(buffer_rest.Begin-data);
-			size_t oldSize = size_t(buffer_rest.End-data);
+			if(mBufferRest.Length()>=newChars) return; //Места достаточно, увеличивать буфер не надо
+			size_t currentLength = size_t(mBufferRest.Begin-mData);
+			size_t oldSize = size_t(mBufferRest.End-mData);
 			size_t newSize = (oldSize + Math::Max(oldSize, newChars)*sizeof(Char));
 			Char* newData = AllocatorRef::Allocate(newSize, INTRA_SOURCE_INFO);
-			core::memcpy(newData, data, currentLength*sizeof(Char));
-			buffer_rest = {newData+currentLength, newData+newSize};
-			AllocatorRef::Free(data, oldSize);
-			data = newData;
+			C::memcpy(newData, mData, currentLength*sizeof(Char));
+			mBufferRest = {newData+currentLength, newData+newSize};
+			AllocatorRef::Free(mData, oldSize);
+			mData = newData;
 		}
 
-		const Char* format_begin;
-		GenericStringView<Char> format_rest;
-		Char* data;
-		ArrayRange<Char> buffer_rest;
-		bool isEnded;
+		const Char* mFormatBegin;
+		GenericStringView<Char> mFormatRest;
+		Char* mData;
+		ArrayRange<Char> mBufferRest;
+		bool mIsEnded;
 
 		Formatter(const Formatter&) = delete;
 		Formatter& operator=(const Formatter&) = delete;
 
-		template<typename CharRange> struct StructVisitor
-		{
-			Formatter& Me;
-			bool Began;
-			ArrayRange<const StringView> FieldNames;
-			const CharRange& Separator;
-			const CharRange& Assignment;
-
-			template<typename T> StructVisitor& operator()(const T& value)
-			{
-				if(Began) Me.Append(Separator);
-				Began = true;
-				if(!FieldNames.Empty())
-				{
-					Me.Append(FieldNames.First());
-					Me.Append(Assignment);
-					FieldNames.PopFirst();
-				}
-				Me.Append(value);
-				return *this;
-			}
-		};
-
 	public:
 		Formatter(GenericStringView<Char> formatStr):
-			format_begin(formatStr.Data()), format_rest(formatStr),
-			data(null), buffer_rest(null), isEnded(false) {init();}
+			mFormatBegin(formatStr.Data()), mFormatRest(formatStr),
+			mData(null), mBufferRest(null), mIsEnded(false) {init();}
 
 		Formatter(GenericStringView<Char> formatStr, Allocator& myAllocator):
 			AllocatorRef(myAllocator),
-			format_begin(formatStr.Data()), format_rest(formatStr),
-			data(null), buffer_rest(null), isEnded(false) {init();}
+			mFormatBegin(formatStr.Data()), mFormatRest(formatStr),
+			mData(null), mBufferRest(null), mIsEnded(false) {init();}
 
 		Formatter(Formatter&& rhs): AllocatorRef(rhs),
-			format_begin(rhs.format_begin), format_rest(rhs.format_rest),
-			data(rhs.data), buffer_rest(rhs.buffer_rest), isEnded(rhs.isEnded)
+			mFormatBegin(rhs.mFormatBegin), mFormatRest(rhs.mFormatRest),
+			mData(rhs.mData), mBufferRest(rhs.mBufferRest), mIsEnded(rhs.mIsEnded)
 		{
-			rhs.format_rest = null;
-			rhs.format_begin  = null;
-			rhs.data = null;
-			rhs.buffer_rest = null;
-			rhs.isEnded = true;
+			rhs.mFormatRest = null;
+			rhs.mFormatBegin  = null;
+			rhs.mData = null;
+			rhs.mBufferRest = null;
+			rhs.mIsEnded = true;
 		}
 
-		~Formatter() {INTRA_ASSERT(buffer_rest.Empty());}
-
-		template<typename T, typename... Args> Meta::EnableIf<
-			Meta::IsArithmeticType<T>::_ ||
-			Meta::IsPointerType<T>::_ ||
-			Range::IsFiniteForwardRangeOf<T, Char>::_ ||
-			Meta::IsTuple<T>::_,
-		Formatter&> Append(const T& value, Args&&... args)
-		{
-			INTRA_ASSERT(!isEnded);
-			const size_t maxLen = GenericStringView<Char>::MaxLengthOf(value, args...);
-			RequireSpace(maxLen);
-			buffer_rest.AppendAdvance(value, core::forward<Args>(args)...);
-			return *this;
-		}
-
-		template<typename T, typename CharRange=StringView> Meta::EnableIf<
-			!(Meta::IsArithmeticType<T>::_ ||
-				Range::IsFiniteInputRangeOf<T, Char>::_ ||
-				Meta::IsTuple<T>::_) &&
-			Data::HasReflection<T>::_ &&
-			Range::IsCharRange<CharRange>::_,
-		Formatter&> Append(const T& structure, bool printNames=true,
-			const CharRange& separator=StringView(", "),
-			const CharRange& lBracket=StringView("{"),
-			const CharRange& rBracket=StringView("}"),
-			const CharRange& assignment=" = ")
-		{
-			INTRA_ASSERT(!isEnded);
-			StructVisitor<CharRange> visitor{*this, false,
-				printNames? T::ReflectionFieldNames(): null, separator, assignment};
-			Append(lBracket);
-			structure.VisitEachField(visitor);
-			Append(rBracket);
-			return *this;
-		}
-
-		template<typename T, typename CharRange=StringView> Meta::EnableIf<
-			Meta::IsTuple<T>::_,
-		Formatter&> Append(const T& tuple,
-			const CharRange& separator=StringView(", "),
-			const CharRange& lBracket=StringView("{"),
-			const CharRange& rBracket=StringView("}"),
-			const CharRange& assignment=StringView(" = "))
-		{
-			INTRA_ASSERT(!isEnded);
-			StructVisitor<CharRange> visitor{*this, false, null, separator, assignment};
-			Append(lBracket);
-			tuple.ForEachField(visitor);
-			Append(rBracket);
-			return *this;
-		}
-
-		template<size_t N, typename Char2> forceinline Meta::EnableIf<
-			Meta::IsCharType<Char2>::_,
-		Formatter&> Append(const Char2(&str)[N])
-		{
-			return Append(GenericStringView<Char2>(str));
-		}
-
-		template<typename T> forceinline
-			Formatter& Append(std::initializer_list<T> list,
-				StringView separator=", ",
-				StringView lBracket="[",
-				StringView rBracket="]")
-		{
-			return Append(Range::AsRange(list), separator, lBracket, rBracket);
-		}
-
-		template<typename R> forceinline Meta::EnableIf<
-			(Range::IsFiniteForwardRange<R>::_ || Range::HasAsRange<R>::_) &&
-			!Range::IsCharRange<R>::_,
-		Formatter&> Append(const R& range,
-			StringView separator=", ",
-			StringView lBracket="[",
-			StringView rBracket="]")
-		{
-			INTRA_ASSERT(!isEnded);
-			size_t maxLen = GenericStringView<Char>::MaxLengthOf(Range::AsRange(range), separator, lBracket, rBracket);
-			RequireSpace(maxLen);
-			buffer_rest.AppendAdvance(Range::AsRange(range), separator, lBracket, rBracket);
-			return *this;
-		}
-
-		template<typename R> forceinline Meta::EnableIf<
-			(Range::IsFiniteForwardRange<R>::_ || Range::HasAsRange<R>::_) &&
-			Range::IsCharRange<R>::_,
-		Formatter&> Append(const R& range)
-		{
-			INTRA_ASSERT(!isEnded);
-			size_t maxLen = GenericStringView<Char>::MaxLengthOf(Range::AsRange(range));
-			RequireSpace(maxLen);
-			buffer_rest.AppendAdvance(Range::AsRange(range));
-			return *this;
-		}
-
-		template<typename R> forceinline Meta::EnableIf<
-			!Range::IsForwardRange<R>::_ &&
-			Range::IsFiniteInputNonCharRange<R>::_,
-		Formatter&> Append(R& range,
-			StringView separator=", ",
-			StringView lBracket="[",
-			StringView rBracket="]")
-		{
-			INTRA_ASSERT(!isEnded);
-			Append(lBracket);
-			while(!range.Empty())
-			{
-				RequireSpace(GenericStringView<Char>::MaxLengthOf(range.First())+separator.Length());
-				buffer_rest.AppendAdvance(range.First());
-				range.PopFirst();
-				if(!range.Empty()) buffer_rest.AppendAdvance(separator);
-			}
-			Append(rBracket);
-			return *this;
-		}
-
-		template<typename T, size_t N, typename CharRange=StringView> forceinline Meta::EnableIf<
-			!Meta::IsCharType<T>::_,
-		Formatter&> Append(const T(&arr)[N],
-			CharRange separator=StringView(", "),
-			CharRange lBracket=StringView("["),
-			CharRange rBracket=StringView("]"))
-		{
-			return Append(ArrayRange<const T>(arr), separator, lBracket, rBracket);
-		}
-
-		template<typename Char2, typename Allocator2> forceinline Formatter& Append(const GenericString<Char2, Allocator2>& rhs)
-		{
-			return Append(rhs.View());
-		}
+		~Formatter() {INTRA_ASSERT(mBufferRest.Empty());}
 
 		template<typename T, typename... Args> Formatter& operator()(const T& value, Args&&... args)
 		{
-			Append(value, core::forward<Args>(args)...);
-			if(format_begin!=null) WriteNextPart();
+			INTRA_ASSERT(!mIsEnded);
+			const size_t maxLen = Algo::MaxLengthOf(value, args...);
+			RequireSpace(maxLen);
+			Range::CountRange<char> realLenCounter;
+			Algo::ToString(realLenCounter, value, args...);
+			INTRA_ASSERT(maxLen>=realLenCounter.Counter);
+			Algo::ToString(mBufferRest, value, Meta::Forward<Args>(args)...);
+			if(mFormatBegin!=null) WriteNextPart();
 			return *this;
 		}
+
+		template<typename T, typename Char2, size_t N1, size_t N2, size_t N3, typename... Args> Formatter& operator()(const T& value,
+			const Char2(&separator)[N1], const Char2(&leftBracket)[N2], const Char2(&rightBracket)[N3], Args&&... args)
+		{
+			return operator()(value, GenericStringView<Char2>(separator),
+				GenericStringView<Char2>(leftBracket), GenericStringView<Char2>(rightBracket), Meta::Forward<Args>(args)...);
+		}
+
+		template<typename T, size_t N, typename... Args> Formatter& operator()(const T(&value)[N], Args&&... args)
+		{return operator()(Range::AsRange(value), Meta::Forward<Args>(args)...);}
 
 	private:
 		void init()
 		{
-			size_t initialSize = size_t(format_rest.End()-format_begin)+8u;
-			data = AllocatorRef::Allocate(initialSize, INTRA_SOURCE_INFO);
-			buffer_rest = {data, initialSize};
-			if(format_begin!=null) WriteNextPart();
+			size_t initialSize = size_t(mFormatRest.End()-mFormatBegin)+8u;
+			mData = AllocatorRef::Allocate(initialSize, INTRA_SOURCE_INFO);
+			mBufferRest = {mData, initialSize};
+			if(mFormatBegin!=null) WriteNextPart();
 		}
 	};
 };
@@ -627,7 +520,7 @@ namespace Meta
 {
 	template<typename Char, typename Allocator> struct IsTriviallyRelocatable<GenericString<Char, Allocator>>: TypeFromValue<bool, true> {};
 
-	namespace detail
+	namespace D
 	{
 		template<typename Char, typename Allocator> struct CommonTypeRef<GenericStringView<Char>, GenericString<Char, Allocator>> {typedef GenericString<Char, Allocator> _;};
 		template<typename Char, typename Allocator> struct CommonTypeRef<GenericStringView<Char>&, GenericString<Char, Allocator>> {typedef GenericString<Char, Allocator> _;};
@@ -673,56 +566,93 @@ namespace Meta
 	}
 }
 
+template<typename Char, typename Allocator> forceinline
+bool operator==(const GenericStringView<Char>& lhs, const GenericString<Char, Allocator>& rhs)
+{return lhs==rhs.View();}
+
 template<typename Char> GenericString<Char> operator+(GenericStringView<Char> lhs, GenericStringView<Char> rhs)
 {
 	GenericString<Char> result;
-	result.SetLengthUninitialized(lhs.Length()+rhs.Length());
-	core::memcpy(result.Data(), lhs.Data(), lhs.Length()*sizeof(Char));
-	core::memcpy(result.Data()+lhs.Length(), rhs.Data(), rhs.Length()*sizeof(Char));
+	result.Reserve(lhs.Length()+rhs.Length());
+	result += lhs;
+	result += rhs;
+	return result;
+}
+
+template<typename Char, class Allocator> GenericString<Char, Allocator> operator+(
+	const GenericString<Char, Allocator>& lhs, GenericStringView<Char> rhs)
+{
+	GenericString<Char, Allocator> result;
+	result.Reserve(lhs.Length()+rhs.Length());
+	result += lhs;
+	result += rhs;
+	return result;
+}
+
+template<typename Char, class Allocator> GenericString<Char, Allocator> operator+(
+	GenericStringView<Char> lhs, const GenericString<Char, Allocator>& rhs)
+{
+	GenericString<Char, Allocator> result;
+	result.Reserve(lhs.Length()+rhs.Length());
+	result += lhs;
+	result += rhs;
 	return result;
 }
 
 template<typename Char> GenericString<Char> operator+(Char lhs, GenericStringView<Char> rhs)
 {
 	GenericString<Char> result;
-	result.SetLengthUninitialized(1+rhs.Length());
-	result[0]=lhs;
-	core::memcpy(result.Data()+1, rhs.Data(), rhs.Length()*sizeof(Char));
+	result.Reserve(1+rhs.Length());
+	result += lhs;
+	result += rhs;
 	return result;
 }
 
-template<typename Char> forceinline GenericString<Char> operator+(Char lhs, const GenericString<Char>& rhs) {return lhs+rhs.View();}
+template<typename Char, typename Allocator> forceinline
+GenericString<Char, Allocator> operator+(Char lhs, const GenericString<Char, Allocator>& rhs)
+{
+	GenericString<Char, Allocator> result(null, rhs);
+	result.Reserve(1+rhs.Length());
+	result += lhs;
+	result += rhs;
+	return result;
+}
+
+template<typename Char, typename Allocator> forceinline
+GenericString<Char, Allocator> operator+(GenericString<Char, Allocator>&& lhs, GenericStringView<Char> rhs)
+{return Meta::Move(lhs+=rhs);}
+
+
+template<typename Char, typename Allocator> forceinline
+GenericString<Char, Allocator> operator+(GenericString<Char, Allocator>&& lhs, Char rhs)
+{return Meta::Move(lhs+=rhs);}
 
 inline String operator+(StringView lhs, dchar rhs)
 {
 	String result;
-	result.SetLengthUninitialized(lhs.Length()+6);
-	core::memcpy(result.Data(), lhs.Data(), lhs.Length());
+	result.Reserve(lhs.Length()+5);
+	result += lhs;
 	auto byteCount = UTF32::CharToUTF8Sequence(rhs, result.Data()+lhs.Length());
 	result.SetLengthUninitialized(lhs.Length()+byteCount);
 	return result;
 }
 
-template<typename Char, size_t N> forceinline GenericString<Char> operator+(const Char(&lhs)[N], GenericStringView<Char> rhs)
-{
-	return operator+(GenericStringView<Char>(lhs), rhs);
-}
+template<typename Char, size_t N> forceinline
+GenericString<Char> operator+(const Char(&lhs)[N], GenericStringView<Char> rhs)
+{return operator+(GenericStringView<Char>(lhs), rhs);}
 
-template<typename Char, size_t N> forceinline GenericString<Char> operator+(GenericStringView<Char> lhs, const Char(&rhs)[N])
-{
-	return operator+(lhs, GenericStringView<Char>(rhs));
-}
+template<typename Char, size_t N> forceinline
+GenericString<Char> operator+(GenericStringView<Char> lhs, const Char(&rhs)[N])
+{return operator+(lhs, GenericStringView<Char>(rhs));}
 
 template<typename Char> GenericString<Char> operator+(GenericStringView<Char> lhs, Char rhs)
 {
 	GenericString<Char> result;
-	result.SetLengthUninitialized(lhs.Length()+1);
-	core::memcpy(result.Data(), lhs.Data(), lhs.Length()*sizeof(Char));
-	result[lhs.Length()]=rhs;
+	result.Reserve(lhs.Length()+1);
+	result += lhs;
+	result += rhs;
 	return result;
 }
-
-
 
 #ifdef USER_DEFINED_LITERALS_SUPPORT
 forceinline String operator ""_s(const char* str, size_t len)
@@ -734,7 +664,7 @@ forceinline String operator ""_s(const char* str, size_t len)
 
 template<typename T, typename... Args> forceinline String ToString(const T& value, Args&&... args)
 {
-	return String::Format()(value, core::forward<Args>(args)...);
+	return String::Format()(value, Meta::Forward<Args>(args)...);
 }
 
 forceinline const String& ToString(const String& value) {return value;}
@@ -765,6 +695,8 @@ GenericString<Char, Allocator>> GenericString<Char, Allocator>::Join(const R& st
 
 	return result;
 }
+
+static_assert(Meta::TypeEquals<Range::AsRangeResult<GenericString<char>>, ArrayRange<char>>::_, "");
 
 }
 

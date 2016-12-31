@@ -5,13 +5,13 @@
 
 namespace Intra { namespace Meta {
 
-namespace detail {struct NoType {};}
+namespace D {struct NoType {};}
 
 template<typename... Args>
 struct TypeList
 {
-	typedef detail::NoType Head;
-	typedef detail::NoType Tail;
+	typedef D::NoType Head;
+	typedef D::NoType Tail;
 };
 
 typedef TypeList<> EmptyTypeList;
@@ -24,17 +24,17 @@ struct TypeList<H, T...>
 };
 
 template<typename TL> struct TypeListIsEmpty: TypeFromValue<bool, true> {};
-template<> struct TypeListIsEmpty<TypeList<detail::NoType, detail::NoType>>:
+template<> struct TypeListIsEmpty<TypeList<D::NoType, D::NoType>>:
 	TypeFromValue<bool, true> {};
 
 template<typename ...Args> struct TypeListIsEmpty<TypeList<Args...>>:
-	TypeFromValue<bool, TypeEquals<typename TypeList<Args...>::Head, detail::NoType>::_ &&
+	TypeFromValue<bool, TypeEquals<typename TypeList<Args...>::Head, D::NoType>::_ &&
 	TypeListIsEmpty<typename TypeList<Args...>::Tail>::_> {};
 
 
 template<typename T, typename TL> struct TypeListContains: TypeFromValue<bool, false> {};
 
-template<typename... Args> struct TypeListContains<detail::NoType, Args...>: TypeFromValue<bool, false> {};
+template<typename... Args> struct TypeListContains<D::NoType, Args...>: TypeFromValue<bool, false> {};
 
 template<typename T, typename ...Args>
 struct TypeListContains<T, TypeList<Args...>>:
@@ -50,7 +50,7 @@ template<typename... Args> struct TypeListLength<TypeList<Args...>>:
 	        1+TypeListLength<typename TypeList<Args...>::Tail>::_> {};
 
 
-namespace detail {
+namespace D {
 template<uint N, typename TL> struct TypeListAt {typedef NoType type;};
 
 template<typename... Args> struct TypeListAt<0, TypeList<Args...>>
@@ -66,10 +66,10 @@ template<uint N, typename... Args> struct TypeListAt<N, TypeList<Args...>>
 
 }
 
-template<uint N, typename TL> using TypeListAt = typename Meta::detail::TypeListAt<N, TL>::type;
+template<uint N, typename TL> using TypeListAt = typename Meta::D::TypeListAt<N, TL>::type;
 
 
-namespace detail
+namespace D
 {
 template<typename TOrTL2, typename TL> struct TypeListAppend {};
 
@@ -80,10 +80,10 @@ template<typename T, typename ...Args> struct TypeListAppend<T, TypeList<Args...
 }
 
 template<typename TL, typename... Args2>
-using TypeListAppend = typename Meta::detail::TypeListAppend<TL, Args2...>::type;
+using TypeListAppend = typename Meta::D::TypeListAppend<TL, Args2...>::type;
 
 
-namespace detail {
+namespace D {
 
 template<typename T, typename TL> struct TypeListAdd {};
 
@@ -95,10 +95,10 @@ template<typename T, typename ...Args> struct TypeListAdd<T, TypeList<Args...>>
 }
 
 template<typename T, typename ...Args>
-using TypeListAdd = typename Meta::detail::TypeListAdd<T, Args...>::type;
+using TypeListAdd = typename Meta::D::TypeListAdd<T, Args...>::type;
 
 
-namespace detail
+namespace D
 {
 template<typename TOrTL2, typename TL> struct RemoveType {};
 
@@ -124,11 +124,11 @@ template<typename T> struct RemoveType<T, EmptyTypeList>
 }
 
 template<typename T, typename TL>
-using TypeListRemoveType = typename Meta::detail::RemoveType<T, TL>::type;
+using TypeListRemoveType = typename Meta::D::RemoveType<T, TL>::type;
 
 
 
-namespace detail {
+namespace D {
 template<typename TL> struct RemoveDuplicates {};
 
 template<> struct RemoveDuplicates<EmptyTypeList>
@@ -147,7 +147,7 @@ public:
 };
 }
 
-template<typename TL> using TypeListRemoveDuplicates = typename Meta::detail::RemoveDuplicates<TL>::type;
+template<typename TL> using TypeListRemoveDuplicates = typename Meta::D::RemoveDuplicates<TL>::type;
 
 
 
@@ -159,7 +159,7 @@ struct Constants
 };
 
 
-namespace detail {
+namespace D {
 
 template<typename T, uint IndexFrom, typename TL>
 struct TypeListFindHelper: TypeFromValue<uint, 0> {};
@@ -181,15 +181,15 @@ template<typename T, typename TL> struct TypeListFind {};
 
 template<typename T> struct TypeListFind<T, EmptyTypeList>: Constants::npos {};
 
-template<typename ...Args> struct TypeListFind<detail::NoType, TypeList<Args...>>: Constants::npos {};
+template<typename ...Args> struct TypeListFind<D::NoType, TypeList<Args...>>: Constants::npos {};
 
 template<typename T, typename ...Args> struct TypeListFind<T, TypeList<Args...>>:
 	TypeFromValue<uint, TypeListContains<T, TypeList<Args...>>::_?
-	detail::TypeListFindHelper<T, 0, TypeList<Args...>>::_:
+	D::TypeListFindHelper<T, 0, TypeList<Args...>>::_:
 	    Constants::npos::_> {};
 
 
-namespace detail
+namespace D
 {
 template<uint IndexBegin, uint IndexEnd, typename TL> struct SliceHelper {};
 
@@ -224,10 +224,10 @@ template<uint IndexBegin, uint IndexEnd, typename ...Args> struct Slice<IndexBeg
 }
 
 template<uint IndexBegin, uint IndexAfterEnd, typename TL>
-using TypeListSlice = typename Meta::detail::Slice<IndexBegin, IndexAfterEnd, TL>::type;
+using TypeListSlice = typename Meta::D::Slice<IndexBegin, IndexAfterEnd, TL>::type;
 
 
-namespace detail
+namespace D
 {
 template<uint Index, typename TL> struct TypeListCutTo {};
 
@@ -249,12 +249,12 @@ public:
 
 }
 
-template<uint Index, typename TL> using TypeListCutTo = typename Meta::detail::TypeListCutTo<Index, TL>::type;
-template<uint Index, typename TL> using TypeListCutFrom = typename Meta::detail::TypeListCutFrom<Index, TL>::type;
+template<uint Index, typename TL> using TypeListCutTo = typename Meta::D::TypeListCutTo<Index, TL>::type;
+template<uint Index, typename TL> using TypeListCutFrom = typename Meta::D::TypeListCutFrom<Index, TL>::type;
 
 
 #if INTRA_DISABLED
-namespace detail
+namespace D
 {
 template<uint Index, typename NewValue, typename TL> struct TypeListReplace {};
 
@@ -280,10 +280,10 @@ public:
 }
 
 template<uint Index, typename NewValue, typename TL>
-using TypeListReplace = typename Meta::detail::TypeListReplace<Index, NewValue, TL>::type;
+using TypeListReplace = typename Meta::D::TypeListReplace<Index, NewValue, TL>::type;
 
 
-namespace detail
+namespace D
 {
 template<bool NotFoundWorkaround, typename OldValue, typename NewValue, typename TL> struct ReplaceTypeHelper
 {
@@ -307,12 +307,12 @@ private:
 	typedef TypeList<Args...> TL;
 	typedef TypeFromValue<bool, TypeListFind<OldValue, TL>::_ == Constants::npos::_> NotFound;
 public:
-	typedef SelectType<TL, typename Meta::detail::ReplaceTypeHelper<NotFound::value, OldValue, NewValue, TL, NotFound::value>::type> type;
+	typedef SelectType<TL, typename Meta::D::ReplaceTypeHelper<NotFound::value, OldValue, NewValue, TL, NotFound::value>::type> type;
 };
 }
 
 template<typename OldValue, typename NewValue, typename TL>
-using TypeListReplaceType = typename Meta::detail::ReplaceType<OldValue, NewValue, TL>::type;
+using TypeListReplaceType = typename Meta::D::ReplaceType<OldValue, NewValue, TL>::type;
 #endif
 
 }

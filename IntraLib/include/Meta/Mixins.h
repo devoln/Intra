@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Type.h"
 
 namespace Intra { namespace Meta {
 

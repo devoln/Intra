@@ -1,13 +1,16 @@
-﻿
-#ifndef INTRA_STL_INTERFACE
+﻿#ifndef INTRA_STL_INTERFACE
 #define INTRA_STL_INTERFACE
+#endif
+
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
 #endif
 
 #include "PerfTestArray.h"
 
 
 #include "Test/PerformanceTest.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"
 #include "Containers/List.h"

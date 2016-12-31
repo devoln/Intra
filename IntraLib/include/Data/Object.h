@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "Containers/Array.h"
-#include "Algorithms/Polymorphic.h"
+#include "Algo/Polymorphic.h"
 
 namespace Intra { namespace Data {
 

@@ -6,6 +6,7 @@
 #include "Range/StringView.h"
 #include "Containers/String.h"
 #include "Graphics/OpenGL/GLExtensions.h"
+#include "Algo/Search/Single.h"
 
 #include <string.h>
 
@@ -74,7 +75,7 @@ bool IsWSGLExtensionSupported(StringView extension)
 #elif defined(INTRA_EGL)
 	const String allSupportedExtensions = " " + StringView(eglQueryString(eglGetCurrentDisplay(), EGL_EXTENSIONS))+" ";
 #endif
-	return allSupportedExtensions().Contains(" " + extension + " ");
+	return Algo::Contains(allSupportedExtensions(), " " + extension + " ");
 }
 
 //Получение версии OpenGL
@@ -150,7 +151,7 @@ static bool LoadExtension(const Extension& ext, const OpenGL& gl)
 			bool allSupported=true;
 			for(auto extstr: extRequirements.Split("&"))
 			{
-				if(gl.Extensions().Contains("GL_"+extstr+" ")) continue;
+				if(Algo::Contains(gl.Extensions(), "GL_"+extstr+" ")) continue;
 				allSupported=false;
 				break;
 			}

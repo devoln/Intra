@@ -1,9 +1,10 @@
 ﻿
-#include "Core/Time.h"
+#include "Platform/Time.h"
 #include "Platform/HardwareInfo.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
 #include "IO/LogSystem.h"
+#include "Algo/String/Path.h"
 
 #include "Test/PerformanceTest.h"
 #include "PerfTestString.h"
@@ -47,7 +48,7 @@ void InitLogSystem(int argc, const char* argv[])
 	g_LogFile = DiskFile::Writer(logFileName, true);
 	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Логи</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
 	const String datetime = ToString(DateTime::Now());
-	StringView appName = DiskFile::ExtractName(StringView(argv[0]));
+	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
 
 	String cmdline;
 	for(int i=1; i<argc; i++)

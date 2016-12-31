@@ -1,13 +1,17 @@
 ﻿#include "IO/Stream.h"
 #include "IO/File.h"
+#include "Range/StringView.h"
 #include "Containers/String.h"
+#include "Algo/String/Parse.h"
+#include "Algo/String/Path.h"
+#include "Algo/Mutation.h"
 using namespace Intra;
 using namespace Intra::IO;
 
 static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 {
-	String result = DiskFile::ExtractName(path);
-	result.AsRange().Transform([](char c){return AsciiSet::LatinAndDigits.Contains(c)? c: '_';});
+	String result = Algo::Path::ExtractName(path);
+	Algo::Transform(result.AsRange(), [](char c){return AsciiSet::LatinAndDigits.Contains(c)? c: '_';});
 	result = prefix+result;
 	if(byte(result[0]-'0')<=9) result = '_'+result;
 	return result;
@@ -15,7 +19,7 @@ static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 
 StringView PathFromCmdLine(const char* path)
 {
-	return StringView(path).Trim('"').Trim(Range::IsSpace<char>);
+	return StringView(path).Trim('"').Trim(Op::IsSpace<char>);
 }
 
 static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath, String& outputFilePath,
@@ -71,7 +75,7 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 		}
 		if(StringView(argv[i])=="-per-line")
 		{
-			valuesPerLine = StringView(argv[++i]).ParseAdvance<int>();
+			valuesPerLine = Algo::ParseAdvance<int>(StringView(argv[++i]));
 			continue;
 		}
 	}
@@ -128,7 +132,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 		size_t n = sizeToPrint;
 		if(!singleline && i%size_t(valuesPerLine)==0)
 		{
-			core::memcpy(dataToPrint+n, dataToPrintPerLine, sizeToPrintPerLineCount);
+			C::memcpy(dataToPrint+n, dataToPrintPerLine, sizeToPrintPerLineCount);
 			n += sizeToPrintPerLineCount;
 		}
 		n += ByteToStr(srcBytes[i], dataToPrint+n);

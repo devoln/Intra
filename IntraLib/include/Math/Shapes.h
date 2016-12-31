@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "CompilerSpecific/InitializerList.h"
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
 
@@ -62,8 +61,11 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	AABB(null_t) {min=max=Vector3<T>(T(0));}
 	AABB(Vector3<T> _min, Vector3<T> _max): min(_min), max(_max) {}
 
-	static AABB<T> FromCenterAndExtents(const Vector3<T>& center, const Vector3<T>& extents) {return {center-extents, center+extents};}
-	static AABB<T> FromCenterAndSize(const Vector3<T>& center, const Vector3<T>& size) {return FromCenterAndExtents(center, size/2);}
+	static AABB<T> FromCenterAndExtents(const Vector3<T>& center, const Vector3<T>& extents)
+	{return {center-extents, center+extents};}
+	
+	static AABB<T> FromCenterAndSize(const Vector3<T>& center, const Vector3<T>& size)
+	{return FromCenterAndExtents(center, size/2);}
 
 	Vector3<T> Size() const {return max-min;}
 	Vector3<T> Extents() const {return Size()/T(2);}
@@ -71,9 +73,10 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	T Diagonal() const {return Length(Size());}
 
 	T SqrDistance(const Vector3<T>& pt, Vector3<T>* nearestPoint=null) const;
-	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=null) const {return T(Sqrt(SqrDistance(pt, nearestPoint)));}
+	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=null) const
+	{return T(Sqrt(SqrDistance(pt, nearestPoint)));}
 
-	//Диаметр вписанной сферы
+	//! Диаметр вписанной сферы
 	T MinSizeAxis(int* axis=null) const
 	{
 		auto size = Size();
@@ -92,13 +95,13 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 		return minSize;
 	}
 
-	//Радиус вписанной сферы
+	//! Радиус вписанной сферы
 	T MinExtentAxis(int* axis=null)
 	{
 		return MinSizeAxis(axis)/T(2);
 	}
 
-	//Диаметр описанной сферы
+	//! Диаметр описанной сферы
 	T MaxSizeAxis(size_t* oAxis=null) const
 	{
 		auto size = Size();
@@ -117,13 +120,12 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 		return maxSize;
 	}
 
-	//Радиус описанной сферы
+	//! Радиус описанной сферы
 	T MaxExtentAxis(int* oAxis=null)
-	{
-		return MaxSizeAxis(oAxis)/T(2);
-	}
+	{return MaxSizeAxis(oAxis)/T(2);}
 
-	void AddTriangle(const Triangle<T>& tri) {for(int i=0; i<3; i++) AddPoint(tri.vertices[i]);}
+	void AddTriangle(const Triangle<T>& tri)
+	{for(int i=0; i<3; i++) AddPoint(tri.vertices[i]);}
 
 	void AddPoint(Vector3<T> pt)
 	{
@@ -171,10 +173,8 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 	}
 
 	//Работает только для плавающей запятой!
-	bool CheckRayIntersection(const Ray<T>& ray, T rayLength=T(Infinity), T* near=null, T* far=null) const
-	{
-		return CheckInvRayIntersection({ray.origin, Vector3<T>(T(1))/ray.dir}, rayLength, near, far);
-	}
+	bool CheckRayIntersection(const Ray<T>& ray, T rayLength=T(Infinity), T* oNear=null, T* oFar=null) const
+	{return CheckInvRayIntersection({ray.origin, Vector3<T>(T(1))/ray.dir}, rayLength, oNear, oFar);}
 
 	
 
@@ -184,10 +184,8 @@ template<typename T> struct AABB // "бокс", лежащий вдоль осе
 		return sz.x*sz.y*sz.z;
 	}
 
-	bool operator>(const AABB& rhs) const //Сравнить размеры двух "боксов"
-	{
-		return Volume()>rhs.Volume();
-	}
+	bool operator>(const AABB& rhs) const //Сравнивает объёмы двух "боксов"
+	{return Volume()>rhs.Volume();}
 };
 
 
@@ -716,8 +714,8 @@ template<typename T> T Distance(const Vector2<T>& pt, const Ellipse<T>& ellipse)
     Vector2<T> ptAbs = Abs(pt);
 	if(ptAbs.x>ptAbs.y)
 	{
-		core::swap(pt.x, pt.y);
-		core::swap(ellipse.a, ellipse.b);
+		Meta::Swap(pt.x, pt.y);
+		Meta::Swap(ellipse.a, ellipse.b);
 	}
 	
     T l = ellipse.b*ellipse.b - ellipse.a*ellipse.a;

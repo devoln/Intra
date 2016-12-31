@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Range/ForwardDecls.h"
 #include "Containers/ForwardDeclarations.h"
 
 namespace Intra {struct Music; class Sound;}

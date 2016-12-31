@@ -16,7 +16,7 @@ public:
 	Image(const Image& rhs) = default;
 
 	Image(Image&& rhs):
-		Data(core::move(rhs.Data)), Info(rhs.Info),
+		Data(Meta::Move(rhs.Data)), Info(rhs.Info),
 		SwapRB(rhs.SwapRB), LineAlignment(rhs.LineAlignment) {}
 
 	Image(Math::USVec3 size, ImageFormat format, ushort mipmapCount=0, ImageType type=ImageType_2D):
@@ -26,7 +26,7 @@ public:
 
 	Image& operator=(Image&& rhs)
 	{
-		Data = core::move(rhs.Data);
+		Data = Meta::Move(rhs.Data);
 		Info = rhs.Info;
 		SwapRB=  rhs.SwapRB;
 		LineAlignment = rhs.LineAlignment;

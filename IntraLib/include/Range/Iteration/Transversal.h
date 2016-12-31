@@ -1,68 +1,76 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/ForwardDecls.h"
 
 namespace Intra { namespace Range {
 
-template<typename Rs> struct FirstTransversalResult:
-	RangeMixin<FirstTransversalResult<Rs>, typename Rs::value_type::value_type,
-		(Rs::RangeType>TypeEnum::Bidirectional)? TypeEnum::Bidirectional: Rs::RangeType, Rs::RangeIsFinite>
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+
+template<typename Rs> struct RFirstTransversal
 {
-	typedef typename Rs::value_type::value_type value_type;
-	typedef typename Rs::value_type::return_value_type return_value_type;
+	enum: bool {RangeIsFinite = IsFiniteRange<Rs>::_};
+	typedef ReturnValueTypeOf<ValueTypeOf<Rs>> return_value_type;
 
-	forceinline FirstTransversalResult(null_t=null) {}
+	forceinline RFirstTransversal(null_t=null) {}
 
-	forceinline FirstTransversalResult(Rs&& rangeOfRanges):
-		ranges(core::move(rangeOfRanges)) {skip_empty();}
+	forceinline RFirstTransversal(Rs&& rangeOfRanges):
+		mRanges(Meta::Move(rangeOfRanges)) {skip_empty();}
 
-	forceinline FirstTransversalResult(const Rs& rangeOfRanges):
-		ranges(rangeOfRanges) {skip_empty();}
+	forceinline RFirstTransversal(const Rs& rangeOfRanges):
+		mRanges(rangeOfRanges) {skip_empty();}
 
-	forceinline bool Empty() const {return ranges.Empty();}
+	forceinline bool Empty() const {return mRanges.Empty();}
 
-	forceinline return_value_type First() const {return ranges.First().First();}
+	forceinline return_value_type First() const {return mRanges.First().First();}
+	forceinline ReturnValueTypeOf<Rs> FirstRange() const {return mRanges.First();}
 
 	forceinline void PopFirst()
 	{
-		ranges.PopFirst();
+		mRanges.PopFirst();
 		skip_empty();
 	}
 
 	template<typename U=Rs> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_,
+		HasLast<U>::_ && HasPopLast<U>::_,
 	return_value_type> Last() const
 	{
-		while(ranges.Last().Empty()) ranges.PopLast();
-		return ranges.Last().First();
+		while(mRanges.Last().Empty()) mRanges.PopLast();
+		return mRanges.Last().First();
 	}
 
 	template<typename U=Rs> forceinline Meta::EnableIf<
-		IsBidirectionalRange<U>::_
+		HasLast<U>::_ && HasPopLast<Rs>::_
 	> PopLast()
 	{
 		INTRA_ASSERT(!Empty());
-		while(ranges.Last().Empty()) ranges.PopLast();
-		ranges.PopLast();
+		while(mRanges.Last().Empty()) mRanges.PopLast();
+		mRanges.PopLast();
 	}
 
-	forceinline bool operator==(const FirstTransversalResult& rhs) const {return ranges==rhs.ranges;}
+	forceinline bool operator==(const RFirstTransversal& rhs) const {return mRanges==rhs.mRanges;}
 
 private:
-	Rs ranges;
+	Rs mRanges;
 
-	void skip_empty()
-	{
-		while(!Empty() && ranges.First().Empty()) ranges.PopFirst();
-	}
+	void skip_empty() {while(!Empty() && mRanges.First().Empty()) mRanges.PopFirst();}
 };
 
-template<typename R> forceinline Meta::EnableIf<
-	!Meta::IsReference<R>::_ && IsRangeOfRanges<R>::_,
-FirstTransversalResult<R>> FirstTransversal(R&& range) {return FirstTransversalResult<R>(core::move(range));}
+INTRA_WARNING_POP
 
 template<typename R> forceinline Meta::EnableIf<
-	IsRangeOfRanges<R>::_ && IsForwardRange<R>::_,
-FirstTransversalResult<R>> FirstTransversal(const R& range) {return FirstTransversalResult<R>(range);}
+	!Meta::IsReference<R>::_ && !Meta::IsConst<R>::_ &&
+	IsInputRange<R>::_ && IsInputRange<ValueTypeOf<R>>::_,
+RFirstTransversal<R>> FirstTransversal(R&& range)
+{return Meta::Move(range);}
+
+template<typename R> forceinline Meta::EnableIf<
+	IsForwardRange<R>::_ && IsInputRange<ValueTypeOf<R>>::_,
+RFirstTransversal<R>> FirstTransversal(const R& range)
+{return range;}
+
+template<typename T, size_t N> forceinline Meta::EnableIf<
+	IsInputRange<T>::_,
+RFirstTransversal<AsRangeResult<T(&)[N]>>> FirstTransversal(T(&rangeArr)[N])
+{return AsRange(rangeArr);}
 
 }}

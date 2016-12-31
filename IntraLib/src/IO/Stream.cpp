@@ -189,11 +189,11 @@ void ConsoleStream::WriteData(const void* src, size_t bytes)
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	const auto hndl = HANDLE(_get_osfhandle(_fileno(reinterpret_cast<FILE*>(myfout))));
 	wchar_t wbuf[512];
-	wchar_t* wsrc = bytes<=core::numof(wbuf)? wbuf: new wchar_t[bytes];
+	wchar_t* wsrc = bytes<=Meta::NumOf(wbuf)? wbuf: new wchar_t[bytes];
 	int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, LPCSTR(src), int(bytes), wsrc, int(bytes));
 	DWORD written;
 	WriteConsoleW(hndl, wsrc, DWORD(wsrcLength), &written, null);
-	if(bytes>core::numof(wbuf)) delete[] wsrc;
+	if(bytes>Meta::NumOf(wbuf)) delete[] wsrc;
 #else
 	fwrite(src, 1, bytes, reinterpret_cast<FILE*>(myfout));
 #endif
@@ -206,10 +206,10 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 	char* pdst = pbegin;
 	char* pend = pbegin+bytes;
 	byte unreadedBytesToRead = byte(Math::Min<size_t>(unread_buf_chars, bytes));
-	core::memcpy(pdst, unread_buf, unreadedBytesToRead);
+	memcpy(pdst, unread_buf, unreadedBytesToRead);
 	pdst += unreadedBytesToRead;
 	unread_buf_chars = byte(int(unread_buf_chars)-int(unreadedBytesToRead));
-	core::memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
+	memmove(unread_buf, unread_buf+unreadedBytesToRead, unread_buf_chars);
 
 	const auto hndl = HANDLE(_get_osfhandle(_fileno(reinterpret_cast<FILE*>(myfin))));
 	while(pdst<pend)
@@ -221,8 +221,8 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 		//if(c[0]>) ReadConsoleW(hndl, c+1, 1, &read, null), read++;
 		int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, c, int(read), u8, sizeof(u8), null, null);
 		size_t bytesToRead = Math::Min(size_t(bytesPerChar), size_t(pend-pdst));
-		core::memcpy(pdst, u8, bytesToRead);
-		core::memcpy(unread_buf, u8+bytesToRead, size_t(bytesPerChar)-bytesToRead);
+		memcpy(pdst, u8, bytesToRead);
+		memcpy(unread_buf, u8+bytesToRead, size_t(bytesPerChar)-bytesToRead);
 		unread_buf_chars = byte(size_t(bytesPerChar)-bytesToRead);
 		pdst+=bytesToRead;
 	}
@@ -236,8 +236,8 @@ void ConsoleStream::UnreadData(const void* src, size_t bytes)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	INTRA_ASSERT(bytes+unread_buf_chars<sizeof(unread_buf));
-	core::memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
-	core::memcpy(unread_buf, src, bytes);
+	memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
+	memcpy(unread_buf, src, bytes);
 #else
 	for(const byte* ptr = reinterpret_cast<const byte*>(src)+bytes; ptr>src;)
 		ungetc(*--ptr, reinterpret_cast<FILE*>(myfin));

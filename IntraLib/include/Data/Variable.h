@@ -70,7 +70,7 @@ struct Variable
 	static Variable Null()
 	{
 		Variable result;
-		core::memset(&result, 0, sizeof(result));
+		C::memset(&result, 0, sizeof(result));
 		return result;
 	}
 
@@ -83,13 +83,13 @@ class VariableArray
 public:
 	VariableArray(): data(null), variables(null) {}
 	VariableArray(const VariableArray& rhs) = default;
-	VariableArray(VariableArray&& rhs): data(core::move(rhs.data)), variables(core::move(rhs.variables)) {}
+	VariableArray(VariableArray&& rhs): data(Meta::Move(rhs.data)), variables(Meta::Move(rhs.variables)) {}
 
 	VariableArray& operator=(const VariableArray& rhs) = default;
 	VariableArray& operator=(VariableArray&& rhs)
 	{
-		data = core::move(rhs.data);
-		variables = core::move(rhs.variables);
+		data = Meta::Move(rhs.data);
+		variables = Meta::Move(rhs.variables);
 		return *this;
 	}
 
@@ -133,7 +133,7 @@ public:
 
 	void Set(size_t index, const void* arrData, size_t start, size_t bytes)
 	{
-		core::memcpy(&data[variables[index].Offset+start], arrData, bytes);
+		C::memcpy(&data[variables[index].Offset+start], arrData, bytes);
 	}
 
 	template<typename T> void Add(const T& value)

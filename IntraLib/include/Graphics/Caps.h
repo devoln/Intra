@@ -8,7 +8,7 @@ struct DeviceCaps
 {
 	typedef uint Bool;
 
-	DeviceCaps() {core::memset(this, 0, sizeof(*this));}
+	DeviceCaps() {C::memset(this, 0, sizeof(*this));}
 
 	uint MaxTexture2DSize: 16;
 	uint MaxTexture3DSize: 16;

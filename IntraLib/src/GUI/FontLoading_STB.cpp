@@ -6,7 +6,7 @@
 #include "Math/Vector.h"
 #include "Memory/Allocator.h"
 #include "Containers/Array.h"
-#include "Algorithms/Sort.h"
+#include "Algo/Sort.h"
 using namespace Math;
 
 extern "C" {
@@ -830,7 +830,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
 
    while(j<result->size.y)
    {
-      core::memset(scanline, 0, result->size.x);
+      memset(scanline, 0, result->size.x);
       for (int s=0; s<vsubsample; s++)
       {
          // find center of pixel for this scanline
@@ -910,7 +910,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
 
          y++;
       }
-      core::memcpy(result->pixels+j*result->stride, scanline, result->size.x);
+      memcpy(result->pixels+j*result->stride, scanline, result->size.x);
       j++;
    }
 
@@ -1287,7 +1287,7 @@ static bool stbtt__matchpair(byte* fc, uint nm, byte* name, int nlen, int target
 
 static bool stbtt__matches(byte* fc, uint offset, byte* name, int flags)
 {
-   int nlen = (int)core::strlen((char*)name);
+   int nlen = (int)strlen((char*)name);
    if(!stbtt__isfont(fc+offset)) return 0;
 
    // check italics/bold/underline flags in macStyle...
@@ -1357,7 +1357,7 @@ FontHandle FontCreate(StringView name, uint height, uint* yadvance)
 FontHandle FontCreateFromMemory(const void* src, size_t length, uint height, uint* yadvance)
 {
 	byte* data = Memory::SystemHeapAllocator::Allocate(length, INTRA_SOURCE_INFO);
-	core::memcpy(data, src, length);
+	memcpy(data, src, length);
 	return create_font(data, height, yadvance);
 }
 

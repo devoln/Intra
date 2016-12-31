@@ -2,11 +2,12 @@
 
 #include "Platform/Endianess.h"
 #include "Meta/Preprocessor.h"
-#include "Meta/Tuple.h"
 #include "Meta/Type.h"
+#include "Meta/EachField.h"
 #include "IO/StaticStream.h"
 #include "Data/Reflection.h"
 #include "Containers/String.h"
+#include "Range/Operations.h"
 
 namespace Intra { namespace Data {
 
@@ -32,7 +33,7 @@ public:
 	//! Сериализовать ForwardRange поэлементно.
 	template<typename ForwardRange> void SerializeRange(const ForwardRange& v)
 	{
-		Output.template WriteRaw<uintLE>(uint(v.Count()));
+		Output.template WriteRaw<uintLE>(uint(Range::Count(v)));
 		ForwardRange range = v;
 		while(!range.Empty())
 		{
@@ -131,7 +132,8 @@ template<typename O, typename AnyArrayRange> forceinline Meta::EnableIf<
 > SerializeBinary(GenericBinarySerializer<O>& serializer, const AnyArrayRange& v)
 {
 	auto range = Range::AsRange(v);
-	serializer.SerializeArray(ArrayRange<const typename decltype(range)::value_type>(range.Data(), range.Length()));
+	typedef Range::ValueTypeOf<decltype(range)> T;
+	serializer.SerializeArray(ArrayRange<const T>(range.Data(), range.Length()));
 }
 
 
@@ -190,53 +192,41 @@ template<typename T> Meta::EnableIf<
 
 //! Сериализовать нетривиально сериализуемую структуру или класс со статической рефлексией.
 template<typename T, typename O> forceinline Meta::EnableIf<
-	(HasReflection<T>::_ || Meta::IsTuple<T>::_) && !Meta::IsTriviallySerializable<T>::_
+	Meta::HasForEachField<const T&, GenericBinarySerializer<O>&>::_ && !Meta::IsTriviallySerializable<T>::_
 > SerializeBinary(GenericBinarySerializer<O>& serializer, const T& src)
-{
-	src.ForEachField(serializer);
-}
+{Meta::ForEachField(src, serializer);}
 
 
 //! Десериализовать нетривиально сериализуемую структуру или класс со статической рефлексией.
 template<typename T> Meta::EnableIf<
-	(HasReflection<T>::_ || Meta::IsTuple<T>::_) && !Meta::IsTriviallySerializable<T>::_
+	Meta::HasForEachField<T&, BinaryDeserializer&>::_ && !Meta::IsTriviallySerializable<T>::_
 > DeserializeBinary(BinaryDeserializer& deserializer, T& dst)
-{
-	dst.ForEachField(deserializer);
-}
+{Meta::ForEachField(dst, deserializer);}
 
 
 //! Сериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
 template<typename T, size_t N, typename O> forceinline Meta::EnableIf<
 	Meta::IsTriviallySerializable<T>::_
 > SerializeBinary(GenericBinarySerializer<O>& serializer, const T(&src)[N])
-{
-	serializer.Output.WriteRaw(src, N*sizeof(T));
-}
+{serializer.Output.WriteRaw(src, N*sizeof(T));}
 
 //! Поэлементно сериализовать массив фиксированной длины нетривиально сериализуемого типа.
 template<typename T, size_t N, typename O> forceinline Meta::EnableIf<
 	!Meta::IsTriviallySerializable<T>::_
 > SerializeBinary(GenericBinarySerializer<O>& serializer, const T(&src)[N])
-{
-	for(size_t i=0; i<N; i++) serializer(src[i]);
-}
+{for(size_t i=0; i<N; i++) serializer(src[i]);}
 
 //! Десериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
 template<typename T, size_t N> Meta::EnableIf<
 	Meta::IsTriviallySerializable<T>::_
 > DeserializeBinary(BinaryDeserializer& deserializer, T(&dst)[N])
-{
-	deserializer.Input.ReadRaw(dst, N*sizeof(T));
-}
+{deserializer.Input.ReadRaw(dst, N*sizeof(T));}
 
 //! Поэлементно десериализовать массив фиксированной длины нетривально десериализуемого типа.
 template<typename T, size_t N> Meta::EnableIf<
 	!Meta::IsTriviallySerializable<T>::_
 > DeserializeBinary(BinaryDeserializer& deserializer, T(&dst)[N])
-{
-	for(size_t i=0; i<N; i++) deserializer(dst[i]);
-}
+{for(size_t i=0; i<N; i++) deserializer(dst[i]);}
 
 }}
 

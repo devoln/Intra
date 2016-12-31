@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "TextSerialization.h"
-//#include "Algorithms/RangeConstruct.h"
-#include "Algorithms/AsciiString.h"
+#include "Algo/String/Ascii.h"
+#include "Algo/Search.h"
 
 namespace Intra { namespace Data {
 
@@ -272,7 +272,7 @@ template<typename T> void TextDeserializer::DeserializeStruct(T& dst, ArrayRange
 	TextDeserializerStructVisitor visitor{this, false, fieldNames, TextSerializerParams::TypeFlags_Struct};
 	if(fieldNames.Empty())
 	{
-		dst.ForEachField(visitor);
+		Meta::ForEachField(dst, visitor);
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
 		return;
 	}
@@ -294,7 +294,7 @@ template<typename T> void TextDeserializer::DeserializeStruct(T& dst, ArrayRange
 		//TODO: учесть, что имя поля может идти после его значения
 		size_t index = 0;
 		if(name.Empty()) index = fieldNames.Length();
-		else index = fieldNames.CountUntil(name);
+		else index = Algo::CountUntil(fieldNames, name);
 		if(index==fieldNames.Length() && name!=null) //Если такого поля в структуре нет, пропускаем его
 		{
 			const bool finished = IgnoreField();
@@ -322,16 +322,14 @@ template<typename T> void TextDeserializer::DeserializeTuple(T& dst)
 {
 	StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
 	TextDeserializerStructVisitor visitor{this, false, null, TextSerializerParams::TypeFlags_Tuple};
-	dst.ForEachField(visitor);
+	Meta::ForEachField(dst, visitor);
 	StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 }
 
 
 
 template<typename O> forceinline void GenericTextSerializer<O>::SerializeBool(bool v)
-{
-	Output.WriteShortRaw(Lang.FalseTrueNames[v!=false]);
-}
+{Output.WriteShortRaw(Lang.FalseTrueNames[v!=false]);}
 
 inline bool TextDeserializer::DeserializeBool()
 {
@@ -376,22 +374,22 @@ void GenericTextSerializer<O>::SerializeRange(const R& range)
 	Output.WriteShortRaw(Lang.ArrayOpen);
 	if(!range.Empty())
 	{
-		typedef Meta::RemoveConstRef<typename R::value_type> T;
+		typedef Range::ValueTypeOf<R> T;
 		const bool simpleArray = ValueType::Of<T>()!=ValueType::End;
 		NestingLevel += int(!simpleArray && Lang.ArrayOpen!=null && Lang.ArrayClose!=null);
 		if(simpleArray? false: (Lang.StructInstanceOpen!=null))
 			EndField(TextSerializerParams::TypeFlags_StructArray);
 
-		auto r = range;
-		SerializeText(*this, r.First());
-		r.PopFirst();
-		while(!r.Empty())
+		auto rangeCopy = range;
+		SerializeText(*this, rangeCopy.First());
+		rangeCopy.PopFirst();
+		while(!rangeCopy.Empty())
 		{
 			NextField(simpleArray?
 				TextSerializerParams::TypeFlags_Array:
 				TextSerializerParams::TypeFlags_StructArray);
-			SerializeText(*this, r.First());
-			r.PopFirst();
+			SerializeText(*this, rangeCopy.First());
+			rangeCopy.PopFirst();
 		}
 
 		NestingLevel -= int(!simpleArray && Lang.ArrayOpen!=null && Lang.ArrayClose!=null);
@@ -403,7 +401,7 @@ void GenericTextSerializer<O>::SerializeRange(const R& range)
 
 template<typename R> void TextDeserializer::DeserializeRange(R& outputRange)
 {
-	typedef typename R::value_type T;
+	typedef Range::ValueTypeOf<R> T;
 
 	if(!Expect(Lang.ArrayOpen))
 	{

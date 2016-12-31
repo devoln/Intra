@@ -4,6 +4,8 @@
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
 #include "Range/ArrayRange.h"
+#include "Algo/Mutation/Fill.h"
+#include "Algo/Comparison.h"
 
 namespace Intra {
 
@@ -15,26 +17,23 @@ class AsciiSet
 	size_t v[ElementCount];
 
 public:
-	AsciiSet(null_t=null)
-	{
-		core::memset(v, 0, sizeof(v));
-	}
+	AsciiSet(null_t=null) {Algo::FillZeros(v);}
 
 	template<uint N> forceinline AsciiSet(const char(&chars)[N])
 	{
-		core::memset(v, 0, sizeof(v));
+		Algo::FillZeros(v);
 		Set(ArrayRange<const char>(chars).DropBack());
 	}
 
 	template<typename CharRange> explicit AsciiSet(CharRange chars)
 	{
-		core::memset(v, 0, sizeof(v));
+		Algo::FillZeros(v);
 		Set(chars);
 	}
 
 	AsciiSet& operator=(const AsciiSet& rhs) = default;
-	AsciiSet& operator=(null_t) {core::memset(v, 0, sizeof(v)); return *this;}
-	bool operator==(null_t) const {return core::memcmp(v, Null.v, sizeof(v))==0;}
+	AsciiSet& operator=(null_t) {Algo::FillZeros(v); return *this;}
+	bool operator==(null_t) const {return Algo::Equals(v, Null.v);}
 	bool operator!=(null_t) const {return !operator==(null);}
 
 	bool operator[](char c) const
@@ -49,12 +48,9 @@ public:
 		return operator[](c);
 	}
 
-	template<typename Char> Meta::EnableIf<
+	template<typename Char> forceinline Meta::EnableIf<
 		Meta::IsCharType<Char>::_,
-	bool> operator()(Char c) const
-	{
-		return Contains(c);
-	}
+	bool> operator()(Char c) const {return Contains(c);}
 	
 	forceinline void Set(char c)
 	{

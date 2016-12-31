@@ -5,7 +5,7 @@
 
 namespace Intra { namespace Utils {
 
-namespace detail
+namespace D
 {
 	template<typename R, class T, typename... Args> struct DeduceConstMemCallback
 	{
@@ -15,7 +15,7 @@ namespace detail
 			{
 				static R wrapper(void* obj, Args... args)
 				{
-					return (static_cast<T*>(obj)->*Func)(core::forward<Args>(args)...);
+					return (static_cast<T*>(obj)->*Func)(Meta::Forward<Args>(args)...);
 				}
 			};
 			return Callback<R(Args...)>(object, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
@@ -30,7 +30,7 @@ namespace detail
 			{
 				static R wrapper(void* obj, Args... args)
 				{
-					return (static_cast<T*>(obj)->*Func)(core::forward<Args>(args)...);
+					return (static_cast<T*>(obj)->*Func)(Meta::Forward<Args>(args)...);
 				}
 			};
 			return Callback<R(Args...)>(object, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
@@ -45,7 +45,7 @@ namespace detail
 			{
 				static R wrapper(void*, Args... args)
 				{
-					return (*Func)(core::forward<Args>(args)...);
+					return (*Func)(Meta::Forward<Args>(args)...);
 				}
 			};
 			return Callback<R(Args...)>(0, reinterpret_cast<R(*)(void*, Args...)>(_::wrapper));
@@ -53,19 +53,19 @@ namespace detail
 	};
 }
 
-template<typename R, class T, typename... Args> detail::DeduceConstMemCallback<R, T, Args...> DeduceCallback(R(T::*)(Args...) const)
+template<typename R, class T, typename... Args> D::DeduceConstMemCallback<R, T, Args...> DeduceCallback(R(T::*)(Args...) const)
 {
-	return detail::DeduceConstMemCallback<R, T, Args...>();
+	return D::DeduceConstMemCallback<R, T, Args...>();
 }
 
-template<typename R, class T, typename... Args> detail::DeduceMemCallback<R, T, Args...> DeduceCallback(R(T::*)(Args...))
+template<typename R, class T, typename... Args> D::DeduceMemCallback<R, T, Args...> DeduceCallback(R(T::*)(Args...))
 {
-	return detail::DeduceMemCallback<R, T, Args...>();
+	return D::DeduceMemCallback<R, T, Args...>();
 }
 
-template<typename R, typename... Args> detail::DeduceStaticCallback<R, Args...> DeduceCallback(R(*)(Args...))
+template<typename R, typename... Args> D::DeduceStaticCallback<R, Args...> DeduceCallback(R(*)(Args...))
 {
-	return detail::DeduceStaticCallback<R, Args...>();
+	return D::DeduceStaticCallback<R, Args...>();
 }
 
 template <typename... T1> class GenericEvent
@@ -77,7 +77,7 @@ template <typename... T1> class GenericEvent
 	typedef void(*CB)(T1...);
 	static void WrapperCall(void* o, T1... args)
 	{
-		reinterpret_cast<CB>(o)(core::forward<T1>(args)...);
+		reinterpret_cast<CB>(o)(Meta::Forward<T1>(args)...);
 	}
 
 protected:
@@ -127,7 +127,7 @@ public:
 
 	void operator()(T1... t1)
 	{
-		Invoke(core::forward<T1>(t1)...);
+		Invoke(Meta::Forward<T1>(t1)...);
 	}
 
 	size_t InvocationCount() const {return invocations.Count();}

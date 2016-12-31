@@ -1,45 +1,49 @@
 ﻿#pragma once
 
 #include "Meta/Type.h"
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Math {
 
-template<typename T> struct SineRange:
-	Range::RangeMixin<SineRange<T>, T, Range::TypeEnum::Forward, false>
+template<typename T> struct SineRange
 {
-	SineRange(null_t=null): s1(0), s2(0), k(0) {}
+	enum: bool {RangeIsInfnite = true};
+
+	SineRange(null_t=null):
+		mS1(0), mS2(0), mK(0) {}
 
 	SineRange(T amplitude, T phi0, T dphi):
-		s1(amplitude*Math::Sin(phi0)),
-		s2(amplitude*Math::Sin(dphi)),
-		k(2*Math::Cos(dphi)) {}
+		mS1(amplitude*Math::Sin(phi0)),
+		mS2(amplitude*Math::Sin(dphi)),
+		mK(2*Math::Cos(dphi)) {}
 
 	forceinline bool Empty() const {return false;}
-	forceinline T First() const {return s2;}
+	forceinline T First() const {return mS2;}
 	
 	forceinline void PopFirst()
 	{
-		const T newS = k*s2-s1;
-		s1 = s2;
-		s2 = newS;
+		const T newS = mK*mS2-mS1;
+		mS1 = mS2;
+		mS2 = newS;
 	}
 
 private:
-	T s1, s2, k;
+	T mS1, mS2, mK;
 };
 
-template<typename T> struct ExponentRange: Range::RangeMixin<ExponentRange<T>, T, Range::TypeEnum::Forward, false>
+template<typename T> struct ExponentRange
 {
-	ExponentRange(T scale=0, double step=0, T k=0): ek_sr(T(Exp(-k*step))), exponent(scale/ek_sr) {}
+	enum: bool {RangeIsFinite = false};
+
+	ExponentRange(T scale=0, double step=0, T k=0):
+		mEkSr(T(Exp(-k*step))), mExponent(scale/mEkSr) {}
 
 	forceinline bool Empty() const {return false;}
-	forceinline void PopFirst() {exponent*=ek_sr;}
-	forceinline T First() const {return exponent;}
+	forceinline void PopFirst() {mExponent *= mEkSr;}
+	forceinline T First() const {return mExponent;}
 
 private:
-	T ek_sr, exponent;
-
+	T mEkSr, mExponent;
 };
 
 

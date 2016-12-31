@@ -1,4 +1,6 @@
 ﻿#include "Memory/VirtualMemory.h"
+#include "Meta/Type.h"
+#include "Core/Debug.h"
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 

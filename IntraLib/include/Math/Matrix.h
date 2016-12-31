@@ -86,7 +86,7 @@ public:
 		rows[1].x=uX; rows[1].y=uY; rows[1].z=uZ;
 		rows[2].x=oX; rows[2].y=oY; rows[2].z=oZ;
 	}
-	explicit Matrix3(const T data[9]) {core::memcpy(rows, data, sizeof(*this));}
+	explicit Matrix3(const T data[9]) {memcpy(rows, data, sizeof(*this));}
 	Matrix3(const Vector2<T>& right, const Vector2<T>& up, const Vector2<T>& origin)
 	{
 		rows[0].xy = right;  rows[0].z = 0;
@@ -100,7 +100,7 @@ public:
 
 	Matrix3& operator=(const Matrix3& m) = default;
 
-	bool operator==(const Matrix3& m) const {return core::memcmp(rows, m, sizeof(*this))==0;}
+	bool operator==(const Matrix3& m) const {return memcmp(rows, m, sizeof(*this))==0;}
 
 	Matrix3 operator*(const Matrix3& rhs) const
 	{
@@ -252,7 +252,7 @@ template<typename T> struct Matrix4
 {
 	Matrix4() = default;
 	Matrix4(T val) {*this = I*val;}
-	Matrix4(const T data[16]) {core::memcpy(rows, data, sizeof(*this));}
+	Matrix4(const T data[16]) {memcpy(rows, data, sizeof(*this));}
 
 	Matrix4(const Vector4<T>& right, const Vector4<T>& up, const Vector4<T>& forward, const Vector4<T>& origin)
 	{
@@ -539,13 +539,13 @@ template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
 	}
 
 	float* r[4]={wtmp[0], wtmp[1], wtmp[2], wtmp[3]};
-	for(int i=3; i>0; i--) if(Abs(r[i][0])>Abs(r[i-1][0])) core::swap(r[i], r[i-1]);
+	for(int i=3; i>0; i--) if(Abs(r[i][0])>Abs(r[i-1][0])) Meta::Swap(r[i], r[i-1]);
 	if(r[0][0]==0) return m;
 
 	for(int i=1; i<=3; i++) mn[i]=r[i][0]/r[0][0];
 	for(int j=1; j<8; j++) for(int i=1; i<=3; i++) r[i][j]-=mn[i]*r[0][j];
-	if(Abs(r[3][1])>Abs(r[2][1])) core::swap(r[3], r[2]);
-	if(Abs(r[2][1])>Abs(r[1][1])) core::swap(r[2], r[1]);
+	if(Abs(r[3][1])>Abs(r[2][1])) Meta::Swap(r[3], r[2]);
+	if(Abs(r[2][1])>Abs(r[1][1])) Meta::Swap(r[2], r[1]);
 	if(r[1][1]==0) return m;
 	for(int j=2; j<4; j++)
 	{
@@ -558,7 +558,7 @@ template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
 		r[2][j]-=mn[2]*r[1][j];
 		r[3][j]-=mn[3]*r[1][j];
 	}
-	if(Abs(r[3][2])>Abs(r[2][2])) core::swap(r[3], r[2]);
+	if(Abs(r[3][2])>Abs(r[2][2])) Meta::Swap(r[3], r[2]);
 
 	if(r[2][2]==0) return m;
 

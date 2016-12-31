@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Range/ForwardDecls.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Math/MathEx.h"
 #include "Math/Matrix.h"

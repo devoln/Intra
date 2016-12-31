@@ -1,40 +1,43 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
+#include "Take.h"
 #include "Utils/Optional.h"
 
 namespace Intra { namespace Range {
 
-template<typename T, typename F> struct SequenceResult:
-	Range::RangeMixin<SequenceResult<T, F>, T, Range::TypeEnum::RandomAccess, false>
-{
-	typedef T value_type;
-	typedef T return_value_type;
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
-	forceinline SequenceResult(null_t=null): Function(), Offset(0) {}
-	forceinline SequenceResult(F function, size_t offset=0): Function(function), Offset(offset) {}
+template<typename T, typename F> struct RSequence
+{
+	enum: bool {RangeIsInfinite = true};
+
+	forceinline RSequence(null_t=null): Function(), Offset(0) {}
+	forceinline RSequence(F function, size_t offset=0): Function(function), Offset(offset) {}
 
 	forceinline T First() const {return Function()(Offset);}
 	forceinline void PopFirst() {Offset++;}
 	forceinline bool Empty() const {return false;}
 	forceinline T operator[](size_t index) const {return Function()(Offset+index);}
 
-	forceinline bool operator==(const SequenceResult<T, F>& rhs) const {return Offset==rhs.Offset;}
+	forceinline bool operator==(const RSequence<T, F>& rhs) const {return Offset==rhs.Offset;}
 
-	forceinline Range::TakeResult<SequenceResult<T, F>> opSlice(size_t start, size_t end) const
+	forceinline RTake<RSequence<T, F>> operator()(size_t start, size_t end) const
 	{
+		INTRA_ASSERT(start<=end);
 		auto result = *this;
 		result.Offset += start;
-		return result.Take(end-start);
+		return RTake<RSequence<T, F>>(Meta::Move(result), end-start);
 	}
 
 	Utils::Optional<F> Function;
 	size_t Offset;
 };
 
-template<typename F> forceinline SequenceResult<Meta::ResultOf<F, size_t>, F> Sequence(F function)
-{
-	return SequenceResult<Meta::ResultOf<F, size_t>, F>(function);
-}
+INTRA_WARNING_POP
+
+template<typename F> forceinline
+RSequence<Meta::ResultOf<Meta::RemoveConstRef<F>, size_t>, Meta::RemoveConstRef<F>> Sequence(F&& function)
+{return {Meta::Forward<F>(function)};}
 
 }}

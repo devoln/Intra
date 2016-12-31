@@ -4,6 +4,9 @@
 #include "Threading/Thread.h"
 #include "Memory/SystemAllocators.h"
 #include "Range/ArrayRange.h"
+#include "Algo/Mutation/Copy.h"
+#include "Algo/String/ToString.h"
+#include "Memory/PlacementNew.h"
 
 namespace Intra { namespace Memory {
 
@@ -33,9 +36,9 @@ INTRA_DEFINE_EXPRESSION_CHECKER(AllocatorHasGetAllocationSize,\
 
 template<typename Allocator> struct BreakpointOnError: Allocator
 {
-	template<typename... Args> explicit BreakpointOnError(Args&&... args): Allocator(core::forward<Args>(args)...) {}
+	template<typename... Args> explicit BreakpointOnError(Args&&... args): Allocator(Meta::Forward<Args>(args)...) {}
 	BreakpointOnError(const BreakpointOnError& rhs): Allocator(rhs) {}
-	BreakpointOnError(BreakpointOnError&& rhs): Allocator(core::move(static_cast<Allocator&>(rhs))) {}
+	BreakpointOnError(BreakpointOnError&& rhs): Allocator(Meta::Move(static_cast<Allocator&>(rhs))) {}
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
 	{
@@ -47,7 +50,7 @@ template<typename Allocator> struct BreakpointOnError: Allocator
 
 template<typename Allocator> struct AbortOnError: Allocator
 {
-	template<typename... Args> explicit AbortOnError(Args&&... args): Allocator(core::forward<Args>(args)...) {}
+	template<typename... Args> explicit AbortOnError(Args&&... args): Allocator(Meta::Forward<Args>(args)...) {}
 	AbortOnError(const AbortOnError& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
@@ -57,9 +60,9 @@ template<typename Allocator> struct AbortOnError: Allocator
 
 		char errorMsg[256];
 		auto msgRange = ArrayRange<char>(errorMsg);
-		ArrayRange<const char>("Недостаточно памяти!\nНе удаётся выделить блок ").DropBack().CopyToAdvance(msgRange);
-		msgRange.AppendAdvance(bytes);
-		ArrayRange<const char>(" байт памяти.").CopyToAdvance(msgRange);
+		Algo::CopyToAdvance(ArrayRange<const char>("Недостаточно памяти!\nНе удаётся выделить блок ").DropBack(), msgRange);
+		Algo::ToString(msgRange, bytes);
+		Algo::CopyToAdvance(ArrayRange<const char>(" байт памяти."), msgRange);
 		return INTRA_INTERNAL_ERROR(errorMsg), null;
 	}
 };
@@ -69,7 +72,7 @@ template<typename Allocator> struct BoundsChecked: Allocator
 private:
 	enum: uint {BoundValue = 0xbcbcbcbc};
 public:
-	template<typename... Args> explicit BoundsChecked(Args&&... args): Allocator(core::forward<Args>(args)...) {}
+	template<typename... Args> explicit BoundsChecked(Args&&... args): Allocator(Meta::Forward<Args>(args)...) {}
 	BoundsChecked(const BoundsChecked& rhs) = default;
 
 	size_t GetAlignment() const {return sizeof(uint);}
@@ -122,7 +125,7 @@ template<typename Allocator> struct AllocationCounted: Allocator
 {
 	size_t counter;
 public:
-	template<typename... Args> explicit AllocationCounted(Args&&... args): Allocator(core::forward<Args>(args)...), counter(0) {}
+	template<typename... Args> explicit AllocationCounted(Args&&... args): Allocator(Meta::Forward<Args>(args)...), counter(0) {}
 	AllocationCounted(const AllocationCounted& rhs) = default;
 
 
@@ -146,7 +149,7 @@ public:
 
 template<typename Allocator, typename SyncPrimitive> struct Synchronized: Allocator
 {
-	template<typename... Args> explicit Synchronized(Args&&... args): Allocator(core::forward<Args>(args)...) {}
+	template<typename... Args> explicit Synchronized(Args&&... args): Allocator(Meta::Forward<Args>(args)...) {}
 	Synchronized(const Synchronized& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
@@ -166,7 +169,7 @@ template<typename Allocator, typename SyncPrimitive> struct Synchronized: Alloca
 	}
 
 	Synchronized& operator=(const Synchronized& rhs) = default;
-	Synchronized& operator=(Synchronized&& rhs) {Allocator::operator=(core::move(rhs)); primitive=rhs.primitive; return *this;}
+	Synchronized& operator=(Synchronized&& rhs) {Allocator::operator=(Meta::Move(rhs)); primitive=rhs.primitive; return *this;}
 
 private:
 	SyncPrimitive primitive;
@@ -177,7 +180,7 @@ template<class Allocator> struct SizedAllocator: Allocator
 {
 	size_t GetAlignment() const {return sizeof(size_t);}
 
-	template<typename... Args> explicit SizedAllocator(Args&&... args): Allocator(core::forward<Args>(args)...) {}
+	template<typename... Args> explicit SizedAllocator(Args&&... args): Allocator(Meta::Forward<Args>(args)...) {}
 	SizedAllocator(const SizedAllocator& rhs) = default;
 
 	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo)
@@ -368,7 +371,8 @@ template<typename Allocator> struct GrowingFreeList: Allocator
 			auto newBlock = Allocator::Allocate(block_size(capacity), INTRA_SOURCE_INFO);
 			*reinterpret_cast<void**>(newBlock) = first_block;
 			first_block = newBlock;
-			new(&list) FreeList(ArrayRange<byte>(reinterpret_cast<byte*>(first_block)+block_size(0), capacity), element_size, element_alignment);
+			ArrayRange<byte> newBuf(reinterpret_cast<byte*>(first_block)+block_size(0), capacity);
+			new(&list) FreeList(newBuf, element_size, element_alignment);
 			capacity*=2;
 		}
 		return list.Allocate();
@@ -450,7 +454,7 @@ template<size_t NumBins, typename Traits, typename LittleAllocator, typename Big
 struct SegregatedAllocator: BigAllocator
 {
 	template<typename... Args> explicit SegregatedAllocator(Args&&... args):
-		BigAllocator(core::forward<Args>(args)...)
+		BigAllocator(Meta::Forward<Args>(args)...)
 	{
 		alignment = BigAllocator::GetAlignment();
 		for(auto& allocator: little_allocators)
@@ -460,8 +464,8 @@ struct SegregatedAllocator: BigAllocator
 	SegregatedAllocator(const SegregatedAllocator& rhs) = delete;
 
 	SegregatedAllocator(SegregatedAllocator&& rhs):
-		BigAllocator(core::move(static_cast<BigAllocator&>(rhs))),
-		little_allocators(core::move(rhs.little_allocators)), alignment(rhs.alignment) {}
+		BigAllocator(Meta::Move(static_cast<BigAllocator&>(rhs))),
+		little_allocators(Meta::Move(rhs.little_allocators)), alignment(rhs.alignment) {}
 
 	size_t GetSizeClass(size_t size)
 	{
@@ -507,7 +511,7 @@ struct SegregatedAllocator: BigAllocator
 		if(newPtr!=null)
 		{
 			size_t copySize = Math::Min(elementSize, bytes);
-			core::memcpy(newPtr, ptr, copySize);
+			memcpy(newPtr, ptr, copySize);
 		}
 		little_allocators[elementSizeClass].Free(ptr);
 		return newPtr;
@@ -594,7 +598,7 @@ struct BufferAllocator
 		size_t totalBytes = bytes+sizeof(Buffer);
 		const ushort sizeCategory = GetBufferSizeCategory(totalBytes);
 		Buffer* result;
-		if(sizeCategory<core::numof(free_lists))
+		if(sizeCategory<Meta::NumOf(free_lists))
 		{
 			totalBytes = GetBufferSizeFromCategory(sizeCategory);
 			bytes = totalBytes-sizeof(Buffer);
@@ -617,7 +621,7 @@ struct BufferAllocator
 		if(buf==null) return;
 		allocationCount--;
 		const ushort sizeCategory = GetBufferSizeCategory(buf->size+sizeof(Buffer));
-		if(sizeCategory<core::numof(free_lists) && space_in_lists[sizeCategory]>0)
+		if(sizeCategory<Meta::NumOf(free_lists) && space_in_lists[sizeCategory]>0)
 		{
 			free_lists[sizeCategory].Free(buf);
 			space_in_lists[sizeCategory]--;
@@ -669,7 +673,7 @@ struct BufferAllocator
 private:
 	void init_space_in_lists()
 	{
-		for(size_t i=0; i<core::numof(space_in_lists); i++)
+		for(size_t i=0; i<Meta::NumOf(space_in_lists); i++)
 			space_in_lists[i] = ushort(1024/(i+1));
 	}
 

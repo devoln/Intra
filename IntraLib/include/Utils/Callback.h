@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Core/Debug.h"
 #include "Meta/Type.h"
 
 #ifdef _MSC_VER
@@ -25,8 +26,8 @@ public:
 
 	R operator()(Args... a) const
 	{
-		return obj? func(obj, core::forward<Args>(a)...):
-			freefunc(core::forward<Args>(a)...);
+		return obj? func(obj, Meta::Forward<Args>(a)...):
+			freefunc(Meta::Forward<Args>(a)...);
 	}
 
 	bool operator==(null_t) const {return func==null;}
@@ -58,10 +59,10 @@ template<typename FuncSignature, typename T=FuncSignature*> class FunctorCallbac
 template<typename T, typename R, typename... Args> class FunctorCallback<R(Args...), T>: public ICallback<R(Args...)>
 {
 public:
-	FunctorCallback(T&& functor): Functor(core::move(functor)) {}
+	FunctorCallback(T&& functor): Functor(Meta::Move(functor)) {}
 	FunctorCallback(const T& functor): Functor(functor) {}
 	ICallback<R(Args...)>* Clone() override final {return new FunctorCallback(Functor);}
-	R Call(Args&&... args) override final {return Functor(core::forward<Args>(args)...);}
+	R Call(Args&&... args) override final {return Functor(Meta::Forward<Args>(args)...);}
 
 	T Functor;
 };
@@ -73,7 +74,7 @@ template<typename T, typename R, typename... Args> class ObjectRefMethodCallback
 public:
 	ObjectRefMethodCallback(const T& obj, MethodSignature method): ObjectRef(&obj), Method(method) {}
 	ICallback<R(Args...)>* Clone() override final {return new ObjectRefMethodCallback(*ObjectRef, Method);}
-	R Call(Args&&... args) override final {return ObjectRef->*Method(core::forward<Args>(args)...);}
+	R Call(Args&&... args) override final {return ObjectRef->*Method(Meta::Forward<Args>(args)...);}
 
 	const T* ObjectRef;
 	MethodSignature Method;
@@ -88,10 +89,10 @@ template<typename R, typename... Args> class Delegate<R(Args...)>
 	{
 		typedef R(*FreeDataFunc)(const T&, Args...);
 	public:
-		FreeFuncDataWrapper(FreeDataFunc func, T&& params): Func(func), Params(core::move(params)) {}
+		FreeFuncDataWrapper(FreeDataFunc func, T&& params): Func(func), Params(Meta::Move(params)) {}
 		FreeFuncDataWrapper(FreeDataFunc func, const T& params): Func(func), Params(params) {}
 		ICallback<R(Args...)>* Clone() override final {return new FreeFuncDataWrapper(Func, Params);}
-		R Call(Args&&... args) override final {return Func(Params, core::forward<Args>(args)...);}
+		R Call(Args&&... args) override final {return Func(Params, Meta::Forward<Args>(args)...);}
 		
 		FreeDataFunc Func;
 		T Params;
@@ -123,7 +124,7 @@ public:
 	R operator()(Args... a) const
 	{
 		INTRA_ASSERT(callback!=null);
-		return callback->Call(core::forward<Args>(a)...);
+		return callback->Call(Meta::Forward<Args>(a)...);
 	}
 
 	bool operator==(null_t) const {return callback==null;}
@@ -172,7 +173,7 @@ public:
 	{
 		static_assert(sizeof(T)<=MaxDataSize, "Too big struct of delegate parameters!");
 		new(data) T(callData);
-		core::memset(data+sizeof(callData), 0, MaxDataSize-sizeof(callData));
+		memset(data+sizeof(callData), 0, MaxDataSize-sizeof(callData));
 	}
 
 	template<typename T> FixedDelegate(R(*f)(const T&, Args...), const T& callData):
@@ -188,7 +189,7 @@ public:
 		func(rhs.func), destructor(rhs.destructor), copy_constructor(rhs.copy_constructor)
 	{
 		if(copy_constructor) copy_constructor(data, rhs.data);
-		//core::memcpy(data, rhs.data, sizeof(rhs.data)>sizeof(data)? sizeof(data): sizeof(rhs.data));
+		//memcpy(data, rhs.data, sizeof(rhs.data)>sizeof(data)? sizeof(data): sizeof(rhs.data));
 	}
 
 	~FixedDelegate()
@@ -198,7 +199,7 @@ public:
 
 	R operator()(Args... a) const
 	{
-		return func(data, core::forward<Args>(a)...);
+		return func(data, Meta::Forward<Args>(a)...);
 	}
 
 	bool operator==(null_t) const {return func==null;}
@@ -208,7 +209,7 @@ public:
 	bool operator==(const FixedDelegate<R(Args...), MaxDataSize>& rhs) const
 	{
 		return func==rhs.func && destructor==rhs.destructor && copy_constructor==rhs.copy_constructor &&
-			core::memcmp(data, rhs.data, MaxDataSize)==0;
+			memcmp(data, rhs.data, MaxDataSize)==0;
 	}
 	bool operator!=(const FixedDelegate<R(Args...), MaxDataSize>& rhs) const {return !operator==(rhs);}
 

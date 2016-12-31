@@ -1,16 +1,15 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Range {
 
-template<typename T> struct CountRange:
-	RangeMixin<CountRange<T>, T, TypeEnum::Forward, false>
+template<typename T> struct CountRange
 {
-	typedef T value_type;
-	typedef const T& return_value_type;
+	enum: bool {RangeIsInfinite = true};
 
-	CountRange(size_t counter=0): Counter(counter) {}
+	CountRange(null_t=null): Counter(0) {}
+	CountRange(size_t counter): Counter(counter) {}
 	bool Empty() {return false;}
 	const T& First() const {static const T empty; return empty;}
 	void PopFirst() {Counter++;}

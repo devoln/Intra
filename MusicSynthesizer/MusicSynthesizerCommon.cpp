@@ -7,7 +7,7 @@
 #include "Sound/SoundBuilder.h"
 #include "Sound/Sound.h"
 #include "Sound/SoundSource.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 
 using namespace Intra;
 using namespace Intra::IO;

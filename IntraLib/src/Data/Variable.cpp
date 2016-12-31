@@ -8,7 +8,7 @@ void Variable::ConvertType(Variable& dst, ValueType srcType, ValueType dstType) 
 {
 	if(srcType==dstType)
 	{
-		core::memcpy(&dst, this, dstType.Size());
+		C::memcpy(&dst, this, dstType.Size());
 		return;
 	}
 
@@ -119,7 +119,7 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 {
 	if(dstType==ValueType::DVec4)
 	{
-		core::memcpy(&dst, this, dstType.Size());
+		C::memcpy(&dst, this, dstType.Size());
 		return;
 	}
 

@@ -21,7 +21,7 @@ public:
 	T& Add(T&& val, Id* oId=null)
 	{
 		Index index;
-		T& result = data.Add(core::move(val), &index);
+		T& result = data.Add(Meta::Move(val), &index);
 		if(oId==null) return result;
 		oId->value = index;
 		oId->generation = generations[index];
@@ -47,7 +47,7 @@ public:
 	template<typename... Args> T& Emplace(Args&&... args, Id* oId=null)
 	{
 		Index index;
-		T& result = data.Emplace(core::forward<Args>(args)..., &index);
+		T& result = data.Emplace(Meta::Forward<Args>(args)..., &index);
 		if(oId==null) return result;
 		oId->value = index;
 		oId->generation = generations[index];

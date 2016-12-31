@@ -3,13 +3,17 @@
 #define INTRA_STL_INTERFACE
 #endif
 
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
+
 #include "PerfTestString.h"
 
-
+#include "Platform/Compatibility.h"
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
 #include "Containers/String.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)

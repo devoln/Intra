@@ -1,36 +1,51 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Range {
 
-template<typename F> struct GenerateResult:
-	RangeMixin<GenerateResult<F>, Meta::RemoveConstRef<Meta::ResultOf<F>>, TypeEnum::Input, false>
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+
+template<typename F> struct RGenerate
 {
+private:
 	typedef Meta::RemoveConstRef<Meta::ResultOf<F>> value_type;
 	typedef const value_type& return_value_type;
+public:
+	enum: bool {RangeIsInfinite = true};
 
-	GenerateResult(null_t=null): func(null) {}
-	GenerateResult(F function): func(function) {front = func()();}
+	RGenerate(null_t=null): mFunc(null) {}
+	RGenerate(F function): mFunc(function), mFront(mFunc()()) {}
 
-	forceinline bool Empty() const {return func==null;}
-	forceinline return_value_type First() const {return front;}
+	RGenerate(const RGenerate&) = delete;
+	RGenerate& operator=(const RGenerate&) = delete;
 
-	forceinline void PopFirst() {front = func()();}
+	RGenerate(RGenerate&& rhs):
+		mFunc(Meta::Move(rhs.mFunc)), mFront(Meta::Move(rhs.mFront)) {}
 
-	forceinline bool operator==(const GenerateResult& rhs) const
+	RGenerate& operator=(RGenerate&& rhs)
 	{
-		return func==null && rhs.func==null;
+		mFunc = Meta::Move(rhs.mFunc);
+		mFront = Meta::Move(rhs.mFront);
+		return *this;
 	}
 
+	forceinline bool Empty() const {return mFunc==null;}
+	forceinline return_value_type First() const {return mFront;}
+
+	forceinline void PopFirst() {mFront = mFunc()();}
+
+	forceinline bool operator==(const RGenerate& rhs) const
+	{return mFunc==null && rhs.mFunc==null;}
+
 private:
-	Utils::Optional<F> func;
-	value_type front;
+	Utils::Optional<F> mFunc;
+	value_type mFront;
 };
 
-template<typename F> GenerateResult<F> Generate(F&& func)
-{
-	return GenerateResult<F>(core::forward<F>(func));
-}
+INTRA_WARNING_POP
+
+template<typename F> RGenerate<F> Generate(F&& func)
+{return Meta::Forward<F>(func);}
 
 }}

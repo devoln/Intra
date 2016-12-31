@@ -1,101 +1,97 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/ForwardDecls.h"
+#include "Range/Concepts.h"
+#include "Range/Construction/Take.h"
 #include "Range/ArrayRange.h"
 
 namespace Intra { namespace Range {
 
-template<typename R> struct CycleResult:
-	RangeMixin<CycleResult<R>, typename R::value_type,
-		R::RangeType==TypeEnum::Bidirectional? TypeEnum::Forward: R::RangeType, false>
+template<typename R> struct RCycle
 {
-	typedef typename R::value_type value_type;
-	typedef typename R::return_value_type return_value_type;
+	enum: bool {RangeIsInfinite = true};
 
-	forceinline CycleResult(null_t=null): counter(0) {}
-	forceinline CycleResult(const R& range):
-		original_range(range), offset_range(range), counter(0) {}
+	forceinline RCycle(null_t=null): mCounter(0) {}
 
-	forceinline bool Empty() const {return original_range.Empty();}
-	forceinline return_value_type First() const {return offset_range.First();}
+	forceinline RCycle(const R& range):
+		mOriginalRange(range), mOffsetRange(range), mCounter(0) {}
+
+	forceinline RCycle(R&& range):
+		mOriginalRange(Meta::Move(range)), mOffsetRange(range), mCounter(0) {}
+
+	forceinline bool Empty() const {return mOriginalRange.Empty();}
+	forceinline ReturnValueTypeOf<R> First() const {return mOffsetRange.First();}
 
 	forceinline void PopFirst()
 	{
-		offset_range.PopFirst();
-		counter++;
-		if(!offset_range.Empty()) return;
-		offset_range=original_range;
-		counter=0;
+		mOffsetRange.PopFirst();
+		mCounter++;
+		if(!mOffsetRange.Empty()) return;
+		mOffsetRange = mOriginalRange;
+		mCounter = 0;
 	}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		IsRandomAccessRange<U>::_,
-	return_value_type> operator[](size_t index) const
-	{
-		return original_range[(index+counter) % original_range.Length()];
-	}
-
-	forceinline bool operator==(const CycleResult& rhs) const
-	{
-		return offset_range==rhs.offset_range && original_range==rhs.original_range;
-	}
+	forceinline bool operator==(const RCycle& rhs) const
+	{return mOffsetRange==rhs.mOffsetRange && mOriginalRange==rhs.mOriginalRange;}
 
 private:
-	R original_range, offset_range;
-	size_t counter;
+	R mOriginalRange, mOffsetRange;
+	size_t mCounter;
 };
 
-template<typename R> struct CycleRandomResult:
-	RangeMixin<CycleRandomResult<R>, typename R::value_type,
-		R::RangeType>=TypeEnum::RandomAccess && HasLength<R>::_? TypeEnum::RandomAccess: TypeEnum::Error, false>
+template<typename R> struct RCycleRandom
 {
-	typedef typename R::value_type value_type;
-	typedef typename R::return_value_type return_value_type;
+	enum: bool {RangeIsInfinite = true};
 
-	forceinline CycleRandomResult(null_t=null): counter(0) {}
-	forceinline CycleRandomResult(const R& range): original_range(range), counter(0) {}
+	forceinline RCycleRandom(null_t=null): mCounter(0) {}
+	forceinline RCycleRandom(const R& range): mOriginalRange(range), mCounter(0) {}
+	forceinline RCycleRandom(R&& range): mOriginalRange(Meta::Move(range)), mCounter(0) {}
 
-	forceinline bool Empty() const {return original_range.Empty();}
+	forceinline bool Empty() const {return mOriginalRange.Empty();}
 
-	forceinline return_value_type First() const {return original_range[counter];}
+	forceinline ReturnValueTypeOf<R> First() const {return mOriginalRange[mCounter];}
 
 	forceinline void PopFirst()
 	{
-		counter++;
-		if(counter==original_range.Length()) counter=0;
+		mCounter++;
+		if(mCounter==mOriginalRange.Length()) mCounter=0;
 	}
 
-	forceinline return_value_type operator[](size_t index) const
-	{
-		return original_range[(index+counter) % original_range.Length()];
-	}
+	forceinline ReturnValueTypeOf<R> operator[](size_t index) const
+	{return mOriginalRange[(index+mCounter) % mOriginalRange.Length()];}
 
-	forceinline bool operator==(const CycleRandomResult& rhs) const
-	{
-		return original_range==rhs.original_range && counter==rhs.counter;
-	}
+	forceinline bool operator==(const RCycleRandom& rhs) const
+	{return mOriginalRange==rhs.mOriginalRange && mCounter==rhs.mCounter;}
 
-	forceinline TakeResult<CycleRandomResult<R>> opSlice(size_t startIndex, size_t endIndex) const
+	forceinline RTake<RCycleRandom<R>> operator()(size_t startIndex, size_t endIndex) const
 	{
 		INTRA_ASSERT(startIndex <= endIndex);
-		CycleRandomResult<R> result(original_range);
-		result.counter = (counter+startIndex) % original_range.Length();
-		return result.Take(endIndex-startIndex);
+		RCycleRandom<R> result(mOriginalRange);
+		result.mCounter = (mCounter+startIndex) % mOriginalRange.Length();
+		return Take(result, endIndex-startIndex);
 	}
 
 private:
-	R original_range;
-	size_t counter;
+	R mOriginalRange;
+	size_t mCounter;
 };
-
-template<typename T, size_t N> forceinline
-CycleRandomResult<ArrayRange<const T>> Cycle(const T(&arr)[N])
-{
-	return ArrayRange<const T>(arr).Cycle();
-}
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInfiniteRange<R>::_,
-R&&> Cycle(R&& range) {return core::forward<R>(range);}
+R&&> Cycle(R&& range) {return Meta::Forward<R>(range);}
+
+template<typename R> forceinline Meta::EnableIf<
+	IsFiniteForwardRange<R>::_ && !IsRandomAccessRange<R>::_,
+RCycle<Meta::RemoveConstRef<R>>> Cycle(R&& range)
+{return Meta::Forward<R>(range);}
+
+template<typename R> forceinline Meta::EnableIf<
+	IsFiniteRandomAccessRange<R>::_,
+RCycleRandom<Meta::RemoveConstRef<R>>> Cycle(R&& range)
+{return Meta::Forward<R>(range);}
+
+template<typename T, size_t N> forceinline
+RCycleRandom<AsRangeResult<T(&)[N]>> Cycle(T(&arr)[N])
+{return AsRange(arr);}
 
 }}

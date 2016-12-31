@@ -1,21 +1,22 @@
 set(INTRA_LIB_SOURCE
-Algorithms/Algorithms.cpp
-Algorithms/Hash.cpp
-Algorithms/AsciiString.cpp
-
-CompilerSpecific/CompilerSpecific.cpp
+Algo/Reduction.cpp
+Algo/Hash/Murmur.cpp
+Algo/String/Ascii.cpp
+Algo/String/Path.cpp
+Algo/Mutation/Copy.cpp
+Algo/Mutation/Transform.cpp
 
 Containers/AsciiSet.cpp
 
 Core/Debug.cpp
 Core/Errors.cpp
-Core/Time.cpp
 
 Data/Reflection.cpp
 Data/BinarySerialization.cpp
 Data/TextSerialization.cpp
 Data/Variable.cpp
 Data/ValueType.cpp
+Data/Object.cpp
 
 Graphics/OpenGL/GLEnum.cpp
 Graphics/OpenGL/GLExtensions.cpp
@@ -37,6 +38,7 @@ IO/DocumentWriter.cpp
 IO/File.cpp
 IO/LogSystem.cpp
 IO/Stream.cpp
+IO/Networking.cpp
 
 Math/MathEx.cpp
 Math/Shapes.cpp
@@ -48,8 +50,11 @@ Memory/SystemAllocators.cpp
 Memory/VirtualMemory.cpp
 
 Platform/HardwareInfo.cpp
-Platform/Platform.cpp
+Platform/Runtime.cpp
+Platform/Environment.cpp
+Platform/Time.cpp
 
+Sound/DrumPhysicalModel.cpp
 Sound/Sound.cpp
 Sound/Music.cpp
 Sound/Midi.cpp
@@ -67,7 +72,7 @@ Test/PerformanceTest.cpp
 Test/UnitTest.cpp
 
 Text/CharMap.cpp
-Text/UtfConversion.cpp
+Range/Unicode.cpp
 
 Threading/Job.cpp
 Threading/Thread.cpp

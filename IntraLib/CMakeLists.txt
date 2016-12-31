@@ -17,7 +17,7 @@ endforeach(FILE)
 
 if(UNITY_BUILD)
 
-set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/IntraAll.cpp)
+set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/Intra.cpp)
 add_definitions(-DINTRA_UNITY_BUILD)
 
 else()

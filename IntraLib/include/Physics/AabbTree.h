@@ -28,13 +28,13 @@ public:
 
 	void GetIntersection(const AabbTree& tree, const Math::Mat4& m, Array<Tri>& contacts) const;
 
-	AabbTree(AabbTree&& rhs): rootId(rhs.rootId), nodes(core::move(rhs.nodes)) {}
+	AabbTree(AabbTree&& rhs): rootId(rhs.rootId), nodes(Meta::Move(rhs.nodes)) {}
 	AabbTree(const AabbTree& rhs): rootId(rhs.rootId), nodes(rhs.nodes) {}
 
 	AabbTree& operator=(AabbTree&& rhs)
 	{
 		rootId = rhs.rootId;
-		nodes = core::move(rhs.nodes);
+		nodes = Meta::Move(rhs.nodes);
 		return *this;
 	}
 

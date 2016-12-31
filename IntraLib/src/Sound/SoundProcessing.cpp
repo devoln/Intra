@@ -1,5 +1,6 @@
 ﻿#include "Sound/SoundProcessing.h"
 #include "Range/ArrayRange.h"
+#include "Math/MathEx.h"
 
 namespace Intra {
 

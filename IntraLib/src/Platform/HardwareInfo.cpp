@@ -75,7 +75,11 @@ ProcessorInfo ProcessorInfo::Get()
 
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 
-#include <IO/File.h>
+#include "IO/File.h"
+#include "Algo/String/Parse.h"
+#include "Algo/Search/Single.h"
+#include "Algo/Search/Subrange.h"
+#include "Range/Construction/TakeUntil.h"
 
 #include <unistd.h>
 #include <sys/sysinfo.h>
@@ -112,19 +116,20 @@ ProcessorInfo ProcessorInfo::Get()
 
 	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
 
-	result.BrandString = allCpuInfo().Find(StringView("\nmodel name"))
-		.Find(':').Drop(2).ReadUntil('\n');
+	StringView modelNameLine = Algo::Find(allCpuInfo(), StringView("\nmodel name"));
+	result.BrandString = Range::TakeUntil(Algo::Find(modelNameLine, ':').Drop(2), '\n');
 
-	result.CoreNumber = allCpuInfo().Find(StringView("\ncpu cores"))
-		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<ushort>();
+	StringView cpuCoresLine = Algo::Find(allCpuInfo(), StringView("\ncpu cores"));
+	result.CoreNumber = Algo::ParseAdvance<ushort>(Range::TakeUntil(Algo::Find(cpuCoresLine, ':').Drop(2), '\n'));
 
-	result.LogicalProcessorNumber = ushort(allCpuInfo().Count(StringView("\nprocessor")));
+	result.LogicalProcessorNumber = ushort(Algo::Count(allCpuInfo(), StringView("\nprocessor")));
 	if(allCpuInfo().StartsWith(StringView("processor"))) result.LogicalProcessorNumber++;
 
 	if(result.CoreNumber==0) result.CoreNumber = result.LogicalProcessorNumber;
 
-	result.Frequency = ulong64(1000000*allCpuInfo().Find(StringView("\ncpu MHz"))
-		.Find(':').Drop(2).ReadUntil('\n').ParseAdvance<double>());
+	StringView cpuMHzLine = Algo::Find(allCpuInfo(), StringView("\ncpu MHz"));
+	StringView cpuMHzStr = Range::TakeUntil(Algo::Find(cpuMHzLine, ':').Drop(2), '\n');
+	result.Frequency = ulong64(1000000*Algo::ParseAdvance<double>(cpuMHzStr));
 
 	return result;
 }

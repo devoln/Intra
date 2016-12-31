@@ -94,12 +94,12 @@ struct StreamedBuffer
 
 	HANDLE notifyLoadEvents[2];
 	HANDLE notifyLoadWaits[2];
-	bool deleteOnStop=false;
-	bool looping=false;
-	byte stop_soon=0;
+	bool deleteOnStop = false;
+	bool looping = false;
+	byte stop_soon = 0;
 
-	byte buffers_processed=0;
-	byte next_buffer_to_fill=1;
+	byte buffers_processed = 0;
+	byte next_buffer_to_fill = 1;
 
 	CRITICAL_SECTION critsec;
 	DWORD lockedSize = 0;
@@ -196,7 +196,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 	if(snd==null || data==null) return;
 	auto lockedData = reinterpret_cast<short*>(BufferLock(snd));
 	if(type==ValueType::Short)
-		core::memcpy(lockedData, data, snd->sampleCount*type.Size());
+		memcpy(lockedData, data, snd->sampleCount*type.Size());
 	else if(type==ValueType::Float)
 	{
 		for(size_t i=0; i<snd->sampleCount; i++)
@@ -451,7 +451,7 @@ void fill_next_buffer_data(StreamedBufferHandle snd)
 	if(snd->stop_soon!=0)
 	{
 		//Достигнут конец потока данных, поэтому зануляем оставшийся буфер. Когда он закончится, воспроизведение будет остановлено
-		core::memset(data, 0, snd->SizeInBytes());
+		memset(data, 0, snd->SizeInBytes());
 		unlock_buffer(snd);
 		return;
 	}
@@ -468,7 +468,7 @@ void fill_next_buffer_data(StreamedBufferHandle snd)
 		}
 		else
 		{
-			core::memset(ptr, 0, (snd->sampleCount-samplesRead)*snd->channels*sizeof(short));
+			memset(ptr, 0, (snd->sampleCount-samplesRead)*snd->channels*sizeof(short));
 			snd->stop_soon=1;
 		}
 	}

@@ -13,7 +13,7 @@ public:
 		data(), width(lineWidth) {data.SetCount(lineWidth*columnHeight);}
 	
 	Array2D(const Array2D& rhs): data(rhs.data), width(rhs.width) {}
-	Array2D(Array2D&& rhs): data(core::move(rhs.data)), width(rhs.width) {}
+	Array2D(Array2D&& rhs): data(Meta::Move(rhs.data)), width(rhs.width) {}
 
 	forceinline T& operator()(size_t x, size_t y)
 	{
@@ -40,12 +40,12 @@ public:
 	Array2D& operator=(Array2D&& rhs)
 	{
 		width = rhs.width;
-		data = core::move(rhs.data);
+		data = Meta::Move(rhs.data);
 		return *this;
 	}
 
 	forceinline size_t SizeInBytes() const {return data.SizeInBytes();}
-	Array<T> MoveToLinearArray() {width = 0; return core::move(data);}
+	Array<T> MoveToLinearArray() {width = 0; return Meta::Move(data);}
 	//ByteBuffer MoveToByteBuffer() {width = 0; return data.MoveToByteBuffer();}
 
 	forceinline size_t Width() const {return width;}

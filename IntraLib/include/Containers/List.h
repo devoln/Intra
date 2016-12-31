@@ -1,23 +1,29 @@
 ﻿#pragma once
 
+#include "Algo/Comparison.h"
+#include "Range/Iterator.h"
 #include "Memory/Allocator.h"
 #include "Memory/AllocatorInterface.h"
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 #include "Containers/ForwardDeclarations.h"
 
 namespace Intra {
 
-template<typename T> struct FListRange:
-	Range::RangeMixin<FListRange<T>, T, Range::TypeEnum::Forward, true>
+template<typename T> struct FListRange
 {
+	enum: bool {RangeIsFinite = true};
+
 	struct Node
 	{
 		Node* Next;
 		T Value;
 	};
 
-	forceinline FListRange(null_t=null): FirstNode(null), LastNode(null) {}
-	forceinline FListRange(Node* first, Node* last): FirstNode(first), LastNode(last) {}
+	forceinline FListRange(null_t=null):
+		FirstNode(null), LastNode(null) {}
+
+	forceinline FListRange(Node* first, Node* last):
+		FirstNode(first), LastNode(last) {}
 
 	forceinline bool Empty() const
 	{
@@ -46,11 +52,8 @@ template<typename T> struct FListRange:
 	Node* LastNode;
 };
 
-template<typename T> struct BListRange:
-	Range::RangeMixin<BListRange<T>, T, Range::TypeEnum::Bidirectional, true>
+template<typename T> struct BListRange
 {
-	typedef T& return_value_type;
-
 #ifdef _MSC_VER
 #pragma warning(push, 0)
 #endif
@@ -119,8 +122,8 @@ template<typename T, typename AllocatorType> class BList:
 public:
 	typedef T value_type;
 	typedef AllocatorType Allocator;
-	typedef Range::ForwardRangeIterator<BListRange<T>> iterator;
-	typedef Range::ForwardRangeIterator<BListRange<const T>> const_iterator;
+	typedef Range::ForwardIterator<BListRange<T>> iterator;
+	typedef Range::ForwardIterator<BListRange<const T>> const_iterator;
 	typedef typename BListRange<T>::Node Node;
 
 
@@ -134,8 +137,9 @@ public:
 		{rhs.range = null; rhs.count = 0;}
 
 	template<typename ForwardRange> forceinline BList(Meta::EnableIf<
-		Range::IsFiniteForwardRangeOf<ForwardRange, T>::_,
-		const ForwardRange&> rhs) {operator=(rhs);}
+		Range::IsFiniteForwardRange<ForwardRange>::_ &&
+		Range::ValueTypeIsConvertible<ForwardRange, T>::_,
+	const ForwardRange&> rhs) {operator=(rhs);}
 
 	forceinline BList(std::initializer_list<T> values) {operator=(values);}
 
@@ -147,7 +151,7 @@ public:
 	//! \return Ссылка на добавленный элемент.
 	template<typename... Args> forceinline T& EmplaceLast(Args&&... args)
 	{
-		return *new(&add_last_node()->Value) T(core::forward<Args>(args)...);
+		return *new(&add_last_node()->Value) T(Meta::Forward<Args>(args)...);
 	}
 
 	//! Добавляет новый элемент в конец контейнера как копию переданного значения.
@@ -158,14 +162,14 @@ public:
 	//! Добавляет элемент в конец контейнера перемещением переданного значения.
 	//! \param value Значение, которое будет перемещено в контейнер.
 	//! \return Ссылка на добавленный элемент.
-	forceinline T& AddLast(T&& value) {new(&add_last_node()->Value) T(core::move(value));}
+	forceinline T& AddLast(T&& value) {new(&add_last_node()->Value) T(Meta::Move(value));}
 
 
 	//! Добавляет новый элемент в начало контейнера, сконструировав его на месте, используя переданные аргументы args.
 	//! \param args Аргументы конструктора T
 	//! \return Ссылка на добавленный элемент.
 	template<typename... Args> forceinline T& EmplaceFirst(Args&&... args)
-	{return *new(&add_first_node()->Value) T(core::forward<Args>(args)...);}
+	{return *new(&add_first_node()->Value) T(Meta::Forward<Args>(args)...);}
 
 	//! Добавляет новый элемент в начало контейнера как копию переданного значения.
 	//! \param value Значение, которое будет помещено в контейнер.
@@ -175,7 +179,7 @@ public:
 	//! Добавляет элемент в начало контейнера перемещением переданного значения.
 	//! \param value Значение, которое будет перемещено в контейнер.
 	//! \return Ссылка на добавленный элемент.
-	forceinline T& AddFirst(T&& value) {return *new(&add_first_node()->Value) T(core::move(value));}
+	forceinline T& AddFirst(T&& value) {return *new(&add_first_node()->Value) T(Meta::Move(value));}
 
 
 	//! Вставляет новый элемент в указанную позицию контейнера, сконструировав его на месте, используя переданные аргументы args.
@@ -186,11 +190,11 @@ public:
 	{
 		if(pos.Range.FirstNode==null)
 		{
-			AddLast(core::forward<Args>(args)...);
+			AddLast(Meta::Forward<Args>(args)...);
 			return range;
 		}
 		Node* node = insert_node(pos.Range.FirstNode);
-		new(&node->Value) T(core::forward<Args>(args)...);
+		new(&node->Value) T(Meta::Forward<Args>(args)...);
 		return BListRange<T>(node, range.LastNode);
 	}
 
@@ -218,11 +222,11 @@ public:
 	{
 		if(it.Range.FirstNode==null)
 		{
-			AddLast(core::move(value));
+			AddLast(Meta::Move(value));
 			return range;
 		}
 		Node* node = insert_node(it.Range.FirstNode);
-		new(&node->Value) T(core::move(value));
+		new(&node->Value) T(Meta::Move(value));
 		return BListRange<T>(node, range.LastNode);
 	}
 
@@ -304,7 +308,8 @@ public:
 	}
 
 	template<typename ForwardRange> Meta::EnableIf<
-		Range::IsFiniteForwardRangeOf<ForwardRange, T>::_,
+		Range::IsFiniteForwardRange<ForwardRange>::_ &&
+		Range::ValueTypeIsConvertible<ForwardRange, T>::_,
 	BList&> operator=(const ForwardRange& values)
 	{
 		Clear();
@@ -351,7 +356,7 @@ public:
 	forceinline bool Empty() const {return range.Empty();}
 	forceinline bool operator==(null_t) const {return range.Empty();}
 	forceinline bool operator!=(null_t) const {return !range.Empty();}
-	forceinline bool operator==(const BList& rhs) const {return count==rhs.count && Range::Equals(range, rhs.range);}
+	forceinline bool operator==(const BList& rhs) const {return count==rhs.count && Algo::Equals(range, rhs.range);}
 	forceinline bool operator!=(const BList& rhs) const {return !operator==(rhs);}
 
 	forceinline const BListRange<T>& AsRange() {return range;}
@@ -378,16 +383,16 @@ public:
 	forceinline const_iterator crend() const {return rend();}
 
 	forceinline iterator insert(const_iterator pos, const T& value) {return Insert(pos, value).begin();}
-	forceinline iterator insert(const_iterator pos, T&& value) {return Insert(pos, core::move(value)).begin();}
-	template<typename... Args> forceinline iterator emplace(const_iterator pos, Args&&... args) {return Emplace(pos, core::forward<Args>(args)...).begin();}
+	forceinline iterator insert(const_iterator pos, T&& value) {return Insert(pos, Meta::Move(value)).begin();}
+	template<typename... Args> forceinline iterator emplace(const_iterator pos, Args&&... args) {return Emplace(pos, Meta::Forward<Args>(args)...).begin();}
 
 	forceinline void push_back(const T& value) {AddLast(value);}
-	forceinline void push_back(T&& value) {AddLast(core::move(value));}
-	template<typename... Args> forceinline void emplace_back(Args&&... args) {EmplaceLast(core::forward<Args>(args)...);}
+	forceinline void push_back(T&& value) {AddLast(Meta::Move(value));}
+	template<typename... Args> forceinline void emplace_back(Args&&... args) {EmplaceLast(Meta::Forward<Args>(args)...);}
 
 	forceinline void push_front(const T& value) {AddFirst(value);}
-	forceinline void push_front(T&& value) {AddFirst(core::move(value));}
-	template<typename... Args> forceinline void emplace_front(Args&&... args) {EmplaceFirst(core::forward<Args>(args)...);}
+	forceinline void push_front(T&& value) {AddFirst(Meta::Move(value));}
+	template<typename... Args> forceinline void emplace_front(Args&&... args) {EmplaceFirst(Meta::Forward<Args>(args)...);}
 
 	forceinline iterator erase(const_iterator pos) {Remove(pos);}
 

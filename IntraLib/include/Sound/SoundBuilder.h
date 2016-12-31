@@ -12,7 +12,7 @@ struct SoundBuffer
 	SoundBuffer(null_t=null): SampleRate(0), Samples(null) {}
 	SoundBuffer(size_t sampleCount, uint sampleRate=44100, ArrayRange<const float> initData=null);
 	SoundBuffer(const SoundBuffer& rhs): SampleRate(rhs.SampleRate), Samples(rhs.Samples) {}
-	SoundBuffer(SoundBuffer&& rhs): SampleRate(rhs.SampleRate), Samples(core::move(rhs.Samples)) {}
+	SoundBuffer(SoundBuffer&& rhs): SampleRate(rhs.SampleRate), Samples(Meta::Move(rhs.Samples)) {}
 
 	double Duration() const {return SampleRate==0? 0: double(Samples.Count())/double(SampleRate);}
 	uint TimeToSamples(double time) const {return uint(time*SampleRate);}
@@ -84,9 +84,9 @@ struct SoundBuffer
 		Samples[i] = sample;
 	}
 
-	core::pair<float, float> GetMinMax(size_t startSample=0, size_t sampleCount = Meta::NumericLimits<size_t>::Max()) const;
+	Meta::Pair<float, float> GetMinMax(size_t startSample=0, size_t sampleCount = Meta::NumericLimits<size_t>::Max()) const;
 	void SetMinMax(float newMin, float newMax, size_t startSample=0,
-		size_t samplesCount = Meta::NumericLimits<size_t>::Max(), core::pair<float, float> oldMinMax={0,0});
+		size_t samplesCount = Meta::NumericLimits<size_t>::Max(), Meta::Pair<float, float> oldMinMax={0,0});
 
 	bool operator==(null_t) const {return SampleRate==0;}
 	bool operator!=(null_t) const {return !operator==(null);}
@@ -96,7 +96,7 @@ struct SoundBuffer
 	SoundBuffer& operator=(SoundBuffer&& rhs)
 	{
 		SampleRate = rhs.SampleRate;
-		Samples= core::move(rhs.Samples);
+		Samples= Meta::Move(rhs.Samples);
 		return *this;
 	}
 

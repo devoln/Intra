@@ -1,6 +1,8 @@
 ﻿#include "Imaging/Image.h"
 #include "IO/File.h"
 #include "Containers/Array.h"
+#include "Algo/Mutation/Fill.h"
+#include "Algo/Comparison.h"
 
 namespace Intra {
 
@@ -17,7 +19,7 @@ Image Image::FromData(USVec3 size, ImageFormat format, ImageType type,
 	Image result({size.x+borderLeft+borderRight, size.y+borderTop+borderBottom, 1}, format, 0, type);
 	result.Data.SetCountUninitialized(result.Info.CalculateFullDataSize(1));
 	if(data==null || borderLeft+borderRight+borderTop+borderBottom!=0)
-		core::memset(result.Data.Data(), 0, result.Data.SizeInBytes());
+		Algo::FillZeros(result.Data());
 
 	result.LineAlignment=1;
 	for(uint y=borderTop; y<uint(size.y+borderTop); y++)
@@ -26,7 +28,7 @@ Image Image::FromData(USVec3 size, ImageFormat format, ImageType type,
 		const uint srcOffset = y*size.x;
 		const uint bpp = format.BytesPerPixel();
 		const uint lineSize = size.x*bpp;
-		core::memcpy(result.Data.Data()+dstOffset*bpp, reinterpret_cast<const byte*>(data)+srcOffset*bpp, lineSize);
+		C::memcpy(result.Data.Data()+dstOffset*bpp, reinterpret_cast<const byte*>(data)+srcOffset*bpp, lineSize);
 	}
 
 	return result;
@@ -156,7 +158,7 @@ inline bool is_valid_dds_header(byte header[4]) {return header[0]=='D' && header
 static bool is_valid_png_header(byte header[8])
 {
 	static const byte pngSignature[]={137, 'P', 'N', 'G', 13, 10, 26, 10};
-	return core::memcmp(header, pngSignature, sizeof(pngSignature))==0;
+	return Algo::Equals(ArrayRange<const byte>(header, sizeof(pngSignature)), pngSignature);
 }
 
 static bool is_valid_tga_header(byte header[12])
@@ -169,7 +171,7 @@ static bool is_valid_tga_header(byte header[12])
 static bool is_valid_ktx_header(byte header[12])
 {
 	static const byte fileIdentifier[12] = {0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31, 0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A};
-	return core::memcmp(header, fileIdentifier, sizeof(fileIdentifier))==0;
+	return Algo::Equals(ArrayRange<const byte>(header, sizeof(fileIdentifier)), fileIdentifier);
 }
 
 Image::FileFormat Image::DetectFileFormatByHeader(byte header[12])
@@ -226,7 +228,7 @@ static ImageInfo get_png_info(byte header[26])
 		Vector2<uintBE> size;
 		byte bitsPerComponent, colorType;
 	} ihdrPart;
-	core::memcpy(&ihdrPart, data, sizeof(ihdrPart));
+	C::memcpy(&ihdrPart, data, sizeof(ihdrPart));
 
 	ImageFormat fmt = null;
 	if(ihdrPart.bitsPerComponent==8)
@@ -258,7 +260,7 @@ static ImageInfo get_bmp_info(byte data[30])
 		ushort colorPlanes;
 		ushort bitsPerPixel;
 	} hdrPart;
-	core::memcpy(&hdrPart, data+14, sizeof(hdrPart));
+	C::memcpy(&hdrPart, data+14, sizeof(hdrPart));
 
 	ImageFormat fmt;
 	if(hdrPart.bitsPerPixel==32) fmt = ImageFormat::RGBA8;
@@ -368,7 +370,7 @@ template<typename T> static void swap_red_blue_typed(size_t lineUnused, size_t c
 	{
 		for(int x=0; x<sizes.x; x++)
 		{
-			core::swap(data[0], data[2]);
+			Meta::Swap(data[0], data[2]);
 			data += componentCount;
 		}
 		data += lineUnused;
@@ -409,7 +411,7 @@ static void read_pixel_data_block(IInputStream* s, USVec2 sizes, ImageFormat src
 	{
 		s->ReadData(pos, usefulSrcLineBytes);
 		s->Skip(srcLineBytes-usefulSrcLineBytes);
-		//core::memset(pos+usefulSrcLineBytes, 0, dstLineBytes-usefulSrcLineBytes);
+		//Algo::FillZeros(ArrayRange<byte>(pos+usefulSrcLineBytes, dstLineBytes-usefulSrcLineBytes));
 		if(flipVert) pos -= dstLineBytes;
 		else pos += dstLineBytes;
 	}
@@ -480,7 +482,7 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 			byte colorIndices = s->Read<byte>();
 			for(int k=0; k<8; k++)
 			{
-				core::memcpy(linePos, palette + ((colorIndices & 0x80) >> 7)*bytesPerPixel, bytesPerPixel);
+				C::memcpy(linePos, palette + ((colorIndices & 0x80) >> 7)*bytesPerPixel, bytesPerPixel);
 				colorIndices = byte(colorIndices << 1);
 				linePos += bytesPerPixel;
 			}
@@ -488,15 +490,15 @@ static void read_paletted_pixel_data_block(IInputStream* s, const byte* palette,
 		else if(bpp==4) for(uint j=0; j<sizes.x; j+=2)
 		{
 			byte colorIndices = s->Read<byte>();
-			core::memcpy(linePos, palette + (colorIndices >> 4)*bytesPerPixel, bytesPerPixel);
+			C::memcpy(linePos, palette + (colorIndices >> 4)*bytesPerPixel, bytesPerPixel);
 			linePos += bytesPerPixel;
-			core::memcpy(linePos, palette + (colorIndices & 15)*bytesPerPixel, bytesPerPixel);
+			C::memcpy(linePos, palette + (colorIndices & 15)*bytesPerPixel, bytesPerPixel);
 			linePos += bytesPerPixel;
 		}
 		else if(bpp==8) for(uint j=0; j<sizes.x; j++)
 		{
 			byte colorIndex = s->Read<byte>();
-			core::memcpy(linePos, palette + colorIndex*bytesPerPixel, bytesPerPixel);
+			C::memcpy(linePos, palette + colorIndex*bytesPerPixel, bytesPerPixel);
 			linePos+=bytesPerPixel;
 		}
 		if(!flipVert) pos += dstLineBytes;
@@ -678,7 +680,7 @@ void Image::loadTGA(IInputStream* s, size_t bytes)
 		s->ReadData(colorBuffer, bytesPerPixel);
 		for(; chunkheader--!=0; currentPixel++)
 		{
-			core::memcpy(pos+index*3, colorBuffer, bytesPerPixel);
+			C::memcpy(pos+index*3, colorBuffer, bytesPerPixel);
 			index++;
 			if(index==Info.Size.x) index=0, pos -= Info.Size.x*bytesPerPixel;
 		}

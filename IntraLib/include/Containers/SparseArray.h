@@ -18,7 +18,7 @@ public:
 	T& Add(T&& val, Index* oIndex=null)
 	{
 		check_space();
-		return data.Add(core::move(val), oIndex);
+		return data.Add(Meta::Move(val), oIndex);
 	}
 
 	//! Добавить копию элемента в массив.
@@ -36,7 +36,7 @@ public:
 	template<typename... Args> T& Emplace(Args&&... args, Index* oIndex=null)
 	{
 		check_space();
-		data.Emplace(core::forward<Args>(args)..., oIndex);
+		data.Emplace(Meta::Forward<Args>(args)..., oIndex);
 	}
 
 	//! Удалить из массива элемент с индексом index
@@ -78,7 +78,7 @@ private:
 		Range::SparseRange<T, Index> newData(range);
 		data.MoveTo(newData);
 		Memory::FreeRangeUninitialized(Memory::GlobalHeap, data.GetInternalDataBuffer());
-		data = core::move(newData);
+		data = Meta::Move(newData);
 	}
 };
 

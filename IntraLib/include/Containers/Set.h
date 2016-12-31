@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Array.h"
-#include "Algorithms/Algorithms.h"
 
 namespace Intra {
 
@@ -14,39 +13,39 @@ public:
 	LinearSet(ArrayRange<const T> values) {Insert(values);}
 	LinearSet(const LinearSet<T>& rhs) {Insert(rhs);}
 
-	void Insert(T&& value) {if(!data.Contains(value)) data.AddLast(core::move(value));}
-	void Insert(const T& value) {if(!data.Contains(value)) data.AddLast(value);}
+	void Insert(T&& value) {if(!mData.Contains(value)) mData.AddLast(Meta::Move(value));}
+	void Insert(const T& value) {if(!mData.Contains(value)) mData.AddLast(value);}
 	void Insert(ArrayRange<const T> values) {for(auto& v: values) Insert(v);}
 
 	void Remove(const T& val)
 	{
-		auto i = data.Find(val);
-		if(i!=-1) data.RemoveUnordered(i);
+		auto i = mData.Find(val);
+		if(i!=-1) mData.RemoveUnordered(i);
 	}
 
-	bool operator==(null_t) const {return data==null;}
+	bool operator==(null_t) const {return mData==null;}
 	bool operator!=(null_t) const {return !operator==(null);}
 
-	bool Contains(const T& v) const {return data.Find(v)!=-1;}
+	bool Contains(const T& v) const {return mData.Find(v)!=-1;}
 
-	intptr Find(const T& v) const {return data.Find(v);}
+	intptr Find(const T& v) const {return mData.Find(v);}
 
-	T* begin() {return data.begin();}
-	const T* begin() const {return data.begin();}
-	T* end() {return data.end();}
-	const T* end() const {return data.end();}
+	T* begin() {return mData.begin();}
+	const T* begin() const {return mData.begin();}
+	T* end() {return mData.end();}
+	const T* end() const {return mData.end();}
 
-	T& operator[](size_t i) {return data[i];}
-	const T& operator[](size_t i) const {return data[i];}
+	T& operator[](size_t i) {return mData[i];}
+	const T& operator[](size_t i) const {return mData[i];}
 
-	ArrayRange<T> AsRange() {return data.AsRange();}
-	ArrayRange<const T> AsRange() const {return data.AsConstRange();}
-	ArrayRange<const T> AsConstRange() const {return data.AsConstRange();}
+	ArrayRange<T> AsRange() {return mData.AsRange();}
+	ArrayRange<const T> AsRange() const {return mData.AsConstRange();}
+	ArrayRange<const T> AsConstRange() const {return mData.AsConstRange();}
 	operator ArrayRange<T>() {return AsRange();}
 	operator ArrayRange<const T>() const {return AsConstRange();}
 
 private:
-	Array<T> data;
+	Array<T> mData;
 };
 
 template<typename T> using Set = LinearSet<T>;

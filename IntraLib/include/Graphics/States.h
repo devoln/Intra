@@ -2,7 +2,7 @@
 
 #include "Data/Reflection.h"
 #include "Data/Variable.h"
-#include "Algorithms/Hash.h"
+#include "Algo/Hash.h"
 
 
 namespace Intra {

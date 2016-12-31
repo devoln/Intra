@@ -2,6 +2,7 @@
 
 #include "GUI/FontLoadingDeclarations.h"
 #include "Math/Vector.h"
+#include "Range/ForwardDecls.h"
 
 namespace Intra { namespace FontLoadingAPI {
 

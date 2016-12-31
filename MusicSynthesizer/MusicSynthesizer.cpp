@@ -5,10 +5,11 @@
 #include "Sound/SoundBuilder.h"
 #include "Sound/Sound.h"
 #include "Sound/SoundSource.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 #include "IO/Networking.h"
-#include "Platform/Platform.h"
+#include "Platform/PlatformInfo.h"
 #include "Threading/Thread.h"
+#include "Platform/Environment.h"
 
 #include "MusicSynthesizerCommon.h"
 
@@ -20,6 +21,7 @@
 #endif
 #ifndef WIN32_MEAN_AND_LEAN
 #define WIN32_MEAN_AND_LEAN
+struct IUnknown;
 #include <windows.h>
 #endif
 
@@ -145,7 +147,7 @@ void SoundTest()
 #endif
 
 
-static const StringView DefaultMidiName = "ABBA-Mamma_Mia.mid";
+static const StringView DefaultMidiName = "Merry Christmas.mid";
 
 int INTRA_CRTDECL main()
 {

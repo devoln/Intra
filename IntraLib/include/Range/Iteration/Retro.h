@@ -1,50 +1,52 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/ForwardDecls.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Range {
 
-template<typename R> struct RetroResult:
-	RangeMixin<RetroResult<R>, typename R::value_type,
-		(R::RangeType>=TypeEnum::Bidirectional)? R::RangeType: TypeEnum::Error,
-		true>
+template<typename R> struct RRetro
 {
-	typedef typename R::value_type value_type;
-	typedef typename R::return_value_type return_value_type;
-
-
 	R OriginalRange;
 
-	RetroResult(null_t=null): OriginalRange(null) {}
-	explicit RetroResult(R&& range): OriginalRange(core::move(range)) {}
-	explicit RetroResult(const R& range): OriginalRange(range) {}
+	RRetro(null_t=null): OriginalRange(null) {}
+	explicit RRetro(R&& range): OriginalRange(Meta::Move(range)) {}
+	explicit RRetro(const R& range): OriginalRange(range) {}
 
 	forceinline bool Empty() const {return OriginalRange.Empty();}
-	forceinline return_value_type First() const {return OriginalRange.Last();}
+	forceinline ReturnValueTypeOf<R> First() const {return OriginalRange.Last();}
 	forceinline void PopFirst() {OriginalRange.PopLast();}
-	forceinline return_value_type Last() const {return OriginalRange.First();}
+	forceinline ReturnValueTypeOf<R> Last() const {return OriginalRange.First();}
 	forceinline void PopLast() {OriginalRange.PopFirst();}
 	
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsFiniteRandomAccessRange<U>::_
+		HasIndex<U>::_
 	> operator[](size_t index) const {return OriginalRange[Length()-1-index];}
 
-	bool operator==(const RetroResult& rhs) const {return OriginalRange==rhs.OriginalRange;}
+	bool operator==(const RRetro& rhs) const {return OriginalRange==rhs.OriginalRange;}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		HasLength<U>::_,
 	size_t> Length() const {return OriginalRange.Length();}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		IsFiniteRandomAccessRange<U>::_,
-	RetroResult> opSlice(size_t first, size_t end) const
-	{return RetroResult(OriginalRange.opSlice(Length()-end, Length()-first));}
+		HasSlicing<U>::_,
+	RRetro> operator()(size_t first, size_t end) const
+	{return RRetro(OriginalRange(Length()-end, Length()-first));}
 
 	forceinline const R& Retro() const {return OriginalRange;}
 };
 
+
+template<typename R> forceinline R Retro(const RRetro<R>& range) {return range.OriginalRange;}
+template<typename R> forceinline R Retro(RRetro<R>&& range) {return Meta::Move(range.OriginalRange);}
+
 template<typename R> forceinline Meta::EnableIf<
 	IsBidirectionalRange<R>::_,
-RetroResult<Meta::RemoveConstRef<R>>> Retro(R&& range) {return RetroResult<Meta::RemoveConstRef<R>>(core::forward<R>(range));}
+RRetro<Meta::RemoveConstRef<R>>> Retro(R&& range)
+{return RRetro<Meta::RemoveConstRef<R>>(Meta::Forward<R>(range));}
+
+template<typename T, size_t N> RRetro<AsRangeResult<T(&)[N]>> Retro(T(&arr)[N])
+{return Retro(AsRange(arr));}
 
 }}

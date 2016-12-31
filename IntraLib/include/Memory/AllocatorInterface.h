@@ -58,43 +58,39 @@ template<typename Allocator, typename PARENT=Meta::EmptyType, bool Stateless=Met
 
 template<typename Allocator, typename PARENT> struct AllocatorRef<Allocator, PARENT, false>: PARENT
 {
-	forceinline explicit AllocatorRef(null_t): allocator(null) {}
-	forceinline AllocatorRef(Allocator& allocatorRef): allocator(&allocatorRef) {}
+	forceinline explicit AllocatorRef(null_t): mAllocator(null) {}
+	forceinline AllocatorRef(Allocator& allocatorRef): mAllocator(&allocatorRef) {}
 
 	forceinline AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo) const
 	{
-		INTRA_ASSERT(allocator!=null);
-		return allocator->Allocate(bytes, sourceInfo);
+		INTRA_ASSERT(mAllocator!=null);
+		return mAllocator->Allocate(bytes, sourceInfo);
 	}
 
 	forceinline void Free(void* ptr, size_t size) const
 	{
-		INTRA_ASSERT(allocator!=null);
-		allocator->Free(ptr, size);
+		INTRA_ASSERT(mAllocator!=null);
+		mAllocator->Free(ptr, size);
 	}
 
 	template<typename U=Allocator> forceinline Meta::EnableIf<
 		AllocatorHasGetAllocationSize<U>::_,
 	size_t> GetAllocationSize(void* ptr) const
 	{
-		INTRA_ASSERT(allocator!=null);
-		return allocator->GetAllocationSize(ptr);
+		INTRA_ASSERT(mAllocator!=null);
+		return mAllocator->GetAllocationSize(ptr);
 	}
 
-	Allocator& GetRef() {return *allocator;}
+	Allocator& GetRef() {return *mAllocator;}
 
 	template<typename T> ArrayRange<T> AllocateRangeUninitialized(size_t& count, const SourceInfo& sourceInfo)
-	{
-		return Memory::AllocateRangeUninitialized<T>(*allocator, count, sourceInfo);
-	}
+	{return Memory::AllocateRangeUninitialized<T>(*mAllocator, count, sourceInfo);}
 
 	template<typename T> ArrayRange<T> AllocateRange(size_t& count, const SourceInfo& sourceInfo)
-	{
-		return Memory::AllocateRange<T>(*allocator, count, sourceInfo);
-	}
+	{return Memory::AllocateRange<T>(*mAllocator, count, sourceInfo);}
 
 protected:
-	Allocator* allocator;
+	Allocator* mAllocator;
 };
 
 template<typename Allocator> struct AllocatorRef<Allocator, Meta::EmptyType, true>: Allocator
@@ -107,14 +103,10 @@ template<typename Allocator> struct AllocatorRef<Allocator, Meta::EmptyType, tru
 	Allocator& GetRef() const {return *const_cast<Allocator*>(static_cast<const Allocator*>(this));}
 
 	template<typename T> ArrayRange<T> AllocateRangeUninitialized(size_t& count, const SourceInfo& sourceInfo)
-	{
-		return Memory::AllocateRangeUninitialized<T>(*this, count, sourceInfo);
-	}
+	{return Memory::AllocateRangeUninitialized<T>(*this, count, sourceInfo);}
 
 	template<typename T> ArrayRange<T> AllocateRange(size_t& count, const SourceInfo& sourceInfo)
-	{
-		return Memory::AllocateRange<T>(*this, count, sourceInfo);
-	}
+	{return Memory::AllocateRange<T>(*this, count, sourceInfo);}
 };
 
 template<typename Allocator, typename PARENT> struct AllocatorRef<Allocator, PARENT, true>: PARENT, AllocatorRef<Allocator, Meta::EmptyType, true>

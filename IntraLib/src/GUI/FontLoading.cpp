@@ -108,7 +108,7 @@ FontHandle FontCreateFromMemory(const void* data, size_t length, ushort height)
 	size_t bytesToAllocate = length;
 	desc->dataCopy = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	desc->dataSize = bytesToAllocate;
-	core::memcpy(desc->dataCopy, data, length);
+	memcpy(desc->dataCopy, data, length);
 	FT_New_Memory_Face(ft, reinterpret_cast<const FT_Byte*>(desc->dataCopy), long(length), 0, &desc->face);
 	FT_Set_Pixel_Sizes(desc->face, height, height);
 	return desc;

@@ -4,9 +4,13 @@
 #define INTRA_STL_INTERFACE
 #endif
 
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
+
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
-#include "Core/Time.h"
+#include "Platform/Time.h"
 
 
 #ifdef _MSC_VER
@@ -36,7 +40,7 @@ template<typename MAP> double TestMapPopulation(uint times, uint size)
 }
 
 template<typename K, typename V> V& GetPairSecondValue(std::pair<K,V>& p) {return p.second;}
-template<typename K, typename V> V& GetPairSecondValue(core::pair<K,V>& p) {return p.second;}
+template<typename K, typename V> V& GetPairSecondValue(Meta::Pair<K,V>& p) {return p.second;}
 template<typename K, typename V> V& GetPairSecondValue(KeyValuePair<K,V>& p) {return p.Value;}
 
 template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
@@ -50,7 +54,7 @@ template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
 	double time = timer.GetTime();
-	srand(ToHash(result));
+	srand(Algo::ToHash(result));
 	return time;
 }
 
@@ -66,7 +70,7 @@ template<typename K, typename V> double TestOrderedMapIterationSumValues(uint ti
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
 	double time = timer.GetTime();
-	srand(ToHash(result));
+	srand(Algo::ToHash(result));
 	return time;
 }
 
@@ -81,7 +85,7 @@ template<typename MAP> double TestMapSuccessfulSearching(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
 	double time = timer.GetTime();
-	srand(ToHash(result));
+	srand(Algo::ToHash(result));
 	return time;
 }
 
@@ -96,7 +100,7 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
 	double time = timer.GetTime();
-	srand(ToHash(result));
+	srand(Algo::ToHash(result));
 
 	size_t numBuckets, freeBucketCount, maxBucketLoad;
 	double averageBucketLoad;
@@ -158,7 +162,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<String, uint>>(times, count),
-					TestMapPopulation<std::unordered_map<String, uint, HasherObject<String>>>(times, count)
+					TestMapPopulation<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapPopulation<LinearMap<String, uint>>(times, count),
@@ -176,7 +180,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<Big<64>, uint>>(times, count),
-					TestMapPopulation<std::unordered_map<Big<64>, uint, HasherObject<Big<64>>>>(times, count)
+					TestMapPopulation<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapPopulation<LinearMap<Big<64>, uint>>(times, count),
@@ -212,7 +216,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<String, uint, HasherObject<String>>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<String, uint>>(times, count),
@@ -230,7 +234,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, HasherObject<Big<64>>>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<Big<64>, uint>>(times, count),
@@ -318,7 +322,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<String, uint, HasherObject<String>>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -336,7 +340,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, HasherObject<Big<64>>>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),
@@ -373,7 +377,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, HasherObject<String>>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -391,7 +395,7 @@ void RunMapPerfTests(IO::Logger& logger)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, HasherObject<Big<64>>>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),

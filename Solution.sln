@@ -21,11 +21,16 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntraLib", "IntraLib\IntraLib.vcxproj", "{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}"
 EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release Clang|x64 = Release Clang|x64
 		Release Clang|x86 = Release Clang|x86
+		Release MSClang|x64 = Release MSClang|x64
+		Release MSClang|x86 = Release MSClang|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 		ReleaseMin|x64 = ReleaseMin|x64
@@ -40,6 +45,10 @@ Global
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x64.Build.0 = Release|x64
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x86.Build.0 = Release Clang|Win32
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release MSClang|x64.Build.0 = Release MSClang|x64
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release MSClang|x86.ActiveCfg = Release MSClang|Win32
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release MSClang|x86.Build.0 = Release MSClang|Win32
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release|x64.ActiveCfg = Release|x64
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release|x64.Build.0 = Release|x64
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release|x86.ActiveCfg = Release|Win32
@@ -56,6 +65,10 @@ Global
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x64.Build.0 = Release|x64
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x86.Build.0 = Release Clang|Win32
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release MSClang|x64.Build.0 = Release MSClang|x64
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release MSClang|x86.ActiveCfg = Release MSClang|Win32
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release MSClang|x86.Build.0 = Release MSClang|Win32
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release|x64.ActiveCfg = Release|x64
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release|x64.Build.0 = Release|x64
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release|x86.ActiveCfg = Release|Win32
@@ -72,6 +85,10 @@ Global
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x64.Build.0 = Release|x64
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x86.Build.0 = Release Clang|Win32
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release MSClang|x64.Build.0 = Release MSClang|x64
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release MSClang|x86.ActiveCfg = Release MSClang|Win32
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release MSClang|x86.Build.0 = Release MSClang|Win32
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release|x64.ActiveCfg = Release|x64
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release|x64.Build.0 = Release|x64
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release|x86.ActiveCfg = Release|Win32
@@ -88,6 +105,10 @@ Global
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release Clang|x64.Build.0 = Release Clang|x64
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release Clang|x86.Build.0 = Release Clang|Win32
+		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
+		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release MSClang|x64.Build.0 = Release MSClang|x64
+		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release MSClang|x86.ActiveCfg = Release MSClang|Win32
+		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release MSClang|x86.Build.0 = Release MSClang|Win32
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release|x64.ActiveCfg = Release|x64
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release|x64.Build.0 = Release|x64
 		{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}.Release|x86.ActiveCfg = Release|Win32

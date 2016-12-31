@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Core/Debug.h"
 #include "Math/MathEx.h"
 
 #ifdef _MSC_VER

@@ -1,57 +1,23 @@
 ﻿#pragma once
 
 #include "Containers/ForwardDeclarations.h"
-#include "Algorithms/Algorithms.h"
+#include "Algo/String/Parse.h"
 #include "Range/ArrayRange.h"
-#include "Range/Construction/Construction.h"
-#include "Range/Iteration/Iteration.h"
-#include "Algorithms/Comparison.h"
+#include "Range/Iteration/Split.h"
+#include "Algo/Op.h"
+#include "Algo/Comparison.h"
+#include "Algo/Mutation.h"
+#include "Algo/Search.h"
+#include "Algo/String/CStr.h"
+#include "Algo/Mutation/Replace.h"
 #include "Meta/Type.h"
-#include "Meta/Mixins.h"
 #include "Memory/Allocator.h"
 #include "Containers/AsciiSet.h"
 
-namespace Intra {
+namespace Intra { namespace Range {
 
-forceinline size_t CStringLength(const char* str) {return core::strlen(str);}
-forceinline size_t CStringLength(const wchar_t* str) {return core::wcslen(str);}
-
-template<typename U=wchar> forceinline Meta::EnableIf<
-	sizeof(U)==sizeof(wchar_t),
-size_t> CStringLength(const wchar* str) {return core::wcslen(reinterpret_cast<const wchar_t*>(str));}
-
-template<typename U=wchar> forceinline Meta::EnableIf<
-	sizeof(U)!=sizeof(wchar_t),
-size_t> CStringLength(const wchar* str)
+template<typename Char> struct GenericStringView
 {
-	const wchar* ptr = str-1;
-	while(*++ptr!=0) {}
-	return size_t(ptr-str);
-}
-
-template<typename U=dchar> forceinline Meta::EnableIf<
-	sizeof(U)==sizeof(wchar_t),
-size_t> CStringLength(const dchar* str) {return core::wcslen(reinterpret_cast<const wchar_t*>(str));}
-
-template<typename U=dchar> forceinline Meta::EnableIf<
-	sizeof(U)!=sizeof(wchar_t),
-size_t> CStringLength(const dchar* str)
-{
-	const dchar* ptr = str-1;
-	while(*++ptr!=0) {}
-	return ptr-str;
-}
-
-template<typename Char> struct GenericStringView:
-	Meta::ComparableMixin<GenericStringView<Char>, Range::RangeMixin<GenericStringView<Char>, Char, Range::TypeEnum::Array, true>>
-{
-	typedef Range::RangeMixin<GenericStringView<Char>, Char, Range::TypeEnum::Array, true> BaseRange;
-	using BaseRange::MultiReplaceTo;
-	using BaseRange::MultiReplaceToAdvance;
-
-	typedef Char value_type;
-	typedef Char return_value_type;
-
 	constexpr forceinline GenericStringView(null_t=null): cstart(null), cend(null) {}
 	template<size_t N> constexpr forceinline GenericStringView(const Char(&str)[N]): cstart(str), cend(str+(N-1)) {}
 	constexpr forceinline GenericStringView(const Char* str, size_t len): cstart(str), cend(str+len) {}
@@ -60,7 +26,7 @@ template<typename Char> struct GenericStringView:
 	constexpr forceinline GenericStringView(const GenericStringView& rhs): cstart(rhs.cstart), cend(rhs.cend) {}
 
 	forceinline GenericStringView(const Char* cstr):
-		cstart(cstr), cend(cstr==null? null: cstr+CStringLength(cstr)) {}
+		cstart(cstr), cend(cstr==null? null: cstr+Algo::CStringLength(cstr)) {}
 
 	constexpr forceinline const Char* Data() const {return cstart;}
 	constexpr forceinline const Char* End() const {return cend;}
@@ -73,11 +39,37 @@ template<typename Char> struct GenericStringView:
 	forceinline Char Last() const {INTRA_ASSERT(!Empty()); return *(cend-1);}
 	forceinline void PopLast() {INTRA_ASSERT(!Empty()); cend--;}
 
+	forceinline void PopFirstExactly(size_t elementsToPop)
+	{
+		INTRA_ASSERT(elementsToPop <= Length());
+		cstart += elementsToPop;
+	}
+
+	forceinline void PopLastExactly(size_t elementsToPop)
+	{
+		INTRA_ASSERT(elementsToPop <= Length());
+		cend -= elementsToPop;
+	}
+
+	forceinline size_t PopFirstN(size_t count)
+	{
+		if(count>Length()) count = Length();
+		cstart += count;
+		return count;
+	}
+
+	forceinline size_t PopLastN(size_t count)
+	{
+		if(count>Length()) count = Length();
+		cend -= count;
+		return count;
+	}
+
 	//Сравнение строк
 	bool operator==(const Char* rhs) const
 	{
 		return (Empty() && (rhs==null || *rhs=='\0')) ||
-			(rhs!=null && core::memcmp(cstart, rhs, Length()*sizeof(Char))==0 && rhs[Length()]=='\0');
+			(rhs!=null && C::memcmp(cstart, rhs, Length()*sizeof(Char))==0 && rhs[Length()]=='\0');
 	}
 
 	bool operator==(const GenericStringView& rhs) const
@@ -125,32 +117,120 @@ template<typename Char> struct GenericStringView:
 	}*/
 
 	//Получить подстроку, начиная с кодовой единицы с индексом start и заканчивая end
-	constexpr forceinline GenericStringView opSlice(size_t startIndex, size_t endIndex) const
+	constexpr forceinline GenericStringView operator()(size_t startIndex, size_t endIndex) const
 	{
 		return GenericStringView(cstart+startIndex, cstart+endIndex);
 	}
 
-	/*constexpr forceinline GenericStringView operator()(size_t startIndex, size_t endIndex) const
+	forceinline GenericStringView operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
 	{
-		return opSlice(startIndex, endIndex);
-	}*/
+		return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));
+	}
+
+	forceinline GenericStringView operator()(size_t firstIndex, RelativeIndex endIndex) const
+	{
+		return operator()(firstIndex, endIndex.GetRealIndex(Length()));
+	}
+
+	forceinline GenericStringView operator()(RelativeIndex firstIndex, size_t endIndex) const
+	{
+		return operator()(firstIndex.GetRealIndex(Length()), endIndex);
+	}
+
+	forceinline constexpr GenericStringView TakeNone() const {return {cstart, cstart};}
 
 	forceinline constexpr ArrayRange<const Char> AsRange() const {return {cstart, cend};}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых и последних символов, равных x.
+	template<typename X> forceinline Meta::EnableIf<
+		Meta::IsConvertible<X, Char>::_,
+	GenericStringView> TrimLeft(X x) const {return Algo::TrimLeft(*this, x);}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением
+	//! всех первых и последних символов, для которых выполнен предикат pred.
+	template<typename P> forceinline Meta::EnableIf<
+		Meta::IsCallable<P, Char>::_,
+	GenericStringView> TrimLeft(P pred) const {return Algo::TrimLeft(*this, pred);}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых и последних символов, равных x.
+	template<typename X> forceinline Meta::EnableIf<
+		Meta::IsConvertible<X, Char>::_,
+	GenericStringView> TrimRight(X x) const {return Algo::TrimRight(*this, x);}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением
+	//! всех первых и последних символов, для которых выполнен предикат pred.
+	template<typename P> forceinline Meta::EnableIf<
+		Meta::IsCallable<P, Char>::_,
+	GenericStringView> TrimRight(P pred) const {return Algo::TrimRight(*this, pred);}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением всех первых и последних символов, равных x.
+	template<typename X> forceinline Meta::EnableIf<
+		Meta::IsConvertible<X, Char>::_,
+	GenericStringView> Trim(X x) const {return Algo::Trim(*this, x);}
+
+	//! Возвращает диапазон, полученный из этого диапазона удалением
+	//! всех первых и последних символов, для которых выполнен предикат pred.
+	template<typename P> forceinline Meta::EnableIf<
+		Meta::IsCallable<P, Char>::_,
+	GenericStringView> Trim(P pred) const {return Algo::Trim(*this, pred);}
+
+	template<typename RW> Meta::EnableIf<
+		IsFiniteForwardRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_ ||
+		Meta::TypeEquals<RW, Char>::_,
+	bool> StartsWith(const RW& what) const
+	{return Algo::StartsWith(*this, what);}
+
+	template<size_t N> bool StartsWith(const Char(&what)[N]) const
+	{return Algo::StartsWith(*this, what);}
+
+	template<typename RW> Meta::EnableIf<
+		IsFiniteForwardRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_ ||
+		Meta::TypeEquals<RW, Char>::_,
+	bool> EndsWith(const RW& what) const
+	{return Algo::EndsWith(*this, what);}
+
+	template<size_t N> bool EndsWith(const Char(&what)[N]) const
+	{return Algo::EndsWith(*this, what);}
+
+	template<typename RW> Meta::EnableIf<
+		IsFiniteForwardRange<RW>::_ &&
+		(ValueTypeIsConvertible<RW, Char>::_ ||
+		ValueTypeIsConvertible<AsRangeResult<RW>, Char>::_) ||
+		Meta::TypeEquals<RW, Char>::_,
+	bool> Contains(const RW& what) const
+	{return Algo::Contains(*this, Range::AsRange(what));}
+
+	template<size_t N> bool Contains(const Char(&what)[N]) const
+	{return Algo::Contains(*this, what);}
+
+
+	forceinline GenericStringView Drop(size_t count=1) const
+	{return GenericStringView(cstart+count>cend? cend: cstart+count, cend);}
+
+	forceinline GenericStringView DropBack(size_t count=1) const
+	{return GenericStringView(cstart, cend-count<cstart? cstart: cend-count);}
+
+	forceinline GenericStringView Take(size_t count) const
+	{return GenericStringView(cstart, cstart+count>cend? cend: cstart+count);}
+
+	forceinline GenericStringView Tail(size_t count) const
+	{return GenericStringView(cend-count<cstart? cstart: cend-count, cend);}
+
 
 	//! Получить целое число, записанное в строке.
 	//! В строке не должно быть пробелов и посторонних символов.
 	//! \param[out] success Адрес булевой переменной, в которую нужно записать, удалось преобразование или нет. Может быть null.
 	//! \returns Прочитанное из строки число или 0 в случае неудачи.
-	long64 ToInt(bool* success=null) const
+	long64 ToInt(bool* oSuccess=null) const
 	{
 		if(!Empty() && uint(cstart[0]-'0')<=9)
 		{
 			GenericStringView nextPart = *this;
-			const long64 result = nextPart.template ParseAdvance<long64>();
+			const long64 result = Algo::ParseAdvance<long64>(nextPart);
 			if(nextPart.Empty()) return result;
 		}
 
-		if(success!=null) *success=false;
+		if(oSuccess!=null) *oSuccess=false;
 		return 0;
 	}
 
@@ -166,7 +246,7 @@ template<typename Char> struct GenericStringView:
 		if(uint(cstart[size_t(minus)]-'0')>9 && cstart[size_t(minus)]!='.')
 			return Math::NaN;
 		GenericStringView nextPart = *this;
-		real result = nextPart.template ParseAdvance<float>();
+		real result = Algo::ParseAdvance<float>(nextPart);
 		if(nextPart.Empty()) return result;
 		return Math::NaN;
 	}
@@ -175,90 +255,18 @@ template<typename Char> struct GenericStringView:
 	//! \param spaceDelimiters Разделяющие символы, которые не будут входить в подстроки
 	//! \param punctDelimiters Разделяющие символы, которые сами будут образовывать подстроки
 	//! \returns Массив полученных подстрок
-	Array<GenericStringView> Split(const AsciiSet& spaceDelimiters, const AsciiSet& punctDelimiters=null) const
-	{
-		if(spaceDelimiters==null && punctDelimiters==null)
-		{
-			Array<GenericStringView> result;
-			result.AddLast(*this);
-			return result;
-		}
-
-		Array<GenericStringView> result;
-		size_t pos = 0;
-		const size_t len = Length();
-		while(pos<len)
-		{
-			size_t newpos = ~size_t(0);
-			if(pos<len)
-			{
-				for(const Char* p = cstart+pos; p<cend; p++)
-				{
-					if((uint(*p) & 0xFFFFFF80u) || (!spaceDelimiters[*p] && !punctDelimiters[*p])) continue;
-					newpos = size_t(p-cstart);
-					break;
-				}
-			}
-			if(newpos == ~size_t(0)) newpos = len;
-			if(newpos>pos) result.AddLast(opSlice(pos, newpos));
-			if(newpos<len && punctDelimiters(cstart[newpos]))
-			{
-				result.AddLast(opSlice(newpos, newpos+1));
-			}
-			pos = newpos+1;
-		}
-		return result;
-	}
-
-	size_t StringEscapeLength(ArrayRange<const StringView> escapeSequences, ArrayRange<const char> chars)
-	{
-		StringView src = *this;
-		size_t len = 0;
-		AsciiSet charset = AsciiSet(chars);
-		while(len += src.CountUntilAdvanceAny(chars), !src.Empty())
-		{
-			size_t index = 0;
-			chars.Find(src.First(), &index);
-			len += 1+escapeSequences[index].Length();
-		}
-		return len;
-	}
-
-	GenericStringView StringEscapeToAdvance(ArrayRange<Char>& dstBuffer, Char escapeChar,
-		ArrayRange<const GenericStringView> escapeSequences, ArrayRange<const Char> chars)
-	{
-		GenericStringView src = *this;
-		char* dstBegin = dstBuffer.Begin;
-		AsciiSet charset = AsciiSet(chars);
-		while(src.ReadUntilAdvance([charset](Char c){return charset.Contains(c);}).CopyToAdvance(dstBuffer), !src.Empty())
-		{
-			dstBuffer.Put(escapeChar);
-			size_t index = 0;
-			chars.Find(src.First(), &index);
-			escapeSequences[index].CopyToAdvance(dstBuffer);
-		}
-		return {dstBegin, dstBuffer.Begin};
-	}
-
-
-	GenericStringView ParseIdentifierAdvance(const AsciiSet& notIdentifierFirstChars, const AsciiSet& notIdentifierChars)
-	{
-		this->TrimLeftAdvance(Range::IsHorSpace<char>);
-		if(Empty() || notIdentifierFirstChars.Contains(First())) return null;
-		GenericStringView result = *this;
-		PopFirst();
-		while(!Empty() && !notIdentifierChars.Contains(First())) PopFirst();
-		return result.Take(size_t(Data()-result.Data()));
-	}
+	RSplit<GenericStringView, AsciiSet, AsciiSet> Split(
+		const AsciiSet& spaceDelimiters, const AsciiSet& punctDelimiters=null) const
+	{return Range::Split(*this, spaceDelimiters, punctDelimiters);}
 
 	//! Заменить все вхождения subStr на newSubStr
 	GenericString<Char> ReplaceAll(GenericStringView subStr, StringView newSubStr) const
 	{
 		GenericString<Char> result;
-		Range::CountRange<Char> counter;
-		MultiReplaceToAdvance(counter, AsRange({Meta::TupleL(subStr, newSubStr)}));
+		CountRange<Char> counter;
+		Algo::MultiReplaceToAdvance(*this, counter, AsRange({Meta::TupleL(subStr, newSubStr)}));
 		result.SetLengthUninitialized(counter.Counter);
-		MultiReplaceToAdvance(result.AsRange(), AsRange({Meta::TupleL(subStr, newSubStr)}));
+		Algo::MultiReplaceToAdvance(*this, result.AsRange(), AsRange({Meta::TupleL(subStr, newSubStr)}));
 		return result;
 	}
 
@@ -292,7 +300,7 @@ template<typename Char> struct GenericStringView:
 	{
 		GenericString<Char> result;
 		result.SetLengthUninitialized(Length());
-		Transform(result.AsRange(), Range::ToLowerAscii<Char>);
+		Algo::Transform(result.AsRange(), Op::ToLowerAscii<Char>);
 		return result;
 	}
 
@@ -301,7 +309,7 @@ template<typename Char> struct GenericStringView:
 	{
 		GenericString<Char> result;
 		result.SetLengthUninitialized(Length());
-		result.AsRange().Transform(Range::ToUpperAscii<Char>);
+		Algo::Transform(result.AsRange(), Op::ToUpperAscii<Char>);
 		return result;
 	}
 
@@ -309,7 +317,7 @@ template<typename Char> struct GenericStringView:
 	{
 		GenericString<Char> result;
 		result.SetLengthUninitialized(Length());
-		this->Retro().CopyTo(result.AsRange());
+		Algo::CopyTo(Retro(*this), result.AsRange());
 		return result;
 	}
 
@@ -320,7 +328,7 @@ template<typename Char> struct GenericStringView:
 		GenericString<Char> result;
 		result.SetLengthUninitialized(Length()*n);
 		for(size_t i=0; i<n; i++)
-			core::memcpy(result.Data()+Length()*i, Data(), Length()*sizeof(Char));
+			memcpy(result.Data()+Length()*i, Data(), Length()*sizeof(Char));
 		return result;
 	}
 
@@ -336,26 +344,20 @@ template<typename Char> GenericString<Char> GenericStringView<Char>::MultiReplac
 	ArrayRange<const GenericStringView<Char>> subStrs, ArrayRange<const GenericStringView<Char>> newSubStrs) const
 {
 	GenericString<Char> result;
-	Range::CountRange<Char> counter;
-	MultiReplaceToAdvance(counter, Range::Zip(subStrs, newSubStrs));
+	CountRange<Char> counter;
+	Algo::MultiReplaceToAdvance(*this, counter, Range::Zip(subStrs, newSubStrs));
 	result.SetLengthUninitialized(counter.Counter);
-	MultiReplaceTo(result.AsRange(), Range::Zip(subStrs, newSubStrs));
+	Algo::MultiReplaceTo(*this, result.AsRange(), Range::Zip(subStrs, newSubStrs));
 	return result;
 }
 
 #ifdef INTRA_USER_DEFINED_LITERAL_SUPPORT
 forceinline constexpr GenericStringView<char> operator"" _v(const char* str, size_t len)
-{
-	return GenericStringView<char>(str, len);
-}
+{return GenericStringView<char>(str, len);}
 
 forceinline constexpr GenericStringView<wchar> operator"" _wv(const wchar* str, size_t len)
-{
-	return GenericStringView<wchar>(str, len);
-}
+{return GenericStringView<wchar>(str, len);}
 #endif
-
-namespace Range {
 
 template<typename T, size_t N> forceinline Meta::EnableIf<
 	Meta::IsCharType<T>::_,
@@ -369,8 +371,11 @@ template<typename T, size_t N> forceinline Meta::EnableIf<
 	!Meta::IsCharType<T>::_,
 ArrayRange<const T>> AsConstRange(const T(&arr)[N]) {return ArrayRange<const T>(arr);}
 
+
 }
 
+using Range::GenericStringView;
+using Range::StringView;
 
 }
 

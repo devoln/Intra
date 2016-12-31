@@ -37,9 +37,9 @@ struct NaNType
 	bool operator!=(double rhs) const {return !operator==(rhs);}
 	bool operator!=(real rhs) const {return !operator==(double(rhs));}
 
-	operator float() const {return float(Infinity-Infinity);}
-	operator double() const {return double(Infinity-Infinity);}
-	operator real() const {return real(Infinity-Infinity);}
+	operator float() const {return float(Infinity/Infinity);}
+	operator double() const {return double(Infinity/Infinity);}
+	operator real() const {return real(Infinity/Infinity);}
 
 	operator long64() const {return 0;}
 	operator int() const {return 0;}

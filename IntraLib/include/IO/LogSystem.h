@@ -231,9 +231,9 @@ struct CustomFormat
 	{
 		String result;
 		if(ShowSource) result = String::Format()(criteria.file)("(")(criteria.line)("): ");
-		if(ShowChannel) result+="["+ToString(criteria.channel)+"] ";
-		if(ShowType) result+="("+ToString(criteria.type)+") ";
-		result+=criteria.message;
+		if(ShowChannel) result += "["+ToString(criteria.channel)+"] ";
+		if(ShowType) result += "("+ToString(criteria.type)+") ";
+		result += criteria.message;
 		return result;
 	}
 };

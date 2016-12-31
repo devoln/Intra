@@ -38,7 +38,7 @@ protected:
 	}
 
 	CommonFileImpl(CommonFileImpl&& rhs):
-		hndl(rhs.hndl), name(core::move(rhs.name)), mapping(core::move(rhs.mapping)) {rhs.hndl = null;}
+		hndl(rhs.hndl), name(Meta::Move(rhs.name)), mapping(Meta::Move(rhs.mapping)) {rhs.hndl = null;}
 
 	~CommonFileImpl() {close();}
 
@@ -59,7 +59,7 @@ class Reader: public CommonFileImpl, public IInputStream
 public:
 	Reader() {}
 
-	Reader(Reader&& rhs): CommonFileImpl(core::move(rhs)) {}
+	Reader(Reader&& rhs): CommonFileImpl(Meta::Move(rhs)) {}
 
 	Reader(StringView fileName, Error* oError=null):
 		CommonFileImpl(fileName, true, false, false, oError) {}
@@ -159,17 +159,6 @@ bool Delete(StringView filename);
 bool MoveOrRename(StringView oldFilename, StringView newFilename);
 Info GetInfo(StringView fileName);
 ulong64 GetFileTime(StringView filename);
-
-String NormalizeSlashes(StringView path);
-String AddTrailingSlash(StringView path);
-StringView RemoveTrailingSlash(StringView path);
-
-inline bool IsPathSeparator(char c) {return c=='/' || c=='\\';}
-void SplitPath(StringView fullPath, StringView* oDirectoryPath, StringView* oNameOnly, StringView* oExtension, StringView* oName);
-StringView ExtractDirectoryPath(StringView fullPath);
-StringView ExtractNameWithoutExtension(StringView fullPath);
-StringView ExtractName(StringView fullPath);
-StringView ExtractExtension(StringView fullPath);
 
 #ifdef GetCurrentDirectory
 #undef GetCurrentDirectory

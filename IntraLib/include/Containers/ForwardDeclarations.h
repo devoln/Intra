@@ -14,9 +14,4 @@ typedef GenericString<char> String;
 typedef GenericString<wchar> WString;
 typedef GenericString<dchar> DString;
 
-template<typename Char> struct GenericStringView;
-typedef GenericStringView<char> StringView;
-typedef GenericStringView<wchar> WStringView;
-typedef GenericStringView<dchar> DStringView;
-
 }

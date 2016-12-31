@@ -1,11 +1,12 @@
 ﻿#include "Graphics/States.h"
 #include "Imaging/ImagingTypes.h"
+#include "Algo/Search.h"
 
 namespace Intra { namespace Graphics {
 
 template<typename T> T findEnumByName(ArrayRange<const StringView> names, StringView name, T notFoundValue)
 {
-	const size_t index = names.CountUntil(name);
+	const size_t index = Algo::CountUntil(names, name);
 	if(index==names.Length()) return notFoundValue;
 	return T(index);
 }

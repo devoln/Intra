@@ -47,6 +47,13 @@
             <ExpandedItem>range</ExpandedItem>
         </Expand>
     </Type>
+
+  <Type Name="Intra::LinearSet&lt;*&gt;">
+    <DisplayString>{mData}</DisplayString>
+    <Expand>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
 	
 	  <Type Name="Intra::BList&lt;*&gt;">
       <DisplayString Condition="count==0">[]</DisplayString>

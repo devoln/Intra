@@ -10,6 +10,7 @@
 #include <QtGui/QDesktopWidget>
 #include <QtGui/QKeyEvent>
 #include <QtGui/QMessageBox>
+#include "Algo/Mutation/Transform.h"
 
 
 namespace Intra { namespace WindowAPI {
@@ -20,37 +21,48 @@ struct Window: public QGLWidget
 {
 public:
 	Window(Qt::WindowFlags flags, void* wndObj):
-		QGLWidget(null, null, flags), myWndObj(wndObj) {core::memset(pressed_keys, 0, sizeof(pressed_keys));}
+		QGLWidget(null, null, flags), mWndObj(wndObj)
+		{Algo::FillZeros(mPressedKeys);}
 
 	void keyPressEvent(QKeyEvent* kev)
 	{
-		const Key key=convert_Qt_key(kev);
+		const Key key = convert_Qt_key(kev);
 		if(key==Key(0)) return;
-		pressed_keys[(byte)key]=true;
-		pressed_keys[(byte)Key::Enter]=(pressed_keys[(byte)Key::MainEnter] || pressed_keys[(byte)Key::NumpadEnter]);
-		if(myWndObj!=null) ws_on_key_press(myWndObj, key);
+		mPressedKeys[byte(key)] = true;
+		mPressedKeys[byte(Key::Enter)] = (
+			mPressedKeys[byte(Key::MainEnter)] ||
+			mPressedKeys[byte(Key::NumpadEnter)]);
+		if(mWndObj!=null) OnKeyPress(myWndObj, key);
 	}
 
 	void keyReleaseEvent(QKeyEvent* kev)
 	{
-		const Key key=convert_Qt_key(kev);
+		const Key key = convert_Qt_key(kev);
 		if(key==Key(0)) return;
-		pressed_keys[(byte)key]=false;
-		pressed_keys[(byte)Key::Enter]=(pressed_keys[(byte)Key::MainEnter] || pressed_keys[(byte)Key::NumpadEnter]);
-		if(myWndObj!=null) ws_on_key_release(myWndObj, key);
+		mPressedKeys[byte(key)]=false;
+		mPressedKeys[byte(Key::Enter)] = (
+			mPressedKeys[byte(Key::MainEnter)] ||
+			mPressedKeys[byte(Key::NumpadEnter)]);
+		if(mWndObj!=null) OnKeyRelease(mWndObj, key);
 	}
 
 	void resizeEvent(QResizeEvent* rev)
-	{if(myWndObj!=null) ws_on_resize(myWndObj, ussize2(rev->size().width(), rev->size().height()));}
+	{
+		if(mWndObj!=null) OnResize(mWndObj,
+			usvec2(rev->size().width(), rev->size().height()));
+	}
 
 	void moveEvent(QMoveEvent* mev)
-	{if(myWndObj!=null) ws_on_move(myWndObj, spoint2(mev->pos().x(), mev->pos().y()));}
+	{if(myWndObj!=null) OnMove(myWndObj, svec2(mev->pos().x(), mev->pos().y()));}
 
 	void closeEvent(QCloseEvent* cev)
-	{if(myWndObj==null || ws_on_close(myWndObj)) cev->accept(); else cev->ignore();}
+	{
+		if(myWndObj==null || OnClose(myWndObj)) cev->accept();
+		else cev->ignore();
+	}
 
-	void* myWndObj;
-	bool pressed_keys[256];
+	void* mWndObj;
+	bool mPressedKeys[256];
 
 private:
 	Key convert_Qt_key(QKeyEvent* qtkey)
@@ -61,9 +73,9 @@ private:
 		//if(nk>='a' && nk<='z') return Key(nk-'a'+'A');
 		if(k>='0' && k<='9')
 			if((qtkey->modifiers() & Qt::KeypadModifier)==0) return Key(k);
-			else return Key((byte)Key::Numpad0+(k-'0'));
-		if(k>=Qt::Key_Left && k<=Qt::Key_Down) return Key((byte)Key::Left+(k-Qt::Key_Left));
-		if(k>=Qt::Key_F1 && k<=Qt::Key_F12) return Key((byte)Key::F1+(k-Qt::Key_F1));
+			else return Key(byte(Key::Numpad0)+(k-'0'));
+		if(k>=Qt::Key_Left && k<=Qt::Key_Down) return Key(byte(Key::Left)+(k-Qt::Key_Left));
+		if(k>=Qt::Key_F1 && k<=Qt::Key_F12) return Key(byte(Key::F1)+(k-Qt::Key_F1));
 	#define CONV(kc) case Qt::Key_ ## kc: return Key::kc
 	#define CONV2(qkc, kc) case Qt::Key_ ## qkc: return Key::kc
 		switch(k)
@@ -135,7 +147,7 @@ void WindowShowCursor(WindowHandle wnd, bool visible)
 
 void WindowSetPos(WindowHandle wnd, SVec2 newpos) {wnd->move(newpos.x, newpos.y);}
 void WindowSetSize(WindowHandle wnd, USVec2 newsize) {wnd->resize(newsize.x, newsize.y);}
-bool WindowIsKeyPressed(WindowHandle wnd, Key key) {return wnd->pressed_keys[(byte)key];}
+bool WindowIsKeyPressed(WindowHandle wnd, Key key) {return wnd->mPressedKeys[(byte)key];}
 
 SVec2 WindowGetCursorPos(WindowHandle wnd)
 {

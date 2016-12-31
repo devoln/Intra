@@ -1,6 +1,6 @@
 ﻿#include "Sound/SynthesizedInstrument.h"
 #include "Sound/SoundBuilder.h"
-#include "Algorithms/Algorithms.h"
+#include "Math/Simd.h"
 
 #define OPTIMIZE
 
@@ -138,10 +138,10 @@ SynthesizedInstrument& SynthesizedInstrument::operator=(const SynthesizedInstrum
 
 SynthesizedInstrument& SynthesizedInstrument::operator=(SynthesizedInstrument&& rhs)
 {
-	SynthPass = core::move(rhs.SynthPass);
-	ModifierPasses = core::move(rhs.ModifierPasses);
-	AttenuationPass = core::move(rhs.AttenuationPass);
-	PostEffects = core::move(rhs.PostEffects);
+	SynthPass = Meta::Move(rhs.SynthPass);
+	ModifierPasses = Meta::Move(rhs.ModifierPasses);
+	AttenuationPass = Meta::Move(rhs.AttenuationPass);
+	PostEffects = Meta::Move(rhs.PostEffects);
 	MinNoteDuration = rhs.MinNoteDuration;
 	FadeOffTime = rhs.FadeOffTime;
 	return *this;
@@ -160,16 +160,18 @@ SoundSynthFunction SynthesizedInstrument::CreateSineSynthPass(float scale, ushor
 SoundSynthFunction SynthesizedInstrument::CreateMultiSineSynthPass(ArrayRange<const SineHarmonic> harmonics)
 {
 	MultiSineParams params;
-	params.len = byte(harmonics.Length());
-	core::memcpy(params.harmonics, harmonics.Begin, params.len*sizeof(SineHarmonic));
+	auto src = harmonics.Take(Meta::NumOf(params.harmonics));
+	params.len = byte(src.Length());
+	Algo::CopyTo(src, params.harmonics);
 	return SoundSynthFunction(functionMultiSineSynthPass, params);
 }
 
 SoundSynthFunction SynthesizedInstrument::CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics)
 {
 	SineExpParams params;
-	params.len = byte(harmonics.Length());
-	core::memcpy(params.harmonics, harmonics.Begin, params.len*sizeof(SineExpHarmonic));
+	auto src = harmonics.Take(Meta::NumOf(params.harmonics));
+	params.len = byte(src.Length());
+	Algo::CopyTo(src, params.harmonics);
 	return SoundSynthFunction(functionSineExpSynthPass, params);
 }
 
@@ -223,12 +225,13 @@ void CombinedSynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSample
 }
 
 
-static void perfect_sawtooth(double upPercent, float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+static void perfect_sawtooth(double upPercent, float volume,
+	float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 	SoundSamplers::Sawtooth saw(float(upPercent/(1.0-upPercent)));
 	saw.SetParams(freq, volume, 1.0/sampleRate);
-	if(!add) for(auto& sample: inOutSamples) sample = saw.NextSample();
-	else for(auto& sample: inOutSamples) sample += saw.NextSample();
+	if(!add) Algo::CopyAdvanceToAdvance(saw, inOutSamples.Length(), inOutSamples);
+	else Algo::Add(inOutSamples, saw);
 }
 
 
@@ -255,24 +258,20 @@ static uint get_good_signal_period(double samplesPerPeriod, uint maxPeriods)
 static void repeat_fragment_in_buffer(ArrayRange<const float> fragmentSamples, ArrayRange<float> inOutSamples, bool add)
 {
 	const size_t copyPassCount = inOutSamples.Length()/fragmentSamples.Length();
-	float* ptr = inOutSamples.Begin;
 	if(!add) for(size_t c=0; c<copyPassCount; c++)
-	{
-		core::memcpy(ptr, fragmentSamples.Begin, fragmentSamples.Length()*sizeof(fragmentSamples[0]));
-		ptr += fragmentSamples.Length();
-	}
+		Algo::CopyToAdvance(fragmentSamples, inOutSamples);
 	else for(size_t c=0; c<copyPassCount; c++)
 	{
-		const float* src = fragmentSamples.Begin;
-		while(src<fragmentSamples.End) *ptr++ += *src++;
+		Algo::Add(inOutSamples.TakeExactly(fragmentSamples.Length()), fragmentSamples);
+		inOutSamples.PopFirstExactly(fragmentSamples.Length());
 	}
 
-	const float* src = fragmentSamples.Begin;
-	if(!add) core::memcpy(ptr, src, size_t(inOutSamples.End-ptr)*sizeof(fragmentSamples[0]));
-	else while(ptr<inOutSamples.End) *ptr++ += *src++;
+	if(!add) Algo::CopyToAdvance(fragmentSamples.Take(inOutSamples.Length()), inOutSamples);
+	else Algo::Add(inOutSamples, fragmentSamples.Take(inOutSamples.Length()));
 }
 
-static void fast_sawtooth(double upPercent, float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+static void fast_sawtooth(double upPercent, float volume, float freq,
+	uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = get_good_signal_period(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
@@ -291,18 +290,8 @@ static void fast_sawtooth(double upPercent, float volume, float freq, uint sampl
 static void perfect_sine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 	Math::SineRange<float> sineRange(volume, 0, float(2*Math::PI*freq/sampleRate));
-	if(!add) while(!inOutSamples.Empty())
-	{
-		inOutSamples.First() = sineRange.First();
-		inOutSamples.PopFirst();
-		sineRange.PopFirst();
-	}
-	else while(!inOutSamples.Empty())
-	{
-		inOutSamples.First() += sineRange.First();
-		inOutSamples.PopFirst();
-		sineRange.PopFirst();
-	}
+	if(!add) Algo::CopyAdvanceToAdvance(sineRange, inOutSamples.Length(), inOutSamples);
+	else Algo::Add(inOutSamples, sineRange);
 }
 
 static void fast_sine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
@@ -592,8 +581,7 @@ void SynthesizedInstrument::functionSawtoothSynthPass(const SawtoothParams& para
 	if(inOutSamples==null) return;
 	double updownPercent = params.updownRatio/(params.updownRatio+1);
 	float newFreq=freq*params.freqMultiplyer;
-	float maxValue=1, harmVal=1;
-	for(ushort h=1; h<params.harmonics; h++) maxValue += (harmVal/=2);
+	float maxValue = 2.0f-2.0f/float(1 << params.harmonics);
 	float newVolume = volume*params.scale/maxValue;
 
 	sawtooth(updownPercent, newVolume, newFreq, sampleRate, inOutSamples, add);
@@ -604,7 +592,7 @@ void SynthesizedInstrument::functionSawtoothSynthPass(const SawtoothParams& para
 		newVolume/=2;
 		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
-		size_t randomSampleOffset = Math::Min<size_t>(Math::Random<ushort>::Global(20), inOutSamples.Length());
+		size_t randomSampleOffset = Math::Random<ushort>::Global(20);
 		sawtooth(updownPercent, newVolume, frequency, sampleRate, inOutSamples.Drop(randomSampleOffset), true);
 	}
 }
@@ -614,8 +602,7 @@ void SynthesizedInstrument::functionSineSynthPass(const SineParams& params,
 {
 	if(inOutSamples==null) return;
 	const float newFreq = freq*params.freqMultiplyer;
-	float maxValue=1, harmVal=1;
-	for(ushort h=1; h<params.harmonics; h++) maxValue += (harmVal/=2);
+	float maxValue = 2.0f-2.0f/float(1 << params.harmonics);
 	float newVolume = volume*params.scale/maxValue;
 
 	sine_generate(newVolume, newFreq, sampleRate, inOutSamples, add);
@@ -635,8 +622,7 @@ void SynthesizedInstrument::functionMultiSineSynthPass(const MultiSineParams& pa
 {
 	if(inOutSamples==null) return;
 	size_t start = Math::Random<ushort>::Global(20);
-	if(start>inOutSamples.Length()) start = inOutSamples.Length();
-	if(!add) core::memset(inOutSamples.Begin, 0, start*sizeof(float));
+	if(!add) Algo::FillZeros(inOutSamples.Take(start));
 	for(ushort h=0; h<params.len; h++)
 	{
 		auto& harm = params.harmonics[h];
@@ -653,24 +639,22 @@ void SynthesizedInstrument::functionSineExpSynthPass(const SineExpParams& params
 	if(inOutSamples==null) return;
 	size_t start = Math::Random<ushort>::Global(20);
 	if(start>inOutSamples.Length()) start=inOutSamples.Length();
-	if(!add)
-	{
-		core::memset(inOutSamples.Begin, 0, start*sizeof(float));
-		if(params.harmonics[0].lengthMultiplyer<norm8s(1))
-		{
-			size_t samplesToProcess = size_t(float(inOutSamples.Length()-start)*float(params.harmonics[0].lengthMultiplyer));
-			size_t freeSamplesLeft = inOutSamples.Length()-start-samplesToProcess;
-			core::memset(inOutSamples.Begin+start+samplesToProcess, 0, freeSamplesLeft*sizeof(float));
-		}
-	}
+	if(!add) Algo::FillZeros(inOutSamples.Take(start));
+	inOutSamples.PopFirstN(start);
 	for(ushort h=0; h<params.len; h++)
 	{
 		auto& harm = params.harmonics[h];
-		size_t samplesToProcess = size_t(float(inOutSamples.Length()-start)*float(harm.lengthMultiplyer));
+		size_t samplesToProcess = size_t(float(inOutSamples.Length())*float(harm.lengthMultiplyer));
 		sinexp_generate(volume*float(harm.scale), float(harm.attenCoeff),
 			freq*float(harm.freqMultiplyer), sampleRate,
-			inOutSamples.Drop(start).Take(samplesToProcess),
+			inOutSamples.Take(samplesToProcess),
 			add || h>0);
+	}
+	bool allSamplesInitialized = add || params.harmonics[0].lengthMultiplyer==norm8s(1);
+	if(!allSamplesInitialized)
+	{
+		size_t samplesProcessed = size_t(float(inOutSamples.Length())*float(params.harmonics[0].lengthMultiplyer));
+		Algo::FillZeros(inOutSamples.Drop(samplesProcessed));
 	}
 }
 
@@ -883,12 +867,10 @@ void SynthesizedInstrument::functionADPass(const ADParams& params, float noteDur
 void SynthesizedInstrument::functionExpAttenuationPass(const float& coeff,
 	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
 {
-	auto ptr = inOutSamples.Begin;
-	auto end = inOutSamples.End;
+	(void)noteDuration;
 	float ek = Math::Exp(-coeff/float(sampleRate));
 	float exp = 1.0f;
-	exponent_attenuation(ptr, ptr, end, exp, ek);
-	(void)noteDuration;
+	exponent_attenuation(inOutSamples.Begin, inOutSamples.Begin, inOutSamples.End, exp, ek);
 }
 
 void SynthesizedInstrument::functionTableAttenuationPass(const TableAttenuatorParams& table,

@@ -2,10 +2,14 @@
 
 #include "Meta/Type.h"
 #include "Range/ArrayRange.h"
-#include "Range/Iteration/Iteration.h"
-#include "Range/Construction/Construction.h"
+#include "Range/Iteration.h"
+#include "Range/Construction.h"
 #include "Range/StringView.h"
-#include "Algorithms/AsciiString.h"
+#include "Range/Construction/TakeUntil.h"
+#include "Containers/AsciiSet.h"
+#include "Algo/String.h"
+#include "Algo/Search.h"
+#include "Algo/Comparison.h"
 
 namespace Intra { namespace IO {
 
@@ -29,7 +33,7 @@ public:
 	{
 		INTRA_ASSERT(Begin <= Rest.Begin);
 		INTRA_ASSERT(bytes <= Rest.Length());
-		core::memmove(Rest.Begin, src, bytes);
+		C::memmove(Rest.Begin, src, bytes);
 		Rest.Begin += bytes;
 	}
 
@@ -59,14 +63,14 @@ public:
 	{
 		INTRA_ASSERT(Begin<=Rest.Begin);
 		//INTRA_ASSERT(Algo::LengthOfNumber(v, preciseness)<=Rest.Length());
-		Rest.AppendAdvance(v, preciseness, decimalSeparator);
+		Algo::ToString(Rest, v, preciseness, decimalSeparator);
 	}
 
 	template<typename T> forceinline void WriteIntegerText(T v)
 	{
 		INTRA_ASSERT(Begin<=Rest.Begin);
 		//INTRA_ASSERT(Algo::LengthOfNumber(v, 10u)<=Rest.Length());
-		Rest.AppendAdvance(v);
+		Algo::ToString(Rest, v);
 	}
 
 	forceinline void WriteReplacedString(StringView str,
@@ -101,7 +105,7 @@ public:
 class DummyOutput
 {
 public:
-	DummyOutput(): counter(0) {}
+	DummyOutput(): counter() {}
 
 	forceinline void WriteRaw(StringView src) {counter.Counter += src.Length();}
 	forceinline void WriteRaw(const void* src, size_t bytes) {(void)src; counter.Counter += bytes;}
@@ -113,12 +117,12 @@ public:
 
 	forceinline void WriteFloatText(real v, int preciseness, char decimalSeparator)
 	{
-		counter.AppendAdvance(v, preciseness, decimalSeparator);
+		Algo::ToString(counter, v, preciseness, decimalSeparator);
 	}
 
 	template<typename T> forceinline void WriteIntegerText(T v)
 	{
-		counter.AppendAdvance(v);
+		Algo::ToString(counter, v);
 	}
 
 	forceinline void WriteReplacedString(StringView str,
@@ -154,7 +158,7 @@ public:
 	{
 		INTRA_ASSERT(Begin <= Rest.Data());
 		INTRA_ASSERT(Rest.Length() >= bytes);
-		core::memmove(dst, Rest.Data(), bytes);
+		C::memmove(dst, Rest.Data(), bytes);
 		Rest.PopFirstN(bytes);
 	}
 
@@ -162,18 +166,18 @@ public:
 
 	forceinline void SkipSpaces()
 	{
-		Rest.TrimLeftAdvance(Range::IsHorSpace<char>);
+		Algo::TrimLeftAdvance(Rest, Op::IsHorSpace<char>);
 	}
 
 	forceinline uint SkipAllSpaces()
 	{
-		return uint(Rest.SkipSpacesCountLinesAdvance());
+		return uint(Algo::SkipSpacesCountLinesAdvance(Rest));
 	}
 
 
 	forceinline bool Expect(StringView str)
 	{
-		if(!Rest.StartsWith(str)) return false;
+		if(!Algo::StartsWith(Rest, str)) return false;
 		Rest.PopFirstN(str.Length());
 		return true;
 	}
@@ -197,40 +201,36 @@ public:
 	template<typename T> forceinline Meta::EnableIf<Meta::IsFloatType<T>::_, T> Parse(char decimalSeparator='.')
 	{
 		INTRA_ASSERT(Rest.Data() >= Begin);
-		return Rest.ParseAdvance<T>(decimalSeparator);
+		return Algo::ParseAdvance<T>(Rest, decimalSeparator);
 	}
 
 	template<typename T> forceinline Meta::EnableIf<Meta::IsIntegralType<T>::_, T> Parse()
 	{
 		INTRA_ASSERT(Rest.Data() >= Begin);
-		return Rest.ParseAdvance<T>();
+		return Algo::ParseAdvance<T>(Rest);
 	}
 
 	forceinline StringView ParseIdentifier()
 	{
 		static const AsciiSet notFirstChars = AsciiSet::NotIdentifierChars|AsciiSet::Digits;
-		return Rest.ParseIdentifierAdvance(notFirstChars, AsciiSet::NotIdentifierChars);
+		return Algo::ParseIdentifierAdvance(Rest, notFirstChars, AsciiSet::NotIdentifierChars);
 	}
 
 	forceinline StringView ReadUntilChar(const AsciiSet& stopCharset)
-	{
-		static_assert(!Range::IsFiniteForwardRangeOf<AsciiSet, char>::_, "ERROR!!!");
-		static_assert(Meta::IsCallable<AsciiSet, char>::_, "ERROR!!!");
-		static_assert(!Meta::IsConvertible<AsciiSet, char>::_, "ERROR!!!");
-		return Rest.ReadUntilAdvance(stopCharset);
-	}
+	{return Range::TakeUntilAdvance(Rest, stopCharset);}
 
 	forceinline StringView ReadUntil(StringView stopStr)
 	{
-		return Rest.ReadUntilAdvance(stopStr);
+		static_assert(Meta::TypeEquals<Range::ResultOfTake<StringView&>, StringView>::_, "ERROR!");
+		return Range::TakeUntilAdvance(Rest, stopStr);
 	}
 
 	forceinline StringView ReadRecursiveBlock(int& counter,
 		StringView openingBracket="{", StringView closingBracket="}", StringView stopToken=null,
-		ArrayRange<const core::pair<StringView, StringView>> commentBlocks={{"//", "\n"},{"/*", "*/"}},
-		ArrayRange<const core::pair<StringView, StringView>> recursiveCommentBlocks=null)
+		ArrayRange<const Meta::Pair<StringView, StringView>> commentBlocks={{"//", "\n"},{"/*", "*/"}},
+		ArrayRange<const Meta::Pair<StringView, StringView>> recursiveCommentBlocks=null)
 	{
-		return Rest.ReadRecursiveBlockAdvance(counter, null,
+		return Algo::ReadRecursiveBlockAdvance(Rest, counter, null,
 			openingBracket, closingBracket, stopToken,
 			commentBlocks, recursiveCommentBlocks);
 	}

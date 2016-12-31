@@ -1,123 +1,116 @@
-#pragma once
+﻿#pragma once
 
-#include "Range/Mixins/RangeMixins.h"
+#include "Range/Concepts.h"
 #include "Range/TupleOperation.h"
 
-namespace Intra { namespace Range
+namespace Intra { namespace Range {
+
+INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+
+template<typename R0, typename... RANGES> struct RRoundRobin
 {
+	enum: bool {RangeIsFinite = CommonRangeCategoryAllFinite<R0, RANGES...>::Finite};
 
-template<typename T, typename R0, typename... RANGES> struct RoundRobinResult:
-	RangeMixin<RoundRobinResult<T, R0, RANGES...>, T,
-	CommonRangeCategoryAllFinite<R0, RANGES...>::Type==TypeEnum::Input? TypeEnum::Input: TypeEnum::Forward,
-	CommonRangeCategoryAllFinite<R0, RANGES...>::Finite>
-{
-	typedef T value_type;
-	typedef Meta::CommonTypeRef<typename R0::return_value_type, typename RANGES::return_value_type...> return_value_type;
+	forceinline RRoundRobin(null_t=null):
+		mCounter(Meta::NumericLimits<decltype(mCounter)>::Max()) {}
 
-	forceinline RoundRobinResult(null_t=null): counter(Meta::NumericLimits<decltype(counter)>::Max()) {}
+	forceinline RRoundRobin(R0&& r0, RANGES&&... ranges):
+		mRange0(Meta::Forward<R0>(r0)), mNext(Meta::Forward<RANGES>(ranges)...),
+		mCounter(r0.Empty()? Meta::NumericLimits<decltype(mCounter)>::Max(): 0) {}
 
-	forceinline RoundRobinResult(R0&& r0, RANGES&&... ranges):
-		range0(core::forward<R0>(r0)), next(core::forward<RANGES>(ranges)...),
-		counter(r0.Empty()? Meta::NumericLimits<decltype(counter)>::Max(): 0) {}
-
-	return_value_type First() const
+	Meta::CommonTypeRef<ReturnValueTypeOf<R0>, ReturnValueTypeOf<RANGES>...> First() const
 	{
-		return (!next.before_(counter) && !range0.Empty())?
-			range0.First(): next.First();
+		return (!mNext.before_(mCounter) && !mRange0.Empty())?
+			mRange0.First(): mNext.First();
 	}
 
 	void PopFirst()
 	{
-		if(!next.before_(counter))
+		if(!mNext.before_(mCounter))
 		{
-			counter++;
-			range0.PopFirst();
-			if(range0.Empty())
-				counter = Meta::NumericLimits<decltype(counter)>::Max();
+			mCounter++;
+			mRange0.PopFirst();
+			if(mRange0.Empty())
+				mCounter = Meta::NumericLimits<decltype(mCounter)>::Max();
 			return;
 		}
-		next.PopFirst();
+		mNext.PopFirst();
 	}
 
-	forceinline bool Empty() const {return range0.Empty() && next.Empty();}
+	forceinline bool Empty() const {return mRange0.Empty() && mNext.Empty();}
 
-	forceinline bool operator==(const RoundRobinResult& rhs) const
+	forceinline bool operator==(const RRoundRobin& rhs) const
 	{
-		return (range0.Empty() && rhs.range0.Empty() ||
-			range0==rhs.range0 && counter==rhs.counter) && next==rhs.next;
+		return (mRange0.Empty() && rhs.mRange0.Empty() ||
+			mRange0==rhs.mRange0 && mCounter==rhs.mCounter) && mNext==rhs.mNext;
 	}
+
+	forceinline bool operator!=(const RRoundRobin& rhs) const
+	{return !operator==(rhs);}
 
 	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_ && HasLength<RoundRobinResult<T, RANGES...>>::_,
-	size_t> Length() const {return range0.Length()+next.Length();}
-
-	//template<typename U=R0> forceinline Meta::EnableIf<
-		//HasSave<U>::_ && HasSave<RoundRobinResult<T, RANGES...>>::_,
-	//RoundRobinResult> Save() const {return {range0.Save(), next.Save()};}
+		HasLength<U>::_ && HasLength<RRoundRobin<RANGES...>>::_,
+	size_t> Length() const {return mRange0.Length()+mNext.Length();}
 
 	bool before_(size_t prevCounter) const
-	{return counter<prevCounter || next.before_(prevCounter);}
+	{return mCounter<prevCounter || mNext.before_(prevCounter);}
 
 private:
-	R0 range0;
-	RoundRobinResult<T, RANGES...> next;
-	size_t counter;
+	R0 mRange0;
+	RRoundRobin<RANGES...> mNext;
+	size_t mCounter;
 };
 
-template<typename T, typename R0> struct RoundRobinResult<T, R0>:
-	RangeMixin<RoundRobinResult<T, R0>, T, R0::RangeType, R0::RangeIsFinite>
+template<typename R0> struct RRoundRobin<R0>
 {
-	typedef T value_type;
-	typedef typename R0::return_value_type return_value_type;
+	enum: bool {RangeIsFinite = IsFiniteRange<R0>::_};
 
-	forceinline RoundRobinResult(null_t=null):
-		counter(Meta::NumericLimits<decltype(counter)>::Max()) {}
+	forceinline RRoundRobin(null_t=null):
+		mCounter(Meta::NumericLimits<decltype(mCounter)>::Max()) {}
 
-	forceinline RoundRobinResult(R0&& r0):
-		range0(core::forward<R0>(r0)), counter(r0.Empty()? Meta::NumericLimits<decltype(counter)>::Max(): 0) {}
+	forceinline RRoundRobin(R0&& r0):
+		mRange0(Meta::Forward<R0>(r0)), mCounter(r0.Empty()? Meta::NumericLimits<decltype(mCounter)>::Max(): 0) {}
 
 
-	forceinline return_value_type First() const
+	forceinline ReturnValueTypeOf<R0> First() const
 	{
 		INTRA_ASSERT(!Empty());
-		return range0.First();
+		return mRange0.First();
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!range0.Empty());
-		counter++;
-		range0.PopFirst();
-		if(range0.Empty())
-			counter = Meta::NumericLimits<decltype(counter)>::Max();
+		INTRA_ASSERT(!mRange0.Empty());
+		mCounter++;
+		mRange0.PopFirst();
+		if(mRange0.Empty())
+			mCounter = Meta::NumericLimits<decltype(mCounter)>::Max();
 	}
 
-	forceinline bool Empty() const {return range0.Empty();}
+	forceinline bool Empty() const {return mRange0.Empty();}
 
-	forceinline bool operator==(const RoundRobinResult& rhs) const
+	forceinline bool operator==(const RRoundRobin& rhs) const
 	{
-		return range0.Empty() && rhs.range0.Empty() ||
-			range0==rhs.range0 && counter==rhs.counter;
+		return mRange0.Empty() && rhs.mRange0.Empty() ||
+			mRange0==rhs.mRange0 && mCounter==rhs.mCounter;
 	}
 
 	template<typename U=R0> forceinline Meta::EnableIf<
 		HasLength<U>::_,
-	size_t> Length() const {return range0.Length();}
+	size_t> Length() const {return mRange0.Length();}
 
-	bool before_(size_t prevCounter) const {return counter<prevCounter;}
+	bool before_(size_t prevCounter) const {return mCounter<prevCounter;}
 
 private:
-	R0 range0;
-	size_t counter;
+	R0 mRange0;
+	size_t mCounter;
 };
 
+INTRA_WARNING_POP
 
 template<typename R0, typename... RANGES> forceinline
-RoundRobinResult<Meta::CommonType<typename R0::value_type, typename RANGES::value_type...>, R0, RANGES...>
-RoundRobin(R0&& range0, RANGES&&... ranges)
-{
-	return {core::forward<R0>(range0), core::forward<RANGES>(ranges)...};
-}
+RRoundRobin<R0, RANGES...> RoundRobin(R0&& range0, RANGES&&... ranges)
+{return {Meta::Forward<R0>(range0), Meta::Forward<RANGES>(ranges)...};}
 
 
 }}
