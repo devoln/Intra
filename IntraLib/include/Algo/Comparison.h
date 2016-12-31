@@ -240,7 +240,7 @@ template<typename R, typename RW> forceinline Meta::EnableIf<
 	Range::ValueTypeIsConvertible<RW, Range::ValueTypeOf<R>>::_ &&
 	!(Range::HasLength<R>::_ && Range::HasLength<RW>::_),
 bool> EndsWith(const R& range, const RW& what)
-{return D::EndsWith(what);}
+{return D::EndsWith(range, what);}
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
 	Range::IsBidirectionalRange<R>::_ &&

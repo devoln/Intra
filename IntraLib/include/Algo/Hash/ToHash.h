@@ -10,7 +10,7 @@ template<typename T> constexpr inline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_,
 uint> ToHash(T k) {return uint(k*2659435761u);}
 
-template<typename T> constexpr inline Meta::EnableIf<
+template<typename T> inline Meta::EnableIf<
 	Meta::IsFloatType<T>::_,
 uint> ToHash(T k)
 {

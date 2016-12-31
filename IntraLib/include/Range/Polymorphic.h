@@ -678,8 +678,11 @@ template<typename T> struct AnyArrayRange
 
 	forceinline size_t Length() const {return mInterface->Count();}
 
-	forceinline T operator[](size_t index) const {return mInterface->OpIndex(index);}
-	forceinline ArrayRange<T> operator()(size_t index) const {return ArrayRange<T>(Data(), Length());}
+	forceinline T operator[](size_t index) const
+	{return mInterface->OpIndex(index);}
+	
+	forceinline ArrayRange<T> operator()(size_t start, size_t end) const
+	{return ArrayRange<T>(Data(), Length())(start, end);}
 
 	T* Data() const {return mInterface->Data();}
 
