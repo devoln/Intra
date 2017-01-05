@@ -1,9 +1,8 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
-#include "Graphics/OpenGL/GLExtensions.h"
+#include "Core/FundamentalTypes.h"
 
-namespace Intra {
+namespace Intra { namespace Imaging {
 
 struct ImageFormat;
 enum ImageType: byte;
@@ -18,4 +17,4 @@ ushort ImageTypeToGLTarget(ImageType type);
 ushort CubeFaceToGLTarget(CubeFace cf);
 ImageType GLTargetToImageType(ushort gl_Target);
 
-}
+}}

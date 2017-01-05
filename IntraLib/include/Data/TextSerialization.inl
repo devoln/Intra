@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "TextSerialization.h"
 #include "Algo/String/Ascii.h"
 #include "Algo/Search.h"
 
 namespace Intra { namespace Data {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename O> void GenericTextSerializer<O>::NextField(TextSerializerParams::TypeFlags typeFlag)
 {
@@ -269,7 +272,7 @@ inline void TextDeserializer::StructInstanceDefinitionEnd(TextSerializerParams::
 template<typename T> void TextDeserializer::DeserializeStruct(T& dst, ArrayRange<const StringView> fieldNames)
 {
 	StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
-	TextDeserializerStructVisitor visitor{this, false, fieldNames, TextSerializerParams::TypeFlags_Struct};
+	TextDeserializerStructVisitor visitor{this, fieldNames, false, TextSerializerParams::TypeFlags_Struct};
 	if(fieldNames.Empty())
 	{
 		Meta::ForEachField(dst, visitor);
@@ -321,7 +324,7 @@ template<typename T> void TextDeserializer::DeserializeStruct(T& dst, ArrayRange
 template<typename T> void TextDeserializer::DeserializeTuple(T& dst)
 {
 	StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
-	TextDeserializerStructVisitor visitor{this, false, null, TextSerializerParams::TypeFlags_Tuple};
+	TextDeserializerStructVisitor visitor{this, null, false, TextSerializerParams::TypeFlags_Tuple};
 	Meta::ForEachField(dst, visitor);
 	StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 }
@@ -452,6 +455,6 @@ template<typename R> void TextDeserializer::DeserializeRange(R& outputRange)
 	}
 }
 
-
+INTRA_WARNING_POP
 
 }}

@@ -1,7 +1,10 @@
 ﻿#include "Data/BinarySerialization.h"
 #include "Data/Reflection.h"
-#include "Test/UnitTest.h"
+#include "Test/Unittest.h"
 #include "Algo/Comparison.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Data {
 
@@ -168,3 +171,5 @@ INTRA_UNITTEST("Binary serialization and deserialization")
 }
 
 #endif
+
+INTRA_WARNING_POP

@@ -4,6 +4,8 @@
 
 namespace Intra {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 template<typename T> class Array2D
 {
 public:
@@ -56,6 +58,6 @@ private:
 	size_t width;
 };
 
-//DEFINE_AS_TRIV_MOVABLE1(Array2D<T1>);
+INTRA_WARNING_POP
 
 }

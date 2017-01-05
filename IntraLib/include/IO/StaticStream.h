@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/ArrayRange.h"
 #include "Range/Iteration.h"
@@ -12,6 +13,8 @@
 #include "Algo/Comparison.h"
 
 namespace Intra { namespace IO {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class MemoryOutput
 {
@@ -247,5 +250,6 @@ public:
 	StringView Rest;
 };
 
+INTRA_WARNING_POP
 
 }}

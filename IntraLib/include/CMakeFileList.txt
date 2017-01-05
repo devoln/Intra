@@ -131,7 +131,8 @@ GUI/GraphicsWindow.h
 GUI/MessageBox.h
 
 Imaging/Image.h
-Imaging/ImagingTypes.h
+Imaging/ImageFormat.h
+Imaging/ImageInfo.h
 Imaging/Bindings/DXGI_Formats.h
 Imaging/Bindings/GLenumFormats.h
 
@@ -180,21 +181,56 @@ Platform/Environment.h
 Platform/SharedLib.h
 Platform/Time.h
 
-Sound/DrumPhysicalModel.h
-Sound/SoundTypes.h
-Sound/Sound.h
-Sound/Music.h
-Sound/Midi.h
-Sound/SoundApi.h
-Sound/SoundApiDeclarations.h
-Sound/SoundBuilder.h
-Sound/SoundProcessing.h
-Sound/SoundSource.h
-Sound/SynthesizedInstrument.h
-Sound/InstrumentLibrary.h
+
+Audio/Synth/Generators/DrumPhysicalModel.h
+Audio/Synth/Generators/ViolinPhysicalModel.h
+Audio/Synth/Generators/AbsModSine.h
+Audio/Synth/Generators/AbsModTimeSine.h
+Audio/Synth/Generators/FunctionGenerator.h
+Audio/Synth/Generators/Rectangular.h
+Audio/Synth/Generators/RelModSine.h
+Audio/Synth/Generators/RelModTimeSine.h
+Audio/Synth/Generators/Sawtooth.h
+Audio/Synth/Generators/WhiteNoise.h
+Audio/Synth/Generators.h
+
+Audio/Synth/Modifiers/AbsPulsator.h
+Audio/Synth/Modifiers/AddPulsator.h
+Audio/Synth/Modifiers/RelPulsator.h
+Audio/Synth/Modifiers.h
+
+Audio/Synth/PostEffects/Chorus.h
+Audio/Synth/PostEffects.h
+
+Audio/Synth/AttackDecayAttenuation.h
+Audio/Synth/AttenuatorPass.h
+Audio/Synth/DrumInstrument.h
+Audio/Synth/ExponentialAttenuation.h
+Audio/Synth/GeneratorSynth.h
+Audio/Synth/HighLowPass.h
+Audio/Synth/InstrumentLibrary.h
+Audio/Synth/ModifierPass.h
+Audio/Synth/SynthesizedInstrument.h
+Audio/Synth/PeriodicSynth.h
+Audio/Synth/SawtoothSynth.h
+Audio/Synth/SineExpSynth.h
+Audio/Synth/SineSynth.h
+Audio/Synth/TableAttenuation.h
+Audio/Synth/Types.h
+
+Audio/SoundTypes.h
+Audio/Sound.h
+Audio/Music.h
+Audio/Midi.h
+Audio/SoundApi.h
+Audio/SoundApiDeclarations.h
+Audio/AudioBuffer.h
+Audio/AudioProcessing.h
+Audio/AudioSource.h
+
 
 Test/PerformanceTest.h
-Test/UnitTest.h
+Test/Unittest.h
 
 Text/CharMap.h
 

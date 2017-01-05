@@ -5,8 +5,11 @@
 #include "Range/Iteration/Transversal.h"
 #include "Single.h"
 #include "Algo/Comparison.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Ќайти первое вхождение диапазона what в этот диапазон.
 //! Ќачало диапазона устанавливаетс€ на начало первого вхождени€ what или совпадает с концом, если диапазон не содержит what.
@@ -258,5 +261,7 @@ template<typename R, typename RW> forceinline Meta::EnableIf<
 	Range::IsFiniteForwardRange<RW>::_,
 size_t> Count(const R& range, const RW& what)
 {return CountAdvance(R(range), what);}
+
+INTRA_WARNING_POP
 
 }}

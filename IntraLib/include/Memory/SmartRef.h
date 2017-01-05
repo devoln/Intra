@@ -1,8 +1,14 @@
 ﻿#pragma once
 
+#include "Core/FundamentalTypes.h"
+#include "Core/Debug.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Threading/Atomic.h"
 
 namespace Intra { namespace Memory {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct IntrusiveRefCounted
 {
@@ -94,5 +100,7 @@ template<typename T> struct UniqueRef
 
 	T* ptr;
 };
+
+INTRA_WARNING_POP
 
 }}

@@ -1,8 +1,12 @@
 #pragma once
 
-#include "Core/Core.h"
+#include "Platform/Intrinsics.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 forceinline size_t CStringLength(const char* str) {return C::strlen(str);}
 forceinline size_t CStringLength(const wchar_t* str) {return C::wcslen(str);}
@@ -22,7 +26,8 @@ size_t> CStringLength(const wchar* str)
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)==sizeof(wchar_t),
-size_t> CStringLength(const dchar* str) {return C::wcslen(reinterpret_cast<const wchar_t*>(str));}
+size_t> CStringLength(const dchar* str)
+{return C::wcslen(reinterpret_cast<const wchar_t*>(str));}
 
 template<typename U=dchar> forceinline Meta::EnableIf<
 	sizeof(U)!=sizeof(wchar_t),
@@ -30,8 +35,10 @@ size_t> CStringLength(const dchar* str)
 {
 	const dchar* ptr = str-1;
 	while(*++ptr!=0) {}
-	return ptr-str;
+	return size_t(ptr-str);
 }
+
+INTRA_WARNING_POP
 
 }}
 

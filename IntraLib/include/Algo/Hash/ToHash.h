@@ -1,8 +1,13 @@
 #pragma once
 
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
+#include "Meta/Type.h"
 #include "Murmur.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasToHashMethod, Meta::Val<T>().ToHash());
 
@@ -37,5 +42,7 @@ uint> ToHash(const T& value) {return ToHash(StringView(reinterpret_cast<char*>(&
 struct HasherObject {
 	template<typename T> uint operator()(const T& k) const {return ToHash(k);}
 };
+
+INTRA_WARNING_POP
 
 }}

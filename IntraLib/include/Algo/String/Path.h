@@ -2,8 +2,11 @@
 
 #include "Range/ForwardDecls.h"
 #include "Containers/ForwardDeclarations.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo { namespace Path {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void NormalizeSlashesAndSpaces(ArrayRange<char>& path);
 String AddTrailingSlash(StringView path);
@@ -16,5 +19,7 @@ StringView ExtractDirectoryPath(StringView fullPath);
 StringView ExtractNameWithoutExtension(StringView fullPath);
 StringView ExtractName(StringView fullPath);
 StringView ExtractExtension(StringView fullPath);
+
+INTRA_WARNING_POP
 
 }}}

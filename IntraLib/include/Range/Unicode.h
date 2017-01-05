@@ -1,9 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
 #include "ArrayRange.h"
 #include "StringView.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct UTF8
 {
@@ -106,6 +110,8 @@ struct UTF32: public ArrayRange<const dchar>
 	static bool CharToUTF16Pair(dchar c, wchar* first, wchar* second);
 	static size_t CharToUTF8Sequence(dchar c, char dst[5]);
 };
+
+INTRA_WARNING_POP
 
 }
 

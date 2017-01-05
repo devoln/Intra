@@ -1,5 +1,7 @@
 ﻿#include "Platform/HardwareInfo.h"
+#include "Platform/CppWarnings.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
@@ -8,16 +10,11 @@
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4668)
+#pragma comment(lib, "Advapi32.lib")
 #endif
 
 #include <Windows.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#pragma comment(lib, "Advapi32.lib")
-#endif
 
 namespace Intra {
 
@@ -241,3 +238,4 @@ ProcessorInfo ProcessorInfo::Get()
 
 #endif
 
+INTRA_WARNING_POP

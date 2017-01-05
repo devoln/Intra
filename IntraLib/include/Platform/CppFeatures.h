@@ -14,7 +14,8 @@
 
 #endif
 
-
+//! Используется для отключения кода препроцессором: #if INTRA_DISABLED ... #endif
+#define INTRA_DISABLED 0
 
 
 #ifdef __GNUC__

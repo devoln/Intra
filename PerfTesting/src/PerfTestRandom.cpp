@@ -1,8 +1,10 @@
 ﻿#include "PerfTestRandom.h"
 #include "Platform/Time.h"
 #include "Test/PerformanceTest.h"
-
+#include "Platform/CppWarnings.h"
 #include "Math/Random.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4350)

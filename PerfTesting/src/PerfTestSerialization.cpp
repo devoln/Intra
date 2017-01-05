@@ -16,6 +16,8 @@
 using namespace Intra;
 using namespace Intra::IO;
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 /*struct StructTest
 {
 	int x;

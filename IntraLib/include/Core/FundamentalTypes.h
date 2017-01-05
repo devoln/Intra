@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
 
 namespace Intra {
@@ -81,6 +82,11 @@ private:
 typedef decltype(nullptr) null_t;
 constexpr const null_t null = nullptr;
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
+#ifdef _MSC_VER
+#pragma warning(disable: 4702)
+#endif
+
 struct AnyPtr
 {
 	void* ptr;
@@ -91,6 +97,8 @@ struct AnyPtr
 	forceinline bool operator==(null_t) const {return ptr==null;}
 	forceinline bool operator!=(null_t) const {return ptr!=null;}
 };
+
+INTRA_WARNING_POP
 
 }
 

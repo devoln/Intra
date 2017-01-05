@@ -1,11 +1,14 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Core/FundamentalTypes.h"
 #include "Core/Debug.h"
 #include "Math/MathEx.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
 #endif
 
@@ -831,12 +834,6 @@ namespace GLSL
 	typedef Vector4<bool> bvec4;
 }
 
-
-
-
 }}
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
-#endif
+INTRA_WARNING_POP

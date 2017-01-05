@@ -1,8 +1,11 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Range/ArrayRange.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> T Minimum(ArrayRange<const T> arr)
 {
@@ -101,5 +104,6 @@ template<typename T, size_t N, typename F> forceinline
 Meta::ResultOf<F, T, T> Reduce(const T(&arr)[N], F func)
 {return Reduce(AsRange(arr), func);}
 
+INTRA_WARNING_POP
 
 }}

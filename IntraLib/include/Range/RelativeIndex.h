@@ -1,8 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct RelativeIndex
 {
@@ -14,29 +18,19 @@ struct RelativeIndex
 	constexpr RelativeIndex(const RelativeIndex& rhs) = default;
 
 	constexpr RelativeIndex operator/(intptr divisor) const
-	{
-		return RelativeIndex(size_t(plus_value/divisor), multiplyer/size_t(divisor));
-	}
+	{return RelativeIndex(size_t(plus_value/divisor), multiplyer/size_t(divisor));}
 
 	constexpr RelativeIndex operator+(intptr value) const
-	{
-		return RelativeIndex(size_t(plus_value+value), multiplyer);
-	}
+	{return RelativeIndex(size_t(plus_value+value), multiplyer);}
 
 	constexpr RelativeIndex operator+(RelativeIndex rhs) const
-	{
-		return RelativeIndex(size_t(plus_value+rhs.plus_value), multiplyer+rhs.multiplyer);
-	}
+	{return RelativeIndex(size_t(plus_value+rhs.plus_value), multiplyer+rhs.multiplyer);}
 
 	constexpr RelativeIndex operator-(intptr value) const
-	{
-		return RelativeIndex(size_t(plus_value-value), multiplyer);
-	}
+	{return RelativeIndex(size_t(plus_value-value), multiplyer);}
 
 	constexpr RelativeIndex operator-(RelativeIndex rhs) const
-	{
-		return RelativeIndex(size_t(plus_value-rhs.plus_value), multiplyer-rhs.multiplyer);
-	}
+	{return RelativeIndex(size_t(plus_value-rhs.plus_value), multiplyer-rhs.multiplyer);}
 
 	friend RelativeIndex operator+(intptr value, RelativeIndex pos) {return pos+value;}
 	friend RelativeIndex operator-(intptr value, RelativeIndex pos) {return RelativeIndex(0)-pos+value;}
@@ -62,10 +56,10 @@ struct RelativeIndexEnd: RelativeIndex
 };
 constexpr const RelativeIndexEnd $;
 
+INTRA_WARNING_POP
 
 }
 
 using Range::$;
 
 }
-

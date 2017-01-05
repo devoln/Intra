@@ -2,8 +2,11 @@
 
 #include "Algo/Op.h"
 #include "Range/Concepts.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace D {
 
@@ -48,5 +51,7 @@ template<typename ArrRange, typename C = Comparers::Function<Range::ValueTypeOf<
 		D::heap_shift_down(range.Data(), 0, i, comparer);
 	}
 }
+
+INTRA_WARNING_POP
 
 }}

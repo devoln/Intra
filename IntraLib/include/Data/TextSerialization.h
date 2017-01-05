@@ -14,6 +14,8 @@
 
 namespace Intra { namespace Data {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 template<typename O> class GenericTextSerializer
 {
 public:
@@ -146,7 +148,7 @@ public:
 	void LogExpectError(StringView token, ArrayRange<const StringView> expected)
 	{
 		Log += String::Format()("Error(")(Line)(":")(Input.Position())("): token \"")(token)("\", where expected ");
-		if(expected.Length()>1) Log += "one of the folowing tokens: " + String::Join(expected, ", ", "\"", "\"");
+		if(expected.Length()>1) Log += "one of the folowing tokens: " + ToString(expected, ", ", "\"", "\"");
 		if(expected.Length()==1) Log += "token \"" + expected[0] + "\"";
 		Log += ".\r\n";
 	}
@@ -219,8 +221,8 @@ template<typename O> struct GenericTextSerializerStructVisitor
 struct TextDeserializerStructVisitor
 {
 	TextDeserializer* Me;
-	bool Began;
 	ArrayRange<const StringView> FieldNames;
+	bool Began;
 	TextSerializerParams::TypeFlags Type;
 
 	template<typename T> TextDeserializerStructVisitor& operator()(T& t)
@@ -377,6 +379,7 @@ template<typename T> forceinline Meta::EnableIf<
 > DeserializeText(TextDeserializer& deserializer, T& v)
 {deserializer.DeserializeTuple(v);}
 
+INTRA_WARNING_POP
 
 }}
 

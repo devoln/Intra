@@ -1,9 +1,11 @@
 ﻿#include "Core/Debug.h"
+#include "Platform/CppWarnings.h"
 #include "IO/Stream.h"
 #include "IO/LogSystem.h"
 #include "GUI/MessageBox.h"
 #include "Algo/String/CStr.h"
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <cstdlib>
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)

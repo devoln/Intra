@@ -1,12 +1,15 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 #include "Meta/Preprocessor.h"
 
 namespace Intra { namespace Range {
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasEmpty, static_cast<bool>(Meta::Val<T>().Empty()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLength, static_cast<size_t>(Meta::Val<T>().Length()));
@@ -302,5 +305,12 @@ struct IsInputRangeOfContainers: Meta::TypeFromValue<bool,
 
 using Range::AsRange;
 using Range::AsConstRange;
+
+//! Оператор == для сравнения с null для диапазонов эквивалентен вызову Empty()
+template<typename R> forceinline Meta::EnableIf<
+	Range::IsInputRange<R>::_,
+bool> operator==(const R& range, null_t) {return range.Empty();}
+
+INTRA_WARNING_POP
 
 }

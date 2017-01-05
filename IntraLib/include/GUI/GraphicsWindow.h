@@ -6,6 +6,8 @@
 
 namespace Intra {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 namespace WindowAPI {
 	void AppProcessMessages();
 	extern bool AppIsRunning;
@@ -120,6 +122,8 @@ private:
 };
 
 Math::USVec2 GetScreenResolution();
+
+INTRA_WARNING_POP
 
 }
 

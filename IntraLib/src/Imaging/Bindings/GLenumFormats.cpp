@@ -1,16 +1,17 @@
 ﻿#include "Imaging/Bindings/GLenumFormats.h"
-#include "Imaging/ImagingTypes.h"
+#include "Imaging/ImageFormat.h"
 #include "Graphics/OpenGL/GLExtensions.h"
 #include "Containers/HashMap.h"
+#include "Imaging/ImageInfo.h"
 
-namespace Intra {
+namespace Intra { namespace Imaging {
 
 using GL = OpenGL;
 
 ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 {
 	if(!format.IsValid()) return 0;
-	static const ushort uncompressedTable[]={0,
+	static const ushort uncompressedTable[] = {0,
 		GL::R8, GL::LUMINANCE8, GL::ALPHA8, GL::RG8, GL::LUMINANCE8_ALPHA8, GL::RGB8, GL::RGBA8, GL::RGBA8,
 		GL::R16, GL::LUMINANCE16, GL::ALPHA16, GL::RG16, GL::LUMINANCE16_ALPHA16, GL::RGB16, GL::RGBA16, GL::RGBA16,
 		0,0,0,0,0,0,0,0,
@@ -300,4 +301,4 @@ ImageType GLTargetToImageType(ushort gl_Target)
 	return ImageType_End;
 }
 
-}
+}}

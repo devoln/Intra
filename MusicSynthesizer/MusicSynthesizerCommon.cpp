@@ -2,15 +2,19 @@
 
 #include "IO/Stream.h"
 #include "IO/File.h"
-#include "Sound/Midi.h"
-#include "Sound/Music.h"
-#include "Sound/SoundBuilder.h"
-#include "Sound/Sound.h"
-#include "Sound/SoundSource.h"
+#include "Audio/Midi.h"
+#include "Audio/Music.h"
+#include "Audio/AudioBuffer.h"
+#include "Audio/Sound.h"
+#include "Audio/AudioSource.h"
 #include "Platform/Time.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 using namespace Intra;
 using namespace Intra::IO;
+using namespace Intra::Audio;
 
 String GetMidiPath(StringView fileName)
 {
@@ -76,4 +80,3 @@ Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
 	}
 	return sound;
 }
-

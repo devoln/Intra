@@ -1,8 +1,11 @@
-﻿#include "Core/Core.h"
+﻿#include "Platform/PlatformInfo.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"
 #include "IO/File.h"
 #include "Range/Unicode.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
 
@@ -86,3 +89,5 @@ ArrayRange<const StringView> GetCommandLineArguments()
 
 }
 #endif
+
+INTRA_WARNING_POP

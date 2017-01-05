@@ -1,6 +1,9 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/Intrinsics.h"
 #include "Meta/Type.h"
 
 #include "PlacementNew.h"
@@ -9,6 +12,8 @@
 
 
 namespace Intra { namespace Memory {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //Вызов конструкторов
 template<typename T> Meta::EnableIfNotTrivConstructible<T> Initialize(ArrayRange<T> dst)
@@ -359,8 +364,6 @@ template<typename T, typename Allocator> void FreeRange(Allocator& allocator, Ar
 	FreeRangeUninitialized(allocator, range);
 }
 
-
+INTRA_WARNING_POP
 
 }}
-
-

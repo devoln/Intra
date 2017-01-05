@@ -5,12 +5,15 @@
 #include "Math/Fixed.h"
 #include "Algo/Hash/ToHash.h"
 #include "Graphics/UniformType.h"
-#include "Imaging/ImagingTypes.h"
+#include "Imaging/ImageFormat.h"
+#include "Imaging/ImageInfo.h"
 #include "Containers/String.h"
 #include "Containers/IdAllocator.h"
 
 
 namespace Intra { namespace Graphics {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct SamplerDesc
 {
@@ -480,6 +483,8 @@ inline uint ToHash(const Graphics::SamplerDesc& desc)
 {return ToHash(Graphics::SamplerCompactDesc(desc));}
 
 }
+
+INTRA_WARNING_POP
 
 }
 

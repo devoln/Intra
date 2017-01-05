@@ -30,9 +30,19 @@ GUI/GraphicsWindow.cpp
 GUI/MessageBox.cpp
 
 Imaging/Image.cpp
-Imaging/ImagingTypes.cpp
+Imaging/ImageFormat.cpp
+Imaging/ImageInfo.cpp
 Imaging/Bindings/DXGI_Formats.cpp
 Imaging/Bindings/GLenumFormats.cpp
+Imaging/Loaders/Loader.cpp
+Imaging/Loaders/LoaderBMP.cpp
+Imaging/Loaders/LoaderGIF.cpp
+Imaging/Loaders/LoaderTIFF.cpp
+Imaging/Loaders/LoaderTGA.cpp
+Imaging/Loaders/LoaderPNG.cpp
+Imaging/Loaders/LoaderJPEG.cpp
+Imaging/Loaders/LoaderDDS.cpp
+Imaging/Loaders/LoaderKTX.cpp
 
 IO/DocumentWriter.cpp
 IO/File.cpp
@@ -54,22 +64,39 @@ Platform/Runtime.cpp
 Platform/Environment.cpp
 Platform/Time.cpp
 
-Sound/DrumPhysicalModel.cpp
-Sound/Sound.cpp
-Sound/Music.cpp
-Sound/Midi.cpp
-Sound/SoundBuilder.cpp
-Sound/SoundProcessing.cpp
-Sound/SoundSource.cpp
-Sound/SynthesizedInstrument.cpp
-Sound/InstrumentLibrary.cpp
-Sound/Sound_DirectSound.cpp
-Sound/Sound_OpenAL.cpp
-Sound/Sound_Dummy.cpp
-Sound/Sound_Emscripten.cpp
+
+Audio/Sound.cpp
+Audio/Music.cpp
+Audio/Midi.cpp
+Audio/AudioBuffer.cpp
+Audio/AudioProcessing.cpp
+Audio/AudioSource.cpp
+Audio/Sound_DirectSound.cpp
+Audio/Sound_OpenAL.cpp
+Audio/Sound_Dummy.cpp
+Audio/Sound_Emscripten.cpp
+
+Audio/Synth/Generators/DrumPhysicalModel.cpp
+Audio/Synth/SynthesizedInstrument.cpp
+Audio/Synth/InstrumentLibrary.cpp
+Audio/Synth/AttackDecayAttenuation.cpp
+Audio/Synth/DrumInstrument.cpp
+Audio/Synth/ExponentialAttenuation.cpp
+Audio/Synth/HighLowPass.cpp
+Audio/Synth/PeriodicSynth.cpp
+Audio/Synth/PostEffects.cpp
+Audio/Synth/SawtoothSynth.cpp
+Audio/Synth/SineExpSynth.cpp
+Audio/Synth/SineSynth.cpp
+Audio/Synth/TableAttenuation.cpp
+
+
+Audio/Sources/MusicSynthSource.cpp
+Audio/Sources/VorbisSource.cpp
+Audio/Sources/WaveSource.cpp
 
 Test/PerformanceTest.cpp
-Test/UnitTest.cpp
+Test/Unittest.cpp
 
 Text/CharMap.cpp
 Range/Unicode.cpp

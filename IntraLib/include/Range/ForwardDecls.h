@@ -2,10 +2,13 @@
 
 #include "Platform/InitializerList.h"
 #include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct ArrayRange;
 template<typename Char> struct GenericStringView;
@@ -53,5 +56,6 @@ using Range::WStringView;
 using Range::DStringView;
 using Range::AsRange;
 
-}
+INTRA_WARNING_POP
 
+}

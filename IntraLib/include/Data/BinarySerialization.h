@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Platform/Endianess.h"
 #include "Meta/Preprocessor.h"
 #include "Meta/Type.h"
@@ -10,6 +11,8 @@
 #include "Range/Operations.h"
 
 namespace Intra { namespace Data {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename O> class GenericBinarySerializer
 {
@@ -227,6 +230,8 @@ template<typename T, size_t N> Meta::EnableIf<
 	!Meta::IsTriviallySerializable<T>::_
 > DeserializeBinary(BinaryDeserializer& deserializer, T(&dst)[N])
 {for(size_t i=0; i<N; i++) deserializer(dst[i]);}
+
+INTRA_WARNING_POP
 
 }}
 

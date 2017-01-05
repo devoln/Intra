@@ -10,6 +10,8 @@
 
 namespace Intra { namespace Algo {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 template<typename R, typename Char, size_t N> Meta::EnableIf<
 	Range::IsOutputCharRange<R>::_ &&
 	Meta::IsConvertible<Char, Range::ValueTypeOf<R>>::_
@@ -481,5 +483,7 @@ void TupleAppender<Range, OtherCharRange>::operator()(const V& value)
 }
 
 }
+
+INTRA_WARNING_POP
 
 }}

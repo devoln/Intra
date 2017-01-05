@@ -5,8 +5,12 @@
 #include "Algo/Search/Trim.h"
 #include "Algo/Op.h"
 #include "Algo/Search.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 template<typename R> Meta::EnableIf<
 	Range::IsCharRange<R>::_,
@@ -92,5 +96,6 @@ Range::ResultOfTake<R>> ParseIdentifierAdvance(R&& src, P1 isNotIdentifierFirstC
 	return Range::Take(result, DistanceTo(result, src));
 }
 
+INTRA_WARNING_POP
 
 }}

@@ -1,12 +1,15 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
 #include "Data/ValueType.h"
 #include "Containers/Array.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct Variable
 {
@@ -185,5 +188,7 @@ private:
 	Array<byte> data;
 	Array<VarEntry> variables;
 };
+
+INTRA_WARNING_POP
 
 }

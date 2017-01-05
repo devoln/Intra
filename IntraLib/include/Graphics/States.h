@@ -1,13 +1,15 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Data/Reflection.h"
 #include "Data/Variable.h"
 #include "Algo/Hash.h"
+#include "Imaging/ImageInfo.h"
 
 
 namespace Intra {
 
-enum ImageType: byte;
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Graphics {
 
@@ -196,5 +198,6 @@ struct FatMeshVertex
 
 struct DrawCall;
 
+INTRA_WARNING_POP
 
 }}

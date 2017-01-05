@@ -8,9 +8,12 @@
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 #include "Containers/ForwardDeclarations.h"
+#include "Platform/CppWarnings.h"
 
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct HashTableRange;
 
@@ -72,8 +75,8 @@ template<typename T> struct HashTableRange
 
 	forceinline bool operator==(const HashTableRange& rhs) const
 	{
-		return Empty() && rhs.Empty() ||
-			mFirstNode==rhs.mFirstNode && mLastNode==rhs.mLastNode;
+		return (Empty() && rhs.Empty()) ||
+			(mFirstNode==rhs.mFirstNode && mLastNode==rhs.mLastNode);
 	}
 	forceinline bool operator!=(const HashTableRange& rhs) const {return !operator==(rhs);}
 	forceinline bool operator==(null_t) const {return Empty();}
@@ -672,5 +675,6 @@ private:
 	}
 };
 
-}
+INTRA_WARNING_POP
 
+}

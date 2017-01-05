@@ -2,6 +2,8 @@
 
 namespace Intra { namespace Data {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 struct TextSerializerParams
 {
 	typedef flag8 TypeFlags;
@@ -101,6 +103,7 @@ struct DataLanguageParams
 		FalseTrueNames, DecimalSeparator);
 };
 
+INTRA_WARNING_POP
 
 }}
 

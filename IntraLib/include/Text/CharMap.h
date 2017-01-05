@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Containers/Array2D.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class CharMap: public Array2D<char>
 {
@@ -39,5 +42,7 @@ public:
 		return *this;
 	}
 };
+
+INTRA_WARNING_POP
 
 }

@@ -1,8 +1,11 @@
 ﻿#pragma once
 
 #include "Range/Concepts.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct CountRange
 {
@@ -19,5 +22,7 @@ template<typename T> struct CountRange
 
 	size_t Counter;
 };
+
+INTRA_WARNING_POP
 
 }}

@@ -5,8 +5,12 @@
 #include "Memory/AllocatorInterface.h"
 #include "Meta/Tuple.h"
 #include "Algo/Search/Single.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename K, typename V, class Allocator> class LinearMap
 {
@@ -380,5 +384,7 @@ private:
 	Array<K, Allocator> mKeys;
 	Array<V, Allocator> mValues;
 };
+
+INTRA_WARNING_POP
 
 }

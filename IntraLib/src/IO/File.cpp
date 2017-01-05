@@ -7,6 +7,9 @@
 #include "Memory/Allocator.h"
 #include "Range/Iteration/Retro.h"
 #include "Platform/Compatibility.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include <stddef.h>
 
@@ -96,8 +99,8 @@ int munmap(void* addr, size_t length)
 
 #undef EOF
 
-namespace Intra { namespace IO
-{
+namespace Intra { namespace IO {
+
 namespace DiskFile {
 
 bool Exists(StringView fileName)
@@ -135,16 +138,15 @@ Info GetInfo(StringView fileName)
 	buf[wstrLength]=0;
 
 	WIN32_FILE_ATTRIBUTE_DATA fad;
-	if(!GetFileAttributesExW(buf, GetFileExInfoStandard, &fad)) return {false, 0, 0};
-	result.Exist = Exists(fileName);
+	if(!GetFileAttributesExW(buf, GetFileExInfoStandard, &fad)) return {0, 0};
 	result.Size = (ulong64(fad.nFileSizeHigh) << 32)|fad.nFileSizeLow;
 	result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32)|fad.ftLastWriteTime.dwLowDateTime;
 
 #else
 	struct stat attrib;
-	result.Exist = stat(fn.CStr(), &attrib)==0;
-	result.LastModified = result.Exist? ulong64(attrib.st_mtime): 0ull;
-	result.Size = result.Exist? ulong64(attrib.st_size): 0ull;
+	bool exist = stat(fn.CStr(), &attrib)==0;
+	result.LastModified = exist? ulong64(attrib.st_mtime): 0ull;
+	result.Size = exist? ulong64(attrib.st_size): 0ull;
 #endif
 	return result;
 }

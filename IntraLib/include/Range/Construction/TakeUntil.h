@@ -19,10 +19,10 @@ namespace Intra { namespace Range {
 //! Возвращает диапазон пройденных элементов.
 template<typename R, typename X> forceinline Meta::EnableIf<
 	IsFiniteForwardRange<R>::_ && !Meta::IsConst<R>::_ &&
-	(Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
+	((Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
 		Meta::IsCallable<X, ValueTypeOf<R>>::_) ||
-	IsFiniteForwardRange<X>::_ &&
-	ValueTypeIsConvertible<X, ValueTypeOf<R>>::_,
+	(IsForwardRange<X>::_ && !IsInfiniteRange<X>::_ &&
+		ValueTypeIsConvertible<X, ValueTypeOf<R>>::_)),
 ResultOfTake<R>> TakeUntilAdvance(R&& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {
 	auto rangeCopy = range;
@@ -39,11 +39,11 @@ ResultOfTake<R>> TakeUntilAdvance(R&& range, const X& valueOrPredOrSubrange, siz
 //! \param valueOrPredOrSubrange Искомое значение, предикат или диапазон.
 //! Возвращает диапазон пройденных элементов.
 template<typename R, typename X> forceinline Meta::EnableIf<
-	IsFiniteForwardRange<R>::_ &&
-	(Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
+	IsForwardRange<R>::_ && !IsInfiniteRange<R>::_ &&
+	((Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
 		Meta::IsCallable<X, ValueTypeOf<R>>::_) ||
-	IsFiniteForwardRange<X>::_ &&
-	ValueTypeIsConvertible<X, ValueTypeOf<R>>::_,
+	(IsForwardRange<X>::_ && !IsInfiniteRange<X>::_ &&
+		ValueTypeIsConvertible<X, ValueTypeOf<R>>::_)),
 ResultOfTake<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {return TakeUntilAdvance(R(range), valueOrPredOrSubrange, ioIndex);}
 
@@ -56,7 +56,8 @@ ResultOfTake<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_
 template<typename T, size_t N, typename X> forceinline Meta::EnableIf<
 	(Meta::IsConvertible<X, T>::_ ||
 		Meta::IsCallable<X, T>::_) ||
-	IsFiniteForwardRange<X>::_ && ValueTypeIsConvertible<X, T>::_,
+	(IsForwardRange<X>::_ && !IsInfiniteRange<X>::_ &&
+		ValueTypeIsConvertible<X, T>::_),
 ArrayRange<T>> TakeUntil(T(&arr)[N], const X& valOrPredOrRange, size_t* ioIndex=null)
 {return TakeUntil(AsRange(arr), valOrPredOrRange, ioIndex);}
 

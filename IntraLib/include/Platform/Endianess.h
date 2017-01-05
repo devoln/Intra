@@ -3,8 +3,11 @@
 #include "PlatformInfo.h"
 #include "Core/FundamentalTypes.h"
 #include "Meta/Type.h"
+#include "CppWarnings.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct AnotherEndian
 {
@@ -101,5 +104,6 @@ typedef long64 long64BE;
 typedef ulong64 ulong64BE;
 #endif
 
-}
+INTRA_WARNING_POP
 
+}

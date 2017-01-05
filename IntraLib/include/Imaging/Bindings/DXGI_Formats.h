@@ -2,7 +2,7 @@
 
 #include "Core/Core.h"
 
-namespace Intra {
+namespace Intra { namespace Imaging {
 
 enum DXGI_FORMAT: byte
 {
@@ -71,4 +71,4 @@ struct ImageFormat;
 ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* swapRB);
 DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB);
 
-}
+}}

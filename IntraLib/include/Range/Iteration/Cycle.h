@@ -4,8 +4,11 @@
 #include "Range/Concepts.h"
 #include "Range/Construction/Take.h"
 #include "Range/ArrayRange.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R> struct RCycle
 {
@@ -93,5 +96,7 @@ RCycleRandom<Meta::RemoveConstRef<R>>> Cycle(R&& range)
 template<typename T, size_t N> forceinline
 RCycleRandom<AsRangeResult<T(&)[N]>> Cycle(T(&arr)[N])
 {return AsRange(arr);}
+
+INTRA_WARNING_POP
 
 }}

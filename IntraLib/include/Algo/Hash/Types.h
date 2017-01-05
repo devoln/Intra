@@ -1,8 +1,12 @@
 #pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct hash128
 {
@@ -13,5 +17,7 @@ struct hash128
 
 	ulong64 h1, h2;
 };
+
+INTRA_WARNING_POP
 
 }}

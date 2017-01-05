@@ -6,7 +6,9 @@
 
 namespace Intra { namespace Range {
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 template<typename R, typename F> struct RMap
 {
@@ -78,7 +80,6 @@ public:
 	Utils::Optional<F> Function;
 };
 
-INTRA_WARNING_POP
 
 template<typename R, typename F> forceinline Meta::EnableIf<
 	!Meta::IsReference<R>::_ && IsInputRange<R>::_,
@@ -93,5 +94,7 @@ RMap<R, F>> Map(const R& range, F func)
 template<typename T, size_t N, typename F> forceinline
 RMap<AsRangeResult<T(&)[N]>, F> Map(T(&arr)[N], F func)
 {return Map(AsRange(arr), func);}
+
+INTRA_WARNING_POP
 
 }}

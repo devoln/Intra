@@ -1,9 +1,12 @@
 ﻿#pragma once
 
 #include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Type.h"
 
 namespace Intra { namespace Meta {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename PARENT=Meta::EmptyType> struct EqualComparableMixin: PARENT
 {
@@ -75,6 +78,6 @@ bool> operator>=(const U& lhs, const ComparableMixin<T, PARENT>& rhs)
     return static_cast<const T&>(rhs)<=lhs;
 }
 
+INTRA_WARNING_POP
 
 }}
-

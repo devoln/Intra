@@ -5,7 +5,9 @@
 
 namespace Intra { namespace Range {
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 template<typename R0, typename... RANGES> struct RRoundRobin
 {
@@ -41,8 +43,8 @@ template<typename R0, typename... RANGES> struct RRoundRobin
 
 	forceinline bool operator==(const RRoundRobin& rhs) const
 	{
-		return (mRange0.Empty() && rhs.mRange0.Empty() ||
-			mRange0==rhs.mRange0 && mCounter==rhs.mCounter) && mNext==rhs.mNext;
+		return ((mRange0.Empty() && rhs.mRange0.Empty()) ||
+			(mRange0==rhs.mRange0 && mCounter==rhs.mCounter)) && mNext==rhs.mNext;
 	}
 
 	forceinline bool operator!=(const RRoundRobin& rhs) const
@@ -91,8 +93,8 @@ template<typename R0> struct RRoundRobin<R0>
 
 	forceinline bool operator==(const RRoundRobin& rhs) const
 	{
-		return mRange0.Empty() && rhs.mRange0.Empty() ||
-			mRange0==rhs.mRange0 && mCounter==rhs.mCounter;
+		return (mRange0.Empty() && rhs.mRange0.Empty()) ||
+			(mRange0==rhs.mRange0 && mCounter==rhs.mCounter);
 	}
 
 	template<typename U=R0> forceinline Meta::EnableIf<

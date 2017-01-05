@@ -206,12 +206,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -251,7 +252,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_USE_PDO;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -449,7 +450,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <ControlFlowGuard>false</ControlFlowGuard>
       <ExceptionHandling>false</ExceptionHandling>
-      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <MinimalRebuild />
@@ -463,14 +464,16 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <Optimization>MaxSpeed</Optimization>
+      <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ForcedIncludeFiles>$(SolutionDir)/IntraLib/include/Intra.h</ForcedIncludeFiles>
       <PrecompiledHeaderFile>$(SolutionDir)/IntraLib/include/Intra.h</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -485,6 +488,33 @@
     <ClCompile Include="src\Algo\Reduction.cpp" />
     <ClCompile Include="src\Algo\String\Ascii.cpp" />
     <ClCompile Include="src\Algo\String\Path.cpp" />
+    <ClCompile Include="src\Audio\AudioBuffer.cpp" />
+    <ClCompile Include="src\Audio\AudioProcessing.cpp" />
+    <ClCompile Include="src\Audio\AudioSource.cpp" />
+    <ClCompile Include="src\Audio\Midi.cpp" />
+    <ClCompile Include="src\Audio\Music.cpp" />
+    <ClCompile Include="src\Audio\Sound.cpp" />
+    <ClCompile Include="src\Audio\Sound_ALSA.cpp" />
+    <ClCompile Include="src\Audio\Sound_DirectSound.cpp" />
+    <ClCompile Include="src\Audio\Sound_Dummy.cpp" />
+    <ClCompile Include="src\Audio\Sound_Emscripten.cpp" />
+    <ClCompile Include="src\Audio\Sound_OpenAL.cpp" />
+    <ClCompile Include="src\Audio\Sources\MusicSynthSource.cpp" />
+    <ClCompile Include="src\Audio\Sources\VorbisSource.cpp" />
+    <ClCompile Include="src\Audio\Sources\WaveSource.cpp" />
+    <ClCompile Include="src\Audio\Synth\AttackDecayAttenuation.cpp" />
+    <ClCompile Include="src\Audio\Synth\DrumInstrument.cpp" />
+    <ClCompile Include="src\Audio\Synth\ExponentialAttenuation.cpp" />
+    <ClCompile Include="src\Audio\Synth\Generators\DrumPhysicalModel.cpp" />
+    <ClCompile Include="src\Audio\Synth\HighLowPass.cpp" />
+    <ClCompile Include="src\Audio\Synth\InstrumentLibrary.cpp" />
+    <ClCompile Include="src\Audio\Synth\PeriodicSynth.cpp" />
+    <ClCompile Include="src\Audio\Synth\PostEffects.cpp" />
+    <ClCompile Include="src\Audio\Synth\SawtoothSynth.cpp" />
+    <ClCompile Include="src\Audio\Synth\SineExpSynth.cpp" />
+    <ClCompile Include="src\Audio\Synth\SineSynth.cpp" />
+    <ClCompile Include="src\Audio\Synth\SynthesizedInstrument.cpp" />
+    <ClCompile Include="src\Audio\Synth\TableAttenuation.cpp" />
     <ClCompile Include="src\Containers\AsciiSet.cpp" />
     <ClCompile Include="src\Core\Debug.cpp" />
     <ClCompile Include="src\Core\Errors.cpp" />
@@ -510,10 +540,20 @@
     <ClCompile Include="src\GUI\MessageBox.cpp" />
     <ClCompile Include="src\Imaging\Bindings\DXGI_Formats.cpp" />
     <ClCompile Include="src\Imaging\Bindings\GLenumFormats.cpp" />
+    <ClCompile Include="src\Imaging\FormatConversion.cpp" />
     <ClCompile Include="src\Imaging\Image.cpp" />
-    <ClCompile Include="src\Imaging\ImagingTypes.cpp" />
+    <ClCompile Include="src\Imaging\ImageFormat.cpp" />
+    <ClCompile Include="src\Imaging\ImageInfo.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\Loader.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderBMP.cpp" />
     <ClCompile Include="src\Imaging\Loaders\LoaderDDS.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderGIF.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderJPEG.cpp" />
     <ClCompile Include="src\Imaging\Loaders\LoaderKTX.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderPlatform.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderPNG.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderTGA.cpp" />
+    <ClCompile Include="src\Imaging\Loaders\LoaderTIFF.cpp" />
     <ClCompile Include="src\Intra.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -545,21 +585,8 @@
     <ClCompile Include="src\Platform\Runtime.cpp" />
     <ClCompile Include="src\Platform\Time.cpp" />
     <ClCompile Include="src\Range\Unicode.cpp" />
-    <ClCompile Include="src\Sound\DrumPhysicalModel.cpp" />
-    <ClCompile Include="src\Sound\InstrumentLibrary.cpp" />
-    <ClCompile Include="src\Sound\Midi.cpp" />
-    <ClCompile Include="src\Sound\Music.cpp" />
-    <ClCompile Include="src\Sound\Sound.cpp" />
-    <ClCompile Include="src\Sound\SoundBuilder.cpp" />
-    <ClCompile Include="src\Sound\SoundProcessing.cpp" />
-    <ClCompile Include="src\Sound\SoundSource.cpp" />
-    <ClCompile Include="src\Sound\Sound_DirectSound.cpp" />
-    <ClCompile Include="src\Sound\Sound_Dummy.cpp" />
-    <ClCompile Include="src\Sound\Sound_Emscripten.cpp" />
-    <ClCompile Include="src\Sound\Sound_OpenAL.cpp" />
-    <ClCompile Include="src\Sound\SynthesizedInstrument.cpp" />
     <ClCompile Include="src\Test\PerformanceTest.cpp" />
-    <ClCompile Include="src\Test\UnitTest.cpp" />
+    <ClCompile Include="src\Test\Unittest.cpp" />
     <ClCompile Include="src\Text\CharMap.cpp" />
     <ClCompile Include="src\Threading\Job.cpp" />
     <ClCompile Include="src\Threading\Thread.cpp" />
@@ -603,6 +630,51 @@
     <ClInclude Include="include\Algo\String\Path.h" />
     <ClInclude Include="include\Algo\String\Spaces.h" />
     <ClInclude Include="include\Algo\String\ToString.h" />
+    <ClInclude Include="include\Audio\AudioBuffer.h" />
+    <ClInclude Include="include\Audio\AudioProcessing.h" />
+    <ClInclude Include="include\Audio\AudioSource.h" />
+    <ClInclude Include="include\Audio\Midi.h" />
+    <ClInclude Include="include\Audio\Music.h" />
+    <ClInclude Include="include\Audio\MusicNote.h" />
+    <ClInclude Include="include\Audio\Sound.h" />
+    <ClInclude Include="include\Audio\SoundApi.h" />
+    <ClInclude Include="include\Audio\SoundApiDeclarations.h" />
+    <ClInclude Include="include\Audio\SoundTypes.h" />
+    <ClInclude Include="include\Audio\Sources\MusicSynthSource.h" />
+    <ClInclude Include="include\Audio\Sources\VorbisSource.h" />
+    <ClInclude Include="include\Audio\Sources\WaveSource.h" />
+    <ClInclude Include="include\Audio\Synth\AttackDecayAttenuation.h" />
+    <ClInclude Include="include\Audio\Synth\AttenuatorPass.h" />
+    <ClInclude Include="include\Audio\Synth\DrumInstrument.h" />
+    <ClInclude Include="include\Audio\Synth\ExponentialAttenuation.h" />
+    <ClInclude Include="include\Audio\Synth\Generators.h" />
+    <ClInclude Include="include\Audio\Synth\GeneratorSynth.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\AbsModSine.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\AbsModTimeSine.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\DrumPhysicalModel.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\FunctionGenerator.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\Rectangular.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\RelModSine.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\RelModTimeSine.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\Sawtooth.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\ViolinPhysicalModel.h" />
+    <ClInclude Include="include\Audio\Synth\Generators\WhiteNoise.h" />
+    <ClInclude Include="include\Audio\Synth\HighLowPass.h" />
+    <ClInclude Include="include\Audio\Synth\InstrumentLibrary.h" />
+    <ClInclude Include="include\Audio\Synth\ModifierPass.h" />
+    <ClInclude Include="include\Audio\Synth\Modifiers.h" />
+    <ClInclude Include="include\Audio\Synth\Modifiers\AbsPulsator.h" />
+    <ClInclude Include="include\Audio\Synth\Modifiers\AddPulsator.h" />
+    <ClInclude Include="include\Audio\Synth\Modifiers\RelPulsator.h" />
+    <ClInclude Include="include\Audio\Synth\PeriodicSynth.h" />
+    <ClInclude Include="include\Audio\Synth\PostEffects.h" />
+    <ClInclude Include="include\Audio\Synth\PostEffects\Chorus.h" />
+    <ClInclude Include="include\Audio\Synth\SawtoothSynth.h" />
+    <ClInclude Include="include\Audio\Synth\SineExpSynth.h" />
+    <ClInclude Include="include\Audio\Synth\SineSynth.h" />
+    <ClInclude Include="include\Audio\Synth\SynthesizedInstrument.h" />
+    <ClInclude Include="include\Audio\Synth\TableAttenuation.h" />
+    <ClInclude Include="include\Audio\Synth\Types.h" />
     <ClInclude Include="include\Containers\Array.h" />
     <ClInclude Include="include\Containers\Array2D.h" />
     <ClInclude Include="include\Containers\AsciiSet.h" />
@@ -616,7 +688,6 @@
     <ClInclude Include="include\Containers\SparseArray.h" />
     <ClInclude Include="include\Containers\SparseHandledArray.h" />
     <ClInclude Include="include\Containers\String.h" />
-    <ClInclude Include="include\Containers\StringView.h" />
     <ClInclude Include="include\Containers\StructureOfArrays.h" />
     <ClInclude Include="include\Containers\Tree.h" />
     <ClInclude Include="include\Core\Core.h" />
@@ -647,8 +718,20 @@
     <ClInclude Include="include\GUI\WindowSystemApiDeclarations.h" />
     <ClInclude Include="include\Imaging\Bindings\DXGI_Formats.h" />
     <ClInclude Include="include\Imaging\Bindings\GLenumFormats.h" />
+    <ClInclude Include="include\Imaging\FormatConversion.h" />
     <ClInclude Include="include\Imaging\Image.h" />
-    <ClInclude Include="include\Imaging\ImagingTypes.h" />
+    <ClInclude Include="include\Imaging\ImageFormat.h" />
+    <ClInclude Include="include\Imaging\ImageInfo.h" />
+    <ClInclude Include="include\Imaging\Loaders\Loader.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderBMP.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderDDS.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderGIF.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderJPEG.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderKTX.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderPlatform.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderPNG.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderTGA.h" />
+    <ClInclude Include="include\Imaging\Loaders\LoaderTIFF.h" />
     <ClInclude Include="include\Intra.h" />
     <ClInclude Include="include\IO\DocumentWriter.h" />
     <ClInclude Include="include\IO\File.h" />
@@ -725,6 +808,7 @@
     <ClInclude Include="include\Range\Iteration\Transversal.h" />
     <ClInclude Include="include\Range\Iteration\Zip.h" />
     <ClInclude Include="include\Range\Iterator.h" />
+    <ClInclude Include="include\Range\ListRange.h" />
     <ClInclude Include="include\Range\Operations.h" />
     <ClInclude Include="include\Range\Polymorphic.h" />
     <ClInclude Include="include\Range\RelativeIndex.h" />
@@ -732,16 +816,6 @@
     <ClInclude Include="include\Range\StringView.h" />
     <ClInclude Include="include\Range\TupleOperation.h" />
     <ClInclude Include="include\Range\Unicode.h" />
-    <ClInclude Include="include\Sound\DrumPhysicalModel.h" />
-    <ClInclude Include="include\Sound\InstrumentLibrary.h" />
-    <ClInclude Include="include\Sound\Midi.h" />
-    <ClInclude Include="include\Sound\Music.h" />
-    <ClInclude Include="include\Sound\Sound.h" />
-    <ClInclude Include="include\Sound\SoundBuilder.h" />
-    <ClInclude Include="include\Sound\SoundProcessing.h" />
-    <ClInclude Include="include\Sound\SoundSource.h" />
-    <ClInclude Include="include\Sound\SoundTypes.h" />
-    <ClInclude Include="include\Sound\SynthesizedInstrument.h" />
     <ClInclude Include="include\Test\PerformanceTest.h" />
     <ClInclude Include="include\Test\Unittest.h" />
     <ClInclude Include="include\Text\CharMap.h" />

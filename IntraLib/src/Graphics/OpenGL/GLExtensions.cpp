@@ -1,5 +1,11 @@
 ﻿#include "Core/Core.h"
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunused-const-variable"
+#endif
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 #if(INTRA_LIBRARY_WINDOW_SYSTEM!=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
 
 #include "GUI/MessageBox.h"

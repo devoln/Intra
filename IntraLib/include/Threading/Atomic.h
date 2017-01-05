@@ -1,7 +1,9 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_LIBRARY_THREADING==INTRA_LIBRARY_THREADING_CPPLIB)
 #include <atomic>
@@ -126,3 +128,5 @@ private:
 }
 
 #endif
+
+INTRA_WARNING_POP

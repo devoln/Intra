@@ -1,10 +1,13 @@
 #pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Range/Concepts.h"
-#include "Range/ForwardDecls.h"
-#include "Range/Iteration/Cycle.h"
+#include "Range/ArrayRange.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename F> Meta::EnableIf<
 	Range::IsAssignableInputRange<R>::_ && !Meta::IsConst<R>::_ &&
@@ -144,5 +147,7 @@ template<typename R> Meta::EnableIf<
 	Range::IsInputRange<R>::_
 > Add(ArrayRange<float> dstOp1, const R& op2)
 {return AddAdvance(dstOp1, R(op2));}
+
+INTRA_WARNING_POP
 
 }}

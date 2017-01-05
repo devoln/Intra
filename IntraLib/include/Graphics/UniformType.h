@@ -1,16 +1,17 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
-#include "Containers/ForwardDeclarations.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
+#include "Range/ForwardDecls.h"
 #include "Data/ValueType.h"
+#include "Imaging/ImageInfo.h"
 
 
 namespace Intra {
 
-enum ImageType: byte;
-
 namespace Graphics {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct UniformType: ValueType
 {
@@ -40,8 +41,18 @@ struct UniformType: ValueType
 	UniformType(ValueType val): ValueType(val) {}
 	UniformType(ValueType::I val): ValueType(val) {}
 
-	bool IsSampler() const {return int(value)>=FirstOfSamplers && int(value)<EndOfSamplers;}
-	bool IsValid() const {return ValueType::IsValid() || (int(value)>=int(ValueType::End) && int(value)<int(UniformType::End));}
+	bool IsSampler() const
+	{
+		return int(value)>=FirstOfSamplers &&
+			int(value)<EndOfSamplers;
+	}
+
+	bool IsValid() const
+	{
+		return ValueType::IsValid() ||
+			(int(value)>=int(ValueType::End) &&
+				int(value)<int(UniformType::End));
+	}
 
 	ushort Size() const
 	{
@@ -57,6 +68,8 @@ struct UniformType: ValueType
 
 	static UniformType FromStringGLSL(Intra::StringView str);
 };
+
+INTRA_WARNING_POP
 
 }}
 

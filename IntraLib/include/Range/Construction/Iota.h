@@ -2,8 +2,11 @@
 
 #include "Range/Concepts.h"
 #include "Take.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename S> struct RIota
 {
@@ -44,5 +47,7 @@ static_assert(IsForwardRange<decltype(Iota(1, 2, 3))>::_, "Not forward range???"
 static_assert(!IsBidirectionalRange<RIota<int, int>>::_, "Is bidirectional range???");
 static_assert(IsRandomAccessRange<RIota<int, int>>::_, "Not random access range???");
 static_assert(!IsFiniteRandomAccessRange<RIota<int, int>>::_, "Is finite random access range???");
+
+INTRA_WARNING_POP
 
 }}

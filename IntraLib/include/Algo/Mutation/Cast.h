@@ -3,8 +3,11 @@
 #include "Range/Concepts.h"
 #include "Range/ArrayRange.h"
 #include "Copy.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename OR> Meta::EnableIf<
 	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
@@ -83,5 +86,7 @@ template<typename To, typename From> Meta::EnableIf<
 		src.PopFirst();
 	}
 }
+
+INTRA_WARNING_POP
 
 }}

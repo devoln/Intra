@@ -1,11 +1,14 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Math/Vector.h"
 #include "Math/Shapes.h"
 #include "Range/ArrayRange.h"
 #include "Containers/Array.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class AabbTree
 {
@@ -85,5 +88,6 @@ template<class GEOM_PRIMITIVE> void AabbTree::recursive_get_intersection(
 	}
 }
 
-}
+INTRA_WARNING_POP
 
+}

@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Stream.h"
 #include "Meta/Type.h"
 #include "Core/Errors.h"
 
 namespace Intra { namespace IO { namespace DiskFile {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class CommonFileImpl
 {
@@ -149,7 +152,8 @@ template<typename T> Array<T> ReadAsArray(StringView fileName, bool* fileOpened=
 
 struct Info
 {
-	bool Exist;
+	bool Exist() const {return Size!=0 || LastModified!=0;}
+
 	ulong64 Size;
 	ulong64 LastModified;
 };
@@ -164,5 +168,7 @@ ulong64 GetFileTime(StringView filename);
 #undef GetCurrentDirectory
 #endif
 String GetCurrentDirectory();
+
+INTRA_WARNING_POP
 
 }}}

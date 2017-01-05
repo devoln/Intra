@@ -1,8 +1,13 @@
 #pragma once
 
 #include "Concepts.h"
+#include "Meta/Type.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirstN, static_cast<size_t>(Meta::Val<T>().PopFirstN(size_t())));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirstExactly, Meta::Val<T>().PopFirstExactly(size_t()));
@@ -247,5 +252,7 @@ Meta::RemoveConstRef<R>> DropLastExactly(R&& range, size_t n)
 	PopLastExactly(result, n);
 	return result;
 }
+
+INTRA_WARNING_POP
 
 }}

@@ -1,11 +1,18 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Core/Debug.h"
 #include "Platform/InitializerList.h"
 #include "Range/Concepts.h"
 #include "Range/RelativeIndex.h"
 
-namespace Intra { namespace Range {
+namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Range {
+
 
 template<typename T> struct ArrayRange
 {
@@ -75,19 +82,19 @@ template<typename T> struct ArrayRange
 	{INTRA_ASSERT(count<=Length()); End -= count;}
 
 	forceinline ArrayRange<T> Drop(size_t count=1) const
-	{return ArrayRange(Begin+count>End? End: Begin+count, End);}
+	{return ArrayRange(Length()<=count? End: Begin+count, End);}
 
 	forceinline ArrayRange<T> DropBack(size_t count=1) const
-	{return ArrayRange(Begin, End-count<Begin? Begin: End-count);}
+	{return ArrayRange(Begin, Length()<=count? Begin: End-count);}
 
 	forceinline ArrayRange<T> Take(size_t count) const
-	{return ArrayRange(Begin, Begin+count>End? End: Begin+count);}
+	{return ArrayRange(Begin, count>=Length()? End: Begin+count);}
 
 	forceinline ArrayRange<T> TakeExactly(size_t count) const
 	{INTRA_ASSERT(count<=Length()); return ArrayRange(Begin, Begin+count);}
 
 	forceinline ArrayRange<T> Tail(size_t count) const
-	{return ArrayRange(End-count<Begin? Begin: End-count, End);}
+	{return ArrayRange(Length()<count? Begin: End-count, End);}
 
 
 	void Put(const T& v)
@@ -113,7 +120,8 @@ template<typename T> struct ArrayRange
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
-	forceinline ArrayRange& operator=(null_t) {Begin=End=null; return *this;}
+	forceinline ArrayRange& operator=(null_t)
+	{Begin=End=null; return *this;}
 
 	forceinline T& operator[](size_t index) const
 	{
@@ -122,9 +130,7 @@ template<typename T> struct ArrayRange
 	}
 
 	forceinline T& operator[](RelativeIndex pos) const
-	{
-		return operator[](pos.GetRealIndex(Length()));
-	}
+	{return operator[](pos.GetRealIndex(Length()));}
 
 	forceinline ArrayRange operator()(size_t firstIndex, size_t endIndex) const
 	{
@@ -211,5 +217,6 @@ template<typename T> struct IsTriviallySerializable<ArrayRange<T>>: TypeFromValu
 
 }
 
-}
+INTRA_WARNING_POP
 
+}

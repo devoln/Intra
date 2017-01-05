@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 #include "Threading/Thread.h"
 #include "Memory/SystemAllocators.h"
 #include "Range/ArrayRange.h"
@@ -9,6 +10,8 @@
 #include "Memory/PlacementNew.h"
 
 namespace Intra { namespace Memory {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 inline size_t AlignmentBytes(size_t value, size_t alignment)
 {
@@ -686,6 +689,8 @@ typedef StaticAllocator<BufferAllocator> StaticBufferAllocator;
 
 
 }
+
+INTRA_WARNING_POP
 
 }
 

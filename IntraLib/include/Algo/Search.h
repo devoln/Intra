@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
 #include "Range/Operations.h"
@@ -19,6 +20,8 @@ namespace Intra {
 namespace Range {template<typename T> struct ArrayRange;}
 
 namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R,
 	typename OpeningBracketRange,
@@ -188,6 +191,6 @@ template<typename R> Meta::EnableIf<
 size_t> DistanceTo(const R& from, const R& to)
 {return DistanceToAdvance(R(from), to);}
 
+INTRA_WARNING_POP
 
 }}
-

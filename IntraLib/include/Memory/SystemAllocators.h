@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/PlatformInfo.h"
 #include "Core/Debug.h"
 #include "VirtualMemory.h"
 #include "Math/MathEx.h"
 
 namespace Intra { namespace Memory {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct NewAllocator
 {
@@ -55,5 +58,7 @@ struct PageAllocator
 	static void Free(void* ptr, size_t size);
 	size_t GetAlignment() const;
 };
+
+INTRA_WARNING_POP
 
 }}

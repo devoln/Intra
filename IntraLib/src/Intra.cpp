@@ -45,11 +45,21 @@
 
 
 #include "Imaging/Image.cpp"
-#include "Imaging/ImagingTypes.cpp"
+#include "Imaging/ImageFormat.cpp"
+#include "Imaging/ImageInfo.cpp"
+#include "Imaging/FormatConversion.cpp"
 #include "Imaging/Bindings/DXGI_Formats.cpp"
 #include "Imaging/Bindings/GLenumFormats.cpp"
+#include "Imaging/Loaders/Loader.cpp"
+#include "Imaging/Loaders/LoaderPlatform.cpp"
 #include "Imaging/Loaders/LoaderDDS.cpp"
 #include "Imaging/Loaders/LoaderKTX.cpp"
+#include "Imaging/Loaders/LoaderTGA.cpp"
+#include "Imaging/Loaders/LoaderBMP.cpp"
+#include "Imaging/Loaders/LoaderGIF.cpp"
+#include "Imaging/Loaders/LoaderTIFF.cpp"
+#include "Imaging/Loaders/LoaderJPEG.cpp"
+#include "Imaging/Loaders/LoaderPNG.cpp"
 
 #include "IO/DocumentWriter.cpp"
 #include "IO/File.cpp"
@@ -73,22 +83,40 @@
 
 #include "Range/Unicode.cpp"
 
-#include "Sound/DrumPhysicalModel.cpp"
-#include "Sound/Sound.cpp"
-#include "Sound/Music.cpp"
-#include "Sound/Midi.cpp"
-#include "Sound/SoundBuilder.cpp"
-#include "Sound/SoundProcessing.cpp"
-#include "Sound/SoundSource.cpp"
-#include "Sound/SynthesizedInstrument.cpp"
-#include "Sound/InstrumentLibrary.cpp"
-#include "Sound/Sound_DirectSound.cpp"
-#include "Sound/Sound_OpenAL.cpp"
-#include "Sound/Sound_Dummy.cpp"
-#include "Sound/Sound_Emscripten.cpp"
+
+#include "Audio/Sound.cpp"
+#include "Audio/Music.cpp"
+#include "Audio/Midi.cpp"
+#include "Audio/AudioBuffer.cpp"
+#include "Audio/AudioProcessing.cpp"
+#include "Audio/AudioSource.cpp"
+
+#include "Audio/Synth/DrumInstrument.cpp"
+#include "Audio/Synth/SynthesizedInstrument.cpp"
+#include "Audio/Synth/InstrumentLibrary.cpp"
+#include "Audio/Synth/PostEffects.cpp"
+#include "Audio/Synth/AttackDecayAttenuation.cpp"
+#include "Audio/Synth/ExponentialAttenuation.cpp"
+#include "Audio/Synth/TableAttenuation.cpp"
+#include "Audio/Synth/HighLowPass.cpp"
+#include "Audio/Synth/PeriodicSynth.cpp"
+#include "Audio/Synth/SawtoothSynth.cpp"
+#include "Audio/Synth/SineExpSynth.cpp"
+#include "Audio/Synth/SineSynth.cpp"
+#include "Audio/Synth/Generators/DrumPhysicalModel.cpp"
+
+#include "Audio/Sources/MusicSynthSource.cpp"
+#include "Audio/Sources/VorbisSource.cpp"
+#include "Audio/Sources/WaveSource.cpp"
+
+#include "Audio/Sound_DirectSound.cpp"
+#include "Audio/Sound_OpenAL.cpp"
+#include "Audio/Sound_Dummy.cpp"
+#include "Audio/Sound_Emscripten.cpp"
+
 
 #include "Test/PerformanceTest.cpp"
-#include "Test/UnitTest.cpp"
+#include "Test/Unittest.cpp"
 
 #include "Text/CharMap.cpp"
 

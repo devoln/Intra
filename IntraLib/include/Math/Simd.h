@@ -1,9 +1,10 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/PlatformInfo.h"
 #include "Math/MathEx.h"
 
-#if(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64)
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #define INTRA_SIMD_NONE 0
 #define INTRA_SIMD_MMX 1
@@ -16,26 +17,48 @@
 #define INTRA_SIMD_AVX 8
 #define INTRA_SIMD_AVX2 9
 
-#ifndef INTRA_MIN_SIMD_SUPPORT
-//#define INTRA_MIN_SIMD_SUPPORT INTRA_SIMD_SSE2
-#define INTRA_MIN_SIMD_SUPPORT INTRA_SIMD_NONE
+#define INTRA_SIMD_NEON 11
+
+#if(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_Emscripten)
+
+#ifndef INTRA_SIMD_SUPPORT
+//#define INTRA_SIMD_SUPPORT INTRA_SIMD_SSE2
 #endif
 
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_NONE)
+#endif
+
+#if(defined(__ARM_NEON__) || defined(__ARM_NEON))
+
+#ifndef INTRA_SIMD_SUPPORT
+#define INTRA_SIMD_SUPPORT INTRA_SIMD_NEON
+#endif
+
+#endif
+
+#ifndef INTRA_SIMD_SUPPORT
+//#define INTRA_SIMD_SUPPORT INTRA_SIMD_SSE2
+#define INTRA_SIMD_SUPPORT INTRA_SIMD_NONE
+#endif
+
+
+
+#if(INTRA_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
+
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_NONE)
 #include <mmintrin.h>  //MMX
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_MMX)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_MMX)
 #include <xmmintrin.h> //SSE
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE)
 #include <emmintrin.h> //SSE2
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE2)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE2)
 #include <pmmintrin.h> //SSE3
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE3)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE3)
 #include <tmmintrin.h> //SSSE3
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSSE3)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSSE3)
 #include <smmintrin.h> //SSE4.1
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE4_1)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE4_1)
 #include <nmmintrin.h> //SSE4.2
-#if(INTRA_MIN_SIMD_SUPPORT>INTRA_SIMD_SSE4_2)
+#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE4_2)
 #include <immintrin.h> //AVX
 #endif
 #endif
@@ -46,13 +69,11 @@
 #endif
 #endif
 
-#elif defined(__ARM_NEON__) || defined(__ARM_NEON)
-#include <arm_neon.h>
 #endif
 
 
 
-#if((INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64) && INTRA_MIN_SIMD_SUPPORT>=INTRA_SIMD_MMX && INTRA_MIN_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
+#if(INTRA_SIMD_SUPPORT>=INTRA_SIMD_MMX && INTRA_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
 namespace Intra { namespace Simd {
 
 	typedef __m128i int4;
@@ -120,9 +141,7 @@ namespace Intra { namespace Simd {
 	}
 
 	forceinline float Dot(float4arg a, float4arg b)
-	{
-		return GetX(Dot4(a, b));
-	}
+	{return GetX(Dot4(a, b));}
 
 	forceinline double Dot(double2arg a, double2arg b) {return GetX(Dot2(a, b));}
 
@@ -149,89 +168,57 @@ namespace Intra { namespace Simd {
 	}
 
 	forceinline float4 Sqrt(float4arg a)
-	{
-		return _mm_sqrt_ps(a);
-	}
+	{return _mm_sqrt_ps(a);}
 
 	forceinline double2 Sqrt(double2arg a)
-	{
-		return _mm_sqrt_pd(a);
-	}
+	{return _mm_sqrt_pd(a);}
 
 	// a,b,c,d -> b,c,d,a
 	forceinline float4 Rotate(float4arg ps)
-	{
-		return _mm_shuffle_ps(ps,(ps), 0x39);
-	}
+	{return _mm_shuffle_ps(ps,(ps), 0x39);}
 
 	forceinline float4 Z1W1Z2W2(float4arg a, float4arg b)
-	{
-		return _mm_movehl_ps(a, b);
-	}
+	{return _mm_movehl_ps(a, b);}
 
 	forceinline bool EqualX(float4arg a, float4arg b)
-	{
-		return _mm_comieq_ss(a, b)!=0;
-	}
+	{return _mm_comieq_ss(a, b)!=0;}
 
 	forceinline bool EqualX(double2arg a, double2arg b)
-	{
-		return _mm_comieq_sd(a, b)!=0;
-	}
+	{return _mm_comieq_sd(a, b)!=0;}
 
 	forceinline bool NotEqualX(float4arg a, float4arg b)
-	{
-		return _mm_comineq_ss(a, b)!=0;
-	}
+	{return _mm_comineq_ss(a, b)!=0;}
 
 	forceinline bool NotEqualX(double2arg a, double2arg b)
-	{
-		return _mm_comineq_sd(a, b)!=0;
-	}
+	{return _mm_comineq_sd(a, b)!=0;}
 
 	forceinline bool LessX(float4arg a, float4arg b)
-	{
-		return _mm_comilt_ss(a, b)!=0;
-	}
+	{return _mm_comilt_ss(a, b)!=0;}
 
 	forceinline bool LessX(double2arg a, double2arg b)
-	{
-		return _mm_comilt_sd(a, b)!=0;
-	}
+	{return _mm_comilt_sd(a, b)!=0;}
 
 	forceinline bool LessEqualX(float4arg a, float4arg b)
-	{
-		return _mm_comile_ss(a, b)!=0;
-	}
+	{return _mm_comile_ss(a, b)!=0;}
 
 	forceinline bool LessEqualX(double2arg a, double2arg b)
-	{
-		return _mm_comile_sd(a, b)!=0;
-	}
+	{return _mm_comile_sd(a, b)!=0;}
 
 	forceinline bool GreaterX(float4arg a, float4arg b)
-	{
-		return _mm_comigt_ss(a, b)!=0;
-	}
+	{return _mm_comigt_ss(a, b)!=0;}
 
 	forceinline bool GreaterX(double2arg a, double2arg b)
-	{
-		return _mm_comigt_sd(a, b)!=0;
-	}
+	{return _mm_comigt_sd(a, b)!=0;}
 
 	forceinline bool GreaterEqualX(float4arg a, float4arg b)
-	{
-		return _mm_comige_ss(a, b)!=0;
-	}
+	{return _mm_comige_ss(a, b)!=0;}
 
 	forceinline bool GreaterEqualX(double2arg a, double2arg b)
-	{
-		return _mm_comige_sd(a, b)!=0;
-	}
+	{return _mm_comige_sd(a, b)!=0;}
 
 }}
 
-#elif(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_PowerPC && INTRA_MIN_SIMD_SUPPORT!=INTRA_SIMD_NONE)
+#elif(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_PowerPC && INTRA_SIMD_SUPPORT!=INTRA_SIMD_NONE)
 
 namespace Intra { namespace Simd {
 
@@ -297,10 +284,17 @@ forceinline int4 SetInt4(const int xyzw[4]) {return vld1q_s32(xyzw);}
 forceinline float2 SetFloat2(const float xy[2]) {return vld1_f32(xy);}
 forceinline float4 SetFloat4(const float xyzw[4]) {return vld1q_f32(xyzw);}
 
-forceinline int2 SetInt2(int x, int y) {int xy[]={x, y}; return SetInt2(xy);}
-forceinline int4 SetInt4(int x, int y, int z, int w) {int xyzw[]={x, y, z, w}; return SetInt4(xyzw);}
-forceinline float2 SetFloat2(float x, float y) {float xy[]={x, y}; return SetFloat2(xy);}
-forceinline float4 SetFloat4(float x, float y, float z, float w) {float xyzw[]={x, y, z, w}; return SetFloat4(xyzw);}
+forceinline int2 SetInt2(int x, int y)
+{int xy[]={x, y}; return SetInt2(xy);}
+
+forceinline int4 SetInt4(int x, int y, int z, int w)
+{int xyzw[]={x, y, z, w}; return SetInt4(xyzw);}
+
+forceinline float2 SetFloat2(float x, float y)
+{float xy[]={x, y}; return SetFloat2(xy);}
+
+forceinline float4 SetFloat4(float x, float y, float z, float w)
+{float xyzw[]={x, y, z, w}; return SetFloat4(xyzw);}
 
 forceinline void Get(float* dst, float2arg v) {vst1_f32(dst, v);}
 forceinline void Get(float* dst, float4arg v) {vst1q_f32(dst, v);}
@@ -349,191 +343,121 @@ namespace Intra { namespace Simd {
 	forceinline float4 SetFloat4(float x, float y, float z, float w) {return {{x,y,z,w}};}
 	forceinline double2 SetDouble2(double x, double y) {return {{x,y}};}
 
-	forceinline void Get(float* dst, float4arg v) {dst[0]=v.v[0]; dst[1]=v.v[1]; dst[2]=v.v[2]; dst[3]=v.v[3];}
+	forceinline void Get(float* dst, float4arg v)
+	{dst[0]=v.v[0]; dst[1]=v.v[1]; dst[2]=v.v[2]; dst[3]=v.v[3];}
+	
 	forceinline float GetX(float4arg v) {return v.v[0];}
 	forceinline double GetX(double2arg v) {return v.v[0];}
 
 	forceinline float4 Abs(float4arg x)
-	{
-		return {{Math::Abs(x.v[0]), Math::Abs(x.v[1]), Math::Abs(x.v[2]), Math::Abs(x.v[3])}};
-	}
+	{return {{Math::Abs(x.v[0]), Math::Abs(x.v[1]), Math::Abs(x.v[2]), Math::Abs(x.v[3])}};}
 
 	forceinline double2 Abs(double2arg x)
-	{
-		return {{Math::Abs(x.v[0]), Math::Abs(x.v[1])}};
-	}
+	{return {{Math::Abs(x.v[0]), Math::Abs(x.v[1])}};}
 
 	forceinline float4 Add(float4arg a, float4arg b)
-	{
-		return {{a.v[0]+b.v[0], a.v[1]+b.v[1], a.v[2]+b.v[2], a.v[3]+b.v[3]}};
-	}
+	{return {{a.v[0]+b.v[0], a.v[1]+b.v[1], a.v[2]+b.v[2], a.v[3]+b.v[3]}};}
 
 	forceinline double2 Add(double2arg a, double2arg b)
-	{
-		return {{a.v[0]+b.v[0], a.v[1]+b.v[1]}};
-	}
+	{return {{a.v[0]+b.v[0], a.v[1]+b.v[1]}};}
 
 	forceinline float4 Sub(float4arg a, float4arg b)
-	{
-		return {{a.v[0]-b.v[0], a.v[1]-b.v[1], a.v[2]-b.v[2], a.v[3]-b.v[3]}};
-	}
+	{return {{a.v[0]-b.v[0], a.v[1]-b.v[1], a.v[2]-b.v[2], a.v[3]-b.v[3]}};}
 
 	forceinline double2 Sub(double2arg a, double2arg b)
-	{
-		return {{a.v[0]-b.v[0], a.v[1]-b.v[1]}};
-	}
+	{return {{a.v[0]-b.v[0], a.v[1]-b.v[1]}};}
 
 	forceinline float4 Mul(float4arg a, float4arg b)
-	{
-		return {{a.v[0]*b.v[0], a.v[1]*b.v[1], a.v[2]*b.v[2], a.v[3]*b.v[3]}};
-	}
+	{return {{a.v[0]*b.v[0], a.v[1]*b.v[1], a.v[2]*b.v[2], a.v[3]*b.v[3]}};}
 
 	forceinline double2 Mul(double2arg a, double2arg b)
-	{
-		return {{a.v[0]*b.v[0], a.v[1]*b.v[1]}};
-	}
+	{return {{a.v[0]*b.v[0], a.v[1]*b.v[1]}};}
 
 	forceinline float Dot(float4arg a, float4arg b)
-	{
-		return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2] + a.v[3]*b.v[3];
-	}
+	{return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2] + a.v[3]*b.v[3];}
 
 	forceinline double Dot(double2arg a, double2arg b)
-	{
-		return a.v[0]*b.v[0] + a.v[1]*b.v[1];
-	}
+	{return a.v[0]*b.v[0] + a.v[1]*b.v[1];}
 
 	forceinline float4 Dot4(float4arg a, float4arg b)
-	{
-		return SetFloat4(Dot(a, b));
-	}
+	{return SetFloat4(Dot(a, b));}
 
 	forceinline double2 Dot2(double2arg a, double2arg b)
-	{
-		return SetDouble2(Dot(a, b));
-	}
+	{return SetDouble2(Dot(a, b));}
 
 
 	forceinline float4 Min(float4arg a, float4arg b)
-	{
-		return {{Math::Min(a.v[0], b.v[0]), Math::Min(a.v[1], b.v[1]), Math::Min(a.v[2], b.v[2]), Math::Min(a.v[3], b.v[3])}};
-	}
+	{return {{Math::Min(a.v[0], b.v[0]), Math::Min(a.v[1], b.v[1]), Math::Min(a.v[2], b.v[2]), Math::Min(a.v[3], b.v[3])}};}
 
 	forceinline double2 Min(double2arg a, double2arg b)
-	{
-		return {{Math::Min(a.v[0], b.v[0]), Math::Min(a.v[1], b.v[1])}};
-	}
+	{return {{Math::Min(a.v[0], b.v[0]), Math::Min(a.v[1], b.v[1])}};}
 
 	forceinline float4 Max(float4arg a, float4arg b)
-	{
-		return {{Math::Max(a.v[0], b.v[0]), Math::Max(a.v[1], b.v[1]), Math::Max(a.v[2], b.v[2]), Math::Max(a.v[3], b.v[3])}};
-	}
+	{return {{Math::Max(a.v[0], b.v[0]), Math::Max(a.v[1], b.v[1]), Math::Max(a.v[2], b.v[2]), Math::Max(a.v[3], b.v[3])}};}
 
 	forceinline double2 Max(double2arg a, double2arg b)
-	{
-		return {{Math::Max(a.v[0], b.v[0]), Math::Max(a.v[1], b.v[1])}};
-	}
+	{return {{Math::Max(a.v[0], b.v[0]), Math::Max(a.v[1], b.v[1])}};}
 
 	forceinline float4 MinSingle(float4arg a, float4arg b)
-	{
-		return {{Math::Min(a.v[0], b.v[0]), a.v[1], a.v[2], a.v[3]}};
-	}
+	{return {{Math::Min(a.v[0], b.v[0]), a.v[1], a.v[2], a.v[3]}};}
 
 	forceinline double2 MinSingle(double2arg a, double2arg b)
-	{
-		return {{Math::Min(a.v[0], b.v[0]), a.v[1]}};
-	}
+	{return {{Math::Min(a.v[0], b.v[0]), a.v[1]}};}
 
 	forceinline float4 MaxSingle(float4arg a, float4arg b)
-	{
-		return {{Math::Max(a.v[0], b.v[0]), a.v[1], a.v[2], a.v[3]}};
-	}
+	{return {{Math::Max(a.v[0], b.v[0]), a.v[1], a.v[2], a.v[3]}};}
 
 	forceinline double2 MaxSingle(double2arg a, double2arg b)
-	{
-		return {{Math::Max(a.v[0], b.v[0]), a.v[1]}};
-	}
+	{return {{Math::Max(a.v[0], b.v[0]), a.v[1]}};}
 
 	forceinline float4 Negate(float4arg a)
-	{
-		return {{-a.v[0], -a.v[1], -a.v[2], -a.v[3]}};
-	}
+	{return {{-a.v[0], -a.v[1], -a.v[2], -a.v[3]}};}
 
 	forceinline double2 Negate(double2arg a)
-	{
-		return {{-a.v[0], -a.v[1]}};
-	}
+	{return {{-a.v[0], -a.v[1]}};}
 
 	// a,b,c,d -> b,c,d,a
 	forceinline float4 Rotate(float4arg a)
-	{
-		return {{a.v[1], a.v[2], a.v[3], a.v[0]}};
-	}
+	{return {{a.v[1], a.v[2], a.v[3], a.v[0]}};}
 
 	forceinline float4 Z1W1Z2W2(float4arg a, float4arg b)
-	{
-		return {{a.v[2], a.v[3], b.v[2], b.v[3]}};
-	}
+	{return {{a.v[2], a.v[3], b.v[2], b.v[3]}};}
 
 	forceinline bool EqualX(float4arg a, float4arg b)
-	{
-		return a.v[0]==b.v[0];
-	}
+	{return a.v[0]==b.v[0];}
 
 	forceinline bool EqualX(double2arg a, double2arg b)
-	{
-		return a.v[0]==b.v[0];
-	}
+	{return a.v[0]==b.v[0];}
 
 	forceinline bool NotEqualX(float4arg a, float4arg b)
-	{
-		return a.v[0]!=b.v[0];
-	}
+	{return a.v[0]!=b.v[0];}
 
 	forceinline bool NotEqualX(double2arg a, double2arg b)
-	{
-		return a.v[0]!=b.v[0];
-	}
+	{return a.v[0]!=b.v[0];}
 
 	forceinline bool LessX(float4arg a, float4arg b)
-	{
-		return a.v[0]<b.v[0];
-	}
+	{return a.v[0]<b.v[0];}
 
 	forceinline bool LessX(double2arg a, double2arg b)
-	{
-		return a.v[0]<b.v[0];
-	}
+	{return a.v[0]<b.v[0];}
 
 	forceinline bool LessEqualX(float4arg a, float4arg b)
-	{
-		return a.v[0]<=b.v[0];
-	}
+	{return a.v[0]<=b.v[0];}
 
 	forceinline bool LessEqualX(double2arg a, double2arg b)
-	{
-		return a.v[0]<=b.v[0];
-	}
+	{return a.v[0]<=b.v[0];}
 
 	forceinline bool GreaterX(float4arg a, float4arg b)
-	{
-		return a.v[0]>b.v[0];
-	}
+	{return a.v[0]>b.v[0];}
 
 	forceinline bool GreaterX(double2arg a, double2arg b)
-	{
-		return a.v[0]>b.v[0];
-	}
+	{return a.v[0]>b.v[0];}
 
 	forceinline bool GreaterEqualX(float4arg a, float4arg b)
-	{
-		return a.v[0]>=b.v[0];
-	}
+	{return a.v[0]>=b.v[0];}
 
 	forceinline bool GreaterEqualX(double2arg a, double2arg b)
-	{
-		return a.v[0]>=b.v[0];
-	}
+	{return a.v[0]>=b.v[0];}
 
 }}
 
@@ -552,3 +476,4 @@ namespace Intra { namespace Simd {
 	template<typename T> using simd4 = typename Impl::simd4<T>::Type;
 }}
 
+INTRA_WARNING_POP

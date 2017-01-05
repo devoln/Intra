@@ -1,5 +1,9 @@
 ﻿#include "Memory/SystemAllocators.h"
 #include "Memory/VirtualMemory.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #include <stdlib.h>
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -9,15 +13,10 @@
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4668)
 #endif
 
 #include <Windows.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #endif
 
@@ -88,3 +87,5 @@ void PageAllocator::Free(void* ptr, size_t size)
 size_t PageAllocator::GetAlignment() const {return VirtualMemoryPageSize();}
 
 }}
+
+INTRA_WARNING_POP

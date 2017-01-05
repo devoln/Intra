@@ -1,9 +1,10 @@
 ﻿#include "IO/DocumentWriter.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4668)
 #endif
 
@@ -11,10 +12,6 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #endif
 
@@ -53,9 +50,9 @@ const char* const HtmlWriter::CssLoggerCode = "<style type=\"text/css\">"
 void HtmlWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
 	auto curFont = GetCurrentFont();
-	if(color==Math::NaN) color = {0,0,0};
-	if(size==Math::NaN) size=3;
-	font_stack.AddLast({color, size, bold, italic, underline, false});
+	if(color==Math::Vec3(-1)) color = {0,0,0};
+	if(size==-1) size = 3;
+	mFontStack.AddLast({color, size, bold, italic, underline, false});
 	if(curFont.Underline && !underline) RawPrint("</ins>");
 	if(curFont.Italic && !italic) RawPrint("</i>");
 	if(curFont.Bold && !bold) RawPrint("</b>");
@@ -73,7 +70,7 @@ void HtmlWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, 
 void HtmlWriter::PopFont()
 {
 	auto oldFont = GetCurrentFont();
-	font_stack.RemoveLast();
+	mFontStack.RemoveLast();
 	auto newFont = GetCurrentFont();
 	if(oldFont.Bold && !newFont.Bold) RawPrint("</b>");
 	if(oldFont.Italic && !newFont.Italic) RawPrint("</i>");
@@ -84,7 +81,8 @@ void HtmlWriter::PopFont()
 	if(!oldFont.Underline && newFont.Underline) RawPrint("<ins>");
 }
 
-void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, float size, bool bold, bool italic, bool underline)
+void set_font(ConsoleTextWriter& s, const FontDesc& oldFont,
+	Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
 	(void)size;
 	(void)italic;
@@ -94,17 +92,15 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 	if(oldFont.Color!=color || oldFont.Underline!=underline)
 	{
 		ushort consoleCode = 0;
-		if(color!=Math::NaN)
+		if(color!=Math::Vec3(-1))
 		{
 			if(color.z>=0.25f) consoleCode |= FOREGROUND_BLUE;
 			if(color.y>=0.25f) consoleCode |= FOREGROUND_GREEN;
 			if(color.x>=0.25f) consoleCode |= FOREGROUND_RED;
-			if(color.x>=0.5f || color.y>=0.5f || color.z>=0.5f) consoleCode |= FOREGROUND_INTENSITY;
+			if(color.x>=0.5f || color.y>=0.5f || color.z>=0.5f)
+				consoleCode |= FOREGROUND_INTENSITY;
 		}
-		else
-		{
-			consoleCode |= FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_RED;
-		}
+		else consoleCode |= FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_RED;
 		if(underline) consoleCode |= COMMON_LVB_UNDERSCORE;
 		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), consoleCode);
 	}
@@ -112,7 +108,7 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 	if(oldFont.Color!=color || oldFont.Bold!=bold || oldFont.Underline!=underline)
 	{
 		s << "\x1B[0m";
-		if(color!=Math::NaN)
+		if(color!=Math::Vec3(-1))
 		{
 			int code = 0;
 			int colorCode = 30;
@@ -131,17 +127,18 @@ void set_font(ConsoleTextWriter& s, const FontDesc& oldFont, Math::Vec3 color, f
 void ConsoleTextWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
 {
 	auto oldFont = GetCurrentFont();
-	font_stack.AddLast({color, size, bold, italic, underline, false});
+	mFontStack.AddLast({color, size, bold, italic, underline, false});
 	set_font(*this, oldFont, color, size, bold, italic, underline);
 }
 
 void ConsoleTextWriter::PopFont()
 {
-	FontDesc oldFont = font_stack.Last();
-	font_stack.RemoveLast();
+	FontDesc oldFont = mFontStack.Last();
+	mFontStack.RemoveLast();
 	auto font = GetCurrentFont();
 	set_font(*this, oldFont, font.Color, font.Size, font.Bold, font.Italic, font.Underline);
 }
 
 }}
 
+INTRA_WARNING_POP

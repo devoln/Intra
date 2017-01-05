@@ -2,8 +2,12 @@
 
 #include "Range/ForwardDecls.h"
 #include "Range/Concepts.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R> struct RRetro
 {
@@ -48,5 +52,7 @@ RRetro<Meta::RemoveConstRef<R>>> Retro(R&& range)
 
 template<typename T, size_t N> RRetro<AsRangeResult<T(&)[N]>> Retro(T(&arr)[N])
 {return Retro(AsRange(arr));}
+
+INTRA_WARNING_POP
 
 }}

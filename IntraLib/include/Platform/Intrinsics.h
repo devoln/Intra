@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/FundamentalTypes.h"
+#include "Platform/Compatibility.h"
 
 #ifndef _MSC_VER
 #include <string.h>

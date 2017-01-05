@@ -1,12 +1,15 @@
 ﻿#pragma once
 
 #include "Range/Concepts.h"
+#include "Core/Debug.h"
 
 namespace Intra { namespace Range {
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasTake, Meta::Val<T>().Take(size_t()));
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_DEFINE_EXPRESSION_CHECKER(HasTake, Meta::Val<T>().Take(size_t()));
 
 template<typename R> struct RTake
 {
@@ -103,7 +106,6 @@ private:
 	> set_len(size_t maxLen) {mLen = maxLen;}
 };
 
-INTRA_WARNING_POP
 
 template<typename R> forceinline Meta::EnableIf<
 	Range::IsInputRange<R>::_ && !Range::IsFiniteRandomAccessRange<R>::_ && !Range::HasTake<R>::_,
@@ -133,5 +135,7 @@ template<typename R> struct ResultOfTake<R, false>
 }
 
 template<typename R> using ResultOfTake = typename D::ResultOfTake<R>::_;
+
+INTRA_WARNING_POP
 
 }}

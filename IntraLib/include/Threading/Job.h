@@ -1,10 +1,13 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 #include "Algo/Mutation/Copy.h"
 #include "Atomic.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct Job
 {
@@ -121,5 +124,7 @@ public:
 private:
 	uint size;
 };
+
+INTRA_WARNING_POP
 
 }

@@ -54,31 +54,11 @@
 #define INTRA_LIBRARY_GRAPHICS_Direct3D11 3
 #define INTRA_LIBRARY_GRAPHICS_Direct3D12 4
 
-//! Используемая библиотека для вывода звука
-#define INTRA_LIBRARY_SOUND_SYSTEM_Dummy 0
-#define INTRA_LIBRARY_SOUND_SYSTEM_DirectSound 1
-#define INTRA_LIBRARY_SOUND_SYSTEM_OpenAL 2
-#define INTRA_LIBRARY_SOUND_SYSTEM_SDL 3
-#define INTRA_LIBRARY_SOUND_SYSTEM_Qt 4
-#define INTRA_LIBRARY_SOUND_SYSTEM_WebAudio 5
-#define INTRA_LIBRARY_SOUND_SYSTEM_ALSA 6
-
 
 //! Используемый декодер ogg vorbis
 #define INTRA_LIBRARY_VORBIS_DECODER_None 0 
 #define INTRA_LIBRARY_VORBIS_DECODER_STB 1
 #define INTRA_LIBRARY_VORBIS_DECODER_libvorbis 2
-
-
-//! Используемая библиотека\API системы для загрузки изображений
-#define INTRA_LIBRARY_IMAGE_LOADING_Dummy 0
-#define INTRA_LIBRARY_IMAGE_LOADING_STB 1
-#define INTRA_LIBRARY_IMAGE_LOADING_DevIL 2
-#define INTRA_LIBRARY_IMAGE_LOADING_Gdiplus 3
-#define INTRA_LIBRARY_IMAGE_LOADING_Qt 4
-#define INTRA_LIBRARY_IMAGE_LOADING_SDL 5
-#define INTRA_LIBRARY_IMAGE_LOADING_libpng_jpg 6
-#define INTRA_LIBRARY_IMAGE_LOADING_Android 7
 
 //! Используемая библиотека для загрузки TrueType шрифтов
 #define INTRA_LIBRARY_FONT_LOADING_Dummy 0
@@ -266,20 +246,6 @@
 #define INTRA_LIBRARY_GRAPHICS INTRA_LIBRARY_GRAPHICS_OpenGL
 #endif
 
-
-//Пытаемся автоматически определить доступную системную библиотеку для загрузки изображений
-#ifndef INTRA_LIBRARY_IMAGE_LOADING
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-#define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_Gdiplus
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
-#define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_Dummy //TODO: сделать загрузку текстур через JNI
-#else
-#define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_Dummy
-#endif
-
-#endif
-
 #ifndef INTRA_LIBRARY_VORBIS_DECODER
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -306,19 +272,6 @@
 
 #else
 #define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_PThread
-#endif
-
-#endif
-
-//Пытаемся автоматически определить библиотеку для вывода звука
-#ifndef INTRA_LIBRARY_SOUND_SYSTEM
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_DirectSound
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
-#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_WebAudio
-#else
-#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_OpenAL
 #endif
 
 #endif

@@ -1,11 +1,17 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "IO/Stream.h"
-#include "Imaging/ImagingTypes.h"
+#include "Imaging/ImageFormat.h"
+#include "Imaging/ImageInfo.h"
 #include "Math/Vector.h"
 #include "Containers/Array.h"
 
-namespace Intra {
+namespace Intra { namespace Imaging {
+
+enum class FileFormat: byte;
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Image
 {
@@ -55,47 +61,22 @@ public:
 
 	Array<const void*> GetMipmapPointers() const;
 
-#ifndef NO_IMAGE_LOADING
-
-	enum class FileFormat: ushort {JPEG, BMP, GIF, TIFF, DDS, PNG, TGA, KTX, Unknown};
+#ifndef INTRA_NO_IMAGE_LOADING
 	static FileFormat DetectFileFormatByHeader(byte header[12]);
-	static ImageInfo GetImageInfo(IO::IInputStream* s, FileFormat* format=null);
+	static ImageInfo GetImageInfo(IO::IInputStream& stream, FileFormat* format=null);
 	static ImageInfo GetImageInfo(StringView filename, FileFormat* format=null);
 
 	static Image FromFile(StringView filename);
-	void SaveToFileDDS(StringView filename) const;
 
-	static Image FromStream(IO::IInputStream* s, size_t bytes)
-	{
-		Image result;
-		result.load(s, bytes);
-		return result;
-	}
-
-	void ToStream(IO::IOutputStream* s) const
-	{
-		saveDDS(s);
-	}
-
-private:
-	void load(IO::IInputStream* s, size_t bytes);
-
-#ifndef INTRA_NO_KTX_LOADER
-	void loadKTX(IO::IInputStream* s, size_t bytes);
-#endif
-#ifndef INTRA_NO_DDS_LOADER
-	void loadDDS(IO::IInputStream* s, size_t bytes);
-	void saveDDS(IO::IOutputStream* s) const;
-#endif
-#ifndef INTRA_NO_BMP_LOADER
-	void loadBMP(IO::IInputStream* s, size_t bytes);
-#endif
-#ifndef INTRA_NO_TGA_LOADER
-	void loadTGA(IO::IInputStream* s, size_t bytes);
-#endif
-	void load_with_library(IO::IInputStream* s, size_t bytes);
+	static Image FromStream(IO::IInputStream& stream, size_t bytes);
 
 #endif
 };
+
+INTRA_WARNING_POP
+
+}
+
+using Imaging::Image;
 
 }

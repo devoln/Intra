@@ -8,7 +8,7 @@ template<> float Minimum(ArrayRange<const float> arr)
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
 	float result;
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	result = *ptr++;
 #else
 	Simd::float4 mini = Simd::SetFloat4(*ptr);
@@ -35,7 +35,7 @@ template<> float Maximum(ArrayRange<const float> arr)
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
 	float result;
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	result=*ptr++;
 #else
 	Simd::float4 maxi = Simd::SetFloat4(*ptr);
@@ -72,7 +72,7 @@ template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maxi
 
 	if(arr==null) {*minimum = *maximum = Math::NaN; return;}
 	auto ptr=arr.Begin;
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	*maximum = *minimum = *ptr++;
 #else
 	Simd::float4 mini = Simd::SetFloat4(*ptr);

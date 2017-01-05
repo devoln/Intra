@@ -1,21 +1,23 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Data/BinarySerialization.h"
 #include "Meta/Type.h"
 #include "Containers/String.h"
 
 namespace Intra {
 
-namespace IO {
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+namespace IO {
 struct endl_t {};
 extern endl_t endl;
-
 }
 forceinline StringView ToString(IO::endl_t) {return "\r\n";}
 
-namespace IO
-{
+namespace IO {
+
 class IInputStream
 {
 public:
@@ -331,4 +333,8 @@ public:
 	ArrayRange<const byte> rest;
 };
 
-}}
+}
+
+INTRA_WARNING_POP
+
+}

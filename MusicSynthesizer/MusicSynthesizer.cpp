@@ -1,10 +1,11 @@
 ﻿#include "IO/Stream.h"
 #include "IO/File.h"
-#include "Sound/Midi.h"
-#include "Sound/Music.h"
-#include "Sound/SoundBuilder.h"
-#include "Sound/Sound.h"
-#include "Sound/SoundSource.h"
+#include "Audio/Midi.h"
+#include "Audio/Music.h"
+#include "Audio/AudioBuffer.h"
+#include "Audio/Sound.h"
+#include "Audio/AudioSource.h"
+#include "Audio/Sources/MusicSynthSource.h"
 #include "Platform/Time.h"
 #include "IO/Networking.h"
 #include "Platform/PlatformInfo.h"
@@ -22,6 +23,7 @@
 #ifndef WIN32_MEAN_AND_LEAN
 #define WIN32_MEAN_AND_LEAN
 struct IUnknown;
+INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <windows.h>
 #endif
 
@@ -29,7 +31,7 @@ struct IUnknown;
 BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 {
 	(void)CtrlType;
-	Intra::CleanUpSoundSystem();
+	Intra::Audio::CleanUpSoundSystem();
 	exit(0);
 }
 
@@ -38,6 +40,7 @@ BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 
 using namespace Intra;
 using namespace Intra::IO;
+using namespace Intra::Audio;
 
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
@@ -90,7 +93,7 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 void PlayMusic(const Music& music, bool printPerf)
 {
 	Timer tim;
-	SoundBuffer buf = music.GetSamples();
+	AudioBuffer buf = music.GetSamples();
 	if(printPerf)
 	{
 		auto time = tim.GetTime();
@@ -108,7 +111,7 @@ void PlayMusicStream(const Music& music)
 	Console.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
 	Console.PrintLine("Инициализация...");
 	static StreamedSound sound;
-	sound = StreamedSound(new MusicSoundSampleSource(music, sampleRate));
+	sound = StreamedSound(new Sources::MusicSynthSource(music, sampleRate));
 	sound.Play();
 }
 
@@ -138,7 +141,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreami
 #if INTRA_DISABLED
 void SoundTest()
 {
-	SoundBuffer buf(2000000, 44100);
+	AudioBuffer buf(2000000, 44100);
 	for(uint t=0; t<buf.Samples.Count(); t++)
 		buf.Samples[t] = (byte( ( (((((t>>3)|(t>>7))*5)|(t>>4))&0xff)/4 + (((((t>>3)|(t>>12))*5)|(t>>7))&0xff)*3/4 ) )-128)/127.0f;
 	Sound snd = Sound(&buf);

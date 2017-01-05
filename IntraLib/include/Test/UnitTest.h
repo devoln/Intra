@@ -1,8 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct UnitTest
 {
@@ -29,6 +33,8 @@ struct UnitTest
 	static const char* CurName;
 
 };
+
+INTRA_WARNING_POP
 
 }
 

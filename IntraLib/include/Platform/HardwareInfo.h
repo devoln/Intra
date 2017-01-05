@@ -1,10 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
 #include "Data/Reflection.h"
 #include "Containers/String.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct SystemMemoryInfo
 {
@@ -29,5 +31,7 @@ struct ProcessorInfo
 
 	INTRA_ADD_REFLECTION(ProcessorInfo, BrandString);
 };
+
+INTRA_WARNING_POP
 
 }

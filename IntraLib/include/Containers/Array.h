@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Core/Core.h"
+#include "Platform/CppWarnings.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Range/ArrayRange.h"
 #include "Algo/Comparison.h"
@@ -10,6 +11,8 @@
 
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, class AllocatorType> class Array: Memory::AllocatorRef<AllocatorType>
 {
@@ -763,5 +766,7 @@ template<typename T> using Deque = Array<T>;
 namespace Meta {
 template<typename T, class Allocator> struct IsTriviallyRelocatable<Array<T, Allocator>>: TypeFromValue<bool, true> {};
 }
+
+INTRA_WARNING_POP
 
 }

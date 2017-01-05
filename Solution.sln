@@ -21,9 +21,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntraLib", "IntraLib\IntraLib.vcxproj", "{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}"
 EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
@@ -41,8 +38,8 @@ Global
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Debug|x64.Build.0 = Debug|x64
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Debug|x86.ActiveCfg = Debug|Win32
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Debug|x86.Build.0 = Debug|Win32
-		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x64.ActiveCfg = Release|x64
-		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x64.Build.0 = Release|x64
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x64.ActiveCfg = Release Clang|x64
+		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x64.Build.0 = Release Clang|x64
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release Clang|x86.Build.0 = Release Clang|Win32
 		{54A3C255-6110-48B7-AE17-28762B6631F5}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
@@ -61,8 +58,8 @@ Global
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Debug|x64.Build.0 = Debug|x64
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Debug|x86.ActiveCfg = Debug|Win32
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Debug|x86.Build.0 = Debug|Win32
-		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x64.ActiveCfg = Release|x64
-		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x64.Build.0 = Release|x64
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x64.ActiveCfg = Release Clang|x64
+		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x64.Build.0 = Release Clang|x64
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release Clang|x86.Build.0 = Release Clang|Win32
 		{5BF0FA4B-B9E5-4772-81D2-E4902C799F59}.Release MSClang|x64.ActiveCfg = Release MSClang|x64
@@ -81,8 +78,8 @@ Global
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Debug|x64.Build.0 = Debug|x64
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Debug|x86.ActiveCfg = Debug|Win32
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Debug|x86.Build.0 = Debug|Win32
-		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x64.ActiveCfg = Release|x64
-		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x64.Build.0 = Release|x64
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x64.ActiveCfg = Release Clang|x64
+		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x64.Build.0 = Release Clang|x64
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x86.ActiveCfg = Release Clang|Win32
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release Clang|x86.Build.0 = Release Clang|Win32
 		{60F3047C-9099-40D9-9173-8B95A0A5FF34}.Release MSClang|x64.ActiveCfg = Release MSClang|x64

@@ -4,6 +4,8 @@
 #include "IO/Stream.h"
 #include "Threading/Atomic.h"
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 #include <stdlib.h>
 
 namespace Intra {
@@ -28,4 +30,3 @@ void Free(void* data)
 
 
 }}
-

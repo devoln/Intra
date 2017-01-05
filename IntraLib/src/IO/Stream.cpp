@@ -1,5 +1,7 @@
 ﻿#include "IO/Stream.h"
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 #include <stdio.h>
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)

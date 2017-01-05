@@ -1,8 +1,11 @@
 ﻿#include "Data/Variable.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
 
 using namespace Math;
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 void Variable::ConvertType(Variable& dst, ValueType srcType, ValueType dstType) const
 {

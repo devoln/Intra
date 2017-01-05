@@ -4,118 +4,15 @@
 #include "Range/Iterator.h"
 #include "Memory/Allocator.h"
 #include "Memory/AllocatorInterface.h"
-#include "Range/Concepts.h"
 #include "Containers/ForwardDeclarations.h"
+#include "Range/ListRange.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
 
-template<typename T> struct FListRange
-{
-	enum: bool {RangeIsFinite = true};
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-	struct Node
-	{
-		Node* Next;
-		T Value;
-	};
-
-	forceinline FListRange(null_t=null):
-		FirstNode(null), LastNode(null) {}
-
-	forceinline FListRange(Node* first, Node* last):
-		FirstNode(first), LastNode(last) {}
-
-	forceinline bool Empty() const
-	{
-		INTRA_ASSERT((FirstNode==null) == (LastNode==null));
-		return FirstNode==LastNode;
-	}
-
-	forceinline void PopFirst()
-	{
-		INTRA_ASSERT(!Empty());
-		FirstNode = FirstNode->Next;
-	}
-
-	forceinline T& First() const
-	{
-		INTRA_ASSERT(!Empty());
-		return FirstNode->Value;
-	}
-
-	forceinline bool operator==(null_t) const {return Empty();}
-	forceinline bool operator!=(null_t) const {return !Empty();}
-	forceinline bool operator==(const FListRange& rhs) const {return FirstNode==rhs.FirstNode && LastNode==rhs.LastNode;}
-	forceinline bool operator!=(const FListRange& rhs) const {return !operator==(rhs);}
-
-	Node* FirstNode;
-	Node* LastNode;
-};
-
-template<typename T> struct BListRange
-{
-#ifdef _MSC_VER
-#pragma warning(push, 0)
-#endif
-
-	struct Node
-	{
-		Node* Prev;
-		Node* Next;
-		T Value;
-	};
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
-	forceinline BListRange(null_t=null): FirstNode(null), LastNode(null) {}
-	forceinline BListRange(Node* first, Node* last): FirstNode(first), LastNode(last) {}
-
-	forceinline bool Empty() const
-	{
-		INTRA_ASSERT((FirstNode==null) == (LastNode==null));
-		return FirstNode==LastNode;
-	}
-
-	forceinline void PopFirst()
-	{
-		INTRA_ASSERT(!Empty());
-		FirstNode = FirstNode->Next;
-	}
-
-	forceinline void PopLast()
-	{
-		INTRA_ASSERT(!Empty());
-		LastNode = LastNode->Prev;
-	}
-
-	forceinline T& First() const
-	{
-		INTRA_ASSERT(!Empty());
-		return FirstNode->Value;
-	}
-
-	forceinline T& Last() const
-	{
-		INTRA_ASSERT(!Empty());
-		return LastNode->Value;
-	}
-
-	forceinline const BListRange<const T>& AsConstRange() const {return *reinterpret_cast<const BListRange<const T>*>(this);}
-
-	forceinline bool operator==(null_t) const {return Empty();}
-	forceinline bool operator!=(null_t) const {return !Empty();}
-	forceinline bool operator==(const BListRange& rhs) const {return FirstNode==rhs.FirstNode && LastNode==rhs.LastNode;}
-	forceinline bool operator!=(const BListRange& rhs) const {return !operator==(rhs);}
-
-private:
-	template<typename U, typename Allocator> friend class BList;
-	Node* FirstNode;
-	Node* LastNode;
-};
-
-template<typename T, typename AllocatorType> class BList:
+template<typename T, class AllocatorType> class BList:
 	public Memory::AllocatorRef<AllocatorType>
 {
 	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
@@ -465,5 +362,7 @@ private:
 	BListRange<T> range;
 	size_t count;
 };
+
+INTRA_WARNING_POP
 
 }

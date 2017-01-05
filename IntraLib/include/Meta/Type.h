@@ -2,10 +2,12 @@
 
 #include "Core/FundamentalTypes.h"
 #include "Platform/PlatformInfo.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
 
-#pragma warning(push)
 #pragma warning(disable: 4310) //Не ругаться на приведение констант с усечением значения
 #pragma warning(disable: 4510 4512 4610 4623 4626) //Не ругаться на то, что конструктор копирования, по умолчанию или оператор присваивания неявно удалён
 #if _MSC_VER>=1900
@@ -219,12 +221,12 @@ template<typename T> using RemoveAllExtents = typename D::RemoveAllExtents<T>::t
 
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(checker_name, expr, condition) \
-	template<typename U> struct checker_name\
+	template<typename U> struct checker_name \
 	{\
-		template<typename T> static decltype((expr), Meta::TypeFromValue<bool, \
-			(condition)>()) func(Meta::RemoveReference<T>*);\
-		template<typename T> static Meta::TypeFromValue<bool, false> func(...);\
-		using type = decltype(func<U>(null));\
+		template<typename T> static decltype((expr), ::Intra::Meta::TypeFromValue<bool, \
+			(condition)>()) func(::Intra::Meta::RemoveReference<T>*);\
+		template<typename T> static ::Intra::Meta::TypeFromValue<bool, false> func(...);\
+		using type = decltype(func<U>(nullptr));\
 		enum {_=type::_};\
 	}
 
@@ -232,13 +234,16 @@ template<typename T> using RemoveAllExtents = typename D::RemoveAllExtents<T>::t
 	INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(checker_name, expr, true)
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, condition, default1, default2) \
-template<typename U1 default1, typename U2 default2> struct checker_name\
-{\
-	template<typename T1, typename T2> static decltype((expr), Meta::TypeFromValue<bool, (condition)>()) func(T1*, T2*);\
-	template<typename T1, typename T2> static Meta::TypeFromValue<bool, false> func(...);\
-	using type = decltype(func<U1, U2>(null, null));\
-	enum {_=type::_};\
-}
+	 \
+	template<typename U1 default1, typename U2 default2> struct checker_name \
+	{\
+		template<typename T1, typename T2> static \
+			decltype((expr), Meta::TypeFromValue<bool, (condition)>()) func(T1*, T2*);\
+		template<typename T1, typename T2> static \
+			Meta::TypeFromValue<bool, false> func(...); \
+		using type = decltype(func<U1, U2>(null, null)); \
+		enum {_=type::_}; \
+	}
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER2(checker_name, expr, default1, default2) \
 	INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, true, default1, default2)
@@ -844,6 +849,4 @@ template<typename T1, typename T2> struct Pair
 
 }}
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+INTRA_WARNING_POP

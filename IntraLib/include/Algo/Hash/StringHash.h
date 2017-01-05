@@ -1,10 +1,14 @@
 #pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
+#include "Core/FundamentalTypes.h"
 #include "MurmurCT.h"
 #include "Murmur.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct StringHash
 {
@@ -53,5 +57,6 @@ inline StringHash::StringHash(StringView sv): hash(Hash::Murmur3_32(sv, 0))
 #endif
 }
 
-}}
+INTRA_WARNING_POP
 
+}}

@@ -1,11 +1,14 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Platform/CppFeatures.h"
 #include "Core/Debug.h"
 #include "Meta/Type.h"
 #include "Math/MathEx.h"
 
 namespace Intra { namespace Math {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct Random;
 
@@ -363,6 +366,6 @@ struct RandomNoise
 	}
 };
 
+INTRA_WARNING_POP
 
 }}
-

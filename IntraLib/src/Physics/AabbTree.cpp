@@ -1,10 +1,13 @@
 ﻿#include "Physics/AabbTree.h"
 #include "IO/LogSystem.h"
+#include "Platform/CppWarnings.h"
 //#include "Platform/Time.h"
 
 namespace Intra {
 
 using namespace Math;
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void AabbTree::Build(ArrayRange<Tri> tris)
 {
@@ -152,5 +155,6 @@ void AabbTree::recursive_get_intersection(int myNodeId, const AabbTree* outside,
 	recursive_get_intersection(myNodeId, outside, pOutsideNode->negativeId, m, contacts);
 }
 
-}
+INTRA_WARNING_POP
 
+}

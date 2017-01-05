@@ -1,9 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Core/FundamentalTypes.h"
 #include "Containers/ForwardDeclarations.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Timer
 {
@@ -12,7 +15,7 @@ public:
 	~Timer();
 
 	void Reset();
-	double GetTime();
+	double GetTime() const;
 	double GetTimeAndReset();
 
 	uint GetTimeUs() {return uint(GetTime()*1000000);}
@@ -34,6 +37,8 @@ struct DateTime
 	ushort Year;
 	byte Month, Day, Hour, Minute, Second;
 };
+
+INTRA_WARNING_POP
 
 String ToString(const DateTime& datetime);
 

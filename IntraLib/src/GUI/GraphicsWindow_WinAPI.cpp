@@ -10,6 +10,8 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 #ifdef _MSC_VER
 #pragma warning(disable: 4191)
 #pragma warning(push)

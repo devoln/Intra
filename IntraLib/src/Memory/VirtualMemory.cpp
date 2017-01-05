@@ -2,6 +2,8 @@
 #include "Meta/Type.h"
 #include "Core/Debug.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -9,15 +11,10 @@
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4668)
 #endif
 
 #include <Windows.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 namespace Intra { namespace Memory {
 
@@ -111,12 +108,18 @@ size_t VirtualMemoryPageSize()
 
 namespace Intra { namespace Memory {
 //TODO: сделать большое выравнивание
-AnyPtr VirtualAlloc(size_t bytes, Access access) {(void)bytes; (void)commit; (void)access; return core::malloc(bytes);}
-void VirtualFree(void* ptr, size_t size) {core::free(ptr);}
-void VirtualCommit(void* ptr, size_t bytes, Access access) {(void)ptr; (void)bytes; (void)access;}
+AnyPtr VirtualAlloc(size_t bytes, Access access)
+{(void)bytes; (void)commit; (void)access; return C::malloc(bytes);}
+
+void VirtualFree(void* ptr, size_t size) {C::free(ptr);}
+
+void VirtualCommit(void* ptr, size_t bytes, Access access)
+{(void)ptr; (void)bytes; (void)access;}
+
 size_t VirtualMemoryPageSize() {return sizeof(void*)*2;}
 
 }}
 
 #endif
 
+INTRA_WARNING_POP

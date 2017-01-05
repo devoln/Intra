@@ -1,6 +1,8 @@
 ﻿#include "Math/MathEx.h"
-#include <math.h>
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+#include <math.h>
 #include <float.h>
 
 #ifdef _MSC_VER
@@ -90,5 +92,6 @@ bool NaNType::operator==(real rhs) const {return isnan(float(rhs))!=0;}
 #pragma GCC diagnostic pop
 #endif
 
+INTRA_WARNING_POP
 
 }}

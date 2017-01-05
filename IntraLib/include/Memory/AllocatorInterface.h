@@ -1,11 +1,15 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Core/Debug.h"
+#include "Platform/CppWarnings.h"
 #include "Memory/Memory.h"
 #include "Memory/Allocator.h"
 
 
 namespace Intra { namespace Memory {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class IAllocator
 {
@@ -114,5 +118,7 @@ template<typename Allocator, typename PARENT> struct AllocatorRef<Allocator, PAR
 	forceinline AllocatorRef(null_t=null) {}
 	forceinline AllocatorRef(Allocator& allocator) {(void)allocator;}
 };
+
+INTRA_WARNING_POP
 
 }}

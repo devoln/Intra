@@ -7,7 +7,7 @@ namespace Intra { namespace Algo {
 void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst)
 {
 	INTRA_ASSERT(dst.Length()>=src.Length());
-#if(INTRA_MIN_SIMD_SUPPORT>=INTRA_SIMD_SSE && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
+#if(INTRA_SIMD_SUPPORT>=INTRA_SIMD_SSE && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
 	while(src.Begin<src.End-3)
 	{
 		*(__m64*)dst.Begin = _mm_cvtps_pi16(Simd::SetFloat4U(src.Begin));

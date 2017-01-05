@@ -1,12 +1,16 @@
 ﻿#pragma once
 
 #include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/ArrayRange.h"
 
 namespace Intra { namespace Op {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 //! Арифметические операции
+//!{
 template<typename T> forceinline T Add(const T& a, const T& b) {return a+b;}
 template<typename T> forceinline T Sub(const T& a, const T& b) {return a-b;}
 template<typename T> forceinline T RSub(const T& a, const T& b) {return b-a;}
@@ -15,6 +19,7 @@ template<typename T> forceinline T Div(const T& a, const T& b) {return a/b;}
 template<typename T> forceinline T RDiv(const T& a, const T& b) {return b/a;}
 template<typename T> forceinline T Mod(const T& a, const T& b) {return a%b;}
 template<typename T> forceinline T RMod(const T& a, const T& b) {return b%a;}
+//!}
 
 template<typename T> forceinline T Min(const T& a, const T& b) {return a<b? a: b;}
 template<typename T> forceinline T Max(const T& a, const T& b) {return a>b? a: b;}
@@ -84,6 +89,6 @@ namespace Comparers
 	template<typename T, typename I> using IndexedFunction = Indexed<Function<T>, T, I>;
 }
 
+INTRA_WARNING_POP
 
 }
-

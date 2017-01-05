@@ -16,19 +16,16 @@
 #include "Containers/List.h"
 #include "IO/LogSystem.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4350)
 #endif
 #include <vector>
 #include <string>
 #include <deque>
 #include <list>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 using namespace Intra;
 using namespace Intra::IO;
@@ -292,10 +289,6 @@ template<typename ARR> double TestContainerStringCopying(uint times, uint size)
 
 void RunContainerPerfTests(Logger& logger)
 {
-	//TestContainerMiddleStringRemove<std::vector<String>>(100000);
-	//TestContainerMiddleStringRemove<std::deque<String>>(100000);
-	TestContainerMiddleStringRemove<Array<String>>(100000);
-
 	StringView comparedArrays[] = {"std::vector", "Array"};
 	StringView comparedContainers[] = {"std::vector", "std::deque", "std::list", "Array", "BList"};
 
@@ -552,3 +545,4 @@ void RunContainerPerfTests(Logger& logger)
 	}
 }
 
+INTRA_WARNING_POP

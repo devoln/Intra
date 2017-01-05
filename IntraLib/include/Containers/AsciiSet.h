@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
 #include "Range/ArrayRange.h"
@@ -8,6 +9,8 @@
 #include "Algo/Comparison.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Класс, содержащий множество символов из ASCII
 class AsciiSet
@@ -133,5 +136,7 @@ public:
 	static const AsciiSet LatinLowercase, LatinUppercase, Latin, LatinAndDigits;
 	static const AsciiSet IdentifierChars, NotIdentifierChars;
 };
+
+INTRA_WARNING_POP
 
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/Operators.h"
 #include "Range/ForwardDecls.h"
 #include "Range/Concepts.h"
@@ -9,7 +11,9 @@
 
 namespace Intra { namespace Range {
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 template<typename R, typename P1, typename P2> struct RSplit
 {
@@ -55,7 +59,6 @@ private:
 	ResultOfTake<R> mFirst;
 };
 
-INTRA_WARNING_POP
 
 template<typename R, typename P1, typename P2> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_,
@@ -67,5 +70,7 @@ template<typename T, size_t N, typename P1, typename P2> forceinline
 RSplit<T, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>> Split(
 	T(&arr)[N], P1&& isSkippedDelimiter, P2&& isElementDelimiter)
 {return Split(AsRange(arr), Meta::Forward<P1>(isSkippedDelimiter), Meta::Forward<P2>(isElementDelimiter));}
+
+INTRA_WARNING_POP
 
 }}

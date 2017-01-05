@@ -1,10 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Utils/Callback.h"
 
 #undef Yield
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Thread
 {
@@ -82,7 +85,6 @@ public:
 	};
 
 private:
-
 	Mutex(const Mutex&) = delete;
 	Mutex& operator=(const Mutex&) = delete;
 };
@@ -92,5 +94,7 @@ private:
 #else
 #define INTRA_SYNCHRONIZED_BLOCK(mutex)
 #endif
+
+INTRA_WARNING_POP
 
 }

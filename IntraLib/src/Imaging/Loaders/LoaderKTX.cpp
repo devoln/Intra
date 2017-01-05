@@ -1,10 +1,16 @@
-﻿#include "Imaging/Image.h"
-#include "Imaging/Bindings/GLenumFormats.h"
+﻿#ifndef INTRA_NO_KTX_LOADER
 
-namespace Intra {
+#include "Imaging/Loaders/LoaderKTX.h"
+#include "Imaging/Image.h"
+#include "Imaging/Bindings/GLenumFormats.h"
+#include "Platform/CppWarnings.h"
+
+namespace Intra { namespace Imaging {
 
 using namespace Math;
 using namespace IO;
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct KtxHeader
 {
@@ -40,62 +46,82 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 	return result;
 }
 
-ImageInfo pe_get_ktx_info(byte header[64])
+ImageInfo LoaderKTX::GetInfo(IO::IInputStream& stream) const
 {
-	//if(memcmp(header, "DDS ", 4)!=0) return errResult;
-	return GetImageInfoFromHeader(*reinterpret_cast<KtxHeader*>(header+16));
+	byte* headerSignature[16];
+	stream.ReadData(headerSignature, 16);
+	if(!IsValidHeader(headerSignature, 16)) return ImageInfo();
+	return GetImageInfoFromHeader(stream.Read<KtxHeader>());
 }
 
-#ifndef INTRA_NO_KTX_LOADER
-void Image::loadKTX(IInputStream* s, size_t bytes)
+bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
 {
-	auto startPos = s->GetPos();
+	if(bytes<12) return false;
 
-	s->Skip(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
+	static const byte fileIdentifier[12] = {
+		0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31,
+		0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
+	};
+	auto headerByteRange = ArrayRange<const byte>(
+		reinterpret_cast<const byte*>(header), sizeof(fileIdentifier));
+	return Algo::Equals(headerByteRange, fileIdentifier);
+}
 
-	if(s->Read<uint>() != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
+Image LoaderKTX::Load(IInputStream& stream, size_t bytes) const
+{
+	auto startPos = stream.GetPos();
+
+	stream.Skip(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
+
+	if(stream.Read<uint>() != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
 	{
-		s->SetPos(startPos+bytes);
-		return;
+		stream.SetPos(startPos+bytes);
+		return null;
 	}
 
-	auto header = s->Read<KtxHeader>();
+	auto header = stream.Read<KtxHeader>();
 	auto info = GetImageInfoFromHeader(header);
 	if(info.Type==ImageType_End)
 	{
-		s->SetPos(startPos+bytes);
-		return;
+		stream.SetPos(startPos+bytes);
+		return null;
 	}
 
-	LineAlignment = 4;
-	Info = info;
-	SwapRB = GLFormatSwapRB(ushort(header.glFormat));
+	Image result;
+	result.LineAlignment = 4;
+	result.Info = info;
+	result.SwapRB = GLFormatSwapRB(ushort(header.glFormat));
 	if(info.MipmapCount==0) info.MipmapCount=1;
-	const size_t fullDataSize = info.CalculateFullDataSize(LineAlignment);
-	Data.Clear();
-	Data.SetCountUninitialized(fullDataSize);
-	byte* pos = Data.Data();
+	const size_t fullDataSize = info.CalculateFullDataSize(result.LineAlignment);
+	result.Data.SetCountUninitialized(fullDataSize);
+	byte* pos = result.Data.Data();
 
-	s->Skip(header.bytesOfKeyValueData); //Пропускаем метаданные
+	stream.Skip(header.bytesOfKeyValueData); //Пропускаем метаданные
 
 	for(ushort i=0; i<info.MipmapCount; i++)
 	{
-		uint imageSize = s->Read<uint>();
-		if(Info.Type==ImageType_Cube)
+		uint imageSize = stream.Read<uint>();
+		if(result.Info.Type==ImageType_Cube)
 		{
 			for(ushort j=0; j<6; j++)
 			{
-				s->ReadData(pos, imageSize);
+				stream.ReadData(pos, imageSize);
 				pos += imageSize;
 				pos += 3-(imageSize+3)%4;
 			}
 			continue;
 		}
-		s->ReadData(pos, imageSize);
+		stream.ReadData(pos, imageSize);
 		pos += imageSize;
 		pos += 3-(imageSize+3)%4;
 	}
+	return result;
 }
-#endif
 
-}
+const LoaderKTX LoaderKTX::Instance;
+
+INTRA_WARNING_POP
+
+}}
+
+#endif

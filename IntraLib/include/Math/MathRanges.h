@@ -1,9 +1,14 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
+#include "MathEx.h"
 
 namespace Intra { namespace Math {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct SineRange
 {
@@ -46,6 +51,6 @@ private:
 	T mEkSr, mExponent;
 };
 
+INTRA_WARNING_POP
 
 }}
-

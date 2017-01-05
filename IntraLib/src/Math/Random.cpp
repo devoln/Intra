@@ -1,6 +1,8 @@
 ﻿#include "Core/Core.h"
 #include "Math/Random.h"
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 namespace Intra { namespace Math {
 
 

@@ -1,10 +1,13 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Operators.h"
 #include "Range/Concepts.h"
 #include "Range/Construction/Take.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Найти первое вхождение элемента what в этот диапазон.
 //! Изменяет диапазон в null, если значение не найдено.
@@ -221,5 +224,7 @@ template<class R, typename P> forceinline Meta::EnableIf<
 	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
 Meta::RemoveConstRef<R>> Find(R&& range, P pred, size_t* ioIndex=null)
 {return FindAdvance(Meta::RemoveConstRef<R>(Meta::Forward<R>(range)), pred, ioIndex);}
+
+INTRA_WARNING_POP
 
 }}

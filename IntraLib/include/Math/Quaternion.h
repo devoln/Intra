@@ -5,6 +5,7 @@
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 namespace Intra { namespace Math {

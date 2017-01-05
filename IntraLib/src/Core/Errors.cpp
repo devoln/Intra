@@ -1,5 +1,8 @@
 ﻿#include "Core/Errors.h"
 #include "Range/StringView.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include <signal.h>
 #include <stdlib.h>

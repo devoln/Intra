@@ -2,9 +2,13 @@
 
 #include "Meta/Preprocessor.h"
 #include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Range/ForwardDecls.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 namespace Intra {
+
 
 struct SourceInfo
 {
@@ -46,19 +50,21 @@ bool IsDebuggerAttached();
 
 #define INTRA_DEBUGGER_BREAKPOINT (Intra::IsDebuggerAttached()? (INTRA_DEBUG_BREAK, true): true)
 
+
 namespace D {
 
 constexpr forceinline const char* past_last_slash(const char* str, const char* lastSlash)
 {
-    return *str=='\0'? lastSlash: *str=='/'? past_last_slash(str+1, str+1): past_last_slash(str+1, lastSlash);
+	return *str=='\0'? lastSlash: *str=='/'?
+		past_last_slash(str+1, str+1):
+		past_last_slash(str+1, lastSlash);
 }
 
 constexpr forceinline const char* past_last_slash(const char* str) 
-{ 
-    return past_last_slash(str, str);
-}
+{ return past_last_slash(str, str);}
 
 }}
+
 
 #define __SHORT_FILE__ Intra::D::past_last_slash(__FILE__)
 
@@ -88,3 +94,5 @@ constexpr forceinline const char* past_last_slash(const char* str)
 #define INTRA_HEAP_CHECK
 #define INTRA_ASSERT_WARNING
 #endif
+
+INTRA_WARNING_POP

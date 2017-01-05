@@ -1,8 +1,11 @@
 #pragma once
 
 #include "Range/Concepts.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct NullRange
 {
@@ -28,5 +31,6 @@ template<typename T> struct NullRange
 	void Put(const T&) {}
 };
 
-}}
+INTRA_WARNING_POP
 
+}}

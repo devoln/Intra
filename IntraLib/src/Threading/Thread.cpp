@@ -1,5 +1,8 @@
-﻿#include "Core/Core.h"
-#include "Threading/Thread.h"
+﻿#include "Threading/Thread.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/PlatformInfo.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_LIBRARY_THREADING==INTRA_LIBRARY_THREADING_Dummy)
 
@@ -288,3 +291,5 @@ void Mutex::Unlock() {pthread_mutex_unlock(reinterpret_cast<pthread_mutex_t*>(ha
 #error "INTRA_LIBRARY_THREADING_Qt is not implemented yet!"
 
 #endif
+
+INTRA_WARNING_POP

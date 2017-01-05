@@ -1,10 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Meta/TypeList.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4512 4626)
 
 #if _MSC_VER>=1900
@@ -227,7 +229,4 @@ using Meta::KeyValuePair;
 
 }
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
+INTRA_WARNING_POP

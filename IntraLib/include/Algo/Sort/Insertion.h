@@ -1,8 +1,11 @@
 #pragma once
 
 #include "Range/ArrayRange.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Сортировка массива array вставками с предикатом сравнения comparer.
 //! Характеристики алгоритма:
@@ -38,6 +41,6 @@ template<typename RandomAccessRange, typename C = Comparers::Function<Range::Val
 				Meta::Swap(range[j], range[j-d]);
 }
 
+INTRA_WARNING_POP
 
 }}
-

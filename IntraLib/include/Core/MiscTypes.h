@@ -1,9 +1,13 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Core/Debug.h"
+#include "Platform/CppWarnings.h"
 #include "Platform/Endianess.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #pragma pack(push, 1)
 struct uint24LE
@@ -87,5 +91,7 @@ private:
 
 typedef AnotherEndian<uint40LE> uint40BE;
 #pragma pack(pop)
+
+INTRA_WARNING_POP
 
 }

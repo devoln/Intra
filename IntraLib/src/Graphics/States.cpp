@@ -1,5 +1,4 @@
 ﻿#include "Graphics/States.h"
-#include "Imaging/ImagingTypes.h"
 #include "Algo/Search.h"
 
 namespace Intra { namespace Graphics {

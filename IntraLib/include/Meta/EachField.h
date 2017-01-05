@@ -1,9 +1,12 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 
 namespace Intra { namespace Meta {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename Func, typename Arg0, typename Arg1, typename... Args> forceinline
 void ForEachField(Tuple<Arg0, Arg1, Args...>& tuple, Func&& f)
@@ -102,5 +105,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER2(HasForEachField, ForEachField(Val<T1>(), Val<T2
 }
 template<typename T, typename F=UniFunctor> struct HasForEachField:
 	D::HasForEachField<RemoveReference<T>, RemoveReference<F>> {};
+
+INTRA_WARNING_POP
 
 }}

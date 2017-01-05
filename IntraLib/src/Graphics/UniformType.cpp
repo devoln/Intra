@@ -2,7 +2,7 @@
 #include "Range/StringView.h"
 #include "Containers/String.h"
 #include "Containers/HashMap.h"
-#include "Imaging/ImagingTypes.h"
+#include "Imaging/ImageInfo.h"
 
 namespace Intra { namespace Graphics {
 

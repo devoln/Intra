@@ -5,6 +5,9 @@
 #include "IO/File.h"
 #include "IO/LogSystem.h"
 #include "Algo/String/Path.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/PerformanceTest.h"
 #include "PerfTestString.h"

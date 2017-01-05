@@ -1,10 +1,16 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Memory {
 
-enum class Access: byte {None, Read, Write, ReadWrite, Execute, ExecuteRead, ExecuteWrite, ExecuteReadWrite, End};
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+enum class Access: byte {
+	None, Read, Write, ReadWrite, Execute,
+	ExecuteRead, ExecuteWrite, ExecuteReadWrite,
+	End};
 
 //! Получает память напрямую от ОС.
 //! Память выделяется страницами, поэтому параметр bytes округляется вверх до размера страницы.
@@ -25,5 +31,7 @@ void VirtualFree(void* ptr, size_t size);
 void VirtualCommit(void* ptr, size_t bytes, Access access);
 
 size_t VirtualMemoryPageSize();
+
+INTRA_WARNING_POP
 
 }}

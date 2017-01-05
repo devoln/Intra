@@ -1,9 +1,11 @@
 ﻿#pragma once
 
 #include "Type.h"
-
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Meta {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace D {struct NoType {};}
 
@@ -317,5 +319,6 @@ using TypeListReplaceType = typename Meta::D::ReplaceType<OldValue, NewValue, TL
 
 }
 
-}
+INTRA_WARNING_POP
 
+}

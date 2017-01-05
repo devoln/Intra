@@ -4,8 +4,12 @@
 #include "Range/StringView.h"
 #include "Range/ArrayRange.h"
 #include "Containers/String.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/PlatformInfo.h"
 
 namespace Intra { namespace Algo { namespace Path {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void NormalizeSlashesAndSpaces(ArrayRange<char>& path)
 {
@@ -88,5 +92,6 @@ bool IsAbsolutePath(StringView path)
 	return false;
 }
 
-}}}
+INTRA_WARNING_POP
 
+}}}

@@ -2,8 +2,12 @@
 
 #include "Algo/Op.h"
 #include "Range/Concepts.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R1, typename R2> forceinline Meta::EnableIf<
 	Range::IsFiniteRange<R1>::_ != Range::IsFiniteRange<R2>::_,
@@ -259,5 +263,6 @@ template<typename R, size_t N> forceinline Meta::EnableIf<
 bool> EndsWith(const R& range, const Range::ValueTypeOf<R>(&rhs)[N])
 {return EndsWith(range, Range::AsRange(rhs));}
 
+INTRA_WARNING_POP
 
 }}

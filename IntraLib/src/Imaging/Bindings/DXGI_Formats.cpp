@@ -1,8 +1,8 @@
 ﻿#include "Imaging/Bindings/DXGI_Formats.h"
-#include "Imaging/ImagingTypes.h"
+#include "Imaging/ImageFormat.h"
 #include "Algo/Mutation/Fill.h"
 
-namespace Intra {
+namespace Intra { namespace Imaging {
 
 static const ImageFormat dxgiFormatConvertTable[]=
 {
@@ -74,4 +74,4 @@ DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB)
 	return (swapRB? map_swap: map_no_swap)[fmt.value];
 }
 
-}
+}}

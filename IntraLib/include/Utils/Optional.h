@@ -1,8 +1,11 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 
 namespace Intra { namespace Utils {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct Optional
 {
@@ -120,5 +123,6 @@ private:
 	{return reinterpret_cast<cref>(val);}
 };
 
-}}
+INTRA_WARNING_POP
 
+}}

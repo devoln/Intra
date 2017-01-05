@@ -1,4 +1,8 @@
-﻿#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+﻿#include "Platform/CppWarnings.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
+#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
 #define _HAS_EXCEPTIONS 0
 #endif
 
@@ -18,6 +22,7 @@
 using namespace Intra;
 using namespace Intra::IO;
 using namespace Intra::Range;
+
 
 template<typename T> void PrintPolymorphicRange(FiniteInputRange<T> range)
 {
@@ -289,4 +294,3 @@ void RunRangePerfTests(IO::Logger& logger)
 		{time1, time2, time3},
 		{time4, time5});
 }
-

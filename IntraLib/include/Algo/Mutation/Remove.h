@@ -1,10 +1,14 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
+#include "Core/Debug.h"
 #include "Range/Concepts.h"
 #include "Range/Operations.h"
 #include "Algo/Sort.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename IndexRange> Meta::EnableIf<
 	Range::IsBidirectionalRange<R>::_,
@@ -62,5 +66,6 @@ template<typename R, typename P> forceinline Meta::EnableIf<
 	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
 R> Remove(const R& range, P pred) {return RemoveRightAdvance(R(range), pred);}
 
-}}
+INTRA_WARNING_POP
 
+}}

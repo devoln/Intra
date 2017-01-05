@@ -1,9 +1,12 @@
 ﻿#include "PerfTestSort.h"
-#include "Test/UnitTest.h"
+#include "Test/Unittest.h"
 #include "Test/PerformanceTest.h"
 #include "Algo/Sort.h"
 #include "Platform/Time.h"
+#include "Platform/CppWarnings.h"
 using namespace Intra;
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
 #define _HAS_EXCEPTIONS 0

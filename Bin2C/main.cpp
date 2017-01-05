@@ -8,6 +8,8 @@
 using namespace Intra;
 using namespace Intra::IO;
 
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 {
 	String result = Algo::Path::ExtractName(path);

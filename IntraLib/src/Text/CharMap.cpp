@@ -1,6 +1,9 @@
 ﻿#include "Text/CharMap.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 using namespace Math;
 
@@ -99,5 +102,6 @@ CharMap CharMap::FromFile(StringView filename)
 	return FromStream(file);
 }
 
-}
+INTRA_WARNING_POP
 
+}

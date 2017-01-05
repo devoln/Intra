@@ -4,10 +4,12 @@
 #include "Range/ForwardDecls.h"
 #include "Utils/Optional.h"
 #include "Take.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Range {
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 template<typename T> struct RRepeat
 {
@@ -26,7 +28,8 @@ template<typename T> struct RRepeat
 	forceinline bool operator==(const RRepeat& rhs) const
 	{
 		if(mValue==null && rhs.mValue==null) return true;
-		if(mValue==null && rhs.mValue!=null || mValue!=null && rhs.mValue==null) return false;
+		if((mValue==null && rhs.mValue!=null) ||
+			(mValue!=null && rhs.mValue==null)) return false;
 		return mValue()==rhs.mValue();
 	}
 	
@@ -34,7 +37,6 @@ private:
 	Utils::Optional<T> mValue;
 };
 
-INTRA_WARNING_POP
 
 template<typename T> RRepeat<T> Repeat(T&& val)
 {return {Meta::Forward<T>(val)};}
@@ -47,5 +49,7 @@ template<typename T, size_t N> RRepeat<AsRangeResult<T(&)[N]>> Repeat(T(&arr)[N]
 
 template<typename T, size_t N> RTake<RRepeat<AsRangeResult<T(&)[N]>>> Repeat(T(&arr)[N], size_t n)
 {return Take(Repeat(AsRange(arr)), n);}
+
+INTRA_WARNING_POP
 
 }}

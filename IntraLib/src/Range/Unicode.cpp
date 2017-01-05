@@ -2,10 +2,13 @@
 #include "Algo/Mutation/Copy.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"
-#include "Test/UnitTest.h"
+#include "Test/Unittest.h"
 #include "Algo/String/CStr.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 enum: ushort {HalfShift=10};
 enum: uint {HalfBase=0x0010000};
@@ -301,5 +304,7 @@ INTRA_UNITTEST("Unicode conversion test")
 	auto utf8 = UTF16(utf16.begin(), utf16.end()).ToUTF8();
 	INTRA_TEST_ASSERT_EQUALS(originalStr, utf8);
 };
+
+INTRA_WARNING_POP
 
 }

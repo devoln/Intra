@@ -2,8 +2,11 @@
 
 #include "Range/ForwardDecls.h"
 #include "Range/Iteration/Cycle.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename R> Meta::EnableIf<
 	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
@@ -92,6 +95,8 @@ template<typename T, size_t N, typename PatternRange> forceinline Meta::EnableIf
 template<typename T, size_t N, typename TP, size_t NP> forceinline
 void FillPattern(T(&arr)[N], TP(&patternArr)[NP])
 {FillPatternAdvance(ArrayRange<T>(arr), AsRange(patternArr));}
+
+INTRA_WARNING_POP
 
 }}
 

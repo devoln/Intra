@@ -1,11 +1,13 @@
 ﻿#include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra {
 
 using namespace Range;
 using namespace IO;
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<const StringView> comparedTypes,
 	ArrayRange<const double> otherTimes, ArrayRange<const double> times)
@@ -105,5 +107,6 @@ TestGroup::TestGroup(Logger& Log, StringView category): yes(false), logger(Log)
 
 TestGroup::~TestGroup() {if(yes) logger.EndSpoiler(); nestingLevel--;}
 
-}
+INTRA_WARNING_POP
 
+}

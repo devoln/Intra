@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
+#include "Meta/Type.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Algo/String/Parse.h"
 #include "Range/ArrayRange.h"
@@ -10,11 +13,12 @@
 #include "Algo/Search.h"
 #include "Algo/String/CStr.h"
 #include "Algo/Mutation/Replace.h"
-#include "Meta/Type.h"
 #include "Memory/Allocator.h"
 #include "Containers/AsciiSet.h"
 
 namespace Intra { namespace Range {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename Char> struct GenericStringView
 {
@@ -175,7 +179,7 @@ template<typename Char> struct GenericStringView
 	GenericStringView> Trim(P pred) const {return Algo::Trim(*this, pred);}
 
 	template<typename RW> Meta::EnableIf<
-		IsFiniteForwardRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_ ||
+		(IsForwardRange<RW>::_ && !IsInfiniteRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_) ||
 		Meta::TypeEquals<RW, Char>::_,
 	bool> StartsWith(const RW& what) const
 	{return Algo::StartsWith(*this, what);}
@@ -184,7 +188,7 @@ template<typename Char> struct GenericStringView
 	{return Algo::StartsWith(*this, what);}
 
 	template<typename RW> Meta::EnableIf<
-		IsFiniteForwardRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_ ||
+		(IsFiniteForwardRange<RW>::_ && ValueTypeIsConvertible<RW, Char>::_) ||
 		Meta::TypeEquals<RW, Char>::_,
 	bool> EndsWith(const RW& what) const
 	{return Algo::EndsWith(*this, what);}
@@ -193,9 +197,9 @@ template<typename Char> struct GenericStringView
 	{return Algo::EndsWith(*this, what);}
 
 	template<typename RW> Meta::EnableIf<
-		IsFiniteForwardRange<RW>::_ &&
+		(IsFiniteForwardRange<RW>::_ &&
 		(ValueTypeIsConvertible<RW, Char>::_ ||
-		ValueTypeIsConvertible<AsRangeResult<RW>, Char>::_) ||
+		ValueTypeIsConvertible<AsRangeResult<RW>, Char>::_)) ||
 		Meta::TypeEquals<RW, Char>::_,
 	bool> Contains(const RW& what) const
 	{return Algo::Contains(*this, Range::AsRange(what));}
@@ -328,7 +332,7 @@ template<typename Char> struct GenericStringView
 		GenericString<Char> result;
 		result.SetLengthUninitialized(Length()*n);
 		for(size_t i=0; i<n; i++)
-			memcpy(result.Data()+Length()*i, Data(), Length()*sizeof(Char));
+			C::memcpy(result.Data()+Length()*i, Data(), Length()*sizeof(Char));
 		return result;
 	}
 
@@ -371,6 +375,7 @@ template<typename T, size_t N> forceinline Meta::EnableIf<
 	!Meta::IsCharType<T>::_,
 ArrayRange<const T>> AsConstRange(const T(&arr)[N]) {return ArrayRange<const T>(arr);}
 
+INTRA_WARNING_POP
 
 }
 

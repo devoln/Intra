@@ -2,6 +2,9 @@
 #include "Platform/Compatibility.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
 
@@ -30,16 +33,11 @@ void android_main(struct android_app* state)
 #endif
 
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4668)
 #endif
 
 #include <Windows.h>
 #include "Platform/Environment.h"
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 #ifndef INTRA_NO_WINDOWS_MAIN
 extern "C" int INTRA_CRTDECL main(int argc, const char* argv[]);
@@ -366,3 +364,5 @@ void INTRA_CRTDECL operator delete(void* block, size_t) noexcept
 #pragma comment(linker, "/NODEFAULTLIB:msvcr120.lib")
 #pragma comment(linker, "/NODEFAULTLIB:msvcr140.lib")
 #endif
+
+INTRA_WARNING_POP

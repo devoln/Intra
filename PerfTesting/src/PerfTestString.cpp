@@ -15,18 +15,15 @@
 #include "Containers/String.h"
 #include "Platform/Time.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4350)
 #endif
 
 #include <string>
 #ifndef INTRA_MINIMIZE_CRT
 #include <sstream>
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
 #endif
 
 using namespace Intra;
@@ -422,3 +419,5 @@ void RunStringPerfTests(Logger& logger)
 			{TestStringSubStr<String>(10000000)});
 	}
 }
+
+INTRA_WARNING_POP

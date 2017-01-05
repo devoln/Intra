@@ -7,6 +7,7 @@
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4668)
+INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #ifndef WIN32_LEAN_AND_MEAN

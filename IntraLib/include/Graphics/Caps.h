@@ -1,8 +1,12 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/Intrinsics.h"
+#include "Core/FundamentalTypes.h"
 
 namespace Intra { namespace Graphics {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct DeviceCaps
 {
@@ -76,6 +80,8 @@ struct DeviceCaps
 	uint FastCopyTexture: 2; //Прямое копирование данных текстуры с одинаковым форматом (>=1), с совместимым форматом (==2)
 	uint ShaderFloatMantissaBits: 5, ShaderIntegerBits: 5;
 };
+
+INTRA_WARNING_POP
 
 }}
 

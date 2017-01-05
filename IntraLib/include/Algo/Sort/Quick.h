@@ -7,10 +7,20 @@
 
 namespace Intra { namespace Algo {
 
-template<typename ArrRange, typename C = Comparers::Function<Range::ValueTypeOf<ArrRange>>> Meta::EnableIf<
+template<typename C, typename ArrRange> Meta::EnableIf<
 	Range::IsArrayRange<ArrRange>::_ &&
 	Range::IsAssignableInputRange<ArrRange>::_
-> QuickSort(const ArrRange& range, C comparer = Op::Less<Range::ValueTypeOf<ArrRange>>);
+> QuickSort(const ArrRange& range, C comparer);
+
+
+template<typename ArrRange> Meta::EnableIf<
+	Range::IsArrayRange<ArrRange>::_ &&
+	Range::IsAssignableInputRange<ArrRange>::_
+> QuickSort(const ArrRange& range)
+{
+	return QuickSort<Comparers::Function<Range::ValueTypeOf<ArrRange>>>(
+		range, Op::Less<Range::ValueTypeOf<ArrRange>>);
+}
 
 namespace D
 {
@@ -135,7 +145,7 @@ namespace D
 }
 
 
-template<typename ArrRange, typename C> Meta::EnableIf<
+template<typename C, typename ArrRange> Meta::EnableIf<
 	Range::IsArrayRange<ArrRange>::_ &&
 	Range::IsAssignableInputRange<ArrRange>::_
 > QuickSort(const ArrRange& range, C comparer)

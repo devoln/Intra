@@ -5,7 +5,9 @@
 
 namespace Intra { namespace Range {
 
-INTRA_WARNING_PUSH_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 template<typename T, typename F> struct RRecurrence1
 {
@@ -45,7 +47,6 @@ private:
 	T a, b;
 };
 
-INTRA_WARNING_POP
 
 template<typename T, typename F> forceinline
 RRecurrence1<Meta::RemoveConstRef<T>, F> Recurrence(F function, T&& f1)
@@ -55,5 +56,7 @@ RRecurrence1<Meta::RemoveConstRef<T>, F> Recurrence(F function, T&& f1)
 template<typename T, typename F> forceinline
 RRecurrence2<Meta::RemoveConstRef<T>, F> Recurrence(F function, T&& f1, T&& f2)
 {return {function, Meta::Forward<T>(f1), Meta::Forward<T>(f2)};}
+
+INTRA_WARNING_POP
 
 }}

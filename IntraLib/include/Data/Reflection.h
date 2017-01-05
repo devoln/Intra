@@ -3,7 +3,6 @@
 #include "Data/ValueType.h"
 #include "Range/ArrayRange.h"
 #include "Meta/Type.h"
-#include "Meta/TypeList.h"
 #include "Meta/Tuple.h"
 #include "Meta/Preprocessor.h"
 #include "Memory/SmartRef.h"
@@ -14,7 +13,10 @@ namespace Intra { namespace Data {
 struct StructReflection;
 struct StructFieldDynamicSerializer;
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 INTRA_DEFINE_EXPRESSION_CHECKER(HasReflection, &T::Reflection());
+
 
 struct StructField
 {
@@ -48,7 +50,6 @@ public:
 	//! Для встроенных типов и других типов, не имеющих рефлексии, null.
 	const StructReflection* SubstructReflection;
 };
-
 
 struct StructReflection
 {
@@ -147,3 +148,4 @@ private:
     INTRA_IMPLEMENT_FOR_EACH_FIELD(__VA_ARGS__)\
     INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(__VA_ARGS__)
 
+INTRA_WARNING_POP

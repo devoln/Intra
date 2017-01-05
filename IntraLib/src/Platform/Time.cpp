@@ -1,6 +1,9 @@
-﻿#include "Platform/Compatibility.h"
-#include "Platform/Time.h"
+﻿#include "Platform/Time.h"
+#include "Platform/Compatibility.h"
+#include "Platform/PlatformInfo.h"
 #include "Containers/String.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <time.h>
 
@@ -31,7 +34,7 @@ namespace Intra {
 Timer::Timer() = default;
 Timer::~Timer() = default;
 void Timer::Reset() {}
-double Timer::GetTime() {return 0;}
+double Timer::GetTime() const {return 0;}
 double Timer::GetTimeAndReset() {return 0;}
 void Timer::Wait(uint msec) {}
 
@@ -63,11 +66,12 @@ Timer::~Timer() = default;
 void Timer::Reset() {GetTimeAndReset();}
 
 
-double Timer::GetTime()
+double Timer::GetTime() const
 {
 	const ulong64 oldHndl = hndl;
-	const double result = GetTimeAndReset();
-	hndl = oldHndl;
+	auto This = const_cast<Timer*>(this);
+	const double result = This->GetTimeAndReset();
+	This->hndl = oldHndl;
 	return result;
 }
 
@@ -112,7 +116,7 @@ double Timer::GetTimeAndReset()
 	return result;
 }
 
-double Timer::GetTime()
+double Timer::GetTime() const
 {
 	auto current = std::chrono::high_resolution_clock::now();
 	auto& prev = *reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl);
@@ -146,7 +150,7 @@ Timer::~Timer() {delete reinterpret_cast<QElapsedTimer*>(hndl);}
 
 void Timer::Reset() {reinterpret_cast<QElapsedTimer*>(hndl)->start();}
 
-double Timer::GetTime()
+double Timer::GetTime() const
 {
 	return double(reinterpret_cast<QElapsedTimer*>(hndl)->nsecsElapsed())/1000000000.0;
 }
@@ -173,7 +177,7 @@ namespace Intra {
 Timer::Timer() {hndl = clock();}
 Timer::~Timer() = default;
 void Timer::Reset() {hndl = clock();}
-double Timer::GetTime() {return double(clock()-hndl)/CLOCKS_PER_SEC;}
+double Timer::GetTime() const {return double(clock()-hndl)/CLOCKS_PER_SEC;}
 
 double Timer::GetTimeAndReset()
 {
@@ -218,3 +222,4 @@ void Timer::Wait(uint msec)
 
 #endif
 
+INTRA_WARNING_POP

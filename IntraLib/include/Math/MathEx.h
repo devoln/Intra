@@ -1,16 +1,19 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
 
 namespace Intra { namespace Math {
 
 constexpr const double PI = 3.14159265358979323846;
 constexpr const double E = 2.71828182845904523536;
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4056)
 const float Infinity = 1e300*1e300;
-#pragma warning(pop)
 #else
 constexpr const float Infinity = __builtin_huge_valf();
 #endif
@@ -550,7 +553,6 @@ inline byte Log2i(uint x)
 
 forceinline bool IsPow2(size_t x) {return x!=0 && ((x&(x-1))==0);}
 
-
 struct Half
 {
 	Half() = default;
@@ -583,5 +585,7 @@ private:
 		return f32;
 	}
 };
+
+INTRA_WARNING_POP
 
 }}

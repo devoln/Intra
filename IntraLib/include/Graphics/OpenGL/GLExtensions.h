@@ -56,6 +56,8 @@ bool IsExtensionSupported(StringView extension);
 ushort GetGLVersion(bool* gles);
 
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 struct OpenGL
 {
 
@@ -934,7 +936,6 @@ String ToString() const
 	else result += "compatibility";
 	if(IsDebugContext) result += " debug";
 	result += "\n\nСписок поддерживаемых расширений:\n";
-	static_assert(Meta::HasOpEquals<Range::ForwardIterator<Range::RSplit<StringView, AsciiSet, AsciiSet>>>::_, "ERROR!");
 	for(auto&& ext: Extensions().Split(" "))
 	{
 		result += ext;
@@ -967,13 +968,13 @@ struct Caps
 
 Caps Caps;
 
-    OpenGL()
-	{
-		C::memset(this, 0, sizeof(OpenGL));
-	}
+    OpenGL() {C::memset(this, 0, sizeof(OpenGL));}
 
 	OpenGL& operator=(const OpenGL&) = delete;
 };
+
+INTRA_WARNING_POP
+
 
 
 #if(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Windows)

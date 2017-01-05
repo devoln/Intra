@@ -1,7 +1,8 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Math/MathEx.h"
-
 #include "Math/Vector.h"
 
 //#define INTRA_SWAP_VM_MULTIPLY_ORDER
@@ -9,6 +10,8 @@
 
 
 namespace Intra { namespace Math {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS\
 
 template<typename T> struct Matrix3;
 template<typename T> struct Matrix4;
@@ -676,5 +679,7 @@ namespace HLSL
 	using GLSL::transpose;
 	using GLSL::Inverse;
 }
+
+INTRA_WARNING_POP
 
 }}

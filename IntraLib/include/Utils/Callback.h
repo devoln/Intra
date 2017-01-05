@@ -1,11 +1,13 @@
 ﻿#pragma once
 
+#include "Platform/Intrinsics.h"
+#include "Platform/CppWarnings.h"
 #include "Core/FundamentalTypes.h"
 #include "Core/Debug.h"
 #include "Meta/Type.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #ifdef _MSC_VER
-#pragma warning(push)
 #pragma warning(disable: 4191 4626)
 #if(_MSC_VER>=1900)
 #pragma warning(disable: 5027)
@@ -173,7 +175,7 @@ public:
 	{
 		static_assert(sizeof(T)<=MaxDataSize, "Too big struct of delegate parameters!");
 		new(data) T(callData);
-		memset(data+sizeof(callData), 0, MaxDataSize-sizeof(callData));
+		C::memset(data+sizeof(callData), 0, MaxDataSize-sizeof(callData));
 	}
 
 	template<typename T> FixedDelegate(R(*f)(const T&, Args...), const T& callData):
@@ -209,7 +211,7 @@ public:
 	bool operator==(const FixedDelegate<R(Args...), MaxDataSize>& rhs) const
 	{
 		return func==rhs.func && destructor==rhs.destructor && copy_constructor==rhs.copy_constructor &&
-			memcmp(data, rhs.data, MaxDataSize)==0;
+			C::memcmp(data, rhs.data, MaxDataSize)==0;
 	}
 	bool operator!=(const FixedDelegate<R(Args...), MaxDataSize>& rhs) const {return !operator==(rhs);}
 
@@ -232,6 +234,4 @@ private:
 
 }}
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+INTRA_WARNING_POP

@@ -1,4 +1,6 @@
 #include "Algo/Mutation/Transform.h"
+#include "Core/Debug.h"
+#include "Range/ArrayRange.h"
 #include "Math/Simd.h"
 
 namespace Intra { namespace Algo {
@@ -9,7 +11,7 @@ void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 	auto dst = dstOp1.Begin;
 	auto src = op2.Begin;
 
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst<dstOp1.End-3)
 	{
 		*dst++ += *src++;
@@ -35,7 +37,7 @@ void Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 	auto dst = dstOp1.Begin;
 	auto src = op2.Begin;
 
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst<dstOp1.End-3)
 	{
 		*dst++ *= *src++;
@@ -59,7 +61,7 @@ void Multiply(ArrayRange<float> dstOp1, float multiplyer)
 {
 	auto dst = dstOp1.Begin;
 
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst<dstOp1.End-3)
 	{
 		*dst++ *= multiplyer;
@@ -82,7 +84,7 @@ void Multiply(ArrayRange<float> dstOp1, float multiplyer)
 void Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiplyer)
 {
 	INTRA_ASSERT(dst.Length()==op1.Length());
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst.Begin<dst.End-3)
 	{
 		*dst.Begin++ = *op1.Begin++ * multiplyer;
@@ -108,7 +110,7 @@ void MulAdd(ArrayRange<float> dstOp1, float mul, float add)
 {
 	auto dst = dstOp1.Begin;
 
-#if(INTRA_MIN_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst<dstOp1.End-3)
 	{
 		*dst = *dst * mul + add; dst++;

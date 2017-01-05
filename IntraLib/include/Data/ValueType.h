@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Range/ForwardDecls.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Math/MathEx.h"
@@ -9,6 +11,8 @@
 #include "Memory/Allocator.h"
 
 namespace Intra {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct ValueType
 {
@@ -173,5 +177,7 @@ struct ValueType
 			ValueType(ValueType::End);
 	}
 };
+
+INTRA_WARNING_POP
 
 }

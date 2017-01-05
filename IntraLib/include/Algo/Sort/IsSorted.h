@@ -2,8 +2,11 @@
 
 #include "Range/Concepts.h"
 #include "Algo/Op.h"
+#include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename P=bool(*)(const Range::ValueTypeOf<R>&, const Range::ValueTypeOf<R>&)> Meta::EnableIf<
 	Range::IsFiniteForwardRange<R>::_,
@@ -23,6 +26,6 @@ bool> IsSorted(const R& range, P comparer=&Op::Less<Range::ValueTypeOf<R>>)
 	return true;
 }
 
+INTRA_WARNING_POP
 
 }}
-

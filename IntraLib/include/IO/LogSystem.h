@@ -1,11 +1,14 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
 #include "Range/ArrayRange.h"
 #include "Range/StringView.h"
 #include "Containers/Array.h"
 #include "IO/DocumentWriter.h"
 
 namespace Intra { namespace IO {
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Logger: public IDocumentWriter
 {
@@ -272,5 +275,7 @@ struct StreamWriter
 	StreamWriter& operator=(const StreamWriter&) = delete;
 };
 }
+
+INTRA_WARNING_POP
 
 }}
