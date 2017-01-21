@@ -1,14 +1,14 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/ArrayRange.h"
 #include "Algo/Op.h"
 
 namespace Intra { namespace Algo {
 
-//! Сортировка выбором диапазона range с предикатом сравнения comparer.
-//! Характеристики алгоритма:
-//! - Худшее, среднее и лучшее время - O(n^2);
-//! - Неустойчив.
+//! РЎРѕСЂС‚РёСЂРѕРІРєР° РІС‹Р±РѕСЂРѕРј РґРёР°РїР°Р·РѕРЅР° range СЃ РїСЂРµРґРёРєР°С‚РѕРј СЃСЂР°РІРЅРµРЅРёСЏ comparer.
+//! РҐР°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё Р°Р»РіРѕСЂРёС‚РјР°:
+//! - РҐСѓРґС€РµРµ, СЃСЂРµРґРЅРµРµ Рё Р»СѓС‡С€РµРµ РІСЂРµРјСЏ - O(n^2);
+//! - РќРµСѓСЃС‚РѕР№С‡РёРІ.
 template<typename RandomAccessRange, typename C = Comparers::Function<Range::ValueTypeOf<RandomAccessRange>>> Meta::EnableIf<
 	Range::IsFiniteRandomAccessRange<RandomAccessRange>::_ &&
 	Range::IsAssignableInputRange<RandomAccessRange>::_

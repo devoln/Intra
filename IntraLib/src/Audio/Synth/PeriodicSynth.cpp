@@ -1,4 +1,4 @@
-#include "Audio/Synth/PeriodicSynth.h"
+﻿#include "Audio/Synth/PeriodicSynth.h"
 #include "Range/ArrayRange.h"
 #include "Math/MathEx.h"
 #include "Algo/Mutation/Copy.h"

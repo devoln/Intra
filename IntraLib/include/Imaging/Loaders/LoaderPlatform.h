@@ -1,8 +1,8 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/PlatformInfo.h"
 
-//! Используемая библиотека\API системы для загрузки изображений
+//! РСЃРїРѕР»СЊР·СѓРµРјР°СЏ Р±РёР±Р»РёРѕС‚РµРєР°\API СЃРёСЃС‚РµРјС‹ РґР»СЏ Р·Р°РіСЂСѓР·РєРё РёР·РѕР±СЂР°Р¶РµРЅРёР№
 #define INTRA_LIBRARY_IMAGE_LOADING_None 0
 #define INTRA_LIBRARY_IMAGE_LOADING_STB 1
 #define INTRA_LIBRARY_IMAGE_LOADING_DevIL 2
@@ -11,13 +11,13 @@
 #define INTRA_LIBRARY_IMAGE_LOADING_SDL 5
 #define INTRA_LIBRARY_IMAGE_LOADING_Android 6
 
-//Пытаемся автоматически определить доступную системную библиотеку для загрузки изображений
+//РџС‹С‚Р°РµРјСЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РѕРїСЂРµРґРµР»РёС‚СЊ РґРѕСЃС‚СѓРїРЅСѓСЋ СЃРёСЃС‚РµРјРЅСѓСЋ Р±РёР±Р»РёРѕС‚РµРєСѓ РґР»СЏ Р·Р°РіСЂСѓР·РєРё РёР·РѕР±СЂР°Р¶РµРЅРёР№
 #ifndef INTRA_LIBRARY_IMAGE_LOADING
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_Gdiplus
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
-//TODO: сделать загрузку изображений через JNI
+//TODO: СЃРґРµР»Р°С‚СЊ Р·Р°РіСЂСѓР·РєСѓ РёР·РѕР±СЂР°Р¶РµРЅРёР№ С‡РµСЂРµР· JNI
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_None
 #else
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_None
@@ -31,14 +31,14 @@
 
 namespace Intra { namespace Imaging {
 
-//! Загрузить изображение средствами библиотек операционной системы
-//! или сторонних библиотек, поддерживающих сразу множество форматов:
+//! Р—Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ СЃСЂРµРґСЃС‚РІР°РјРё Р±РёР±Р»РёРѕС‚РµРє РѕРїРµСЂР°С†РёРѕРЅРЅРѕР№ СЃРёСЃС‚РµРјС‹
+//! РёР»Рё СЃС‚РѕСЂРѕРЅРЅРёС… Р±РёР±Р»РёРѕС‚РµРє, РїРѕРґРґРµСЂР¶РёРІР°СЋС‰РёС… СЃСЂР°Р·Сѓ РјРЅРѕР¶РµСЃС‚РІРѕ С„РѕСЂРјР°С‚РѕРІ:
 //! GDI+ (Windows)
-//! Java API через JNI (Android)
-//! Qt (стороння библиотека, входит во многие дистрибутивы Linux)
-//! DevIL (сторонняя библиотека)
-//! STB image (сторонняя библиотека)
-//! SDL image (сторонняя библиотека)
+//! Java API С‡РµСЂРµР· JNI (Android)
+//! Qt (СЃС‚РѕСЂРѕРЅРЅСЏ Р±РёР±Р»РёРѕС‚РµРєР°, РІС…РѕРґРёС‚ РІРѕ РјРЅРѕРіРёРµ РґРёСЃС‚СЂРёР±СѓС‚РёРІС‹ Linux)
+//! DevIL (СЃС‚РѕСЂРѕРЅРЅСЏСЏ Р±РёР±Р»РёРѕС‚РµРєР°)
+//! STB image (СЃС‚РѕСЂРѕРЅРЅСЏСЏ Р±РёР±Р»РёРѕС‚РµРєР°)
+//! SDL image (СЃС‚РѕСЂРѕРЅРЅСЏСЏ Р±РёР±Р»РёРѕС‚РµРєР°)
 Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes);
 
 }}

@@ -19,7 +19,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 template<typename O> class GenericTextSerializer
 {
 public:
-	GenericTextSerializer(const DataLanguageParams& langParams, const TextSerializerParams& serializerParams, const O& output):
+	GenericTextSerializer(const DataLanguageParams& langParams,
+		const TextSerializerParams& serializerParams, const O& output):
 		Params(serializerParams), Lang(langParams),
 		NestingLevel(0), Output(output) {}
 
@@ -252,28 +253,30 @@ struct TextDeserializerStructVisitor
 //! Сериализовать кортеж
 template<typename O, typename Tuple> Meta::EnableIf<
 	Meta::HasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
-	!HasReflection<Tuple>::_
+	!HasReflectionFieldNamesMethod<Tuple>::_
 > SerializeText(GenericTextSerializer<O>& serializer,
 	const Tuple& src, ArrayRange<const StringView> fieldNames=null)
 {
 	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
 	if((serializer.Params.ValuePerLine & TextSerializerParams::TypeFlags_Tuple) == 0)
 		fieldNames = null;
-	GenericTextSerializerStructVisitor<O> visitor = {&serializer, false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
+	GenericTextSerializerStructVisitor<O> visitor = {&serializer,
+		false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
 	Meta::ForEachField(src, visitor);
 	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 }
 
 //! Сериализовать структуру или класс со статической рефлексией
 template<typename T, typename O> forceinline Meta::EnableIf<
-	HasReflection<T>::_
+	HasReflectionFieldNamesMethod<T>::_
 > SerializeText(GenericTextSerializer<O>& serializer, const T& src)
 {
 	auto fieldNames = T::ReflectionFieldNames();
 	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
 	if(!serializer.Params.FieldAssignments && !serializer.Lang.RequireFieldAssignments)
 		fieldNames=null;
-	GenericTextSerializerStructVisitor<O> visitor = {&serializer, false, fieldNames, TextSerializerParams::TypeFlags_Struct};
+	GenericTextSerializerStructVisitor<O> visitor = {&serializer,
+		false, fieldNames, TextSerializerParams::TypeFlags_Struct};
 	Meta::ForEachField(src, visitor);
 	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
 }
@@ -369,7 +372,7 @@ forceinline void DeserializeText(TextDeserializer& deserializer, bool& v)
 
 //! Десериализация структур
 template<typename T> forceinline Meta::EnableIf<
-	HasReflection<T>::_
+	HasReflectionFieldNamesMethod<T>::_
 > DeserializeText(TextDeserializer& deserializer, T& v)
 {deserializer.DeserializeStruct(v);}
 

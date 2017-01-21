@@ -1,4 +1,4 @@
-#include "Algo/Reduction.h"
+﻿#include "Algo/Reduction.h"
 #include "Math/Simd.h"
 
 namespace Intra { namespace Algo {

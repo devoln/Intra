@@ -1,4 +1,4 @@
-#include "Audio/Synth/SineSynth.h"
+п»ї#include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Platform/CppWarnings.h"
 #include "Math/MathRanges.h"
@@ -32,7 +32,7 @@ void FastSine(float volume, float freq, uint sampleRate, ArrayRange<float> inOut
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
-	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
+	//Р“РµРЅРµСЂРёСЂСѓРµРј С„СЂР°РіРјРµРЅС‚, РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµРј РїРѕРІС‚РѕСЂСЏС‚СЊ, РїРѕРєР° РЅРµ Р·Р°РїРѕР»РЅРёРј Р±СѓС„РµСЂ С†РµР»РёРєРѕРј
 	Array<float> sineFragment;
 	const auto sampleCount = uint(Math::Round(samplesPerPeriod*count));
 	sineFragment.SetCountUninitialized(sampleCount);

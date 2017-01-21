@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
@@ -34,23 +34,36 @@ template<typename R, typename P1, typename P2> struct RSplit
 
 	void PopFirst()
 	{
+		if(mIsSkippedDelimiter!=null)
+			while(!mOriginalRange.Empty() &&
+				mIsSkippedDelimiter()(mOriginalRange.First()))
+					mOriginalRange.PopFirst();
+		if(mOriginalRange.Empty())
+		{
+			mFirst = Take(mOriginalRange, 0);
+			return;
+		}
 		if(mIsElementDelimiter!=null && mIsElementDelimiter()(mOriginalRange.First()))
 		{
 			mFirst = Take(mOriginalRange, 1);
 			mOriginalRange.PopFirst();
 			return;
 		}
-		mFirst = Range::TakeUntil(mOriginalRange, [this](const ValueTypeOf<R>& v)
+		mFirst = Range::TakeUntilAdvance(mOriginalRange, [this](const ValueTypeOf<R>& v)
 		{
 			return (mIsSkippedDelimiter!=null && mIsSkippedDelimiter()(v)) ||
 				(mIsElementDelimiter!=null && mIsElementDelimiter()(v));
 		});
 	}
 
-	forceinline ResultOfTake<R> First() const {INTRA_ASSERT(!Empty()); return mFirst;}
+	forceinline ResultOfTake<R> First() const
+	{
+		INTRA_ASSERT(!Empty());
+		return mFirst;
+	}
 
-	bool operator==(const RSplit& rhs) const {return mOriginalRange==rhs.mOriginalRange;}
-	bool operator==(null_t) const {return !Empty();}
+	bool operator==(const RSplit& rhs) const
+	{return mOriginalRange==rhs.mOriginalRange;}
 
 private:
 	R mOriginalRange;
@@ -67,7 +80,7 @@ RSplit<Meta::RemoveConstRef<R>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P
 {return {Meta::Forward<R>(range), Meta::Forward<P1>(isSkippedDelimiter), Meta::Forward<P2>(isElementDelimiter)};}
 
 template<typename T, size_t N, typename P1, typename P2> forceinline
-RSplit<T, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>> Split(
+RSplit<AsRangeResult<T(&)[N]>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>> Split(
 	T(&arr)[N], P1&& isSkippedDelimiter, P2&& isElementDelimiter)
 {return Split(AsRange(arr), Meta::Forward<P1>(isSkippedDelimiter), Meta::Forward<P2>(isElementDelimiter));}
 

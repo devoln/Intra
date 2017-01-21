@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #ifdef _MSC_VER
 
@@ -6,8 +6,9 @@
 #define INTRA_WARNING_POP __pragma(warning(pop))
 
 #if _MSC_VER>=1900
-#define INTRA_REDUNDANT_WARNINGS_MSVC14 4577
-//4577 - чтобы не ругался на noexcept при отключённых исключениях
+#define INTRA_REDUNDANT_WARNINGS_MSVC14 4577 4868
+//4577 - С‡С‚РѕР±С‹ РЅРµ СЂСѓРіР°Р»СЃСЏ РЅР° noexcept РїСЂРё РѕС‚РєР»СЋС‡С‘РЅРЅС‹С… РёСЃРєР»СЋС‡РµРЅРёСЏС…
+//4868 - РєРѕРјРїРёР»СЏС‚РѕСЂ РЅРµ РјРѕР¶РµС‚ РїСЂРёРЅСѓРґРёС‚РµР»СЊРЅРѕ РїСЂРёРјРµРЅРёС‚СЊ РїРѕСЂСЏРґРѕРє РІС‹С‡РёСЃР»РµРЅРёСЏ "СЃР»РµРІР° РЅР°РїСЂР°РІРѕ" РґР»СЏ СЃРїРёСЃРєР° РёРЅРёС†РёР°Р»РёР·Р°С‚РѕСЂРѕРІ, Р·Р°РєР»СЋС‡РµРЅРЅС‹С… РІ С„РёРіСѓСЂРЅС‹Рµ СЃРєРѕР±РєРё
 
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED \
 	__pragma(warning(disable : 5027))
@@ -16,29 +17,28 @@
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
 #endif
 
-//TODO: в будущем исправить это
-#pragma warning(disable: 4710)
+//TODO: РІ Р±СѓРґСѓС‰РµРј РёСЃРїСЂР°РІРёС‚СЊ СЌС‚Рѕ
+#pragma warning(disable: 4710 4514)
 
 #define INTRA_DISABLE_REDUNDANT_WARNINGS \
-	__pragma(warning(disable : 4714 4640 4514 4820 4711 4710 4061 4868 INTRA_REDUNDANT_WARNINGS_MSVC14))
-//4714 - в дебаге не ругаться на то, что forceinline не сработал
-//4640 - создание в конструкторе локального статического объекта может привести к ошибкам при работе с потоками
-//4514 - подставляемая функция, не используемая в ссылках, была удалена
-//4820 - не ругаться на выравнивание
-//4711 - не сообщать об автоматическом inline
-//4710 - не сообщать об автоматическом не inline
-//4061 - не ругаться на необработанные явно case enum'а
-//4868 - компилятор не может принудительно применить порядок вычисления "слева направо" для списка инициализаторов, заключенных в фигурные скобки
+	__pragma(warning(disable: 4714 4640 4514 4820 4711 4710 4061 4608 INTRA_REDUNDANT_WARNINGS_MSVC14))
+//4714 - РІ РґРµР±Р°РіРµ РЅРµ СЂСѓРіР°С‚СЊСЃСЏ РЅР° С‚Рѕ, С‡С‚Рѕ forceinline РЅРµ СЃСЂР°Р±РѕС‚Р°Р»
+//4640 - СЃРѕР·РґР°РЅРёРµ РІ РєРѕРЅСЃС‚СЂСѓРєС‚РѕСЂРµ Р»РѕРєР°Р»СЊРЅРѕРіРѕ СЃС‚Р°С‚РёС‡РµСЃРєРѕРіРѕ РѕР±СЉРµРєС‚Р° РјРѕР¶РµС‚ РїСЂРёРІРµСЃС‚Рё Рє РѕС€РёР±РєР°Рј РїСЂРё СЂР°Р±РѕС‚Рµ СЃ РїРѕС‚РѕРєР°РјРё
+//4514 - РїРѕРґСЃС‚Р°РІР»СЏРµРјР°СЏ С„СѓРЅРєС†РёСЏ, РЅРµ РёСЃРїРѕР»СЊР·СѓРµРјР°СЏ РІ СЃСЃС‹Р»РєР°С…, Р±С‹Р»Р° СѓРґР°Р»РµРЅР°
+//4820 - РЅРµ СЂСѓРіР°С‚СЊСЃСЏ РЅР° РІС‹СЂР°РІРЅРёРІР°РЅРёРµ
+//4711 - РЅРµ СЃРѕРѕР±С‰Р°С‚СЊ РѕР± Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРј inline
+//4710 - РЅРµ СЃРѕРѕР±С‰Р°С‚СЊ РѕР± Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРѕРј РЅРµ inline
+//4061 - РЅРµ СЂСѓРіР°С‚СЊСЃСЏ РЅР° РЅРµРѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Рµ СЏРІРЅРѕ case enum'Р°
 
 
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED \
-	__pragma(warning(disable : 4625 4626 4512))
+	__pragma(warning(disable: 4625 4626 4512))
 
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED \
-	__pragma(warning(disable : 4510 4610 4623))
+	__pragma(warning(disable: 4510 4610 4623))
 
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0))
-#define INTRA_WARNING_DISABLE_SIGN_CONVERSION
+#define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
 
 #elif defined(__GNUC__)
 #define INTRA_WARNING_PUSH \
@@ -63,7 +63,7 @@
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_DISABLE_REDUNDANT_WARNINGS
+#define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("GCC diagnostic ignored \"-Wctor-dtor-privacy\"")
 
 #elif defined(__clang__)
 #define INTRA_WARNING_PUSH \
@@ -87,7 +87,7 @@
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_DISABLE_REDUNDANT_WARNINGS
+#define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("clang diagnostic ignored \"-Wctor-dtor-privacy\"")
 
 
 #else

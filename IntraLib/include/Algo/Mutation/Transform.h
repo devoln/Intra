@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
@@ -124,7 +124,7 @@ template<typename R1, typename R2, typename ResultRange, typename F> Meta::Enabl
 {return Transform2ToAdvance(range1, range2, ResultRange(output), f);}
 
 
-//Оптимизированные частные случаи:
+//РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅРЅС‹Рµ С‡Р°СЃС‚РЅС‹Рµ СЃР»СѓС‡Р°Рё:
 
 void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2);
 void Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2);

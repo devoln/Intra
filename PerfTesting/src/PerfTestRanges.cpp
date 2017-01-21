@@ -18,6 +18,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
 #include "Range/Polymorphic.h"
+#include "Containers/List.h"
+
+#include <stdlib.h>
 
 using namespace Intra;
 using namespace Intra::IO;
@@ -58,10 +61,20 @@ void TestSumRange()
 	int sum = SumPolymorphicRange(ints);
 	Console.PrintLine("sum of ", ints, " = ", sum);
 
+	
+	InputRange<const char> myRange = StringView("Диапазон");
+	String myRange2Str = "Супер Диапазон";
+	//myRange = myRange2Str();
+	char c[40];
+	auto r = ArrayRange<char>(c);
+	Algo::CopyAdvanceToAdvance(myRange, r);
+
 	ivec3 vectors[] = {{1, 2, 3}, {1, 64, 7}, {43, 5, 342}, {5, 45, 4}};
-	//static_assert(Range::RD::AsRangeCompiles<ivec3(&)[4]>::_, "ERROR!");
-	int xsum = SumPolymorphicRange(Map(vectors, [](const ivec3& v){return v.x;}));
-	static_assert(Meta::HasForEachField<ivec3>::_, "ERROR!");
+	RandomAccessRange<ivec3&> vectors1;
+	vectors1 = vectors;
+	vectors1[1] = {2, 3, 4};
+	InputRange<int> xvectors = Map(vectors, [](const ivec3& v){return v.x;});
+	int xsum = SumPolymorphicRange(Meta::Move(xvectors));
 	Console.PrintLine("x sum of ", vectors, " = ", xsum);
 }
 
@@ -108,9 +121,15 @@ void RunRangeTests()
 	Console.PrintLine(fibArr());
 
 	auto chain = Chain(AsRange(strs), AsRange(strs1), AsRange(strs2));
+
 	auto someRecurrence = Take(Drop(Cycle(Take(Recurrence(
 		[](int a, int b) {return a*2+b;}, 1, 1
 	), 17)), 3), 22);
+
+	typedef Meta::RemoveConstRef<decltype(Stride(Take(chain, 40), 2))> TYPE;
+	TYPE type;
+	static_assert(HasEmpty<TYPE>::_, "ERROR!");
+
 	auto megaZip = Zip(
 		Take(fib, 30),
 		Retro(Stride(Take(chain, 40), 2)),
@@ -119,10 +138,14 @@ void RunRangeTests()
 		Take(Recurrence(Op::Mul<ulong64>, 2ull, 3ull), 9)
 	);
 
+	static_assert(IsFiniteRange<AsRangeResult<decltype(someRecurrence)&>>::_ &&
+		ValueTypeIsConvertible<AsRangeResult<decltype(someRecurrence)&>, int>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<decltype(someRecurrence)&, FiniteInputRange<int>>::_, "ERROR!");
+
 	Console.PrintLine(endl, "Полиморфные диапазоны:");
-	PrintPolymorphicRange<int>(someRecurrence);
+	PrintPolymorphicRange<int>(FiniteInputRange<int>(someRecurrence));
 	PrintPolymorphicRange<StringView>(Take(Cycle(chain), 100));
-	PrintPolymorphicRange<String>(Map(someRecurrence, [](int x){return ToString(x);}));
+	PrintPolymorphicRange<String>(Map(someRecurrence, ToString<int>));
 	PrintPolymorphicRange<StringView>(strs1);
 
 	Console.PrintLine(endl, "Объединяем элементы различных диапазонов в диапазоне кортежей: ", endl,
@@ -148,7 +171,7 @@ void RunRangeTests()
 	Console.PrintLine("Между массивом строк и 5 числами Фибоначчи выбрали второе в рантайме: ");
 	Console.PrintLine(Choose(
 		Map(AsRange(strs1), [](StringView str) {return String(str);}),
-		Map(Take(fib, 5), [](int x){return ToString(x);}),
+		Map(Take(fib, 5), ToString<int>),
 		true) );
 	
 
@@ -162,6 +185,9 @@ void RunRangeTests()
 			AsRange(strs2)
 		)
 	);
+
+	auto tokens = Range::Split("int main() {\n\tprintf(\"HelloWorld!\")\n}", AsciiSet::Spaces, AsciiSet("(){},"));
+	Console.PrintLine("Tokens of HelloWorld program: ", tokens);
 	
 
 	/*Console.PrintLine(endl, "Введите строки, которые войдут в диапазон строк. В конце введите \"end\".");
@@ -181,10 +207,16 @@ void RunRangeTests()
 		Math::Sqr<uint>);
 	PrintPolymorphicRange(Meta::Move(seq));
 
-	Console.PrintLine(endl, "Присвоили той же переменной диапазон другого типа:");
+	Console.PrintLine(endl, "Присвоили той же переменной диапазон другого типа и выведем его снова:");
 	
-	seq = Take(Generate([](){return Math::Random<uint>::Global(1000);}), 50);
+	seq = Take(Generate(rand), 50);
 	PrintPolymorphicRange(Meta::Move(seq));
+
+	Console.PrintLine(endl, "Код в 4 строки, эквивалентный примеру из http://ru.cppreference.com/w/cpp/algorithm/copy:");
+	Array<int> fromVector = Iota(10);
+	Array<int> toVector = Repeat(0, 10);
+	Algo::CopyTo(fromVector, toVector);
+	Console.PrintLine("toVector содержит: ", toVector);
 }
 
 struct IRange

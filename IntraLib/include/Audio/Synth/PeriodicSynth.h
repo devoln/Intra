@@ -1,16 +1,16 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/ForwardDecls.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
-//! Подобрать целое количество периодов размером samplesPerPeriod так,
-//! чтобы их было не очень много, но конец переходил в начало с минимальным швом.
-//! \return Количество повторений периода.
+//! РџРѕРґРѕР±СЂР°С‚СЊ С†РµР»РѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ РїРµСЂРёРѕРґРѕРІ СЂР°Р·РјРµСЂРѕРј samplesPerPeriod С‚Р°Рє,
+//! С‡С‚РѕР±С‹ РёС… Р±С‹Р»Рѕ РЅРµ РѕС‡РµРЅСЊ РјРЅРѕРіРѕ, РЅРѕ РєРѕРЅРµС† РїРµСЂРµС…РѕРґРёР» РІ РЅР°С‡Р°Р»Рѕ СЃ РјРёРЅРёРјР°Р»СЊРЅС‹Рј С€РІРѕРј.
+//! \return РљРѕР»РёС‡РµСЃС‚РІРѕ РїРѕРІС‚РѕСЂРµРЅРёР№ РїРµСЂРёРѕРґР°.
 uint GetGoodSignalPeriod(double samplesPerPeriod, uint maxPeriods);
 
-//! Повторить фрагмент fragmentSamples в буфере inOutSamples.
-//! \param add Сложение (true) или присваивание (false).
+//! РџРѕРІС‚РѕСЂРёС‚СЊ С„СЂР°РіРјРµРЅС‚ fragmentSamples РІ Р±СѓС„РµСЂРµ inOutSamples.
+//! \param add РЎР»РѕР¶РµРЅРёРµ (true) РёР»Рё РїСЂРёСЃРІР°РёРІР°РЅРёРµ (false).
 void RepeatFragmentInBuffer(ArrayRange<const float> fragmentSamples,
 	ArrayRange<float> inOutSamples, bool add);
 

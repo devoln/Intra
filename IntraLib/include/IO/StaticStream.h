@@ -71,7 +71,7 @@ public:
 
 	template<typename T> forceinline void WriteIntegerText(T v)
 	{
-		INTRA_ASSERT(Begin<=Rest.Begin);
+		INTRA_ASSERT(Begin <= Rest.Begin);
 		//INTRA_ASSERT(Algo::LengthOfNumber(v, 10u)<=Rest.Length());
 		Algo::ToString(Rest, v);
 	}

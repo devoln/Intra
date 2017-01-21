@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/InitializerList.h"
 #include "Core/FundamentalTypes.h"

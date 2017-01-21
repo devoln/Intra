@@ -1,4 +1,4 @@
-#include "Audio/Synth/SineExpSynth.h"
+п»ї#include "Audio/Synth/SineExpSynth.h"
 #include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/ExponentialAttenuation.h"
 #include "Audio/Synth/PeriodicSynth.h"
@@ -91,7 +91,7 @@ void FastSineExp(float volume, float coeff, float freq,
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	size_t count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
-	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
+	//Р“РµРЅРµСЂРёСЂСѓРµРј С„СЂР°РіРјРµРЅС‚, РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµРј РїРѕРІС‚РѕСЂСЏС‚СЊ, РїРѕРєР° РЅРµ Р·Р°РїРѕР»РЅРёРј Р±СѓС„РµСЂ С†РµР»РёРєРѕРј
 	size_t sampleCount = uint(Math::Round(samplesPerPeriod*double(count)));
 	size_t N = (500/sampleCount+1);
 	AudioBuffer sineFragment;
@@ -99,8 +99,8 @@ void FastSineExp(float volume, float coeff, float freq,
 	sineFragment.Samples.SetCountUninitialized(sampleCount*N);
 	PerfectSine(volume, freq, sampleRate, sineFragment.Samples(0, sampleCount), false);
 
-	//Если этот фрагмент короче 500 семплов, то повторим его, 
-	//там как экспоненциальное затухание эффективнее для больших массивов
+	//Р•СЃР»Рё СЌС‚РѕС‚ С„СЂР°РіРјРµРЅС‚ РєРѕСЂРѕС‡Рµ 500 СЃРµРјРїР»РѕРІ, С‚Рѕ РїРѕРІС‚РѕСЂРёРј РµРіРѕ, 
+	//С‚Р°Рј РєР°Рє СЌРєСЃРїРѕРЅРµРЅС†РёР°Р»СЊРЅРѕРµ Р·Р°С‚СѓС…Р°РЅРёРµ СЌС„С„РµРєС‚РёРІРЅРµРµ РґР»СЏ Р±РѕР»СЊС€РёС… РјР°СЃСЃРёРІРѕРІ
 	for(uint i=1; i<N; i++) sineFragment.CopyFrom(i*sampleCount, sampleCount, &sineFragment, 0);
 
 	float ek = Math::Exp(-coeff/float(sampleRate));
@@ -119,7 +119,7 @@ void FastSineExp(float volume, float coeff, float freq,
 struct SineExpParams
 {
 	byte Len;
-	SineExpHarmonic Harmonics[20]; //Требуется, чтобы harmonics[0] имела наибольший lengthMultiplyer
+	SineExpHarmonic Harmonics[20]; //РўСЂРµР±СѓРµС‚СЃСЏ, С‡С‚РѕР±С‹ harmonics[0] РёРјРµР»Р° РЅР°РёР±РѕР»СЊС€РёР№ lengthMultiplyer
 };
 
 static void SineExpSynthPassFunction(const SineExpParams& params,

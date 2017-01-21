@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Concepts.h"
 #include "Meta/Type.h"
@@ -135,8 +135,8 @@ template<typename R> forceinline Meta::EnableIf<
 ReturnValueTypeOf<R>> AtIndex(const R& range, size_t index)
 {return PopFirstExactly(range, index).First();}
 
-//! Удаляет из диапазона все элементы кроме последних n элементов.
-//! \return Возвращает ссылку на себя.
+//! РЈРґР°Р»СЏРµС‚ РёР· РґРёР°РїР°Р·РѕРЅР° РІСЃРµ СЌР»РµРјРµРЅС‚С‹ РєСЂРѕРјРµ РїРѕСЃР»РµРґРЅРёС… n СЌР»РµРјРµРЅС‚РѕРІ.
+//! \return Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃСЃС‹Р»РєСѓ РЅР° СЃРµР±СЏ.
 template<typename R> Meta::EnableIf<
 	IsForwardRange<R>::_ && !HasLength<R>::_,
 R&&> TailAdvance(R&& range, size_t n)
@@ -159,7 +159,7 @@ R&&> TailAdvance(R&& range, size_t n)
 	return Meta::Forward<R>(range);
 }
 
-//! Возвращает диапазон, содержащий последние n элементов данного диапазона.
+//! Р’РѕР·РІСЂР°С‰Р°РµС‚ РґРёР°РїР°Р·РѕРЅ, СЃРѕРґРµСЂР¶Р°С‰РёР№ РїРѕСЃР»РµРґРЅРёРµ n СЌР»РµРјРµРЅС‚РѕРІ РґР°РЅРЅРѕРіРѕ РґРёР°РїР°Р·РѕРЅР°.
 template<typename R> forceinline Meta::EnableIf<
 	IsFiniteForwardRange<R>::_ && !HasSlicing<R>::_,
 R> Tail(const R& range, size_t n)

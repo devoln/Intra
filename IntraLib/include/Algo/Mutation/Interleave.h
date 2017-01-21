@@ -1,11 +1,11 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/Concepts.h"
 #include "Range/ArrayRange.h"
 
 namespace Intra { namespace Algo {
 
-//! Скопировать нескольких массивов src в один массив dst с чередующимися элементами:
+//! РЎРєРѕРїРёСЂРѕРІР°С‚СЊ РЅРµСЃРєРѕР»СЊРєРёС… РјР°СЃСЃРёРІРѕРІ src РІ РѕРґРёРЅ РјР°СЃСЃРёРІ dst СЃ С‡РµСЂРµРґСѓСЋС‰РёРјРёСЃСЏ СЌР»РµРјРµРЅС‚Р°РјРё:
 //! dst = {src[0][0], ..., src.Last()[0], src[0][1], ..., src.Last()[1], ...}
 template<typename T> void Interleave(ArrayRange<T> dst, ArrayRange<const ArrayRange<const T>> src)
 {
@@ -25,7 +25,7 @@ template<typename T> void Interleave(ArrayRange<T> dst, ArrayRange<const ArrayRa
 	}
 }
 
-//! Скопировать массив src с чередующимися элементами в несколько отдельных массивов:
+//! РЎРєРѕРїРёСЂРѕРІР°С‚СЊ РјР°СЃСЃРёРІ src СЃ С‡РµСЂРµРґСѓСЋС‰РёРјРёСЃСЏ СЌР»РµРјРµРЅС‚Р°РјРё РІ РЅРµСЃРєРѕР»СЊРєРѕ РѕС‚РґРµР»СЊРЅС‹С… РјР°СЃСЃРёРІРѕРІ:
 //! dst = {src[0][0], ..., src.Last()[0], src[0][1], ..., src.Last()[1], ...}
 template<typename T> void Deinterleave(ArrayRange<const ArrayRange<T>> dst, ArrayRange<const T> src)
 {

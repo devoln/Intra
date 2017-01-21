@@ -8,10 +8,10 @@
 
 namespace Intra {
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 void PrintPerformanceResults(IO::Logger& logger, StringView testName,
 	ArrayRange<const StringView> comparedTypes, ArrayRange<const double> stdTimes, ArrayRange<const double> times);
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct TestGroup
 {
@@ -41,7 +41,6 @@ template<size_t N> struct Big
 	{return Algo::Hash::Murmur3_32(StringView(c, N), 0);}
 };
 
-INTRA_WARNING_POP
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
@@ -99,6 +98,8 @@ template<typename String> String GenerateRandomString(size_t len)
 	}
 	return result;
 }
+
+INTRA_WARNING_POP
 
 }
 

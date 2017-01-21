@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Meta/Type.h"
 #include "Meta/EachField.h"
@@ -74,7 +74,7 @@ template<typename R, typename X> Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_ && sizeof(X)<sizeof(size_t)
 > ToString(R&& dst, X number)
 {
-	ToString(dst, size_t(number));
+	Algo::ToString(dst, size_t(number));
 }
 
 template<typename X> static forceinline Meta::EnableIf<
@@ -90,7 +90,7 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_
 > ToString(R&& dst, X number, int minWidth, Range::ValueTypeOf<R> filler=' ', uint base=10)
 {
-	ToString(dst, Meta::MakeUnsignedType<X>(number<0? -number: number),
+	Algo::ToString(dst, Meta::MakeUnsignedType<X>(number<0? -number: number),
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
@@ -99,7 +99,7 @@ template<typename T=char, typename X> static forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_,
 size_t> MaxLengthOf(X number, int minWidth, T filler=' ', uint base=10)
 {
-	return 1+MaxLengthOf(Meta::MakeUnsignedType<X>(number<0? -number: number),
+	return 1+Algo::MaxLengthOf(Meta::MakeUnsignedType<X>(number<0? -number: number),
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
@@ -113,7 +113,7 @@ template<typename R, typename X> Meta::EnableIf<
 		dst.Put('-');
 		number = X(-number);
 	}
-	ToString(dst, Meta::MakeUnsignedType<X>(number));
+	Algo::ToString(dst, Meta::MakeUnsignedType<X>(number));
 }
 
 template<typename X> static forceinline Meta::EnableIf<
@@ -182,10 +182,10 @@ template<typename R> Meta::EnableIf<
 	real fractional = number-real(integralPart);
 	if(fractional>0.99)
 	{
-		ToString(dst, integralPart+1);
+		Algo::ToString(dst, integralPart+1);
 		fractional=0;
 	}
-	else ToString(dst, integralPart);
+	else Algo::ToString(dst, integralPart);
 
 	if(preciseness==0) return;
 
@@ -206,7 +206,7 @@ template<typename R, typename X> Meta::EnableIf<
 > ToString(R&& dst, X number, int preciseness=sizeof(X)<=4? 7: 15,
 	Range::ValueTypeOf<R> dot='.', bool appendAllDigits=false)
 {
-	ToString(dst, real(number), preciseness, dot, appendAllDigits);
+	Algo::ToString(dst, real(number), preciseness, dot, appendAllDigits);
 }
 
 template<typename T=char, typename X> static forceinline Meta::EnableIf<
@@ -236,7 +236,7 @@ template<typename R, typename ForwardRange> forceinline Meta::EnableIf<
 	Range::IsFiniteForwardRange<ForwardRange>::_ &&
 	Range::ValueTypeEquals<ForwardRange, R>::_
 > ToString(R&& dst, const ForwardRange& range)
-{CopyAdvanceToAdvance(ForwardRange(range), dst);}
+{Algo::CopyAdvanceToAdvance(ForwardRange(range), dst);}
 
 template<typename ForwardRange> static forceinline Meta::EnableIf<
 	Range::IsFiniteForwardRange<ForwardRange>::_ &&
@@ -331,10 +331,10 @@ template<typename R, typename Tuple, typename OtherCharRange> Meta::EnableIf<
 	const OtherCharRange& lBracket,
 	const OtherCharRange& rBracket)
 {
-	ToString(dst, lBracket);
+	Algo::ToString(dst, lBracket);
 	D::TupleAppender<R, OtherCharRange> appender(true, dst, separator);
 	Meta::ForEachField(tuple, appender);
-	ToString(dst, rBracket);
+	Algo::ToString(dst, rBracket);
 }
 
 template<typename Tuple, typename OtherCharRange> static Meta::EnableIf<
@@ -346,10 +346,10 @@ size_t> MaxLengthOf(const Tuple& tuple,
 	const OtherCharRange& rBracket)
 {
 	Range::CountRange<char> counter;
-	ToString(counter, lBracket);
+	Algo::ToString(counter, lBracket);
 	D::TupleAppender<Range::CountRange<char>, OtherCharRange> appender(false, counter, separator);
 	Meta::ForEachField(tuple, appender);
-	ToString(counter, rBracket);
+	Algo::ToString(counter, rBracket);
 	return counter.Counter;
 }
 
@@ -407,7 +407,7 @@ template<typename R, typename ForwardRange> Meta::EnableIf<
 	!Range::ValueTypeIsChar<ForwardRange>::_
 > ToString(R&& dst, const ForwardRange& r)
 {
-	ToString(dst, r, AsRange({',', ' '}), AsRange({'['}), AsRange({']'}));
+	Algo::ToString(dst, r, AsRange({',', ' '}), AsRange({'['}), AsRange({']'}));
 }
 
 template<typename ForwardRange, typename OtherCharRange> static forceinline Meta::EnableIf<
@@ -421,7 +421,7 @@ size_t> MaxLengthOf(const ForwardRange& range,
 	const OtherCharRange& lBracket,
 	const OtherCharRange& rBracket)
 {
-	return (MaxLengthOf(Range::ValueTypeOf<ForwardRange>()) + Range::Count(separator))*Range::Count(range) +
+	return (Algo::MaxLengthOf(Range::ValueTypeOf<ForwardRange>()) + Range::Count(separator))*Range::Count(range) +
 		Range::Count(lBracket) + Range::Count(rBracket);
 }
 
@@ -466,7 +466,7 @@ template<typename R, typename X> Meta::EnableIf<
 	Range::IsOutputCharRange<R>::_ &&
 	!Range::IsInputRange<X>::_ && Range::HasAsRange<X>::_
 > ToString(R&& dst, const X& value)
-{ToString(dst, value.AsRange());}
+{Algo::ToString(dst, value.AsRange());}
 
 template<typename X> static forceinline Meta::EnableIf<
 	!Range::IsInputRange<X>::_ && Range::HasAsRange<X>::_,
@@ -477,8 +477,8 @@ namespace D {
 template<typename Range, typename OtherCharRange> template<typename V>
 void TupleAppender<Range, OtherCharRange>::operator()(const V& value)
 {
-	if(!First) ToString(DstRange, Separator);
-	ToString(DstRange, value);
+	if(!First) Algo::ToString(DstRange, Separator);
+	Algo::ToString(DstRange, value);
 	First = false;
 }
 

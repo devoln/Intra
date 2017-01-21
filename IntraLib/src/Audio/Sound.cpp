@@ -99,7 +99,7 @@ Sound Sound::FromFile(StringView fileName)
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(fileData.StartsWith(StringView("OggS")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), "OggS"))
 		source = new Sources::VorbisSource(fileData);
 	else 
 #endif
@@ -234,17 +234,17 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	auto fileData = file->Map<byte>();
 	SourceRef source=null;
 #ifndef INTRA_NO_WAVE_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("RIFF")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), "RIFF"))
 		source = SourceRef(new Sources::WaveSource(fileData));
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(fileData.StartsWith(StringView("OggS")))
-		source = SourceRef(new VorbisSoundSampleSource(fileData));
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), "OggS"))
+		source = SourceRef(new Sources::VorbisSource(fileData));
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("MThd")))
+	if(Algo::StartsWith(fileData.Reinterpret<char>(), "MThd"))
 		source = SourceRef(new Sources::MusicSynthSource(ReadMidiFile(fileData), 48000));
 	else
 #endif

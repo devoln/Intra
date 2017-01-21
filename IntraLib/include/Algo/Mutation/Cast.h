@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/Concepts.h"
 #include "Range/ArrayRange.h"
@@ -22,7 +22,7 @@ template<typename R, typename OR> Meta::EnableIf<
 	}
 }
 
-//Оптимизированная перегрузка
+//РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅРЅР°СЏ РїРµСЂРµРіСЂСѓР·РєР°
 void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst);
 forceinline void CastAdvanceToAdvance(ArrayRange<const float>&& src, ArrayRange<short>& dst)
 {CastAdvanceToAdvance(src, dst);}
@@ -58,7 +58,7 @@ template<typename R, typename OR> Meta::EnableIf<
 
 
 
-//! Нормировать массив делением каждого элемента на NumericLimits<From>::Max
+//! РќРѕСЂРјРёСЂРѕРІР°С‚СЊ РјР°СЃСЃРёРІ РґРµР»РµРЅРёРµРј РєР°Р¶РґРѕРіРѕ СЌР»РµРјРµРЅС‚Р° РЅР° NumericLimits<From>::Max
 template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<To>::_ && Meta::IsIntegralType<From>::_
 > CastToNormalized(ArrayRange<To> dst, ArrayRange<const From> src)
@@ -72,8 +72,8 @@ template<typename To, typename From> Meta::EnableIf<
 	}
 }
 
-//! Заполнить массив dst элементами из src, умноженными на NumericLimits<To>::Max.
-//! Предполагается, что -1.0 <= src[i] <= 1.0. Иначе произойдёт переполнение.
+//! Р—Р°РїРѕР»РЅРёС‚СЊ РјР°СЃСЃРёРІ dst СЌР»РµРјРµРЅС‚Р°РјРё РёР· src, СѓРјРЅРѕР¶РµРЅРЅС‹РјРё РЅР° NumericLimits<To>::Max.
+//! РџСЂРµРґРїРѕР»Р°РіР°РµС‚СЃСЏ, С‡С‚Рѕ -1.0 <= src[i] <= 1.0. РРЅР°С‡Рµ РїСЂРѕРёР·РѕР№РґС‘С‚ РїРµСЂРµРїРѕР»РЅРµРЅРёРµ.
 template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<From>::_ && Meta::IsIntegralType<To>::_
 > CastFromNormalized(ArrayRange<To> dst, ArrayRange<const From> src)

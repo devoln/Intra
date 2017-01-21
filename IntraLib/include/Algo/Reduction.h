@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Range/ArrayRange.h"
@@ -58,7 +58,7 @@ template<typename T> void MiniMax(ArrayRange<const T> arr, T* oMinimum, T* oMaxi
 	}
 }
 
-//Оптимизированные специализации
+//РћРїС‚РёРјРёР·РёСЂРѕРІР°РЅРЅС‹Рµ СЃРїРµС†РёР°Р»РёР·Р°С†РёРё
 template<> float Minimum(ArrayRange<const float> arr);
 template<> float Maximum(ArrayRange<const float> arr);
 template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maximum);

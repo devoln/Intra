@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Core/FundamentalTypes.h"
@@ -36,7 +36,7 @@ struct ImageInfo
 	bool operator!=(null_t) const { return !operator==(null); }
 
 	Math::USVec3 Size;
-	ushort MipmapCount; //=0, если требуется автоматическая генерация всех мип-уровней
+	ushort MipmapCount; //=0, РµСЃР»Рё С‚СЂРµР±СѓРµС‚СЃСЏ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєР°СЏ РіРµРЅРµСЂР°С†РёСЏ РІСЃРµС… РјРёРї-СѓСЂРѕРІРЅРµР№
 	ImageFormat Format;
 	ImageType Type;
 

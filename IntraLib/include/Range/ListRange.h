@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
@@ -77,10 +77,7 @@ template<typename T> struct BListRange
 		FirstNode(first), LastNode(last) {}
 
 	forceinline bool Empty() const
-	{
-		INTRA_ASSERT((FirstNode==null) == (LastNode==null));
-		return FirstNode==LastNode;
-	}
+	{return FirstNode==null || LastNode==null;}
 
 	forceinline void PopFirst()
 	{
@@ -105,6 +102,8 @@ template<typename T> struct BListRange
 		INTRA_ASSERT(!Empty());
 		return LastNode->Value;
 	}
+
+	forceinline void Put(const T& value) {First()=value; PopFirst();}
 
 	forceinline const BListRange<const T>& AsConstRange() const
 	{return *reinterpret_cast<const BListRange<const T>*>(this);}

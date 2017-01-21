@@ -1,4 +1,4 @@
-#include "Audio/Synth/PostEffects.h"
+﻿#include "Audio/Synth/PostEffects.h"
 #include "Range/ArrayRange.h"
 #include "Math/MathRanges.h"
 #include "Math/MathEx.h"

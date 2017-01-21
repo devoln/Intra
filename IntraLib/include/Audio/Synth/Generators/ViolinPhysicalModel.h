@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Math/MathRanges.h"
@@ -37,7 +37,7 @@ struct ViolinPhysicalModel
 		mBowIndex = mLen*9/10-3;
 		mSoundIndex = mLen/100+1;
 			
-		mOscillator = Math::SineRange<float>(0.9f, 0, float(2*Math::PI*7*mDT)); //Частота вибратто 7 Гц
+		mOscillator = Math::SineRange<float>(0.9f, 0, float(2*Math::PI*7*mDT)); //Р§Р°СЃС‚РѕС‚Р° РІРёР±СЂР°С‚С‚Рѕ 7 Р“С†
 
 		mP.SetCount(mLen+1u);
 		mS.SetCount(mLen+1u);
@@ -74,7 +74,7 @@ struct ViolinPhysicalModel
 			*pptr++ += *sptr++;
 		}
 
-		mS[mBowIndex] += 1.0f / ((mS[mBowIndex]-1)*(mS[mBowIndex]-1)+1); //Сила действия смычка на струну
+		mS[mBowIndex] += 1.0f / ((mS[mBowIndex]-1)*(mS[mBowIndex]-1)+1); //РЎРёР»Р° РґРµР№СЃС‚РІРёСЏ СЃРјС‹С‡РєР° РЅР° СЃС‚СЂСѓРЅСѓ
 	}
 
 private:
@@ -83,15 +83,15 @@ private:
 
 	Math::SineRange<float> mOscillator;
 
-	uint mLen;   //Длина струны
-	float mFrc; //Натяжение струны
-	float mK1, mK2; //Коэффициенты, определяющие затухание звука в струне
+	uint mLen;   //Р”Р»РёРЅР° СЃС‚СЂСѓРЅС‹
+	float mFrc; //РќР°С‚СЏР¶РµРЅРёРµ СЃС‚СЂСѓРЅС‹
+	float mK1, mK2; //РљРѕСЌС„С„РёС†РёРµРЅС‚С‹, РѕРїСЂРµРґРµР»СЏСЋС‰РёРµ Р·Р°С‚СѓС…Р°РЅРёРµ Р·РІСѓРєР° РІ СЃС‚СЂСѓРЅРµ
 
-	Array<float> mP; //Позиция участка струны
-	Array<float> mS; //Скорость участка струны
+	Array<float> mP; //РџРѕР·РёС†РёСЏ СѓС‡Р°СЃС‚РєР° СЃС‚СЂСѓРЅС‹
+	Array<float> mS; //РЎРєРѕСЂРѕСЃС‚СЊ СѓС‡Р°СЃС‚РєР° СЃС‚СЂСѓРЅС‹
 
-	uint mBowIndex;   //Участок струны, где работает смычок
-	uint mSoundIndex; //Участок струны, где снимается звук
+	uint mBowIndex;   //РЈС‡Р°СЃС‚РѕРє СЃС‚СЂСѓРЅС‹, РіРґРµ СЂР°Р±РѕС‚Р°РµС‚ СЃРјС‹С‡РѕРє
+	uint mSoundIndex; //РЈС‡Р°СЃС‚РѕРє СЃС‚СЂСѓРЅС‹, РіРґРµ СЃРЅРёРјР°РµС‚СЃСЏ Р·РІСѓРє
 };
 
 INTRA_WARNING_POP

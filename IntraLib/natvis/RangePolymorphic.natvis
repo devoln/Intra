@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::Range::InputRange&lt;*&gt;">
+    <DisplayString Condition="mInterface.ptr==nullptr">null</DisplayString>
+    <DisplayString>{*mInterface.ptr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*mInterface.ptr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::InputRange&lt;*&gt;::ImplFiller&lt;*,*&gt;">
+    <DisplayString>{OriginalRange}</DisplayString>
+    <Expand>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>

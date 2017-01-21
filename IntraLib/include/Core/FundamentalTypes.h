@@ -6,6 +6,11 @@
 
 namespace Intra {
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
+#ifdef _MSC_VER
+#pragma warning(disable: 4702)
+#endif
+
 static_assert(sizeof(char)==1 && sizeof(short)==2 && sizeof(int)==4 && sizeof(long long)==8,
 	"Some of fundamental types have unexpected size!");
 
@@ -71,9 +76,9 @@ typedef wchar_t dchar;
 #else
 struct dchar
 {
-	dchar(uint code): c(code) {}
-	operator uint() const {return c;}
-	operator uint&() {return c;}
+	forceinline dchar(uint code): c(code) {}
+	forceinline operator uint() const {return c;}
+	forceinline operator uint&() {return c;}
 private:
 	uint c;
 };
@@ -81,11 +86,6 @@ private:
 
 typedef decltype(nullptr) null_t;
 constexpr const null_t null = nullptr;
-
-INTRA_PUSH_DISABLE_ALL_WARNINGS
-#ifdef _MSC_VER
-#pragma warning(disable: 4702)
-#endif
 
 struct AnyPtr
 {

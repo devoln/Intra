@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Generators/AbsModSine.h"
 #include "Generators/AbsModTimeSine.h"

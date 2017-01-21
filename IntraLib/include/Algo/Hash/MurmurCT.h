@@ -1,8 +1,8 @@
-#pragma once
+п»ї#pragma once
 
-//! В данном заголовочном файле определена compile-time версия MurmurHash 3.
-//! Она также может работать в run-time, но скорее всего будет медленнее,
-//! чем версия, определённая в файле Murmur.h
+//! Р’ РґР°РЅРЅРѕРј Р·Р°РіРѕР»РѕРІРѕС‡РЅРѕРј С„Р°Р№Р»Рµ РѕРїСЂРµРґРµР»РµРЅР° compile-time РІРµСЂСЃРёСЏ MurmurHash 3.
+//! РћРЅР° С‚Р°РєР¶Рµ РјРѕР¶РµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РІ run-time, РЅРѕ СЃРєРѕСЂРµРµ РІСЃРµРіРѕ Р±СѓРґРµС‚ РјРµРґР»РµРЅРЅРµРµ,
+//! С‡РµРј РІРµСЂСЃРёСЏ, РѕРїСЂРµРґРµР»С‘РЅРЅР°СЏ РІ С„Р°Р№Р»Рµ Murmur.h
 
 #include "Types.h"
 
@@ -215,22 +215,22 @@ namespace Literals {
 
 #ifdef INTRA_CONSTEXPR_SUPPORT
 
-//! Murmur3 32-разрядная хеш-функция
+//! Murmur3 32-СЂР°Р·СЂСЏРґРЅР°СЏ С…РµС€-С„СѓРЅРєС†РёСЏ
 constexpr inline uint operator"" _m3h(const char* str, size_t len)
 {return D::murmur3_32_value(str, len, 0);}
 
-//! Младшие 64 бита 128-разрядной Murmur3 хеш-функции
+//! РњР»Р°РґС€РёРµ 64 Р±РёС‚Р° 128-СЂР°Р·СЂСЏРґРЅРѕР№ Murmur3 С…РµС€-С„СѓРЅРєС†РёРё
 constexpr inline ulong64 operator"" _m3h64(const char* str, size_t len)
 {return Murmur3_128_x64_low(str, len, 0);}
 
-//! Murmur3 128-разрядная хеш-функция
+//! Murmur3 128-СЂР°Р·СЂСЏРґРЅР°СЏ С…РµС€-С„СѓРЅРєС†РёСЏ
 constexpr inline hash128 operator"" _m3h128(const char* str, size_t len)
 {return Murmur3_128_x64(str, len, 0);}
 
 #endif
 
-//! Используйте using namespace Intra::Algo::HashCT::Literals::Murmur3,
-//! чтобы назначить эту версию хеша основной для строковых литералов.
+//! РСЃРїРѕР»СЊР·СѓР№С‚Рµ using namespace Intra::Algo::HashCT::Literals::Murmur3,
+//! С‡С‚РѕР±С‹ РЅР°Р·РЅР°С‡РёС‚СЊ СЌС‚Сѓ РІРµСЂСЃРёСЋ С…РµС€Р° РѕСЃРЅРѕРІРЅРѕР№ РґР»СЏ СЃС‚СЂРѕРєРѕРІС‹С… Р»РёС‚РµСЂР°Р»РѕРІ.
 namespace Murmur3 {
 
 #ifdef INTRA_CONSTEXPR_SUPPORT

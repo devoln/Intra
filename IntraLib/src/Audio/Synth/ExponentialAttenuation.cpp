@@ -1,4 +1,4 @@
-#include "Audio/Synth/ExponentialAttenuation.h"
+﻿#include "Audio/Synth/ExponentialAttenuation.h"
 #include "Math/Simd.h"
 #include "Range/ArrayRange.h"
 

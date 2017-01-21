@@ -34,6 +34,19 @@ template<typename T> struct ArrayRange
 	constexpr forceinline ArrayRange(const ArrayRange& rhs):
 		Begin(rhs.Begin), End(rhs.End) {}
 
+	/*template<typename R, typename=Meta::EnableIf<
+		IsArrayRange<AsRangeResult<R>>::_ &&
+		Meta::TypeEquals<Meta::RemoveConst<T>, Meta::RemoveConst<ValueTypeOf<AsRangeResult<R>>>>::_ &&
+		!(!Meta::IsConst<T>::_ && Meta::IsConst<ValueTypeOf<AsRangeResult<R>>>::_) &&
+		!Meta::TypeEqualsIgnoreCVRef<R, ArrayRange>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, ArrayRange<Meta::RemoveConst<T>>>::_
+	>> forceinline ArrayRange(R&& range)
+	{
+		auto&& r = AsRange(range);
+		Begin = r.Data();
+		End = Begin+r.Length();
+	}*/
+
 	forceinline constexpr ArrayRange<const T> AsConstRange() const {return ArrayRange<const T>(Begin, End);}
 	forceinline constexpr operator ArrayRange<const T>() const {return AsConstRange();}
 
@@ -53,7 +66,7 @@ template<typename T> struct ArrayRange
 	forceinline constexpr T* end() const {return End;}
 
 	forceinline constexpr size_t Length() const {return size_t(End-Begin);}
-	forceinline constexpr bool Empty() const {return End==Begin;}
+	forceinline constexpr bool Empty() const {return End<=Begin;}
 	forceinline constexpr T* Data() const {return Begin;}
 	forceinline T& First() const {INTRA_ASSERT(!Empty()); return *Begin;}
 	

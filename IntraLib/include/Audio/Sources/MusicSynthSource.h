@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
@@ -29,15 +29,15 @@ public:
 	size_t SampleCount() const override {return mSampleCount;}
 	size_t CurrentSamplePosition() const override {return mCurrentSamplePos; }
 
-	//! Загрузить следующие maxFloatsToGet/ChannelCount семплов в текущий буфер
-	//! Если в семплов осталось меньше, то загрузится столько семплов, сколько осталось.
-	//! \returns Количество прочитанных float'ов, то есть прочитанное количество семплов, умноженное на ChannelCount
+	//! Р—Р°РіСЂСѓР·РёС‚СЊ СЃР»РµРґСѓСЋС‰РёРµ maxFloatsToGet/ChannelCount СЃРµРјРїР»РѕРІ РІ С‚РµРєСѓС‰РёР№ Р±СѓС„РµСЂ
+	//! Р•СЃР»Рё РІ СЃРµРјРїР»РѕРІ РѕСЃС‚Р°Р»РѕСЃСЊ РјРµРЅСЊС€Рµ, С‚Рѕ Р·Р°РіСЂСѓР·РёС‚СЃСЏ СЃС‚РѕР»СЊРєРѕ СЃРµРјРїР»РѕРІ, СЃРєРѕР»СЊРєРѕ РѕСЃС‚Р°Р»РѕСЃСЊ.
+	//! \returns РљРѕР»РёС‡РµСЃС‚РІРѕ РїСЂРѕС‡РёС‚Р°РЅРЅС‹С… float'РѕРІ, С‚Рѕ РµСЃС‚СЊ РїСЂРѕС‡РёС‚Р°РЅРЅРѕРµ РєРѕР»РёС‡РµСЃС‚РІРѕ СЃРµРјРїР»РѕРІ, СѓРјРЅРѕР¶РµРЅРЅРѕРµ РЅР° ChannelCount
 	size_t LoadNextNonNormalizedSamples(uint maxFloatsToGet);
 
 
 	size_t LoadNextNormalizedSamples(uint maxFloatsToGet);
 
-	//! Удалить уже обработанные семплы из буфера
+	//! РЈРґР°Р»РёС‚СЊ СѓР¶Рµ РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Рµ СЃРµРјРїР»С‹ РёР· Р±СѓС„РµСЂР°
 	void FlushProcessedSamples();
 
 

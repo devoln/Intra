@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Audio/Synth/Generators/WhiteNoise.h"
@@ -29,7 +29,7 @@ template<typename T> void GeneratorSynthPassFunction(const SamplerPassParams<T>&
 {
 	const float dt = 1.0f/float(sampleRate);
 
-	//Считаем громкость основной гармоники так, чтобы суммарная громкость по всем гармоникам не превышала scale
+	//РЎС‡РёС‚Р°РµРј РіСЂРѕРјРєРѕСЃС‚СЊ РѕСЃРЅРѕРІРЅРѕР№ РіР°СЂРјРѕРЅРёРєРё С‚Р°Рє, С‡С‚РѕР±С‹ СЃСѓРјРјР°СЂРЅР°СЏ РіСЂРѕРјРєРѕСЃС‚СЊ РїРѕ РІСЃРµРј РіР°СЂРјРѕРЅРёРєР°Рј РЅРµ РїСЂРµРІС‹С€Р°Р»Р° scale
 	float maxValue = 2.0f-2.0f/float(1 << params.Harmonics);
 	float newVolume = volume*params.Scale/maxValue;
 

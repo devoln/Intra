@@ -47,7 +47,7 @@ private:
 
 INTRA_WARNING_POP
 
-template<typename F> RGenerate<F> Generate(F&& func)
-{return Meta::Forward<F>(func);}
+template<typename F> RGenerate<F> Generate(F func)
+{return Meta::Move(func);}
 
 }}

@@ -33,13 +33,17 @@ template<typename T, typename S> struct RIota
 	}
 };
 
-template<typename T, typename S=int> forceinline
-RIota<T, S> Iota(T begin, S step=1)
+template<typename T=int, typename S=int> forceinline
+RIota<T, S> IotaInf(T begin=0, S step=1)
 {return {begin, step};}
 
-template<typename T, typename S> forceinline
-RTake<RIota<T, S>> Iota(T begin, T end, S step)
-{return Take(Iota(begin, step), size_t((end-begin+step-1)/step));}
+template<typename T, typename S=int> forceinline
+RTake<RIota<T, S>> Iota(T begin, T end, S step=1)
+{return Take(IotaInf(begin, step), size_t((end-begin+step-1)/step));}
+
+template<typename T=int> forceinline
+RTake<RIota<T, T>> Iota(T end)
+{return Take(IotaInf(0, 1), size_t(end));}
 
 
 static_assert(IsInputRange<RIota<int, int>>::_, "Not input range???");

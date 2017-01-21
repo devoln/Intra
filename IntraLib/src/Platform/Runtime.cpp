@@ -1,4 +1,4 @@
-#include "Platform/PlatformInfo.h"
+п»ї#include "Platform/PlatformInfo.h"
 #include "Platform/Compatibility.h"
 #include "Containers/Array.h"
 #include "Containers/String.h"
@@ -109,7 +109,7 @@ unsigned int INTRA_CRTDECL _Random_device()
 
 #include <stdlib.h>
 
-//extern "C" int _imp___fdtest(float*) {return -1;} //Это заглушка для недостающего символа. Она может вызвать ошибки с математической библиотекой
+//extern "C" int _imp___fdtest(float*) {return -1;} //Р­С‚Рѕ Р·Р°РіР»СѓС€РєР° РґР»СЏ РЅРµРґРѕСЃС‚Р°СЋС‰РµРіРѕ СЃРёРјРІРѕР»Р°. РћРЅР° РјРѕР¶РµС‚ РІС‹Р·РІР°С‚СЊ РѕС€РёР±РєРё СЃ РјР°С‚РµРјР°С‚РёС‡РµСЃРєРѕР№ Р±РёР±Р»РёРѕС‚РµРєРѕР№
 
 namespace std
 {
@@ -179,7 +179,7 @@ void _fastcall _guard_check_icall(unsigned int) {}
 #endif
 
 #ifdef INTRA_QIFIST
-//Выполнить это при запуске, если используется /QIfist
+//Р’С‹РїРѕР»РЅРёС‚СЊ СЌС‚Рѕ РїСЂРё Р·Р°РїСѓСЃРєРµ, РµСЃР»Рё РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ /QIfist
 inline int SetFloatingPointRoundingToTruncate()
 {
 	short control_word, control_word2;

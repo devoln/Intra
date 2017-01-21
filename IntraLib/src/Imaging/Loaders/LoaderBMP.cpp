@@ -1,4 +1,4 @@
-#ifndef INTRA_NO_BMP_LOADER
+п»ї#ifndef INTRA_NO_BMP_LOADER
 
 #include "Containers/Array.h"
 #include "Imaging/Loaders/LoaderBMP.h"
@@ -62,7 +62,7 @@ Image LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		Vector3<uintLE> GammaRGB;
 	} bmpHdr;
 
-	stream.Skip(2); //Предполагается, что идентификатор формата уже проверен
+	stream.Skip(2); //РџСЂРµРґРїРѕР»Р°РіР°РµС‚СЃСЏ, С‡С‚Рѕ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂ С„РѕСЂРјР°С‚Р° СѓР¶Рµ РїСЂРѕРІРµСЂРµРЅ
 
 	uint fileSize = stream.Read<uintLE>();
 	(void)fileSize;
@@ -73,7 +73,7 @@ Image LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 	stream.ReadData(&bmpHdr, hdrSize-sizeof(uintLE));
 
 
-	//RLE4, RLE8 и встроенный jpeg\png не поддерживаются!
+	//RLE4, RLE8 Рё РІСЃС‚СЂРѕРµРЅРЅС‹Р№ jpeg\png РЅРµ РїРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ!
 	if(bmpHdr.Compression!=0 && bmpHdr.Compression!=3)
 		return null;
 
@@ -89,7 +89,7 @@ Image LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		for(uint i = 0; i<bmpHdr.clrUsed; i++)
 			colorTable[i] = colorTable[i].swizzle(2, 1, 0, 3);
 	}
-	else if(bmpHdr.bitCount<=8) //Если палитра отсутствует, то сделаем её сами из оттенков серого. Такие случаи вроде бы не были описаны, но paint создаёт такие bmp
+	else if(bmpHdr.bitCount<=8) //Р•СЃР»Рё РїР°Р»РёС‚СЂР° РѕС‚СЃСѓС‚СЃС‚РІСѓРµС‚, С‚Рѕ СЃРґРµР»Р°РµРј РµС‘ СЃР°РјРё РёР· РѕС‚С‚РµРЅРєРѕРІ СЃРµСЂРѕРіРѕ. РўР°РєРёРµ СЃР»СѓС‡Р°Рё РІСЂРѕРґРµ Р±С‹ РЅРµ Р±С‹Р»Рё РѕРїРёСЃР°РЅС‹, РЅРѕ paint СЃРѕР·РґР°С‘С‚ С‚Р°РєРёРµ bmp
 		for(int i = 0; i<(1<<bmpHdr.bitCount); i++)
 			colorTable[i] = UBVec4(UBVec3(byte(255*i >> bmpHdr.bitCount)), 255);
 
@@ -143,8 +143,8 @@ Image LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		return result;
 	}
 
-	//Битовые поля
-	//Предполагается, что маски цветовых компонентов могут находиться в любом порядке
+	//Р‘РёС‚РѕРІС‹Рµ РїРѕР»СЏ
+	//РџСЂРµРґРїРѕР»Р°РіР°РµС‚СЃСЏ, С‡С‚Рѕ РјР°СЃРєРё С†РІРµС‚РѕРІС‹С… РєРѕРјРїРѕРЅРµРЅС‚РѕРІ РјРѕРіСѓС‚ РЅР°С…РѕРґРёС‚СЊСЃСЏ РІ Р»СЋР±РѕРј РїРѕСЂСЏРґРєРµ
 	const uint lineWidth = ((uint(result.Info.Size.x)*bmpHdr.bitCount/8u)+3u)&~3u;
 	Array<byte> line;
 	line.SetCountUninitialized(lineWidth);

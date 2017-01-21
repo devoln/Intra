@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Math/Fixed.h"
 #include "Range/ForwardDecls.h"

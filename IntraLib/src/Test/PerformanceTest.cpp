@@ -20,7 +20,7 @@ void PrintPerformanceResults(Logger& logger, StringView testName, ArrayRange<con
 	
 	logger.PrintLine();
 
-	logger.PushFont(Math::Vec3(Math::NaN), Math::NaN, false, false, true);
+	logger.PushFont(Math::Vec3(-1), -1, false, false, true);
 	logger.PrintLine("В тесте \"", testName, '"');
 	logger.PopFont();
 

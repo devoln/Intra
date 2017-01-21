@@ -1,4 +1,4 @@
-#include "Imaging/Loaders/LoaderTIFF.h"
+﻿#include "Imaging/Loaders/LoaderTIFF.h"
 #include "Imaging/Loaders/LoaderPlatform.h"
 #include "Imaging/Image.h"
 

@@ -1,4 +1,4 @@
-#include "Audio/Synth/TableAttenuation.h"
+﻿#include "Audio/Synth/TableAttenuation.h"
 #include "Range/ArrayRange.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Construction/Take.h"

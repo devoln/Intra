@@ -15,17 +15,28 @@ foreach(FILE ${INTRA_LIB_HEADERS})
 	set(INTRA_LIB_HEADERS1 ${INTRA_LIB_HEADERS1} include/${FILE})
 endforeach(FILE)
 
-if(UNITY_BUILD)
-
-set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/Intra.cpp)
-add_definitions(-DINTRA_UNITY_BUILD)
-
-else()
+foreach(_source IN ITEMS ${INTRA_LIB_HEADERS1})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "/" "\\" _group_path "${_source_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
 
 include(src/CMakeFileList.txt)
 foreach(FILE ${INTRA_LIB_SOURCE})
-	set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/${FILE})
+    set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/${FILE})
 endforeach(FILE)
+
+foreach(_source IN ITEMS ${INTRA_LIB_SOURCE1})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "/" "\\" _group_path "${_source_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
+
+if(UNITY_BUILD)
+
+set_source_files_properties(${INTRA_LIB_SOURCE1} PROPERTIES HEADER_FILE_ONLY true)
+set(INTRA_LIB_SOURCE1 ${INTRA_LIB_SOURCE1} src/Intra.cpp)
+add_definitions(-DINTRA_UNITY_BUILD)
 
 endif()
 

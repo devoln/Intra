@@ -2,6 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
+#include "Meta/Operators.h"
 
 namespace Intra { namespace Utils {
 
@@ -11,9 +12,7 @@ template<typename T> struct Optional
 {
 	static struct ConstructT {} DefaultConstruct;
 private:
-	typedef T& ref;
-	typedef const T& cref;
-
+	typedef T value_type; //Нужно для natvis
 	union storage
 	{
 		char value[sizeof(T)];
@@ -26,7 +25,6 @@ private:
 	};
 
 public:
-
 	Optional(null_t=null): val(null), not_null(false) {}
 	Optional(ConstructT): val(DefaultConstruct), not_null(true) {}
 	
@@ -46,7 +44,7 @@ public:
 
 	~Optional() {if(not_null) value().~T();}
 
-	Optional<T>& operator=(cref rhs)
+	Optional<T>& operator=(const T& rhs)
 	{
 		if(not_null) assign(rhs);
 		else new(&val) T(rhs);
@@ -76,23 +74,41 @@ public:
 		return *this;
 	}
 
-	bool operator==(null_t) const {return !not_null;}
-	bool operator!=(null_t) const {return not_null;}
+	forceinline bool operator==(null_t) const {return !not_null;}
+	forceinline bool operator!=(null_t) const {return not_null;}
+
+	//! Если тип T не имеет оператора сравнения, то сравнивается только наличие значения в обоих объектах.
+	template<typename U=T> forceinline Meta::EnableIf<
+		!Meta::HasOpEquals<U>::_,
+	bool> operator==(const Optional& rhs) const
+	{return (not_null==null)==(not_null==null);}
+
+	//! Если тип T имеет оператор сравнения, то сравнивается наличие значения в обоих объектах, и,
+	//! если значение содержится в обоих объектах, то сравниваются хранящиеся в нём значения.
+	template<typename U=T> forceinline Meta::EnableIf<
+		Meta::HasOpEquals<U>::_,
+	bool> operator==(const Optional& rhs) const
+	{
+		return (not_null==null)==(not_null==null) &&
+			(!not_null || value()==rhs.value());
+	}
+
+	forceinline bool operator!=(const Optional& rhs) const {return !operator==(rhs);}
 	
-	ref Value()
+	T& Value()
 	{
 		INTRA_ASSERT(not_null);
 		return value();
 	}
 
-	cref Value() const
+	const T& Value() const
 	{
 		INTRA_ASSERT(not_null);
 		return value();
 	}
 
-	ref operator()() {return value();}
-	cref operator()() const {return value();}
+	T& operator()() {return Value();}
+	const T& operator()() const {return Value();}
 
 private:
 	storage val;
@@ -100,12 +116,12 @@ private:
 
 	template<typename U=T> Meta::EnableIf<
 		Meta::IsCopyAssignable<U>::_
-	> assign(cref rhs)
+	> assign(const T& rhs)
 	{value() = rhs;}
 
 	template<typename U=T> Meta::EnableIf<
 		!Meta::IsCopyAssignable<U>::_
-	> assign(cref rhs)
+	> assign(const T& rhs)
 	{
 		value().~T();
 		new(&val) T(rhs);
@@ -116,11 +132,11 @@ private:
 	> assign(T&& rhs)
 	{value() = Meta::Move(rhs);}
 
-	forceinline ref value()
-	{return reinterpret_cast<ref>(val);}
+	forceinline T& value()
+	{return reinterpret_cast<T&>(val);}
 
-	forceinline cref value() const
-	{return reinterpret_cast<cref>(val);}
+	forceinline const T& value() const
+	{return reinterpret_cast<const T&>(val);}
 };
 
 INTRA_WARNING_POP

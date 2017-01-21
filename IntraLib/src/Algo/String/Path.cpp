@@ -1,4 +1,4 @@
-#include "Algo/String/Path.h"
+﻿#include "Algo/String/Path.h"
 #include "Algo/Mutation/Replace.h"
 #include "Range/Iteration/Retro.h"
 #include "Range/StringView.h"

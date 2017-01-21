@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Imaging/ImageInfo.h"
 #include "Range/ListRange.h"

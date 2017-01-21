@@ -2,38 +2,38 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 	
     <Type Name="Intra::GenericString&lt;char,*&gt;">
-        <DisplayString>{data,[len]s8}</DisplayString> 
-        <StringView>data,[len]s8b</StringView>
+        <DisplayString>{mData,[mLen]s8}</DisplayString> 
+        <StringView>mData,[mLen]s8b</StringView>
         <Expand> 
-            <Item Name="Length">len</Item>
-            <Item Name="Data">data</Item>
+            <Item Name="Length">mLen</Item>
+            <Item Name="Data">mData</Item>
         </Expand> 
     </Type>
 
   <Type Name="Intra::GenericString&lt;char16_t,*&gt;">
-    <DisplayString>{data,[len]su}</DisplayString>
-    <StringView>data,[len]sub</StringView>
+    <DisplayString>{mData,[mLen]su}</DisplayString>
+    <StringView>mData,[mLen]sub</StringView>
     <Expand>
-      <Item Name="Length">len</Item>
-      <Item Name="Data">data</Item>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
     </Expand>
   </Type>
 
   <Type Name="Intra::GenericString&lt;wchar_t,*&gt;">
-    <DisplayString>{data,[len]su}</DisplayString>
-    <StringView>data,[len]sub</StringView>
+    <DisplayString>{mData,[mLen]su}</DisplayString>
+    <StringView>mData,[mLen]sub</StringView>
     <Expand>
-      <Item Name="Length">len</Item>
-      <Item Name="Data">data</Item>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
     </Expand>
   </Type>
 
   <Type Name="Intra::GenericString&lt;char32_t,*&gt;">
-    <DisplayString>{data,[len]s32}</DisplayString>
-    <StringView>data,[len]s32b</StringView>
+    <DisplayString>{mData,[mLen]s32}</DisplayString>
+    <StringView>mData,[mLen]s32b</StringView>
     <Expand>
-      <Item Name="Length">len</Item>
-      <Item Name="Data">data</Item>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
     </Expand>
   </Type>
 
@@ -57,13 +57,13 @@
 	
 	  <Type Name="Intra::BList&lt;*&gt;">
       <DisplayString Condition="count==0">[]</DisplayString>
-	    <DisplayString Condition="(range.First==null || range.Last==null) &amp;&amp; count!=0 || count==0 &amp;&amp; (range.First!=null || range.Last!=null)">&lt;INVALID&gt;</DisplayString>
+	    <DisplayString Condition="(range.FirstNode==null || range.LastNode==null) &amp;&amp; count!=0 || count==0 &amp;&amp; (range.FirstNode!=null || range.LastNode!=null)">&lt;INVALID&gt;</DisplayString>
       <DisplayString>BList({count}){range}</DisplayString>
       <Expand>
           <Item Name="Count" ExcludeView="simple">count</Item>
           <LinkedListItems>
                 <Size>count</Size>
-                <HeadPointer>range.First</HeadPointer>
+                <HeadPointer>range.FirstNode</HeadPointer>
                 <NextPointer>Next</NextPointer>
                 <ValueNode>Value</ValueNode>
             </LinkedListItems>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+<Type Name="Intra::Range::RIndexed&lt;*&gt;">
+    <DisplayString>Indexed({ValueRange} by {IndexRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RFirstTransversal&lt;*&gt;">
+    <DisplayString>FirstTransversal({mRanges})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RMap&lt;*,*&gt;">
+    <DisplayString Condition="!Function.not_null">[]</DisplayString>
+    <DisplayString>Map({OriginalRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RChain&lt;*,*&gt;">
+    <DisplayString IncludeView="noparens">{mRange0}, {mNext,view(noparens)}</DisplayString>
+    <DisplayString ExcludeView="noparens">Chain({*this,view(noparens)})</DisplayString>
+    <Expand>
+      <Item Name="Range">mRange0</Item>
+      <ExpandedItem>mNext</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::RChain&lt;*&gt;">
+    <DisplayString>{mRange0}</DisplayString>
+    <Expand>
+      <Item Name="Range">mRange0</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::RStride&lt;*&gt;">
+    <DisplayString>Stride({mStep}, {mOriginalRange})</DisplayString>
+  </Type>
+  
+  <Type Name="Intra::Range::RZip&lt;*&gt;">
+    <DisplayString>Zip({OriginalRanges,view(noparens)})</DisplayString>
+    <Expand>
+      <Synthetic Name="[Zip]"><DisplayString>Ranges:</DisplayString></Synthetic>
+      <ExpandedItem>OriginalRanges</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::RRetro&lt;*&gt;">
+    <DisplayString>Reverse({OriginalRange})</DisplayString>
+    <Expand>
+      <Synthetic Name="[Reverse]"><DisplayString>Range:</DisplayString></Synthetic>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+
+  
+</AutoVisualizer>
+
+

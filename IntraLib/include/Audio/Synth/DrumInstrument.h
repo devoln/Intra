@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Audio/Music.h"
@@ -54,7 +54,7 @@ public:
 	HashMap<uint, IMusicalInstrument*> Generators;
 
 private:
-	//Убедиться, что в кеше присутствуют семплы для указанной ноты длины не менее указанной
+	//РЈР±РµРґРёС‚СЊСЃСЏ, С‡С‚Рѕ РІ РєРµС€Рµ РїСЂРёСЃСѓС‚СЃС‚РІСѓСЋС‚ СЃРµРјРїР»С‹ РґР»СЏ СѓРєР°Р·Р°РЅРЅРѕР№ РЅРѕС‚С‹ РґР»РёРЅС‹ РЅРµ РјРµРЅРµРµ СѓРєР°Р·Р°РЅРЅРѕР№
 	AudioBuffer& cache_note(MusicNote note, float tempo, uint sampleRate) const;
 };
 

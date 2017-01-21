@@ -90,7 +90,7 @@ struct IsInputRange: Meta::TypeFromValue<bool,
 > {};
 
 INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(IsForwardRange, Meta::Val<ValueTypeOf<T>>(),
-	IsInputRange<T>::_ && Meta::IsCopyConstructible<T>::_);
+	IsInputRange<T>::_ && Meta::IsCopyConstructible<Meta::RemoveReference<T>>::_);
 
 template<typename R>
 struct IsBidirectionalRange: Meta::TypeFromValue<bool,
@@ -241,10 +241,6 @@ template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ || IsOutputRange<R>::_,
 R&&> AsRange(R&& r) {return Meta::Forward<R>(r);}
 
-template<typename R> forceinline Meta::EnableIf<
-	IsInputRange<R>::_ || IsOutputRange<R>::_,
-const R&> AsRange(const R& r) {return r;}
-
 
 template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_,
@@ -254,24 +250,25 @@ template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_,
 const R&> AsConstRange(const R& r) {return r;}
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRange, Meta::Val<T>().AsRange());
-INTRA_DEFINE_EXPRESSION_CHECKER(HasAsConstRange, Meta::Val<T>().AsConstRange());
+INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRangeMethod, Meta::Val<T>().AsRange());
+INTRA_DEFINE_EXPRESSION_CHECKER(HasAsConstRangeMethod, Meta::Val<T>().AsConstRange());
 
 template<typename T, typename=Meta::EnableIf<
-	HasAsRange<T>::_
+	!IsInputRange<T>::_ && HasAsRangeMethod<T>::_
 >> decltype(Meta::Val<T>().AsRange()) AsRange(T&& v) {return v.AsRange();}
 template<typename T, typename=Meta::EnableIf<
-	HasAsRange<T>::_
+	!IsInputRange<T>::_ && HasAsConstRangeMethod<T>::_
 >> decltype(Meta::Val<T>().AsConstRange()) AsConstRange(T&& v) {return v.AsConstRange();}
+
+INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRange, AsRange(Meta::Val<T>()));
+INTRA_DEFINE_EXPRESSION_CHECKER(HasAsConstRange, AsConstRange(Meta::Val<T>()));
 
 template<typename T> struct ArrayRange;
 template<typename Char> struct GenericStringView;
 
 namespace RD {
 
-INTRA_DEFINE_EXPRESSION_CHECKER(AsRangeCompiles, AsRange(Meta::Val<T>()));
-
-template<typename T, int=AsRangeCompiles<T>::_? 1:
+template<typename T, int=HasAsRange<T>::_? 1:
 	(Meta::IsArrayType<Meta::RemoveReference<T>>::_? 2: 0)
 > struct AsRangeResult;
 template<typename T> struct AsRangeResult<T, 1>
@@ -283,9 +280,8 @@ template<typename T> struct AsRangeResult<T, 0>
 template<typename T, size_t N> struct AsRangeResult<T(&)[N], 2>
 {typedef Meta::SelectType<GenericStringView<Meta::RemoveConst<T>>, ArrayRange<T>, Meta::IsCharType<T>::_> _;};
 
-INTRA_DEFINE_EXPRESSION_CHECKER(AsConstRangeCompiles, AsRange(Meta::Val<T>()));
 
-template<typename T, bool=AsConstRangeCompiles<T>::_> struct AsConstRangeResult
+template<typename T, bool=HasAsConstRange<T>::_> struct AsConstRangeResult
 {typedef decltype(AsConstRange(Meta::Val<T>())) _;};
 
 template<typename T> struct AsConstRangeResult<T, false>

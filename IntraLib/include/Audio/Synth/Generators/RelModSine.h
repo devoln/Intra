@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"

@@ -1,4 +1,4 @@
-#ifndef INTRA_NO_TGA_LOADER
+п»ї#ifndef INTRA_NO_TGA_LOADER
 
 #include "Imaging/Loaders/LoaderTGA.h"
 #include "Imaging/Image.h"
@@ -113,7 +113,7 @@ bool LoaderTGA::IsValidHeader(const void* header, size_t headerSize) const
 	for(int i: {0, 1, 3, 4, 5, 6, 8, 9, 10, 11})
 		if(headerBytes[i]!=0) return false;
 
-	//Поддерживаются пока только форматы 2 (несжатый) и 10 (RLE)
+	//РџРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ РїРѕРєР° С‚РѕР»СЊРєРѕ С„РѕСЂРјР°С‚С‹ 2 (РЅРµСЃР¶Р°С‚С‹Р№) Рё 10 (RLE)
 	if(headerBytes[2]!=10 && headerBytes[2]!=2) return false;
 
 	return true;

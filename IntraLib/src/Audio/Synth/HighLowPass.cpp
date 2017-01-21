@@ -1,4 +1,4 @@
-#include "Audio/Synth/HighLowPass.h"
+﻿#include "Audio/Synth/HighLowPass.h"
 #include "Platform/CppWarnings.h"
 #include "Range/ArrayRange.h"
 #include "Containers/Array.h"

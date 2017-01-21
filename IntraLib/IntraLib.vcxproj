@@ -810,6 +810,7 @@
     <ClInclude Include="include\Range\Iterator.h" />
     <ClInclude Include="include\Range\ListRange.h" />
     <ClInclude Include="include\Range\Operations.h" />
+    <ClInclude Include="include\Range\Output\Inserter.h" />
     <ClInclude Include="include\Range\Polymorphic.h" />
     <ClInclude Include="include\Range\RelativeIndex.h" />
     <ClInclude Include="include\Range\SparseRange.h" />
@@ -825,7 +826,6 @@
     <ClInclude Include="include\Utils\Callback.h" />
     <ClInclude Include="include\Utils\Event.h" />
     <ClInclude Include="include\Utils\Optional.h" />
-    <ClInclude Include="include\Utils\Wrapper.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="include\Data\TextSerialization.inl" />
@@ -840,7 +840,11 @@
   <ItemGroup>
     <Natvis Include="natvis\Containers.natvis" />
     <Natvis Include="natvis\Meta.natvis" />
-    <Natvis Include="natvis\Ranges.natvis" />
+    <Natvis Include="natvis\Range.natvis" />
+    <Natvis Include="natvis\RangeConstruction.natvis" />
+    <Natvis Include="natvis\RangeIteration.natvis" />
+    <Natvis Include="natvis\RangePolymorphic.natvis" />
+    <Natvis Include="natvis\Utils.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

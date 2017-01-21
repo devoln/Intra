@@ -1,14 +1,16 @@
-﻿#include "PerfTestMap.h"
+﻿#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+#include "PerfTestMap.h"
+#include "Platform/Compatibility.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #ifndef INTRA_STL_INTERFACE
 #define INTRA_STL_INTERFACE
 #endif
 
-#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
-#define _HAS_EXCEPTIONS 0
-#endif
 
 #include "Test/PerformanceTest.h"
 #include "IO/LogSystem.h"
@@ -60,10 +62,10 @@ template<typename K, typename V> double TestOrderedMapIterationSumValues(uint ti
 	HashMap<K, V> map;
 	PopulateMapRandom(map, size);
 	Timer timer;
-	map.SortByKey();
 	V result = V();
 	for(uint i=0; i<times; i++)
 	{
+		map.SortByKey();
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
 	double time = timer.GetTime();
@@ -401,5 +403,3 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 }
-
-INTRA_WARNING_POP

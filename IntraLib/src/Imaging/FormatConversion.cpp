@@ -1,4 +1,4 @@
-#include "Imaging/FormatConversion.h"
+п»ї#include "Imaging/FormatConversion.h"
 
 namespace Intra {
 
@@ -42,7 +42,7 @@ void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes,
 	if(bytesPerComp==1) SwapRedBlueTyped<byte>(lineUnusedBytes, components, sizes, data.Data());
 	else if(bytesPerComp==2) SwapRedBlueTyped<ushort>(lineUnusedBytes/2u, components, sizes, reinterpret_cast<ushort*>(data.Data()));
 	else if(bytesPerComp==4) SwapRedBlueTyped<uint>(lineUnusedBytes/4u, components, sizes, reinterpret_cast<uint*>(data.Data()));
-	else INTRA_INTERNAL_ERROR("swap_red_blue пока не поддерживает упакованные форматы!");
+	else INTRA_INTERNAL_ERROR("swap_red_blue РїРѕРєР° РЅРµ РїРѕРґРґРµСЂР¶РёРІР°РµС‚ СѓРїР°РєРѕРІР°РЅРЅС‹Рµ С„РѕСЂРјР°С‚С‹!");
 }
 
 

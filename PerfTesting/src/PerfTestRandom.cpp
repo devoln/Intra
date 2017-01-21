@@ -1,7 +1,12 @@
-﻿#include "PerfTestRandom.h"
+﻿#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+#define _HAS_EXCEPTIONS 0
+#endif
+
+#include "PerfTestRandom.h"
 #include "Platform/Time.h"
 #include "Test/PerformanceTest.h"
 #include "Platform/CppWarnings.h"
+#include "Platform/Compatibility.h"
 #include "Math/Random.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
@@ -10,9 +15,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #pragma warning(disable: 4350)
 #endif
 
-#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
-#define _HAS_EXCEPTIONS 0
-#endif
 
 #include <random>
 #include <stdlib.h>

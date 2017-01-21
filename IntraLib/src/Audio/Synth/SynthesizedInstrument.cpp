@@ -89,10 +89,6 @@ void CombinedSynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSample
 }
 
 
-
-
-
-
 }}}
 
 

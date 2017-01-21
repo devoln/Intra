@@ -1,4 +1,4 @@
-#include "Audio/Sources/WaveSource.h"
+﻿#include "Audio/Sources/WaveSource.h"
 #include "Math/MathEx.h"
 #include "Platform/Intrinsics.h"
 #include "Platform/CppWarnings.h"

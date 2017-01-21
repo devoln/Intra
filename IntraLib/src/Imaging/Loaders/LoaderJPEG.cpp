@@ -1,4 +1,4 @@
-#include "Imaging/Loaders/LoaderJPEG.h"
+п»ї#include "Imaging/Loaders/LoaderJPEG.h"
 #include "Imaging/Loaders/LoaderPlatform.h"
 #include "IO/Stream.h"
 #include "Imaging/Image.h"
@@ -43,7 +43,7 @@ ImageInfo LoaderJPEG::GetInfo(IO::IInputStream& stream) const
 Image LoaderJPEG::Load(IO::IInputStream& stream, size_t bytes) const
 {
 #ifdef INTRA_USE_LIBJPEG
-	//TODO: сделать загрузку через libjpeg
+	//TODO: СЃРґРµР»Р°С‚СЊ Р·Р°РіСЂСѓР·РєСѓ С‡РµСЂРµР· libjpeg
 #elif(INTRA_LIBRARY_IMAGE_LOADING!=INTRA_LIBRARY_IMAGE_LOADING_None)
 	return LoadWithPlatform(stream, bytes);
 #else

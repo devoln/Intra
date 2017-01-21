@@ -3,8 +3,7 @@
 #include "Range/Concepts.h"
 #include "Range/TupleOperation.h"
 
-namespace Intra { namespace Range
-{
+namespace Intra { namespace Range {
 
 INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS

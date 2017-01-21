@@ -326,6 +326,7 @@ template<typename SRC, typename DST> struct IsStaticCastable: D::is_static_casta
 #ifdef _MSC_VER
 template<typename T, typename... Args> struct IsConstructible:
 	TypeFromValue<bool, __is_constructible(T, Args...)> {};
+template<typename... Args> struct IsConstructible<void, Args...>: TypeFromValue<bool, false> {};
 template<typename T> struct IsDefaultConstructible: IsConstructible<T> {};
 #else
 
@@ -458,6 +459,7 @@ template<typename T, typename... Args> struct IsTriviallyConstructible:
 
 #ifdef _MSC_VER
 template<typename T> struct IsCopyConstructible: IsConstructible<T, const T&> {};
+template<> struct IsCopyConstructible<void>: TypeFromValue<bool, false> {};
 #else
 INTRA_DEFINE_EXPRESSION_CHECKER(IsCopyConstructible, T(Val<const T&>()));
 #endif

@@ -1,4 +1,4 @@
-#include "Imaging/Loaders/LoaderPlatform.h"
+п»ї#include "Imaging/Loaders/LoaderPlatform.h"
 #include "Math/MathEx.h"
 #include "IO/Stream.h"
 
@@ -13,7 +13,7 @@
 
 namespace Intra { namespace Imaging {
 
-//Загрузить изображение из BMP, JPG или GIF файла
+//Р—Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РёР· BMP, JPG РёР»Рё GIF С„Р°Р№Р»Р°
 Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 {
 	ilInit();
@@ -33,7 +33,7 @@ Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 	case IL_RGBA: result.Info.Format = ImageFormat::RGBA8; break;
 	}
 	result.Info.Type = ImageType_2D;
-	result.Data.SetBounds(0); //Оптимизация: чтобы при растягивании буфера не копировалось старое содержимое, которое нам не нужно
+	result.Data.SetBounds(0); //РћРїС‚РёРјРёР·Р°С†РёСЏ: С‡С‚РѕР±С‹ РїСЂРё СЂР°СЃС‚СЏРіРёРІР°РЅРёРё Р±СѓС„РµСЂР° РЅРµ РєРѕРїРёСЂРѕРІР°Р»РѕСЃСЊ СЃС‚Р°СЂРѕРµ СЃРѕРґРµСЂР¶РёРјРѕРµ, РєРѕС‚РѕСЂРѕРµ РЅР°Рј РЅРµ РЅСѓР¶РЅРѕ
 	result.Data.SetBounds(GetSize());
 	C::memcpy(result.Data.First, ilGetData(), result.GetSize());
 	ilDeleteImage(handle);
@@ -58,7 +58,7 @@ struct IUnknown;
 
 #include <olectl.h>
 
-//Поддерживает BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, и EMF. Не работает в WinRT \ Windows Phone
+//РџРѕРґРґРµСЂР¶РёРІР°РµС‚ BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, Рё EMF. РќРµ СЂР°Р±РѕС‚Р°РµС‚ РІ WinRT \ Windows Phone
 #include <gdiplus.h>
 
 #ifdef _MSC_VER
@@ -68,7 +68,7 @@ struct IUnknown;
 
 namespace Intra { namespace Imaging {
 
-//Загрузить изображение из BMP, JPG или GIF файла
+//Р—Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РёР· BMP, JPG РёР»Рё GIF С„Р°Р№Р»Р°
 Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 {
 	using namespace Gdiplus;
@@ -167,7 +167,7 @@ Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 
 namespace Intra { namespace Imaging {
 
-//Загрузить изображение из BMP, JPG, PNG или GIF файла
+//Р—Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РёР· BMP, JPG, PNG РёР»Рё GIF С„Р°Р№Р»Р°
 Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 {
 	const auto startPos = s->GetPos();

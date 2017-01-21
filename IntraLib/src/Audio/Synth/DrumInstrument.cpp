@@ -1,4 +1,4 @@
-#include "Audio/Synth/DrumInstrument.h"
+﻿#include "Audio/Synth/DrumInstrument.h"
 #include "Audio/AudioBuffer.h"
 
 namespace Intra { namespace Audio { namespace Synth {

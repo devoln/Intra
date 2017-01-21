@@ -1,4 +1,4 @@
-#include "Imaging/Loaders/Loader.h"
+﻿#include "Imaging/Loaders/Loader.h"
 
 namespace Intra { namespace Imaging {
 

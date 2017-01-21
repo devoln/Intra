@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Platform/CppWarnings.h"
 #include "Core/FundamentalTypes.h"
@@ -10,7 +10,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 struct MusicNote
 {
 	enum NoteType: byte {C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, H};
-	static const float BasicFrequencies[12]; //Таблица соответствия нот субконтроктавы частотам
+	static const float BasicFrequencies[12]; //РўР°Р±Р»РёС†Р° СЃРѕРѕС‚РІРµС‚СЃС‚РІРёСЏ РЅРѕС‚ СЃСѓР±РєРѕРЅС‚СЂРѕРєС‚Р°РІС‹ С‡Р°СЃС‚РѕС‚Р°Рј
 
 	MusicNote(byte octave, NoteType note, ushort duration):
 		Octave(octave), Note(note), Duration(duration) {}
@@ -41,9 +41,9 @@ struct MusicNote
 	float Frequency() const {return BasicFrequencies[Note]*float(1 << Octave);}
 	float AbsDuration(float tempo) const {return Duration*tempo/2048;}
 
-	byte Octave; //0 - субконтроктава, дальше по порядку. Если Octave==255, то это не нота, а пауза
+	byte Octave; //0 - СЃСѓР±РєРѕРЅС‚СЂРѕРєС‚Р°РІР°, РґР°Р»СЊС€Рµ РїРѕ РїРѕСЂСЏРґРєСѓ. Р•СЃР»Рё Octave==255, С‚Рѕ СЌС‚Рѕ РЅРµ РЅРѕС‚Р°, Р° РїР°СѓР·Р°
 	NoteType Note;
-	ushort Duration; //Относительная длительность ноты в 1/2048 долях
+	ushort Duration; //РћС‚РЅРѕСЃРёС‚РµР»СЊРЅР°СЏ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ РЅРѕС‚С‹ РІ 1/2048 РґРѕР»СЏС…
 };
 
 INTRA_WARNING_POP

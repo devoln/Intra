@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #ifdef _MSC_VER
 
@@ -12,7 +12,7 @@
 
 //#define _USE_32BIT_TIME_T
 #define fseeko64(file, offset, origin) fseek(file, (long)(offset), (origin))
-#define ftello64 _ftelli64 //_ftelli64 не работает на старой CRT
+#define ftello64 _ftelli64 //_ftelli64 РЅРµ СЂР°Р±РѕС‚Р°РµС‚ РЅР° СЃС‚Р°СЂРѕР№ CRT
 
 #define _ATL_SECURE_NO_DEPRECATE
 #define _CRT_SECURE_NO_WARNINGS
@@ -20,7 +20,7 @@
 
 #elif(defined(__clang__))
 
-extern "C" char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке glibc, из-за которой clang не компилирует
+extern "C" char* gets(char* str); //Р—Р°С‚С‹РєР°РµРј РѕС€РёР±РєСѓ РІ СЃС‚Р°РЅРґР°СЂС‚РЅРѕР№ Р±РёР±Р»РёРѕС‚РµРєРµ glibc, РёР·-Р·Р° РєРѕС‚РѕСЂРѕР№ clang РЅРµ РєРѕРјРїРёР»РёСЂСѓРµС‚
 
 #endif
 
@@ -31,6 +31,6 @@ extern "C" char* gets(char* str); //Затыкаем ошибку в стандартной библиотеке gli
 #endif
 
 #ifdef _MSC_VER
-//Clang 3.7 with Microsoft CodeGen (v140_clang_3_7) почему-то без этого не компилирует
+//Clang 3.7 with Microsoft CodeGen (v140_clang_3_7) РїРѕС‡РµРјСѓ-С‚Рѕ Р±РµР· СЌС‚РѕРіРѕ РЅРµ РєРѕРјРїРёР»РёСЂСѓРµС‚
 #define _ALLOW_KEYWORD_MACROS
 #endif

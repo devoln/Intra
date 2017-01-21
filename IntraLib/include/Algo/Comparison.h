@@ -4,6 +4,7 @@
 #include "Range/Concepts.h"
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
+#include "Range/ForwardDecls.h"
 
 namespace Intra { namespace Algo {
 
@@ -158,11 +159,6 @@ bool> StartsWith(const R& range, const RW& what)
 	return D::StartsWith(range, what);
 }
 
-template<typename R, size_t N> forceinline Meta::EnableIf<
-	Range::IsArrayRange<R>::_,
-bool> StartsWith(const R& range, const Range::ValueTypeOf<R>(&rhs)[N])
-{return StartsWith(range, Range::AsRange(rhs));}
-
 template<typename R, typename RW> forceinline Meta::EnableIf<
 	Range::IsArrayRange<R>::_ &&
 	Range::IsArrayRangeOfExactly<RW, Range::ValueTypeOf<R>>::_ &&
@@ -172,6 +168,11 @@ bool> StartsWith(const R& range, const RW& what)
 	if(range.Length()<what.Length()) return false;
 	return C::memcmp(range.Data(), what.Data(), what.Length()*sizeof(what.First()))==0;
 }
+
+template<typename R, size_t N, typename T=Range::ValueTypeOf<R>> forceinline Meta::EnableIf<
+	Range::IsArrayRange<R>::_,
+bool> StartsWith(const R& range, T(&rhs)[N])
+{return StartsWith(range, Range::AsRange(rhs));}
 
 template<typename R, typename RWs> Meta::EnableIf<
 	Range::IsForwardRange<R>::_ &&

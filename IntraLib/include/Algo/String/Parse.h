@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Range/Concepts.h"
 #include "Range/Construction/Take.h"

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Range/ArrayRange.h"
 #include "Containers/ForwardDeclarations.h"

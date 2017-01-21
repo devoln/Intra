@@ -42,7 +42,7 @@ template<typename R> struct RRetro
 };
 
 
-template<typename R> forceinline R Retro(const RRetro<R>& range) {return range.OriginalRange;}
+template<typename R> forceinline const R& Retro(const RRetro<R>& range) {return range.OriginalRange;}
 template<typename R> forceinline R Retro(RRetro<R>&& range) {return Meta::Move(range.OriginalRange);}
 
 template<typename R> forceinline Meta::EnableIf<

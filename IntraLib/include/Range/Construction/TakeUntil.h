@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/ForwardDecls.h"
 #include "Range/Concepts.h"
@@ -8,15 +8,15 @@
 
 namespace Intra { namespace Range {
 
-//TODO: Реализовать класс TakeUntilResult для InputRange
+//TODO: Р РµР°Р»РёР·РѕРІР°С‚СЊ РєР»Р°СЃСЃ TakeUntilResult РґР»СЏ InputRange
 
 
-//! Последовательно удаляет элементы диапазона до тех пор, пока не:
-//! 1) встретится элемент, для которого выполнен предикат valueOrPredOrSubrange;
-//! 2) встретится элемент, равный valueOrPredOrSubrange;
-//! 3) встретится поддиапазон valueOrPredOrSubrange;
-//! 4) будет достигнут конец диапазона.
-//! Возвращает диапазон пройденных элементов.
+//! РџРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ СѓРґР°Р»СЏРµС‚ СЌР»РµРјРµРЅС‚С‹ РґРёР°РїР°Р·РѕРЅР° РґРѕ С‚РµС… РїРѕСЂ, РїРѕРєР° РЅРµ:
+//! 1) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, РґР»СЏ РєРѕС‚РѕСЂРѕРіРѕ РІС‹РїРѕР»РЅРµРЅ РїСЂРµРґРёРєР°С‚ valueOrPredOrSubrange;
+//! 2) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, СЂР°РІРЅС‹Р№ valueOrPredOrSubrange;
+//! 3) РІСЃС‚СЂРµС‚РёС‚СЃСЏ РїРѕРґРґРёР°РїР°Р·РѕРЅ valueOrPredOrSubrange;
+//! 4) Р±СѓРґРµС‚ РґРѕСЃС‚РёРіРЅСѓС‚ РєРѕРЅРµС† РґРёР°РїР°Р·РѕРЅР°.
+//! Р’РѕР·РІСЂР°С‰Р°РµС‚ РґРёР°РїР°Р·РѕРЅ РїСЂРѕР№РґРµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
 template<typename R, typename X> forceinline Meta::EnableIf<
 	IsFiniteForwardRange<R>::_ && !Meta::IsConst<R>::_ &&
 	((Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
@@ -31,13 +31,13 @@ ResultOfTake<R>> TakeUntilAdvance(R&& range, const X& valueOrPredOrSubrange, siz
 	return Take(rangeCopy, index);
 }
 
-//! Последовательно просматривает элементы диапазона до тех пор, пока не:
-//! 1) встретится элемент, для которого выполнен предикат valueOrPredOrSubrange;
-//! 2) встретится элемент, равный valueOrPredOrSubrange;
-//! 3) встретится поддиапазон valueOrPredOrSubrange;
-//! 4) будет достигнут конец диапазона.
-//! \param valueOrPredOrSubrange Искомое значение, предикат или диапазон.
-//! Возвращает диапазон пройденных элементов.
+//! РџРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ РїСЂРѕСЃРјР°С‚СЂРёРІР°РµС‚ СЌР»РµРјРµРЅС‚С‹ РґРёР°РїР°Р·РѕРЅР° РґРѕ С‚РµС… РїРѕСЂ, РїРѕРєР° РЅРµ:
+//! 1) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, РґР»СЏ РєРѕС‚РѕСЂРѕРіРѕ РІС‹РїРѕР»РЅРµРЅ РїСЂРµРґРёРєР°С‚ valueOrPredOrSubrange;
+//! 2) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, СЂР°РІРЅС‹Р№ valueOrPredOrSubrange;
+//! 3) РІСЃС‚СЂРµС‚РёС‚СЃСЏ РїРѕРґРґРёР°РїР°Р·РѕРЅ valueOrPredOrSubrange;
+//! 4) Р±СѓРґРµС‚ РґРѕСЃС‚РёРіРЅСѓС‚ РєРѕРЅРµС† РґРёР°РїР°Р·РѕРЅР°.
+//! \param valueOrPredOrSubrange РСЃРєРѕРјРѕРµ Р·РЅР°С‡РµРЅРёРµ, РїСЂРµРґРёРєР°С‚ РёР»Рё РґРёР°РїР°Р·РѕРЅ.
+//! Р’РѕР·РІСЂР°С‰Р°РµС‚ РґРёР°РїР°Р·РѕРЅ РїСЂРѕР№РґРµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
 template<typename R, typename X> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_ && !IsInfiniteRange<R>::_ &&
 	((Meta::IsConvertible<X, ValueTypeOf<R>>::_ ||
@@ -47,12 +47,12 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 ResultOfTake<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {return TakeUntilAdvance(R(range), valueOrPredOrSubrange, ioIndex);}
 
-//! Последовательно просматривает элементы массива до тех пор, пока не:
-//! 1) встретится элемент, для которого выполнен предикат valOrPredOrRange
-//! 2) встретится элемент, равный valOrPredOrRange
-//! 3) встретится поддиапазон valOrPredOrRange
-//! 4) будет достигнут конец диапазона.
-//! Возвращает диапазон пройденных элементов.
+//! РџРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕ РїСЂРѕСЃРјР°С‚СЂРёРІР°РµС‚ СЌР»РµРјРµРЅС‚С‹ РјР°СЃСЃРёРІР° РґРѕ С‚РµС… РїРѕСЂ, РїРѕРєР° РЅРµ:
+//! 1) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, РґР»СЏ РєРѕС‚РѕСЂРѕРіРѕ РІС‹РїРѕР»РЅРµРЅ РїСЂРµРґРёРєР°С‚ valOrPredOrRange
+//! 2) РІСЃС‚СЂРµС‚РёС‚СЃСЏ СЌР»РµРјРµРЅС‚, СЂР°РІРЅС‹Р№ valOrPredOrRange
+//! 3) РІСЃС‚СЂРµС‚РёС‚СЃСЏ РїРѕРґРґРёР°РїР°Р·РѕРЅ valOrPredOrRange
+//! 4) Р±СѓРґРµС‚ РґРѕСЃС‚РёРіРЅСѓС‚ РєРѕРЅРµС† РґРёР°РїР°Р·РѕРЅР°.
+//! Р’РѕР·РІСЂР°С‰Р°РµС‚ РґРёР°РїР°Р·РѕРЅ РїСЂРѕР№РґРµРЅРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ.
 template<typename T, size_t N, typename X> forceinline Meta::EnableIf<
 	(Meta::IsConvertible<X, T>::_ ||
 		Meta::IsCallable<X, T>::_) ||

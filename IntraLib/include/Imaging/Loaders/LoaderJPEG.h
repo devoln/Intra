@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifndef INTRA_NO_JPEG_LOADER
 

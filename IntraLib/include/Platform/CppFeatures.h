@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #define INTRA_COMPILER_INLINE_ASM_SYNTAX_INTEL 0
 #define INTRA_COMPILER_INLINE_ASM_SYNTAX_ATAT 1
@@ -14,7 +14,7 @@
 
 #endif
 
-//! Используется для отключения кода препроцессором: #if INTRA_DISABLED ... #endif
+//! РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ РѕС‚РєР»СЋС‡РµРЅРёСЏ РєРѕРґР° РїСЂРµРїСЂРѕС†РµСЃСЃРѕСЂРѕРј: #if INTRA_DISABLED ... #endif
 #define INTRA_DISABLED 0
 
 

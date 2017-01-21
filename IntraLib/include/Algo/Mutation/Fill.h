@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Range/ForwardDecls.h"
 #include "Range/Iteration/Cycle.h"

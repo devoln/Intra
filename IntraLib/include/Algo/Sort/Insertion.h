@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Range/ArrayRange.h"
 #include "Platform/CppWarnings.h"
@@ -7,14 +7,14 @@ namespace Intra { namespace Algo {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-//! Сортировка массива array вставками с предикатом сравнения comparer.
-//! Характеристики алгоритма:
-//! - Худшее время O(n^2) достигается, когда исходный массив отсортирован в обратном порядке;
-//! - Среднее время О(n^2);
-//! - Лучшее время O(n) достигается, когда исходный массив уже отсортирован;
-//! - Самый эффективный алгоритм для сортировки до нескольких десятков элементов;
-//! - Эффективен, если массив уже частично отсортирован;
-//! - Устойчив.
+//! РЎРѕСЂС‚РёСЂРѕРІРєР° РјР°СЃСЃРёРІР° array РІСЃС‚Р°РІРєР°РјРё СЃ РїСЂРµРґРёРєР°С‚РѕРј СЃСЂР°РІРЅРµРЅРёСЏ comparer.
+//! РҐР°СЂР°РєС‚РµСЂРёСЃС‚РёРєРё Р°Р»РіРѕСЂРёС‚РјР°:
+//! - РҐСѓРґС€РµРµ РІСЂРµРјСЏ O(n^2) РґРѕСЃС‚РёРіР°РµС‚СЃСЏ, РєРѕРіРґР° РёСЃС…РѕРґРЅС‹Р№ РјР°СЃСЃРёРІ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅ РІ РѕР±СЂР°С‚РЅРѕРј РїРѕСЂСЏРґРєРµ;
+//! - РЎСЂРµРґРЅРµРµ РІСЂРµРјСЏ Рћ(n^2);
+//! - Р›СѓС‡С€РµРµ РІСЂРµРјСЏ O(n) РґРѕСЃС‚РёРіР°РµС‚СЃСЏ, РєРѕРіРґР° РёСЃС…РѕРґРЅС‹Р№ РјР°СЃСЃРёРІ СѓР¶Рµ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅ;
+//! - РЎР°РјС‹Р№ СЌС„С„РµРєС‚РёРІРЅС‹Р№ Р°Р»РіРѕСЂРёС‚Рј РґР»СЏ СЃРѕСЂС‚РёСЂРѕРІРєРё РґРѕ РЅРµСЃРєРѕР»СЊРєРёС… РґРµСЃСЏС‚РєРѕРІ СЌР»РµРјРµРЅС‚РѕРІ;
+//! - Р­С„С„РµРєС‚РёРІРµРЅ, РµСЃР»Рё РјР°СЃСЃРёРІ СѓР¶Рµ С‡Р°СЃС‚РёС‡РЅРѕ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅ;
+//! - РЈСЃС‚РѕР№С‡РёРІ.
 template<typename RandomAccessRange, typename C = Comparers::Function<Range::ValueTypeOf<RandomAccessRange>>> Meta::EnableIf<
 	Range::IsFiniteRandomAccessRange<RandomAccessRange>::_ &&
 	Range::IsAssignableInputRange<RandomAccessRange>::_
@@ -28,7 +28,7 @@ template<typename RandomAccessRange, typename C = Comparers::Function<Range::Val
 	}
 }
 
-//! Сортировка Шелла массива array с предикатом сравнения comparer.
+//! РЎРѕСЂС‚РёСЂРѕРІРєР° РЁРµР»Р»Р° РјР°СЃСЃРёРІР° array СЃ РїСЂРµРґРёРєР°С‚РѕРј СЃСЂР°РІРЅРµРЅРёСЏ comparer.
 template<typename RandomAccessRange, typename C = Comparers::Function<Range::ValueTypeOf<RandomAccessRange>>> Meta::EnableIf<
 	Range::IsFiniteRandomAccessRange<RandomAccessRange>::_ &&
 	Range::IsAssignableInputRange<RandomAccessRange>::_

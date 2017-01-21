@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core/FundamentalTypes.h"
 #include "Platform/CppWarnings.h"

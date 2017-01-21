@@ -1,10 +1,10 @@
-#pragma once
+п»ї#pragma once
 
 #include "Types.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
-//Копирует src в dst с затуханием, пока не кончится либо dst, либо src.
+//РљРѕРїРёСЂСѓРµС‚ src РІ dst СЃ Р·Р°С‚СѓС…Р°РЅРёРµРј, РїРѕРєР° РЅРµ РєРѕРЅС‡РёС‚СЃСЏ Р»РёР±Рѕ dst, Р»РёР±Рѕ src.
 void ExponentialAttenuate(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek);
 void ExponentialAttenuateAdd(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek);
 

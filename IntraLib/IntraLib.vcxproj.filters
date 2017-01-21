@@ -208,6 +208,9 @@
     <Filter Include="Файлы исходного кода\Audio\Synth\Generators">
       <UniqueIdentifier>{e1062f18-6367-4df1-bb5e-750832f61498}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\Range\Output">
+      <UniqueIdentifier>{cea0ca45-06b6-416d-9741-00a68f3e22b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Physics\AabbTree.cpp">
@@ -755,9 +758,6 @@
     <ClInclude Include="include\Data\Object.h">
       <Filter>Заголовочные файлы\Data</Filter>
     </ClInclude>
-    <ClInclude Include="include\Utils\Wrapper.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="include\Range\ArrayRange.h">
       <Filter>Заголовочные файлы\Range</Filter>
     </ClInclude>
@@ -1202,6 +1202,9 @@
     <ClInclude Include="include\Imaging\Loaders\LoaderTIFF.h">
       <Filter>Заголовочные файлы\Imaging\Loaders</Filter>
     </ClInclude>
+    <ClInclude Include="include\Range\Output\Inserter.h">
+      <Filter>Заголовочные файлы\Range\Output</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">
@@ -1236,7 +1239,19 @@
     <Natvis Include="natvis\Meta.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="natvis\Ranges.natvis">
+    <Natvis Include="natvis\RangeConstruction.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\RangeIteration.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\RangePolymorphic.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\Range.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="natvis\Utils.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

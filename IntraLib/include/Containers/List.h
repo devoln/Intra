@@ -11,6 +11,7 @@
 namespace Intra {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 template<typename T, class AllocatorType> class BList:
 	public Memory::AllocatorRef<AllocatorType>
@@ -33,12 +34,14 @@ public:
 		AllocatorRef(rhs), range(rhs.range), count(rhs.count)
 		{rhs.range = null; rhs.count = 0;}
 
-	template<typename ForwardRange> forceinline BList(Meta::EnableIf<
-		Range::IsFiniteForwardRange<ForwardRange>::_ &&
-		Range::ValueTypeIsConvertible<ForwardRange, T>::_,
-	const ForwardRange&> rhs) {operator=(rhs);}
+	template<typename R, typename = Meta::EnableIf<
+		Range::ValueTypeIsConvertible<Range::AsRangeResult<R>, T>::_ &&
+		Range::IsForwardRange<Range::AsRangeResult<R>>::_ &&
+		!Range::IsInfiniteRange<Range::AsRangeResult<R>>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, BList>::_
+	>> forceinline BList(R&& values) {operator=(Range::AsRange(values));}
 
-	forceinline BList(std::initializer_list<T> values) {operator=(values);}
+	template<size_t N> BList(T(&arr)[N]) {operator=(Range::AsRange(arr));}
 
 	BList(const BList& rhs): AllocatorRef(rhs), range(null), count(0) {operator=(rhs.AsRange());}
 	~BList() {Clear();}
@@ -47,19 +50,19 @@ public:
 	//! \param args Аргументы конструктора T
 	//! \return Ссылка на добавленный элемент.
 	template<typename... Args> forceinline T& EmplaceLast(Args&&... args)
-	{
-		return *new(&add_last_node()->Value) T(Meta::Forward<Args>(args)...);
-	}
+	{return *new(&add_last_node()->Value) T(Meta::Forward<Args>(args)...);}
 
 	//! Добавляет новый элемент в конец контейнера как копию переданного значения.
 	//! \param value Значение, которое будет помещено в контейнер.
 	//! \return Ссылка на добавленный элемент.
-	forceinline T& AddLast(const T& value) {return *new(&add_last_node()->Value) T(value);}
+	forceinline T& AddLast(const T& value)
+	{return *new(&add_last_node()->Value) T(value);}
 
 	//! Добавляет элемент в конец контейнера перемещением переданного значения.
 	//! \param value Значение, которое будет перемещено в контейнер.
 	//! \return Ссылка на добавленный элемент.
-	forceinline T& AddLast(T&& value) {new(&add_last_node()->Value) T(Meta::Move(value));}
+	forceinline T& AddLast(T&& value)
+	{return *new(&add_last_node()->Value) T(Meta::Move(value));}
 
 
 	//! Добавляет новый элемент в начало контейнера, сконструировав его на месте, используя переданные аргументы args.
@@ -204,13 +207,15 @@ public:
 		}
 	}
 
-	template<typename ForwardRange> Meta::EnableIf<
-		Range::IsFiniteForwardRange<ForwardRange>::_ &&
-		Range::ValueTypeIsConvertible<ForwardRange, T>::_,
-	BList&> operator=(const ForwardRange& values)
+	template<typename R> Meta::EnableIf<
+		Range::ValueTypeIsConvertible<Range::AsRangeResult<R>, T>::_ &&
+		Range::IsForwardRange<Range::AsRangeResult<R>>::_ &&
+		!Range::IsInfiniteRange<Range::AsRangeResult<R>>::_ &&
+		!Meta::TypeEqualsIgnoreCVRef<R, BList>::_,
+	BList&> operator=(R&& values)
 	{
 		Clear();
-		auto rhsCopy = values;
+		auto rhsCopy = Range::AsRange(values);
 		count = 0;
 		while(!rhsCopy.Empty())
 		{
@@ -220,15 +225,13 @@ public:
 		return *this;
 	}
 
+	template<size_t N> BList& operator=(T(&arr)[N])
+	{return operator=(Range::AsRange(arr));}
+
 	BList& operator=(const BList& rhs)
 	{
 		if(this==&rhs) return *this;
 		return operator=(rhs.AsRange());
-	}
-
-	BList& operator=(std::initializer_list<T> values)
-	{
-		return operator=(Range::AsRange(values));
 	}
 
 	BList& operator=(BList&& rhs)

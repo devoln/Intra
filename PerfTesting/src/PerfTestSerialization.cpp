@@ -4,6 +4,7 @@
 
 #include "PerfTestSerialization.h"
 
+#include "Platform/Compatibility.h"
 #include "Meta/Preprocessor.h"
 #include "Data/BinarySerialization.h"
 #include "Data/TextSerialization.h"
@@ -18,41 +19,42 @@ using namespace Intra::IO;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
-/*struct StructTest
+struct StructTest
 {
 	int x;
 	float y;
-	StringView z[2];
+	String z[2];
 	Array<int> arr;
 	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr);
 };
 
-int main()
+static int SerializationTest()
 {
-	StringView strToDeserialize = "{z = [\"тест\", \"сериализации\"], x = ---5434, arr = [1, 2, 3, -4, 5], y = 2.1721}";
+	StringView strToDeserialize = "{z = [\"тест\", \"сериализации\"], x = ---5434, "
+		"arr = [1, 2, 3, -4, 5], y = 2.1721}";
 	Console.PrintLine("In custom format: ", endl, strToDeserialize, endl);
 	Data::TextDeserializer deserializer(Data::DataLanguageParams::JsonLikeNoQuotes, strToDeserialize);
 	StructTest t2 = deserializer.Deserialize<StructTest>();
 	if(!deserializer.Log.Empty()) Console.PrintLine("Deserialization Log: ", endl, deserializer.Log);
 
-	char serializedBuf[100];
+	char serializedBuf[300];
 	Data::TextSerializer serializer(Data::DataLanguageParams::Json,
 		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
-	serializer.Serialize(t2);
+	serializer(t2);
 	Console.PrintLine("JSON:", endl, serializer.GetString(), endl);
 
 	serializer = Data::TextSerializer(Data::DataLanguageParams::Xml,
 		Data::TextSerializerParams::VerboseNoSpaces, ArrayRange<char>(serializedBuf));
-	serializer.Serialize(t2);
+	serializer(t2);
 	Console.PrintLine("XML:", endl, serializer.GetString(), endl);
 
 	serializer = Data::TextSerializer(Data::DataLanguageParams::JsonLikeNoQuotes,
 		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
-	serializer.Serialize(t2);
+	serializer(t2);
 	Console.PrintLine("JSON-like without quotes:", endl, serializer.GetString());
 
 	return 0;
-}*/
+}
 
 //#if INTRA_DISABLED
 struct Test
@@ -79,7 +81,6 @@ struct SuperTest
 
 	INTRA_ADD_REFLECTION(SuperTest, strArr, foo, str, vals, dbl, tests, bar, tuple);
 };
-static_assert(Meta::HasForEachField<const SuperTest&, Data::BinaryDeserializer&>::_, "ERROR!");
 
 
 
@@ -308,7 +309,11 @@ double TestBinaryRefDeserialization(size_t times)
 
 void RunSerializationPerfTests(IO::Logger& logger)
 {
+	if(TestGroup gr{logger, "Проверка сериализации"})
+		SerializationTest();
+
 	logger.BeginSpoiler("Строка для десериализации структуры", "[Скрыть] Строка для десериализации структуры");
+
 	logger.PrintCode(g_SuperTestTextWithNames);
 	logger.EndSpoiler();
 

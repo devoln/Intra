@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Modifiers/AbsPulsator.h"
 #include "Modifiers/AddPulsator.h"

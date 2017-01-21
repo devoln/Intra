@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
+#include "Core/Debug.h"
 #include "Range/ForwardDecls.h"
 #include "Range/Concepts.h"
 #include "Range/Operations.h"
@@ -16,15 +19,13 @@ template<typename R> struct RStride
 
 	forceinline RStride(null_t=null): mOriginalRange(null), mStep(0) {}
 	forceinline RStride(const R& range, size_t strideStep):
-		mOriginalRange(range), mStep(strideStep) {INTRA_ASSERT(strideStep!=0); skip_back_odd();}
+		mOriginalRange(range), mStep(strideStep)
+	{
+		INTRA_ASSERT(strideStep!=0);
+		skip_back_odd();
+	}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLength<U>::_ || !U::RangeIsFinite,
-		bool> Empty() const {return mOriginalRange.Empty();}
-
-	template<typename U=R> forceinline Meta::EnableIf<
-		!HasLength<U>::_ && U::RangeIsFinite,
-		bool> Empty() const {return mOriginalRange.Empty();}
+	forceinline bool Empty() const {return mOriginalRange.Empty();}
 
 
 	forceinline ReturnValueTypeOf<R> First() const {return mOriginalRange.First();}
@@ -58,9 +59,9 @@ template<typename R> struct RStride
 	{return RStride(mOriginalRange, mStep*strideStep);}
 
 private:
-	template<typename U=R> forceinline Meta::EnableIf<
+	template<typename U=R, typename = Meta::EnableIf<
 		HasPopLast<U>::_ && HasLength<U>::_
-	> skip_back_odd()
+	>> forceinline void skip_back_odd()
 	{
 		size_t len = mOriginalRange.Length();
 		if(len==0) return;
@@ -68,14 +69,13 @@ private:
 	}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		!HasPopLast<U>::_ || !HasLength<U>::_
+		!(HasPopLast<U>::_ && HasLength<U>::_)
 	> skip_back_odd() {}
 
 	R mOriginalRange;
 	size_t mStep;
 };
 
-INTRA_WARNING_POP
 
 template<typename R> forceinline Meta::EnableIf<
 	!Meta::IsReference<R>::_ && IsInputRange<R>::_,
@@ -90,5 +90,7 @@ RStride<R>> Stride(const R& range, size_t step)
 template<typename T, size_t N> forceinline
 RStride<ArrayRange<T>> Stride(T(&arr)[N], size_t step)
 {return Stride(AsRange(arr), step);}
+
+INTRA_WARNING_POP
 
 }}

@@ -1,4 +1,4 @@
-#include "Imaging/ImageInfo.h"
+﻿#include "Imaging/ImageInfo.h"
 #include "Range/StringView.h"
 #include "Containers/String.h"
 #include "Math/MathEx.h"

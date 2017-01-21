@@ -72,9 +72,8 @@ public:
 	size_t> Length() const
 	{return OriginalRange.Length();}
 
-	//TODO BUG: MapResults with same range but different functions are considered to be equal!
 	forceinline bool operator==(const RMap& rhs) const
-	{return OriginalRange==rhs.OriginalRange;}
+	{return Function==rhs.Function && OriginalRange==rhs.OriginalRange;}
 
 	R OriginalRange;
 	Utils::Optional<F> Function;
@@ -84,16 +83,16 @@ public:
 template<typename R, typename F> forceinline Meta::EnableIf<
 	!Meta::IsReference<R>::_ && IsInputRange<R>::_,
 RMap<R, F>> Map(R&& range, F func)
-{return {Meta::Move(range), func};}
+{return {Meta::Move(range), Meta::Move(func)};}
 
 template<typename R, typename F> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_,
 RMap<R, F>> Map(const R& range, F func)
-{return {range, func};}
+{return {range, Meta::Move(func)};}
 
 template<typename T, size_t N, typename F> forceinline
 RMap<AsRangeResult<T(&)[N]>, F> Map(T(&arr)[N], F func)
-{return Map(AsRange(arr), func);}
+{return Map(AsRange(arr), Meta::Move(func));}
 
 INTRA_WARNING_POP
 

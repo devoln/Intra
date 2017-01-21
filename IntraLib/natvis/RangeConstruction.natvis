@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::Range::RTake&lt;*&gt;">
+    <DisplayString Condition="mLen==0">[]</DisplayString>
+    <DisplayString>Take({mLen}, {mOriginalRange})</DisplayString>
+    <Expand>
+      <ExpandedItem>mOriginalRange</ExpandedItem>
+      <Item Name="LengthLimit">mLen</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::RFilter&lt;*&gt;">
+    <DisplayString Condition="!predicate.not_null">[]</DisplayString>
+    <DisplayString>Filter({mOriginalRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RIota&lt;*&gt;">
+    <DisplayString Condition="Step==0">[]</DisplayString>
+    <DisplayString>Iota({Begin}, {Step})[{Begin}, {Begin+Step}, {Begin+2*Step}, {Begin+3*Step}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RSequence&lt;*&gt;">
+    <DisplayString Condition="!Function.not_null">[]</DisplayString>
+    <DisplayString>Sequence({Offset})[...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RRecurrence1&lt;*&gt;">
+    <DisplayString>Recurrence[{a}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RRecurrence2&lt;*&gt;">
+    <DisplayString>Recurrence[{a}, {b}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RCycle&lt;*&gt;">
+    <DisplayString Condition="mCounter==0">Cycle({mOriginalRange})</DisplayString>
+    <DisplayString>Cycle({mCounter} &lt;- {mOriginalRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RCycleRandom&lt;*&gt;">
+    <DisplayString Condition="mCounter==0">Cycle({mOriginalRange})</DisplayString>
+    <DisplayString>Cycle({mCounter} &lt;- {mOriginalRange})</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RRepeat&lt;*&gt;">
+    <DisplayString Condition="!mValue.not_null">[]</DisplayString>
+    <DisplayString>Repeat[{mValue}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RGenerate&lt;*&gt;">
+    <DisplayString Condition="!mFunc.not_null">[]</DisplayString>
+    <DisplayString>Generate[{mFront}, ...]</DisplayString>
+  </Type>
+
+  <Type Name="Intra::Range::RChoose&lt;*&gt;">
+    <DisplayString>Choose({mRange1} or {mRange2})</DisplayString>
+  </Type>
+
+  
+
+</AutoVisualizer>

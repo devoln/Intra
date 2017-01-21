@@ -6,6 +6,7 @@
 #include "Range/ArrayRange.h"
 #include "Algo/Comparison.h"
 #include "Algo/Search/Single.h"
+#include "Algo/Mutation/Copy.h"
 #include "Platform/InitializerList.h"
 #include "Memory/AllocatorInterface.h"
 
@@ -48,17 +49,12 @@ public:
 	}
 
 	template<typename R, typename = Meta::EnableIf<
-		Range::IsFiniteForwardRange<R>::_
+		Range::IsFiniteForwardRange<Range::AsRangeResult<R>>::_
 	>> Array(R&& values): buffer(null), range(null)
 	{
-		SetCountUninitialized(Range::Count(values));
-		auto dst = range;
-		while(!values.Empty())
-		{
-			new(&dst.First()) T(values.First());
-			dst.PopFirst();
-			values.PopFirst();
-		}
+		Range::AsRangeResult<R> valuesRange = Meta::Forward<R>(values);
+		SetCountUninitialized(Range::Count(valuesRange));
+		Algo::CopyAdvanceTo(valuesRange, range);
 	}
 
 	template<size_t N> Array(const T(&values)[N])
@@ -175,12 +171,13 @@ public:
 	}
 	
 	//! Добавить все значения указанного диапазона в начало массива
-	template<typename RangeOfValues> Meta::EnableIf<
-		Range::IsFiniteForwardRange<RangeOfValues>::_ &&
-		Range::ValueTypeIsConvertible<RangeOfValues, T>::_
-	> AddFirstRange(const RangeOfValues& values)
+	template<typename R> Meta::EnableIf<
+		Range::IsForwardRange<Range::AsRangeResult<R>>::_ &&
+		!Range::IsInfiniteRange<Range::AsRangeResult<R>>::_ &&
+		Range::ValueTypeIsConvertible<R, T>::_
+	> AddFirstRange(R&& values)
 	{
-		RangeOfValues valueRange = values;
+		auto valueRange = Range::AsRange(values);
 		//INTRA_ASSERT(!range.Overlaps((ArrayRange<const byte>&)values));
 		const size_t valuesCount = Range::Count(values);
 		if(LeftSpace()<valuesCount) CheckSpace(0, valuesCount);
@@ -218,14 +215,15 @@ public:
 	}
 
 	//! Добавить все значения указанного диапазона в конец массива.
-	template<typename RangeOfValues> Meta::EnableIf<
-		Range::IsFiniteForwardRange<RangeOfValues>::_ &&
-		Range::ValueTypeIsConvertible<RangeOfValues, T>::_
-	> AddLastRange(const RangeOfValues& values)
+	template<typename R> Meta::EnableIf<
+		Range::IsForwardRange<Range::AsRangeResult<R>>::_ &&
+		!Range::IsInfiniteRange<Range::AsRangeResult<R>>::_ &&
+		Range::ValueTypeIsConvertible<R, T>::_
+	> AddLastRange(R&& values)
 	{
-		RangeOfValues valueRange = values;
+		auto valueRange = Range::AsRange(values);
 		//INTRA_ASSERT(!data.Overlaps((ArrayRange<const byte>&)values));
-		const size_t valuesCount = Range::Count(values);
+		const size_t valuesCount = Range::Count(valueRange);
 		if(RightSpace()<valuesCount) CheckSpace(valuesCount, 0);
 		while(!valueRange.Empty())
 		{
@@ -428,7 +426,11 @@ public:
 	}
 
 	//! Удалить один элемент по указателю.
-	forceinline void Remove(T* ptr) {INTRA_ASSERT(range.ContainsAddress(ptr)); Remove(ptr-range.Begin);}
+	forceinline void Remove(T* ptr)
+	{
+		INTRA_ASSERT(range.ContainsAddress(ptr));
+		Remove(ptr-range.Begin);
+	}
 
 	//!@{
 	//! Удаление всех элементов в диапазоне [removeStart; removeEnd)
@@ -642,24 +644,16 @@ public:
 	}
 
 	ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex)
-	{
-		return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));
-	}
+	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
 
 	ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex) const
-	{
-		return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));
-	}
+	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
 
 	ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd)
-	{
-		return range(firstIndex.GetRealIndex(Count()), $);
-	}
+	{return range(firstIndex.GetRealIndex(Count()), $);}
 
 	ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd) const
-	{
-		return range(firstIndex.GetRealIndex(Count()), $);
-	}
+	{return range(firstIndex.GetRealIndex(Count()), $);}
 
 	struct BackInserter
 	{

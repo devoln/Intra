@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/PlatformInfo.h"
 #include "Range/ArrayRange.h"
@@ -21,6 +21,8 @@ class VorbisSource: public ASoundSource
 public:
 	VorbisSource(ArrayRange<const byte> srcFileData);
 	~VorbisSource();
+
+	VorbisSource& operator=(const VorbisSource&) = delete;
 
 	size_t SampleCount() const override;
 	size_t CurrentSamplePosition() const override;

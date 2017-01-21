@@ -1,4 +1,4 @@
-#include "Audio/Sources/MusicSynthSource.h"
+п»ї#include "Audio/Sources/MusicSynthSource.h"
 #include "Math/MathEx.h"
 #include "Platform/CppWarnings.h"
 #include "Algo/Mutation/Fill.h"
@@ -119,7 +119,7 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 size_t MusicSynthSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
 	INTRA_ASSERT(mChannelCount==outFloats.Length());
-	INTRA_ASSERT(mChannelCount==1); //TODO: убрать это ограничение
+	INTRA_ASSERT(mChannelCount==1); //TODO: СѓР±СЂР°С‚СЊ СЌС‚Рѕ РѕРіСЂР°РЅРёС‡РµРЅРёРµ
 	return GetInterleavedSamples(outFloats.First());
 }
 
@@ -130,7 +130,7 @@ Array<const void*> MusicSynthSource::GetRawSamplesData(size_t maxSamplesToRead,
 	if(oType!=null) *oType=ValueType::Void;
 	if(oInterleaved!=null) *oInterleaved=false;
 	if(oSamplesRead!=null) *oSamplesRead=0;
-	return null; //На предпоследнем шаге сэмплы имеют тип float, но не нормированы
+	return null; //РќР° РїСЂРµРґРїРѕСЃР»РµРґРЅРµРј С€Р°РіРµ СЃСЌРјРїР»С‹ РёРјРµСЋС‚ С‚РёРї float, РЅРѕ РЅРµ РЅРѕСЂРјРёСЂРѕРІР°РЅС‹
 }
 
 #endif

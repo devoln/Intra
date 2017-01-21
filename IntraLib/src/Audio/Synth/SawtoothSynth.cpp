@@ -1,4 +1,4 @@
-#include "Audio/Synth/SawtoothSynth.h"
+п»ї#include "Audio/Synth/SawtoothSynth.h"
 #include "Audio/Synth/Generators/Sawtooth.h"
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Range/ArrayRange.h"
@@ -28,7 +28,7 @@ void FastSawtooth(double upPercent, float volume, float freq,
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
-	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
+	//Р“РµРЅРµСЂРёСЂСѓРµРј С„СЂР°РіРјРµРЅС‚, РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµРј РїРѕРІС‚РѕСЂСЏС‚СЊ, РїРѕРєР° РЅРµ Р·Р°РїРѕР»РЅРёРј Р±СѓС„РµСЂ С†РµР»РёРєРѕРј
 	Array<float> samples;
 	const auto sampleCount = uint(Math::Round(samplesPerPeriod*count));
 	samples.SetCountUninitialized(sampleCount);

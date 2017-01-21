@@ -1,4 +1,4 @@
-#include "Audio/Synth/AttackDecayAttenuation.h"
+п»ї#include "Audio/Synth/AttackDecayAttenuation.h"
 #include "Math/MathEx.h"
 #include "Math/Simd.h"
 #include "Range/ArrayRange.h"
@@ -127,9 +127,9 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 		u += du;
 	}
 #else
-	//Атака
+	//РђС‚Р°РєР°
 	
-	//Первая половина атаки
+	//РџРµСЂРІР°СЏ РїРѕР»РѕРІРёРЅР° Р°С‚Р°РєРё
 	du = 0.707107f/halfAttackSamples;
 	Simd::float4 u4 = Simd::SetFloat4(0, du, 2*du, 3*du);
 	Simd::float4 du4 = Simd::SetFloat4(4*du);
@@ -148,7 +148,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 		u4 = Simd::SetFloat4(u_x+du);
 	}
 
-	//Вторая половина атаки
+	//Р’С‚РѕСЂР°СЏ РїРѕР»РѕРІРёРЅР° Р°С‚Р°РєРё
 	du = 0.25f/halfAttackSamples;
 	u4 = Simd::SetFloat4(0, du, 2*du, 3*du);
 	du4 = Simd::SetFloat4(4*du);
@@ -169,10 +169,10 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 	}
 
 
-	//Спад
+	//РЎРїР°Рґ
 	ptr = beginDecay;
 
-	//Первая половина спада
+	//РџРµСЂРІР°СЏ РїРѕР»РѕРІРёРЅР° СЃРїР°РґР°
 	u = 0.25f;
 	du = -0.25f/halfDecaySamples;
 	//u4 = Simd::SetFloat4(0.5f, 0.5f-du/2, 0.5f-du, 0.5f-3*du/2);
@@ -195,7 +195,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 		u4w += du;
 	}
 
-	//Вторая половина спада
+	//Р’С‚РѕСЂР°СЏ РїРѕР»РѕРІРёРЅР° СЃРїР°РґР°
 	u = 0.707107f;
 	du = -0.707107f/halfDecaySamples;
 	u4 = Simd::SetFloat4(u, u+du, u+2*du, u+3*du);
