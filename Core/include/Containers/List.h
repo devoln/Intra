@@ -2,6 +2,7 @@
 
 #include "Algo/Comparison/Equals.h"
 #include "Range/Iterator.hh"
+#include "Range/Decorators/Retro.h"
 #include "Memory/Allocator/AllocatorRef.h"
 #include "Containers/ForwardDeclarations.h"
 #include "Range/Generators/ListRange.h"
