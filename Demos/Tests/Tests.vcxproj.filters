@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src/PerfTestArray.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTesting.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTestMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTestRandom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTestSerialization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTestSort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src/PerfTestString.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Range\Streams.cpp">
+      <Filter>Source Files\Ranges</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Range\Polymorphic.cpp">
+      <Filter>Source Files\Ranges</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Range\Composing.cpp">
+      <Filter>Source Files\Ranges</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src/PerfTestArray.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/PerfTestMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/PerfTestRandom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/PerfTestSerialization.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/PerfTestSort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/PerfTestString.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Range\Header.h">
+      <Filter>Header Files\Ranges</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{e4959a3e-3672-4aad-887c-d5bc920fe494}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{7e61effa-22df-438b-ad91-2dd11c35ed78}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Ranges">
+      <UniqueIdentifier>{ad7e676c-86d0-484b-b89b-7af3db87604e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Ranges">
+      <UniqueIdentifier>{d08bb8a2-025a-4eec-bca9-50b30d10863a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

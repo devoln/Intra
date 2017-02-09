@@ -1,0 +1,21 @@
+#pragma once
+
+#include "AttackDecayAttenuation.h"
+#include "AttenuatorPass.h"
+#include "DrumInstrument.h"
+#include "ExponentialAttenuation.h"
+#include "GeneratorSynth.h"
+#include "HighLowPass.h"
+#include "InstrumentLibrary.h"
+#include "ModifierPass.h"
+#include "PeriodicSynth.h"
+#include "SawtoothSynth.h"
+#include "SineExpSynth.h"
+#include "SineSynth.h"
+#include "SynthesizedInstrument.h"
+#include "TableAttenuation.h"
+#include "Types.h"
+
+#include "Modifiers.hh"
+#include "Generators.hh"
+#include "PostEffects.hh"

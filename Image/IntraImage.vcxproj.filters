@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Файлы исходного кода">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Заголовочные файлы">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Файлы ресурсов">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="natvis">
+      <UniqueIdentifier>{d1501a57-b575-4f1b-a482-f3c4444d6ed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Image">
+      <UniqueIdentifier>{5b0d0a56-7665-479e-bc89-576c76f3ee34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Image">
+      <UniqueIdentifier>{57d4f5b0-1695-4a8b-8add-32f984ff3842}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Image\Bindings">
+      <UniqueIdentifier>{5c95d531-54ac-4edd-b2fc-80241c0c370a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Image\Loaders">
+      <UniqueIdentifier>{7e3dc13b-f7e3-4bfe-8b79-5c350747cb63}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Image\Loaders">
+      <UniqueIdentifier>{f0897ba7-3e98-4c4f-a662-5faf0be9502a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Image\Bindings">
+      <UniqueIdentifier>{b950bdad-8be3-47fe-87a1-6b9f44f7da5e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Font">
+      <UniqueIdentifier>{d2aa910d-4df0-4864-a23d-ec1d324c54dd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Image\Bindings\GLenumFormats.cpp">
+      <Filter>Файлы исходного кода\Image\Bindings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Bindings\DXGI_Formats.cpp">
+      <Filter>Файлы исходного кода\Image\Bindings</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderDDS.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderKTX.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderBMP.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderJPEG.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderPlatform.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderPNG.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderTGA.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\ImageFormat.cpp">
+      <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\ImageInfo.cpp">
+      <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\FormatConversion.cpp">
+      <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\Loader.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderGIF.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\Loaders\LoaderTIFF.cpp">
+      <Filter>Файлы исходного кода\Image\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IntraImage.cc">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Image\AnyImage.cpp">
+      <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\Image\Bindings\DXGI_Formats.h">
+      <Filter>Заголовочные файлы\Image\Bindings</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Bindings\GLenumFormats.h">
+      <Filter>Заголовочные файлы\Image\Bindings</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\Loader.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderBMP.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderDDS.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderGIF.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderJPEG.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderKTX.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderPNG.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderTGA.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\ImageFormat.h">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\ImageInfo.h">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\FormatConversion.h">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderPlatform.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders\LoaderTIFF.h">
+      <Filter>Заголовочные файлы\Image\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Bindings.hh">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\Loaders.hh">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Font.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IntraImage.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Font\FontLoading.h">
+      <Filter>Заголовочные файлы\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Font\FontLoadingDeclarations.h">
+      <Filter>Заголовочные файлы\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Image\AnyImage.h">
+      <Filter>Заголовочные файлы\Image</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="natvis\Image.natvis">
+      <Filter>natvis</Filter>
+    </None>
+  </ItemGroup>
+</Project>

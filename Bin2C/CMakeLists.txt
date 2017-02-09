@@ -1,9 +1,0 @@
-cmake_minimum_required(VERSION 2.8)
-
-project(Bin2C)
-
-include(../CMakeCommon.txt)
-
-include_directories(../IntraLib/include)
-add_executable(Bin2C main.cpp)
-target_link_libraries(Bin2C IntraLib)

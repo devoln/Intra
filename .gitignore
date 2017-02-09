@@ -1,11 +1,8 @@
-/Test/*
-Resources/
-OldCode/
-EngineDemo/
-IntraLib/include/configs/
-IntraLib/src/configs
-IntraLib/include/Engine/
-IntraLib/src/Engine/
+/Demos/EngineDemo/
+/Graphics/
+/Engine/
+/Resources/
+/OldCode/
 .vs/
 LineCounter.exe
 
@@ -18,7 +15,7 @@ LineCounter.exe
 Build/*/*.lib
 logs.html
 *.map
-EngineDemo1.exe
+/Build/Release/EngineDemo1.exe
 Build/Debug*/
 Build/Release?*/
 *.vcxproj.user

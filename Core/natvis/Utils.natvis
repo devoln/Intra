@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+	
+    <Type Name="Intra::Utils::Optional&lt;*&gt;">
+    <DisplayString Condition="!mNotNull">null</DisplayString>
+    <DisplayString>{(value_type&amp;)mVal}</DisplayString>
+    <Expand>
+      <ExpandedItem>(value_type&amp;)mVal</ExpandedItem>
+    </Expand>
+  </Type>
+	
+</AutoVisualizer>

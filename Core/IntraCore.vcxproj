@@ -1,0 +1,774 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Clang|Win32">
+      <Configuration>Release Clang</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release Clang|x64">
+      <Configuration>Release Clang</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release MSClang|Win32">
+      <Configuration>Release MSClang</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release MSClang|x64">
+      <Configuration>Release MSClang</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseMin|Win32">
+      <Configuration>ReleaseMin</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseMin|x64">
+      <Configuration>ReleaseMin</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{5F1E44C2-E07A-4E06-9479-FAEF877AA2A7}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Intransigent</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>LLVM-vs2014_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_clang_c2</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v140</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>LLVM-vs2014_xp</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v140_clang_c2</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath);$(SolutionDir)../Libs/lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <UseMultiToolTask>true</UseMultiToolTask>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <UseMultiToolTask>true</UseMultiToolTask>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);include</IncludePath>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);include</IncludePath>
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;../../Lib/lib</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);include</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
+    <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
+    <OutDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(Configuration) $(Platform)\</OutDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_RUN_UNITTESTS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <MinimalRebuild />
+      <SDLCheck>true</SDLCheck>
+      <EnablePREfast>false</EnablePREfast>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm150 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <CallingConvention>Cdecl</CallingConvention>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MinSpace</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINIMIZE_CRT;INTRA_QIFIST;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <CallingConvention>Cdecl</CallingConvention>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>
+      </EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <PositionIndependentCode>false</PositionIndependentCode>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <MinimalRebuild />
+      <WholeProgramOptimization />
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_MINEXE=3;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ExceptionHandling>Disabled</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <EnableParallelCodeGeneration>
+      </EnableParallelCodeGeneration>
+      <PositionIndependentCode>false</PositionIndependentCode>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MinSpace</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableFiberSafeOptimizations>
+      </EnableFiberSafeOptimizations>
+      <StringPooling>true</StringPooling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <ControlFlowGuard>false</ControlFlowGuard>
+      <ExceptionHandling>false</ExceptionHandling>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <MultiProcessorCompilation>false</MultiProcessorCompilation>
+      <MinimalRebuild />
+      <WholeProgramOptimization />
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
+    <ClCompile>
+      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>Full</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="src\Algo\Hash\Murmur.cpp" />
+    <ClCompile Include="src\Algo\Mutation\Copy.cpp" />
+    <ClCompile Include="src\Algo\Mutation\Transform.cpp" />
+    <ClCompile Include="src\Algo\Reduction.cpp" />
+    <ClCompile Include="src\Algo\String\Ascii.cpp" />
+    <ClCompile Include="src\Algo\String\Path.cpp" />
+    <ClCompile Include="src\Data\BinarySerialization.cpp" />
+    <ClCompile Include="src\Data\Object.cpp" />
+    <ClCompile Include="src\Data\Reflection.cpp" />
+    <ClCompile Include="src\Data\TextSerialization.cpp" />
+    <ClCompile Include="src\Data\ValueType.cpp" />
+    <ClCompile Include="src\Data\Variable.cpp" />
+    <ClCompile Include="src\IntraCore.cc">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+    </ClCompile>
+    <ClCompile Include="src\IO\DocumentWriter.cpp" />
+    <ClCompile Include="src\IO\File.cpp" />
+    <ClCompile Include="src\IO\LogSystem.cpp" />
+    <ClCompile Include="src\IO\Networking.cpp" />
+    <ClCompile Include="src\IO\Stream.cpp" />
+    <ClCompile Include="src\Math\Math.cpp" />
+    <ClCompile Include="src\Math\Random.cpp" />
+    <ClCompile Include="src\Math\Shapes.cpp" />
+    <ClCompile Include="src\Memory\Allocator.cpp" />
+    <ClCompile Include="src\Memory\Allocator\Basic\Pool.cpp" />
+    <ClCompile Include="src\Memory\Allocator\Basic\Stack.cpp" />
+    <ClCompile Include="src\Memory\Allocator\System.cpp" />
+    <ClCompile Include="src\Memory\Memory.cpp" />
+    <ClCompile Include="src\Memory\VirtualMemory.cpp" />
+    <ClCompile Include="src\Platform\Debug.cpp" />
+    <ClCompile Include="src\Platform\Environment.cpp" />
+    <ClCompile Include="src\Platform\Errors.cpp" />
+    <ClCompile Include="src\Platform\HardwareInfo.cpp" />
+    <ClCompile Include="src\Platform\MessageBox.cpp" />
+    <ClCompile Include="src\Platform\Runtime.cpp" />
+    <ClCompile Include="src\Platform\Time.cpp" />
+    <ClCompile Include="src\Range\Special\Unicode.cpp" />
+    <ClCompile Include="src\Test\PerformanceTest.cpp" />
+    <ClCompile Include="src\Test\Unittest.cpp" />
+    <ClCompile Include="src\Thread\Job.cpp" />
+    <ClCompile Include="src\Thread\Thread.cpp" />
+    <ClCompile Include="src\Utils\AsciiSet.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\Algo.hh" />
+    <ClInclude Include="include\Algo\Comparison.hh" />
+    <ClInclude Include="include\Algo\Comparison\EndsWith.h" />
+    <ClInclude Include="include\Algo\Comparison\Equals.h" />
+    <ClInclude Include="include\Algo\Comparison\LexCompare.h" />
+    <ClInclude Include="include\Algo\Comparison\StartsWith.h" />
+    <ClInclude Include="include\Algo\ForEach.h" />
+    <ClInclude Include="include\Algo\Hash.hh" />
+    <ClInclude Include="include\Algo\Hash\Murmur.h" />
+    <ClInclude Include="include\Algo\Hash\MurmurCT.h" />
+    <ClInclude Include="include\Algo\Hash\StringHash.h" />
+    <ClInclude Include="include\Algo\Hash\ToHash.h" />
+    <ClInclude Include="include\Algo\Hash\Types.h" />
+    <ClInclude Include="include\Algo\Mutation.hh" />
+    <ClInclude Include="include\Algo\Mutation\Cast.h" />
+    <ClInclude Include="include\Algo\Mutation\Copy.h" />
+    <ClInclude Include="include\Algo\Mutation\Fill.h" />
+    <ClInclude Include="include\Algo\Mutation\Remove.h" />
+    <ClInclude Include="include\Algo\Mutation\Replace.h" />
+    <ClInclude Include="include\Algo\Mutation\ReplaceSubrange.h" />
+    <ClInclude Include="include\Algo\Mutation\Transform.h" />
+    <ClInclude Include="include\Algo\Op.h" />
+    <ClInclude Include="include\Algo\Reduction.h" />
+    <ClInclude Include="include\Algo\Search.hh" />
+    <ClInclude Include="include\Algo\Search\Binary.h" />
+    <ClInclude Include="include\Algo\Search\Distance.h" />
+    <ClInclude Include="include\Algo\Search\Recursive.h" />
+    <ClInclude Include="include\Algo\Search\Single.h" />
+    <ClInclude Include="include\Algo\Search\Subrange.h" />
+    <ClInclude Include="include\Algo\Search\Trim.h" />
+    <ClInclude Include="include\Algo\Sort.hh" />
+    <ClInclude Include="include\Algo\Sort\Heap.h" />
+    <ClInclude Include="include\Algo\Sort\Insertion.h" />
+    <ClInclude Include="include\Algo\Sort\IsSorted.h" />
+    <ClInclude Include="include\Algo\Sort\Merge.h" />
+    <ClInclude Include="include\Algo\Sort\Quick.h" />
+    <ClInclude Include="include\Algo\Sort\Radix.h" />
+    <ClInclude Include="include\Algo\Sort\Selection.h" />
+    <ClInclude Include="include\Algo\String.hh" />
+    <ClInclude Include="include\Algo\String\Ascii.h" />
+    <ClInclude Include="include\Algo\String\CStr.h" />
+    <ClInclude Include="include\Algo\String\Escape.h" />
+    <ClInclude Include="include\Algo\String\MaxLengthOfToString.h" />
+    <ClInclude Include="include\Algo\String\Parse.h" />
+    <ClInclude Include="include\Algo\String\Path.h" />
+    <ClInclude Include="include\Algo\String\Spaces.h" />
+    <ClInclude Include="include\Algo\String\ToString.h" />
+    <ClInclude Include="include\Algo\String\ToStringArithmetic.h" />
+    <ClInclude Include="include\Containers.hh" />
+    <ClInclude Include="include\Containers\Array.h" />
+    <ClInclude Include="include\Containers\Array2D.h" />
+    <ClInclude Include="include\Containers\ForwardDeclarations.h" />
+    <ClInclude Include="include\Containers\HashMap.h" />
+    <ClInclude Include="include\Containers\IndexAllocator.h" />
+    <ClInclude Include="include\Containers\List.h" />
+    <ClInclude Include="include\Containers\LinearMap.h" />
+    <ClInclude Include="include\Containers\Operations.h" />
+    <ClInclude Include="include\Containers\RangeAllocator.h" />
+    <ClInclude Include="include\Containers\Set.h" />
+    <ClInclude Include="include\Containers\SparseArray.h" />
+    <ClInclude Include="include\Containers\SparseHandledArray.h" />
+    <ClInclude Include="include\Containers\String.h" />
+    <ClInclude Include="include\Containers\StructureOfArrays.h" />
+    <ClInclude Include="include\Containers\Tree.h" />
+    <ClInclude Include="include\Data.hh" />
+    <ClInclude Include="include\Data\Object.h" />
+    <ClInclude Include="include\Data\Reflection.h" />
+    <ClInclude Include="include\Data\Serialization.hh" />
+    <ClInclude Include="include\Data\Serialization\BinaryDeserializer.h" />
+    <ClInclude Include="include\Data\Serialization\BinarySerializer.h" />
+    <ClInclude Include="include\Data\Serialization\DynamicSerializer.h" />
+    <ClInclude Include="include\Data\Serialization\TextDeserializer.h" />
+    <ClInclude Include="include\Data\Serialization\TextSerializer.h" />
+    <ClInclude Include="include\Data\Serialization\TextSerializerParams.h" />
+    <ClInclude Include="include\Data\ValueType.h" />
+    <ClInclude Include="include\Data\Variable.h" />
+    <ClInclude Include="include\IntraCore.hh" />
+    <ClInclude Include="include\IO.hh" />
+    <ClInclude Include="include\IO\DocumentWriter.h" />
+    <ClInclude Include="include\IO\File.h" />
+    <ClInclude Include="include\IO\LogSystem.h" />
+    <ClInclude Include="include\IO\Networking.h" />
+    <ClInclude Include="include\IO\StaticStream.h" />
+    <ClInclude Include="include\IO\Stream.h" />
+    <ClInclude Include="include\Math.hh" />
+    <ClInclude Include="include\Math\Bit.h" />
+    <ClInclude Include="include\Math\Fixed.h" />
+    <ClInclude Include="include\Math\LinAl.h" />
+    <ClInclude Include="include\Math\Math.h" />
+    <ClInclude Include="include\Math\MathRanges.h" />
+    <ClInclude Include="include\Math\Matrix.h" />
+    <ClInclude Include="include\Math\Quaternion.h" />
+    <ClInclude Include="include\Math\Random.h" />
+    <ClInclude Include="include\Math\Shapes.h" />
+    <ClInclude Include="include\Math\Simd.h" />
+    <ClInclude Include="include\Math\Vector.h" />
+    <ClInclude Include="include\Memory.hh" />
+    <ClInclude Include="include\Memory\Align.h" />
+    <ClInclude Include="include\Memory\Allocator.hh" />
+    <ClInclude Include="include\Memory\Allocator\AllocatorRef.h" />
+    <ClInclude Include="include\Memory\Allocator\Basic.hh" />
+    <ClInclude Include="include\Memory\Allocator\Basic\Linear.h" />
+    <ClInclude Include="include\Memory\Allocator\Basic\Pool.h" />
+    <ClInclude Include="include\Memory\Allocator\Basic\Stack.h" />
+    <ClInclude Include="include\Memory\Allocator\Compositors.hh" />
+    <ClInclude Include="include\Memory\Allocator\Concepts.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators.hh" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\BoundsChecked.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\CallOnFail.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\Counted.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\GrowingPool.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\Sized.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\Static.h" />
+    <ClInclude Include="include\Memory\Allocator\Decorators\Synchronized.h" />
+    <ClInclude Include="include\Memory\Allocator\Polymorphic.h" />
+    <ClInclude Include="include\Memory\Allocator\System.h" />
+    <ClInclude Include="include\Memory\Memory.h" />
+    <ClInclude Include="include\Memory\PlacementNew.h" />
+    <ClInclude Include="include\Memory\SmartRef.hh" />
+    <ClInclude Include="include\Memory\SmartRef\Shared.h" />
+    <ClInclude Include="include\Memory\SmartRef\Unique.h" />
+    <ClInclude Include="include\Memory\VirtualMemory.h" />
+    <ClInclude Include="include\Meta.hh" />
+    <ClInclude Include="include\Meta\EachField.h" />
+    <ClInclude Include="include\Meta\Mixins.h" />
+    <ClInclude Include="include\Meta\Operators.h" />
+    <ClInclude Include="include\Meta\Preprocessor.h" />
+    <ClInclude Include="include\Meta\Tuple.h" />
+    <ClInclude Include="include\Meta\Type.h" />
+    <ClInclude Include="include\Meta\TypeList.h" />
+    <ClInclude Include="include\Platform.hh" />
+    <ClInclude Include="include\Platform\Compatibility.h" />
+    <ClInclude Include="include\Platform\CppFeatures.h" />
+    <ClInclude Include="include\Platform\CppWarnings.h" />
+    <ClInclude Include="include\Platform\Debug.h" />
+    <ClInclude Include="include\Platform\Endianess.h" />
+    <ClInclude Include="include\Platform\Environment.h" />
+    <ClInclude Include="include\Platform\Errors.h" />
+    <ClInclude Include="include\Platform\FundamentalTypes.h" />
+    <ClInclude Include="include\Platform\HardwareInfo.h" />
+    <ClInclude Include="include\Platform\InitializerList.h" />
+    <ClInclude Include="include\Platform\Intrinsics.h" />
+    <ClInclude Include="include\Platform\MessageBox.h" />
+    <ClInclude Include="include\Platform\PlatformInfo.h" />
+    <ClInclude Include="include\Platform\SharedLib.h" />
+    <ClInclude Include="include\Platform\StdLibDefines.h" />
+    <ClInclude Include="include\Platform\Time.h" />
+    <ClInclude Include="include\Range.hh" />
+    <ClInclude Include="include\Range\AsRange.h" />
+    <ClInclude Include="include\Range\Compositors.hh" />
+    <ClInclude Include="include\Range\Compositors\AssociativeRange.h" />
+    <ClInclude Include="include\Range\Compositors\Chain.h" />
+    <ClInclude Include="include\Range\Compositors\Choose.h" />
+    <ClInclude Include="include\Range\Compositors\Indexed.h" />
+    <ClInclude Include="include\Range\Compositors\RoundRobin.h" />
+    <ClInclude Include="include\Range\Compositors\Zip.h" />
+    <ClInclude Include="include\Range\Concepts.h" />
+    <ClInclude Include="include\Range\Decorators.hh" />
+    <ClInclude Include="include\Range\Decorators\Cycle.h" />
+    <ClInclude Include="include\Range\Decorators\Filter.h" />
+    <ClInclude Include="include\Range\Decorators\Map.h" />
+    <ClInclude Include="include\Range\Decorators\Retro.h" />
+    <ClInclude Include="include\Range\Decorators\Split.h" />
+    <ClInclude Include="include\Range\Decorators\Stride.h" />
+    <ClInclude Include="include\Range\Decorators\Take.h" />
+    <ClInclude Include="include\Range\Decorators\TakeUntil.h" />
+    <ClInclude Include="include\Range\Decorators\TakeUntilAny.h" />
+    <ClInclude Include="include\Range\Decorators\Transversal.h" />
+    <ClInclude Include="include\Range\ForwardDecls.h" />
+    <ClInclude Include="include\Range\Generators.hh" />
+    <ClInclude Include="include\Range\Generators\ArrayRange.h" />
+    <ClInclude Include="include\Range\Generators\Count.h" />
+    <ClInclude Include="include\Range\Generators\Generate.h" />
+    <ClInclude Include="include\Range\Generators\Iota.h" />
+    <ClInclude Include="include\Range\Generators\ListRange.h" />
+    <ClInclude Include="include\Range\Generators\Null.h" />
+    <ClInclude Include="include\Range\Generators\Recurrence.h" />
+    <ClInclude Include="include\Range\Generators\Repeat.h" />
+    <ClInclude Include="include\Range\Generators\Sequence.h" />
+    <ClInclude Include="include\Range\Generators\StringView.h" />
+    <ClInclude Include="include\Range\Iterator.hh" />
+    <ClInclude Include="include\Range\Iterator\IteratorConcepts.h" />
+    <ClInclude Include="include\Range\Iterator\IteratorRange.h" />
+    <ClInclude Include="include\Range\Iterator\RangeIterator.h" />
+    <ClInclude Include="include\Range\Operations.h" />
+    <ClInclude Include="include\Range\Output\Inserter.h" />
+    <ClInclude Include="include\Range\Polymorphic.hh" />
+    <ClInclude Include="include\Range\Polymorphic\BidirectionalRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\FiniteForwardRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\FiniteInputRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\FiniteRandomAccessRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\ForwardRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\InputRange.h" />
+    <ClInclude Include="include\Range\Polymorphic\RandomAccessRange.h" />
+    <ClInclude Include="include\Range\RelativeIndex.h" />
+    <ClInclude Include="include\Range\Special.hh" />
+    <ClInclude Include="include\Range\Special\SparseRange.h" />
+    <ClInclude Include="include\Range\Special\Unicode.h" />
+    <ClInclude Include="include\Range\Stream.h" />
+    <ClInclude Include="include\Range\TupleOperation.h" />
+    <ClInclude Include="include\Test.hh" />
+    <ClInclude Include="include\Test\PerformanceTest.h" />
+    <ClInclude Include="include\Test\Unittest.h" />
+    <ClInclude Include="include\Thread.hh" />
+    <ClInclude Include="include\Thread\Atomic.h" />
+    <ClInclude Include="include\Thread\Job.h" />
+    <ClInclude Include="include\Thread\Thread.h" />
+    <ClInclude Include="include\Utils.hh" />
+    <ClInclude Include="include\Utils\AsciiSet.h" />
+    <ClInclude Include="include\Utils\Callback.h" />
+    <ClInclude Include="include\Utils\Event.h" />
+    <ClInclude Include="include\Utils\MiscTypes.h" />
+    <ClInclude Include="include\Utils\Optional.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="include\Range\Special\SparseRange.inl" />
+    <None Include="natvis\Core.natvis" />
+    <None Include="natvis\Data.natvis" />
+    <None Include="natvis\Graphics.natvis" />
+    <None Include="natvis\Math.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="natvis\Containers.natvis" />
+    <Natvis Include="natvis\Meta.natvis" />
+    <Natvis Include="natvis\Range.natvis" />
+    <Natvis Include="natvis\RangeConstruction.natvis" />
+    <Natvis Include="natvis\RangeIteration.natvis" />
+    <Natvis Include="natvis\RangePolymorphic.natvis" />
+    <Natvis Include="natvis\Utils.natvis" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

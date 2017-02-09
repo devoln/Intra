@@ -1,0 +1,83 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+    <Type Name="Intra::GenericString&lt;char,*&gt;">
+        <DisplayString>{mData,[mLen]s8}</DisplayString> 
+        <StringView>mData,[mLen]s8b</StringView>
+        <Expand> 
+            <Item Name="Length">mLen</Item>
+            <Item Name="Data">mData</Item>
+        </Expand> 
+    </Type>
+
+  <Type Name="Intra::GenericString&lt;char16_t,*&gt;">
+    <DisplayString>{mData,[mLen]su}</DisplayString>
+    <StringView>mData,[mLen]sub</StringView>
+    <Expand>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;wchar_t,*&gt;">
+    <DisplayString>{mData,[mLen]su}</DisplayString>
+    <StringView>mData,[mLen]sub</StringView>
+    <Expand>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;char32_t,*&gt;">
+    <DisplayString>{mData,[mLen]s32}</DisplayString>
+    <StringView>mData,[mLen]s32b</StringView>
+    <Expand>
+      <Item Name="Length">mLen</Item>
+      <Item Name="Data">mData</Item>
+    </Expand>
+  </Type>
+
+  
+	
+    <Type Name="Intra::Array&lt;*&gt;">
+        <DisplayString>{range}</DisplayString>
+        <Expand>
+            <Item Name="Count" ExcludeView="simple">range.End-range.Begin</Item>
+            <Item Name="Capacity" ExcludeView="simple">buffer.End-buffer.Begin</Item>
+            <ExpandedItem>range</ExpandedItem>
+        </Expand>
+    </Type>
+
+  <Type Name="Intra::LinearSet&lt;*&gt;">
+    <DisplayString>{mData}</DisplayString>
+    <Expand>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+	
+	  <Type Name="Intra::BList&lt;*&gt;">
+      <DisplayString Condition="mCount==0">[]</DisplayString>
+	    <DisplayString Condition="(mRange.FirstNode==null || mRange.LastNode==null) &amp;&amp; mCount!=0 || mCount==0 &amp;&amp; (mRange.FirstNode!=null || mRange.LastNode!=null)">&lt;INVALID&gt;</DisplayString>
+      <DisplayString>BList({mCount}){mRange}</DisplayString>
+      <Expand>
+          <Item Name="Count" ExcludeView="simple">mCount</Item>
+          <LinkedListItems>
+                <Size>mCount</Size>
+                <HeadPointer>mRange.FirstNode</HeadPointer>
+                <NextPointer>Next</NextPointer>
+                <ValueNode>Value</ValueNode>
+            </LinkedListItems>
+      </Expand>
+    </Type>
+
+  <Type Name="Intra::HashMap&lt;*&gt;">
+    <DisplayString>Map({(reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]}) {range}</DisplayString>
+    <Expand>
+      <Item Name="Count">bucket_heads!=null? (reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]: 0</Item>
+      <ExpandedItem>range</ExpandedItem>
+    </Expand>
+  </Type>
+	  
+	
+</AutoVisualizer>
+
