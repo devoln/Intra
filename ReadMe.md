@@ -4,9 +4,9 @@
 ## English description
 
 This repository contains Intra library and its modules:
-- [Core](Intra Core)
-- [Audio](Intra Audio)
-- [Image](Intra Image)
+- [Intra Core](Core)
+- [Intra Audio](Audio)
+- [Intra Image](Image)
 
 This library contains the following functionality:
 - Containers: Array, BList, HashMap, LinearMap, String and others. Array is different from existing implementations of dynamic arrays by fast O(1) appending to the beginning of array.
@@ -21,9 +21,9 @@ This library contains the following functionality:
 - etc: timer, IO streams, basic classes for multithreading.
 
 In addition to the library this repository also contains 3 demos projects:
-- [Demos/MusicSynthesizer](MusicSynthesizer) - MIDI synthesizer. This project consist only of one file with main function. Most of the synthesizer code is located at IntraLib/Sound.
-- [Demos/Tests](Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL. This project's source code contains many examples of Intra usage.
-- [Demos/Bin2C](Bin2C) - Utility to convert any file into byte array in C code.
+- [MusicSynthesizer](Demos/MusicSynthesizer) - MIDI synthesizer. This project consist only of one file with main function. Most of the synthesizer code is located at IntraLib/Sound.
+- [Tests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL. This project's source code contains many examples of Intra usage.
+- [Bin2C](Demos/Bin2C) - Utility to convert any file into byte array in C code.
 
 ### Supported compilers:
 - MSVC 2013+;
@@ -53,9 +53,9 @@ make -j4
 ## Описание на русском языке
 
 Данный репозиторий содержит библиотеку Intra и её модули:
-- [Core](Intra Core)
-- [Audio](Intra Audio)
-- [Image](Intra Image)
+- [Intra Core](Core)
+- [Intra Audio](Audio)
+- [Intra Image](Image)
 
 Библиотека содержит в себе следующий функционал:
 - Контейнеры: Array, BList, HashMap, LinearMap, String и другие. Отличительная черта Array от существующих реализаций динамических массивов - быстрое O(1) добавление элементов в начало массива. При этом массив не теряет никаких преимуществ перед другими контейнерами, имея во всех остальных случаях производительность, схожую с std::vector.
@@ -70,9 +70,9 @@ make -j4
 - Другое: таймер, потоки ввода-вывода, основные классы для многопоточности.
 
 Кроме самой библиотеки в репозитории также находятся 3 демо-проекта:
-- [Demos/MusicSynthesizer](MusicSynthesizer) - синтезатор MIDI. Этот проект состоит только из одного файла с функцией main, а основной код синтезатора находится в IntraLib/Sound.
-- [Demos/Tests](Tests) - Тесты производительности контейнеров, алгоритмов и сериализации и сравнение с аналогами из STL. В исходных кодах этого проекта можно увидеть множество примеров использования библиотеки IntraLib.
-- [Demos/Bin2C](Bin2C) - Утилита для преобразования файла в массив байт на C.
+- [MusicSynthesizer](Demos/MusicSynthesizer) - синтезатор MIDI. Этот проект состоит только из одного файла с функцией main, а основной код синтезатора находится в IntraLib/Sound.
+- [Tests](Demos/Tests) - Тесты производительности контейнеров, алгоритмов и сериализации и сравнение с аналогами из STL. В исходных кодах этого проекта можно увидеть множество примеров использования библиотеки IntraLib.
+- [Bin2C](Demos/Bin2C) - Утилита для преобразования файла в массив байт на C.
  
 
 ### Поддерживаемые компиляторы:
