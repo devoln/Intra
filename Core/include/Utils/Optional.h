@@ -12,7 +12,7 @@ template<typename T> struct Optional
 {
 	static struct ConstructT {} DefaultConstruct;
 private:
-	typedef T value_type; //Нужно для natvis
+	typedef T Type; //Нужно для natvis
 	union storage
 	{
 		char value[sizeof(T)];
@@ -68,7 +68,7 @@ public:
 
 	Optional<T>& operator=(Optional<T>&& rhs)
 	{
-		if(rhs.mNotNull) return operator=(Meta::Move(reinterpret_cast<T&>(rhs.mNal)));
+		if(rhs.mNotNull) return operator=(Meta::Move(reinterpret_cast<T&>(rhs.mVal)));
 		if(mNotNull) value().~T();
 		mNotNull = false;
 		return *this;

@@ -8,12 +8,12 @@
 #include "Range/Generators/StringView.h"
 #include "Algo/Search.hh"
 #include "Algo/Comparison/EndsWith.h"
-#include "IO/StaticStream.h"
 #include "Data/Reflection.h"
 #include "TextSerializerParams.h"
-#include "Containers/String.h"
+#include "LanguageParams.h"
 #include "Range/Decorators/TakeUntil.h"
 #include "Range/Decorators/TakeUntilAny.h"
+#include "Range/Output/OutputArrayRange.h"
 
 namespace Intra { namespace Data {
 
@@ -34,22 +34,97 @@ template<typename O> struct GenericTextSerializerStructVisitor
 template<typename O> class GenericTextSerializer
 {
 public:
-	GenericTextSerializer(const DataLanguageParams& langParams,
+	GenericTextSerializer(const LanguageParams& langParams,
 		const TextSerializerParams& serializerParams, const O& output):
 		Params(serializerParams), Lang(langParams),
 		NestingLevel(0), Output(output) {}
 
-	void NextField(TextSerializerParams::TypeFlags typeFlag);
+	void NextField(TextSerializerParams::TypeFlags typeFlag)
+	{
+		if(typeFlag & TextSerializerParams::TypeFlags_Struct)
+		{
+			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
+			Algo::CopyToAdvanceByOne(Lang.FieldSeparator, Output);
+		}
+		if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
+		{
+			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
+			Algo::CopyToAdvanceByOne(Lang.TupleFieldSeparator, Output);
+		}
+		if(typeFlag & TextSerializerParams::TypeFlags_Array)
+		{
+			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
+			Algo::CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
+		}
+		if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
+		{
+			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
+			Algo::CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
+		}
+		EndField(typeFlag);
+	}
 
-	void EndField(TextSerializerParams::TypeFlags typeFlag);
+	void EndField(TextSerializerParams::TypeFlags typeFlag)
+	{
+		if((Params.ValuePerLine & typeFlag) == 0)
+		{
+			Output.Put(' ');
+			return;
+		}
+		Algo::CopyToAdvanceByOne(Params.LineEnding, Output);
+		if((Params.UseTabs & typeFlag)==0) return;
+		for(int i=0; i<NestingLevel; i++)
+			Algo::CopyToAdvanceByOne(Params.TabChars, Output);
+	}
 
-	void FieldAssignmentBeginning(StringView name);
-	void FieldAssignmentEnding(StringView name);
+	void FieldAssignmentBeginning(StringView name)
+	{
+		INTRA_ASSERT(!name.Empty());
+		Algo::CopyToAdvanceByOne(Lang.LeftFieldNameBeginQuote, Output);
+		Algo::CopyToAdvance(name, Output);
+		Algo::CopyToAdvanceByOne(Lang.LeftFieldNameEndQuote, Output);
 
-	StringView GetString() const {return Output.GetString();}
+		if(Params.UseAssignmentSpaces)
+			Output.Put(' ');
 
-	void StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct);
-	void StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct);
+		Algo::CopyToAdvanceByOne(Lang.LeftAssignmentOperator, Output);
+
+		if(Params.UseAssignmentSpaces && Lang.LeftAssignmentOperator!=null)
+			Output.Put(' ');
+	}
+
+	void FieldAssignmentEnding(StringView name)
+	{
+		INTRA_ASSERT(name!=null);
+
+		if(Params.UseAssignmentSpaces)
+			Output.Put(' ');
+
+		Algo::CopyToAdvanceByOne(Lang.RightAssignmentOperator, Output);
+
+		if(Params.UseAssignmentSpaces && Lang.RightAssignmentOperator!=null)
+			Output.Put(' ');
+
+		Algo::CopyToAdvanceByOne(Lang.RightFieldNameBeginQuote, Output);
+		Algo::CopyToAdvance(name, Output);
+		Algo::CopyToAdvanceByOne(Lang.RightFieldNameEndQuote, Output);
+	}
+
+	void StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct)
+	{
+		auto openStr = (type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceOpen: Lang.TupleOpen;
+		Algo::CopyToAdvanceByOne(openStr, Output);
+		NestingLevel++;
+		EndField(type);
+	}
+
+	void StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct)
+	{
+		NestingLevel--;
+		EndField(type);
+		auto closeStr = (type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceClose: Lang.TupleClose;
+		Algo::CopyToAdvanceByOne(closeStr, Output);
+	}
 
 	//! Сериализовать кортеж
 	template<typename Tuple> Meta::EnableIf<
@@ -73,22 +148,22 @@ public:
 	//! Вычислить размер объекта в сериализованном виде в байтах
 	template<typename T> size_t SerializedSizeOf(T&& v) const
 	{
-		GenericTextSerializer<IO::DummyOutput> dummy(Lang, Params, IO::DummyOutput());
+		GenericTextSerializer<Range::CountRange<char>> dummy(Lang, Params, Range::CountRange<char>());
 		dummy.NestingLevel = NestingLevel;
 		dummy << Meta::Forward<T>(v);
-		return dummy.Output.BytesWritten();
+		return dummy.Output.Counter;
 	}
 
 	void ResetOutput(const O& output) {Output=output; NestingLevel=0;}
 
 	TextSerializerParams Params;
-	DataLanguageParams Lang;
+	LanguageParams Lang;
 	int NestingLevel;
 	O Output;
 };
 
-typedef GenericTextSerializer<IO::MemoryOutput> TextSerializer;
-typedef GenericTextSerializer<IO::DummyOutput> DummyTextSerializer;
+typedef GenericTextSerializer<Range::OutputArrayRange<char>> TextSerializer;
+typedef GenericTextSerializer<Range::CountRange<char>> DummyTextSerializer;
 
 template<typename O> template<typename T> GenericTextSerializerStructVisitor<O>&
 	GenericTextSerializerStructVisitor<O>::operator()(T&& t)
@@ -144,7 +219,7 @@ template<typename T, typename O> Meta::EnableIf<
 	Meta::IsIntegralType<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
-	serializer.Output.WriteIntegerText(v);
+	serializer.Output << v;
 	return serializer;
 }
 
@@ -153,7 +228,7 @@ template<typename T, typename O> Meta::EnableIf<
 	Meta::IsFloatType<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
-	serializer.Output.WriteFloatText(v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
+	Algo::ToString(serializer.Output, v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
 	return serializer;
 }
 
@@ -162,7 +237,7 @@ template<typename O> forceinline GenericTextSerializer<O>& operator<<(
 	GenericTextSerializer<O>& serializer, bool v)
 {
 	INTRA_ASSERT(int(v) <= 1 && "Invalid bool value!");
-	serializer.Output.WriteShortRaw(serializer.Lang.FalseTrueNames[v!=false]);
+	Algo::CopyToAdvanceByOne(serializer.Lang.FalseTrueNames[v!=false], serializer.Output);
 	return serializer;
 }
 
@@ -172,7 +247,7 @@ template<typename R, typename O> forceinline Meta::EnableIf<
 	!Range::IsAsCharRange<R>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& r)
 {
-	serializer.Output.WriteShortRaw(serializer.Lang.ArrayOpen);
+	Algo::CopyToAdvanceByOne(serializer.Lang.ArrayOpen, serializer.Output);
 	auto range = Range::Forward<R>(r);
 	if(!range.Empty())
 	{
@@ -202,15 +277,17 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& 
 		if(!TypeIsSimpleArray && !serializer.Lang.StructInstanceClose.Empty())
 			serializer.EndField(TextSerializerParams::TypeFlags_StructArray);
 	}
-	serializer.Output.WriteShortRaw(serializer.Lang.ArrayClose);
+	Algo::CopyToAdvanceByOne(serializer.Lang.ArrayClose, serializer.Output);
 	return serializer;
 }
 
 template<typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, const StringView& v)
 {
-	serializer.Output.WriteShortRaw(serializer.Lang.StringQuote);
-	serializer.Output.WriteReplacedString(v, {"\n", "\r", "\t"}, {"\\n", "\\r", "\\t"});
-	serializer.Output.WriteShortRaw(serializer.Lang.StringQuote);
+	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
+	Algo::MultiReplaceToAdvance(v, serializer.Output, Range::Zip(
+		ArrayRange<const StringView>{"\n", "\r", "\t"},
+		ArrayRange<const StringView>{"\\n", "\\r", "\\t"}));
+	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
 	return serializer;
 }
 
@@ -220,90 +297,6 @@ template<typename T, size_t N, typename O> forceinline GenericTextSerializer<O>&
 {return serializer << Range::AsRange(src);}
 
 
-template<typename O> void GenericTextSerializer<O>::NextField(TextSerializerParams::TypeFlags typeFlag)
-{
-	if(typeFlag & TextSerializerParams::TypeFlags_Struct)
-	{
-		INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
-		Output.WriteShortRaw(Lang.FieldSeparator);
-	}
-	if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
-	{
-		INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
-		Output.WriteShortRaw(Lang.TupleFieldSeparator);
-	}
-	if(typeFlag & TextSerializerParams::TypeFlags_Array)
-	{
-		INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
-		Output.WriteShortRaw(Lang.ArrayElementSeparator);
-	}
-	if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
-	{
-		INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
-		Output.WriteShortRaw(Lang.ArrayElementSeparator);
-	}
-	EndField(typeFlag);
-}
-
-template<typename O> void GenericTextSerializer<O>::EndField(TextSerializerParams::TypeFlags typeFlag)
-{
-	if((Params.ValuePerLine & typeFlag) == 0)
-	{
-		Output.WriteCharRaw(' ');
-		return;
-	}
-	Output.WriteShortRaw(Params.LineEnding);
-	if((Params.UseTabs & typeFlag)==0) return;
-	for(int i=0; i<NestingLevel; i++)
-		Output.WriteShortRaw(Params.TabChars);
-}
-
-template<typename O> void GenericTextSerializer<O>::FieldAssignmentBeginning(StringView name)
-{
-	INTRA_ASSERT(name!=null);
-	Output.WriteShortRaw(Lang.LeftFieldNameBeginQuote);
-	Output.WriteRaw(name);
-	Output.WriteShortRaw(Lang.LeftFieldNameEndQuote);
-
-	if(Params.UseAssignmentSpaces)
-		Output.WriteCharRaw(' ');
-
-	Output.WriteShortRaw(Lang.LeftAssignmentOperator);
-
-	if(Params.UseAssignmentSpaces && Lang.LeftAssignmentOperator!=null)
-		Output.WriteCharRaw(' ');
-}
-
-template<typename O> void GenericTextSerializer<O>::FieldAssignmentEnding(StringView name)
-{
-	INTRA_ASSERT(name!=null);
-
-	if(Params.UseAssignmentSpaces)
-		Output.WriteCharRaw(' ');
-
-	Output.WriteShortRaw(Lang.RightAssignmentOperator);
-
-	if(Params.UseAssignmentSpaces && Lang.RightAssignmentOperator!=null)
-		Output.WriteCharRaw(' ');
-
-	Output.WriteShortRaw(Lang.RightFieldNameBeginQuote);
-	Output.WriteRaw(name);
-	Output.WriteShortRaw(Lang.RightFieldNameEndQuote);
-}
-
-template<typename O> void GenericTextSerializer<O>::StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type)
-{
-	Output.WriteShortRaw((type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceOpen: Lang.TupleOpen);
-	NestingLevel++;
-	EndField(type);
-}
-
-template<typename O> void GenericTextSerializer<O>::StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags type)
-{
-	NestingLevel--;
-	EndField(type);
-	Output.WriteShortRaw((type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceClose: Lang.TupleClose);
-}
 
 INTRA_WARNING_POP
 

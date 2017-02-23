@@ -22,7 +22,7 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 #define TEMPLATE template //clang требует слово template в typename ...<...>::template ...<...>
 #endif
 
-namespace D {
+namespace DP {
 
 template<typename T, bool Condition =
 	Meta::IsCopyAssignable<Meta::RemoveConstRef<T>>::_ &&
@@ -37,7 +37,6 @@ template<typename T, bool Condition =
 	virtual T GetNext() = 0;
 
 	virtual void PopFirstN(size_t count) = 0;
-	virtual void PopFirstExactly(size_t count) = 0;
 
 	virtual size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) = 0;
 };
@@ -52,7 +51,6 @@ template<typename T> struct InputRangeInterface<T, false>
 	virtual T GetNext() = 0;
 
 	virtual void PopFirstN(size_t count) = 0;
-	virtual void PopFirstExactly(size_t count) = 0;
 };
 
 template<typename T, typename R, typename PARENT, bool Condition =
@@ -65,26 +63,24 @@ template<typename T, typename R, typename PARENT, bool Condition =
 	template<typename A> InputRangeImplFiller(A&& range):
 		OriginalRange(Meta::Forward<A>(range)) {}
 
-	bool Empty() const override
+	bool Empty() const override final
 	{return OriginalRange.Empty();}
 
-	T First() const override
+	T First() const override final
 	{return OriginalRange.First();}
 
-	void PopFirst() override
+	void PopFirst() override final
 	{OriginalRange.PopFirst();}
 
-	T GetNext() override
+	T GetNext() override final
 	{
 		auto&& result = OriginalRange.First();
 		OriginalRange.PopFirst();
 		return result;
 	}
 
-	void PopFirstN(size_t count) override
+	void PopFirstN(size_t count) override final
 	{Range::PopFirstN(OriginalRange, count);}
-	void PopFirstExactly(size_t count) override
-	{Range::PopFirstExactly(OriginalRange, count);}
 };
 
 template<typename T, typename R, typename PARENT>
@@ -95,7 +91,7 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 	template<typename A> InputRangeImplFiller(A&& range):
 		base(Meta::Forward<A>(range)) {}
 
-	size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) override
+	size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) override final
 	{return Algo::CopyAdvanceToAdvance(base::OriginalRange, dst);}
 };
 
@@ -104,9 +100,8 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 template<typename T> struct InputRange
 {
 protected:
-	typedef Meta::RemoveReference<T> value_type;
-	typedef D::InputRangeInterface<T> Interface;
-	template<typename R, typename PARENT> using ImplFiller = D::InputRangeImplFiller<T, R, PARENT>;
+	typedef DP::InputRangeInterface<T> Interface;
+	template<typename R, typename PARENT> using ImplFiller = DP::InputRangeImplFiller<T, R, PARENT>;
 	
 	template<typename R, typename PARENT> using FullImplFiller = ImplFiller<R, PARENT>;
 
@@ -130,6 +125,8 @@ private:
 	}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline InputRange(null_t=null): mInterface(null) {}
 
 	forceinline InputRange(InputRange&& rhs):
@@ -156,10 +153,10 @@ public:
 		return *this;
 	}
 
-	forceinline InputRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline InputRange(InitializerList<value_type> arr):
 		InputRange(AsRange(arr)) {}
 
-	forceinline InputRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline InputRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;
@@ -172,9 +169,8 @@ public:
 	forceinline T GetNext() {return mInterface->GetNext();}
 
 	forceinline void PopFirstN(size_t count) {mInterface->PopFirstN(count);}
-	forceinline void PopFirstExactly(size_t count) {mInterface->PopFirstExactly(count);}
 
-	forceinline size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConst<value_type>>& dst)
+	forceinline size_t CopyAdvanceToAdvance(ArrayRange<value_type>& dst)
 	{return mInterface->CopyAdvanceToAdvance(dst);}
 
 protected:

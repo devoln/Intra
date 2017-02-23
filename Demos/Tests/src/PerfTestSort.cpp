@@ -31,17 +31,13 @@ INTRA_UNITTEST("Sort algorithms unit tests")
 	Array<short> arrSelection = arrUnsorted;
 	Array<short> arrStdSort = arrUnsorted;
 
-	Algo::InsertionSort(arrInsertion());
-	Algo::ShellSort(arrShell());
-	Algo::QuickSort(arrQuick());
-	Algo::RadixSort(arrRadix());
-
-	static_assert(Range::IsAsConsumableRange<ArrayRange<const short>>::_ &&
-		Range::IsAsOutputRange<ArrayRange<short>&>::_, "ERROR");
-
-	Algo::MergeSort(arrMerge());
-	Algo::HeapSort(arrHeap());
-	Algo::SelectionSort(arrSelection());
+	Algo::InsertionSort(arrInsertion);
+	Algo::ShellSort(arrShell);
+	Algo::QuickSort(arrQuick);
+	Algo::RadixSort(arrRadix.AsRange());
+	Algo::MergeSort(arrMerge);
+	Algo::HeapSort(arrHeap);
+	Algo::SelectionSort(arrSelection);
 	std::sort(arrStdSort.begin(), arrStdSort.end());
 
 	INTRA_TEST_ASSERT_EQUALS(arrInsertion, arrStdSort);
@@ -58,9 +54,9 @@ double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::InsertionSort(arr(), comparer);
+	Algo::InsertionSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -69,9 +65,9 @@ double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::ShellSort(arr(), comparer);
+	Algo::ShellSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -80,9 +76,9 @@ double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::QuickSort(arr(), comparer);
+	Algo::QuickSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -90,9 +86,9 @@ template<typename T> double TestRadixSorting(size_t size)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::RadixSort(arr());
+	Algo::RadixSort(arr.AsRange());
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -101,9 +97,9 @@ double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::MergeSort(arr(), comparer);
+	Algo::MergeSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -112,9 +108,9 @@ double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::SelectionSort(arr(), comparer);
+	Algo::SelectionSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -123,9 +119,9 @@ double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
-	Algo::HeapSort(arr(), comparer);
+	Algo::HeapSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -136,7 +132,7 @@ double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	std::sort(arr.begin(), arr.end(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr()));
+	INTRA_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 

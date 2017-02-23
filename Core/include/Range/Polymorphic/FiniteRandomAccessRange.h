@@ -28,7 +28,6 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 template<typename T> struct FiniteRandomAccessRange: BidirectionalRange<T>
 {
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	struct Interface: BidirectionalRange<T>::Interface
 	{
 		virtual T OpIndex(size_t index) const = 0;
@@ -62,6 +61,8 @@ private:
 	{return new WrapperImpl<Meta::RemoveConstRef<AsRangeResult<R>>>(Range::Forward<R>(range));}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline FiniteRandomAccessRange(null_t=null) {}
 
 	forceinline FiniteRandomAccessRange(FiniteRandomAccessRange&& rhs):
@@ -93,10 +94,10 @@ public:
 		return *this;
 	}
 
-	forceinline FiniteRandomAccessRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline FiniteRandomAccessRange(InitializerList<value_type> arr):
 		FiniteRandomAccessRange(AsRange(arr)) {}
 
-	forceinline FiniteRandomAccessRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline FiniteRandomAccessRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;
@@ -109,7 +110,8 @@ public:
 	{return FiniteRandomAccessRange(static_cast<Interface*>(InputRange<T>::mInterface.Ptr())->OpSlice(start, end));}
 
 protected:
-	FiniteRandomAccessRange(Interface* interfacePtr): BidirectionalRange<T>(interfacePtr) {}
+	FiniteRandomAccessRange(typename ForwardRange<T>::Interface* interfacePtr):
+		BidirectionalRange<T>(interfacePtr) {}
 };
 
 #undef TEMPLATE

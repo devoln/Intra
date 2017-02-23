@@ -1,10 +1,14 @@
 ﻿#pragma once
 
+#include "Platform/CppFeatures.h"
+#include "Platform/CppWarnings.h"
 #include "Algo/Op.h"
 #include "Range/Concepts.h"
-#include "Platform/CppWarnings.h"
+#include "Range/AsRange.h"
 
 namespace Intra { namespace Algo {
+
+using namespace Range::Concepts;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -32,10 +36,10 @@ template<typename T, typename C> void heap_shift_down(T arr[], size_t i, size_t 
 //! - Неустойчив;
 //! - На почти отсортированных массивах работает так же долго, как и для хаотичных данных;
 //! - Для N меньше нескольких тысяч ShellSort быстрее.
-template<typename ArrRange, typename C = Comparers::Function<Range::ValueTypeOf<ArrRange>>> Meta::EnableIf<
-	Range::IsArrayRange<ArrRange>::_ &&
-	Range::IsAssignableRange<ArrRange>::_
-> HeapSort(const ArrRange& range, C comparer = Op::Less<Range::ValueTypeOf<ArrRange>>)
+template<typename R, typename C=Comparers::Function<ValueTypeOf<R>>> Meta::EnableIf<
+	Range::IsArrayRange<R>::_ &&
+	Range::IsAssignableRange<R>::_
+> HeapSort(const R& range, C comparer=Op::Less<ValueTypeOf<R>>)
 {
 	const size_t count = range.Length();
 
@@ -51,6 +55,14 @@ template<typename ArrRange, typename C = Comparers::Function<Range::ValueTypeOf<
 		D::heap_shift_down(range.Data(), 0, i, comparer);
 	}
 }
+
+template<typename R, typename C=Comparers::Function<ValueTypeOfAs<R>>,
+typename AsR=AsRangeResult<R>> forceinline Meta::EnableIf<
+	!IsInputRange<R>::_ &&
+	Range::IsArrayRange<AsR>::_ &&
+	Range::IsAssignableRange<AsR>::_
+> HeapSort(R&& range, C comparer=Op::Less<ValueTypeOf<AsR>>)
+{HeapSort(Range::Forward<R>(range), comparer);}
 
 INTRA_WARNING_POP
 

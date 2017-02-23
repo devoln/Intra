@@ -69,15 +69,14 @@ StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstB
 	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
 {
 	INTRA_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
-	/*char* begin = dstBuffer.Data();
+	char* begin = dstBuffer.Data();
 	size_t substrIndex=0;
 	while(CopyToAdvance(StringReadUntilAscii(src, fromSubStrs, &substrIndex), dstBuffer), !src.Empty())
 	{
 		CopyToAdvance(toSubStrs[substrIndex], dstBuffer);
 		src.PopFirstExactly(fromSubStrs[substrIndex].Length());
 	}
-	return StringView(begin, dstBuffer.Data());*/
-	return MultiReplaceToAdvance(src, dstBuffer, Range::Zip(fromSubStrs, toSubStrs));
+	return StringView(begin, dstBuffer.Data());
 }
 
 

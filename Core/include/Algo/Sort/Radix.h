@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/ForwardDeclarations.h"
+#include "Container/ForwardDecls.h"
 
 namespace Intra { namespace Algo {
 
@@ -16,13 +16,11 @@ T> ExtractKey(T t) {return t;}
 template<typename T> forceinline size_t ExtractKey(T* t) {return reinterpret_cast<size_t>(t);}
 
 template<typename T, typename ExtractKeyFunc = Meta::MakeUnsignedType<T>(*)(T), size_t RadixLog=8>
-void RadixSort(Range::ArrayRange<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
+void RadixSort(ArrayRange<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
 
 template<typename T, typename ExtractKeyFunc = size_t(*)(T*), size_t RadixLog=8>
 void RadixSort(ArrayRange<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
-{
-	RadixSort(arr.template Reinterpret<size_t>(), extractKey);
-}
+{RadixSort(arr.template Reinterpret<size_t>(), extractKey);}
 
 namespace D
 {

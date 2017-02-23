@@ -10,3 +10,6 @@
 #include "Decorators/Retro.h"
 #include "Decorators/Cycle.h"
 #include "Decorators/Split.h"
+#include "Decorators/Join.h"
+#include "Decorators/Chunks.h"
+#include "Decorators/ByLine.h"

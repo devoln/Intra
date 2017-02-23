@@ -50,11 +50,9 @@ template<typename R0, typename... RANGES> struct RRoundRobin
 	forceinline bool operator!=(const RRoundRobin& rhs) const
 	{return !operator==(rhs);}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_ && HasLength<RRoundRobin<RANGES...>>::_,
-	size_t> Length() const {return mRange0.Length()+mNext.Length();}
+	forceinline size_t Length() const {return mRange0.Length()+mNext.Length();}
 
-	bool before_(size_t prevCounter) const
+	forceinline bool before_(size_t prevCounter) const
 	{return mCounter<prevCounter || mNext.before_(prevCounter);}
 
 private:
@@ -97,11 +95,9 @@ template<typename R0> struct RRoundRobin<R0>
 			(mRange0==rhs.mRange0 && mCounter==rhs.mCounter);
 	}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_,
-	size_t> Length() const {return mRange0.Length();}
+	forceinline size_t Length() const {return mRange0.Length();}
 
-	bool before_(size_t prevCounter) const {return mCounter<prevCounter;}
+	forceinline bool before_(size_t prevCounter) const {return mCounter<prevCounter;}
 
 private:
 	R0 mRange0;

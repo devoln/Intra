@@ -5,7 +5,7 @@
 #ifndef INTRA_NO_AUDIO_SYNTH
 
 #include "Math/Random.h"
-#include "Containers/Array2D.h"
+#include "Container/Utility/Array2D.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 

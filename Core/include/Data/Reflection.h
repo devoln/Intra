@@ -53,7 +53,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasReflectionFieldNamesMethod, Meta::RemoveConst
 		{\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_NAME, A, __VA_ARGS__)\
 		};\
-		return Intra::Range::AsRange(fieldNames);\
+		return ::Intra::Range::AsRange(fieldNames);\
 	}
 
 //! Добавить метаинформацию к структуре. Первым указывается имя структуры\класса, далее перечисляются поля.

@@ -1,7 +1,7 @@
 ﻿#include "Audio/Synth/HighLowPass.h"
 #include "Platform/CppWarnings.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 

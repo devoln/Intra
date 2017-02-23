@@ -1,23 +1,26 @@
 ﻿#pragma once
 
 #include "Range/Concepts.h"
+#include "Range/AsRange.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Copy.h"
 #include "Platform/CppWarnings.h"
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	!Range::ValueTypeEquals<R, OR>::_
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRange<OR>::_ &&
+	!ValueTypeEquals<R, OR>::_
 > CastAdvanceToAdvance(R& src, OR& dst)
 {
 	while(!src.Empty())
 	{
-		dst.Put(Range::ValueTypeOf<OR>(src.First()));
+		dst.Put(ValueTypeOf<OR>(src.First()));
 		src.PopFirst();
 	}
 }
@@ -32,15 +35,15 @@ forceinline void CastAdvanceToAdvance(ArrayRange<const float>&& src, ArrayRange<
 {CastAdvanceToAdvance(src, dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	Range::ValueTypeEquals<R, OR>::_
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRange<OR>::_ &&
+	ValueTypeEquals<R, OR>::_
 > CastAdvanceToAdvance(R& src, OR& dst)
 {Algo::CopyAdvanceToAdvance(src, dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsOutputRange<OR>::_
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsOutputRange<OR>::_
 > CastAdvanceTo(R& src, OR&& dst)
 {
 	auto dstRange = Range::Forward<OR>(dst);
@@ -48,8 +51,8 @@ template<typename R, typename OR> Meta::EnableIf<
 }
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsAsNonInfiniteInputRange<R>::_ &&
-	Range::IsOutputRange<OR>::_
+	IsAsNonInfiniteInputRange<R>::_ &&
+	IsOutputRange<OR>::_
 > CastToAdvance(R&& src, OR& dst)
 {
 	auto srcCopy = Range::Forward<R>(src);
@@ -57,8 +60,8 @@ template<typename R, typename OR> Meta::EnableIf<
 }
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsAsNonInfiniteInputRange<R>::_ &&
-	Range::IsAsOutputRange<OR>::_
+	IsAsNonInfiniteInputRange<R>::_ &&
+	IsAsOutputRange<OR>::_
 > CastTo(R&& src, OR&& dst)
 {
 	auto srcCopy = Range::Forward<R>(src);

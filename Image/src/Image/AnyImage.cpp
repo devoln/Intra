@@ -1,7 +1,7 @@
 ﻿#include "Image/AnyImage.h"
 
 #include "IO/File.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Fill.h"
 #include "Range/Generators/ListRange.h"
 #include "Range/Iterator/RangeIterator.h"
@@ -24,7 +24,7 @@ AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
 	AnyImage result({size.x+borderLeft+borderRight, size.y+borderTop+borderBottom, 1}, format, 0, type);
 	result.Data.SetCountUninitialized(result.Info.CalculateFullDataSize(1));
 	if(data==null || borderLeft+borderRight+borderTop+borderBottom!=0)
-		Algo::FillZeros(result.Data());
+		Algo::FillZeros(result.Data);
 
 	result.LineAlignment = 1;
 	for(uint y = borderTop; y<uint(size.y+borderTop); y++)

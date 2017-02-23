@@ -16,8 +16,8 @@
 #include "Platform/Errors.cpp"
 
 #include "Data/Reflection.cpp"
-#include "Data/BinarySerialization.cpp"
-#include "Data/TextSerialization.cpp"
+#include "Data/Serialization/TextSerializerParams.cpp"
+#include "Data/Serialization/LanguageParams.cpp"
 #include "Data/Variable.cpp"
 #include "Data/ValueType.cpp"
 #include "Data/Object.cpp"

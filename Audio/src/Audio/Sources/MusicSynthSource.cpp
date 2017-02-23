@@ -109,7 +109,7 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
 	size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
-	Algo::CopyToAdvance(mBuffer.Samples().Take(floatsRead), outFloats);
+	Algo::CopyToAdvance(Range::Take(mBuffer.Samples, floatsRead), outFloats);
 	Algo::FillZeros(outFloats);
 	mProcessedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();

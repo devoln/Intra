@@ -10,9 +10,9 @@
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/PerformanceTest.h"
-#include "PerfTestString.h"
-#include "PerfTestArray.h"
-#include "PerfTestMap.h"
+#include "Container/String.h"
+#include "Container/Array.h"
+#include "Container/Map.h"
 #include "PerfTestSerialization.h"
 #include "Range/Header.h"
 #include "PerfTestRandom.h"
@@ -109,9 +109,9 @@ void InitLogSystem(int argc, const char* argv[])
 
 
 
-#include "Containers/Array.h"
-#include "Containers/HashMap.h"
-#include "Containers/List.h"
+#include "Container/Sequential/Array.h"
+#include "Container/Associative/HashMap.h"
+#include "Container/Sequential/List.h"
 
 #if INTRA_DISABLED
 #include <unordered_map>
@@ -127,24 +127,6 @@ int main(int argc, const char* argv[])
 	if(argc>=2 && StringView(argv[1])=="-a")
 #endif
         TestGroup::YesForNestingLevel=0;
-
-#if INTRA_DISABLED
-    HashMap<String, int> map;
-	map["Строка"] = 6;
-	map["Тест"] = 4;
-	map["Вывод"] = 5;
-	map["Ассоциативного"] = 14;
-	map["Массива"] = 7;
-	map["В отладчике"] = 11;
- 
-	auto mapRange = map.Find("Вывод");
-	mapRange.PopLast();
- 
-	Console << map() << endl;
-
-	map.SortByKey();
-	Console << map() << endl;
-#endif
 	
 	if(TestGroup gr{logger, "Генераторы случайных чисел"})
 		RunRandomPerfTests(logger);
@@ -162,6 +144,9 @@ int main(int argc, const char* argv[])
 
 		if(TestGroup gr2{logger, "Сравнение скорости простых полиморфных диапазонов"})
 			RunPolymorphicRangePerfTests(logger);
+
+		if(TestGroup gr2{logger, "Взаимодействие STL и диапазонов"})
+			RunRangeStlInteropTests();
 	}
 
 	if(TestGroup gr{logger, "std::string vs String"})

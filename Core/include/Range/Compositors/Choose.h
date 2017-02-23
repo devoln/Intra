@@ -43,14 +43,10 @@ public:
 		mRange2.PopFirst();
 	}
 
-	template<typename U=R1> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasLast<R2>::_,
-	ReturnValueType> Last() const
+	forceinline ReturnValueType Last() const
 	{return mRange1.Empty()? mRange2.Last(): mRange1.Last();}
 
-	template<typename U=R1> forceinline Meta::EnableIf<
-		HasPopLast<U>::_ && HasPopLast<R2>::_
-	> PopLast()
+	forceinline void PopLast()
 	{
 		if(!mRange1.Empty())
 		{
@@ -61,14 +57,10 @@ public:
 		mRange2.PopLast();
 	}
 
-	template<typename U=R1> forceinline Meta::EnableIf<
-		HasIndex<U>::_ && HasIndex<R2>::_,
-	ReturnValueType> operator[](size_t index) const
+	forceinline ReturnValueType operator[](size_t index) const
 	{return mRange1.Empty()? mRange2[index]: mRange1[index];}
 
-	template<typename U=R1> forceinline Meta::EnableIf<
-		HasSlicing<U>::_ && HasSlicing<R2>::_,
-	RChoose> operator()(size_t start, size_t end) const
+	forceinline RChoose operator()(size_t start, size_t end) const
 	{
 		return {mRange1.Empty()? null: mRange1(start, end),
 			    mRange1.Empty()? null: mRange2(start, end)};

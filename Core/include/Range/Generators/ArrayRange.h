@@ -67,6 +67,7 @@ template<typename T> struct ArrayRange
 		Begin += count;
 		return count;
 	}
+
 	forceinline void PopFirstExactly(size_t count)
 	{INTRA_ASSERT(count <= Length()); Begin += count;}
 
@@ -180,19 +181,12 @@ template<typename T, size_t N> forceinline Meta::EnableIf<
 ArrayRange<T>> AsRange(T(&arr)[N]) {return ArrayRange<T>(arr);}
 
 
-template<typename T> forceinline ArrayRange<const T> AsRange(InitializerList<T> arr) {return ArrayRange<const T>(arr);}
+template<typename T> forceinline ArrayRange<const T> AsRange(InitializerList<T> arr)
+{return ArrayRange<const T>(arr);}
 
 }
 
 using Range::ArrayRange;
-
-/*
-namespace Meta {
-
-template<typename T> struct IsTriviallySerializable<ArrayRange<T>>: TypeFromValue<bool, false> {}; 
-
-}
-*/
 
 INTRA_WARNING_POP
 

@@ -29,7 +29,6 @@ template<typename T> struct FiniteForwardRange: ForwardRange<T>
 {
 	enum: bool {RangeIsFinite = true};
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	struct Interface: ForwardRange<T>::Interface
 	{
 		virtual size_t Count() const = 0;
@@ -59,6 +58,8 @@ private:
 	{return new WrapperImpl<Meta::RemoveConstRef<AsRangeResult<R>>>(Range::Forward<R>(range));}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline FiniteForwardRange(null_t=null) {}
 
 	forceinline FiniteForwardRange(FiniteForwardRange&& rhs):
@@ -90,10 +91,10 @@ public:
 		return *this;
 	}
 
-	forceinline FiniteForwardRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline FiniteForwardRange(InitializerList<value_type> arr):
 		FiniteForwardRange(AsRange(arr)) {}
 
-	forceinline FiniteForwardRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline FiniteForwardRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;
@@ -103,7 +104,7 @@ public:
 	{return static_cast<Interface*>(InputRange<T>::mInterface.Ptr())->Count();}
 
 protected:
-	FiniteForwardRange(Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
+	FiniteForwardRange(typename ForwardRange<T>::Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
 };
 
 

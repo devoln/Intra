@@ -2,12 +2,12 @@
 
 #include "Platform/CppWarnings.h"
 #include "Audio/SoundApiDeclarations.h"
-#include "Containers/Array.h"
-#include "Utils/Callback.h"
+#include "Container/Sequential/Array.h"
 #include "Memory/SmartRef.hh"
-#include "Containers/SparseHandledArray.h"
+#include "Container/Utility/SparseHandledArray.h"
 #include "Audio/SoundTypes.h"
 #include "Data/ValueType.h"
+#include "Utils/Callback.h"
 
 namespace Intra { namespace Audio {
 

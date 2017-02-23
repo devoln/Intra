@@ -17,12 +17,18 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #endif
 
+#if(!INTRA_AVOID_STD_HEADERS)
+#include <type_traits>
+#endif
+
 namespace Intra { namespace Meta {
 
 template<typename T> T&& Val();
 struct UniFunctor {template<typename T> void operator()(T);};
 
 template<typename T, T value> struct TypeFromValue {enum {_=value};};
+typedef TypeFromValue<bool, false> FalseType;
+typedef TypeFromValue<bool, true> TrueType;
 
 template<typename T> struct AddReference
 {
@@ -45,6 +51,15 @@ template<> struct AddReference<const void>
 struct EmptyType
 {
 	template<typename... Args> EmptyType(Args&&...) {}
+};
+
+struct NonCopyableType
+{
+	NonCopyableType() = default;
+	NonCopyableType(const NonCopyableType&) = delete;
+	NonCopyableType& operator=(const NonCopyableType&) = delete;
+	NonCopyableType(NonCopyableType&&) {}
+	NonCopyableType& operator=(NonCopyableType&&) {return *this;}
 };
 
 template<typename T> struct WrapperStruct {T value;};
@@ -79,45 +94,48 @@ template<typename T> struct IsConst<const T>: TypeFromValue<bool, true> {};
 template<typename T> struct IsConst<const T&>: TypeFromValue<bool, true> {};
 template<typename T> struct IsConst<const T&&>: TypeFromValue<bool, true> {};
 
-namespace D
-{
-template<typename IfTrue, typename IfFalse, bool COND> struct SelectType {typedef IfTrue _;};
-template<typename IfTrue, typename IfFalse> struct SelectType<IfTrue, IfFalse, false> {typedef IfFalse _;};
-}
+template<typename IfTrue, typename IfFalse, bool COND> struct TSelectType {typedef IfTrue _;};
+template<typename IfTrue, typename IfFalse> struct TSelectType<IfTrue, IfFalse, false> {typedef IfFalse _;};
 
 template<typename IfTrue, typename IfFalse, bool COND>
-using SelectType = typename Meta::D::SelectType<IfTrue, IfFalse, COND>::_;
+using SelectType = typename TSelectType<IfTrue, IfFalse, COND>::_;
 
-namespace D {
-template<typename T> struct RemoveReference {typedef T _;};
-template<typename T> struct RemoveReference<T&> {typedef T _;};
-template<typename T> struct RemoveReference<T&&> {typedef T _;};
 
-template<typename T> struct RemoveConst {typedef T _;};
-template<typename T> struct RemoveConst<const T> {typedef T _;};
-template<typename T> struct RemoveConst<const T&> {typedef T& _;};
-template<typename T> struct RemoveConst<const T&&> {typedef T&& _;};
+template<bool COND> using CopyableIf = SelectType<EmptyType, NonCopyableType, COND>;
 
-template<typename T> struct RemoveVolatile {typedef T _;};
-template<typename T> struct RemoveVolatile<volatile T> {typedef T _;};
-template<typename T> struct RemoveVolatile<volatile T[]> {typedef T _[];};
-template<typename T, size_t N> struct RemoveVolatile<volatile T[N]> {typedef T _[N];};
-}
-template<typename T> using RemoveReference = typename D::RemoveReference<T>::_;
-template<typename T> using RemoveConst = typename D::RemoveConst<T>::_;
-template<typename T> using RemoveVolatile = typename D::RemoveVolatile<T>::_;
+
+template<typename T> struct TRemoveReference {typedef T _;};
+template<typename T> struct TRemoveReference<T&> {typedef T _;};
+template<typename T> struct TRemoveReference<T&&> {typedef T _;};
+
+template<typename T> struct TRemovePointer {typedef T _;};
+template<typename T> struct TRemovePointer<T*> {typedef T _;};
+template<typename T> struct TRemovePointer<T* const> {typedef T _;};
+
+template<typename T> struct TRemoveConst {typedef T _;};
+template<typename T> struct TRemoveConst<const T> {typedef T _;};
+template<typename T> struct TRemoveConst<const T&> {typedef T& _;};
+template<typename T> struct TRemoveConst<const T&&> {typedef T&& _;};
+
+template<typename T> struct TRemoveVolatile {typedef T _;};
+template<typename T> struct TRemoveVolatile<volatile T> {typedef T _;};
+template<typename T> struct TRemoveVolatile<volatile T[]> {typedef T _[];};
+template<typename T, size_t N> struct TRemoveVolatile<volatile T[N]> {typedef T _[N];};
+
+template<typename T> using RemoveReference = typename TRemoveReference<T>::_;
+template<typename T> using RemovePointer = typename TRemovePointer<T>::_;
+template<typename T> using RemoveConst = typename TRemoveConst<T>::_;
+template<typename T> using RemoveVolatile = typename TRemoveVolatile<T>::_;
 template<typename T> using RemoveConstRef = RemoveConst<RemoveReference<T>>;
 template<typename T> using RemoveConstVolatile = RemoveConst<RemoveVolatile<T>>;
 
-namespace D {
-template<typename T> struct RemoveExtent {typedef T _;};
-template<typename T, size_t N> struct RemoveExtent<T[N]> {typedef T _;};
-template<typename T> struct RemoveExtent<T[]> {typedef T _;};
-}
-template<typename T> using RemoveExtent = typename D::RemoveExtent<T>::_;
+template<typename T> struct TRemoveExtent {typedef T _;};
+template<typename T, size_t N> struct TRemoveExtent<T[N]> {typedef T _;};
+template<typename T> struct TRemoveExtent<T[]> {typedef T _;};
+
+template<typename T> using RemoveExtent = typename TRemoveExtent<T>::_;
 template<typename T> using AddPointer = RemoveReference<T>*;
 
-namespace D {
 template<typename T> struct IsFunctionPointer: TypeFromValue<bool, false> {};
 #if(defined(_MSC_VER) && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
 template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(__cdecl*)(Args...)>: TypeFromValue<bool, true> {};
@@ -126,8 +144,8 @@ template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(__fastcall
 #else
 template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(*)(Args...)>: TypeFromValue<bool, true> {};
 #endif
-}
-template<typename T> struct IsFunction: Meta::D::IsFunctionPointer<RemoveConstVolatile<T>*> {};
+
+template<typename T> struct IsFunction: Meta::IsFunctionPointer<RemoveConstVolatile<T>*> {};
 template<typename T> struct IsFunction<T&>: TypeFromValue<bool, false> {};
 template<typename T> struct IsFunction<T&&>: TypeFromValue<bool, false> {};
 
@@ -137,8 +155,7 @@ template<class T, size_t N> struct Extent<T[], N>: Extent<T, N-1> {};
 template<class T, size_t N> struct Extent<T[N], 0>: TypeFromValue<size_t, N> {};
 template<class T, size_t I, size_t N> struct Extent<T[I], N>: Extent<T, N-1> {};
 
-namespace D {
-template<typename T> struct Decay
+template<typename T> struct TDecay
 {
 	typedef Meta::RemoveReference<T> T1;
 	typedef Meta::SelectType<
@@ -149,8 +166,7 @@ template<typename T> struct Decay
 		    Meta::IsFunction<T1>::_>,
 		Meta::IsArrayType<T1>::_> _;
 };
-}
-template<typename T> using Decay = typename Meta::D::Decay<T>::_;
+template<typename T> using Decay = typename Meta::TDecay<T>::_;
 
 
 
@@ -183,50 +199,40 @@ template<typename T> struct IsCharTypeExactly: TypeFromValue<bool,
 
 template<typename T> struct IsCharType: IsCharTypeExactly<RemoveConstVolatile<T>> {};
 
-namespace D {
 
-template<typename T> struct is_pointer_helper: TypeFromValue<bool, false> {};
-template<typename T> struct is_pointer_helper<T*>: TypeFromValue<bool, true> {};
+template<typename T> struct IsPointerType: TypeFromValue<bool, false> {};
+template<typename T> struct IsPointerType<T*>: TypeFromValue<bool, true> {};
+template<typename T> struct IsPointerType<T* const>: TypeFromValue<bool, true> {};
+template<typename T> struct IsPointerType<T* volatile>: TypeFromValue<bool, true> {};
+template<typename T> struct IsPointerType<T* const volatile>: TypeFromValue<bool, true> {};
 
-}
-template<typename T> struct IsPointerType: D::is_pointer_helper<RemoveConstVolatile<T>> {};
 
-namespace D {
+template<typename T> struct IsMemberPointerType: TypeFromValue<bool, false> {};
+template<class T, class U> struct IsMemberPointerType<T U::*>: TypeFromValue<bool, true> {};
+template<class T, class U> struct IsMemberPointerType<T U::* const>: TypeFromValue<bool, true> {};
+template<class T, class U> struct IsMemberPointerType<T U::* volatile>: TypeFromValue<bool, true> {};
+template<class T, class U> struct IsMemberPointerType<T U::* const volatile>: TypeFromValue<bool, true> {};
 
-template<typename T> struct is_member_pointer_helper: TypeFromValue<bool, false> {};
-template<class T, class U> struct is_member_pointer_helper<T U::*>: TypeFromValue<bool, true> {};
-
-}
-template<typename T> struct IsMemberPointerType: D::is_member_pointer_helper<RemoveConstVolatile<T>> {};
-
-template<typename T> struct IsArithmeticType: TypeFromValue<bool,
-	TypeEquals<RemoveConstRef<T>, bool>::_ ||
-	IsCharType<RemoveConstRef<T>>::_ ||
-	IsIntegralType<RemoveConstRef<T>>::_ ||
-	IsFloatType<RemoveConstRef<T>>::_
+template<typename T> struct IsNonCRefArithmeticType: TypeFromValue<bool,
+	TypeEquals<T, bool>::_ ||
+	IsCharType<T>::_ ||
+	IsIntegralType<T>::_ ||
+	IsFloatType<T>::_
 > {};
 
+template<typename T> struct IsArithmeticType: IsNonCRefArithmeticType<RemoveConstRef<T>> {};
 
 
 
 
 
-namespace D {
 
-template<typename T> struct RemoveAllExtents {typedef T type;};
-template<typename T> struct RemoveAllExtents<T[]>
-{
-	typedef typename RemoveAllExtents<T>::type type;
-};
- 
-template<typename T, size_t N> struct RemoveAllExtents<T[N]>
-{
-	typedef typename RemoveAllExtents<T>::type type;
-};
 
-}
+template<typename T> struct TRemoveAllExtents {typedef T _;};
+template<typename T> struct TRemoveAllExtents<T[]>: TRemoveAllExtents<T> {};
+template<typename T, size_t N> struct TRemoveAllExtents<T[N]>: TRemoveAllExtents<T> {};
 
-template<typename T> using RemoveAllExtents = typename D::RemoveAllExtents<T>::type;
+template<typename T> using RemoveAllExtents = typename TRemoveAllExtents<T>::_;
 
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER_WITH_CONDITION(checker_name, expr, condition) \
@@ -239,37 +245,35 @@ template<typename T> using RemoveAllExtents = typename D::RemoveAllExtents<T>::t
 		enum {_ = type::_};\
 	}
 
+
 #define INTRA_DEFINE_EXPRESSION_CHECKER(checker_name, expr) \
-	template<typename U> struct checker_name \
-	{\
+	struct D ## checker_name ## _base {\
 		template<typename T> static decltype((expr), short()) func(::Intra::Meta::RemoveReference<T>*);\
 		template<typename T> static char func(...);\
-		enum {_ = sizeof(func<U>(nullptr))==sizeof(short)};\
-	}
+	};\
+	template<typename U> struct checker_name: D ## checker_name ## _base \
+	{enum {_ = sizeof(func<U>(nullptr))==sizeof(short)};}
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, condition, default1, default2) \
 	template<typename U1 default1, typename U2 default2> struct checker_name \
 	{\
 		template<typename T1, typename T2> static \
-			decltype((expr), Meta::TypeFromValue<bool, (condition)>()) func(T1*, T2*);\
+			decltype((expr), ::Intra::Meta::TypeFromValue<bool, (condition)>()) func(T1*, T2*);\
 		template<typename T1, typename T2> static \
-			Meta::TypeFromValue<bool, false> func(...); \
+			::Intra::Meta::TypeFromValue<bool, false> func(...); \
 		using type = decltype(func<U1, U2>(null, null)); \
 		enum {_=type::_}; \
 	}
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER2(checker_name, expr, default1, default2) \
-	template<typename U1 default1, typename U2 default2> struct checker_name \
-	{\
+	namespace D { struct checker_name ## _base {\
 		template<typename T1, typename T2> static decltype((expr), short()) func(\
-			::Intra::Meta::D::RemoveReference<T1>*, ::Intra::Meta::D::RemoveReference<T2>*);\
+			::Intra::Meta::RemoveReference<T1>*, ::Intra::Meta::RemoveReference<T2>*);\
 		template<typename T1, typename T2> static char func(...); \
-		enum {_ = sizeof(func<U1, U2>(nullptr, nullptr))==sizeof(short)}; \
-	}
+	};}\
+	template<typename U1 default1, typename U2 default2> struct checker_name: D::checker_name ## _base \
+	{enum {_ = sizeof(func<U1, U2>(nullptr, nullptr))==sizeof(short)};}
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPreIncrement, ++Meta::Val<T>());
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPostIncrement, Meta::Val<T>()++);
-INTRA_DEFINE_EXPRESSION_CHECKER(HasDereference, *Meta::Val<T>());
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasUnambigousTernary, true? Val<T1>(): Val<T2>(),,);
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasUnambigousSum, Val<T1>()+Val<T2>(),,);
 
@@ -334,18 +338,14 @@ namespace D {
 
 struct do_is_static_castable_impl
 {
-	template<typename SRC, typename DST, typename = decltype(static_cast<DST>(Val<SRC>()))> static TypeFromValue<bool, true> test(int);
-    template<typename, typename> static Meta::TypeFromValue<bool, false> test(...);
-};
-
-template<typename SRC, typename DST> struct is_static_castable_impl: do_is_static_castable_impl
-{
-      typedef decltype(test<SRC, DST>(0)) type;
+	template<typename SRC, typename DST, typename = decltype(static_cast<DST>(Val<SRC>()))> static short test(int);
+    template<typename, typename> static char test(...);
 };
 
 }
 
-template<typename SRC, typename DST> struct IsStaticCastable: D::is_static_castable_impl<SRC, DST>::type {};
+template<typename SRC, typename DST> struct IsStaticCastable: D::do_is_static_castable_impl
+{enum: bool {_ = sizeof(test<SRC, DST>(0))==sizeof(short)};};
 
 #ifdef _MSC_VER
 template<typename T, typename... Args> struct IsConstructible:
@@ -502,23 +502,22 @@ template<typename T, typename... Args> struct IsCallable
 	template<typename T1> struct dummy;
 
 	template<typename CheckType> static short check(dummy<decltype(
-		Val<Meta::RemoveReference<CheckType>>()(Val<Args>()...))>*);
+		Val<RemoveReference<CheckType>>()(Val<Args>()...))>*);
 	template<typename CheckType> static char check(...);
 
 	enum: bool {_ = sizeof(check<T>(nullptr))==sizeof(short)};
 };
 
+
+template<typename T, typename... Args> struct TResultOf
+{typedef decltype(Val<RemoveReference<T>>()(Val<Args>()...)) _;};
+template<typename T, typename... Args> using ResultOf = typename TResultOf<T, Args...>::_;
+
 namespace D {
-
-template<bool, typename T, typename... Args> struct ResultOf
-{typedef decltype(Val<Meta::RemoveReference<T>>()(Val<Args>()...)) _;};
-
-template<typename T, typename... Args> struct ResultOf<false, T, Args...>
-{typedef void _;};
-
+template<bool, typename T, typename... Args> struct ResultOfOrVoid: TResultOf<T, Args...> {};
+template<typename T, typename... Args> struct ResultOfOrVoid<false, T, Args...> {typedef void _;};
 }
-
-template<typename T, typename... Args> using ResultOf = typename D::ResultOf<IsCallable<T, Args...>::_, T, Args...>::_;
+template<typename T, typename... Args> using ResultOfOrVoid = typename D::ResultOfOrVoid<IsCallable<T, Args...>::_, T, Args...>::_;
 
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) && _MSC_VER<=1800
@@ -584,13 +583,10 @@ template<typename T> struct IsTriviallyMovable: TypeFromValue<bool,
 template<typename T> struct IsTriviallyRelocatable: IsTriviallyMovable<T> {};
 
 
-namespace D
-{
-template<bool COND, class T = void> struct EnableIf {};
-template<class T> struct EnableIf<true, T> {typedef T _;};
-}
-template<bool COND, typename T = void> using EnableIf = typename Meta::D::EnableIf<COND, T>::_;
 
+template<bool COND, class T=void> struct TEnableIf {};
+template<class T> struct TEnableIf<true, T> {typedef T _;};
+template<bool COND, typename T=void> using EnableIf = typename Meta::TEnableIf<COND, T>::_;
 
 template<typename T1, typename T2> struct TypeEqualsIgnoreCV: TypeEquals<RemoveConstVolatile<T1>, RemoveConstVolatile<T2>> {};
 template<typename T1, typename T2> struct TypeEqualsIgnoreCVRef: TypeEqualsIgnoreCV<RemoveReference<T1>, RemoveReference<T2>> {};

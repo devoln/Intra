@@ -1,6 +1,6 @@
 ﻿#include "Image/Bindings/GLenumFormats.h"
 #include "Image/ImageFormat.h"
-#include "Containers/HashMap.h"
+#include "Container/Associative/HashMap.h"
 #include "Image/ImageInfo.h"
 
 namespace Intra { namespace Image {

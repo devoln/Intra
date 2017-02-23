@@ -30,9 +30,11 @@ public:
 	//Для совместимости с Visual Studio 2013:
 	RMap(const RMap&) = default;
 	RMap& operator=(const RMap&) = default;
+
 	forceinline RMap(RMap&& rhs):
 		OriginalRange(Meta::Move(rhs.OriginalRange)),
 		Function(Meta::Move(rhs.Function)) {}
+
 	forceinline RMap& operator=(RMap&& rhs)
 	{
 		OriginalRange = Meta::Move(rhs.OriginalRange);
@@ -49,23 +51,17 @@ public:
 	forceinline bool Empty() const
 	{return OriginalRange.Empty() || Function==null;}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLast<U>::_,
-	return_value_type> Last() const
+	forceinline return_value_type Last() const
 	{return Function()(OriginalRange.Last());}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasPopLast<U>::_
-	> PopLast() {OriginalRange.PopLast();}
+	forceinline void PopLast() {OriginalRange.PopLast();}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasIndex<U>::_,
-	return_value_type> operator[](size_t index) const
+	forceinline return_value_type operator[](size_t index) const
 	{return Function()(OriginalRange[index]);}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		HasSlicing<U>::_,
-	RMap<SliceTypeOf<R>, F>> operator()(size_t start, size_t end) const
+	RMap<SliceTypeOf<U>, F>> operator()(size_t start, size_t end) const
 	{return {OriginalRange(start, end), Function()};}
 
 	template<typename U=R> forceinline Meta::EnableIf<
@@ -81,14 +77,10 @@ public:
 };
 
 
-template<typename R, typename F> forceinline Meta::EnableIf<
-	IsAsConsumableRange<R>::_,
-RMap<Meta::RemoveConstRef<AsRangeResult<R>>, F>> Map(R&& range, F func)
+template<typename R, typename F> forceinline /*Meta::EnableIf<
+	IsAsConsumableRange<R>::_,*/
+RMap<Meta::RemoveConstRef<AsRangeResult<R&&>>, F>/*>*/ Map(R&& range, F func)
 {return {Range::Forward<R>(range), Meta::Move(func)};}
-
-/*template<typename T, size_t N, typename F> forceinline
-RMap<AsRangeResult<T(&)[N]>, F> Map(T(&arr)[N], F func)
-{return Map(AsRange(arr), Meta::Move(func));}*/
 
 INTRA_WARNING_POP
 

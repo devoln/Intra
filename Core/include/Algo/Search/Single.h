@@ -8,6 +8,8 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Найти первое вхождение элемента what в этот диапазон.
@@ -16,10 +18,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 //! \param what Искомый элемент.
 //! \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
 template<class R, typename X> Meta::EnableIf<
-	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	!Meta::IsCallable<X, Range::ValueTypeOf<R>>::_ &&
-	!(Range::IsFiniteForwardRange<X>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<X>, Range::ValueTypeOf<R>>::_),
+	IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	!Meta::IsCallable<X, ValueTypeOf<R>>::_ &&
+	!(IsFiniteForwardRange<X>::_ &&
+	Meta::IsConvertible<ValueTypeOf<X>, ValueTypeOf<R>>::_),
 R&&> FindAdvance(R&& range, const X& what, size_t* ioIndex=null)
 {
 	size_t index = 0;
@@ -38,9 +40,9 @@ R&&> FindAdvance(R&& range, const X& what, size_t* ioIndex=null)
 //! \param pred Условие, которому должен удовлетворять искомый элемент.
 //! \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
 template<class R, typename P> Meta::EnableIf<
-	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
-R&&> FindAdvance(R&& range, P pred, size_t* ioIndex=null)
+	IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
+R&> FindAdvance(R& range, P pred, size_t* ioIndex=null)
 {
 	size_t index=0;
 	while(!range.Empty() && !pred(range.First()))
@@ -49,7 +51,7 @@ R&&> FindAdvance(R&& range, P pred, size_t* ioIndex=null)
 		index++;
 	}
 	if(ioIndex!=null) *ioIndex += index;
-	return Meta::Forward<R>(range);
+	return range;
 }
 
 
@@ -61,10 +63,10 @@ R&&> FindAdvance(R&& range, P pred, size_t* ioIndex=null)
 //! \param oWhatIndex[out] Указатель на переменную, в которую будет записан индекс найденного элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 //! \return Возвращает ссылку на себя.
 template<class R, class Ws> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsNonInfiniteForwardRange<Ws>::_ && !Meta::IsConst<Ws>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<Ws>, Range::ValueTypeOf<R>>::_,
-R&&> FindAdvanceAnyAdvance(R&& range, Ws&& whats,
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsNonInfiniteForwardRange<Ws>::_ && !Meta::IsConst<Ws>::_ &&
+	Meta::IsConvertible<ValueTypeOf<Ws>, ValueTypeOf<R>>::_,
+R&> FindAdvanceAnyAdvance(R& range, Ws& whats,
 	size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	size_t index=0, whatIndex = Range::Count(whats);
@@ -87,7 +89,7 @@ R&&> FindAdvanceAnyAdvance(R&& range, Ws&& whats,
 exit:
 	if(ioIndex!=null) *ioIndex += index;
 	if(oWhatIndex!=null) *oWhatIndex = whatIndex;
-	return Meta::Forward<R>(range);
+	return range;
 }
 
 //! Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
@@ -97,9 +99,9 @@ exit:
 //! \param oWhatIndex[out] Указатель на переменную, в которую будет записан индекс найденного элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 //! \return Возвращает ссылку на себя.
 template<class R, class Ws> forceinline Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsFiniteForwardRange<Ws>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOfAs<Ws>, Range::ValueTypeOf<R>>::_,
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsNonInfiniteForwardRange<Ws>::_ &&
+	Meta::IsConvertible<ValueTypeOfAs<Ws>, ValueTypeOf<R>>::_,
 R&> FindAdvanceAny(R&& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	auto whatsCopy = Range::Forward<Ws>(whats);
@@ -109,9 +111,9 @@ R&> FindAdvanceAny(R&& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatInd
 
 //! Последовательно удаляет все элементы из диапазона, подсчитывая количество элементов, равных x.
 template<class R, typename X> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	!Meta::IsCallable<X, Range::ValueTypeOf<R>>::_ &&
-	Meta::HasOpEquals<Range::ReturnValueTypeOf<R>, const X&>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	!Meta::IsCallable<X, ValueTypeOf<R>>::_ &&
+	Meta::HasOpEquals<ReturnValueTypeOf<R>, const X&>::_,
 size_t> CountAdvance(R&& range, const X& x)
 {
 	size_t result=0;
@@ -126,8 +128,8 @@ size_t> CountAdvance(R&& range, const X& x)
 
 //! Последовательно удаляет все элементы из диапазона, подсчитывая количество элементов, для которых выполнено условие pred.
 template<class R, typename P> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
 size_t> CountAdvance(R&& range, P pred)
 {
 	size_t result=0;
@@ -146,9 +148,9 @@ size_t> CountAdvance(R&& range, P pred)
 //! 3) будет достигнут конец диапазона.
 //! \return Возвращает количество пройденных элементов.
 template<class R, typename X> forceinline Meta::EnableIf<
-	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	!(Range::IsFiniteForwardRange<X>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<X>, Range::ValueTypeOf<R>>::_),
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	!(IsNonInfiniteForwardRange<X>::_ &&
+	Meta::IsConvertible<ValueTypeOf<X>, ValueTypeOf<R>>::_),
 size_t> CountUntilAdvance(R&& range, const X& valOrPred)
 {
 	size_t index=0;
@@ -161,9 +163,9 @@ size_t> CountUntilAdvance(R&& range, const X& valOrPred)
 //! \param whats[inout] Диапазон искомых элементов. Если элемент найден, начало диапазона whats смещается к найденному элементу.
 //! \return Возвращает количество пройденных элементов.
 template<class R, class Ws> forceinline Meta::EnableIf<
-	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsForwardRange<Ws>::_ && !Meta::IsConst<Ws>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<Ws>, Range::ValueTypeOf<R>>::_,
+	IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsForwardRange<Ws>::_ && !Meta::IsConst<Ws>::_ &&
+	Meta::IsConvertible<ValueTypeOf<Ws>, ValueTypeOf<R>>::_,
 size_t> CountUntilAdvanceAnyAdvance(R&& range, Ws&& whats)
 {
 	size_t index=0;
@@ -176,9 +178,9 @@ size_t> CountUntilAdvanceAnyAdvance(R&& range, Ws&& whats)
 //! \param whats[inout] Диапазон искомых элементов.
 //! \return Возвращает количество пройденных элементов.
 template<class R, class Ws> forceinline Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsForwardRange<Ws>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOfAs<Ws>, Range::ValueTypeOf<R>>::_,
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsForwardRange<Ws>::_ &&
+	Meta::IsConvertible<ValueTypeOfAs<Ws>, ValueTypeOf<R>>::_,
 size_t> CountUntilAdvanceAny(R&& range, Ws&& whats)
 {
 	size_t index = 0;
@@ -193,9 +195,9 @@ size_t> CountUntilAdvanceAny(R&& range, Ws&& whats)
 //! либо равный valueOrPred, если это не предикат, или не будет достигнут конец диапазона.
 //! Возвращает количество пройденных элементов.
 template<class R, typename X> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	(Meta::IsConvertible<X, Range::ValueTypeOfAs<R>>::_ ||
-		Meta::IsCallable<X, Range::ValueTypeOfAs<R>>::_),
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	(Meta::IsConvertible<X, ValueTypeOfAs<R>>::_ ||
+		Meta::IsCallable<X, ValueTypeOfAs<R>>::_),
 size_t> CountUntil(R&& range, const X& valueOrPred)
 {
 	auto rangeCopy = Range::Forward<R>(range);
@@ -208,9 +210,9 @@ size_t> CountUntil(R&& range, const X& valueOrPred)
 //! \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
 //! \returns null, если значение не найдено. Часть этого диапазона, начиная с позиции, на которой начинается первое вхождение what.
 template<class R, typename X> Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Meta::IsConvertible<X, Range::ValueTypeOfAs<R>>::_,
-Meta::RemoveConstRef<Range::AsRangeResult<R>>> Find(R&& range, const X& what, size_t* ioIndex=null)
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	Meta::IsConvertible<X, ValueTypeOfAs<R>>::_,
+Meta::RemoveConstRef<AsRangeResult<R>>> Find(R&& range, const X& what, size_t* ioIndex=null)
 {
 	auto result = Range::Forward<R>(range);
 	FindAdvance(result, what, ioIndex);
@@ -218,8 +220,8 @@ Meta::RemoveConstRef<Range::AsRangeResult<R>>> Find(R&& range, const X& what, si
 }
 
 template<class R, typename X> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Meta::IsConvertible<X, Range::ValueTypeOfAs<R>>::_,
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	Meta::IsConvertible<X, ValueTypeOfAs<R>>::_,
 bool> Contains(R&& range, const X& what)
 {return !Find(Range::Forward<R>(range), what).Empty();}
 
@@ -227,9 +229,9 @@ bool> Contains(R&& range, const X& what)
 //! \param pred Условие, которому должен удовлетворять искомый элемент.
 //! \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
 template<class R, typename P> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOfAs<R>>::_,
-Meta::RemoveConstRef<Range::AsRangeResult<R>>> Find(R&& range, P pred, size_t* ioIndex=null)
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	Meta::IsCallable<P, ValueTypeOfAs<R>>::_,
+Meta::RemoveConstRef<AsRangeResult<R>>> Find(R&& range, P pred, size_t* ioIndex=null)
 {
 	auto rangeCopy = Range::Forward<R>(range);
 	return FindAdvance(rangeCopy, pred, ioIndex);

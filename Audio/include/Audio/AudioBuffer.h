@@ -3,7 +3,7 @@
 #include "Platform/CppWarnings.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Math/Vector.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Audio/SoundTypes.h"
 
 namespace Intra { namespace Audio {

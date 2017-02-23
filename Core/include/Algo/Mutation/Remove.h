@@ -8,10 +8,12 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename IndexRange> Meta::EnableIf<
-	Range::IsBidirectionalRange<R>::_,
+	IsBidirectionalRange<R>::_,
 R> Remove(const R& rhs, const IndexRange& indices)
 {
 	if(indices.Empty()) return rhs;
@@ -39,9 +41,9 @@ R> Remove(const R& rhs, const IndexRange& indices)
 }
 
 template<typename R, typename P> Meta::EnableIf<
-	Range::IsBidirectionalRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
-R&&> RemoveRightAdvance(R&& range, P pred)
+	IsBidirectionalRange<R>::_ && !Meta::IsConst<R>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
+R&> RemoveRightAdvance(R& range, P pred)
 {
 	R dst = range, src = dst;
 	bool somethingRemoved = false;
@@ -58,13 +60,16 @@ R&&> RemoveRightAdvance(R&& range, P pred)
 		src.PopFirst();
 		dst.PopFirst();
 	}
-	return Meta::Forward<R>(range);
+	return range;
 }
 
 template<typename R, typename P> forceinline Meta::EnableIf<
-	Range::IsBidirectionalRange<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
-R> Remove(const R& range, P pred) {return RemoveRightAdvance(R(range), pred);}
+	IsAsBidirectionalRange<R>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
+AsRangeResult<R>> Remove(R&& range, P pred)
+{
+	auto rangeCopy = Range::Forward<R>(range);
+	return RemoveRightAdvance(rangeCopy, pred);}
 
 INTRA_WARNING_POP
 

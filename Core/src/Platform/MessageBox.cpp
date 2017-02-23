@@ -40,7 +40,7 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Qt)
 
 #include "Range/StringView.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 #include <QtGui/QMessageBox>
 
 namespace Intra {

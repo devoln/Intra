@@ -2,7 +2,7 @@
 
 #include "Algo/Op.h"
 #include "Range/Concepts.h"
-#include "Containers/ForwardDeclarations.h"
+#include "Container/ForwardDecls.h"
 #include "Algo/Mutation/Copy.h"
 
 namespace Intra { namespace Algo {
@@ -67,17 +67,25 @@ template<typename T, typename C> T* merge_sort_pass(T* up, T* down, size_t left,
 //! - Лучшее, среднее и худшее время: O(n Log n);
 //! - На «почти отсортированных» массивах работает столь же долго, как на хаотичных;
 //! - Требует дополнительной памяти по размеру исходного массива.
-template<typename ArrRange, typename C = Comparers::Function<Range::ValueTypeOf<ArrRange>>> Meta::EnableIf<
-	Range::IsArrayRange<ArrRange>::_ &&
-	Range::IsAssignableRange<ArrRange>::_
-> MergeSort(const ArrRange& range, C comparer = Op::Less<Range::ValueTypeOf<ArrRange>>)
+template<typename R, typename C=Comparers::Function<ValueTypeOf<R>>> Meta::EnableIf<
+	Range::IsArrayRange<R>::_ &&
+	Range::IsAssignableRange<R>::_
+> MergeSort(const R& range, C comparer=Op::Less<ValueTypeOf<R>>)
 {
-	Array<Range::ValueTypeOf<ArrRange>> temp;
+	Array<ValueTypeOf<R>> temp;
 	temp.SetCountUninitialized(range.Length());
 	auto resultPtr = D::merge_sort_pass(range.Data(), temp.Data(), 0, range.Length()-1, comparer);
 	if(resultPtr==range.Data()) return;
 	Algo::CopyTo(temp.AsConstRange(), range);
 }
+
+template<typename R, typename C=Comparers::Function<ValueTypeOfAs<R>>,
+typename AsR=AsRangeResult<R>> forceinline Meta::EnableIf<
+	!IsInputRange<R>::_ &&
+	Range::IsArrayRange<AsR>::_ &&
+	Range::IsAssignableRange<AsR>::_
+> MergeSort(R&& range, C comparer=Op::Less<ValueTypeOf<AsR>>)
+{MergeSort(Range::Forward<R>(range), comparer);}
 
 }}
 

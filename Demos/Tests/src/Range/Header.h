@@ -6,4 +6,4 @@ void RunComposedRangeTests();
 void RunPolymorphicRangeTests();
 void RunStreamRangeTests();
 void RunPolymorphicRangePerfTests(Intra::IO::Logger& logger);
-
+void RunRangeStlInteropTests();

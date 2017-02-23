@@ -22,6 +22,10 @@ Build/Release?*/
 *.psess
 *.vspx
 ipch/
+*.kernel.etl
+*.tmp.merged.etl
+logs*.html
+Tests*.exe
 
 
 # Windows image file caches

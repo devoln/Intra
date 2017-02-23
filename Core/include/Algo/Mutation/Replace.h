@@ -6,11 +6,13 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R> Meta::EnableIf<
-	Range::IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
-> ReplaceOneAdvance(R&& range, const Range::ValueTypeOf<R>& from, const Range::ValueTypeOf<R>& to)
+	IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
+> ReplaceOneAdvance(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	while(!range.Empty())
 	{
@@ -26,16 +28,16 @@ template<typename R> Meta::EnableIf<
 }
 
 template<typename R> Meta::EnableIf<
-	Range::IsAsAssignableRange<R>::_
-> ReplaceOne(R&& range, const Range::ValueTypeOf<R>& from, const Range::ValueTypeOf<R>& to)
+	IsAsAssignableRange<R>::_
+> ReplaceOne(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	auto rangeCopy = Range::Forward<R>(range);
 	ReplaceOneAdvance(rangeCopy, from, to);
 }
 
 template<typename R> Meta::EnableIf<
-	Range::IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
-> ReplaceAdvance(R&& range, const Range::ValueTypeOf<R>& from, const Range::ValueTypeOf<R>& to)
+	IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
+> ReplaceAdvance(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	while(!range.Empty())
 	{
@@ -46,8 +48,8 @@ template<typename R> Meta::EnableIf<
 }
 
 template<typename R> forceinline Meta::EnableIf<
-	Range::IsAsAssignableRange<R>::_ && !Meta::IsConst<R>::_
-> Replace(R&& range, const Range::ValueTypeOf<R>& from, const Range::ValueTypeOf<R>& to)
+	IsAsAssignableRange<R>::_ && !Meta::IsConst<R>::_
+> Replace(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	auto rangeCopy = Range::Forward<R>(range);
 	ReplaceAdvance(rangeCopy, from, to);

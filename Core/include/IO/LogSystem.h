@@ -3,7 +3,7 @@
 #include "Platform/CppFeatures.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "IO/DocumentWriter.h"
 
 namespace Intra { namespace IO {

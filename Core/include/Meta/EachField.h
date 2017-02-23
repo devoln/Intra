@@ -35,45 +35,13 @@ Tuple<ResultOf<Func, Arg0>>
 TransformEachField(const Tuple<Arg0>& args, Func&& f)
 {return TupleL(f(args.first));}
 
-template<typename Func, typename Arg0, typename Arg1> forceinline
-Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>>
-TransformEachField(const Tuple<Arg0, Arg1>& args, Func&& f)
-{
-	typedef Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>> ResultType;
-	return ResultType(f(args.first), TransformEachField(args.next, f));
-}
-
-template<typename Func, typename Arg0, typename Arg1, typename Arg2> forceinline
-Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>>
-TransformEachField(const Tuple<Arg0, Arg1, Arg2>& args, Func&& f)
-{
-	typedef Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>> ResultType;
-	return ResultType(f(args.first), TransformEachField(args.next, f));
-}
-
-template<typename Func, typename Arg0, typename Arg1, typename Arg2, typename Arg3> forceinline
-Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>, ResultOf<Func, Arg3>>
-TransformEachField(const Tuple<Arg0, Arg1, Arg2, Arg3>& args, Func&& f)
-{
-	typedef Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>, ResultOf<Func, Arg3>> ResultType;
-	return ResultType(f(args.first), TransformEachField(args.next, f));
-}
-
-template<typename Func, typename Arg0, typename Arg1, typename Arg2, typename Arg3, typename Arg4> forceinline
-Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>, ResultOf<Func, Arg3>, ResultOf<Func, Arg4>>
-TransformEachField(const Tuple<Arg0, Arg1, Arg2, Arg3, Arg4>& args, Func&& f)
-{
-	typedef Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Arg2>, ResultOf<Func, Arg3>, ResultOf<Func, Arg4>> ResultType;
-	return ResultType(f(args.first), TransformEachField(args.next, f));
-}
-
-/*template<typename Func, typename Arg0, typename Arg1, typename... Args> forceinline
+template<typename Func, typename Arg0, typename Arg1, typename... Args> forceinline
 Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Args>...>
 TransformEachField(const Tuple<Arg0, Arg1, Args...>& args, Func&& f)
 {
 	typedef Tuple<ResultOf<Func, Arg0>, ResultOf<Func, Arg1>, ResultOf<Func, Args>...> ResultType;
 	return ResultType(f(args.first), TransformEachField(args.next, f));
-}*/
+}
 
 
 template<typename F, typename K, typename V> forceinline
@@ -87,6 +55,12 @@ void ForEachField(const KeyValuePair<K,V>& pair, F&& f)
 template<typename F, typename K, typename V> forceinline
 KeyValuePair<ResultOf<F, K>, ResultOf<F, V>> TransformEachField(const KeyValuePair<K, V>& pair, F&& f)
 {return {f(pair.Key), f(pair.Value)};}
+
+
+template<typename F, typename P> forceinline Meta::EnableIf<
+	D::Has_first_second<P>::_
+> ForEachField(P&& pair, F&& f)
+{f(pair.first); f(pair.second);}
 
 
 namespace D {

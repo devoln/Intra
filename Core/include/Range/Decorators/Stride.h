@@ -40,29 +40,19 @@ template<typename R> struct RStride
 	forceinline ReturnValueTypeOf<R> First() const {return mOriginalRange.First();}
 	forceinline void PopFirst() {PopFirstN(mOriginalRange, mStep);}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasLength<U>::_,
-	ReturnValueTypeOf<R>> Last() const {return mOriginalRange.Last();}
+	forceinline ReturnValueTypeOf<R> Last() const {return mOriginalRange.Last();}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasPopLast<U>::_ && HasLength<U>::_
-	> PopLast() {PopLastN(mOriginalRange, mStep);}
+	forceinline void PopLast() {PopLastN(mOriginalRange, mStep);}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasIndex<U>::_,
-	ReturnValueTypeOf<R>> operator[](size_t index) const {return mOriginalRange[index*mStep];}
+	forceinline ReturnValueTypeOf<R> operator[](size_t index) const {return mOriginalRange[index*mStep];}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasSlicing<U>::_,
-	SliceTypeOf<R>> operator()(size_t start, size_t end) const
+	template<typename U=R> forceinline SliceTypeOf<U> operator()(size_t start, size_t end) const
 	{return mOriginalRange(start*mStep, end*mStep);}
 
 	forceinline bool operator==(const RStride& rhs) const
 	{return mStep==rhs.mStep && (mStep==0 || mOriginalRange==rhs.mOriginalRange);}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLength<U>::_ || IsInfiniteRange<U>::_,
-	size_t> Length() const {return (mOriginalRange.Length()+mStep-1)/mStep;}
+	forceinline size_t Length() const {return (mOriginalRange.Length()+mStep-1)/mStep;}
 
 	RStride Stride(size_t strideStep) const
 	{return RStride(mOriginalRange, mStep*strideStep);}
@@ -87,8 +77,8 @@ private:
 
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsConsumableRange<R>::_,
-RStride<Meta::RemoveReference<AsRangeResult<R>>>> Stride(R&& range, size_t step)
+	IsAsAccessibleRange<R>::_,
+RStride<Meta::RemoveConstRef<AsRangeResult<R&&>>>> Stride(R&& range, size_t step)
 {return {Range::Forward<R>(range), step};}
 
 INTRA_WARNING_POP

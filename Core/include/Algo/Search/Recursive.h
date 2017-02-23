@@ -11,86 +11,86 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename R,
-	typename OpeningBracketRange,
-	typename ClosingBracketRange,
-	typename StopTokenRange,
-	typename CommentBlockRangePairRange,
-	typename RecursiveCommentBlockRangePairRange> Meta::EnableIf<
-	Range::IsNonInfiniteForwardRange<R>::_ &&
-	Range::IsNonInfiniteForwardRange<OpeningBracketRange>::_ &&
-	Range::IsNonInfiniteForwardRange<ClosingBracketRange>::_ &&
-	Range::IsNonInfiniteForwardRange<StopTokenRange>::_ &&
-	Range::IsFiniteForwardRange<CommentBlockRangePairRange>::_ &&
-	Range::IsFiniteForwardRange<RecursiveCommentBlockRangePairRange>::_,
-Range::ResultOfTake<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioIndex,
-	OpeningBracketRange openingBracket, ClosingBracketRange closingBracket, StopTokenRange stopToken,
-	CommentBlockRangePairRange commentBlocks, RecursiveCommentBlockRangePairRange recursiveCommentBlocks)
+template<typename R, typename OB, typename CB, typename ST, typename CBP, typename RCBP> Meta::EnableIf<
+	IsNonInfiniteForwardRange<R>::_ &&
+	IsAsNonInfiniteForwardRange<OB>::_ &&
+	IsAsNonInfiniteForwardRange<CB>::_ &&
+	IsAsNonInfiniteForwardRange<ST>::_ &&
+	IsAsFiniteForwardRange<CBP>::_ &&
+	IsAsFiniteForwardRange<RCBP>::_,
+TakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioIndex,
+	const OB& openingBracket, const CB& closingBracket, const ST& stopToken,
+	const CBP& commentBlocks, const RCBP& recursiveCommentBlocks)
 {
-	typedef Range::ValueTypeOf<R> T;
+	using namespace Range;
+	using Range::Count;
+	typedef ValueTypeOf<R> T;
+
 	auto start = range;
 	size_t index = 0;
-	const size_t openingBracketLen = Range::Count(openingBracket);
-	const size_t closingBracketLen = Range::Count(closingBracket);
-	const size_t stopTokenLen = Range::Count(stopToken);
+	const size_t openingBracketLen = Count(openingBracket);
+	const size_t closingBracketLen = Count(closingBracket);
+	const size_t stopTokenLen = Count(stopToken);
 	while(!range.Empty() && counter!=0)
 	{
-		if(openingBracketLen!=0 && Algo::StartsWith(range, openingBracket))
+		if(openingBracketLen!=0 && StartsWith(range, openingBracket))
 		{
 			counter++;
-			Range::PopFirstExactly(range, openingBracketLen);
+			PopFirstExactly(range, openingBracketLen);
 			index += openingBracketLen;
 			continue;
 		}
 
-		if(closingBracketLen!=0 && Algo::StartsWith(range, closingBracket))
+		if(closingBracketLen!=0 && StartsWith(range, closingBracket))
 		{
 			counter--;
-			Range::PopFirstExactly(range, closingBracketLen);
+			PopFirstExactly(range, closingBracketLen);
 			index += closingBracketLen;
 			continue;
 		}
 
-		if(stopTokenLen!=0 && Algo::StartsWith(range, stopToken))
+		if(stopTokenLen!=0 && StartsWith(range, stopToken))
 		{
-			Range::PopFirstExactly(range, stopTokenLen);
+			PopFirstExactly(range, stopTokenLen);
 			index += stopTokenLen;
 			break;
 		}
 
 		bool commentFound = false;
-		for(auto cblocks = commentBlocks; !cblocks.Empty(); cblocks.PopFirst())
+		for(auto cblocks = AsRange(commentBlocks); !cblocks.Empty(); cblocks.PopFirst())
 		{
 			auto commentBlockBegin = Meta::Get<0>(cblocks.First());
 			auto commentBlockEnd = Meta::Get<1>(cblocks.First());
 			commentFound = Algo::StartsWith(range, commentBlockBegin);
 			if(!commentFound) continue;
 
-			const size_t commentBlockOpeningLen = Range::Count(commentBlockBegin);
-			const size_t commentBlockClosingLen = Range::Count(commentBlockEnd);
-			Range::PopFirstN(range, commentBlockOpeningLen);
+			const size_t commentBlockOpeningLen = Count(commentBlockBegin);
+			const size_t commentBlockClosingLen = Count(commentBlockEnd);
+			PopFirstN(range, commentBlockOpeningLen);
 			index += commentBlockOpeningLen;
-			Algo::FindAdvance(range, commentBlockEnd, &index);
-			Range::PopFirstN(range, commentBlockClosingLen);
+			FindAdvance(range, commentBlockEnd, &index);
+			PopFirstN(range, commentBlockClosingLen);
 			index += commentBlockClosingLen;
 			break;
 		}
 		if(commentFound) continue;
 
-		for(auto reccblocks = recursiveCommentBlocks; !reccblocks.Empty(); reccblocks.PopFirst())
+		for(auto reccblocks = AsRange(recursiveCommentBlocks); !reccblocks.Empty(); reccblocks.PopFirst())
 		{
 			auto commentBlockBegin = Meta::Get<0>(reccblocks.First());
 			auto commentBlockEnd = Meta::Get<1>(reccblocks.First());
-			commentFound = Algo::StartsWith(range, commentBlockBegin);
+			commentFound = StartsWith(range, commentBlockBegin);
 			if(!commentFound) continue;
 
 			int commentCounter = 1;
 			TakeRecursiveBlockAdvance(range, commentCounter, &index,
-				commentBlockBegin, commentBlockEnd, Range::NullRange<T>(),
-				Range::NullRange<Meta::Tuple<Range::NullRange<T>, Range::NullRange<T>>>(),
-				Range::NullRange<Meta::Tuple<Range::NullRange<T>, Range::NullRange<T>>>());
+				commentBlockBegin, commentBlockEnd, NullRange<T>(),
+				NullRange<Meta::Pair<NullRange<T>, NullRange<T>>>(),
+				NullRange<Meta::Pair<NullRange<T>, NullRange<T>>>());
 			break;
 		}
 		if(commentFound) continue;
@@ -98,7 +98,24 @@ Range::ResultOfTake<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t
 		range.PopFirst();
 	}
 	if(ioIndex!=null) *ioIndex += index;
-	return Range::Take(start, index);
+	return Take(start, index);
+}
+
+template<typename R, typename OB, typename CB, typename ST> Meta::EnableIf<
+	IsNonInfiniteForwardRange<R>::_ &&
+	IsAsNonInfiniteForwardRange<OB>::_ &&
+	IsAsNonInfiniteForwardRange<CB>::_ &&
+	IsAsNonInfiniteForwardRange<ST>::_,
+TakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioIndex,
+	const OB& openingBracket, const CB& closingBracket, const ST& stopToken)
+{
+	using namespace Range;
+	typedef ValueTypeOf<R> T;
+
+	return TakeRecursiveBlockAdvance(range, counter, ioIndex,
+		openingBracket, closingBracket, stopToken,
+		NullRange<Meta::Pair<NullRange<T>, NullRange<T>>>(),
+		NullRange<Meta::Pair<NullRange<T>, NullRange<T>>>());
 }
 
 INTRA_WARNING_POP

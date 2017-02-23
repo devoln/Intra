@@ -10,7 +10,9 @@ INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
+namespace Concepts {
 INTRA_DEFINE_EXPRESSION_CHECKER(HasTake, Meta::Val<T>().Take(size_t()));
+}
 
 template<typename R> struct RTake
 {
@@ -55,17 +57,13 @@ template<typename R> struct RTake
 	forceinline void PopFirst()
 	{mOriginalRange.PopFirst(); mLen--;}
 	
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLast<U>::_,
-	ReturnValueTypeOf<R>> Last() const
+	forceinline ReturnValueTypeOf<R> Last() const
 	{INTRA_ASSERT(!Empty()); return mOriginalRange[mLen-1];}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasPopLast<U>::_
-	> PopLast() {mLen--;}
+	forceinline void PopLast() {mLen--;}
 
 	template<typename U=R> forceinline Meta::EnableIf<
-		HasIndex<U>::_,
+		Range::HasIndex<U>::_,
 	ReturnValueTypeOf<R>> operator[](size_t index) const {return mOriginalRange[index];}
 
 
@@ -125,23 +123,28 @@ template<typename R, typename = Meta::EnableIf<
 >> forceinline decltype(Meta::Val<R>().Take(size_t())) Take(R&& range, size_t count)
 {return range.Take(count);}
 
+
+namespace Concepts {
+
 namespace D {
 
 INTRA_DEFINE_EXPRESSION_CHECKER(TakeCompiles, Range::Take(Meta::Val<T>(), size_t()));
 
-template<typename R, bool=TakeCompiles<R>::_> struct ResultOfTake
+template<typename R, bool=TakeCompiles<R>::_> struct TakeResult
 {typedef decltype(Take(Meta::Val<R>(), size_t())) _;};
 
-template<typename R> struct ResultOfTake<R, false>
+template<typename R> struct TakeResult<R, false>
 {typedef void _;};
 
 }
 
-template<typename R> using ResultOfTake = typename D::ResultOfTake<R>::_;
+template<typename R> using TakeResult = typename D::TakeResult<R>::_;
+
+}
 
 template<typename R> forceinline Meta::EnableIf<
 	!IsInputRange<R>::_ && IsAsInputRange<R>::_,
-ResultOfTake<AsRangeResult<R>>> Take(R&& range, size_t count)
+TakeResult<AsRangeResult<R>>> Take(R&& range, size_t count)
 {return Take(Range::Forward<R>(range), count);}
 
 INTRA_WARNING_POP

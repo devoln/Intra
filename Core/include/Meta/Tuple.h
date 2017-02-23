@@ -128,7 +128,7 @@ template<typename K, typename V> KeyValuePair<K, V> KVPairL(K&& key, V&& value)
 
 template<typename T> struct IsTuple: TypeFromValue<bool, false> {};
 template<typename... Args> struct IsTuple<Tuple<Args...>>: TypeFromValue<bool, true> {};
-template<typename T1, typename T2> struct IsTuple<Meta::Pair<T1, T2>>: TypeFromValue<bool, true> {};
+template<typename T1, typename T2> struct IsTuple<Pair<T1, T2>>: TypeFromValue<bool, true> {};
 template<typename K, typename V> struct IsTuple<KeyValuePair<K, V>>: TypeFromValue<bool, true> {};
 
 namespace D {
@@ -153,36 +153,34 @@ template<> struct Tuple_GetN_T<0>
 	T0& func(Tuple<T0, Args...>& t) {return t.first;}
 };
 
+INTRA_DEFINE_EXPRESSION_CHECKER(Has_first_second, (Val<T>().first, Val<T>().second));
+INTRA_DEFINE_EXPRESSION_CHECKER(HasKeyValue, (Val<T>().Key, Val<T>().Value));
+
 template<size_t I> struct Pair_Get_T;
 template<> struct Pair_Get_T<0>
 {
-	template<typename T1, typename T2> static forceinline
-	const T1& get(const Meta::Pair<T1, T2>& p) {return p.first;}
-	
-	template<typename T1, typename T2> static forceinline
-	T1& get(Meta::Pair<T1, T2>& p) {return p.first;}
+	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
+		Has_first_second<P>::_,
+	decltype(*&p.first)>
+	{return p.first;}
 
-	template<typename K, typename V> static forceinline
-	const K& get(const KeyValuePair<K, V>& p) {return p.Key;}
-	
-	template<typename K, typename V> static forceinline
-	K& get(KeyValuePair<K, V>& p) {return p.Key;}
+	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
+		HasKeyValue<P>::_,
+	decltype(*&p.Key)>
+	{return p.Key;}
 };
 
-template<size_t I> struct Pair_Get_T;
 template<> struct Pair_Get_T<1>
 {
-	template<typename T1, typename T2> static forceinline
-	const T1& get(const Meta::Pair<T1, T2>& p) {return p.second;}
-	
-	template<typename T1, typename T2> static forceinline
-	T1& get(Meta::Pair<T1, T2>& p) {return p.second;}
+	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
+		Has_first_second<P>::_,
+	decltype(*&p.second)>
+	{return p.second;}
 
-	template<typename K, typename V> static forceinline
-	const V& get(const KeyValuePair<K, V>& p) {return p.Value;}
-	
-	template<typename K, typename V> static forceinline
-	V& get(KeyValuePair<K, V>& p) {return p.Value;}
+	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
+		HasKeyValue<P>::_,
+	decltype(*&p.Value)>
+	{return p.Value;}
 };
 
 }
@@ -196,21 +194,12 @@ template<size_t N, typename... Types> forceinline
 const TypeListAt<N, TypeList<Types...>>& Get(const Tuple<Types...>& tuple)
 {return D::Tuple_GetN_T<N>::cfunc(tuple);}
 
-template<size_t N, typename T1, typename T2> forceinline
-Meta::SelectType<T1, T2, N==0>& Get(Meta::Pair<T1, T2>& p)
-{return D::Pair_Get_T<N>::get(p);}
 
-template<size_t N, typename T1, typename T2> forceinline
-const Meta::SelectType<T1, T2, N==0>& Get(const Meta::Pair<T1, T2>& p)
-{return D::Pair_Get_T<N>::get(p);}
+template<size_t N, typename P> forceinline auto Get(P&& p) -> EnableIf<
+	D::Has_first_second<P>::_ || D::HasKeyValue<P>::_,
+decltype(D::Pair_Get_T<N>::get(Meta::Forward<P>(p)))>
+{return D::Pair_Get_T<N>::get(Meta::Forward<P>(p));}
 
-template<size_t N, typename T1, typename T2> forceinline
-Meta::SelectType<T1, T2, N==0>& Get(KeyValuePair<T1, T2>& p)
-{return D::Pair_Get_T<N>::get(p);}
-
-template<size_t N, typename K, typename V> forceinline
-const Meta::SelectType<K, V, N==0>& Get(const KeyValuePair<K, V>& p)
-{return D::Pair_Get_T<N>::get(p);}
 
 
 template<size_t N, typename T> struct TupleElementEqualsFunctor

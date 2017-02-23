@@ -5,8 +5,8 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Audio/Synth/InstrumentLibrary.h"
 #include "Audio/Synth/Generators/DrumPhysicalModel.h"
 #include "Audio/Synth/GeneratorSynth.h"
-#include "Containers/Array.h"
-#include "Containers/Array2D.h"
+#include "Container/Sequential/Array.h"
+#include "Container/Utility/Array2D.h"
 
 #include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/SineExpSynth.h"

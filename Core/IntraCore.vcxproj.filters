@@ -13,14 +13,8 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Файлы исходного кода\Containers">
-      <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Data">
       <UniqueIdentifier>{68207ef6-4dd3-44d9-bacd-742de0b41161}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Containers">
-      <UniqueIdentifier>{ef2279d2-dc06-4758-b685-4391bbcd56d9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Data">
       <UniqueIdentifier>{7eaf3407-ccbe-44f6-b497-febbdc6bef79}</UniqueIdentifier>
@@ -175,6 +169,30 @@
     <Filter Include="Файлы исходного кода\Memory\Allocator\Basic">
       <UniqueIdentifier>{91a6d889-e4f3-4487-9cb5-8a416a423cac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Data\Serialization">
+      <UniqueIdentifier>{8ce6fd71-5f3f-4a1d-aaea-088a709eca04}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Algo\Raw">
+      <UniqueIdentifier>{f458f0f0-4a0f-4663-b20c-0bca4702b697}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Container">
+      <UniqueIdentifier>{67a2aac7-835a-46b7-9ca1-1e07b7b2dcc4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Container\Associative">
+      <UniqueIdentifier>{8c0097fa-43d3-4457-baa9-d067a411d143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Container\Sequential">
+      <UniqueIdentifier>{575c6701-7c2c-4c6b-bacf-011fcb4cb985}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Container\Utility">
+      <UniqueIdentifier>{ddc01ba1-094f-4785-873d-ad6b857b7c99}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Container\Operations">
+      <UniqueIdentifier>{50ae5bde-be45-4742-914b-9e8e37c8bcc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Container">
+      <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Memory\Allocator.cpp">
@@ -200,9 +218,6 @@
     </ClCompile>
     <ClCompile Include="src\Math\Shapes.cpp">
       <Filter>Файлы исходного кода\Math</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Data\TextSerialization.cpp">
-      <Filter>Файлы исходного кода\Data</Filter>
     </ClCompile>
     <ClCompile Include="src\Data\BinarySerialization.cpp">
       <Filter>Файлы исходного кода\Data</Filter>
@@ -297,14 +312,14 @@
     <ClCompile Include="src\Memory\Allocator\Basic\Stack.cpp">
       <Filter>Файлы исходного кода\Memory\Allocator\Basic</Filter>
     </ClCompile>
+    <ClCompile Include="src\Data\Serialization\LanguageParams.cpp">
+      <Filter>Файлы исходного кода\Data\Serialization</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Data\Serialization\TextSerializerParams.cpp">
+      <Filter>Файлы исходного кода\Data\Serialization</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\Containers\Array.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\Array2D.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
     <ClInclude Include="include\Utils\Callback.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
@@ -314,9 +329,6 @@
     <ClInclude Include="include\Platform\Endianess.h">
       <Filter>Заголовочные файлы\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="include\Utils\Event.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="include\IO\File.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
@@ -325,9 +337,6 @@
     </ClInclude>
     <ClInclude Include="include\Platform\HardwareInfo.h">
       <Filter>Заголовочные файлы\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\HashMap.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Math\MathRanges.h">
       <Filter>Заголовочные файлы\Math</Filter>
@@ -340,12 +349,6 @@
     </ClInclude>
     <ClInclude Include="include\IO\LogSystem.h">
       <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\LinearMap.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\List.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Meta\Mixins.h">
       <Filter>Заголовочные файлы\Meta</Filter>
@@ -371,14 +374,8 @@
     <ClInclude Include="include\Math\Random.h">
       <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
-    <ClInclude Include="include\Containers\RangeAllocator.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
     <ClInclude Include="include\Data\Reflection.h">
       <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\Set.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Math\Simd.h">
       <Filter>Заголовочные файлы\Math</Filter>
@@ -386,26 +383,8 @@
     <ClInclude Include="include\Math\Shapes.h">
       <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
-    <ClInclude Include="include\Containers\SparseArray.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\SparseHandledArray.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
     <ClInclude Include="include\IO\Stream.h">
       <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="include\IO\StaticStream.h">
-      <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\String.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\StructureOfArrays.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\Tree.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Meta\Tuple.h">
       <Filter>Заголовочные файлы\Meta</Filter>
@@ -674,9 +653,6 @@
     <ClInclude Include="include\Algo.hh">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="include\Containers.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="include\Data.hh">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
@@ -718,9 +694,6 @@
     </ClInclude>
     <ClInclude Include="include\Thread\Thread.h">
       <Filter>Заголовочные файлы\Thread</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\ForwardDeclarations.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Algo\Hash.hh">
       <Filter>Заголовочные файлы\Algo</Filter>
@@ -857,13 +830,7 @@
     <ClInclude Include="include\Range\Polymorphic\FiniteRandomAccessRange.h">
       <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
     </ClInclude>
-    <ClInclude Include="include\Containers\IndexAllocator.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
-    </ClInclude>
     <ClInclude Include="include\Data\Serialization\BinarySerializer.h">
-      <Filter>Заголовочные файлы\Data\Serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Data\Serialization\DynamicSerializer.h">
       <Filter>Заголовочные файлы\Data\Serialization</Filter>
     </ClInclude>
     <ClInclude Include="include\Data\Serialization\TextSerializer.h">
@@ -883,9 +850,6 @@
     </ClInclude>
     <ClInclude Include="include\Data\Serialization.hh">
       <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Containers\Operations.h">
-      <Filter>Заголовочные файлы\Containers</Filter>
     </ClInclude>
     <ClInclude Include="include\Algo\String\MaxLengthOfToString.h">
       <Filter>Заголовочные файлы\Algo\String</Filter>
@@ -938,15 +902,120 @@
     <ClInclude Include="include\Memory\Allocator\System.h">
       <Filter>Заголовочные файлы\Memory\Allocator</Filter>
     </ClInclude>
+    <ClInclude Include="include\Data\Serialization\LanguageParams.h">
+      <Filter>Заголовочные файлы\Data\Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Output\OutputArrayRange.h">
+      <Filter>Заголовочные файлы\Range\Output</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algo\Raw\Read.h">
+      <Filter>Заголовочные файлы\Algo\Raw</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algo\Raw\Write.h">
+      <Filter>Заголовочные файлы\Algo\Raw</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\ByLine.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\Join.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\Chunks.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\Buffered.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Associative.hh">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\ForwardDecls.h">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential.hh">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility.hh">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Associative\HashMap.h">
+      <Filter>Заголовочные файлы\Container\Associative</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Associative\LinearMap.h">
+      <Filter>Заголовочные файлы\Container\Associative</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Associative\LinearSet.h">
+      <Filter>Заголовочные файлы\Container\Associative</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\Array2D.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\IndexAllocator.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\IntervalAllocator.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\SparseArray.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\SparseHandledArray.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\Tree.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\Array.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\List.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\String.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\StructureOfArrays.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Operations\Append.h">
+      <Filter>Заголовочные файлы\Container\Operations</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Operations.hh">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Concepts.h">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Operations\Extension.h">
+      <Filter>Заголовочные файлы\Container\Operations</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Operations\Comparison.h">
+      <Filter>Заголовочные файлы\Container\Operations</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Operations\Info.h">
+      <Filter>Заголовочные файлы\Container\Operations</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Delegate.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Callable.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\ExtArray.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Sequential\StringFormatter.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">
       <Filter>natvis</Filter>
     </None>
     <None Include="natvis\Data.natvis">
-      <Filter>natvis</Filter>
-    </None>
-    <None Include="natvis\Graphics.natvis">
       <Filter>natvis</Filter>
     </None>
     <None Include="natvis\Math.natvis">

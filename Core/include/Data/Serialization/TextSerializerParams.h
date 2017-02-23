@@ -7,6 +7,8 @@ namespace Intra { namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+//! Структура, определяющая способ форматирования генерируемого при сериализации текста.
+//! Корректно заполненная структура не влияет на результат десериализации полученного текста.
 struct TextSerializerParams
 {
 	typedef flag8 TypeFlags;
@@ -20,7 +22,7 @@ struct TextSerializerParams
 	bool UseStructInstanceTypeName;
 
 	//! В определении экземпляра структуры указывать имена присваиваемых полей, а не просто перечисление значений.
-	//! Если в DataLanguageParams выставлено RequireFieldAssignments, то это поле игнорируется и считается равным true
+	//! Если в LanguageParams выставлено RequireFieldAssignments, то это поле игнорируется и считается равным true
 	bool FieldAssignments;
 
 	//! Использовать пробелы вокруг знака присваивания
@@ -40,70 +42,6 @@ struct TextSerializerParams
 
 	INTRA_ADD_REFLECTION(TextSerializerParams, UseStructInstanceTypeName, FieldAssignments,\
 		UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding);
-};
-
-struct DataLanguageParams
-{
-	static const DataLanguageParams CStructInitializer, DStructInitializer, JsonLikeNoQuotes, Json, Xml;
-
-	//! Всегда сериализовать структуры в виде присваиваний с именами полей и требовать этого при десериализации
-	bool RequireFieldAssignments;
-
-	//! Приписать название поля после значения
-	bool AddFieldNameAfterAssignment;
-	
-	//! Символ в качестве символа присваивания поля
-	StringView LeftAssignmentOperator, RightAssignmentOperator;
-	
-	//! Разделитель между полями
-	StringView TupleFieldSeparator, FieldSeparator;
-
-	//! Во что обрамляются начало и конец имени поля до присваивания
-	StringView LeftFieldNameBeginQuote, LeftFieldNameEndQuote;
-
-	//! Во что обрамляются начало и конец имени поля после присваивания
-	StringView RightFieldNameBeginQuote, RightFieldNameEndQuote;
-	
-	//! Символы в качестве скобок, между которыми будут перечислены поля кортежа
-	StringView TupleOpen, TupleClose;
-
-	//! Символы в качестве скобок, между которыми будут перечислены присваиваемые поля структуры
-	StringView StructInstanceOpen, StructInstanceClose;
-	
-	//! Начало любого однострочного комментария
-	StringView OneLineCommentBegin;
-	
-	//! Начало и конец многострочного комментария
-	StringView MultiLineCommentBegin, MultiLineCommentEnd;
-	
-	//! Кавычки, в которые заключаются строки
-	StringView StringQuote;
-
-	//! Кавычки, в которые может быть заключён символ
-	StringView CharQuotes;
-
-	//! Символы, обозначающие начало и конец массива
-	StringView ArrayOpen, ArrayClose;
-
-	//! Разделитель элементов массива
-	StringView ArrayElementSeparator;
-
-	//! Начало и конец многострочной строки
-	StringView MultiLineStringBegin, MultiLineStringEnd;
-
-	//! Булевые значения
-	StringView FalseTrueNames[2];
-
-	//! Символ в качестве разделителя в десятичной дроби
-	char DecimalSeparator;
-
-	INTRA_ADD_REFLECTION(DataLanguageParams, RequireFieldAssignments, AddFieldNameAfterAssignment, \
-		LeftAssignmentOperator, RightAssignmentOperator, TupleFieldSeparator, FieldSeparator, \
-		LeftFieldNameBeginQuote, LeftFieldNameEndQuote, RightFieldNameBeginQuote, RightFieldNameEndQuote,\
-		TupleOpen, TupleClose, StructInstanceOpen, StructInstanceClose, OneLineCommentBegin, \
-		MultiLineCommentBegin, MultiLineCommentEnd, StringQuote, CharQuotes, \
-		ArrayOpen, ArrayClose, ArrayElementSeparator, MultiLineStringBegin, MultiLineStringEnd, \
-		FalseTrueNames, DecimalSeparator);
 };
 
 INTRA_WARNING_POP

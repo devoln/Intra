@@ -4,7 +4,6 @@
 #include "Platform/CppFeatures.h"
 #include "Meta/Type.h"
 #include "Range/AsRange.h"
-#include "Containers/Operations.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -17,20 +16,20 @@ template<typename C> struct RLastAppender
 {
 	C& Dst;
 
-	typedef Range::ValueTypeOf<C> value_type;
+	typedef typename C::value_type value_type;
 
-	void Put(value_type&& v) {Container::AddLast(Dst, Meta::Move(v));}
-	void Put(const value_type& v) {Container::AddLast(Dst, v);}
+	void Put(value_type&& v) {Dst.push_back(Meta::Move(v));}
+	void Put(const value_type& v) {Dst.push_back(v);}
 };
 
 template<typename C> struct RFirstAppender
 {
 	C& Dst;
 
-	typedef Range::ValueTypeOf<C> value_type;
+	typedef typename C::value_type value_type;
 
-	void Put(value_type&& v) {Container::AddFirst(Dst, Meta::Move(v));}
-	void Put(const value_type& v) {Container::AddFirst(Dst, v);}
+	void Put(value_type&& v) {Dst.push_front(Meta::Move(v));}
+	void Put(const value_type& v) {Dst.push_front(v);}
 };
 
 template<typename C> forceinline RLastAppender<C> LastAppender(C& container) {return RLastAppender<C>{container};}

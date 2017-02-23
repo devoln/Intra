@@ -1,7 +1,7 @@
 ﻿#include "Math/LinAl.h"
 #include "Data/ValueType.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/HashMap.h"
+#include "Container/Associative/HashMap.h"
 
 
 namespace Intra {

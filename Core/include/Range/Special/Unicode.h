@@ -4,7 +4,7 @@
 #include "Platform/CppFeatures.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/ForwardDeclarations.h"
+#include "Container/ForwardDecls.h"
 
 namespace Intra {
 

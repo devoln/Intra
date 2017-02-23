@@ -407,8 +407,9 @@ template<typename T, typename Allocator> ArrayRange<T> AllocateRange(
 
 template<typename T, typename Allocator> void FreeRangeUninitialized(Allocator& allocator, ArrayRange<T> range)
 {
+	(void)allocator;
 	if(range==null) return;
-	allocator.Free(range.Begin, range.Length());
+	allocator.Free(range.Begin, range.Length()*sizeof(T));
 }
 
 template<typename T, typename Allocator> void FreeRange(Allocator& allocator, ArrayRange<T> range)

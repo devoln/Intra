@@ -1,9 +1,10 @@
 ﻿#pragma once
 
+#include "Platform/Compatibility.h"
 #include "Platform/CppFeatures.h"
 #include "Platform/FundamentalTypes.h"
 
-#ifdef _MSC_VER
+#if(defined(_MSC_VER) && INTRA_AVOID_STD_HEADERS)
 
 #ifndef _INITIALIZER_LIST_
 #define _INITIALIZER_LIST_

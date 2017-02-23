@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
-#include "Containers/ForwardDeclarations.h"
+#include "Container/ForwardDecls.h"
 
 namespace Intra {
 

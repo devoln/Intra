@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Audio/Music.h"
-#include "Containers/HashMap.h"
+#include "Container/Associative/HashMap.h"
 
 namespace Intra { namespace Audio {
 

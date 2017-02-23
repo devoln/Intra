@@ -44,35 +44,25 @@ template<typename ValueRangeType, typename IndexRangeType> struct RIndexed
 		IndexRange.PopFirst();
 	}
 
-	template<typename U=IndexRangeType> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasIndex<ValueRangeType>::_,
-	ReturnValueTypeOf<ValueRangeType>> Last() const
+	forceinline ReturnValueTypeOf<ValueRangeType> Last() const
 	{
 		INTRA_ASSERT(!Empty());
 		return ValueRange[IndexRange.Last()];
 	}
 
-	template<typename U=IndexRangeType> forceinline Meta::EnableIf<
-		HasPopLast<U>::_
-	> PopLast()
+	forceinline void PopLast()
 	{
 		INTRA_ASSERT(!Empty());
 		IndexRange.PopLast();
 	}
 
-	template<typename U=IndexRangeType> forceinline Meta::EnableIf<
-		HasIndex<U>::_ && HasIndex<ValueRangeType>::_,
-	ReturnValueTypeOf<ValueRangeType>> operator[](size_t index) const
+	forceinline ReturnValueTypeOf<ValueRangeType> operator[](size_t index) const
 	{return ValueRange[IndexRange[index]];}
 
-	template<typename U=IndexRangeType> forceinline Meta::EnableIf<
-		IsRandomAccessRange<U>::_,
-	RIndexed> operator()(size_t start, size_t end) const
+	forceinline RIndexed operator()(size_t start, size_t end) const
 	{return RIndexed(ValueRange, IndexRange(start, end));}
 
-	template<typename U=IndexRangeType> forceinline Meta::EnableIf<
-		HasLength<U>::_,
-	size_t> Length() const {return IndexRange.Length();}
+	forceinline size_t Length() const {return IndexRange.Length();}
 
 
 	forceinline bool operator==(const RIndexed& rhs) const

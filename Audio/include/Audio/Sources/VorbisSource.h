@@ -2,7 +2,7 @@
 
 #include "Platform/PlatformInfo.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Audio/AudioSource.h"
 
 namespace Intra { namespace Audio { namespace Sources {

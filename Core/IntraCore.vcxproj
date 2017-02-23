@@ -226,7 +226,6 @@
       <EnablePREfast>false</EnablePREfast>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <AdditionalOptions>/Zm150 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -269,7 +268,7 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
-      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zm10 %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
@@ -350,7 +349,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_MINEXE=3;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_AVOID_STD_HEADERS=0;INTRA_DBGHELP;INTRA_MINEXE=3;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -492,7 +491,8 @@
     <ClCompile Include="src\Data\BinarySerialization.cpp" />
     <ClCompile Include="src\Data\Object.cpp" />
     <ClCompile Include="src\Data\Reflection.cpp" />
-    <ClCompile Include="src\Data\TextSerialization.cpp" />
+    <ClCompile Include="src\Data\Serialization\LanguageParams.cpp" />
+    <ClCompile Include="src\Data\Serialization\TextSerializerParams.cpp" />
     <ClCompile Include="src\Data\ValueType.cpp" />
     <ClCompile Include="src\Data\Variable.cpp" />
     <ClCompile Include="src\IntraCore.cc">
@@ -560,6 +560,8 @@
     <ClInclude Include="include\Algo\Mutation\ReplaceSubrange.h" />
     <ClInclude Include="include\Algo\Mutation\Transform.h" />
     <ClInclude Include="include\Algo\Op.h" />
+    <ClInclude Include="include\Algo\Raw\Read.h" />
+    <ClInclude Include="include\Algo\Raw\Write.h" />
     <ClInclude Include="include\Algo\Reduction.h" />
     <ClInclude Include="include\Algo\Search.hh" />
     <ClInclude Include="include\Algo\Search\Binary.h" />
@@ -586,29 +588,39 @@
     <ClInclude Include="include\Algo\String\Spaces.h" />
     <ClInclude Include="include\Algo\String\ToString.h" />
     <ClInclude Include="include\Algo\String\ToStringArithmetic.h" />
-    <ClInclude Include="include\Containers.hh" />
-    <ClInclude Include="include\Containers\Array.h" />
-    <ClInclude Include="include\Containers\Array2D.h" />
-    <ClInclude Include="include\Containers\ForwardDeclarations.h" />
-    <ClInclude Include="include\Containers\HashMap.h" />
-    <ClInclude Include="include\Containers\IndexAllocator.h" />
-    <ClInclude Include="include\Containers\List.h" />
-    <ClInclude Include="include\Containers\LinearMap.h" />
-    <ClInclude Include="include\Containers\Operations.h" />
-    <ClInclude Include="include\Containers\RangeAllocator.h" />
-    <ClInclude Include="include\Containers\Set.h" />
-    <ClInclude Include="include\Containers\SparseArray.h" />
-    <ClInclude Include="include\Containers\SparseHandledArray.h" />
-    <ClInclude Include="include\Containers\String.h" />
-    <ClInclude Include="include\Containers\StructureOfArrays.h" />
-    <ClInclude Include="include\Containers\Tree.h" />
+    <ClInclude Include="include\Container.hh" />
+    <ClInclude Include="include\Container\Associative.hh" />
+    <ClInclude Include="include\Container\Associative\HashMap.h" />
+    <ClInclude Include="include\Container\Associative\LinearMap.h" />
+    <ClInclude Include="include\Container\Associative\LinearSet.h" />
+    <ClInclude Include="include\Container\Concepts.h" />
+    <ClInclude Include="include\Container\ForwardDecls.h" />
+    <ClInclude Include="include\Container\Operations.hh" />
+    <ClInclude Include="include\Container\Operations\Append.h" />
+    <ClInclude Include="include\Container\Operations\Comparison.h" />
+    <ClInclude Include="include\Container\Operations\Extension.h" />
+    <ClInclude Include="include\Container\Operations\Info.h" />
+    <ClInclude Include="include\Container\Sequential.hh" />
+    <ClInclude Include="include\Container\Sequential\Array.h" />
+    <ClInclude Include="include\Container\Sequential\ExtArray.h" />
+    <ClInclude Include="include\Container\Sequential\List.h" />
+    <ClInclude Include="include\Container\Sequential\String.h" />
+    <ClInclude Include="include\Container\Sequential\StringFormatter.h" />
+    <ClInclude Include="include\Container\Sequential\StructureOfArrays.h" />
+    <ClInclude Include="include\Container\Utility.hh" />
+    <ClInclude Include="include\Container\Utility\Array2D.h" />
+    <ClInclude Include="include\Container\Utility\IndexAllocator.h" />
+    <ClInclude Include="include\Container\Utility\IntervalAllocator.h" />
+    <ClInclude Include="include\Container\Utility\SparseArray.h" />
+    <ClInclude Include="include\Container\Utility\SparseHandledArray.h" />
+    <ClInclude Include="include\Container\Utility\Tree.h" />
     <ClInclude Include="include\Data.hh" />
     <ClInclude Include="include\Data\Object.h" />
     <ClInclude Include="include\Data\Reflection.h" />
     <ClInclude Include="include\Data\Serialization.hh" />
     <ClInclude Include="include\Data\Serialization\BinaryDeserializer.h" />
     <ClInclude Include="include\Data\Serialization\BinarySerializer.h" />
-    <ClInclude Include="include\Data\Serialization\DynamicSerializer.h" />
+    <ClInclude Include="include\Data\Serialization\LanguageParams.h" />
     <ClInclude Include="include\Data\Serialization\TextDeserializer.h" />
     <ClInclude Include="include\Data\Serialization\TextSerializer.h" />
     <ClInclude Include="include\Data\Serialization\TextSerializerParams.h" />
@@ -620,7 +632,6 @@
     <ClInclude Include="include\IO\File.h" />
     <ClInclude Include="include\IO\LogSystem.h" />
     <ClInclude Include="include\IO\Networking.h" />
-    <ClInclude Include="include\IO\StaticStream.h" />
     <ClInclude Include="include\IO\Stream.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
@@ -696,8 +707,12 @@
     <ClInclude Include="include\Range\Compositors\Zip.h" />
     <ClInclude Include="include\Range\Concepts.h" />
     <ClInclude Include="include\Range\Decorators.hh" />
+    <ClInclude Include="include\Range\Decorators\Buffered.h" />
+    <ClInclude Include="include\Range\Decorators\Chunks.h" />
+    <ClInclude Include="include\Range\Decorators\ByLine.h" />
     <ClInclude Include="include\Range\Decorators\Cycle.h" />
     <ClInclude Include="include\Range\Decorators\Filter.h" />
+    <ClInclude Include="include\Range\Decorators\Join.h" />
     <ClInclude Include="include\Range\Decorators\Map.h" />
     <ClInclude Include="include\Range\Decorators\Retro.h" />
     <ClInclude Include="include\Range\Decorators\Split.h" />
@@ -724,6 +739,7 @@
     <ClInclude Include="include\Range\Iterator\RangeIterator.h" />
     <ClInclude Include="include\Range\Operations.h" />
     <ClInclude Include="include\Range\Output\Inserter.h" />
+    <ClInclude Include="include\Range\Output\OutputArrayRange.h" />
     <ClInclude Include="include\Range\Polymorphic.hh" />
     <ClInclude Include="include\Range\Polymorphic\BidirectionalRange.h" />
     <ClInclude Include="include\Range\Polymorphic\FiniteForwardRange.h" />
@@ -747,8 +763,9 @@
     <ClInclude Include="include\Thread\Thread.h" />
     <ClInclude Include="include\Utils.hh" />
     <ClInclude Include="include\Utils\AsciiSet.h" />
+    <ClInclude Include="include\Utils\Callable.h" />
     <ClInclude Include="include\Utils\Callback.h" />
-    <ClInclude Include="include\Utils\Event.h" />
+    <ClInclude Include="include\Utils\Delegate.h" />
     <ClInclude Include="include\Utils\MiscTypes.h" />
     <ClInclude Include="include\Utils\Optional.h" />
   </ItemGroup>
@@ -756,15 +773,20 @@
     <None Include="include\Range\Special\SparseRange.inl" />
     <None Include="natvis\Core.natvis" />
     <None Include="natvis\Data.natvis" />
-    <None Include="natvis\Graphics.natvis" />
     <None Include="natvis\Math.natvis" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="natvis\Containers.natvis" />
     <Natvis Include="natvis\Meta.natvis" />
-    <Natvis Include="natvis\Range.natvis" />
-    <Natvis Include="natvis\RangeConstruction.natvis" />
-    <Natvis Include="natvis\RangeIteration.natvis" />
+    <Natvis Include="natvis\Range.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
+    <Natvis Include="natvis\RangeConstruction.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
+    <Natvis Include="natvis\RangeIteration.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
     <Natvis Include="natvis\RangePolymorphic.natvis" />
     <Natvis Include="natvis\Utils.natvis" />
   </ItemGroup>

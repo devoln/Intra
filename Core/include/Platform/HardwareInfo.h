@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Data/Reflection.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 
 namespace Intra {
 

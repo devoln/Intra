@@ -27,7 +27,7 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 		Meta::IsCallable<X, ValueTypeOf<R>>::_) ||
 	(IsForwardRange<X>::_ && !IsInfiniteRange<X>::_ &&
 		Meta::IsConvertible<ValueTypeOf<X>, ValueTypeOf<R>>::_)),
-ResultOfTake<R>> TakeUntilAdvance(R&& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
+TakeResult<R>> TakeUntilAdvance(R&& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {
 	auto rangeCopy = range;
 	size_t index = Algo::CountUntilAdvance(range, valueOrPredOrSubrange);
@@ -48,7 +48,7 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 		Meta::IsCallable<X, ValueTypeOf<R>>::_) ||
 	(IsForwardRange<X>::_ && !IsInfiniteRange<X>::_ &&
 		Meta::IsConvertible<ValueTypeOf<X>, ValueTypeOf<R>>::_)),
-ResultOfTake<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
+TakeResult<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {return TakeUntilAdvance(R(range), valueOrPredOrSubrange, ioIndex);}
 
 INTRA_WARNING_POP

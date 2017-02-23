@@ -36,7 +36,8 @@ template<typename R0, typename R1, typename... Rs> struct AllHasLength<R0, R1, R
 
 template<typename R0> struct AllHasLength<R0>: Meta::TypeFromValue<bool,
 	HasLength<R0>::_
-> {}; 
+> {};
+
 
 
 struct Fronter

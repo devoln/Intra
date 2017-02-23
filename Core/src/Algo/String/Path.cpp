@@ -3,7 +3,7 @@
 #include "Range/Decorators/Retro.h"
 #include "Range/Generators/StringView.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
 

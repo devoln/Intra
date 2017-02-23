@@ -89,10 +89,10 @@ template<typename R, typename X> Meta::EnableIf<
 	Algo::ToString(dst, Meta::MakeUnsignedType<X>(number));
 }
 
-template<typename R, typename X> Meta::EnableIf<
+template<typename R, typename X, typename=Meta::EnableIf<
 	Range::IsOutputCharRange<R>::_ &&
 	Meta::IsUnsignedIntegralType<X>::_
-> ToStringHexInt(R&& dst, X number)
+>> void ToStringHexInt(R&& dst, X number)
 {
 	intptr digitPos = intptr(sizeof(X)*2);
 	while(digitPos --> 0)

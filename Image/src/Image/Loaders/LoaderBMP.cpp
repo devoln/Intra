@@ -1,6 +1,6 @@
 ﻿#ifndef INTRA_NO_BMP_LOADER
 
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Image/Loaders/LoaderBMP.h"
 #include "IO/Stream.h"
 #include "Image/FormatConversion.h"
@@ -118,7 +118,7 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		{
 			ReadPixelDataBlock(stream, size,
 				ImageFormat::RGB5A1, result.Info.Format, false, true,
-				4, result.LineAlignment, result.Data());
+				4, result.LineAlignment, result.Data);
 			return result;
 		}
 
@@ -126,7 +126,7 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		{
 			ReadPixelDataBlock(stream, size,
 				ImageFormat::RGB8, result.Info.Format, false, true,
-				4, result.LineAlignment, result.Data());
+				4, result.LineAlignment, result.Data);
 			return result;
 		}
 
@@ -134,12 +134,13 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		{
 			ReadPixelDataBlock(stream, size,
 				ImageFormat::RGBA8, result.Info.Format, false, true,
-				4, result.LineAlignment, result.Data());
+				4, result.LineAlignment, result.Data);
 			return result;
 		}
 
-		ReadPalettedPixelDataBlock(stream, ArrayRange<const byte>(reinterpret_cast<byte*>(colorTable), sizeof(colorTable)),
-			bmpHdr.bitCount, size, result.Info.Format, true, 4, result.LineAlignment, result.Data());
+		ArrayRange<const byte> paletteBytes(reinterpret_cast<byte*>(colorTable), sizeof(colorTable));
+		ReadPalettedPixelDataBlock(stream, paletteBytes, bmpHdr.bitCount,
+			size, result.Info.Format, true, 4, result.LineAlignment, result.Data);
 		return result;
 	}
 

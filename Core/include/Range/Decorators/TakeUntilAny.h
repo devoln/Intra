@@ -24,7 +24,7 @@ namespace Intra { namespace Range {
 template<typename R, typename RWs> Meta::EnableIf<
 	IsFiniteForwardRange<RWs>::_ && !Meta::IsConst<R>::_ &&
 	IsFiniteForwardRange<ValueTypeOf<RWs>>::_ && !Meta::IsConst<RWs>::_,
-ResultOfTake<R>> TakeUntilAdvanceAnyAdvance(R&& range,
+TakeResult<R>> TakeUntilAdvanceAnyAdvance(R&& range,
 	RWs&& subranges, size_t* ioIndex, size_t* oSubrangeIndex=null)
 {
 	auto rangeCopy = range;
@@ -41,7 +41,7 @@ template<class R, class Ws> forceinline Meta::EnableIf<
 	IsNonInfiniteForwardRange<R>::_ && !Meta::IsConst<R>::_ &&
 	IsAsNonInfiniteForwardRange<Ws>::_ &&
 	Meta::IsConvertible<ValueTypeOfAs<Ws>, ValueTypeOf<R>>::_,
-ResultOfTake<R>> TakeUntilAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
+TakeResult<R>> TakeUntilAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	auto rangeCopy = range;
 	size_t index = Algo::CountUntilAdvanceAny(range, Range::Forward<Ws>(whats), oWhatIndex);
@@ -57,7 +57,7 @@ template<class R, class Ws> forceinline Meta::EnableIf<
 	IsAsNonInfiniteForwardRange<R>::_ &&
 	IsAsNonInfiniteForwardRange<Ws>::_ &&
 	Meta::IsConvertible<ValueTypeOfAs<Ws>, ValueTypeOfAs<R>>::_,
-ResultOfTake<R>> TakeUntilAny(R&& range, Ws&& whats,
+TakeResult<R>> TakeUntilAny(R&& range, Ws&& whats,
 	size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	size_t index = Algo::CountUntilAny(Range::Forward<R>(range), Range::Forward<Ws>(whats), oWhatIndex);
@@ -79,7 +79,7 @@ template<class R, class RWs> Meta::EnableIf<
 	IsNonInfiniteForwardRange<R>::_ && !Meta::IsConst<R>::_ &&
 	IsAsNonInfiniteForwardRange<RWs>::_ &&
 	IsAsNonInfiniteForwardRange<ValueTypeOfAs<RWs>>::_,
-ResultOfTake<R>> TakeUntilAdvanceAny(R& range,
+TakeResult<R>> TakeUntilAdvanceAny(R& range,
 	RWs&& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
 {
 	auto rangeCopy = range;
@@ -99,7 +99,7 @@ template<class R, class RWs> Meta::EnableIf<
 	IsAsNonInfiniteForwardRange<R>::_ &&
 	IsNonInfiniteForwardRange<RWs>::_ && !Meta::IsConst<RWs>::_ &&
 	IsNonInfiniteForwardRange<ValueTypeOf<RWs>>::_,
-ResultOfTake<R>> TakeUntilAnyAdvance(R&& range,
+TakeResult<R>> TakeUntilAnyAdvance(R&& range,
 	RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
 {
 	size_t index = Algo::CountUntilAnyAdvance(Range::AsRange(range), subranges, oSubrangeIndex);
@@ -118,7 +118,7 @@ template<class R, class RWs> forceinline Meta::EnableIf<
 	IsAsNonInfiniteForwardRange<R>::_ &&
 	IsAsNonInfiniteForwardRange<RWs>::_ &&
 	IsAsNonInfiniteForwardRange<ValueTypeOfAs<RWs>>::_,
-ResultOfTake<R>> TakeUntilAny(R&& range, RWs&& subranges,
+TakeResult<R>> TakeUntilAny(R&& range, RWs&& subranges,
 	size_t* ioIndex=null, size_t* oSubrangeIndex=null)
 {
 	const size_t index = CountUntilAny(Range::AsRange(range), Range::Forward<RWs>(subranges), oSubrangeIndex);

@@ -57,7 +57,7 @@ template<typename R, typename P1, typename P2> struct RSplit
 		});
 	}
 
-	forceinline ResultOfTake<R> First() const
+	forceinline TakeResult<R> First() const
 	{
 		INTRA_ASSERT(!Empty());
 		return mFirst;
@@ -70,7 +70,7 @@ private:
 	R mOriginalRange;
 	Utils::Optional<P1> mIsSkippedDelimiter;
 	Utils::Optional<P2> mIsElementDelimiter;
-	ResultOfTake<R> mFirst;
+	TakeResult<R> mFirst;
 };
 
 
@@ -78,7 +78,7 @@ template<typename R, typename P1, typename P2 = bool(*)(const ValueTypeOfAs<R>&)
 	IsAsForwardRange<R>::_ &&
 	Meta::IsCallable<P1, ValueTypeOfAs<R>>::_ &&
 	Meta::IsCallable<P2, ValueTypeOfAs<R>>::_,
-RSplit<Meta::RemoveConstRef<AsRangeResult<R>>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
+RSplit<AsRangeResultNoCRef<R>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
 	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter=&Op::FalsePredicate<ValueTypeOfAs<R>>)
 {return {Range::Forward<R>(range), Meta::Forward<P1>(isSkippedDelimiter), Meta::Forward<P2>(isElementDelimiter)};}
 

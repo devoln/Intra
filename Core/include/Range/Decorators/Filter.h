@@ -27,9 +27,11 @@ template<typename R, typename P> struct RFilter
 	//Для совместимости с Visual Studio 2013:
 	RFilter(const RFilter&) = default;
 	RFilter& operator=(const RFilter&) = default;
+	
 	forceinline RFilter(RFilter&& rhs):
 		mOriginalRange(Meta::Move(rhs.mOriginalRange)),
 		mPredicate(Meta::Move(rhs.mPredicate)) {}
+
 	forceinline RFilter& operator=(RFilter&& rhs)
 	{
 		mOriginalRange = Meta::Move(rhs.mOriginalRange);

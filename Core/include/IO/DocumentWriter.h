@@ -2,10 +2,10 @@
 
 #include "Platform/CppWarnings.h"
 #include "Math/Vector.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 #include "Stream.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 
 namespace Intra { namespace IO {
 

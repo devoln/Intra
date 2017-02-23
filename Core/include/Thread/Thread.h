@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppWarnings.h"
-#include "Utils/Callback.h"
+#include "Utils/Delegate.h"
 
 #undef Yield
 

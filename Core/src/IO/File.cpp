@@ -2,7 +2,7 @@
 #include "Algo/Mutation/Copy.h"
 #include "Algo/String/Path.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 #include "Memory/Allocator.hh"
 #include "Platform/Compatibility.h"
 #include "Platform/CppWarnings.h"

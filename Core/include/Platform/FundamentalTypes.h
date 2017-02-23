@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Platform/Compatibility.h"
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
@@ -58,6 +59,7 @@ typedef wchar_t wchar;
 #else
 struct wchar
 {
+	forceinline wchar() = default;
 	wchar(ushort code): c(code) {}
 	operator ushort() const {return c;}
 	operator ushort&() {return c;}
@@ -76,6 +78,7 @@ typedef wchar_t dchar;
 #else
 struct dchar
 {
+	forceinline dchar() = default;
 	forceinline dchar(uint code): c(code) {}
 	forceinline operator uint() const {return c;}
 	forceinline operator uint&() {return c;}

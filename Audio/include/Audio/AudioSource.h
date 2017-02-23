@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "AudioBuffer.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Data/ValueType.h"
 
 namespace Intra { namespace Audio {

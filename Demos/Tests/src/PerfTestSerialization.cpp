@@ -32,25 +32,25 @@ static int SerializationTest()
 	StringView strToDeserialize = "{z = [\"тест\", \"сериализации\"], x = ---5434, "
 		"arr = [1, 2, 3, -4, 5], y = 2.1721}";
 	Console.PrintLine("In custom format: ", endl, strToDeserialize, endl);
-	Data::TextDeserializer deserializer(Data::DataLanguageParams::JsonLikeNoQuotes, strToDeserialize);
+	auto deserializer = Data::TextDeserializer(Data::LanguageParams::JsonLikeNoQuotes, strToDeserialize);
 	StructTest t2 = deserializer.Deserialize<StructTest>();
 	if(!deserializer.Log.Empty()) Console.PrintLine("Deserialization Log: ", endl, deserializer.Log);
 
 	char serializedBuf[300];
-	Data::TextSerializer serializer(Data::DataLanguageParams::Json,
+	Data::TextSerializer serializer(Data::LanguageParams::Json,
 		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
 	serializer << t2;
-	Console.PrintLine("JSON:", endl, serializer.GetString(), endl);
+	Console.PrintLine("JSON:", endl, serializer.Output.GetWrittenData(), endl);
 
-	serializer = Data::TextSerializer(Data::DataLanguageParams::Xml,
+	serializer = Data::TextSerializer(Data::LanguageParams::Xml,
 		Data::TextSerializerParams::VerboseNoSpaces, ArrayRange<char>(serializedBuf));
 	serializer << t2;
-	Console.PrintLine("XML:", endl, serializer.GetString(), endl);
+	Console.PrintLine("XML:", endl, serializer.Output.GetWrittenData(), endl);
 
-	serializer = Data::TextSerializer(Data::DataLanguageParams::JsonLikeNoQuotes,
+	serializer = Data::TextSerializer(Data::LanguageParams::JsonLikeNoQuotes,
 		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
 	serializer << t2;
-	Console.PrintLine("JSON-like without quotes:", endl, serializer.GetString());
+	Console.PrintLine("JSON-like without quotes:", endl, serializer.Output.GetWrittenData());
 
 	return 0;
 }
@@ -94,7 +94,7 @@ struct TestRef
 		booleanVal = rhs.booleanVal;
 		flt = rhs.flt;
 		stringArray.Clear();
-		stringArray.AddLastRange(rhs.stringArray());
+		stringArray.AddLastRange(rhs.stringArray);
 		return *this;
 	}
 
@@ -114,7 +114,7 @@ struct SuperTestRef
 	SuperTestRef& operator=(const SuperTest& rhs)
 	{
 		strArr.Clear();
-		strArr.AddLastRange(rhs.strArr());
+		strArr.AddLastRange(rhs.strArr);
 		foo = rhs.foo;
 		str = rhs.str;
 		vals = rhs.vals;
@@ -214,13 +214,15 @@ SuperTest g_SuperTest;
 
 SuperTestRef g_SuperTestRef;
 
-double TestTextDeserialization(size_t times, const Data::DataLanguageParams& lang, const Data::TextSerializerParams& params)
+double TestTextDeserialization(size_t times,
+	const Data::LanguageParams& lang,
+	const Data::TextSerializerParams& params)
 {
 	char buf[1000];
 	Data::TextSerializer ser(lang, params, ArrayRange<char>(buf));
 	ser << g_SuperTest;
 
-	Data::TextDeserializer deserializer(lang, ser.GetString());
+	auto deserializer = Data::TextDeserializer(lang, StringView(ser.Output.GetWrittenData()));
 	SuperTest test = deserializer.Deserialize<SuperTest>();
 	if(!deserializer.Log.Empty())
 	{
@@ -231,7 +233,7 @@ double TestTextDeserialization(size_t times, const Data::DataLanguageParams& lan
 	Timer tim;
 	for(size_t i=0; i<times; i++)
 	{
-		deserializer.ResetStream(ser.GetString());
+		deserializer.ResetStream(StringView(ser.Output.GetWrittenData()));
 		deserializer.Deserialize<SuperTest>();
 	}
 	return tim.GetTime();
@@ -241,19 +243,19 @@ double TestTextDeserialization(size_t times, const Data::DataLanguageParams& lan
 
 double TestBinarySerialization(size_t times)
 {
-	char buf[1000];
-	Data::BinarySerializer binser((ArrayRange<char>(buf)));
+	byte buf[1000];
+	Data::BinarySerializer binser(buf);
 	Timer tim;
 	for(size_t i=0; i<times; i++)
 	{
 		binser << g_SuperTest;
-		binser.Output.Rest = ArrayRange<char>(buf);
+		binser.Output.Reset();
 	}
 	return tim.GetTime();
 }
 
 double TestTextSerialization(Logger& logger, StringView desc, size_t times,
-	const Data::DataLanguageParams& lang, const Data::TextSerializerParams& params)
+	const Data::LanguageParams& lang, const Data::TextSerializerParams& params)
 {
 	char buf[1000];
 	Data::TextSerializer ser(lang, params, ArrayRange<char>(buf));
@@ -261,27 +263,27 @@ double TestTextSerialization(Logger& logger, StringView desc, size_t times,
 	for(size_t i=0; i<times; i++)
 	{
 		ser.ResetOutput(ArrayRange<char>(buf));
-		ser(g_SuperTest);
+		ser << g_SuperTest;
 	}
 	double result = tim.GetTime();
 	logger.BeginSpoiler("Результат сериализации в " + desc, "[Скрыть] Результат сериализации в " + desc);
-	logger.PrintCode(ser.GetString());
+	logger.PrintCode(ser.Output.GetWrittenData());
 	logger.EndSpoiler();
 	return result;
 }
 
 double TestBinaryDeserialization(size_t times)
 {
-	char buf[1000];
-	Data::BinarySerializer binser((ArrayRange<char>(buf)));
+	byte buf[1000];
+	Data::BinarySerializer binser(buf);
 	binser << g_SuperTest;
 
-	Data::BinaryDeserializer bindeser(binser.Output.GetRange());
+	Data::BinaryDeserializer bindeser(binser.Output.GetWrittenData());
 	SuperTest newTest;
 	Timer tim;
 	for(size_t i=0; i<times; i++)
 	{
-		bindeser.Input.Rest = binser.Output.GetString();
+		bindeser.Input = binser.Output.GetWrittenData();
 		bindeser >> newTest;
 	}
 	return tim.GetTime();
@@ -289,16 +291,16 @@ double TestBinaryDeserialization(size_t times)
 
 double TestBinaryRefDeserialization(size_t times)
 {
-	char buf[1000];
-	Data::BinarySerializer binser((ArrayRange<char>(buf)));
+	byte buf[1000];
+	Data::BinarySerializer binser(buf);
 	binser << g_SuperTestRef;
 
-	Data::BinaryDeserializer bindeser(binser.Output.GetRange());
+	Data::BinaryDeserializer bindeser(binser.Output.GetWrittenData());
 	SuperTestRef newTest;
 	Timer tim;
 	for(size_t i=0; i<times; i++)
 	{
-		bindeser.Input.Rest = binser.Output.GetString();
+		bindeser.Input = binser.Output.GetWrittenData();
 		bindeser >> newTest;
 	}
 	return tim.GetTime();
@@ -316,7 +318,7 @@ void RunSerializationPerfTests(IO::Logger& logger)
 	logger.PrintCode(g_SuperTestTextWithNames);
 	logger.EndSpoiler();
 
-	Data::TextDeserializer deserializer(Data::DataLanguageParams::CStructInitializer, g_SuperTestTextWithNames);
+	auto deserializer = Data::TextDeserializer(Data::LanguageParams::CStructInitializer, g_SuperTestTextWithNames);
 	deserializer >> g_SuperTest;
 	g_SuperTestRef = g_SuperTest;
 	if(!deserializer.Log.Empty())
@@ -359,15 +361,15 @@ void RunSerializationPerfTests(IO::Logger& logger)
 			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
 			{
 				TestTextSerialization(logger, "(1) C struct", 1000000,
-					Data::DataLanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),
+					Data::LanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),
 				TestTextSerialization(logger, "(2) JSON", 1000000,
-					Data::DataLanguageParams::Json, Data::TextSerializerParams::Verbose),
+					Data::LanguageParams::Json, Data::TextSerializerParams::Verbose),
 				TestTextSerialization(logger, "(3) JSON compact", 1000000,
-					Data::DataLanguageParams::Json, Data::TextSerializerParams::Compact),
+					Data::LanguageParams::Json, Data::TextSerializerParams::Compact),
 				TestTextSerialization(logger, "(4) XML subset", 1000000,
-					Data::DataLanguageParams::Xml, Data::TextSerializerParams::Verbose),
+					Data::LanguageParams::Xml, Data::TextSerializerParams::Verbose),
 				TestTextSerialization(logger, "(5) JSON-like custom", 1000000,
-					Data::DataLanguageParams::JsonLikeNoQuotes, Data::TextSerializerParams::Verbose)
+					Data::LanguageParams::JsonLikeNoQuotes, Data::TextSerializerParams::Verbose)
 			});
 	}
 
@@ -376,11 +378,11 @@ void RunSerializationPerfTests(IO::Logger& logger)
 		PrintPerformanceResults(logger, "Десериализация структуры 100000 раз",
 			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
 			{
-				TestTextDeserialization(100000, Data::DataLanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),
-				TestTextDeserialization(100000, Data::DataLanguageParams::Json, Data::TextSerializerParams::Verbose),
-				TestTextDeserialization(100000, Data::DataLanguageParams::Json, Data::TextSerializerParams::Compact),
-				TestTextDeserialization(100000, Data::DataLanguageParams::Xml, Data::TextSerializerParams::Verbose),
-				TestTextDeserialization(100000, Data::DataLanguageParams::JsonLikeNoQuotes, Data::TextSerializerParams::Verbose)
+				TestTextDeserialization(100000, Data::LanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),
+				TestTextDeserialization(100000, Data::LanguageParams::Json, Data::TextSerializerParams::Verbose),
+				TestTextDeserialization(100000, Data::LanguageParams::Json, Data::TextSerializerParams::Compact),
+				TestTextDeserialization(100000, Data::LanguageParams::Xml, Data::TextSerializerParams::Verbose),
+				TestTextDeserialization(100000, Data::LanguageParams::JsonLikeNoQuotes, Data::TextSerializerParams::Verbose)
 			});
 	}
 

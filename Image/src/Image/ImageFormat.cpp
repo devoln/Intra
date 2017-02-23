@@ -1,6 +1,6 @@
 ﻿#include "Image/ImageFormat.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/HashMap.h"
+#include "Container/Associative/HashMap.h"
 
 namespace Intra { namespace Image {
 

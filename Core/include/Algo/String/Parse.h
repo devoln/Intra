@@ -15,8 +15,10 @@ namespace Intra { namespace Algo {
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
+using namespace Range::Concepts;
+
 template<typename R> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_,
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_,
 bool> ParseSignAdvance(R& src)
 {
 	bool minus = false;
@@ -30,11 +32,11 @@ bool> ParseSignAdvance(R& src)
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsUnsignedIntegralType<X>::_,
 X> ParseAdvance(R& src)
 {
-	Algo::TrimLeftAdvance(src, Op::IsSpace<Range::ValueTypeOf<R>>);
+	TrimLeftAdvance(src, Op::IsSpace<ValueTypeOf<R>>);
 	X result = 0;
 	while(!src.Empty())
 	{
@@ -47,7 +49,7 @@ X> ParseAdvance(R& src)
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsSignedIntegralType<X>::_,
 X> ParseAdvance(R& src)
 {
@@ -57,14 +59,14 @@ X> ParseAdvance(R& src)
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsFloatType<X>::_,
-X> ParseAdvance(R& src, Range::ValueTypeOf<R> decimalSeparator='.')
+X> ParseAdvance(R& src, ValueTypeOf<R> decimalSeparator='.')
 {
 	X result = 0, pos = 1;
 	bool waspoint = false;
 
-	bool minus = Algo::ParseSignAdvance(src);
+	bool minus = ParseSignAdvance(src);
 
 	for(; !src.Empty(); src.PopFirst())
 	{
@@ -84,7 +86,7 @@ X> ParseAdvance(R& src, Range::ValueTypeOf<R> decimalSeparator='.')
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsCharType<X>::_,
 X> ParseAdvance(R& src)
 {
@@ -94,63 +96,63 @@ X> ParseAdvance(R& src)
 }
 
 template<typename R, typename CR> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsCharRange<CR>::_ && !Meta::IsConst<CR>::_,
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<CR>::_ && !Meta::IsConst<CR>::_,
 bool> ExpectAdvance(R& src, CR& stringToExpect)
 {
-	Algo::TrimLeftAdvance(src, Op::IsSpace<Range::ValueTypeOf<R>>);
-	Algo::TrimLeftAdvance(stringToExpect, Op::IsSpace<Range::ValueTypeOf<R>>);
-	return Algo::StartsAdvanceWith(src, stringToExpect);
+	TrimLeftAdvance(src, Op::IsSpace<Range::ValueTypeOf<R>>);
+	TrimLeftAdvance(stringToExpect, Op::IsSpace<Range::ValueTypeOf<R>>);
+	return StartsAdvanceWith(src, stringToExpect);
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ && Range::IsAsCharRange<R>::_ &&
+	IsAsConsumableRange<R>::_ && IsAsCharRange<R>::_ &&
 	Meta::IsIntegralType<X>::_,
 X> Parse(R&& src)
 {
 	auto range = Range::Forward<R>(src);
-	return Algo::ParseAdvance<X>(range);
+	return ParseAdvance<X>(range);
 }
 
 template<typename X, typename R> Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ && Range::IsAsCharRange<R>::_ &&
+	IsAsConsumableRange<R>::_ && IsAsCharRange<R>::_ &&
 	Meta::IsFloatType<X>::_,
-X> Parse(R&& src, Range::ValueTypeOfAs<R> decimalSeparator = '.')
+X> Parse(R&& src, ValueTypeOfAs<R> decimalSeparator = '.')
 {
 	auto range = Range::Forward<R>(src);
-	return Algo::ParseAdvance<X>(range, decimalSeparator);
+	return ParseAdvance<X>(range, decimalSeparator);
 }
 
 template<typename R, typename P1, typename P2> Meta::EnableIf<
-	Range::IsCharRange<R>::_ &&
-	Meta::IsCallable<P1, Range::ValueTypeOf<R>>::_ &&
-	Meta::IsCallable<P2, Range::ValueTypeOf<R>>::_,
-Range::ResultOfTake<R>> ParseIdentifierAdvance(R& src, P1 isNotIdentifierFirstChar, P2 isNotIdentifierChar)
+	IsCharRange<R>::_ &&
+	Meta::IsCallable<P1, ValueTypeOf<R>>::_ &&
+	Meta::IsCallable<P2, ValueTypeOf<R>>::_,
+TakeResult<R>> ParseIdentifierAdvance(R& src, P1 isNotIdentifierFirstChar, P2 isNotIdentifierChar)
 {
-	Algo::TrimLeftAdvance(src, Op::IsHorSpace<char>);
+	TrimLeftAdvance(src, Op::IsHorSpace<char>);
 	if(src.Empty() || isNotIdentifierFirstChar(src.First())) return null;
 	auto result = src;
 	src.PopFirst();
 	while(!src.Empty() && !isNotIdentifierChar(src.First())) src.PopFirst();
-	return Range::Take(result, Algo::DistanceTo(result, src));
+	return Range::Take(result, DistanceTo(result, src));
 }
 
 template<typename R, typename X> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsArithmeticType<X>::_ && !Meta::IsConst<X>::_,
 R&&> operator>>(R&& stream, X&& dst)
 {
-	dst = Algo::ParseAdvance<Meta::RemoveReference<X>>(stream);
+	dst = ParseAdvance<Meta::RemoveReference<X>>(stream);
 	return Meta::Forward<R>(stream);
 }
 
 template<typename R, typename CR> Meta::EnableIf<
-	Range::IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsCharRange<CR>::_,// && Meta::IsConst<Range::ValueTypeOfAs<CR>>::_,
+	IsCharRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsCharRange<CR>::_,// && Meta::IsConst<Range::ValueTypeOfAs<CR>>::_,
 R&&> operator>>(R&& stream, CR&& stringToExpect)
 {
 	auto stringToExpectCopy = Range::Forward<CR>(stringToExpect);
-	Algo::ExpectAdvance(stream, stringToExpectCopy);
+	ExpectAdvance(stream, stringToExpectCopy);
 	return Meta::Forward<R>(stream);
 }
 

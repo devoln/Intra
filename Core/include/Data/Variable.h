@@ -5,7 +5,7 @@
 #include "Math/Vector.h"
 #include "Math/Matrix.h"
 #include "Data/ValueType.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 
 namespace Intra {
 
@@ -159,9 +159,7 @@ public:
 	void ReserveBytes(size_t bytes) {data.Reserve(bytes);}
 
 	bool operator==(const VariableArray& rhs) const
-	{
-		return data==rhs.data && variables==rhs.variables;
-	}
+	{return data==rhs.data && variables==rhs.variables;}
 
 	bool operator==(null_t) const {return data==null;}
 	bool operator!=(null_t) const {return !operator==(null);}

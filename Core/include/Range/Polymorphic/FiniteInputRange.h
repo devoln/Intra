@@ -29,7 +29,6 @@ template<typename T> struct FiniteInputRange: InputRange<T>
 	enum: bool {RangeIsFinite = true};
 
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	typedef typename InputRange<T>::Interface Interface;
 	template<typename R> using WrapperImpl = typename InputRange<T>::template WrapperImpl<R>;
 
@@ -47,6 +46,8 @@ private:
 	}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+	
 	forceinline FiniteInputRange(null_t=null) {}
 
 	forceinline FiniteInputRange(FiniteInputRange&& rhs):
@@ -73,10 +74,10 @@ public:
 		return *this;
 	}
 
-	forceinline FiniteInputRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline FiniteInputRange(InitializerList<value_type> arr):
 		FiniteInputRange(AsRange(arr)) {}
 
-	forceinline FiniteInputRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline FiniteInputRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;

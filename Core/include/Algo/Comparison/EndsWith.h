@@ -9,6 +9,8 @@ namespace Intra { namespace Algo {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+using namespace Range::Concepts;
+
 namespace D {
 
 template<typename R, typename RW> bool EndsAdvanceWithAdvance(R& range, RW& what)
@@ -26,8 +28,8 @@ template<typename R, typename RW> bool EndsAdvanceWithAdvance(R& range, RW& what
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsArrayRange<R>::_ &&
-	Range::IsArrayRange<RW>::_ && Meta::IsConvertible<Range::ValueTypeOf<RW>, Range::ValueTypeOf<R>>::_,
+	IsArrayClass<R>::_ && IsArrayClass<RW>::_ &&
+	Meta::TypeEqualsIgnoreCV<ValueTypeOf<R>, ValueTypeOf<RW>>::_,
 bool> EndsWith(const R& range, const RW& what)
 {
 	if(range.Length()<what.Length()) return false;
@@ -36,10 +38,8 @@ bool> EndsWith(const R& range, const RW& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsBidirectionalRange<R>::_ &&
-	Range::IsBidirectionalRange<RW>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<RW>, Range::ValueTypeOf<R>>::_ &&
-	!(Range::HasLength<R>::_ && Range::HasLength<RW>::_),
+	IsBidirectionalRange<R>::_ && IsBidirectionalRange<RW>::_ &&
+	!(HasLength<R>::_ && HasLength<RW>::_),
 bool> EndsWith(R&& range, RW&& what)
 {
 	auto rangeCopy = Meta::Forward<R>(range);
@@ -48,23 +48,19 @@ bool> EndsWith(R&& range, RW&& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsBidirectionalRange<R>::_ &&
-	Range::IsBidirectionalRange<RW>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<RW>, Range::ValueTypeOf<R>>::_ &&
-	Range::HasLength<R>::_ && Range::HasLength<RW>::_ &&
-	!(Range::HasData<R>::_ && Range::HasData<RW>::_),
-bool> EndsWith(const R& range, const RW& what)
+	IsBidirectionalRangeWithLength<R>::_ && IsBidirectionalRangeWithLength<RW>::_ &&
+	!(HasData<R>::_ && HasData<RW>::_),
+bool> EndsWith(R&& range, RW&& what)
 {
 	if(range.Length()<what.Length()) return false;
-	R rangeCopy = range;
-	RW whatCopy = what;
+	auto rangeCopy = Meta::Forward<R>(range);
+	auto whatCopy = Meta::Forward<RW>(what);
 	return D::EndsAdvanceWithAdvance(rangeCopy, whatCopy);
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	(!Range::IsInputRange<R>::_ || !Range::IsInputRange<RW>::_) &&
-	Range::IsAsBidirectionalRange<R>::_ &&
-	Range::IsAsBidirectionalRange<RW>::_,
+	(!IsInputRange<R>::_ || !IsInputRange<RW>::_) &&
+	IsAsBidirectionalRange<R>::_ && IsAsBidirectionalRange<RW>::_,
 bool> EndsWith(R&& range, RW&& what)
 {return EndsWith(Range::Forward<R>(range), Range::Forward<RW>(what));}
 

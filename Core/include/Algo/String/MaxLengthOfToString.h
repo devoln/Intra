@@ -10,6 +10,8 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 template<typename Char, size_t N> Meta::EnableIf<
 	Meta::IsCharType<Char>::_,
 size_t> MaxLengthOfToString(const Char(&str)[N]) {(void)str; return N;}
@@ -44,7 +46,7 @@ template<typename T = char, typename X> static forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number, int minWidth, T filler = ' ', uint base = 10)
 {
-	return 1+Algo::MaxLengthOfToString(Meta::MakeUnsignedType<X>(number<0? -number: number),
+	return 1+MaxLengthOfToString(Meta::MakeUnsignedType<X>(number<0? -number: number),
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
@@ -77,14 +79,14 @@ size_t> MaxLengthOfToString(Char character, size_t repeat=1) {(void)character; r
 forceinline size_t MaxLengthOfToString(bool value) {return 4u+!value;}
 
 template<typename SRC> static forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<SRC>::_ &&
-	Meta::IsCharType<Range::ValueTypeOfAs<SRC>>::_,
+	IsAsNonInfiniteForwardRange<SRC>::_ &&
+	Meta::IsCharType<ValueTypeOfAs<SRC>>::_,
 size_t> MaxLengthOfToString(SRC&& src) {return Range::Count(Range::Forward<SRC>(src));}
 
 
 template<typename T> static forceinline Meta::EnableIf<
 	!Meta::IsArithmeticType<T>::_ &&
-	!Range::IsAsNonInfiniteForwardRange<T>::_,
+	!IsAsNonInfiniteForwardRange<T>::_,
 size_t> MaxLengthOfToString(T&& v)
 {
 	Range::CountRange<char> counter;
@@ -98,8 +100,8 @@ size_t MaxLengthOfImpl(VR&& r, size_t separatorLen);
 }
 
 template<typename VR> static forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<VR>::_ &&
-	!Meta::IsCharType<Range::ValueTypeOfAs<VR>>::_,
+	IsAsNonInfiniteForwardRange<VR>::_ &&
+	!Meta::IsCharType<ValueTypeOfAs<VR>>::_,
 size_t> MaxLengthOfToString(VR&& r)
 {return D::MaxLengthOfImpl(Range::Forward<VR>(r), 2)+2;}
 
@@ -123,8 +125,8 @@ size_t MaxLengthOfImpl(VR&& r, size_t separatorLen)
 }
 
 template<typename VR, typename SR, typename LR, typename RR> static forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<VR>::_ &&
-	Range::IsAsCharRange<SR>::_ && Range::IsAsCharRange<LR>::_ && Range::IsAsCharRange<SR>::_,
+	IsAsNonInfiniteForwardRange<VR>::_ &&
+	IsAsCharRange<SR>::_ && IsAsCharRange<LR>::_ && IsAsCharRange<SR>::_,
 size_t> MaxLengthOfToString(VR&& r, SR&& separator, LR&& lBracket, RR&& rBracket)
 {
 	size_t result = Range::Count(Range::Forward<LR>(lBracket));
@@ -134,9 +136,9 @@ size_t> MaxLengthOfToString(VR&& r, SR&& separator, LR&& lBracket, RR&& rBracket
 }
 
 template<typename VR, typename SR> static forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<VR>::_ &&
-	Meta::IsArithmeticType<Range::ValueTypeOfAs<VR>>::_ &&
-	Range::IsAsCharRange<SR>::_,
+	IsAsNonInfiniteForwardRange<VR>::_ &&
+	Meta::IsArithmeticType<ValueTypeOfAs<VR>>::_ &&
+	IsAsCharRange<SR>::_,
 size_t> MaxLengthOfToString(VR&& r, SR&& separator)
 {return D::MaxLengthOfImpl(Meta::Forward<VR>(r), Range::Count(Range::Forward<SR>(separator)))+2;}
 

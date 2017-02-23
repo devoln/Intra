@@ -37,38 +37,28 @@ public:
 	forceinline bool Empty() const
 	{return mRange0.Empty() && mNext.Empty();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasLast<NextChain>::_,
-	ReturnValueType> Last() const
+	forceinline ReturnValueType Last() const
 	{return mNext.Empty()? mRange0.Last(): mNext.Last();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasPopLast<U>::_ && HasPopLast<NextChain>::_
-	> PopLast()
+	forceinline void PopLast()
 	{
 		if(mNext.Empty()) mRange0.PopLast();
 		else mNext.PopLast();
 	}
 
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_ && HasLength<RChain<R1, RANGES...>>::_,
-	size_t> Length() const
+	forceinline size_t Length() const
 	{return mRange0.Length()+mNext.Length();}
 
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasIndex<U>::_ && HasIndex<NextChain>::_,
-	ReturnValueType> operator[](size_t index) const
+	forceinline ReturnValueType operator[](size_t index) const
 	{
 		size_t len = mRange0.Length();
 		if(index<len) return mRange0[index];
 		return mNext[index-len];
 	}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_ && HasSlicing<U>::_ && HasSlicing<NextChain>::_,
-	RChain> operator()(size_t startIndex, size_t endIndex) const
+	forceinline RChain operator()(size_t startIndex, size_t endIndex) const
 	{
 		const size_t len = mRange0.Length();
 		return {mRange0(startIndex>len? len: startIndex, len>endIndex? endIndex: len),
@@ -115,25 +105,15 @@ public:
 
 	forceinline bool Empty() const {return mRange0.Empty();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLast<U>::_,
-	ReturnValueType> Last() const {return mRange0.Last();}
+	forceinline ReturnValueType Last() const {return mRange0.Last();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasPopLast<U>::_
-	> PopLast() {mRange0.PopLast();}
+	forceinline void PopLast() {mRange0.PopLast();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasLength<U>::_,
-	size_t> Length() const {return mRange0.Length();}
+	forceinline size_t Length() const {return mRange0.Length();}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasIndex<U>::_,
-	ReturnValueType> operator[](size_t index) const {return mRange0[index];}
+	forceinline ReturnValueType operator[](size_t index) const {return mRange0[index];}
 
-	template<typename U=R0> forceinline Meta::EnableIf<
-		HasSlicing<U>::_,
-	RChain> operator()(size_t startIndex, size_t endIndex) const
+	forceinline RChain operator()(size_t startIndex, size_t endIndex) const
 	{return RChain(mRange0(startIndex, endIndex));}
 
 	forceinline bool operator==(const RChain& rhs) const

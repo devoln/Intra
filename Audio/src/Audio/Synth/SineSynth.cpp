@@ -7,7 +7,7 @@
 #include "Algo/Mutation/Transform.h"
 #include "Algo/Mutation/Fill.h"
 #include "Math/Random.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 

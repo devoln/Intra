@@ -28,13 +28,11 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 template<typename T> struct BidirectionalRange: FiniteForwardRange<T>
 {
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	struct Interface: FiniteForwardRange<T>::Interface
 	{
 		virtual T Last() const = 0;
 		virtual void PopLast() = 0;
 		virtual void PopLastN(size_t count) = 0;
-		virtual void PopLastExactly(size_t count) = 0;
 	};
 
 	template<typename R, typename PARENT> struct ImplFiller: PARENT
@@ -47,7 +45,6 @@ protected:
 		T Last() const override {return PARENT::OriginalRange.Last();}
 		void PopLast() override {PARENT::OriginalRange.PopLast();}
 		void PopLastN(size_t count) override {Range::PopLastN(PARENT::OriginalRange, count);}
-		void PopLastExactly(size_t count) override {Range::PopLastExactly(PARENT::OriginalRange, count);}
 	};
 
 	template<typename R, typename PARENT> using FullImplFiller =
@@ -71,6 +68,8 @@ private:
 	{return new WrapperImpl<Meta::RemoveConstRef<AsRangeResult<R>>>(Range::Forward<R>(range));}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline BidirectionalRange(null_t=null) {}
 
 	forceinline BidirectionalRange(BidirectionalRange&& rhs):
@@ -102,10 +101,10 @@ public:
 		return *this;
 	}
 
-	forceinline BidirectionalRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline BidirectionalRange(InitializerList<value_type> arr):
 		BidirectionalRange(AsRange(arr)) {}
 
-	forceinline BidirectionalRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline BidirectionalRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;
@@ -120,11 +119,8 @@ public:
 	forceinline void PopLastN(size_t count)
 	{static_cast<Interface*>(InputRange<T>::mInterface.Ptr())->PopLastN(count);}
 
-	forceinline void PopLastExactly(size_t count)
-	{static_cast<Interface*>(InputRange<T>::mInterface.Ptr())->PopLastExactly(count);}
-
 protected:
-	BidirectionalRange(Interface* interfacePtr): FiniteForwardRange<T>(interfacePtr) {}
+	BidirectionalRange(typename ForwardRange<T>::Interface* interfacePtr): FiniteForwardRange<T>(interfacePtr) {}
 };
 
 

@@ -4,7 +4,8 @@
 #include "Platform/CppWarnings.h"
 #include "Data/Serialization/BinarySerializer.h"
 #include "Meta/Type.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
+#include "Utils/AsciiSet.h"
 
 namespace Intra {
 
@@ -185,17 +186,17 @@ public:
 	> Write(const T& value)
 	{
 		byte tempBuffer[4096];
-		Data::BinarySerializer serializer = Data::BinarySerializer(MemoryOutput(tempBuffer));
+		Data::BinarySerializer serializer = Data::BinarySerializer(tempBuffer);
 		const size_t requiredBufferSize = serializer.SerializedSizeOf(value);
 		size_t allocatedBufferSize = requiredBufferSize;
 
 		if(requiredBufferSize>sizeof(tempBuffer))
-			serializer.Output = MemoryOutput(ArrayRange<byte>(
+			serializer.Output = ArrayRange<byte>(
 				Memory::GlobalHeap.Allocate(allocatedBufferSize, INTRA_SOURCE_INFO),
-				requiredBufferSize));
+				requiredBufferSize);
 
 		serializer(value);
-		WriteData(serializer.Output.Begin, serializer.Output.BytesWritten());
+		WriteData(serializer.Output.GetWrittenData().Begin, serializer.Output.ElementsWritten());
 
 		if(requiredBufferSize>sizeof(tempBuffer))
 			Memory::GlobalHeap.Free(tempBuffer, allocatedBufferSize);

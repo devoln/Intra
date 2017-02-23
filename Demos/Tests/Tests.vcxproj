@@ -238,7 +238,6 @@
       <EnablePREfast>false</EnablePREfast>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <AdditionalOptions>/Zm150 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -288,7 +287,7 @@
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <ControlFlowGuard>Guard</ControlFlowGuard>
-      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/Zm10 %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -331,7 +330,7 @@
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <AdditionalOptions>/QIfist /Zm50 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
     </ClCompile>
@@ -569,16 +568,15 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src/PerfTestArray.h" />
-    <ClInclude Include="src/PerfTestMap.h" />
     <ClInclude Include="src/PerfTestRandom.h" />
     <ClInclude Include="src/PerfTestSerialization.h" />
     <ClInclude Include="src/PerfTestSort.h" />
-    <ClInclude Include="src/PerfTestString.h" />
+    <ClInclude Include="src\Container\Array.h" />
+    <ClInclude Include="src\Container\Map.h" />
+    <ClInclude Include="src\Container\String.h" />
     <ClInclude Include="src\Range\Header.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src/PerfTestArray.cpp" />
     <ClCompile Include="src/PerfTesting.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -589,13 +587,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="src/PerfTestMap.cpp" />
     <ClCompile Include="src/PerfTestRandom.cpp" />
     <ClCompile Include="src/PerfTestSerialization.cpp" />
     <ClCompile Include="src/PerfTestSort.cpp" />
-    <ClCompile Include="src/PerfTestString.cpp" />
+    <ClCompile Include="src\Container\Array.cpp" />
+    <ClCompile Include="src\Container\Map.cpp" />
+    <ClCompile Include="src\Container\String.cpp" />
     <ClCompile Include="src\Range\Composing.cpp" />
     <ClCompile Include="src\Range\Polymorphic.cpp" />
+    <ClCompile Include="src\Range\StlInterop.cpp" />
     <ClCompile Include="src\Range\Streams.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

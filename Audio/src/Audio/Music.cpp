@@ -47,7 +47,7 @@ AudioBuffer MusicTrack::GetSamples(uint sampleRate) const
 	const auto duration = Duration();
 	AudioBuffer result(size_t(duration*sampleRate), sampleRate);
 	if(result.Samples==null) return result;
-	Algo::FillZeros(result.Samples());
+	Algo::FillZeros(result.Samples);
 	uint samplePos = 0;
 	for(uint i=0; i<Notes.Count(); i++)
 	{

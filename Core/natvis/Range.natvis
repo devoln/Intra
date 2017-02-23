@@ -48,36 +48,24 @@
             </ArrayItems>
         </Expand>
     </Type>
+
+  <Type Name="Intra::Range::GenericStringView&lt;*&gt;">
+    <DisplayString Condition="sizeof(*mStart)==1" Optional="true">{mStart,[mEnd-mStart]s8}</DisplayString>
+    <DisplayString Condition="sizeof(*mStart)==2" Optional="true">{mStart,[mEnd-mStart]s16}</DisplayString>
+    <DisplayString Condition="sizeof(*mStart)==4" Optional="true">{mStart,[mEnd-mStart]s32}</DisplayString>
+    <StringView Condition="sizeof(*mStart)==1" Optional="true">mStart,[mEnd-mStart]s8b</StringView>
+    <StringView Condition="sizeof(*mStart)==2" Optional="true">mStart,[mEnd-mStart]s16b</StringView>
+    <StringView Condition="sizeof(*mStart)==4" Optional="true">mStart,[mEnd-mStart]s32b</StringView>
+    <Expand>
+      <Item Name="Length">mEnd-mStart</Item>
+      <ArrayItems>
+        <Size>mEnd-mStart</Size>
+        <ValuePointer>mStart</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
   
-    <Type Name="Intra::Range::GenericStringView&lt;char&gt;">
-        <DisplayString>{cstart,[cend-cstart]s8}</DisplayString>
-        <StringView>cstart,[cend-cstart]s8b</StringView>
-        <Expand>
-            <Item Name="Length">cend-cstart</Item>
-            <Item Name="StartPtr">cstart</Item>
-            <Item Name="EndPtr">cend</Item>
-        </Expand>
-    </Type>
-
-  <Type Name="Intra::Range::GenericStringView&lt;wchar&gt;">
-    <DisplayString>{cstart,[cend-cstart]s16}</DisplayString>
-    <StringView>cstart,[cend-cstart]s16b</StringView>
-    <Expand>
-      <Item Name="Length">cend-cstart</Item>
-      <Item Name="StartPtr">cstart</Item>
-      <Item Name="EndPtr">cend</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::Range::GenericStringView&lt;dchar&gt;">
-    <DisplayString>{cstart,[cend-cstart]s32}</DisplayString>
-    <StringView>cstart,[cend-cstart]s32b</StringView>
-    <Expand>
-      <Item Name="Length">cend-cstart</Item>
-      <Item Name="StartPtr">cstart</Item>
-      <Item Name="EndPtr">cend</Item>
-    </Expand>
-  </Type>
 
   <Type Name="Intra::Range::FListRange&lt;*&gt;">
     <DisplayString Condition="FirstNode==nullptr || LastNode==nullptr">[]</DisplayString>

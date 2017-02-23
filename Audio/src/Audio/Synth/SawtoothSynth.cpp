@@ -5,7 +5,7 @@
 #include "Platform/CppWarnings.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Transform.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Math/Random.h"
 
 namespace Intra { namespace Audio { namespace Synth {

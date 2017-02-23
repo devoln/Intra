@@ -33,17 +33,13 @@ template<typename Rs> struct RFirstTransversal
 		skip_empty();
 	}
 
-	template<typename U=Rs> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasPopLast<U>::_,
-	return_value_type> Last() const
+	return_value_type Last() const
 	{
 		while(mRanges.Last().Empty()) mRanges.PopLast();
 		return mRanges.Last().First();
 	}
 
-	template<typename U=Rs> forceinline Meta::EnableIf<
-		HasLast<U>::_ && HasPopLast<Rs>::_
-	> PopLast()
+	void PopLast()
 	{
 		INTRA_ASSERT(!Empty());
 		while(mRanges.Last().Empty()) mRanges.PopLast();
@@ -61,19 +57,8 @@ private:
 INTRA_WARNING_POP
 
 template<typename R> forceinline Meta::EnableIf<
-	!Meta::IsReference<R>::_ && !Meta::IsConst<R>::_ &&
-	IsInputRange<R>::_ && IsInputRange<ValueTypeOf<R>>::_,
-RFirstTransversal<R>> FirstTransversal(R&& range)
-{return Meta::Move(range);}
-
-template<typename R> forceinline Meta::EnableIf<
-	IsForwardRange<R>::_ && IsInputRange<ValueTypeOf<R>>::_,
-RFirstTransversal<R>> FirstTransversal(const R& range)
-{return range;}
-
-template<typename T, size_t N> forceinline Meta::EnableIf<
-	IsInputRange<T>::_,
-RFirstTransversal<AsRangeResult<T(&)[N]>>> FirstTransversal(T(&rangeArr)[N])
-{return AsRange(rangeArr);}
+	IsAsAccessibleRange<R>::_ && IsAsInputRange<ValueTypeOfAs<R>>::_,
+RFirstTransversal<Meta::RemoveConstRef<AsRangeResult<R&&>>>> FirstTransversal(R&& range)
+{return Range::Forward<R>(range);}
 
 }}

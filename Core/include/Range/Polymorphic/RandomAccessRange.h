@@ -28,7 +28,6 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 template<typename T> struct RandomAccessRange: ForwardRange<T>
 {
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	struct Interface: ForwardRange<T>::Interface
 	{
 		virtual T OpIndex(size_t index) const = 0;
@@ -60,6 +59,8 @@ private:
 	{return new WrapperImpl<Meta::RemoveConstRef<R>>(Meta::Forward<R>(range));}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline RandomAccessRange(null_t=null) {}
 
 	forceinline RandomAccessRange(RandomAccessRange&& rhs):
@@ -91,10 +92,10 @@ public:
 		return *this;
 	}
 
-	forceinline RandomAccessRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline RandomAccessRange(InitializerList<value_type> arr):
 		RandomAccessRange(AsRange(arr)) {}
 
-	forceinline RandomAccessRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline RandomAccessRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;
@@ -118,7 +119,7 @@ public:
 	}
 
 protected:
-	RandomAccessRange(Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
+	RandomAccessRange(typename ForwardRange<T>::Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
 };
 
 

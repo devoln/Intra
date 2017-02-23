@@ -2,7 +2,7 @@
 
 #include "Platform/PlatformInfo.h"
 #include "Math/Random.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Thread/Thread.h"
 #include "Thread/Atomic.h"
 

@@ -1,7 +1,7 @@
 ﻿#include "Platform/PlatformInfo.h"
 #include "Platform/Compatibility.h"
-#include "Containers/Array.h"
-#include "Containers/String.h"
+#include "Container/Sequential/Array.h"
+#include "Container/Sequential/String.h"
 #include "Platform/CppWarnings.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -46,13 +46,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	using namespace Intra;
 	auto args = GetCommandLineArguments();
-	String argStr;
-	argStr.Reserve(1000);
-	for(auto arg: args)
-	{
-		argStr += arg;
-		argStr += '\0';
-	}
+	String argStr = ToString(args, "\0", "", "");
 	Array<const char*> argv(args.Length());
 	size_t start=0;
 	for(auto&& arg: args)

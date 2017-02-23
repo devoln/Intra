@@ -8,11 +8,13 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R, typename F> Meta::EnableIf<
-	Range::IsAssignableRange<R>::_ && !Meta::IsConst<R>::_ && !Range::IsInfiniteRange<R>::_ &&
-	Meta::IsCallable<F, Range::ValueTypeOf<R>&>::_
+	IsAssignableRange<R>::_ && !Meta::IsConst<R>::_ && !IsInfiniteRange<R>::_ &&
+	Meta::IsCallable<F, ValueTypeOf<R>&>::_
 > TransformAdvance(R& range, F f)
 {
 	while(!range.Empty())
@@ -24,9 +26,9 @@ template<typename R, typename F> Meta::EnableIf<
 }
 
 template<typename R1, typename R2, typename F> Meta::EnableIf<
-	Range::IsAssignableRange<R1>::_ && !Meta::IsConst<R1>::_ && !Range::IsInfiniteRange<R1>::_ &&
-	Range::IsInputRange<R2>::_ && !Meta::IsConst<R2>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOf<R1>, Range::ReturnValueTypeOf<R2>>::_
+	IsAssignableRange<R1>::_ && !Meta::IsConst<R1>::_ && !IsInfiniteRange<R1>::_ &&
+	IsInputRange<R2>::_ && !Meta::IsConst<R2>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOf<R1>, ReturnValueTypeOf<R2>>::_
 > Transform2Advance(R1& dstOp1, R2& op2, F f)
 {
 	while(!dstOp1.Empty())
@@ -39,9 +41,9 @@ template<typename R1, typename R2, typename F> Meta::EnableIf<
 }
 
 template<typename R1, typename R2, typename F> Meta::EnableIf<
-	Range::IsAsAssignableRange<R1>::_ && !Range::IsAsInfiniteRange<R1>::_ &&
-	Range::IsAsInputRange<R2>::_ && !Range::IsAsInfiniteRange<R2>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOfAs<R1>, Range::ReturnValueTypeOfAs<R2>>::_
+	IsAsAssignableRange<R1>::_ && !IsAsInfiniteRange<R1>::_ &&
+	IsAsInputRange<R2>::_ && !IsAsInfiniteRange<R2>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOfAs<R1>, ReturnValueTypeOfAs<R2>>::_
 > Transform2(R1&& dstOp1, R2&& op2, F f)
 {
 	auto dstOp1Copy = Range::Forward<R1>(dstOp1);
@@ -50,9 +52,9 @@ template<typename R1, typename R2, typename F> Meta::EnableIf<
 }
 
 template<typename R, typename OR, typename F> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOf<R>>::_
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOf<R>>::_
 > TransformAdvanceToAdvance(R& range, OR& output, F f)
 {
 	while(!range.Empty())
@@ -63,19 +65,19 @@ template<typename R, typename OR, typename F> Meta::EnableIf<
 }
 
 template<typename R, typename OR, typename F> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ValueTypeOf<R>&>::_
-> TransformAdvanceTo(R&& range, OR&& output, F f)
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ValueTypeOf<R>&>::_
+> TransformAdvanceTo(R& range, OR&& output, F f)
 {
 	auto outputCopy = Range::Forward<OR>(output);
-	TransformAdvanceToAdvance(Meta::Forward<R>(range), outputCopy, f);
+	TransformAdvanceToAdvance(range, outputCopy, f);
 }
 
 template<typename R, typename F> forceinline Meta::EnableIf<
-	Range::IsAsAssignableRange<R>::_ &&
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Meta::IsCallable<F, Range::ValueTypeOfAs<R>&>::_
+	IsAsAssignableRange<R>::_ &&
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	Meta::IsCallable<F, ValueTypeOfAs<R>&>::_
 > Transform(R&& range, F f)
 {
 	auto rangeCopy = Range::Forward<R>(range);
@@ -83,19 +85,19 @@ template<typename R, typename F> forceinline Meta::EnableIf<
 }
 
 template<typename R, typename OR, typename F> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ValueTypeOfAs<R>&>::_
-> TransformToAdvance(R&& range, OR&& output, F f)
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	IsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ValueTypeOfAs<R>&>::_
+> TransformToAdvance(R&& range, OR& output, F f)
 {
 	auto rangeCopy = Range::Forward<R>(range);
-	TransformAdvanceToAdvance(rangeCopy, Meta::Forward<OR>(output), f);
+	TransformAdvanceToAdvance(rangeCopy, output, f);
 }
 
 template<typename R, typename OR, typename F> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Range::IsAsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ValueTypeOfAs<R>&>::_
+	IsAsNonInfiniteForwardRange<R>::_ &&
+	IsAsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ValueTypeOfAs<R>&>::_
 > TransformTo(R&& range, OR&& output, F f)
 {
 	auto outputCopy = Range::Forward<OR>(output);
@@ -105,11 +107,11 @@ template<typename R, typename OR, typename F> forceinline Meta::EnableIf<
 
 
 template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R1>::_ && !Meta::IsConst<R1>::_ &&
-	Range::IsNonInfiniteInputRange<R2>::_ && !Meta::IsConst<R2>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOf<R1>, Range::ReturnValueTypeOf<R2>>::_
-> Transform2AdvanceToAdvance(R1&& range1, R2&& range2, OR&& output, F f)
+	IsNonInfiniteInputRange<R1>::_ && !Meta::IsConst<R1>::_ &&
+	IsNonInfiniteInputRange<R2>::_ && !Meta::IsConst<R2>::_ &&
+	IsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOf<R1>, ReturnValueTypeOf<R2>>::_
+> Transform2AdvanceToAdvance(R1& range1, R2& range2, OR& output, F f)
 {
 	while(!range1.Empty() && !range2.Empty())
 	{
@@ -120,22 +122,22 @@ template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
 }
 
 template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
-	Range::IsAsNonInfiniteInputRange<R1>::_ &&
-	Range::IsAsNonInfiniteInputRange<R2>::_ &&
-	Range::IsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOfAs<R1>, Range::ReturnValueTypeOfAs<R2>>::_
-> Transform2ToAdvance(R1&& range1, R2&& range2, OR&& output, F f)
+	IsAsNonInfiniteInputRange<R1>::_ &&
+	IsAsNonInfiniteInputRange<R2>::_ &&
+	IsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOfAs<R1>, ReturnValueTypeOfAs<R2>>::_
+> Transform2ToAdvance(R1&& range1, R2&& range2, OR& output, F f)
 {
 	auto range1Copy = Range::Forward<R1>(range1);
 	auto range2Copy = Range::Forward<R2>(range2);
-	return Transform2AdvanceToAdvance(range1Copy, range2Copy, Meta::Forward<OR>(output), f);
+	return Transform2AdvanceToAdvance(range1Copy, range2Copy, output, f);
 }
 
 template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
-	Range::IsAsNonInfiniteInputRange<R1>::_ &&
-	Range::IsAsNonInfiniteInputRange<R2>::_ &&
-	Range::IsAsOutputRange<OR>::_ &&
-	Meta::IsCallable<F, Range::ReturnValueTypeOfAs<R1>, Range::ReturnValueTypeOfAs<R2>>::_
+	IsAsNonInfiniteInputRange<R1>::_ &&
+	IsAsNonInfiniteInputRange<R2>::_ &&
+	IsAsOutputRange<OR>::_ &&
+	Meta::IsCallable<F, ReturnValueTypeOfAs<R1>, ReturnValueTypeOfAs<R2>>::_
 > Transform2To(R1&& range1, R2&& range2, OR&& output, F f)
 {
 	auto outputCopy = Range::Forward<OR>(output);
@@ -152,7 +154,7 @@ void Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiply
 void MulAdd(ArrayRange<float> dstOp1, float mul, float add);
 
 template<typename R> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_
 > AddAdvance(ArrayRange<float>& dstOp1, R&& op2)
 {
 	while(!dstOp1.Empty())
@@ -163,7 +165,7 @@ template<typename R> Meta::EnableIf<
 }
 
 template<typename R> Meta::EnableIf<
-	Range::IsInputRange<R>::_
+	IsInputRange<R>::_
 > Add(ArrayRange<float> dstOp1, const R& op2)
 {return AddAdvance(dstOp1, R(op2));}
 

@@ -30,6 +30,21 @@ public:
 	
 	forceinline RZip(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
 
+	forceinline RZip(const RZip& rhs): OriginalRanges(rhs.OriginalRanges) {}
+	forceinline RZip(RZip&& rhs): OriginalRanges(Meta::Move(rhs.OriginalRanges)) {}
+
+	forceinline RZip& operator=(const RZip& rhs)
+	{
+		OriginalRanges = rhs.OriginalRanges;
+		return *this;
+	}
+
+	forceinline RZip& operator=(RZip&& rhs)
+	{
+		OriginalRanges = Meta::Move(rhs.OriginalRanges);
+		return *this;
+	}
+
 	forceinline ReturnValueType First() const
 	{return Meta::TransformEachField(OriginalRanges, Fronter());}
 	
@@ -39,19 +54,19 @@ public:
 	forceinline bool Empty() const
 	{return AnyEmpty(OriginalRanges);}
 
-	template<typename U=size_t> forceinline Meta::EnableIf<
-		AllHasLength<RANGES...>::_,
-	U> Length() const
+
+	forceinline ReturnValueType Last() const {return Meta::TransformEachField(OriginalRanges, Backer());}
+	
+	forceinline void PopLast() {Meta::ForEachField(OriginalRanges, PopBacker());}
+
+
+	forceinline size_t Length() const
 	{return MinLength(OriginalRanges);}
 
-	template<typename U=RZip> Meta::EnableIf<
-		U::RangeType>=TypeEnum::RandomAccess,
-	ReturnValueType> operator[](size_t index) const
+	ReturnValueType operator[](size_t index) const
 	{return Meta::TransformEachField(OriginalRanges, Indexer{index});}
 
-	template<typename U=RZip> Meta::EnableIf<
-		U::RangeType>=TypeEnum::RandomAccess,
-	RZip> operator()(size_t startIndex, size_t endIndex) const
+	RZip operator()(size_t startIndex, size_t endIndex) const
 	{return Meta::TransformEachField(OriginalRanges, Slicer{startIndex, endIndex});}
 
 	forceinline bool operator==(const RZip& rhs) const {return OriginalRanges==rhs.OriginalRanges;}
@@ -70,9 +85,10 @@ RZip<AsRangeResultNoCRef<R0>, AsRangeResultNoCRef<RANGES>...> Zip(R0&& range0, R
 template<size_t N, typename RangeOfTuples> struct RUnzip
 {
 private:
-	typedef decltype(Meta::Get<N>(Meta::Val<ValueTypeOf<RangeOfTuples>>())) ReturnValueType;
+	typedef decltype(Meta::Get<N>(Meta::Val<ReturnValueTypeOf<RangeOfTuples>>())) ReturnValueType;
 public:
-	enum: bool {RangeIsFinite = IsFiniteRange<RangeOfTuples>::_, RangeIsInfinite = IsInfiniteRange<RangeOfTuples>::_};
+	enum: bool {RangeIsFinite = IsFiniteRange<RangeOfTuples>::_,
+		RangeIsInfinite = IsInfiniteRange<RangeOfTuples>::_};
 	
 	RangeOfTuples OriginalRange;
 
@@ -85,28 +101,18 @@ public:
 	forceinline void PopFirst() {OriginalRange.PopFirst();}
 	forceinline bool Empty() const {return OriginalRange.Empty();}
 
-	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasIndex<U>::_,
-	ReturnValueType> operator[](size_t index) const
+	forceinline ReturnValueType operator[](size_t index) const
 	{return Meta::Get<N>(OriginalRange[index]);}
 
-	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasSlicing<U>::_,
-	RUnzip> operator()(size_t start, size_t end) const
+	forceinline RUnzip operator()(size_t start, size_t end) const
 	{return RUnzip(OriginalRange(start, end));}
 
-	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasLast<U>::_,
-	ReturnValueType> Last() const
+	forceinline ReturnValueType Last() const
 	{return Meta::Get<N>(OriginalRange.Last());}
 
-	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasPopLast<U>::_
-	> PopLast() const {OriginalRange.PopLast();}
+	forceinline void PopLast() const {OriginalRange.PopLast();}
 
-	template<typename U=RangeOfTuples> forceinline Meta::EnableIf<
-		HasLength<U>::_,
-	size_t> Length() const {OriginalRange.Length();}
+	forceinline size_t Length() const {return OriginalRange.Length();}
 
 	forceinline bool operator==(const RUnzip& rhs) const
 	{return OriginalRange==rhs.OriginalRange;}

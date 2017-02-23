@@ -2,7 +2,7 @@
 
 #include "Range/Special/SparseRange.h"
 #include "Memory/Memory.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Range {
 

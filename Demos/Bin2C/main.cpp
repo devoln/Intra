@@ -1,7 +1,7 @@
 ﻿#include "IO/Stream.h"
 #include "IO/File.h"
 #include "Range/Generators/StringView.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 #include "Algo/String/Parse.h"
 #include "Algo/String/Path.h"
 #include "Algo/Search/Trim.h"

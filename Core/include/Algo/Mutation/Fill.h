@@ -3,14 +3,17 @@
 #include "Range/ForwardDecls.h"
 #include "Range/Decorators/Cycle.h"
 #include "Platform/CppWarnings.h"
+#include "Range/Concepts.h"
 
 namespace Intra { namespace Algo {
+
+using namespace Range::Concepts;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename R> Meta::EnableIf<
-	Range::IsAssignableRange<R>::_ && !Range::IsInfiniteRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Meta::IsConvertible<T, Range::ValueTypeOf<R>>::_
+	IsAssignableRange<R>::_ && !IsInfiniteRange<R>::_ && !Meta::IsConst<R>::_ &&
+	Meta::IsConvertible<T, ValueTypeOf<R>>::_
 > FillAdvance(R& range, const T& value)
 {
 	while(!range.Empty())
@@ -23,8 +26,8 @@ template<typename T, typename R> Meta::EnableIf<
 
 
 template<typename R, typename PR> Meta::EnableIf<
-	Range::IsAssignableRange<R>::_ && !Range::IsInfiniteRange<R>::_ && !Meta::IsConst<R>::_ &&
-	(Range::IsAsForwardRange<PR>::_ || Range::IsAsInfiniteRange<PR>::_)
+	IsAssignableRange<R>::_ && !IsInfiniteRange<R>::_ && !Meta::IsConst<R>::_ &&
+	(IsAsForwardRange<PR>::_ || IsAsInfiniteRange<PR>::_)
 > FillPatternAdvance(R& range, PR&& pattern)
 {
 	auto patternCopy = Range::Cycle(Range::Forward<PR>(pattern));
@@ -36,9 +39,9 @@ template<typename R, typename PR> Meta::EnableIf<
 	}
 }
 
-template<typename T, typename R> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	Meta::IsConvertible<T, Range::ValueTypeOf<R>>::_
+template<typename T, typename R, typename AsR = AsRangeResult<R>> forceinline Meta::EnableIf<
+	IsConsumableRange<AsR>::_ && IsAssignableRange<AsR>::_ &&
+	Meta::IsConvertible<T, ValueTypeOf<AsR>>::_
 > Fill(R&& range, const T& value)
 {
 	auto dst = Range::Forward<R>(range);
@@ -46,14 +49,14 @@ template<typename T, typename R> forceinline Meta::EnableIf<
 }
 
 
-template<typename R> forceinline Meta::EnableIf<
-	Range::IsAsNonInfiniteForwardRange<R>::_ &&
-	!(Range::IsAsArrayRange<R>::_ && Meta::IsAlmostPod<Range::ValueTypeOfAs<R>>::_)
+template<typename R, typename AsR> forceinline Meta::EnableIf<
+	IsConsumableRange<AsR>::_ && IsAssignableRange<AsR>::_ &&
+	!(IsArrayRange<AsR>::_ && Meta::IsAlmostPod<ValueTypeOf<AsR>>::_)
 > FillZeros(R&& range)
-{Fill(Range::Forward<R>(range), Range::ValueTypeOf<R>(0));}
+{Fill(Range::Forward<R>(range), ValueTypeOf<AsR>(0));}
 
-template<typename R> forceinline Meta::EnableIf<
-	Range::IsAsArrayRange<R>::_ && Meta::IsAlmostPod<Range::ValueTypeOfAs<R>>::_
+template<typename R, typename AsR=AsRangeResult<R>> forceinline Meta::EnableIf<
+	IsArrayRange<AsR>::_ && Meta::IsAlmostPod<ValueTypeOf<AsR>>::_
 > FillZeros(R&& range)
 {
 	auto dst = Range::Forward<R>(range);
@@ -61,8 +64,7 @@ template<typename R> forceinline Meta::EnableIf<
 }
 
 template<typename R, typename PR> forceinline Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ &&
-	Range::IsAsAccessibleRange<PR>::_
+	IsAsConsumableRange<R>::_ && IsAsAccessibleRange<PR>::_
 > FillPattern(R&& range, PR&& pattern)
 {
 	auto dst = Range::Forward<R>(range);

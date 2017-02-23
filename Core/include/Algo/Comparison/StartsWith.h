@@ -27,11 +27,10 @@ template<typename R, typename RW> bool StartsAdvanceWithAdvance(R& range, RW& wh
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsAccessibleRange<R>::_ &&
-	Range::IsConsumableRange<RW>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<RW>, Range::ValueTypeOf<R>>::_ &&
-	!(Range::HasLength<R>::_ &&
-		Range::HasLength<RW>::_),
+	IsAccessibleRange<R>::_ &&
+	IsConsumableRange<RW>::_ &&
+	Meta::IsConvertible<ValueTypeOf<RW>, ValueTypeOf<R>>::_ &&
+	!(HasLength<R>::_ && HasLength<RW>::_),
 bool> StartsWith(R&& range, RW&& what)
 {
 	auto rangeCopy = Meta::Forward<R>(range);
@@ -40,11 +39,10 @@ bool> StartsWith(R&& range, RW&& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsAccessibleRange<R>::_ &&
-	Range::IsConsumableRange<RW>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<RW>, Range::ValueTypeOf<R>>::_ &&
-	!(Range::HasData<R>::_ && Range::HasData<RW>::_ && Meta::IsAlmostPod<Range::ValueTypeOf<R>>::_) &&
-	Range::HasLength<R>::_ && Range::HasLength<RW>::_,
+	IsAccessibleRangeWithLength<R>::_ &&
+	IsAccessibleRangeWithLength<RW>::_ &&
+	Meta::IsConvertible<ValueTypeOf<RW>, ValueTypeOf<R>>::_ &&
+	!(HasData<R>::_ && HasData<RW>::_ && Meta::IsAlmostPod<ValueTypeOf<R>>::_),
 bool> StartsWith(R&& range, RW&& what)
 {
 	if(range.Length()<what.Length()) return false;
@@ -54,9 +52,9 @@ bool> StartsWith(R&& range, RW&& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsArrayRange<R>::_ &&
-	Range::IsArrayRangeOfExactly<RW, Range::ValueTypeOf<R>>::_ &&
-	Meta::IsAlmostPod<Range::ValueTypeOf<R>>::_,
+	IsArrayRange<R>::_ &&
+	IsArrayRangeOfExactly<RW, ValueTypeOf<R>>::_ &&
+	Meta::IsAlmostPod<ValueTypeOf<R>>::_,
 bool> StartsWith(const R& range, const RW& what)
 {
 	if(range.Length()<what.Length()) return false;
@@ -64,8 +62,8 @@ bool> StartsWith(const R& range, const RW& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	(!Range::IsInputRange<R>::_ && Range::IsAsForwardRange<R>::_) ||
-	(!Range::IsInputRange<RW>::_ && Range::IsAsForwardRange<RW>::_),
+	(!IsInputRange<R>::_ && IsAsForwardRange<R>::_) ||
+	(!IsInputRange<RW>::_ && IsAsForwardRange<RW>::_),
 bool> StartsWith(R&& range, RW&& what)
 {return StartsWith(Range::Forward<R>(range), Range::Forward<RW>(what));}
 
@@ -74,8 +72,8 @@ bool> StartsWith(R&& range, RW&& what)
 //! Если да, то начало range смещается к первому элементу, идущему сразу после вхождения what.
 //! Иначе range остаётся без изменений.
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	Range::IsForwardRange<R>::_ &&
-	Range::IsAsNonInfiniteForwardRange<RW>::_,
+	IsForwardRange<R>::_ &&
+	IsAsNonInfiniteForwardRange<RW>::_,
 bool> StartsAdvanceWith(R& range, RW&& what)
 {
 	auto whatCopy = Range::Forward<RW>(what);
@@ -85,10 +83,10 @@ bool> StartsAdvanceWith(R& range, RW&& what)
 }
 
 template<typename R, typename RWs> Meta::EnableIf<
-	Range::IsForwardRange<R>::_ &&
-	Range::IsInputRange<RWs>::_ && !Range::IsInfiniteRange<RWs>::_ &&
-	Range::IsNonInfiniteForwardRange<Range::ValueTypeOf<RWs>>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOf<Range::ValueTypeOf<RWs>>, Range::ValueTypeOf<R>>::_,
+	IsForwardRange<R>::_ &&
+	IsNonInfiniteInputRange<RWs>::_ &&
+	IsNonInfiniteForwardRange<ValueTypeOf<RWs>>::_ &&
+	Meta::IsConvertible<ValueTypeOf<ValueTypeOf<RWs>>, ValueTypeOf<R>>::_,
 bool> StartsWithAnyAdvance(const R& range, RWs& subranges, size_t* oSubrangeIndex = null)
 {
 	if(oSubrangeIndex!=null) *oSubrangeIndex = 0;
@@ -102,10 +100,10 @@ bool> StartsWithAnyAdvance(const R& range, RWs& subranges, size_t* oSubrangeInde
 }
 
 template<typename R, typename RWs> forceinline Meta::EnableIf<
-	Range::IsAsForwardRange<R>::_ &&
-	Range::IsAsConsumableRange<RWs>::_ &&
-	Range::IsAsNonInfiniteForwardRange<Range::ValueTypeOfAs<RWs>>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOfAs<Range::ValueTypeOfAs<RWs>>, Range::ValueTypeOfAs<R>>::_,
+	IsAsForwardRange<R>::_ &&
+	IsAsConsumableRange<RWs>::_ &&
+	IsAsNonInfiniteForwardRange<ValueTypeOfAs<RWs>>::_ &&
+	Meta::IsConvertible<ValueTypeOfAs<ValueTypeOfAs<RWs>>, ValueTypeOfAs<R>>::_,
 bool> StartsWithAny(R&& range, RWs&& subranges, size_t* oSubrangeIndex = null)
 {
 	auto subrangesCopy = Range::Forward<RWs>(subranges);
@@ -113,10 +111,10 @@ bool> StartsWithAny(R&& range, RWs&& subranges, size_t* oSubrangeIndex = null)
 }
 
 template<typename R, typename RWs> forceinline Meta::EnableIf<
-	Range::IsForwardRange<R>::_ &&
-	Range::IsAsConsumableRange<RWs>::_ &&
-	Range::IsAsNonInfiniteForwardRange<Range::ValueTypeOfAs<RWs>>::_ &&
-	Meta::IsConvertible<Range::ValueTypeOfAs<Range::ValueTypeOfAs<RWs>>, Range::ValueTypeOf<R>>::_,
+	IsForwardRange<R>::_ &&
+	IsAsConsumableRange<RWs>::_ &&
+	IsAsNonInfiniteForwardRange<ValueTypeOfAs<RWs>>::_ &&
+	Meta::IsConvertible<ValueTypeOfAs<ValueTypeOfAs<RWs>>, ValueTypeOf<R>>::_,
 bool> StartsAdvanceWithAny(R& range, RWs&& subranges, size_t* oSubrangeIndex = null)
 {
 	auto subrangesCopy = Range::Forward<RWs>(subranges);

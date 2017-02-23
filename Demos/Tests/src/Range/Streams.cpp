@@ -14,7 +14,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
-#include "Containers/List.h"
+#include "Container/Sequential/List.h"
 
 using namespace Intra;
 using namespace Intra::IO;

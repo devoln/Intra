@@ -27,7 +27,6 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 template<typename T> struct ForwardRange: InputRange<T>
 {
 protected:
-	typedef typename InputRange<T>::value_type value_type;
 	struct Interface: InputRange<T>::Interface
 	{
 		virtual Interface* Clone() const = 0;
@@ -60,6 +59,8 @@ private:
 	}
 
 public:
+	typedef Meta::RemoveConstRef<T> value_type;
+
 	forceinline ForwardRange(null_t=null) {}
 
 	forceinline ForwardRange(ForwardRange&& rhs):
@@ -91,10 +92,10 @@ public:
 		return *this;
 	}
 
-	forceinline ForwardRange(InitializerList<Meta::RemoveConst<value_type>> arr):
+	forceinline ForwardRange(InitializerList<value_type> arr):
 		ForwardRange(AsRange(arr)) {}
 
-	forceinline ForwardRange& operator=(InitializerList<Meta::RemoveConst<value_type>> arr)
+	forceinline ForwardRange& operator=(InitializerList<value_type> arr)
 	{
 		operator=(AsRange(arr));
 		return *this;

@@ -14,7 +14,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
-#include "Containers/List.h"
+#include "Container/Sequential/List.h"
 
 #include <stdlib.h>
 
@@ -36,7 +36,9 @@ void RunComposedRangeTests()
 	StringView strs1[]  = {"range", "testing", "program"};
 	StringView strs2[] = {"C++", "крут"};
 
-	Console.PrintLine("В тесте используются три массива:", endl, strs, endl, strs1, endl, strs2);
+	Console.PrintLine("В тесте используются три массива:");
+	Console.PrintLine(strs);
+	Console.PrintLine(strs1, endl, strs2);
 	Console.PrintLine(endl, "Пример вывода initializer list:");
 	Console.PrintLine(AsRange<double>({4353.435, 3243.23, 21.421, 12355.5, 64532}));
 

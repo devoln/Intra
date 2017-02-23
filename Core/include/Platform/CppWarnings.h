@@ -39,6 +39,7 @@
 
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0))
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
 
 #elif defined(__GNUC__)
 #define INTRA_WARNING_PUSH \
@@ -65,6 +66,8 @@
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 #define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("GCC diagnostic ignored \"-Wctor-dtor-privacy\"")
 
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
+
 #elif defined(__clang__)
 #define INTRA_WARNING_PUSH \
 	_Pragma("clang diagnostic push")
@@ -89,6 +92,7 @@
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 #define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("clang diagnostic ignored \"-Wctor-dtor-privacy\"")
 
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
 #else
 
@@ -100,6 +104,7 @@
 #define INTRA_DISABLE_REDUNDANT_WARNINGS
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS
 #define INTRA_WARNING_POP
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
 #endif
 

@@ -8,3 +8,4 @@
 #include "Algo/String.hh"
 #include "Algo/Comparison.hh"
 #include "Algo/Hash.hh"
+#include "Algo/Raw.hh"

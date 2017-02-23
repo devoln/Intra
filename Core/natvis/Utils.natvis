@@ -4,9 +4,9 @@
 	
     <Type Name="Intra::Utils::Optional&lt;*&gt;">
     <DisplayString Condition="!mNotNull">null</DisplayString>
-    <DisplayString>{(value_type&amp;)mVal}</DisplayString>
+    <DisplayString>{(Type&amp;)mVal}</DisplayString>
     <Expand>
-      <ExpandedItem>(value_type&amp;)mVal</ExpandedItem>
+      <ExpandedItem>(Type&amp;)mVal</ExpandedItem>
     </Expand>
   </Type>
 	

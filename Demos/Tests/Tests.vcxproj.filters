@@ -1,13 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src/PerfTestArray.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src/PerfTesting.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src/PerfTestMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src/PerfTestRandom.cpp">
@@ -19,26 +13,29 @@
     <ClCompile Include="src/PerfTestSort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src/PerfTestString.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Range\Streams.cpp">
-      <Filter>Source Files\Ranges</Filter>
+      <Filter>Source Files\Range</Filter>
     </ClCompile>
     <ClCompile Include="src\Range\Polymorphic.cpp">
-      <Filter>Source Files\Ranges</Filter>
+      <Filter>Source Files\Range</Filter>
     </ClCompile>
     <ClCompile Include="src\Range\Composing.cpp">
-      <Filter>Source Files\Ranges</Filter>
+      <Filter>Source Files\Range</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Container\Array.cpp">
+      <Filter>Source Files\Container</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Container\Map.cpp">
+      <Filter>Source Files\Container</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Container\String.cpp">
+      <Filter>Source Files\Container</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Range\StlInterop.cpp">
+      <Filter>Source Files\Range</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src/PerfTestArray.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src/PerfTestMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/PerfTestRandom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -48,11 +45,17 @@
     <ClInclude Include="src/PerfTestSort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/PerfTestString.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Range\Header.h">
-      <Filter>Header Files\Ranges</Filter>
+      <Filter>Header Files\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Container\Array.h">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Container\Map.h">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Container\String.h">
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -62,11 +65,17 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{7e61effa-22df-438b-ad91-2dd11c35ed78}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\Ranges">
+    <Filter Include="Header Files\Container">
+      <UniqueIdentifier>{7549bc08-4654-4014-aa89-f87a8986a836}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Range">
       <UniqueIdentifier>{ad7e676c-86d0-484b-b89b-7af3db87604e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Ranges">
+    <Filter Include="Source Files\Range">
       <UniqueIdentifier>{d08bb8a2-025a-4eec-bca9-50b30d10863a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Container">
+      <UniqueIdentifier>{a9c27421-d494-4dc0-bfcb-dc0164cf379a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

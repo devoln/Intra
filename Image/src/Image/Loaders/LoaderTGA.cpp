@@ -63,7 +63,7 @@ AnyImage LoaderTGA::Load(IInputStream& stream, size_t bytes) const
 	if(!compressedRLE)
 	{
 		ReadPixelDataBlock(stream, {result.Info.Size.x, result.Info.Size.y},
-			result.Info.Format, result.Info.Format, false, true, 4, result.LineAlignment, result.Data());
+			result.Info.Format, result.Info.Format, false, true, 4, result.LineAlignment, result.Data);
 		return result;
 	}
 

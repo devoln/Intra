@@ -26,8 +26,18 @@ extern "C" char* gets(char* str); //Затыкаем ошибку в станд�
 
 #ifdef _MSC_VER
 #define INTRA_CRTDECL __cdecl
+
+#ifndef INTRA_AVOID_STD_HEADERS
+#define INTRA_AVOID_STD_HEADERS 1
+#endif
+
 #else
 #define INTRA_CRTDECL
+
+#ifndef INTRA_AVOID_STD_HEADERS
+#define INTRA_AVOID_STD_HEADERS 0
+#endif
+
 #endif
 
 #ifdef _MSC_VER

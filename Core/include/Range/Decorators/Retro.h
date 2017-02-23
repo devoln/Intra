@@ -23,9 +23,7 @@ template<typename R> struct RRetro
 	forceinline ReturnValueTypeOf<R> Last() const {return OriginalRange.First();}
 	forceinline void PopLast() {OriginalRange.PopFirst();}
 	
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasIndex<U>::_
-	> operator[](size_t index) const {return OriginalRange[Length()-1-index];}
+	ReturnValueTypeOf<R> operator[](size_t index) const {return OriginalRange[Length()-1-index];}
 
 	bool operator==(const RRetro& rhs) const {return OriginalRange==rhs.OriginalRange;}
 
@@ -33,9 +31,7 @@ template<typename R> struct RRetro
 		HasLength<U>::_,
 	size_t> Length() const {return OriginalRange.Length();}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasSlicing<U>::_,
-	RRetro> operator()(size_t first, size_t end) const
+	forceinline RRetro operator()(size_t first, size_t end) const
 	{return RRetro(OriginalRange(Length()-end, Length()-first));}
 
 	forceinline const R& Retro() const {return OriginalRange;}

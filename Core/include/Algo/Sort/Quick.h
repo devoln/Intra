@@ -9,18 +9,18 @@
 namespace Intra { namespace Algo {
 
 template<typename C, typename ArrRange> Meta::EnableIf<
-	Range::IsArrayRange<ArrRange>::_ &&
-	Range::IsAssignableRange<ArrRange>::_
+	IsAsArrayRange<ArrRange>::_ &&
+	IsAsAssignableRange<ArrRange>::_
 > QuickSort(const ArrRange& range, C comparer);
 
 
-template<typename ArrRange> Meta::EnableIf<
-	Range::IsArrayRange<ArrRange>::_ &&
-	Range::IsAssignableRange<ArrRange>::_
-> QuickSort(const ArrRange& range)
+template<typename R> Meta::EnableIf<
+	IsAsArrayRange<R>::_ &&
+	IsAsAssignableRange<R>::_
+> QuickSort(R&& range)
 {
-	return QuickSort<Comparers::Function<Range::ValueTypeOf<ArrRange>>>(
-		range, Op::Less<Range::ValueTypeOf<ArrRange>>);
+	return QuickSort<Comparers::Function<ValueTypeOfAs<R>>>(
+		Range::Forward<R>(range), Op::Less<ValueTypeOfAs<R>>);
 }
 
 namespace D {
@@ -111,7 +111,8 @@ template<typename T, typename C> Meta::Pair<T*, T*> unguarded_partition(ArrayRan
 	}
 }
 
-template<typename T, typename C> void sort_pass(ArrayRange<T> range, intptr ideal, C comparer, size_t insertionSortThreshold=32)
+template<typename T, typename C> void sort_pass(ArrayRange<T> range,
+	intptr ideal, C comparer, size_t insertionSortThreshold=32)
 {
 	size_t count;
 	while(range.Length()>insertionSortThreshold && ideal>0)
@@ -147,12 +148,14 @@ template<typename T, typename C> void sort_pass(ArrayRange<T> range, intptr idea
 }
 
 
-template<typename C, typename ArrRange> Meta::EnableIf<
-	Range::IsArrayRange<ArrRange>::_ &&
-	Range::IsAssignableRange<ArrRange>::_
-> QuickSort(const ArrRange& range, C comparer)
+template<typename C, typename R> Meta::EnableIf<
+	IsAsArrayRange<R>::_ &&
+	IsAsAssignableRange<R>::_
+> QuickSort(R&& range, C comparer)
 {
-	D::sort_pass(ArrayRange<Range::ValueTypeOf<ArrRange>>(range.Data(), range.Length()), intptr(range.Length()), comparer);
+	auto rangeCopy = Range::Forward<R>(range);
+	ArrayRange<ValueTypeOfAs<R>> arr(rangeCopy.Data(), rangeCopy.Length());
+	D::sort_pass(arr, intptr(rangeCopy.Length()), comparer);
 }
 
 }}

@@ -3,12 +3,13 @@
 #include "Platform/CppWarnings.h"
 #include "Concepts.h"
 #include "ForwardDecls.h"
+#include "Container/Concepts.h"
+#include "Iterator/IteratorConcepts.h"
+#include "Iterator/IteratorRange.h"
 
-namespace Intra {
+namespace Intra { namespace Range {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Range {
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ || IsOutputRange<R>::_ || IsOutputCharRange<R>::_,
@@ -20,24 +21,37 @@ template<typename T, typename=Meta::EnableIf<
 	!IsInputRange<T>::_ && HasAsRangeMethod<T>::_
 >> decltype(Meta::Val<T>().AsRange()) AsRange(T&& v) {return v.AsRange();}
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRange, AsRange(Meta::Val<T>()));
-
 template<typename T> struct ArrayRange;
 template<typename Char> struct GenericStringView;
 
+template<typename C, typename D=C, typename=Meta::EnableIf<
+	!IsInputRange<C>::_ && !HasAsRangeMethod<C>::_ &&
+	Container::Has_data<C>::_ && Container::Has_size<C>::_
+>> forceinline ArrayRange<Meta::RemoveReference<decltype(*Meta::Val<D>().begin())>> AsRange(C&& v)
+{
+	typedef Meta::RemoveReference<decltype(*Meta::Val<C>().begin())> T;
+	return {const_cast<T*>(v.data()), v.size()};
+}
+
+template<typename C, typename D=C, typename E=D, typename=Meta::EnableIf<
+	!IsInputRange<C>::_ && !HasAsRangeMethod<C>::_ &&
+	!(Container::Has_data<C>::_ && Container::Has_size<C>::_) &&
+	IteratorConcepts::Has_begin_end<C>::_
+>> forceinline IteratorRange<decltype(Meta::Val<D>().begin()), decltype(Meta::Val<E>().end())> AsRange(C&& v)
+{return {v.begin(), v.end()};}
+
+
+INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRange, AsRange(Meta::Val<T>()));
+
+namespace Concepts {
+
 namespace RD {
 
-template<typename T, int=HasAsRange<T>::_? 1:
-	(Meta::IsArrayType<Meta::RemoveReference<T>>::_? 2: 0)
-> struct AsRangeResult;
-template<typename T> struct AsRangeResult<T, 1>
-{typedef decltype(AsRange(Meta::Val<T>())) _;};
-
-template<typename T> struct AsRangeResult<T, 0>
+template<typename T, bool=HasAsRange<T>::_> struct AsRangeResult
 {typedef T _;};
 
-template<typename T, size_t N> struct AsRangeResult<T(&)[N], 2>
-{typedef Meta::SelectType<GenericStringView<Meta::RemoveConst<T>>, ArrayRange<T>, Meta::IsCharType<T>::_> _;};
+template<typename T> struct AsRangeResult<T, true>
+{typedef decltype(AsRange(Meta::Val<T>())) _;};
 
 template<typename T> struct AsRangeResultNoCRef
 {typedef Meta::RemoveConstRef<typename AsRangeResult<T>::_> _;};
@@ -82,6 +96,9 @@ template<typename T> using ValueTypeOfAs = ValueTypeOf<AsRangeResult<T>>;
 template<typename R> struct IsAsAccessibleRange: IsAccessibleRange<AsRangeResult<R>> {};
 template<typename R> struct IsAsConsumableRange: IsConsumableRange<AsRangeResult<R>> {};
 template<typename R, typename T> struct IsAsConsumableRangeOf: IsConsumableRangeOf<AsRangeResult<R>, T> {};
+
+}
+using namespace Concepts;
 
 template<typename R> forceinline Meta::EnableIf<
 	IsAsInputRange<R>::_ || IsAsOutputRange<R>::_,

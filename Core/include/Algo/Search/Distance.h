@@ -10,6 +10,8 @@ namespace Range {template<typename T> struct ArrayRange;}
 
 namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Удаляет элементы из from, пока не получится to или from не станет пустым.
@@ -17,7 +19,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 //! Диапазон должен определять операцию сравнения на равенство.
 //! \returns Количество удалённых элементов.
 template<typename R> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ && !Range::HasData<R>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ && !HasData<R>::_,
 size_t> DistanceAdvanceTo(R& from, const R& to)
 {
 	size_t result = 0;
@@ -34,7 +36,7 @@ size_t> DistanceAdvanceTo(R& from, const R& to)
 //! Диапазон должен определять операцию сравнения на равенство.
 //! \returns Количество удалённых элементов.
 template<typename R> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ && Range::HasData<R>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ && HasData<R>::_,
 size_t> DistanceAdvanceTo(R& from, const R& to)
 {
 	size_t result = size_t(to.Data()-from.Data());
@@ -46,11 +48,11 @@ size_t> DistanceAdvanceTo(R& from, const R& to)
 //! Диапазон должен определять операцию сравнения на равенство.
 //! \returns Количество удалённых элементов.
 template<typename R> Meta::EnableIf<
-	Range::IsAccessibleRange<R>::_,
+	IsAccessibleRange<R>::_,
 size_t> DistanceTo(R&& from, R&& to)
 {
 	auto fromCopy = Meta::Forward<R>(from);
-	return Algo::DistanceAdvanceTo(fromCopy, to);
+	return DistanceAdvanceTo(fromCopy, to);
 }
 
 INTRA_WARNING_POP

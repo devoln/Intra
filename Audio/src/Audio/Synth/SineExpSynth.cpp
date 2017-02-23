@@ -6,7 +6,7 @@
 #include "Math/Simd.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Fill.h"
-#include "Containers/Array.h"
+#include "Container/Sequential/Array.h"
 #include "Math/Random.h"
 #include "Audio/AudioBuffer.h"
 
@@ -106,12 +106,12 @@ void FastSineExp(float volume, float coeff, float freq,
 	float ek = Math::Exp(-coeff/float(sampleRate));
 	float exp = 1.0f;
 	if(!add) while(!inOutSamples.Empty())
-		ExponentialAttenuate(inOutSamples, sineFragment.Samples(), exp, ek);
+		ExponentialAttenuate(inOutSamples, sineFragment.Samples, exp, ek);
 	else while(!inOutSamples.Empty())
-		ExponentialAttenuateAdd(inOutSamples, sineFragment.Samples(), exp, ek);
+		ExponentialAttenuateAdd(inOutSamples, sineFragment.Samples, exp, ek);
 
-	if(!add) ExponentialAttenuate(inOutSamples, sineFragment.Samples(), exp, ek);
-	else ExponentialAttenuateAdd(inOutSamples, sineFragment.Samples(), exp, ek);
+	if(!add) ExponentialAttenuate(inOutSamples, sineFragment.Samples, exp, ek);
+	else ExponentialAttenuateAdd(inOutSamples, sineFragment.Samples, exp, ek);
 //#endif
 }
 

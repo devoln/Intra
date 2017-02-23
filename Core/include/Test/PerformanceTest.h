@@ -5,6 +5,7 @@
 #include "Range/Generators/StringView.h"
 #include "Math/Random.h"
 #include "Algo/Hash/Murmur.h"
+#include "Container/ForwardDecls.h"
 
 namespace Intra {
 
@@ -59,7 +60,7 @@ template<size_t N> void GenerateRandomValue(Big<N>& dst)
 	for(size_t i=0; i<N/sizeof(size_t); i++) GenerateRandomValue(*ptr++);
 }
 
-template<typename Char, typename Allocator> void GenerateRandomValue(GenericString<Char, Allocator>& dst)
+template<typename Char> void GenerateRandomValue(GenericString<Char>& dst)
 {
 	const size_t size = Math::Random<uint>::Global(5, 30);
 	dst.SetLengthUninitialized(size);

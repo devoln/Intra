@@ -11,14 +11,16 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
-
+INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
 namespace Intra {namespace Algo {
 
-INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethod, Meta::Val<T1>().CopyAdvanceToAdvance(Meta::Val<T2&>()),,);
-INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethodN, Meta::Val<T1>().CopyAdvanceToAdvance(Meta::Val<T2&>(), size_t()),,);
+using namespace Range::Concepts;
 
-//! Данный файл содержит алгоритмы копирования данных диапазонов
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethod, Meta::Val<T1>().CopyAdvanceToAdvance(Meta::Val<T2&>()),,);
+
+//! @file
+//! Данный файл содержит алгоритмы копирования данных диапазонов.
 /**
 Существует три варианта копирования:
 1) Копирование до тех пор, пока источник или приёмник не закончатся.
@@ -37,24 +39,14 @@ INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethodN, Meta::Val<T1>()
 когда начало диапазона src расположено после начала диапазона dst.
 **/
 
-template<typename R, typename OR> Meta::EnableIf<
-	Range::IsTrivCopyCompatibleArrayWith<R, OR>::_,
-size_t> CopyAdvanceToAdvance(R& src, OR& dst)
-{
-	size_t minLen = Op::Min(src.Length(), dst.Length());
-	C::memmove(dst.Data(), src.Data(), minLen*sizeof(src.First()));
-	Range::PopFirstExactly(src, minLen);
-	Range::PopFirstExactly(dst, minLen);
-	return minLen;
-}
 
+//! Неоптимизированная версия алгоритма копирования. Может быть эффективнее оптимизированной версии
+//! для копирования очень малого количества элементов массива или символов строк в обход memcpy\memmove.
 template<typename R, typename OR> Meta::EnableIf<
-	!Range::IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ &&
-	Range::HasEmpty<OR>::_ && !Range::IsInfiniteRange<OR>::_ &&
-	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
-size_t> CopyAdvanceToAdvance(R& src, OR& dst)
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	HasEmpty<OR>::_ && !IsInfiniteRange<OR>::_,
+size_t> CopyAdvanceToAdvanceByOne(R& src, OR& dst)
 {
 	size_t minLen = 0;
 	while(!src.Empty() && !dst.Empty())
@@ -67,10 +59,47 @@ size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 }
 
 template<typename R, typename OR> Meta::EnableIf<
-	!Range::IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ &&
-	(!Range::HasEmpty<OR>::_ || Range::IsInfiniteRange<OR>::_) &&
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	(!HasEmpty<OR>::_ || IsInfiniteRange<OR>::_),
+size_t> CopyAdvanceToAdvanceByOne(R& src, OR& dst)
+{
+	size_t minLen = 0;
+	while(!src.Empty())
+	{
+		dst.Put(src.First());
+		src.PopFirst();
+		minLen++;
+	}
+	return minLen;
+}
+
+
+template<typename R, typename OR> Meta::EnableIf<
+	IsTrivCopyCompatibleArrayWith<R, OR>::_,
+size_t> CopyAdvanceToAdvance(R& src, OR& dst)
+{
+	size_t minLen = Op::Min(src.Length(), dst.Length());
+	C::memmove(dst.Data(), src.Data(), minLen*sizeof(src.First()));
+	Range::PopFirstExactly(src, minLen);
+	Range::PopFirstExactly(dst, minLen);
+	return minLen;
+}
+
+template<typename R, typename OR> Meta::EnableIf<
+	!IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	HasEmpty<OR>::_ && !IsInfiniteRange<OR>::_ &&
+	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
+size_t> CopyAdvanceToAdvance(R& src, OR& dst)
+{return CopyAdvanceToAdvanceByOne(src, dst);}
+
+template<typename R, typename OR> Meta::EnableIf<
+	!IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	(!HasEmpty<OR>::_ || IsInfiniteRange<OR>::_) &&
 	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 {
@@ -85,25 +114,17 @@ size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 }
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ &&
-	(!Range::IsInfiniteRange<R>::_ || Range::HasEmpty<OR>::_) &&
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	(!IsInfiniteRange<R>::_ || HasEmpty<OR>::_) &&
 	HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 {return src.CopyAdvanceToAdvance(dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ &&
-	HasCopyAdvanceToAdvanceMethodN<R&, OR&>::_,
-size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
-{return src.CopyAdvanceToAdvanceN(dst, n);}
-
-template<typename R, typename OR> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ && Range::HasEmpty<OR>::_ &&
-	!Range::IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
-	!HasCopyAdvanceToAdvanceMethodN<R&, OR&>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ && HasEmpty<OR>::_ &&
+	!IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 {
 	size_t left = n;
@@ -116,10 +137,9 @@ size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 }
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ && !Range::HasEmpty<OR>::_ &&
-	!Range::IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
-	!HasCopyAdvanceToAdvanceMethodN<R&, OR&>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ && !HasEmpty<OR>::_ &&
+	!IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 {
 	size_t left = n;
@@ -132,7 +152,7 @@ size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 }
 
 template<typename R, typename OR> Meta::EnableIf<
-	Range::IsTrivCopyCompatibleArrayWith<R, OR>::_,
+	IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 {
 	size_t minLen = Op::Min(src.Length(), dst.Length());
@@ -144,9 +164,9 @@ size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 }
 
 template<typename R, typename OR, typename P> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ && Range::HasEmpty<OR>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ && HasEmpty<OR>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 {
 	size_t count = 0;
@@ -164,9 +184,9 @@ size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 }
 
 template<typename R, typename OR, typename P> Meta::EnableIf<
-	Range::IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ && !Range::HasEmpty<OR>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
+	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ && !HasEmpty<OR>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 {
 	size_t count = 0;
@@ -186,9 +206,9 @@ size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsOutputRangeOf<Meta::RemoveConstRef<OR>, Range::ValueTypeOf<R>>::_ &&
-	(!Range::IsInfiniteRange<R>::_ || Range::HasEmpty<Range::AsRangeResult<OR>>::_),
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsOutputRangeOf<Meta::RemoveConstRef<OR>, ValueTypeOf<R>>::_ &&
+	(!IsInfiniteRange<R>::_ || HasEmpty<AsRangeResult<OR>>::_),
 size_t> CopyAdvanceTo(R& src, OR&& dst)
 {
 	auto dstRange = Range::Forward<OR>(dst);
@@ -196,8 +216,8 @@ size_t> CopyAdvanceTo(R& src, OR&& dst)
 }
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsOutputRangeOf<Meta::RemoveConst<OR>, Range::ValueTypeOf<R>>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsOutputRangeOf<Meta::RemoveConst<OR>, ValueTypeOf<R>>::_,
 size_t> CopyAdvanceTo(R& src, size_t n, OR&& dst)
 {
 	auto dstRange = Range::Forward<OR>(dst);
@@ -205,9 +225,9 @@ size_t> CopyAdvanceTo(R& src, size_t n, OR&& dst)
 }
 
 template<typename R, typename OR, typename P> forceinline Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	Range::IsAsOutputRangeOf<OR, Range::ValueTypeOf<R>>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOf<R>>::_,
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsAsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<R>>::_,
 size_t> CopyAdvanceTo(R& src, OR&& dst, P pred)
 {
 	auto dstCopy = Range::Forward<OR>(dst);
@@ -215,9 +235,19 @@ size_t> CopyAdvanceTo(R& src, OR&& dst, P pred)
 }
 
 
+
+template<typename R, typename OR> Meta::EnableIf<
+	IsAsAccessibleRange<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOfAs<R>>::_,
+size_t> CopyToAdvanceByOne(R&& src, OR& dst)
+{
+	auto srcCopy = Range::Forward<R>(src);
+	return Algo::CopyAdvanceToAdvanceByOne(srcCopy, dst);
+}
+
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsAsAccessibleRange<R>::_ &&
-	Range::HasPut<OR, Range::ValueTypeOfAs<R>>::_,
+	IsAsAccessibleRange<R>::_ &&
+	HasPut<OR, ValueTypeOfAs<R>>::_,
 size_t> CopyToAdvance(R&& src, OR& dst)
 {
 	auto range = Range::Forward<R>(src);
@@ -225,8 +255,8 @@ size_t> CopyToAdvance(R&& src, OR& dst)
 }
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsAsAccessibleRange<R>::_ &&
-	Range::HasPut<OR, Range::ValueTypeOfAs<R>>::_,
+	IsAsAccessibleRange<R>::_ &&
+	HasPut<OR, ValueTypeOfAs<R>>::_,
 size_t> CopyToAdvance(R&& src, size_t n, OR& dst)
 {
 	auto range = Range::Forward<R>(src);
@@ -234,8 +264,8 @@ size_t> CopyToAdvance(R&& src, size_t n, OR& dst)
 }
 
 template<typename R, typename OR, typename P> forceinline Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ &&
-	Range::IsOutputRange<OR>::_,
+	IsAsConsumableRange<R>::_ &&
+	IsOutputRange<OR>::_,
 size_t> CopyToAdvance(R&& src, OR& dst, P pred)
 {
 	auto range = Range::Forward<R>(src);
@@ -244,8 +274,8 @@ size_t> CopyToAdvance(R&& src, OR& dst, P pred)
 
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ &&
-	Range::IsAsOutputRange<Meta::RemoveConst<OR>>::_,
+	IsAsConsumableRange<R>::_ &&
+	IsAsOutputRange<Meta::RemoveConst<OR>>::_,
 size_t> CopyTo(R&& src, OR&& dst)
 {
 	auto dstCopy = Range::Forward<OR>(dst);
@@ -253,8 +283,8 @@ size_t> CopyTo(R&& src, OR&& dst)
 }
 
 template<typename R, typename OR> forceinline Meta::EnableIf<
-	Range::IsAsAccessibleRange<R>::_ &&
-	Range::IsAsOutputRange<Meta::RemoveConst<OR>>::_,
+	IsAsAccessibleRange<R>::_ &&
+	IsAsOutputRange<Meta::RemoveConst<OR>>::_,
 size_t> CopyTo(R&& src, size_t n, OR&& dst)
 {
 	auto dstCopy = Range::Forward<OR>(dst);
@@ -262,9 +292,9 @@ size_t> CopyTo(R&& src, size_t n, OR&& dst)
 }
 
 template<typename R, typename OR, typename P> forceinline Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ &&
-	Range::IsAsOutputRange<Meta::RemoveConstRef<OR>>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOfAs<R>>::_,
+	IsAsConsumableRange<R>::_ &&
+	IsAsOutputRange<Meta::RemoveConstRef<OR>>::_ &&
+	Meta::IsCallable<P, ValueTypeOfAs<R>>::_,
 size_t> CopyTo(R&& range, OR&& dst, P pred)
 {
 	auto dstCopy = Range::Forward<OR>(dst);

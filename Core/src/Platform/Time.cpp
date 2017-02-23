@@ -1,7 +1,7 @@
 ﻿#include "Platform/Time.h"
 #include "Platform/Compatibility.h"
 #include "Platform/PlatformInfo.h"
-#include "Containers/String.h"
+#include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

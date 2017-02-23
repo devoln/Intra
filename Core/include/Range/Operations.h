@@ -11,9 +11,7 @@ namespace Intra { namespace Range {
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirstN, static_cast<size_t>(Meta::Val<T>().PopFirstN(size_t())));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirstExactly, Meta::Val<T>().PopFirstExactly(size_t()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLastN, static_cast<size_t>(Meta::Val<T>().PopLastN(size_t())));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLastExactly, Meta::Val<T>().PopLastExactly(size_t()));
 
 
 template<typename R> forceinline Meta::EnableIf<
@@ -22,7 +20,7 @@ size_t> Count(const R& range) {return range.Length();}
 
 template<typename R> Meta::EnableIf<
 	IsFiniteForwardRange<R>::_ && !Meta::IsConst<R>::_,
-size_t> CountAdvance(R&& range)
+size_t> CountAdvance(R& range)
 {
 	size_t result=0;
 	while(!range.Empty()) range.PopFirst(), result++;
@@ -30,27 +28,46 @@ size_t> CountAdvance(R&& range)
 } 
 
 template<typename R> forceinline Meta::EnableIf<
-	!HasLength<R>::_ && IsFiniteForwardRange<R>::_,
-size_t> Count(const R& range) {return CountAdvance(R(range));}
+	!HasLength<R>::_ && IsAsConsumableRange<R>::_,
+size_t> Count(R&& range)
+{
+	auto rangeCopy = Range::Forward<R>(range);
+	return CountAdvance(rangeCopy);
+}
+
+
+template<typename R> forceinline Meta::EnableIf<
+	HasLength<AsRangeResult<R>>::_,
+size_t> LengthOr0(R&& range) {return Range::Forward<R>(range).Length();}
+
+
+template<typename R> forceinline Meta::EnableIf<
+	!HasLength<AsRangeResult<R>>::_,
+size_t> LengthOr0(R&& range) {(void)range; return 0;}
 
 
 
 template<typename R> forceinline Meta::EnableIf<
 	HasSlicing<R>::_ && HasLength<R>::_ &&
-	!Meta::IsConst<R>::_ && !HasPopFirstExactly<R>::_
+	!Meta::IsConst<R>::_ && !HasPopFirstN<R>::_
 > PopFirstExactly(R& range, size_t elementsToPop)
 {range = range(elementsToPop, range.Length());}
 
 template<typename R> forceinline Meta::EnableIf<
-	IsInputRange<R>::_ && (!HasSlicing<R>::_ || !HasLength<R>::_) && 
-	!Meta::IsConst<R>::_ && !HasPopFirstExactly<R>::_
+	IsInputRange<R>::_ &&
+	(!HasSlicing<R>::_ || !HasLength<R>::_) && 
+	!Meta::IsConst<R>::_ && !HasPopFirstN<R>::_
 > PopFirstExactly(R& range, size_t elementsToPop)
 {while(elementsToPop --> 0) range.PopFirst();}
 
 template<typename R> forceinline Meta::EnableIf<
-	HasPopFirstExactly<R>::_
+	HasPopFirstN<R>::_
 > PopFirstExactly(R& range, size_t elementsToPop)
-{range.PopFirstExactly(elementsToPop);}
+{
+	size_t poppedElements = range.PopFirstN(elementsToPop);
+	INTRA_ASSERT(poppedElements==elementsToPop);
+	(void)poppedElements;
+}
 
 
 template<typename R> Meta::EnableIf<
@@ -58,7 +75,7 @@ template<typename R> Meta::EnableIf<
 	IsFiniteInputRange<R>::_ && HasSlicing<R>::_,
 size_t> PopFirstN(R& range, size_t n)
 {
-	const size_t l = Count(range);
+	const size_t l = Range::Count(range);
 	const size_t elementsToPop = n<l? n: l;
 	range = range(elementsToPop, l);
 	return elementsToPop;
@@ -83,20 +100,24 @@ size_t> PopFirstN(R& range, size_t n)
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
-	HasSlicing<R>::_ && !HasPopLastExactly<R>::_
+	HasSlicing<R>::_ && !HasPopLastN<R>::_
 > PopLastExactly(R& range, size_t elementsToPop)
 {range = range(0, range.Length()-elementsToPop);}
 
 template<typename R> forceinline Meta::EnableIf<
 	IsBidirectionalRange<R>::_ && !Meta::IsConst<R>::_ &&
-	!HasSlicing<R>::_ && !HasPopLastExactly<R>::_
+	!HasSlicing<R>::_ && !HasPopLastN<R>::_
 > PopLastExactly(R& range, size_t elementsToPop)
 {while(elementsToPop --> 0) range.PopLast();}
 
 template<typename R> forceinline Meta::EnableIf<
-	HasPopLastExactly<R>::_
+	HasPopLastN<R>::_
 > PopLastExactly(R& range, size_t elementsToPop)
-{range.PopLastExactly(elementsToPop);}
+{
+	size_t poppedElements = range.PopLastN(elementsToPop);
+	INTRA_ASSERT(poppedElements==elementsToPop);
+	(void)poppedElements;
+}
 
 
 template<typename R> Meta::EnableIf<
@@ -170,8 +191,8 @@ R> Tail(const R& range, size_t n)
 
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_,
-Meta::RemoveConstRef<AsRangeResult<R>>> Drop(R&& range)
+	IsAsAccessibleRange<R>::_,
+AsRangeResultNoCRef<R>> Drop(R&& range)
 {
 	if(range.Empty()) return Range::Forward<R>(range);
 	auto result = Range::Forward<R>(range);
@@ -180,8 +201,8 @@ Meta::RemoveConstRef<AsRangeResult<R>>> Drop(R&& range)
 }
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_,
-Meta::RemoveConstRef<AsRangeResult<R>>> Drop(R&& range, size_t n)
+	IsAsAccessibleRange<R>::_,
+AsRangeResultNoCRef<R>> Drop(R&& range, size_t n)
 {
 	auto result = Range::Forward<R>(range);
 	PopFirstN(result, n);
@@ -189,8 +210,8 @@ Meta::RemoveConstRef<AsRangeResult<R>>> Drop(R&& range, size_t n)
 }
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_,
-Meta::RemoveConstRef<AsRangeResult<R>>> DropExactly(R&& range)
+	IsAsAccessibleRange<R>::_,
+AsRangeResultNoCRef<R>> DropExactly(R&& range)
 {
 	auto result = Range::Forward<R>(range);
 	result.PopFirst();
@@ -198,8 +219,8 @@ Meta::RemoveConstRef<AsRangeResult<R>>> DropExactly(R&& range)
 }
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_,
-Meta::RemoveConstRef<AsRangeResult<R>>> DropExactly(R&& range, size_t n)
+	IsAsAccessibleRange<R>::_,
+AsRangeResultNoCRef<R>> DropExactly(R&& range, size_t n)
 {
 	auto result = Range::Forward<R>(range);
 	PopFirstExactly(result, n);
@@ -208,12 +229,13 @@ Meta::RemoveConstRef<AsRangeResult<R>>> DropExactly(R&& range, size_t n)
 
 template<typename R> forceinline Meta::EnableIf<
 	IsAsInputRange<R>::_ && HasIndex<AsRangeResult<R>>::_,
-ReturnValueTypeOf<R>> AtIndex(R&& range, size_t index) {return AsRange(Meta::Forward<R>(range))[index];}
+ReturnValueTypeOf<R>> AtIndex(R&& range, size_t index)
+{return Range::Forward<R>(range)[index];}
 
 template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_ && !HasIndex<AsRangeResult<R>>::_,
+	IsAsAccessibleRange<R>::_ && !HasIndex<AsRangeResult<R>>::_,
 ReturnValueTypeOf<R>> AtIndex(R&& range, size_t index)
-{return DropExactly(range, index).First();}
+{return DropExactly(Range::Forward<R>(range), index).First();}
 
 
 template<typename R> forceinline Meta::EnableIf<
@@ -252,6 +274,26 @@ Meta::RemoveConstRef<AsRangeResult<R>>> DropLastExactly(R&& range, size_t n)
 	PopLastExactly(result, n);
 	return result;
 }
+
+//! Оператор == для сравнения с null для диапазонов эквивалентен вызову Empty()
+template<typename R> forceinline Meta::EnableIf<
+	IsInputRange<R>::_,
+bool> operator==(const R& range, null_t) {return range.Empty();}
+
+//! Оператор == для сравнения с null для диапазонов эквивалентен вызову Empty()
+template<typename R> forceinline Meta::EnableIf<
+	IsInputRange<R>::_,
+bool> operator==(null_t, const R& range) {return range.Empty();}
+
+//! Оператор != для сравнения с null для диапазонов эквивалентен вызову !Empty()
+template<typename R> forceinline Meta::EnableIf<
+	IsInputRange<R>::_,
+bool> operator!=(const R& range, null_t) {return !range.Empty();}
+
+//! Оператор != для сравнения с null для диапазонов эквивалентен вызову !Empty()
+template<typename R> forceinline Meta::EnableIf<
+	IsInputRange<R>::_,
+bool> operator!=(null_t, const R& range) {return !range.Empty();}
 
 INTRA_WARNING_POP
 

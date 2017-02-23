@@ -4,8 +4,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Containers/Array.h"
-#include "Containers/HashMap.h"
+#include "Container/Sequential/Array.h"
 #include "Audio/Synth/Types.h"
 
 namespace Intra { namespace Audio { namespace Synth {
