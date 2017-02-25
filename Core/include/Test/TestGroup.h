@@ -43,12 +43,15 @@ public:
 	static TestGroup* GetCurrent() {return currentTestGroup;}
 	void PrintUnitTestResult();
 
+	static int GetTotalTestsFailed() {return totalTestsFailed;}
+
 	static int YesForNestingLevel;
 private:
 	static TestGroup* currentTestGroup;
 	static int nestingLevel;
 	bool mHadChildren;
 	int mFailedChildren, mPassedChildren;
+	static int totalTestsFailed, totalTestsPassed;
 	TestGroup& operator=(const TestGroup&) = delete;
 
 	void consoleAskToEnableTest();

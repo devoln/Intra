@@ -29,6 +29,7 @@ struct Point
 //TODO: перенести это
 template<typename Char> void TestStrings(IO::IFormattedWriter& output)
 {
+	(void)output;
 	GenericString<Char> emptyStr;
 	GenericString<Char> shortStr = L"ShortString";
 	auto shortCStr = shortStr.CStr();
@@ -64,6 +65,9 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	output.PrintLine("Выводим std::list<std::string> stringList:");
 	INTRA_ASSERT_EQUALS(ToString(stringList), "[Hello, Intra, Ranges]");
 	output.PrintLine(stringList, endl);
+
+	output.PrintLine("Устраиваем намеренный сегфолт.");
+	*(int*)null = 4;
 
 	output.PrintLine("Добавляем в предыдущий список 5 элементов Cycle(stringVec)");
 	CopyTo(Take(Cycle(stringVec), 5), LastAppender(stringList));

@@ -13,6 +13,8 @@ using namespace IO;
 
 int TestGroup::nestingLevel=0;
 int TestGroup::YesForNestingLevel=1000000000;
+int TestGroup::totalTestsFailed = 0;
+int TestGroup::totalTestsPassed = 0;
 
 struct TestException {};
 
@@ -117,9 +119,15 @@ TestGroup::~TestGroup()
 	if(mParentTestGroup!=null)
 	{
 		if(ErrorInfo.NoError())
+		{
 			mParentTestGroup->mPassedChildren++;
+			totalTestsPassed++;
+		}
 		else
+		{
 			mParentTestGroup->mFailedChildren++;
+			totalTestsFailed++;
+		}
 	}
 	Output.EndSpoiler();
 	INTRA_HEAP_CHECK;

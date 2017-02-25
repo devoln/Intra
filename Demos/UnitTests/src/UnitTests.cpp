@@ -94,4 +94,5 @@ int main(int argc, const char* argv[])
 	TestGroup(gLogger, ConsoleWriter, "Text serialization", TestTextSerialization);
 	TestGroup(gLogger, ConsoleWriter, "Binary serialization", TestBinarySerialization);
 	TestGroup(gLogger, ConsoleWriter, "Sort algorithms", TestSort);
+	return TestGroup::GetTotalTestsFailed();
 }

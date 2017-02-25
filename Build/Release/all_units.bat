@@ -1,0 +1,1 @@
+UnitTests.exe -a
