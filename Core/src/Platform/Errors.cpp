@@ -9,10 +9,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra {
 
-static void INTRA_CRTDECL on_crash(int signum)
+static void INTRA_CRTDECL SignalHandler(int signum)
 {
 	if(Errors::CrashHandler!=null)
 		Errors::CrashHandler(signum);
+	if(signum==SIGTERM) exit(1);
 	INTRA_INTERNAL_ERROR(Errors::CrashSignalDesc(signum));
 }
 
@@ -21,11 +22,11 @@ namespace Errors {
 
 void InitSignals()
 {
-	signal(SIGSEGV, on_crash);
-	signal(SIGTERM, on_crash);
-	signal(SIGILL, on_crash);
-	//signal(SIGABRT, on_crash);
-	signal(SIGFPE, on_crash);
+	signal(SIGSEGV, SignalHandler);
+	signal(SIGTERM, SignalHandler);
+	signal(SIGILL, SignalHandler);
+	signal(SIGABRT, SignalHandler);
+	signal(SIGFPE, SignalHandler);
 }
 
 StringView CrashSignalName(int signum)

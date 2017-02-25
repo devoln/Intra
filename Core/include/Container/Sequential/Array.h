@@ -13,6 +13,7 @@
 #include "Range/Output/Inserter.h"
 #include "Range/AsRange.h"
 #include "Container/Operations.hh"
+#include "Memory/Allocator/Global.h"
 
 
 namespace Intra { namespace Container {

@@ -509,17 +509,18 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="src\IO\DocumentWriter.cpp" />
+    <ClCompile Include="src\IO\ConsoleWriter.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
+    <ClCompile Include="src\IO\HtmlWriter.cpp" />
     <ClCompile Include="src\IO\LogSystem.cpp" />
     <ClCompile Include="src\IO\Networking.cpp" />
     <ClCompile Include="src\IO\Stream.cpp" />
     <ClCompile Include="src\Math\Math.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />
     <ClCompile Include="src\Math\Shapes.cpp" />
-    <ClCompile Include="src\Memory\Allocator.cpp" />
     <ClCompile Include="src\Memory\Allocator\Basic\Pool.cpp" />
     <ClCompile Include="src\Memory\Allocator\Basic\Stack.cpp" />
+    <ClCompile Include="src\Memory\Allocator\Global.cpp" />
     <ClCompile Include="src\Memory\Allocator\System.cpp" />
     <ClCompile Include="src\Memory\Memory.cpp" />
     <ClCompile Include="src\Memory\VirtualMemory.cpp" />
@@ -531,8 +532,8 @@
     <ClCompile Include="src\Platform\Runtime.cpp" />
     <ClCompile Include="src\Platform\Time.cpp" />
     <ClCompile Include="src\Range\Special\Unicode.cpp" />
-    <ClCompile Include="src\Test\PerformanceTest.cpp" />
-    <ClCompile Include="src\Test\Unittest.cpp" />
+    <ClCompile Include="src\Test\PerfSummary.cpp" />
+    <ClCompile Include="src\Test\TestGroup.cpp" />
     <ClCompile Include="src\Thread\Job.cpp" />
     <ClCompile Include="src\Thread\Thread.cpp" />
     <ClCompile Include="src\Utils\AsciiSet.cpp" />
@@ -589,6 +590,7 @@
     <ClInclude Include="include\Algo\String\ToString.h" />
     <ClInclude Include="include\Algo\String\ToStringArithmetic.h" />
     <ClInclude Include="include\Container.hh" />
+    <ClInclude Include="include\Container\AllForwardDecls.h" />
     <ClInclude Include="include\Container\Associative.hh" />
     <ClInclude Include="include\Container\Associative\HashMap.h" />
     <ClInclude Include="include\Container\Associative\LinearMap.h" />
@@ -628,8 +630,11 @@
     <ClInclude Include="include\Data\Variable.h" />
     <ClInclude Include="include\IntraCore.hh" />
     <ClInclude Include="include\IO.hh" />
-    <ClInclude Include="include\IO\DocumentWriter.h" />
+    <ClInclude Include="include\IO\CompositeFormattedWriter.h" />
+    <ClInclude Include="include\IO\ConsoleWriter.h" />
     <ClInclude Include="include\IO\File.h" />
+    <ClInclude Include="include\IO\FormattedWriter.h" />
+    <ClInclude Include="include\IO\HtmlWriter.h" />
     <ClInclude Include="include\IO\LogSystem.h" />
     <ClInclude Include="include\IO\Networking.h" />
     <ClInclude Include="include\IO\Stream.h" />
@@ -663,6 +668,7 @@
     <ClInclude Include="include\Memory\Allocator\Decorators\Sized.h" />
     <ClInclude Include="include\Memory\Allocator\Decorators\Static.h" />
     <ClInclude Include="include\Memory\Allocator\Decorators\Synchronized.h" />
+    <ClInclude Include="include\Memory\Allocator\Global.h" />
     <ClInclude Include="include\Memory\Allocator\Polymorphic.h" />
     <ClInclude Include="include\Memory\Allocator\System.h" />
     <ClInclude Include="include\Memory\Memory.h" />
@@ -673,8 +679,10 @@
     <ClInclude Include="include\Memory\VirtualMemory.h" />
     <ClInclude Include="include\Meta.hh" />
     <ClInclude Include="include\Meta\EachField.h" />
+    <ClInclude Include="include\Meta\GetField.h" />
     <ClInclude Include="include\Meta\Mixins.h" />
     <ClInclude Include="include\Meta\Operators.h" />
+    <ClInclude Include="include\Meta\Pair.h" />
     <ClInclude Include="include\Meta\Preprocessor.h" />
     <ClInclude Include="include\Meta\Tuple.h" />
     <ClInclude Include="include\Meta\Type.h" />
@@ -704,7 +712,9 @@
     <ClInclude Include="include\Range\Compositors\Choose.h" />
     <ClInclude Include="include\Range\Compositors\Indexed.h" />
     <ClInclude Include="include\Range\Compositors\RoundRobin.h" />
+    <ClInclude Include="include\Range\Compositors\Unzip.h" />
     <ClInclude Include="include\Range\Compositors\Zip.h" />
+    <ClInclude Include="include\Range\Compositors\ZipKV.h" />
     <ClInclude Include="include\Range\Concepts.h" />
     <ClInclude Include="include\Range\Decorators.hh" />
     <ClInclude Include="include\Range\Decorators\Buffered.h" />
@@ -755,8 +765,9 @@
     <ClInclude Include="include\Range\Stream.h" />
     <ClInclude Include="include\Range\TupleOperation.h" />
     <ClInclude Include="include\Test.hh" />
-    <ClInclude Include="include\Test\PerformanceTest.h" />
-    <ClInclude Include="include\Test\Unittest.h" />
+    <ClInclude Include="include\Test\PerfSummary.h" />
+    <ClInclude Include="include\Test\TestData.h" />
+    <ClInclude Include="include\Test\TestGroup.h" />
     <ClInclude Include="include\Thread.hh" />
     <ClInclude Include="include\Thread\Atomic.h" />
     <ClInclude Include="include\Thread\Job.h" />

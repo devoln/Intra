@@ -593,10 +593,7 @@
     <ClCompile Include="src\Container\Array.cpp" />
     <ClCompile Include="src\Container\Map.cpp" />
     <ClCompile Include="src\Container\String.cpp" />
-    <ClCompile Include="src\Range\Composing.cpp" />
     <ClCompile Include="src\Range\Polymorphic.cpp" />
-    <ClCompile Include="src\Range\StlInterop.cpp" />
-    <ClCompile Include="src\Range\Streams.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

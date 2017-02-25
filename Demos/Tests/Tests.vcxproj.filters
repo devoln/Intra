@@ -13,13 +13,7 @@
     <ClCompile Include="src/PerfTestSort.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Range\Streams.cpp">
-      <Filter>Source Files\Range</Filter>
-    </ClCompile>
     <ClCompile Include="src\Range\Polymorphic.cpp">
-      <Filter>Source Files\Range</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Range\Composing.cpp">
       <Filter>Source Files\Range</Filter>
     </ClCompile>
     <ClCompile Include="src\Container\Array.cpp">
@@ -30,9 +24,6 @@
     </ClCompile>
     <ClCompile Include="src\Container\String.cpp">
       <Filter>Source Files\Container</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Range\StlInterop.cpp">
-      <Filter>Source Files\Range</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -4,6 +4,7 @@
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
 #include "Callable.h"
+#include "Platform/Debug.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -19,7 +20,7 @@ public:
 	template<typename T> Delegate(R(*func)(const T&, Args...), const T& params):
 		mCallback(new FreeFuncCallable<R(Args...), T>(func, params)) {}
 
-	template<typename T> Delegate(const T& obj):
+	template<typename T, typename=Meta::EnableIf<!Meta::IsFunction<T>::_>> Delegate(const T& obj):
 		mCallback(new FunctorCallable<R(Args...), T>(obj)) {}
 
 	Delegate(R(*freeFunction)(Args...)):

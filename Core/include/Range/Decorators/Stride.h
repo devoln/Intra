@@ -76,9 +76,9 @@ private:
 };
 
 
-template<typename R> forceinline Meta::EnableIf<
-	IsAsAccessibleRange<R>::_,
-RStride<Meta::RemoveConstRef<AsRangeResult<R&&>>>> Stride(R&& range, size_t step)
+template<typename R, typename AsR=AsRangeResultNoCRef<R>> forceinline Meta::EnableIf<
+	IsAccessibleRange<AsR>::_,
+RStride<AsR>> Stride(R&& range, size_t step)
 {return {Range::Forward<R>(range), step};}
 
 INTRA_WARNING_POP

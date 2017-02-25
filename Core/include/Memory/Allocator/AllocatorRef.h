@@ -5,6 +5,7 @@
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Memory/Memory.h"
+#include "Concepts.h"
 
 namespace Intra { namespace Memory {
 

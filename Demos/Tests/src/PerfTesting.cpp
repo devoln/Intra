@@ -3,20 +3,24 @@
 #include "Platform/HardwareInfo.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
-#include "IO/LogSystem.h"
+#include "IO/FormattedWriter.h"
+#include "IO/HtmlWriter.h"
+#include "IO/ConsoleWriter.h"
 #include "Algo/String/Path.h"
 #include "Platform/CppWarnings.h"
-
-INTRA_DISABLE_REDUNDANT_WARNINGS
-
-#include "Test/PerformanceTest.h"
+#include "Test/PerfSummary.h"
 #include "Container/String.h"
 #include "Container/Array.h"
 #include "Container/Map.h"
+#include "Test/TestGroup.h"
+
 #include "PerfTestSerialization.h"
 #include "Range/Header.h"
 #include "PerfTestRandom.h"
 #include "PerfTestSort.h"
+
+INTRA_DISABLE_REDUNDANT_WARNINGS
+
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4350)
@@ -39,7 +43,8 @@ HtmlWriter logConsoleWriter(&Console);
 ConsoleTextWriter logConsoleWriter(&Console);
 #endif
 
-Logger logger;
+MultipleDocumentWriter logger;
+MultipleDocumentWriter emptyLogger;
 
 void InitLogSystem(int argc, const char* argv[])
 {
@@ -49,7 +54,7 @@ void InitLogSystem(int argc, const char* argv[])
 	const StringView logFileName = "logs.html";
 	const bool logExisted = DiskFile::Exists(logFileName);
 	g_LogFile = DiskFile::Writer(logFileName, true);
-	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Логи</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
+	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Logs</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
 	const String datetime = DateTime::Now().ToString();
 	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
 
@@ -60,7 +65,7 @@ void InitLogSystem(int argc, const char* argv[])
 		if(i+1<argc) cmdline+=' ';
 	}
 
-	g_LogWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime, "Закрыть лог "+datetime);
+	g_LogWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
 	atexit([](){g_LogWriter.EndAllSpoilers(); g_LogFile=null;});
 	
 
@@ -79,16 +84,17 @@ void InitLogSystem(int argc, const char* argv[])
 		cmdline += StringView(argv[i]);
 		if(i+1<argc) cmdline+='\n';
 	}
-	g_LogWriter << "Параметры командной строки:";
+	g_LogWriter << "Command line arguments:";
 	g_LogWriter.PrintCode(cmdline);
-	g_LogWriter.BeginSpoiler("Информация о системе", "[Скрыть] Информация о системе");
+	g_LogWriter.BeginSpoiler("System info");
 	auto memInfo = SystemMemoryInfo::Get();
 	auto procInfo = ProcessorInfo::Get();
-	g_LogWriter.PrintCode(*String::Format("Процессор:\r\n<^>\r\n"
-		"Число ядер: <^>\r\n"
-		"Число логических процессоров: <^>\r\n"
-		"Частота: <^> МГц\r\n\r\n"
-		"Свободно физической памяти: <^> ГиБ из <^> ГиБ\r\n")
+	g_LogWriter.PrintCode(*String::Format(
+		"CPU:\r\n<^>\r\n"
+		"Cores: <^>\r\n"
+		"Logical cores: <^>\r\n"
+		"Frequency: <^> MHz\r\n\r\n"
+		"Free physical memory: <^> GiB of <^> GiB\r\n")
 		(procInfo.BrandString)
 		(procInfo.CoreNumber)
 		(procInfo.LogicalProcessorNumber)
@@ -126,47 +132,22 @@ int main(int argc, const char* argv[])
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 	if(argc>=2 && StringView(argv[1])=="-a")
 #endif
-        TestGroup::YesForNestingLevel=0;
+	TestGroup::YesForNestingLevel=0;
 	
-	if(TestGroup gr{logger, "Генераторы случайных чисел"})
-		RunRandomPerfTests(logger);
-
-	if(TestGroup gr{logger, "Диапазоны"})
+	TestGroup(emptyLogger, logger, "Random number generation", RunRandomPerfTests);
+	if(TestGroup gr{emptyLogger, logger, "Ranges"})
 	{
-		if(TestGroup gr2{logger, "Композиция сложных диапазонов"})
-			RunComposedRangeTests();
-
-		if(TestGroup gr2{logger, "Полиморфные диапазоны"})
-			RunPolymorphicRangeTests();
-
-		if(TestGroup gr2{logger, "Потоки из диапазонов"})
-			RunStreamRangeTests();
-
-		if(TestGroup gr2{logger, "Сравнение скорости простых полиморфных диапазонов"})
-			RunPolymorphicRangePerfTests(logger);
-
-		if(TestGroup gr2{logger, "Взаимодействие STL и диапазонов"})
-			RunRangeStlInteropTests();
+		TestGroup("Polymorphic range performance", RunPolymorphicRangePerfTests);
 	}
-
-	if(TestGroup gr{logger, "std::string vs String"})
-		RunStringPerfTests(logger);
-
-	if(TestGroup gr{logger, "std::vector и std::deque vs Array"})
-		RunContainerPerfTests(logger);
-
-	if(TestGroup gr{logger, "Ассоциативные контейнеры"})
-		RunMapPerfTests(logger);
-
-	if(TestGroup gr{logger, "Сериализация и десериализация"})
-		RunSerializationPerfTests(logger);
-
-	if(TestGroup gr{logger, "Сортировка"})
-		RunSortPerfTests(logger);
+	TestGroup(emptyLogger, logger, "std::string vs String", RunStringPerfTests);
+	TestGroup(emptyLogger, logger, "std::vector и std::deque vs Array", RunContainerPerfTests);
+	TestGroup(emptyLogger, logger, "Associative containers", RunMapPerfTests);
+	TestGroup(emptyLogger, logger, "Serialization and deserialization", RunSerializationPerfTests);
+	TestGroup(emptyLogger, logger, "Sort algorithms", RunSortPerfTests);
 
 	if(argc<2 || StringView(argv[1])!="-a")
 	{
-		Console.PrintLine("Для продолжения нажмите любую клавишу...");
+		Console.PrintLine("Press any key to exit...");
 		Console.GetChar();
 	}
 

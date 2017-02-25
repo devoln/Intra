@@ -1,6 +1,7 @@
 ﻿#include "Thread/Thread.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
+#include "Platform/Debug.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

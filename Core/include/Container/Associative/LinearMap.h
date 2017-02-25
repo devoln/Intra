@@ -2,10 +2,11 @@
 
 #include "Container/ForwardDecls.h"
 #include "Container/Sequential/Array.h"
-#include "Meta/Tuple.h"
+#include "Meta/Pair.h"
 #include "Algo/Search/Single.h"
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
+#include "Range/Compositors/ZipKV.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -18,8 +19,8 @@ public:
 	typedef KeyValuePair<const K, V> CPair;
 	typedef KeyValuePair<K&, V&> PairRef;
 	typedef KeyValuePair<const K&, V&> CPairRef;
-	typedef Intra::Range::RZip<ArrayRange<const K>, ArrayRange<V>> Range;
-	typedef Intra::Range::RZip<ArrayRange<const K>, ArrayRange<const V>> ConstRange;
+	typedef Intra::Range::RZipKV<ArrayRange<const K>, ArrayRange<V>> Range;
+	typedef Intra::Range::RZipKV<ArrayRange<const K>, ArrayRange<const V>> ConstRange;
 
 	typedef K key_type;
 	typedef V mapped_type;
@@ -355,10 +356,10 @@ public:
 	}
 
 	forceinline Range AsRange()
-	{return Intra::Range::Zip(mKeys.AsConstRange(), mValues.AsRange());}
+	{return ZipKV(mKeys.AsConstRange(), mValues.AsRange());}
 
 	forceinline ConstRange AsConstRange() const
-	{return Intra::Range::Zip(mKeys.AsConstRange(), mValues.AsConstRange());}
+	{return ZipKV(mKeys.AsConstRange(), mValues.AsConstRange());}
 
 	forceinline ConstRange AsRange() const
 	{return AsConstRange();}

@@ -188,6 +188,14 @@ template<typename R> Meta::EnableIf<
 	while(*str!='\0') dst.Put(*str++);
 }
 
+template<typename R> Meta::EnableIf<
+	Range::IsOutputCharRange<R>::_
+> ToString(R&& dst, null_t)
+{
+	const char* str = "null";
+	while(*str!='\0') dst.Put(*str++);
+}
+
 
 INTRA_WARNING_POP
 

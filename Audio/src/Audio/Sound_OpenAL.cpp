@@ -1,5 +1,6 @@
 ﻿#include "Platform/PlatformInfo.h"
 #include "Audio/SoundApi.h"
+#include "Platform/CppWarnings.h"
 
 #if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
 
@@ -319,5 +320,9 @@ void SoundSystemCleanUp()
 INTRA_WARNING_POP
 
 }}}
+
+#else
+
+INTRA_DISABLE_LNK4221
 
 #endif

@@ -1,9 +1,12 @@
 ﻿#include "PerfTestSort.h"
-#include "Test/Unittest.h"
-#include "Test/PerformanceTest.h"
+#include "Test/PerfSummary.h"
+#include "Test/TestGroup.h"
+#include "Test/TestData.h"
 #include "Algo/Sort.hh"
 #include "Platform/Time.h"
 #include "Platform/CppWarnings.h"
+#include "IO/FormattedWriter.h"
+
 using namespace Intra;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
@@ -12,42 +15,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #define _HAS_EXCEPTIONS 0
 #endif
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
-
-static const short arrayForSortTesting[] = {
-	2, 4234, -9788, 23, 5, 245, 2, 24, 5, -9890,
-	2, 5, 4552, 54, 3, -932, 123, 342, 24321, -234
-};
-
-INTRA_UNITTEST("Sort algorithms unit tests")
-{
-	Array<short> arrUnsorted = arrayForSortTesting;
-	Array<short> arrInsertion = arrUnsorted;
-	Array<short> arrShell = arrUnsorted;
-	Array<short> arrQuick = arrUnsorted;
-	Array<short> arrRadix = arrUnsorted;
-	Array<short> arrMerge = arrUnsorted;
-	Array<short> arrHeap = arrUnsorted;
-	Array<short> arrSelection = arrUnsorted;
-	Array<short> arrStdSort = arrUnsorted;
-
-	Algo::InsertionSort(arrInsertion);
-	Algo::ShellSort(arrShell);
-	Algo::QuickSort(arrQuick);
-	Algo::RadixSort(arrRadix.AsRange());
-	Algo::MergeSort(arrMerge);
-	Algo::HeapSort(arrHeap);
-	Algo::SelectionSort(arrSelection);
-	std::sort(arrStdSort.begin(), arrStdSort.end());
-
-	INTRA_TEST_ASSERT_EQUALS(arrInsertion, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrShell, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrQuick, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrRadix, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrMerge, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrHeap, arrStdSort);
-	INTRA_TEST_ASSERT_EQUALS(arrSelection, arrStdSort);
-};
+INTRA_WARNING_POP
 
 template<typename T, typename Comparer = Comparers::Function<T>>
 double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
@@ -145,9 +115,9 @@ static const StringView comparedSortsWithoutSlow[] = {
 	"MergeSort", "HeapSort", "RadixSort"
 };
 
-template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, StringView typeName)
+template<typename T> void TestAndPrintIntegralTypeSorts(IO::IFormattedWriter& output, StringView typeName)
 {
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 100",
+	PrintPerformanceResults(output, typeName + " array size: 100",
 		comparedSorts, {TestStdSorting<T>(100)},
 		{
 			TestInsertionSorting<T>(100),
@@ -159,7 +129,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 			TestRadixSorting<T>(100)
 		});
 
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 1000",
+	PrintPerformanceResults(output, typeName + " array size: 1000",
 		comparedSorts, {TestStdSorting<T>(1000)},
 		{
 			TestInsertionSorting<T>(1000),
@@ -171,7 +141,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 			TestRadixSorting<T>(1000)
 		});
 
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 10000",
+	PrintPerformanceResults(output, typeName + " array size: 10000",
 		comparedSorts, {TestStdSorting<T>(10000)},
 		{
 			TestInsertionSorting<T>(10000),
@@ -183,7 +153,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 			TestRadixSorting<T>(10000)
 		});
 
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 100000",
+	PrintPerformanceResults(output, typeName + " array size: 100000",
 		comparedSorts, {TestStdSorting<T>(100000)},
 		{
 			TestInsertionSorting<T>(100000),
@@ -195,7 +165,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 			TestRadixSorting<T>(100000)
 		});
 
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 1000000",
+	PrintPerformanceResults(output, typeName + " array size: 1000000",
 		comparedSortsWithoutSlow, {TestStdSorting<T>(1000000)},
 		{
 			TestShellSorting<T>(1000000),
@@ -205,7 +175,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 			TestRadixSorting<T>(1000000)
 		});
 
-	PrintPerformanceResults(logger, "Размер массива " + typeName + ": 10000000",
+	PrintPerformanceResults(output, typeName + " array size: 10000000",
 		comparedSortsWithoutSlow, {TestStdSorting<T>(10000000)},
 		{
 			TestShellSorting<T>(10000000),
@@ -216,18 +186,18 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::Logger& logger, Stri
 		});
 }
 
-void RunSortPerfTests(Intra::IO::Logger& logger)
+void RunSortPerfTests(Intra::IO::IFormattedWriter& output)
 {
-	if(TestGroup gr{logger, "Сортировка случайных массивов short"})
-		TestAndPrintIntegralTypeSorts<short>(logger, "short");
+	IO::MultipleDocumentWriter emptyLogger;
+	if(TestGroup gr{"Sorting of random generated arrays of short"})
+		TestAndPrintIntegralTypeSorts<short>(output, "short");
 
-	if(TestGroup gr{logger, "Сортировка случайных массивов int"})
-		TestAndPrintIntegralTypeSorts<int>(logger, "int");
+	if(TestGroup gr{"Sorting of random generated arrays of int"})
+		TestAndPrintIntegralTypeSorts<int>(output, "int");
 
-	if(TestGroup gr{logger, "Сортировка случайных массивов uint"})
-		TestAndPrintIntegralTypeSorts<uint>(logger, "uint");
+	if(TestGroup gr{"Sorting of random generated arrays of uint"})
+		TestAndPrintIntegralTypeSorts<uint>(output, "uint");
 
-	if(TestGroup gr{logger, "Сортировка случайных массивов long64"})
-		TestAndPrintIntegralTypeSorts<long64>(logger, "long64");
+	if(TestGroup gr{"Sorting of random generated arrays of long64"})
+		TestAndPrintIntegralTypeSorts<long64>(output, "long64");
 }
-

@@ -15,13 +15,23 @@ template<typename L, typename R> forceinline Meta::EnableIf<
 	(IsSequentialContainer<L>::_ && Range::IsAsConsumableRange<R>::_) ||
 	(IsSequentialContainer<R>::_ && Range::IsAsConsumableRange<L>::_),
 bool> operator==(L&& lhs, R&& rhs)
-{return Algo::Equals(Meta::Forward<L>(lhs), Meta::Forward<R>(rhs));}
+{return Algo::Equals(Range::AsRange(lhs), Range::AsRange(rhs));}
 
 template<typename L, typename R> forceinline Meta::EnableIf<
 	(IsSequentialContainer<L>::_ && Range::IsAsConsumableRange<R>::_) ||
 	(IsSequentialContainer<R>::_ && Range::IsAsConsumableRange<L>::_),
 bool> operator!=(L&& lhs, R&& rhs)
-{return !Algo::Equals(Meta::Forward<L>(lhs), Meta::Forward<R>(rhs));}
+{return !Algo::Equals(Range::AsRange(lhs), Range::AsRange(rhs));}
+
+template<typename L, typename T> forceinline Meta::EnableIf<
+	IsSequentialContainer<L>::_,
+bool> operator==(L&& lhs, InitializerList<T> rhs)
+{return Algo::Equals(Range::AsRange(lhs), Range::AsRange(rhs));}
+
+template<typename L, typename T> forceinline Meta::EnableIf<
+	IsSequentialContainer<L>::_,
+bool> operator!=(L&& lhs, InitializerList<T> rhs)
+{return !Algo::Equals(Range::AsRange(lhs), Range::AsRange(rhs));}
 
 INTRA_WARNING_POP
 

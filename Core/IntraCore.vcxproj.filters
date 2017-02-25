@@ -195,14 +195,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Memory\Allocator.cpp">
-      <Filter>Файлы исходного кода\Memory</Filter>
-    </ClCompile>
     <ClCompile Include="src\Memory\Memory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="src\IO\DocumentWriter.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="src\IO\File.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
@@ -233,9 +227,6 @@
     </ClCompile>
     <ClCompile Include="src\IO\Stream.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Test\PerformanceTest.cpp">
-      <Filter>Файлы исходного кода\Test</Filter>
     </ClCompile>
     <ClCompile Include="src\Memory\VirtualMemory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
@@ -272,9 +263,6 @@
     </ClCompile>
     <ClCompile Include="src\Platform\Time.cpp">
       <Filter>Файлы исходного кода\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Test\Unittest.cpp">
-      <Filter>Файлы исходного кода\Test</Filter>
     </ClCompile>
     <ClCompile Include="src\Utils\AsciiSet.cpp">
       <Filter>Файлы исходного кода\Utils</Filter>
@@ -318,13 +306,25 @@
     <ClCompile Include="src\Data\Serialization\TextSerializerParams.cpp">
       <Filter>Файлы исходного кода\Data\Serialization</Filter>
     </ClCompile>
+    <ClCompile Include="src\Test\PerfSummary.cpp">
+      <Filter>Файлы исходного кода\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Test\TestGroup.cpp">
+      <Filter>Файлы исходного кода\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Memory\Allocator\Global.cpp">
+      <Filter>Файлы исходного кода\Memory\Allocator</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\ConsoleWriter.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\HtmlWriter.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Utils\Callback.h">
       <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="include\IO\DocumentWriter.h">
-      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="include\Platform\Endianess.h">
       <Filter>Заголовочные файлы\Platform</Filter>
@@ -362,9 +362,6 @@
     <ClInclude Include="include\Platform\PlatformInfo.h">
       <Filter>Заголовочные файлы\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="include\Test\PerformanceTest.h">
-      <Filter>Заголовочные файлы\Test</Filter>
-    </ClInclude>
     <ClInclude Include="include\Meta\Preprocessor.h">
       <Filter>Заголовочные файлы\Meta</Filter>
     </ClInclude>
@@ -394,9 +391,6 @@
     </ClInclude>
     <ClInclude Include="include\Meta\Type.h">
       <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Test\Unittest.h">
-      <Filter>Заголовочные файлы\Test</Filter>
     </ClInclude>
     <ClInclude Include="include\Data\ValueType.h">
       <Filter>Заголовочные файлы\Data</Filter>
@@ -1009,6 +1003,45 @@
     </ClInclude>
     <ClInclude Include="include\Container\Sequential\StringFormatter.h">
       <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Test\PerfSummary.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Test\TestData.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Test\TestGroup.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\Allocator\Global.h">
+      <Filter>Заголовочные файлы\Memory\Allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\AllForwardDecls.h">
+      <Filter>Заголовочные файлы\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\ConsoleWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\FormattedWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\HtmlWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\CompositeFormattedWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Compositors\ZipKV.h">
+      <Filter>Заголовочные файлы\Range\Compositors</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\Pair.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Meta\GetField.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Compositors\Unzip.h">
+      <Filter>Заголовочные файлы\Range\Compositors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

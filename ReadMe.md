@@ -22,7 +22,8 @@ This library contains the following functionality:
 
 In addition to the library this repository also contains 3 demos projects:
 - [MusicSynthesizer](Demos/MusicSynthesizer) - MIDI synthesizer. This project consist only of one file with main function. Most of the synthesizer code is located at IntraLib/Sound.
-- [Tests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL. This project's source code contains many examples of Intra usage.
+- [Tests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL.
+- [UnitTests](Demos/UnitTests) - This project's source code contains many examples of Intra usage.
 - [Bin2C](Demos/Bin2C) - Utility to convert any file into byte array in C code.
 
 ### Supported compilers:
@@ -71,7 +72,8 @@ make -j4
 
 Кроме самой библиотеки в репозитории также находятся 3 демо-проекта:
 - [MusicSynthesizer](Demos/MusicSynthesizer) - синтезатор MIDI. Этот проект состоит только из одного файла с функцией main, а основной код синтезатора находится в IntraLib/Sound.
-- [Tests](Demos/Tests) - Тесты производительности контейнеров, алгоритмов и сериализации и сравнение с аналогами из STL. В исходных кодах этого проекта можно увидеть множество примеров использования библиотеки IntraLib.
+- [Tests](Demos/Tests) - Тесты производительности контейнеров, алгоритмов и сериализации и сравнение с аналогами из STL.
+- [UnitTests](Demos/UnitTests) - В исходных кодах этого проекта можно увидеть множество примеров использования библиотеки Intra.
 - [Bin2C](Demos/Bin2C) - Утилита для преобразования файла в массив байт на C.
  
 

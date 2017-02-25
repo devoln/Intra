@@ -11,7 +11,7 @@
 #include "String.h"
 
 #include "Platform/Compatibility.h"
-#include "Test/PerformanceTest.h"
+#include "Test.hh"
 #include "IO/LogSystem.h"
 #include "Container/Sequential/String.h"
 #include "Platform/Time.h"
@@ -19,7 +19,7 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4350)
+#pragma warning(disable: 4350 4548)
 #endif
 
 #include <string>
@@ -339,100 +339,100 @@ double TestStringSubStrView(uint times)
 
 
 
-void RunStringPerfTests(Logger& logger)
+void RunStringPerfTests(IFormattedWriter& output)
 {
 	StringView comparedStrings[2] = {"std::string", "String"};
 
-	if(TestGroup gr{logger, "operator[]"})
+	if(TestGroup gr{"operator[]"})
 	{
-		PrintPerformanceResults(logger, "Посимвольное чтение operator[](50000 раз, 2000 символов)",
+		PrintPerformanceResults(output, "Посимвольное чтение operator[](50000 раз, 2000 символов)",
 			comparedStrings,
 			{TestStringReading<std::string>(50000, 2000)},
 			{TestStringReading<String>(50000, 2000)});
 
-		PrintPerformanceResults(logger, "Посимвольная запись(50000 раз, 2000 символов)",
+		PrintPerformanceResults(output, "Посимвольная запись(50000 раз, 2000 символов)",
 			comparedStrings,
 			{TestStringWriting<std::string>(50000, 2000)},
 			{TestStringWriting<String>(50000, 2000)});
 	}
 
-	if(TestGroup gr{logger, "Сравнение строк"})
+	if(TestGroup gr{"Сравнение строк"})
 	{
-		PrintPerformanceResults(logger, "Одинаковые - 2000 символов",
+		PrintPerformanceResults(output, "Одинаковые - 2000 символов",
 			comparedStrings,
 			{TestStringComparing1<std::string>(10000000, 2000)},
 			{TestStringComparing1<String>(10000000, 2000)});
 
-		PrintPerformanceResults(logger, "Одинаковые, с длинами 2001 и 2000",
+		PrintPerformanceResults(output, "Одинаковые, с длинами 2001 и 2000",
 			comparedStrings,
 			{TestStringComparing2<std::string>(10000000, 2000)},
 			{TestStringComparing2<String>(10000000, 2000)});
 
-		PrintPerformanceResults(logger, "Отличающиеся первым символом(2000 символов):",
+		PrintPerformanceResults(output, "Отличающиеся первым символом(2000 символов):",
 			comparedStrings,
 			{TestStringComparing3<std::string>(10000000, 2000)},
 			{TestStringComparing3<String>(10000000, 2000)});
 	}
 
-	if(TestGroup gr{logger, "Конкатенация строк"})
+	if(TestGroup gr{"Конкатенация строк"})
 	{
-		PrintPerformanceResults(logger, "Накопление строки (ss+=c) 5000000 конкатенаций (c - 50 символов)",
+		PrintPerformanceResults(output, "Накопление строки (ss+=c) 5000000 конкатенаций (c - 50 символов)",
 			comparedStrings,
 			{TestStringAccumulation1<std::string>(1, 50, 5000000)},
 			{TestStringAccumulation1<String>(1, 50, 5000000)});
 
-		PrintPerformanceResults(logger, "Накопление строки (String+=\"str\") 50000000 конкатенаций",
+		PrintPerformanceResults(output, "Накопление строки (String+=\"str\") 50000000 конкатенаций",
 			comparedStrings,
 			{TestStringAccumulation2<std::string>(1, 50000000)},
 			{TestStringAccumulation2<String>(1, 50000000)});
 
-		PrintPerformanceResults(logger, "Цепочка из 10 конкатенаций (ss=c+c+...+c, где c - строка из 50 символов), 1000000 повторений",
+		PrintPerformanceResults(output, "Цепочка из 10 конкатенаций (ss=c+c+...+c, где c - строка из 50 символов), 1000000 повторений",
 			comparedStrings,
 			{TestStringConcatenationChain<std::string>(1000000, 50)},
 			{TestStringConcatenationChain<String>(1000000, 50)});
 
-		PrintPerformanceResults(logger, "Оптимизированные 10 конкатенаций (ss=c; s+=c; s+=c; ... s+=c; где c - строка из 50 символов), 1000000 повторений",
+		PrintPerformanceResults(output, "Оптимизированные 10 конкатенаций (ss=c; s+=c; s+=c; ... s+=c; где c - строка из 50 символов), 1000000 повторений",
 			comparedStrings,
 			{TestStringConcatenationOptimizedChain<std::string>(1000000, 50)},
 			{TestStringConcatenationOptimizedChain<String>(1000000, 50)});
 
-		PrintPerformanceResults(logger, "Конкатенация 2 строк (ss=c+c, где c - строка из 50 символов), 1000000 повторений",
+		PrintPerformanceResults(output, "Конкатенация 2 строк (ss=c+c, где c - строка из 50 символов), 1000000 повторений",
 			comparedStrings,
 			{TestStringConcatenation<std::string>(1000000, 50)},
 			{TestStringConcatenation<String>(1000000, 50)});
 
-		PrintPerformanceResults(logger, "Добавление символа в конец строки (ss+='g') 10000000 раз",
+		PrintPerformanceResults(output, "Добавление символа в конец строки (ss+='g') 10000000 раз",
 			comparedStrings,
 			{TestStringAddChar<std::string>(10000000)},
 			{TestStringAddChar<String>(10000000)});
 
-		PrintPerformanceResults(logger, "Добавление символа в конец строки (ss=ss+'g') 50000 раз, 10 повторений.",
+		PrintPerformanceResults(output, "Добавление символа в конец строки (ss=ss+'g') 50000 раз, 10 повторений.",
 			comparedStrings,
 			{TestStringAddChar2<std::string>(10, 50000)},
 			{TestStringAddChar2<String>(10, 50000)});
 
-		PrintPerformanceResults(logger, "Добавление символа в конец строки без изменения исходной (ss=c+'g', где c - строка из 100 симв.)",
+		PrintPerformanceResults(output, "Добавление символа в конец строки без изменения исходной (ss=c+'g', где c - строка из 100 симв.)",
 			comparedStrings,
 			{TestStringPlusChar<std::string>(1000000, 100)},
 			{TestStringPlusChar<String>(1000000, 100)});
 	}
 
-	if(TestGroup gr{logger, "Копирование строк"})
+	if(TestGroup gr{"Копирование строк"})
 	{
-		PrintPerformanceResults(logger, "Объект=Объект, String (2000 символов)",
+		PrintPerformanceResults(output, "Объект=Объект, String (2000 символов)",
 			comparedStrings,
 			{TestStringCopying<std::string>(10000000, 2000)},
 			{TestStringCopying<String>(10000000, 2000)});
 
-		PrintPerformanceResults(logger, "Объект=C-строка(2000 символов)",
+		PrintPerformanceResults(output, "Объект=C-строка(2000 символов)",
 			comparedStrings,
 			{TestCStrToStringCopying<std::string>(10000000, 2000)},
 			{TestCStrToStringCopying<String>(10000000, 2000)});
 	}
 
-	if(TestGroup gr{logger, "Форматирование строк"})
+	if(TestGroup gr{"Форматирование строк"})
 	{
-		PrintPerformanceResults(logger, "Вставка int и double",
+		PrintPerformanceResults(output, "Вставка int и double",
 			{"sprintf",
 #ifndef INTRA_MINIMIZE_CRT
 			 "std::string + std::to_string",
@@ -463,9 +463,9 @@ void RunStringPerfTests(Logger& logger)
 			});
 	}
 
-	if(TestGroup gr{logger, "Взятие подстроки"})
+	if(TestGroup gr{"Взятие подстроки"})
 	{
-		PrintPerformanceResults(logger, "Взятие подстроки",
+		PrintPerformanceResults(output, "Взятие подстроки",
 			{"std::string", "String", "String -> StringView"},
 			{TestStringSubStr<std::string>(10000000)},
 			{TestStringSubStr<String>(10000000), TestStringSubStrView(10000000)});

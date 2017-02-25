@@ -83,9 +83,12 @@ template<typename SRC> static forceinline Meta::EnableIf<
 	Meta::IsCharType<ValueTypeOfAs<SRC>>::_,
 size_t> MaxLengthOfToString(SRC&& src) {return Range::Count(Range::Forward<SRC>(src));}
 
+forceinline size_t MAxLengthOfToString(null_t) {return 4;}
+
 
 template<typename T> static forceinline Meta::EnableIf<
 	!Meta::IsArithmeticType<T>::_ &&
+	!Meta::TypeEqualsIgnoreCVRef<T, null_t>::_ &&
 	!IsAsNonInfiniteForwardRange<T>::_,
 size_t> MaxLengthOfToString(T&& v)
 {

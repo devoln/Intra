@@ -13,6 +13,7 @@
 #include "Container/Concepts.h"
 #include "Range/Decorators/TakeUntil.h"
 #include "Range/Decorators/TakeUntilAny.h"
+#include "Utils/AsciiSet.h"
 
 namespace Intra { namespace Data {
 
@@ -457,7 +458,8 @@ template<typename I> struct GenericTextDeserializer
 
 	//! Десериализация кортежей
 	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsTuple<T>::_,
+		Meta::HasForEachField<T>::_ &&
+		!HasReflectionFieldNamesMethod<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
 		DeserializeTuple(v);
@@ -466,6 +468,7 @@ template<typename I> struct GenericTextDeserializer
 
 	//! Десериализация структур
 	template<typename T> forceinline Meta::EnableIf<
+		Meta::HasForEachField<T>::_ &&
 		HasReflectionFieldNamesMethod<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{

@@ -2,6 +2,7 @@
 
 #include "Platform/FundamentalTypes.h"
 #include "Platform/CppWarnings.h"
+#include "Platform/Debug.h"
 #include "Meta/Type.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS

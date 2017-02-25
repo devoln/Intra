@@ -1,13 +1,30 @@
-﻿#include "Core/Core.h"
+﻿#include "Platform/PlatformInfo.h"
+#include "Font/FontLoading.h"
 
 #if(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_STB)
 
-#include "GUI/FontLoading.h"
+INTRA_PUSH_DISABLE_ALL_WARNINGS
+
+#include "Platform/FundamentalTypes.h"
 #include "Math/Vector.h"
-#include "Memory/Allocator.h"
-#include "Containers/Array.h"
-#include "Algo/Sort.h"
-using namespace Math;
+#include "Memory/Allocator/Global.h"
+#include "Container/Sequential/Array.h"
+#include "Algo/Sort/Insertion.h"
+
+using Intra::null;
+using Intra::sbyte;
+using Intra::byte;
+using Intra::ushort;
+using Intra::uint;
+using Intra::Math::SVec2;
+using Intra::Math::Vec2;
+
+using Intra::Math::Sqrt;
+using Intra::Math::Ceil;
+using Intra::Memory::CopyBits;
+using Intra::Memory::GlobalHeap;
+using Intra::Container::Array;
+using Intra::Algo::ShellSort;
 
 extern "C" {
 
@@ -122,10 +139,10 @@ enum { // languageID for STBTT_PLATFORM_ID_MAC
 
 #else
 
-   ushort ttUSHORT(const byte *p) {return p[0]*256+p[1];}
-   short ttSHORT(const byte *p) {return p[0]*256+p[1];}
-   uint ttULONG(const byte *p) {return (p[0]<<24)+(p[1]<<16)+(p[2]<<8)+p[3];}
-   int ttLONG(const byte *p) {return (p[0]<<24)+(p[1]<<16)+(p[2]<<8)+p[3];}
+   ushort ttUSHORT(const byte *p) {return ushort((p[0] << 8)+p[1]);}
+   short ttSHORT(const byte *p) {return short((p[0] << 8)+p[1]);}
+   uint ttULONG(const byte *p) {return uint((p[0] << 24)+(p[1] << 16)+(p[2] << 8)+p[3]);}
+   int ttLONG(const byte *p) {return int((p[0] << 24)+(p[1] << 16)+(p[2] << 8)+p[3]);}
 
 #endif
 
@@ -169,7 +186,7 @@ int stbtt_GetFontOffsetForIndex(const byte* font_collection, int index)
       {
          int n=ttLONG(font_collection+8);
          if(index>=n) return -1;
-         return ttULONG(font_collection+12+index*14);
+         return ttLONG(font_collection+12+index*14);
       }
    }
    return -1;
@@ -184,37 +201,37 @@ int stbtt_InitFont(stbtt_fontinfo* info, const byte* data2, int fontstart)
    info->data=data;
    info->fontstart=fontstart;
 
-   cmap=stbtt__find_table(data, fontstart, "cmap");       // required
-   info->loca=stbtt__find_table(data, fontstart, "loca"); // required
-   info->head=stbtt__find_table(data, fontstart, "head"); // required
-   info->glyf=stbtt__find_table(data, fontstart, "glyf"); // required
-   info->hhea=stbtt__find_table(data, fontstart, "hhea"); // required
-   info->hmtx=stbtt__find_table(data, fontstart, "hmtx"); // required
-   info->kern=stbtt__find_table(data, fontstart, "kern"); // not required
+   cmap = stbtt__find_table(data, uint(fontstart), "cmap");       // required
+   info->loca = int(stbtt__find_table(data, uint(fontstart), "loca")); // required
+   info->head = int(stbtt__find_table(data, uint(fontstart), "head")); // required
+   info->glyf = int(stbtt__find_table(data, uint(fontstart), "glyf")); // required
+   info->hhea = int(stbtt__find_table(data, uint(fontstart), "hhea")); // required
+   info->hmtx = int(stbtt__find_table(data, uint(fontstart), "hmtx")); // required
+   info->kern = int(stbtt__find_table(data, uint(fontstart), "kern")); // not required
    if(!cmap || !info->loca || !info->head || !info->glyf || !info->hhea || !info->hmtx) return 0;
 
-   t=stbtt__find_table(data, fontstart, "maxp");
+   t = stbtt__find_table(data, uint(fontstart), "maxp");
    if(t!=0) info->numGlyphs=ttUSHORT(data+t+4);
    else info->numGlyphs=0xffff;
 
    // find a cmap encoding table we understand *now* to avoid searching
    // later. (todo: could make this installable)
    // the same regardless of glyph.
-   numTables=ttUSHORT(data+cmap+2);
+   numTables = ttUSHORT(data+cmap+2);
    info->index_map=0;
-   for (i=0; i < numTables; ++i)
+   for(i=0; i<numTables; i++)
    {
       uint encoding_record=cmap+4 + 8*i;
       // find an encoding we understand:
       switch(ttUSHORT(data+encoding_record))
       {
          case STBTT_PLATFORM_ID_MICROSOFT:
-            switch (ttUSHORT(data+encoding_record+2))
+            switch(ttUSHORT(data+encoding_record+2))
             {
                case STBTT_MS_EID_UNICODE_BMP:
                case STBTT_MS_EID_UNICODE_FULL:
                   // MS/Unicode
-                  info->index_map = cmap + ttULONG(data+encoding_record+4);
+                  info->index_map = int(cmap) + ttLONG(data+encoding_record+4);
                   break;
             }
             break;
@@ -228,8 +245,8 @@ int stbtt_InitFont(stbtt_fontinfo* info, const byte* data2, int fontstart)
 
 int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 {
-   byte* data=info->data;
-   uint index_map=info->index_map;
+   byte* data = info->data;
+   int index_map = info->index_map;
 
 	ushort format=ttUSHORT(data+index_map);
 	if(format==0)
@@ -262,8 +279,8 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 	    ushort rangeShift=ttUSHORT(data+index_map+12)/2;
 
 		// do a binary search of the segments
-		uint endCount=index_map+14;
-		uint search=endCount;
+		uint endCount = uint(index_map+14);
+		uint search = endCount;
 
 		if(unicode_codepoint>0xffff) return 0;
 
@@ -288,7 +305,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 		}
 		search+=2;
 
-		ushort item=(ushort)((search-endCount)/2);
+		ushort item = ushort((search-endCount)/2);
 
 		INTRA_ASSERT(unicode_codepoint<=ttUSHORT(data+endCount+2*item));
 		start=ttUSHORT(data+index_map+14+segcount*2+2+2*item);
@@ -302,20 +319,20 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 	}
 	else if(format==12 || format==13)
 	{
-      uint ngroups=ttULONG(data+index_map+12);
-      int low=0, high=(int)ngroups;
+      uint ngroups = ttULONG(data+index_map+12);
+      int low=0, high = int(ngroups);
 
       // Binary search the right group.
       while(low<high)
 	  {
          int mid=low+(high-low)/2; // rounds down, so low <= mid < high
-         uint start_char=ttULONG(data+index_map+16+mid*12);
-         uint end_char=ttULONG(data+index_map+16+mid*12+4);
-         if((uint)unicode_codepoint<start_char) high=mid;
-         else if((uint) unicode_codepoint>end_char) low=mid+1;
+         uint start_char = ttULONG(data+index_map+16+mid*12);
+         uint end_char = ttULONG(data+index_map+16+mid*12+4);
+         if(uint(unicode_codepoint)<start_char) high=mid;
+         else if(uint(unicode_codepoint)>end_char) low=mid+1;
          else
 		 {
-            uint start_glyph=ttULONG(data+index_map+16+mid*12+8);
+            uint start_glyph = ttULONG(data+index_map+16+mid*12+8);
             if(format==12) return start_glyph+unicode_codepoint-start_char;
             else return start_glyph; // format == 13
          }
@@ -557,8 +574,8 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 				for(ushort j=0; j<4; j++) mtx[j]=ttSHORT(comp)/16384.0f, comp+=2;
          
 			// Find transformation scales.
-			m = Math::Sqrt(mtx[0]*mtx[0]+mtx[1]*mtx[1]);
-			n = Math::Sqrt(mtx[2]*mtx[2]+mtx[3]*mtx[3]);
+			m = Sqrt(mtx[0]*mtx[0]+mtx[1]*mtx[1]);
+			n = Sqrt(mtx[2]*mtx[2]+mtx[3]*mtx[3]);
 
 			// Get indexed glyph.
 			comp_num_verts = stbtt_GetGlyphShape(info, gidx, &comp_verts);
@@ -578,8 +595,8 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 				}
 				// Append vertices.
 				tmp = new stbtt_vertex[num_vertices+comp_num_verts];
-				Memory::CopyBits<stbtt_vertex>({tmp, size_t(num_vertices)}, {vertices, size_t(num_vertices)});
-				Memory::CopyBits<stbtt_vertex>({tmp+num_vertices, size_t(comp_num_verts)}, {comp_verts, size_t(comp_num_verts)});
+				CopyBits<stbtt_vertex>({tmp, size_t(num_vertices)}, {vertices, size_t(num_vertices)});
+				CopyBits<stbtt_vertex>({tmp+num_vertices, size_t(comp_num_verts)}, {comp_verts, size_t(comp_num_verts)});
 				delete[] vertices;
 				vertices=tmp;
 				delete[] comp_verts;
@@ -707,7 +724,7 @@ float stbtt_ScaleForMappingEmToPixels(const stbtt_fontinfo* info, float pixels)
 void stbtt_FreeShape(const stbtt_fontinfo* info, stbtt_vertex* v)
 {
 	info;
-	Memory::SystemHeapAllocator::Free(v);
+	GlobalHeap.Free(v);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -720,8 +737,8 @@ void stbtt_GetGlyphBitmapBoxSubpixel(const stbtt_fontinfo* font, int glyph, Vec2
    SVec2 pos0, pos1;
    if(!stbtt_GetGlyphBox(font, glyph, &pos0, &pos1)) pos0=pos1={0,0}; // e.g. space character
    // now move to integral bboxes (treating pixels as little squares, what pixels get touched)?
-   if(ipos0!=null) *ipos0=SVec2(short(pos0.x*scale.x+shift.x), -(short)Math::Ceil(pos1.y*scale.y+shift.y));
-   if(ipos1!=null) *ipos1=SVec2((short)Math::Ceil(pos1.x*scale.x+shift.x), -(short)(pos0.y*scale.y+shift.y));
+   if(ipos0!=null) *ipos0=SVec2(short(pos0.x*scale.x+shift.x), -(short)Ceil(pos1.y*scale.y+shift.y));
+   if(ipos1!=null) *ipos1=SVec2(short(Ceil(pos1.x*scale.x+shift.x)), -short(pos0.y*scale.y+shift.y));
 }
 void stbtt_GetGlyphBitmapBox(const stbtt_fontinfo* font, int glyph, Vec2 scale, SVec2* ipos0, SVec2* ipos1)
 {
@@ -822,7 +839,11 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
    byte scanline_data[512];
    byte* scanline;
 
-   if(result->size.x>512) scanline = Memory::SystemHeapAllocator::Allocate(result->size.x, INTRA_SOURCE_INFO);
+   if(result->size.x>512)
+   {
+	   size_t size = result->size.x;
+	   scanline = GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
+   }
    else scanline=scanline_data;
 
    y=off.y*vsubsample;
@@ -830,7 +851,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
 
    while(j<result->size.y)
    {
-      memset(scanline, 0, result->size.x);
+      Intra::C::memset(scanline, 0, result->size.x);
       for (int s=0; s<vsubsample; s++)
       {
          // find center of pixel for this scanline
@@ -847,7 +868,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
                *step=z->next; // delete from list
                INTRA_ASSERT(z->valid);
                z->valid=0;
-               Memory::SystemHeapAllocator::Free(z);
+               GlobalHeap.Free(z);
             }
             else
             {
@@ -910,7 +931,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
 
          y++;
       }
-      memcpy(result->pixels+j*result->stride, scanline, result->size.x);
+      Intra::C::memcpy(result->pixels+j*result->stride, scanline, result->size.x);
       j++;
    }
 
@@ -921,7 +942,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
       delete z;
    }
 
-   if(scanline!=scanline_data) Memory::SystemHeapAllocator::Free(scanline);
+   if(scanline!=scanline_data) GlobalHeap.Free(scanline);
 }
 
 
@@ -963,7 +984,7 @@ static void stbtt__rasterize(stbtt__bitmap* result, Vec2* pts, int* wcount, int 
    }
 
    // now sort the edges by their highest point (should snap to integer, and then by x)
-   Algo::ShellSort<stbtt__edge>(e, [](const stbtt__edge& a, const stbtt__edge& b) {return a.pos0.y<b.pos0.y;});
+   Intra::Algo::ShellSort(e, [](const stbtt__edge& a, const stbtt__edge& b) {return a.pos0.y<b.pos0.y;});
 
    // now, traverse the scanlines and find the intersections on each scanline, use xor winding rule
    stbtt__rasterize_sorted_edges(result, &e[0], (uint)e.Count(), vsubsample, off, userdata);
@@ -1057,7 +1078,7 @@ static Vec2* stbtt_FlattenCurves(stbtt_vertex* vertices, int num_verts, float ob
 
 static void stbtt_Rasterize(stbtt__bitmap* result, float flatness_in_pixels, stbtt_vertex* vertices, int num_verts, Vec2 scale, Vec2 shift, SVec2 off, int invert, void* userdata)
 {
-   float scale_min=Min(scale.x, scale.y);
+   float scale_min = Intra::Math::Min(scale.x, scale.y);
    int winding_count; int* winding_lengths;
    Vec2* windings=stbtt_FlattenCurves(vertices, num_verts, flatness_in_pixels/scale_min, &winding_lengths, &winding_count, userdata);
    if(windings)
@@ -1071,7 +1092,7 @@ static void stbtt_Rasterize(stbtt__bitmap* result, float flatness_in_pixels, stb
 static void stbtt_FreeBitmap(byte* bitmap, void* userdata)
 {
 	(void)userdata;
-	Memory::SystemHeapAllocator::Free(bitmap);
+	GlobalHeap.Free(bitmap);
 }
 
 static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale, Vec2 shift, int glyph, SVec2* size, SVec2* off)
@@ -1099,15 +1120,15 @@ static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale
 
    if(gbm.size.x && gbm.size.y)
    {
-	  const size_t bytesToAllocate = gbm.size.x*gbm.size.y;
-      gbm.pixels = (byte*)Memory::SystemHeapAllocator::Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
+	  size_t bytesToAllocate = gbm.size.x*gbm.size.y;
+      gbm.pixels = GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
       if(gbm.pixels!=null)
       {
          gbm.stride=gbm.size.x;
          stbtt_Rasterize(&gbm, 0.35f, vertices, num_verts, scale, shift, i0, 1, info->userdata);
       }
    }
-   Memory::SystemHeapAllocator::Free(vertices);
+   GlobalHeap.Free(vertices);
    return gbm.pixels;
 }   
 
@@ -1129,7 +1150,7 @@ static void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo* info, byte* outp
    if(gbm.size.x!=0 && gbm.size.y!=0)
       stbtt_Rasterize(&gbm, 0.35f, vertices, num_verts, scale, shift, i0, true, info->userdata);
 
-   Memory::SystemHeapAllocator::Free(vertices);
+   GlobalHeap.Free(vertices);
 }
 
 void stbtt_MakeGlyphBitmap(const stbtt_fontinfo* info, byte* output, SVec2 out_size, int out_stride, Vec2 scale, int glyph)
@@ -1287,7 +1308,7 @@ static bool stbtt__matchpair(byte* fc, uint nm, byte* name, int nlen, int target
 
 static bool stbtt__matches(byte* fc, uint offset, byte* name, int flags)
 {
-   int nlen = (int)strlen((char*)name);
+   int nlen = (int)Intra::C::strlen((char*)name);
    if(!stbtt__isfont(fc+offset)) return 0;
 
    // check italics/bold/underline flags in macStyle...
@@ -1348,22 +1369,22 @@ FontHandle FontCreate(StringView name, uint height, uint* yadvance)
 {
 	DiskFile::Reader file = DiskFile::Reader(name);
 	if(file==null) return null;
-	size_t size = (uint)file.GetSize();
-	byte* data = Memory::SystemHeapAllocator::Allocate(size, INTRA_SOURCE_INFO);
+	size_t size = uint(file.GetSize());
+	byte* data = GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	file.ReadData(data, size);
 	return create_font(data, height, yadvance);
 }
 
 FontHandle FontCreateFromMemory(const void* src, size_t length, uint height, uint* yadvance)
 {
-	byte* data = Memory::SystemHeapAllocator::Allocate(length, INTRA_SOURCE_INFO);
-	memcpy(data, src, length);
+	byte* data = GlobalHeap.Allocate(length, INTRA_SOURCE_INFO);
+	Intra::C::memcpy(data, src, length);
 	return create_font(data, height, yadvance);
 }
 
 void FontDelete(FontHandle font)
 {
-	if(font!=null) Memory::SystemHeapAllocator::Free(font->font.data);
+	if(font!=null) GlobalHeap.Free(font->font.data);
 	delete font;
 }
 
@@ -1393,5 +1414,7 @@ short FontGetKerning(FontHandle font, int left, int right)
 }
 
 }}
+
+INTRA_WARNING_POP
 
 #endif

@@ -8,12 +8,15 @@
 #include "Range/Generators/StringView.h"
 #include "Algo/Search.hh"
 #include "Algo/Comparison/EndsWith.h"
+#include "Algo/String/ToStringArithmetic.h"
 #include "Data/Reflection.h"
 #include "TextSerializerParams.h"
 #include "LanguageParams.h"
 #include "Range/Decorators/TakeUntil.h"
 #include "Range/Decorators/TakeUntilAny.h"
 #include "Range/Output/OutputArrayRange.h"
+#include "Range/Compositors/ZipKV.h"
+#include "Algo/Mutation/ReplaceSubrange.h"
 
 namespace Intra { namespace Data {
 
@@ -284,7 +287,7 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& 
 template<typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, const StringView& v)
 {
 	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
-	Algo::MultiReplaceToAdvance(v, serializer.Output, Range::Zip(
+	Algo::MultiReplaceToAdvance(v, serializer.Output, Range::ZipKV(
 		ArrayRange<const StringView>{"\n", "\r", "\t"},
 		ArrayRange<const StringView>{"\\n", "\\r", "\\t"}));
 	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);

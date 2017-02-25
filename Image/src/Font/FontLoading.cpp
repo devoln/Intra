@@ -1,7 +1,7 @@
-﻿#include "Core/Core.h"
-#include "GUI/FontLoading.h"
-#include "Range/StringView.h"
-#include "Containers/String.h"
+﻿#include "Platform/PlatformInfo.h"
+#include "Font/FontLoading.h"
+#include "Range/Generators/StringView.h"
+#include "Container/Sequential/String.h"
 #include "Math/Vector.h"
 
 

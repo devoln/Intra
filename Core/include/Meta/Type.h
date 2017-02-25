@@ -838,12 +838,6 @@ template<class T, typename U> constexpr forceinline size_t MemberOffset(U T::* m
 template<class T> forceinline T* AddressOf(T& arg)
 {return reinterpret_cast<T*>(&const_cast<char&>(reinterpret_cast<const volatile char &>(arg)));}
 
-template<typename T1, typename T2> struct Pair
-{
-	T1 first;
-	T2 second;
-};
-
 #define INTRA_CHECK_TABLE_SIZE(table, expectedSize) static_assert(\
 	sizeof(table)/sizeof(table[0])==size_t(expectedSize), "Table is outdated!")
 

@@ -21,12 +21,12 @@ struct Job
 #else
 	enum {PADDING_SIZE = 44};
 #endif
-	char data[PADDING_SIZE];
+	byte data[PADDING_SIZE];
 
 	Job(const Job& rhs):
 		function(rhs.function), parent(rhs.parent),
 		unfinishedJobs(rhs.unfinishedJobs.Load())
-		{Algo::CopyTo(rhs.data, data);}
+		{Algo::CopyTo(ArrayRange<const byte>(rhs.data), ArrayRange<byte>(data));}
 
 
 	template<typename T, typename S> static Job* parallel_for(T* data, uint count, Function function, const S& splitter)

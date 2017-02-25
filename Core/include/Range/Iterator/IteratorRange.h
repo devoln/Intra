@@ -2,6 +2,7 @@
 
 #include "Range/ForwardDecls.h"
 #include "IteratorConcepts.h"
+#include "Platform/Debug.h"
 
 namespace Intra { namespace Range {
 

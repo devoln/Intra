@@ -4,6 +4,7 @@
 #include "Platform/CppWarnings.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
+#include "Range/Operations.h"
 
 namespace Intra { namespace Algo {
 

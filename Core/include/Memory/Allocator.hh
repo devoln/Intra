@@ -9,6 +9,7 @@
 #include "Algo/Mutation/Copy.h"
 #include "Range/Stream.h"
 #include "Memory/PlacementNew.h"
+#include "Allocator/Global.h"
 
 #include "Allocator/Decorators.hh"
 #include "Allocator/Basic.hh"
@@ -18,22 +19,6 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Memory {
-
-
-
-#ifdef INTRA_DEBUG
-using SizedHeapType = ASized<ABoundsChecked<ACallOnFail<SystemHeapAllocator, NoMemoryAbort>>>;
-using GlobalHeapType = ABoundsChecked<ACallOnFail<SystemHeapAllocator, NoMemoryAbort>>;
-#else
-using SizedHeapType = ASized<ACallOnFail<SystemHeapAllocator, NoMemoryAbort>>;
-using GlobalHeapType = ACallOnFail<SystemHeapAllocator, NoMemoryAbort>;
-#endif
-
-extern SizedHeapType SizedHeap;
-extern GlobalHeapType GlobalHeap;
-
-
-
 
 struct Buffer
 {

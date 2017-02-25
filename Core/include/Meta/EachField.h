@@ -2,6 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
+#include "Meta/Pair.h"
 #include "Meta/Tuple.h"
 
 namespace Intra { namespace Meta {
@@ -58,7 +59,7 @@ KeyValuePair<ResultOf<F, K>, ResultOf<F, V>> TransformEachField(const KeyValuePa
 
 
 template<typename F, typename P> forceinline Meta::EnableIf<
-	D::Has_first_second<P>::_
+	Has_first_second<P>::_
 > ForEachField(P&& pair, F&& f)
 {f(pair.first); f(pair.second);}
 

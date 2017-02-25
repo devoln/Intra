@@ -7,6 +7,7 @@
 #include "Range/ForwardDecls.h"
 #include "Range/Generators/Count.h"
 #include "Range/Generators/Repeat.h"
+#include "Range/Generators/StringView.h"
 #include "Algo/Op.h"
 #include "Math/Math.h"
 #include "Algo/Mutation/Copy.h"
@@ -143,7 +144,7 @@ template<typename R, typename VR> Meta::EnableIf<
 R&&> operator<<(R&& dst, VR&& r)
 {
 	ToString(dst, Range::Forward<VR>(r),
-		AsRange({',', ' '}), AsRange({'['}), AsRange({']'}));
+		StringView(", "), StringView("["), StringView("]"));
 	return Meta::Forward<R>(dst);
 }
 

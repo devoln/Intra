@@ -11,49 +11,13 @@
 #include "Platform/Time.h"
 #include "Range/Generators/ArrayRange.h"
 #include "IO/Stream.h"
-#include "Test/PerformanceTest.h"
+#include "Test/PerfSummary.h"
+#include "Test/TestGroup.h"
 
 using namespace Intra;
 using namespace Intra::IO;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
-
-struct StructTest
-{
-	int x;
-	float y;
-	String z[2];
-	Array<int> arr;
-	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr);
-};
-
-static int SerializationTest()
-{
-	StringView strToDeserialize = "{z = [\"тест\", \"сериализации\"], x = ---5434, "
-		"arr = [1, 2, 3, -4, 5], y = 2.1721}";
-	Console.PrintLine("In custom format: ", endl, strToDeserialize, endl);
-	auto deserializer = Data::TextDeserializer(Data::LanguageParams::JsonLikeNoQuotes, strToDeserialize);
-	StructTest t2 = deserializer.Deserialize<StructTest>();
-	if(!deserializer.Log.Empty()) Console.PrintLine("Deserialization Log: ", endl, deserializer.Log);
-
-	char serializedBuf[300];
-	Data::TextSerializer serializer(Data::LanguageParams::Json,
-		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
-	serializer << t2;
-	Console.PrintLine("JSON:", endl, serializer.Output.GetWrittenData(), endl);
-
-	serializer = Data::TextSerializer(Data::LanguageParams::Xml,
-		Data::TextSerializerParams::VerboseNoSpaces, ArrayRange<char>(serializedBuf));
-	serializer << t2;
-	Console.PrintLine("XML:", endl, serializer.Output.GetWrittenData(), endl);
-
-	serializer = Data::TextSerializer(Data::LanguageParams::JsonLikeNoQuotes,
-		Data::TextSerializerParams::Verbose, ArrayRange<char>(serializedBuf));
-	serializer << t2;
-	Console.PrintLine("JSON-like without quotes:", endl, serializer.Output.GetWrittenData());
-
-	return 0;
-}
 
 //#if INTRA_DISABLED
 struct Test
@@ -226,7 +190,7 @@ double TestTextDeserialization(size_t times,
 	SuperTest test = deserializer.Deserialize<SuperTest>();
 	if(!deserializer.Log.Empty())
 	{
-		Console.PrintLine(endl, "В процессе десериализации произошли следующие ошибки: ");
+		Console.PrintLine(endl, "The following errors occured during deserialization: ");
 		Console.PrintLine(deserializer.Log, endl);
 	}
 
@@ -254,7 +218,7 @@ double TestBinarySerialization(size_t times)
 	return tim.GetTime();
 }
 
-double TestTextSerialization(Logger& logger, StringView desc, size_t times,
+double TestTextSerialization(IFormattedWriter& logger, StringView desc, size_t times,
 	const Data::LanguageParams& lang, const Data::TextSerializerParams& params)
 {
 	char buf[1000];
@@ -266,7 +230,7 @@ double TestTextSerialization(Logger& logger, StringView desc, size_t times,
 		ser << g_SuperTest;
 	}
 	double result = tim.GetTime();
-	logger.BeginSpoiler("Результат сериализации в " + desc, "[Скрыть] Результат сериализации в " + desc);
+	logger.BeginSpoiler("Serialization result to " + desc);
 	logger.PrintCode(ser.Output.GetWrittenData());
 	logger.EndSpoiler();
 	return result;
@@ -308,74 +272,71 @@ double TestBinaryRefDeserialization(size_t times)
 
 
 
-void RunSerializationPerfTests(IO::Logger& logger)
+void RunSerializationPerfTests(IO::IFormattedWriter& output)
 {
-	if(TestGroup gr{logger, "Проверка сериализации"})
-		SerializationTest();
+	output.BeginSpoiler("String with structure description to deserialize: ");
 
-	logger.BeginSpoiler("Строка для десериализации структуры", "[Скрыть] Строка для десериализации структуры");
-
-	logger.PrintCode(g_SuperTestTextWithNames);
-	logger.EndSpoiler();
+	output.PrintCode(g_SuperTestTextWithNames);
+	output.EndSpoiler();
 
 	auto deserializer = Data::TextDeserializer(Data::LanguageParams::CStructInitializer, g_SuperTestTextWithNames);
 	deserializer >> g_SuperTest;
 	g_SuperTestRef = g_SuperTest;
 	if(!deserializer.Log.Empty())
 	{
-		logger.PushFont({128,0,0}, 3.5f);
-		logger.PrintLine(endl, "В процессе десериализации произошли следующие ошибки: ");
-		logger.PopFont();
-		logger.BeginSpoiler("Лог сериализатора", "[Скрыть] Лог сериализатора");
-		logger.PrintCode(deserializer.Log);
-		logger.EndSpoiler();
+		output.PushFont({128,0,0}, 3.5f);
+		output.PrintLine(endl, "The folowing errors occured during deserialization: ");
+		output.PopFont();
+		output.BeginSpoiler("Deserializer log");
+		output.PrintCode(deserializer.Log);
+		output.EndSpoiler();
 	}
 
-	if(TestGroup gr{logger, "Бинарная сериализация"})
+	if(TestGroup gr{"Binary serialization"})
 	{
-		PrintPerformanceResults(logger, "Сериализация структуры 1000000 раз",
+		PrintPerformanceResults(output, "Serializing struct 1000000 times",
 			{"binary"}, null,
 			{
 				TestBinarySerialization(1000000)
 			});
 	}
 
-	if(TestGroup gr{logger, "Бинарная десериализация"})
+	if(TestGroup gr{"Binary deserialization"})
 	{
-		PrintPerformanceResults(logger, "Десериализация структуры с контейнерами 1000000 раз",
+		PrintPerformanceResults(output, "Deserializing struct with containers 1000000 times",
 			{"binary"}, null,
 			{
 				TestBinaryDeserialization(1000000)
 			});
 
-		PrintPerformanceResults(logger, "Десериализация структуры с диапазонами 1000000 раз",
+		PrintPerformanceResults(output, "Deserializing struct with ranges 1000000 times",
 			{"binary"}, null,
 			{
 				TestBinaryRefDeserialization(1000000)
 			});
 	}
 
-	if(TestGroup gr{logger, "Текстовая сериализация"})
+	if(TestGroup gr{"Text serialization"})
 	{
-		PrintPerformanceResults(logger, "Сериализация структуры 1000000 раз",
+		PrintPerformanceResults(output, "Serializing struct 1000000 times",
 			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
 			{
-				TestTextSerialization(logger, "(1) C struct", 1000000,
+				TestTextSerialization(output, "(1) C struct", 1000000,
 					Data::LanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),
-				TestTextSerialization(logger, "(2) JSON", 1000000,
+				TestTextSerialization(output, "(2) JSON", 1000000,
 					Data::LanguageParams::Json, Data::TextSerializerParams::Verbose),
-				TestTextSerialization(logger, "(3) JSON compact", 1000000,
+				TestTextSerialization(output, "(3) JSON compact", 1000000,
 					Data::LanguageParams::Json, Data::TextSerializerParams::Compact),
-				TestTextSerialization(logger, "(4) XML subset", 1000000,
+				TestTextSerialization(output, "(4) XML subset", 1000000,
 					Data::LanguageParams::Xml, Data::TextSerializerParams::Verbose),
-				TestTextSerialization(logger, "(5) JSON-like custom", 1000000,
+				TestTextSerialization(output, "(5) JSON-like custom", 1000000,
 					Data::LanguageParams::JsonLikeNoQuotes, Data::TextSerializerParams::Verbose)
 			});
 	}
 
-	if(TestGroup gr{logger, "Текстовая десериализация"})
+	if(TestGroup gr{"Text deserialization"})
 	{
-		PrintPerformanceResults(logger, "Десериализация структуры 100000 раз",
+		PrintPerformanceResults(output, "Deserializing struct 100000 times",
 			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
 			{
 				TestTextDeserialization(100000, Data::LanguageParams::CStructInitializer, Data::TextSerializerParams::Verbose),

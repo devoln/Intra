@@ -8,6 +8,7 @@
 #include "Data/Reflection.h"
 #include "Range/Operations.h"
 #include "Algo/Raw/Read.h"
+#include "Container/Operations/Append.h"
 
 namespace Intra { namespace Data {
 

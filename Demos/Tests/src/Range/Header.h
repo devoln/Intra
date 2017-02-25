@@ -1,9 +1,5 @@
-﻿#pragma once
+#pragma once
 
-#include "IO/LogSystem.h"
+#include "IO/FormattedWriter.h"
 
-void RunComposedRangeTests();
-void RunPolymorphicRangeTests();
-void RunStreamRangeTests();
-void RunPolymorphicRangePerfTests(Intra::IO::Logger& logger);
-void RunRangeStlInteropTests();
+void RunPolymorphicRangePerfTests(Intra::IO::IFormattedWriter& logger);

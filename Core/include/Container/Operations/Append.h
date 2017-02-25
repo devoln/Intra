@@ -6,6 +6,8 @@
 #include "Platform/Intrinsics.h"
 #include "Extension.h"
 #include "Range/Output/Inserter.h"
+#include "Range/Operations.h"
+#include "Algo/Mutation/Copy.h"
 
 namespace Intra { namespace Container {
 

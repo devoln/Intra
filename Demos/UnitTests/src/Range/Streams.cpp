@@ -8,6 +8,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Header.h"
 #include "IO/Stream.h"
+#include "IO/FormattedWriter.h"
 #include "Range/Stream.h"
 #include "Algo/Reduction.h"
 #include "Range/Generators/ArrayRange.h"
@@ -22,10 +23,10 @@ using namespace Intra::Range;
 using namespace Intra::Algo;
 
 
-void TestArrayRangeStreams()
+void TestArrayRangeStreams(IO::IFormattedWriter& output)
 {
-	Console.PrintLine("Любой диапазон символов есть поток.");
-	Console.PrintLine("Можно работать со строками прямо в буфере на стеке как с потоками.");
+	output.PrintLine("Любой диапазон символов есть поток.");
+	output.PrintLine("Можно работать со строками прямо в буфере на стеке как с потоками.");
 	char bufOnStack[512];
 	Array<int> arrToFormat = {54, 3, 45, 56, 24};
 	int rawArr[] = {6, 3, 8, 3};
@@ -36,18 +37,18 @@ void TestArrayRangeStreams()
 		"Далее записан массив: " << arrToFormat <<
 		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, Math::Sqr<int>) <<
 		"\r\nКвадраты элементов другого массива: " << Map(rawArr, Math::Sqr<int>);
-	Console.PrintLine("Результат:");
-	Console.PrintLine(StringView(bufOnStack, buf.Begin), endl);
+	output.PrintLine("Результат:");
+	output.PrintLine(StringView(bufOnStack, buf.Begin), endl);
 
 	StringView strPiE = "3.1415926, 2.178281828, 1, 2";
-	Console.PrintLine("Распарсим строку \"", strPiE, "\" как поток:");
+	output.PrintLine("Распарсим строку \"", strPiE, "\" как поток:");
 	float pi, e;
 	int i1, i2;
 	strPiE >> pi >> "," >> e >> "," >> i1 >> "," >> i2;
-	Console.PrintLine("π = ", pi, ", e = ", e, ", i1 = ", i1, ", i2 = ", i2, endl);
+	output.PrintLine("π = ", pi, ", e = ", e, ", i1 = ", i1, ", i2 = ", i2, endl);
 }
 
-void TestCustomOutputStream()
+void TestCustomOutputStream(IO::IFormattedWriter& output)
 {
 	struct ConsoleCaesarCipher
 	{
@@ -68,13 +69,13 @@ void TestCustomOutputStream()
 	};
 
 	StringView strings[] = {"Hello", ", ", "World", "!"};
-	Console.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"", "Printing array: ", "\" и к массиву ", strings, ":");
+	output.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"", "Printing array: ", "\" и к массиву ", strings, ":");
 	ConsoleCaesarCipher() << "Printing array: " << strings;
-	Console.PrintLine();
+	output.PrintLine();
 }
 
-void RunStreamRangeTests()
+void TestStreamRange(IO::IFormattedWriter& output)
 {
-	TestArrayRangeStreams();
-	TestCustomOutputStream();
+	TestArrayRangeStreams(output);
+	TestCustomOutputStream(output);
 }

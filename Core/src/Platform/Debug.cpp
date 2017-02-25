@@ -4,6 +4,9 @@
 #include "IO/LogSystem.h"
 #include "Platform/MessageBox.h"
 #include "Algo/String/CStr.h"
+#include "Range/Stream.h"
+#include "Range/Decorators/Split.h"
+#include "Utils/AsciiSet.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <cstdlib>
@@ -44,7 +47,8 @@ void PrintDebugMessage(StringView message)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	LPWSTR wmessage = new wchar_t[message.Length()+1];
-	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), int(message.Length()), wmessage, int(message.Length()));
+	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(),
+		int(message.Length()), wmessage, int(message.Length()));
 	wmessage[wmessageLength] = L'\0';
 	OutputDebugStringW(wmessage);
 	delete[] wmessage;
@@ -67,24 +71,38 @@ bool IsDebuggerAttached()
 #endif
 }
 
+#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Windows || defined(INTRA_DBGHELP))
+
+static bool ContainsMainFunction(StringView sym)
+{
+	auto tokens = Range::Split(sym, AsciiSet(",.: \t\r\n"));
+	auto trimmedTokens = Range::Map(tokens, [](StringView str) {return Algo::Trim(str, '_');});
+	return Algo::Contains(trimmedTokens, "main");
+}
+
+#endif
+
 }
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
 namespace Intra {
 
-String GetStackWalk(size_t framesToSkip)
+String GetStackTrace(size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
 #ifndef INTRA_DBGHELP
 	(void)framesToSkip;
+	(void)maxFrames;
+	(void)untilMain;
 	return null;
 #else
 	SymSetOptions(SYMOPT_DEFERRED_LOADS|SYMOPT_INCLUDE_32BIT_MODULES|SYMOPT_UNDNAME);
 	if(!SymInitialize(GetCurrentProcess(), "http://msdl.microsoft.com/download/symbols", true))
 		return null;
 
+	if(maxFrames>50) maxFrames = 50;
 	void* addrs[50] = {0};
-	ushort frames = CaptureStackBackTrace(DWORD(2+framesToSkip), 50, addrs, null);
+	ushort frames = CaptureStackBackTrace(DWORD(2+framesToSkip), maxFrames, addrs, null);
 
 	String result;
 	result.Reserve(2048);
@@ -99,8 +117,10 @@ String GetStackWalk(size_t framesToSkip)
 		DWORD64 displacement = 0;
 		if(SymFromAddr(GetCurrentProcess(), size_t(addrs[i]), &displacement, info))
 		{
-			result += StringView(info->Name, info->NameLen);
+			auto sym = StringView(info->Name, info->NameLen);
+			result += sym;
 			result += "\n";
+			if(untilMain && ContainsMainFunction(sym)) break;
 		}
 	}
 
@@ -117,17 +137,21 @@ String GetStackWalk(size_t framesToSkip)
 
 namespace Intra {
 
-String GetStackWalk(size_t framesToSkip)
+String GetStackTrace(size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
-	void* pointerArr[100];
-	size_t size = size_t(backtrace(pointerArr, 100));
+	if(framesToSkip>50) return null;
+	if(maxFrames+framesToSkip>50) maxFrames = 50-framesToSkip;
+	void* pointerArr[50];
+	size_t size = size_t(backtrace(pointerArr, int(maxFrames+framesToSkip)));
 	char** strings = backtrace_symbols(pointerArr, int(size+framesToSkip));
 
 	String result;
 	for(size_t i=framesToSkip; i<size+framesToSkip; i++)
 	{
-		result += StringView(strings[i]);
+		auto sym = StringView(strings[i]);
+		result += sym;
 		result += '\n';
+		if(untilMain && ContainsMainFunction(sym)) break;
 	}
 
 	free(strings);
@@ -140,7 +164,8 @@ String GetStackWalk(size_t framesToSkip)
 
 namespace Intra {
 
-String GetStackWalk(size_t framesToSkip) {(void)framesToSkip; return null;}
+String GetStackTrace(size_t framesToSkip, size_t maxFrames, bool untilMain)
+{(void)framesToSkip; (void)maxFrames; (void)untilMain; return null;}
 
 }
 
@@ -148,12 +173,22 @@ String GetStackWalk(size_t framesToSkip) {(void)framesToSkip; return null;}
 
 namespace Intra {
 
-void InternalError(const char* func, const char* file, int line, const char* info)
+String BuildErrorMessage(StringView func, StringView file, int line, StringView info, size_t stackFramesToSkip)
 {
-	InternalError(StringView(func), StringView(file), line, StringView(info));
+	String msg;
+	msg.Reserve(100 + file.Length() + func.Length() + info.Length());
+	Range::LastAppender(msg) << file << "(" << line << "): "
+		"internal error detected in function\n" << func << "\n" << info;
+	String stackTrace = GetStackTrace(1+stackFramesToSkip, 50);
+	if(stackTrace!=null)
+	{
+		msg += "\n\nStack trace:\n";
+		msg += stackTrace;
+	}
+	return msg;
 }
 
-void InternalError(StringView func, StringView file, int line, StringView info)
+void InternalErrorMessageAbort(StringView func, StringView file, int line, StringView info)
 {
 	#if(INTRA_MINEXE>=3)
 	(void)func, (void)file, (void)line, (void)info;
@@ -164,22 +199,7 @@ void InternalError(StringView func, StringView file, int line, StringView info)
 	if(was) return;
 	was = true;
 
-	String msg;
-	msg.Reserve(100 + file.Length() + func.Length() + info.Length());
-	msg += file;
-	msg += "(";
-	msg += ToString(line);
-	msg +=  ")";
-	msg += ": обнаружена ошибка при вызове функции\n";
-	msg += func;
-	msg += "\n";
-	msg += info;
-	String stackTrace = GetStackWalk(1);
-	if(stackTrace!=null)
-	{
-		msg += "\n\nStack trace:\n";
-		msg += stackTrace;
-	}
+	String msg = BuildErrorMessage(func, file, line, info, 2);
 
 #ifndef INTRA_NO_LOGGING
 	if(IO::ErrorLog!=null)
@@ -200,6 +220,14 @@ void InternalError(StringView func, StringView file, int line, StringView info)
 	exit(1);
 #endif
 }
+
+void CallInternalErrorCallback(const char* func, const char* file, int line, const char* info)
+{gInternalErrorCallback(StringView(func), StringView(file), line, StringView(info));}
+
+void CallInternalErrorCallback(const char* func, const char* file, int line, StringView info)
+{gInternalErrorCallback(StringView(func), StringView(file), line, info);}
+
+InternalErrorCallbackType gInternalErrorCallback = InternalErrorMessageAbort;
 
 }
 

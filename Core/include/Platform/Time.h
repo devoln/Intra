@@ -35,6 +35,7 @@ struct DateTime
 	static DateTime Now();
 
 	String ToString() const;
+	ulong64 TimeBasedRandomValue() const;
 
 	ushort Year;
 	byte Month, Day, Hour, Minute, Second;

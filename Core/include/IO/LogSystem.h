@@ -4,20 +4,20 @@
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Generators/StringView.h"
 #include "Container/Sequential/Array.h"
-#include "IO/DocumentWriter.h"
+#include "IO/FormattedWriter.h"
 
 namespace Intra { namespace IO {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-class Logger: public IDocumentWriter
+class MultipleDocumentWriter: public IFormattedWriter
 {
 public:
-	Logger(): attached(null) {}
-	Logger(ArrayRange<IDocumentWriter* const> streams): attached(streams) {}
+	MultipleDocumentWriter(): attached(null) {}
+	MultipleDocumentWriter(ArrayRange<IFormattedWriter* const> streams): attached(streams) {}
 
-	void Attach(IDocumentWriter* stream) {attached.AddLast(stream);}
-	void Detach(IDocumentWriter* stream) {attached.FindAndRemoveUnordered(stream);}
+	void Attach(IFormattedWriter* stream) {attached.AddLast(stream);}
+	void Detach(IFormattedWriter* stream) {attached.FindAndRemoveUnordered(stream);}
 
 	bool operator==(null_t) const {return attached==null;}
 	bool operator!=(null_t) const {return attached!=null;}
@@ -39,14 +39,16 @@ public:
 	void PushStyle(StringView style) override {for(auto stream: attached) stream->PushStyle(style);}
 	void PopStyle() override {for(auto stream: attached) stream->PopStyle();}
 
-	void BeginSpoiler(StringView show="Show", StringView hide="Hide") override {for(auto stream: attached) stream->BeginSpoiler(show, hide);}
+	void BeginSpoiler(StringView show) override {for(auto stream: attached) stream->BeginSpoiler(show);}
 	void EndSpoiler() override {for(auto stream: attached) stream->EndSpoiler();}
 	void EndAllSpoilers() override {for(auto stream: attached) stream->EndAllSpoilers();}
 	void BeginCode() override {for(auto stream: attached) stream->BeginCode();}
 	void EndCode() override {for(auto stream: attached) stream->EndCode();}
 
-	Logger& operator<<(endl_t) override {for(auto stream: attached) *stream << endl; return *this;}
+	MultipleDocumentWriter& operator<<(endl_t) override {for(auto stream: attached) *stream << endl; return *this;}
 	void Print(StringView s) override {for(auto stream: attached) stream->Print(s);}
+
+	void HorLine() override {for(auto stream: attached) stream->HorLine();}
 
 private:
 	virtual void WriteData(const void* data, size_t bytes) override
@@ -54,7 +56,7 @@ private:
 		for(auto stream: attached)
 			stream->WriteData(data, bytes);
 	}
-	Array<IDocumentWriter*> attached;
+	Array<IFormattedWriter*> attached;
 };
 
 
@@ -64,8 +66,8 @@ private:
 struct DummyLogger
 {
 	template<typename T> forceinline DummyLogger& operator<<(const T&) {return *this;}
-	forceinline void Attach(IDocumentWriter*) {}
-	forceinline void Detach(IDocumentWriter*) {}
+	forceinline void Attach(IFormattedWriter*) {}
+	forceinline void Detach(IFormattedWriter*) {}
 	forceinline bool operator==(null_t) const {return true;}
 	forceinline bool operator!=(null_t) const {return false;}
 
@@ -89,7 +91,7 @@ struct DummyLogger
 
 typedef
 #ifdef INTRA_DEBUG
-Logger
+MultipleDocumentWriter
 #else
 DummyLogger
 #endif
@@ -97,7 +99,7 @@ DebugLogger;
 
 typedef
 #ifndef INTRA_NO_LOGGING
-Logger
+MultipleDocumentWriter
 #else
 DummyLogger
 #endif

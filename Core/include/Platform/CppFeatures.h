@@ -278,3 +278,31 @@
 #endif
 
 #endif
+
+#ifndef INTRA_USE_EXCEPTIONS
+
+#ifdef __cpp_exceptions
+#if(_cpp_exceptions>=199711)
+#define INTRA_USE_EXCEPTIONS
+#endif
+#endif
+
+#endif
+
+#ifndef INTRA_EXCEPTIONS_ENABLED
+
+#ifdef __cpp_exceptions
+#if(_cpp_exceptions>=199711)
+#define INTRA_EXCEPTIONS_ENABLED
+#endif
+#endif
+
+#endif
+
+#ifndef INTRA_EXCEPTIONS_ENABLED
+
+#ifdef _CPPUNWIND
+#define INTRA_EXCEPTIONS_ENABLED
+#endif
+
+#endif

@@ -2,7 +2,6 @@
 #include "Algo/Mutation/Copy.h"
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
-#include "Test/Unittest.h"
 #include "Algo/String/CStr.h"
 #include "Platform/CppWarnings.h"
 
@@ -293,17 +292,6 @@ bool UTF8::SequenceIsLegal(const char* source, const char* sourceEnd)
     return source+length<=sourceEnd &&
 		isLegalUTF8(source, length, null);
 }
-
-INTRA_UNITTEST("Unicode conversion test")
-{
-	StringView originalStr = "Тестируется текст с иероглифами ㈇㌤㈳㌛㉨, а также греческим алфавитом αβγδεζηθικλμνξο.";
-	String mystr = originalStr;
-	WString utf16 = UTF8(originalStr).ToUTF16(false);
-	DString utf32 = UTF16(utf16).ToUTF32();
-	utf16 = UTF32(utf32).ToUTF16(false);
-	auto utf8 = UTF16(utf16.begin(), utf16.end()).ToUTF8();
-	INTRA_TEST_ASSERT_EQUALS(originalStr, utf8);
-};
 
 INTRA_WARNING_POP
 

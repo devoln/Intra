@@ -5,6 +5,7 @@
 #include "Algo/String/Parse.h"
 #include "Algo/String/Path.h"
 #include "Algo/Search/Trim.h"
+#include "Algo/Mutation/Transform.h"
 using namespace Intra;
 using namespace Intra::IO;
 

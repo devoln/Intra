@@ -5,6 +5,7 @@
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
 #include "Range/Operations.h"
+#include "Platform/InitializerList.h"
 
 namespace Intra { namespace Algo {
 

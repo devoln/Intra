@@ -8,6 +8,7 @@
 #include "Range/Decorators/Take.h"
 #include "Range/Generators/Null.h"
 #include "Range/Operations.h"
+#include "Meta/GetField.h"
 
 namespace Intra { namespace Algo {
 

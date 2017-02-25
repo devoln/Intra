@@ -5,22 +5,25 @@
 #include "Algo/Sort/Heap.h"
 #include "Range/Concepts.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Meta/Pair.h"
 
 namespace Intra { namespace Algo {
 
-template<typename C, typename ArrRange> Meta::EnableIf<
-	IsAsArrayRange<ArrRange>::_ &&
-	IsAsAssignableRange<ArrRange>::_
-> QuickSort(const ArrRange& range, C comparer);
+using namespace Range::Concepts;
+
+template<typename C, typename R, typename AsR=AsRangeResult<R>> Meta::EnableIf<
+	IsArrayRange<AsR>::_ &&
+	IsAssignableRange<AsR>::_
+> QuickSort(R&& range, C comparer);
 
 
-template<typename R> Meta::EnableIf<
-	IsAsArrayRange<R>::_ &&
-	IsAsAssignableRange<R>::_
+template<typename R, typename AsR=AsRangeResult<R>> Meta::EnableIf<
+	IsArrayRange<AsR>::_ &&
+	IsAssignableRange<AsR>::_
 > QuickSort(R&& range)
 {
-	return QuickSort<Comparers::Function<ValueTypeOfAs<R>>>(
-		Range::Forward<R>(range), Op::Less<ValueTypeOfAs<R>>);
+	return QuickSort<Comparers::Function<ValueTypeOf<AsR>>>(
+		Range::Forward<R>(range), Op::Less<ValueTypeOf<AsR>>);
 }
 
 namespace D {
@@ -55,7 +58,7 @@ template<typename T, typename C> void median(T* first, T* mid, T* last, C compar
 	med3(first+step, mid, last-step, comparer);
 }
 
-template<typename T, typename C> Meta::Pair<T*, T*> unguarded_partition(ArrayRange<T> range, C comparer)
+template<typename T, typename C> Pair<T*, T*> unguarded_partition(ArrayRange<T> range, C comparer)
 {
 	// partition [_First, _Last), using _Pred
 	T* mid = range.Data()+range.Length()/2;
@@ -148,13 +151,13 @@ template<typename T, typename C> void sort_pass(ArrayRange<T> range,
 }
 
 
-template<typename C, typename R> Meta::EnableIf<
-	IsAsArrayRange<R>::_ &&
-	IsAsAssignableRange<R>::_
+template<typename C, typename R, typename AsR> Meta::EnableIf<
+	IsArrayRange<AsR>::_ &&
+	IsAssignableRange<AsR>::_
 > QuickSort(R&& range, C comparer)
 {
 	auto rangeCopy = Range::Forward<R>(range);
-	ArrayRange<ValueTypeOfAs<R>> arr(rangeCopy.Data(), rangeCopy.Length());
+	ArrayRange<ValueTypeOf<AsR>> arr(rangeCopy.Data(), rangeCopy.Length());
 	D::sort_pass(arr, intptr(rangeCopy.Length()), comparer);
 }
 

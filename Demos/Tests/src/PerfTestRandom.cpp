@@ -4,7 +4,7 @@
 
 #include "PerfTestRandom.h"
 #include "Platform/Time.h"
-#include "Test/PerformanceTest.h"
+#include "Test/PerfSummary.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/Compatibility.h"
 #include "Math/Random.h"
@@ -12,7 +12,7 @@
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4350)
+#pragma warning(disable: 4350 4548)
 #endif
 
 
@@ -24,7 +24,7 @@ using namespace Intra;
 float g_A = 0;
 int g_B = 0;
 
-void RunRandomPerfTests(IO::Logger& logger)
+void RunRandomPerfTests(IO::IFormattedWriter& logger)
 {
 	std::random_device r;
 	std::mt19937 mt19937(r());
@@ -43,7 +43,7 @@ void RunRandomPerfTests(IO::Logger& logger)
 	double time3 = tim.GetTimeAndReset();
 
 
-	PrintPerformanceResults(logger, "float в диапазоне [0.0; 1.0] 100000000 раз",
+	PrintPerformanceResults(logger, "float in range [0.0; 1.0] 100000000 times",
 		{"rand()/32767.0f", "mt19937()/(float)mt19937.max()", "Math::Random<float>()"},
 		{time1, time2},
 		{time3});

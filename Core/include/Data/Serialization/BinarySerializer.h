@@ -10,6 +10,9 @@
 #include "Algo/ForEach.h"
 #include "Range/Output/OutputArrayRange.h"
 #include "Algo/Raw/Write.h"
+#include "Range/Generators/Count.h"
+#include "Container/Operations/Info.h"
+#include "Container/Operations/Extension.h"
 
 namespace Intra { namespace Data {
 
@@ -54,7 +57,8 @@ public:
 
 	//! Сериализация диапазонов, представленных непрерывно в памяти.
 	template<typename R> forceinline Meta::EnableIf<
-		Range::IsAsArrayRange<R>::_,
+		Range::IsAsArrayRange<R>::_ &&
+		!Container::IsStaticArrayContainer<R>::_,
 	GenericBinarySerializer&> operator<<(R&& v)
 	{
 		auto range = Range::Forward<R>(v);
@@ -62,7 +66,6 @@ public:
 		SerializeArray(ArrayRange<const T>(range.Data(), range.Length()));
 		return *this;
 	}
-
 
 
 	//! Сериализовать нетривиально сериализуемую структуру или класс со статической рефлексией.
@@ -79,16 +82,36 @@ public:
 	//! Сериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
 	template<typename T, size_t N> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	GenericBinarySerializer&> operator<<(const T(&src)[N])
+	GenericBinarySerializer&> operator<<(T(&src)[N])
 	{
-		Algo::CopyToRawAdvance(ArrayRange<const T>(src), Output);
+		Algo::CopyToRawAdvance(src, Output, sizeof(T)*N/sizeof(Range::ValueTypeOf<O>));
 		return *this;
 	}
 
 	//! Поэлементно сериализовать массив фиксированной длины нетривиально сериализуемого типа.
 	template<typename T, size_t N> forceinline Meta::EnableIf<
 		!Meta::IsTriviallySerializable<T>::_,
-	GenericBinarySerializer&> operator<<(const T(&src)[N])
+	GenericBinarySerializer&> operator<<(T(&src)[N])
+	{
+		Algo::ForEach(src, *this);
+		return *this;
+	}
+
+	//! Сериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
+	template<typename C, typename T= Container::ValueTypeOf<C>> forceinline Meta::EnableIf<
+		Container::IsStaticArrayContainer<C>::_ &&
+		Meta::IsTriviallySerializable<T>::_,
+	GenericBinarySerializer&> operator<<(C&& src)
+	{
+		Algo::CopyToRawAdvance(ArrayRange<T>(src), Output);
+		return *this;
+	}
+
+	//! Поэлементно сериализовать массив фиксированной длины нетривиально сериализуемого типа.
+	template<typename C, typename T=Container::ValueTypeOf<C>> forceinline Meta::EnableIf<
+		Container::IsStaticArrayContainer<C>::_ &&
+		!Meta::IsTriviallySerializable<T>::_,
+	GenericBinarySerializer&> operator<<(C&& src)
 	{
 		Algo::ForEach(src, *this);
 		return *this;
@@ -116,13 +139,6 @@ public:
 };
 typedef GenericBinarySerializer<Range::OutputArrayRange<byte>> BinarySerializer;
 typedef GenericBinarySerializer<Range::CountRange<byte>> DummyBinarySerializer;
-
-
-//struct StructReflection;
-
-//! Сериализовать runtime структуру
-//void SerializeStructBinary(BinarySerializer& serializer, const void* src, const StructReflection& reflection);
-//void SerializeStructBinary(DummyBinarySerializer& serializer, const void* src, const StructReflection& reflection);
 
 INTRA_WARNING_POP
 

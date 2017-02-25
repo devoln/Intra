@@ -1,5 +1,5 @@
 ﻿#pragma once
 
-#include "IO/LogSystem.h"
+#include "IO/FormattedWriter.h"
 
-void RunSortPerfTests(Intra::IO::Logger& logger);
+void RunSortPerfTests(Intra::IO::IFormattedWriter& logger);

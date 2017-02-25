@@ -1,34 +1,11 @@
-﻿#pragma once
+#pragma once
 
-#include "Range/Generators/ArrayRange.h"
-#include "IO/LogSystem.h"
-#include "Range/Generators/StringView.h"
+#include "Meta/Type.h"
 #include "Math/Random.h"
 #include "Algo/Hash/Murmur.h"
 #include "Container/ForwardDecls.h"
 
 namespace Intra {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-void PrintPerformanceResults(IO::Logger& logger, StringView testName,
-	ArrayRange<const StringView> comparedTypes, ArrayRange<const double> stdTimes, ArrayRange<const double> times);
-
-struct TestGroup
-{
-	bool yes;
-	IO::Logger& logger;
-
-	operator bool() const {return yes;}
-	TestGroup(IO::Logger& Log, StringView category);
-	~TestGroup();
-
-	static int YesForNestingLevel;
-private:
-	static int nestingLevel;
-	TestGroup& operator=(const TestGroup&) = delete;
-};
-
 
 template<size_t N> struct Big
 {
@@ -85,10 +62,10 @@ template<typename MAP> void PopulateMapRandom(MAP& map, size_t count)
 		map.insert({keys[i], values[i]});
 }
 
-template<typename String> String GenerateRandomString(size_t len)
+template<typename S> S GenerateRandomString(size_t len)
 {
 	Math::Random<int> rand(uint(len)^Math::Random<uint>::Global());
-	String result;
+	S result;
 	result.resize(len);
 	for(char& c: result)
 	{
@@ -100,7 +77,4 @@ template<typename String> String GenerateRandomString(size_t len)
 	return result;
 }
 
-INTRA_WARNING_POP
-
 }
-

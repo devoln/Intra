@@ -14,13 +14,15 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 
-#include "Test/PerformanceTest.h"
+#include "Test/PerfSummary.h"
+#include "Test/TestGroup.h"
+#include "Test/TestData.h"
 #include "IO/Stream.h"
 #include "IO/LogSystem.h"
 #include "Platform/Time.h"
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4350 4702)
+#pragma warning(disable: 4350 4548 4702)
 #endif
 #include <map>
 #include <unordered_map>
@@ -31,7 +33,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace IO;
 
-void TestMaps()
+void TestMaps(IO::IFormattedWriter& output)
 {
 	HashMap<String, int> map;
 	map["Строка"] = 6;
@@ -41,18 +43,18 @@ void TestMaps()
 	map["Массива"] = 7;
 	map["HashMap"] = 11;
 
-	Console.PrintLine("Заполнили HashMap, выведем его:");
-	Console.PrintLine(map, endl);
+	output.PrintLine("Заполнили HashMap, выведем его:");
+	output.PrintLine(map, endl);
 
 	auto mapRange = map.Find("Вывод");
 	mapRange.PopLast();
 
-	Console.PrintLine("Выведем все элементы, вставленные начиная от \"Вывод\" и до предпоследнего элемента:");
-	Console.PrintLine(mapRange, endl);
+	output.PrintLine("Выведем все элементы, вставленные начиная от \"Вывод\" и до предпоследнего элемента:");
+	output.PrintLine(mapRange, endl);
 
 	map.SortByKey();
-	Console.PrintLine("Отсортируем элементы HashMap на месте:");
-	Console.PrintLine(map);
+	output.PrintLine("Отсортируем элементы HashMap на месте:");
+	output.PrintLine(map);
 }
 
 template<typename MAP> double TestMapPopulation(uint times, uint size)
@@ -158,21 +160,18 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 }
 
 
-void RunMapPerfTests(IO::Logger& logger)
+void RunMapPerfTests(IO::IFormattedWriter& output)
 {
 	static const StringView comparedContainers[] = {"std::map", "std::unordered_map", "LinearMap", "HashMap"};
 
-	if(TestGroup gr{logger, "Пример использования HashMap"})
-	{
-		TestMaps();
-	}
+	TestGroup("Пример использования HashMap", TestMaps);
 
-	if(TestGroup gr{logger, "Заполнение случайными ключами uint и значениями uint"})
+	if(TestGroup gr{"Заполнение случайными ключами uint и значениями uint"})
 	{
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000u/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<uint, uint>>(times, count),
@@ -185,12 +184,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Заполнение случайными ключами String и значениями uint"})
+	if(TestGroup gr{"Заполнение случайными ключами String и значениями uint"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<String, uint>>(times, count),
@@ -203,12 +202,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Заполнение случайными ключами Big<64> и значениями uint"})
+	if(TestGroup gr{"Заполнение случайными ключами Big<64> и значениями uint"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<Big<64>, uint>>(times, count),
@@ -221,12 +220,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<uint, uint>>(times, count),
@@ -239,12 +238,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count),
@@ -257,12 +256,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count),
@@ -277,12 +276,12 @@ void RunMapPerfTests(IO::Logger& logger)
 
 
 
-	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Упорядоченная итерация по контейнеру с ключом uint и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<uint, uint>>(times, count)
@@ -293,12 +292,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Упорядоченная итерация по контейнеру с ключом String и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count)
@@ -309,12 +308,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Упорядоченная итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
+	if(TestGroup gr{"Упорядоченная итерация по контейнеру с ключом Big<64> и значением uint с вычислением суммы всех значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count)
@@ -327,12 +326,12 @@ void RunMapPerfTests(IO::Logger& logger)
 
 
 
-	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов по ключу uint с вычислением суммы всех найденных значений"})
+	if(TestGroup gr{"Поиск существующих в контейнере uint элементов по ключу uint с вычислением суммы всех найденных значений"})
 	{
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<uint, uint>>(times, count),
@@ -345,12 +344,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов с ключом String с вычислением суммы всех найденных значений"})
+	if(TestGroup gr{"Поиск существующих в контейнере uint элементов с ключом String с вычислением суммы всех найденных значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<String, uint>>(times, count),
@@ -363,12 +362,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Поиск существующих в контейнере uint элементов по ключу Big<64> с вычислением суммы всех найденных значений"})
+	if(TestGroup gr{"Поиск существующих в контейнере uint элементов по ключу Big<64> с вычислением суммы всех найденных значений"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<Big<64>, uint>>(times, count),
@@ -382,12 +381,12 @@ void RunMapPerfTests(IO::Logger& logger)
 	}
 
 
-	if(TestGroup gr{logger, "Поиск несуществующих в контейнере uint элементов по ключу uint"})
+	if(TestGroup gr{"Поиск несуществующих в контейнере uint элементов по ключу uint"})
 	{
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<uint, uint>>(times, count),
@@ -400,12 +399,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Поиск несуществующих в контейнере uint элементов по ключу String"})
+	if(TestGroup gr{"Поиск несуществующих в контейнере uint элементов по ключу String"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<String, uint>>(times, count),
@@ -418,12 +417,12 @@ void RunMapPerfTests(IO::Logger& logger)
 		}
 	}
 
-	if(TestGroup gr{logger, "Поиск несуществующих в контейнере с ключом Big<64> и значением uint"})
+	if(TestGroup gr{"Поиск несуществующих в контейнере с ключом Big<64> и значением uint"})
 	{
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(logger, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<Big<64>, uint>>(times, count),

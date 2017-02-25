@@ -287,6 +287,12 @@ void Writer::WriteData(const void* data, size_t bytes)
 	//fflush(reinterpret_cast<FILE*>(hndl));
 }
 
+void Writer::Flush()
+{
+	if(hndl==null) return;
+	fflush(reinterpret_cast<FILE*>(hndl));
+}
+
 
 
 //Установить позицию чтения

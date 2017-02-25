@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "IO/LogSystem.h"
+#include "IO/FormattedWriter.h"
 
-void RunMapPerfTests(Intra::IO::Logger& logger);
+void RunMapPerfTests(Intra::IO::IFormattedWriter& output);
 

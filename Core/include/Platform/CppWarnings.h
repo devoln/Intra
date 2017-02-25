@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Meta/Preprocessor.h"
+
 #ifdef _MSC_VER
 
 #define INTRA_WARNING_PUSH __pragma(warning(push))
@@ -21,7 +23,7 @@
 #pragma warning(disable: 4710 4514)
 
 #define INTRA_DISABLE_REDUNDANT_WARNINGS \
-	__pragma(warning(disable: 4714 4640 4514 4820 4711 4710 4061 4608 INTRA_REDUNDANT_WARNINGS_MSVC14))
+	__pragma(warning(disable: 4714 4640 4514 4820 4711 4710 4061 4608 4571 INTRA_REDUNDANT_WARNINGS_MSVC14))
 //4714 - в дебаге не ругаться на то, что forceinline не сработал
 //4640 - создание в конструкторе локального статического объекта может привести к ошибкам при работе с потоками
 //4514 - подставляемая функция, не используемая в ссылках, была удалена
@@ -29,6 +31,8 @@
 //4711 - не сообщать об автоматическом inline
 //4710 - не сообщать об автоматическом не inline
 //4061 - не ругаться на необработанные явно case enum'а
+//4571 - не сообщать о том, что поведение catch(...) изменилось
+//4868 - компилятор не может принудительно применить порядок вычисления "слева направо" для списка инициализаторов, заключенных в фигурные скобки
 
 
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED \
@@ -37,9 +41,15 @@
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED \
 	__pragma(warning(disable: 4510 4610 4623))
 
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0))
+#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) __pragma(warning(disable: 4548))
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
+
+#ifndef __clang__
+#define INTRA_DISABLE_LNK4221 namespace {char INTRA_CONCATENATE_TOKENS($DisableLNK4221__, __LINE__);}
+#else
+#define INTRA_DISABLE_LNK4221
+#endif
 
 #elif defined(__GNUC__)
 #define INTRA_WARNING_PUSH \
@@ -68,6 +78,8 @@
 
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
+#define INTRA_DISABLE_LNK4221
+
 #elif defined(__clang__)
 #define INTRA_WARNING_PUSH \
 	_Pragma("clang diagnostic push")
@@ -94,6 +106,8 @@
 
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
+#define INTRA_DISABLE_LNK4221
+
 #else
 
 #define INTRA_WARNING_PUSH
@@ -106,6 +120,8 @@
 #define INTRA_WARNING_POP
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
+#define INTRA_DISABLE_LNK4221
+
 #endif
 
 #define INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS \
@@ -115,3 +131,4 @@
 	INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED \
 	INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED \
 	INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
+

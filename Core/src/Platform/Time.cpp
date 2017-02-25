@@ -18,6 +18,11 @@ DateTime DateTime::Now()
 		byte(now->tm_hour), byte(now->tm_min), byte(now->tm_sec)};
 }
 
+ulong64 DateTime::TimeBasedRandomValue() const
+{
+	return Second+Minute*60ull+Hour*3600ull+Day*86400ull+Month*31ull*86400ull+Year*366ull*86400ull;
+}
+
 String DateTime::ToString() const
 {
 	return String::Format()

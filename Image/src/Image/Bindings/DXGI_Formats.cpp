@@ -1,6 +1,7 @@
 ﻿#include "Image/Bindings/DXGI_Formats.h"
 #include "Image/ImageFormat.h"
 #include "Algo/Mutation/Fill.h"
+#include "Range/Generators/ArrayRange.h"
 
 namespace Intra { namespace Image {
 
@@ -55,23 +56,23 @@ ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* swapRB)
 
 DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB)
 {
-	static DXGI_FORMAT map_no_swap[ImageFormat::End], map_swap[ImageFormat::End];
+	static DXGI_FORMAT mapNoSwap[ImageFormat::End], mapSwap[ImageFormat::End];
 	static bool inited = false;
 	if(!inited)
 	{
-		Algo::FillZeros(map_no_swap);
-		Algo::FillZeros(map_swap);
+		Algo::FillZeros(mapNoSwap);
+		Algo::FillZeros(mapSwap);
 		for(int i=DXGI_FORMAT_UNKNOWN+1; i<=DXGI_FORMAT_B4G4R4A4_UNORM; i++)
 		{
 			bool swap;
 			auto dxgi = DXGI_FORMAT(i);
 			auto f = DXGI_ToImageFormat(dxgi, &swap).value;
-			if(!swap) map_no_swap[f] = dxgi;
-			if(swap) map_swap[f] = dxgi;
+			if(!swap) mapNoSwap[f] = dxgi;
+			if(swap) mapSwap[f] = dxgi;
 		}
 		inited = true;
 	}
-	return (swapRB? map_swap: map_no_swap)[fmt.value];
+	return (swapRB? mapSwap: mapNoSwap)[fmt.value];
 }
 
 }}

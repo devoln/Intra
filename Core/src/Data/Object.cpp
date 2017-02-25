@@ -1,11 +1,13 @@
 ﻿#include "Data/Object.h"
+#include "Range/Compositors/ZipKV.h"
+#include "Range/Decorators/Map.h"
 
 namespace Intra { namespace Data {
 
 Object::StringMap<double> Object::GetNumbers() const
 {
-	return Range::Map(mNumbers, [](const Meta::Tuple<const String&, const double&>& p) {
-		return MapElement<double>{Meta::Get<0>(p), Meta::Get<1>(p)};
+	return Range::Map(mNumbers, [](const KeyValuePair<const String&, const double&>& p) {
+		return MapElement<double>{p.Key, p.Value};
 	});
 }
 
@@ -18,37 +20,37 @@ StringView Object::GetString(StringView key, StringView defaultValue) const
 
 Object::StringMap<StringView> Object::GetStrings() const
 {
-	return Range::Map(mStrings, [](const Meta::Tuple<const String&, const String&>& p) {
-		return MapElement<StringView>{Meta::Get<0>(p), Meta::Get<1>(p)};
+	return Range::Map(mStrings, [](const KeyValuePair<const String&, const String&>& p) {
+		return MapElement<StringView>{p.Key, p.Value};
 	});
 }
 
 Object::StringMap<const IConstObject&> Object::GetObjects() const
 {
-	return Range::Map(mObjects, [](const Meta::Tuple<const String&, const Object&>& p) {
-		return MapElement<const IConstObject&>{Meta::Get<0>(p), Meta::Get<1>(p)};
+	return Range::Map(mObjects, [](const KeyValuePair<const String&, const Object&>& p) {
+		return MapElement<const IConstObject&>{p.Key, p.Value};
 	});
 }
 
 
 Object::StringMap<Object::Collection<double>> Object::GetNumberArrays() const
 {
-	return Range::Map(mNumberArrays, [](const Meta::Tuple<const String&, const Array<double>&>& p) {
-		return MapElement<Collection<double>>{Meta::Get<0>(p), Meta::Get<1>(p).AsRange()};
+	return Range::Map(mNumberArrays, [](const KeyValuePair<const String&, const Array<double>&>& p) {
+		return MapElement<Collection<double>>{p.Key, p.Value.AsRange()};
 	});
 }
 
 Object::StringMap<Object::Collection<StringView>> Object::GetStringArrays() const
 {
-	return Range::Map(mStringArrays, [](const Meta::Tuple<const String&, const Array<String>&>& p) {
-		return MapElement<Collection<StringView>>{Meta::Get<0>(p), Meta::Get<1>(p).AsRange()};
+	return Range::Map(mStringArrays, [](const KeyValuePair<const String&, const Array<String>&>& p) {
+		return MapElement<Collection<StringView>>{p.Key, p.Value.AsRange()};
 	});
 }
 
 Object::StringMap<Object::Collection<const IConstObject&>> Object::GetObjectArrays() const
 {
-	return Range::Map(mObjectArrays, [](const Meta::Tuple<const String&, const Array<Object>&>& p) {
-		return MapElement<Collection<const IConstObject&>>{Meta::Get<0>(p), Meta::Get<1>(p).AsRange()};
+	return Range::Map(mObjectArrays, [](const KeyValuePair<const String&, const Array<Object>&>& p) {
+		return MapElement<Collection<const IConstObject&>>{p.Key, p.Value.AsRange()};
 	});
 }
 

@@ -5,6 +5,7 @@
 #include "Platform/CppWarnings.h"
 #include "Concepts.h"
 #include "AsRange.h"
+#include "Platform/Debug.h"
 
 namespace Intra { namespace Range {
 

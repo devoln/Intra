@@ -4,7 +4,7 @@
 #include "Range/Iterator.hh"
 #include "Range/Decorators/Retro.h"
 #include "Memory/Allocator/AllocatorRef.h"
-#include "Container/ForwardDecls.h"
+#include "Container/AllForwardDecls.h"
 #include "Range/Generators/ListRange.h"
 #include "Platform/CppWarnings.h"
 

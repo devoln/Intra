@@ -1,4 +1,5 @@
 #pragma once
 
-#include "Test/PerformanceTest.h"
-#include "Test/Unittest.h"
+#include "Test/PerfSummary.h"
+#include "Test/TestData.h"
+#include "Test/TestGroup.h"

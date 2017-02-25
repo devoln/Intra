@@ -1,5 +1,7 @@
 ﻿#pragma once
 
+#include "Platform/FundamentalTypes.h"
+#include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
 #include "Platform/Debug.h"
 #include "Memory/VirtualMemory.h"

@@ -6,7 +6,7 @@
 #include "Algo/Sort/Quick.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
-#include "Container/ForwardDecls.h"
+#include "Container/AllForwardDecls.h"
 #include "Platform/CppWarnings.h"
 #include "Memory/Memory.h"
 

@@ -6,9 +6,11 @@
 
 namespace Intra { namespace Algo {
 
-template<typename R, typename P> Meta::EnableIf<
-	Range::IsAsConsumableRange<R>::_ &&
-	Meta::IsCallable<P, Range::ValueTypeOfAs<R>>::_
+using namespace Range::Concepts;
+
+template<typename R, typename P, typename AsR=AsRangeResult<R>> Meta::EnableIf<
+	IsConsumableRange<AsR>::_ &&
+	Meta::IsCallable<P, ValueTypeOf<AsR>>::_
 > ForEach(R&& r, P&& pred)
 {
 	auto range = Range::Forward<R>(r);
@@ -19,9 +21,18 @@ template<typename R, typename P> Meta::EnableIf<
 	}
 }
 
-template<typename T, size_t N, typename P> Meta::EnableIf<
-	Meta::IsCallable<P, T>::_
-> ForEach(T(&arr)[N], P&& pred)
-{ForEach(Range::AsRange(arr), Meta::Forward<P>(pred));}
+template<typename R, typename AsR=AsRangeResult<R>, typename... Args> Meta::EnableIf<
+	IsConsumableRange<AsR>::_ &&
+	Meta::IsCallable<ReturnValueTypeOf<AsR>, Args...>::_
+> CallEach(R&& r, Args&&... args)
+{
+	auto range = Range::Forward<R>(r);
+	while(!range.Empty())
+	{
+		range.First()(args...);
+		range.PopFirst();
+	}
+}
+
 
 }}

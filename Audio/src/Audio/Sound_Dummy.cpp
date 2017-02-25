@@ -1,4 +1,5 @@
 ﻿#include "Platform/PlatformInfo.h"
+#include "Platform/CppWarnings.h"
 #include "Audio/SoundApi.h"
 
 #if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
@@ -128,5 +129,9 @@ void SoundSystemCleanUp() {}
 }}}
 
 INTRA_WARNING_POP
+
+#else
+
+INTRA_DISABLE_LNK4221
 
 #endif

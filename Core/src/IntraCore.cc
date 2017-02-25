@@ -22,7 +22,8 @@
 #include "Data/ValueType.cpp"
 #include "Data/Object.cpp"
 
-#include "IO/DocumentWriter.cpp"
+#include "IO/ConsoleWriter.cpp"
+#include "IO/HtmlWriter.cpp"
 #include "IO/File.cpp"
 #include "IO/LogSystem.cpp"
 #include "IO/Stream.cpp"
@@ -34,7 +35,7 @@
 
 #include "Memory/Memory.cpp"
 #include "Memory/VirtualMemory.cpp"
-#include "Memory/Allocator.cpp"
+#include "Memory/Allocator/Global.cpp"
 #include "Memory/Allocator/System.cpp"
 #include "Memory/Allocator/Basic/Pool.cpp"
 #include "Memory/Allocator/Basic/Stack.cpp"
@@ -48,8 +49,8 @@
 #include "Range/Special/Unicode.cpp"
 
 
-#include "Test/PerformanceTest.cpp"
-#include "Test/Unittest.cpp"
+#include "Test/PerfSummary.cpp"
+#include "Test/TestGroup.cpp"
 
 #include "Thread/Job.cpp"
 #include "Thread/Thread.cpp"

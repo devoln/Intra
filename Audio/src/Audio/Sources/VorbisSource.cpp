@@ -8,6 +8,10 @@
 #include <vorbis/vorbisfile.h>
 #include <stdio.h>
 
+#elif(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
+
+#include "stb_vorbis.h"
+
 #endif
 
 namespace Intra { namespace Audio { namespace Sources {
@@ -139,12 +143,7 @@ Array<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
 	return null;
 }
 
-#else
-
-
-#if(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
-
-#include "stb_vorbis.h"
+#elif(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
 
 VorbisSource::VorbisSource(ArrayRange<const byte> srcFileData): data(srcFileData)
 {
@@ -210,7 +209,9 @@ Array<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
 	return null;
 }
 
-#endif
+#else
+
+INTRA_DISABLE_LNK4221
 
 #endif
 

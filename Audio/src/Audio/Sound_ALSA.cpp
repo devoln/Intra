@@ -1,4 +1,5 @@
 ﻿#include "Audio/SoundApi.h"
+#include "Platform/CppWarnings.h"
 
 //#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
 
@@ -402,5 +403,9 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 }
 
 }}
+
+#else
+
+INTRA_DISABLE_LNK4221
 
 #endif

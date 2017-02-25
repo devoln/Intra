@@ -4,6 +4,7 @@
 #include "Range/Decorators/Cycle.h"
 #include "Platform/CppWarnings.h"
 #include "Range/Concepts.h"
+#include "Platform/Intrinsics.h"
 
 namespace Intra { namespace Algo {
 

@@ -100,6 +100,10 @@ Array<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
 	return resultPtrs;
 }
 
+#else
+
+INTRA_DISABLE_LNK4221
+
 #endif
 
 INTRA_WARNING_POP

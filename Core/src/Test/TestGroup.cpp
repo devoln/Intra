@@ -1,0 +1,154 @@
+#include "Test/TestGroup.h"
+#include "IO/LogSystem.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
+#include "Platform/Debug.h"
+#include "IO/ConsoleWriter.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra {
+
+using namespace IO;
+
+int TestGroup::nestingLevel=0;
+int TestGroup::YesForNestingLevel=1000000000;
+
+struct TestException {};
+
+static void InternalErrorTestFail(StringView func, StringView file, int line, StringView info)
+{
+	INTRA_ASSERT(TestGroup::GetCurrent() != null);
+	TestGroup::GetCurrent()->ErrorInfo = TestInternalErrorInfo{func, file, line, info,
+		BuildErrorMessage(func, file, line, info, 1)};
+#ifdef INTRA_EXCEPTIONS_ENABLED
+	throw TestException();
+#else
+	INTRA_HEAP_CHECK;
+#endif
+}
+
+TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output, StringView category):
+	Yes(false), Logger(logger), Output(output), Category(category),
+	mHadChildren(false),
+	mFailedChildren(0), mPassedChildren(0)
+{
+	ErrorInfo = {null, null, 0, null, null};
+	if(YesForNestingLevel<=nestingLevel) Yes = true;
+	else consoleAskToEnableTest();
+	if(Yes)
+	{
+		if(currentTestGroup!=null && !currentTestGroup->mHadChildren)
+		{
+			currentTestGroup->mHadChildren = true;
+			Logger.BeginSpoiler(currentTestGroup->Category);
+		}
+		Output.BeginSpoiler(Category);
+	}
+	else Output.PrintLine("Test [ ", Category, " ] skipped!");
+	nestingLevel++;
+
+	mParentTestGroup = currentTestGroup;
+	currentTestGroup = this;
+}
+
+void TestGroup::consoleAskToEnableTest()
+{
+	Console.PrintLine("Press space to run test [ ", Category, " ] or press enter to skip it...");
+	for(;;)
+	{
+		dchar c = Console.GetChar();
+		if(c=='y')
+		{
+			YesForNestingLevel = nestingLevel+1;
+			Yes = true;
+			break;
+		}
+		if(c=='a')
+		{
+			YesForNestingLevel = nestingLevel;
+			Yes = true;
+			break;
+		}
+		if(c==' ')
+		{
+			Yes = true;
+			break;
+		}
+		if(c=='\r' || c=='\n') break;
+	}
+}
+
+TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output,
+	StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest):
+		TestGroup(logger, output, category)
+{
+	if(!Yes) return;
+	auto oldCallback = gInternalErrorCallback;
+	gInternalErrorCallback = InternalErrorTestFail;
+#ifdef INTRA_EXCEPTIONS_ENABLED
+	try { //Исключение как способ безопасного выхода из ошибочного теста вместо падения всего приложения
+#endif
+		funcToTest(output);
+#ifdef INTRA_EXCEPTIONS_ENABLED
+	} catch(TestException) {}
+	catch(...) {ErrorInfo.FullDesc += "\nUnknown exception caught!";}
+#endif
+	gInternalErrorCallback = oldCallback;
+}
+
+TestGroup::TestGroup(StringView category):
+	TestGroup(currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Logger,
+		currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Output, category) {}
+
+TestGroup::TestGroup(StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest):
+	TestGroup(currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Logger,
+		currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Output, category, funcToTest) {}
+
+TestGroup::~TestGroup()
+{
+	nestingLevel--;
+	currentTestGroup = mParentTestGroup;
+	if(!Yes) return;
+
+	if(mHadChildren) Logger.EndSpoiler();
+
+	PrintUnitTestResult();
+	if(mParentTestGroup!=null)
+	{
+		if(ErrorInfo.NoError())
+			mParentTestGroup->mPassedChildren++;
+		else
+			mParentTestGroup->mFailedChildren++;
+	}
+	Output.EndSpoiler();
+	INTRA_HEAP_CHECK;
+}
+
+void TestGroup::PrintUnitTestResult()
+{
+	if(ErrorInfo.NoError() && mFailedChildren==0)
+	{
+		Logger.PushFont({0, 0, 1}, 3.0f, true, false, true);
+		Logger.PrintLine("Test [ ", Category, " ] PASSED!");
+		Logger.PopFont();
+	}
+	else
+	{
+		Logger.PushFont({1, 0, 0}, 3.0f, true, false, true);
+		Logger.PrintLine("Test [ ", Category, " ] FAILED!");
+		Logger.PopFont();
+
+		Logger.HorLine();
+		if(ErrorInfo.FullDesc!=null) Logger.PrintLine(ErrorInfo.FullDesc);
+		if(mFailedChildren!=0)
+			Logger.PrintLine(mFailedChildren, " of ", mFailedChildren+mPassedChildren, " subtests were FAILED!");
+		Logger.HorLine();
+	}
+}
+
+TestGroup* TestGroup::currentTestGroup = null;
+
+}
+
+INTRA_WARNING_POP

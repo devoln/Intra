@@ -120,6 +120,8 @@ public:
 	ulong64 GetSize() const override;
 	ulong64 GetPos() const override;
 
+	void Flush();
+
 	//Запись
 	virtual void WriteData(const void* data, size_t length) override final;
 

@@ -17,7 +17,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Meta {
 
-template<typename ...Args> struct Tuple;
+template<typename... Args> struct Tuple;
 
 
 namespace D {
@@ -97,124 +97,8 @@ public:
 template<typename... Args> forceinline Tuple<Args...> TupleL(Args&&... args)
 {return Tuple<Args...>(Meta::Forward<Args>(args)...);}
 
-
-
-template<typename K, typename V> struct KeyValuePair
-{
-	typedef TypeList<K, V> TL;
-
-	K Key;
-	V Value;
-
-	KeyValuePair(): Key(), Value() {};
-	template<typename K1, typename V1> KeyValuePair(K1&& key, V1&& value):
-		Key(Meta::Forward<K1>(key)), Value(Meta::Forward<V1>(value)) {}
-
-	operator KeyValuePair<const K, V>() const
-	{return *reinterpret_cast<KeyValuePair<const K, V>*>(this);}
-
-	operator Meta::Pair<K,V>&() {return *reinterpret_cast<Meta::Pair<K,V>*>(this);}
-	operator const Meta::Pair<K,V>&() const {return *reinterpret_cast<Meta::Pair<K,V>*>(this);}
-
-};
-
-
-
-template<typename T1, typename T2> Meta::Pair<T1, T2> PairL(T1&& first, T2&& second)
-{return {Meta::Forward<T1>(first), Meta::Forward<T2>(second)};}
-
-template<typename K, typename V> KeyValuePair<K, V> KVPairL(K&& key, V&& value)
-{return {Meta::Forward<K>(key), Meta::Forward<V>(value)};}
-
-template<typename T> struct IsTuple: TypeFromValue<bool, false> {};
-template<typename... Args> struct IsTuple<Tuple<Args...>>: TypeFromValue<bool, true> {};
-template<typename T1, typename T2> struct IsTuple<Pair<T1, T2>>: TypeFromValue<bool, true> {};
-template<typename K, typename V> struct IsTuple<KeyValuePair<K, V>>: TypeFromValue<bool, true> {};
-
-namespace D {
-
-template<size_t I> struct Tuple_GetN_T
-{
-	template<typename T0, typename ...Args> static forceinline
-	auto cfunc(const Tuple<T0, Args...>& t) -> decltype(Tuple_GetN_T<I-1>::cfunc(t.next))
-	{return Tuple_GetN_T<I-1>::cfunc(t.next);}
-
-	template<typename T0, typename ...Args> static forceinline
-	auto func(Tuple<T0, Args...>& t) -> decltype(Tuple_GetN_T<I-1>::func(t.next))
-	{return Tuple_GetN_T<I-1>::func(t.next);}
-};
-
-template<> struct Tuple_GetN_T<0>
-{
-	template<typename T0, typename ...Args> static forceinline
-	const T0& cfunc(const Tuple<T0, Args...>& t) {return t.first;}
-
-	template<typename T0, typename ...Args> static forceinline
-	T0& func(Tuple<T0, Args...>& t) {return t.first;}
-};
-
-INTRA_DEFINE_EXPRESSION_CHECKER(Has_first_second, (Val<T>().first, Val<T>().second));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasKeyValue, (Val<T>().Key, Val<T>().Value));
-
-template<size_t I> struct Pair_Get_T;
-template<> struct Pair_Get_T<0>
-{
-	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
-		Has_first_second<P>::_,
-	decltype(*&p.first)>
-	{return p.first;}
-
-	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
-		HasKeyValue<P>::_,
-	decltype(*&p.Key)>
-	{return p.Key;}
-};
-
-template<> struct Pair_Get_T<1>
-{
-	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
-		Has_first_second<P>::_,
-	decltype(*&p.second)>
-	{return p.second;}
-
-	template<typename P> static forceinline auto get(P&& p) -> EnableIf<
-		HasKeyValue<P>::_,
-	decltype(*&p.Value)>
-	{return p.Value;}
-};
-
 }
 
-
-template<size_t N, typename... Types> forceinline
-TypeListAt<N, TypeList<Types...>>& Get(Tuple<Types...>& tuple)
-{return D::Tuple_GetN_T<N>::func(tuple);}
-
-template<size_t N, typename... Types> forceinline
-const TypeListAt<N, TypeList<Types...>>& Get(const Tuple<Types...>& tuple)
-{return D::Tuple_GetN_T<N>::cfunc(tuple);}
-
-
-template<size_t N, typename P> forceinline auto Get(P&& p) -> EnableIf<
-	D::Has_first_second<P>::_ || D::HasKeyValue<P>::_,
-decltype(D::Pair_Get_T<N>::get(Meta::Forward<P>(p)))>
-{return D::Pair_Get_T<N>::get(Meta::Forward<P>(p));}
-
-
-
-template<size_t N, typename T> struct TupleElementEqualsFunctor
-{
-	const T& Value;
-	forceinline TupleElementEqualsFunctor(const T& value): Value(value) {}
-	template<typename TUPLE> forceinline bool operator()(const TUPLE& rhs) const {return Value==Get<N>(rhs);}
-};
-
-template<size_t N, typename T> forceinline TupleElementEqualsFunctor<N, T> TupleElementEquals(const T& value)
-{return TupleElementEqualsFunctor<N, T>(value);}
-
-}
-
-using Meta::KeyValuePair;
 
 }
 

@@ -1,12 +1,3 @@
-﻿#include "Platform/CppWarnings.h"
-
-INTRA_DISABLE_REDUNDANT_WARNINGS
-
-#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
-#define _HAS_EXCEPTIONS 0
-#endif
-
-#include "Header.h"
 #include "IO/Stream.h"
 #include "Range/Stream.h"
 #include "Algo/Reduction.h"
@@ -15,94 +6,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
 #include "Container/Sequential/List.h"
-
-#include <stdlib.h>
+#include "Platform/Time.h"
+#include "Test/PerfSummary.h"
 
 using namespace Intra;
 using namespace Intra::IO;
-using namespace Intra::Range;
-using namespace Intra::Algo;
-
-template<typename T> void PrintPolymorphicRange(InputRange<T> range)
-{
-	Console.Print("[");
-	bool firstIteration = true;
-	while(!range.Empty())
-	{
-		if(!firstIteration) Console.Print(", ");
-		else firstIteration = false;
-		Console.Print(range.First());
-		range.PopFirst();
-	}
-	Console.PrintLine("]");
-}
-
-int SumPolymorphicRange(InputRange<int> ints)
-{
-	int sum = 0;
-	while(!ints.Empty())
-		sum += ints.GetNext();
-	return sum;
-}
-
-
-struct ivec3
-{
-	int x, y, z;
-	INTRA_ADD_REFLECTION(ivec3, x, y, z);
-};
-
-void TestSumRange()
-{
-	int ints[] = {3, 53, 63, 3, 321, 34253, 35434, 2};
-	int sum = SumPolymorphicRange(ints);
-	Console.PrintLine("sum of ", ints, " = ", sum);
-
-	InputRange<const char> myRange = StringView("Диапазон");
-	String myRange2Str = "Супер Диапазон";
-	//myRange = myRange2Str();
-	char c[40];
-	auto r = ArrayRange<char>(c);
-	r << Meta::Move(myRange);
-
-	ivec3 vectors[] = {{1, 2, 3}, {1, 64, 7}, {43, 5, 342}, {5, 45, 4}};
-	RandomAccessRange<ivec3&> vectors1;
-	vectors1 = vectors;
-	vectors1[1] = {2, 3, 4};
-	InputRange<int> xvectors = Map(vectors, [](const ivec3& v) {return v.x;});
-	int xsum = SumPolymorphicRange(Meta::Move(xvectors));
-	Console.PrintLine("x sum of ", vectors, " = ", xsum);
-}
-
-void TestComposedPolymorphicRange()
-{
-	auto someRecurrence = Take(Drop(Cycle(Take(Recurrence(
-		[](int a, int b) {return a*2+b; }, 1, 1
-
-	), 17)), 3), 22);
-	Console.PrintLine("Представляем сложную последовательность в виде полиморфного input-диапазона:");
-	InputRange<int> someRecurrencePolymorphic = someRecurrence;
-	PrintPolymorphicRange(Meta::Move(someRecurrencePolymorphic));
-
-	Console.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
-	InputRange<uint> seq = Map(
-		Filter(
-			Take(Generate([]() {return Math::Random<uint>::Global(1000); }), 500),
-			[](uint x) {return x%7==0; }),
-		Math::Sqr<uint>);
-	PrintPolymorphicRange(Meta::Move(seq));
-
-	Console.PrintLine(endl, "Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
-	seq = Take(Generate(rand), 50);
-	PrintPolymorphicRange(Meta::Move(seq));
-}
-
-void RunPolymorphicRangeTests()
-{
-	TestSumRange();
-	TestComposedPolymorphicRange();
-}
-
 
 struct IRange
 {
@@ -178,11 +86,7 @@ int TestStaticRange(int* arr, size_t count, size_t totalCount)
 	return sum;
 }
 
-
-#include "Platform/Time.h"
-#include "Test/PerformanceTest.h"
-
-void RunPolymorphicRangePerfTests(IO::Logger& logger)
+void RunPolymorphicRangePerfTests(IO::IFormattedWriter& output)
 {
 	Array<int> arr;
 	arr.SetCountUninitialized(1000);
@@ -206,7 +110,7 @@ void RunPolymorphicRangePerfTests(IO::Logger& logger)
 
 	Console.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
 
-	PrintPerformanceResults(logger, "CycledRange 100000000 раз",
+	PrintPerformanceResults(output, "CycledRange 100000000 times",
 		{"CycledRange*", "InputRange<int>", "InputRange<int>::GetNext", "manually inlined loop", "ArrayRange.Cycle"},
 		{time1, time2, time3},
 		{time4, time5});
