@@ -66,9 +66,6 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	INTRA_ASSERT_EQUALS(ToString(stringList), "[Hello, Intra, Ranges]");
 	output.PrintLine(stringList, endl);
 
-	output.PrintLine("Устраиваем намеренный сегфолт.");
-	*(int*)null = 4;
-
 	output.PrintLine("Добавляем в предыдущий список 5 элементов Cycle(stringVec)");
 	CopyTo(Take(Cycle(stringVec), 5), LastAppender(stringList));
 	output.PrintLine("Снова выводим stringList:");
