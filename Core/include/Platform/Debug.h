@@ -90,7 +90,7 @@ constexpr forceinline const char* pastLastSlash(const char* str)
 
 #ifdef INTRA_DEBUG
 
-#define INTRA_INTERNAL_ERROR_DEBUG INTRA_INTERNAL_ERROR
+#define INTRA_INTERNAL_ERROR_DEBUG(msg) INTRA_INTERNAL_ERROR(msg)
 
 #define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT;\
 	::Intra::PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
@@ -140,7 +140,7 @@ INTRA_WARNING_POP
         ::Intra::StringView(__FUNCTION__) + "): assertion (" # expression ") failed!\r\n" __FILE__ "\r\n"), false)))
 
 #else
-#define INTRA_INTERNAL_ERROR_DEBUG
+#define INTRA_INTERNAL_ERROR_DEBUG(msg)
 #define INTRA_DEBUG_WARNING_CHECK
 #define INTRA_ASSERT(expr) (void)0
 #define INTRA_ASSERT_EQUALS(lhs, rhs) (void)0

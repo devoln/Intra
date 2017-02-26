@@ -1,5 +1,6 @@
 ﻿#include "Audio/SoundApi.h"
 #include "Platform/CppWarnings.h"
+#include "Memory/Allocator/Global.h"
 
 //#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
 
@@ -240,7 +241,8 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 void* BufferLock(BufferHandle snd)
 {
 	INTRA_ASSERT(snd!=null);
-    snd->locked_bits = Memory::SystemHeapAllocator::Allocate(snd->SizeInBytes(), INTRA_SOURCE_INFO);
+	auto size = snd->SizeInBytes();
+    snd->locked_bits = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return snd->locked_bits;
 }
 
@@ -249,7 +251,7 @@ void BufferUnlock(BufferHandle snd)
 	INTRA_ASSERT(snd!=null);
     alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
     INTRA_ASSERT(alGetError()==AL_NO_ERROR);
-    Memory::SystemHeapAllocator::Free(snd->locked_bits);
+    Memory::GlobalHeap.Free(snd->locked_bits);
     snd->locked_bits=null;
 }
 
@@ -324,7 +326,8 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	result->sampleRate = sampleRate;
 	result->channels = channels;
 	result->streamingCallback = callback;
-	result->temp_buffer = Memory::SystemHeapAllocator::Allocate(result->SizeInBytes(), INTRA_SOURCE_INFO);
+	size_t size = result->SizeInBytes();
+	result->temp_buffer = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return result;
 }
 
@@ -337,7 +340,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 {
 	alDeleteSources(1, &snd->source);
 	alDeleteBuffers(2, snd->buffers);
-	Memory::SystemHeapAllocator::Free(snd->temp_buffer);
+	Memory::GlobalHeap.Free(snd->temp_buffer);
 }
 
 

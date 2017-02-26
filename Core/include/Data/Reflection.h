@@ -36,7 +36,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasReflectionFieldNamesMethod, Meta::RemoveConst
 	template<typename V> void VisitFieldById(size_t index, V& visitor) {\
         switch(index) {\
             INTRA_MACRO2_FOR_EACH_INDEX((;), INTRA_REFLECTION_VISIT_INDEX, __VA_ARGS__);\
-			default: INTRA_INTERNAL_ERROR_DEBUG(!"Invalid id for VisitFieldById.");\
+			default: INTRA_INTERNAL_ERROR_DEBUG("Invalid id for VisitFieldById.");\
         }\
     }\
     template<typename V> void VisitFieldById(size_t index, V& visitor) const {\
