@@ -27,7 +27,7 @@ double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::InsertionSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -38,7 +38,7 @@ double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::ShellSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -49,7 +49,7 @@ double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::QuickSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -59,7 +59,7 @@ template<typename T> double TestRadixSorting(size_t size)
 	Timer tim;
 	Algo::RadixSort(arr.AsRange());
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -70,7 +70,7 @@ double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::MergeSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -81,7 +81,7 @@ double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::SelectionSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -92,7 +92,7 @@ double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	Algo::HeapSort(arr, comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 
@@ -103,7 +103,7 @@ double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Timer tim;
 	std::sort(arr.begin(), arr.end(), comparer);
 	double result = tim.GetTime();
-	INTRA_ASSERT(Algo::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }
 

@@ -51,7 +51,7 @@ template<typename R> struct RByLine
 
 	forceinline TakeResult<R> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return mFirst;
 	}
 

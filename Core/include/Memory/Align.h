@@ -7,7 +7,7 @@ namespace Intra { namespace Memory {
 
 inline size_t AlignmentBytes(size_t value, size_t alignment)
 {
-	INTRA_ASSERT(alignment!=0);
+	INTRA_DEBUG_ASSERT(alignment!=0);
 	size_t remainder = value % alignment;
 	if(remainder==0) return 0;
 	return alignment-remainder;

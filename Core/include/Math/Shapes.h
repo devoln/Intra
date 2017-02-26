@@ -774,7 +774,7 @@ template<typename T> bool TestIntersection(const Triangle<T>& tri, const Sphere<
 template<typename T> bool TestIntersection(const Triangle<T>& tri1, const Triangle<T>& tri2)
 {
 	(void)tri1; (void)tri2;
-	INTRA_ASSERT(!"Not implemented!");
+	INTRA_DEBUG_ASSERT(!"Not implemented!");
 	return false;
 }
 

@@ -87,7 +87,7 @@ TakeResult<AsRangeResult<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 		auto entryStr = TakeRecursiveBlockAdvance(src, counter, &index, entryStart, entryEnd, null, null, null);
 		if(counter>0)
 		{
-			INTRA_ASSERT(src.Empty());
+			INTRA_DEBUG_ASSERT(src.Empty());
 			CopyToAdvance(entryStr, dstBuffer);
 			index += Count(entryStr);
 			break;

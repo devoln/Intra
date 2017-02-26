@@ -33,7 +33,7 @@ template<typename R, typename X> Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_
 > ToString(R&& dst, X number, int minWidth, char filler=' ', uint base=10, char minus='\0')
 {
-	INTRA_ASSERT(base>=2 && base<=36);
+	INTRA_DEBUG_ASSERT(base>=2 && base<=36);
 	char reversed[64];
 	char* rev = reversed;
 	do *rev++ = "0123456789abcdefghijklmnopqrstuvwxyz"[number%base], number = X(number/base);
@@ -182,7 +182,7 @@ template<typename R> Meta::EnableIf<
 	Range::IsOutputCharRange<R>::_
 > ToString(R&& dst, bool value)
 {
-	INTRA_ASSERT(byte(value)<=1);
+	INTRA_DEBUG_ASSERT(byte(value)<=1);
 	static const char* const boolStr[2] = {"false", "true"};
 	const char* str = boolStr[value!=false];
 	while(*str!='\0') dst.Put(*str++);

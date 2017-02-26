@@ -7,7 +7,7 @@ namespace Intra { namespace Algo {
 
 void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 {
-	INTRA_ASSERT(dstOp1.Length()==op2.Length());
+	INTRA_DEBUG_ASSERT(dstOp1.Length()==op2.Length());
 	auto dst = dstOp1.Begin;
 	auto src = op2.Begin;
 
@@ -33,7 +33,7 @@ void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 
 void Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2)
 {
-	INTRA_ASSERT(dstOp1.Length()==op2.Length());
+	INTRA_DEBUG_ASSERT(dstOp1.Length()==op2.Length());
 	auto dst = dstOp1.Begin;
 	auto src = op2.Begin;
 
@@ -83,7 +83,7 @@ void Multiply(ArrayRange<float> dstOp1, float multiplyer)
 
 void Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiplyer)
 {
-	INTRA_ASSERT(dst.Length()==op1.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==op1.Length());
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	while(dst.Begin<dst.End-3)
 	{

@@ -139,7 +139,7 @@ public:
 
 	StreamedSound& operator=(StreamedSound&& rhs)
 	{
-		INTRA_ASSERT(this!=&rhs);
+		INTRA_DEBUG_ASSERT(this!=&rhs);
 		release();
 		if(rhs.mData!=null) rhs.unregister_instance();
 		mSampleSource = Meta::Move(rhs.mSampleSource);

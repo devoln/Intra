@@ -26,7 +26,7 @@ template<typename T, typename F> struct RSequence
 
 	forceinline RTake<RSequence<T, F>> operator()(size_t start, size_t end) const
 	{
-		INTRA_ASSERT(start<=end);
+		INTRA_DEBUG_ASSERT(start<=end);
 		auto result = *this;
 		result.Offset += start;
 		return RTake<RSequence<T, F>>(Meta::Move(result), end-start);

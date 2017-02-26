@@ -42,7 +42,7 @@ void VirtualFree(void* ptr, size_t size)
 
 void VirtualCommit(void* ptr, size_t bytes, Access access)
 {
-	INTRA_ASSERT(ptr!=null);
+	INTRA_DEBUG_ASSERT(ptr!=null);
 	if(access!=Access::None) ::VirtualAlloc(ptr, bytes, MEM_COMMIT, translate_access(access));
 	else ::VirtualFree(ptr, bytes, MEM_DECOMMIT);
 }

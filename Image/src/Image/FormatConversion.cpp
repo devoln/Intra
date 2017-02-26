@@ -38,7 +38,7 @@ void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes,
 	const auto components = format.ComponentCount();
 	const auto bytesPerComp = format.GetComponentType().Size();
 	const ushort lineUnusedBytes = ushort(lineAlignment-sizes.x*format.BytesPerPixel()%lineAlignment);
-	INTRA_ASSERT(data.Length() >= size_t(sizes.y*(sizes.x*components+lineUnusedBytes)));
+	INTRA_DEBUG_ASSERT(data.Length() >= size_t(sizes.y*(sizes.x*components+lineUnusedBytes)));
 	if(bytesPerComp==1) SwapRedBlueTyped<byte>(lineUnusedBytes, components, sizes, data.Data());
 	else if(bytesPerComp==2) SwapRedBlueTyped<ushort>(lineUnusedBytes/2u, components, sizes, reinterpret_cast<ushort*>(data.Data()));
 	else if(bytesPerComp==4) SwapRedBlueTyped<uint>(lineUnusedBytes/4u, components, sizes, reinterpret_cast<uint*>(data.Data()));
@@ -51,15 +51,15 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
 {
-	INTRA_ASSERT(stream.IsSeekable());
-	INTRA_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
+	INTRA_DEBUG_ASSERT(stream.IsSeekable());
+	INTRA_DEBUG_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
 	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
 	const size_t usefulDstLineBytes = size_t(sizes.x*dstFormat.BytesPerPixel());
 	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~size_t(srcAlignment-1u);
 	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~size_t(dstAlignment-1u);
 	const size_t srcDataSize = sizes.y*srcLineBytes;
 	const size_t dstDataSize = sizes.y*dstLineBytes;
-	INTRA_ASSERT(dstBuf.Length() >= dstDataSize);
+	INTRA_DEBUG_ASSERT(dstBuf.Length() >= dstDataSize);
 
 	if(srcFormat==dstFormat && srcLineBytes==dstLineBytes && !swapRB && !flipVert)
 	{
@@ -128,8 +128,8 @@ void ReadPalettedPixelDataBlock(IInputStream& stream, ArrayRange<const byte> pal
 	ushort bpp, USVec2 sizes, ImageFormat format, bool flipVert,
 	ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
 {
-	INTRA_ASSERT(stream.IsSeekable());
-	INTRA_ASSERT(palette.Length() >= 1u << bpp);
+	INTRA_DEBUG_ASSERT(stream.IsSeekable());
+	INTRA_DEBUG_ASSERT(palette.Length() >= 1u << bpp);
 	const ushort bytesPerPixel = format.BytesPerPixel();
 	const uint usefulSrcLineBytes = uint(sizes.x*bpp)/8u;
 	const uint usefulDstLineBytes = uint(sizes.x*bytesPerPixel);

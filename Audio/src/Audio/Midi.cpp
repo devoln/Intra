@@ -82,7 +82,7 @@ public:
 
 	static size_t GetEventLength(byte status)
 	{
-		INTRA_ASSERT(status & 0x80);
+		INTRA_DEBUG_ASSERT(status & 0x80);
 		if(status<0xC0) return 2;
 		if(status<0xE0) return 1;
 		if(status<0xF0) return 2;

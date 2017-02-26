@@ -25,7 +25,7 @@ template<typename S> class StringFormatter
 public:
 	operator S()
 	{
-		INTRA_ASSERT(mFormatRest.Empty());
+		INTRA_DEBUG_ASSERT(mFormatRest.Empty());
 		Container::SetCountTryNotInit(mResult, mResult.size()-mBufferRest.Length());
 		mBufferRest = null;
 		return Meta::Move(mResult);
@@ -67,7 +67,7 @@ public:
 		mFormatRest(rhs.mFormatRest), mResult(Meta::Move(rhs.mResult)),
 		mBufferRest(rhs.mBufferRest) {rhs.mBufferRest = null;}
 
-	~StringFormatter() {INTRA_ASSERT(mFormatRest.Empty());}
+	~StringFormatter() {INTRA_DEBUG_ASSERT(mFormatRest.Empty());}
 
 	template<typename T, typename... Args> StringFormatter& operator()(const T& value, Args&&... args)
 	{
@@ -75,7 +75,7 @@ public:
 		RequireSpace(maxLen);
 		//Range::CountRange<char> realLenCounter;
 		//Algo::ToString(realLenCounter, value, args...);
-		//INTRA_ASSERT(maxLen>=realLenCounter.Counter);
+		//INTRA_DEBUG_ASSERT(maxLen>=realLenCounter.Counter);
 		Algo::ToString(mBufferRest, value, Meta::Forward<Args>(args)...);
 		if(mFormatRest!=null) WriteNextPart();
 		return *this;

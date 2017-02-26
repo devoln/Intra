@@ -20,13 +20,13 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 
 	forceinline AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo) const
 	{
-		INTRA_ASSERT(mAllocator!=null);
+		INTRA_DEBUG_ASSERT(mAllocator!=null);
 		return mAllocator->Allocate(bytes, sourceInfo);
 	}
 
 	forceinline void Free(void* ptr, size_t size) const
 	{
-		INTRA_ASSERT(mAllocator!=null);
+		INTRA_DEBUG_ASSERT(mAllocator!=null);
 		mAllocator->Free(ptr, size);
 	}
 
@@ -34,7 +34,7 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 		HasGetAllocationSize<U>::_,
 	size_t> GetAllocationSize(void* ptr) const
 	{
-		INTRA_ASSERT(mAllocator!=null);
+		INTRA_DEBUG_ASSERT(mAllocator!=null);
 		return mAllocator->GetAllocationSize(ptr);
 	}
 

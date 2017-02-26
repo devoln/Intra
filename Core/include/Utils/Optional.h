@@ -97,13 +97,13 @@ public:
 	
 	T& Value()
 	{
-		INTRA_ASSERT(mNotNull);
+		INTRA_DEBUG_ASSERT(mNotNull);
 		return value();
 	}
 
 	const T& Value() const
 	{
-		INTRA_ASSERT(mNotNull);
+		INTRA_DEBUG_ASSERT(mNotNull);
 		return value();
 	}
 

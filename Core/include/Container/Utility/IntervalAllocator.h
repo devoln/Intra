@@ -58,7 +58,7 @@ public:
 			ranges.AddLast({len, used_length+oldInterval.length});
 			len += oldInterval.length;
 		}
-		INTRA_ASSERT(len<=used_length);
+		INTRA_DEBUG_ASSERT(len<=used_length);
 		has_holes=false;
 		return oldIntervals;
 	}

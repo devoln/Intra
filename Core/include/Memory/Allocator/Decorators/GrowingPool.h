@@ -32,8 +32,8 @@ template<typename A> struct AGrowingPool: A
 	{
 		if(mFirstBlock!=null)
 		{
-			INTRA_ASSERT(mElementSize==elementSize);
-			INTRA_ASSERT(mElementAlignment==alignment);
+			INTRA_DEBUG_ASSERT(mElementSize==elementSize);
+			INTRA_DEBUG_ASSERT(mElementAlignment==alignment);
 			return;
 		}
 		mFirstBlock = A::Allocate(blockSize(initialSize), sourceInfo);
@@ -66,7 +66,7 @@ template<typename A> struct AGrowingPool: A
 	AnyPtr Allocate(size_t bytes, SourceInfo sourceInfo)
 	{
 		(void)sourceInfo; (void)bytes;
-		INTRA_ASSERT(bytes <= mElementSize);
+		INTRA_DEBUG_ASSERT(bytes <= mElementSize);
 		return Allocate();
 	}
 

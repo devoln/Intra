@@ -273,27 +273,27 @@ public:
 
 	forceinline Char& operator[](size_t index)
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		return Data()[index];
 	}
 
 	forceinline const Char& operator[](size_t index) const
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		return Data()[index];
 	}
 
 	forceinline bool Empty() const
 	{return IsHeapAllocated()? m.Len==0: emptyShort();}
 
-	forceinline Char& First() {INTRA_ASSERT(!Empty()); return *Data();}
-	forceinline const Char& First() const {INTRA_ASSERT(!Empty()); return *Data();}
-	forceinline Char& Last() {INTRA_ASSERT(!Empty()); return Data()[Length()-1];}
-	forceinline const Char& Last() const {INTRA_ASSERT(!Empty()); return Data()[Length()-1];}
+	forceinline Char& First() {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
+	forceinline const Char& First() const {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
+	forceinline Char& Last() {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
+	forceinline const Char& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
 
 	forceinline void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		if(IsHeapAllocated()) m.Len--;
 		else shortLenDecrement();
 	}
@@ -407,8 +407,8 @@ public:
 	
 	forceinline GenericStringView<Char> View(size_t startIndex, size_t endIndex)
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Length());
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
 	}
 
@@ -417,8 +417,8 @@ public:
 	
 	forceinline GenericStringView<const Char> View(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Length());
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
 	}
 

@@ -49,7 +49,7 @@ template<typename I> struct GenericTextDeserializer
 			{Lang.ArrayOpen, Lang.ArrayClose}
 		},
 		ArrayRange<const Meta::Pair<StringView, StringView>>{});
-		INTRA_ASSERT(counter==0 || counter==1);
+		INTRA_DEBUG_ASSERT(counter==0 || counter==1);
 		return counter==0;
 	}
 
@@ -75,7 +75,7 @@ template<typename I> struct GenericTextDeserializer
 			Range::PopFirstExactly(Input, charsRead-Lang.ArrayClose.Length());
 			return true;
 		}
-		INTRA_ASSERT(counter==1);
+		INTRA_DEBUG_ASSERT(counter==1);
 		return false;
 	}
 
@@ -83,7 +83,7 @@ template<typename I> struct GenericTextDeserializer
 	{
 		if(typeFlag & TextSerializerParams::TypeFlags_Struct)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
 			if(!Expect(Lang.FieldSeparator))
 			{
 				if(!Input.Empty()) IgnoreField();
@@ -92,7 +92,7 @@ template<typename I> struct GenericTextDeserializer
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
 			if(!Expect(Lang.TupleFieldSeparator))
 			{
 				if(!Input.Empty()) IgnoreField();
@@ -101,13 +101,13 @@ template<typename I> struct GenericTextDeserializer
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_Array)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
 			if(!Expect(Lang.ArrayElementSeparator))
 				return !Input.Empty() && !IgnoreArrayElement();
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
 			if(!Expect(Lang.ArrayElementSeparator))
 				return !Input.Empty() && !IgnoreArrayElement();
 		}

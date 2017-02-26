@@ -82,11 +82,11 @@ template<typename T> struct HashTableRange
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
-	forceinline void PopFirst() {INTRA_ASSERT(!Empty()); mFirstNode = mFirstNode->next;}
-	forceinline void PopLast() {INTRA_ASSERT(!Empty()); mLastNode = mLastNode->prev;}
+	forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); mFirstNode = mFirstNode->next;}
+	forceinline void PopLast() {INTRA_DEBUG_ASSERT(!Empty()); mLastNode = mLastNode->prev;}
 	forceinline bool Empty() const {return mFirstNode==null || mFirstNode->prev==mLastNode;}
-	forceinline T& First() const {INTRA_ASSERT(!Empty()); return mFirstNode->element;}
-	forceinline T& Last() const {INTRA_ASSERT(!Empty()); return mLastNode->element;}
+	forceinline T& First() const {INTRA_DEBUG_ASSERT(!Empty()); return mFirstNode->element;}
+	forceinline T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return mLastNode->element;}
 
 
 	const HashTableRange<const T>& AsConstRange() const
@@ -131,8 +131,8 @@ public:
  
 		forceinline bool operator==(const iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {INTRA_ASSERT(node!=null); node = node->next;}
-        forceinline void GotoPrev() {INTRA_ASSERT(node!=null); node = node->prev;}
+        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node!=null); node = node->next;}
+        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node!=null); node = node->prev;}
  
         forceinline iterator& operator++() {GotoNext(); return *this;}
         forceinline iterator operator++(int) {iterator it = *this; GotoNext(); return it;}
@@ -154,8 +154,8 @@ public:
  
         forceinline bool operator==(const const_iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const const_iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {INTRA_ASSERT(node!=null); node = node->next;}
-        forceinline void GotoPrev() {INTRA_ASSERT(node!=null); node = node->prev;}
+        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node!=null); node = node->next;}
+        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node!=null); node = node->prev;}
  
         forceinline const_iterator& operator++() {GotoNext(); return *this;}
         forceinline const_iterator operator++(int) {const_iterator it = *this; GotoNext(); return it;}
@@ -294,7 +294,7 @@ public:
 			current = current->down;
 		}
 
-		INTRA_ASSERT(current==node);
+		INTRA_DEBUG_ASSERT(current==node);
 
 		if(previous!=null) previous->down = node->down;
 		else bh = node->down;
@@ -376,7 +376,7 @@ public:
 		if(numBuckets == BucketCount()) return true;
 		if(numBuckets==0 || numBuckets < Count()) return false;
 
-		INTRA_ASSERT(Math::IsPow2(numBuckets));
+		INTRA_DEBUG_ASSERT(Math::IsPow2(numBuckets));
 
 		allocate_buckets(Count(), numBuckets);
 		rehash();

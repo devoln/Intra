@@ -83,7 +83,7 @@ private:
 
 	static void internalErrorTestFail(StringView func, StringView file, int line, StringView info)
 	{
-		INTRA_ASSERT(GetCurrent() != null);
+		INTRA_DEBUG_ASSERT(GetCurrent() != null);
 		GetCurrent()->ErrorInfo = TestInternalErrorInfo{func, file, line, info,
 			BuildErrorMessage(func, file, line, info, 1)};
 	#ifdef INTRA_EXCEPTIONS_ENABLED

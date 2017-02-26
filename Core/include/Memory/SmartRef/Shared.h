@@ -19,7 +19,7 @@ template<typename T> struct IntrusiveRefCounted
 	
 	forceinline void Release()
 	{
-		INTRA_ASSERT(mRefs>0);
+		INTRA_DEBUG_ASSERT(mRefs>0);
 		if(--mRefs==0) delete static_cast<T*>(this);
 	}
 
@@ -60,8 +60,8 @@ template<typename T> struct IntrusiveRef
 	forceinline size_t use_count() const {return mPtr!=null? mPtr->GetRefCount(): 0;}
 	forceinline bool unique() const {return use_count()==1;}
 
-	forceinline T& operator*() const {INTRA_ASSERT(mPtr!=null); return *mPtr;}
-	forceinline T* operator->() const {INTRA_ASSERT(mPtr!=null); return mPtr;}
+	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mPtr!=null); return *mPtr;}
+	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mPtr!=null); return mPtr;}
 
 	forceinline bool operator==(null_t) const {return mPtr==null;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}

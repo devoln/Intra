@@ -237,7 +237,7 @@ size_t ConsoleStream::ReadData(void* dst, size_t bytes)
 void ConsoleStream::UnreadData(const void* src, size_t bytes)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	INTRA_ASSERT(bytes+unread_buf_chars<sizeof(unread_buf));
+	INTRA_DEBUG_ASSERT(bytes+unread_buf_chars<sizeof(unread_buf));
 	memmove(unread_buf+bytes, unread_buf, unread_buf_chars);
 	memcpy(unread_buf, src, bytes);
 #else

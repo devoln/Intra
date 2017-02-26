@@ -9,7 +9,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> T Minimum(ArrayRange<const T> arr)
 {
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
 	arr.PopFirst();
 	while(!arr.Empty())
@@ -22,7 +22,7 @@ template<typename T> T Minimum(ArrayRange<const T> arr)
 
 template<typename T> T Maximum(ArrayRange<const T> arr)
 {
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
 	arr.PopFirst();
 	while(!arr.Empty())
@@ -46,7 +46,7 @@ template<typename T> void MiniMax(ArrayRange<const T> arr, T* oMinimum, T* oMaxi
 		return;
 	}
 
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	*oMaximum = *oMinimum = arr.First();
 	arr.PopFirst();
 

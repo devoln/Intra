@@ -22,7 +22,7 @@ template<class A> struct ASized: A
 
 	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
 	{
-		INTRA_ASSERT(bytes!=0);
+		INTRA_DEBUG_ASSERT(bytes!=0);
 		size_t totalBytes = bytes+sizeof(size_t);
 		size_t* data = A::Allocate(totalBytes, sourceInfo);
 		if(data!=null)
@@ -42,7 +42,7 @@ template<class A> struct ASized: A
 
 	void Free(void* ptr, size_t size)
 	{
-		INTRA_ASSERT(GetAllocationSize(ptr)==size);
+		INTRA_DEBUG_ASSERT(GetAllocationSize(ptr)==size);
 		size_t* originalPtr = reinterpret_cast<size_t*>(ptr)-1;
 		A::Free(originalPtr, size+sizeof(size_t));
 	}

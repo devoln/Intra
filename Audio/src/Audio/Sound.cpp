@@ -142,7 +142,7 @@ Sound Sound::FromSource(ASoundSource* src)
 
 SoundInstance Sound::CreateInstance()
 {
-	INTRA_ASSERT(mData!=null);
+	INTRA_DEBUG_ASSERT(mData!=null);
 	return SoundInstance(this, SoundAPI::InstanceCreate(mData));
 }
 
@@ -301,13 +301,13 @@ uint StreamedSound::InternalSampleRate()
 
 void StreamedSound::register_instance()
 {
-	INTRA_ASSERT(!Algo::Contains(all_existing_instances, this));
+	INTRA_DEBUG_ASSERT(!Algo::Contains(all_existing_instances, this));
 	all_existing_instances.AddLast(this);
 }
 
 void StreamedSound::unregister_instance()
 {
-	INTRA_ASSERT(Algo::Contains(all_existing_instances, this));
+	INTRA_DEBUG_ASSERT(Algo::Contains(all_existing_instances, this));
 	all_existing_instances.FindAndRemoveUnordered(this);
 }
 

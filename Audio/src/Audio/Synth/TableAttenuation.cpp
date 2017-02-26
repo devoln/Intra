@@ -14,7 +14,7 @@ struct TableAttenuatorParams
 static void TableAttenuationPassFunction(const TableAttenuatorParams& table,
 	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
 {
-	INTRA_ASSERT(table.Len>=2);
+	INTRA_DEBUG_ASSERT(table.Len>=2);
 	const size_t samplesPerValue = inOutSamples.Length()/size_t(table.Len-1);
 
 	for(uint i=0; i<table.Len-1u; i++)

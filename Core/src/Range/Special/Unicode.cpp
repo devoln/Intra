@@ -107,7 +107,7 @@ void UTF8::PopFirst()
 
 bool UTF8::popBackChar()
 {
-	INTRA_ASSERT(!Empty());
+	INTRA_DEBUG_ASSERT(!Empty());
 	while((((*--Text.End)&0xFF) >> 6)==0x2)
 		if(Text.End==Text.Begin) return false;
 	return true;
@@ -141,7 +141,7 @@ WString UTF8::ToUTF16(bool addNullTerminator) const
 
 dchar UTF16::NextChar(size_t* wcharsRead) const
 {
-	INTRA_ASSERT(!Empty());
+	INTRA_DEBUG_ASSERT(!Empty());
 	const wchar* source = Text.Begin;
 	wchar ch = *source++;
 
@@ -156,14 +156,14 @@ dchar UTF16::NextChar(size_t* wcharsRead) const
 
 void UTF16::PopFirst()
 {
-	INTRA_ASSERT(!Empty());
+	INTRA_DEBUG_ASSERT(!Empty());
 	Text.Begin += 1+(*Text.Begin>=SurrogateHighStart && *Text.Begin<=SurrogateHighEnd);
 	if(Text.Begin>Text.End) Text.Begin=Text.End;
 }
 
 bool UTF16::popBackChar()
 {
-	INTRA_ASSERT(!Empty());
+	INTRA_DEBUG_ASSERT(!Empty());
 	Text.End -= 1+(*(Text.End-1)>=SurrogateHighStart && *(Text.End-1)<=SurrogateHighEnd); //Символ состоит из двух слов
 	if(Text.End<Text.Begin)
 	{

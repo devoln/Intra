@@ -44,7 +44,7 @@ SynthesizedInstrument& SynthesizedInstrument::operator=(SynthesizedInstrument&& 
 void SynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
-	INTRA_ASSERT(Synth!=null);
+	INTRA_DEBUG_ASSERT(Synth!=null);
 	if(Synth==null) return;
 	auto noteDuration=note.AbsDuration(tempo);
 	if(noteDuration<0.00001 || note.IsPause() || volume==0) return;

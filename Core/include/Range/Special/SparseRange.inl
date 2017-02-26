@@ -25,7 +25,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::init_free_list(
 
 template<typename T, typename Index> T& SparseRange<T, Index>::Add(T&& val, Index* oIndex)
 {
-	INTRA_ASSERT(!IsFull());
+	INTRA_DEBUG_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
 	new(&result) T(Meta::Move(val));
 	return result;
@@ -33,7 +33,7 @@ template<typename T, typename Index> T& SparseRange<T, Index>::Add(T&& val, Inde
 
 template<typename T, typename Index> T& SparseRange<T, Index>::Add(const T& val, Index* oIndex)
 {
-	INTRA_ASSERT(!IsFull());
+	INTRA_DEBUG_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
 	new(&result) T(val);
 	return result;
@@ -41,7 +41,7 @@ template<typename T, typename Index> T& SparseRange<T, Index>::Add(const T& val,
 
 template<typename T, typename Index> template<typename... Args> T& SparseRange<T, Index>::Emplace(Args&&... args, Index* oIndex)
 {
-	INTRA_ASSERT(!IsFull());
+	INTRA_DEBUG_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
 	new(&result) T(Meta::Forward<Args>(args)...);
 	return result;
@@ -64,7 +64,7 @@ template<typename T, typename Index> Array<flag32> SparseRange<T, Index>::DeadBi
 	size_t ff = first_free;
 	while(ff != end_index())
 	{
-		INTRA_ASSERT(ff<data.Length());
+		INTRA_DEBUG_ASSERT(ff<data.Length());
 		result[ff/ValueBits] |= (1 << (ff % ValueBits));
 		ff = reinterpret_cast<Index&>(data[ff]);
 	}
@@ -98,7 +98,7 @@ template<typename T, typename Index> template<typename U> Meta::EnableIf<
 
 template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRange& dst)
 {
-	INTRA_ASSERT(dst.data.Length()>=data.Length());
+	INTRA_DEBUG_ASSERT(dst.data.Length()>=data.Length());
 	enum {ValueBits = sizeof(flag32)*8};
 	Array<flag32> deadBitfield = DeadBitfield();
 	Index* prevEmpty = &dst.first_free;
@@ -153,7 +153,7 @@ template<typename Index> void SparseTypelessRange<Index>::init_free_list()
 
 template<typename Index> byte* SparseTypelessRange<Index>::Emplace(Index* oIndex)
 {
-	INTRA_ASSERT(!IsFull());
+	INTRA_DEBUG_ASSERT(!IsFull());
 	return append_first_free(oIndex);
 }
 
@@ -173,7 +173,7 @@ template<typename Index> Array<flag32> SparseTypelessRange<Index>::DeadBitfield(
 	size_t ff = first_free;
 	while(ff != end_index())
 	{
-		INTRA_ASSERT(ff<Capacity());
+		INTRA_DEBUG_ASSERT(ff<Capacity());
 		result[ff/ValueBits] |= (1 << (ff % ValueBits));
 		ff = reinterpret_cast<Index&>(data[ff]);
 	}
@@ -183,7 +183,7 @@ template<typename Index> Array<flag32> SparseTypelessRange<Index>::DeadBitfield(
 
 template<typename Index> void SparseTypelessRange<Index>::MoveTo(SparseTypelessRange& dst)
 {
-	INTRA_ASSERT(dst.data.Length()>=data.Length());
+	INTRA_DEBUG_ASSERT(dst.data.Length()>=data.Length());
 	memcpy(dst.data.Begin, data.Begin, data.Length());
 	dst.node_size = node_size;
 

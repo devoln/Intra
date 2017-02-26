@@ -11,7 +11,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 StringView ToString(ImageType t)
 {
-	INTRA_ASSERT(t<ImageType_End);
+	INTRA_DEBUG_ASSERT(t<ImageType_End);
 	static const StringView values[] = {"1D", "1DArray", "2D", "2DArray", "3D", "Cube", "CubeArray"};
 	INTRA_CHECK_TABLE_SIZE(values, ImageType_End);
 	return values[byte(t)];

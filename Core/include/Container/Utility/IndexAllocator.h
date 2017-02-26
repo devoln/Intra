@@ -21,7 +21,7 @@ public:
 			mFreeList.RemoveLast();
 			return result;
 		}
-		INTRA_ASSERT(mCount<mMaxCount);
+		INTRA_DEBUG_ASSERT(mCount<mMaxCount);
 		return mCount++;
 	}
 
@@ -40,7 +40,7 @@ public:
 					if(mFreeList[j]!=last+1 || last-first==n) break;
 					last++;
 				}
-				INTRA_ASSERT(T(last-first) <= n);
+				INTRA_DEBUG_ASSERT(T(last-first) <= n);
 				if(last-first==n)
 				{
 					mFreeList.Remove(first, last);
@@ -48,7 +48,7 @@ public:
 				}
 			}
 		}
-		INTRA_ASSERT(mCount+n <= mMaxCount);
+		INTRA_DEBUG_ASSERT(mCount+n <= mMaxCount);
 		mCount += n;
 		return mCount-n;
 	}
@@ -68,14 +68,14 @@ public:
 			mFreeList.RemoveUnordered(index);
 			return minimal;
 		}
-		INTRA_ASSERT(mCount<mMaxCount);
+		INTRA_DEBUG_ASSERT(mCount<mMaxCount);
 		return mCount++;
 	}
 
 	//! Освободить идентификатор
 	void Deallocate(T id)
 	{
-		INTRA_ASSERT(!Algo::Contains(mFreeList, id) && id<mCount);
+		INTRA_DEBUG_ASSERT(!Algo::Contains(mFreeList, id) && id<mCount);
 		if(id+1==mCount)
 		{
 			mCount--;
@@ -95,7 +95,7 @@ public:
 
 	void SetMaxCount(T maxCount)
 	{
-		INTRA_ASSERT(mCount<=maxCount);
+		INTRA_DEBUG_ASSERT(mCount<=maxCount);
 		mMaxCount = maxCount;
 	}
 
@@ -170,7 +170,7 @@ public:
 	//! Освободить идентификатор
 	void Deallocate(Id id)
 	{
-		INTRA_ASSERT(id.Generation==mGenerations[id]);
+		INTRA_DEBUG_ASSERT(id.Generation==mGenerations[id]);
 		if(id.Generation!=mGenerations[id]) return;
 		mIdAlloc.Deallocate(id.Value);
 		++mGenerations[id];

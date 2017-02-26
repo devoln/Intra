@@ -114,7 +114,7 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 size_t VorbisSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
 	if(outFloats.Empty()) return 0;
-	INTRA_ASSERT(outFloats.Length()<=channelCount);
+	INTRA_DEBUG_ASSERT(outFloats.Length()<=channelCount);
 	size_t totalSamplesRead = 0;
 	ArrayRange<float> outFloats1[8];
 	for(size_t i=0; i<outFloats.Length(); i++) outFloats1[i] = outFloats[i];
@@ -188,7 +188,7 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 
 size_t VorbisSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
-	INTRA_ASSERT(outFloats.Count()==channelCount);
+	INTRA_DEBUG_ASSERT(outFloats.Count()==channelCount);
 	const auto dec = (stb_vorbis*)decoder;
 	float* outFloatsPtrs[16];
 	for(ushort c=0; c<channelCount; c++)

@@ -88,12 +88,6 @@ constexpr forceinline const char* pastLastSlash(const char* str)
 
 #define INTRA_DEBUGGER_BREAKPOINT (::Intra::IsDebuggerAttached()? (INTRA_DEBUG_BREAK, true): true)
 
-#ifdef INTRA_DEBUG
-
-#define INTRA_INTERNAL_ERROR_DEBUG(msg) INTRA_INTERNAL_ERROR(msg)
-
-#define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT;\
-	::Intra::PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
 
 #define INTRA_ASSERT(expr) (expr)? (void)0: (void)(\
     (INTRA_INTERNAL_ERROR("Assertion " # expr " failed!"), true))
@@ -117,8 +111,22 @@ constexpr forceinline const char* pastLastSlash(const char* str)
     (INTRA_INTERNAL_ERROR(::Intra::Range::StringView("Assertion " # lhs " == " # rhs " failed!\n")+\
 		::Intra::ToString((lhs)) + " != " + ::Intra::ToString((rhs))), true))
 
-#define INTRA_NAN_CHECK(val) INTRA_ASSERT(val != ::Intra::Math::NaN)
-#define INTRA_DEBUG_CODE(...) {__VA_ARGS___};
+
+#ifdef INTRA_DEBUG
+
+#define INTRA_DEBUG_INTERNAL_ERROR(msg) INTRA_INTERNAL_ERROR(msg)
+
+#define INTRA_DEBUG_WARNING_CHECK(expression, message) {if(!(expression)) {INTRA_DEBUGGER_BREAKPOINT;\
+	::Intra::PrintDebugMessage(StringView("Предупреждение: ")+(message));}}
+
+#define INTRA_NAN_CHECK(val) INTRA_DEBUG_ASSERT(val != ::Intra::Math::NaN)
+#define INTRA_DEBUG_CODE(...) {__VA_ARGS__};
+
+#define INTRA_DEBUG_ASSERT(expr) INTRA_ASSERT(expr)
+#define INTRA_DEBUG_ASSERT_EQUALS(lhs, rhs) INTRA_ASSERT_EQUALS(lhs, rhs)
+#define INTRA_DEBUG_ASSERT1(expr, arg0) INTRA_ASSERT1(expr, arg0)
+#define INTRA_DEBUG_ASSERT2(expr, arg0, arg1) INTRA_ASSERT2(expr, arg0, arg1)
+#define INTRA_DEBUG_ASSERT3(expr, arg0, arg1, arg2) INTRA_ASSERT3(expr, arg0, arg1, arg2)
 
 #ifdef _MSC_VER
 
@@ -126,7 +134,7 @@ constexpr forceinline const char* pastLastSlash(const char* str)
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <malloc.h>
 INTRA_WARNING_POP
-#define INTRA_HEAP_CHECK INTRA_ASSERT(_heapchk()==_HEAPOK)
+#define INTRA_HEAP_CHECK INTRA_DEBUG_ASSERT(_heapchk()==_HEAPOK)
 #else
 #define INTRA_HEAP_CHECK
 #endif
@@ -140,15 +148,15 @@ INTRA_WARNING_POP
         ::Intra::StringView(__FUNCTION__) + "): assertion (" # expression ") failed!\r\n" __FILE__ "\r\n"), false)))
 
 #else
-#define INTRA_INTERNAL_ERROR_DEBUG(msg)
+#define INTRA_DEBUG_INTERNAL_ERROR(msg)
 #define INTRA_DEBUG_WARNING_CHECK
-#define INTRA_ASSERT(expr) (void)0
-#define INTRA_ASSERT_EQUALS(lhs, rhs) (void)0
-#define INTRA_ASSERT1(expr, arg0) (void)0
-#define INTRA_ASSERT2(expr, arg0, arg1) (void)0
-#define INTRA_ASSERT3(expr, arg0, arg1, arg2) (void)0
+#define INTRA_DEBUG_ASSERT(expr) (void)0
+#define INTRA_DEBUG_ASSERT_EQUALS(lhs, rhs) (void)0
+#define INTRA_DEBUG_ASSERT1(expr, arg0) (void)0
+#define INTRA_DEBUG_ASSERT2(expr, arg0, arg1) (void)0
+#define INTRA_DEBUG_ASSERT3(expr, arg0, arg1, arg2) (void)0
 #define INTRA_NAN_CHECK(val) {if(val==Intra::Math::NaN) {(val)=0;}}
-#define DEBUG_CODE(x)
+#define INTRA_DEBUG_CODE(...) (void)0
 #define INTRA_HEAP_CHECK
 #define INTRA_ASSERT_WARNING
 #endif

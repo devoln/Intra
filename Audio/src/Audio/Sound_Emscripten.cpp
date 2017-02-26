@@ -162,7 +162,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 
 void* BufferLock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	if(snd==null) return null;
 	if(snd->lockedData!=null) return snd->lockedData;
 	size_t bytesToAllocate = snd->SizeInBytes();
@@ -231,7 +231,7 @@ void InstanceDelete(InstanceHandle inst)
 
 void InstancePlay(InstanceHandle inst, bool loop)
 {
-	INTRA_ASSERT(inst!=null);
+	INTRA_DEBUG_ASSERT(inst!=null);
 	EM_ASM_({
 		var src = Module.gWebAudioInstanceArray[$0];
 		src.loop = $1;

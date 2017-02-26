@@ -25,14 +25,14 @@ template<> struct Random<byte>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline byte operator()(byte max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return byte(operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline byte operator()(byte min, byte max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return byte(min + operator()(byte(max-min)));
 	}
 
@@ -54,14 +54,14 @@ template<> struct Random<sbyte>: Random<byte>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline sbyte operator()(sbyte max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return sbyte(Random<byte>::operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline sbyte operator()(sbyte min, sbyte max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return sbyte(min + sbyte(Random<byte>::operator()(byte(max-min))));
 	}
 
@@ -79,14 +79,14 @@ template<> struct Random<ushort>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline ushort operator()(ushort max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return ushort(operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline ushort operator()(ushort min, ushort max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return ushort(min + operator()(ushort(max-min)));
 	}
 
@@ -108,14 +108,14 @@ template<> struct Random<short>: Random<ushort>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline short operator()(short max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return short(Random<ushort>::operator()() % max);
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline short operator()(short min, short max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return short(min + short(Random<ushort>::operator()(ushort(max-min))));
 	}
 
@@ -137,14 +137,14 @@ template<> struct Random<uint>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline uint operator()(uint max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return operator()() % max;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline uint operator()(uint min, uint max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 
@@ -166,14 +166,14 @@ template<> struct Random<int>: Random<uint>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline int operator()(int max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return operator()() % max;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline int operator()(int min, int max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 
@@ -195,14 +195,14 @@ template<> struct Random<ulong64>: Random<uint>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline ulong64 operator()(ulong64 max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return operator()() % max;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline ulong64 operator()(ulong64 min, ulong64 max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 
@@ -222,14 +222,14 @@ template<> struct Random<long64>: Random<ulong64>
 	//! Возвращает псевдослучайное число в диапазоне [0; max)
 	forceinline long64 operator()(long64 max)
 	{
-		INTRA_ASSERT(0 < max);
+		INTRA_DEBUG_ASSERT(0 < max);
 		return operator()() % max;
 	}
 
 	//! Возвращает псевдослучайное число в диапазоне [min; max)
 	forceinline long64 operator()(long64 min, long64 max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 
@@ -273,7 +273,7 @@ template<> struct Random<float>
 	//! Возвращает псевдослучайное число в диапазоне [min; max]
 	forceinline float operator()(float min, float max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 
@@ -310,7 +310,7 @@ template<> struct Random<double>
 	//! Возвращает псевдослучайное число в диапазоне [min; max]
 	forceinline double operator()(double min, double max)
 	{
-		INTRA_ASSERT(min < max);
+		INTRA_DEBUG_ASSERT(min < max);
 		return min + operator()(max-min);
 	}
 

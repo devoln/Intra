@@ -49,19 +49,19 @@ template<typename T> struct Vector2
 
 	Vector2 swizzle(uint X, uint Y) const
 	{
-		INTRA_ASSERT((X|Y)<2);
+		INTRA_DEBUG_ASSERT((X|Y)<2);
 		return {index(X), index(Y)};
 	}
 
 	Vector3<T> swizzle(uint X, uint Y, uint Z) const
 	{
-		INTRA_ASSERT((X|Y|Z)<2);
+		INTRA_DEBUG_ASSERT((X|Y|Z)<2);
 		return {index(X), index(Y), index(Z)};
 	}
 
 	Vector4<T> swizzle(uint X, uint Y, uint Z, uint W) const
 	{
-		INTRA_ASSERT((X|Y|Z|W)<2);
+		INTRA_DEBUG_ASSERT((X|Y|Z|W)<2);
 		return {index(X), index(Y), index(Z), index(W)};
 	}
 
@@ -163,19 +163,19 @@ template<typename T> struct Vector3
 
 	Vector2<T> swizzle(byte X, byte Y) const
 	{
-		INTRA_ASSERT((X|Y)<3);
+		INTRA_DEBUG_ASSERT((X|Y)<3);
 		return {index(X), index(Y)};
 	}
 
 	Vector3 swizzle(byte X, byte Y, byte Z) const
 	{
-		INTRA_ASSERT((X|Y|Z)<3);
+		INTRA_DEBUG_ASSERT((X|Y|Z)<3);
 		return {index(X), index(Y), index(Z)};
 	}
 
 	Vector4<T> swizzle(byte X, byte Y, byte Z, byte W) const
 	{
-		INTRA_ASSERT((X|Y|Z|W)<3);
+		INTRA_DEBUG_ASSERT((X|Y|Z|W)<3);
 		return {index(X), index(Y), index(Z), index(W)};
 	}
 
@@ -335,19 +335,19 @@ public:
 
 	Vector2<T> swizzle(uint X, uint Y) const
 	{
-		INTRA_ASSERT((X|Y)<4);
+		INTRA_DEBUG_ASSERT((X|Y)<4);
 		return {index(X), index(Y)};
 	}
 
 	Vector3<T> swizzle(uint X, uint Y, uint Z) const
 	{
-		INTRA_ASSERT((X|Y|Z)<4);
+		INTRA_DEBUG_ASSERT((X|Y|Z)<4);
 		return {index(X), index(Y), index(Z)};
 	}
 
 	Vector4 swizzle(uint X, uint Y, uint Z, uint W) const
 	{
-		INTRA_ASSERT((X|Y|Z|W)<4);
+		INTRA_DEBUG_ASSERT((X|Y|Z|W)<4);
 		return {index(X), index(Y), index(Z), index(W)};
 	}
 

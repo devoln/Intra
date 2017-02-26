@@ -41,7 +41,7 @@ template<typename R, typename P> struct RFilter
 
 	forceinline ReturnValueTypeOf<R> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return mOriginalRange.First();
 	}
 
@@ -55,7 +55,7 @@ template<typename R, typename P> struct RFilter
 		HasLast<U>::_ && HasPopLast<U>::_,
 	ReturnValueTypeOf<R>> Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		auto&& b = mOriginalRange.Last();
 		if(mPredicate()(b)) return b;
 
