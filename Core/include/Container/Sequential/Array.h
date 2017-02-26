@@ -364,7 +364,12 @@ public:
 	forceinline void CheckSpace(size_t rightSpace, size_t leftSpace=0) {Reserve(Count()+rightSpace, leftSpace);}
 
 	//! Удалить все элементы из массива, не освобождая занятую ими память.
-	forceinline void Clear() {Memory::Destruct<T>(range); range.End=range.Begin;}
+	forceinline void Clear()
+	{
+		if(Empty()) return;
+		Memory::Destruct<T>(range);
+		range.End = range.Begin;
+	}
 
 	//! Возвращает, является ли массив пустым.
 	forceinline bool Empty() const {return range.Empty();}
