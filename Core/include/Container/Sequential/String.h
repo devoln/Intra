@@ -34,7 +34,7 @@ public:
 	GenericString(const Char* str):
 		GenericString(str, (str==null)? 0: Algo::CStringLength(str)) {}
 
-	GenericString(null_t=null) {resetToEmptySsoWithoutFreeing();}
+	forceinline GenericString(null_t=null) {m = {null, 0, SSO_CAPACITY_FIELD_FOR_EMPTY};}
 
 	explicit GenericString(const Char* str, size_t strLength): GenericString(null)
 	{
