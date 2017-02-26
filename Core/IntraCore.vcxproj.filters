@@ -419,9 +419,6 @@
     <ClInclude Include="include\Range\Operations.h">
       <Filter>Заголовочные файлы\Range</Filter>
     </ClInclude>
-    <ClInclude Include="include\Range\RelativeIndex.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
     <ClInclude Include="include\Algo\Op.h">
       <Filter>Заголовочные файлы\Algo</Filter>
     </ClInclude>

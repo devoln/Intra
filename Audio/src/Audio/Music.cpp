@@ -53,7 +53,7 @@ AudioBuffer MusicTrack::GetSamples(uint sampleRate) const
 	{
 		samplePos += uint(GetNoteTimeOffset(i)*sampleRate);
 		if(Notes[i].Note.IsPause()) continue;
-		Instrument->GetNoteSamples(result.Samples(samplePos, $),
+		Instrument->GetNoteSamples(Range::Drop(result.Samples, samplePos),
 			operator[](i), Tempo, Volume*Notes[i].Volume, sampleRate);
 	}
 	return result;

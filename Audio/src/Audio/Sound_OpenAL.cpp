@@ -151,7 +151,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 void* BufferLock(BufferHandle snd)
 {
 	INTRA_ASSERT(snd!=null);
-	size_t bytesToAlocate = snd->SizeInBytes();
+	size_t bytesToAllocate = snd->SizeInBytes();
     snd->locked_bits = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	return snd->locked_bits;
 }

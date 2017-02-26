@@ -5,7 +5,6 @@
 #include "Platform/Debug.h"
 #include "Platform/InitializerList.h"
 #include "Range/Concepts.h"
-#include "Range/RelativeIndex.h"
 
 namespace Intra {
 
@@ -132,23 +131,11 @@ template<typename T> struct ArrayRange
 		return Begin[index];
 	}
 
-	forceinline T& operator[](RelativeIndex pos) const
-	{return operator[](pos.GetRealIndex(Length()));}
-
 	forceinline ArrayRange operator()(size_t firstIndex, size_t endIndex) const
 	{
 		INTRA_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
 		return ArrayRange(Begin+firstIndex, Begin+endIndex);
 	}
-
-	forceinline ArrayRange operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));}
-
-	forceinline ArrayRange operator()(size_t firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex, endIndex.GetRealIndex(Length()));}
-
-	forceinline ArrayRange operator()(RelativeIndex firstIndex, size_t endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex);}
 
 	forceinline constexpr ArrayRange TakeNone() const {return {Begin, Begin};}
 

@@ -53,7 +53,7 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			
 			if(!note.IsPause() && volume>0.0001f)
 			{
-				auto dstRange = mBuffer.Samples(trackPosition.samplePos, $).Take(sampleCount);
+				auto dstRange = Range::Drop(mBuffer.Samples, trackPosition.samplePos).Take(sampleCount);
 				track.Instrument->GetNoteSamples(dstRange, note, track.Tempo, volume, mSampleRate, true);
 			}
 			trackPosition.noteId++;

@@ -160,15 +160,6 @@ template<typename Char> struct GenericStringView
 	constexpr forceinline GenericStringView operator()(size_t startIndex, size_t endIndex) const
 	{return GenericStringView(mStart+startIndex, mStart+endIndex);}
 
-	forceinline GenericStringView operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));}
-
-	forceinline GenericStringView operator()(size_t firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex, endIndex.GetRealIndex(Length()));}
-
-	forceinline GenericStringView operator()(RelativeIndex firstIndex, size_t endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex);}
-
 	forceinline constexpr GenericStringView TakeNone() const {return {mStart, mStart};}
 
 	forceinline constexpr ArrayRange<const Char> AsRange() const {return {mStart, mEnd};}

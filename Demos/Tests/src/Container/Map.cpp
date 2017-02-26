@@ -148,7 +148,8 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 {
 	MAP map;
 	PopulateMapRandom(map, size);
-	auto keys = GetRandomValueArray<typename MAP::key_type>(size*2)($/2, $);
+	auto keys = GetRandomValueArray<typename MAP::key_type>(size*2);
+	keys = keys.Drop(keys.Length()/2);
 	Timer timer;
 	uint result = 0;
 	for(uint i=0; i<times; i++)

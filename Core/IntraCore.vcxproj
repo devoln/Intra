@@ -761,7 +761,6 @@
     <ClInclude Include="include\Range\Polymorphic\ForwardRange.h" />
     <ClInclude Include="include\Range\Polymorphic\InputRange.h" />
     <ClInclude Include="include\Range\Polymorphic\RandomAccessRange.h" />
-    <ClInclude Include="include\Range\RelativeIndex.h" />
     <ClInclude Include="include\Range\Special.hh" />
     <ClInclude Include="include\Range\Special\SparseRange.h" />
     <ClInclude Include="include\Range\Special\Unicode.h" />

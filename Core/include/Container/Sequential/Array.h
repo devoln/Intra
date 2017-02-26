@@ -294,12 +294,6 @@ public:
 	}
 
 
-	template<typename U> forceinline void Insert(Range::RelativeIndex pos, ArrayRange<const U> values)
-	{
-		Insert(pos.GetRealIndex(Count()), values);
-	}
-
-
 	//! Добавить новый элемент в конец.
 	forceinline Array& operator<<(const T& value) {AddLast(value); return *this;}
 
@@ -395,9 +389,6 @@ public:
 	//! Таким образом адреса элементов изменяются и указатели станут указывать либо на другой элемент массива, либо на неинициализированную область массива.
 
 	//! Удалить один элемент по индексу.
-	forceinline void Remove(Range::RelativeIndex index) {Remove(index.GetRealIndex(Count()));}
-
-	//! Удалить один элемент по индексу.
 	void Remove(size_t index)
 	{
 		INTRA_ASSERT(index<Count());
@@ -424,13 +415,7 @@ public:
 		Remove(ptr-range.Begin);
 	}
 
-	//!@{
 	//! Удаление всех элементов в диапазоне [removeStart; removeEnd)
-	void Remove(Range::RelativeIndex removeStart, Range::RelativeIndex removeEnd)
-	{
-		Remove(removeStart.GetRealIndex(Count()), removeEnd.GetRealIndex(Count()));
-	}
-
 	void Remove(size_t removeStart, size_t removeEnd)
 	{
 		INTRA_ASSERT(removeStart <= removeEnd);
@@ -467,7 +452,6 @@ public:
 			range.Begin += elementsToRemove;
 		}
 	}
-	//!@}
 
 	//! Удаление первого найденного элемента, равного value
 	forceinline void FindAndRemove(const T& value)
@@ -494,8 +478,6 @@ public:
 
 	//!@{
 	//! Быстрое удаление путём переноса последнего элемента (без смещения).
-	forceinline void RemoveUnordered(Range::RelativeIndex index) {RemoveUnordered(index.GetRealIndex(Count()));}
-	
 	forceinline void RemoveUnordered(size_t index)
 	{
 		INTRA_ASSERT(index<Count());
@@ -519,8 +501,6 @@ public:
 
 	forceinline T& operator[](size_t index) {INTRA_ASSERT(index<Count()); return range.Begin[index];}
 	forceinline const T& operator[](size_t index) const {INTRA_ASSERT(index<Count()); return range.Begin[index];}
-	forceinline T& operator[](Range::RelativeIndex index) {return operator[](index.GetRealIndex(Count()));}
-	forceinline const T& operator[](Range::RelativeIndex index) const {return operator[](index.GetRealIndex(Count()));}
 
 	forceinline T& Last() {INTRA_ASSERT(!Empty()); return range.Last();}
 	forceinline const T& Last() const {INTRA_ASSERT(!Empty()); return range.Last();}
@@ -612,20 +592,6 @@ public:
 		INTRA_ASSERT(endIndex <= Count());
 		return AsConstRange()(firstIndex, endIndex);
 	}
-
-	forceinline ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex)
-	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
-
-	forceinline ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex) const
-	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
-
-	forceinline ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd)
-	{return range(firstIndex.GetRealIndex(Count()), $);}
-
-	forceinline ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd) const
-	{return range(firstIndex.GetRealIndex(Count()), $);}
-
-	forceinline Range::RLastAppender<Array> Insert(Range::RelativeIndexEnd) {return {*this};}
 
 
 	//! @defgroup Array_STL_Interface STL-подобный интерфейс для Array
