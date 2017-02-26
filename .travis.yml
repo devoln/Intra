@@ -3,9 +3,9 @@ compiler:
   - clang
   - gcc
 env:
-  - CMAKE_PARAMS = -DUSE_EXCEPTIONS=1 -DUNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release
-  - CMAKE_PARAMS = -DUNITY_BUILD=OFF -DCMAKE_BUILD_TYPE=Release
-  - CMAKE_PARAMS = -DUSE_EXCEPTIONS=1 -DCMAKE_BUILD_TYPE=Debug
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Release -DUSE_EXCEPTIONS=1 -DUNITY_BUILD=ON"
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Release -DUNITY_BUILD=OFF"
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Debug -DUSE_EXCEPTIONS=1"
 dist: trusty
 sudo: false
-script: cmake -G"Unix Makefiles" $CMAKE_PARAMS && make -j4 && Demos/UnitTests/UnitTests -a
+script: cmake -G"Unix Makefiles" $CMAKE_PARAMS && make && Demos/UnitTests/UnitTests -au
