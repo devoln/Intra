@@ -8,4 +8,4 @@ env:
   - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Debug -DUSE_EXCEPTIONS=1"
 dist: trusty
 sudo: false
-script: cmake -G"Unix Makefiles" $CMAKE_PARAMS && make && reset && Demos/UnitTests/UnitTests -au
+script: cmake -G"Unix Makefiles" $CMAKE_PARAMS && make -j2 && Demos/UnitTests/UnitTests -au

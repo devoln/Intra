@@ -13,6 +13,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <string>
 #include <list>
 #include <deque>
+#include <map>
 #include <unordered_map>
 
 using namespace Intra;
@@ -58,7 +59,17 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	output.PrintLine("Переведём std::unordered_map<std::string, std::vector<int>> в строку на стеке и выведем её:");
 	char figuresTextBuf[200];
 	StringView figuresText = (OutputArrayRange<char>(figuresTextBuf) << figureMap).GetWrittenData();
-	INTRA_ASSERT_EQUALS(figuresText, "[[Triangle, [[2.7, 1.21], [3.0, 2.718], [4.321, 3.212]]], [Line, [[1.1112, 5.234], [6.22, 5.45]]], [Point, [[65.0, 242.0]]]]");
+	INTRA_ASSERT_EQUALS(Algo::Count(figuresText, '['), Algo::Count(figuresText, ']'));
+	output.PrintLine(figuresText, endl);
+	
+	std::map<std::string, std::vector<Point>> orderedFigureMap = {
+		{"Triangle", {{2.7f, 1.21f}, {3, 2.718f}, {4.321f, 3.212f}}},
+		{"Line", {{1.1112f, 5.234f}, {6.22f, 5.45f}}},
+		{"Point", {{65, 242}}}
+	};
+	output.PrintLine("Теперь проделаем то же самое с std::map<std::string, std::vector<int>>:");
+	figuresText = (OutputArrayRange<char>(figuresTextBuf) << orderedFigureMap).GetWrittenData();
+	INTRA_ASSERT_EQUALS(figuresText, "[[Line, [[1.1112, 5.234], [6.22, 5.45]]], [Point, [[65.0, 242.0]]], [Triangle, [[2.7, 1.21], [3.0, 2.718], [4.321, 3.212]]]]");
 	output.PrintLine(figuresText, endl);
 
 	std::list<std::string> stringList(stringVec.begin(), stringVec.end());
