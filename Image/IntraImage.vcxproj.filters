@@ -37,6 +37,9 @@
     <Filter Include="Заголовочные файлы\Font">
       <UniqueIdentifier>{d2aa910d-4df0-4864-a23d-ec1d324c54dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Font">
+      <UniqueIdentifier>{bb26b26d-c2d3-4465-ae66-dbfff246ce90}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Image\Bindings\GLenumFormats.cpp">
@@ -89,6 +92,12 @@
     </ClCompile>
     <ClCompile Include="src\Image\AnyImage.cpp">
       <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Font\FontLoading.cpp">
+      <Filter>Файлы исходного кода\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Font\FontLoading_STB.cpp">
+      <Filter>Файлы исходного кода\Font</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -705,14 +705,14 @@ void stbtt_GetFontVMetrics(const stbtt_fontinfo* info, short* ascent, short* des
 
 void stbtt_GetFontBoundingBox(const stbtt_fontinfo* info, SVec2* pos0, SVec2* pos1)
 {
-   *pos0=SVec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
-   *pos1=SVec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
+   *pos0 = SVec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
+   *pos1 = SVec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
 }
 
 float stbtt_ScaleForPixelHeight(const stbtt_fontinfo* info, float height)
 {
    int fheight=ttSHORT(info->data+info->hhea+4)-ttSHORT(info->data+info->hhea+6);
-   return (float)height/fheight;
+   return float(height)/fheight;
 }
 
 float stbtt_ScaleForMappingEmToPixels(const stbtt_fontinfo* info, float pixels)

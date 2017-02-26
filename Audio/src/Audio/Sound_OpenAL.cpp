@@ -161,7 +161,7 @@ void BufferUnlock(BufferHandle snd)
 	INTRA_ASSERT(snd!=null);
     alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
     INTRA_ASSERT(alGetError()==AL_NO_ERROR);
-    Memory::GlobalHeap.Free(snd->locked_bits);
+    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
     snd->locked_bits=null;
 }
 
@@ -250,7 +250,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 {
 	alDeleteSources(1, &snd->source);
 	alDeleteBuffers(2, snd->buffers);
-	Memory::GlobalHeap.Free(snd->temp_buffer);
+	Memory::GlobalHeap.Free(snd->temp_buffer, snd->SizeInBytes());
 }
 
 

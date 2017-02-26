@@ -75,7 +75,7 @@ void* BufferLock(BufferHandle snd)
 void BufferUnlock(BufferHandle snd)
 {
 	INTRA_ASSERT(snd!=null);
-    Memory::GlobalHeap.Free(snd->locked_bits);
+    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
     snd->locked_bits=null;
 }
 
