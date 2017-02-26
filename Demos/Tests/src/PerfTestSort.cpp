@@ -6,6 +6,7 @@
 #include "Platform/Time.h"
 #include "Platform/CppWarnings.h"
 #include "IO/FormattedWriter.h"
+#include "IO/CompositeFormattedWriter.h"
 
 using namespace Intra;
 
@@ -188,7 +189,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::IFormattedWriter& ou
 
 void RunSortPerfTests(Intra::IO::IFormattedWriter& output)
 {
-	IO::MultipleDocumentWriter emptyLogger;
+	IO::CompositeFormattedWriter emptyLogger;
 	if(TestGroup gr{"Sorting of random generated arrays of short"})
 		TestAndPrintIntegralTypeSorts<short>(output, "short");
 

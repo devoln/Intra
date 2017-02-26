@@ -7,6 +7,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/File.h"
 #include "IO/HtmlWriter.h"
 #include "IO/ConsoleWriter.h"
+#include "IO/CompositeFormattedWriter.h"
 #include "Algo/String/Path.h"
 #include "Platform/Time.h"
 
@@ -25,7 +26,7 @@ DiskFile::Writer g_LogFile;
 HtmlWriter g_LogWriter(&g_LogFile);
 #endif
 
-MultipleDocumentWriter gLogger;
+CompositeFormattedWriter gLogger;
 
 void InitLogSystem(int argc, const char* argv[])
 {
@@ -78,12 +79,22 @@ int main(int argc, const char* argv[])
 	Errors::InitSignals();
 	InitLogSystem(argc, argv);
 	gLogger.Attach(&g_LogWriter);
-	gLogger.Attach(&ConsoleWriter);
 
-	if(argc>=2 && StringView(argv[1])=="-a")
-		TestGroup::YesForNestingLevel = 0;
+	CompositeFormattedWriter emptyLogger;
+	IFormattedWriter* output = &ConsoleWriter;
 
-	if(TestGroup gr{gLogger, ConsoleWriter, "Ranges"})
+	if(argc>=2 && Algo::StartsWith(StringView(argv[1]), "-"))
+	{
+		if(Algo::Contains(StringView(argv[1]), 'a'))
+			TestGroup::YesForNestingLevel = 0;
+		if(Algo::Contains(StringView(argv[1]), 'u'))
+			output = &emptyLogger;
+		if(!Algo::Contains(StringView(argv[1]), 's'))
+			gLogger.Attach(&ConsoleWriter);
+	}
+	else gLogger.Attach(&ConsoleWriter);
+
+	if(TestGroup gr{gLogger, *output, "Ranges"})
 	{
 		TestGroup("Composing complex ranges", TestComposedRange);
 		TestGroup("Polymorphic ranges", TestPolymorphicRange);
@@ -91,8 +102,8 @@ int main(int argc, const char* argv[])
 		TestGroup("STL and ranges interoperability", TestRangeStlInterop);
 		TestGroup("Unicode encoding conversions", TestUnicodeConversion);
 	}
-	TestGroup(gLogger, ConsoleWriter, "Text serialization", TestTextSerialization);
-	TestGroup(gLogger, ConsoleWriter, "Binary serialization", TestBinarySerialization);
-	TestGroup(gLogger, ConsoleWriter, "Sort algorithms", TestSort);
+	TestGroup(gLogger, *output, "Text serialization", TestTextSerialization);
+	TestGroup(gLogger, *output, "Binary serialization", TestBinarySerialization);
+	TestGroup(gLogger, *output, "Sort algorithms", TestSort);
 	return TestGroup::GetTotalTestsFailed();
 }

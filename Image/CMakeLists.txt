@@ -2,12 +2,10 @@ cmake_minimum_required(VERSION 2.8)
 
 project(IntraImage)
 
-include(../CMakeCommon.txt)
+include(../Configurations.cmake)
 
 include_directories(../Core/include)
 include_directories(include)
-
-add_definitions(-DINTRA_LIBRARY_WINDOW_SYSTEM=INTRA_LIBRARY_WINDOW_SYSTEM_Console)
 
 file(GLOB_RECURSE IMAGE_HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" include/*.h)
 file(GLOB_RECURSE IMAGE_SOURCES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" src/*.cpp)

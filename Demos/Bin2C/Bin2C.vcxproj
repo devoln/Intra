@@ -237,6 +237,7 @@
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -257,6 +258,7 @@
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -410,7 +412,7 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <FloatingPointModel>Fast</FloatingPointModel>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
-      <ExceptionHandling>Disabled</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>FastCall</CallingConvention>
@@ -481,6 +483,7 @@
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -542,6 +545,7 @@
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

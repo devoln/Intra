@@ -16,20 +16,6 @@ int TestGroup::YesForNestingLevel=1000000000;
 int TestGroup::totalTestsFailed = 0;
 int TestGroup::totalTestsPassed = 0;
 
-struct TestException {};
-
-static void InternalErrorTestFail(StringView func, StringView file, int line, StringView info)
-{
-	INTRA_ASSERT(TestGroup::GetCurrent() != null);
-	TestGroup::GetCurrent()->ErrorInfo = TestInternalErrorInfo{func, file, line, info,
-		BuildErrorMessage(func, file, line, info, 1)};
-#ifdef INTRA_EXCEPTIONS_ENABLED
-	throw TestException();
-#else
-	INTRA_HEAP_CHECK;
-#endif
-}
-
 TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output, StringView category):
 	Yes(false), Logger(logger), Output(output), Category(category),
 	mHadChildren(false),
@@ -79,24 +65,6 @@ void TestGroup::consoleAskToEnableTest()
 		}
 		if(c=='\r' || c=='\n') break;
 	}
-}
-
-TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output,
-	StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest):
-		TestGroup(logger, output, category)
-{
-	if(!Yes) return;
-	auto oldCallback = gInternalErrorCallback;
-	gInternalErrorCallback = InternalErrorTestFail;
-#ifdef INTRA_EXCEPTIONS_ENABLED
-	try { //Исключение как способ безопасного выхода из ошибочного теста вместо падения всего приложения
-#endif
-		funcToTest(output);
-#ifdef INTRA_EXCEPTIONS_ENABLED
-	} catch(TestException) {}
-	catch(...) {ErrorInfo.FullDesc += "\nUnknown exception caught!";}
-#endif
-	gInternalErrorCallback = oldCallback;
 }
 
 TestGroup::TestGroup(StringView category):
