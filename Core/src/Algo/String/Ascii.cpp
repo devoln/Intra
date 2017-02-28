@@ -54,7 +54,7 @@ forceinline StringView StringReadUntilAscii(StringView& str, ArrayRange<const St
 size_t StringMultiReplaceAsciiLength(StringView src,
 	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
 {
-	INTRA_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
+	INTRA_DEBUG_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	size_t substrIndex = 0;
 	size_t len = 0;
 	while(len += StringReadUntilAscii(src, fromSubStrs, &substrIndex).Length(), !src.Empty())
@@ -68,7 +68,7 @@ size_t StringMultiReplaceAsciiLength(StringView src,
 StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstBuffer,
 	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
 {
-	INTRA_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
+	INTRA_DEBUG_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	char* begin = dstBuffer.Data();
 	size_t substrIndex=0;
 	while(CopyToAdvance(StringReadUntilAscii(src, fromSubStrs, &substrIndex), dstBuffer), !src.Empty())

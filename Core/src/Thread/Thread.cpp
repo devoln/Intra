@@ -40,7 +40,7 @@ void Thread::create_thread(const Thread::Func& func) {handle = new Thread::Handl
 void Thread::delete_thread()
 {
 	if(handle==null) return;
-	INTRA_ASSERT(!Joinable());
+	INTRA_DEBUG_ASSERT(!Joinable());
 	delete handle;
 }
 
@@ -124,7 +124,7 @@ void Thread::create_thread(const Thread::Func& func)
 void Thread::delete_thread()
 {
 	if(handle==null) return;
-	INTRA_ASSERT(!Joinable());
+	INTRA_DEBUG_ASSERT(!Joinable());
 	delete static_cast<ThreadData*>(handle);
 }
 
@@ -238,7 +238,7 @@ void Thread::create_thread(const Thread::Func& func)
 void Thread::delete_thread()
 {
 	if(handle==null) return;
-	INTRA_ASSERT(!Joinable());
+	INTRA_DEBUG_ASSERT(!Joinable());
 	delete static_cast<ThreadData*>(handle);
 }
 

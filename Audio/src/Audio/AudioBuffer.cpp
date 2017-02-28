@@ -22,8 +22,8 @@ AudioBuffer::AudioBuffer(size_t sampleCount,
 void AudioBuffer::CopyFrom(size_t startSample,
 	size_t sampleCount, AudioBuffer* src, size_t srcStartSample)
 {
-	INTRA_ASSERT(src!=null);
-	INTRA_ASSERT(srcStartSample+sampleCount<=src->Samples.Count());
+	INTRA_DEBUG_ASSERT(src!=null);
+	INTRA_DEBUG_ASSERT(srcStartSample+sampleCount<=src->Samples.Count());
 	if(startSample+sampleCount>Samples.Count())
 		Samples.SetCount(startSample+sampleCount);
 	CopyTo(Drop(src->Samples, srcStartSample), sampleCount, Drop(Samples, startSample));

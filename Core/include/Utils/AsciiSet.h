@@ -41,7 +41,7 @@ public:
 
 	bool operator[](char c) const
 	{
-		INTRA_ASSERT(byte(c)<128);
+		INTRA_DEBUG_ASSERT(byte(c)<128);
 		return (v[c/BitsPerElement] & (size_t(1) << (c & Mask))) != 0;
 	}
 

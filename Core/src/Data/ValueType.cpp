@@ -10,7 +10,7 @@ using namespace Math;
 
 ushort ValueType::Size() const
 {
-	INTRA_ASSERT(value<End);
+	INTRA_DEBUG_ASSERT(value<End);
 	static const byte scalarVecSizeTable[]={0,
 		sizeof(float),  sizeof(Math::Vec2),  sizeof(Math::Vec3),  sizeof(Math::Vec4),
 		sizeof(double), sizeof(Math::DVec2), sizeof(Math::DVec3), sizeof(Math::DVec4),

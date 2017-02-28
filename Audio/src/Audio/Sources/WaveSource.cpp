@@ -45,7 +45,7 @@ WaveSource::WaveSource(ArrayRange<const byte> srcFileData):
 
 size_t WaveSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
-	INTRA_ASSERT(!outShorts.Empty());
+	INTRA_DEBUG_ASSERT(!outShorts.Empty());
 	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
 	const short* const streamStart = reinterpret_cast<const short*>(mData.Begin+sizeof(WaveHeader));
 	Algo::CopyTo(ArrayRange<const short>(streamStart+mCurrentDataPos, shortsToRead), outShorts);
@@ -56,7 +56,7 @@ size_t WaveSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 
 size_t WaveSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
-	INTRA_ASSERT(!outFloats.Empty());
+	INTRA_DEBUG_ASSERT(!outFloats.Empty());
 	Array<short> outShorts;
 	outShorts.SetCountUninitialized(outFloats.Length());
 	auto result = GetInterleavedSamples(outShorts);
@@ -67,11 +67,11 @@ size_t WaveSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 
 size_t WaveSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
-	INTRA_ASSERT(outFloats.Length()==mChannelCount);
+	INTRA_DEBUG_ASSERT(outFloats.Length()==mChannelCount);
 	const size_t outSamplesCount = outFloats.First().Length();
 	for(size_t i=1; i<mChannelCount; i++)
 	{
-		INTRA_ASSERT(outFloats[i].Length()==outSamplesCount);
+		INTRA_DEBUG_ASSERT(outFloats[i].Length()==outSamplesCount);
 	}
 
 	Array<float> outShorts;

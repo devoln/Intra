@@ -68,7 +68,7 @@ template<typename R> struct RCycleRandom
 
 	forceinline RTake<RCycleRandom<R>> operator()(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
 		RCycleRandom<R> result(mOriginalRange);
 		result.mCounter = (mCounter+startIndex) % mOriginalRange.Length();
 		return Take(result, endIndex-startIndex);

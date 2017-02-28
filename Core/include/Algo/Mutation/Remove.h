@@ -17,7 +17,7 @@ template<typename R, typename IndexRange> Meta::EnableIf<
 R> Remove(const R& rhs, const IndexRange& indices)
 {
 	if(indices.Empty()) return rhs;
-	INTRA_ASSERT(IsSorted(indices, [](size_t a, size_t b){return a<b;}));
+	INTRA_DEBUG_ASSERT(IsSorted(indices, [](size_t a, size_t b){return a<b;}));
 	size_t nextIndex = indices.First();
 	auto indicesCopy = indices;
 	indicesCopy.PopFirst();

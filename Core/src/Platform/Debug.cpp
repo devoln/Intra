@@ -6,6 +6,8 @@
 #include "Algo/String/CStr.h"
 #include "Range/Stream.h"
 #include "Range/Decorators/Split.h"
+#include "Range/Decorators/Map.h"
+#include "Algo/Search/Trim.h"
 #include "Utils/AsciiSet.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS

@@ -240,11 +240,11 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 
 void* BufferLock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	if(snd==null) return null;
 	DWORD lockedSize;
 	snd->buffer->Lock(0, snd->SizeInBytes(), &snd->lockedBits, &lockedSize, null, null, 0);
-	INTRA_ASSERT(lockedSize==snd->SizeInBytes());
+	INTRA_DEBUG_ASSERT(lockedSize==snd->SizeInBytes());
 	return snd->lockedBits;
 }
 
@@ -391,7 +391,7 @@ void StreamedBufferSetDeleteOnStop(StreamedBufferHandle snd, bool del)
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	snd->looping = loop;
 	snd->stop_soon = 0;
 	snd->buffer->Play(0, 0, DSBPLAY_LOOPING);
@@ -436,7 +436,7 @@ AnyPtr lock_buffer(StreamedBufferHandle snd, uint no)
 	size_t lockSampleStart = no==0? 0: snd->sampleCount;
 	HRESULT lockResult = snd->buffer->Lock(uint(lockSampleStart*sizeof(short)*snd->channels),
 		snd->SizeInBytes(), &snd->lockedBits, &snd->lockedSize, &snd->lockedBits2, &snd->lockedSize2, 0);
-	INTRA_ASSERT(!FAILED(lockResult));
+	INTRA_DEBUG_ASSERT(!FAILED(lockResult));
 	if(FAILED(lockResult)) return null;
 	return snd->lockedBits;
 }

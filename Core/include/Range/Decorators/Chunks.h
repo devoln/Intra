@@ -27,7 +27,7 @@ template<typename R> struct RChunks
 		HasSlicing<U>::_ && HasLength<U>::_,
 	SliceTypeOf<U>> operator[](size_t index) const
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		const size_t startIndex = index*mChunkLen;
 		const size_t endIndex = Op::Min(startIndex+mChunkLen, mOriginalRange.Length());
 		return mOriginalRange(startIndex, endIndex);
@@ -37,8 +37,8 @@ template<typename R> struct RChunks
 		HasSlicing<U>::_ && HasLength<U>::_,
 	RChunks<SliceTypeOf<U>>> operator()(size_t start, size_t end) const
 	{
-		INTRA_ASSERT(end <= Length());
-		INTRA_ASSERT(start <= end);
+		INTRA_DEBUG_ASSERT(end <= Length());
+		INTRA_DEBUG_ASSERT(start <= end);
 		const size_t startIndex = start*mChunkLen;
 		const size_t endIndex = Op::Min(end*mChunkLen, mOriginalRange.Length());
 		return {mOriginalRange(startIndex, endIndex), mChunkLen};
@@ -48,7 +48,7 @@ template<typename R> struct RChunks
 		HasSlicing<U>::_ && HasLength<U>::_,
 	SliceTypeOf<U>> Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		size_t numToTake = mOriginalRange.Length()%mChunkLen;
 		if(numToTake==0) numToTake = mChunkLen;
 		return Drop(mOriginalRange, mOriginalRange.Length()-numToTake);
@@ -58,7 +58,7 @@ template<typename R> struct RChunks
 		HasPopLast<U>::_ && HasLength<U>::_
 	> PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		size_t numToPop = mOriginalRange.Length()%mChunkLen;
 		if(numToPop==0) numToPop = mChunkLen;
 		PopLastExactly(mOriginalRange, numToPop);

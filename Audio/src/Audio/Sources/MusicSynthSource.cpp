@@ -47,13 +47,13 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			size_t sampleCount;
 			if(!note.IsPause()) sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, mSampleRate);
 			else sampleCount = floatsToRead;
-			INTRA_ASSERT(int(trackPosition.samplePos)>=0);
+			INTRA_DEBUG_ASSERT(int(trackPosition.samplePos)>=0);
 			if(mBuffer.Samples.Count()<trackPosition.samplePos+sampleCount)
 				mBuffer.Samples.SetCount(trackPosition.samplePos+sampleCount);
 			
 			if(!note.IsPause() && volume>0.0001f)
 			{
-				auto dstRange = mBuffer.Samples(trackPosition.samplePos, $).Take(sampleCount);
+				auto dstRange = Range::Drop(mBuffer.Samples, trackPosition.samplePos).Take(sampleCount);
 				track.Instrument->GetNoteSamples(dstRange, note, track.Tempo, volume, mSampleRate, true);
 			}
 			trackPosition.noteId++;
@@ -118,8 +118,8 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 
 size_t MusicSynthSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
 {
-	INTRA_ASSERT(mChannelCount==outFloats.Length());
-	INTRA_ASSERT(mChannelCount==1); //TODO: убрать это ограничение
+	INTRA_DEBUG_ASSERT(mChannelCount==outFloats.Length());
+	INTRA_DEBUG_ASSERT(mChannelCount==1); //TODO: убрать это ограничение
 	return GetInterleavedSamples(outFloats.First());
 }
 

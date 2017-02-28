@@ -306,3 +306,11 @@
 #endif
 
 #endif
+
+#ifndef INTRA_EXCEPTIONS_ENABLED
+
+#ifdef __EXCEPTIONS
+#define INTRA_EXCEPTIONS_ENABLED
+#endif
+
+#endif

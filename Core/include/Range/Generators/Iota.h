@@ -28,7 +28,7 @@ template<typename T, typename S> struct RIota
 
 	forceinline RTake<RIota> operator()(size_t start, size_t end) const
 	{
-		INTRA_ASSERT(start<=end);
+		INTRA_DEBUG_ASSERT(start<=end);
 		return RTake<RIota>(RIota(Begin+Step*start, Step), end-start);
 	}
 };

@@ -5,7 +5,6 @@
 #include "Platform/Debug.h"
 #include "Platform/InitializerList.h"
 #include "Range/Concepts.h"
-#include "Range/RelativeIndex.h"
 
 namespace Intra {
 
@@ -25,7 +24,7 @@ template<typename T> struct ArrayRange
 		Begin(arr), End(arr+N) {}
 
 	forceinline ArrayRange(T* startPtr, T* endPtr):
-		Begin(startPtr), End(endPtr) {INTRA_ASSERT(End >= Begin);}
+		Begin(startPtr), End(endPtr) {INTRA_DEBUG_ASSERT(End >= Begin);}
 
 	constexpr forceinline ArrayRange(T* startPtr, size_t length):
 		Begin(startPtr), End(startPtr+length) {}
@@ -54,12 +53,12 @@ template<typename T> struct ArrayRange
 	forceinline size_t Length() const {return size_t(End-Begin);}
 	forceinline constexpr bool Empty() const {return End<=Begin;}
 	forceinline constexpr T* Data() const {return Begin;}
-	forceinline T& First() const {INTRA_ASSERT(!Empty()); return *Begin;}
+	forceinline T& First() const {INTRA_DEBUG_ASSERT(!Empty()); return *Begin;}
 	
-	forceinline void PopFirst() {INTRA_ASSERT(!Empty()); Begin++;}
+	forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); Begin++;}
 
-	forceinline T& Last() const {INTRA_ASSERT(!Empty()); return *(End-1);}
-	forceinline void PopLast() {INTRA_ASSERT(!Empty()); End--;}
+	forceinline T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return *(End-1);}
+	forceinline void PopLast() {INTRA_DEBUG_ASSERT(!Empty()); End--;}
 
 	forceinline size_t PopFirstN(size_t count)
 	{
@@ -69,7 +68,7 @@ template<typename T> struct ArrayRange
 	}
 
 	forceinline void PopFirstExactly(size_t count)
-	{INTRA_ASSERT(count <= Length()); Begin += count;}
+	{INTRA_DEBUG_ASSERT(count <= Length()); Begin += count;}
 
 	forceinline size_t PopBackN(size_t count)
 	{
@@ -79,7 +78,7 @@ template<typename T> struct ArrayRange
 	}
 
 	forceinline void PopBackExactly(size_t count)
-	{INTRA_ASSERT(count <= Length()); End -= count;}
+	{INTRA_DEBUG_ASSERT(count <= Length()); End -= count;}
 
 	forceinline ArrayRange<T> Drop(size_t count=1) const
 	{return ArrayRange(Length()<=count? End: Begin+count, End);}
@@ -92,7 +91,7 @@ template<typename T> struct ArrayRange
 
 	forceinline ArrayRange<T> TakeExactly(size_t count) const
 	{
-		INTRA_ASSERT(count <= Length());
+		INTRA_DEBUG_ASSERT(count <= Length());
 		return ArrayRange(Begin, Begin+count);
 	}
 
@@ -102,13 +101,13 @@ template<typename T> struct ArrayRange
 
 	void Put(const T& v)
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		*Begin++ = v;
 	}
 
 	void Put(T&& v)
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		*Begin++ = Meta::Move(v);
 	}
 
@@ -128,27 +127,15 @@ template<typename T> struct ArrayRange
 
 	forceinline T& operator[](size_t index) const
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		return Begin[index];
 	}
 
-	forceinline T& operator[](RelativeIndex pos) const
-	{return operator[](pos.GetRealIndex(Length()));}
-
 	forceinline ArrayRange operator()(size_t firstIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
+		INTRA_DEBUG_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
 		return ArrayRange(Begin+firstIndex, Begin+endIndex);
 	}
-
-	forceinline ArrayRange operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));}
-
-	forceinline ArrayRange operator()(size_t firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex, endIndex.GetRealIndex(Length()));}
-
-	forceinline ArrayRange operator()(RelativeIndex firstIndex, size_t endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex);}
 
 	forceinline constexpr ArrayRange TakeNone() const {return {Begin, Begin};}
 

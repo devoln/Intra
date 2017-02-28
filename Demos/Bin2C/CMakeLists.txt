@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(Bin2C)
 
-include(../../CMakeCommon.txt)
+include(../../Configurations.cmake)
 
 include_directories(../../Core/include)
 

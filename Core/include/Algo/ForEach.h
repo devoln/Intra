@@ -8,15 +8,15 @@ namespace Intra { namespace Algo {
 
 using namespace Range::Concepts;
 
-template<typename R, typename P, typename AsR=AsRangeResult<R>> Meta::EnableIf<
+template<typename R, typename F, typename AsR=AsRangeResult<R>> Meta::EnableIf<
 	IsConsumableRange<AsR>::_ &&
-	Meta::IsCallable<P, ValueTypeOf<AsR>>::_
-> ForEach(R&& r, P&& pred)
+	Meta::IsCallable<F, ValueTypeOf<AsR>>::_
+> ForEach(R&& r, F&& f)
 {
 	auto range = Range::Forward<R>(r);
 	while(!range.Empty())
 	{
-		pred(range.First());
+		f(range.First());
 		range.PopFirst();
 	}
 }

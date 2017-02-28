@@ -59,7 +59,7 @@ template<typename R, typename P1, typename P2> struct RSplit
 
 	forceinline TakeResult<R> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return mFirst;
 	}
 

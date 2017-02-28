@@ -39,7 +39,7 @@ public:
 			mRange1.PopFirst();
 			return;
 		}
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		mRange2.PopFirst();
 	}
 
@@ -53,7 +53,7 @@ public:
 			mRange1.PopLast();
 			return;
 		}
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		mRange2.PopLast();
 	}
 

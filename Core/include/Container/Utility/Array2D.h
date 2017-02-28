@@ -19,13 +19,13 @@ public:
 
 	forceinline T& operator()(size_t x, size_t y)
 	{
-		INTRA_ASSERT(x<Width() && y<Height());
+		INTRA_DEBUG_ASSERT(x<Width() && y<Height());
 		return data[y*width+x];
 	};
 
 	forceinline const T& operator()(size_t x, size_t y) const
 	{
-		INTRA_ASSERT(x<Width() && y<Height());
+		INTRA_DEBUG_ASSERT(x<Width() && y<Height());
 		return data[y*width+x];
 	}
 

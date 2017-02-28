@@ -117,7 +117,7 @@ struct BufferAllocator
 		(void)size;
 		if(ptr==null) return;
 		Buffer* buf = reinterpret_cast<Buffer*>(ptr)-1;
-		INTRA_ASSERT(size == buf->Size());
+		INTRA_DEBUG_ASSERT(size == buf->Size());
 		FreeBuffer(buf);
 	}
 

@@ -1,6 +1,7 @@
 ﻿#include "Platform/PlatformInfo.h"
 #include "Platform/CppWarnings.h"
 #include "Audio/SoundApi.h"
+#include "Memory/Allocator/Global.h"
 
 #if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
 
@@ -59,21 +60,22 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
-	INTRA_ASSERT(data!=null);
+	INTRA_DEBUG_ASSERT(data!=null);
 	(void)data; (void)snd; (void)type;
 }
 
 void* BufferLock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
-    snd->locked_bits = Memory::SystemHeapAllocator::Allocate(snd->SizeInBytes(), INTRA_SOURCE_INFO);
+	INTRA_DEBUG_ASSERT(snd!=null);
+	size_t size = snd->SizeInBytes();
+    snd->locked_bits = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return snd->locked_bits;
 }
 
 void BufferUnlock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
-    Memory::SystemHeapAllocator::Free(snd->locked_bits);
+	INTRA_DEBUG_ASSERT(snd!=null);
+    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
     snd->locked_bits=null;
 }
 
@@ -81,7 +83,7 @@ void BufferDelete(BufferHandle snd) {delete snd;}
 
 InstanceHandle InstanceCreate(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	return new Instance(snd);
 }
 
@@ -91,7 +93,7 @@ void InstanceDelete(InstanceHandle instance) {delete instance;}
 
 void InstancePlay(InstanceHandle instance, bool loop)
 {
-	INTRA_ASSERT(instance!=null);
+	INTRA_DEBUG_ASSERT(instance!=null);
 	(void)instance; (void)loop;
 }
 
@@ -117,7 +119,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd) {(void)snd;}
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	snd->looping = loop;
 }
 

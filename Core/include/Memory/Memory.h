@@ -86,7 +86,7 @@ template<typename T> Meta::EnableIf<
 //Побитовое копирование
 template<typename T> void CopyBits(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Length()>=src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
 	//C::memcpy(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
@@ -98,7 +98,7 @@ template<typename T> void CopyBits(T* dst, const T* src, size_t count)
 
 template<typename T> void CopyBitsBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Length()>=src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
 
@@ -121,7 +121,7 @@ template<typename OR, typename R> Meta::EnableIf<
 {
 	auto dstCopy = dst;
 	auto srcCopy = src;
-	INTRA_ASSERT(Range::Count(dst) <= Range::Count(src));
+	INTRA_DEBUG_ASSERT(Range::Count(dst) <= Range::Count(src));
 	while(!dstCopy.Empty())
 	{
 		dstCopy.First() = srcCopy.First();
@@ -137,7 +137,7 @@ template<typename OR, typename R> Meta::EnableIf<
 	Range::IsFiniteInputRangeOfExactly<R, Range::ValueTypeOf<OR>>::_
 > CopyAssign(const OR& dst, const R& src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	CopyBits(dst.Data(), src.Data(), dst.Length());
 }
 
@@ -146,7 +146,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyAssignable<T>::_
 > CopyAssignBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Length() <= src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() <= src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last() = src.Last();
@@ -168,7 +168,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyDestructible<T>::_
 > CopyRecreate(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.First().~T();
@@ -191,7 +191,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyDestructible<T>::_
 > CopyRecreateBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last().~T();
@@ -212,7 +212,7 @@ template<typename T, typename U> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
 > CopyInit(ArrayRange<T> dst, ArrayRange<const U> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
 	{
 		new(&dst.First()) T(src.First());
@@ -232,7 +232,7 @@ template<typename T, typename U> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
 > CopyInitBackwards(ArrayRange<T> dst, ArrayRange<const U> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
 	{
 		new(&dst.Last()) T(src.Last());
@@ -253,7 +253,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
 > MoveInit(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.First()) T(Meta::Move(src.First()));
@@ -275,7 +275,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
 > MoveInitBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.Last()) T(Meta::Move(src.Last()));
@@ -295,7 +295,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
 > MoveInitDelete(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.First()) T(Meta::Move(src.First()));
@@ -319,7 +319,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
 > MoveInitDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.Last()) T(Meta::Move(src.Last()));
@@ -343,7 +343,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
 > MoveAssignDelete(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.First() = Meta::Move(src.First());
@@ -366,7 +366,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
 > MoveAssignDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last() = Meta::Move(src.Last());

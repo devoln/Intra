@@ -15,7 +15,7 @@ public:
 
 	forceinline ReturnValueType First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return mCurrentRange.First();
 	}
 
@@ -23,7 +23,7 @@ public:
 
 	void PopFirst()
 	{
-		INTRA_ASSERT(!mCurrentRange.Empty());
+		INTRA_DEBUG_ASSERT(!mCurrentRange.Empty());
 		mCurrentRange.PopFirst();
 		goToNearestNonEmptyElement();
 	}

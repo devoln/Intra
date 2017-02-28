@@ -114,7 +114,7 @@ public:
 
 	RTake<RandomAccessRange> operator()(size_t start, size_t end) const
 	{
-		INTRA_ASSERT(end>=start);
+		INTRA_DEBUG_ASSERT(end>=start);
 		return Take(Drop(start), end-start);
 	}
 

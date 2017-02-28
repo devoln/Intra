@@ -46,22 +46,22 @@ public:
 	{
 		if(typeFlag & TextSerializerParams::TypeFlags_Struct)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Struct);
 			Algo::CopyToAdvanceByOne(Lang.FieldSeparator, Output);
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Tuple);
 			Algo::CopyToAdvanceByOne(Lang.TupleFieldSeparator, Output);
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_Array)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_Array);
 			Algo::CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
 		}
 		if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
 		{
-			INTRA_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
+			INTRA_DEBUG_ASSERT(typeFlag==TextSerializerParams::TypeFlags_StructArray);
 			Algo::CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
 		}
 		EndField(typeFlag);
@@ -82,7 +82,7 @@ public:
 
 	void FieldAssignmentBeginning(StringView name)
 	{
-		INTRA_ASSERT(!name.Empty());
+		INTRA_DEBUG_ASSERT(!name.Empty());
 		Algo::CopyToAdvanceByOne(Lang.LeftFieldNameBeginQuote, Output);
 		Algo::CopyToAdvance(name, Output);
 		Algo::CopyToAdvanceByOne(Lang.LeftFieldNameEndQuote, Output);
@@ -98,7 +98,7 @@ public:
 
 	void FieldAssignmentEnding(StringView name)
 	{
-		INTRA_ASSERT(name!=null);
+		INTRA_DEBUG_ASSERT(name!=null);
 
 		if(Params.UseAssignmentSpaces)
 			Output.Put(' ');
@@ -239,7 +239,7 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 template<typename O> forceinline GenericTextSerializer<O>& operator<<(
 	GenericTextSerializer<O>& serializer, bool v)
 {
-	INTRA_ASSERT(int(v) <= 1 && "Invalid bool value!");
+	INTRA_DEBUG_ASSERT(int(v) <= 1 && "Invalid bool value!");
 	Algo::CopyToAdvanceByOne(serializer.Lang.FalseTrueNames[v!=false], serializer.Output);
 	return serializer;
 }

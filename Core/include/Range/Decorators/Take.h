@@ -52,13 +52,13 @@ template<typename R> struct RTake
 
 
 	forceinline ReturnValueTypeOf<R> First() const
-	{INTRA_ASSERT(!Empty()); return mOriginalRange.First();}
+	{INTRA_DEBUG_ASSERT(!Empty()); return mOriginalRange.First();}
 
 	forceinline void PopFirst()
 	{mOriginalRange.PopFirst(); mLen--;}
 	
 	forceinline ReturnValueTypeOf<R> Last() const
-	{INTRA_ASSERT(!Empty()); return mOriginalRange[mLen-1];}
+	{INTRA_DEBUG_ASSERT(!Empty()); return mOriginalRange[mLen-1];}
 
 	forceinline void PopLast() {mLen--;}
 
@@ -78,8 +78,8 @@ template<typename R> struct RTake
 		HasSlicing<U>::_,
 	SliceTypeOf<U>> operator()(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= mLen);
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= mLen);
 		return mOriginalRange(startIndex, endIndex);
 	}
 

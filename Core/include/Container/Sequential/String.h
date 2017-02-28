@@ -34,7 +34,7 @@ public:
 	GenericString(const Char* str):
 		GenericString(str, (str==null)? 0: Algo::CStringLength(str)) {}
 
-	GenericString(null_t=null) {resetToEmptySsoWithoutFreeing();}
+	forceinline GenericString(null_t=null) {m = {null, 0, SSO_CAPACITY_FIELD_FOR_EMPTY};}
 
 	explicit GenericString(const Char* str, size_t strLength): GenericString(null)
 	{
@@ -75,21 +75,6 @@ public:
 	forceinline GenericStringView<const Char> operator()(
 		size_t startIndex, size_t endIndex) const
 	{return View(startIndex, endIndex);}
-
-	//! Получить подстроку, начиная с кодовой единицы с индексом start и заканчивая end.
-	forceinline GenericStringView<const Char> operator()(
-		Range::RelativeIndex startIndex, Range::RelativeIndex endIndex) const
-	{return View(startIndex, endIndex);}
-
-	//! Получить подстроку, начиная с кодовой единицы с индексом start и до конца.
-	forceinline GenericStringView<const Char> operator()(
-		Range::RelativeIndex startIndex, Range::RelativeIndexEnd) const
-	{return View(startIndex, $);}
-
-	//! Получить подстроку, начиная с кодовой единицы с индексом start и до конца.
-	forceinline GenericStringView<const Char> operator()(
-		size_t startIndex, Range::RelativeIndexEnd) const
-	{return View(startIndex, $);}
 
 
 	//! Получить указатель на C-строку для передачи в различные C API.
@@ -256,7 +241,7 @@ public:
 	{
 		const size_t oldLength = Length();
 		SetLengthUninitialized(newLen);
-		if(newLen>oldLength) Algo::Fill(View(oldLength, $), filler);
+		if(newLen>oldLength) Algo::Fill(View(oldLength, newLen), filler);
 	}
 
 	forceinline void SetCount(size_t newLen, Char filler='\0') {SetLength(newLen, filler);}
@@ -288,27 +273,27 @@ public:
 
 	forceinline Char& operator[](size_t index)
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		return Data()[index];
 	}
 
 	forceinline const Char& operator[](size_t index) const
 	{
-		INTRA_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index<Length());
 		return Data()[index];
 	}
 
 	forceinline bool Empty() const
 	{return IsHeapAllocated()? m.Len==0: emptyShort();}
 
-	forceinline Char& First() {INTRA_ASSERT(!Empty()); return *Data();}
-	forceinline const Char& First() const {INTRA_ASSERT(!Empty()); return *Data();}
-	forceinline Char& Last() {INTRA_ASSERT(!Empty()); return Data()[Length()-1];}
-	forceinline const Char& Last() const {INTRA_ASSERT(!Empty()); return Data()[Length()-1];}
+	forceinline Char& First() {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
+	forceinline const Char& First() const {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
+	forceinline Char& Last() {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
+	forceinline const Char& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
 
 	forceinline void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		if(IsHeapAllocated()) m.Len--;
 		else shortLenDecrement();
 	}
@@ -402,7 +387,7 @@ public:
 	{
 		size_t oldLen = Length();
 		SetLengthUninitialized(oldLen+n);
-		Algo::Fill(View(oldLen, $), c);
+		Algo::Fill(View(oldLen, oldLen+n), c);
 	}
 
 	template<class InputIt> forceinline GenericString& append(InputIt firstIt, InputIt endIt)
@@ -420,45 +405,21 @@ public:
 	forceinline GenericStringView<Char> View()
 	{return {Data(), Length()};}
 	
-	forceinline GenericStringView<Char> View(size_t index, Range::RelativeIndexEnd)
-	{
-		INTRA_ASSERT(index <= Length());
-		return {Data()+index, Data()+Length()};
-	}
-	
 	forceinline GenericStringView<Char> View(size_t startIndex, size_t endIndex)
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Length());
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
-	}
-
-	GenericStringView<Char> View(Range::RelativeIndex startIndex, Range::RelativeIndex endIndex)
-	{
-		const size_t len = Length();
-		return View(startIndex.GetRealIndex(len), endIndex.GetRealIndex(len));
 	}
 
 	forceinline GenericStringView<const Char> View() const
 	{return {Data(), Length()};}
 	
-	forceinline GenericStringView<const Char> View(size_t index, Range::RelativeIndexEnd) const
-	{
-		INTRA_ASSERT(index <= Length());
-		return {Data()+index, Data()+Length()};
-	}
-	
 	forceinline GenericStringView<const Char> View(size_t startIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(startIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Length());
+		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
-	}
-
-	GenericStringView<const Char> View(Range::RelativeIndex startIndex, Range::RelativeIndex endIndex) const
-	{
-		const size_t len = Length();
-		return View(startIndex.GetRealIndex(len), endIndex.GetRealIndex(len));
 	}
 
 	forceinline bool IsHeapAllocated() const {return (m.Capacity & SSO_LONG_BIT_MASK)!=0;}

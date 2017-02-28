@@ -118,7 +118,7 @@ public:
 	//! \return Диапазон, содержащий все элементы списка, идущие после удалённого элемента.
 	BListRange<T> Remove(const_iterator pos)
 	{
-		INTRA_ASSERT(pos.Range.FirstNode!=null);
+		INTRA_DEBUG_ASSERT(pos.Range.FirstNode!=null);
 		pos.Range.FirstNode->Value.~T();
 		Node* next = pos.Range.FirstNode->Next;
 		remove_node(pos.Range.FirstNode);
@@ -301,7 +301,7 @@ private:
 	{
 		size_t nodeSize = sizeof(Node);
 		Node* node = AllocatorRef::Allocate(nodeSize, INTRA_SOURCE_INFO);
-		INTRA_ASSERT(nodeSize==sizeof(Node));
+		INTRA_DEBUG_ASSERT(nodeSize==sizeof(Node));
 		node->Prev = null;
 		node->Next = mRange.FirstNode;
 		if(mRange.FirstNode!=null) mRange.FirstNode->Prev = node;
@@ -329,7 +329,7 @@ private:
 		auto prev = itnode->Prev;
 		size_t nodeSize = sizeof(Node);
 		Node* node = AllocatorRef::Allocate(nodeSize);
-		INTRA_ASSERT(nodeSize==sizeof(Node));
+		INTRA_DEBUG_ASSERT(nodeSize==sizeof(Node));
 		node->Prev = prev;
 		node->Next = itnode;
 		prev->Next = node;

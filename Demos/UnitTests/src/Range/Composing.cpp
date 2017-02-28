@@ -43,11 +43,11 @@ void TestComposedRange(IO::IFormattedWriter& output)
 	INTRA_ASSERT_EQUALS(fibArr, Take(fib, 15));
 	output.PrintLine(fibArr);
 	output.PrintLine(endl, "Вторая половина того же массива задом наперёд: ");
-	INTRA_ASSERT1(Algo::Equals(Retro(fibArr($/2, $)), ArrayRange<const int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(fibArr($/2, $)));
-	output.PrintLine(Retro(fibArr($/2, $)));
+	INTRA_ASSERT1(Algo::Equals(Retro(Drop(fibArr, fibArr.Count()/2)), ArrayRange<const int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(Drop(fibArr, fibArr.Count()/2)));
+	output.PrintLine(Retro(Drop(fibArr, fibArr.Count()/2)));
 
 	//Вставляем в массив 15 чисел Фибонначчи, начиная с 6-го
-	Algo::CopyTo(Take(Drop(fib, 5), 15), fibArr.Insert($));
+	Algo::CopyTo(Take(Drop(fib, 5), 15), LastAppender(fibArr));
 	output.PrintLine(endl, "Добавляем 15 чисел Фибоначчи, начиная с шестого, в конец. Новое содержимое массива: ");
 	output.PrintLine(fibArr);
 

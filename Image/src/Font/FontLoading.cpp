@@ -64,8 +64,12 @@ short FontGetKerning(FontHandle font, int left, int right)
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_FreeType)
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
+
+INTRA_WARNING_POP
 
 namespace Intra {
 
@@ -141,16 +145,12 @@ using Intra::Math::GLSL::min;
 
 struct IUnknown;
 
-#ifdef _MSC_VER
-#pragma warning(push, 0)
-#endif
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 
 #include <olectl.h>
 #include <gdiplus.h>
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+INTRA_WARNING_POP
 
 
 using namespace Gdiplus;

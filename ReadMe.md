@@ -1,6 +1,8 @@
 
 # IntraLib
 
+[![Build Status (master)](https://travis-ci.org/gammaker/Intra.svg?branch=master)](https://travis-ci.org/gammaker/Intra)
+
 ## English description
 
 This repository contains Intra library and its modules:

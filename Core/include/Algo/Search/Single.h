@@ -102,7 +102,7 @@ template<class R, class Ws> forceinline Meta::EnableIf<
 	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	IsAsNonInfiniteForwardRange<Ws>::_ &&
 	Meta::IsConvertible<ValueTypeOfAs<Ws>, ValueTypeOf<R>>::_,
-R&> FindAdvanceAny(R&& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
+R&> FindAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	auto whatsCopy = Range::Forward<Ws>(whats);
 	return FindAdvanceAnyAdvance(range, whatsCopy, ioIndex, oWhatIndex);
@@ -114,7 +114,7 @@ template<class R, typename X> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	!Meta::IsCallable<X, ValueTypeOf<R>>::_ &&
 	Meta::HasOpEquals<ReturnValueTypeOf<R>, const X&>::_,
-size_t> CountAdvance(R&& range, const X& x)
+size_t> CountAdvance(R& range, const X& x)
 {
 	size_t result=0;
 	while(!range.Empty())
@@ -130,7 +130,7 @@ size_t> CountAdvance(R&& range, const X& x)
 template<class R, typename P> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Meta::IsCallable<P, ValueTypeOf<R>>::_,
-size_t> CountAdvance(R&& range, P pred)
+size_t> CountAdvance(R& range, P pred)
 {
 	size_t result=0;
 	while(!range.Empty())
@@ -139,6 +139,17 @@ size_t> CountAdvance(R&& range, P pred)
 		range.PopFirst();
 	}
 	return result;
+}
+
+//! Подсчитать количество элементов, равных x или для которых выполнен предикат x.
+template<class R, typename X> Meta::EnableIf<
+	IsAsConsumableRange<R>::_ &&
+	(Meta::IsCallable<X, ValueTypeOf<R>>::_ ||
+		Meta::HasOpEquals<ReturnValueTypeOf<R>, const X&>::_),
+size_t> Count(R&& range, const X& x)
+{
+	auto rangeCopy = Range::Forward<R>(range);
+	return CountAdvance(rangeCopy, x);
 }
 
 

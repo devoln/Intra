@@ -51,7 +51,7 @@ void FreeList::Free(void* ptr)
 AnyPtr APool::Allocate(size_t& bytes, SourceInfo sourceInfo)
 {
 	(void)sourceInfo;
-	INTRA_ASSERT(bytes <= mElementSize);
+	INTRA_DEBUG_ASSERT(bytes <= mElementSize);
 	if(bytes>mElementSize) return null;
 	bytes = mElementSize;
 	return mList.Allocate();
@@ -60,7 +60,7 @@ AnyPtr APool::Allocate(size_t& bytes, SourceInfo sourceInfo)
 void APool::Free(void* ptr, size_t size)
 {
 	(void)size;
-	INTRA_ASSERT(size == mElementSize);
+	INTRA_DEBUG_ASSERT(size == mElementSize);
 	mList.Free(ptr);
 }
 

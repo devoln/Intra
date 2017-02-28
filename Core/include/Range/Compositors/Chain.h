@@ -93,13 +93,13 @@ public:
 
 	forceinline ReturnValueType First() const
 	{
-		INTRA_ASSERT(!mRange0.Empty());
+		INTRA_DEBUG_ASSERT(!mRange0.Empty());
 		return mRange0.First();
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!mRange0.Empty());
+		INTRA_DEBUG_ASSERT(!mRange0.Empty());
 		mRange0.PopFirst();
 	}
 

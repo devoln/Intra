@@ -43,8 +43,8 @@ HtmlWriter logConsoleWriter(&Console);
 ConsoleTextWriter logConsoleWriter(&Console);
 #endif
 
-MultipleDocumentWriter logger;
-MultipleDocumentWriter emptyLogger;
+CompositeFormattedWriter logger;
+CompositeFormattedWriter emptyLogger;
 
 void InitLogSystem(int argc, const char* argv[])
 {

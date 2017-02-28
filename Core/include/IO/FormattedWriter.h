@@ -89,7 +89,7 @@ public:
 	}
 
 	void EndSpoiler() override
-	{INTRA_ASSERT(mSpoilerNesting!=0); mSpoilerNesting--;}
+	{INTRA_DEBUG_ASSERT(mSpoilerNesting!=0); mSpoilerNesting--;}
 	
 	void EndAllSpoilers() override
 	{while(mSpoilerNesting!=0) EndSpoiler();}

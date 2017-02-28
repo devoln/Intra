@@ -267,7 +267,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 	}
 	else if(format==2)
 	{
-		INTRA_ASSERT(!"@TODO: high-byte mapping for japanese/chinese/korean");
+		INTRA_DEBUG_ASSERT(!"@TODO: high-byte mapping for japanese/chinese/korean");
 		return 0;
 	}
 	else if(format==4)
@@ -307,7 +307,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 
 		ushort item = ushort((search-endCount)/2);
 
-		INTRA_ASSERT(unicode_codepoint<=ttUSHORT(data+endCount+2*item));
+		INTRA_DEBUG_ASSERT(unicode_codepoint<=ttUSHORT(data+endCount+2*item));
 		start=ttUSHORT(data+index_map+14+segcount*2+2+2*item);
 		end=ttUSHORT(data+index_map+14+2+2*item);
 		if(unicode_codepoint<start) return 0;
@@ -340,7 +340,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
       return 0; // not found
    }
    // @TODO
-   INTRA_ASSERT(0);
+   INTRA_DEBUG_ASSERT(0);
    return 0;
 }
 
@@ -557,7 +557,7 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 			else
 			{
 				// @TODO handle matching point
-				INTRA_ASSERT(0);
+				INTRA_DEBUG_ASSERT(0);
 			}
 			if(flags & (1<<3))
 			{ // WE_HAVE_A_SCALE
@@ -609,7 +609,7 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 	else if(numberOfContours<0)
 	{
 		// @TODO other compound variations?
-		INTRA_ASSERT(0);
+		INTRA_DEBUG_ASSERT(0);
 	}
 	else
 	{
@@ -705,14 +705,14 @@ void stbtt_GetFontVMetrics(const stbtt_fontinfo* info, short* ascent, short* des
 
 void stbtt_GetFontBoundingBox(const stbtt_fontinfo* info, SVec2* pos0, SVec2* pos1)
 {
-   *pos0=SVec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
-   *pos1=SVec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
+   *pos0 = SVec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
+   *pos1 = SVec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
 }
 
 float stbtt_ScaleForPixelHeight(const stbtt_fontinfo* info, float height)
 {
    int fheight=ttSHORT(info->data+info->hhea+4)-ttSHORT(info->data+info->hhea+6);
-   return (float)height/fheight;
+   return float(height)/fheight;
 }
 
 float stbtt_ScaleForMappingEmToPixels(const stbtt_fontinfo* info, float pixels)
@@ -779,7 +779,7 @@ static stbtt__active_edge* new_active(stbtt__edge* e, int off_x, float start_poi
 
 	auto z=new stbtt__active_edge; // TODO: make a pool of these!!!
 	float dxdy=(e->pos1.x-e->pos0.x)/(e->pos1.y-e->pos0.y);
-	INTRA_ASSERT(e->pos0.y<=start_point);
+	INTRA_DEBUG_ASSERT(e->pos0.y<=start_point);
 	z->dx=(int)(FIX * dxdy);
 	z->x=(int)(FIX*(e->pos0.x+dxdy*(start_point-e->pos0.y)));
 	z->x-=off_x*FIX;
@@ -866,7 +866,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
             if(z->ey<=scan_y)
             {
                *step=z->next; // delete from list
-               INTRA_ASSERT(z->valid);
+               INTRA_DEBUG_ASSERT(z->valid);
                z->valid=0;
                GlobalHeap.Free(z);
             }

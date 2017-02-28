@@ -37,7 +37,7 @@ public:
 
 	R operator()(Args... a) const
 	{
-		INTRA_ASSERT(mCallback!=null);
+		INTRA_DEBUG_ASSERT(mCallback!=null);
 		return mCallback->Call(Meta::Forward<Args>(a)...);
 	}
 

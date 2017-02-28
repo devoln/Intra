@@ -122,14 +122,14 @@ public:
 	//! Добавить новый элемент в начало массива копированием или перемещением value.
 	forceinline T& AddFirst(T&& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
+		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoLeftSpace()) CheckSpace(0, 1);
 		return *new(--range.Begin) T(Meta::Move(value));
 	}
 
 	forceinline T& AddFirst(const T& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
+		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoLeftSpace()) CheckSpace(0, 1);
 		return *new(--range.Begin) T(value);
 	}
@@ -150,7 +150,7 @@ public:
 	> AddFirstRange(R&& values)
 	{
 		auto valueRange = Range::Forward<R>(values);
-		//INTRA_ASSERT(!range.Overlaps((ArrayRange<const byte>&)values));
+		//INTRA_DEBUG_ASSERT(!range.Overlaps((ArrayRange<const byte>&)values));
 		const size_t valuesCount = Range::Count(values);
 		if(LeftSpace()<valuesCount) CheckSpace(0, valuesCount);
 		for(T* dst = (range.Begin -= valuesCount); !valueRange.Empty(); valueRange.PopFirst())
@@ -172,7 +172,7 @@ public:
 	//! Добавить новый элемент в конец массива перемещением value.
 	forceinline T& AddLast(T&& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
+		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoRightSpace()) CheckSpace(1, 0);
 		return *new(range.End++) T(Meta::Move(value));
 	}
@@ -180,7 +180,7 @@ public:
 	//! Добавить новый элемент в конец массива копированием value.
 	forceinline T& AddLast(const T& value)
 	{
-		INTRA_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
+		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
 		if(NoRightSpace()) CheckSpace(1, 0);
 		return *new(range.End++) T(value);
 	}
@@ -201,7 +201,7 @@ public:
 	> AddLastRange(R&& values)
 	{
 		auto valueRange = Range::Forward<R>(values);
-		//INTRA_ASSERT(!data.Overlaps((ArrayRange<const byte>&)values));
+		//INTRA_DEBUG_ASSERT(!data.Overlaps((ArrayRange<const byte>&)values));
 		const size_t valuesCount = Range::Count(valueRange);
 		if(RightSpace()<valuesCount) CheckSpace(valuesCount, 0);
 		for(; !valueRange.Empty(); valueRange.PopFirst())
@@ -246,7 +246,7 @@ public:
 	template<typename U> void Insert(size_t pos, ArrayRange<const U> values)
 	{
 		if(values.Empty()) return;
-		INTRA_ASSERT(!range.Overlaps(values));
+		INTRA_DEBUG_ASSERT(!range.Overlaps(values));
 		const size_t valuesCount = values.Count();
 
 		//Если не хватает места, перераспределяем память и копируем элементы
@@ -281,7 +281,7 @@ public:
 
 	template<typename U> forceinline void Insert(const T* it, ArrayRange<const U> values)
 	{
-		INTRA_ASSERT(range.ContainsAddress(it));
+		INTRA_DEBUG_ASSERT(range.ContainsAddress(it));
 		Insert(it-range.Begin, values);
 	}
 
@@ -289,14 +289,8 @@ public:
 
 	forceinline void Insert(const T* it, const T& value)
 	{
-		INTRA_ASSERT(range.ContainsAddress(it));
+		INTRA_DEBUG_ASSERT(range.ContainsAddress(it));
 		Insert(it-range.Begin, value);
-	}
-
-
-	template<typename U> forceinline void Insert(Range::RelativeIndex pos, ArrayRange<const U> values)
-	{
-		Insert(pos.GetRealIndex(Count()), values);
 	}
 
 
@@ -370,7 +364,12 @@ public:
 	forceinline void CheckSpace(size_t rightSpace, size_t leftSpace=0) {Reserve(Count()+rightSpace, leftSpace);}
 
 	//! Удалить все элементы из массива, не освобождая занятую ими память.
-	forceinline void Clear() {Memory::Destruct<T>(range); range.End=range.Begin;}
+	forceinline void Clear()
+	{
+		if(Empty()) return;
+		Memory::Destruct<T>(range);
+		range.End = range.Begin;
+	}
 
 	//! Возвращает, является ли массив пустым.
 	forceinline bool Empty() const {return range.Empty();}
@@ -395,12 +394,9 @@ public:
 	//! Таким образом адреса элементов изменяются и указатели станут указывать либо на другой элемент массива, либо на неинициализированную область массива.
 
 	//! Удалить один элемент по индексу.
-	forceinline void Remove(Range::RelativeIndex index) {Remove(index.GetRealIndex(Count()));}
-
-	//! Удалить один элемент по индексу.
 	void Remove(size_t index)
 	{
-		INTRA_ASSERT(index<Count());
+		INTRA_DEBUG_ASSERT(index<Count());
 		range[index].~T();
 
 		// Соотношение 1/4 вместо 1/2 было выбрано, потому что перемещение перекрывающихся
@@ -420,21 +416,15 @@ public:
 	//! Удалить один элемент по указателю.
 	forceinline void Remove(T* ptr)
 	{
-		INTRA_ASSERT(range.ContainsAddress(ptr));
+		INTRA_DEBUG_ASSERT(range.ContainsAddress(ptr));
 		Remove(ptr-range.Begin);
 	}
 
-	//!@{
 	//! Удаление всех элементов в диапазоне [removeStart; removeEnd)
-	void Remove(Range::RelativeIndex removeStart, Range::RelativeIndex removeEnd)
-	{
-		Remove(removeStart.GetRealIndex(Count()), removeEnd.GetRealIndex(Count()));
-	}
-
 	void Remove(size_t removeStart, size_t removeEnd)
 	{
-		INTRA_ASSERT(removeStart <= removeEnd);
-		INTRA_ASSERT(removeEnd <= Count());
+		INTRA_DEBUG_ASSERT(removeStart <= removeEnd);
+		INTRA_DEBUG_ASSERT(removeEnd <= Count());
 		if(removeEnd==removeStart) return;
 		const size_t elementsToRemove = removeEnd-removeStart;
 		Memory::Destruct<T>(range(removeStart, removeEnd));
@@ -467,7 +457,6 @@ public:
 			range.Begin += elementsToRemove;
 		}
 	}
-	//!@}
 
 	//! Удаление первого найденного элемента, равного value
 	forceinline void FindAndRemove(const T& value)
@@ -487,18 +476,16 @@ public:
 	}
 
 	//! Удалить первый элемент.
-	forceinline void RemoveFirst() {INTRA_ASSERT(!Empty()); (*range.Begin++).~T();}
+	forceinline void RemoveFirst() {INTRA_DEBUG_ASSERT(!Empty()); (*range.Begin++).~T();}
 
 	//! Удалить последний элемент.
-	forceinline void RemoveLast() {INTRA_ASSERT(!Empty()); (*--range.End).~T();}
+	forceinline void RemoveLast() {INTRA_DEBUG_ASSERT(!Empty()); (*--range.End).~T();}
 
 	//!@{
 	//! Быстрое удаление путём переноса последнего элемента (без смещения).
-	forceinline void RemoveUnordered(Range::RelativeIndex index) {RemoveUnordered(index.GetRealIndex(Count()));}
-	
 	forceinline void RemoveUnordered(size_t index)
 	{
-		INTRA_ASSERT(index<Count());
+		INTRA_DEBUG_ASSERT(index<Count());
 		if(index<Count()-1) range[index] = Meta::Move(*--range.End);
 		RemoveLast();
 	}
@@ -517,15 +504,13 @@ public:
 
 
 
-	forceinline T& operator[](size_t index) {INTRA_ASSERT(index<Count()); return range.Begin[index];}
-	forceinline const T& operator[](size_t index) const {INTRA_ASSERT(index<Count()); return range.Begin[index];}
-	forceinline T& operator[](Range::RelativeIndex index) {return operator[](index.GetRealIndex(Count()));}
-	forceinline const T& operator[](Range::RelativeIndex index) const {return operator[](index.GetRealIndex(Count()));}
+	forceinline T& operator[](size_t index) {INTRA_DEBUG_ASSERT(index<Count()); return range.Begin[index];}
+	forceinline const T& operator[](size_t index) const {INTRA_DEBUG_ASSERT(index<Count()); return range.Begin[index];}
 
-	forceinline T& Last() {INTRA_ASSERT(!Empty()); return range.Last();}
-	forceinline const T& Last() const {INTRA_ASSERT(!Empty()); return range.Last();}
-	forceinline T& First() {INTRA_ASSERT(!Empty()); return range.First();}
-	forceinline const T& First() const {INTRA_ASSERT(!Empty()); return range.First();}
+	forceinline T& Last() {INTRA_DEBUG_ASSERT(!Empty()); return range.Last();}
+	forceinline const T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return range.Last();}
+	forceinline T& First() {INTRA_DEBUG_ASSERT(!Empty()); return range.First();}
+	forceinline const T& First() const {INTRA_DEBUG_ASSERT(!Empty()); return range.First();}
 
 	forceinline T* Data() {return begin();}
 	forceinline const T* Data() const {return begin();}
@@ -601,31 +586,17 @@ public:
 
 	forceinline ArrayRange<T> operator()(size_t firstIndex, size_t endIndex)
 	{
-		INTRA_ASSERT(firstIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Count());
+		INTRA_DEBUG_ASSERT(firstIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Count());
 		return range(firstIndex, endIndex);
 	}
 
 	forceinline ArrayRange<const T> operator()(size_t firstIndex, size_t endIndex) const
 	{
-		INTRA_ASSERT(firstIndex <= endIndex);
-		INTRA_ASSERT(endIndex <= Count());
+		INTRA_DEBUG_ASSERT(firstIndex <= endIndex);
+		INTRA_DEBUG_ASSERT(endIndex <= Count());
 		return AsConstRange()(firstIndex, endIndex);
 	}
-
-	forceinline ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex)
-	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
-
-	forceinline ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndex endIndex) const
-	{return range(firstIndex.GetRealIndex(Count()), endIndex.GetRealIndex(Count()));}
-
-	forceinline ArrayRange<T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd)
-	{return range(firstIndex.GetRealIndex(Count()), $);}
-
-	forceinline ArrayRange<const T> operator()(Range::RelativeIndex firstIndex, Range::RelativeIndexEnd) const
-	{return range(firstIndex.GetRealIndex(Count()), $);}
-
-	forceinline Range::RLastAppender<Array> Insert(Range::RelativeIndexEnd) {return {*this};}
 
 
 	//! @defgroup Array_STL_Interface STL-подобный интерфейс для Array

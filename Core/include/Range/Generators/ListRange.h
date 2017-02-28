@@ -34,7 +34,7 @@ template<typename T, typename NodeType> struct FListRange
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		FirstNode = FirstNode->NextListNode();
 	}
 
@@ -42,7 +42,7 @@ template<typename T, typename NodeType> struct FListRange
 		Meta::TypeEquals<U, Node>::_,
 	T&> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return *FirstNode;
 	}
 
@@ -50,7 +50,7 @@ template<typename T, typename NodeType> struct FListRange
 		!Meta::TypeEquals<U, Node>::_,
 	T&> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return FirstNode->Value;
 	}
 
@@ -90,19 +90,19 @@ template<typename T, typename NodeType> struct BListRange
 
 	forceinline bool Empty() const
 	{
-		INTRA_ASSERT((FirstNode==null) == (LastNode==null));
+		INTRA_DEBUG_ASSERT((FirstNode==null) == (LastNode==null));
 		return FirstNode==null || LastNode==null;
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		FirstNode = FirstNode->NextListNode();
 	}
 
 	forceinline void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		LastNode = LastNode->PrevListNode();
 	}
 
@@ -110,7 +110,7 @@ template<typename T, typename NodeType> struct BListRange
 		Meta::TypeEquals<U, Node>::_,
 	T&> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return *FirstNode;
 	}
 
@@ -118,7 +118,7 @@ template<typename T, typename NodeType> struct BListRange
 		!Meta::TypeEquals<U, Node>::_,
 	T&> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return FirstNode->Value;
 	}
 
@@ -126,7 +126,7 @@ template<typename T, typename NodeType> struct BListRange
 		Meta::TypeEquals<U, Node>::_,
 	T&> Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return *LastNode;
 	}
 
@@ -134,7 +134,7 @@ template<typename T, typename NodeType> struct BListRange
 		!Meta::TypeEquals<U, Node>::_,
 	T&> Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return LastNode->Value;
 	}
 

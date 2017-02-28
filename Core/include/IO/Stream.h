@@ -137,13 +137,13 @@ public:
 
 		forceinline StringView First() const
 		{
-			INTRA_ASSERT(!Empty());
+			INTRA_DEBUG_ASSERT(!Empty());
 			return CurLine;
 		}
 
 		void PopFirst()
 		{
-			INTRA_ASSERT(!Empty());
+			INTRA_DEBUG_ASSERT(!Empty());
 			CurLine = MyStream->ReadLine(ConsumeCRLF);
 			if(UseTerminator && CurLine==Terminator) mIsEmpty=true;
 		}
@@ -153,7 +153,7 @@ public:
 		forceinline bool operator==(const ByLineResult& rhs) const
 		{
 			if(mIsEmpty && rhs.mIsEmpty) return true;
-			INTRA_ASSERT(MyStream!=rhs.MyStream || CurLine==rhs.CurLine);
+			INTRA_DEBUG_ASSERT(MyStream!=rhs.MyStream || CurLine==rhs.CurLine);
 			return MyStream==rhs.MyStream;
 		}
 
@@ -255,7 +255,7 @@ public:
 	void Skip(ulong64 bytes)
 	{
 		auto curPos = GetPos();
-		INTRA_ASSERT(curPos != Meta::NumericLimits<ulong64>::Max());
+		INTRA_DEBUG_ASSERT(curPos != Meta::NumericLimits<ulong64>::Max());
 		SetPos(curPos+bytes);
 	}
 
@@ -312,7 +312,7 @@ public:
 	size_t ReadData(void* dst, size_t bytes) override final
 	{
 		const auto bytesToRead = Math::Min(bytes, rest.Length());
-		INTRA_ASSERT(bytesToRead<=bytes);
+		INTRA_DEBUG_ASSERT(bytesToRead<=bytes);
 		C::memcpy(dst, rest.Begin, bytesToRead);
 		rest.Begin+=bytesToRead;
 		return bytesToRead;
@@ -321,9 +321,9 @@ public:
 	void UnreadData(const void* src, size_t bytes) override final
 	{
 		(void)src;
-		INTRA_ASSERT(C::memcmp(rest.Begin-bytes, src, bytes)==0);
+		INTRA_DEBUG_ASSERT(C::memcmp(rest.Begin-bytes, src, bytes)==0);
 		rest.Begin-=bytes;
-		INTRA_ASSERT(rest.Begin>=data);
+		INTRA_DEBUG_ASSERT(rest.Begin>=data);
 	}
 	bool EndOfStream() const override {return rest.Empty();}
 

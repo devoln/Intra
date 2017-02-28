@@ -103,12 +103,12 @@ void Variable::ConvertType(Variable& dst, ValueType srcType, ValueType dstType) 
 
 
 	case ValueType::Mat3:
-		INTRA_ASSERT(dstType==ValueType::Mat4);
+		INTRA_DEBUG_ASSERT(dstType==ValueType::Mat4);
 		r.AsMat4 = Mat4(AsMat3);
 		return;
 
 	case ValueType::Mat4:
-		INTRA_ASSERT(dstType==ValueType::Mat3);
+		INTRA_DEBUG_ASSERT(dstType==ValueType::Mat3);
 		r.AsMat3 = Mat3(AsMat4);
 		return;
 

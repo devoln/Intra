@@ -16,8 +16,8 @@ template<typename R> struct InputIterator
 	forceinline InputIterator(null_t=null): mRange(null) {}
 	forceinline InputIterator(R& range): mRange(&range) {}
 
-	forceinline InputIterator& operator++() {INTRA_ASSERT(mRange!=null); mRange->PopFirst(); return *this;}
-	forceinline return_value_type operator*() const {INTRA_ASSERT(mRange!=null); return mRange->First();}
+	forceinline InputIterator& operator++() {INTRA_DEBUG_ASSERT(mRange!=null); mRange->PopFirst(); return *this;}
+	forceinline return_value_type operator*() const {INTRA_DEBUG_ASSERT(mRange!=null); return mRange->First();}
 
 	forceinline bool operator==(const InputIterator& rhs) const
 	{

@@ -30,8 +30,8 @@ template<typename T> struct UniqueRef
 
 	T* Ptr() const {return mPtr;}
 
-	forceinline T& operator*() const {INTRA_ASSERT(mPtr!=null); return *mPtr;}
-	forceinline T* operator->() const {INTRA_ASSERT(mPtr!=null); return mPtr;}
+	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mPtr!=null); return *mPtr;}
+	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mPtr!=null); return mPtr;}
 
 	forceinline bool operator==(null_t) const {return mPtr==null;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}

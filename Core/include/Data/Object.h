@@ -111,12 +111,12 @@ public:
 	Object& operator=(Object&& rhs);
 };
 
-template<typename O>
+/*template<typename O>
 GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, const IConstObject& src)
 {
 	//serializer.
 	return serializer;
-}
+}*/
 
 
 #if INTRA_DISABLED

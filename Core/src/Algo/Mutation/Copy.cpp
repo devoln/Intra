@@ -6,7 +6,7 @@ namespace Intra { namespace Algo {
 
 void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst)
 {
-	INTRA_ASSERT(dst.Length()>=src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 #if(INTRA_SIMD_SUPPORT>=INTRA_SIMD_SSE && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
 	while(src.Begin<src.End-3)
 	{
@@ -26,7 +26,7 @@ void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst)
 #endif
 	while(src.Begin<src.End)
 	{
-		//INTRA_ASSERT(*src>=-32768.0f && *src<=32767.0f);
+		//INTRA_DEBUG_ASSERT(*src>=-32768.0f && *src<=32767.0f);
 		*dst.Begin++ = short(*src.Begin++);
 	}
 }

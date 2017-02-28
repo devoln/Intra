@@ -31,8 +31,8 @@ AnyPtr AStack::Allocate(size_t bytes, SourceInfo sourceInfo)
 void AStack::Free(void* ptr, size_t size)
 {
 	(void)size;
-	INTRA_ASSERT(ptr!=null);
-	INTRA_ASSERT(reinterpret_cast<byte*>(ptr) < mRest.Begin);
+	INTRA_DEBUG_ASSERT(ptr!=null);
+	INTRA_DEBUG_ASSERT(reinterpret_cast<byte*>(ptr) < mRest.Begin);
 
 	// grab the allocation offset from the 4 bytes right before the given pointer
 	const uint allocationOffset = *--reinterpret_cast<uint*&>(ptr);

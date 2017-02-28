@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(IntraAudio)
 
-include(../CMakeCommon.txt)
+include(../Configurations.cmake)
 
 include_directories(../Core/include)
 include_directories(include)

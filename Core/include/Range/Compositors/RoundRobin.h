@@ -74,13 +74,13 @@ template<typename R0> struct RRoundRobin<R0>
 
 	forceinline ReturnValueTypeOf<R0> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return mRange0.First();
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!mRange0.Empty());
+		INTRA_DEBUG_ASSERT(!mRange0.Empty());
 		mCounter++;
 		mRange0.PopFirst();
 		if(mRange0.Empty())

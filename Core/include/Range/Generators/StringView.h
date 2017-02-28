@@ -50,55 +50,55 @@ template<typename Char> struct GenericStringView
 	
 	forceinline size_t Length() const
 	{
-		INTRA_ASSERT(mEnd >= mStart);
+		INTRA_DEBUG_ASSERT(mEnd >= mStart);
 		return size_t(mEnd-mStart);
 	}
 
 	forceinline Char operator[](size_t n) const
 	{
-		INTRA_ASSERT(n < Length());
+		INTRA_DEBUG_ASSERT(n < Length());
 		return mStart[n];
 	}
 
 	forceinline bool Empty() const
 	{
-		INTRA_ASSERT(mEnd >= mStart);
+		INTRA_DEBUG_ASSERT(mEnd >= mStart);
 		return mStart>=mEnd;
 	}
 
 	forceinline Char& First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return *mStart;
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		mStart++;
 	}
 
 	forceinline Char& Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return *(mEnd-1);
 	}
 
 	forceinline void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		mEnd--;
 	}
 
 	forceinline void PopFirstExactly(size_t elementsToPop)
 	{
-		INTRA_ASSERT(elementsToPop <= Length());
+		INTRA_DEBUG_ASSERT(elementsToPop <= Length());
 		mStart += elementsToPop;
 	}
 
 	forceinline void PopLastExactly(size_t elementsToPop)
 	{
-		INTRA_ASSERT(elementsToPop <= Length());
+		INTRA_DEBUG_ASSERT(elementsToPop <= Length());
 		mEnd -= elementsToPop;
 	}
 
@@ -116,7 +116,7 @@ template<typename Char> struct GenericStringView
 		return count;
 	}
 
-	forceinline void Put(Char c) {INTRA_ASSERT(!Empty()); *mStart++ = c;}
+	forceinline void Put(Char c) {INTRA_DEBUG_ASSERT(!Empty()); *mStart++ = c;}
 
 	//Сравнение строк
 	bool operator==(const Char* rhs) const
@@ -159,15 +159,6 @@ template<typename Char> struct GenericStringView
 	//Получить подстроку, начиная с кодовой единицы с индексом start и заканчивая end
 	constexpr forceinline GenericStringView operator()(size_t startIndex, size_t endIndex) const
 	{return GenericStringView(mStart+startIndex, mStart+endIndex);}
-
-	forceinline GenericStringView operator()(RelativeIndex firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex.GetRealIndex(Length()));}
-
-	forceinline GenericStringView operator()(size_t firstIndex, RelativeIndex endIndex) const
-	{return operator()(firstIndex, endIndex.GetRealIndex(Length()));}
-
-	forceinline GenericStringView operator()(RelativeIndex firstIndex, size_t endIndex) const
-	{return operator()(firstIndex.GetRealIndex(Length()), endIndex);}
 
 	forceinline constexpr GenericStringView TakeNone() const {return {mStart, mStart};}
 

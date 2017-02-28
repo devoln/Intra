@@ -34,25 +34,25 @@ template<typename ValueRangeType, typename IndexRangeType> struct RIndexed
 
 	forceinline ReturnValueTypeOf<ValueRangeType> First() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return ValueRange[IndexRange.First()];
 	}
 
 	forceinline void PopFirst()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		IndexRange.PopFirst();
 	}
 
 	forceinline ReturnValueTypeOf<ValueRangeType> Last() const
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		return ValueRange[IndexRange.Last()];
 	}
 
 	forceinline void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		IndexRange.PopLast();
 	}
 

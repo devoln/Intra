@@ -33,20 +33,20 @@ public:
 
 		forceinline Meta::Pair<const K&, V&> operator*() const
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
 		}
 
 		forceinline iterator& operator++()
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			mIndex++;
 			return *this;
 		}
 
 		forceinline iterator operator++(int)
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			iterator result = *this;
 			mIndex++;
 			return result;
@@ -54,14 +54,14 @@ public:
 
 		forceinline iterator& operator--()
 		{
-			INTRA_ASSERT(mIndex > 0);
+			INTRA_DEBUG_ASSERT(mIndex > 0);
 			mIndex--;
 			return *this;
 		}
 
 		forceinline iterator operator--(int)
 		{
-			INTRA_ASSERT(mIndex > 0);
+			INTRA_DEBUG_ASSERT(mIndex > 0);
 			iterator result = *this;
 			mIndex++;
 			return result;
@@ -81,20 +81,20 @@ public:
 	{
 		forceinline const Meta::Pair<const K&, V&> operator*() const
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
 		}
 
 		forceinline const_iterator& operator++()
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			mIndex++;
 			return *this;
 
 		}
 		forceinline const_iterator operator++(int)
 		{
-			INTRA_ASSERT(mIndex < mMymap->Count());
+			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			const_iterator result = *this;
 			mIndex++;
 			return result;
@@ -102,14 +102,14 @@ public:
 
 		forceinline const_iterator& operator--()
 		{
-			INTRA_ASSERT(mIndex > 0);
+			INTRA_DEBUG_ASSERT(mIndex > 0);
 			mIndex--;
 			return *this;
 		}
 
 		forceinline const_iterator operator--(int)
 		{
-			INTRA_ASSERT(mIndex > 0);
+			INTRA_DEBUG_ASSERT(mIndex > 0);
 			const_iterator result = *this;
 			mIndex++;
 			return result;
@@ -139,7 +139,7 @@ public:
 	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V> valueRange):
 		mKeys(), mValues()
 	{
-		INTRA_ASSERT(keyRange.Length()==valueRange.Length());
+		INTRA_DEBUG_ASSERT(keyRange.Length()==valueRange.Length());
 		Reserve(keyRange.Length());
 		for(size_t i=0; i<keyRange.Length(); i++)
 			Insert({keyRange[i], valueRange[i]});
@@ -148,7 +148,7 @@ public:
 	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V* const> valuePtrRange):
 		mKeys(), mValues()
 	{
-		INTRA_ASSERT(keyRange.Length()==valuePtrRange.Length());
+		INTRA_DEBUG_ASSERT(keyRange.Length()==valuePtrRange.Length());
 		Reserve(keyRange.Length());
 		for(size_t i=0; i<keyRange.Length(); i++)
 			Insert(keyRange[i], *valuePtrRange[i]);
@@ -157,7 +157,7 @@ public:
 	LinearMap(ArrayRange<const K> keyRange, ArrayRange<V* const> valuePtrRange):
 		mKeys(), mValues()
 	{
-		INTRA_ASSERT(keyRange.Count()==valuePtrRange.Count());
+		INTRA_DEBUG_ASSERT(keyRange.Count()==valuePtrRange.Count());
 		Reserve(keyRange.Count());
 		for(size_t i=0; i<keyRange.Count(); i++)
 			Insert(keyRange[i], *valuePtrRange[i]);
@@ -221,28 +221,28 @@ public:
 	//! Вставка нового элемента за постоянное время O(1). Элемент с таким ключом не должен существовать!
 	void InsertNew(const Pair& p)
 	{
-		INTRA_ASSERT(!KeyExists(p.key));
+		INTRA_DEBUG_ASSERT(!KeyExists(p.key));
 		mKeys.AddLast(p.key);
 		return mValues.AddLast(p.value);
 	}
 
 	V& InsertNew(const K& key, V&& value)
 	{
-		INTRA_ASSERT(!KeyExists(key));
+		INTRA_DEBUG_ASSERT(!KeyExists(key));
 		mKeys.AddLast(key);
 		return mValues.AddLast(Meta::Move(value));
 	}
 
 	V& InsertNew(const K& key)
 	{
-		INTRA_ASSERT(!KeyExists(key));
+		INTRA_DEBUG_ASSERT(!KeyExists(key));
 		mKeys.AddLast(key);
 		return mValues.AddLast();
 	}
 
 	V& InsertNew(const K& key, const V& value)
 	{
-		INTRA_ASSERT(!KeyExists(key));
+		INTRA_DEBUG_ASSERT(!KeyExists(key));
 		mKeys.AddLast(key);
 		return mValues.AddLast(value);
 	}
@@ -298,7 +298,7 @@ public:
 	void Rename(const K& key, const K& newKey)
 	{
 		if(key==newKey) return;
-		INTRA_ASSERT(!Algo::Contains(mKeys, newKey));
+		INTRA_DEBUG_ASSERT(!Algo::Contains(mKeys, newKey));
 		auto i = FindIndex(key);
 		if(i==Count()) return;
 		mKeys[i] = newKey;

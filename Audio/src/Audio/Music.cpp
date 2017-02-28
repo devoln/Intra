@@ -43,7 +43,7 @@ MusicNote MusicTrack::operator[](size_t index) const
 
 AudioBuffer MusicTrack::GetSamples(uint sampleRate) const
 {
-	INTRA_ASSERT(Instrument!=null);
+	INTRA_DEBUG_ASSERT(Instrument!=null);
 	const auto duration = Duration();
 	AudioBuffer result(size_t(duration*sampleRate), sampleRate);
 	if(result.Samples==null) return result;
@@ -53,7 +53,7 @@ AudioBuffer MusicTrack::GetSamples(uint sampleRate) const
 	{
 		samplePos += uint(GetNoteTimeOffset(i)*sampleRate);
 		if(Notes[i].Note.IsPause()) continue;
-		Instrument->GetNoteSamples(result.Samples(samplePos, $),
+		Instrument->GetNoteSamples(Range::Drop(result.Samples, samplePos),
 			operator[](i), Tempo, Volume*Notes[i].Volume, sampleRate);
 	}
 	return result;

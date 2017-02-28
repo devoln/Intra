@@ -76,7 +76,7 @@ template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<To>::_ && Meta::IsIntegralType<From>::_
 > CastToNormalized(ArrayRange<To> dst, ArrayRange<const From> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.First() = To(src.First()) / To(Meta::NumericLimits<From>::Max());
@@ -91,7 +91,7 @@ template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<From>::_ && Meta::IsIntegralType<To>::_
 > CastFromNormalized(ArrayRange<To> dst, ArrayRange<const From> src)
 {
-	INTRA_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
 	{
 		dst.First() = To(src.First() * Meta::NumericLimits<From>::Max());

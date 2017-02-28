@@ -2,6 +2,8 @@
 
 #include "Platform/CppWarnings.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Range/Concepts.h"
+#include "Range/AsRange.h"
 
 namespace Intra { namespace Algo {
 
@@ -9,7 +11,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> T Minimum(ArrayRange<const T> arr)
 {
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
 	arr.PopFirst();
 	while(!arr.Empty())
@@ -22,7 +24,7 @@ template<typename T> T Minimum(ArrayRange<const T> arr)
 
 template<typename T> T Maximum(ArrayRange<const T> arr)
 {
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
 	arr.PopFirst();
 	while(!arr.Empty())
@@ -46,7 +48,7 @@ template<typename T> void MiniMax(ArrayRange<const T> arr, T* oMinimum, T* oMaxi
 		return;
 	}
 
-	INTRA_ASSERT(!arr.Empty());
+	INTRA_DEBUG_ASSERT(!arr.Empty());
 	*oMaximum = *oMinimum = arr.First();
 	arr.PopFirst();
 
@@ -78,22 +80,25 @@ S> ReduceAdvance(R&& range, const F& func, const S& seed)
 }
 
 template<typename R, typename F> Meta::EnableIf<
-	Range::IsInputRange<R>::_ && !Meta::IsConst<R>::_,
-Meta::ResultOf<F, Range::ValueTypeOf<R>, Range::ValueTypeOf<R>>> ReduceAdvance(R&& range, F func)
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_,
+Meta::ResultOf<F, ValueTypeOf<R>, ValueTypeOf<R>>> ReduceAdvance(R& range, F func)
 {
-	typedef Meta::ResultOf<F, Range::ValueTypeOf<R>, Range::ValueTypeOf<R>> ResultType;
+	typedef Meta::ResultOf<F, ValueTypeOf<R>, ValueTypeOf<R>> ResultType;
 	ResultType seed = range.First();
 	range.PopFirst();
 	return ReduceAdvance(range, func, seed);
 }
 
 template<typename R, typename F, typename S> forceinline Meta::EnableIf<
-	Range::IsFiniteForwardRange<R>::_,
-S> Reduce(const R& range, const F& func, const S& seed)
-{return ReduceAdvance(R(range), func, seed);}
+	IsAsConsumableRange<R>::_,
+S> Reduce(R&& r, const F& func, const S& seed)
+{
+	auto range = Range::Forward<R>(r);
+	return ReduceAdvance(range, func, seed);
+}
 
 template<typename R, typename F, typename = Meta::EnableIf<Range::IsForwardRange<R>::_>> forceinline
-Meta::ResultOf<F, Range::ValueTypeOf<R>, Range::ValueTypeOf<R>> Reduce(const R& range, F func)
+Meta::ResultOf<F, ValueTypeOf<R>, ValueTypeOf<R>> Reduce(const R& range, F func)
 {return ReduceAdvance(R(range), func);}
 
 template<typename T, size_t N, typename F, typename S> forceinline

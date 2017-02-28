@@ -80,11 +80,11 @@ void TestComposedPolymorphicRange(IO::IFormattedWriter& output)
 		[](int a, int b) {return a*2+b; }, 1, 1
 
 	), 17)), 3), 22);
-	Console.PrintLine("Представляем сложную последовательность в виде полиморфного input-диапазона:");
+	output.PrintLine("Представляем сложную последовательность в виде полиморфного input-диапазона:");
 	InputRange<int> someRecurrencePolymorphic = someRecurrence;
 	PrintPolymorphicRange(output, Meta::Move(someRecurrencePolymorphic));
 
-	Console.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
+	output.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
 	InputRange<uint> seq = Map(
 		Filter(
 			Take(Generate([]() {return Math::Random<uint>::Global(1000); }), 500),
@@ -92,7 +92,7 @@ void TestComposedPolymorphicRange(IO::IFormattedWriter& output)
 		Math::Sqr<uint>);
 	PrintPolymorphicRange(output, Meta::Move(seq));
 
-	Console.PrintLine(endl, "Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
+	output.PrintLine(endl, "Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
 	seq = Take(Generate(rand), 50);
 	PrintPolymorphicRange(output, Meta::Move(seq));
 }

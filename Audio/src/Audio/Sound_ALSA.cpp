@@ -1,5 +1,6 @@
 ﻿#include "Audio/SoundApi.h"
 #include "Platform/CppWarnings.h"
+#include "Memory/Allocator/Global.h"
 
 //#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
 
@@ -214,7 +215,7 @@ static Context context;
 
 static ushort get_format(uint channels)
 {
-	INTRA_ASSERT(channels>0 && channels<=2);
+	INTRA_DEBUG_ASSERT(channels>0 && channels<=2);
     if(channels==1) return AL_FORMAT_MONO16;
     if(channels==2) return AL_FORMAT_STEREO16;
     return 0;
@@ -231,25 +232,26 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
 	(void)type;
-	INTRA_ASSERT(data!=null);
-	INTRA_ASSERT(type==ValueType::Short);
+	INTRA_DEBUG_ASSERT(data!=null);
+	INTRA_DEBUG_ASSERT(type==ValueType::Short);
     alBufferData(snd->buffer, snd->alformat, data, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_ASSERT(alGetError()==AL_NO_ERROR);
+    INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
 }
 
 void* BufferLock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
-    snd->locked_bits = Memory::SystemHeapAllocator::Allocate(snd->SizeInBytes(), INTRA_SOURCE_INFO);
+	INTRA_DEBUG_ASSERT(snd!=null);
+	auto size = snd->SizeInBytes();
+    snd->locked_bits = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return snd->locked_bits;
 }
 
 void BufferUnlock(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
     alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_ASSERT(alGetError()==AL_NO_ERROR);
-    Memory::SystemHeapAllocator::Free(snd->locked_bits);
+    INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
+    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
     snd->locked_bits=null;
 }
 
@@ -262,7 +264,7 @@ void BufferDelete(BufferHandle snd)
 
 InstanceHandle InstanceCreate(BufferHandle snd)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	uint source;
 	alGenSources(1, &source);
 	//alSource3f(source, AL_POSITION, 0, 0, 0);
@@ -271,7 +273,7 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	//alSourcef(source, AL_ROLLOFF_FACTOR, 0);
 	//alSourcei(source, AL_SOURCE_RELATIVE, true);
 	alSourcei(source, AL_BUFFER, int(snd->buffer));
-	INTRA_ASSERT(alGetError()==AL_NO_ERROR);
+	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
 	return new Instance(source, snd);
 }
 
@@ -289,10 +291,10 @@ void InstanceDelete(InstanceHandle si)
 
 void InstancePlay(InstanceHandle si, bool loop)
 {
-	INTRA_ASSERT(si!=null);
+	INTRA_DEBUG_ASSERT(si!=null);
 	alSourcei(si->source, AL_LOOPING, loop);
 	alSourcePlay(si->source);
-	INTRA_ASSERT(alGetError()==AL_NO_ERROR);
+	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
 }
 
 bool InstanceIsPlaying(InstanceHandle si)
@@ -316,7 +318,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	if(sampleCount==0 || channels==0 ||
 		sampleRate==0 || callback.CallbackFunction==null)
 			return null;
-	INTRA_ASSERT(channels<=2);
+	INTRA_DEBUG_ASSERT(channels<=2);
 	StreamedBufferHandle result = new StreamedBuffer;
 	alGenBuffers(2, result->buffers);
 	alGenSources(1, &result->source);
@@ -324,7 +326,8 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	result->sampleRate = sampleRate;
 	result->channels = channels;
 	result->streamingCallback = callback;
-	result->temp_buffer = Memory::SystemHeapAllocator::Allocate(result->SizeInBytes(), INTRA_SOURCE_INFO);
+	size_t size = result->SizeInBytes();
+	result->temp_buffer = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return result;
 }
 
@@ -337,7 +340,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 {
 	alDeleteSources(1, &snd->source);
 	alDeleteBuffers(2, snd->buffers);
-	Memory::SystemHeapAllocator::Free(snd->temp_buffer);
+	Memory::GlobalHeap.Free(snd->temp_buffer, snd->SizeInBytes());
 }
 
 
@@ -359,7 +362,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
-	INTRA_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=null);
 	load_buffer(snd, 0);
 	if(!snd->stop_soon) load_buffer(snd, 1);
 	alSourceQueueBuffers(snd->source, 2, snd->buffers);

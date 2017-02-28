@@ -66,7 +66,7 @@ template<typename R> forceinline Meta::EnableIf<
 > PopFirstExactly(R& range, size_t elementsToPop)
 {
 	size_t poppedElements = range.PopFirstN(elementsToPop);
-	INTRA_ASSERT(poppedElements==elementsToPop);
+	INTRA_DEBUG_ASSERT(poppedElements==elementsToPop);
 	(void)poppedElements;
 }
 
@@ -116,7 +116,7 @@ template<typename R> forceinline Meta::EnableIf<
 > PopLastExactly(R& range, size_t elementsToPop)
 {
 	size_t poppedElements = range.PopLastN(elementsToPop);
-	INTRA_ASSERT(poppedElements==elementsToPop);
+	INTRA_DEBUG_ASSERT(poppedElements==elementsToPop);
 	(void)poppedElements;
 }
 

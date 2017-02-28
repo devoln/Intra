@@ -266,8 +266,8 @@ bool Reader::EndOfStream() const {return feof(reinterpret_cast<FILE*>(hndl))!=0;
 size_t Reader::ReadData(void* data, size_t bytes)
 {
 	if(bytes==0) return 0;
-	INTRA_ASSERT(hndl!=null);
-	INTRA_ASSERT(data!=null);
+	INTRA_DEBUG_ASSERT(hndl!=null);
+	INTRA_DEBUG_ASSERT(data!=null);
 	size_t bytesRead = fread(data, 1, bytes, reinterpret_cast<FILE*>(hndl));
 	//if(bytesRead<bytes) memset(reinterpret_cast<byte*>(data)+bytesRead, 0, bytes-bytesRead);
 	return bytesRead;
@@ -282,7 +282,7 @@ void Reader::UnreadData(const void* src, size_t bytes)
 
 void Writer::WriteData(const void* data, size_t bytes)
 {
-	INTRA_ASSERT(hndl!=null);
+	INTRA_DEBUG_ASSERT(hndl!=null);
 	fwrite(data, 1, bytes, reinterpret_cast<FILE*>(hndl));
 	//fflush(reinterpret_cast<FILE*>(hndl));
 }

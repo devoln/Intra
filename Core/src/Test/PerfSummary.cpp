@@ -13,7 +13,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 void PrintPerformanceResults(IFormattedWriter& logger, StringView testName, ArrayRange<const StringView> comparedTypes,
 	ArrayRange<const double> set2Times, ArrayRange<const double> set1Times)
 {
-	INTRA_ASSERT_EQUALS(comparedTypes.Length(), set1Times.Length()+set2Times.Length());
+	INTRA_DEBUG_ASSERT_EQUALS(comparedTypes.Length(), set1Times.Length()+set2Times.Length());
 	static const Math::Vec3 set1Color = {0, 0, 0.75f},
 		goodSet1Color = {0, 0.25f, 1.0f},
 		set2Color = {0.75f, 0, 0},

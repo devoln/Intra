@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project(UnitTests)
 
-include(../../CMakeCommon.txt)
+set(USE_EXCEPTIONS 1)
+include(../../Configurations.cmake)
 
 include_directories(../../Core/include)
 

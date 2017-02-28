@@ -48,8 +48,8 @@ AnyImage AnyImage::ExtractChannel(char channelName, ImageFormat compatibleFormat
 	if(newLineAlignment==0) newLineAlignment = LineAlignment;
 	const auto channelType = Info.Format.GetComponentType();
 
-	INTRA_ASSERT(compatibleFormat.GetValueType()==channelType);
-	INTRA_ASSERT(compatibleFormat.ComponentCount()==1);
+	INTRA_DEBUG_ASSERT(compatibleFormat.GetValueType()==channelType);
+	INTRA_DEBUG_ASSERT(compatibleFormat.ComponentCount()==1);
 
 	const auto channelWidth = channelType.Size();
 	const auto channelCount = Info.Format.ComponentCount();
@@ -108,7 +108,7 @@ AnyImage AnyImage::FromFile(StringView filename)
 
 AnyImage AnyImage::FromStream(IO::IInputStream& stream, size_t bytes)
 {
-	INTRA_ASSERT(stream.IsSeekable());
+	INTRA_DEBUG_ASSERT(stream.IsSeekable());
 	auto startPos = stream.GetPos();
 	byte header[12];
 	stream.ReadData(header, sizeof(header));
@@ -120,7 +120,7 @@ AnyImage AnyImage::FromStream(IO::IInputStream& stream, size_t bytes)
 		result = loader.Load(stream, bytes);
 		break;
 	}
-	INTRA_ASSERT(stream.GetPos()==startPos+bytes);
+	INTRA_DEBUG_ASSERT(stream.GetPos()==startPos+bytes);
 	stream.SetPos(startPos+bytes);
 	return result;
 }
@@ -134,7 +134,7 @@ FileFormat AnyImage::DetectFileFormatByHeader(byte header[12])
 
 ImageInfo AnyImage::GetImageInfo(IInputStream& stream, FileFormat* oFormat)
 {
-	INTRA_ASSERT(stream.IsSeekable());
+	INTRA_DEBUG_ASSERT(stream.IsSeekable());
 	auto startPos = stream.GetPos();
 	if(oFormat!=null) *oFormat = FileFormat::Unknown;
 	ImageInfo result;

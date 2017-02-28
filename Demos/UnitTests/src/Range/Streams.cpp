@@ -50,7 +50,8 @@ void TestArrayRangeStreams(IO::IFormattedWriter& output)
 
 void TestCustomOutputStream(IO::IFormattedWriter& output)
 {
-	struct ConsoleCaesarCipher
+	INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+	struct OutputCaesarCipher
 	{
 		void Put(char ch)
 		{
@@ -64,13 +65,14 @@ void TestCustomOutputStream(IO::IFormattedWriter& output)
 				if(ch=='z') ch = 'a';
 				else ch++;
 			}
-			Console << ch;
+			Output << ch;
 		}
+		IOutputStream& Output;
 	};
 
 	StringView strings[] = {"Hello", ", ", "World", "!"};
 	output.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"", "Printing array: ", "\" и к массиву ", strings, ":");
-	ConsoleCaesarCipher() << "Printing array: " << strings;
+	OutputCaesarCipher{output} << "Printing array: " << strings;
 	output.PrintLine();
 }
 

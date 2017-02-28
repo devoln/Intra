@@ -23,14 +23,14 @@ template<typename R> struct RStride
 	forceinline RStride(const R& range, size_t strideStep):
 		mOriginalRange(range), mStep(strideStep)
 	{
-		INTRA_ASSERT(strideStep!=0);
+		INTRA_DEBUG_ASSERT(strideStep!=0);
 		skip_back_odd();
 	}
 
 	forceinline RStride(R&& range, size_t strideStep):
 		mOriginalRange(Meta::Forward<R>(range)), mStep(strideStep)
 	{
-		INTRA_ASSERT(strideStep!=0);
+		INTRA_DEBUG_ASSERT(strideStep!=0);
 		skip_back_odd();
 	}
 

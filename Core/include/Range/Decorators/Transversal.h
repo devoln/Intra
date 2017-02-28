@@ -41,7 +41,7 @@ template<typename Rs> struct RFirstTransversal
 
 	void PopLast()
 	{
-		INTRA_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Empty());
 		while(mRanges.Last().Empty()) mRanges.PopLast();
 		mRanges.PopLast();
 	}

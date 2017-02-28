@@ -1,7 +1,11 @@
 language: cpp
 compiler:
-  - clang
   - gcc
+  - clang
+env:
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_EXCEPTIONS=1 -DUNITY_BUILD=ON"
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Release -DUNITY_BUILD=OFF"
+  - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Debug -DUSE_EXCEPTIONS=1"
 dist: trusty
 sudo: false
-script: cmake -G"Unix Makefiles" && make -j4 && Demos/UnitTests/UnitTests -a
+script: cmake -G"Unix Makefiles" $CMAKE_PARAMS && make -j2 && Demos/UnitTests/UnitTests -au

@@ -19,7 +19,7 @@ struct uint24LE
 
 	uint24LE& operator=(uint v)
 	{
-		INTRA_ASSERT(v<=0xFFFFFF);
+		INTRA_DEBUG_ASSERT(v<=0xFFFFFF);
 		data[0] = byte(v & 0xFF);
 		data[1] = byte((v & 0xFF00) >> 8);
 		data[2] = byte((v & 0xFF0000) >> 16);
@@ -28,7 +28,7 @@ struct uint24LE
 
 	uint24LE& operator++()
 	{
-		INTRA_ASSERT(data[0]!=255 || data[1]!=255 || data[2]!=255);
+		INTRA_DEBUG_ASSERT(data[0]!=255 || data[1]!=255 || data[2]!=255);
 		if(++data[0]==0 && ++data[1]==0) data[2]++;
 		return *this;
 	}
@@ -69,7 +69,7 @@ struct uint40LE
 
 	uint40LE& operator++()
 	{
-		INTRA_ASSERT(data[0]!=255 || data[1]!=255 || data[2]!=255 || data[3]!=255 || data[4]!=255);
+		INTRA_DEBUG_ASSERT(data[0]!=255 || data[1]!=255 || data[2]!=255 || data[3]!=255 || data[4]!=255);
 		if(++data[0]==0 && ++data[1]==0 && ++data[2]==0 && ++data[3]==0) data[4]++;
 		return *this;
 	}
