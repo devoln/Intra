@@ -7,6 +7,8 @@
 
 namespace Intra { namespace Algo {
 
+using namespace Range::Concepts;
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> T Minimum(ArrayRange<const T> arr)
@@ -67,7 +69,7 @@ template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maxi
 
 
 template<typename R, typename F, typename S> Meta::EnableIf<
-	Range::IsConsumableRange<R>::_,
+	IsConsumableRange<R>::_,
 S> ReduceAdvance(R& range, const F& func, const S& seed)
 {
 	auto result = seed;
@@ -98,7 +100,7 @@ S> Reduce(R&& range, const F& func, const S& seed)
 }
 
 template<typename R, typename F, typename = Meta::EnableIf<
-	Range::IsAsForwardRange<R>::_
+	IsAsForwardRange<R>::_
 >> forceinline Meta::ResultOf<F, ValueTypeOfAs<R>, ValueTypeOfAs<R>> Reduce(R&& range, F func)
 {
 	auto rangeCopy = Range::Forward<R>(range);
