@@ -67,8 +67,8 @@ template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maxi
 
 
 template<typename R, typename F, typename S> Meta::EnableIf<
-	Range::IsFiniteInputRange<R>::_ && !Meta::IsConst<R>::_,
-S> ReduceAdvance(R&& range, const F& func, const S& seed)
+	Range::IsConsumableRange<R>::_,
+S> ReduceAdvance(R& range, const F& func, const S& seed)
 {
 	auto result = seed;
 	while(!range.Empty())
@@ -91,23 +91,19 @@ Meta::ResultOf<F, ValueTypeOf<R>, ValueTypeOf<R>>> ReduceAdvance(R& range, F fun
 
 template<typename R, typename F, typename S> forceinline Meta::EnableIf<
 	IsAsConsumableRange<R>::_,
-S> Reduce(R&& r, const F& func, const S& seed)
+S> Reduce(R&& range, const F& func, const S& seed)
 {
-	auto range = Range::Forward<R>(r);
-	return ReduceAdvance(range, func, seed);
+	auto rangeCopy = Range::Forward<R>(range);
+	return ReduceAdvance(rangeCopy, func, seed);
 }
 
-template<typename R, typename F, typename = Meta::EnableIf<Range::IsForwardRange<R>::_>> forceinline
-Meta::ResultOf<F, ValueTypeOf<R>, ValueTypeOf<R>> Reduce(const R& range, F func)
-{return ReduceAdvance(R(range), func);}
-
-template<typename T, size_t N, typename F, typename S> forceinline
-S Reduce(const T(&arr)[N], const F& func, const S& seed)
-{return Reduce(AsRange(arr), func, seed);}
-
-template<typename T, size_t N, typename F> forceinline
-Meta::ResultOf<F, T, T> Reduce(const T(&arr)[N], F func)
-{return Reduce(AsRange(arr), func);}
+template<typename R, typename F, typename = Meta::EnableIf<
+	Range::IsAsForwardRange<R>::_
+>> forceinline Meta::ResultOf<F, ValueTypeOfAs<R>, ValueTypeOfAs<R>> Reduce(R&& range, F func)
+{
+	auto rangeCopy = Range::Forward<R>(range);
+	return ReduceAdvance(rangeCopy, func);
+}
 
 INTRA_WARNING_POP
 
