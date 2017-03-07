@@ -321,6 +321,12 @@
     <ClCompile Include="src\IO\HtmlWriter.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\FileSystem.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\FileMapping.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Utils\Callback.h">
@@ -1039,6 +1045,12 @@
     </ClInclude>
     <ClInclude Include="include\Range\Compositors\Unzip.h">
       <Filter>Заголовочные файлы\Range\Compositors</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\FileSystem.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\FileMapping.h">
+      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

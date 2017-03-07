@@ -8,7 +8,7 @@ namespace Intra {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-enum class Error: byte {NoError, InvalidArguments, NotFound, OutOfMemory};
+enum class Error: byte {NoError, InvalidArguments, NotFound, OutOfMemory, AlreadyUsed, NoAccess};
 
 namespace Errors
 {

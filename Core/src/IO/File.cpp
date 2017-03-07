@@ -6,6 +6,7 @@
 #include "Memory/Allocator.hh"
 #include "Platform/Compatibility.h"
 #include "Platform/CppWarnings.h"
+#include "IO/FileSystem.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -46,54 +47,6 @@ struct IUnknown;
 #endif
 
 
-#ifdef _MSC_VER
-#define fileno _fileno
-
-
-#endif
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-
-#define PROT_READ 1
-#define PROT_WRITE 2
-#define MAP_SHARED 0
-
-void* mmap(void* addr, size_t length, int prot, int flags, int fd, long offset)
-{
-	(void)addr; (void)flags;
-
-	HANDLE fileHandle = HANDLE(_get_osfhandle(fd));
-	DWORD flProtect=0, dwDesiredAccess=0;
-	if(prot==PROT_READ)
-	{
-		flProtect = PAGE_READONLY;
-		dwDesiredAccess = FILE_MAP_READ;
-	}
-	else if(prot==PROT_WRITE)
-	{
-		flProtect = PAGE_READWRITE;
-		dwDesiredAccess = FILE_MAP_WRITE;
-	}
-	else return reinterpret_cast<void*>(-1);
-
-	HANDLE hnd = CreateFileMappingW(fileHandle, nullptr, flProtect, 0, DWORD(length), nullptr);
-	void* map = nullptr;
-    if(hnd!=nullptr)
-    {
-        map = MapViewOfFile(hnd, dwDesiredAccess, 0, DWORD(offset), length);
-        CloseHandle(hnd);
-    }
-
-    return map!=nullptr? map: reinterpret_cast<void*>(-1);
-}
-
-int munmap(void* addr, size_t length)
-{
-	(void)length;
-    return UnmapViewOfFile(addr)!=0? 0: -1;
-}
-
-#endif
 
 #undef EOF
 
@@ -101,81 +54,12 @@ namespace Intra { namespace IO {
 
 namespace DiskFile {
 
-bool Exists(StringView fileName)
-{
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	GenericString<wchar_t> wfn;
-	wfn.SetLengthUninitialized(fileName.Length());
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, fileName.Data(),
-		int(fileName.Length()), wfn.Data(), int(wfn.Length()));
-	wfn.SetLengthUninitialized(size_t(wlen+1));
-	wfn.Last() = 0;
-	return PathFileExistsW(wfn.Data())!=0;
-#else
-	String fn = fileName;
-	return access(fn.CStr(), 0)!=-1;
-#endif
-}
-
-bool Delete(StringView fileName) {String fn=fileName; return remove(fn.CStr()) == 0;}
-
-bool MoveOrRename(StringView oldFileName, StringView newFileName)
-{
-	if(Exists(newFileName) || !Exists(oldFileName)) return false;
-	return rename(String(oldFileName).CStr(), String(newFileName).CStr() ) == 0;
-}
-
-
-Info GetInfo(StringView fileName)
-{
-	Info result;
-	String fn = fileName;
-#if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
-	wchar_t buf[MAX_PATH+1];
-	int wstrLength = MultiByteToWideChar(CP_UTF8, 0, fileName.Data(), int(fileName.Length()), buf, MAX_PATH);
-	buf[wstrLength]=0;
-
-	WIN32_FILE_ATTRIBUTE_DATA fad;
-	if(!GetFileAttributesExW(buf, GetFileExInfoStandard, &fad)) return {0, 0};
-	result.Size = (ulong64(fad.nFileSizeHigh) << 32)|fad.nFileSizeLow;
-	result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32)|fad.ftLastWriteTime.dwLowDateTime;
-
-#else
-	struct stat attrib;
-	bool exist = stat(fn.CStr(), &attrib)==0;
-	result.LastModified = exist? ulong64(attrib.st_mtime): 0ull;
-	result.Size = exist? ulong64(attrib.st_size): 0ull;
-#endif
-	return result;
-}
-
-ulong64 GetFileTime(StringView fileName)
-{return GetInfo(fileName).LastModified;}
-
-String GetCurrentDirectory()
-{
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	wchar_t wpath[MAX_PATH];
-	uint wlength = GetCurrentDirectoryW(MAX_PATH, reinterpret_cast<LPWSTR>(wpath));
-	char path[MAX_PATH*3];
-	int length = WideCharToMultiByte(CP_UTF8, 0u, wpath, int(wlength), path, int(Meta::NumOf(path)), null, null);
-	const String result = StringView(path, size_t(length));
-#else
-	char path[2048];
-	path[0] = '\0';
-	String result = StringView(getcwd(path, sizeof(path)));
-#endif
-	return Algo::Path::AddTrailingSlash(result);
-}
-
-
-
 String ReadAsString(StringView fileName, bool* fileOpened)
 {
 	Reader file(fileName);
 	if(fileOpened!=null) *fileOpened = (file!=null);
 	if(file==null) return null;
-	size_t size = size_t(DiskFile::GetInfo(fileName).Size);
+	size_t size = size_t(OS.FileGetInfo(fileName).Size);
 	if(size==0)
 	{
 		String result;
@@ -185,10 +69,6 @@ String ReadAsString(StringView fileName, bool* fileOpened)
 	}
 	return file.ReadNChars(size);
 }
-
-
-ulong64 CommonFileImpl::GetFileTime() const
-{return DiskFile::GetFileTime(name);}
 
 void CommonFileImpl::open(StringView fileName, bool readAccess, bool writeAccess, bool append, Error* oError)
 {
@@ -225,40 +105,8 @@ void CommonFileImpl::close()
 	hndl=null;
 }
 
-int CommonFileImpl::GetFileDescriptor() const
-{return fileno(reinterpret_cast<FILE*>(hndl));}
 
 
-void Reader::map(ulong64 firstByte, size_t bytes) const
-{
-	auto size = GetSize();
-	if(bytes==Meta::NumericLimits<size_t>::Max() || firstByte+bytes>size)
-		bytes = size_t(size-firstByte);
-#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-	mapping.data = reinterpret_cast<byte*>(mmap(null, bytes, PROT_READ, MAP_SHARED, GetFileDescriptor(), long(firstByte)));
-#else
-	mapping.data = Memory::GlobalHeap.Allocate(bytes, INTRA_SOURCE_INFO);
-	auto pos = GetPos();
-	auto This = const_cast<Reader*>(this);
-	This->SetPos(firstByte);
-	This->ReadData(mapping.data, bytes);
-	This->SetPos(pos);
-#endif
-	mapping.hndl = mapping.data;
-}
-
-void Reader::Unmap() const
-{
-	if(mapping.hndl==null) return;
-#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-	munmap(mapping.data, mapping.Size);
-#else
-	Memory::GlobalHeap.Free(mapping.data, mapping.Size);
-#endif
-	mapping.data = null;
-	mapping.hndl = null;
-	mapping.Size = 0;
-}
 
 
 bool Reader::EndOfStream() const {return feof(reinterpret_cast<FILE*>(hndl))!=0;}
@@ -319,7 +167,7 @@ ulong64 Reader::GetPos() const
 ulong64 Reader::GetSize() const
 {
 	if(hndl==null) return 0;
-	return DiskFile::GetInfo(name).Size;
+	return OS.FileGetSize(name);
 }
 
 //Установить позицию записи

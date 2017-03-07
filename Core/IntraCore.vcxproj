@@ -514,6 +514,8 @@
     </ClCompile>
     <ClCompile Include="src\IO\ConsoleWriter.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
+    <ClCompile Include="src\IO\FileMapping.cpp" />
+    <ClCompile Include="src\IO\FileSystem.cpp" />
     <ClCompile Include="src\IO\HtmlWriter.cpp" />
     <ClCompile Include="src\IO\LogSystem.cpp" />
     <ClCompile Include="src\IO\Networking.cpp" />
@@ -636,6 +638,8 @@
     <ClInclude Include="include\IO\CompositeFormattedWriter.h" />
     <ClInclude Include="include\IO\ConsoleWriter.h" />
     <ClInclude Include="include\IO\File.h" />
+    <ClInclude Include="include\IO\FileMapping.h" />
+    <ClInclude Include="include\IO\FileSystem.h" />
     <ClInclude Include="include\IO\FormattedWriter.h" />
     <ClInclude Include="include\IO\HtmlWriter.h" />
     <ClInclude Include="include\IO\LogSystem.h" />

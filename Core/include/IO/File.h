@@ -21,7 +21,6 @@ protected:
 		size_t Size=0;
 	};
 public:
-	int GetFileDescriptor() const;
 	ulong64 GetFileTime() const;
 
 	CommonFileImpl& operator=(null_t) {close(); return *this;}
@@ -151,25 +150,6 @@ template<typename T> Array<T> ReadAsArray(StringView fileName, bool* fileOpened=
 	file.Skip(bytes%sizeof(T));
 	return result;
 }
-
-struct Info
-{
-	bool Exist() const {return Size!=0 || LastModified!=0;}
-
-	ulong64 Size;
-	ulong64 LastModified;
-};
-
-bool Exists(StringView fileName);
-bool Delete(StringView filename);
-bool MoveOrRename(StringView oldFilename, StringView newFilename);
-Info GetInfo(StringView fileName);
-ulong64 GetFileTime(StringView filename);
-
-#ifdef GetCurrentDirectory
-#undef GetCurrentDirectory
-#endif
-String GetCurrentDirectory();
 
 INTRA_WARNING_POP
 
