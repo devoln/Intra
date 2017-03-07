@@ -30,6 +30,12 @@ String DateTime::ToString() const
 		(Hour, 2, '0')(":")(Minute, 2, '0')(":")(Second, 2, '0');
 }
 
+ulong64 DateTime::StartupTimeBasedSeed()
+{
+	static const ulong64 result = Now().TimeBasedRandomValue();
+	return result;
+}
+
 }
 
 #if(INTRA_LIBRARY_TIMER==INTRA_LIBRARY_TIMER_Dummy)

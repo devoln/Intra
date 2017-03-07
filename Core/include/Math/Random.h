@@ -5,6 +5,7 @@
 #include "Platform/Debug.h"
 #include "Meta/Type.h"
 #include "Math/Math.h"
+#include "Memory/SmartRef/Unique.h"
 
 namespace Intra { namespace Math {
 
@@ -331,6 +332,7 @@ template<> struct Random<double>
 
 struct RandomNoise
 {
+private:
 	struct Data
 	{
 		Data()
@@ -342,8 +344,9 @@ struct RandomNoise
 		float discreteNoise[16384];
 	};
 
-	static Data* data;
+	static Memory::UniqueRef<Data> data;
 
+public:
 	static forceinline float Discrete(float t)
 	{
 		return data->discreteNoise[int(t+0.5f) & 16383];
@@ -351,7 +354,7 @@ struct RandomNoise
 
 	static forceinline float Linear(float t)
 	{
-		int n=int(t);
+		int n = int(t);
 		return LinearMix(data->discreteNoise[n & 16383], data->discreteNoise[(n+1) & 16383], Fract(t));
 	}
 

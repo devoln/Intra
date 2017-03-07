@@ -39,6 +39,10 @@ struct DateTime
 
 	ushort Year;
 	byte Month, Day, Hour, Minute, Second;
+
+	//! Константа, монотонно зависящая от времени запуска программы.
+	//! Его можно использовать как seed в генераторах псевдослучайных чисел.
+	static ulong64 StartupTimeBasedSeed();
 };
 
 INTRA_WARNING_POP
