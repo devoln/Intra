@@ -64,6 +64,16 @@ template<typename R, typename RW> forceinline Meta::EnableIf<
 bool> EndsWith(R&& range, RW&& what)
 {return EndsWith(Range::Forward<R>(range), Range::Forward<RW>(what));}
 
+template<typename R, typename W> forceinline Meta::EnableIf<
+	IsBidirectionalRange<R>::_ && !IsAsInputRange<W>::_,
+bool> EndsWith(const R& range, const W& what)
+{return !range.Empty() && range.Last()==what;}
+
+template<typename R, typename W> forceinline Meta::EnableIf<
+	!IsInputRange<R>::_ && IsAsBidirectionalRange<R>::_ && !IsAsInputRange<W>::_,
+bool> EndsWith(R&& range, const W& what)
+{return EndsWith(Range::Forward<R>(range), what);}
+
 INTRA_WARNING_POP
 
 }}

@@ -12,7 +12,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R> Meta::EnableIf<
 	IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
-> ReplaceOneAdvance(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
+> ReplaceOneAdvance(R& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	while(!range.Empty())
 	{
@@ -37,7 +37,7 @@ template<typename R> Meta::EnableIf<
 
 template<typename R> Meta::EnableIf<
 	IsAssignableRange<R>::_ && !Meta::IsConst<R>::_
-> ReplaceAdvance(R&& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
+> ReplaceAdvance(R& range, const ValueTypeOf<R>& from, const ValueTypeOf<R>& to)
 {
 	while(!range.Empty())
 	{

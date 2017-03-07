@@ -68,6 +68,16 @@ template<typename R, typename RW> forceinline Meta::EnableIf<
 bool> StartsWith(R&& range, RW&& what)
 {return StartsWith(Range::Forward<R>(range), Range::Forward<RW>(what));}
 
+template<typename R, typename W> forceinline Meta::EnableIf<
+	IsForwardRange<R>::_ && !IsAsInputRange<W>::_,
+bool> StartsWith(const R& range, const W& what)
+{return !range.Empty() && range.First()==what;}
+
+template<typename R, typename W> forceinline Meta::EnableIf<
+	IsAsForwardRange<R>::_ && !IsAsInputRange<W>::_,
+bool> StartsWith(R&& range, const W& what)
+{return StartsWith(Range::Forward<R>(range), what);}
+
 
 //! Проверяет, начинается ли range с what.
 //! Если да, то начало range смещается к первому элементу, идущему сразу после вхождения what.
