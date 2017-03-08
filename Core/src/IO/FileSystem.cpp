@@ -2,6 +2,8 @@
 #include "Platform/PlatformInfo.h"
 #include "Container/Sequential/String.h"
 #include "Algo/String/Path.h"
+#include "Algo/Comparison/EndsWith.h"
+#include "Algo/Mutation/Replace.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -12,6 +14,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <unistd.h>
 #include <sys/mman.h>
+#include <cstdio>
 
 #elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
 
