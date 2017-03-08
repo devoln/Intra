@@ -1,20 +1,20 @@
-﻿#include "Range.hh"
+﻿#include "Platform/CppWarnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+#include "Range.hh"
 #include "IO/Stream.h"
 #include "IO/FormattedWriter.h"
 
-INTRA_DISABLE_REDUNDANT_WARNINGS
 #define _HAS_EXCEPTIONS 0
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4548)
-#endif
-
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <vector>
 #include <string>
 #include <list>
 #include <deque>
 #include <map>
 #include <unordered_map>
+INTRA_WARNING_POP
 
 using namespace Intra;
 using namespace Range;
@@ -108,3 +108,5 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	INTRA_ASSERT_EQUALS(String(charDeque), "RangesHelloRanges");
 	output.PrintLine("В результате charDeque содержит: ", charDeque);
 }
+
+INTRA_WARNING_POP

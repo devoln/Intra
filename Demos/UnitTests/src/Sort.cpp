@@ -1,19 +1,18 @@
+#include "Platform/CppWarnings.h"
+
 #include "Sort.h"
 
 #include "Algo/Sort.hh"
 #include "Container/Sequential/Array.h"
 #include "IO/FormattedWriter.h"
 #include "Platform/Debug.h"
-#include "Platform/CppWarnings.h"
 
-INTRA_DISABLE_REDUNDANT_WARNINGS
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4350 4548 4702)
-#endif
-
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
+INTRA_WARNING_POP
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 
 static const short arrayForSortTesting[] = {
@@ -73,3 +72,5 @@ void TestSort(IO::IFormattedWriter& output)
 	INTRA_ASSERT_EQUALS(arrSelection, arrStdSort);
 	INTRA_ASSERT1(Algo::IsSorted(arrSelection), arrSelection);
 };
+
+INTRA_WARNING_POP

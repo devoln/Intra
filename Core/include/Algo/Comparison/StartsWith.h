@@ -74,7 +74,7 @@ bool> StartsWith(const R& range, const W& what)
 {return !range.Empty() && range.First()==what;}
 
 template<typename R, typename W> forceinline Meta::EnableIf<
-	IsAsForwardRange<R>::_ && !IsAsInputRange<W>::_,
+	!IsInputRange<R>::_ && IsAsForwardRange<R>::_ && !IsAsInputRange<W>::_,
 bool> StartsWith(R&& range, const W& what)
 {return StartsWith(Range::Forward<R>(range), what);}
 

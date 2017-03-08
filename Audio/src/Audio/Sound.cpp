@@ -11,6 +11,7 @@
 #include "Algo/Comparison/StartsWith.h"
 #include "Algo/Search/Single.h"
 #include "Platform/CppWarnings.h"
+#include "IO/FileSystem.h"
 
 
 namespace Intra { namespace Audio {
@@ -87,49 +88,49 @@ Sound& Sound::operator=(Sound&& rhs)
 
 Sound Sound::FromFile(StringView fileName)
 {
-	Sound result=null;
-	DiskFile::Reader file(fileName);
-	if(file==null) return result;
-	auto fileData = file.Map<byte>();
-	ASoundSource* source=null;
+	auto fileMapping = OS.MapFile(fileName);
+	if(fileMapping==null) return null;
+
+	auto fileSignature = fileMapping.AsRangeOf<char>();
+
+	Memory::UniqueRef<ASoundSource> source;
 
 #ifndef INTRA_NO_WAVE_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("RIFF")))
-		source = new Sources::WaveSource(fileData);
+	if(Algo::StartsWith(fileSignature, "RIFF"))
+		source = new Sources::WaveSource(fileMapping.AsRange());
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), "OggS"))
+	if(Algo::StartsWith(fileSignature, "OggS"))
 		source = new Sources::VorbisSource(fileData);
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), StringView("MThd")))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileData), SoundAPI::InternalSampleRate());
+	if(Algo::StartsWith(fileSignature, "MThd"))
+		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), SoundAPI::InternalSampleRate());
 	else
 #endif
 		return null;
 
-	result = FromSource(source);
-	delete source;
-	file.Unmap();
-	return result;
+	return FromSource(source.Ptr());
 }
 
 Sound Sound::FromSource(ASoundSource* src)
 {
-	Sound result = Sound({src->SampleCount(), src->SampleRate(), ushort(src->ChannelCount()), SoundAPI::InternalBufferType}, null);
+	const SoundInfo info = {src->SampleCount(), src->SampleRate(),
+		ushort(src->ChannelCount()), SoundAPI::InternalBufferType};
+	Sound result = Sound(info, null);
 	auto lockedData = result.Lock();
 	if(SoundAPI::InternalBufferType==ValueType::Short &&
-		(SoundAPI::InternalChannelsInterleaved || result.Info().Channels==1))
+		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
-		ArrayRange<short> dst = ArrayRange<short>(lockedData, result.Info().SampleCount*src->ChannelCount());
+		ArrayRange<short> dst = ArrayRange<short>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	else if(SoundAPI::InternalBufferType==ValueType::Float &&
-		(SoundAPI::InternalChannelsInterleaved || result.Info().Channels==1))
+		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
-		ArrayRange<float> dst = ArrayRange<float>(lockedData, result.Info().SampleCount*src->ChannelCount());
+		ArrayRange<float> dst = ArrayRange<float>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	//else if(SoundAPI::InternalBufferType==ValueType::Float && !SoundAPI::InternalChannelsInterleaved)
@@ -194,9 +195,9 @@ size_t StreamingLoadCallback(void** dstSamples, uint channels,
 	if(interleaved || channels==1)
 	{
 		if(type==ValueType::Float)
-			return src->GetInterleavedSamples({reinterpret_cast<float*>(dstSamples[0]), sampleCount*src->ChannelCount()});
+			return src->GetInterleavedSamples({static_cast<float*>(dstSamples[0]), sampleCount*src->ChannelCount()});
 		if(type==ValueType::Short)
-			return src->GetInterleavedSamples({reinterpret_cast<short*>(dstSamples[0]), sampleCount*src->ChannelCount()});
+			return src->GetInterleavedSamples({static_cast<short*>(dstSamples[0]), sampleCount*src->ChannelCount()});
 	}
 	else
 	{
@@ -204,14 +205,14 @@ size_t StreamingLoadCallback(void** dstSamples, uint channels,
 		{
 			ArrayRange<float> ranges[16];
 			for(ushort c=0; c<channels; c++)
-				ranges[c] = ArrayRange<float>(reinterpret_cast<float*>(dstSamples[c]), sampleCount);
+				ranges[c] = ArrayRange<float>(static_cast<float*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});
 		}
 		if(type==ValueType::Short)
 		{
 			/*ArrayRange<short> ranges[16];
 			for(ushort c=0; c<channels; c++)
-				ranges[c] = ArrayRange<short>(reinterpret_cast<short*>(dstSamples[c]), sampleCount);
+				ranges[c] = ArrayRange<short>(static_cast<short*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});*/
 		}
 	}
@@ -229,37 +230,33 @@ StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples, OnClos
 
 StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 {
-	auto file = new DiskFile::Reader(fileName);
-	if(*file==null) {delete file; return null;}
-	auto fileData = file->Map<byte>();
+	auto fileMapping = OS.MapFile(fileName);
+	if(fileMapping==null) return null;
 	SourceRef source=null;
 #ifndef INTRA_NO_WAVE_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), "RIFF"))
-		source = SourceRef(new Sources::WaveSource(fileData));
+	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "RIFF"))
+		source = new Sources::WaveSource(fileMapping.AsRange());
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), "OggS"))
-		source = SourceRef(new Sources::VorbisSource(fileData));
+	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "OggS"))
+		source = new Sources::VorbisSource(fileMapping.AsRange());
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(Algo::StartsWith(fileData.Reinterpret<char>(), "MThd"))
-		source = SourceRef(new Sources::MusicSynthSource(ReadMidiFile(fileData), 48000));
+	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "MThd"))
+		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), 48000);
 	else
 #endif
-	{
-		file->Unmap();
-		delete file;
 		return null;
-	}
 
-	return StreamedSound(Meta::Move(source), bufSize, StreamedSound::OnCloseCallback(file, [](void* o)
-	{
-		auto mappedFile = reinterpret_cast<DiskFile::Reader*>(o);
-		mappedFile->Unmap();
-		delete mappedFile;
-	}));
+	return StreamedSound(Meta::Move(source), bufSize,
+		StreamedSound::OnCloseCallback(new FileMapping(Meta::Move(fileMapping)),
+			[](void* o)
+		{
+			delete static_cast<FileMapping*>(o);
+		})
+	);
 }
 
 void StreamedSound::release()

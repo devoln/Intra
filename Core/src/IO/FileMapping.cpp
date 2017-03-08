@@ -2,6 +2,8 @@
 #include "IO/FileSystem.h"
 #include "Memory/Allocator/Global.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #if(defined(INTRA_PLATFORM_IS_UNIX) || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 
 #include <unistd.h>
@@ -49,13 +51,14 @@ static GenericString<wchar_t> utf8ToWStringZ(StringView str)
 
 #endif
 
-BasicFileMapping::BasicFileMapping(StringView fileName, size_t startByte, size_t bytes, bool writeAccess):
+BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess):
 	mData(null), mSize(0)
 {
 	String fullFileName = OS.GetFullFileName(fileName);
 	auto size = OS.FileGetSize(fullFileName);
+	if(startByte>size) return;
 	
-	if(bytes==Meta::NumericLimits<size_t>::Max())
+	if(bytes == ~size_t(0) && bytes > size-startByte)
 		bytes = size_t(size-startByte);
 
 	if(startByte+bytes>size) return;
@@ -69,21 +72,23 @@ BasicFileMapping::BasicFileMapping(StringView fileName, size_t startByte, size_t
 	This->ReadData(mapping.data, bytes);
 	This->SetPos(pos);
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	HANDLE hFile = CreateFileW(utf8ToWStringZ("\\\\?\\"+fullFileName).Data(),
+	HANDLE hFile = CreateFileW(utf8ToWStringZ(fullFileName).Data(),
 		GENERIC_READ|(writeAccess? GENERIC_WRITE: 0),
 		FILE_SHARE_READ, null,
-		writeAccess? OPEN_ALWAYS: OPEN_EXISTING,
+		DWORD(writeAccess? OPEN_ALWAYS: OPEN_EXISTING),
 		FILE_ATTRIBUTE_NORMAL, null);
 
-	HANDLE fileMapping = CreateFileMappingW(hFile, null,
-		writeAccess? PAGE_READWRITE: PAGE_READONLY,
-		DWORD((mSize+startByte) >> 32), DWORD(mSize+startByte), null);
+	const DWORD lowSize = DWORD(mSize+startByte);
+	const DWORD highSize = DWORD(ulong64(mSize+startByte) >> 32);
+	const DWORD flProtect = DWORD(writeAccess? PAGE_READWRITE: PAGE_READONLY);
+	HANDLE fileMapping = CreateFileMappingW(hFile, null, flProtect, highSize, lowSize, null);
 
 	if(fileMapping != null)
 	{
-		mData = MapViewOfFile(fileMapping,
-			writeAccess? FILE_MAP_WRITE: FILE_MAP_READ,
-			DWORD(startByte >> 32), DWORD(startByte), DWORD(mSize));
+		const DWORD lowOffset = DWORD(startByte);
+		const DWORD highOffset = DWORD(ulong64(startByte) >> 32);
+		const DWORD desiredAccess = DWORD(writeAccess? FILE_MAP_WRITE: FILE_MAP_READ);
+		mData = MapViewOfFile(fileMapping, desiredAccess, highOffset, lowOffset, DWORD(mSize));
 		CloseHandle(fileMapping);
 	}
 #else
@@ -111,6 +116,7 @@ void BasicFileMapping::Close()
 
 void WritableFileMapping::Flush()
 {
+	if(mData==null) return;
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	FlushViewOfFile(mData, 0);
@@ -121,3 +127,5 @@ void WritableFileMapping::Flush()
 
 
 }}
+
+INTRA_WARNING_POP

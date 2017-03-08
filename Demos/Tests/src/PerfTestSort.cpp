@@ -1,16 +1,15 @@
-﻿#include "PerfTestSort.h"
+﻿#include "Platform/CppWarnings.h"
+
+#include "PerfTestSort.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
 #include "Algo/Sort.hh"
 #include "Platform/Time.h"
-#include "Platform/CppWarnings.h"
 #include "IO/FormattedWriter.h"
 #include "IO/CompositeFormattedWriter.h"
 
 using namespace Intra;
-
-INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
 #define _HAS_EXCEPTIONS 0
@@ -19,6 +18,8 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
 INTRA_WARNING_POP
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename Comparer = Comparers::Function<T>>
 double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
@@ -202,3 +203,5 @@ void RunSortPerfTests(Intra::IO::IFormattedWriter& output)
 	if(TestGroup gr{"Sorting of random generated arrays of long64"})
 		TestAndPrintIntegralTypeSorts<long64>(output, "long64");
 }
+
+INTRA_WARNING_POP

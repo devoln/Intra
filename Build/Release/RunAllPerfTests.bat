@@ -1,1 +1,0 @@
-PerfTesting -a

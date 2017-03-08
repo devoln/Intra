@@ -2,6 +2,7 @@
 
 #include "IO/Stream.h"
 #include "IO/File.h"
+#include "IO/FileSystem.h"
 #include "Audio/Midi.h"
 #include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
@@ -21,11 +22,11 @@ String GetMidiPath(StringView fileName)
 	String ResDir = "Resources/";
 	for(size_t i=0; i<5; i++)
 	{
-		if(DiskFile::Exists(ResDir)) break;
+		if(OS.FileExists(ResDir)) break;
 		ResDir = "../"+ResDir;
 	}
 	String filePath = fileName;
-	if(!DiskFile::Exists(filePath)) filePath = ResDir+"Music/Midi/"+fileName;
+	if(!OS.FileExists(filePath)) filePath = ResDir+"Music/Midi/"+fileName;
 	return filePath;
 }
 
@@ -45,16 +46,14 @@ void PrintMusicInfo(const Music& music)
 bool PrintMidiFileInfo(StringView filePath)
 {
 	Console.PrintLine("Загрузка midi файла ", filePath, "...");
-	auto file = DiskFile::Reader(filePath);
-	if(file==null)
+	auto fileMapping = OS.MapFile(filePath);
+	if(fileMapping==null)
 	{
 		Console.PrintLine("Файл не открыт!");
 		Console.GetChar();
 		return false;
 	}
-	auto mapping = file.Map<Intra::byte>();
-	auto music = ReadMidiFile(mapping);
-	file.Unmap();
+	auto music = ReadMidiFile(fileMapping.AsRange());
 
 	if(music.Tracks==null)
 	{

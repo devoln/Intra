@@ -13,7 +13,7 @@
 //4868 - компилятор не может принудительно применить порядок вычисления "слева направо" для списка инициализаторов, заключенных в фигурные скобки
 
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED \
-	__pragma(warning(disable : 5027))
+	__pragma(warning(disable : 5026 5027))
 #else
 #define INTRA_REDUNDANT_WARNINGS_MSVC14
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
@@ -41,9 +41,14 @@
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED \
 	__pragma(warning(disable: 4510 4610 4623))
 
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) __pragma(warning(disable: 4548))
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
+
+#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) \
+	__pragma(warning(disable: 4548 4987 4774 4702)) \
+	INTRA_WARNING_DISABLE_LOSING_CONVERSION \
+	INTRA_WARNING_DISABLE_SIGN_CONVERSION \
+	INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 
 #ifndef __clang__
 #define INTRA_DISABLE_LNK4221 namespace {char INTRA_CONCATENATE_TOKENS($DisableLNK4221__, __LINE__);}

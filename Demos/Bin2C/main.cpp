@@ -1,5 +1,6 @@
 ﻿#include "IO/Stream.h"
 #include "IO/File.h"
+#include "IO/FileSystem.h"
 #include "Range/Generators/StringView.h"
 #include "Container/Sequential/String.h"
 #include "Algo/String/Parse.h"
@@ -8,21 +9,23 @@
 #include "Algo/Mutation/Transform.h"
 using namespace Intra;
 using namespace Intra::IO;
+using namespace Algo;
+using namespace Op;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 {
-	String result = Algo::Path::ExtractName(path);
-	Algo::Transform(result.AsRange(), [](char c){return AsciiSet::LatinAndDigits.Contains(c)? c: '_';});
+	String result = Path::ExtractName(path);
+	Transform(result.AsRange(), [](char c) {return AsciiSet::LatinAndDigits.Contains(c)? c: '_';});
 	result = prefix+result;
-	if(byte(result[0]-'0')<=9) result = '_'+result;
+	if(IsDigit(result.First())) result = '_'+result;
 	return result;
 }
 
 StringView PathFromCmdLine(const char* path)
 {
-	return Algo::Trim(Algo::Trim(StringView(path), '"'), Op::IsSpace<char>);
+	return Trim(Trim(StringView(path), '"'), IsSpace<char>);
 }
 
 static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath, String& outputFilePath,
@@ -39,44 +42,45 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 
 	for(int i=1; i<argc; i++)
 	{
-		if(argv[i][0]!='-')
+		StringView arg = StringView(argv[i]);
+		if(!StartsWith(arg, '-'))
 		{
 			inputFilePath = PathFromCmdLine(argv[i]);
 			continue;
 		}
 
-		if(StringView(argv[i])=="-notabs")
+		if(arg=="-notabs")
 		{
 			notabs = true;
 			continue;
 		}
-		if(StringView(argv[i])=="-nospaces")
+		if(arg=="-nospaces")
 		{
 			nospaces = true;
 			continue;
 		}
-		if(StringView(argv[i])=="-singleline")
+		if(arg=="-singleline")
 		{
 			singleline = true;
 			continue;
 		}
-		if(StringView(argv[i])=="-endline")
+		if(arg=="-endline")
 		{
 			endline = true;
 			continue;
 		}
 
-		if(StringView(argv[i])=="-o")
+		if(arg=="-o")
 		{
 			outputFilePath = PathFromCmdLine(argv[++i]);
 			continue;
 		}
-		if(StringView(argv[i])=="-varname")
+		if(arg=="-varname")
 		{
 			binArrName = PathFromCmdLine(argv[++i]);
 			continue;
 		}
-		if(StringView(argv[i])=="-per-line")
+		if(arg=="-per-line")
 		{
 			StringView(argv[++i]) >> valuesPerLine;
 			continue;
@@ -103,13 +107,13 @@ inline size_t ByteToStr(byte x, char* dst)
 void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView binArrName,
 	int valuesPerLine, bool notabs, bool nospaces, bool singleline, bool endline)
 {
-	DiskFile::Reader input(inputFilePath);
-	if(input==null)
+	auto inputFileMapping = OS.MapFile(inputFilePath);
+	if(inputFileMapping==null)
 	{
 		Console.PrintLine("File ", inputFilePath, " is not opened!");
 		return;
 	}
-	ArrayRange<const byte> src = input.Map<byte>();
+	ArrayRange<const byte> src = inputFileMapping.AsRange();
 	const byte* srcBytes = src.Begin;
 	DiskFile::Writer dst(outputFilePath);
 	dst.Print("const unsigned char ", binArrName, "[] = {");
@@ -160,8 +164,12 @@ int INTRA_CRTDECL main(int argc, const char* argv[])
 	String inputFilePath, outputFilePath, binArrName;
 	int valuesPerLine;
 	bool notabs, nospaces, singleline, endline;
-	ParseCommandLine(argc, argv, inputFilePath, outputFilePath, binArrName, valuesPerLine, notabs, nospaces, singleline, endline);
-	ConvertFile(inputFilePath, outputFilePath, binArrName, valuesPerLine, notabs, nospaces, singleline, endline);
+
+	ParseCommandLine(argc, argv, inputFilePath, outputFilePath,
+		binArrName, valuesPerLine, notabs, nospaces, singleline, endline);
+
+	ConvertFile(inputFilePath, outputFilePath, binArrName,
+		valuesPerLine, notabs, nospaces, singleline, endline);
 
 	return 0;
 }

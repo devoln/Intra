@@ -2,12 +2,13 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
+#include "Platform/CppWarnings.h"
+
 #include "Map.h"
 
 #include "Platform/Compatibility.h"
-#include "Platform/CppWarnings.h"
 
-INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifndef INTRA_STL_INTERFACE
 #define INTRA_STL_INTERFACE
@@ -21,11 +22,10 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/LogSystem.h"
 #include "Platform/Time.h"
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4350 4548 4702)
-#endif
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <map>
 #include <unordered_map>
+INTRA_WARNING_POP
 
 #include "Container/Associative/LinearMap.h"
 #include "Container/Associative/HashMap.h"
@@ -436,3 +436,5 @@ void RunMapPerfTests(IO::IFormattedWriter& output)
 		}
 	}
 }
+
+INTRA_WARNING_POP

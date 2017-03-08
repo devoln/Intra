@@ -1,10 +1,9 @@
-﻿#ifndef INTRA_STL_INTERFACE
-#define INTRA_STL_INTERFACE
-#endif
-
-#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
+﻿#if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
 #define _HAS_EXCEPTIONS 0
 #endif
+
+#include "Platform/CppWarnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Array.h"
 
@@ -17,16 +16,15 @@
 #include "Container/Sequential/List.h"
 #include "IO/LogSystem.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4350 4548)
-#endif
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <vector>
 #include <string>
 #include <deque>
 #include <list>
+INTRA_WARNING_POP
+
 
 using namespace Intra;
 using namespace Intra::IO;

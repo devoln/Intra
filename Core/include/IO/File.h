@@ -70,20 +70,6 @@ public:
 	ulong64 GetSize() const override;
 	ulong64 GetPos() const override;
 
-	template<typename T> ArrayRange<const T> Map(ulong64 firstByte=0, size_t elements = Meta::NumericLimits<size_t>::Max()) const
-	{
-		if(elements == Meta::NumericLimits<size_t>::Max())
-			elements = size_t((GetSize()-firstByte)/sizeof(T));
-		map(firstByte, elements*sizeof(T));
-		return {reinterpret_cast<const T*>(mapping.data), elements};
-	}
-
-	void Unmap() const;
-
-private:
-
-	void map(ulong64 firstByte, size_t bytes) const;
-
 public:
 	bool EndOfStream() const override;
 	size_t ReadData(void* data, size_t bytes) override final;

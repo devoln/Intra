@@ -3,6 +3,7 @@
 #include "Platform/HardwareInfo.h"
 #include "IO/Stream.h"
 #include "IO/File.h"
+#include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
 #include "IO/ConsoleWriter.h"
@@ -52,7 +53,7 @@ void InitLogSystem(int argc, const char* argv[])
 #ifndef INTRA_NO_FILE_LOGGING
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
-	const bool logExisted = DiskFile::Exists(logFileName);
+	const bool logExisted = OS.FileExists(logFileName);
 	g_LogFile = DiskFile::Writer(logFileName, true);
 	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Logs</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
 	const String datetime = DateTime::Now().ToString();

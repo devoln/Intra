@@ -1,7 +1,10 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Generators/ArrayRange.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
@@ -12,6 +15,9 @@ public:
 
 	void Close();
 
+	bool operator==(null_t) const {return mData==null;}
+	bool operator!=(null_t) const {return mData!=null;}
+
 protected:
 	void* mData;
 	size_t mSize;
@@ -21,18 +27,24 @@ protected:
 		mData = rhs.mData;
 		mSize = rhs.mSize;
 		rhs.mData = null;
+		rhs.mSize = 0;
 	}
 
 	BasicFileMapping() {}
-	BasicFileMapping(StringView fileName, size_t startByte, size_t bytes, bool writeAccess);
+	BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess);
 	~BasicFileMapping() {Close();}
 };
 
 class FileMapping: public BasicFileMapping
 {
 public:
-	FileMapping(StringView fileName, size_t startByte, size_t bytes):
+	enum: size_t {MAP_ALL};
+
+	FileMapping(StringView fileName, ulong64 startByte, size_t bytes):
 		BasicFileMapping(fileName, startByte, bytes, false) {}
+
+	FileMapping(StringView fileName):
+		BasicFileMapping(fileName, 0, ~size_t(0), false) {}
 
 	FileMapping(FileMapping&& rhs) {assign(Meta::Move(rhs));}
 	FileMapping(const FileMapping&) = delete;
@@ -42,7 +54,7 @@ public:
 
 	const byte* Data() const {return static_cast<byte*>(mData);}
 
-	ArrayRange<const byte> AsRange() const {return{Data(), Length()};}
+	ArrayRange<const byte> AsRange() const {return {Data(), Length()};}
 
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
@@ -52,8 +64,11 @@ public:
 class WritableFileMapping: public BasicFileMapping
 {
 public:
-	WritableFileMapping(StringView fileName, size_t startByte, size_t bytes):
+	WritableFileMapping(StringView fileName, ulong64 startByte, size_t bytes):
 		BasicFileMapping(fileName, startByte, bytes, true) {}
+
+	WritableFileMapping(StringView fileName):
+		BasicFileMapping(fileName, 0, ~size_t(0), true) {}
 
 	WritableFileMapping(WritableFileMapping&& rhs) {assign(Meta::Move(rhs));}
 	WritableFileMapping(const WritableFileMapping&) = delete;
@@ -73,3 +88,5 @@ public:
 };
 
 }}
+
+INTRA_WARNING_POP

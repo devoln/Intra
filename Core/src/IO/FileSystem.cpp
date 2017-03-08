@@ -3,6 +3,8 @@
 #include "Container/Sequential/String.h"
 #include "Algo/String/Path.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #include <sys/stat.h>
 
 
@@ -92,7 +94,7 @@ bool OsFileSystem::FileExists(StringView fileName) const
 {
 	String fullFileName = GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	auto wfn = utf8ToWStringZ("\\\\?\\"+fullFileName);
+	auto wfn = utf8ToWStringZ(fullFileName);
 	return PathFileExistsW(wfn.Data()) != 0;
 #else
 	return access(fullFileName.CStr(), 0) != -1;
@@ -103,7 +105,7 @@ bool OsFileSystem::FileDelete(StringView fileName)
 {
 	String fullFileName = GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	auto wfn = utf8ToWStringZ("\\\\?\\"+fullFileName);
+	auto wfn = utf8ToWStringZ(fullFileName);
 	return DeleteFileW(wfn.Data()) != 0;
 #else
 	return remove(fullFileName.CStr()) == 0;
@@ -123,8 +125,8 @@ bool OsFileSystem::FileMove(StringView oldFileName, StringView newFileName, bool
 	}
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	auto wOldFN = utf8ToWStringZ("\\\\?\\"+oldFullFileName);
-	auto wNewFN = utf8ToWStringZ("\\\\?\\"+newFullFileName);
+	auto wOldFN = utf8ToWStringZ(oldFullFileName);
+	auto wNewFN = utf8ToWStringZ(newFullFileName);
 	return MoveFileExW(wOldFN.Data(), wNewFN.Data(), MOVEFILE_COPY_ALLOWED) != 0;
 #else
 	return rename(oldFullFileName.CStr(), newFullFileName.CStr()) == 0;
@@ -138,7 +140,7 @@ FileInfo OsFileSystem::FileGetInfo(StringView fileName) const
 	String fullFileName = GetFullFileName(fileName);
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
 	WIN32_FILE_ATTRIBUTE_DATA fad;
-	if(!GetFileAttributesExW(utf8ToWStringZ("\\\\?\\"+fullFileName).Data(), GetFileExInfoStandard, &fad)) return {0, 0};
+	if(!GetFileAttributesExW(utf8ToWStringZ(fullFileName).Data(), GetFileExInfoStandard, &fad)) return {0, 0};
 	result.Size = (ulong64(fad.nFileSizeHigh) << 32)|fad.nFileSizeLow;
 	result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32)|fad.ftLastWriteTime.dwLowDateTime;
 #else
@@ -157,4 +159,8 @@ ulong64 OsFileSystem::FileGetTime(StringView fileName) const
 ulong64 OsFileSystem::FileGetSize(StringView fileName) const
 {return FileGetInfo(fileName).Size;}
 
+OsFileSystem OS;
+
 }}
+
+INTRA_WARNING_POP

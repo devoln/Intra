@@ -1,8 +1,12 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
 #include "Range/Generators/StringView.h"
 #include "Container/ForwardDecls.h"
+#include "FileMapping.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
@@ -17,11 +21,14 @@ struct FileInfo
 class IFileSystem
 {
 public:
+	virtual ~IFileSystem() {}
+
 	virtual bool FileExists(StringView fileName) const = 0;
 	virtual bool FileDelete(StringView filename) = 0;
 	virtual bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) = 0;
 	virtual FileInfo FileGetInfo(StringView fileName) const = 0;
 	virtual ulong64 FileGetTime(StringView filename) const = 0;
+	virtual ulong64 FileGetSize(StringView filename) const = 0;
 
 	virtual StringView CurrentDirectory() const = 0;
 	virtual void SetDirectory(StringView newDir) = 0;
@@ -67,6 +74,18 @@ public:
 	//! Получить полный путь к файлу fileName.
 	String GetFullFileName(StringView fileName) const;
 
+	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes)
+	{return FileMapping(GetFullFileName(fileName), offset, bytes);}
+	
+	FileMapping MapFile(StringView fileName)
+	{return FileMapping(GetFullFileName(fileName));}
+
+	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes)
+	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes);}
+	
+	WritableFileMapping MapFileWrite(StringView fileName)
+	{return WritableFileMapping(GetFullFileName(fileName));}
+
 private:
 	String mCurrentDirectory;
 };
@@ -74,3 +93,5 @@ private:
 extern OsFileSystem OS;
 
 }}
+
+INTRA_WARNING_POP

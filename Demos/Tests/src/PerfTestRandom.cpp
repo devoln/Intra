@@ -2,22 +2,21 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
+#include "Platform/CppWarnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #include "PerfTestRandom.h"
+
 #include "Platform/Time.h"
 #include "Test/PerfSummary.h"
-#include "Platform/CppWarnings.h"
 #include "Platform/Compatibility.h"
 #include "Math/Random.h"
 
-INTRA_DISABLE_REDUNDANT_WARNINGS
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4350 4548)
-#endif
-
-
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <random>
-#include <stdlib.h>
+#include <cstdlib>
+INTRA_WARNING_POP
 
 using namespace Intra;
 
@@ -49,3 +48,4 @@ void RunRandomPerfTests(IO::IFormattedWriter& logger)
 		{time3});
 }
 
+INTRA_WARNING_POP

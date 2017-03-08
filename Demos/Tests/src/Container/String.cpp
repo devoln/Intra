@@ -8,6 +8,9 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
 
+#include "Platform/CppWarnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #include "String.h"
 
 #include "Platform/Compatibility.h"
@@ -16,17 +19,14 @@
 #include "Container/Sequential/String.h"
 #include "Platform/Time.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-#ifdef _MSC_VER
-#pragma warning(disable: 4350 4548)
-#endif
-
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <string>
 #include <vector>
 #ifndef INTRA_MINIMIZE_CRT
 #include <sstream>
 #endif
+INTRA_WARNING_POP
 
 using namespace Intra;
 using namespace Intra::IO;
