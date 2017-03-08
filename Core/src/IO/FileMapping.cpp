@@ -8,6 +8,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <unistd.h>
 #include <sys/mman.h>
+#include <fcntl.h>
 
 #elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
 
@@ -95,7 +96,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 	int fd = open(fullFileName.CStr(), writeAccess? O_RDONLY: O_RDWR);
 	mData = mmap(null, bytes,
 		writeAccess? PROT_WRITE: PROT_READ,
-		MAP_SHARED, fd, long(firstByte));
+		MAP_SHARED, fd, long(startByte));
 	close(fd);
 #endif
 }

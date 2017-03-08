@@ -3,6 +3,7 @@
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/StringView.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

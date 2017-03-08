@@ -3,7 +3,7 @@
 #include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
 #include "Range/Generators/StringView.h"
-#include "Container/ForwardDecls.h"
+#include "Container/Sequential/String.h"
 #include "FileMapping.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS

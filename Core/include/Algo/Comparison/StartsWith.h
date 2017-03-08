@@ -63,8 +63,8 @@ bool> StartsWith(const R& range, const RW& what)
 }
 
 template<typename R, typename RW> forceinline Meta::EnableIf<
-	(!IsInputRange<R>::_ && IsAsForwardRange<R>::_) ||
-	(!IsInputRange<RW>::_ && IsAsForwardRange<RW>::_),
+	(!IsInputRange<R>::_ || !IsInputRange<RW>::_) &&
+	IsAsForwardRange<R>::_ && IsAsForwardRange<RW>::_,
 bool> StartsWith(R&& range, RW&& what)
 {return StartsWith(Range::Forward<R>(range), Range::Forward<RW>(what));}
 
