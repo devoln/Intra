@@ -87,6 +87,7 @@ protected:
 	FiniteInputRange(Interface* interfacePtr): InputRange<T>(interfacePtr) {}
 };
 
+typedef FiniteInputRange<char> FiniteInputStream;
 
 #undef TEMPLATE
 
@@ -95,5 +96,6 @@ INTRA_WARNING_POP
 }
 
 using Range::FiniteInputRange;
+using Range::FiniteInputStream;
 
 }

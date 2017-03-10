@@ -198,9 +198,6 @@
     <ClCompile Include="src\Memory\Memory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
     </ClCompile>
-    <ClCompile Include="src\IO\File.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
     <ClCompile Include="src\Platform\HardwareInfo.cpp">
       <Filter>Файлы исходного кода\Platform</Filter>
     </ClCompile>
@@ -327,6 +324,9 @@
     <ClCompile Include="src\IO\FileMapping.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\OsFile.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Utils\Callback.h">
@@ -334,9 +334,6 @@
     </ClInclude>
     <ClInclude Include="include\Platform\Endianess.h">
       <Filter>Заголовочные файлы\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="include\IO\File.h">
-      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="include\Math\Fixed.h">
       <Filter>Заголовочные файлы\Math</Filter>
@@ -1051,6 +1048,18 @@
     </ClInclude>
     <ClInclude Include="include\IO\FileMapping.h">
       <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\OsFile.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\FileReader.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\FileWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\Runtime.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

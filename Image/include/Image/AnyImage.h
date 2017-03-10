@@ -7,6 +7,8 @@
 #include "Image/ImageInfo.h"
 #include "Math/Vector.h"
 #include "Container/Sequential/Array.h"
+#include "Range/Polymorphic/InputRange.h"
+#include "Range/Polymorphic/ForwardRange.h"
 
 namespace Intra { namespace Image {
 
@@ -64,12 +66,9 @@ public:
 
 #ifndef INTRA_NO_IMAGE_LOADING
 	static FileFormat DetectFileFormatByHeader(byte header[12]);
-	static ImageInfo GetImageInfo(IO::IInputStream& stream, FileFormat* format=null);
-	static ImageInfo GetImageInfo(StringView filename, FileFormat* format=null);
+	static ImageInfo GetImageInfo(ForwardStream stream, FileFormat* oFormat=null);
 
-	static AnyImage FromFile(StringView filename);
-
-	static AnyImage FromStream(IO::IInputStream& stream, size_t bytes);
+	static AnyImage FromStream(ForwardStream stream);
 
 #endif
 };

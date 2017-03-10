@@ -7,6 +7,7 @@
 #include "Range/Concepts.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range/AsRange.h"
+#include "Range/Stream.h"
 
 namespace Intra { namespace Range {
 
@@ -97,7 +98,9 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 
 }
 
-template<typename T> struct InputRange
+template<typename T> struct InputRange: Meta::SelectType<
+	StreamMixin<InputRange<T>, Meta::RemoveConst<T>>,
+	Meta::EmptyType, Meta::IsTriviallySerializable<T>::_>
 {
 protected:
 	typedef DP::InputRangeInterface<T> Interface;
@@ -178,6 +181,8 @@ protected:
 	InputRange(Interface* interfacePtr): mInterface(interfacePtr) {}
 };
 
+typedef InputRange<char> InputStream;
+
 
 #undef TEMPLATE
 
@@ -186,5 +191,6 @@ INTRA_WARNING_POP
 }
 
 using Range::InputRange;
+using Range::InputStream;
 
 }

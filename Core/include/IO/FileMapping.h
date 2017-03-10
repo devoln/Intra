@@ -39,8 +39,6 @@ protected:
 class FileMapping: public BasicFileMapping
 {
 public:
-	enum: size_t {MAP_ALL};
-
 	FileMapping(StringView fileName, ulong64 startByte, size_t bytes):
 		BasicFileMapping(fileName, startByte, bytes, false) {}
 

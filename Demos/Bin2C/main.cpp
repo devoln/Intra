@@ -1,5 +1,7 @@
 ﻿#include "IO/Stream.h"
-#include "IO/File.h"
+#include "IO/OsFile.h"
+#include "IO/FileReader.h"
+#include "IO/FileWriter.h"
 #include "IO/FileSystem.h"
 #include "Range/Generators/StringView.h"
 #include "Container/Sequential/String.h"
@@ -115,12 +117,13 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	}
 	ArrayRange<const byte> src = inputFileMapping.AsRange();
 	const byte* srcBytes = src.Begin;
-	DiskFile::Writer dst(outputFilePath);
-	dst.Print("const unsigned char ", binArrName, "[] = {");
+	OsFile dstFile = OS.FileOpenWrite(outputFilePath);
+	FileWriter dst(dstFile);
+	dst << "const unsigned char " << binArrName << "[] = {";
 	if(!singleline)
 	{
-		dst.PrintLine();
-		if(!notabs) dst.Print('\t');
+		dst << "\r\n";
+		if(!notabs) dst << '\t';
 	}
 	char dataToPrint[10]={',', ' '};
 	static const char dataToPrintPerLine[4]="\r\n\t";
@@ -132,7 +135,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	{
 		size_t n = sizeToPrint;
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteData(dataToPrint, n);
+		dst.WriteRawFrom(ArrayRange<const char>(dataToPrint, n));
 	}
 	else for(size_t i=1; i<src.Length(); i++)
 	{
@@ -143,11 +146,11 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 			n += sizeToPrintPerLineCount;
 		}
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteData(dataToPrint, n);
+		dst.WriteRawFrom(ArrayRange<const char>(dataToPrint, n));
 	}
-	if(!singleline) dst.PrintLine();
-	dst.Print("};");
-	if(endline) dst.PrintLine();
+	if(!singleline) dst << "\r\n";
+	dst << "};";
+	if(endline) dst << "\r\n";
 }
 
 

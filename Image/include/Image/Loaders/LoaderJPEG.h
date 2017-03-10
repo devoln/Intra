@@ -13,8 +13,8 @@ class LoaderJPEG: public AImageLoader
 {
 	LoaderJPEG() {}
 public:
-	ImageInfo GetInfo(IO::IInputStream& stream) const override;
-	AnyImage Load(IO::IInputStream& stream, size_t bytes) const override;
+	ImageInfo GetInfo(InputStream stream) const override;
+	AnyImage Load(InputStream stream) const override;
 	bool IsValidHeader(const void* header, size_t headerSize) const override;
 	FileFormat FileFormatOfLoader() const override {return FileFormat::JPEG;}
 

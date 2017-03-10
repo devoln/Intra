@@ -3,6 +3,7 @@
 #include "Image/ImageInfo.h"
 #include "Range/Generators/ListRange.h"
 #include "Platform/CppWarnings.h"
+#include "Range/Polymorphic/InputRange.h"
 
 namespace Intra {
 
@@ -26,8 +27,8 @@ protected:
 public:
 	AImageLoader* NextListNode() const {return mNextLoader;}
 
-	virtual ImageInfo GetInfo(IO::IInputStream& stream) const = 0;
-	virtual AnyImage Load(IO::IInputStream& stream, size_t bytes) const = 0;
+	virtual ImageInfo GetInfo(InputStream stream) const = 0;
+	virtual AnyImage Load(InputStream stream) const = 0;
 	virtual bool IsValidHeader(const void* header, size_t headerSize) const = 0;
 	virtual FileFormat FileFormatOfLoader() const = 0;
 

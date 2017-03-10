@@ -4,6 +4,7 @@
 #include "Algo/String/Path.h"
 #include "Algo/Comparison/EndsWith.h"
 #include "Algo/Mutation/Replace.h"
+#include "IO/OsFile.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -161,6 +162,18 @@ ulong64 OsFileSystem::FileGetTime(StringView fileName) const
 
 ulong64 OsFileSystem::FileGetSize(StringView fileName) const
 {return FileGetInfo(fileName).Size;}
+
+OsFile OsFileSystem::FileOpen(StringView fileName)
+{return OsFile(GetFullFileName(fileName), OsFile::Mode::Read);}
+
+OsFile OsFileSystem::FileOpenWrite(StringView fileName)
+{return OsFile(GetFullFileName(fileName), OsFile::Mode::Write);}
+
+OsFile OsFileSystem::FileOpenReadWrite(StringView fileName)
+{return OsFile(GetFullFileName(fileName), OsFile::Mode::ReadWrite);}
+
+String OsFileSystem::FileToString(StringView fileName)
+{return OsFile::ReadAsString(GetFullFileName(fileName));}
 
 OsFileSystem OS;
 

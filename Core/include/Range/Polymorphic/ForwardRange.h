@@ -105,6 +105,7 @@ protected:
 	ForwardRange(Interface* interfacePtr): InputRange<T>(interfacePtr) {}
 };
 
+typedef ForwardRange<char> ForwardStream;
 
 #undef TEMPLATE
 
@@ -113,5 +114,6 @@ INTRA_WARNING_POP
 }
 
 using Range::ForwardRange;
+using Range::ForwardStream;
 
 }

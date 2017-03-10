@@ -15,11 +15,11 @@ using namespace IO;
 namespace Image {
 
 
-ImageInfo LoaderBMP::GetInfo(IO::IInputStream& stream) const
+ImageInfo LoaderBMP::GetInfo(InputStream stream) const
 {
 	byte headerBegin[14];
-	stream.ReadData(headerBegin, 14);
-	if(!IsValidHeader(headerBegin, 14)) return ImageInfo();
+	stream.ReadRawTo<byte>(headerBegin);
+	if(!IsValidHeader(headerBegin, sizeof(headerBegin))) return ImageInfo();
 	struct HeaderPart
 	{
 		uint infoSize;
@@ -27,7 +27,7 @@ ImageInfo LoaderBMP::GetInfo(IO::IInputStream& stream) const
 		ushort colorPlanes;
 		ushort bitsPerPixel;
 	};
-	HeaderPart hdrPart = stream.Read<HeaderPart>();
+	HeaderPart hdrPart = stream.ReadRaw<HeaderPart>();
 
 	ImageFormat fmt;
 	if(hdrPart.bitsPerPixel==32) fmt = ImageFormat::RGBA8;
@@ -41,10 +41,8 @@ ImageInfo LoaderBMP::GetInfo(IO::IInputStream& stream) const
 	return {USVec3(hdrPart.size, 1), fmt, ImageType_2D, 0};
 }
 
-AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
+AnyImage LoaderBMP::Load(InputStream stream) const
 {
-	(void)bytes;
-
 	struct BitmapHeader
 	{
 		Vector2<intLE> sizes;
@@ -60,38 +58,41 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 		uintLE CsType;
 		uintLE Endpoints[9];
 		Vector3<uintLE> GammaRGB;
+		byte V5[16];
 	} bmpHdr;
 
-	stream.Skip(2); //Предполагается, что идентификатор формата уже проверен
+	stream.PopFirstN(2); //Предполагается, что идентификатор формата уже проверен
 
-	uint fileSize = stream.Read<uintLE>();
+	uint fileSize = stream.ReadRaw<uintLE>();
 	(void)fileSize;
-	stream.Read<uint>();
-	const uint dataPos = stream.Read<uintLE>();
+	stream.ReadRaw<uint>();
+	const uint dataPos = stream.ReadRaw<uintLE>();
 
-	const uint hdrSize = stream.Read<uintLE>();
-	stream.ReadData(&bmpHdr, hdrSize-sizeof(uintLE));
-
+	const uint hdrSize = stream.ReadRaw<uintLE>();
+	stream.ReadRawTo(ArrayRange<char>(reinterpret_cast<char*>(&bmpHdr), hdrSize-sizeof(uintLE)));
+	size_t bytesRead = 14+hdrSize;
 
 	//RLE4, RLE8 и встроенный jpeg\png не поддерживаются!
 	if(bmpHdr.Compression!=0 && bmpHdr.Compression!=3)
 		return null;
-
-	//Load Color Table
-	stream.SetPos(14+hdrSize);
 
 	//const uint colorTableSize=(bmpHdr.bitCount>8 || bmpHdr.bitCount==0)? 0: (1 << bmpHdr.bitCount);
 
 	UBVec4 colorTable[256];
 	if(bmpHdr.clrUsed!=0)
 	{
-		stream.ReadData(colorTable, sizeof(colorTable[0])*bmpHdr.clrUsed);
-		for(uint i = 0; i<bmpHdr.clrUsed; i++)
+		stream.ReadRawTo(Range::Take(colorTable, bmpHdr.clrUsed));
+		bytesRead += bmpHdr.clrUsed*sizeof(colorTable[0]);
+		for(uint i=0; i<bmpHdr.clrUsed; i++)
 			colorTable[i] = colorTable[i].swizzle(2, 1, 0, 3);
 	}
-	else if(bmpHdr.bitCount<=8) //Если палитра отсутствует, то сделаем её сами из оттенков серого. Такие случаи вроде бы не были описаны, но paint создаёт такие bmp
-		for(int i = 0; i<(1<<bmpHdr.bitCount); i++)
+	else if(bmpHdr.bitCount<=8)
+	{
+		//Если палитра отсутствует, то сделаем её сами из оттенков серого.
+		//Такие случаи вроде бы не были описаны, но paint создаёт такие bmp.
+		for(int i=0; i < (1 << bmpHdr.bitCount); i++)
 			colorTable[i] = UBVec4(UBVec3(byte(255*i >> bmpHdr.bitCount)), 255);
+	}
 
 	AnyImage result;
 	result.LineAlignment = 1;
@@ -107,7 +108,10 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 	}
 	else result.Info.Format = ImageFormat::RGBA8;
 	result.Data.SetCountUninitialized(result.Info.CalculateMipmapDataSize(0, result.LineAlignment));
-	stream.SetPos(dataPos);
+
+	if(bytesRead > dataPos) return null;
+	stream.PopFirstN(dataPos-bytesRead);
+	bytesRead = dataPos;
 
 	if(bmpHdr.Compression==0)
 	{
@@ -157,11 +161,11 @@ AnyImage LoaderBMP::Load(IInputStream& stream, size_t bytes) const
 	}
 	UBVec4* pixels = reinterpret_cast<UBVec4*>(result.Data.End());
 
-	for(uint i = 0; i<result.Info.Size.y; i++)
+	for(uint i=0; i<result.Info.Size.y; i++)
 	{
 		pixels -= result.Info.Size.x;
 		uint index = 0;
-		stream.ReadData(line.Data(), lineWidth);
+		stream.ReadRawTo(line.AsRange());
 
 		byte* linePtr = line.Data();
 

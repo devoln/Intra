@@ -1367,11 +1367,11 @@ static FontHandle create_font(byte* data, uint height, uint* yadvance)
 
 FontHandle FontCreate(StringView name, uint height, uint* yadvance)
 {
-	DiskFile::Reader file = DiskFile::Reader(name);
+	auto file = OS.MapFile(name);
 	if(file==null) return null;
-	size_t size = uint(file.GetSize());
+	size_t size = size_t(file.Size());
 	byte* data = GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
-	file.ReadData(data, size);
+	file.ReadData(0, data, size);
 	return create_font(data, height, yadvance);
 }
 

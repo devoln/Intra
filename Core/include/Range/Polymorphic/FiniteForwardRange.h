@@ -107,6 +107,7 @@ protected:
 	FiniteForwardRange(typename ForwardRange<T>::Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
 };
 
+typedef FiniteForwardRange<char> FiniteForwardStream;
 
 #undef TEMPLATE
 
@@ -115,5 +116,6 @@ INTRA_WARNING_POP
 }
 
 using Range::FiniteForwardRange;
+using Range::FiniteForwardStream;
 
 }

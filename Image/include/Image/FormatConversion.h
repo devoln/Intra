@@ -7,6 +7,7 @@
 #include "Math/Math.h"
 #include "Math/Bit.h"
 #include "Platform/CppWarnings.h"
+#include "Range/Polymorphic/InputRange.h"
 
 namespace Intra { namespace Image {
 
@@ -18,11 +19,11 @@ inline uint ComponentByMask(uint color, uint mask)
 uint ConvertColorBits(uint color, uint fromBitCount, uint toBitCount);
 void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, Math::USVec2 sizes, ArrayRange<byte> data);
 
-void ReadPixelDataBlock(IO::IInputStream& stream, Math::USVec2 sizes,
+void ReadPixelDataBlock(InputStream& stream, Math::USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf);
 
-void ReadPalettedPixelDataBlock(IO::IInputStream& stream, ArrayRange<const byte> palette,
+void ReadPalettedPixelDataBlock(InputStream& stream, ArrayRange<const byte> palette,
 	ushort bpp, Math::USVec2 sizes, ImageFormat format, bool flipVert,
 	ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf);
 

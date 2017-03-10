@@ -47,7 +47,7 @@ void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes,
 
 
 
-void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
+void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
 {
@@ -63,62 +63,74 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 
 	if(srcFormat==dstFormat && srcLineBytes==dstLineBytes && !swapRB && !flipVert)
 	{
-		stream.ReadData(dstBuf.Data(), srcDataSize);
+		stream.ReadRawTo(Range::Take(dstBuf, srcDataSize));
 		return;
 	}
 
-	byte* pos = dstBuf.Begin;
-	if(flipVert) pos += dstDataSize-dstLineBytes;
+	auto dstPos = dstBuf;
 
 	if(srcFormat==dstFormat)
 		for(int y = 0; y<sizes.y; y++)
 		{
-			stream.ReadData(pos, usefulSrcLineBytes);
-			stream.Skip(srcLineBytes-usefulSrcLineBytes);
-			//Algo::FillZeros(ArrayRange<byte>(pos+usefulSrcLineBytes, dstLineBytes-usefulSrcLineBytes));
-			if(flipVert) pos -= dstLineBytes;
-			else pos += dstLineBytes;
+			if(flipVert)
+			{
+				stream.ReadRawTo(dstPos.Tail(usefulSrcLineBytes));
+				dstPos.PopLastExactly(dstLineBytes);
+			}
+			else
+			{
+				stream.ReadRawTo(dstPos.Take(usefulSrcLineBytes));
+				dstPos.PopFirstExactly(dstLineBytes);
+				//Algo::FillZeros(dstPos.Drop(usefulSrcLineBytes));
+			}
+			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 		}
 
 	if(srcFormat==ImageFormat::A1_BGR5 && dstFormat==ImageFormat::RGB8)
-		for(int y = 0; y<sizes.y; y++)
+		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels = reinterpret_cast<UBVec3*>(pos);
-			for(uint x = 0; x<sizes.x; x++)
+			auto pixels = !flipVert?
+				reinterpret_cast<UBVec3*>(dstPos.Begin):
+				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
+			for(uint x=0; x<sizes.x; x++)
 			{
-				ushort color = stream.Read<ushortLE>();
+				ushort color = stream.ReadRaw<ushortLE>();
 				*pixels++ = {(color >> 11) << 3, ((color >> 6) & 0x1f) << 3, ((color >> 1) & 0x1f) << 3};
 			}
-			if(flipVert) pos -= dstLineBytes;
-			else pos += dstLineBytes;
-			stream.Skip(srcLineBytes-usefulSrcLineBytes);
+			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
+			else dstPos.PopFirstExactly(dstLineBytes);
+			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 		}
 
 	if(srcFormat==ImageFormat::RGB5A1 && dstFormat==ImageFormat::RGB8)
-		for(int y = 0; y<sizes.y; y++)
+		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels = reinterpret_cast<UBVec3*>(pos);
-			for(uint x = 0; x<sizes.x; x++)
+			auto pixels = !flipVert?
+				reinterpret_cast<UBVec3*>(dstPos.Begin):
+				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
+			for(uint x=0; x<sizes.x; x++)
 			{
-				ushort color = stream.Read<ushortLE>();
+				ushort color = stream.ReadRaw<ushortLE>();
 				*pixels++ = {((color >> 10) & 0x1f) << 3, ((color >> 5) & 0x1f) << 3, (color & 0x1f) << 3};
 			}
-			if(flipVert) pos -= dstLineBytes;
-			else pos += dstLineBytes;
-			stream.Skip(srcLineBytes-usefulSrcLineBytes);
+			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
+			else dstPos.PopFirstExactly(dstLineBytes);
+			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 		}
 
 	if(srcFormat==ImageFormat::RGBA8 && dstFormat==ImageFormat::RGB8)
-		for(int y = 0; y<sizes.y; y++)
+		for(int y=0; y<sizes.y; y++)
 		{
-			auto pixels = reinterpret_cast<UBVec3*>(pos);
+			auto pixels = !flipVert?
+				reinterpret_cast<UBVec3*>(dstPos.Begin):
+				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
 			if(swapRB) for(uint x = 0; x<sizes.x; x++)
-				*pixels++ = stream.Read<UBVec4>().swizzle(2, 1, 0);
+				*pixels++ = stream.ReadRaw<UBVec4>().swizzle(2, 1, 0);
 			else for(uint x = 0; x<sizes.x; x++)
-				*pixels++ = stream.Read<UBVec4>().xyz;
-			if(flipVert) pos -= dstLineBytes;
-			else pos += dstLineBytes;
-			stream.Skip(srcLineBytes-usefulSrcLineBytes);
+				*pixels++ = stream.ReadRaw<UBVec4>().xyz;
+			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
+			else dstPos.PopFirstExactly(dstLineBytes);
+			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 		}
 
 	if(swapRB) SwapRedBlueChannels(dstFormat, dstAlignment, sizes, dstBuf);

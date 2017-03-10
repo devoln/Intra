@@ -9,6 +9,7 @@
 #include "Platform/Debug.h"
 #include "Platform/Errors.h"
 #include "Platform/FundamentalTypes.h"
+#include "Platform/Runtime.h"
 
 #include "Platform/MessageBox.h"
 #include "Platform/Environment.h"

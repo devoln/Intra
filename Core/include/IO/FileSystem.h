@@ -6,6 +6,11 @@
 #include "Container/Sequential/String.h"
 #include "FileMapping.h"
 
+//TODO Это временно, пока не переведу все потоки на новые файлы
+#ifndef INTRA_NO_FILE_LOGGING
+#define INTRA_NO_FILE_LOGGING
+#endif
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
@@ -35,6 +40,7 @@ public:
 };
 
 class FileMapping;
+class OsFile;
 
 class OsFileSystem: public IFileSystem
 {
@@ -74,17 +80,37 @@ public:
 	//! Получить полный путь к файлу fileName.
 	String GetFullFileName(StringView fileName) const;
 
+	//! Отобразить область файла с именем fileName в память с доступом только для чтения.
+	//! @param offset Начало отображаемой области.
+	//! @param bytes Размер отображаемой области в байтах.
 	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes)
 	{return FileMapping(GetFullFileName(fileName), offset, bytes);}
 	
+	//! Отобразить целиком файл с именем fileName в память с доступом только для чтения.
 	FileMapping MapFile(StringView fileName)
 	{return FileMapping(GetFullFileName(fileName));}
 
+	//! Отобразить область файла с именем fileName в память с доступом для чтения и записи.
+	//! @param offset Начало отображаемой области.
+	//! @param bytes Размер отображаемой области в байтах.
 	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes)
 	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes);}
 	
+	//! Отобразить целиком файл с именем fileName в память с доступом для чтения и записи.
 	WritableFileMapping MapFileWrite(StringView fileName)
 	{return WritableFileMapping(GetFullFileName(fileName));}
+
+	//! Открыть файл fileName только для чтения.
+	//! Файл должен существовать, иначе вернёт null.
+	OsFile FileOpen(StringView fileName);
+
+	//! Открыть файл fileName только для записи.
+	OsFile FileOpenWrite(StringView fileName);
+
+	//! Открыть файл fileName для чтения и записи.
+	OsFile FileOpenReadWrite(StringView fileName);
+
+	String FileToString(StringView fileName);
 
 private:
 	String mCurrentDirectory;

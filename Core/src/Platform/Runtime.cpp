@@ -3,6 +3,7 @@
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
 #include "Platform/CppWarnings.h"
+#include "Platform/Runtime.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -71,14 +72,6 @@ extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dsoSymbol)
 
 
 #if(defined(_MSC_VER) && defined(INTRA_MINIMIZE_CRT))
-
-#define INTRA_NOT_LINK_CRT_LIB
-
-#pragma comment(lib, "msvcrtOLD.lib")
-
-#if _MSC_VER>=1900
-#pragma comment(lib, "msvcrtOLD2015.lib")
-#endif
 
 #include <stdio.h>
 
@@ -339,24 +332,6 @@ void INTRA_CRTDECL operator delete(void* block) noexcept
 void INTRA_CRTDECL operator delete(void* block, size_t) noexcept
 {operator delete(block);}
 
-#endif
-
-#ifdef INTRA_NOT_LINK_CRT_LIB
-#pragma comment(linker, "/NODEFAULTLIB:libcmt.lib")
-#pragma comment(linker, "/NODEFAULTLIB:libcpmt.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcrt.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcrt100.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcrt110.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcrt120.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcrt140.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcp100.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcp110.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcp120.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcp140.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcr100.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcr110.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcr120.lib")
-#pragma comment(linker, "/NODEFAULTLIB:msvcr140.lib")
 #endif
 
 INTRA_WARNING_POP

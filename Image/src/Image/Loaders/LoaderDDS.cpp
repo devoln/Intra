@@ -301,22 +301,22 @@ bool LoaderDDS::IsValidHeader(const void* header, size_t headerSize) const
 		headerBytes[2]=='S' && headerBytes[3]==' ');
 }
 
-ImageInfo LoaderDDS::GetInfo(IInputStream& stream) const
+ImageInfo LoaderDDS::GetInfo(InputStream stream) const
 {
 	ImageInfo errResult = {{0,0,0}, null, ImageType_End, 0};
 
 	byte headerSignature[4];
-	stream.ReadData(headerSignature, 4);
+	stream.ReadRawTo<byte>(headerSignature);
 
 	const bool isDDS = IsValidHeader(headerSignature, 4);
 	if(!isDDS) return errResult;
 
-	DDS_HEADER hdr = stream.Read<DDS_HEADER>();
+	DDS_HEADER hdr = stream.ReadRaw<DDS_HEADER>();
 	if(hdr.size!=124) return errResult;
 
 	DDS_HEADER_DXT10 dx10header;
 	if(has_dx10_header(hdr.ddspf))
-		dx10header = stream.Read<DDS_HEADER_DXT10>();
+		dx10header = stream.ReadRaw<DDS_HEADER_DXT10>();
 	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	ImageInfo result;
@@ -333,19 +333,18 @@ ImageInfo LoaderDDS::GetInfo(IInputStream& stream) const
 }
 
 
-AnyImage LoaderDDS::Load(IO::IInputStream& stream, size_t bytes) const
+AnyImage LoaderDDS::Load(InputStream stream) const
 {
-	auto startPos = stream.GetPos();
-	stream.Skip(4); //Пропускаем идентификатор, предполагая, что он уже проверен
+	stream.PopFirstN(4); //Пропускаем идентификатор, предполагая, что он уже проверен
 
-	DDS_HEADER header = stream.Read<DDS_HEADER>();
+	DDS_HEADER header = stream.ReadRaw<DDS_HEADER>();
 	if(header.size!=124)
 		return null;
 
 	DDS_HEADER_DXT10 dx10header;
 
 	if(has_dx10_header(header.ddspf))
-		dx10header = stream.Read<DDS_HEADER_DXT10>();
+		dx10header = stream.ReadRaw<DDS_HEADER_DXT10>();
 	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	bool swapRB;
@@ -357,10 +356,7 @@ AnyImage LoaderDDS::Load(IO::IInputStream& stream, size_t bytes) const
 	iInfo.MipmapCount=0;
 	if(header.flags & DDSD_MIPMAPCOUNT) iInfo.MipmapCount = Max(ushort(1), ushort(header.mipMapCount));
 	if(iInfo.Format==null || iInfo.Type==ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z==0)
-	{
-		stream.SetPos(startPos+bytes);
 		return null;
-	}
 
 	/*if(!iInfo.format.IsCompressed())
 	{
@@ -376,7 +372,7 @@ AnyImage LoaderDDS::Load(IO::IInputStream& stream, size_t bytes) const
 	if(iInfo.MipmapCount==0) iInfo.MipmapCount=1;
 	size_t dataSize = iInfo.CalculateFullDataSize(result.LineAlignment);
 	result.Data.SetCountUninitialized(dataSize);
-	stream.ReadData(result.Data.Data(), dataSize);
+	stream.ReadRawTo(result.Data.AsRange());
 	return result;
 }
 

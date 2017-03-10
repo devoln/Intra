@@ -1,6 +1,7 @@
 ﻿#include "Platform/HardwareInfo.h"
 #include "Platform/CppWarnings.h"
 #include "Algo/Search/Trim.h"
+#include "IO/OsFile.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -74,7 +75,6 @@ ProcessorInfo ProcessorInfo::Get()
 
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
 
-#include "IO/File.h"
 #include "Algo/String/Parse.h"
 #include "Algo/Search/Single.h"
 #include "Algo/Search/Subrange.h"
@@ -114,7 +114,7 @@ ProcessorInfo ProcessorInfo::Get()
 {
 	ProcessorInfo result;
 
-	String allCpuInfo = IO::DiskFile::ReadAsString("/proc/cpuinfo");
+	String allCpuInfo = IO::OsFile::ReadAsString("/proc/cpuinfo");
 
 	StringView modelNameLine = Algo::Find(allCpuInfo, "\nmodel name");
 	result.BrandString = Range::TakeUntil(Algo::Find(modelNameLine, ':').Drop(2), '\n');

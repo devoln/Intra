@@ -4,13 +4,13 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Sort.h"
 #include "Test/TestGroup.h"
 #include "Range/Header.h"
-#include "IO/File.h"
 #include "IO/FileSystem.h"
 #include "IO/HtmlWriter.h"
 #include "IO/ConsoleWriter.h"
 #include "IO/CompositeFormattedWriter.h"
 #include "Algo/String/Path.h"
 #include "Platform/Time.h"
+#include "Platform/Errors.h"
 
 #include "Serialization.h"
 
@@ -79,7 +79,11 @@ int main(int argc, const char* argv[])
 {
 	Errors::InitSignals();
 	InitLogSystem(argc, argv);
+#ifndef INTRA_NO_LOGGING
+#ifndef INTRA_NO_FILE_LOGGING
 	gLogger.Attach(&g_LogWriter);
+#endif
+#endif
 
 	CompositeFormattedWriter emptyLogger;
 	IFormattedWriter* output = &ConsoleWriter;

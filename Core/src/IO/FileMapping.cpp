@@ -58,26 +58,23 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 	String fullFileName = OS.GetFullFileName(fileName);
 	auto size = OS.FileGetSize(fullFileName);
 	if(startByte>size) return;
-	
+
 	if(bytes == ~size_t(0) && bytes > size-startByte)
 		bytes = size_t(size-startByte);
 
 	if(startByte+bytes>size) return;
 	mSize = bytes;
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
-	mData = Memory::GlobalHeap.Allocate(bytes, INTRA_SOURCE_INFO);
-	//TODO исправить этот код, когда новый класс файла будет готов
-	auto pos = GetPos();
-	auto This = const_cast<Reader*>(this);
-	This->SetPos(firstByte);
-	This->ReadData(mapping.data, bytes);
-	This->SetPos(pos);
+	mData = Memory::GlobalHeap.Allocate(mSize, INTRA_SOURCE_INFO);
+	OS.FileOpen(fullFileName).ReadData(startByte, mData, mSize);
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	HANDLE hFile = CreateFileW(utf8ToWStringZ(fullFileName).Data(),
 		GENERIC_READ|(writeAccess? GENERIC_WRITE: 0),
 		FILE_SHARE_READ, null,
 		DWORD(writeAccess? OPEN_ALWAYS: OPEN_EXISTING),
 		FILE_ATTRIBUTE_NORMAL, null);
+
+	if(hFile == INVALID_HANDLE_VALUE) return;
 
 	const DWORD lowSize = DWORD(mSize+startByte);
 	const DWORD highSize = DWORD(ulong64(mSize+startByte) >> 32);
@@ -94,6 +91,8 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 	}
 #else
 	int fd = open(fullFileName.CStr(), writeAccess? O_RDONLY: O_RDWR);
+	if(fd <= 0) return;
+
 	mData = mmap(null, bytes,
 		writeAccess? PROT_WRITE: PROT_READ,
 		MAP_SHARED, fd, long(startByte));

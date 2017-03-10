@@ -12,13 +12,12 @@ bool LoaderTIFF::IsValidHeader(const void* header, size_t headerSize) const
 
 
 
-AnyImage LoaderTIFF::Load(IO::IInputStream& stream, size_t bytes) const
+AnyImage LoaderTIFF::Load(InputStream stream) const
 {
 #if(INTRA_LIBRARY_IMAGE_LOADING!=INTRA_LIBRARY_IMAGE_LOADING_None)
-	return LoadWithPlatform(stream, bytes);
+	return LoadWithPlatform(Meta::Move(stream));
 #else
 	(void)stream;
-	(void)bytes;
 	return null;
 #endif
 }

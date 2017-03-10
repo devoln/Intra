@@ -46,12 +46,12 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 	return result;
 }
 
-ImageInfo LoaderKTX::GetInfo(IO::IInputStream& stream) const
+ImageInfo LoaderKTX::GetInfo(InputStream stream) const
 {
-	byte* headerSignature[16];
-	stream.ReadData(headerSignature, 16);
+	byte headerSignature[16];
+	stream.ReadRawTo<byte>(headerSignature);
 	if(!IsValidHeader(headerSignature, 16)) return ImageInfo();
-	return GetImageInfoFromHeader(stream.Read<KtxHeader>());
+	return GetImageInfoFromHeader(stream.ReadRaw<KtxHeader>());
 }
 
 bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
@@ -67,25 +67,17 @@ bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
 	return Algo::Equals(headerByteRange, fileIdentifier);
 }
 
-AnyImage LoaderKTX::Load(IInputStream& stream, size_t bytes) const
+AnyImage LoaderKTX::Load(InputStream stream) const
 {
-	auto startPos = stream.GetPos();
+	stream.PopFirstN(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
 
-	stream.Skip(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
-
-	if(stream.Read<uint>() != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
-	{
-		stream.SetPos(startPos+bytes);
+	if(stream.ReadRaw<uint>() != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
 		return null;
-	}
 
-	auto header = stream.Read<KtxHeader>();
+	auto header = stream.ReadRaw<KtxHeader>();
 	auto info = GetImageInfoFromHeader(header);
 	if(info.Type==ImageType_End)
-	{
-		stream.SetPos(startPos+bytes);
 		return null;
-	}
 
 	AnyImage result;
 	result.LineAlignment = 4;
@@ -96,22 +88,22 @@ AnyImage LoaderKTX::Load(IInputStream& stream, size_t bytes) const
 	result.Data.SetCountUninitialized(fullDataSize);
 	byte* pos = result.Data.Data();
 
-	stream.Skip(header.bytesOfKeyValueData); //Пропускаем метаданные
+	stream.PopFirstN(header.bytesOfKeyValueData); //Пропускаем метаданные
 
 	for(ushort i=0; i<info.MipmapCount; i++)
 	{
-		uint imageSize = stream.Read<uint>();
+		uint imageSize = stream.ReadRaw<uint>();
 		if(result.Info.Type==ImageType_Cube)
 		{
 			for(ushort j=0; j<6; j++)
 			{
-				stream.ReadData(pos, imageSize);
+				stream.ReadRawTo<byte>({pos, imageSize});
 				pos += imageSize;
 				pos += 3-(imageSize+3)%4;
 			}
 			continue;
 		}
-		stream.ReadData(pos, imageSize);
+		stream.ReadRawTo<byte>({pos, imageSize});
 		pos += imageSize;
 		pos += 3-(imageSize+3)%4;
 	}

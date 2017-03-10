@@ -312,9 +312,9 @@ public:
 	size_t ReadData(void* dst, size_t bytes) override final
 	{
 		const auto bytesToRead = Math::Min(bytes, rest.Length());
-		INTRA_DEBUG_ASSERT(bytesToRead<=bytes);
+		INTRA_DEBUG_ASSERT(bytesToRead <= bytes);
 		C::memcpy(dst, rest.Begin, bytesToRead);
-		rest.Begin+=bytesToRead;
+		rest.Begin += bytesToRead;
 		return bytesToRead;
 	}
 
@@ -322,8 +322,8 @@ public:
 	{
 		(void)src;
 		INTRA_DEBUG_ASSERT(C::memcmp(rest.Begin-bytes, src, bytes)==0);
-		rest.Begin-=bytes;
-		INTRA_DEBUG_ASSERT(rest.Begin>=data);
+		rest.Begin -= bytes;
+		INTRA_DEBUG_ASSERT(rest.Begin >= data);
 	}
 	bool EndOfStream() const override {return rest.Empty();}
 

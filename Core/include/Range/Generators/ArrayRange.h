@@ -5,6 +5,7 @@
 #include "Platform/Debug.h"
 #include "Platform/InitializerList.h"
 #include "Range/Concepts.h"
+#include "Meta/Type.h"
 
 namespace Intra {
 
@@ -70,14 +71,14 @@ template<typename T> struct ArrayRange
 	forceinline void PopFirstExactly(size_t count)
 	{INTRA_DEBUG_ASSERT(count <= Length()); Begin += count;}
 
-	forceinline size_t PopBackN(size_t count)
+	forceinline size_t PopLastN(size_t count)
 	{
 		if(count>Length()) count = Length();
 		End -= count;
 		return count;
 	}
 
-	forceinline void PopBackExactly(size_t count)
+	forceinline void PopLastExactly(size_t count)
 	{INTRA_DEBUG_ASSERT(count <= Length()); End -= count;}
 
 	forceinline ArrayRange<T> Drop(size_t count=1) const
@@ -99,13 +100,17 @@ template<typename T> struct ArrayRange
 	{return ArrayRange(Length()<count? Begin: End-count, End);}
 
 
-	void Put(const T& v)
+	template<typename U=T> forceinline Meta::EnableIf<
+		!Meta::IsConst<U>::_
+	> Put(const T& v)
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		*Begin++ = v;
 	}
 
-	void Put(T&& v)
+	template<typename U=T> Meta::EnableIf<
+		!Meta::IsConst<U>::_
+	> Put(T&& v)
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		*Begin++ = Meta::Move(v);

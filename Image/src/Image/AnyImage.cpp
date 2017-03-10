@@ -1,6 +1,5 @@
 ﻿#include "Image/AnyImage.h"
 
-#include "IO/File.h"
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Fill.h"
 #include "Range/Generators/ListRange.h"
@@ -98,31 +97,19 @@ Array<const void*> AnyImage::GetMipmapPointers() const
 
 #ifndef INTRA_NO_IMAGE_LOADING
 
-
-AnyImage AnyImage::FromFile(StringView filename)
+AnyImage AnyImage::FromStream(ForwardStream stream)
 {
-	DiskFile::Reader file(filename);
-	if(file==null) return null;
-	return FromStream(file, size_t(file.GetSize()));
-}
-
-AnyImage AnyImage::FromStream(IO::IInputStream& stream, size_t bytes)
-{
-	INTRA_DEBUG_ASSERT(stream.IsSeekable());
-	auto startPos = stream.GetPos();
+	auto oldStream = stream;
 	byte header[12];
-	stream.ReadData(header, sizeof(header));
-	stream.SetPos(startPos);
-	AnyImage result;
+	stream.ReadRawTo<byte>(header);
+	stream = Meta::Move(oldStream);
+
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
 	{
 		if(!loader.IsValidHeader(header, 12)) continue;
-		result = loader.Load(stream, bytes);
-		break;
+		return loader.Load(Meta::Move(stream));
 	}
-	INTRA_DEBUG_ASSERT(stream.GetPos()==startPos+bytes);
-	stream.SetPos(startPos+bytes);
-	return result;
+	return null;
 }
 
 FileFormat AnyImage::DetectFileFormatByHeader(byte header[12])
@@ -132,28 +119,18 @@ FileFormat AnyImage::DetectFileFormatByHeader(byte header[12])
 	return FileFormat::Unknown;
 }
 
-ImageInfo AnyImage::GetImageInfo(IInputStream& stream, FileFormat* oFormat)
+ImageInfo AnyImage::GetImageInfo(ForwardStream stream, FileFormat* oFormat)
 {
-	INTRA_DEBUG_ASSERT(stream.IsSeekable());
-	auto startPos = stream.GetPos();
 	if(oFormat!=null) *oFormat = FileFormat::Unknown;
 	ImageInfo result;
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
 	{
 		result = loader.GetInfo(stream);
-		stream.SetPos(startPos);
 		if(result==null) continue;
 		if(oFormat!=null) *oFormat = loader.FileFormatOfLoader();
-		return result;
+		break;
 	}
 	return result;
-}
-
-ImageInfo AnyImage::GetImageInfo(StringView filename, FileFormat* oFormat)
-{
-	IO::DiskFile::Reader file(filename);
-	if(file==null) return ImageInfo();
-	return GetImageInfo(file, oFormat);
 }
 
 #endif

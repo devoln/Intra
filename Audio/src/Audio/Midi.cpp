@@ -1,7 +1,8 @@
 ﻿#include "Audio/Midi.h"
 #include "Audio/Synth/InstrumentLibrary.h"
 #include "IO/Stream.h"
-#include "IO/File.h"
+#include "IO/FileSystem.h"
+#include "IO/FileMapping.h"
 #include "Algo/Mutation/Fill.h"
 #include "Platform/CppWarnings.h"
 
@@ -285,10 +286,9 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 
 Music ReadMidiFile(StringView path)
 {
-	bool opened;
-	auto buf = DiskFile::ReadAsArray<byte>(path, &opened);
-	if(!opened) return null;
-	return ReadMidiFile(buf.AsConstRange());
+	auto fileMapping = OS.MapFile(path);
+	if(fileMapping==null) return null;
+	return ReadMidiFile(fileMapping.AsRange());
 }
 
 INTRA_WARNING_POP

@@ -431,7 +431,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINIMIZE_CRT;INTRA_QIFIST;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -693,12 +693,12 @@
       <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
     </ClCompile>
     <ClCompile Include="src\IO\ConsoleWriter.cpp" />
-    <ClCompile Include="src\IO\File.cpp" />
     <ClCompile Include="src\IO\FileMapping.cpp" />
     <ClCompile Include="src\IO\FileSystem.cpp" />
     <ClCompile Include="src\IO\HtmlWriter.cpp" />
     <ClCompile Include="src\IO\LogSystem.cpp" />
     <ClCompile Include="src\IO\Networking.cpp" />
+    <ClCompile Include="src\IO\OsFile.cpp" />
     <ClCompile Include="src\IO\Stream.cpp" />
     <ClCompile Include="src\Math\Math.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />
@@ -817,13 +817,15 @@
     <ClInclude Include="include\IO.hh" />
     <ClInclude Include="include\IO\CompositeFormattedWriter.h" />
     <ClInclude Include="include\IO\ConsoleWriter.h" />
-    <ClInclude Include="include\IO\File.h" />
     <ClInclude Include="include\IO\FileMapping.h" />
+    <ClInclude Include="include\IO\FileReader.h" />
     <ClInclude Include="include\IO\FileSystem.h" />
+    <ClInclude Include="include\IO\FileWriter.h" />
     <ClInclude Include="include\IO\FormattedWriter.h" />
     <ClInclude Include="include\IO\HtmlWriter.h" />
     <ClInclude Include="include\IO\LogSystem.h" />
     <ClInclude Include="include\IO\Networking.h" />
+    <ClInclude Include="include\IO\OsFile.h" />
     <ClInclude Include="include\IO\Stream.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
@@ -888,6 +890,7 @@
     <ClInclude Include="include\Platform\Intrinsics.h" />
     <ClInclude Include="include\Platform\MessageBox.h" />
     <ClInclude Include="include\Platform\PlatformInfo.h" />
+    <ClInclude Include="include\Platform\Runtime.h" />
     <ClInclude Include="include\Platform\SharedLib.h" />
     <ClInclude Include="include\Platform\StdLibDefines.h" />
     <ClInclude Include="include\Platform\Time.h" />

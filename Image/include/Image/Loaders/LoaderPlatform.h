@@ -39,7 +39,7 @@ namespace Intra { namespace Image {
 //! DevIL (сторонняя библиотека)
 //! STB image (сторонняя библиотека)
 //! SDL image (сторонняя библиотека)
-AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes);
+AnyImage LoadWithPlatform(InputStream stream);
 
 }}
 

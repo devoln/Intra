@@ -3,7 +3,7 @@
 #include "Platform/PlatformInfo.h"
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
-#include "IO/File.h"
+#include "IO/OsFile.h"
 #include "Range/Special/Unicode.h"
 #include "Range/Decorators/Split.h"
 #include "Utils/AsciiSet.h"
@@ -79,7 +79,7 @@ namespace Intra {
 
 ArrayRange<const StringView> GetCommandLineArguments()
 {
-	static const String cmdline = IO::DiskFile::ReadAsString(
+	static const String cmdline = IO::OsFile::ReadAsString(
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
 "/proc/curproc/cmdline"
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)

@@ -15,18 +15,18 @@ bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 		Algo::Equals(ArrayRange<const byte>(headerBytes, sizeof(pngSignature)), pngSignature);
 }
 
-ImageInfo LoaderPNG::GetInfo(IO::IInputStream& stream) const
+ImageInfo LoaderPNG::GetInfo(InputStream stream) const
 {
 	byte headerSignature[8];
-	stream.ReadData(headerSignature, 8);
+	stream.ReadRawTo<byte>(headerSignature);
 	if(!IsValidHeader(headerSignature, 8)) return ImageInfo();
-	stream.Skip(2*sizeof(intBE));
+	stream.PopFirstN(2*sizeof(intBE));
 	struct IHeaderPart
 	{
 		Math::Vector2<uintBE> size;
 		byte bitsPerComponent, colorType;
 	};
-	IHeaderPart ihdrPart = stream.Read<IHeaderPart>();
+	IHeaderPart ihdrPart = stream.ReadRaw<IHeaderPart>();
 
 	ImageFormat fmt = null;
 	if(ihdrPart.bitsPerComponent==8)
@@ -49,15 +49,14 @@ ImageInfo LoaderPNG::GetInfo(IO::IInputStream& stream) const
 	};
 }
 
-AnyImage LoaderPNG::Load(IO::IInputStream& stream, size_t bytes) const
+AnyImage LoaderPNG::Load(InputStream stream) const
 {
 #ifdef INTRA_USE_LIBPNG
 	//TODO: сделать загрузку через libjpeg
 #elif(INTRA_LIBRARY_IMAGE_LOADING!=INTRA_LIBRARY_IMAGE_LOADING_None)
-	return LoadWithPlatform(stream, bytes);
+	return LoadWithPlatform(Meta::Move(stream));
 #else
 	(void)stream;
-	(void)bytes;
 	return null;
 #endif
 }

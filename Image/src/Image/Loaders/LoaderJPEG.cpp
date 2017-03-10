@@ -13,42 +13,41 @@ bool LoaderJPEG::IsValidHeader(const void* header, size_t headerSize) const
 	return headerSize>=2 && headerBytes[0]==0xFF && headerBytes[1]==0xD8;
 }
 
-ImageInfo LoaderJPEG::GetInfo(IO::IInputStream& stream) const
+ImageInfo LoaderJPEG::GetInfo(InputStream stream) const
 {
 	ImageInfo result = {{0, 0, 1}, null, ImageType_2D, 0};
 	byte SOI[2];
-	stream.ReadData(SOI, sizeof(SOI));
+	stream.ReadRawTo<byte>(SOI);
 	if(!IsValidHeader(SOI, 2)) return result;
-	while(!stream.EndOfStream())
+	while(!stream.Empty())
 	{
-		stream.Skip(1);
-		byte chunkName = stream.Read<byte>();
-		ushort chunkSize = ushort(stream.Read<ushortBE>()-2u);
+		stream.PopFirst();
+		byte chunkName = stream.ReadRaw<byte>();
+		ushort chunkSize = ushort(stream.ReadRaw<ushortBE>()-2u);
 		if(chunkName==0xC0 || chunkName==0xC2) // baseline/progressive (huffman)
 		{
-			stream.Skip(1); // precision
-			result.Size.y = stream.Read<ushortBE>();
-			result.Size.x = stream.Read<ushortBE>();
-			byte bpp = stream.Read<byte>();
+			stream.PopFirst(); // precision
+			result.Size.y = stream.ReadRaw<ushortBE>();
+			result.Size.x = stream.ReadRaw<ushortBE>();
+			byte bpp = stream.ReadRaw<byte>();
 			if(bpp==3) result.Format = ImageFormat::RGB8;
 			else if(bpp==1) result.Format = ImageFormat::Luminance8;
 			break;
 		}
-		stream.Skip(chunkSize);
+		stream.PopFirstN(chunkSize);
 	}
 	return result;
 }
 
 
-AnyImage LoaderJPEG::Load(IO::IInputStream& stream, size_t bytes) const
+AnyImage LoaderJPEG::Load(InputStream stream) const
 {
 #ifdef INTRA_USE_LIBJPEG
 	//TODO: сделать загрузку через libjpeg
 #elif(INTRA_LIBRARY_IMAGE_LOADING!=INTRA_LIBRARY_IMAGE_LOADING_None)
-	return LoadWithPlatform(stream, bytes);
+	return LoadWithPlatform(Meta::Move(stream));
 #else
 	(void)stream;
-	(void)bytes;
 	return null;
 #endif
 }

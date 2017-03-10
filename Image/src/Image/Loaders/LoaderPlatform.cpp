@@ -14,12 +14,23 @@
 namespace Intra { namespace Image {
 
 //Загрузить изображение из BMP, JPG или GIF файла
-AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
+AnyImage LoadWithPlatform(InputStream stream)
 {
+	Array<char> fileData;
+	size_t capacity = 1 << 20;
+	size_t size = 0;
+	while(!stream.Empty())
+	{
+		size_t oldSize = fileData.Length();
+		fileData.SetCountUninitialized(capacity);
+		size = oldSize + stream.ReadRawTo(fileData(oldSize, capacity));
+		capacity *= 2;
+	}
+
 	ilInit();
 	auto handle = ilGenImage();
 	ilBindImage(handle);
-	ilLoadImage(file.CStr()); //INVALID_EXTENSION
+	ilLoadL(IL_TYPE_UNKNOWN, fileData.Data(), size);
 	AnyImage result;
 	result.Info.Size = {ilGetInteger(IL_IMAGE_WIDTH), ilGetInteger(IL_IMAGE_HEIGHT), 1};
 	result.SwapRB = false;
@@ -33,8 +44,8 @@ AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 	case IL_RGBA: result.Info.Format = ImageFormat::RGBA8; break;
 	}
 	result.Info.Type = ImageType_2D;
-	result.Data.SetBounds(0); //Оптимизация: чтобы при растягивании буфера не копировалось старое содержимое, которое нам не нужно
-	result.Data.SetBounds(GetSize());
+	result.Data.Clear(); //Оптимизация: чтобы при растягивании буфера не копировалось старое содержимое, которое нам не нужно
+	result.Data.SetLengthUninitialized(GetSize());
 	C::memcpy(result.Data.First, ilGetData(), result.GetSize());
 	ilDeleteImage(handle);
 }
@@ -69,8 +80,10 @@ struct IUnknown;
 namespace Intra { namespace Image {
 
 //Загрузить изображение из BMP, JPG или GIF файла
-AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
+AnyImage LoadWithPlatform(InputStream stream)
 {
+	if(stream.Empty()) return null;
+
 	using namespace Gdiplus;
 	using namespace Gdiplus::DllExports;
 
@@ -85,10 +98,29 @@ AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 	};
 	static InitGDIP sInitGDIP;
 
-	auto glob = GlobalAlloc(0, bytes);
-	if(glob==null) return null;
-	void* raw = GlobalLock(glob);
-	stream.ReadData(raw, bytes);
+	//Мы не знаем размер потока, поэтому считываем его целиком в global-память, которая нужна для создания потока
+	size_t size = 1 << 20;
+	HGLOBAL glob = null;
+	char* raw = null;
+	for(;;)
+	{
+		HGLOBAL oldGlob = glob;
+		ArrayRange<char> oldData = {raw, size/2};
+		glob = GlobalAlloc(0, size);
+		if(glob==null) return null;
+		raw = static_cast<char*>(GlobalLock(glob));
+		ArrayRange<char> range = {raw, size};
+		if(oldGlob)
+		{
+			Algo::CopyToAdvance(oldData, range);
+			GlobalUnlock(oldGlob);
+			GlobalFree(oldGlob);
+		}
+		stream.ReadRawToAdvance(range);
+		if(stream.Empty()) break;
+		size *= 2;
+	}
+	GlobalUnlock(glob);
 	
 	IStream* istream;
 	if(FAILED(CreateStreamOnHGlobal(glob, true, &istream)))
@@ -168,15 +200,21 @@ AnyImage LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 namespace Intra { namespace Image {
 
 //Загрузить изображение из BMP, JPG, PNG или GIF файла
-Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
+Image LoadWithPlatform(InputStream stream)
 {
-	const auto startPos = s->GetPos();
+	Array<char> fileData;
+	size_t capacity = 1 << 20;
+	size_t size = 0;
+	while(!stream.Empty())
+	{
+		size_t oldSize = fileData.Length();
+		fileData.SetCountUninitialized(capacity);
+		size = oldSize + stream.ReadRawTo(fileData(oldSize, capacity));
+		capacity *= 2;
+	}
 
-	Array<byte> buf;
-	buf.SetCountUninitialized(bytes);
-	stream.ReadData(buf.Data(), bytes);
-
-	QImage img; img.loadFromData(buf.Data(), bytes);
+	QImage img;
+	img.loadFromData(fileData.Data(), size);
 	Image result;
 	result.Size = {img.width(), img.height()};
 	const auto qtformat = img.format();
@@ -198,15 +236,14 @@ Image LoadWithPlatform(IO::IInputStream& stream, size_t bytes)
 		break;
 
 	default:
-		stream.SetPos(startPos+bytes);
-		return;
+		return null;
 	}
 
 	result.Info.Type = ImageType_2D;
 	result.Data.Clear();
 	const size_t sizeInBytes = result.Info.CalculateFullDataSize(1);
 	result.Data.SetCountUninitialized(sizeInBytes);
-	C::memcpy(result.Data.Data(), img.bits(), calculate_size());
+	C::memcpy(result.Data.Data(), img.bits(), sizeInBytes);
 }
 
 }}

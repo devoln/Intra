@@ -24,7 +24,7 @@
 
 #include "IO/ConsoleWriter.cpp"
 #include "IO/HtmlWriter.cpp"
-#include "IO/File.cpp"
+#include "IO/OsFile.cpp"
 #include "IO/FileSystem.cpp"
 #include "IO/FileMapping.cpp"
 #include "IO/LogSystem.cpp"
