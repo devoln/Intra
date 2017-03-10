@@ -5,6 +5,7 @@
 #include "Range/Generators/StringView.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Algo/Mutation/Fill.h"
+#include "Container/Sequential/String.h"
 
 namespace Intra { namespace IO {
 
