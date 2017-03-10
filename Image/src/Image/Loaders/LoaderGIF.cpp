@@ -17,7 +17,6 @@ AnyImage LoaderGIF::Load(InputStream stream) const
 	return LoadWithPlatform(Meta::Move(stream));
 #else
 	(void)stream;
-	(void)bytes;
 	return null;
 #endif
 }

@@ -60,6 +60,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	const size_t srcDataSize = sizes.y*srcLineBytes;
 	const size_t dstDataSize = sizes.y*dstLineBytes;
 	INTRA_DEBUG_ASSERT(dstBuf.Length() >= dstDataSize);
+	(void)dstDataSize;
 
 	if(srcFormat==dstFormat && srcLineBytes==dstLineBytes && !swapRB && !flipVert)
 	{
