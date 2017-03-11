@@ -79,7 +79,7 @@ ProcessorInfo ProcessorInfo::Get()
 #include "Algo/Search/Single.h"
 #include "Algo/Search/Subrange.h"
 #include "Range/Decorators/TakeUntil.h"
-#include "Range/Stream.h"
+#include "Range/Stream/Operators.h"
 
 #include <unistd.h>
 #include <sys/sysinfo.h>

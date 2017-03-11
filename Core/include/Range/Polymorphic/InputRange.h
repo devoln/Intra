@@ -7,7 +7,7 @@
 #include "Range/Concepts.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range/AsRange.h"
-#include "Range/Stream.h"
+#include "Range/Stream/InputStreamMixin.h"
 
 namespace Intra { namespace Range {
 
@@ -99,7 +99,7 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 }
 
 template<typename T> struct InputRange: Meta::SelectType<
-	StreamMixin<InputRange<T>, Meta::RemoveConst<T>>,
+	InputStreamMixin<InputRange<T>, Meta::RemoveConst<T>>,
 	Meta::EmptyType, Meta::IsTriviallySerializable<T>::_>
 {
 protected:

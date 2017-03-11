@@ -16,7 +16,7 @@ void TestUnicodeConversion(IO::IFormattedWriter& output)
 	WString utf16 = UTF8(originalStr).ToUTF16(false);
 	DString utf32 = UTF16(utf16).ToUTF32();
 	utf16 = UTF32(utf32).ToUTF16(false);
-	auto utf8 = UTF16(utf16.begin(), utf16.end()).ToUTF8();
+	auto utf8 = UTF16(utf16.View()).ToUTF8();
 	output.PrintLine("Result:");
 	output.PrintLine(originalStr);
 	INTRA_ASSERT_EQUALS(originalStr, utf8);

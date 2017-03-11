@@ -4,7 +4,6 @@
 #include "Range/AsRange.h"
 #include "Range/Operations.h"
 #include "Range/Decorators/Take.h"
-#include "Platform/Debug.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/Intrinsics.h"
 #include "Algo/Op.h"
@@ -301,6 +300,6 @@ size_t> CopyTo(R&& range, OR&& dst, P pred)
 	return Algo::CopyToAdvance(Range::Forward<R>(range), dstCopy, pred);
 }
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

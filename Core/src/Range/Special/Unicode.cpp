@@ -47,9 +47,9 @@ illegal_char:
 
 dchar UTF8::NextChar(size_t* oBytesRead) const
 {
-	const byte* srcPtr = reinterpret_cast<const byte*>(Text.Begin);
-	const byte* srcEnd = reinterpret_cast<const byte*>(Text.End);
-	uint ch=0;
+	const byte* srcPtr = reinterpret_cast<const byte*>(Text.Data());
+	const byte* srcEnd = reinterpret_cast<const byte*>(Text.End());
+	uint ch = 0;
 	size_t bytesToRead = UTF8::SequenceBytes(*srcPtr);
 
 	if(srcPtr+bytesToRead>srcEnd)
@@ -79,37 +79,40 @@ dchar UTF8::NextChar(size_t* oBytesRead) const
 
 dchar UTF8::ReadPrevChar()
 {
-	auto oldEnd = Text.End;
+	auto oldEnd = Text.End();
 	if(!popBackChar()) return UTF32::ReplacementChar;
-	return UTF8(Text.End, oldEnd).NextChar();
+	return UTF8({Text.End(), oldEnd}).NextChar();
 }
 
 dchar UTF8::Last() const
 {
 	auto temp = *this;
 	if(!temp.popBackChar()) return UTF32::ReplacementChar;
-	return UTF8(temp.Text.End, Text.End).NextChar();
+	return UTF8({temp.Text.End(), Text.End()}).NextChar();
 }
 
 void UTF8::PopFirst()
 {
-	size_t bytesToRead = UTF8::SequenceBytes(*Text.Begin);
+	size_t bytesToRead = UTF8::SequenceBytes(Text.First());
 	size_t bytesRead = 0;
-	if(Text.Begin+bytesToRead>Text.End) {Text.Begin = Text.End; return;}
-	if(!isLegalUTF8(Text.Begin, bytesToRead, &bytesRead))
+	if(bytesToRead > Text.Length()) {Text = null; return;}
+	if(!isLegalUTF8(Text.Data(), bytesToRead, &bytesRead))
 	{
-		Text.Begin += bytesRead;
+		Text.PopFirstExactly(bytesRead);
 		return;
 	}
 	//ushort bytesToRead; NextChar(&bytesToRead);
-	Text.Begin += bytesToRead;
+	Text.PopFirstExactly(bytesToRead);
 }
 
 bool UTF8::popBackChar()
 {
 	INTRA_DEBUG_ASSERT(!Empty());
-	while((((*--Text.End)&0xFF) >> 6)==0x2)
-		if(Text.End==Text.Begin) return false;
+	while( ((Text.Last() & 0xFF) >> 6) == 0x2 )
+	{
+		Text.PopLast();
+		if(Text.Empty()) return false;
+	}
 	return true;
 }
 
@@ -142,33 +145,36 @@ WString UTF8::ToUTF16(bool addNullTerminator) const
 dchar UTF16::NextChar(size_t* wcharsRead) const
 {
 	INTRA_DEBUG_ASSERT(!Empty());
-	const wchar* source = Text.Begin;
-	wchar ch = *source++;
+	auto src = Text;
+	wchar ch = src.First();
+	src.PopFirst();
 
 	if(wcharsRead!=null) *wcharsRead = 1;
 	if(ch<SurrogateHighStart || ch>SurrogateHighEnd) return ch;
-	if(source>=Text.End) return UTF32::ReplacementChar;
+	if(src.Empty()) return UTF32::ReplacementChar;
 
 	if(wcharsRead!=null) *wcharsRead = 2;
-	if(*source<SurrogateLowStart || *source>SurrogateLowEnd) return ch;
-	return (uint(ch-SurrogateHighStart) << HalfShift) + uint(*source-SurrogateLowStart) + HalfBase;
+	if(src.First()<SurrogateLowStart || src.First()>SurrogateLowEnd) return ch;
+	return (uint(ch-SurrogateHighStart) << HalfShift) + uint(src.First()-SurrogateLowStart) + HalfBase;
 }
 
 void UTF16::PopFirst()
 {
 	INTRA_DEBUG_ASSERT(!Empty());
-	Text.Begin += 1+(*Text.Begin>=SurrogateHighStart && *Text.Begin<=SurrogateHighEnd);
-	if(Text.Begin>Text.End) Text.Begin=Text.End;
+	bool twoElements = (Text.First()>=SurrogateHighStart && Text.First()<=SurrogateHighEnd);
+	Text.PopFirst();
+	if(twoElements && !Text.Empty()) Text.PopFirst();
 }
 
 bool UTF16::popBackChar()
 {
 	INTRA_DEBUG_ASSERT(!Empty());
-	Text.End -= 1+(*(Text.End-1)>=SurrogateHighStart && *(Text.End-1)<=SurrogateHighEnd); //Символ состоит из двух слов
-	if(Text.End<Text.Begin)
+	const bool twoElements = (Text.Last() >= SurrogateHighStart && Text.Last() <= SurrogateHighEnd);
+	Text.PopLast();
+	if(twoElements)
 	{
-		Text.End=Text.Begin;
-		return false;
+		if(Text.Empty()) return false;
+		Text.PopLast();
 	}
 	return true;
 }
@@ -183,7 +189,7 @@ dchar UTF16::Last() const
 {
 	auto temp = *this;
 	if(!temp.popBackChar()) return UTF32::ReplacementChar;
-	return UTF16(temp.Text.End, Text.End).ReadChar();
+	return UTF16({temp.Text.End(), Text.End()}).ReadChar();
 }
 
 

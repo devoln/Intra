@@ -7,7 +7,7 @@
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Generators/StringView.h"
 #include "Algo/Mutation/Copy.h"
-#include "Range/Stream.h"
+#include "Range/Stream/Operators.h"
 #include "Memory/PlacementNew.h"
 #include "Allocator/Global.h"
 

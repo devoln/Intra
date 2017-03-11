@@ -7,9 +7,9 @@
 #include "Container/Sequential/String.h"
 #include "Utils/AsciiSet.h"
 
-namespace Intra {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra {
 
 namespace IO {
 struct endl_t {};
@@ -342,6 +342,6 @@ public:
 
 }
 
-INTRA_WARNING_POP
-
 }
+
+INTRA_WARNING_POP

@@ -7,6 +7,7 @@
 #include "Range/Special/Unicode.h"
 #include "Range/Decorators/Split.h"
 #include "Utils/AsciiSet.h"
+#include "Algo/String/CStr.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -53,7 +54,7 @@ ArrayRange<const StringView> GetCommandLineArguments()
 	if(!result.Empty()) return result;
 	for(int i=0; i<argc; i++)
 	{
-		UTF16 utf16range(argvW[i], argvW[i]+wcslen(reinterpret_cast<const wchar_t*>(argvW[i])));
+		UTF16 utf16range({argvW[i], Algo::CStringLength(argvW[i])});
 		args.AddLast(utf16range.ToUTF8());
 		result.AddLast(args.Last());
 	}

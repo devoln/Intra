@@ -12,14 +12,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct UTF8
 {
-	ArrayRange<const char> Text;
+	StringView Text;
 
-	constexpr UTF8(null_t=null): Text(null) {}
-	UTF8(const char* startPtr, const char* endPtr): Text(startPtr, endPtr) {}
-	constexpr UTF8(const char* startPtr, size_t lengthInBytes): Text(startPtr, lengthInBytes) {}
-	constexpr UTF8(StringView str): Text(str.AsRange()) {}
-	constexpr UTF8(const ArrayRange<char> str): Text(str) {}
-	constexpr UTF8(const ArrayRange<const char> str): Text(str) {}
+	UTF8(StringView str=null): Text(str) {}
 
 	DString ToUTF32(bool addNullTerminator) const;
 	WString ToUTF16(bool addNullTerminator) const;
@@ -32,7 +27,7 @@ struct UTF8
 	{
 		size_t read;
 		auto res = NextChar(&read);
-		Text.Begin += read;
+		Text.PopFirstExactly(read);
 		return res;
 	}
 
@@ -56,14 +51,9 @@ private:
 
 struct UTF16
 {
-	ArrayRange<const wchar> Text;
+	WStringView Text;
 
-	constexpr UTF16(null_t=null) {}
-	UTF16(const wchar* startPtr, const wchar* endPtr): Text(startPtr, endPtr) {}
-	constexpr UTF16(const wchar* startPtr, size_t lengthInWords): Text(startPtr, lengthInWords) {}
-	constexpr UTF16(WStringView str): Text(str.AsRange()) {}
-	constexpr UTF16(const ArrayRange<wchar> str): Text(str) {}
-	constexpr UTF16(const ArrayRange<const wchar> str): Text(str) {}
+	UTF16(WStringView str=null): Text(str) {}
 
 	DString ToUTF32() const;
 	String ToUTF8() const;
@@ -72,7 +62,7 @@ struct UTF16
 	{
 		size_t read;
 		auto res = NextChar(&read);
-		Text.Begin += read;
+		Text.PopFirstExactly(read);
 		return res;
 	}
 
@@ -95,14 +85,9 @@ private:
 };
 
 
-struct UTF32: public ArrayRange<const dchar>
+struct UTF32: public DStringView
 {
-	constexpr UTF32(null_t=null) {}
-	UTF32(const dchar* startPtr, const dchar* endPtr): ArrayRange<const dchar>(startPtr, endPtr) {}
-	constexpr UTF32(const dchar* startPtr, size_t lengthInChars): ArrayRange<const dchar>(startPtr, lengthInChars) {}
-	constexpr UTF32(DStringView range): ArrayRange<const dchar>(range.AsRange()) {}
-	constexpr UTF32(const ArrayRange<dchar> range): ArrayRange<const dchar>(range) {}
-	constexpr UTF32(const ArrayRange<const dchar> range): ArrayRange<const dchar>(range) {}
+	constexpr UTF32(DStringView range=null): DStringView(range) {}
 
 	WString ToUTF16(bool addNullTerminator) const;
 	String ToUTF8() const;

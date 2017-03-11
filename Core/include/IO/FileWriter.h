@@ -6,6 +6,8 @@
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Range/Stream/Operators.h"
+#include "Range/Stream/OutputStreamMixin.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -14,7 +16,7 @@ namespace Intra { namespace IO {
 
 class OsFile;
 
-class FileWriter
+class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 {
 public:
 	forceinline FileWriter(const OsFile& file, size_t bufferSize):
@@ -68,23 +70,6 @@ public:
 		totalBytesWritten += Algo::CopyAdvanceToAdvance(src, mBufferRest);
 		return totalBytesWritten;
 	}
-
-	template<typename T> size_t WriteRawFromAdvance(ArrayRange<T>& src, size_t maxElementsToRead)
-	{
-		auto src1 = src.Take(maxElementsToRead).template Reinterpret<const char>();
-		size_t elementsRead = CopyAdvanceFromAdvance(src1)/sizeof(T);
-		src.Begin += elementsRead;
-		return elementsRead;
-	}
-
-	template<typename U> forceinline size_t WriteRawFromAdvance(ArrayRange<U>& src)
-	{return WriteRawFromAdvance(src, src.Length());}
-
-	template<typename U> forceinline size_t WriteRawFrom(ArrayRange<U> src)
-	{return WriteRawFromAdvance(src);}
-
-	template<typename U> forceinline void WriteRaw(const U& dst)
-	{return WriteRawFrom(ArrayRange<const U>(&dst, 1u));}
 
 	void Flush()
 	{

@@ -193,6 +193,9 @@
     <Filter Include="Файлы исходного кода\Container">
       <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\Range\Stream">
+      <UniqueIdentifier>{5f03e135-27ac-4500-96bd-78aec12c876a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Memory\Memory.cpp">
@@ -851,9 +854,6 @@
     <ClInclude Include="include\Algo\String\ToStringArithmetic.h">
       <Filter>Заголовочные файлы\Algo\String</Filter>
     </ClInclude>
-    <ClInclude Include="include\Range\Stream.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
     <ClInclude Include="include\Range\Compositors\Zip.h">
       <Filter>Заголовочные файлы\Range\Compositors</Filter>
     </ClInclude>
@@ -1060,6 +1060,21 @@
     </ClInclude>
     <ClInclude Include="include\Platform\Runtime.h">
       <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Stream\InputStreamMixin.h">
+      <Filter>Заголовочные файлы\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Stream\OutputStreamMixin.h">
+      <Filter>Заголовочные файлы\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Stream.hh">
+      <Filter>Заголовочные файлы\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Algo\Mutation\CopyUntil.h">
+      <Filter>Заголовочные файлы\Algo\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Stream\Operators.h">
+      <Filter>Заголовочные файлы\Range\Stream</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

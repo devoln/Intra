@@ -17,7 +17,12 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasEmpty, static_cast<bool>(Meta::Val<T>().Empty
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLength, static_cast<size_t>(Meta::Val<T>().Length()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirst, Meta::Val<T>().PopFirst());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasFirst, Meta::Val<T>().First());
+INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==null);
 
+template<typename R>
+struct IsArrayClass: Meta::TypeFromValue<bool,
+	HasLength<R>::_ && HasData<R>::_
+> {};
 
 template<typename R> struct HasSlicing: Meta::IsCallable<R, size_t, size_t> {};
 
@@ -36,7 +41,7 @@ template<typename R> struct ReturnValueTypeOf2<R, true>
 
 template<typename R> struct ReturnValueTypeOf {typedef typename ReturnValueTypeOf2<R>::_ _;};
 
-template<typename R, bool = HasFirst<R>::_, bool = Has_value_type<R>::_> struct ValueTypeOf
+template<typename R, bool=HasFirst<R>::_, bool=Has_value_type<R>::_> struct ValueTypeOf
 {typedef Meta::RemoveConstRef<decltype(Meta::Val<R>().First())> _;};
 
 template<typename R> struct ValueTypeOf<R, false, false>
@@ -48,6 +53,17 @@ template<typename R> struct ValueTypeOf<R, false, true>
 	typedef typename R2::value_type _;
 };
 
+
+
+template<typename R, bool=IsArrayClass<R>::_> struct ValueTypeOfArray
+{
+	typedef decltype(*Meta::Val<R>().Data()) TMut;
+	typedef Meta::RemoveConstRef<TMut> _;
+};
+
+template<typename R> struct ValueTypeOfArray<R, false>
+{typedef void _;};
+
 }
 
 template<typename R> using ReturnValueTypeOf = typename RD::ReturnValueTypeOf<R>::_;
@@ -58,7 +74,6 @@ template<typename R> using SliceTypeOf = Meta::ResultOfOrVoid<R, size_t, size_t>
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLast, Meta::Val<T>().PopLast());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasIndex, Meta::Val<T>()[size_t()]);
-INTRA_DEFINE_EXPRESSION_CHECKER(HasData, Meta::Val<T>().Data()==static_cast<ValueTypeOf<T>*>(null));
 
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasPut, Meta::Val<T1>().Put(Meta::Val<T2>()),,);
 
@@ -117,11 +132,6 @@ struct IsRandomAccessRange: Meta::TypeFromValue<bool,
 template<typename R>
 struct IsRandomAccessRangeWithLength: Meta::TypeFromValue<bool,
 	IsRandomAccessRange<R>::_ && HasLength<R>::_
-> {};
-
-template<typename R>
-struct IsArrayClass: Meta::TypeFromValue<bool,
-	HasLength<R>::_ && HasData<R>::_
 > {};
 
 template<typename R>

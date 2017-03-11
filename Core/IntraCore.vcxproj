@@ -504,7 +504,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Disabled</ExceptionHandling>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ControlFlowGuard>false</ControlFlowGuard>
@@ -740,6 +740,7 @@
     <ClInclude Include="include\Algo\Mutation.hh" />
     <ClInclude Include="include\Algo\Mutation\Cast.h" />
     <ClInclude Include="include\Algo\Mutation\Copy.h" />
+    <ClInclude Include="include\Algo\Mutation\CopyUntil.h" />
     <ClInclude Include="include\Algo\Mutation\Fill.h" />
     <ClInclude Include="include\Algo\Mutation\Remove.h" />
     <ClInclude Include="include\Algo\Mutation\Replace.h" />
@@ -951,7 +952,10 @@
     <ClInclude Include="include\Range\Special.hh" />
     <ClInclude Include="include\Range\Special\SparseRange.h" />
     <ClInclude Include="include\Range\Special\Unicode.h" />
-    <ClInclude Include="include\Range\Stream.h" />
+    <ClInclude Include="include\Range\Stream.hh" />
+    <ClInclude Include="include\Range\Stream\InputStreamMixin.h" />
+    <ClInclude Include="include\Range\Stream\Operators.h" />
+    <ClInclude Include="include\Range\Stream\OutputStreamMixin.h" />
     <ClInclude Include="include\Range\TupleOperation.h" />
     <ClInclude Include="include\Test.hh" />
     <ClInclude Include="include\Test\PerfSummary.h" />

@@ -9,7 +9,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Header.h"
 #include "IO/Stream.h"
 #include "IO/FormattedWriter.h"
-#include "Range/Stream.h"
+#include "Range/Stream.hh"
 #include "Algo/Reduction.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range.hh"

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "String/CStr.h"
 #include "String/Ascii.h"
 #include "String/Escape.h"
 #include "String/Parse.h"

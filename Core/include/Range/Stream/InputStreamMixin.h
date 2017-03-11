@@ -1,20 +1,19 @@
-﻿#pragma once
+#pragma once
 
-#include "Algo/String/ToString.h"
-#include "Algo/String/Parse.h"
-#include "Algo/Mutation/Copy.h"
+#include "Platform/CppFeatures.h"
+#include "Meta/Type.h"
 #include "Algo/Mutation/Fill.h"
+#include "Algo/Mutation/Copy.h"
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
 
 namespace Intra { namespace Range {
 
-using Algo::operator<<;
-using Algo::operator>>;
-
-template<typename R, typename T> struct StreamMixin
+template<typename R, typename T> struct InputStreamMixin
 {
+	typedef Meta::RemoveConstRef<T> ElementType;
+
 	template<typename U> Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
 	size_t> ReadRawToAdvance(ArrayRange<U>& dst, size_t maxElementsToRead)
@@ -55,6 +54,11 @@ template<typename R, typename T> struct StreamMixin
 		U result;
 		ReadRaw(result);
 		return result;
+	}
+
+	template<typename P> GenericStringView<const ElementType> ReadUntilAdvance(ArrayRange<ElementType>& buf)
+	{
+
 	}
 };
 

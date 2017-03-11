@@ -33,6 +33,11 @@ template<typename T> struct ArrayRange
 	constexpr forceinline ArrayRange(const ArrayRange& rhs):
 		Begin(rhs.Begin), End(rhs.End) {}
 
+	template<typename R, typename=Meta::EnableIf<
+		IsArrayClass<R>::_ && Meta::TypeEquals<ValueTypeOf<R>, T>::_
+	>> forceinline ArrayRange(R&& rhs):
+		ArrayRange(rhs.Data(), rhs.Length()) {}
+
 	forceinline constexpr ArrayRange<const T> AsConstRange() const {return ArrayRange<const T>(Begin, End);}
 	forceinline constexpr operator ArrayRange<const T>() const {return AsConstRange();}
 

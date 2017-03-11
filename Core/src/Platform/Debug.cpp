@@ -4,7 +4,7 @@
 #include "IO/LogSystem.h"
 #include "Platform/MessageBox.h"
 #include "Algo/String/CStr.h"
-#include "Range/Stream.h"
+#include "Range/Stream/Operators.h"
 #include "Range/Decorators/Split.h"
 #include "Range/Decorators/Map.h"
 #include "Algo/Search/Trim.h"

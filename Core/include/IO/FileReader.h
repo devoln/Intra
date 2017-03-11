@@ -5,7 +5,8 @@
 #include "Platform/CppWarnings.h"
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Copy.h"
-#include "Range/Stream.h"
+#include "Range/Stream/Operators.h"
+#include "Range/Stream/InputStreamMixin.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -14,7 +15,7 @@ namespace Intra { namespace IO {
 
 class OsFile;
 
-class FileReader: Range::StreamMixin<FileReader, char>
+class FileReader: Range::InputStreamMixin<FileReader, char>
 {
 public:
 	forceinline FileReader(const OsFile& file, size_t bufferSize):

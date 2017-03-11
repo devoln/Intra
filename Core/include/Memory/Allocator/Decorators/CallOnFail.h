@@ -4,7 +4,7 @@
 #include "Platform/CppWarnings.h"
 #include "Platform/Debug.h"
 #include "Range/Generators/StringView.h"
-#include "Range/Stream.h"
+#include "Range/Stream/Operators.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
