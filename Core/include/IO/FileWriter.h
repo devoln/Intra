@@ -71,6 +71,16 @@ public:
 		return totalBytesWritten;
 	}
 
+	template<typename AR> Meta::EnableIf<
+		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
+	size_t> CopyAdvanceFromAdvance(AR& src)
+	{
+		ArrayRange<const char> srcArr = {src.Data(), src.Length()};
+		size_t result = CopyAdvanceFromAdvance(srcArr);
+		Range::PopFirstExactly(src, result);
+		return result;
+	}
+
 	void Flush()
 	{
 		const size_t bytesWritten = mBuffer.Length()-mBufferRest.Length();

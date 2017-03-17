@@ -84,13 +84,25 @@ bool> StartsWith(R&& range, const W& what)
 //! Иначе range остаётся без изменений.
 template<typename R, typename RW> forceinline Meta::EnableIf<
 	IsForwardRange<R>::_ &&
-	IsAsNonInfiniteForwardRange<RW>::_,
-bool> StartsAdvanceWith(R& range, RW&& what)
+	IsAsConsumableRange<RW>::_,
+bool> SkipIfStartsWith(R& range, RW&& what)
 {
 	auto whatCopy = Range::Forward<RW>(what);
 	bool result = Algo::StartsWith(range, whatCopy);
 	if(result) Range::PopFirstExactly(range, Range::Count(whatCopy));
 	return result;
+}
+
+//! Проверяет, начинается ли range с what.
+//! Если да, то начало range смещается к первому элементу, идущему сразу после вхождения what.
+//! Иначе range остаётся без изменений.
+template<typename R, typename RW> forceinline Meta::EnableIf<
+	IsInputRange<R>::_ &&
+	IsAsConsumableRange<RW>::_,
+bool> StartsAdvanceWith(R& range, RW&& what)
+{
+	auto whatCopy = Range::Forward<RW>(what);
+	return D::StartsAdvanceWithAdvance(range, whatCopy);
 }
 
 template<typename R, typename RWs> Meta::EnableIf<

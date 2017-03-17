@@ -6,51 +6,38 @@
 
 namespace Intra { namespace IO {
 
-class CompositeFormattedWriter: public IFormattedWriter
+class CompositeFormattedWriter final: public AFormattedWriter
 {
 public:
-	CompositeFormattedWriter(): attached(null) {}
-	CompositeFormattedWriter(ArrayRange<IFormattedWriter* const> streams): attached(streams) {}
+	CompositeFormattedWriter(): mAttached(null) {}
+	CompositeFormattedWriter(ArrayRange<AFormattedWriter* const> streams): mAttached(streams) {}
 
-	void Attach(IFormattedWriter* stream) {attached.AddLast(stream);}
-	void Detach(IFormattedWriter* stream) {attached.FindAndRemoveUnordered(stream);}
+	void Attach(AFormattedWriter* stream) {mAttached.AddLast(stream);}
+	void Detach(AFormattedWriter* stream) {mAttached.FindAndRemoveUnordered(stream);}
 
-	bool operator==(null_t) const {return attached==null;}
-	bool operator!=(null_t) const {return attached!=null;}
-	operator bool() const {return *this!=null;}
+	bool operator==(null_t) const {return mAttached==null;}
+	bool operator!=(null_t) const {return mAttached!=null;}
 
-	void PushFont(Math::Vec3 color={0,0,0}, float size=3, bool bold=false, bool italic=false, bool underline=false) override
-	{for(auto stream: attached) stream->PushFont(color, size, bold, italic, underline);}
 
-	void PopFont() override {for(auto stream: attached) stream->PopFont();}
+	void PushStyle(StringView style) override {for(auto stream: mAttached) stream->PushStyle(style);}
+	void PopStyle() override {for(auto stream: mAttached) stream->PopStyle();}
 
-	virtual FontDesc GetCurrentFont() const override
-	{
-		if(attached.Empty()) return {{1,1,1}, 3, false, false, false, false};
-		return attached.First()->GetCurrentFont();
-	}
+	void BeginCode() override {for(auto stream: mAttached) stream->BeginCode();}
+	void EndCode() override {for(auto stream: mAttached) stream->EndCode();}
+	void HorLine() override {for(auto stream: mAttached) stream->HorLine();}
+	void PrintRaw(StringView s) override {for(auto stream: mAttached) stream->PrintRaw(s);}
+	void PrintPreformatted(StringView s) override {for(auto stream: mAttached) stream->PrintPreformatted(s);}
 
-	void PushStyle(StringView style) override {for(auto stream: attached) stream->PushStyle(style);}
-	void PopStyle() override {for(auto stream: attached) stream->PopStyle();}
+protected:
+	void pushFont(const FontDesc& fontDesc) override final
+	{for(auto stream: mAttached) stream->PushFont(fontDesc);}
 
-	void BeginSpoiler(StringView show) override {for(auto stream: attached) stream->BeginSpoiler(show);}
-	void EndSpoiler() override {for(auto stream: attached) stream->EndSpoiler();}
-	void EndAllSpoilers() override {for(auto stream: attached) stream->EndAllSpoilers();}
-	void BeginCode() override {for(auto stream: attached) stream->BeginCode();}
-	void EndCode() override {for(auto stream: attached) stream->EndCode();}
-
-	CompositeFormattedWriter& operator<<(endl_t) override {for(auto stream: attached) *stream << endl; return *this;}
-	void Print(StringView s) override {for(auto stream: attached) stream->Print(s);}
-
-	void HorLine() override {for(auto stream: attached) stream->HorLine();}
+	void popFont() override {for(auto stream: mAttached) stream->PopFont();}
+	void beginSpoiler(StringView show) override {for(auto stream: mAttached) stream->BeginSpoiler(show);}
+	void endSpoiler() override {for(auto stream: mAttached) stream->EndSpoiler();}
 
 private:
-	virtual void WriteData(const void* data, size_t bytes) override
-	{
-		for(auto stream: attached)
-			stream->WriteData(data, bytes);
-	}
-	Array<IFormattedWriter*> attached;
+	Array<AFormattedWriter*> mAttached;
 };
 
 }}

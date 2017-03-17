@@ -37,7 +37,7 @@ template<typename T, bool Condition =
 	virtual void PopFirst() = 0;
 	virtual T GetNext() = 0;
 
-	virtual void PopFirstN(size_t count) = 0;
+	virtual size_t PopFirstN(size_t count) = 0;
 
 	virtual size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) = 0;
 };
@@ -51,7 +51,7 @@ template<typename T> struct InputRangeInterface<T, false>
 	virtual void PopFirst() = 0;
 	virtual T GetNext() = 0;
 
-	virtual void PopFirstN(size_t count) = 0;
+	virtual size_t PopFirstN(size_t count) = 0;
 };
 
 template<typename T, typename R, typename PARENT, bool Condition =
@@ -80,8 +80,8 @@ template<typename T, typename R, typename PARENT, bool Condition =
 		return result;
 	}
 
-	void PopFirstN(size_t count) override final
-	{Range::PopFirstN(OriginalRange, count);}
+	size_t PopFirstN(size_t count) override final
+	{return Range::PopFirstN(OriginalRange, count);}
 };
 
 template<typename T, typename R, typename PARENT>
@@ -171,10 +171,27 @@ public:
 	forceinline void PopFirst() {mInterface->PopFirst();}
 	forceinline T GetNext() {return mInterface->GetNext();}
 
-	forceinline void PopFirstN(size_t count) {mInterface->PopFirstN(count);}
+	forceinline size_t PopFirstN(size_t count)
+	{
+		if(mInterface==null) return 0;
+		return mInterface->PopFirstN(count);
+	}
 
 	forceinline size_t CopyAdvanceToAdvance(ArrayRange<value_type>& dst)
-	{return mInterface->CopyAdvanceToAdvance(dst);}
+	{
+		if(mInterface==null) return 0;
+		return mInterface->CopyAdvanceToAdvance(dst);
+	}
+
+	template<typename AR> Meta::EnableIf<
+		Range::IsArrayRangeOfExactly<AR, value_type>::_ && !Meta::IsConst<AR>::_,
+	size_t> CopyAdvanceToAdvance(AR& dst)
+	{
+		ArrayRange<value_type> dstArr = {dst.Data(), dst.Length()};
+		size_t result = CopyAdvanceToAdvance(dstArr);
+		Range::PopFirstExactly(dst, result);
+		return result;
+	}
 
 protected:
 	Memory::UniqueRef<Interface> mInterface;

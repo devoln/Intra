@@ -6,10 +6,10 @@
 
 namespace Intra { namespace IO {
 
-class HtmlWriter: public FormattedWriterBase
+class HtmlWriter: public AFormattedWriter
 {
 public:
-	HtmlWriter(IOutputStream* s): FormattedWriterBase(s) {}
+	HtmlWriter(OutputStream s) {}
 
 	void WriteData(const void* data, size_t bytes) override {mMyS->WriteData(data, bytes);}
 	

@@ -7,3 +7,4 @@
 #include "Polymorphic/BidirectionalRange.h"
 #include "Polymorphic/RandomAccessRange.h"
 #include "Polymorphic/FiniteRandomAccessRange.h"
+#include "Polymorphic/OutputRange.h"

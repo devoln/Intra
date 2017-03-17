@@ -75,13 +75,13 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 	HANDLE hFile = CreateFileW(wFullFileName.Data(), desiredAccess,
 		FILE_SHARE_READ, null, creationDisposition, flagsAndAttributes, null);
 
-	if(hFile!=INVALID_HANDLE_VALUE) mHandle = reinterpret_cast<Handle*>(hFile);
+	if(hFile!=INVALID_HANDLE_VALUE) mHandle = reinterpret_cast<NativeHandle*>(hFile);
 	else mHandle = null;
 #else
 	auto openFlags = mMode == Mode::Read? O_RDONLY: mMode==Mode::Write? O_WRONLY: O_RDWR;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
 	int fd = open(fullFileName.CStr(), openFlags);
-	if(fd != -1) mHandle = reinterpret_cast<Handle*>(size_t(fd));
+	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
 	else mHandle = null;
 #endif
 }
@@ -175,6 +175,8 @@ String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return null;
 #else
+	//В Unix-подобных системах файлом могут являться устройства и другие объекты, размер которых заранее неизвестен.
+	//В этом случае мы попадём сюда. Будем читать файл блоками, пока он не закончится.
 	int fd = int(reinterpret_cast<size_t>(file.mHandle));
 	size_t pos = 0;
 	String result;
@@ -182,14 +184,24 @@ String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
 	for(;;)
 	{
 		pos += size_t(read(fd, result.Data()+pos, result.Length()-pos));
-		if(pos == result.Length()) result.SetLengthUninitialized(pos+pos/2);
-		else
+		if(pos == result.Length())
 		{
-			result.SetLengthUninitialized(pos);
-			return result;
+			result.SetLengthUninitialized(pos+pos/2);
+			continue;
 		}
+		result.SetLengthUninitialized(pos);
+		result.TrimExcessCapacity();
+		return result;
 	}
 #endif
+}
+
+OsFile OsFile::FromNative(NativeHandle* handle)
+{
+	OsFile result;
+	result.mHandle = handle;
+	result.mMode = Mode::ReadWrite; //Некоторые проверки отключатся, на функциональность влиять не должно
+	return result;
 }
 
 

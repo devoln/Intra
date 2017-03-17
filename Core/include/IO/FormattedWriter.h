@@ -3,9 +3,9 @@
 #include "Platform/CppWarnings.h"
 #include "Math/Vector.h"
 #include "Container/Sequential/String.h"
-#include "Stream.h"
 #include "Range/Generators/StringView.h"
 #include "Container/Sequential/Array.h"
+#include "Range/Polymorphic/OutputRange.h"
 
 namespace Intra { namespace IO {
 
@@ -13,9 +13,16 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct FontDesc
 {
+	//! Цвет шрифта. Отрицательное значение означает, что нужно использовать цвет по умолчанию.
 	Math::Vec3 Color;
 	float Size;
 	bool Bold, Italic, Underline, Strike;
+
+	static const FontDesc& Default()
+	{
+		const FontDesc result = {{-1, -1, -1}, 3, false, false, false, false};
+		return result;
+	}
 
 	bool operator==(const FontDesc& rhs) const
 	{
@@ -27,116 +34,128 @@ struct FontDesc
 	bool operator!=(const FontDesc& rhs) const {return !operator==(rhs);}
 };
 
-class IFormattedWriter: public IOutputStream
+class AFormattedWriter
 {
 public:
-	virtual void PushFont(Math::Vec3 color={0,0,0}, float size=3,
-		bool bold=false, bool italic=false, bool underline=false) = 0;
-
-	virtual void PopFont() = 0;
-
-	virtual void BeginSpoiler(StringView show) = 0;
-	void BeginSpoiler() {BeginSpoiler("Show");}
-	virtual void EndSpoiler() = 0;
-	virtual void EndAllSpoilers() = 0;
-
-	virtual void BeginCode() = 0;
-	virtual void EndCode() = 0;
-
-	virtual void PushStyle(StringView style) = 0;
-	virtual void PopStyle() = 0;
-
-	virtual void HorLine() {PrintLine("__________________________________________________");}
-
-	virtual FontDesc GetCurrentFont() const = 0;
-
-	void PrintCode(StringView code)
-	{BeginCode(); Print(code); EndCode();}
-};
-
-class FormattedWriterBase: public IFormattedWriter
-{
-protected:
-	IOutputStream* mMyS;
-	size_t mSpoilerNesting;
-	Array<FontDesc> mFontStack;
-public:
-	FormattedWriterBase(IOutputStream* s):
-		mMyS(s), mSpoilerNesting(0), mFontStack(null) {}
-
-	void WriteData(const void* data, size_t bytes) override {mMyS->WriteData(data, bytes);}
-
-	void PushFont(Math::Vec3 color={1,1,1}, float size=3,
-		bool bold=false, bool italic=false, bool underline=false) override
-	{mFontStack.AddLast({color, size, bold, italic, underline, false});}
-
-	void PopFont() override
-	{mFontStack.RemoveLast();}
-
-	FontDesc GetCurrentFont() const override
+	void PushFont(Math::Vec3 color, float size=3,
+		bool bold=false, bool italic=false, bool underline=false, bool strike=false)
 	{
-		if(mFontStack.Empty()) return {{0,0,0}, 0, false, false, false, false};
-		return mFontStack.Last();
+		PushFont({color, size, bold, italic, underline, strike});
 	}
 
-	void PushStyle(StringView) override {}
-	void PopStyle() override {}
-
-	void BeginSpoiler(StringView show) override
+	void PushFont(const FontDesc& fontDesc)
 	{
-		(void)show;
+		pushFont(fontDesc);
+		mFontStack.AddLast(fontDesc);
+	}
+
+	void PushFont() {PushFont(FontDesc::Default());}
+
+	void PopFont()
+	{
+		popFont();
+		mFontStack.RemoveLast();
+	}
+
+	void BeginSpoiler(StringView label)
+	{
+		beginSpoiler(label);
 		mSpoilerNesting++;
 	}
 
-	void EndSpoiler() override
-	{INTRA_DEBUG_ASSERT(mSpoilerNesting!=0); mSpoilerNesting--;}
-	
-	void EndAllSpoilers() override
-	{while(mSpoilerNesting!=0) EndSpoiler();}
+	void BeginSpoiler() {BeginSpoiler("Show");}
 
-	void BeginCode() override {}
-	void EndCode() override   {}
+	void EndSpoiler()
+	{
+		INTRA_DEBUG_ASSERT(mSpoilerNesting != 0);
+		if(mSpoilerNesting == 0) return;
+		mSpoilerNesting--;
+		endSpoiler();
+	}
 
-	void Print(StringView s) override {RawPrint(s);}
+	void EndAllSpoilers()
+	{
+		while(mSpoilerNesting --> 0)
+			EndSpoiler();
+	}
+
+	virtual void BeginCode() {}
+	virtual void EndCode() {}
+
+	virtual void PushStyle(StringView style) {}
+	virtual void PopStyle() {}
+
+	virtual void HorLine()
+	{
+		PrintRaw("__________________________________________________");
+		LineBreak();
+	}
+
+	virtual void LineBreak() {PrintRaw("\r\n");}
+
+	const FontDesc& GetCurrentFont() const
+	{
+		if(mFontStack.Empty())
+			return FontDesc::Default();
+		return mFontStack.Last();
+	}
+
+	void PrintCode(StringView code)
+	{
+		BeginCode();
+		PrintPreformatted(code);
+		EndCode();
+	}
+
+	virtual void PrintPreformatted(StringView str) {PrintRaw(str);}
+	virtual void PrintRaw(StringView str) = 0;
 
 protected:
-	~FormattedWriterBase() {}
-	FormattedWriterBase(const FormattedWriterBase&) = delete;
-	FormattedWriterBase& operator=(const FormattedWriterBase&) = delete;
+	virtual void pushFont(const FontDesc& fontDesc) {(void)fontDesc;}
+	virtual void popFont() {}
+	virtual void beginSpoiler(StringView label) {(void)label;}
+	virtual void endSpoiler() {}
+
+	size_t mSpoilerNesting;
+	Array<FontDesc> mFontStack;
 };
 
 
-
-class PlainTextWriter: public FormattedWriterBase
+class APlainTextFormattedWriter: public AFormattedWriter
 {
 public:
-	PlainTextWriter(IOutputStream* s): FormattedWriterBase(s) {}
-
-	void BeginSpoiler(StringView show) override
+	void BeginCode() override
 	{
-		FormattedWriterBase::BeginSpoiler(show);
-		PrintLine();
-		RawPrint(show);
-		PrintLine();
-		RawPrint("{");
-		PrintLine();
+		LineBreak();
+		PrintRaw("___________________");
+		LineBreak();
 	}
 
-	void EndSpoiler() override
+	void EndCode() override
 	{
-		FormattedWriterBase::EndSpoiler();
-		PrintLine();
-		PrintLine("}");
+		LineBreak();
+		PrintRaw("___________________");
+		LineBreak();
 	}
 
-	void BeginCode() override {PrintLine(endl, "___________________");}
-	void EndCode() override   {PrintLine(endl, "___________________");}
+	void PrintPreformatted(StringView str) {PrintRaw(str);}
 
-	void Print(StringView s) override {RawPrint(s);}
+protected:
+	void beginSpoiler(StringView show) override
+	{
+		LineBreak();
+		PrintRaw(show);
+		LineBreak();
+		PrintRaw("{");
+		LineBreak();
+	}
 
-private:
-	PlainTextWriter(const PlainTextWriter&) = delete;
-	PlainTextWriter& operator=(const PlainTextWriter&) = delete;
+	void endSpoiler() override
+	{
+		LineBreak();
+		PrintRaw("}");
+		LineBreak();
+	}
 };
 
 INTRA_WARNING_POP

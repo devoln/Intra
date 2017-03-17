@@ -46,10 +46,19 @@ public:
 	static String ReadAsString(StringView fileName, bool& fileOpened);
 	static String ReadAsString(StringView fileName) {bool unused; return ReadAsString(fileName, unused);}
 
+	struct NativeHandle;
+
+	//! Возвращает хендл файла ОС.
+	//! Для Windows возвращаемое значение нужно приводить к HANDLE (создаётся через CreateFile).
+	//! Для остальных ОС возвращаемое значение нужно приводить к int (file descriptor, создаётся через open).
+	NativeHandle* GetNativeHandle() const {return mHandle;}
+	static OsFile FromNative(NativeHandle* handle);
+
 private:
-	struct Handle;
-	Handle* mHandle;
+	NativeHandle* mHandle;
 	Mode mMode;
+
+	OsFile() {}
 };
 
 }}

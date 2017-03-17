@@ -51,12 +51,11 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
 {
-	INTRA_DEBUG_ASSERT(stream.IsSeekable());
 	INTRA_DEBUG_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
 	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
 	const size_t usefulDstLineBytes = size_t(sizes.x*dstFormat.BytesPerPixel());
-	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u)&~size_t(srcAlignment-1u);
-	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u)&~size_t(dstAlignment-1u);
+	const size_t srcLineBytes = (usefulSrcLineBytes+srcAlignment-1u) & ~size_t(srcAlignment-1u);
+	const size_t dstLineBytes = (usefulDstLineBytes+dstAlignment-1u) & ~size_t(dstAlignment-1u);
 	const size_t srcDataSize = sizes.y*srcLineBytes;
 	const size_t dstDataSize = sizes.y*dstLineBytes;
 	INTRA_DEBUG_ASSERT(dstBuf.Length() >= dstDataSize);
@@ -137,11 +136,10 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	if(swapRB) SwapRedBlueChannels(dstFormat, dstAlignment, sizes, dstBuf);
 }
 
-void ReadPalettedPixelDataBlock(IInputStream& stream, ArrayRange<const byte> palette,
+void ReadPalettedPixelDataBlock(InputStream& stream, ArrayRange<const byte> palette,
 	ushort bpp, USVec2 sizes, ImageFormat format, bool flipVert,
 	ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
 {
-	INTRA_DEBUG_ASSERT(stream.IsSeekable());
 	INTRA_DEBUG_ASSERT(palette.Length() >= 1u << bpp);
 	const ushort bytesPerPixel = format.BytesPerPixel();
 	const uint usefulSrcLineBytes = uint(sizes.x*bpp)/8u;
@@ -153,39 +151,39 @@ void ReadPalettedPixelDataBlock(IInputStream& stream, ArrayRange<const byte> pal
 	byte* pos = dstBuf.Begin;
 	if(flipVert) pos += dstDataSize-dstLineBytes;
 
-	for(int y = 0; y<sizes.y; y++)
+	for(int y=0; y<sizes.y; y++)
 	{
 		byte* linePos = pos;
-		if(bpp==1) for(uint j = 0; j<sizes.x; j += 8)
+		if(bpp==1) for(uint j=0; j<sizes.x; j += 8)
 		{
-			byte colorIndices = stream.Read<byte>();
-			for(int k = 0; k<8; k++)
+			byte colorIndices = stream.ReadRaw<byte>();
+			for(int k=0; k<8; k++)
 			{
 				size_t bytesLeftToCopy = bytesPerPixel;
 				const byte* paletteSrc = palette.Data() + ((colorIndices & 0x80) >> 7)*bytesPerPixel;
-				while(bytesLeftToCopy--> 0) *linePos++ = *paletteSrc++;
+				while(bytesLeftToCopy --> 0) *linePos++ = *paletteSrc++;
 				colorIndices = byte(colorIndices << 1);
 			}
 		}
-		else if(bpp==4) for(uint j = 0; j<sizes.x; j += 2)
+		else if(bpp==4) for(uint j=0; j<sizes.x; j += 2)
 		{
-			byte colorIndices = stream.Read<byte>();
+			byte colorIndices = stream.ReadRaw<byte>();
 			const byte* paletteSrc = palette.Data() + (colorIndices >> 4)*bytesPerPixel;
 			size_t bytesLeftToCopy = bytesPerPixel;
-			while(bytesLeftToCopy--> 0) *linePos++ = *paletteSrc++;
+			while(bytesLeftToCopy --> 0) *linePos++ = *paletteSrc++;
 			paletteSrc = palette.Data() + (colorIndices & 15)*bytesPerPixel;
-			while(bytesLeftToCopy--> 0) *linePos++ = *paletteSrc++;
+			while(bytesLeftToCopy --> 0) *linePos++ = *paletteSrc++;
 		}
 		else if(bpp==8) for(uint j = 0; j<sizes.x; j++)
 		{
-			byte colorIndex = stream.Read<byte>();
+			byte colorIndex = stream.ReadRaw<byte>();
 			size_t bytesLeftToCopy = bytesPerPixel;
 			const byte* paletteSrc = palette.Data() + colorIndex*bytesPerPixel;
 			while(bytesLeftToCopy--> 0) *linePos++ = *paletteSrc++;
 		}
 		if(!flipVert) pos += dstLineBytes;
 		else pos -= dstLineBytes;
-		stream.Skip(srcLineBytes-usefulSrcLineBytes);
+		stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 	}
 }
 

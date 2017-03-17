@@ -225,9 +225,6 @@
     <ClCompile Include="src\Data\Variable.cpp">
       <Filter>Файлы исходного кода\Data</Filter>
     </ClCompile>
-    <ClCompile Include="src\IO\Stream.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
     <ClCompile Include="src\Memory\VirtualMemory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
     </ClCompile>
@@ -330,6 +327,9 @@
     <ClCompile Include="src\IO\OsFile.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\Console.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Utils\Callback.h">
@@ -385,9 +385,6 @@
     </ClInclude>
     <ClInclude Include="include\Math\Shapes.h">
       <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="include\IO\Stream.h">
-      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="include\Meta\Tuple.h">
       <Filter>Заголовочные файлы\Meta</Filter>
@@ -1075,6 +1072,12 @@
     </ClInclude>
     <ClInclude Include="include\Range\Stream\Operators.h">
       <Filter>Заголовочные файлы\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Polymorphic\OutputRange.h">
+      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\Console.h">
+      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -96,6 +96,16 @@ public:
 		return totalBytesRead;
 	}
 
+	template<typename AR> Meta::EnableIf<
+		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
+	size_t> CopyAdvanceToAdvance(AR& dst)
+	{
+		ArrayRange<char> dstArr = {dst.Data(), dst.Length()};
+		size_t result = CopyAdvanceToAdvance(dstArr);
+		Range::PopFirstExactly(dst, result);
+		return result;
+	}
+
 	forceinline ulong64 PositionInFile() const {return mOffset-mBufferRest.Length();}
 	forceinline ArrayRange<const char> BufferedData() const {return mBufferRest;}
 

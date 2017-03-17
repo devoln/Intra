@@ -17,6 +17,7 @@ namespace Intra {namespace Algo {
 using namespace Range::Concepts;
 
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethod, Meta::Val<T1>().CopyAdvanceToAdvance(Meta::Val<T2&>()),,);
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceFromAdvanceMethod, Meta::Val<T1>().CopyAdvanceFromAdvance(Meta::Val<T2&>()),,);
 
 //! @file
 //! Данный файл содержит алгоритмы копирования данных диапазонов.
@@ -90,7 +91,8 @@ template<typename R, typename OR> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
 	HasEmpty<OR>::_ && !IsInfiniteRange<OR>::_ &&
-	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
+	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
+	!HasCopyAdvanceFromAdvanceMethod<OR&, R&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 {return CopyAdvanceToAdvanceByOne(src, dst);}
 
@@ -99,7 +101,8 @@ template<typename R, typename OR> Meta::EnableIf<
 	IsNonInfiniteInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
 	(!HasEmpty<OR>::_ || IsInfiniteRange<OR>::_) &&
-	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
+	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
+	!HasCopyAdvanceFromAdvanceMethod<OR&, R&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 {
 	size_t minLen = 0;
@@ -119,6 +122,15 @@ template<typename R, typename OR> forceinline Meta::EnableIf<
 	HasCopyAdvanceToAdvanceMethod<R&, OR&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 {return src.CopyAdvanceToAdvance(dst);}
+
+template<typename R, typename OR> forceinline Meta::EnableIf<
+	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
+	IsOutputRangeOf<OR, ValueTypeOf<R>>::_ &&
+	(!IsInfiniteRange<R>::_ || HasEmpty<OR>::_) &&
+	!HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
+	HasCopyAdvanceFromAdvanceMethod<OR&, R&>::_,
+size_t> CopyAdvanceToAdvance(R& src, OR& dst)
+{return dst.CopyAdvanceFromAdvance(src);}
 
 template<typename R, typename OR> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
