@@ -1,4 +1,4 @@
-﻿#include "IO/Stream.h"
+﻿#include "IO/ConsoleOutput.h"
 #include "IO/OsFile.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
@@ -112,7 +112,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	auto inputFileMapping = OS.MapFile(inputFilePath);
 	if(inputFileMapping==null)
 	{
-		Console.PrintLine("File ", inputFilePath, " is not opened!");
+		ConsoleOut.PrintLine("File ", inputFilePath, " is not opened!");
 		return;
 	}
 	ArrayRange<const byte> src = inputFileMapping.AsRange();
@@ -159,8 +159,8 @@ int INTRA_CRTDECL main(int argc, const char* argv[])
 {
 	if(argc<2)
 	{
-		Console.PrintLine("Usage:");
-		Console.PrintLine(argv[0], " <inputFilePath> [-o <outputFilePath.c>] [-varname <binaryArrayName>] [-per-line <32>] [-notabs] [-nospaces] [-singleline] [-endline]");
+		ConsoleOut.PrintLine("Usage:");
+		ConsoleOut.PrintLine(argv[0], " <inputFilePath> [-o <outputFilePath.c>] [-varname <binaryArrayName>] [-per-line <32>] [-notabs] [-nospaces] [-singleline] [-endline]");
 		return 0;
 	}
 

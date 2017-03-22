@@ -1,4 +1,5 @@
-﻿#include "IO/Stream.h"
+﻿#include "IO/ConsoleOutput.h"
+#include "IO/ConsoleInput.h"
 #include "IO/FileSystem.h"
 #include "Audio/Midi.h"
 #include "Audio/Music.h"
@@ -50,8 +51,7 @@ using namespace Intra::Audio;
 void MainLoop(bool enableStreaming)
 {
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-
-	Console.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
+	ConsoleOut.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
 	Thread thr;
 	if(enableStreaming)
 	{
@@ -64,7 +64,7 @@ void MainLoop(bool enableStreaming)
 			}		
 		});
 	}
-	Console.GetChar();
+	ConsoleIn.GetChar();
 
 #else
 	(void)enableStreaming;
@@ -76,7 +76,7 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 {
 	if(enableStreaming)
 	{
-		Console.PrintLine("Инициализация...");
+		ConsoleOut.PrintLine("Инициализация...");
 		static StreamedSound sound = StreamedSound::FromFile(filePath, 16384);
 		sound.Play();
 	}
@@ -86,7 +86,7 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 		auto inst = sound.CreateInstance();
 		inst.Play();
 	}
-	Console.PrintLine("Воспроизведение...");
+	ConsoleOut.PrintLine("Воспроизведение...");
 	MainLoop(enableStreaming);
 }
 
@@ -97,7 +97,7 @@ void PlayMusic(const Music& music, bool printPerf)
 	if(printPerf)
 	{
 		auto time = tim.GetTime();
-		Console.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
+		ConsoleOut.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
 	}
 	static Sound snd;
 	snd = Sound(&buf);
@@ -108,8 +108,8 @@ void PlayMusic(const Music& music, bool printPerf)
 void PlayMusicStream(const Music& music)
 {
 	const auto sampleRate = StreamedSound::InternalSampleRate();
-	Console.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
-	Console.PrintLine("Инициализация...");
+	ConsoleOut.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
+	ConsoleOut.PrintLine("Инициализация...");
 	static StreamedSound sound;
 	sound = StreamedSound(new Sources::MusicSynthSource(music, sampleRate));
 	sound.Play();
@@ -126,7 +126,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size
 	PrintMusicInfo(music);
 	if(enableStreaming) PlayMusicStream(music);
 	else PlayMusic(music, true);
-	Console.PrintLine("Воспроизведение...");
+	ConsoleOut.PrintLine("Воспроизведение...");
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)

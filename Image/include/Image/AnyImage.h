@@ -2,7 +2,6 @@
 
 #include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
-#include "IO/Stream.h"
 #include "Image/ImageFormat.h"
 #include "Image/ImageInfo.h"
 #include "Math/Vector.h"

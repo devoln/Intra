@@ -2,5 +2,4 @@
 
 #include "IO/LogSystem.h"
 
-void RunContainerPerfTests(Intra::IO::IFormattedWriter& logger);
-
+void RunContainerPerfTests(Intra::IO::FormattedWriter& logger);

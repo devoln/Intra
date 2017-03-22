@@ -1,11 +1,10 @@
 ﻿
 #include "Platform/Time.h"
 #include "Platform/HardwareInfo.h"
-#include "IO/Stream.h"
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
-#include "IO/ConsoleWriter.h"
+#include "IO/ConsoleOutput.h"
 #include "Algo/String/Path.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/Errors.h"
@@ -32,18 +31,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace Intra::IO;
 
-
-#ifndef INTRA_NO_FILE_LOGGING
-DiskFile::Writer g_LogFile;
-HtmlWriter g_LogWriter(&g_LogFile);
-#endif
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
-HtmlWriter logConsoleWriter(&Console);
-#else
-ConsoleTextWriter logConsoleWriter(&Console);
-#endif
-
 CompositeFormattedWriter logger;
 CompositeFormattedWriter emptyLogger;
 
@@ -54,7 +41,7 @@ void InitLogSystem(int argc, const char* argv[])
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	g_LogFile = DiskFile::Writer(logFileName, true);
+	auto logFile = DiskFile::Writer(logFileName, true);
 	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Logs</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
 	const String datetime = DateTime::Now().ToString();
 	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
@@ -108,7 +95,7 @@ void InitLogSystem(int argc, const char* argv[])
 #else
 	(void)argc; (void)argv;
 #endif
-	logger.Attach(&logConsoleWriter);
+	logger.Attach(ConsoleOutput());
 #endif
 }
 
@@ -148,8 +135,8 @@ int main(int argc, const char* argv[])
 
 	if(argc<2 || StringView(argv[1])!="-a")
 	{
-		Console.PrintLine("Press any key to exit...");
-		Console.GetChar();
+		ConsoleOut.PrintLine("Press any key to exit...");
+		ConsoleIn.GetChar();
 	}
 
 	return 0;

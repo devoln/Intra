@@ -1,8 +1,8 @@
 ﻿#ifndef INTRA_NO_BMP_LOADER
 
+#include "Platform/Endianess.h"
 #include "Container/Sequential/Array.h"
 #include "Image/Loaders/LoaderBMP.h"
-#include "IO/Stream.h"
 #include "Image/FormatConversion.h"
 #include "Image/AnyImage.h"
 #include "Math/Vector.h"

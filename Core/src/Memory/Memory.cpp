@@ -2,7 +2,6 @@
 #include "Platform/Debug.h"
 #include "Memory/Memory.h"
 #include "Platform/Errors.h"
-#include "IO/Stream.h"
 #include "Thread/Atomic.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS

@@ -4,8 +4,9 @@
 
 using namespace Intra;
 using namespace Range;
+using namespace IO;
 
-void TestUnicodeConversion(IO::IFormattedWriter& output)
+void TestUnicodeConversion(FormattedWriter& output)
 {
 	output.PrintLine("String to test:");
 	StringView originalStr = "Тестируется русский текст с иероглифами ㈇㌤㈳㌛㉨, "

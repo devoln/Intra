@@ -28,7 +28,14 @@ template<typename T> struct UniqueRef
 		return *this;
 	}
 
-	T* Ptr() const {return mPtr;}
+	forceinline T* Ptr() const {return mPtr;}
+
+	forceinline T* Release()
+	{
+		T* result = mPtr;
+		mPtr = null;
+		return result;
+	}
 
 	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mPtr!=null); return *mPtr;}
 	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mPtr!=null); return mPtr;}
@@ -40,6 +47,13 @@ private:
 	T* mPtr;
 };
 
+template<typename T, typename... Args> forceinline
+UniqueRef<T> NewUnique(Args&&... args)
+{return new T(Meta::Forward<Args>(args)...);}
+
 INTRA_WARNING_POP
 
-}}
+}
+using Memory::UniqueRef;
+
+}

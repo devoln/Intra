@@ -20,7 +20,7 @@ static const short arrayForSortTesting[] = {
 	2, 5, 4552, 54, 3, -932, 123, 342, 24321, -234
 };
 
-void TestSort(IO::IFormattedWriter& output)
+void TestSort(IO::FormattedWriter& output)
 {
 	Array<short> arrUnsorted = arrayForSortTesting;
 	output.PrintLine("Not sorted array: ", arrUnsorted);

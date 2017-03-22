@@ -1,6 +1,6 @@
 ﻿#include "Image/Loaders/LoaderPlatform.h"
 #include "Math/Math.h"
-#include "IO/Stream.h"
+#include "Range/Polymorphic/InputRange.h"
 
 #if(INTRA_LIBRARY_IMAGE_LOADING==INTRA_LIBRARY_IMAGE_LOADING_STB)
 

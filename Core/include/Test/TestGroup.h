@@ -23,21 +23,23 @@ struct TestInternalErrorInfo
 	bool NoError() const {return Function==null && File==null && Line==0 && Info==null && FullDesc==null;}
 };
 
+typedef Utils::Delegate<void(IO::FormattedWriter&)> TestFunction;
+
 class TestGroup
 {
 	TestGroup* mParentTestGroup;
 public:
 	bool Yes;
-	IO::IFormattedWriter& Logger;
-	IO::IFormattedWriter& Output;
+	IO::FormattedWriter& Logger;
+	IO::FormattedWriter& Output;
 	StringView Category;
 	TestInternalErrorInfo ErrorInfo;
 
 	operator bool() const {return Yes;}
-	TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output, StringView category);
+	TestGroup(IO::FormattedWriter& logger, IO::FormattedWriter& output, StringView category);
 	
-	TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output,
-		StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest):
+	TestGroup(IO::FormattedWriter& logger, IO::FormattedWriter& output,
+		StringView category, const TestFunction& funcToTest):
 		TestGroup(logger, output, category)
 	{
 		if(!Yes) return;
@@ -48,7 +50,7 @@ public:
 	}
 
 	TestGroup(StringView category);
-	TestGroup(StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest);
+	TestGroup(StringView category, const TestFunction& funcToTest);
 	~TestGroup();
 
 	static TestGroup* GetCurrent() {return currentTestGroup;}
@@ -69,7 +71,7 @@ private:
 	void consoleAskToEnableTest();
 
 	struct TestException {};
-	void tryCallTest(const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest)
+	void tryCallTest(const TestFunction& funcToTest)
 	{
 	#ifdef INTRA_EXCEPTIONS_ENABLED
 		try { //Исключение как способ безопасного выхода из ошибочного теста вместо падения всего приложения

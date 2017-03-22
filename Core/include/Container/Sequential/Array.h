@@ -598,6 +598,11 @@ public:
 		return AsConstRange()(firstIndex, endIndex);
 	}
 
+	ArrayRange<T> Take(size_t count) {return range.Take(count);}
+	ArrayRange<const T> Take(size_t count) const {return AsConstRange().Take(count);}
+	ArrayRange<T> Drop(size_t count) {return range.Drop(count);}
+	ArrayRange<const T> Drop(size_t count) const {return AsConstRange().Drop(count);}
+
 
 	//! @defgroup Array_STL_Interface STL-подобный интерфейс для Array
 	//! Этот интерфейс предназначен для совместимости с обобщённым контейнеро-независимым кодом.

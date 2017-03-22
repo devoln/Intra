@@ -7,7 +7,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #include "Header.h"
-#include "IO/Stream.h"
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
 #include "Range/Generators/ArrayRange.h"
@@ -19,11 +18,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <stdlib.h>
 
 using namespace Intra;
-using namespace Intra::IO;
-using namespace Intra::Range;
-using namespace Intra::Algo;
+using namespace IO;
+using namespace Range;
+using namespace Algo;
 
-template<typename T> static void PrintPolymorphicRange(IO::IFormattedWriter& output, InputRange<T> range)
+template<typename T> static void PrintPolymorphicRange(FormattedWriter& output, InputRange<T> range)
 {
 	output.Print("[");
 	bool firstIteration = true;
@@ -52,7 +51,7 @@ struct ivec3
 	template<typename V> void ForEachField(V&& f) const {f(x), f(y), f(z);}
 };
 
-static void TestSumRange(IO::IFormattedWriter& output)
+static void TestSumRange(FormattedWriter& output)
 {
 	int ints[] = {3, 53, 63, 3, 321, 34253, 35434, 2};
 	int sum = SumPolymorphicRange(ints);
@@ -74,7 +73,7 @@ static void TestSumRange(IO::IFormattedWriter& output)
 	output.PrintLine("x sum of ", vectors, " = ", xsum);
 }
 
-void TestComposedPolymorphicRange(IO::IFormattedWriter& output)
+void TestComposedPolymorphicRange(FormattedWriter& output)
 {
 	auto someRecurrence = Take(Drop(Cycle(Take(Recurrence(
 		[](int a, int b) {return a*2+b; }, 1, 1
@@ -92,12 +91,13 @@ void TestComposedPolymorphicRange(IO::IFormattedWriter& output)
 		Math::Sqr<uint>);
 	PrintPolymorphicRange(output, Meta::Move(seq));
 
-	output.PrintLine(endl, "Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
+	output.LineBreak();
+	output.PrintLine("Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
 	seq = Take(Generate(rand), 50);
 	PrintPolymorphicRange(output, Meta::Move(seq));
 }
 
-void TestPolymorphicRange(IO::IFormattedWriter& output)
+void TestPolymorphicRange(FormattedWriter& output)
 {
 	TestSumRange(output);
 	TestComposedPolymorphicRange(output);

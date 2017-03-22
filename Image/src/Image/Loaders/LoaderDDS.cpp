@@ -4,6 +4,8 @@
 #include "Image/AnyImage.h"
 #include "Image/Bindings/DXGI_Formats.h"
 #include "Platform/CppWarnings.h"
+#include "Platform/Endianess.h"
+#include "Range/Polymorphic/OutputRange.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -377,9 +379,9 @@ AnyImage LoaderDDS::Load(InputStream stream) const
 }
 
 
-void LoaderDDS::Save(const AnyImage& img, IO::IOutputStream& stream) const
+void LoaderDDS::Save(const AnyImage& img, OutputStream& stream) const
 {
-	stream.WriteData("DDS ", 4);
+	stream.WriteRawFrom("DDS ");
 
 	DDS_HEADER header;
 	header.size = sizeof(header);
@@ -430,11 +432,12 @@ void LoaderDDS::Save(const AnyImage& img, IO::IOutputStream& stream) const
 	}
 	else header.pitchOrLinearSize = (uint(img.Info.Size.x)*img.Info.Format.BitsPerPixel()+7u)/8u;
 
-	stream.Write<DDS_HEADER>(header);
+	stream.WriteRaw<DDS_HEADER>(header);
 	if(has_dx10_header(header.ddspf))
-		stream.Write<DDS_HEADER_DXT10>(dx10header);
+		stream.WriteRaw<DDS_HEADER_DXT10>(dx10header);
 	size_t dataSize = img.Info.CalculateFullDataSize(img.LineAlignment);
-	stream.WriteData(img.Data.Data(), dataSize);
+	INTRA_ASSERT_EQUALS(dataSize, img.Data.Count());
+	stream.WriteRawFrom(img.Data.Take(dataSize));
 }
 
 const LoaderDDS LoaderDDS::Instance;

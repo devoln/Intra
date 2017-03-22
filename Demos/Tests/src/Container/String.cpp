@@ -339,7 +339,7 @@ double TestStringSubStrView(uint times)
 
 
 
-void RunStringPerfTests(IFormattedWriter& output)
+void RunStringPerfTests(FormattedWriter& output)
 {
 	StringView comparedStrings[2] = {"std::string", "String"};
 

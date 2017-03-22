@@ -50,32 +50,32 @@ public:
 	OsFileSystem& operator=(const OsFileSystem&) = default;
 
 	//! Проверить существования файла fileName.
-	bool FileExists(StringView fileName) const override final;
+	bool FileExists(StringView fileName) const final;
 
 	//! Удалить файл fileName.
 	//! Если файл не существует или его нельзя удалить, возвращает false.
 	//! \return true, если операция была выполнена.
-	bool FileDelete(StringView fileName) override final;
+	bool FileDelete(StringView fileName) final;
 
 	//! Переместить и\или переименовать файл или директорию oldFilename в newFilename.
 	//! Если файл уже существует, поведение функции зависит от параметра overwriteExisting.
 	//! \return true, если операция была выполнена.
-	bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) override final;
+	bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) final;
 
 	//! Возвращает информацию о файле fileName.
-	FileInfo FileGetInfo(StringView fileName) const override final;
+	FileInfo FileGetInfo(StringView fileName) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetTime(StringView filename) const override final;
+	ulong64 FileGetTime(StringView filename) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetSize(StringView filename) const override final;
+	ulong64 FileGetSize(StringView filename) const final;
 
 	//! Возвращает текущую директорию, относительно которой производятся все файловые операции при указании относительного пути.
-	StringView CurrentDirectory() const override final {return mCurrentDirectory;}
+	StringView CurrentDirectory() const final {return mCurrentDirectory;}
 
 	//! Установить текущую директорию.
-	void SetDirectory(StringView newDir) override final {mCurrentDirectory = newDir;}
+	void SetDirectory(StringView newDir) final {mCurrentDirectory = newDir;}
 
 	//! Получить полный путь к файлу fileName.
 	String GetFullFileName(StringView fileName) const;

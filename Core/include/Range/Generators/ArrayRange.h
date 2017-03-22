@@ -34,7 +34,7 @@ template<typename T> struct ArrayRange
 		Begin(rhs.Begin), End(rhs.End) {}
 
 	template<typename R, typename=Meta::EnableIf<
-		IsArrayClass<R>::_ && Meta::TypeEquals<ValueTypeOf<R>, T>::_
+		IsArrayClass<R>::_ && Meta::TypeEqualsIgnoreCV<ValueTypeOfArray<R>, T>::_
 	>> forceinline ArrayRange(R&& rhs):
 		ArrayRange(rhs.Data(), rhs.Length()) {}
 

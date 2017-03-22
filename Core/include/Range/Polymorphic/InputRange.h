@@ -64,23 +64,23 @@ template<typename T, typename R, typename PARENT, bool Condition =
 	template<typename A> InputRangeImplFiller(A&& range):
 		OriginalRange(Meta::Forward<A>(range)) {}
 
-	bool Empty() const override final
+	bool Empty() const final
 	{return OriginalRange.Empty();}
 
-	T First() const override final
+	T First() const final
 	{return OriginalRange.First();}
 
-	void PopFirst() override final
+	void PopFirst() final
 	{OriginalRange.PopFirst();}
 
-	T GetNext() override final
+	T GetNext() final
 	{
 		auto&& result = OriginalRange.First();
 		OriginalRange.PopFirst();
 		return result;
 	}
 
-	size_t PopFirstN(size_t count) override final
+	size_t PopFirstN(size_t count) final
 	{return Range::PopFirstN(OriginalRange, count);}
 };
 
@@ -92,7 +92,7 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 	template<typename A> InputRangeImplFiller(A&& range):
 		base(Meta::Forward<A>(range)) {}
 
-	size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) override final
+	size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) final
 	{return Algo::CopyAdvanceToAdvance(base::OriginalRange, dst);}
 };
 

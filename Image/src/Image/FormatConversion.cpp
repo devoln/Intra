@@ -1,9 +1,9 @@
 ﻿#include "Image/FormatConversion.h"
+#include "Platform/Endianess.h"
 
 namespace Intra {
 
 using namespace Math;
-using namespace IO;
 
 namespace Image {
 

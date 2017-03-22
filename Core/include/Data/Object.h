@@ -62,42 +62,42 @@ private:
 	LinearMap<String, Array<Object>> mObjectArrays;
 
 public:
-	double GetNumber(StringView key, double defaultValue=0) const override final {return mNumbers.Get(key, defaultValue);}
+	double GetNumber(StringView key, double defaultValue=0) const final {return mNumbers.Get(key, defaultValue);}
 	double& NumberValue(StringView key) {return mNumbers[key];}
-	bool NumberExists(StringView key) const override final {return mNumbers.KeyExists(key);}
-	StringMap<double> GetNumbers() const override final;
+	bool NumberExists(StringView key) const final {return mNumbers.KeyExists(key);}
+	StringMap<double> GetNumbers() const final;
 
 
-	StringView GetString(StringView key, StringView defaultValue=null) const override final;
+	StringView GetString(StringView key, StringView defaultValue=null) const final;
 	String& StringValue(StringView key) {return mStrings[key];}
-	bool StringExists(StringView key) const override final {return mStrings.KeyExists(key);}
-	StringMap<StringView> GetStrings() const override final;
+	bool StringExists(StringView key) const final {return mStrings.KeyExists(key);}
+	StringMap<StringView> GetStrings() const final;
 
 
-	const Object& GetObject(StringView key) const override final {return mObjects.Get(key);}
+	const Object& GetObject(StringView key) const final {return mObjects.Get(key);}
 	Object& ObjectValue(StringView key) {return mObjects[key];}
-	bool ObjectExists(StringView key) const override final {return mObjects.KeyExists(key);}
-	StringMap<const IConstObject&> GetObjects() const override final;
+	bool ObjectExists(StringView key) const final {return mObjects.KeyExists(key);}
+	StringMap<const IConstObject&> GetObjects() const final;
 
 
-	ArrayRange<const double> GetNumberArray(StringView key) const override final {return mNumberArrays.Get(key);}
+	ArrayRange<const double> GetNumberArray(StringView key) const final {return mNumberArrays.Get(key);}
 	Array<double>& NumberArray(StringView key) {return mNumberArrays[key];}
-	bool NumberArrayExists(StringView key) const override final {return mNumberArrays.KeyExists(key);}
-	StringMap<Collection<double>> GetNumberArrays() const override final;
+	bool NumberArrayExists(StringView key) const final {return mNumberArrays.KeyExists(key);}
+	StringMap<Collection<double>> GetNumberArrays() const final;
 
 
-	ArrayRange<const String> GetStringArray(StringView key) const override final {return mStringArrays.Get(key);}
+	ArrayRange<const String> GetStringArray(StringView key) const final {return mStringArrays.Get(key);}
 	Array<String>& StringArray(StringView key) {return mStringArrays[key];}
-	bool StringArrayExists(StringView key) const override final {return mStringArrays.KeyExists(key);}
-	StringMap<Collection<StringView>> GetStringArrays() const override final;
+	bool StringArrayExists(StringView key) const final {return mStringArrays.KeyExists(key);}
+	StringMap<Collection<StringView>> GetStringArrays() const final;
 
 
-	Collection<const IConstObject&> GetObjectArray(StringView key) const override final
+	Collection<const IConstObject&> GetObjectArray(StringView key) const final
 	{return mObjectArrays.Get(key);}
 
 	Array<Object>& ObjectArray(StringView key) {return mObjectArrays[key];}
-	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
-	StringMap<Collection<const IConstObject&>> GetObjectArrays() const override final;
+	bool ObjectArrayExists(StringView key) const final {return mObjectArrays.KeyExists(key);}
+	StringMap<Collection<const IConstObject&>> GetObjectArrays() const final;
 
 
 	Object() {}
@@ -131,25 +131,25 @@ private:
 	LinearMap<String, Array<Object>> mObjectArrays;
 
 public:
-	double GetNumber(StringView key, double defaultValue=0) const override final {return mNumbers.Get(key, defaultValue);}
-	bool NumberExists(StringView key) const override final {return mNumbers.KeyExists(key);}
+	double GetNumber(StringView key, double defaultValue=0) const final {return mNumbers.Get(key, defaultValue);}
+	bool NumberExists(StringView key) const final {return mNumbers.KeyExists(key);}
 
-	StringView GetString(StringView key, StringView defaultValue=null) const override final {return mStrings.Get(key, defaultValue);}
-	bool StringExists(StringView key) const override final {return mStrings.KeyExists(key);}
+	StringView GetString(StringView key, StringView defaultValue=null) const final {return mStrings.Get(key, defaultValue);}
+	bool StringExists(StringView key) const final {return mStrings.KeyExists(key);}
 
-	const IConstObject& GetObject(StringView key) const override final {return mObjects.Get(key);}
-	bool ObjectExists(StringView key) const override final {return mObjects.KeyExists(key);}
+	const IConstObject& GetObject(StringView key) const final {return mObjects.Get(key);}
+	bool ObjectExists(StringView key) const final {return mObjects.KeyExists(key);}
 
-	ArrayRange<const double> GetNumberArray(StringView key) const override final {return mNumberArrays.Get(key);}
-	bool NumberArrayExists(StringView key) const override final {return mNumberArrays.KeyExists(key);}
+	ArrayRange<const double> GetNumberArray(StringView key) const final {return mNumberArrays.Get(key);}
+	bool NumberArrayExists(StringView key) const final {return mNumberArrays.KeyExists(key);}
 
-	ArrayRange<const String> GetStringArray(StringView key) const override final {return mStringArrays.Get(key);}
-	bool StringArrayExists(StringView key) const override final {return mStringArrays.KeyExists(key);}
+	ArrayRange<const String> GetStringArray(StringView key) const final {return mStringArrays.Get(key);}
+	bool StringArrayExists(StringView key) const final {return mStringArrays.KeyExists(key);}
 
-	FiniteRandomAccessRange<const IConstObject&> GetObjectArray(StringView key) const override final
+	FiniteRandomAccessRange<const IConstObject&> GetObjectArray(StringView key) const final
 	{return mObjectArrays.Get(key);}
 
-	bool ObjectArrayExists(StringView key) const override final {return mObjectArrays.KeyExists(key);}
+	bool ObjectArrayExists(StringView key) const final {return mObjectArrays.KeyExists(key);}
 
 
 	ObjectCRef() {}

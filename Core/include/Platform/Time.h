@@ -24,7 +24,7 @@ public:
 	uint GetTimeMs() {return uint(GetTime()*1000);}
 	uint GetTimeMsAndReset() {return uint(GetTimeAndReset()*1000);}
 
-	static void Wait(uint msec);
+	static void Sleep(uint msec);
 
 private:
 	ulong64 hndl;

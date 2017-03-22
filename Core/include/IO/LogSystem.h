@@ -11,49 +11,7 @@ namespace Intra { namespace IO {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-struct DummyLogger
-{
-	template<typename T> forceinline DummyLogger& operator<<(const T&) {return *this;}
-	forceinline void Attach(IFormattedWriter*) {}
-	forceinline void Detach(IFormattedWriter*) {}
-	forceinline bool operator==(null_t) const {return true;}
-	forceinline bool operator!=(null_t) const {return false;}
-
-	forceinline operator bool() const {return false;}
-
-	forceinline void PushFont(Math::Vec3={1,1,1}, float=3, bool=false, bool=false, bool=false) {}
-	forceinline void PopFont() {}
-	forceinline FontDesc GetCurrentFont() const {return {{1,1,1}, 3, false, false, false, false};}
-
-	forceinline void BeginSpoiler(StringView=null, StringView=null) {}
-	forceinline void EndSpoiler() {}
-	forceinline void EndAllSpoilers() {}
-	forceinline void BeginCode() {}
-	forceinline void EndCode() {}
-
-
-
-	forceinline void PushStyle(StringView) {}
-	forceinline void PopStyle() {}
-};
-
-typedef
-#ifdef INTRA_DEBUG
-CompositeFormattedWriter
-#else
-DummyLogger
-#endif
-DebugLogger;
-
-typedef
-#ifndef INTRA_NO_LOGGING
-CompositeFormattedWriter
-#else
-DummyLogger
-#endif
-AppLogger;
-
-extern AppLogger ErrorLog, WarnLog, InfoLog;
+extern CompositeFormattedWriter ErrorLog, WarnLog, InfoLog;
 
 
 
@@ -211,19 +169,6 @@ struct HtmlFormat
 	}
 };
 
-struct StreamWriter
-{
-	StreamWriter(IO::IOutputStream& stream): MyStream(stream) {}
-
-	void Write(StringView str)
-	{
-		MyStream << str;
-	}
-
-	IO::IOutputStream& MyStream;
-
-	StreamWriter& operator=(const StreamWriter&) = delete;
-};
 }
 
 INTRA_WARNING_POP

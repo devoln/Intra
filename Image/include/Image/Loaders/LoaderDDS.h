@@ -4,10 +4,9 @@
 
 #include "Loader.h"
 #include "Platform/CppWarnings.h"
+#include "Range/Polymorphic/OutputRange.h"
 
 namespace Intra {
-
-namespace IO {class IOutputStream; class IInputStream;}
 
 namespace Image {
 
@@ -19,7 +18,7 @@ class LoaderDDS: public AImageLoader
 public:
 	ImageInfo GetInfo(InputStream stream) const override;
 	AnyImage Load(InputStream stream) const override;
-	void Save(const AnyImage& img, IO::IOutputStream& stream) const;
+	void Save(const AnyImage& img, OutputStream& stream) const;
 	bool IsValidHeader(const void* header, size_t headerSize) const override;
 	FileFormat FileFormatOfLoader() const override {return FileFormat::DDS;}
 

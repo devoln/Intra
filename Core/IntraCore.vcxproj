@@ -692,14 +692,16 @@
       <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
       <ForcedIncludeFiles Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
     </ClCompile>
-    <ClCompile Include="src\IO\Console.cpp" />
-    <ClCompile Include="src\IO\ConsoleWriter.cpp" />
+    <ClCompile Include="src\IO\CompositeFormattedWriter.cpp" />
+    <ClCompile Include="src\IO\ConsoleInput.cpp" />
+    <ClCompile Include="src\IO\ConsoleOutput.cpp" />
     <ClCompile Include="src\IO\FileMapping.cpp" />
     <ClCompile Include="src\IO\FileSystem.cpp" />
     <ClCompile Include="src\IO\HtmlWriter.cpp" />
     <ClCompile Include="src\IO\LogSystem.cpp" />
     <ClCompile Include="src\IO\Networking.cpp" />
     <ClCompile Include="src\IO\OsFile.cpp" />
+    <ClCompile Include="src\IO\Std.cpp" />
     <ClCompile Include="src\Math\Math.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />
     <ClCompile Include="src\Math\Shapes.cpp" />
@@ -817,8 +819,8 @@
     <ClInclude Include="include\IntraCore.hh" />
     <ClInclude Include="include\IO.hh" />
     <ClInclude Include="include\IO\CompositeFormattedWriter.h" />
-    <ClInclude Include="include\IO\Console.h" />
-    <ClInclude Include="include\IO\ConsoleWriter.h" />
+    <ClInclude Include="include\IO\ConsoleInput.h" />
+    <ClInclude Include="include\IO\ConsoleOutput.h" />
     <ClInclude Include="include\IO\FileMapping.h" />
     <ClInclude Include="include\IO\FileReader.h" />
     <ClInclude Include="include\IO\FileSystem.h" />
@@ -828,6 +830,7 @@
     <ClInclude Include="include\IO\LogSystem.h" />
     <ClInclude Include="include\IO\Networking.h" />
     <ClInclude Include="include\IO\OsFile.h" />
+    <ClInclude Include="include\IO\Std.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
     <ClInclude Include="include\Math\Fixed.h" />

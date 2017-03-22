@@ -12,7 +12,7 @@ namespace Intra { namespace Range {
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename R> forceinline Meta::EnableIf<
-	IsInputRange<R>::_ || IsOutputRange<R>::_ || IsOutputCharRange<R>::_,
+	IsInputRange<R>::_ || IsOutputRange<Meta::RemoveConst<R>>::_ || IsOutputCharRange<Meta::RemoveConst<R>>::_,
 R&&> AsRange(R&& r) {return Meta::Forward<R>(r);}
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasAsRangeMethod, Meta::Val<T>().AsRange());
@@ -100,14 +100,28 @@ template<typename R, typename T> struct IsAsConsumableRangeOf: IsConsumableRange
 }
 using namespace Concepts;
 
-template<typename R> forceinline Meta::EnableIf<
-	IsAsInputRange<R>::_ || IsAsOutputRange<R>::_,
-AsRangeResult<R&&>> Forward(Meta::RemoveReference<R>& t)
+template<typename R, typename AsR = AsRangeResult<R&&>> forceinline Meta::EnableIf<
+	IsInputRange<AsR>::_ || IsOutputRange<Meta::RemoveConst<AsR>>::_ || IsOutputCharRange<Meta::RemoveConst<AsR>>::_,
+AsR> Forward(Meta::RemoveReference<R>& t)
 {return AsRange(static_cast<R&&>(t));}
 
-template<typename R> forceinline Meta::EnableIf<
-	IsAsInputRange<R>::_ || IsAsOutputRange<R>::_,
+template<typename R, typename AsR = AsRangeResult<R&&>> forceinline Meta::EnableIf<
+	IsInputRange<AsR>::_ || IsOutputRange<Meta::RemoveConst<AsR>>::_ || IsOutputCharRange<Meta::RemoveConst<AsR>>::_,
 AsRangeResult<R&&>> Forward(Meta::RemoveReference<R>&& t)
+{
+	static_assert(!Meta::IsLValueReference<R>::_, "Bad Range::Forward call!");
+	return AsRange(static_cast<R&&>(t));
+}
+
+
+template<typename R, typename T> forceinline Meta::EnableIf<
+	IsAsOutputRangeOf<Meta::RemoveConst<R>, T>::_,
+AsRangeResult<R&&>> ForwardOutputOf(Meta::RemoveReference<R>& t)
+{return AsRange(static_cast<R&&>(t));}
+
+template<typename R, typename T> forceinline Meta::EnableIf<
+	IsAsOutputRangeOf<Meta::RemoveConst<R>, T>::_,
+AsRangeResult<R&&>> ForwardOutputOf(Meta::RemoveReference<R>&& t)
 {
 	static_assert(!Meta::IsLValueReference<R>::_, "Bad Range::Forward call!");
 	return AsRange(static_cast<R&&>(t));

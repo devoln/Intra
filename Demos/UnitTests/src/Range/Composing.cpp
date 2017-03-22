@@ -7,7 +7,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #include "Header.h"
-#include "IO/Stream.h"
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
 #include "Range/Generators/ArrayRange.h"
@@ -19,36 +18,40 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <stdlib.h>
 
 using namespace Intra;
-using namespace Intra::IO;
-using namespace Intra::Range;
-using namespace Intra::Algo;
+using namespace IO;
+using namespace Range;
+using namespace Algo;
 
 
-void TestComposedRange(IO::IFormattedWriter& output)
+void TestComposedRange(FormattedWriter& output)
 {
 	auto latinAlphabet = Iota('A', char('Z'+1), 1);
-	INTRA_ASSERT1(Algo::Equals(latinAlphabet, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), latinAlphabet);
-	output.PrintLine("Выведем английский алфавит: ", latinAlphabet, endl);
+	INTRA_ASSERT1(Equals(latinAlphabet, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), latinAlphabet);
+	output.PrintLine("Выведем английский алфавит: ", latinAlphabet);
+	output.LineBreak();
 
 	//Бесконечная последовательность Фибоначчи вместе с диапазоном
 	auto fib = Recurrence(Op::Add<int>, 1, 1);
-	INTRA_ASSERT1(Algo::StartsWith(fib, ArrayRange<const int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
+	INTRA_ASSERT1(StartsWith(fib, ArrayRange<const int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
 
 	Array<int> fibArr;
 	fibArr.SetCountUninitialized(15);
 
 	//Копируем на их место 15 элементов из последовательности fib
 	Algo::CopyTo(fib, 15, fibArr);
-	output.PrintLine(endl, "Последовательность Фибоначчи в массиве: ");
+	output.LineBreak();
+	output.PrintLine("Последовательность Фибоначчи в массиве: ");
 	INTRA_ASSERT_EQUALS(fibArr, Take(fib, 15));
 	output.PrintLine(fibArr);
-	output.PrintLine(endl, "Вторая половина того же массива задом наперёд: ");
+	output.LineBreak();
+	output.PrintLine("Вторая половина того же массива задом наперёд: ");
 	INTRA_ASSERT1(Algo::Equals(Retro(Drop(fibArr, fibArr.Count()/2)), ArrayRange<const int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(Drop(fibArr, fibArr.Count()/2)));
 	output.PrintLine(Retro(Drop(fibArr, fibArr.Count()/2)));
 
 	//Вставляем в массив 15 чисел Фибонначчи, начиная с 6-го
 	Algo::CopyTo(Take(Drop(fib, 5), 15), LastAppender(fibArr));
-	output.PrintLine(endl, "Добавляем 15 чисел Фибоначчи, начиная с шестого, в конец. Новое содержимое массива: ");
+	output.LineBreak();
+	output.PrintLine("Добавляем 15 чисел Фибоначчи, начиная с шестого, в конец. Новое содержимое массива: ");
 	output.PrintLine(fibArr);
 
 	StringView strs0[] = {"hello", "world"};
@@ -66,7 +69,8 @@ void TestComposedRange(IO::IFormattedWriter& output)
 		[](int a, int b) {return a*2+b;}, 1, 1
 	), 17)), 3), 22);
 
-	output.PrintLine(endl, "Объединяем элементы различных диапазонов в диапазоне кортежей:");
+	output.LineBreak();
+	output.PrintLine("Объединяем элементы различных диапазонов в диапазоне кортежей:");
 	auto megaZip = Zip(
 		Take(fib, 30),
 		Retro(Stride(Take(chain, 40), 2)),
@@ -78,15 +82,26 @@ void TestComposedRange(IO::IFormattedWriter& output)
 	output.PrintLine(ToString(megaZip, ",\n  ", "[\n  ", "\n]"));
 
 	output.PrintLine("4-й элемент цепочки массивов: ", chain[4]);
-	output.PrintLine("Первые 20 элементов зацикленной цепочки массивов: ", endl, Take(Cycle(chain), 20));
+	output.PrintLine("Первые 20 элементов зацикленной цепочки массивов: ");
+	output.PrintLine(Take(Cycle(chain), 20));
 
-	output.PrintLine(endl, "Поменяем сразу три массива одним вызовом FillPattern для цепочки:");
+	output.LineBreak();
+	output.PrintLine("Поменяем сразу три массива одним вызовом FillPattern для цепочки:");
 	static const StringView pattern[] = {"pattern", "fills", "range"};
 	Algo::FillPattern(chain, pattern);
-	output.PrintLine(strs0, endl, strs1, endl, strs2, endl);
+	output.PrintLine("strs0 = ", strs0);
+	output.PrintLine("strs1 = ", strs1);
+	output.PrintLine("strs2 = ", strs2);
+	output.LineBreak();
 
-	output.PrintLine("11-й элемент зацикленного массива строк: ", endl, Tail(Take(Cycle(strs0), 11), 1), endl);
-	output.PrintLine("Перевёрнутый массив строк: ", endl, Retro(strs0), endl);
+	output.PrintLine("11-й элемент зацикленного массива строк: ");
+	output.PrintLine(Tail(Take(Cycle(strs0), 11), 1));
+	output.LineBreak();
+
+	output.PrintLine("Перевёрнутый массив строк: ");
+	output.PrintLine(Retro(strs0));
+	output.LineBreak();
+
 	output.PrintLine("Зациклили первые два элемента массива и взяли 10 из них:");
 	output.PrintLine(Take(Cycle(Take(strs1, 2)), 10));
 	output.PrintLine("Между массивом строк и 5 числами Фибоначчи выбрали второе в рантайме: ");
@@ -94,6 +109,7 @@ void TestComposedRange(IO::IFormattedWriter& output)
 		strs1,
 		Map(Take(fib, 5), ToString<int>),
 		true) );
+	output.LineBreak();
 	
 
 	//Выводим чередующиеся элементы из четырёх разных диапазонов
@@ -116,7 +132,9 @@ void TestComposedRange(IO::IFormattedWriter& output)
 	int arr[]={1, 4, 11, 6, 8};
 	output.PrintLine("max of ", arr, " = ", Algo::Reduce(arr, Op::Max<int>));
 
-	output.PrintLine(endl, "Код в 4 строки, эквивалентный примеру из http://ru.cppreference.com/w/cpp/algorithm/copy:");
+	output.LineBreak();
+	output.PrintLine("Код в 4 строки, эквивалентный примеру из "
+		"http://ru.cppreference.com/w/cpp/algorithm/copy:");
 	Array<int> fromVector = Iota(10);
 	Array<int> toVector = Repeat(0, 10);
 	Algo::CopyTo(fromVector, toVector);

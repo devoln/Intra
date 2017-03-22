@@ -13,21 +13,14 @@ namespace Intra { namespace Range {
 
 INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
-INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
+INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
-#if defined(_MSC_VER) && !defined(__clang__)
-#define TEMPLATE //VS не хочет компилировать конструкцию typename ...<...>::template ...<...>, но без template компилирует
-#else
-#define TEMPLATE template //clang требует слово template в typename ...<...>::template ...<...>
-#endif
-
-template<typename T> struct OutputRange: Meta::SelectType<
+template<typename T> class OutputRange: public Meta::SelectType<
 	OutputStreamMixin<OutputRange<T>, Meta::RemoveConst<T>>,
 	Meta::EmptyType, Meta::IsTriviallySerializable<T>::_>
 {
-private:
+public:
 	struct Interface
 	{
 		virtual ~Interface() {}
@@ -48,26 +41,26 @@ private:
 		template<typename A> WrapperImpl(A&& range):
 			OriginalRange(Meta::Forward<A>(range)) {}
 
-		bool Empty() const override final {return Range::EmptyOrFalse(OriginalRange);}
-		void Put(const T& value) override final {OriginalRange.Put(value);}
+		bool Empty() const final {return Range::EmptyOrFalse(OriginalRange);}
+		void Put(const T& value) final {OriginalRange.Put(value);}
 
-		void Put(T&& value) override final {OriginalRange.Put(Meta::Move(value));}
+		void Put(T&& value) final {OriginalRange.Put(Meta::Move(value));}
 
-		bool TryPut(const T& value) override final
+		bool TryPut(const T& value) final
 		{
 			if(Range::EmptyOrFalse(OriginalRange)) return false;
 			OriginalRange.Put(value);
 			return true;
 		}
 
-		bool TryPut(T&& value) override final
+		bool TryPut(T&& value) final
 		{
 			if(Range::EmptyOrFalse(OriginalRange)) return false;
 			OriginalRange.Put(Meta::Move(value));
 			return true;
 		}
 
-		size_t CopyAdvanceFromAdvance(ArrayRange<const T>& src) override final
+		size_t CopyAdvanceFromAdvance(ArrayRange<const T>& src) final
 		{return Algo::CopyAdvanceToAdvance(src, OriginalRange);}
 
 		R OriginalRange;
@@ -75,9 +68,8 @@ private:
 
 private:
 	template<typename R> using EnableCondition = Meta::EnableIf<
-		Meta::IsConvertible<ReturnValueTypeOfAs<R>, T>::_ &&
-		IsAsOutputRange<R>::_ &&
-		!Meta::TypeEqualsIgnoreCVRef<R, OutputRange>::_
+		IsAsOutputRangeOf<R, T>::_ &&
+		!Meta::IsInherited<R, OutputRange>::_
 	>;
 
 	template<typename R> forceinline static Interface* wrap(R&& range)
@@ -104,12 +96,12 @@ public:
 
 	template<typename R, typename = EnableCondition<R>>
 	forceinline OutputRange(R&& range):
-		mInterface(wrap(Range::Forward<R>(range))) {}
+		mInterface(wrap(Range::ForwardOutputOf<R, T>(range))) {}
 
 	template<typename R, typename = EnableCondition<R>>
 	forceinline OutputRange& operator=(R&& range)
 	{
-		mInterface = wrap(Range::Forward<R>(range));
+		mInterface = wrap(Range::ForwardOutputOf<R, T>(range));
 		return *this;
 	}
 
@@ -147,13 +139,11 @@ public:
 
 protected:
 	Memory::UniqueRef<Interface> mInterface;
-	InputRange(Interface* interfacePtr): mInterface(interfacePtr) {}
+	OutputRange(Interface* interfacePtr): mInterface(interfacePtr) {}
 };
 
 typedef OutputRange<char> OutputStream;
 
-
-#undef TEMPLATE
 
 INTRA_WARNING_POP
 

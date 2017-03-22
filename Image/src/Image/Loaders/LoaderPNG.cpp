@@ -3,7 +3,8 @@
 #include "Math/Vector.h"
 #include "Algo/Comparison/Equals.h"
 #include "Image/AnyImage.h"
-#include "IO/Stream.h"
+#include "Range/Polymorphic/InputRange.h"
+#include "Platform/Endianess.h"
 
 namespace Intra { namespace Image {
 

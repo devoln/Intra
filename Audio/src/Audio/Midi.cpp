@@ -1,11 +1,11 @@
 ﻿#include "Audio/Midi.h"
 #include "Audio/Synth/InstrumentLibrary.h"
-#include "IO/Stream.h"
 #include "IO/FileSystem.h"
 #include "IO/FileMapping.h"
 #include "Algo/Mutation/Fill.h"
 #include "Platform/CppWarnings.h"
 #include "Range/Polymorphic/InputRange.h"
+#include "Platform/Endianess.h"
 
 namespace Intra { namespace Audio {
 

@@ -31,11 +31,11 @@ template<typename R, typename T> struct OutputStreamMixin
 	size_t> WriteRawFrom(ArrayRange<U> src)
 	{return WriteRawFromAdvance(src);}
 
-	template<typename R1, typename AsR1=AsRangeResult<R1>> forceinline Meta::EnableIf<
+	template<typename R1, typename AsR1=AsRangeResult<R1>, typename VT=ValueTypeOf<AsR1>> forceinline Meta::EnableIf<
 		!IsInputRange<R1>::_ && IsArrayRange<AsR1>::_ &&
-		Meta::IsTriviallySerializable<ValueTypeOf<AsR1>>::_,
+		Meta::IsTriviallySerializable<VT>::_,
 	size_t> WriteRawFrom(R1&& dst)
-	{return WriteRawFrom(Range::Forward<R1>(dst));}
+	{return WriteRawFrom(ArrayRange<const VT>(Range::Forward<R1>(dst)));}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_

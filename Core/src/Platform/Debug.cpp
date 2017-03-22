@@ -1,6 +1,5 @@
 ﻿#include "Platform/Debug.h"
 #include "Platform/CppWarnings.h"
-#include "IO/Stream.h"
 #include "IO/LogSystem.h"
 #include "Platform/MessageBox.h"
 #include "Algo/String/CStr.h"

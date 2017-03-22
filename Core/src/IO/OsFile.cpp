@@ -58,7 +58,7 @@ static GenericString<wchar_t> utf8ToWStringZ(StringView str)
 #endif
 
 OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
-	mMode(mode)
+	mMode(mode), mOwning(true)
 {
 	String fullFileName = OS.GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -76,24 +76,34 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 		FILE_SHARE_READ, null, creationDisposition, flagsAndAttributes, null);
 
 	if(hFile!=INVALID_HANDLE_VALUE) mHandle = reinterpret_cast<NativeHandle*>(hFile);
-	else mHandle = null;
+	else
+	{
+		mHandle = null;
+		mOwning = false;
+	}
 #else
 	auto openFlags = mMode == Mode::Read? O_RDONLY: mMode==Mode::Write? O_WRONLY: O_RDWR;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
 	int fd = open(fullFileName.CStr(), openFlags);
 	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
-	else mHandle = null;
+	else
+	{
+		mHandle = null;
+		mOwning = false;
+	}
 #endif
 }
 
-OsFile::~OsFile()
+void OsFile::Close()
 {
-	if(mHandle==null) return;
+	if(mHandle == null) return;
+	if(!mOwning) return;
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	CloseHandle(reinterpret_cast<HANDLE>(mHandle));
 #else
 	close(int(reinterpret_cast<size_t>(mHandle)));
 #endif
+	mOwning = false;
 }
 
 size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes) const
@@ -160,7 +170,8 @@ void OsFile::SetSize(ulong64 size) const
 }
 
 FileReader OsFile::Reader() const {return FileReader(*this);}
-FileWriter OsFile::Writer() const {return FileWriter(*this);}
+FileWriter OsFile::Writer(ulong64 startOffset) const {return FileWriter(*this, startOffset);}
+FileWriter OsFile::Appender() const {return FileWriter(*this, Size());}
 FileReader OsFile::AsRange() const {return FileReader(*this);}
 
 
@@ -196,11 +207,12 @@ String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
 #endif
 }
 
-OsFile OsFile::FromNative(NativeHandle* handle)
+OsFile OsFile::FromNative(NativeHandle* handle, bool owning)
 {
 	OsFile result;
 	result.mHandle = handle;
 	result.mMode = Mode::ReadWrite; //Некоторые проверки отключатся, на функциональность влиять не должно
+	result.mOwning = owning;
 	return result;
 }
 

@@ -69,6 +69,7 @@ template<typename R> struct ValueTypeOfArray<R, false>
 template<typename R> using ReturnValueTypeOf = typename RD::ReturnValueTypeOf<R>::_;
 
 template<typename R> using ValueTypeOf = typename RD::ValueTypeOf<R>::_;
+template<typename R> using ValueTypeOfArray = typename RD::ValueTypeOfArray<R>::_;
 template<typename R> using SliceTypeOf = Meta::ResultOfOrVoid<R, size_t, size_t>;
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());

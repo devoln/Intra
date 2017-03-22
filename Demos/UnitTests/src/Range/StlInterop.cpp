@@ -2,7 +2,6 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.hh"
-#include "IO/Stream.h"
 #include "IO/FormattedWriter.h"
 
 #define _HAS_EXCEPTIONS 0
@@ -28,7 +27,7 @@ struct Point
 };
 
 //TODO: перенести это
-template<typename Char> void TestStrings(IO::IFormattedWriter& output)
+template<typename Char> void TestStrings(FormattedWriter& output)
 {
 	(void)output;
 	GenericString<Char> emptyStr;
@@ -44,12 +43,13 @@ template<typename Char> void TestStrings(IO::IFormattedWriter& output)
 	auto veryLongCStr = veryLongStr.CStr();
 }
 
-void TestRangeStlInterop(IO::IFormattedWriter& output)
+void TestRangeStlInterop(FormattedWriter& output)
 {
 	std::vector<std::string> stringVec = {"Hello", "Intra", "Ranges"};
 	output.PrintLine("Выводим std::vector<std::string> stringVec:");
 	INTRA_ASSERT_EQUALS(ToString(stringVec), "[Hello, Intra, Ranges]");
-	output.PrintLine(stringVec, endl);
+	output.PrintLine(stringVec);
+	output.LineBreak();
 
 	std::unordered_map<std::string, std::vector<Point>> figureMap = {
 		{"Triangle", {{2.7f, 1.21f}, {3, 2.718f}, {4.321f, 3.212f}}},
@@ -60,7 +60,8 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	char figuresTextBuf[200];
 	StringView figuresText = (OutputArrayRange<char>(figuresTextBuf) << figureMap).GetWrittenData();
 	INTRA_ASSERT_EQUALS(Algo::Count(figuresText, '['), Algo::Count(figuresText, ']'));
-	output.PrintLine(figuresText, endl);
+	output.PrintLine(figuresText);
+	output.LineBreak();
 	
 	std::map<std::string, std::vector<Point>> orderedFigureMap = {
 		{"Triangle", {{2.7f, 1.21f}, {3, 2.718f}, {4.321f, 3.212f}}},
@@ -70,12 +71,14 @@ void TestRangeStlInterop(IO::IFormattedWriter& output)
 	output.PrintLine("Теперь проделаем то же самое с std::map<std::string, std::vector<int>>:");
 	figuresText = (OutputArrayRange<char>(figuresTextBuf) << orderedFigureMap).GetWrittenData();
 	INTRA_ASSERT_EQUALS(figuresText, "[[Line, [[1.1112, 5.234], [6.22, 5.45]]], [Point, [[65.0, 242.0]]], [Triangle, [[2.7, 1.21], [3.0, 2.718], [4.321, 3.212]]]]");
-	output.PrintLine(figuresText, endl);
+	output.PrintLine(figuresText);
+	output.LineBreak();
 
 	std::list<std::string> stringList(stringVec.begin(), stringVec.end());
 	output.PrintLine("Выводим std::list<std::string> stringList:");
 	INTRA_ASSERT_EQUALS(ToString(stringList), "[Hello, Intra, Ranges]");
-	output.PrintLine(stringList, endl);
+	output.PrintLine(stringList);
+	output.LineBreak();
 
 	output.PrintLine("Добавляем в предыдущий список 5 элементов Cycle(stringVec)");
 	CopyTo(Take(Cycle(stringVec), 5), LastAppender(stringList));

@@ -23,8 +23,8 @@ template<typename T, typename R, typename... Args> class FunctorCallable<R(Args.
 public:
 	FunctorCallable(T&& functor): Functor(Meta::Move(functor)) {}
 	FunctorCallable(const T& functor): Functor(functor) {}
-	ICallable<R(Args...)>* Clone() override final {return new FunctorCallable(Functor);}
-	R Call(Args&&... args) override final {return Functor(Meta::Forward<Args>(args)...);}
+	ICallable<R(Args...)>* Clone() final {return new FunctorCallable(Functor);}
+	R Call(Args&&... args) final {return Functor(Meta::Forward<Args>(args)...);}
 
 	FunctorCallable& operator=(const FunctorCallable&) = delete;
 
@@ -37,8 +37,8 @@ template<typename T, typename R, typename... Args> class ObjectRefMethodCallable
 	typedef R(T::*MethodSignature)(Args...);
 public:
 	ObjectRefMethodCallable(const T& obj, MethodSignature method): ObjectRef(&obj), Method(method) {}
-	ICallable<R(Args...)>* Clone() override final {return new ObjectRefMethodCallable(*ObjectRef, Method);}
-	R Call(Args&&... args) override final {return ObjectRef->*Method(Meta::Forward<Args>(args)...);}
+	ICallable<R(Args...)>* Clone() final {return new ObjectRefMethodCallable(*ObjectRef, Method);}
+	R Call(Args&&... args) final {return ObjectRef->*Method(Meta::Forward<Args>(args)...);}
 
 	const T* ObjectRef;
 	MethodSignature Method;
@@ -51,8 +51,8 @@ template<typename R, typename T, typename... Args> class FreeFuncCallable<R(Args
 public:
 	FreeFuncCallable(FreeDataFunc func, T&& params): Func(func), Params(Meta::Move(params)) {}
 	FreeFuncCallable(FreeDataFunc func, const T& params): Func(func), Params(params) {}
-	ICallable<R(Args...)>* Clone() override final {return new FreeFuncCallable(Func, Params);}
-	R Call(Args&&... args) override final {return Func(Params, Meta::Forward<Args>(args)...);}
+	ICallable<R(Args...)>* Clone() final {return new FreeFuncCallable(Func, Params);}
+	R Call(Args&&... args) final {return Func(Params, Meta::Forward<Args>(args)...);}
 
 	FreeFuncCallable& operator=(const FreeFuncCallable&) = delete;
 

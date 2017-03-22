@@ -326,7 +326,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
@@ -349,7 +349,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
       <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>

@@ -1,6 +1,7 @@
 ﻿#include "MusicSynthesizerCommon.h"
 
-#include "IO/Stream.h"
+#include "IO/ConsoleInput.h"
+#include "IO/ConsoleOutput.h"
 #include "IO/FileSystem.h"
 #include "Audio/Midi.h"
 #include "Audio/Music.h"
@@ -37,27 +38,27 @@ void PrintMusicInfo(const Music& music)
 		for(auto&& note: track.Notes)
 			noteCount += uint(!note.Note.IsPause());
 
-	Console.PrintLine("Длительность музыки: ", ToString(music.Duration(), 2), " с.");
-	Console.PrintLine("Число нот: ", noteCount);
-	Console.PrintLine("Число дорожек: ", music.Tracks.Count());
+	ConsoleOut.PrintLine("Длительность музыки: ", ToString(music.Duration(), 2), " с.");
+	ConsoleOut.PrintLine("Число нот: ", noteCount);
+	ConsoleOut.PrintLine("Число дорожек: ", music.Tracks.Count());
 }
 
 bool PrintMidiFileInfo(StringView filePath)
 {
-	Console.PrintLine("Загрузка midi файла ", filePath, "...");
+	ConsoleOut.PrintLine("Загрузка midi файла ", filePath, "...");
 	auto fileMapping = OS.MapFile(filePath);
 	if(fileMapping==null)
 	{
-		Console.PrintLine("Файл не открыт!");
-		Console.GetChar();
+		ConsoleOut.PrintLine("Файл не открыт!");
+		ConsoleIn.GetChar();
 		return false;
 	}
 	auto music = ReadMidiFile(fileMapping.AsRange());
 
 	if(music.Tracks==null)
 	{
-		Console.PrintLine("Ошибка!");
-		Console.GetChar();
+		ConsoleOut.PrintLine("Ошибка!");
+		ConsoleIn.GetChar();
 		return false;
 	}
 
@@ -68,13 +69,13 @@ bool PrintMidiFileInfo(StringView filePath)
 
 Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
 {
-	if(printMessages) Console.PrintLine("Синтез...");
+	if(printMessages) ConsoleOut.PrintLine("Синтез...");
 	Timer tim;
 	auto sound = Sound::FromFile(filePath);
 	if(printMessages)
 	{
 		auto time = tim.GetTime();
-		Console.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
+		ConsoleOut.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
 	}
 	return sound;
 }

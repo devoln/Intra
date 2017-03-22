@@ -3,7 +3,7 @@
 namespace Intra { namespace IO {
 
 //Это нужно вставить в начало html файла, если используются спойлеры
-const StringView HtmlWriter::CssSpoilerCode =
+static const StringView HtmlWriter_CssSpoilerCode =
 "<style type=\"text/css\">"
 	".spoiler > input + label:after{content: \"+\";float: right; font-family: monospace; font-weight: bold; color: FFF;}"
 	".spoiler > input {display:none;}"
@@ -13,15 +13,15 @@ const StringView HtmlWriter::CssSpoilerCode =
 	".spoiler >.spoiler_body{background: #FFF; color: 000; border: 3px solid #CCC; border-top: none; }"
 "</style>";
 
-const StringView HtmlWriter::SpoilerBeginCode =
+static const StringView HtmlWriter_SpoilerBeginCode =
 "<div class='spoiler'>"
 	"<input type='checkbox' id='spoilerid_<^>'>"
 	"<label for='spoilerid_<^>'>\r\n<^>\r\n</label>"
 	"<div class = 'spoiler_body'>";
 
-const StringView HtmlWriter::SpoilerEndCode = "</div></div>";
+static const StringView HtmlWriter_SpoilerEndCode = "</div></div>";
 
-const StringView HtmlWriter::CssLoggerCode = "<style type=\"text/css\">"
+static const StringView HtmlWriter_CssLoggerCode = "<style type=\"text/css\">"
 	".error {color: #ff0000; font-size: 125%;}\r\n"
 	".warn {color: #ffaa00; font-size: 110%;}\r\n"
 	".info {color: #707070; font-size: 100%;}\r\n"
@@ -29,39 +29,70 @@ const StringView HtmlWriter::CssLoggerCode = "<style type=\"text/css\">"
 	".perf {color: #aaaa00; font-size: 75%;}\r\n"
 	"</style>";
 
-
-void HtmlWriter::PushFont(Math::Vec3 color, float size, bool bold, bool italic, bool underline)
+struct HtmlWriterImpl final: FormattedWriter::Interface
 {
-	auto curFont = GetCurrentFont();
-	if(color==Math::Vec3(-1)) color = {0,0,0};
-	if(size==-1) size = 3;
-	mFontStack.AddLast({color, size, bold, italic, underline, false});
-	if(curFont.Underline && !underline) RawPrint("</ins>");
-	if(curFont.Italic && !italic) RawPrint("</i>");
-	if(curFont.Bold && !bold) RawPrint("</b>");
-	if(curFont.Color!=color || curFont.Size!=size)
+	void BeginCode(OutputStream& s) final {s.Print("\n<pre>\n");}
+	void EndCode(OutputStream& s) final {s.Print("\n</pre>\n");}
+
+	void PushStyle(OutputStream& s, StringView style) final {s.Print("<span class='", style, "'>");}
+	void PopStyle(OutputStream& s) final {s.Print("</span>");}
+
+	void HorLine(OutputStream& s) final {s.Print("<hr>");}
+
+	void LineBreak(OutputStream& s) final
 	{
-		const auto c = Math::USVec3(Math::Min(color*255.0f, 255.0f));
-		String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
-		RawPrint("<font color="+colstr+" size="+ToString(size)+">");
+		s.Put('\r');
+		s.Put('\n');
 	}
-	if(!curFont.Bold && bold) RawPrint("<b>");
-	if(!curFont.Italic && italic) RawPrint("<i>");
-	if(!curFont.Underline && underline) RawPrint("<ins>");
-}
 
-void HtmlWriter::PopFont()
+	void PrintPreformatted(OutputStream& s, StringView text) final
+	{
+		s.Print(String::MultiReplace(text,
+			{"&",      "<",     ">",   "\r\n",   "\n",     "\r"},
+			{"&amp;", "&lt;", "&gt;", "<br />", "<br />", "<br />"}
+		));
+	}
+
+	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) final
+	{
+		if(curFont.Underline && !newFont.Underline) s.Print("</ins>");
+		if(curFont.Italic && !newFont.Italic) s.Print("</i>");
+		if(curFont.Bold && !newFont.Bold) s.Print("</b>");
+		if(curFont.Color != newFont.Color || curFont.Size != newFont.Size)
+		{
+			const auto c = Math::USVec3(Math::Min(newFont.Color*255.0f, 255.0f));
+			String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
+			s.Print("<font color=", colstr, " size=", newFont.Size, ">");
+		}
+		if(!curFont.Bold && newFont.Bold) s.Print("<b>");
+		if(!curFont.Italic && newFont.Italic) s.Print("<i>");
+		if(!curFont.Underline && newFont.Underline) s.Print("<ins>");
+	}
+
+	void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) final
+	{
+		if(curFont.Bold && !prevFont.Bold) s.Print("</b>");
+		if(curFont.Italic && !prevFont.Italic) s.Print("</i>");
+		if(curFont.Underline && !prevFont.Underline) s.Print("</ins>");
+		s.Print("</font>");
+		if(!curFont.Bold && prevFont.Bold) s.Print("<b>");
+		if(!curFont.Italic && prevFont.Italic) s.Print("<i>");
+		if(!curFont.Underline && prevFont.Underline) s.Print("<ins>");
+	}
+
+	void BeginSpoiler(OutputStream& s, StringView label) final
+	{
+		auto id = Math::Random<ulong64>::Global()^Algo::ToHash(label);
+		s.Print(*String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label));
+	}
+
+	void EndSpoiler(OutputStream& s) final {s.Print(HtmlWriter_SpoilerEndCode);}
+};
+
+FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions)
 {
-	auto oldFont = GetCurrentFont();
-	mFontStack.RemoveLast();
-	auto newFont = GetCurrentFont();
-	if(oldFont.Bold && !newFont.Bold) RawPrint("</b>");
-	if(oldFont.Italic && !newFont.Italic) RawPrint("</i>");
-	if(oldFont.Underline && !newFont.Underline) RawPrint("</ins>");
-	RawPrint("</font>");
-	if(!oldFont.Bold && newFont.Bold) RawPrint("<b>");
-	if(!oldFont.Italic && newFont.Italic) RawPrint("<i>");
-	if(!oldFont.Underline && newFont.Underline) RawPrint("<ins>");
+	if(addDefinitions) stream.Print(HtmlWriter_CssSpoilerCode);
+	return FormattedWriter(Meta::Move(stream), new HtmlWriterImpl);
 }
 
 }}

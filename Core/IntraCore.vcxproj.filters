@@ -312,9 +312,6 @@
     <ClCompile Include="src\Memory\Allocator\Global.cpp">
       <Filter>Файлы исходного кода\Memory\Allocator</Filter>
     </ClCompile>
-    <ClCompile Include="src\IO\ConsoleWriter.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
     <ClCompile Include="src\IO\HtmlWriter.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
@@ -327,7 +324,16 @@
     <ClCompile Include="src\IO\OsFile.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
-    <ClCompile Include="src\IO\Console.cpp">
+    <ClCompile Include="src\IO\CompositeFormattedWriter.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\ConsoleOutput.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\ConsoleInput.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\Std.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1016,9 +1022,6 @@
     <ClInclude Include="include\Container\AllForwardDecls.h">
       <Filter>Заголовочные файлы\Container</Filter>
     </ClInclude>
-    <ClInclude Include="include\IO\ConsoleWriter.h">
-      <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
     <ClInclude Include="include\IO\FormattedWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
@@ -1076,7 +1079,13 @@
     <ClInclude Include="include\Range\Polymorphic\OutputRange.h">
       <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
     </ClInclude>
-    <ClInclude Include="include\IO\Console.h">
+    <ClInclude Include="include\IO\ConsoleOutput.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\ConsoleInput.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\Std.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
   </ItemGroup>

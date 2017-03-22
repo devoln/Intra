@@ -19,14 +19,14 @@ class OsFile;
 class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 {
 public:
-	forceinline FileWriter(const OsFile& file, size_t bufferSize):
-		mFile(&file), mOffset(0)
+	forceinline FileWriter(const OsFile& file, ulong64 startOffset, size_t bufferSize):
+		mFile(&file), mOffset(startOffset)
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
 		mBufferRest = mBuffer;
 	}
 
-	forceinline FileWriter(const OsFile& file): FileWriter(file, 4096) {}
+	forceinline FileWriter(const OsFile& file, ulong64 startOffset=0): FileWriter(file, startOffset, 4096) {}
 
 	FileWriter(const FileWriter& rhs) = delete;
 	FileWriter(FileWriter&& rhs) {operator=(Meta::Move(rhs));}

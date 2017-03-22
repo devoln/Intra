@@ -47,7 +47,7 @@ Timer::~Timer() = default;
 void Timer::Reset() {}
 double Timer::GetTime() const {return 0;}
 double Timer::GetTimeAndReset() {return 0;}
-void Timer::Wait(uint msec) {}
+void Timer::Sleep(uint msec) {}
 
 }
 
@@ -141,7 +141,10 @@ void Timer::Reset()
 	*reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl) = current;
 }
 
-//void Timer::Wait(uint msec) {std::this_thread::sleep_for(std::chrono::milliseconds(msec));}
+void Timer::Sleep(uint msec)
+{
+	std::this_thread::sleep_for(std::chrono::milliseconds(msec));
+}
 
 }
 
@@ -173,11 +176,11 @@ double Timer::GetTimeAndReset()
 	return result;
 }
 
-/*void Timer::Wait(uint msec)
+void Timer::Sleep(uint msec)
 {
 	struct SleepThread: public QThread {using QThread::msleep;};
 	SleepThread::msleep(msec);
-}*/
+}
 
 }
 
@@ -213,7 +216,7 @@ double Timer::GetTimeAndReset()
 
 namespace Intra {
 
-void Timer::Wait(uint msec) {Sleep(msec);}
+void Timer::Sleep(uint msec) {Sleep(msec);}
 
 }
 
@@ -223,7 +226,7 @@ void Timer::Wait(uint msec) {Sleep(msec);}
 
 namespace Intra {
 
-void Timer::Wait(uint msec)
+void Timer::Sleep(uint msec)
 {
 	if(msec < (1 << 29)/125 ) usleep(msec*1000);
 	else sleep((msec+999)/1000);

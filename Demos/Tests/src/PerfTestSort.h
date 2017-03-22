@@ -2,4 +2,4 @@
 
 #include "IO/FormattedWriter.h"
 
-void RunSortPerfTests(Intra::IO::IFormattedWriter& logger);
+void RunSortPerfTests(Intra::IO::FormattedWriter& logger);

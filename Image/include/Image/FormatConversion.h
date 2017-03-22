@@ -2,7 +2,6 @@
 
 #include "Math/Vector.h"
 #include "Image/ImageFormat.h"
-#include "IO/Stream.h"
 #include "Range/ForwardDecls.h"
 #include "Math/Math.h"
 #include "Math/Bit.h"

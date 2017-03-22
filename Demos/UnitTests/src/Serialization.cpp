@@ -14,7 +14,7 @@ struct StructTest
 	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr);
 };
 
-void TestTextSerialization(IFormattedWriter& output)
+void TestTextSerialization(FormattedWriter& output)
 {
 	StringView strToDeserialize = "{z = [\"serialization\", \"test\"], x = ---5434, "
 		"arr = [1, 2, 3, -4, 5], y = 2.1721}";
@@ -65,7 +65,7 @@ void TestTextSerialization(IFormattedWriter& output)
 	(void)expectedResultJsonLikeNoQuotes;
 }
 
-void TestBinarySerialization(IO::IFormattedWriter& output)
+void TestBinarySerialization(IO::FormattedWriter& output)
 {
 	byte data[1000];
 	Data::BinarySerializer serializer(data);

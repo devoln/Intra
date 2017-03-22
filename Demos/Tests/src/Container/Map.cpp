@@ -18,9 +18,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
-#include "IO/Stream.h"
 #include "IO/LogSystem.h"
 #include "Platform/Time.h"
+#include "IO/FormattedWriter.h"
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <map>
@@ -33,7 +33,7 @@ INTRA_WARNING_POP
 using namespace Intra;
 using namespace IO;
 
-void TestMaps(IO::IFormattedWriter& output)
+void TestMaps(IO::FormattedWriter& output)
 {
 	HashMap<String, int> map;
 	map["Строка"] = 6;
@@ -44,13 +44,15 @@ void TestMaps(IO::IFormattedWriter& output)
 	map["HashMap"] = 11;
 
 	output.PrintLine("Заполнили HashMap, выведем его:");
-	output.PrintLine(map, endl);
+	output.PrintLine(map);
+	output.LineBreak();
 
 	auto mapRange = map.Find("Вывод");
 	mapRange.PopLast();
 
 	output.PrintLine("Выведем все элементы, вставленные начиная от \"Вывод\" и до предпоследнего элемента:");
-	output.PrintLine(mapRange, endl);
+	output.PrintLine(mapRange);
+	output.LineBreak();
 
 	map.SortByKey();
 	output.PrintLine("Отсортируем элементы HashMap на месте:");
@@ -135,11 +137,11 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 	double averageBucketLoad;
 	size_t bucketLoads[20] = {0};
 	map.GetStats(&numBuckets, &freeBucketCount, &averageBucketLoad, &maxBucketLoad, bucketLoads, 20);
-	IO::Console.PrintLine("num buckets: ", numBuckets, IO::endl,
-		"free bucket count: ", freeBucketCount, IO::endl,
-		"max bucket load: ", maxBucketLoad, IO::endl,
-		"average bucket load: ", averageBucketLoad, IO::endl,
-		AsRange(bucketLoads).Take(maxBucketLoad+1));
+	IO::ConsoleOut.PrintLine("num buckets: ", numBuckets);
+	IO::ConsoleOut.PrintLine("free bucket count: ", freeBucketCount);
+	IO::ConsoleOut.PrintLine("max bucket load: ", maxBucketLoad);
+	IO::ConsoleOut.PrintLine("average bucket load: ", averageBucketLoad);
+	IO::ConsoleOut.PrintLine(Range::Take(bucketLoads, maxBucketLoad+1));
 
 	return time;
 }
@@ -161,7 +163,7 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 }
 
 
-void RunMapPerfTests(IO::IFormattedWriter& output)
+void RunMapPerfTests(IO::FormattedWriter& output)
 {
 	static const StringView comparedContainers[] = {"std::map", "std::unordered_map", "LinearMap", "HashMap"};
 

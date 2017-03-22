@@ -20,8 +20,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Audio/Synth/Modifiers.hh"
 #include "Audio/Synth/PostEffects.hh"
 
-#include "IO/Stream.h"
-
 namespace Intra { namespace Audio { namespace Synth {
 
 using namespace IO;

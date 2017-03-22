@@ -73,11 +73,6 @@ extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dsoSymbol)
 
 #if(defined(_MSC_VER) && defined(INTRA_MINIMIZE_CRT))
 
-#include <stdio.h>
-
-long long _cdecl _ftelli64(FILE* f)
-{return ftell(f);}
-
 #define _CRT_RAND_S
 #include <stdlib.h>
 #include "Platform/Debug.h"

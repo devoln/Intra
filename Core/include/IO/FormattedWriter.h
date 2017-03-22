@@ -7,9 +7,9 @@
 #include "Container/Sequential/Array.h"
 #include "Range/Polymorphic/OutputRange.h"
 
-namespace Intra { namespace IO {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace IO {
 
 struct FontDesc
 {
@@ -20,7 +20,7 @@ struct FontDesc
 
 	static const FontDesc& Default()
 	{
-		const FontDesc result = {{-1, -1, -1}, 3, false, false, false, false};
+		static const FontDesc result = {{-1, -1, -1}, 3, false, false, false, false};
 		return result;
 	}
 
@@ -34,32 +34,128 @@ struct FontDesc
 	bool operator!=(const FontDesc& rhs) const {return !operator==(rhs);}
 };
 
-class AFormattedWriter
+class FormattedWriter: public OutputStream
 {
 public:
-	void PushFont(Math::Vec3 color, float size=3,
-		bool bold=false, bool italic=false, bool underline=false, bool strike=false)
+	struct Interface
 	{
-		PushFont({color, size, bold, italic, underline, strike});
+		virtual ~Interface() {}
+
+		virtual void BeginCode(OutputStream& s)
+		{
+			LineBreak(s);
+			s.Print("___________________");
+			LineBreak(s);
+		}
+
+		virtual void EndCode(OutputStream& s)
+		{
+			LineBreak(s);
+			s.Print("___________________");
+			LineBreak(s);
+		}
+
+		virtual void PushStyle(OutputStream& s, StringView style) {(void)s; (void)style;}
+		virtual void PopStyle(OutputStream& s) {(void)s;}
+
+		virtual void HorLine(OutputStream& s)
+		{
+			s.Print("__________________________________________________");
+			LineBreak(s);
+		}
+
+		virtual void LineBreak(OutputStream& s)
+		{
+			s.Put('\r');
+			s.Put('\n');
+		}
+
+		virtual void PrintPreformatted(OutputStream& s, StringView text) {s.Print(text);}
+
+		virtual void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) {(void)s; (void)newFont; (void)curFont;}
+		virtual void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) {(void)s; (void)curFont; (void)prevFont;}
+		
+		virtual void BeginSpoiler(OutputStream& s, StringView label)
+		{
+			LineBreak(s);
+			s.Print(label);
+			LineBreak(s);
+			s.Print("{");
+			LineBreak(s);
+		}
+
+		virtual void EndSpoiler(OutputStream& s) {(void)s;}
+	};
+	Memory::UniqueRef<Interface> mInterface;
+	size_t mSpoilerNesting;
+	Array<FontDesc> mFontStack;
+public:
+	FormattedWriter(null_t=null):
+		OutputStream(null), mInterface(null), mSpoilerNesting(0) {}
+
+	explicit FormattedWriter(OutputStream stream):
+		OutputStream(Meta::Move(stream)),
+		mInterface(new Interface), mSpoilerNesting(0) {}
+
+	FormattedWriter(OutputStream stream, Interface* impl):
+		OutputStream(Meta::Move(stream)),
+		mInterface(impl), mSpoilerNesting(0) {}
+
+	FormattedWriter(FormattedWriter&& rhs):
+		OutputStream(Meta::Move(rhs)),
+		mInterface(Meta::Move(rhs.mInterface)),
+		mSpoilerNesting(rhs.mSpoilerNesting), mFontStack(Meta::Move(rhs.mFontStack))
+	{rhs.mSpoilerNesting = 0;}
+
+	FormattedWriter& operator=(FormattedWriter&& rhs)
+	{
+		if(this == &rhs) return *this;
+		EndAllSpoilers();
+		OutputStream::operator=(Meta::Move(rhs));
+		mInterface = Meta::Move(rhs.mInterface);
+		mSpoilerNesting = rhs.mSpoilerNesting;
+		mFontStack = Meta::Move(rhs.mFontStack);
+		rhs.mSpoilerNesting = 0;
+		return *this;
+	}
+	
+	~FormattedWriter() {operator=(null);}
+
+	FormattedWriter& operator=(null_t)
+	{
+		EndAllSpoilers();
+		while(!mFontStack.Empty()) PopFont();
+		OutputStream::operator=(null);
+		return *this;
 	}
 
-	void PushFont(const FontDesc& fontDesc)
+	forceinline bool operator==(null_t) const
+	{return Empty() || mInterface==null;}
+
+	forceinline bool operator!=(null_t) const
+	{return !operator==(null);}
+
+	void PushFont(Math::Vec3 color, float size=3,
+		bool bold=false, bool italic=false, bool underline=false, bool strike=false)
+	{PushFont({color, size, bold, italic, underline, strike});}
+
+	void PushFont(const FontDesc& newFont)
 	{
-		pushFont(fontDesc);
-		mFontStack.AddLast(fontDesc);
+		mInterface->PushFont(*this, newFont, GetCurrentFont());
+		mFontStack.AddLast(newFont);
 	}
 
 	void PushFont() {PushFont(FontDesc::Default());}
 
 	void PopFont()
 	{
-		popFont();
+		mInterface->PopFont(*this, GetCurrentFont(), GetPrevFont());
 		mFontStack.RemoveLast();
 	}
 
 	void BeginSpoiler(StringView label)
 	{
-		beginSpoiler(label);
+		mInterface->BeginSpoiler(*this, label);
 		mSpoilerNesting++;
 	}
 
@@ -70,7 +166,7 @@ public:
 		INTRA_DEBUG_ASSERT(mSpoilerNesting != 0);
 		if(mSpoilerNesting == 0) return;
 		mSpoilerNesting--;
-		endSpoiler();
+		mInterface->EndSpoiler(*this);
 	}
 
 	void EndAllSpoilers()
@@ -79,25 +175,28 @@ public:
 			EndSpoiler();
 	}
 
-	virtual void BeginCode() {}
-	virtual void EndCode() {}
+	void BeginCode() {mInterface->BeginCode(*this);}
+	void EndCode() {mInterface->EndCode(*this);}
 
-	virtual void PushStyle(StringView style) {}
-	virtual void PopStyle() {}
+	void PushStyle(StringView style) {mInterface->PushStyle(*this, style);}
+	void PopStyle() {mInterface->PopStyle(*this);}
 
-	virtual void HorLine()
-	{
-		PrintRaw("__________________________________________________");
-		LineBreak();
-	}
+	void HorLine() {mInterface->HorLine(*this);}
 
-	virtual void LineBreak() {PrintRaw("\r\n");}
+	void LineBreak(size_t count=1) {while(count --> 0) mInterface->LineBreak(*this);}
 
 	const FontDesc& GetCurrentFont() const
 	{
 		if(mFontStack.Empty())
 			return FontDesc::Default();
 		return mFontStack.Last();
+	}
+
+	const FontDesc& GetPrevFont() const
+	{
+		if(mFontStack.Length()<2)
+			return FontDesc::Default();
+		return mFontStack[mFontStack.Length()-2];
 	}
 
 	void PrintCode(StringView code)
@@ -107,57 +206,13 @@ public:
 		EndCode();
 	}
 
-	virtual void PrintPreformatted(StringView str) {PrintRaw(str);}
-	virtual void PrintRaw(StringView str) = 0;
+	void PrintPreformatted(StringView str) {mInterface->PrintPreformatted(*this, str);}
 
-protected:
-	virtual void pushFont(const FontDesc& fontDesc) {(void)fontDesc;}
-	virtual void popFont() {}
-	virtual void beginSpoiler(StringView label) {(void)label;}
-	virtual void endSpoiler() {}
-
-	size_t mSpoilerNesting;
-	Array<FontDesc> mFontStack;
+private:
+	FormattedWriter(const FormattedWriter&) = delete;
+	FormattedWriter& operator=(const FormattedWriter&) = delete;
 };
-
-
-class APlainTextFormattedWriter: public AFormattedWriter
-{
-public:
-	void BeginCode() override
-	{
-		LineBreak();
-		PrintRaw("___________________");
-		LineBreak();
-	}
-
-	void EndCode() override
-	{
-		LineBreak();
-		PrintRaw("___________________");
-		LineBreak();
-	}
-
-	void PrintPreformatted(StringView str) {PrintRaw(str);}
-
-protected:
-	void beginSpoiler(StringView show) override
-	{
-		LineBreak();
-		PrintRaw(show);
-		LineBreak();
-		PrintRaw("{");
-		LineBreak();
-	}
-
-	void endSpoiler() override
-	{
-		LineBreak();
-		PrintRaw("}");
-		LineBreak();
-	}
-};
-
-INTRA_WARNING_POP
 
 }}
+
+INTRA_WARNING_POP

@@ -1,7 +1,8 @@
 ﻿#include "Image/Loaders/LoaderJPEG.h"
 #include "Image/Loaders/LoaderPlatform.h"
-#include "IO/Stream.h"
+#include "Range/Polymorphic/InputRange.h"
 #include "Image/AnyImage.h"
+#include "Platform/Endianess.h"
 
 namespace Intra { namespace Image {
 

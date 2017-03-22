@@ -23,7 +23,7 @@ using namespace Intra;
 float g_A = 0;
 int g_B = 0;
 
-void RunRandomPerfTests(IO::IFormattedWriter& logger)
+void RunRandomPerfTests(IO::FormattedWriter& logger)
 {
 	std::random_device r;
 	std::mt19937 mt19937(r());

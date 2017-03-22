@@ -3,7 +3,8 @@
 #include "Platform/CppWarnings.h"
 #include "Platform/CppFeatures.h"
 #include "Platform/Debug.h"
-#include "IO/ConsoleWriter.h"
+#include "IO/ConsoleOutput.h"
+#include "IO/ConsoleInput.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -16,7 +17,7 @@ int TestGroup::YesForNestingLevel=1000000000;
 int TestGroup::totalTestsFailed = 0;
 int TestGroup::totalTestsPassed = 0;
 
-TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output, StringView category):
+TestGroup::TestGroup(IO::FormattedWriter& logger, IO::FormattedWriter& output, StringView category):
 	Yes(false), Logger(logger), Output(output), Category(category),
 	mHadChildren(false),
 	mFailedChildren(0), mPassedChildren(0)
@@ -42,10 +43,10 @@ TestGroup::TestGroup(IO::IFormattedWriter& logger, IO::IFormattedWriter& output,
 
 void TestGroup::consoleAskToEnableTest()
 {
-	Console.PrintLine("Press space to run test [ ", Category, " ] or press enter to skip it...");
+	ConsoleOut.PrintLine("Press space to run test [ ", Category, " ] or press enter to skip it...");
 	for(;;)
 	{
-		dchar c = Console.GetChar();
+		dchar c = ConsoleIn.GetChar();
 		if(c=='y')
 		{
 			YesForNestingLevel = nestingLevel+1;
@@ -68,12 +69,12 @@ void TestGroup::consoleAskToEnableTest()
 }
 
 TestGroup::TestGroup(StringView category):
-	TestGroup(currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Logger,
-		currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Output, category) {}
+	TestGroup(currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Logger,
+		currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Output, category) {}
 
-TestGroup::TestGroup(StringView category, const Utils::Delegate<void(IO::IFormattedWriter&)>& funcToTest):
-	TestGroup(currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Logger,
-		currentTestGroup==null? IO::ConsoleWriter: currentTestGroup->Output, category, funcToTest) {}
+TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
+	TestGroup(currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Logger,
+		currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Output, category, funcToTest) {}
 
 TestGroup::~TestGroup()
 {

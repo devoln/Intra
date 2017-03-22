@@ -275,7 +275,7 @@ template<typename ARR> double TestContainerStringCopying(uint times, uint size)
 
 
 
-void RunContainerPerfTests(IFormattedWriter& output)
+void RunContainerPerfTests(FormattedWriter& output)
 {
 	StringView comparedArrays[] = {"std::vector", "Array"};
 	StringView comparedContainers[] = {"std::vector", "std::deque", "std::list", "Array", "BList"};
@@ -286,7 +286,7 @@ void RunContainerPerfTests(IFormattedWriter& output)
 		"Array<std::string>", "BList<std::string>",
 		"Array<String>", "BList<String>"
 	};*/
-	output << endl << endl;
+	output.LineBreak(2);
 
 	if(TestGroup gr{"Добавление int в контейнер"})
 	{

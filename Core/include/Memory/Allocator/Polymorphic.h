@@ -25,12 +25,12 @@ public:
 
 template<typename Allocator> class PolymorphicUnsizedAllocator: public IAllocator, private Allocator
 {
-	AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo) override final
+	AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo) final
 	{
 		return Allocator::Allocate(bytes, sourceInfo);
 	}
 
-	void Free(void* ptr) override final
+	void Free(void* ptr) final
 	{
 		Allocator::Free(ptr);
 	}
@@ -38,17 +38,17 @@ template<typename Allocator> class PolymorphicUnsizedAllocator: public IAllocato
 
 template<typename Allocator> class PolymorphicSizedAllocator: public ISizedAllocator, private Allocator
 {
-	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo) override final
+	AnyPtr Allocate(size_t& bytes, const SourceInfo& sourceInfo) final
 	{
 		return Allocator::Allocate(bytes, sourceInfo);
 	}
 
-	void Free(void* ptr) override final
+	void Free(void* ptr) final
 	{
 		Allocator::Free(ptr);
 	}
 
-	size_t GetAllocationSize(void* ptr) const override final { return Allocator::GetAllocationSize(ptr); }
+	size_t GetAllocationSize(void* ptr) const final { return Allocator::GetAllocationSize(ptr); }
 };
 
 template<typename Allocator> class PolymorphicAllocator: public Meta::SelectType<

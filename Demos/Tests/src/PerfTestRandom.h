@@ -2,5 +2,5 @@
 
 #include "IO/LogSystem.h"
 
-void RunRandomPerfTests(Intra::IO::IFormattedWriter& logger);
+void RunRandomPerfTests(Intra::IO::FormattedWriter& logger);
 

@@ -117,7 +117,7 @@ static const StringView comparedSortsWithoutSlow[] = {
 	"MergeSort", "HeapSort", "RadixSort"
 };
 
-template<typename T> void TestAndPrintIntegralTypeSorts(IO::IFormattedWriter& output, StringView typeName)
+template<typename T> void TestAndPrintIntegralTypeSorts(IO::FormattedWriter& output, StringView typeName)
 {
 	PrintPerformanceResults(output, typeName + " array size: 100",
 		comparedSorts, {TestStdSorting<T>(100)},
@@ -188,7 +188,7 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::IFormattedWriter& ou
 		});
 }
 
-void RunSortPerfTests(Intra::IO::IFormattedWriter& output)
+void RunSortPerfTests(IO::FormattedWriter& output)
 {
 	IO::CompositeFormattedWriter emptyLogger;
 	if(TestGroup gr{"Sorting of random generated arrays of short"})

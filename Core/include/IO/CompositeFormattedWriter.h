@@ -2,42 +2,30 @@
 
 #include "IO/FormattedWriter.h"
 #include "Range/Generators/ArrayRange.h"
-#include "Container/Sequential/Array.h"
 
 namespace Intra { namespace IO {
 
-class CompositeFormattedWriter final: public AFormattedWriter
+class CompositeFormattedWriter: public FormattedWriter
 {
 public:
-	CompositeFormattedWriter(): mAttached(null) {}
-	CompositeFormattedWriter(ArrayRange<AFormattedWriter* const> streams): mAttached(streams) {}
+	CompositeFormattedWriter();
 
-	void Attach(AFormattedWriter* stream) {mAttached.AddLast(stream);}
-	void Detach(AFormattedWriter* stream) {mAttached.FindAndRemoveUnordered(stream);}
+	CompositeFormattedWriter(CompositeFormattedWriter&& rhs): FormattedWriter(Meta::Move(rhs)) {}
 
-	bool operator==(null_t) const {return mAttached==null;}
-	bool operator!=(null_t) const {return mAttached!=null;}
+	CompositeFormattedWriter& operator=(CompositeFormattedWriter&& rhs)
+	{
+		FormattedWriter::operator=(Meta::Move(rhs));
+		return *this;
+	}
 
-
-	void PushStyle(StringView style) override {for(auto stream: mAttached) stream->PushStyle(style);}
-	void PopStyle() override {for(auto stream: mAttached) stream->PopStyle();}
-
-	void BeginCode() override {for(auto stream: mAttached) stream->BeginCode();}
-	void EndCode() override {for(auto stream: mAttached) stream->EndCode();}
-	void HorLine() override {for(auto stream: mAttached) stream->HorLine();}
-	void PrintRaw(StringView s) override {for(auto stream: mAttached) stream->PrintRaw(s);}
-	void PrintPreformatted(StringView s) override {for(auto stream: mAttached) stream->PrintPreformatted(s);}
-
-protected:
-	void pushFont(const FontDesc& fontDesc) override final
-	{for(auto stream: mAttached) stream->PushFont(fontDesc);}
-
-	void popFont() override {for(auto stream: mAttached) stream->PopFont();}
-	void beginSpoiler(StringView show) override {for(auto stream: mAttached) stream->BeginSpoiler(show);}
-	void endSpoiler() override {for(auto stream: mAttached) stream->EndSpoiler();}
+	size_t Attach(FormattedWriter&& stream);
+	void Detach(size_t index);
 
 private:
-	Array<AFormattedWriter*> mAttached;
+	CompositeFormattedWriter(FormattedWriter::Interface*);
+
+	CompositeFormattedWriter(const CompositeFormattedWriter&) = delete;
+	CompositeFormattedWriter& operator=(const CompositeFormattedWriter&) = delete;
 };
 
 }}

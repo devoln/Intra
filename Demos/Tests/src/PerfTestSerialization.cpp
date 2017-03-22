@@ -10,7 +10,6 @@
 #include "Data/Reflection.h"
 #include "Platform/Time.h"
 #include "Range/Generators/ArrayRange.h"
-#include "IO/Stream.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 
@@ -190,8 +189,10 @@ double TestTextDeserialization(size_t times,
 	SuperTest test = deserializer.Deserialize<SuperTest>();
 	if(!deserializer.Log.Empty())
 	{
-		Console.PrintLine(endl, "The following errors occured during deserialization: ");
-		Console.PrintLine(deserializer.Log, endl);
+		ConsoleOut.LineBreak();
+		ConsoleOut.PrintLine("The following errors occured during deserialization: ");
+		ConsoleOut.PrintCode(deserializer.Log);
+		ConsoleOut.LineBreak();
 	}
 
 	Timer tim;
@@ -218,7 +219,7 @@ double TestBinarySerialization(size_t times)
 	return tim.GetTime();
 }
 
-double TestTextSerialization(IFormattedWriter& logger, StringView desc, size_t times,
+double TestTextSerialization(FormattedWriter& logger, StringView desc, size_t times,
 	const Data::LanguageParams& lang, const Data::TextSerializerParams& params)
 {
 	char buf[1000];
@@ -272,7 +273,7 @@ double TestBinaryRefDeserialization(size_t times)
 
 
 
-void RunSerializationPerfTests(IO::IFormattedWriter& output)
+void RunSerializationPerfTests(FormattedWriter& output)
 {
 	output.BeginSpoiler("String with structure description to deserialize: ");
 
@@ -285,7 +286,8 @@ void RunSerializationPerfTests(IO::IFormattedWriter& output)
 	if(!deserializer.Log.Empty())
 	{
 		output.PushFont({128,0,0}, 3.5f);
-		output.PrintLine(endl, "The folowing errors occured during deserialization: ");
+		output.LineBreak();
+		output.PrintLine("The folowing errors occured during deserialization: ");
 		output.PopFont();
 		output.BeginSpoiler("Deserializer log");
 		output.PrintCode(deserializer.Log);

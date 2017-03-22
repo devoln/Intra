@@ -11,42 +11,68 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Thread
 {
-	struct Handle;
+	struct Data;
+	typedef Data* Handle;
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Handle* handle;
+	Handle mHandle;
+	mutable bool mJoined;
 #endif
+	struct NativeData;
 public:
+	typedef NativeData* NativeHandle;
+
 	typedef Utils::Delegate<void()> Func;
 
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Thread(null_t=null): handle(null) {}
-	Thread(Thread&& rhs): handle(rhs.handle) {rhs.handle=null;}
-	Thread(const Func& func): handle(null) {create_thread(func);}
+	Thread(null_t=null): mHandle(null), mJoined(false) {}
+	Thread(Thread&& rhs): mHandle(rhs.mHandle), mJoined(rhs.mJoined) {rhs.mHandle=null;}
+	Thread(const Func& func): mHandle(null), mJoined(false) {create_thread(func);}
 
 	Thread& operator=(Thread&& rhs)
 	{
-		if(handle!=null) delete_thread();
-		handle = rhs.handle;
-		rhs.handle = null;
+		if(mHandle!=null) delete_thread();
+		mHandle = rhs.mHandle;
+		mJoined = rhs.mJoined;
+		rhs.mHandle = null;
 		return *this;
 	}
 
-	~Thread() {delete_thread();}
+	//! Деструктор ждёт завершения потока.
+	~Thread() {if(mHandle!=null) delete_thread();}
 #else
 	Thread(null_t=null) {}
 	Thread(Thread&& rhs) {(void)rhs;}
-	Thread(const Func& func) {create_thread(func);}
+	Thread(Func func) {create_thread(Meta::Move(func));}
 	Thread& operator=(Thread&& rhs) {(void)rhs; return *this;}
 #endif
 
-	void Join();
-	void Detach();
-	bool Joinable() const;
+	//! Блокировать выполнение текущего потока до тех пор,
+	//! пока указанный поток не завершится или не истечёт указанный таймаут.
+	//! @param timeoutInMs Таймаут в миллисекундах.
+	//! @return Возвращает true, если в результате поток завершил своё выполнение.
+	bool Join(uint timeoutInMs);
 
+	bool Join();
+
+	//! Отсоединить поток от объекта.
+	//! Текущий объект переходит в нулевое состояние,
+	//! поток продолжает выполняться независимо от него.
+	void Detach();
+
+	//! Возвращает, выполняется ли поток в данный момент.
+	bool IsRunning() const;
+
+	//! @return Зависимый от платформы дескриптор потока:
+	//! Для Windows HANDLE (созданный через _beginthreadex\CreateThread)
+	//! Для остальных платформ pthread*.
+	//! Полученный дескриптор нельзя использовать после Detach или уничтожения потока.
+	NativeHandle GetNativeHandle() const;
+
+	//! Отдаёт текущий квант времени ОС.
 	static void Yield();
 
 private:
-	void create_thread(const Func& func);
+	void create_thread(Func func);
 	void delete_thread();
 
 
@@ -56,11 +82,15 @@ private:
 
 class Mutex
 {
-	struct Handle;
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Handle* handle;
+	struct Data;
+	typedef Data* Handle;
+	Handle mHandle;
 #endif
+	struct NativeData;
 public:
+	typedef NativeData* NativeHandle;
+
 	Mutex(bool processPrivate=true);
 	~Mutex();
 

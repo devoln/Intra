@@ -2,5 +2,5 @@
 
 #include "IO/FormattedWriter.h"
 
-void RunMapPerfTests(Intra::IO::IFormattedWriter& output);
+void RunMapPerfTests(Intra::IO::FormattedWriter& output);
 
