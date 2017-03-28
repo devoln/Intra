@@ -132,8 +132,8 @@
 #define INTRA_OVERRIDE_SUPPORT
 #endif
 
-#define forceinline inline
-//#define forceinline __forceinline
+//#define forceinline inline
+#define forceinline __forceinline
 
 #endif
 

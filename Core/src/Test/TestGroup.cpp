@@ -107,13 +107,13 @@ void TestGroup::PrintUnitTestResult()
 {
 	if(ErrorInfo.NoError() && mFailedChildren==0)
 	{
-		Logger.PushFont({0, 0, 1}, 3.0f, true, false, true);
+		Logger.PushFont({0, 0.75f, 0}, 3.0f, true);
 		Logger.PrintLine("Test [ ", Category, " ] PASSED!");
 		Logger.PopFont();
 	}
 	else
 	{
-		Logger.PushFont({1, 0, 0}, 3.0f, true, false, true);
+		Logger.PushFont({1, 0, 0}, 3.0f, true);
 		Logger.PrintLine("Test [ ", Category, " ] FAILED!");
 		Logger.PopFont();
 

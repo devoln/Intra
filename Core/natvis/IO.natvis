@@ -46,7 +46,7 @@
 
   <Type Name="Intra::IO::FileWriter">
     <DisplayString Condition="mFile.mData==nullptr">null</DisplayString>
-    <DisplayString>FileWriter({mOffset+(mBufferRest.Begin-mBuffer.range.Begin)}, {mFile.mData->mValue,view(noparens)})</DisplayString>
+    <DisplayString>FileWriter({mOffset+(mBufferRest.Begin-mBuffer.range.Begin)}, {mFile.mData->Value,view(noparens)})</DisplayString>
     <StringView>mBuffer.range.Begin,[mBufferRest.Begin-mBuffer.range.Begin]s8b</StringView>
     <Expand>
       <ExpandedItem Condition="mFile.mData!=nullptr">mFile.mData->Value</ExpandedItem>

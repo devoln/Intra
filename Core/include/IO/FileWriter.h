@@ -10,6 +10,8 @@
 #include "Range/Stream/OutputStreamMixin.h"
 #include "Memory/SmartRef/Shared.h"
 
+#include "IO/Std.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -34,7 +36,15 @@ public:
 	forceinline static FileWriter Append(Shared<OsFile> file, size_t bufferSize=4096)
 	{
 		if(file == null) return null;
-		return FileWriter(Meta::Move(file), file->Size(), bufferSize);
+		const size_t size = file->Size();
+		return FileWriter(Meta::Move(file), size, bufferSize);
+	}
+
+	forceinline static FileWriter Overwrite(Shared<OsFile> file, size_t bufferSize=4096)
+	{
+		if(file == null) return null;
+		file->SetSize(0);
+		return FileWriter(Meta::Move(file), 0, bufferSize);
 	}
 
 	FileWriter(const FileWriter&) = delete;

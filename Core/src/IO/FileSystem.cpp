@@ -7,6 +7,7 @@
 #include "IO/OsFile.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
+#include "IO/Std.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -168,11 +169,17 @@ ulong64 OsFileSystem::FileGetSize(StringView fileName) const
 FileReader OsFileSystem::FileOpen(StringView fileName)
 {return FileReader(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Read));}
 
-FileWriter OsFileSystem::FileOpenWrite(StringView fileName)
-{return FileWriter(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write));}
+FileWriter OsFileSystem::FileOpenWrite(StringView fileName, ulong64 offset)
+{return FileWriter(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write), offset);}
+
+FileWriter OsFileSystem::FileOpenOverwrite(StringView fileName)
+{return FileWriter::Overwrite(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write));}
 
 FileWriter OsFileSystem::FileOpenAppend(StringView fileName)
-{return FileWriter::Append(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write));}
+{
+	auto file = Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write);
+	return FileWriter::Append(Meta::Move(file));
+}
 
 String OsFileSystem::FileToString(StringView fileName)
 {return OsFile::ReadAsString(GetFullFileName(fileName));}

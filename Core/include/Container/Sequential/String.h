@@ -152,11 +152,8 @@ public:
 
 	GenericString& operator=(null_t)
 	{
-		if(IsHeapAllocated())
-		{
-			freeLongData();
-			resetToEmptySsoWithoutFreeing();
-		}
+		if(IsHeapAllocated()) freeLongData();
+		resetToEmptySsoWithoutFreeing();
 		return *this;
 	}
 	//!@}

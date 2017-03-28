@@ -23,7 +23,7 @@ public:
 	~OsFile() {Close();}
 	
 	OsFile(OsFile&& rhs):
-		mHandle(rhs.mHandle), mOwning(rhs.mOwning)
+		mHandle(rhs.mHandle), mMode(rhs.mMode), mOwning(rhs.mOwning)
 	{rhs.mHandle = null; rhs.mOwning = false;}
 	
 	OsFile(const OsFile&) = delete;

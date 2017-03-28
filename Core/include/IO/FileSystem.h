@@ -97,15 +97,20 @@ public:
 	{return WritableFileMapping(GetFullFileName(fileName));}
 
 	//! Открыть файл fileName для чтения.
-	//! Файл должен существовать, иначе вернёт null.
+	//! Если файл не существует или не удаётся открыть по другим причинам, вернёт null.
 	FileReader FileOpen(StringView fileName);
 
 	//! Открыть файл fileName для записи.
-	FileWriter FileOpenWrite(StringView fileName);
+	//! Если файл уже существует, запись происходит поверх данных, уже записанных в файл.
+	FileWriter FileOpenWrite(StringView fileName, ulong64 offset=0);
+
+	//! Открыть файл fileName для записи. Если файл уже существует, всё его содержимое будет стёрто.
+	FileWriter FileOpenOverwrite(StringView fileName);
 
 	//! Открыть файл fileName для записи в конец.
 	FileWriter FileOpenAppend(StringView fileName);
 
+	//! Прочитать файл целиком в строку.
 	String FileToString(StringView fileName);
 
 private:

@@ -28,6 +28,10 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
 	FileWriter logFile = OS.FileOpenAppend(logFileName);
+	if(logFile==null)
+	{
+		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
+	}
 	if(!logExisted && logFile!=null) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
 	FormattedWriter logWriter = HtmlWriter(Meta::Move(logFile), !logExisted);
 
@@ -97,5 +101,12 @@ int main(int argc, const char* argv[])
 	TestGroup(logger, *output, "Text serialization", TestTextSerialization);
 	TestGroup(logger, *output, "Binary serialization", TestBinarySerialization);
 	TestGroup(logger, *output, "Sort algorithms", TestSort);
-	return TestGroup::GetTotalTestsFailed();
+
+	if(TestGroup::GetTotalTestsFailed() != 0)
+		logger.PushFont({1, 0, 0}, 5, true, false, true);
+	else logger.PushFont({0, 0.75f, 0}, 5, true, false, true);
+	logger.PrintLine("Tests passed: ", TestGroup::GetTotalTestsPassed(), "/", TestGroup::GetTotalTests(), ".");
+	logger.PopFont();
+
+	return 0;
 }

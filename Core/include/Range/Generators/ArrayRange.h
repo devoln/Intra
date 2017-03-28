@@ -181,6 +181,8 @@ ArrayRange<T>> AsRange(T(&arr)[N]) {return ArrayRange<T>(arr);}
 template<typename T> forceinline ArrayRange<const T> AsRange(InitializerList<T> arr)
 {return ArrayRange<const T>(arr);}
 
+template<typename T> forceinline ArrayRange<T> Take(T* arrPtr, size_t n) {return ArrayRange<T>(arrPtr, n);}
+
 }
 
 using Range::ArrayRange;

@@ -71,7 +71,11 @@ public:
 	template<typename... Args> forceinline static Shared New(Args&&... args)
 	{return new Data(Meta::Forward<Args>(args)...);}
 
-	forceinline uint use_count() const {return mData!=null? mData->RefCount: 0;}
+	forceinline uint use_count() const
+	{
+		if(mData == null) return 0;
+		return mData->RefCount;
+	}
 
 	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mData!=null); return mData->Value;}
 	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mData!=null); return &mData->Value;}

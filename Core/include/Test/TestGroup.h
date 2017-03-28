@@ -56,6 +56,8 @@ public:
 	static TestGroup* GetCurrent() {return currentTestGroup;}
 	void PrintUnitTestResult();
 
+	static int GetTotalTests() {return totalTestsPassed+totalTestsFailed;}
+	static int GetTotalTestsPassed() {return totalTestsPassed;}
 	static int GetTotalTestsFailed() {return totalTestsFailed;}
 
 

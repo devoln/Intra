@@ -5,6 +5,7 @@
 #include "IO/FileSystem.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
+#include "IO/Std.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -14,6 +15,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
 
@@ -82,12 +85,14 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 		mOwning = false;
 	}
 #else
-	auto openFlags = mMode == Mode::Read? O_RDONLY: mMode==Mode::Write? O_WRONLY: O_RDWR;
+	auto openFlags = (mMode == Mode::Read)? O_RDONLY: (mMode==Mode::Write? O_WRONLY: O_RDWR);
+	if(mMode != Mode::Read) openFlags |= O_CREAT;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
-	int fd = open(mFullPath.CStr(), openFlags);
+	int fd = open(mFullPath.CStr(), openFlags, 0664);
 	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
 	else
 	{
+		Std.PrintLine("Cannot open file ", mFullPath, "! errno = ", StringView(strerror(errno)));
 		mHandle = null;
 		mOwning = false;
 	}
@@ -101,7 +106,7 @@ void OsFile::Close()
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	CloseHandle(reinterpret_cast<HANDLE>(mHandle));
 #else
-	close(int(reinterpret_cast<size_t>(mHandle)));
+	close(int(size_t(mHandle)));
 #endif
 	mOwning = false;
 }
@@ -132,7 +137,13 @@ ulong64 OsFile::Size() const
 	GetFileSizeEx(reinterpret_cast<HANDLE>(mHandle), &result);
 	return ulong64(result.QuadPart);
 #else
-	return size_t(lseek64(int(reinterpret_cast<size_t>(mHandle)), 0, SEEK_END));
+	off64_t result = lseek64(int(reinterpret_cast<size_t>(mHandle)), 0, SEEK_END);
+	if(result == off64_t(-1))
+	{
+		//Std.PrintLine("Cannot determine size of file ", mFullPath);
+		return 0;
+	}
+	return size_t(result);
 #endif
 }
 
@@ -161,10 +172,10 @@ void OsFile::SetSize(ulong64 size) const
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	LONG highSize = LONG(size >> 32);
-	SetFilePointer(reinterpret_cast<HANDLE>(mHandle), LONG(size), &highSize, FILE_BEGIN);
-	SetEndOfFile(reinterpret_cast<HANDLE>(mHandle));
+	SetFilePointer(HANDLE(mHandle), LONG(size), &highSize, FILE_BEGIN);
+	SetEndOfFile(HANDLE(mHandle));
 #else
-	bool success = ftruncate64(int(reinterpret_cast<size_t>(mHandle)), off64_t(size)) == 0;
+	const bool success = ftruncate64(int(size_t(mHandle)), off64_t(size)) == 0;
 	(void)success;
 #endif
 }
@@ -183,7 +194,7 @@ String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
 #else
 	//В Unix-подобных системах файлом могут являться устройства и другие объекты, размер которых заранее неизвестен.
 	//В этом случае мы попадём сюда. Будем читать файл блоками, пока он не закончится.
-	int fd = int(reinterpret_cast<size_t>(file.mHandle));
+	int fd = int(size_t(file.mHandle));
 	size_t pos = 0;
 	String result;
 	result.SetLengthUninitialized(4096);
