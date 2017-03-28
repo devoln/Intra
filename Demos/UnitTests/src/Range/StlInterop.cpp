@@ -3,6 +3,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.hh"
 #include "IO/FormattedWriter.h"
+#include "Range/Output/OutputArrayRange.h"
 
 #define _HAS_EXCEPTIONS 0
 

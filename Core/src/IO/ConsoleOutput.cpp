@@ -31,11 +31,9 @@ namespace Intra { namespace IO {
 
 struct ConsoleOutStream
 {
-	ConsoleOutStream():
+	ConsoleOutStream()
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-		mOutputHandle(GetStdHandle(STD_OUTPUT_HANDLE))
-#else
-		mFirstInited(false)
+		: mOutputHandle(GetStdHandle(STD_OUTPUT_HANDLE))
 #endif
 	{}
 
@@ -54,7 +52,8 @@ struct ConsoleOutStream
 		WriteConsoleW(HANDLE(mOutputHandle), wbuf, DWORD(wsrcLength), &written, null);
 		mWriteBufCount = 0;
 #else
-		write(STDOUT_FILENO, &c, 1);
+		const auto charsWritten = write(STDOUT_FILENO, &c, 1);
+		(void)charsWritten;
 #endif
 	}
 
@@ -82,7 +81,7 @@ struct ConsoleOutStream
 
 		return totalBytesToWrite;
 #else
-		size_t n = write(STDOUT_FILENO, src.Data(), src.Length());
+		size_t n = size_t(write(STDOUT_FILENO, src.Data(), src.Length()));
 		src.Begin += n;
 		return n;
 #endif
@@ -90,14 +89,18 @@ struct ConsoleOutStream
 
 private:
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	byte mWriteBufCount;
+	byte mWriteBufCount = 0;
 	char mWriteBuf[6];
 	void* mOutputHandle;
 #endif
 };
 
-struct ConsoleWriterImpl final: FormattedWriter::Interface
+class ConsoleWriterImpl final: public FormattedWriter::BasicImpl
 {
+public:
+	using FormattedWriter::BasicImpl::PushFont;
+	using FormattedWriter::BasicImpl::PopFont;
+
 	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) override
 	{
 #if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows

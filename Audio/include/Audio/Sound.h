@@ -3,7 +3,7 @@
 #include "Platform/CppWarnings.h"
 #include "Audio/SoundApiDeclarations.h"
 #include "Container/Sequential/Array.h"
-#include "Memory/SmartRef.hh"
+#include "Memory/SmartRef/Unique.h"
 #include "Container/Utility/SparseHandledArray.h"
 #include "Audio/SoundTypes.h"
 #include "Data/ValueType.h"
@@ -115,7 +115,7 @@ private:
 class StreamedSound
 {
 public:
-	typedef Memory::UniqueRef<ASoundSource> SourceRef;
+	typedef Unique<ASoundSource> SourceRef;
 	typedef Utils::Callback<void()> OnCloseCallback;
 
 	StreamedSound(null_t=null):

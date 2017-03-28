@@ -89,11 +89,11 @@ void FastSineExp(float volume, float coeff, float freq,
 #endif
 //#if INTRA_DISABLED
 	const double samplesPerPeriod = float(sampleRate)/freq;
-	size_t count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
+	const size_t count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
-	size_t sampleCount = uint(Math::Round(samplesPerPeriod*double(count)));
-	size_t N = (500/sampleCount+1);
+	const size_t sampleCount = uint(Math::Round(samplesPerPeriod*double(count)));
+	const size_t N = (500/sampleCount+1);
 	AudioBuffer sineFragment;
 	sineFragment.SampleRate = sampleRate;
 	sineFragment.Samples.SetCountUninitialized(sampleCount*N);
@@ -103,7 +103,7 @@ void FastSineExp(float volume, float coeff, float freq,
 	//там как экспоненциальное затухание эффективнее для больших массивов
 	for(uint i=1; i<N; i++) sineFragment.CopyFrom(i*sampleCount, sampleCount, &sineFragment, 0);
 
-	float ek = Math::Exp(-coeff/float(sampleRate));
+	const float ek = Math::Exp(-coeff/float(sampleRate));
 	float exp = 1.0f;
 	if(!add) while(!inOutSamples.Empty())
 		ExponentialAttenuate(inOutSamples, sineFragment.Samples, exp, ek);
@@ -132,17 +132,17 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 	inOutSamples.PopFirstN(start);
 	for(ushort h=0; h<params.Len; h++)
 	{
-		auto& harm = params.Harmonics[h];
-		size_t samplesToProcess = size_t(float(inOutSamples.Length())*float(harm.LengthMultiplyer));
+		const SineExpHarmonic harm = params.Harmonics[h];
+		const size_t samplesToProcess = size_t(float(inOutSamples.Length())*float(harm.LengthMultiplyer));
 		FastSineExp(volume*float(harm.Scale), float(harm.AttenCoeff),
 			freq*float(harm.FreqMultiplyer), sampleRate,
 			inOutSamples.Take(samplesToProcess),
 			add || h>0);
 	}
-	bool allSamplesInitialized = add || params.Harmonics[0].LengthMultiplyer==norm8s(1);
+	const bool allSamplesInitialized = add || params.Harmonics[0].LengthMultiplyer==norm8s(1);
 	if(!allSamplesInitialized)
 	{
-		size_t samplesProcessed = size_t(float(inOutSamples.Length())*float(params.Harmonics[0].LengthMultiplyer));
+		const size_t samplesProcessed = size_t(float(inOutSamples.Length())*float(params.Harmonics[0].LengthMultiplyer));
 		Algo::FillZeros(inOutSamples.Drop(samplesProcessed));
 	}
 }
@@ -150,7 +150,7 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 SynthPass CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics)
 {
 	SineExpParams params;
-	auto src = harmonics.Take(Meta::NumOf(params.Harmonics));
+	const auto src = harmonics.Take(Meta::NumOf(params.Harmonics));
 	params.Len = byte(src.Length());
 	Algo::CopyTo(src, params.Harmonics);
 	return SynthPass(SineExpSynthPassFunction, params);

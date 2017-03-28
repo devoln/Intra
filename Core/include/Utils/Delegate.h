@@ -14,7 +14,7 @@ namespace Intra { namespace Utils {
 template<typename FuncSignature> class Delegate;
 template<typename R, typename... Args> class Delegate<R(Args...)>
 {
-	UniqueRef<ICallable<R(Args...)>> mCallback;
+	Unique<ICallable<R(Args...)>> mCallback;
 public:
 	forceinline Delegate(null_t=null): mCallback(null) {}
 
@@ -38,8 +38,8 @@ public:
 	forceinline Delegate(Delegate&& rhs):
 		mCallback(Meta::Move(rhs.mCallback)) {}
 
-	forceinline R operator()(Args&&... args) const
-	{return mCallback->Call(args...);}
+	forceinline R operator()(Args... args) const
+	{return mCallback->Call(Meta::Forward<Args>(args)...);}
 
 	forceinline bool operator==(null_t) const {return mCallback==null;}
 	forceinline bool operator!=(null_t) const {return mCallback!=null;}
@@ -59,7 +59,7 @@ public:
 		return *this;
 	}
 
-	UniqueRef<ICallable<R(Args...)>> TakeAwayCallable() {return Meta::Move(mCallback);}
+	Unique<ICallable<R(Args...)>> TakeAwayCallable() {return Meta::Move(mCallback);}
 	ICallable<R(Args...)>& Callable() const {return *mCallback;}
 	ICallable<R(Args...)>* ReleaseCallable() {return mCallback.Release();}
 };

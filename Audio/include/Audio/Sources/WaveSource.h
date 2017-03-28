@@ -12,7 +12,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class WaveSource: public ASoundSource
 {
-	ArrayRange<const byte> mData;
+	ArrayRange<const short> mData;
 	size_t mSampleCount, mCurrentDataPos;
 public:
 	WaveSource(ArrayRange<const byte> srcFileData);

@@ -138,7 +138,7 @@ public:
 	}
 
 protected:
-	Memory::UniqueRef<Interface> mInterface;
+	Unique<Interface> mInterface;
 	OutputRange(Interface* interfacePtr): mInterface(interfacePtr) {}
 };
 

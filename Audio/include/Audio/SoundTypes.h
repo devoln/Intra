@@ -4,9 +4,12 @@
 #include "Platform/FundamentalTypes.h"
 #include "Data/ValueType.h"
 
-namespace Intra { namespace Audio {
+namespace Intra {
 
 namespace IO {class IInputStream;}
+
+namespace Audio {
+
 struct AudioBuffer;
 class SoundInstance;
 class ASoundSource;

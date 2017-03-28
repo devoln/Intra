@@ -136,7 +136,7 @@ struct ImageFormat
 	ImageFormat ToSRGB() const;
 	ImageFormat ToNonSRGB() const;
 	StringView ToString() const;
-	static ImageFormat FromString(StringView str, bool* exists = null);
+	static ImageFormat FromString(StringView str);
 };
 
 

@@ -21,6 +21,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "IO/LogSystem.h"
 #include "Platform/Time.h"
 #include "IO/FormattedWriter.h"
+#include "IO/Std.h"
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <map>
@@ -33,7 +34,7 @@ INTRA_WARNING_POP
 using namespace Intra;
 using namespace IO;
 
-void TestMaps(IO::FormattedWriter& output)
+void TestMaps(FormattedWriter& output)
 {
 	HashMap<String, int> map;
 	map["Строка"] = 6;
@@ -82,9 +83,10 @@ template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
 	typename MAP::mapped_type result = typename MAP::mapped_type();
 	for(uint i=0; i<times; i++)
 	{
-		for(auto&& element: map) result += GetPairSecondValue(element);
+		for(auto&& element: map)
+			result += GetPairSecondValue(element);
 	}
-	double time = timer.GetTime();
+	const double time = timer.GetTime();
 	srand(Algo::ToHash(result));
 	return time;
 }
@@ -100,7 +102,7 @@ template<typename K, typename V> double TestOrderedMapIterationSumValues(uint ti
 		map.SortByKey();
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
-	double time = timer.GetTime();
+	const double time = timer.GetTime();
 	srand(Algo::ToHash(result));
 	return time;
 }
@@ -115,7 +117,7 @@ template<typename MAP> double TestMapSuccessfulSearching(uint times, uint size)
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
-	double time = timer.GetTime();
+	const double time = timer.GetTime();
 	srand(Algo::ToHash(result));
 	return time;
 }
@@ -130,18 +132,17 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
-	double time = timer.GetTime();
+	const double time = timer.GetTime();
 	srand(Algo::ToHash(result));
 
-	size_t numBuckets, freeBucketCount, maxBucketLoad;
-	double averageBucketLoad;
-	size_t bucketLoads[20] = {0};
-	map.GetStats(&numBuckets, &freeBucketCount, &averageBucketLoad, &maxBucketLoad, bucketLoads, 20);
-	IO::ConsoleOut.PrintLine("num buckets: ", numBuckets);
-	IO::ConsoleOut.PrintLine("free bucket count: ", freeBucketCount);
-	IO::ConsoleOut.PrintLine("max bucket load: ", maxBucketLoad);
-	IO::ConsoleOut.PrintLine("average bucket load: ", averageBucketLoad);
-	IO::ConsoleOut.PrintLine(Range::Take(bucketLoads, maxBucketLoad+1));
+	
+	size_t bucketLoads[20];
+	auto stats = map.GetStats(bucketLoads);
+	Std.PrintLine("num buckets: ", stats.NumBuckets);
+	Std.PrintLine("free bucket count: ", stats.FreeBucketCount);
+	Std.PrintLine("max bucket load: ", stats.MaxBucketLoad);
+	Std.PrintLine("average bucket load: ", stats.AverageBucketLoad);
+	Std.PrintLine(Range::Take(bucketLoads, stats.MaxBucketLoad+1));
 
 	return time;
 }
@@ -157,13 +158,13 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += (map.find(keys[j])!=map.end());
-	double time = timer.GetTime();
+	const double time = timer.GetTime();
 	srand(result);
 	return time;
 }
 
 
-void RunMapPerfTests(IO::FormattedWriter& output)
+void RunMapPerfTests(FormattedWriter& output)
 {
 	static const StringView comparedContainers[] = {"std::map", "std::unordered_map", "LinearMap", "HashMap"};
 

@@ -1,6 +1,9 @@
 ﻿#include "Platform/PlatformInfo.h"
 #include "Platform/MessageBox.h"
 #include "Range/Generators/StringView.h"
+#include "Range/Generators/StringView.h"
+#include "Container/Sequential/String.h"
+#include "IO/Std.h"
 
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -39,8 +42,6 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 
 #elif(INTRA_LIBRARY_WINDOW_SYSTEM==INTRA_LIBRARY_WINDOW_SYSTEM_Qt)
 
-#include "Range/StringView.h"
-#include "Container/Sequential/String.h"
 #include <QtGui/QMessageBox>
 
 namespace Intra {
@@ -59,15 +60,16 @@ void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 
 #else
 
-#include "IO/Stream.h"
-
 namespace Intra {
 
 void ShowMessageBox(StringView message, StringView caption, MessageIcon icon)
 {
-	IO::Console << IO::endl << "  --- " <<
-		(icon==MessageIcon::Error? "Error! ": icon==MessageIcon::Warning? "Warning! ": "") <<
-		caption << " ---" << IO::endl << message << IO::endl;
+	using namespace IO;
+	StdErr.LineBreak();
+	StdErr.PrintLine("  --- ",
+		(icon==MessageIcon::Error? "Error! ": icon==MessageIcon::Warning? "Warning! ": ""),
+		caption, " ---");
+	StdErr.PrintLine(message);
 }
 
 }

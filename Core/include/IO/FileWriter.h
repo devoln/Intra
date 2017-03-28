@@ -8,6 +8,7 @@
 #include "Range/Generators/ArrayRange.h"
 #include "Range/Stream/Operators.h"
 #include "Range/Stream/OutputStreamMixin.h"
+#include "Memory/SmartRef/Shared.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -16,26 +17,37 @@ namespace Intra { namespace IO {
 
 class OsFile;
 
+//! Буферизованный output-поток для записи в файл.
 class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 {
 public:
-	forceinline FileWriter(const OsFile& file, ulong64 startOffset, size_t bufferSize):
-		mFile(&file), mOffset(startOffset)
+	forceinline FileWriter(null_t=null) {}
+
+	forceinline FileWriter(Shared<OsFile> file, ulong64 startOffset=0, size_t bufferSize=4096):
+		mFile(Meta::Move(file)), mOffset(startOffset)
 	{
+		if(mFile == null) return;
 		mBuffer.SetCountUninitialized(bufferSize);
 		mBufferRest = mBuffer;
 	}
 
-	forceinline FileWriter(const OsFile& file, ulong64 startOffset=0): FileWriter(file, startOffset, 4096) {}
+	forceinline static FileWriter Append(Shared<OsFile> file, size_t bufferSize=4096)
+	{
+		if(file == null) return null;
+		return FileWriter(Meta::Move(file), file->Size(), bufferSize);
+	}
 
-	FileWriter(const FileWriter& rhs) = delete;
+	FileWriter(const FileWriter&) = delete;
 	FileWriter(FileWriter&& rhs) {operator=(Meta::Move(rhs));}
+
+	forceinline bool operator==(null_t) {return mFile==null;}
+	forceinline bool operator!=(null_t) {return mFile!=null;}
 
 	FileWriter& operator=(const FileWriter& rhs) = delete;
 
 	FileWriter& operator=(FileWriter&& rhs)
 	{
-		mFile = rhs.mFile;
+		mFile = Meta::Move(rhs.mFile);
 		mOffset = rhs.mOffset;
 		mBuffer = Meta::Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
@@ -43,7 +55,7 @@ public:
 		return *this;
 	}
 
-	~FileWriter() {Flush();}
+	forceinline ~FileWriter() {Flush();}
 
 	forceinline bool Empty() const {return mBufferRest.Empty();}
 	
@@ -81,8 +93,10 @@ public:
 		return result;
 	}
 
+	//! Записать буфер в файл.
 	void Flush()
 	{
+		if(mBuffer.Empty()) return;
 		const size_t bytesWritten = mBuffer.Length()-mBufferRest.Length();
 		mFile->SetSize(mOffset+bytesWritten);
 		mFile->WriteData(mOffset, mBuffer.Data(), bytesWritten);
@@ -93,10 +107,10 @@ public:
 	forceinline ulong64 PositionInFile() const {return mOffset+mBuffer.Length()-mBufferRest.Length();}
 	forceinline ulong64 FlushedPositionInFile() const {return mOffset;}
 
-	forceinline const OsFile& File() const {return *mFile;}
+	forceinline const Shared<OsFile>& File() const {return mFile;}
 
 private:
-	const OsFile* mFile;
+	Shared<OsFile> mFile;
 	ulong64 mOffset;
 	Array<char> mBuffer;
 	ArrayRange<char> mBufferRest;

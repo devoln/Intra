@@ -9,7 +9,7 @@ namespace Intra { namespace Audio { namespace Synth {
 uint GetGoodSignalPeriod(double samplesPerPeriod, uint maxPeriods)
 {
 	if(Math::Fract(samplesPerPeriod)<=0.05) return 1;
-	double fractionalCount = 1.0/(Math::Floor(Math::Fract(samplesPerPeriod)*20)/20);
+	const double fractionalCount = 1.0/(Math::Floor(Math::Fract(samplesPerPeriod)*20)/20);
 	double minDeltaCnt = 1;
 	uint minDeltaN = 0;
 	for(uint n=1; fractionalCount*n<maxPeriods || minDeltaCnt>0.1; n++)

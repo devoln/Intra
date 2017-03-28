@@ -12,9 +12,10 @@
 #include "Range/Generators/ArrayRange.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
+#include "IO/Std.h"
 
 using namespace Intra;
-using namespace Intra::IO;
+using namespace IO;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -189,10 +190,10 @@ double TestTextDeserialization(size_t times,
 	SuperTest test = deserializer.Deserialize<SuperTest>();
 	if(!deserializer.Log.Empty())
 	{
-		ConsoleOut.LineBreak();
-		ConsoleOut.PrintLine("The following errors occured during deserialization: ");
-		ConsoleOut.PrintCode(deserializer.Log);
-		ConsoleOut.LineBreak();
+		Std.LineBreak();
+		Std.PrintLine("The following errors occured during deserialization: ");
+		Std.PrintCode(deserializer.Log);
+		Std.LineBreak();
 	}
 
 	Timer tim;

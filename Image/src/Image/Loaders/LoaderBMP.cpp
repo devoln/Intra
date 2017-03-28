@@ -18,7 +18,7 @@ namespace Image {
 ImageInfo LoaderBMP::GetInfo(InputStream stream) const
 {
 	byte headerBegin[14];
-	stream.ReadRawTo<byte>(headerBegin);
+	stream.ReadRawTo(headerBegin);
 	if(!IsValidHeader(headerBegin, sizeof(headerBegin))) return ImageInfo();
 	struct HeaderPart
 	{

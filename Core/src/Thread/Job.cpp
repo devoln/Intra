@@ -22,7 +22,7 @@ namespace
 class WorkStealingQueue
 {
 public:
-	WorkStealingQueue(): jobs(), bottom(0), top(0), mutex()
+	WorkStealingQueue(): jobs(), bottom(0), top(0), mMutex()
 	{
 		queues.AddLast(this);
 	}
@@ -34,16 +34,14 @@ public:
 
 	void Push(Job* job)
 	{
-		Mutex::Locker lock(mutex);
-
+		auto locker = mMutex.Locker();
 		jobs[bottom % NUMBER_OF_JOBS] = job;
 		++bottom;
 	}
 
 	Job* Pop()
 	{
-		Mutex::Locker lock(mutex);
-
+		auto locker = mMutex.Locker();
 		const int jobCount = int(bottom)-int(top);
 		if(jobCount <= 0)
 		{
@@ -57,8 +55,7 @@ public:
 
 	Job* Steal()
 	{
-		Mutex::Locker lock(mutex);
-
+		auto locker = mMutex.Locker();
 		const int jobCount = int(bottom)-int(top);
 		if(jobCount <= 0)
 		{
@@ -74,7 +71,7 @@ public:
 private:
 	Array<Job*> jobs;
 	uint bottom, top;
-	Mutex mutex;
+	Mutex mMutex;
 };
 #else
 class WorkStealingQueue

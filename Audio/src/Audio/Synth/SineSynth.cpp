@@ -30,11 +30,11 @@ void PerfectSine(float volume, float freq, uint sampleRate, ArrayRange<float> in
 void FastSine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 	const double samplesPerPeriod = float(sampleRate)/freq;
-	uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
+	const uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
 	Array<float> sineFragment;
-	const auto sampleCount = uint(Math::Round(samplesPerPeriod*count));
+	const uint sampleCount = uint(Math::Round(samplesPerPeriod*count));
 	sineFragment.SetCountUninitialized(sampleCount);
 	PerfectSine(volume, freq, sampleRate, sineFragment, false);
 
@@ -46,7 +46,7 @@ static void SineSynthPassFunction(const SineParams& params,
 {
 	if(inOutSamples==null) return;
 	const float newFreq = freq*params.freqMultiplyer;
-	float maxValue = 2.0f-2.0f/float(1 << params.harmonics);
+	const float maxValue = 2.0f-2.0f/float(1 << params.harmonics);
 	float newVolume = volume*params.scale/maxValue;
 
 	FastSine(newVolume, newFreq, sampleRate, inOutSamples, add);
@@ -90,7 +90,7 @@ static void MultiSineSynthPassFunction(const MultiSineParams& params,
 SynthPass CreateMultiSineSynthPass(ArrayRange<const SineHarmonic> harmonics)
 {
 	MultiSineParams params;
-	auto src = harmonics.Take(Meta::NumOf(params.harmonics));
+	const auto src = harmonics.Take(Meta::NumOf(params.harmonics));
 	params.len = byte(src.Length());
 	Algo::CopyTo(src, params.harmonics);
 	return SynthPass(MultiSineSynthPassFunction, params);

@@ -69,7 +69,7 @@ struct AudioBuffer
 	}
 
 	void CopyFrom(size_t startSample, size_t sampleCount, AudioBuffer* src, size_t srcStartSample);
-	void MixWith(const AudioBuffer* rhs, size_t lhsStartSample, size_t rhsStartSample, size_t sampleCount);
+	void MixWith(const AudioBuffer& rhs, size_t lhsStartSample, size_t rhsStartSample, size_t sampleCount);
 
 	void FillWithFunction(float(*f)(float t, const void* params), const void* parameters, size_t startSample, size_t sampleCount)
 	{

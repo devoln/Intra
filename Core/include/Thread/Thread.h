@@ -17,6 +17,7 @@ class Thread
 	Handle mHandle;
 	mutable bool mJoined;
 #endif
+	uint mId;
 	struct NativeData;
 public:
 	typedef NativeData* NativeHandle;
@@ -24,15 +25,16 @@ public:
 	typedef Utils::Delegate<void()> Func;
 
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Thread(null_t=null): mHandle(null), mJoined(false) {}
-	Thread(Thread&& rhs): mHandle(rhs.mHandle), mJoined(rhs.mJoined) {rhs.mHandle=null;}
-	Thread(const Func& func): mHandle(null), mJoined(false) {create_thread(func);}
+	Thread(null_t=null): mHandle(null), mJoined(false), mId(0) {}
+	Thread(Thread&& rhs): mHandle(rhs.mHandle), mJoined(rhs.mJoined), mId(rhs.mId) {rhs.mHandle=null;}
+	Thread(const Func& func): mHandle(null), mJoined(false), mId(0) {create_thread(func);}
 
 	Thread& operator=(Thread&& rhs)
 	{
 		if(mHandle!=null) delete_thread();
 		mHandle = rhs.mHandle;
 		mJoined = rhs.mJoined;
+		mId = rhs.mId;
 		rhs.mHandle = null;
 		return *this;
 	}
@@ -62,6 +64,9 @@ public:
 	//! Возвращает, выполняется ли поток в данный момент.
 	bool IsRunning() const;
 
+	uint Id() const {return mId;}
+	static uint CurrentId();
+
 	//! @return Зависимый от платформы дескриптор потока:
 	//! Для Windows HANDLE (созданный через _beginthreadex\CreateThread)
 	//! Для остальных платформ pthread*.
@@ -79,6 +84,21 @@ private:
 	Thread(const Thread& rhs) = delete;
 	Thread& operator=(const Thread&) = delete;
 };
+
+
+template<typename T> class LockObject
+{
+	T* mLockable;
+public:
+	forceinline LockObject(T& lockable): mLockable(&lockable) {lockable.Lock();}
+	forceinline LockObject(LockObject&& rhs): mLockable(rhs.mLockable) {rhs.mLockable = null;}
+	forceinline ~LockObject() {mLockable->Unlock();}
+	forceinline operator bool() const {return true;}
+
+	LockObject(const LockObject&) = delete;
+	LockObject& operator=(const LockObject&) = delete;
+};
+
 
 class Mutex
 {
@@ -101,23 +121,14 @@ public:
 	void Unlock();
 	void Leave() {Unlock();}
 
-	class Locker
-	{
-		Mutex* mutex;
-	public:
-		Locker(Mutex& mut) noexcept: mutex(&mut) {mut.Lock();}
-		Locker(Mutex* mut) noexcept: mutex(mut) {mut->Lock();}
-		~Locker() {mutex->Unlock();}
-		operator bool() const {return true;}
-
-		Locker(const Locker&) = delete;
-		Locker& operator=(const Locker&) = delete;
-	};
+	LockObject<Mutex> Locker() {return *this;}
 
 private:
 	Mutex(const Mutex&) = delete;
 	Mutex& operator=(const Mutex&) = delete;
 };
+
+
 
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
 #define INTRA_SYNCHRONIZED_BLOCK(mutex) if( Intra::Mutex::Locker _Locker{(mutex)} )

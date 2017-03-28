@@ -2,6 +2,9 @@
 
 #include "Container/ForwardDecls.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Range {
 
@@ -93,7 +96,7 @@ private:
 	void init_free_list();
 
 	static Index end_index() {return Meta::NumericLimits<Index>::Max();}
-	static Index empty_index() {return end_index()-1;}
+	static Index empty_index() {return Index(end_index()-1);}
 
 	SparseRange& operator=(const SparseRange&) = delete;
 	SparseRange(const SparseRange&) = delete;
@@ -185,5 +188,6 @@ private:
 
 }}
 
-#include "SparseRange.inl"
+INTRA_WARNING_POP
 
+#include "SparseRange.inl"

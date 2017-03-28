@@ -9,22 +9,46 @@ namespace Intra { namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename T> struct UniqueRef
+template<typename T> struct Unique
 {
-	forceinline UniqueRef(T* b=null): mPtr(b) {}
-	forceinline ~UniqueRef() {if(mPtr!=null) delete mPtr;}
+	forceinline Unique(null_t=null): mPtr(null) {}
 
-	forceinline UniqueRef(const UniqueRef& rhs) = delete;
-	UniqueRef& operator=(const UniqueRef& rhs) = delete;
+	//! Этот конструктор предполагает, что объект выделен как new T(...).
+	//! Передавать другие указатели запрещено.
+	forceinline Unique(T*&& ptrFromNew): mPtr(ptrFromNew) {}
 
-	forceinline UniqueRef(UniqueRef&& rhs):
+	forceinline ~Unique() {if(mPtr!=null) delete mPtr;}
+
+	forceinline Unique(const Unique& rhs) = delete;
+	Unique& operator=(const Unique& rhs) = delete;
+
+	forceinline Unique(Unique&& rhs):
 		mPtr(rhs.mPtr) {rhs.mPtr=null;}
 
-	UniqueRef& operator=(UniqueRef&& rhs)
+	template<typename... Args> forceinline static Unique New(Args&&... args)
+	{return new T(Meta::Forward<Args>(args)...);}
+
+	Unique& operator=(Unique&& rhs)
 	{
-		if(mPtr!=null) delete mPtr;
+		if(this == &rhs) return *this;
+		delete mPtr;
 		mPtr = rhs.mPtr;
 		rhs.mPtr = null;
+		return *this;
+	}
+
+	Unique& operator=(T* ptrFromNew)
+	{
+		if(mPtr == ptrFromNew) return *this;
+		delete mPtr;
+		mPtr = ptrFromNew;
+		return *this;
+	}
+
+	forceinline Unique& operator=(null_t)
+	{
+		delete mPtr;
+		mPtr = null;
 		return *this;
 	}
 
@@ -47,13 +71,12 @@ private:
 	T* mPtr;
 };
 
-template<typename T, typename... Args> forceinline
-UniqueRef<T> NewUnique(Args&&... args)
-{return new T(Meta::Forward<Args>(args)...);}
-
 INTRA_WARNING_POP
 
+template<typename T> forceinline Unique<T> UniqueMove(T& rhs) {return new T(Meta::Move(rhs));}
+
 }
-using Memory::UniqueRef;
+using Memory::Unique;
+using Memory::UniqueMove;
 
 }

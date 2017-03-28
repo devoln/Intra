@@ -9,7 +9,6 @@ void FreeList::InitBuffer(ArrayRange<byte> buf, size_t elementSize, size_t align
 	if(elementSize<sizeof(FreeList*))
 		elementSize = sizeof(FreeList*);
 
-	size_t numElements = buf.Length()/elementSize;
 
 	union
 	{
@@ -22,7 +21,8 @@ void FreeList::InitBuffer(ArrayRange<byte> buf, size_t elementSize, size_t align
 	asByte += elementSize;
 
 	FreeList* runner = mNext;
-	for(size_t i = 1; i<numElements; i++)
+	const size_t numElements = buf.Length()/elementSize;
+	for(size_t i=1; i<numElements; i++)
 	{
 		runner->mNext = asSelf;
 		runner = asSelf;
@@ -42,7 +42,7 @@ AnyPtr FreeList::Allocate()
 
 void FreeList::Free(void* ptr)
 {
-	FreeList* head = reinterpret_cast<FreeList*>(ptr);
+	FreeList* head = static_cast<FreeList*>(ptr);
 	head->mNext = mNext;
 	mNext = head;
 }

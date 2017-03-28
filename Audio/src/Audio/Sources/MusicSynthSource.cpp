@@ -20,7 +20,7 @@ MusicSynthSource::MusicSynthSource(const Music& data, uint sampleRate):
 	for(uint i=0; i<mData.Tracks.Count(); i++)
 		mCurrentPositions.AddLast(Position{0,0});
 
-	for(auto&& track: data.Tracks)
+	for(const MusicTrack& track: data.Tracks)
 	{
 		if(track.Instrument==null) continue;
 		track.Instrument->PrepareToPlay(track, sampleRate);
@@ -40,13 +40,12 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			const auto sampleOffset = uint(track.GetNoteTimeOffset(trackPosition.noteId)*mSampleRate);
 			if(trackPosition.samplePos+sampleOffset>=floatsToRead) break;
 			trackPosition.samplePos += sampleOffset;
-			const auto noteInfo = track.Notes[trackPosition.noteId];
-			const auto note = track[trackPosition.noteId];
+			const MusicTrack::NoteEntry noteInfo = track.Notes[trackPosition.noteId];
+			const MusicNote note = track[trackPosition.noteId];
 			const float volume = track.Volume*noteInfo.Volume;
 
-			size_t sampleCount;
+			size_t sampleCount = floatsToRead;
 			if(!note.IsPause()) sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, mSampleRate);
-			else sampleCount = floatsToRead;
 			INTRA_DEBUG_ASSERT(int(trackPosition.samplePos)>=0);
 			if(mBuffer.Samples.Count()<trackPosition.samplePos+sampleCount)
 				mBuffer.Samples.SetCount(trackPosition.samplePos+sampleCount);
@@ -68,8 +67,8 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 
 	if(floatsToRead<maxFloatsToGet)
 	{
-		mCurrentSamplePos=0;
-		for(auto& pos: mCurrentPositions) pos.noteId=0;
+		mCurrentSamplePos = 0;
+		for(Position& pos: mCurrentPositions) pos.noteId=0;
 		//buffer.Clear();
 	}
 
@@ -108,7 +107,7 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 
 size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 {
-	size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
+	const size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
 	Algo::CopyToAdvance(Range::Take(mBuffer.Samples, floatsRead), outFloats);
 	Algo::FillZeros(outFloats);
 	mProcessedSamplesToFlush = floatsRead;

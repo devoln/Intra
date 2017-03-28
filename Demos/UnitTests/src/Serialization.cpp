@@ -18,11 +18,17 @@ void TestTextSerialization(FormattedWriter& output)
 {
 	StringView strToDeserialize = "{z = [\"serialization\", \"test\"], x = ---5434, "
 		"arr = [1, 2, 3, -4, 5], y = 2.1721}";
-	output.PrintLine("In custom format: ", endl, strToDeserialize, endl);
+	output.PrintLine("In custom format: ");
+	output.PrintLine(strToDeserialize);
+	output.LineBreak();
 	auto deserializer = Data::TextDeserializer(Data::LanguageParams::JsonLikeNoQuotes, strToDeserialize);
 	StructTest t2 = deserializer.Deserialize<StructTest>();
 	INTRA_ASSERT_EQUALS(deserializer.Log, null);
-	if(!deserializer.Log.Empty()) output.PrintLine("Deserialization Log: ", endl, deserializer.Log);
+	if(!deserializer.Log.Empty())
+	{
+		output.PrintLine("Deserialization Log: ");
+		output.PrintLine(deserializer.Log);
+	}
 
 	char serializedBuf[300];
 	Data::TextSerializer serializer(Data::LanguageParams::Json,
@@ -39,14 +45,16 @@ void TestTextSerialization(FormattedWriter& output)
 	INTRA_ASSERT_EQUALS(resultJson, expectedResultJson);
 	(void)expectedResultJson;
 	output.PrintLine("JSON:");
-	output.PrintLine(resultJson, endl);
+	output.PrintLine(resultJson);
+	output.LineBreak();
 
 	serializer = Data::TextSerializer(Data::LanguageParams::Xml,
 		Data::TextSerializerParams::VerboseNoSpaces, serializedBuf);
 	serializer << t2;
 	const StringView resultXml = serializer.Output.GetWrittenData();
 	output.PrintLine("XML:");
-	output.PrintLine(resultXml, endl);
+	output.PrintLine(resultXml);
+	output.LineBreak();
 
 	serializer = Data::TextSerializer(Data::LanguageParams::JsonLikeNoQuotes,
 		Data::TextSerializerParams::Verbose, serializedBuf);

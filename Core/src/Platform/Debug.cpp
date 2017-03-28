@@ -8,6 +8,7 @@
 #include "Range/Decorators/Map.h"
 #include "Algo/Search/Trim.h"
 #include "Utils/AsciiSet.h"
+#include "IO/Std.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <cstdlib>
@@ -54,7 +55,7 @@ void PrintDebugMessage(StringView message)
 	OutputDebugStringW(wmessage);
 	delete[] wmessage;
 #else
-	IO::Console << message << IO::endl;
+	IO::StdErr.PrintLine(message);
 #endif
 }
 
@@ -111,7 +112,7 @@ String GetStackTrace(size_t framesToSkip, size_t maxFrames, bool untilMain)
 	for(ushort i=0; i<frames; i++)
 	{
 		ulong64 buffer[(sizeof(SYMBOL_INFO) + 1024 + sizeof(ulong64) - 1) / sizeof(ulong64)] = {0};
-		SYMBOL_INFO* info = (SYMBOL_INFO*)buffer;
+		SYMBOL_INFO* info = reinterpret_cast<SYMBOL_INFO*>(buffer);
 		info->SizeOfStruct = sizeof(SYMBOL_INFO);
 		info->MaxNameLen = 1024;
 
@@ -206,10 +207,10 @@ void InternalErrorMessageAbort(StringView func, StringView file, int line, Strin
 	if(IO::ErrorLog!=null)
 	{
 		IO::ErrorLog.PushFont({1,0,0}, 5);
-		IO::ErrorLog << "Критическая ошибка!" << IO::endl;
+		IO::ErrorLog.PrintLine("Критическая ошибка!");
 		IO::ErrorLog.PopFont();
 		IO::ErrorLog.PushFont({1,0,0}, 4);
-		IO::ErrorLog << msg << IO::endl;
+		IO::ErrorLog.PrintLine(msg);
 		IO::ErrorLog.PopFont();
 	}
 #endif

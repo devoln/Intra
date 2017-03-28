@@ -48,31 +48,29 @@ void AudioBuffer::ShiftSamples(intptr samplesToShift)
 	if(samplesToShift<0)
 	{
 		const size_t firstFreeSampleIndex = size_t(intptr(Samples.Count())+samplesToShift);
-		CopyTo(Drop(Samples, size_t(-samplesToShift)), firstFreeSampleIndex, Samples);
+		CopyTo(Samples.Drop(size_t(-samplesToShift)), firstFreeSampleIndex, Samples);
 		Clear(firstFreeSampleIndex, size_t(-samplesToShift));
 		return;
 	}
-	C::memmove(Samples.Data()+samplesToShift, Samples.Data(),
-		(Samples.Count()-size_t(samplesToShift))*sizeof(float));
+	CopyTo(Samples, Samples.Drop(size_t(samplesToShift)));
+	//C::memmove(Samples.Data()+samplesToShift, Samples.Data(),
+		//(Samples.Count()-size_t(samplesToShift))*sizeof(float));
 	Clear(0, size_t(samplesToShift));
 }
 
 void AudioBuffer::Clear(size_t startSample, size_t sampleCount)
 {
-	FillZeros(Drop(Samples, startSample).Take(sampleCount));
+	FillZeros(Samples.Drop(startSample).Take(sampleCount));
 }
 
-void AudioBuffer::MixWith(const AudioBuffer* rhs,
+void AudioBuffer::MixWith(const AudioBuffer& rhs,
 	size_t lhsStartSample, size_t rhsStartSample, size_t sampleCount)
 {
-	if(rhs==null) return;
 	size_t endSample = lhsStartSample+sampleCount;
 	if(Samples.Count()<endSample) Samples.SetCount(endSample);
-	auto dst = Samples.begin()+lhsStartSample, dstEnd = dst+endSample;
-	auto src = rhs->Samples.begin()+rhsStartSample, srcEnd=rhs->Samples.end();
-	dstEnd = Min(dstEnd, dst+(srcEnd-src));
-
-	Add({dst, dstEnd}, {src, size_t(dstEnd-dst)});
+	auto dst = Samples.Drop(lhsStartSample).Take(sampleCount);
+	auto src = rhs.Samples.Drop(rhsStartSample);
+	Add(dst, src);
 }
 
 Meta::Pair<float, float> AudioBuffer::GetMinMax(size_t startSample, size_t sampleCount) const
@@ -94,8 +92,8 @@ void AudioBuffer::SetMinMax(float newMin, float newMax,
 	if(minMax.first==0 && minMax.second==0) minMax = GetMinMax();
 	const size_t endSample = Min(startSample+sampleCount, Samples.Count());
 
-	const auto multiplyer = (newMax-newMin) / (minMax.second-minMax.first);
-	const auto add = -minMax.first*multiplyer+newMin;
+	const float multiplyer = (newMax-newMin) / (minMax.second-minMax.first);
+	const float add = -minMax.first*multiplyer+newMin;
 
 	MulAdd(Samples(startSample, endSample), multiplyer, add);
 }

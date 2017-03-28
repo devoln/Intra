@@ -19,7 +19,14 @@ public:
 	}
 
 	size_t Attach(FormattedWriter&& stream);
+	size_t Attach(FormattedWriter* streamByRef);
 	void Detach(size_t index);
+
+	CompositeFormattedWriter& operator=(null_t)
+	{
+		FormattedWriter::operator=(null);
+		return *this;
+	}
 
 private:
 	CompositeFormattedWriter(FormattedWriter::Interface*);

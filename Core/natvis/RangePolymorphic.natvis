@@ -2,14 +2,29 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
   <Type Name="Intra::Range::InputRange&lt;*&gt;">
-    <DisplayString Condition="mInterface.ptr==nullptr">null</DisplayString>
-    <DisplayString>{*mInterface.ptr}</DisplayString>
+    <DisplayString Condition="mInterface.mPtr==nullptr">null</DisplayString>
+    <DisplayString>{*mInterface.mPtr}</DisplayString>
     <Expand>
-      <ExpandedItem>*mInterface.ptr</ExpandedItem>
+      <ExpandedItem>*mInterface.mPtr</ExpandedItem>
     </Expand>
   </Type>
 
   <Type Name="Intra::Range::InputRange&lt;*&gt;::ImplFiller&lt;*,*&gt;">
+    <DisplayString>{OriginalRange}</DisplayString>
+    <Expand>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::OutputRange&lt;*&gt;">
+    <DisplayString Condition="mInterface.mPtr==nullptr">null</DisplayString>
+    <DisplayString>{*mInterface.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*mInterface.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::OutputRange&lt;*&gt;::WrapperImpl&lt;*&gt;">
     <DisplayString>{OriginalRange}</DisplayString>
     <Expand>
       <ExpandedItem>OriginalRange</ExpandedItem>

@@ -8,8 +8,7 @@ namespace Intra { namespace Audio { namespace Synth {
 
 void ExponentialAttenuate(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek)
 {
-	float* dstEnd = dst.End;
-	if(src.Length()<dst.Length()) dstEnd = dst.Begin + src.Length();
+	float* const dstEnd = dst.Take(src.Length()).End;
 #ifndef OPTIMIZE
 
 #elif(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
@@ -65,8 +64,7 @@ void ExponentialAttenuate(ArrayRange<float>& dst, ArrayRange<const float> src, f
 
 void ExponentialAttenuateAdd(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek)
 {
-	float* dstEnd = dst.End;
-	if(src.Length()<dst.Length()) dstEnd = dst.Begin+src.Length();
+	const float* const dstEnd = dst.Take(src.Length()).End;
 
 #ifndef OPTIMIZE
 
@@ -165,7 +163,7 @@ void ExponentialAttenuationPassFunction(const float& coeff,
 	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
 {
 	(void)noteDuration;
-	float ek = Math::Exp(-coeff/float(sampleRate));
+	const float ek = Math::Exp(-coeff/float(sampleRate));
 	float exp = 1.0f;
 	ExponentialAttenuate(inOutSamples, inOutSamples, exp, ek);
 }

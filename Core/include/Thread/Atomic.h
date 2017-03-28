@@ -86,37 +86,28 @@ template<typename T> struct Atomic
 	Atomic(T val) noexcept: mValue(val) {}
 	Atomic(const Atomic&) = delete;
 
-	T Load() const noexcept {Intra::Mutex::Locker l(mMutex); return mValue;}
+	T Load() const noexcept {auto locker = mMutex.Locker(); return mValue;}
 	T load() const noexcept {return Load();}
-	T Exchange(T val) noexcept {Intra::Mutex::Locker l(mMutex); {T result = mValue; mValue = val; return result;}}
+	T Exchange(T val) noexcept {auto locker = mMutex.Locker(); {T result = mValue; mValue = val; return result;}}
 	T exchange(T val) noexcept {return Exchange(val);}
-	void Store(T val) noexcept {Intra::Mutex::Locker l(mMutex); mValue = val;}
+	void Store(T val) noexcept {auto locker = mMutex.Locker(); mValue = val;}
 	void store(T val) noexcept {Store(val);}
 	//bool CompareExchangeWeak(T& expected, T desired) {}
 	//bool compare_exchange_weak(T& expected, T desired) {return CompareExchangeWeak(expected, desired);}
 
-	T operator++() {Intra::Mutex::Locker l(mMutex); return ++mValue;}
-	T operator++() volatile {Intra::Mutex::Locker l(mMutex); return ++mValue;}
-	T operator++(int) {Intra::Mutex::Locker l(mMutex); return mValue++;}
-	T operator++(int) volatile {Intra::Mutex::Locker l(mMutex); return mValue++;}
-	T operator--() {Intra::Mutex::Locker l(mMutex); return --mValue;}
-	T operator--() volatile {Intra::Mutex::Locker l(mMutex); return --mValue;}
-	T operator--(int) {Intra::Mutex::Locker l(mMutex); return mValue--;}
-	T operator--(int) volatile {Intra::Mutex::Locker l(mMutex); return mValue--;}
+	T operator++() {auto locker = mMutex.Locker(); return ++mValue;}
+	T operator++(int) {auto locker = mMutex.Locker(); return mValue++;}
+	T operator--() {auto locker = mMutex.Locker(); return --mValue;}
+	T operator--(int) {auto locker = mMutex.Locker(); return mValue--;}
 
-	T operator=(T rhs) {Intra::Mutex::Locker l(mMutex); return mValue = rhs;}
+	T operator=(T rhs) {auto locker = mMutex.Locker(); return mValue = rhs;}
 	Atomic& operator=(const Atomic&) = delete;
 
-	T operator+=(T arg) {Intra::Mutex::Locker l(mMutex); return mValue += arg;}
-	T operator+=(T arg) volatile {Intra::Mutex::Locker l(mMutex); return mValue += arg;}
-	T operator-=(T arg) {Intra::Mutex::Locker l(mMutex); return mValue -= arg;}
-	T operator-=(T arg) volatile {Intra::Mutex::Locker l(mMutex); return mValue -= arg;}
-	T operator&=(T arg) {Intra::Mutex::Locker l(mMutex); return mValue &= arg;}
-	T operator&=(T arg) volatile {Intra::Mutex::Locker l(mMutex); return mValue &= arg;}
-	T operator|=(T arg) {Intra::Mutex::Locker l(mMutex); return mValue |= arg;}
-	T operator|=(T arg) volatile {Intra::Mutex::Locker l(mMutex); return mValue |= arg;}
-	T operator^=(T arg) {Intra::Mutex::Locker l(mMutex); return mValue ^= arg;}
-	T operator^=(T arg) volatile {Intra::Mutex::Locker l(mMutex); return mValue ^= arg;}
+	T operator+=(T arg) {auto locker = mMutex.Locker(); return mValue += arg;}
+	T operator-=(T arg) {auto locker = mMutex.Locker(); return mValue -= arg;}
+	T operator&=(T arg) {auto locker = mMutex.Locker(); return mValue &= arg;}
+	T operator|=(T arg) {auto locker = mMutex.Locker(); return mValue |= arg;}
+	T operator^=(T arg) {auto locker = mMutex.Locker(); return mValue ^= arg;}
 
 	operator T() const noexcept {return Load();}
 

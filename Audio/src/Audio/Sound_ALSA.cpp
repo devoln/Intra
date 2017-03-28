@@ -1,6 +1,7 @@
 ﻿#include "Audio/SoundApi.h"
 #include "Platform/CppWarnings.h"
 #include "Memory/Allocator/Global.h"
+#include "Algo/Mutation/Fill.h"
 
 //#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
 
@@ -353,7 +354,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 	{
 		short* const endOfData = snd->temp_buffer+snd->sampleCount*snd->channels;
 		const size_t totalSamplesInBuffer = (snd->sampleCount-samplesProcessed)*snd->channels;
-		core::memset(endOfData, 0, totalSamplesInBuffer*sizeof(short));
+		Algo::FillZeros(Range::Take(endOfData, totalSamplesInBuffer));
 		snd->stop_soon = true;
 	}
 	alBufferData(snd->buffers[index], alFmt, snd->temp_buffer, int(snd->SizeInBytes()), int(snd->sampleRate));

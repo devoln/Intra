@@ -12,6 +12,7 @@
 #include "Platform/PlatformInfo.h"
 #include "Thread/Thread.h"
 #include "Platform/Environment.h"
+#include "IO/Std.h"
 
 #include "MusicSynthesizerCommon.h"
 
@@ -60,7 +61,7 @@ void MainLoop(bool enableStreaming)
 			for(;;)
 			{
 				StreamedSound::UpdateAllExistingInstances();
-				Timer::Wait(1);
+				Timer::SleepMs(1);
 			}		
 		});
 	}
@@ -76,7 +77,7 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 {
 	if(enableStreaming)
 	{
-		ConsoleOut.PrintLine("Инициализация...");
+		Std.PrintLine("Инициализация...");
 		static StreamedSound sound = StreamedSound::FromFile(filePath, 16384);
 		sound.Play();
 	}
@@ -86,7 +87,7 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 		auto inst = sound.CreateInstance();
 		inst.Play();
 	}
-	ConsoleOut.PrintLine("Воспроизведение...");
+	Std.PrintLine("Воспроизведение...");
 	MainLoop(enableStreaming);
 }
 
@@ -97,7 +98,7 @@ void PlayMusic(const Music& music, bool printPerf)
 	if(printPerf)
 	{
 		auto time = tim.GetTime();
-		ConsoleOut.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
+		Std.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
 	}
 	static Sound snd;
 	snd = Sound(&buf);
@@ -108,8 +109,8 @@ void PlayMusic(const Music& music, bool printPerf)
 void PlayMusicStream(const Music& music)
 {
 	const auto sampleRate = StreamedSound::InternalSampleRate();
-	ConsoleOut.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
-	ConsoleOut.PrintLine("Инициализация...");
+	Std.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
+	Std.PrintLine("Инициализация...");
 	static StreamedSound sound;
 	sound = StreamedSound(new Sources::MusicSynthSource(music, sampleRate));
 	sound.Play();
@@ -126,7 +127,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size
 	PrintMusicInfo(music);
 	if(enableStreaming) PlayMusicStream(music);
 	else PlayMusic(music, true);
-	ConsoleOut.PrintLine("Воспроизведение...");
+	Std.PrintLine("Воспроизведение...");
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)
@@ -173,7 +174,7 @@ int INTRA_CRTDECL main()
 	auto args = GetCommandLineArguments();
 	String filePath = GetMidiPath(args.Length()>=2? args[1]: DefaultMidiName);
 	
-	bool success = PrintMidiFileInfo(filePath);
+	const bool success = PrintMidiFileInfo(filePath);
 	if(!success) return 1;
 #ifdef ENABLE_STREAMING
 	LoadAndPlaySound(filePath, true);

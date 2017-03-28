@@ -35,14 +35,14 @@ static ImageInfo GetInfoFromHeader(const byte* header)
 ImageInfo LoaderTGA::GetInfo(InputStream stream) const
 {
 	byte header[18];
-	stream.ReadRawTo<byte>(header);
+	stream.ReadRawTo(header);
 	return GetInfoFromHeader(header);
 }
 
 AnyImage LoaderTGA::Load(InputStream stream) const
 {
 	byte header[18];
-	stream.ReadRawTo<byte>(header);
+	stream.ReadRawTo(header);
 
 	const bool compressedRLE = (header[2]==10);
 
@@ -76,7 +76,7 @@ AnyImage LoaderTGA::Load(InputStream stream) const
 			chunkheader++;
 			for(; chunkheader--!=0; currentPixel++)
 			{
-				stream.ReadRawTo<byte>({pos+index*3, bytesPerPixel});
+				stream.ReadRawTo(pos+index*3, bytesPerPixel);
 				index++;
 				if(index==result.Info.Size.x)
 				{
@@ -88,7 +88,7 @@ AnyImage LoaderTGA::Load(InputStream stream) const
 		}
 		chunkheader -= 127;
 		byte colorBuffer[4];
-		stream.ReadRawTo<byte>({colorBuffer, bytesPerPixel});
+		stream.ReadRawTo(colorBuffer, bytesPerPixel);
 		for(; chunkheader--!=0; currentPixel++)
 		{
 			C::memcpy(pos+index*3, colorBuffer, bytesPerPixel);

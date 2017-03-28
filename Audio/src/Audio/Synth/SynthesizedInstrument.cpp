@@ -61,13 +61,13 @@ void SynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 		noteSampleArr.SetCountUninitialized(noteSampleCount);
 		auto sampleBuf = noteSampleArr(0, noteSampleCount);
 		Synth(note.Frequency(), volume, sampleBuf, sampleRate, false);
-		for(auto& pass: Modifiers)
+		for(const ModifierPass& pass: Modifiers)
 		{
 			if(pass==null) continue;
 			pass(note.Frequency(), sampleBuf, sampleRate);
 		}
 		if(Attenuation!=null) Attenuation(noteDuration, sampleBuf/*result.Samples*/, sampleRate);
-		for(auto& postEffect: PostEffects)
+		for(const PostEffectPass& postEffect: PostEffects)
 		{
 			if(postEffect==null) continue;
 			postEffect(sampleBuf, sampleRate);

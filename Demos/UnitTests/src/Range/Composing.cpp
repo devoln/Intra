@@ -14,6 +14,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
 #include "Container/Sequential/List.h"
+#include "Utils/AsciiSet.h"
 
 #include <stdlib.h>
 
@@ -62,7 +63,7 @@ void TestComposedRange(FormattedWriter& output)
 	output.PrintLine("strs0 = ", strs0);
 	output.PrintLine("strs1 = ", strs1);
 	output.PrintLine("strs2 = ", strs2);
-	output.PrintLine();
+	output.LineBreak();
 	auto chain = Chain(strs0, strs1, strs2);
 
 	auto someRecurrence = Take(Drop(Cycle(Take(Recurrence(

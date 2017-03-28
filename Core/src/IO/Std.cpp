@@ -1,7 +1,12 @@
 #include "IO/Std.h"
 #include "IO/ConsoleInput.h"
 #include "IO/ConsoleOutput.h"
+#include "IO/FileReader.h"
+#include "IO/FileWriter.h"
 #include "Platform/PlatformInfo.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
@@ -48,7 +53,7 @@ static bool StdOutIsConsole()
 #endif
 }
 
-static OsFile::NativeHandle* StdInHandle()
+inline OsFile::NativeHandle* StdInHandle()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_INPUT_HANDLE));
@@ -57,7 +62,7 @@ static OsFile::NativeHandle* StdInHandle()
 #endif
 }
 
-static OsFile::NativeHandle* StdOutHandle()
+inline OsFile::NativeHandle* StdOutHandle()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_OUTPUT_HANDLE));
@@ -66,24 +71,37 @@ static OsFile::NativeHandle* StdOutHandle()
 #endif
 }
 
+inline OsFile::NativeHandle* StdErrHandle()
+{
+#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_ERROR_HANDLE));
+#else
+	return reinterpret_cast<OsFile::NativeHandle*>(size_t(STDERR_FILENO));
+#endif
+}
+
+struct StdInOut::ConstructOnce {};
 StdInOut::StdInOut(ConstructOnce)
 {
 	if(StdOutIsConsole()) FormattedWriter::operator=(ConsoleOutput());
 	else
 	{
-		mOutputFile = OsFile::FromNative(StdOutHandle(), false);
-		FormattedWriter::operator=(FormattedWriter(mOutputFile.Writer()));
+		FileWriter writer(SharedMove(OsFile::FromNative(StdOutHandle(), false)));
+		FormattedWriter::operator=(FormattedWriter(Meta::Move(writer)));
 	}
 
-	if(StdInIsConsole()) InputStream::operator=(ConsoleIn);
+	if(StdInIsConsole()) InputStream::operator=(ConsoleInput());
 	else
 	{
-		mInputFile = OsFile::FromNative(StdInHandle(), false);
-		InputStream::operator=(mInputFile.Reader());
+		FileReader reader(SharedMove(OsFile::FromNative(StdInHandle(), false)));
+		InputStream::operator=(Meta::Move(reader));
 	}
 }
 
-struct StdInOut::ConstructOnce {};
 StdInOut Std(StdInOut::ConstructOnce{});
 
+FormattedWriter StdErr(FileWriter(SharedMove(OsFile::FromNative(StdOutHandle(), false))));
+
 }}
+
+INTRA_WARNING_POP

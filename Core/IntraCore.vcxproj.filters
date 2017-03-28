@@ -100,18 +100,6 @@
     <Filter Include="Файлы исходного кода\Algo\Hash">
       <UniqueIdentifier>{f2a29b41-89a0-45fb-bafc-ac425037efbf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\Audio">
-      <UniqueIdentifier>{074b23b8-2006-4a2b-9816-c525ad74aa26}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Audio\Synth">
-      <UniqueIdentifier>{f88eac47-a3c4-4ce1-82bc-614bace1487c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Audio\Sources">
-      <UniqueIdentifier>{64c54285-1629-4c1a-910a-d8ece9442984}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Audio\Synth\Generators">
-      <UniqueIdentifier>{e1062f18-6367-4df1-bb5e-750832f61498}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Range\Output">
       <UniqueIdentifier>{cea0ca45-06b6-416d-9741-00a68f3e22b7}</UniqueIdentifier>
     </Filter>
@@ -334,6 +322,9 @@
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="src\IO\Std.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\ReferenceFormattedWriter.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1088,6 +1079,12 @@
     <ClInclude Include="include\IO\Std.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
+    <ClInclude Include="include\IO\ReferenceFormattedWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Output.hh">
+      <Filter>Заголовочные файлы\Range</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">
@@ -1101,6 +1098,9 @@
     </None>
     <None Include="include\Range\Special\SparseRange.inl">
       <Filter>Заголовочные файлы\Range\Special</Filter>
+    </None>
+    <None Include="natvis\IO.natvis">
+      <Filter>natvis</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

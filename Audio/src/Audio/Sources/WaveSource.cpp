@@ -28,16 +28,18 @@ struct WaveHeader
 
 
 WaveSource::WaveSource(ArrayRange<const byte> srcFileData):
-	mData(srcFileData), mSampleCount(0), mCurrentDataPos(0)
+	mData(null), mSampleCount(0), mCurrentDataPos(0)
 {
-	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(mData.Begin);
+	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(srcFileData.Begin);
 
-	if(C::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF))!=0 ||
-		C::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE))!=0 ||
-		C::memcmp(header.fmt, "fmt ", sizeof(header.fmt))!=0 ||
-		C::memcmp(header.data, "data", sizeof(header.data))!=0) return;
-	if(mData.Length()!=header.DataSize+sizeof(WaveHeader)) return;
+	const bool isValidHeader = (C::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF))==0 &&
+		C::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE))==0 &&
+		C::memcmp(header.fmt, "fmt ", sizeof(header.fmt))==0 &&
+		C::memcmp(header.data, "data", sizeof(header.data))==0);
+	
+	if(!isValidHeader) return;
 
+	mData = srcFileData.Drop(sizeof(WaveHeader)).Reinterpret<const short>().Take(header.DataSize/sizeof(short));
 	mChannelCount = ushort(header.Channels);
 	mSampleRate = header.SampleRate;
 	mSampleCount = header.DataSize/sizeof(short)/mChannelCount;
@@ -47,10 +49,9 @@ size_t WaveSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 {
 	INTRA_DEBUG_ASSERT(!outShorts.Empty());
 	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
-	const short* const streamStart = reinterpret_cast<const short*>(mData.Begin+sizeof(WaveHeader));
-	Algo::CopyTo(ArrayRange<const short>(streamStart+mCurrentDataPos, shortsToRead), outShorts);
+	Algo::CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
 	mCurrentDataPos += shortsToRead;
-	if(shortsToRead<outShorts.Length()) mCurrentDataPos=0;
+	if(shortsToRead<outShorts.Length()) mCurrentDataPos = 0;
 	return shortsToRead/mChannelCount;
 }
 
@@ -93,8 +94,7 @@ Array<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
 	if(oInterleaved!=null) *oInterleaved = true;
 	if(oType!=null) *oType = ValueType::Short;
 	Array<const void*> resultPtrs;
-	const short* const streamStart = reinterpret_cast<const short*>(mData.Begin+sizeof(WaveHeader));
-	resultPtrs.AddLast(streamStart+mCurrentDataPos);
+	resultPtrs.AddLast(mData.Begin+mCurrentDataPos);
 	mCurrentDataPos += shortsToRead;
 	if(shortsToRead<maxSamplesToRead) mCurrentDataPos = 0;
 	return resultPtrs;

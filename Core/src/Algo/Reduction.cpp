@@ -7,9 +7,9 @@ template<> float Minimum(ArrayRange<const float> arr)
 {
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
-	float result;
+
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	result = *ptr++;
+	float result = *ptr++;
 #else
 	Simd::float4 mini = Simd::SetFloat4(*ptr);
 	while(ptr<arr.End-3)
@@ -20,11 +20,11 @@ template<> float Minimum(ArrayRange<const float> arr)
 	}
 	float minis[4];
 	Simd::GetU(minis, mini);
-	result = Math::Min(Math::Min(minis[0], minis[1]), Math::Min(minis[2], minis[3]));
+	float result = Math::Min(Math::Min(minis[0], minis[1]), Math::Min(minis[2], minis[3]));
 #endif
 	while(ptr<arr.End)
 	{
-		if(result<*ptr) result=*ptr;
+		if(result < *ptr) result = *ptr;
 		ptr++;
 	}
 	return result;
@@ -34,9 +34,9 @@ template<> float Maximum(ArrayRange<const float> arr)
 {
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
-	float result;
+
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	result=*ptr++;
+	float result = *ptr++;
 #else
 	Simd::float4 maxi = Simd::SetFloat4(*ptr);
 	while(ptr<arr.End-3)
@@ -47,7 +47,7 @@ template<> float Maximum(ArrayRange<const float> arr)
 	}
 	float maxis[4];
 	Simd::GetU(maxis, maxi);
-	result = Math::Max( Math::Max(maxis[0], maxis[1]), Math::Max(maxis[2], maxis[3]) );
+	float result = Math::Max( Math::Max(maxis[0], maxis[1]), Math::Max(maxis[2], maxis[3]) );
 #endif
 	while(ptr<arr.End)
 	{

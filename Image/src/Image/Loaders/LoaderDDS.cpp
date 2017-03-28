@@ -308,7 +308,7 @@ ImageInfo LoaderDDS::GetInfo(InputStream stream) const
 	ImageInfo errResult = {{0,0,0}, null, ImageType_End, 0};
 
 	byte headerSignature[4];
-	stream.ReadRawTo<byte>(headerSignature);
+	stream.ReadRawTo(headerSignature, 4);
 
 	const bool isDDS = IsValidHeader(headerSignature, 4);
 	if(!isDDS) return errResult;
@@ -374,7 +374,7 @@ AnyImage LoaderDDS::Load(InputStream stream) const
 	if(iInfo.MipmapCount==0) iInfo.MipmapCount=1;
 	size_t dataSize = iInfo.CalculateFullDataSize(result.LineAlignment);
 	result.Data.SetCountUninitialized(dataSize);
-	stream.ReadRawTo(result.Data.AsRange());
+	stream.ReadRawTo(result.Data.Data(), dataSize);
 	return result;
 }
 

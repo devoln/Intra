@@ -6,7 +6,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range/Header.h"
 #include "IO/FileSystem.h"
 #include "IO/HtmlWriter.h"
-#include "IO/ConsoleWriter.h"
+#include "IO/FileWriter.h"
+#include "IO/Std.h"
+#include "IO/ReferenceFormattedWriter.h"
 #include "IO/CompositeFormattedWriter.h"
 #include "Algo/String/Path.h"
 #include "Platform/Time.h"
@@ -14,31 +16,21 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Serialization.h"
 
-
-INTRA_PUSH_DISABLE_ALL_WARNINGS
-#include <stdlib.h>
-INTRA_WARNING_POP
-
 using namespace Intra;
 using namespace IO;
 
-#ifndef INTRA_NO_FILE_LOGGING
-DiskFile::Writer g_LogFile;
-HtmlWriter g_LogWriter(&g_LogFile);
-#endif
-
-CompositeFormattedWriter gLogger;
-
-void InitLogSystem(int argc, const char* argv[])
+CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 {
+	static CompositeFormattedWriter logger;
 #ifndef INTRA_NO_LOGGING
 #ifndef INTRA_NO_FILE_LOGGING
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	g_LogFile = DiskFile::Writer(logFileName, true);
-	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Logs</title>\n" + 
-		StringView(HtmlWriter::CssSpoilerCode));
+	FileWriter logFile = OS.FileOpenAppend(logFileName);
+	if(!logExisted && logFile!=null) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
+	FormattedWriter logWriter = HtmlWriter(Meta::Move(logFile), !logExisted);
+
 	const String datetime = DateTime::Now().ToString();
 	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
 
@@ -49,57 +41,52 @@ void InitLogSystem(int argc, const char* argv[])
 		if(i+1<argc) cmdline+=' ';
 	}
 
-	g_LogWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
-	atexit([](){g_LogWriter.EndAllSpoilers(); g_LogFile=null;});
+	logWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
 	
-
-	Errors::CrashHandler=[](int signum)
+	Errors::CrashHandler = [](int signum)
 	{
-		g_LogWriter.PushFont({1, 0, 0}, 5, true);
-		g_LogWriter.PrintLine(Errors::CrashSignalDesc(signum));
-		g_LogWriter.PopFont();
-		g_LogFile.Flush();
+		logger.PushFont({1, 0, 0}, 5, true);
+		logger.PrintLine(Errors::CrashSignalDesc(signum));
+		logger.PopFont();
 	};
 
-	cmdline=null;
+	cmdline = null;
 	for(int i=0; i<argc; i++)
 	{
 		cmdline += StringView(argv[i]);
 		if(i+1<argc) cmdline+='\n';
 	}
-	g_LogWriter << "Command line arguments:";
-	g_LogWriter.PrintCode(cmdline);
+	logWriter << "Command line arguments:";
+	logWriter.PrintCode(cmdline);
+	logger.Attach(Meta::Move(logWriter));
 #else
 	(void)argc; (void)argv;
 #endif
 #endif
+	return logger;
 }
 
 int main(int argc, const char* argv[])
 {
 	Errors::InitSignals();
-	InitLogSystem(argc, argv);
-#ifndef INTRA_NO_LOGGING
-#ifndef INTRA_NO_FILE_LOGGING
-	gLogger.Attach(&g_LogWriter);
-#endif
-#endif
+	auto& logger = InitLogSystem(argc, argv);
 
 	CompositeFormattedWriter emptyLogger;
-	IFormattedWriter* output = &ConsoleWriter;
+	FormattedWriter* output = &Std;
 
-	if(argc>=2 && Algo::StartsWith(StringView(argv[1]), "-"))
+	StringView arg1 = argc>1? StringView(argv[1]): null;
+	if(Algo::StartsWith(arg1, "-"))
 	{
-		if(Algo::Contains(StringView(argv[1]), 'a'))
+		if(Algo::Contains(arg1, 'a'))
 			TestGroup::YesForNestingLevel = 0;
-		if(Algo::Contains(StringView(argv[1]), 'u'))
+		if(Algo::Contains(arg1, 'u'))
 			output = &emptyLogger;
-		if(!Algo::Contains(StringView(argv[1]), 's'))
-			gLogger.Attach(&ConsoleWriter);
+		if(!Algo::Contains(arg1, 's'))
+			logger.Attach(&Std);
 	}
-	else gLogger.Attach(&ConsoleWriter);
+	else logger.Attach(&Std);
 
-	if(TestGroup gr{gLogger, *output, "Ranges"})
+	if(TestGroup gr{logger, *output, "Ranges"})
 	{
 		TestGroup("Composing complex ranges", TestComposedRange);
 		TestGroup("Polymorphic ranges", TestPolymorphicRange);
@@ -107,8 +94,8 @@ int main(int argc, const char* argv[])
 		TestGroup("STL and ranges interoperability", TestRangeStlInterop);
 		TestGroup("Unicode encoding conversions", TestUnicodeConversion);
 	}
-	TestGroup(gLogger, *output, "Text serialization", TestTextSerialization);
-	TestGroup(gLogger, *output, "Binary serialization", TestBinarySerialization);
-	TestGroup(gLogger, *output, "Sort algorithms", TestSort);
+	TestGroup(logger, *output, "Text serialization", TestTextSerialization);
+	TestGroup(logger, *output, "Binary serialization", TestBinarySerialization);
+	TestGroup(logger, *output, "Sort algorithms", TestSort);
 	return TestGroup::GetTotalTestsFailed();
 }

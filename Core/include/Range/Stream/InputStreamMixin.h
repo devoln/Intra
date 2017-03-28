@@ -10,6 +10,7 @@
 #include "Container/Sequential/String.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
+#include "Range/Operations.h"
 
 namespace Intra { namespace Range {
 
@@ -27,25 +28,35 @@ template<typename R, typename T> struct InputStreamMixin
 		return elementsRead;
 	}
 
-	template<typename U> forceinline Meta::EnableIf<
+	template<typename R1, typename U=ValueTypeOf<R1>> Meta::EnableIf<
+		IsOutputRange<R1>::_ && IsArrayClass<R1>::_ &&
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawToAdvance(ArrayRange<U>& dst)
-	{return ReadRawToAdvance(dst, dst.Length());}
+	size_t> ReadRawToAdvance(R1& dst, size_t maxElementsToRead)
+	{
+		ArrayRange<U> dst1 = dst;
+		size_t result = ReadRawToAdvance(dst1, maxElementsToRead);
+		PopFirstExactly(dst, result);
+		return result;
+	}
 
-	template<typename U> forceinline Meta::EnableIf<
+	template<typename R1, typename U=ValueTypeOf<R1>> forceinline Meta::EnableIf<
+		IsOutputRange<R1>::_ && IsArrayClass<R1>::_ &&
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawTo(ArrayRange<U> dst)
-	{return ReadRawToAdvance(dst);}
+	size_t> ReadRawToAdvance(R1& dst)
+	{return ReadRawToAdvance(dst, dst.Length());}
 
 	forceinline size_t ReadRawTo(void* dst, size_t bytes)
 	{return ReadRawTo(ArrayRange<char>(reinterpret_cast<char*>(dst), bytes));}
 
 
-	template<typename R1, typename AsR1=AsRangeResult<R1>> forceinline Meta::EnableIf<
-		!IsInputRange<R1>::_ && IsArrayRange<AsR1>::_ &&
-		Meta::IsTriviallySerializable<ValueTypeOf<AsR1>>::_,
+	template<typename R1, typename AsR1=AsRangeResult<R1>, typename U=ValueTypeOf<AsR1>> forceinline Meta::EnableIf<
+		IsOutputRange<AsR1>::_ && IsArrayClass<AsR1>::_ &&
+		Meta::IsTriviallySerializable<U>::_,
 	size_t> ReadRawTo(R1&& dst)
-	{return ReadRawTo(Range::Forward<R1>(dst));}
+	{
+		ArrayRange<U> range = Range::Forward<R1>(dst);
+		return ReadRawToAdvance(range);
+	}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_

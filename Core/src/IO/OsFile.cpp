@@ -60,9 +60,9 @@ static GenericString<wchar_t> utf8ToWStringZ(StringView str)
 OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 	mMode(mode), mOwning(true)
 {
-	String fullFileName = OS.GetFullFileName(fileName);
+	mFullPath = OS.GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	auto wFullFileName = utf8ToWStringZ(fullFileName);
+	auto wFullFileName = utf8ToWStringZ(mFullPath);
 
 	DWORD desiredAccess = GENERIC_READ;
 	if(mode == Mode::Write) desiredAccess = GENERIC_WRITE;
@@ -84,7 +84,7 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 #else
 	auto openFlags = mMode == Mode::Read? O_RDONLY: mMode==Mode::Write? O_WRONLY: O_RDWR;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
-	int fd = open(fullFileName.CStr(), openFlags);
+	int fd = open(mFullPath.CStr(), openFlags);
 	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
 	else
 	{
@@ -115,7 +115,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes) const
 	OVERLAPPED overlapped;
 	overlapped.Offset = DWORD(fileOffset);
 	overlapped.OffsetHigh = DWORD(fileOffset >> 32);
-	ReadFile(reinterpret_cast<HANDLE>(mHandle), dst, bytes, &bytesRead, &overlapped);
+	(void)ReadFile(reinterpret_cast<HANDLE>(mHandle), dst, bytes, &bytesRead, &overlapped);
 #else
 	auto bytesRead = pread64(int(reinterpret_cast<size_t>(mHandle)), dst, bytes, off64_t(fileOffset));
 	if(bytesRead < 0) bytesRead = 0;
@@ -169,11 +169,6 @@ void OsFile::SetSize(ulong64 size) const
 #endif
 }
 
-FileReader OsFile::Reader() const {return FileReader(*this);}
-FileWriter OsFile::Writer(ulong64 startOffset) const {return FileWriter(*this, startOffset);}
-FileWriter OsFile::Appender() const {return FileWriter(*this, Size());}
-FileReader OsFile::AsRange() const {return FileReader(*this);}
-
 
 
 String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
@@ -181,7 +176,7 @@ String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
 	OsFile file(fileName, Mode::Read);
 	fileOpened = (file!=null);
 	if(!fileOpened) return null;
-	if(file.Size()!=0) return file;
+	if(file.Size()!=0) return FileReader(SharedMove(file));
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return null;

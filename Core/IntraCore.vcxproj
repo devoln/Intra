@@ -108,7 +108,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140_clang_c2</PlatformToolset>
+    <PlatformToolset>v141_clang_c2</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -243,7 +243,7 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
@@ -251,9 +251,11 @@
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include;$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <EnableCppCoreCheck>false</EnableCppCoreCheck>
+    <EnableExperimentalCppCoreCheck>false</EnableExperimentalCppCoreCheck>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);include</IncludePath>
@@ -498,7 +500,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>INTRA_AVOID_STD_HEADERS=0;INTRA_DBGHELP;INTRA_MINEXE=3;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <OmitFramePointers>false</OmitFramePointers>
+      <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
@@ -513,6 +515,9 @@
       <PositionIndependentCode>false</PositionIndependentCode>
       <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
       <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <StrictAliasing>true</StrictAliasing>
+      <MSExtensions>true</MSExtensions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -701,6 +706,7 @@
     <ClCompile Include="src\IO\LogSystem.cpp" />
     <ClCompile Include="src\IO\Networking.cpp" />
     <ClCompile Include="src\IO\OsFile.cpp" />
+    <ClCompile Include="src\IO\ReferenceFormattedWriter.cpp" />
     <ClCompile Include="src\IO\Std.cpp" />
     <ClCompile Include="src\Math\Math.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />
@@ -830,6 +836,7 @@
     <ClInclude Include="include\IO\LogSystem.h" />
     <ClInclude Include="include\IO\Networking.h" />
     <ClInclude Include="include\IO\OsFile.h" />
+    <ClInclude Include="include\IO\ReferenceFormattedWriter.h" />
     <ClInclude Include="include\IO\Std.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
@@ -942,6 +949,7 @@
     <ClInclude Include="include\Range\Iterator\IteratorRange.h" />
     <ClInclude Include="include\Range\Iterator\RangeIterator.h" />
     <ClInclude Include="include\Range\Operations.h" />
+    <ClInclude Include="include\Range\Output.hh" />
     <ClInclude Include="include\Range\Output\Inserter.h" />
     <ClInclude Include="include\Range\Output\OutputArrayRange.h" />
     <ClInclude Include="include\Range\Polymorphic.hh" />
@@ -979,8 +987,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="include\Range\Special\SparseRange.inl" />
-    <None Include="natvis\Core.natvis" />
+    <None Include="natvis\Core.natvis">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="natvis\Data.natvis" />
+    <None Include="natvis\IO.natvis" />
     <None Include="natvis\Math.natvis" />
   </ItemGroup>
   <ItemGroup>

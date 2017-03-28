@@ -19,7 +19,7 @@ bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 ImageInfo LoaderPNG::GetInfo(InputStream stream) const
 {
 	byte headerSignature[8];
-	stream.ReadRawTo<byte>(headerSignature);
+	stream.ReadRawTo(headerSignature);
 	if(!IsValidHeader(headerSignature, 8)) return ImageInfo();
 	stream.PopFirstN(2*sizeof(intBE));
 	struct IHeaderPart

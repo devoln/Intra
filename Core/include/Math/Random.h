@@ -344,7 +344,7 @@ private:
 		float discreteNoise[16384];
 	};
 
-	static Memory::UniqueRef<Data> data;
+	static Unique<Data> data;
 
 public:
 	static forceinline float Discrete(float t)

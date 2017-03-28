@@ -4,20 +4,25 @@
 #include "Platform/Debug.h"
 #include "Platform/Runtime.h"
 #include "Thread/Atomic.h"
-#include "Container/Sequential/Array.h"
+#include "Container/Utility/SparseArray.h"
+#include "Container/Associative/LinearMap.h"
+#include "Memory/SmartRef/Unique.h"
+#include "Utils/Callable.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra {
 
-bool gThreadFinished[256];
-struct IdFreeList
+struct ThreadData
 {
-	IdFreeList() {FreeIds.SetCountUninitialized(256);}
-	Array<byte> FreeIds;
-	Atomic<int> FreeIndex;
+	//Удаляется и устанавливается в null по завершении выполнения
+	Utils::ICallable<void()>* Function;
+
+	bool IsDetached;
 };
-static IdFreeList gIdFreeList;
+
+static Mutex gThreadMutex;
+static SparseArray<ThreadData, ushort> gThreadData;
 
 }
 
@@ -25,11 +30,15 @@ static IdFreeList gIdFreeList;
 
 namespace Intra {
 
-void Thread::create_thread(const Thread::Func& func) {func();}
+void Thread::create_thread(Thread::Func func) {func();}
 void Thread::delete_thread() {}
-void Thread::Join() {}
-bool Thread::Joinable() const {return true;}
+bool Thread::Join() {return true;}
+bool Thread::Join(uint timeoutMs) {return true;}
+bool Thread::IsRunning() const {return false;}
 void Thread::Detach() {}
+Thread::NativeHandle Thread::GetNativeHandle() const {return null;}
+
+uint Thread::CurrentId() {return 0;}
 
 void Thread::Yield() {}
 
@@ -54,8 +63,32 @@ namespace Intra {
 
 struct Thread::Data {std::thread t;};
 
+static LinearMap<std::thread::id, uint> gIdMap;
+
 void Thread::create_thread(Thread::Func func)
-{mHandle = new Thread::Data{std::thread(Meta::Move(func))};}
+{
+	ushort id;
+	{
+		auto locker = gThreadMutex.Locker();
+		gThreadData.Add({func.ReleaseCallable(), false}, &id);
+	}
+	mId = id;
+	mHandle = new Thread::Data{std::thread([id]() {
+		{
+			auto locker = gThreadMutex.Locker();
+			gIdMap[std::this_thread::get_id()] = id;
+		}
+		{
+			Unique<Utils::ICallable<void()>> func = gThreadData[id].Function;
+			func->Call();
+		}
+		{
+			auto locker = gThreadMutex.Locker();
+			gThreadData[id].Function = null;
+			if(gThreadData[id].IsDetached) gThreadData.Remove(id);
+		}
+	})};
+}
 
 void Thread::delete_thread()
 {
@@ -84,7 +117,8 @@ bool Thread::Join(uint timeoutMs)
 bool Thread::IsRunning() const
 {
 	if(mHandle==null || mJoined) return false;
-	return true;
+	mJoined = gThreadData[ushort(mId)].Function == null;
+	return !mJoined;
 }
 
 void Thread::Detach()
@@ -93,13 +127,30 @@ void Thread::Detach()
 	mHandle->t.detach();
 	delete mHandle;
 	mHandle = null;
+	auto locker = gThreadMutex.Locker();
+	if(gThreadData[ushort(mId)].Function==null)
+		gThreadData.Remove(ushort(mId));
+	else gThreadData[ushort(mId)].IsDetached = true;
+}
+
+Thread::NativeHandle Thread::GetNativeHandle() const
+{
+	if(mHandle==null) return null;
+	return NativeHandle(mHandle->t.native_handle());
+}
+
+uint Thread::CurrentId()
+{
+	auto id = std::this_thread::get_id();
+	auto locker = gThreadMutex.Locker();
+	return gIdMap.Get(id, 0);
 }
 
 void Thread::Yield() {std::this_thread::yield();}
 
 
 struct Mutex::Data {std::mutex mut;};
-Mutex::Mutex() {mHandle = new Data;}
+Mutex::Mutex(bool processPrivate) {mHandle = new Data;}
 Mutex::~Mutex() {delete mHandle;}
 void Mutex::Lock() {mHandle->mut.lock();}
 bool Mutex::TryLock() {return mHandle->mut.try_lock();}
@@ -148,7 +199,7 @@ static unsigned __stdcall ThreadProc(void* lpParam)
 #endif
 {
 	{
-		UniqueRef<Utils::ICallable<void()>> threadFunc = static_cast<Utils::ICallable<void()>*>(lpParam);
+		Unique<Utils::ICallable<void()>> threadFunc = static_cast<Utils::ICallable<void()>*>(lpParam);
 		threadFunc->Call();
 	}
 #ifdef INTRA_NO_THREAD_CRT_INIT
@@ -171,7 +222,12 @@ void Thread::create_thread(Thread::Func func)
 #else
 	mHandle = Handle(_beginthreadex(null, ThreadStackSize, ThreadProc, func.ReleaseCallable(), 0, null));
 #endif
-	if(Handle(mHandle) == INVALID_HANDLE_VALUE) mHandle = null;
+	if(Handle(mHandle) == INVALID_HANDLE_VALUE)
+	{
+		mHandle = null;
+		return;
+	}
+	mId = GetThreadId(HANDLE(mHandle));
 }
 
 void Thread::delete_thread()
@@ -187,7 +243,7 @@ bool Thread::Join(uint timeoutMs)
 	return mJoined;
 }
 
-bool Thread::Join(uint timeoutMs) {return Join(INFINITE);}
+bool Thread::Join() {return Join(INFINITE);}
 
 bool Thread::IsRunning() const
 {
@@ -202,6 +258,8 @@ void Thread::Detach()
 	CloseHandle(HANDLE(mHandle));
 	mHandle = null;
 }
+
+uint Thread::CurrentId() {return GetCurrentThreadId();}
 
 void Thread::Yield() {YieldProcessor();}
 
@@ -268,8 +326,16 @@ enum: size_t {ThreadStackSize=1048576};
 
 static void* ThreadProc(void* lpParam)
 {
-	UniqueRef<Utils::ICallable<void()>> threadFunc = static_cast<Utils::ICallable<void()>*>(lpParam);
-	threadFunc->Call();
+	ushort id = ushort(reinterpret_cast<size_t>(lpParam));
+	{
+		Unique<Utils::ICallable<void()>> threadFunc = Meta::Move(gThreadData[id].Function);
+		threadFunc->Call();
+	}
+	{
+		auto locker = gThreadMutex.Locker();
+		gThreadData[id].Function = null;
+		if(gThreadData[id].IsDetached) gThreadData.Remove(id);
+	}
 	return null;
 }
 
@@ -278,7 +344,13 @@ void Thread::create_thread(Thread::Func func)
 	pthread_attr_t attribute;
 	pthread_attr_init(&attribute);
 	pthread_attr_setstacksize(&attribute, ThreadStackSize);
-	pthread_create(reinterpret_cast<pthread_t*>(&mHandle), &attribute, ThreadProc, mHandle.ReleaseCallable());
+	ushort id;
+	{
+		auto locker = gThreadMutex.Locker();
+		gThreadData.Add({func.ReleaseCallable(), false}, &id);
+	}
+	mId = id;
+	pthread_create(reinterpret_cast<pthread_t*>(&mHandle), &attribute, ThreadProc, reinterpret_cast<void*>(id));
 }
 
 void Thread::delete_thread() {Join();}
@@ -314,12 +386,6 @@ bool Thread::Join(uint timeoutMs)
 	return mJoined;
 }
 
-bool Thread::IsRunning() const
-{
-	if(mHandle == null || mJoined) return false;
-	mJoined = (pthread_tryjoin_np(mHandle->thread, null) == 0);
-	return !mJoined;
-}
 #else
 
 bool Thread::Join(uint timeoutMs)
@@ -334,22 +400,23 @@ bool Thread::Join(uint timeoutMs)
 		ts.tv_nsec -= 1000000000;
 		ts.tv_sec++;
 	}
-	mJoined = (pthread_timedjoin_np(mHandle->thread, null, &ts) == 0);
+	mJoined = (pthread_timedjoin_np(pthread_t(mHandle), null, &ts) == 0);
 	return mJoined;
 }
+
+#endif
 
 bool Thread::IsRunning() const
 {
 	if(mHandle == null || mJoined) return false;
-	mJoined = (pthread_tryjoin_np(mHandle->thread, null) == 0);
+	mJoined = (gThreadData[ushort(mId)].Function == null);
 	return !mJoined;
 }
-#endif
 
 bool Thread::Join()
 {
 	if(mHandle == null || mJoined) return true;
-	mJoined = (pthread_join(mHandle->thread, null) == 0);
+	mJoined = (pthread_join(pthread_t(mHandle), null) == 0);
 	return mJoined;
 }
 
@@ -358,9 +425,17 @@ void Thread::Detach()
 	if(mHandle==null) return;
 	pthread_detach(pthread_t(mHandle));
 	mHandle = null;
+
+	auto locker = gThreadMutex.Locker();
+	if(gThreadData[ushort(mId)].Function == null)
+		gThreadData.Remove(ushort(mId));
+	else gThreadData[ushort(mId)].IsDetached = true;
+	mId = 0;
 }
 
 void Thread::Yield() {sched_yield();}
+
+Thread::NativeHandle Thread::GetNativeHandle() const {return NativeHandle(mHandle);}
 
 
 Mutex::Mutex(bool processPrivate): mHandle(null)

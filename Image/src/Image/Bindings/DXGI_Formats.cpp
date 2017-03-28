@@ -64,11 +64,11 @@ DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB)
 		Algo::FillZeros(mapSwap);
 		for(int i=DXGI_FORMAT_UNKNOWN+1; i<=DXGI_FORMAT_B4G4R4A4_UNORM; i++)
 		{
-			bool swap;
-			auto dxgi = DXGI_FORMAT(i);
+			const auto dxgi = DXGI_FORMAT(i);
+			bool swap = false;
 			auto f = DXGI_ToImageFormat(dxgi, &swap).value;
 			if(!swap) mapNoSwap[f] = dxgi;
-			if(swap) mapSwap[f] = dxgi;
+			else mapSwap[f] = dxgi;
 		}
 		inited = true;
 	}

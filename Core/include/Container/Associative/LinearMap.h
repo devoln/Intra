@@ -262,25 +262,30 @@ public:
 		return mValues.EmplaceLast();
 	}
 
-	//V operator[](const K& key) const {return Get(key);}
-
-	const V& Get(const K& key, bool* oExists=null) const
+	V& Get(const K& key, V& defaultValue, bool& oExists)
 	{
 		auto i = FindIndex(key);
-		if(oExists!=null) *oExists = (i!=Count());
-		if(i==Count())
-		{
-			static const V defaultValue;
-			return defaultValue;
-		}
-		return mValues[i];
+		oExists = i!=Count();
+		return oExists? mValues[i]: defaultValue;
+	}
+
+	const V& Get(const K& key, const V& defaultValue, bool& oExists) const
+	{
+		auto i = FindIndex(key);
+		oExists = i!=Count();
+		return oExists? mValues[i]: defaultValue;
+	}
+
+	V& Get(const K& key, V& defaultValue)
+	{
+		bool exists;
+		return Get(key, defaultValue, exists);
 	}
 
 	const V& Get(const K& key, const V& defaultValue) const
 	{
-		auto i = FindIndex(key);
-		if(i==Count()) return defaultValue;
-		return mValues[i];
+		bool exists;
+		return Get(key, defaultValue, exists);
 	}
 
 	const K& FindByValue(const V& second) const;  //Найти ключ по значению

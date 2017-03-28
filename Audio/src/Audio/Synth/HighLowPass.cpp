@@ -20,35 +20,23 @@ struct HighLowPassParams
 static void HighLowPassFunction(const HighLowPassParams& params,
 	ArrayRange<float> inOutSamples, uint sampleRate)
 {
-	double t = 0.0, dt = 1.0/sampleRate;
-	Array<float> in = inOutSamples;
-	auto out = inOutSamples;
-
 	float c = Math::Tan(float(Math::PI)*params.CutoffFreq/float(sampleRate));
-	float a1, a2, a3, b1, b2;
-	if(params.HighPass)
-	{
-		a1 = 1.0f/(1 + params.RezAmount*c + c*c);
-		a2 = -2*a1;
-		a3 = a1;
-		b1 = 2*(c*c-1)*a1;
-		b2 = (1.0f - params.RezAmount*c + c*c)*a1;
-	}
-	else
-	{
-		c = 1/c;
-		a1 = 1.0f/(1 + params.RezAmount*c + c*c);
-		a2 = 2*a1;
-		a3 = a1;
-		b1 = 2*(1-c*c)*a1;
-		b2 = (1.0f - params.RezAmount*c + c*c)*a1;
-	}
-		
+	if(!params.HighPass) c = 1/c;
+	const float a1 = 1.0f/(1 + params.RezAmount*c + c*c);
+	float a2 = -2*a1;
+	const float a3 = a1;
+	float  b1 = 2*(c*c-1)*a1;
+	const float b2 = (1.0f - params.RezAmount*c + c*c)*a1;
+	if(!params.HighPass) a2 = -a2, b1 = -b1;
+
+	Array<float> inCopy = inOutSamples;
+	const double dt = 1.0/sampleRate;
+	double t = 0.0;
 	for(size_t i=2; i<inOutSamples.Length(); i++)
 	{
-		out[i] *= a1;
-		out[i] += a2*in[i-1] + a3*in[i-2];
-		out[i] -= b1*out[i-1] + b2*out[i-2];
+		inOutSamples[i] *= a1;
+		inOutSamples[i] += a2*inCopy[i-1] + a3*inCopy[i-2];
+		inOutSamples[i] -= b1*inOutSamples[i-1] + b2*inOutSamples[i-2];
 		t += dt;
 	}
 }

@@ -64,8 +64,7 @@ void ConsoleInput::PopFirst()
 	gReadBufStart = 0;
 	gReadBufCount = byte(bytesPerChar);
 #else
-	read(STDIN_FILENO, &gFirst, 1);
-	gFirstInited = true;
+	gFirstInited = read(STDIN_FILENO, &gFirst, 1) == 1;
 #endif
 }
 
@@ -75,7 +74,7 @@ char ConsoleInput::First() const
 	if(gReadBufCount == 0) const_cast<ConsoleInput*>(this)->PopFirst();
 	return gReadBuf[gReadBufStart];
 #else
-	if(!gFirstInited == 0) const_cast<ConsoleInput*>(this)->PopFirst();
+	if(!gFirstInited) const_cast<ConsoleInput*>(this)->PopFirst();
 	return gFirst;
 #endif
 }
@@ -91,7 +90,7 @@ size_t ConsoleInput::CopyAdvanceToAdvance(ArrayRange<char>& dst)
 	}
 	return dstLen;
 #else
-	size_t n = read(STDIN_FILENO, dst.Data(), dst.Length());
+	size_t n = size_t(read(STDIN_FILENO, dst.Data(), dst.Length()));
 	dst.Begin += n;
 	return n;
 #endif
@@ -109,9 +108,9 @@ dchar ConsoleInput::GetChar()
 	newt.c_lflag &= ~uint(ICANON|ECHO);
 	tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 	char c[6];
-	read(STDIN_FILENO, c, 1);
-	byte clen = UTF8::SequenceBytes(c[0]);
-	read(STDIN_FILENO, c+1, size_t(clen-1u));
+	const size_t charsRead = size_t(read(STDIN_FILENO, c, 1));
+	size_t clen = UTF8::SequenceBytes(c[0]);
+	clen = charsRead+size_t( read(STDIN_FILENO, c+1, clen-1) );
 	dchar ch = UTF8(StringView(c, clen)).First();
 	if(ch=='\r') ch = '\n';
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);

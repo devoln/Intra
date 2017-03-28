@@ -38,12 +38,12 @@ void DrumInstrument::PrepareToPlay(const MusicTrack& track, uint sampleRate) con
 AudioBuffer& DrumInstrument::cache_note(MusicNote note, float tempo, uint sampleRate) const
 {
 	uint id = note.Octave*12u+uint(note.Note);
-	auto gen = Generators.Get(id);
+	auto gen = Generators.Get(id, null);
 	AudioBuffer& bufRef = SamplesCache[gen];
+	if(gen==null) return bufRef;
 	const size_t noteSampleCount = GetNoteSampleCount(note, tempo, sampleRate);
 	if(bufRef.SampleRate!=sampleRate || noteSampleCount>bufRef.Samples.Count())
 	{
-		if(gen==null) return bufRef;
 		bufRef.Samples.SetCountUninitialized(noteSampleCount+bufRef.Samples.Count()/2);
 		bufRef.SampleRate = sampleRate;
 		const MusicNote drumNote = MusicNote(4, MusicNote::NoteType::C, ushort(note.Duration*tempo));

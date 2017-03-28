@@ -3,6 +3,9 @@
 #include "Range/Special/SparseRange.h"
 #include "Memory/Memory.h"
 #include "Container/Sequential/Array.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Range {
 
@@ -60,12 +63,12 @@ template<typename T, typename Index> Array<flag32> SparseRange<T, Index>::DeadBi
 {
 	enum {ValueBits = sizeof(flag32)*8};
 	Array<flag32> result;
-	result.SetCount(data.Count()/ValueBits); //Заполнит все биты нулями
+	result.SetCount(data.Length()/ValueBits); //Заполнит все биты нулями
 	size_t ff = first_free;
 	while(ff != end_index())
 	{
 		INTRA_DEBUG_ASSERT(ff<data.Length());
-		result[ff/ValueBits] |= (1 << (ff % ValueBits));
+		result[ff/ValueBits] |= (1u << (ff % ValueBits));
 		ff = reinterpret_cast<Index&>(data[ff]);
 	}
 	return result;
@@ -201,6 +204,4 @@ template<typename Index> void SparseTypelessRange<Index>::MoveTo(SparseTypelessR
 
 }}
 
-
-
-
+INTRA_WARNING_POP

@@ -4,6 +4,7 @@
 #include "Algo/Op.h"
 #include "Algo/Hash/ToHash.h"
 #include "Algo/Sort/Quick.h"
+#include "Algo/Mutation/Fill.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 #include "Container/AllForwardDecls.h"
@@ -104,6 +105,14 @@ private:
 	template<typename K, typename V, class Allocator> friend class HashMap;
 };
 
+struct HashMapStatistics
+{
+	size_t NumBuckets;
+	size_t FreeBucketCount;
+	size_t MaxBucketLoad;
+	double AverageBucketLoad;
+	ArrayRange<size_t> BucketLoads;
+};
 
 template<typename K, typename V, typename AllocatorType>
 class HashMap: Memory::AllocatorRef<AllocatorType>
@@ -131,8 +140,8 @@ public:
  
 		forceinline bool operator==(const iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node!=null); node = node->next;}
-        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node!=null); node = node->prev;}
+        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node != null); node = node->next;}
+        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node != null); node = node->prev;}
  
         forceinline iterator& operator++() {GotoNext(); return *this;}
         forceinline iterator operator++(int) {iterator it = *this; GotoNext(); return it;}
@@ -399,21 +408,32 @@ public:
 		return ConstRange(const_cast<HashMap*>(this)->Find(key));
 	}
 
-	V& Get(const K& key, bool* oExists=null)
+	V& Get(const K& key, V& defaultValue, bool& oExists)
 	{
 		Range found = Find(key);
-		if(oExists!=null) *oExists = !found.Empty();
-		if(found.Empty())
-		{
-			static V defaultValue;
-			return defaultValue;
-		}
+		oExists = !found.Empty();
+		if(found.Empty()) return defaultValue;
 		return found.First().Value;
 	}
 
-	const V& Get(const K& key, bool* oExists=null) const
+	V& Get(const K& key, V& defaultValue)
 	{
-		return const_cast<HashMap*>(this)->Get(key, oExists);
+		bool exists;
+		return Get(key, defaultValue, exists);
+	}
+
+	const V& Get(const K& key, const V& defaultValue, bool& oExists) const
+	{
+		ConstRange found = Find(key);
+		oExists = !found.Empty();
+		if(found.Empty()) return defaultValue;
+		return found.First().Value;
+	}
+
+	const V& Get(const K& key, const V& defaultValue) const
+	{
+		bool exists;
+		return Get(key, defaultValue, exists);
 	}
 
 	bool Contains(const K& key) const
@@ -470,19 +490,20 @@ public:
     size_t Count() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[0]: 0;}
     size_t BucketCount() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[1]: 0;}
 
-	void GetStats(size_t* oNumBuckets, size_t* oFreeBucketCount,
-		double* oAverageBucketLoad, size_t* oMaxBucketLoad, size_t oBucketLoads[], size_t bucketLoadsCount)
+	HashMapStatistics GetStats(ArrayRange<size_t> oBucketLoads)
 	{
-		if(oNumBuckets) *oNumBuckets = BucketCount();
-		if(oFreeBucketCount) *oFreeBucketCount=0;
-		if(oMaxBucketLoad) *oMaxBucketLoad=0;
-		size_t loadSum=0, num=0;
+		Algo::FillZeros(oBucketLoads);
+		HashMapStatistics result;
+		result.NumBuckets = BucketCount();
+		result.FreeBucketCount = 0;
+		result.MaxBucketLoad = 0;
+		size_t loadSum = 0, num = 0;
 		for(size_t i=0; i<BucketCount(); i++)
 		{
 			Node* node = get_bucket_head(i);
 			if(node==null)
 			{
-				if(oFreeBucketCount) ++*oFreeBucketCount;
+				++result.FreeBucketCount;
 				continue;
 			}
 			num++;
@@ -494,10 +515,11 @@ public:
 			}
 			while(node!=null);
 			loadSum += bucketLoad;
-			if(bucketLoad<bucketLoadsCount) oBucketLoads[bucketLoad]++;
-			if(oMaxBucketLoad && *oMaxBucketLoad<bucketLoad) *oMaxBucketLoad = bucketLoad;
+			if(bucketLoad<oBucketLoads.Length()) oBucketLoads[bucketLoad]++;
+			if(result.MaxBucketLoad<bucketLoad) result.MaxBucketLoad = bucketLoad;
 		}
-		if(oAverageBucketLoad) *oAverageBucketLoad = double(loadSum)/double(num);
+		result.AverageBucketLoad = double(loadSum)/double(num);
+		return result;
 	}
 
 private:

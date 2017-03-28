@@ -81,7 +81,7 @@ double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Timer tim;
 	Algo::SelectionSort(arr, comparer);
-	double result = tim.GetTime();
+	const double result = tim.GetTime();
 	INTRA_DEBUG_ASSERT(Algo::IsSorted(arr));
 	return result;
 }

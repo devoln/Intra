@@ -47,7 +47,7 @@ Timer::~Timer() = default;
 void Timer::Reset() {}
 double Timer::GetTime() const {return 0;}
 double Timer::GetTimeAndReset() {return 0;}
-void Timer::Sleep(uint msec) {}
+void Timer::SleepMs(uint msec) {}
 
 }
 
@@ -80,7 +80,7 @@ void Timer::Reset() {GetTimeAndReset();}
 double Timer::GetTime() const
 {
 	const ulong64 oldHndl = hndl;
-	auto This = const_cast<Timer*>(this);
+	Timer* const This = const_cast<Timer*>(this);
 	const double result = This->GetTimeAndReset();
 	This->hndl = oldHndl;
 	return result;
@@ -90,7 +90,7 @@ double Timer::GetTimeAndReset()
 {
 	ulong64 current;
 	QueryPerformanceCounter(reinterpret_cast<LARGE_INTEGER*>(&current));
-	double result = double(current-hndl)/double(g_timer_frequency);
+	const double result = double(current-hndl)/double(g_timer_frequency);
 	hndl = current;
 	return result;
 }
@@ -141,10 +141,11 @@ void Timer::Reset()
 	*reinterpret_cast<std::chrono::high_resolution_clock::time_point*>(hndl) = current;
 }
 
-void Timer::Sleep(uint msec)
+void Timer::SleepMs(uint msec)
 {
 	std::this_thread::sleep_for(std::chrono::milliseconds(msec));
 }
+#define INTRA_SLEEP_DEFINED
 
 }
 
@@ -176,7 +177,7 @@ double Timer::GetTimeAndReset()
 	return result;
 }
 
-void Timer::Sleep(uint msec)
+void Timer::SleepMs(uint msec)
 {
 	struct SleepThread: public QThread {using QThread::msleep;};
 	SleepThread::msleep(msec);
@@ -216,17 +217,17 @@ double Timer::GetTimeAndReset()
 
 namespace Intra {
 
-void Timer::Sleep(uint msec) {Sleep(msec);}
+void Timer::SleepMs(uint msec) {Sleep(msec);}
 
 }
 
-#elif defined(INTRA_PLATFORM_IS_UNIX)
+#elif defined(INTRA_PLATFORM_IS_UNIX) && !defined(INTRA_SLEEP_DEFINED)
 
 #include <unistd.h>
 
 namespace Intra {
 
-void Timer::Sleep(uint msec)
+void Timer::SleepMs(uint msec)
 {
 	if(msec < (1 << 29)/125 ) usleep(msec*1000);
 	else sleep((msec+999)/1000);

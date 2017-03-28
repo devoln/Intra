@@ -2,5 +2,5 @@
 
 #include "IO/FormattedWriter.h"
 
-void TestTextSerialization(Intra::IO::IFormattedWriter& output);
-void TestBinarySerialization(Intra::IO::IFormattedWriter& output);
+void TestTextSerialization(Intra::IO::FormattedWriter& output);
+void TestBinarySerialization(Intra::IO::FormattedWriter& output);

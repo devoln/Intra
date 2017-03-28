@@ -185,10 +185,7 @@ ValueType ValueType::FromString(Intra::StringView str)
 		for(ValueType i=ValueType::Void; i.value<ValueType::End; i=I(i.value+1))
 			dictionary.InsertNew(i.ToString(), i);
 	}
-	bool exists;
-	auto&& result = dictionary.Get(str, &exists);
-	if(!exists) return ValueType::Void;
-	return result;
+	return dictionary.Get(str, ValueType::Void);
 }
 
 ValueType ValueType::FromStringGLSL(Intra::StringView str)
@@ -200,10 +197,7 @@ ValueType ValueType::FromStringGLSL(Intra::StringView str)
 		for(I i=ValueType::Void; i<ValueType::End; i=ValueType::I(i+1))
 			dictionary.InsertNew(ValueType(i).ToStringGLSL(), i);
 	}
-	bool exists;
-	auto&& result = dictionary.Get(str, &exists);
-	if(!exists) return ValueType::Void;
-	return result;
+	return dictionary.Get(str, ValueType::Void);
 }
 
 }

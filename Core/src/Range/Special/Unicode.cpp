@@ -17,10 +17,10 @@ const char UTF8::BOM[] = "\xef\xbb\xbf";
 
 static bool isLegalUTF8(const char* source, size_t length, size_t* oBytesRead)
 {
-	byte a;
 	const byte* srcBegin = reinterpret_cast<const byte*>(source);
 	const byte* srcPtr = reinterpret_cast<const byte*>(source)+length;
 	if(oBytesRead!=null) *oBytesRead = length;
+	byte a = 0;
     switch(length)
     {
     default: return false;

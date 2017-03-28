@@ -27,7 +27,7 @@ public:
 	ConsoleInput& operator=(const ConsoleInput&) = delete;
 
 	ConsoleInput(ConsoleInput&&) {}
-	ConsoleInput& operator=(ConsoleInput&&) {}
+	ConsoleInput& operator=(ConsoleInput&&) {return *this;}
 };
 
 extern ConsoleInput ConsoleIn;

@@ -20,7 +20,7 @@ static void TableAttenuationPassFunction(const TableAttenuatorParams& table,
 	for(uint i=0; i<table.Len-1u; i++)
 	{
 		double v = double(table.Table[i]);
-		double dv = (double(table.Table[i+1])-double(v))/double(samplesPerValue);
+		const double dv = (double(table.Table[i+1])-double(v))/double(samplesPerValue);
 		for(size_t s=0; s<samplesPerValue; s++)
 		{
 			inOutSamples.First() *= float(v);

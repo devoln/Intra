@@ -78,6 +78,9 @@ private:
 	#endif
 			funcToTest(Output);
 	#ifdef INTRA_EXCEPTIONS_ENABLED
+	#ifdef _MSC_VER
+	#pragma warning(disable: 4571)
+	#endif
 		} catch(TestException) {}
 		catch(...) {ErrorInfo.FullDesc += "\nUnknown exception caught!";}
 	#endif

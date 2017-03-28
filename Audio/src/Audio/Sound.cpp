@@ -92,7 +92,7 @@ Sound Sound::FromFile(StringView fileName)
 
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 
-	Memory::UniqueRef<ASoundSource> source;
+	Unique<ASoundSource> source;
 
 #ifndef INTRA_NO_WAVE_LOADER
 	if(Algo::StartsWith(fileSignature, "RIFF"))

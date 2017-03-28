@@ -1,12 +1,14 @@
 ﻿#include "Platform/PlatformInfo.h"
 #include "Audio/SoundApi.h"
 #include "Platform/CppWarnings.h"
+#include "Container/Utility/IndexAllocator.h"
+#include "Algo/Mutation/Fill.h"
+#include "Range/Decorators/Take.h"
 
 #if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_WebAudio)
 
 #include <emscripten.h>
 
-#include "Containers/IndexAllocator.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -282,7 +284,7 @@ extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(Stre
 		{
 			snd->stopSoon = true;
 			for(size_t i=0; i<snd->channels; i++)
-				C::memset(tempPtrs[i], 0, (snd->sampleCount-floatsRead)*sizeof(float));
+				Algo::FillZeros(Range::Take(tempPtrs[i], snd->sampleCount-floatsRead));
 		}
 		else
 		{

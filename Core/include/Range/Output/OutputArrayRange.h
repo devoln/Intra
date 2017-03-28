@@ -45,8 +45,13 @@ public:
 	size_t Length() const {return mRight.Length();}
 	T& First() const {return mRight.First();}
 	void PopFirst() {mRight.PopFirst();}
+	T& Last() const {return mRight.Last();}
+	void PopLast() {mRight.PopLast();}
 	bool Empty() const {return mRight.Empty();}
 	size_t PopFirstN(size_t count) {return mRight.PopFirstN(count);}
 };
 
-}}
+}
+using Range::OutputArrayRange;
+
+}

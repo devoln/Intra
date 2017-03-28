@@ -194,8 +194,8 @@ public:
 	}
 
 protected:
-	Memory::UniqueRef<Interface> mInterface;
-	InputRange(Interface* interfacePtr): mInterface(interfacePtr) {}
+	Unique<Interface> mInterface;
+	InputRange(Interface* interfacePtr): mInterface(Meta::Move(interfacePtr)) {}
 };
 
 typedef InputRange<char> InputStream;

@@ -7,7 +7,7 @@
 
 #define INITGUID
 
-INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -26,6 +26,11 @@ struct IUnknown;
 #pragma comment(lib, "dsound.lib")
 #pragma comment(lib, "user32.lib")
 #pragma warning(pop)
+
+#if(_MSC_VER<1900)
+#pragma warning(disable: 4351)
+#endif
+
 #endif
 
 
@@ -74,41 +79,41 @@ struct Instance
 
 struct StreamedBuffer
 {
-	StreamedBuffer(IDirectSoundBuffer* buf, StreamingCallback callback, uint sample_count, uint sample_rate, uint ch)
+	StreamedBuffer(IDirectSoundBuffer* buf, StreamingCallback callback, uint sampleCount, uint sampleRate, uint ch):
+		mBuffer(buf),
+		mSampleCount(sampleCount),
+		mSampleRate(sampleRate),
+		mChannels(ch),
+		mStreamingCallback(callback),
+		mNotifyLoadEvents{},
+		mNotifyLoadWaits{}
 	{
-		buffer = buf;
-		streamingCallback = callback;
-		sampleCount = sample_count;
-		channels = ch;
-		sampleRate = sample_rate;
-		notifyLoadEvents[0] = notifyLoadEvents[1] = null;
-		notifyLoadWaits[0] = notifyLoadWaits[1] = null;
-		InitializeCriticalSection(&critsec);
+		InitializeCriticalSection(&mCritsec);
 	}
 
 	//! Размер в байтах половины буфера
-	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
+	uint SizeInBytes() const {return uint(mSampleCount*mChannels*sizeof(short));}
 
-	IDirectSoundBuffer* buffer;
-	uint sampleCount; //Размер половины буфера
-	uint sampleRate;
-	uint channels;
-	StreamingCallback streamingCallback;
+	IDirectSoundBuffer* mBuffer;
+	uint mSampleCount; //Размер половины буфера
+	uint mSampleRate;
+	uint mChannels;
+	StreamingCallback mStreamingCallback;
 
-	HANDLE notifyLoadEvents[2];
-	HANDLE notifyLoadWaits[2];
-	bool deleteOnStop = false;
-	bool looping = false;
-	byte stop_soon = 0;
+	HANDLE mNotifyLoadEvents[2];
+	HANDLE mNotifyLoadWaits[2];
+	bool mDeleteOnStop = false;
+	bool mLooping = false;
+	byte mStopSoon = 0;
 
-	byte buffers_processed = 0;
-	byte next_buffer_to_fill = 1;
+	byte mBuffersProcessed = 0;
+	byte mNextBufferToFill = 1;
 
-	CRITICAL_SECTION critsec;
-	DWORD lockedSize = 0;
-	void* lockedBits = null;
-	DWORD lockedSize2 = 0;
-	void* lockedBits2 = null;
+	CRITICAL_SECTION mCritsec;
+	DWORD mLockedSize = 0;
+	void* mLockedBits = null;
+	DWORD mLockedSize2 = 0;
+	void* mLockedBits2 = null;
 };
 
 static IDirectSound8* context=null;
@@ -197,13 +202,13 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
 	if(snd==null || data==null) return;
-	auto lockedData = reinterpret_cast<short*>(BufferLock(snd));
+	auto lockedData = static_cast<short*>(BufferLock(snd));
 	if(type==ValueType::Short)
 		memcpy(lockedData, data, snd->sampleCount*type.Size());
 	else if(type==ValueType::Float)
 	{
 		for(size_t i=0; i<snd->sampleCount; i++)
-			lockedData[i] = short((reinterpret_cast<const float*>(data))[i]*32767.5f-0.5f);
+			lockedData[i] = short((static_cast<const float*>(data))[i]*32767.5f-0.5f);
 	}
 	BufferUnlock(snd);
 }
@@ -216,13 +221,13 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 		return;
 	}
 
-	auto lockedData = reinterpret_cast<short*>(BufferLock(snd));
+	auto lockedData = static_cast<short*>(BufferLock(snd));
 	if(type==ValueType::Short)
 	{
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
 			{
-				const short* const channelSamples = reinterpret_cast<const short*>(data[c]);
+				const short* const channelSamples = static_cast<const short*>(data[c]);
 				lockedData[j++] = channelSamples[i];
 			}
 	}
@@ -231,7 +236,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
 			{
-				const float* const channelSamples = reinterpret_cast<const float*>(data[c]);
+				const float* const channelSamples = static_cast<const float*>(data[c]);
 				lockedData[j++] = short(channelSamples[i]*32767.5f-0.5f);
 			}
 	}
@@ -263,14 +268,14 @@ void BufferDelete(BufferHandle snd)
 
 static void CALLBACK DeleteInstanceOnStopCallback(_In_  void* lpParameter, _In_  byte /*timerOrWaitFired*/)
 {
-	auto impl = reinterpret_cast<InstanceHandle>(lpParameter);
+	auto impl = static_cast<InstanceHandle>(lpParameter);
 	if(impl->deleteOnStop) if(context!=null) InstanceDelete(impl);
 }
 
 InstanceHandle InstanceCreate(BufferHandle snd)
 {
 	if(snd==null) return null;
-	IDirectSoundBuffer* bufferDup;
+	IDirectSoundBuffer* bufferDup = null;
 	context->DuplicateSoundBuffer(snd->buffer, &bufferDup);
 	auto result = new Instance(bufferDup, snd);
 
@@ -334,11 +339,11 @@ void InstanceStop(InstanceHandle si)
 
 static void CALLBACK WaitLoadCallback(_In_  void* lpParameter, _In_  byte /*timerOrWaitFired*/)
 {
-	auto snd = reinterpret_cast<StreamedBufferHandle>(lpParameter);
-	EnterCriticalSection(&snd->critsec);
-	snd->buffers_processed++;
+	auto snd = static_cast<StreamedBufferHandle>(lpParameter);
+	EnterCriticalSection(&snd->mCritsec);
+	snd->mBuffersProcessed++;
 	//StreamedSoundUpdate(snd);
-	LeaveCriticalSection(&snd->critsec);
+	LeaveCriticalSection(&snd->mCritsec);
 }
 
 StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
@@ -352,31 +357,31 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 	const ushort blockAlign = ushort(sizeof(ushort)*channels);
 	WAVEFORMATEX wfx = {WAVE_FORMAT_PCM, ushort(channels), sampleRate, sampleRate*blockAlign, blockAlign, 16, sizeof(WAVEFORMATEX)};
 	const DSBUFFERDESC dsbd = {sizeof(DSBUFFERDESC), DSBCAPS_GLOBALFOCUS|DSBCAPS_CTRLPOSITIONNOTIFY, result->SizeInBytes()*2, 0, &wfx, {}};
-	if(FAILED(context->CreateSoundBuffer(&dsbd, &result->buffer, null))) return null;
+	if(FAILED(context->CreateSoundBuffer(&dsbd, &result->mBuffer, null))) return null;
 
 
 	DWORD lockedSize; void* lockedData;
-	result->buffer->Lock(0, result->SizeInBytes()*2, &lockedData, &lockedSize, null, null, 0);
+	result->mBuffer->Lock(0, result->SizeInBytes()*2, &lockedData, &lockedSize, null, null, 0);
 	callback.CallbackFunction(&lockedData, channels, ValueType::Short, true, sampleCount, callback.CallbackData);
-	result->buffer->Unlock(lockedData, result->SizeInBytes()*2, null, 0);
+	result->mBuffer->Unlock(lockedData, result->SizeInBytes()*2, null, 0);
 
 	IDirectSoundNotify* notify;
-	if(SUCCEEDED(result->buffer->QueryInterface(IID_IDirectSoundNotify, reinterpret_cast<void**>(&notify))))
+	if(SUCCEEDED(result->mBuffer->QueryInterface(IID_IDirectSoundNotify, reinterpret_cast<void**>(&notify))))
 	{
-		result->notifyLoadEvents[0] = CreateEventW(null, false, false, null);
-		result->notifyLoadEvents[1] = CreateEventW(null, false, false, null);
-		if(result->notifyLoadEvents[0]==null || result->notifyLoadEvents[1]==null)
+		result->mNotifyLoadEvents[0] = CreateEventW(null, false, false, null);
+		result->mNotifyLoadEvents[1] = CreateEventW(null, false, false, null);
+		if(result->mNotifyLoadEvents[0]==null || result->mNotifyLoadEvents[1]==null)
 		{
 			delete result;
 			return null;
 		}
 
 		DSBPOSITIONNOTIFY positionNotify[2] = {
-			{0, result->notifyLoadEvents[0]},
-			{result->SizeInBytes(), result->notifyLoadEvents[1]}
+			{0, result->mNotifyLoadEvents[0]},
+			{result->SizeInBytes(), result->mNotifyLoadEvents[1]}
 		};
-		RegisterWaitForSingleObject(&result->notifyLoadWaits[0], result->notifyLoadEvents[0], WaitLoadCallback, result, INFINITE, 0);
-		RegisterWaitForSingleObject(&result->notifyLoadWaits[1], result->notifyLoadEvents[1], WaitLoadCallback, result, INFINITE, 0);
+		RegisterWaitForSingleObject(&result->mNotifyLoadWaits[0], result->mNotifyLoadEvents[0], WaitLoadCallback, result, INFINITE, 0);
+		RegisterWaitForSingleObject(&result->mNotifyLoadWaits[1], result->mNotifyLoadEvents[1], WaitLoadCallback, result, INFINITE, 0);
 		notify->SetNotificationPositions(2, positionNotify);
 		notify->Release();
 	}
@@ -386,45 +391,45 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 
 void StreamedBufferSetDeleteOnStop(StreamedBufferHandle snd, bool del)
 {
-	snd->deleteOnStop = del;
+	snd->mDeleteOnStop = del;
 }
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
 	INTRA_DEBUG_ASSERT(snd!=null);
-	snd->looping = loop;
-	snd->stop_soon = 0;
-	snd->buffer->Play(0, 0, DSBPLAY_LOOPING);
+	snd->mLooping = loop;
+	snd->mStopSoon = 0;
+	snd->mBuffer->Play(0, 0, DSBPLAY_LOOPING);
 }
 
 bool StreamedSoundIsPlaying(StreamedBufferHandle snd)
 {
-	DWORD status;
-	if(snd==null || FAILED( snd->buffer->GetStatus(&status) )) return false;
+	DWORD status = 0;
+	if(snd==null || FAILED( snd->mBuffer->GetStatus(&status) )) return false;
 	return (status & DSBSTATUS_PLAYING)!=0;
 }
 
 void StreamedSoundStop(StreamedBufferHandle snd)
 {
 	if(snd==null) return;
-	snd->buffer->Stop();
-	if(snd->deleteOnStop) StreamedBufferDelete(snd);
+	snd->mBuffer->Stop();
+	if(snd->mDeleteOnStop) StreamedBufferDelete(snd);
 }
 
 void StreamedBufferDelete(StreamedBufferHandle snd)
 {
-	(void)UnregisterWait(snd->notifyLoadWaits[0]);
-	(void)UnregisterWait(snd->notifyLoadWaits[1]);
+	(void)UnregisterWait(snd->mNotifyLoadWaits[0]);
+	(void)UnregisterWait(snd->mNotifyLoadWaits[1]);
 	if(TryEnterCriticalSection(&contextCritSect))
 	{
 		if(context!=null)
 		{
-		EnterCriticalSection(&snd->critsec);
-			CloseHandle(snd->notifyLoadEvents[0]);
-			CloseHandle(snd->notifyLoadEvents[1]);
-			snd->buffer->Stop();
-			snd->buffer->Release();
-		LeaveCriticalSection(&snd->critsec);
+		EnterCriticalSection(&snd->mCritsec);
+			CloseHandle(snd->mNotifyLoadEvents[0]);
+			CloseHandle(snd->mNotifyLoadEvents[1]);
+			snd->mBuffer->Stop();
+			snd->mBuffer->Release();
+		LeaveCriticalSection(&snd->mCritsec);
 		}
 		LeaveCriticalSection(&contextCritSect);
 	}
@@ -433,25 +438,25 @@ void StreamedBufferDelete(StreamedBufferHandle snd)
 
 AnyPtr lock_buffer(StreamedBufferHandle snd, uint no)
 {
-	size_t lockSampleStart = no==0? 0: snd->sampleCount;
-	HRESULT lockResult = snd->buffer->Lock(uint(lockSampleStart*sizeof(short)*snd->channels),
-		snd->SizeInBytes(), &snd->lockedBits, &snd->lockedSize, &snd->lockedBits2, &snd->lockedSize2, 0);
+	const size_t lockSampleStart = no==0? 0: snd->mSampleCount;
+	const HRESULT lockResult = snd->mBuffer->Lock(uint(lockSampleStart*sizeof(short)*snd->mChannels),
+		snd->SizeInBytes(), &snd->mLockedBits, &snd->mLockedSize, &snd->mLockedBits2, &snd->mLockedSize2, 0);
 	INTRA_DEBUG_ASSERT(!FAILED(lockResult));
 	if(FAILED(lockResult)) return null;
-	return snd->lockedBits;
+	return snd->mLockedBits;
 }
 
 void unlock_buffer(StreamedBufferHandle snd)
 {
-	snd->buffer->Unlock(snd->lockedBits, snd->lockedSize, snd->lockedBits2, snd->lockedSize2);
+	snd->mBuffer->Unlock(snd->mLockedBits, snd->mLockedSize, snd->mLockedBits2, snd->mLockedSize2);
 }
 
 void fill_next_buffer_data(StreamedBufferHandle snd)
 {
-	short* data = lock_buffer(snd, snd->next_buffer_to_fill);
+	short* data = lock_buffer(snd, snd->mNextBufferToFill);
 	if(data==null) return;
 
-	if(snd->stop_soon!=0)
+	if(snd->mStopSoon!=0)
 	{
 		//Достигнут конец потока данных, поэтому зануляем оставшийся буфер. Когда он закончится, воспроизведение будет остановлено
 		memset(data, 0, snd->SizeInBytes());
@@ -459,20 +464,20 @@ void fill_next_buffer_data(StreamedBufferHandle snd)
 		return;
 	}
 
-	const size_t samplesRead = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&data), snd->channels,
-		ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
-	if(samplesRead<snd->sampleCount)
+	const size_t samplesRead = snd->mStreamingCallback.CallbackFunction(reinterpret_cast<void**>(&data), snd->mChannels,
+		ValueType::Short, true, snd->mSampleCount, snd->mStreamingCallback.CallbackData);
+	if(samplesRead<snd->mSampleCount)
 	{
 		void* ptr = data+samplesRead;
-		if(snd->looping)
+		if(snd->mLooping)
 		{
-			snd->streamingCallback.CallbackFunction(&ptr, 1, ValueType::Short, true,
-				uint(snd->sampleCount-samplesRead), snd->streamingCallback.CallbackData);
+			snd->mStreamingCallback.CallbackFunction(&ptr, 1, ValueType::Short, true,
+				uint(snd->mSampleCount-samplesRead), snd->mStreamingCallback.CallbackData);
 		}
 		else
 		{
-			memset(ptr, 0, (snd->sampleCount-samplesRead)*snd->channels*sizeof(short));
-			snd->stop_soon=1;
+			memset(ptr, 0, (snd->mSampleCount-samplesRead)*snd->mChannels*sizeof(short));
+			snd->mStopSoon=1;
 		}
 	}
 	unlock_buffer(snd);
@@ -499,19 +504,20 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		bufferToLock=1;
 	}*/
 
-	if(snd->stop_soon==2)
+	if(snd->mStopSoon==2)
 	{
-		snd->stop_soon=0;
+		snd->mStopSoon=0;
 		StreamedSoundStop(snd);
 		return;
 	}
 
-	int bufsProcessed = snd->buffers_processed;
-	snd->buffers_processed = 0;
+	int bufsProcessed = snd->mBuffersProcessed;
+	snd->mBuffersProcessed = 0;
 	while(bufsProcessed!=0)
 	{
 		fill_next_buffer_data(snd);
-		snd->next_buffer_to_fill = byte(1 - snd->next_buffer_to_fill);
+		if(snd->mNextBufferToFill == 1) snd->mNextBufferToFill = 0;
+		else snd->mNextBufferToFill = 1;
 		bufsProcessed--;
 	}
 }
@@ -523,6 +529,8 @@ void SoundSystemCleanUp()
 
 
 }}}
+
+INTRA_WARNING_POP
 
 #else
 

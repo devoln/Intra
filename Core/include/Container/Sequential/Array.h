@@ -10,7 +10,6 @@
 #include "Algo/Mutation/Copy.h"
 #include "Platform/InitializerList.h"
 #include "Memory/Memory.h"
-#include "Range/Output/Inserter.h"
 #include "Range/AsRange.h"
 #include "Container/Operations.hh"
 #include "Memory/Allocator/Global.h"
@@ -476,10 +475,10 @@ public:
 	}
 
 	//! Удалить первый элемент.
-	forceinline void RemoveFirst() {INTRA_DEBUG_ASSERT(!Empty()); (*range.Begin++).~T();}
+	forceinline void RemoveFirst() {INTRA_DEBUG_ASSERT(!Empty()); (range.Begin++)->~T();}
 
 	//! Удалить последний элемент.
-	forceinline void RemoveLast() {INTRA_DEBUG_ASSERT(!Empty()); (*--range.End).~T();}
+	forceinline void RemoveLast() {INTRA_DEBUG_ASSERT(!Empty()); (--range.End)->~T();}
 
 	//!@{
 	//! Быстрое удаление путём переноса последнего элемента (без смещения).

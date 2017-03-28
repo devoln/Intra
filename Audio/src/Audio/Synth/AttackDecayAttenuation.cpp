@@ -13,22 +13,21 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 {
 	const double halfAttackTime = Math::Min(noteDuration*0.5, params.AttackTime)*0.5;
 	const double halfDecayTime = Math::Min(noteDuration*0.5, params.DecayTime)*0.5;
-	const uint halfAttackSamples = uint(halfAttackTime*sampleRate), attackSampleEnd=halfAttackSamples*2;
+	const uint halfAttackSamples = uint(halfAttackTime*sampleRate);
+	const uint attackSampleEnd = halfAttackSamples*2;
 	const double decayTimeBegin = noteDuration-halfDecayTime*2;
 	const uint halfDecaySamples = uint(halfDecayTime*sampleRate);
 	const uint decaySampleBegin = uint(decayTimeBegin*sampleRate);
 
-	auto ptr = inOutSamples.Begin;
-	auto endHalfAttack = inOutSamples.Begin+halfAttackSamples;
-	auto endAttack = inOutSamples.Begin+attackSampleEnd;
-	auto beginDecay = inOutSamples.Begin+decaySampleBegin;
-	auto beginHalfDecay = beginDecay+halfDecaySamples;
-
-	float u, du;
+	float* ptr = inOutSamples.Begin;
+	const float* const endHalfAttack = inOutSamples.Begin+halfAttackSamples;
+	const float* const endAttack = inOutSamples.Begin+attackSampleEnd;
+	float* const beginDecay = inOutSamples.Begin+decaySampleBegin;
+	const float* const beginHalfDecay = beginDecay+halfDecaySamples;
 
 #if !defined(OPTIMIZE)
-	u = 0;
-	du = Math::Sqrt(0.5f)/halfAttackSamples;
+	float u = 0;
+	float du = 0.707107f/halfAttackSamples;
 	while(ptr<endHalfAttack)
 	{
 		*ptr++ *= u*u;
@@ -52,19 +51,17 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 		u += du;
 	}
 
-	u = Math::Sqrt(0.5f);
-	du = -Math::Sqrt(0.5f)/halfDecaySamples;
+	u = 0.707107f;
+	du = -0.707107f/halfDecaySamples;
 	while(ptr<inOutSamples.End)
 	{
 		*ptr++ *= u*u;
 		u += du;
 	}
 #elif(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	float du4;
-
-	u = 0;
-	du = 0.707107f/float(halfAttackSamples);
-	du4 = 4*du;
+	float u = 0;
+	float du = 0.707107f/float(halfAttackSamples);
+	float du4 = 4*du;
 	while(ptr<endHalfAttack-3)
 	{
 		const float u2 = u*u;
@@ -78,7 +75,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 
 	u = 0;
 	du = 0.25f/float(halfAttackSamples);
-	du4 = 4.0f*du;
+	du4 = 4*du;
 	while(ptr<endAttack-3)
 	{
 		float u2 = Math::Sqrt(u)+0.5f;
@@ -94,7 +91,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 		u += du;
 	}
 
-	ptr=beginDecay;
+	ptr = beginDecay;
 	u = 0.25f;
 	du = -0.25f/float(halfDecaySamples);
 	du4 = 4.0f*du;
@@ -130,7 +127,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 	//Атака
 	
 	//Первая половина атаки
-	du = 0.707107f/halfAttackSamples;
+	float du = 0.707107f/halfAttackSamples;
 	Simd::float4 u4 = Simd::SetFloat4(0, du, 2*du, 3*du);
 	Simd::float4 du4 = Simd::SetFloat4(4*du);
 	while(ptr<endHalfAttack-3)
@@ -173,7 +170,7 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 	ptr = beginDecay;
 
 	//Первая половина спада
-	u = 0.25f;
+	float u = 0.25f;
 	du = -0.25f/halfDecaySamples;
 	//u4 = Simd::SetFloat4(0.5f, 0.5f-du/2, 0.5f-du, 0.5f-3*du/2);
 	u4 = Simd::SetFloat4(u, u+du, u+2*du, u+3*du);

@@ -8,6 +8,7 @@
 
 #include "PlacementNew.h"
 #include "Range/Generators/ArrayRange.h"
+#include "Platform/Debug.h"
 
 
 namespace Intra { namespace Memory {
@@ -27,10 +28,13 @@ template<typename T> Meta::EnableIf<
 }
 
 //Для POD типов просто зануление памяти
-template<typename T> inline Meta::EnableIf<
+template<typename T> forceinline Meta::EnableIf<
 	Meta::IsTriviallyConstructible<T>::_
 > Initialize(ArrayRange<T> dst)
-{C::memset(dst.Begin, 0, dst.Length()*sizeof(T));}
+{
+	if(dst.Empty()) return;
+	C::memset(dst.Begin, 0, dst.Length()*sizeof(T));
+}
 
 
 //Вызов конструктора
@@ -57,11 +61,12 @@ template<typename T> Meta::EnableIf<
 	}
 }
 
-template<typename T> Meta::EnableIf<
+template<typename T> forceinline Meta::EnableIf<
 	Meta::IsTriviallyDestructible<T>::_
 > Destruct(ArrayRange<T> dst)
 {
 #ifdef INTRA_DEBUG
+	if(dst.Empty()) return;
 	C::memset(dst.Data(), 0xDE, dst.Length()*sizeof(dst.First()));
 #endif
 	(void)dst;

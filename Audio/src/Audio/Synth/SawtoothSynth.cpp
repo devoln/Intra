@@ -26,11 +26,11 @@ void FastSawtooth(double upPercent, float volume, float freq,
 	uint sampleRate, ArrayRange<float> inOutSamples, bool add)
 {
 	const double samplesPerPeriod = float(sampleRate)/freq;
-	uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
+	const uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
 
 	//Генерируем фрагмент, который будем повторять, пока не заполним буфер целиком
 	Array<float> samples;
-	const auto sampleCount = uint(Math::Round(samplesPerPeriod*count));
+	const uint sampleCount = uint(Math::Round(samplesPerPeriod*count));
 	samples.SetCountUninitialized(sampleCount);
 	PerfectSawtooth(upPercent, volume, freq, sampleRate, samples, false);
 
@@ -49,9 +49,9 @@ void SawtoothSynthPassFunction(const SawtoothParams& params,
 		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	double updownPercent = params.UpdownRatio/(params.UpdownRatio+1);
-	float newFreq=freq*params.FreqMultiplyer;
-	float maxValue = 2.0f-2.0f/float(1 << params.Harmonics);
+	const double updownPercent = params.UpdownRatio/(params.UpdownRatio+1);
+	const float newFreq = freq*params.FreqMultiplyer;
+	const float maxValue = 2.0f-2.0f/float(1 << params.Harmonics);
 	float newVolume = volume*params.Scale/maxValue;
 
 	FastSawtooth(updownPercent, newVolume, newFreq, sampleRate, inOutSamples, add);

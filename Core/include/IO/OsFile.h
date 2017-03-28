@@ -7,11 +7,11 @@
 #include "Algo/Mutation/Fill.h"
 #include "Container/Sequential/String.h"
 #include "Platform/Debug.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
-
-class FileReader;
-class FileWriter;
 
 class OsFile
 {
@@ -41,7 +41,7 @@ public:
 	bool operator==(null_t) const {return mHandle==null;}
 	bool operator!=(null_t) const {return mHandle!=null;}
 
-	OsFile& operator=(null_t) {Close(); return *this;}
+	forceinline OsFile& operator=(null_t) {Close(); return *this;}
 
 	//! Закрыть файл, ассоциированный с этим объектом.
 	//! Текущий объект переходит в null состояние.
@@ -66,18 +66,6 @@ public:
 
 	//! Установить размер файла равным size.
 	void SetSize(ulong64 size) const;
-
-	//! Возвращает поток для чтения файла.
-	FileReader Reader() const;
-
-	//! Возвращает поток для записи файла, начиная с позиции startOffset.
-	FileWriter Writer(ulong64 startOffset=0) const;
-
-	//! Возвращает поток для записи файла в конец.
-	FileWriter Appender() const;
-
-	//! Возвращает поток для чтения файла.
-	FileReader AsRange() const;
 
 	//! Прочитать файл целиком в строку.
 	//! @param fileName Путь к файлу.
@@ -109,10 +97,15 @@ public:
 		return mOwning;
 	}
 
+	StringView FullPath() const {return mFullPath;}
+
 private:
 	NativeHandle* mHandle;
 	Mode mMode;
 	bool mOwning;
+	String mFullPath;
 };
 
 }}
+
+INTRA_WARNING_POP

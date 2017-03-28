@@ -7,6 +7,7 @@
 #include "Algo/Mutation/Copy.h"
 #include "Range/Stream/Operators.h"
 #include "Range/Stream/InputStreamMixin.h"
+#include "Memory/SmartRef/Shared.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -18,14 +19,12 @@ class OsFile;
 class FileReader: Range::InputStreamMixin<FileReader, char>
 {
 public:
-	forceinline FileReader(const OsFile& file, size_t bufferSize):
-		mFile(&file), mOffset(0), mSize(file.Size())
+	forceinline FileReader(Shared<OsFile> file, size_t bufferSize=4096):
+		mFile(Meta::Move(file)), mOffset(0), mSize(mFile==null? 0: mFile->Size())
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
 		loadBuffer();
 	}
-
-	forceinline FileReader(const OsFile& file): FileReader(file, 4096) {}
 
 	forceinline FileReader(const FileReader& rhs) {operator=(rhs);}
 	forceinline FileReader(FileReader&& rhs) {operator=(Meta::Move(rhs));}
@@ -43,7 +42,7 @@ public:
 
 	FileReader& operator=(FileReader&& rhs)
 	{
-		mFile = rhs.mFile;
+		mFile = Meta::Move(rhs.mFile);
 		mOffset = rhs.mOffset;
 		mSize = rhs.mSize;
 		mBuffer = Meta::Move(rhs.mBuffer);
@@ -57,6 +56,9 @@ public:
 	forceinline bool Empty() const {return mBufferRest.Empty();}
 
 	forceinline size_t Length() const {return size_t(mSize+PositionInFile());}
+
+	forceinline bool operator==(null_t) const {return Empty();}
+	forceinline bool operator!=(null_t) const {return !Empty();}
 	
 	void PopFirst()
 	{
@@ -109,7 +111,7 @@ public:
 	forceinline ulong64 PositionInFile() const {return mOffset-mBufferRest.Length();}
 	forceinline ArrayRange<const char> BufferedData() const {return mBufferRest;}
 
-	forceinline const OsFile& File() const {return *mFile;}
+	forceinline const Shared<OsFile>& File() const {return mFile;}
 
 private:
 	void loadBuffer()
@@ -119,7 +121,7 @@ private:
 		mBufferRest = mBuffer(0, bytesRead);
 	}
 
-	const OsFile* mFile;
+	Shared<OsFile> mFile;
 	ulong64 mOffset, mSize;
 	Array<char> mBuffer;
 	ArrayRange<char> mBufferRest;

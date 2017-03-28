@@ -7,9 +7,10 @@
 #include "Container/Sequential/List.h"
 #include "Platform/Time.h"
 #include "Test/PerfSummary.h"
+#include "IO/Std.h"
 
 using namespace Intra;
-using namespace Intra::IO;
+using namespace IO;
 
 struct IRange
 {
@@ -107,7 +108,7 @@ void RunPolymorphicRangePerfTests(FormattedWriter& output)
 	int sum5 = TestStaticRange(arr.Data(), 1000, 100000000);
 	double time5 = tim.GetTimeAndReset();
 
-	ConsoleOut.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
+	Std.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
 
 	PrintPerformanceResults(output, "CycledRange 100000000 times",
 		{"CycledRange*", "InputRange<int>", "InputRange<int>::GetNext", "manually inlined loop", "ArrayRange.Cycle"},

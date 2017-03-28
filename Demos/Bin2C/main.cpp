@@ -9,6 +9,9 @@
 #include "Algo/String/Path.h"
 #include "Algo/Search/Trim.h"
 #include "Algo/Mutation/Transform.h"
+#include "IO/Std.h"
+#include "Utils/AsciiSet.h"
+
 using namespace Intra;
 using namespace Intra::IO;
 using namespace Algo;
@@ -112,13 +115,12 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	auto inputFileMapping = OS.MapFile(inputFilePath);
 	if(inputFileMapping==null)
 	{
-		ConsoleOut.PrintLine("File ", inputFilePath, " is not opened!");
+		Std.PrintLine("File ", inputFilePath, " is not opened!");
 		return;
 	}
 	ArrayRange<const byte> src = inputFileMapping.AsRange();
 	const byte* srcBytes = src.Begin;
-	OsFile dstFile = OS.FileOpenWrite(outputFilePath);
-	FileWriter dst(dstFile);
+	FileWriter dst = OS.FileOpenWrite(outputFilePath);
 	dst << "const unsigned char " << binArrName << "[] = {";
 	if(!singleline)
 	{
@@ -135,7 +137,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	{
 		size_t n = sizeToPrint;
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteRawFrom(ArrayRange<const char>(dataToPrint, n));
+		dst.WriteRawFrom(dataToPrint, n);
 	}
 	else for(size_t i=1; i<src.Length(); i++)
 	{
@@ -146,7 +148,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 			n += sizeToPrintPerLineCount;
 		}
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteRawFrom(ArrayRange<const char>(dataToPrint, n));
+		dst.WriteRawFrom(dataToPrint, n);
 	}
 	if(!singleline) dst << "\r\n";
 	dst << "};";
@@ -159,8 +161,9 @@ int INTRA_CRTDECL main(int argc, const char* argv[])
 {
 	if(argc<2)
 	{
-		ConsoleOut.PrintLine("Usage:");
-		ConsoleOut.PrintLine(argv[0], " <inputFilePath> [-o <outputFilePath.c>] [-varname <binaryArrayName>] [-per-line <32>] [-notabs] [-nospaces] [-singleline] [-endline]");
+		Std.PrintLine("Usage:");
+		Std.PrintLine(argv[0], " <inputFilePath> [-o <outputFilePath.c>] [-varname <binaryArrayName>] "
+			"[-per-line <32>] [-notabs] [-nospaces] [-singleline] [-endline]");
 		return 0;
 	}
 

@@ -19,7 +19,7 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Array
 		set2Color = {0.75f, 0, 0},
 		goodSet2Color = {1, 0.25f, 0};
 	
-	logger.PrintLine();
+	logger.LineBreak();
 
 	logger.PushFont(Math::Vec3(-1), -1, false, false, true);
 	logger.PrintLine("В тесте \"", testName, '"');
@@ -57,7 +57,7 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Array
 	String timeStr;
 	for(size_t i=0; i<comparedTypes.Length(); i++)
 	{
-		bool isSet2Time = i<set2Times.Length();
+		const bool isSet2Time = i<set2Times.Length();
 		double time = isSet2Time? set2Times[i]: set1Times[i-set2Times.Length()];
 		logger.PushFont(isSet2Time? set2Color: set1Color, 3, true);
 		logger << comparedTypes[i];
@@ -65,7 +65,7 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Array
 		logger.PrintLine(" - ", ToString(time*1000, 2));
 	}
 
-	logger.PrintLine();
+	logger.LineBreak();
 }
 
 

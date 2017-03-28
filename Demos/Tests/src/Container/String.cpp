@@ -18,6 +18,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "IO/LogSystem.h"
 #include "Container/Sequential/String.h"
 #include "Platform/Time.h"
+#include "Range/Output/OutputArrayRange.h"
+#include "Range/Output/Inserter.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -29,12 +31,8 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 
 using namespace Intra;
-using namespace Intra::IO;
-
-static_assert(!Range::IsInputRange<std::string>::_ && !Range::HasAsRangeMethod<std::string>::_ &&
-	Container::Has_data<std::string>::_ && Container::Has_size<std::string>::_, "ERRRORORORRORORO");
-decltype(Range::AsRange(std::string())) res;
-static_assert(Range::IsAsInputRange<std::string>::_, "ERROR!");
+using namespace IO;
+using namespace Range;
 
 template<typename String> double TestStringReading(uint times, size_t strsize)
 {
@@ -292,7 +290,7 @@ double TestStackStreamFormatting(uint times)
 	Timer timer;
 	for(uint i=0; i<times; i++)
 	{
-		Range::OutputArrayRange<char> strStream = stackBuffer;
+		OutputArrayRange<char> strStream = stackBuffer;
 		strStream << "int=" << i << ", double=" << 234.0963 << "!";
 		auto str = strStream.GetWrittenData();
 		(void)str;
@@ -306,7 +304,7 @@ template<typename S> double TestAppenderStreamFormatting(uint times)
 	for(uint i = 0; i<times; i++)
 	{
 		S result;
-		Range::LastAppender(result) << "int=" << i << ", double=" << 234.0963 << "!";
+		LastAppender(result) << "int=" << i << ", double=" << 234.0963 << "!";
 	}
 	return timer.GetTime();
 }

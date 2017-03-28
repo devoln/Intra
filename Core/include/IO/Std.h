@@ -2,6 +2,10 @@
 
 #include "Range/Polymorphic/InputRange.h"
 #include "IO/FormattedWriter.h"
+#include "Platform/CppWarnings.h"
+#include "IO/OsFile.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
@@ -28,3 +32,5 @@ extern StdInOut Std;
 extern FormattedWriter StdErr;
 
 }}
+
+INTRA_WARNING_POP

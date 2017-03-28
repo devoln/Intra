@@ -20,7 +20,7 @@ Random<ulong64> Random<ulong64>::Global((uint(DateTime::StartupTimeBasedSeed()))
 Random<float> Random<float>::Global((uint(DateTime::StartupTimeBasedSeed())));
 Random<double> Random<double>::Global((uint(DateTime::StartupTimeBasedSeed())));
 
-Memory::UniqueRef<RandomNoise::Data> RandomNoise::data = new RandomNoise::Data;
+Unique<RandomNoise::Data> RandomNoise::data = new RandomNoise::Data;
 
 
 }}

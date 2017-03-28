@@ -5,6 +5,8 @@
 #include "Algo/Comparison/EndsWith.h"
 #include "Algo/Mutation/Replace.h"
 #include "IO/OsFile.h"
+#include "IO/FileReader.h"
+#include "IO/FileWriter.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -163,14 +165,14 @@ ulong64 OsFileSystem::FileGetTime(StringView fileName) const
 ulong64 OsFileSystem::FileGetSize(StringView fileName) const
 {return FileGetInfo(fileName).Size;}
 
-OsFile OsFileSystem::FileOpen(StringView fileName)
-{return OsFile(GetFullFileName(fileName), OsFile::Mode::Read);}
+FileReader OsFileSystem::FileOpen(StringView fileName)
+{return FileReader(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Read));}
 
-OsFile OsFileSystem::FileOpenWrite(StringView fileName)
-{return OsFile(GetFullFileName(fileName), OsFile::Mode::Write);}
+FileWriter OsFileSystem::FileOpenWrite(StringView fileName)
+{return FileWriter(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write));}
 
-OsFile OsFileSystem::FileOpenReadWrite(StringView fileName)
-{return OsFile(GetFullFileName(fileName), OsFile::Mode::ReadWrite);}
+FileWriter OsFileSystem::FileOpenAppend(StringView fileName)
+{return FileWriter::Append(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write));}
 
 String OsFileSystem::FileToString(StringView fileName)
 {return OsFile::ReadAsString(GetFullFileName(fileName));}

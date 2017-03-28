@@ -10,7 +10,7 @@ void Chorus::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 {
 	Array<float> copy(inOutSamples);
 	float radFreq = Frequency*2*float(Math::PI);
-	double duration = double(inOutSamples.Length())/sampleRate;
+	const double duration = double(inOutSamples.Length())/sampleRate;
 	float t = 0.0f;
 	float dt = 1.0f/float(sampleRate);
 	Math::SineRange<float> sineRange(MaxDelay, 0, radFreq*dt);
@@ -35,7 +35,7 @@ void Chorus::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 void Echo::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 {
 	Array<float> copy(inOutSamples);
-	double duration = double(inOutSamples.Length())/sampleRate;
+	const double duration = double(inOutSamples.Length())/sampleRate;
 	float t = 0;
 	const float dt = 1.0f/float(sampleRate);
 	while(!inOutSamples.Empty())
@@ -73,7 +73,8 @@ void FilterHP::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 void FilterQ::operator()(ArrayRange<float> samples, uint sampleRate) const
 {
 	(void)sampleRate;
-	float F = Frq/7019.0f, P = 0, S = 0;
+	const float F = Frq/7019.0f;
+	float P = 0, S = 0;
 	for(float& sample: samples)
 	{
 		P += S*F+sample;
@@ -87,14 +88,14 @@ void Fade::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 	(void)sampleRate;
 	if(FadeIn>0)
 	{
-		float k = 1.0f/float(FadeIn*FadeIn);
+		const float k = 1.0f/float(FadeIn*FadeIn);
 		for(size_t i=0; i<inOutSamples.Length(); i++)
 			inOutSamples[i] *= float(Math::Sqr(i+1))*k;
 	}
 	if(FadeOut>0)
 	{
-		size_t a = inOutSamples.Length()>FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
-		float k = 1.0f/float(Math::Sqr(FadeOut));
+		const size_t a = inOutSamples.Length()>FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
+		const float k = 1.0f/float(Math::Sqr(FadeOut));
 		for(uint i=1; i<FadeOut; i++)
 			inOutSamples[a+i] *= float(Math::Sqr(FadeOut-i))*k;
 	}

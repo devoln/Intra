@@ -4,6 +4,8 @@
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
+#include "IO/FileWriter.h"
+#include "IO/ConsoleInput.h"
 #include "IO/ConsoleOutput.h"
 #include "Algo/String/Path.h"
 #include "Platform/CppWarnings.h"
@@ -31,18 +33,18 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace Intra::IO;
 
-CompositeFormattedWriter logger;
-CompositeFormattedWriter emptyLogger;
 
-void InitLogSystem(int argc, const char* argv[])
+CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 {
+	static CompositeFormattedWriter logger;
 #ifndef INTRA_NO_LOGGING
 #ifndef INTRA_NO_FILE_LOGGING
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	auto logFile = DiskFile::Writer(logFileName, true);
-	if(!logExisted) g_LogWriter.RawPrint("<meta charset='utf-8'>\n<title>Logs</title>\n"+StringView(HtmlWriter::CssSpoilerCode));
+	FileWriter logFile = OS.FileOpenAppend(logFileName);
+	logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
+	FormattedWriter logWriter = HtmlWriter(Meta::Move(logFile), !logExisted);
 	const String datetime = DateTime::Now().ToString();
 	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
 
@@ -53,31 +55,29 @@ void InitLogSystem(int argc, const char* argv[])
 		if(i+1<argc) cmdline+=' ';
 	}
 
-	g_LogWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
-	atexit([](){g_LogWriter.EndAllSpoilers(); g_LogFile=null;});
+	logWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
 	
 
 	Errors::CrashHandler=[](int signum)
 	{
-		g_LogWriter.PushFont({1, 0, 0}, 5, true);
-		g_LogWriter.Print(Errors::CrashSignalDesc(signum));
-		g_LogWriter.PopFont();
-		g_LogWriter.EndAllSpoilers();
-		g_LogFile=null;
+		logger.PushFont({1, 0, 0}, 5, true);
+		logger.Print(Errors::CrashSignalDesc(signum));
+		logger.PopFont();
+		logger = null;
 	};
 
-	cmdline=null;
+	cmdline = null;
 	for(int i=0; i<argc; i++)
 	{
 		cmdline += StringView(argv[i]);
 		if(i+1<argc) cmdline+='\n';
 	}
-	g_LogWriter << "Command line arguments:";
-	g_LogWriter.PrintCode(cmdline);
-	g_LogWriter.BeginSpoiler("System info");
+	logWriter << "Command line arguments:";
+	logWriter.PrintCode(cmdline);
+	logWriter.BeginSpoiler("System info");
 	auto memInfo = SystemMemoryInfo::Get();
 	auto procInfo = ProcessorInfo::Get();
-	g_LogWriter.PrintCode(*String::Format(
+	logWriter.PrintCode(*String::Format(
 		"CPU:\r\n<^>\r\n"
 		"Cores: <^>\r\n"
 		"Logical cores: <^>\r\n"
@@ -90,13 +90,14 @@ void InitLogSystem(int argc, const char* argv[])
 		(double(memInfo.FreePhysicalMemory)/double(1 << 30), 2)
 		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);
-	g_LogWriter.EndSpoiler();
-	logger.Attach(&g_LogWriter);
+	logWriter.EndSpoiler();
+	logger.Attach(Meta::Move(logWriter));
 #else
 	(void)argc; (void)argv;
 #endif
 	logger.Attach(ConsoleOutput());
 #endif
+	return logger;
 }
 
 
@@ -115,12 +116,13 @@ void InitLogSystem(int argc, const char* argv[])
 int main(int argc, const char* argv[])
 {
 	Errors::InitSignals();
-	InitLogSystem(argc, argv);
+	auto& logger = InitLogSystem(argc, argv);
 
 #if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
 	if(argc>=2 && StringView(argv[1])=="-a")
 #endif
 	TestGroup::YesForNestingLevel=0;
+	CompositeFormattedWriter emptyLogger;
 	
 	TestGroup(emptyLogger, logger, "Random number generation", RunRandomPerfTests);
 	if(TestGroup gr{emptyLogger, logger, "Ranges"})

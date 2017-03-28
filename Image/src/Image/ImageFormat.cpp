@@ -381,7 +381,7 @@ ValueType ImageFormat::GetValueType() const
 ValueType ImageFormat::GetComponentType() const {return GetValueType().ToScalarType();}
 StringView ImageFormat::ToString() const {return StringView(get_format_info(*this).Name);}
 
-ImageFormat ImageFormat::FromString(StringView str, bool* exists)
+ImageFormat ImageFormat::FromString(StringView str)
 {
 	static HashMap<StringView, ImageFormat> formatTable;
 	if(formatTable==null)
@@ -393,9 +393,7 @@ ImageFormat ImageFormat::FromString(StringView str, bool* exists)
 		for(ushort i=ImageFormat::FirstOfBasic; i<ImageFormat::EndOfBasic; i++)
 			formatTable[ImageFormat(i).ToString()] = ImageFormat(i);
 	}
-	auto result = formatTable.Get(str, exists);
-
-	return result;
+	return formatTable.Get(str, ImageFormat::None);
 }
 
 UVec4 ImageFormat::GetBitMasks(bool swapRB) const

@@ -29,23 +29,23 @@ static const StringView HtmlWriter_CssLoggerCode = "<style type=\"text/css\">"
 	".perf {color: #aaaa00; font-size: 75%;}\r\n"
 	"</style>";
 
-struct HtmlWriterImpl final: FormattedWriter::Interface
+class HtmlWriterImpl final: public FormattedWriter::BasicImpl
 {
-	void BeginCode(OutputStream& s) final {s.Print("\n<pre>\n");}
-	void EndCode(OutputStream& s) final {s.Print("\n</pre>\n");}
+public:
+	using FormattedWriter::BasicImpl::PushFont;
+	using FormattedWriter::BasicImpl::PopFont;
 
-	void PushStyle(OutputStream& s, StringView style) final {s.Print("<span class='", style, "'>");}
-	void PopStyle(OutputStream& s) final {s.Print("</span>");}
+	void BeginCode(OutputStream& s) override {s.Print("\n<pre>\n");}
+	void EndCode(OutputStream& s) override {s.Print("\n</pre>\n");}
 
-	void HorLine(OutputStream& s) final {s.Print("<hr>");}
+	void PushStyle(OutputStream& s, StringView style) override {s.Print("<span class='", style, "'>");}
+	void PopStyle(OutputStream& s) override {s.Print("</span>");}
 
-	void LineBreak(OutputStream& s) final
-	{
-		s.Put('\r');
-		s.Put('\n');
-	}
+	void HorLine(OutputStream& s) override {s.Print("<hr>");}
 
-	void PrintPreformatted(OutputStream& s, StringView text) final
+	void LineBreak(OutputStream& s) override {s.PrintLine("<br />");}
+
+	void PrintPreformatted(OutputStream& s, StringView text) override
 	{
 		s.Print(String::MultiReplace(text,
 			{"&",      "<",     ">",   "\r\n",   "\n",     "\r"},
@@ -53,7 +53,7 @@ struct HtmlWriterImpl final: FormattedWriter::Interface
 		));
 	}
 
-	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) final
+	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) override
 	{
 		if(curFont.Underline && !newFont.Underline) s.Print("</ins>");
 		if(curFont.Italic && !newFont.Italic) s.Print("</i>");
@@ -69,7 +69,7 @@ struct HtmlWriterImpl final: FormattedWriter::Interface
 		if(!curFont.Underline && newFont.Underline) s.Print("<ins>");
 	}
 
-	void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) final
+	void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) override
 	{
 		if(curFont.Bold && !prevFont.Bold) s.Print("</b>");
 		if(curFont.Italic && !prevFont.Italic) s.Print("</i>");
@@ -80,13 +80,13 @@ struct HtmlWriterImpl final: FormattedWriter::Interface
 		if(!curFont.Underline && prevFont.Underline) s.Print("<ins>");
 	}
 
-	void BeginSpoiler(OutputStream& s, StringView label) final
+	void beginSpoiler(OutputStream& s, StringView label) override
 	{
 		auto id = Math::Random<ulong64>::Global()^Algo::ToHash(label);
 		s.Print(*String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label));
 	}
 
-	void EndSpoiler(OutputStream& s) final {s.Print(HtmlWriter_SpoilerEndCode);}
+	void endSpoiler(OutputStream& s) override {s.Print(HtmlWriter_SpoilerEndCode);}
 };
 
 FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions)

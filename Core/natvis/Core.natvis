@@ -1,17 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Intra::Memory::IntrusiveRef&lt;*&gt;">
-    <DisplayString>Ref({(void*)mPtr}) {{{*mPtr}}}</DisplayString>
+  <Type Name="Intra::Memory::Unique&lt;*&gt;">
+    <DisplayString Condition="mPtr==nullptr">null</DisplayString>
+    <DisplayString>Unique({(void*)mPtr}) {{{*mPtr}}}</DisplayString>
     <Expand>
       <ExpandedItem Condition="mPtr!=nullptr">*mPtr</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Memory::UniqueRef&lt;*&gt;">
-    <DisplayString>Ref({(void*)mPtr}) {{{*mPtr}}}</DisplayString>
+  <Type Name="Intra::Memory::Shared&lt;*&gt;">
+    <DisplayString Condition="mData==nullptr">null</DisplayString>
+    <DisplayString>Shared({mData->RefCount}, {(void*)mPtr}) {{{*mPtr}}}</DisplayString>
     <Expand>
-      <ExpandedItem Condition="mPtr!=nullptr">*mPtr</ExpandedItem>
+      <ExpandedItem Condition="mData!=nullptr">*mData->Value</ExpandedItem>
+      <Item Name="RefCount" Condition="mData!=nullptr">*mData->RefCount</Item>
     </Expand>
   </Type>
 

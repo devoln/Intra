@@ -29,10 +29,10 @@ using namespace Math;
 static float DrumSample(float freq, float t)
 {
 	float e = 0.5f, f = 0.5f;
-	float x = 2*float(PI)*t;
+	const float x = 2*float(PI)*t;
 	float resonanse = 20*0.00390625f;
-	float cutoff = 5*0.0019531f;
-	auto exponent = Exp(-20*t);
+	const float cutoff = 5*0.0019531f;
+	const float exponent = Exp(-20*t);
 	float a = Sin(218*x)*0.3051758f;
 	a += Sin(343*x)*0.06103516f;
 	a += Sin(570*x)*0.1831055f;
@@ -43,7 +43,7 @@ static float DrumSample(float freq, float t)
 	k3 = 1.0f/Tan(k3);
 	resonanse *= k3;
 	k3 *= k3;
-	float km = 1.0f/(1.0f+resonanse+k3);
+	const float km = 1.0f/(1.0f+resonanse+k3);
 	resonanse = (1.0f-resonanse+k3)/(1.0f-k3);
 	k3 = 2.0f*(1.0f-k3)*km;
 
@@ -99,7 +99,7 @@ static DrumInstrument CreateDrums()
 	ClosedHiHat->PostEffects.AddLast(PostEffects::Fade(0, 1000));
 	ClosedHiHat->MinNoteDuration = 0.25f;
 
-	for(uint id: {41u}) result.Generators[id] = ClosedHiHat;
+	result.Generators[41] = ClosedHiHat;
 
 	auto AcousticBassDrum = new SynthesizedInstrument;
 	AcousticBassDrum->Synth = CreateGeneratorSynthPass(
@@ -109,7 +109,8 @@ static DrumInstrument CreateDrums()
 	AcousticBassDrum->PostEffects.AddLast(PostEffects::Fade(0, 1000));
 	AcousticBassDrum->MinNoteDuration = 0.2f;
 
-	for(uint id: {34u, 35u}) result.Generators[id]=AcousticBassDrum;
+	result.Generators[34] = AcousticBassDrum;
+	result.Generators[35] = AcousticBassDrum;
 
 	//auto instr1 = new SynthesizedInstrument;
 	//instr1->Synth = CreateGeneratorSynthPass(DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 0.05f, 1, 0.35f);
@@ -471,7 +472,7 @@ SynthesizedInstrument MusicalInstruments::CreateGuitar(size_t n, float c,
 	SineExpHarmonic harmonics[20];
 	for(size_t i=1; i<=n; i++)
 	{
-		auto scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow(float(i), -f);
+		const float scale = Abs( ((Mod(c*float(i*i)+37.0f*float(i), 397.0f)/200.0f)-1.0f) )*Pow(float(i), -f);
 		harmonics[i-1] = {scale * 0.5f*volume,   d+e*float(i-1),   freqMult*float(i), 1.0f/(float(i)*2.0f-1.0f)};
 	}
 	result.Synth = CreateSineExpSynthPass({harmonics, n});

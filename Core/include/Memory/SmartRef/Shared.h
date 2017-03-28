@@ -11,68 +11,87 @@ namespace Intra { namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename T> struct IntrusiveRefCounted
+//! Более лёгкий аналог std::shared_ptr.
+//! Он не принимает сырые указатели, поэтому не подвержен ошибке наличия двух счётчиков для одного объекта.
+//! Выделяет и освобождает память сам через new и не хранит deleter.
+//! Не поддерживает слабые ссылки.
+//! Также он не может использоваться с incomplete типами.
+template<typename T> class Shared
 {
-	forceinline IntrusiveRefCounted(): mRefs(0) {}
-	
-	forceinline void AddRef() {++mRefs;}
-	
-	forceinline void Release()
+	struct Data
 	{
-		INTRA_DEBUG_ASSERT(mRefs>0);
-		if(--mRefs==0) delete static_cast<T*>(this);
+		template<typename... Args> forceinline Data(Args&&... args):
+			Value(Meta::Forward<Args>(args)...), RefCount(1) {}
+
+		forceinline void Release()
+		{
+			INTRA_DEBUG_ASSERT(RefCount > 0);
+			if(--RefCount == 0) delete this;
+		}
+		
+		T Value;
+		Atomic<uint> RefCount;
+
+		Data(const Data&) = delete;
+		Data& operator=(const Data&) = delete;
+	};
+	forceinline Shared(Data* data): mData(data) {}
+public:
+	forceinline Shared(null_t=null): mData(null) {}
+	forceinline Shared(const Shared& rhs): mData(rhs.mData) {if(mData!=null) ++mData->RefCount;}
+	forceinline Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = null;}
+	forceinline ~Shared() {if(mData!=null) mData->Release();}
+
+	Shared& operator=(const Shared& rhs)
+	{
+		if(mData==rhs.mData) return *this;
+		if(mData!=null) mData->Release();
+		mData = rhs.mData;
+		if(mData!=null) ++mData->RefCount;
+		return *this;
 	}
 
-	forceinline uint GetRefCount() {return mRefs;}
+	Shared& operator=(Shared&& rhs)
+	{
+		if(mData==rhs.mData) return *this;
+		if(mData!=null) mData->Release();
+		mData = rhs.mData;
+		rhs.mData = null;
+		return *this;
+	}
+
+	forceinline Shared& operator=(null_t)
+	{
+		if(mData==null) return *this;
+		mData->Release();
+		mData = null;
+		return *this;
+	}
+
+	template<typename... Args> forceinline static Shared New(Args&&... args)
+	{return new Data(Meta::Forward<Args>(args)...);}
+
+	forceinline uint use_count() const {return mData!=null? mData->RefCount: 0;}
+
+	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mData!=null); return mData->Value;}
+	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mData!=null); return &mData->Value;}
+
+	forceinline bool operator==(null_t) const {return mData==null;}
+	forceinline bool operator!=(null_t) const {return !operator==(null);}
+	forceinline bool operator==(const Shared& rhs) const {return mData==rhs.mData;}
+	forceinline bool operator!=(const Shared& rhs) const {return !operator==(rhs);}
 
 private:
-	IntrusiveRefCounted(const IntrusiveRefCounted&) {mRefs = 0;}
-	IntrusiveRefCounted& operator=(const IntrusiveRefCounted&) = delete;
-
-	Atomic<uint> mRefs;
+	Data* mData;
 };
 
-template<typename T> struct IntrusiveRef
-{
-	forceinline IntrusiveRef(T* b=null): mPtr(b) {if(mPtr!=null) mPtr->AddRef();}
-	forceinline IntrusiveRef(const IntrusiveRef& rhs): mPtr(rhs.mPtr) {if(mPtr!=null) mPtr->AddRef();}
-	forceinline IntrusiveRef(IntrusiveRef&& rhs): mPtr(rhs.mPtr) {rhs.mPtr = null;}
-	forceinline ~IntrusiveRef() {if(mPtr!=null) mPtr->Release();}
-
-	IntrusiveRef& operator=(const IntrusiveRef& rhs)
-	{
-		if(mPtr==rhs.mPtr) return *this;
-		if(mPtr!=null) mPtr->Release();
-		mPtr = rhs.mPtr;
-		if(mPtr!=null) mPtr->AddRef();
-		return *this;
-	}
-
-	IntrusiveRef& operator=(IntrusiveRef&& rhs)
-	{
-		if(mPtr==rhs.mPtr) return *this;
-		if(mPtr!=null) mPtr->Release();
-		mPtr = rhs.mPtr;
-		rhs.mPtr = null;
-		return *this;
-	}
-
-	forceinline size_t use_count() const {return mPtr!=null? mPtr->GetRefCount(): 0;}
-	forceinline bool unique() const {return use_count()==1;}
-
-	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mPtr!=null); return *mPtr;}
-	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mPtr!=null); return mPtr;}
-
-	forceinline bool operator==(null_t) const {return mPtr==null;}
-	forceinline bool operator!=(null_t) const {return !operator==(null);}
-	forceinline bool operator==(const IntrusiveRef& rhs) const {return mPtr==rhs.mPtr;}
-	forceinline bool operator!=(const IntrusiveRef& rhs) const {return !operator==(rhs);}
-
-	uint ToHash() const {return ToHash(mPtr);}
-
-	T* mPtr;
-};
+template<typename T> forceinline Shared<Meta::RemoveReference<T>> SharedMove(T&& rhs)
+{return Shared<Meta::RemoveReference<T>>::New(Meta::Move(rhs));}
 
 INTRA_WARNING_POP
 
-}}
+}
+using Memory::Shared;
+using Memory::SharedMove;
+
+}

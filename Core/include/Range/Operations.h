@@ -49,12 +49,12 @@ size_t> LengthOr0(R&& range) {(void)range; return 0;}
 
 template<typename R> forceinline Meta::EnableIf<
 	HasEmpty<AsRangeResult<R>>::_,
-size_t> EmptyOrFalse(R&& range) {return Range::Forward<R>(range).Empty();}
+bool> EmptyOrFalse(R&& range) {return Range::Forward<R>(range).Empty();}
 
 
 template<typename R> forceinline Meta::EnableIf<
 	!HasEmpty<AsRangeResult<R>>::_,
-size_t> EmptyOrFalse(R&& range) {(void)range; return false;}
+bool> EmptyOrFalse(R&& range) {(void)range; return false;}
 
 
 

@@ -24,7 +24,7 @@ uint Murmur3_32(StringView key, uint seed)
 
 	const uint nblocks = uint(key.Length()/4);
 	chars = key.Data();
-	uint k;
+	uint k = 0;
 	for(uint i = 0; i < nblocks; i++)
 	{
 		k = blocks[i];
@@ -38,7 +38,6 @@ uint Murmur3_32(StringView key, uint seed)
 
 	const byte* tail = bytes + nblocks*4;
 	uint k1 = 0;
-
 	switch(key.Length() & 3)
 	{
 	case 3:
@@ -70,7 +69,7 @@ uint Murmur3_32(StringView key, uint seed)
 
 ulong64 Murmur2_64_x64(StringView key, uint seed)
 {
-	const ulong64 m = 0xc6a4a7935bd1e995;
+	enum: ulong64 {m = 0xc6a4a7935bd1e995};
 	const int r = 47;
 
 	ulong64 h = seed ^ (key.Length() * m);
@@ -83,7 +82,7 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 	};
 
 	chars = key.Data();
-	const ulong64* end = data + (key.Length()/8);
+	const ulong64* const end = data + (key.Length()/8);
 
 	while(data != end)
 	{
@@ -99,8 +98,8 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 
 	switch(key.Length() & 7)
 	{
-	case 7: h ^= ulong64(bytes[6]) << 48;
-	case 6: h ^= ulong64(bytes[5]) << 40;
+	case 7: h ^= ulong64(bytes[6]) << 48; //fallthrough
+	case 6: h ^= ulong64(bytes[5]) << 40; //...
 	case 5: h ^= ulong64(bytes[4]) << 32;
 	case 4: h ^= ulong64(bytes[3]) << 24;
 	case 3: h ^= ulong64(bytes[2]) << 16;
@@ -120,8 +119,8 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 
 ulong64 Murmur2_64_x32(StringView key, uint seed)
 {
-	const uint m = 0x5bd1e995;
-	const int r = 24;
+	enum: uint {m = 0x5bd1e995};
+	enum: uint {r = 24};
 
 	uint h1 = seed ^ uint(key.Length());
 	uint h2 = 0;
@@ -163,9 +162,9 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 
 	switch(key.End()-chars)
 	{
-	case 3: h2 ^= uint(bytes[2]) << 16u;
-	case 2: h2 ^= uint(bytes[1]) << 8u;
-	case 1: h2 ^= bytes[0];
+	case 3: h2 ^= uint(bytes[2] << 16);
+	case 2: h2 ^= uint(bytes[1] << 8);
+	case 1: h2 ^= uint(bytes[0]);
 		h2 *= m;
 
 	default:;

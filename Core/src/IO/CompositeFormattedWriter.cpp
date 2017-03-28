@@ -1,11 +1,15 @@
 #include "IO/CompositeFormattedWriter.h"
 #include "Container/Sequential/Array.h"
 #include "IO/FormattedWriter.h"
+#include "IO/ReferenceFormattedWriter.h"
 
 namespace Intra { namespace IO {
 
-struct CompositeFormattedWriterImpl final: FormattedWriter::Interface
+struct CompositeFormattedWriterImpl final: FormattedWriter::BasicImpl
 {
+	using FormattedWriter::BasicImpl::PushFont;
+	using FormattedWriter::BasicImpl::PopFont;
+
 	void PushStyle(OutputStream&, StringView style) override
 	{for(auto& writer: Attached) writer.PushStyle(style);}
 	
@@ -33,10 +37,10 @@ struct CompositeFormattedWriterImpl final: FormattedWriter::Interface
 	void PopFont(OutputStream&, const FontDesc&, const FontDesc&) override
 	{for(auto& writer: Attached) writer.PopFont();}
 	
-	void BeginSpoiler(OutputStream&, StringView show) override
+	void beginSpoiler(OutputStream&, StringView show) override
 	{for(auto& writer: Attached) writer.BeginSpoiler(show);}
 	
-	void EndSpoiler(OutputStream&) override
+	void endSpoiler(OutputStream&) override
 	{for(auto& writer: Attached) writer.EndSpoiler();}
 
 	Array<FormattedWriter> Attached;
@@ -81,9 +85,17 @@ size_t CompositeFormattedWriter::Attach(FormattedWriter&& stream)
 	return index;
 }
 
+size_t CompositeFormattedWriter::Attach(FormattedWriter* stream)
+{
+	if(stream==null) return ~size_t(0);
+	return Attach(ReferenceFormattedWriter(*stream));
+}
+
 void CompositeFormattedWriter::Detach(size_t index)
 {
 	auto& attached = static_cast<CompositeFormattedWriterImpl*>(mInterface.Ptr())->Attached;
+	INTRA_DEBUG_ASSERT(index < attached.Count());
+	INTRA_DEBUG_ASSERT(attached[index] != null);
 	attached[index] = null;
 	while(!attached.Empty() && attached.Last()==null)
 		attached.RemoveLast();

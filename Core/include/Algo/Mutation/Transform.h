@@ -147,11 +147,23 @@ template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
 
 //Оптимизированные частные случаи:
 
-void Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2);
-void Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2);
-void Multiply(ArrayRange<float> dstOp1, float multiplyer);
-void Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiplyer);
-void MulAdd(ArrayRange<float> dstOp1, float mul, float add);
+//! Складывать соотвествующие элементы диапазонов до тех пор, пока один из диапазонов не окажется пустым.
+//! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
+size_t AddAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2);
+size_t MultiplyAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2);
+size_t MultiplyAdvance(ArrayRange<float>& dstOp1, float multiplyer);
+size_t MultiplyAdvance(ArrayRange<float>& dst, ArrayRange<const float>& op1, float multiplyer);
+size_t MulAddAdvance(ArrayRange<float>& dstOp1, float mul, float add);
+
+//! Складывать соответствующие элементы диапазонов.
+//! Если один из диапазонов короче другого, будет обработано столько элементов, какова минимальная длина.
+//! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
+forceinline size_t Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2) {return AddAdvance(dstOp1, op2);}
+forceinline size_t Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2) {return MultiplyAdvance(dstOp1, op2);}
+forceinline size_t Multiply(ArrayRange<float> dstOp1, float multiplyer) {return MultiplyAdvance(dstOp1, multiplyer);}
+forceinline size_t Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiplyer) {return MultiplyAdvance(dst, op1, multiplyer);}
+forceinline size_t MulAdd(ArrayRange<float> dstOp1, float mul, float add) {return MulAddAdvance(dstOp1, mul, add);}
+
 
 template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_

@@ -5,6 +5,7 @@
 #include "Platform/Debug.h"
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
+#include "IO/Std.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -69,12 +70,12 @@ void TestGroup::consoleAskToEnableTest()
 }
 
 TestGroup::TestGroup(StringView category):
-	TestGroup(currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Logger,
-		currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Output, category) {}
+	TestGroup(currentTestGroup==null? IO::Std: currentTestGroup->Logger,
+		currentTestGroup==null? IO::Std: currentTestGroup->Output, category) {}
 
 TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
-	TestGroup(currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Logger,
-		currentTestGroup==null? IO::ConsoleOut: currentTestGroup->Output, category, funcToTest) {}
+	TestGroup(currentTestGroup==null? IO::Std: currentTestGroup->Logger,
+		currentTestGroup==null? IO::Std: currentTestGroup->Output, category, funcToTest) {}
 
 TestGroup::~TestGroup()
 {
