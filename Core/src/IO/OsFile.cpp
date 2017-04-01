@@ -5,7 +5,6 @@
 #include "IO/FileSystem.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
-#include "IO/Std.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -92,7 +91,7 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
 	else
 	{
-		Std.PrintLine("Cannot open file ", mFullPath, "! errno = ", StringView(strerror(errno)));
+		//Std.PrintLine("Cannot open file ", mFullPath, "! errno = ", StringView(strerror(errno)));
 		mHandle = null;
 		mOwning = false;
 	}
@@ -138,11 +137,7 @@ ulong64 OsFile::Size() const
 	return ulong64(result.QuadPart);
 #else
 	off64_t result = lseek64(int(reinterpret_cast<size_t>(mHandle)), 0, SEEK_END);
-	if(result == off64_t(-1))
-	{
-		//Std.PrintLine("Cannot determine size of file ", mFullPath);
-		return 0;
-	}
+	if(result == off64_t(-1)) return 0;
 	return size_t(result);
 #endif
 }

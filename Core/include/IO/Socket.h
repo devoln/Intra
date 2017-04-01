@@ -59,6 +59,9 @@ protected:
 	~BasicSocket() {Close();}
 
 	void initContext();
+
+	bool waitInputMs(size_t milliseconds) const;
+	bool waitInput() const;
 };
 
 class StreamSocket: public BasicSocket
@@ -67,6 +70,10 @@ class StreamSocket: public BasicSocket
 public:
 	StreamSocket(null_t=null) {}
 	StreamSocket(SocketType type, StringView host, ushort port);
+
+	bool WaitForInputMs(size_t timeoutMs) const {return waitInputMs(timeoutMs);}
+	bool WaitForInput() const {return waitInput();}
+	bool ReadyToRead() const {return waitInputMs(0);}
 
 	size_t Read(void* dst, size_t bytes);
 	size_t Write(const void* src, size_t bytes);
@@ -81,9 +88,10 @@ public:
 	ServerSocket(SocketType type, ushort port, size_t maxConnections);
 	ServerSocket(ServerSocket&& rhs): BasicSocket(Meta::Move(rhs)) {}
 
-	bool WaitForConnectionMs(size_t milliseconds) const;
-	bool WaitForConnection() const;
-	bool HasConnections() const;
+	bool WaitForConnectionMs(size_t milliseconds) const {return waitInputMs(milliseconds);}
+	bool WaitForConnection() const {return waitInput();}
+	bool HasConnections() const {return waitInputMs(0);}
+
 	StreamSocket Accept(String& oAddr);
 	StreamSocket Accept() {String addr; return Accept(addr);}
 };
