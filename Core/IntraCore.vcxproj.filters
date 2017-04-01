@@ -327,6 +327,9 @@
     <ClCompile Include="src\IO\ReferenceFormattedWriter.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\Socket.cpp">
+      <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Utils\Callback.h">
@@ -1084,6 +1087,12 @@
     </ClInclude>
     <ClInclude Include="include\Range\Output.hh">
       <Filter>Заголовочные файлы\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\Socket.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Finally.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -707,6 +707,7 @@
     <ClCompile Include="src\IO\Networking.cpp" />
     <ClCompile Include="src\IO\OsFile.cpp" />
     <ClCompile Include="src\IO\ReferenceFormattedWriter.cpp" />
+    <ClCompile Include="src\IO\Socket.cpp" />
     <ClCompile Include="src\IO\Std.cpp" />
     <ClCompile Include="src\Math\Math.cpp" />
     <ClCompile Include="src\Math\Random.cpp" />
@@ -837,6 +838,7 @@
     <ClInclude Include="include\IO\Networking.h" />
     <ClInclude Include="include\IO\OsFile.h" />
     <ClInclude Include="include\IO\ReferenceFormattedWriter.h" />
+    <ClInclude Include="include\IO\Socket.h" />
     <ClInclude Include="include\IO\Std.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
@@ -982,6 +984,7 @@
     <ClInclude Include="include\Utils\Callable.h" />
     <ClInclude Include="include\Utils\Callback.h" />
     <ClInclude Include="include\Utils\Delegate.h" />
+    <ClInclude Include="include\Utils\Finally.h" />
     <ClInclude Include="include\Utils\MiscTypes.h" />
     <ClInclude Include="include\Utils\Optional.h" />
   </ItemGroup>
