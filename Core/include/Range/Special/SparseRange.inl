@@ -13,13 +13,14 @@ template<typename T, typename Index> T& SparseRange<T, Index>::append_first_free
 {
 	if(Empty()) init_free_list();
 	if(oIndex!=null) *oIndex = first_free;
-	T& result = data[first_free];
+	T& result = data[size_t(first_free)];
 	first_free = reinterpret_cast<Index&>(result);
 	return result;
 }
 
 template<typename T, typename Index> void SparseRange<T, Index>::init_free_list()
 {
+	INTRA_ASSERT(data.Length() >= 1);
 	for(size_t i=0; i<data.Length()-1; i++)
 		reinterpret_cast<Index&>(data[i]) = Index(i+1);
 	reinterpret_cast<Index&>(data.Last()) = end_index();
@@ -53,23 +54,24 @@ template<typename T, typename Index> template<typename... Args> T& SparseRange<T
 
 template<typename T, typename Index> void SparseRange<T, Index>::Remove(Index index)
 {
-	data[index].~T();
-	Index& nextFree = reinterpret_cast<Index&>(data[index]);
+	data[size_t(index)].~T();
+	Index& nextFree = reinterpret_cast<Index&>(data[size_t(index)]);
 	nextFree = first_free;
 	first_free = index;
 }
 
 template<typename T, typename Index> Array<flag32> SparseRange<T, Index>::DeadBitfield() const
 {
+	if(Empty()) return null;
 	enum {ValueBits = sizeof(flag32)*8};
 	Array<flag32> result;
 	result.SetCount(data.Length()/ValueBits); //Заполнит все биты нулями
-	size_t ff = first_free;
+	Index ff = first_free;
 	while(ff != end_index())
 	{
-		INTRA_DEBUG_ASSERT(ff<data.Length());
-		result[ff/ValueBits] |= (1u << (ff % ValueBits));
-		ff = reinterpret_cast<Index&>(data[ff]);
+		INTRA_DEBUG_ASSERT(size_t(ff) < data.Length());
+		result[size_t(ff/ValueBits)] |= (1u << (ff % ValueBits));
+		ff = reinterpret_cast<Index&>(data[size_t(ff)]);
 	}
 	return result;
 }
@@ -101,7 +103,8 @@ template<typename T, typename Index> template<typename U> Meta::EnableIf<
 
 template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRange& dst)
 {
-	INTRA_DEBUG_ASSERT(dst.data.Length()>=data.Length());
+	if(Empty()) return;
+	INTRA_DEBUG_ASSERT(dst.data.Length() >= data.Length());
 	enum {ValueBits = sizeof(flag32)*8};
 	Array<flag32> deadBitfield = DeadBitfield();
 	Index* prevEmpty = &dst.first_free;

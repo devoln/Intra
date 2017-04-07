@@ -116,7 +116,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes) const
 	INTRA_DEBUG_ASSERT(mMode == Mode::Read || mMode == Mode::ReadWrite);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	DWORD bytesRead;
-	OVERLAPPED overlapped;
+	OVERLAPPED overlapped{};
 	overlapped.Offset = DWORD(fileOffset);
 	overlapped.OffsetHigh = DWORD(fileOffset >> 32);
 	(void)ReadFile(reinterpret_cast<HANDLE>(mHandle), dst, bytes, &bytesRead, &overlapped);

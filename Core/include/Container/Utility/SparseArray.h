@@ -61,15 +61,15 @@ public:
 	//! Возвращает, заполнен ли массив.
 	//! Это означает, что массив не содержит свободных элементов,
 	//! и следующая вставка элемента приведёт к перераспределению памяти.
-	bool IsFull() const {return mData.IsFull();}
+	forceinline bool IsFull() const {return mData.IsFull();}
 
 
-	bool Empty() const {return mData.Empty();}
+	forceinline bool Empty() const {return mData.Empty();}
 
-	size_t Capacity() const {return mData.Capacity();}
+	forceinline size_t Capacity() const {return size_t(mData.Capacity());}
 
-	bool operator==(null_t) const { return Empty(); }
-	bool operator!=(null_t) const { return !Empty(); }
+	forceinline bool operator==(null_t) const {return Empty();}
+	forceinline bool operator!=(null_t) const {return !Empty();}
 
 private:
 	Range::SparseRange<T, Index> mData;
@@ -78,6 +78,7 @@ private:
 	{
 		if(!IsFull()) return;
 		size_t count = Capacity()+Capacity()/2;
+		if(count == 0) count = 4;
 		auto range = Memory::AllocateRangeUninitialized<T>(Memory::GlobalHeap, count, INTRA_SOURCE_INFO);
 		Range::SparseRange<T, Index> newData(range);
 		mData.MoveTo(newData);

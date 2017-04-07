@@ -42,7 +42,8 @@ template<typename Char> struct GenericStringView
 
 	//! Конструирование из ограниченной нулевым символом C-строки.
 	//! Сам нулевой символ при этом не входит в полученный диапазон.
-	forceinline GenericStringView(Char* cstr):
+	//! Хотелось бы сделать его explicit, но не все компиляторы будут неявно конструировать StringView из строковых литералов.
+	forceinline /*explicit*/ GenericStringView(Char* cstr):
 		mStart(cstr), mEnd(cstr==null? null: cstr+Algo::CStringLength(cstr)) {}
 
 	constexpr forceinline Char* Data() const {return mStart;}
@@ -122,7 +123,7 @@ template<typename Char> struct GenericStringView
 	bool operator==(const Char* rhs) const
 	{
 		return (Empty() && (rhs==null || *rhs=='\0')) ||
-			(rhs!=null && Algo::Equals(*this, GenericStringView(rhs, Length())) && rhs[Length()]=='\0');
+			(rhs!=null && Algo::Equals(*this, GenericStringView<const Char>(rhs, Length())) && rhs[Length()]=='\0');
 	}
 
 	bool operator==(const GenericStringView& rhs) const

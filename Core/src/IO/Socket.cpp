@@ -1,6 +1,10 @@
 #include "IO/Socket.h"
-#include "Platform/PlatformInfo.h"
 #include "Utils/Finally.h"
+#include "Platform/PlatformInfo.h"
+#include "Platform/CppWarnings.h"
+#include "IO/Std.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
@@ -10,22 +14,18 @@
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
-
-#pragma warning(push)
-#pragma warning(disable: 4668)
+#pragma warning(disable: 4548) //Ругался на FD_SET
 #endif
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <windows.h>
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <ws2bth.h>
+INTRA_WARNING_POP
 
 typedef int bufsize_t;
+typedef intptr_t ssize_t;
 
 #else
 
@@ -35,6 +35,7 @@ typedef int bufsize_t;
 #include <unistd.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <errno.h>
 
 typedef size_t bufsize_t;
 
@@ -52,7 +53,7 @@ struct WsaContext
 	
 	WsaContext()
 	{
-		inited = WSAStartup(MAKEWORD(2, 2), &wsaData) != 0;
+		inited = WSAStartup(MAKEWORD(2, 0), &wsaData) == 0;
 	}
 
 	~WsaContext()
@@ -61,8 +62,28 @@ struct WsaContext
 	}
 };
 
+static Intra::Container::String getErrorMessage()
+{
+	int err = WSAGetLastError();
+	char* s = null;
+	FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
+		null, DWORD(err),
+		DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
+		(char*)&s, 0, null);
+	Intra::Container::String errorMsg = Intra::Container::String(s);
+	LocalFree(s);
+	return errorMsg;
+}
+
 #undef gai_strerror
 #define gai_strerror gai_strerrorA
+
+#else
+
+inline Intra::Container::String getErrorMessage()
+{return Intra::Container::String(strerror(errno));}
+
+enum: ssize_t {SOCKET_ERROR = -1};
 
 #endif
 
@@ -101,6 +122,10 @@ BasicSocket::BasicSocket(SocketType type): mType(type)
 		socketConstants[byte(type)][0],
 		socketConstants[byte(type)][1],
 		socketConstants[byte(type)][2]);
+	if(mHandle == NullSocketHandle)
+	{
+		Std.PrintLine(getErrorMessage());
+	}
 }
 
 void BasicSocket::Close()
@@ -125,24 +150,29 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections)
 	const auto gaiErr = getaddrinfo(null, portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
-		//gai_strerror(gaiErr);
+		Std.PrintLine(gai_strerror(gaiErr));
 		return;
 	}
 	auto addrAutoCleanup = Finally(freeaddrinfo, addrInfo);
 
-	if(bind(mHandle, addrInfo->ai_addr, addrInfo->ai_addrlen) != 0)
-	{
-		return;
-	}
 	mHandle = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol);
-	addrInfo = null;
-
 	if(mHandle == NullSocketHandle)
 	{
+		Std.PrintLine(getErrorMessage());
 		return;
 	}
+
+	if(bind(mHandle, addrInfo->ai_addr, socklen_t(addrInfo->ai_addrlen)) != 0)
+	{
+		Std.PrintLine(getErrorMessage());
+		Close();
+		return;
+	}
+	addrInfo = null;
+
 	if(listen(mHandle, int(maxConnections)) < 0)
 	{
+		Std.PrintLine(getErrorMessage());
 		Close();
 		return;
 	}
@@ -154,24 +184,30 @@ bool BasicSocket::waitInputMs(size_t milliseconds) const
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
 	timeval timeout = {long(milliseconds/1000), long(milliseconds % 1000 * 1000)};
-	return select(mHandle+1, &set, null, null, &timeout) > 0;
+	return select(int(mHandle+1), &set, null, null, &timeout) > 0;
 }
 
 bool BasicSocket::waitInput() const
 {
+	if(mHandle == NullSocketHandle) return false;
 	fd_set set;
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
-	return select(mHandle+1, &set, null, null, null) > 0;
+	return select(int(mHandle+1), &set, null, null, null) > 0;
 }
 
 StreamSocket ServerSocket::Accept(String& addr)
 {
 	if(mHandle == NullSocketHandle) return null;
 	sockaddr sAddr;
-	socklen_t sAddrLen;
+	socklen_t sAddrLen = sizeof(sAddr);
 	StreamSocket result;
 	result.mHandle = accept(mHandle, &sAddr, &sAddrLen);
+	if(result.mHandle == NullSocketHandle)
+	{
+		Std.PrintLine(getErrorMessage());
+		return result;
+	}
 	result.mType = mType;
 	addr = StringView(static_cast<const char*>(sAddr.sa_data));
 	return result;
@@ -191,32 +227,72 @@ StreamSocket::StreamSocket(SocketType type, StringView host, ushort port):
 	const auto gaiErr = getaddrinfo(String(host).CStr(), portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
-		//gai_strerror(gaiErr);
+		Std.PrintLine(gai_strerror(gaiErr));
 		Close();
 		return;
 	}
 
-	if(connect(mHandle, addrInfo->ai_addr, int(addrInfo->ai_addrlen)) < 0)
+	if(connect(mHandle, addrInfo->ai_addr, socklen_t(addrInfo->ai_addrlen)) < 0)
 	{
-		//strerror(errno);
+		Std.PrintLine(getErrorMessage());
 		Close();
 		return;
 	}
+}
+
+size_t StreamSocket::Receive(void* dst, size_t bytes)
+{
+	ssize_t result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), 0);
+	if(result == SOCKET_ERROR)
+	{
+		Std.PrintLine(getErrorMessage());
+		return 0;
+	}
+	return size_t(result);
+}
+
+size_t StreamSocket::Send(const void* src, size_t bytes)
+{
+	ssize_t result = send(mHandle, static_cast<const char*>(src), bufsize_t(bytes), 0);
+	if(result == SOCKET_ERROR)
+	{
+		Std.PrintLine(getErrorMessage());
+		return 0;
+	}
+	return size_t(result);
 }
 
 size_t StreamSocket::Read(void* dst, size_t bytes)
 {
-	int result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), 0);
-	if(result == -1) return 0;
+	ssize_t result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), MSG_WAITALL);
+	if(result == SOCKET_ERROR)
+	{
+		Std.PrintLine(getErrorMessage());
+		return 0;
+	}
 	return size_t(result);
 }
 
-size_t StreamSocket::Write(const void* src, size_t bytes)
+size_t StreamSocket::Write(const void* src, size_t bytes) {return Send(src, bytes);}
+
+void StreamSocket::ShutdownReading()
 {
-	int result = send(mHandle, static_cast<const char*>(src), bufsize_t(bytes), 0);
-	if(result == -1) return 0;
-	return size_t(result);
+	if(mHandle == NullSocketHandle) return;
+	shutdown(mHandle, 0);
+}
+
+void StreamSocket::ShutdownWriting()
+{
+	if(mHandle == NullSocketHandle) return;
+	shutdown(mHandle, 1);
+}
+
+void StreamSocket::Shutdown()
+{
+	if(mHandle == NullSocketHandle) return; 
+	shutdown(mHandle, 2);
 }
 
 }}
 
+INTRA_WARNING_POP

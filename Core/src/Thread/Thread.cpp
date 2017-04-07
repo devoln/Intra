@@ -341,6 +341,11 @@ static void* ThreadProc(void* lpParam)
 
 void Thread::create_thread(Thread::Func func)
 {
+	if(func==null)
+	{
+		mHandle = null;
+		return;
+	}
 	pthread_attr_t attribute;
 	pthread_attr_init(&attribute);
 	pthread_attr_setstacksize(&attribute, ThreadStackSize);

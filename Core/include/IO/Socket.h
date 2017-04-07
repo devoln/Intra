@@ -3,6 +3,10 @@
 #include "Platform/FundamentalTypes.h"
 #include "Container/Sequential/String.h"
 #include "Platform/PlatformInfo.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 namespace Intra { namespace IO {
 
@@ -13,7 +17,8 @@ namespace Intra { namespace IO {
 enum class SocketType: byte
 {
 	TCP, TCP_IPv6, UDP, UDP_IPv6,
-	ICMP, ICMP_IPv6, IGMP, IGMP_IPv6, BluetoothRFCOMM, ICMPv6, ICMPv6_IPv6, IrDA
+	ICMP, ICMP_IPv6, IGMP, IGMP_IPv6, BluetoothRFCOMM, ICMPv6, ICMPv6_IPv6, IrDA,
+	End
 };
 
 class BasicSocket
@@ -53,9 +58,12 @@ protected:
 	NativeHandle mHandle;
 	SocketType mType;
 
-	BasicSocket(null_t=null): mHandle(NullSocketHandle) {}
+	BasicSocket(null_t=null): mHandle(NullSocketHandle), mType(SocketType::End) {}
 	BasicSocket(SocketType type);
-	BasicSocket(BasicSocket&& rhs): mHandle(rhs.mHandle), mType(rhs.mType) {rhs.mHandle = NullSocketHandle;}
+
+	BasicSocket(BasicSocket&& rhs):
+		mHandle(rhs.mHandle), mType(rhs.mType) {rhs.mHandle = NullSocketHandle;}
+	
 	~BasicSocket() {Close();}
 
 	void initContext();
@@ -70,13 +78,34 @@ class StreamSocket: public BasicSocket
 public:
 	StreamSocket(null_t=null) {}
 	StreamSocket(SocketType type, StringView host, ushort port);
+	StreamSocket(StreamSocket&& rhs): BasicSocket(Meta::Move(rhs)) {}
+	~StreamSocket() {Shutdown();}
+
+	StreamSocket& operator=(StreamSocket&& rhs)
+	{
+		BasicSocket::operator=(Meta::Move(rhs));
+		return *this;
+	}
+
+	StreamSocket& operator=(null_t)
+	{
+		Shutdown();
+		BasicSocket::operator=(null);
+		return *this;
+	}
 
 	bool WaitForInputMs(size_t timeoutMs) const {return waitInputMs(timeoutMs);}
 	bool WaitForInput() const {return waitInput();}
 	bool ReadyToRead() const {return waitInputMs(0);}
 
+	void ShutdownReading();
+	void ShutdownWriting();
+	void Shutdown();
+
 	size_t Read(void* dst, size_t bytes);
 	size_t Write(const void* src, size_t bytes);
+	size_t Receive(void* dst, size_t bytes);
+	size_t Send(const void* src, size_t bytes);
 };
 
 class ServerSocket: public BasicSocket
@@ -86,7 +115,20 @@ public:
 
 	ServerSocket(null_t=null) {}
 	ServerSocket(SocketType type, ushort port, size_t maxConnections);
+
 	ServerSocket(ServerSocket&& rhs): BasicSocket(Meta::Move(rhs)) {}
+
+	ServerSocket& operator=(ServerSocket&& rhs)
+	{
+		BasicSocket::operator=(Meta::Move(rhs));
+		return *this;
+	}
+
+	ServerSocket& operator=(null_t)
+	{
+		BasicSocket::operator=(null);
+		return *this;
+	}
 
 	bool WaitForConnectionMs(size_t milliseconds) const {return waitInputMs(milliseconds);}
 	bool WaitForConnection() const {return waitInput();}
@@ -97,3 +139,5 @@ public:
 };
 
 }}
+
+INTRA_WARNING_POP

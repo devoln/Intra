@@ -69,6 +69,7 @@
 
 #if __GNUC__==4 && __GNUC_MINOR__>=8 || __GNUC__>=5
 #define INTRA_THREAD_LOCAL_SUPPORT
+#define INTRA_RETURN_TYPE_DEDUCTION_SUPPORT
 #endif
 #define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT
 
@@ -78,7 +79,7 @@
 #endif
 
 #if __GNUC__>=6 && __GNUC_MINOR__>=0
-#define INTRA_GENERALIZED_RANGE_BASED_FOR_SUPPORT
+#define INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT
 #endif
 
 
@@ -92,6 +93,11 @@
 
 #if defined(_MSC_VER) && !defined(__GNUC__)
 
+#if _MSC_VER>=1910 //Visual Studio 2017
+#define INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT
+#define INTRA_ADVANCED_CONSTEXPR_SUPPORT
+#endif
+
 #if _MSC_VER>=1900 //Visual Studio 2015
 #define INTRA_CHAR16_SUPPORT
 #define INTRA_CHAR32_SUPPORT
@@ -99,7 +105,7 @@
 #define INTRA_CONSTEXPR_SUPPORT
 #define INTRA_NOEXCEPT_SUPPORT
 #define INTRA_UNRESTRICTED_UNION_SUPPORT
-#define INTRA_AUTO_RETURN_TYPE
+#define INTRA_RETURN_TYPE_DEDUCTION_SUPPORT
 #define INTRA_THREAD_LOCAL_SUPPORT
 #define INTRA_ALIGNMENT_SUPPORT
 #define INTRA_UNICODE_STRING_LITERAL_SUPPORT
@@ -148,6 +154,18 @@
 
 #if __has_feature(cxx_constexpr)
 #define INTRA_CONSTEXPR_SUPPORT
+#endif
+
+#if __has_feature(cxx_relaxed_constexpr) || __has_extension(cxx_relaxed_constexpr)
+#define INTRA_ADVANCED_CONSTEXPR_SUPPORT
+#endif
+
+#if __has_feature(cxx_variable_templates) || __has_extension(cxx_variable_templates)
+#define INTRA_VARIABLE_TEMPLATES
+#endif
+
+#if __has_feature(cxx_return_type_deduction) || __has_extension(cxx_return_type_deduction)
+#define INTRA_RETURN_TYPE_DEDUCTION_SUPPORT
 #endif
 
 #if __has_feature(cxx_noexcept)

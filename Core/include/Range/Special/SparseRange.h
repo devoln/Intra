@@ -60,13 +60,13 @@ template<typename T, typename Index> struct SparseRange
 	void MakeNull() {Clear(); data=null;}
 
 	//! Доступ по индексу следует использовать только тогда, когда точно известно, что элемент с этим индексом не был удалён.
-	T& operator[](Index index) {return data[index];}
-	const T& operator[](Index index) const {return data[index];}
+	T& operator[](Index index) {return data[size_t(index)];}
+	const T& operator[](Index index) const {return data[size_t(index)];}
 
 	//! Возвращает, заполнен ли массив.
 	//! Это означает, что массив не содержит свободных элементов,
 	//! и следующая вставка элемента приведёт к перераспределению памяти.
-	bool IsFull() const {return first_free == end_index();}
+	bool IsFull() const {return first_free == end_index() || data.Empty();}
 
 	//! Возвращает, пуст ли этот разреженный массив.
 	bool Empty() const {return first_free == empty_index();}

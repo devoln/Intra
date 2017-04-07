@@ -15,8 +15,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
-class OsFile;
-
 //! Буферизованный output-поток для записи в файл.
 class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 {
@@ -34,7 +32,7 @@ public:
 	forceinline static FileWriter Append(Shared<OsFile> file, size_t bufferSize=4096)
 	{
 		if(file == null) return null;
-		const size_t size = file->Size();
+		const ulong64 size = file->Size();
 		return FileWriter(Meta::Move(file), size, bufferSize);
 	}
 
@@ -55,11 +53,18 @@ public:
 
 	FileWriter& operator=(FileWriter&& rhs)
 	{
+		Flush();
 		mFile = Meta::Move(rhs.mFile);
 		mOffset = rhs.mOffset;
 		mBuffer = Meta::Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
 		rhs.mBufferRest = null;
+		return *this;
+	}
+
+	FileWriter& operator=(null_t)
+	{
+		Flush();
 		return *this;
 	}
 

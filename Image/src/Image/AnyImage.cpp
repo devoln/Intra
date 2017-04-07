@@ -3,7 +3,7 @@
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Fill.h"
 #include "Range/Generators/ListRange.h"
-#include "Range/Iterator/RangeIterator.h"
+#include "Range/Iterator/RangeForSupport.h"
 #include "Image/Loaders/Loader.h"
 
 namespace Intra { namespace Image {

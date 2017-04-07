@@ -33,6 +33,8 @@
 #include "IO/HtmlWriter.cpp"
 #include "IO/LogSystem.cpp"
 #include "IO/Networking.cpp"
+#include "IO/Socket.cpp"
+
 
 #include "Math/Math.cpp"
 #include "Math/Shapes.cpp"

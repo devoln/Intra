@@ -825,6 +825,7 @@
     <ClInclude Include="include\Data\Variable.h" />
     <ClInclude Include="include\IntraCore.hh" />
     <ClInclude Include="include\IO.hh" />
+    <ClInclude Include="include\IO\SocketReader.h" />
     <ClInclude Include="include\IO\CompositeFormattedWriter.h" />
     <ClInclude Include="include\IO\ConsoleInput.h" />
     <ClInclude Include="include\IO\ConsoleOutput.h" />
@@ -839,6 +840,7 @@
     <ClInclude Include="include\IO\OsFile.h" />
     <ClInclude Include="include\IO\ReferenceFormattedWriter.h" />
     <ClInclude Include="include\IO\Socket.h" />
+    <ClInclude Include="include\IO\SocketWriter.h" />
     <ClInclude Include="include\IO\Std.h" />
     <ClInclude Include="include\Math.hh" />
     <ClInclude Include="include\Math\Bit.h" />
@@ -921,8 +923,10 @@
     <ClInclude Include="include\Range\Concepts.h" />
     <ClInclude Include="include\Range\Decorators.hh" />
     <ClInclude Include="include\Range\Decorators\Buffered.h" />
-    <ClInclude Include="include\Range\Decorators\Chunks.h" />
     <ClInclude Include="include\Range\Decorators\ByLine.h" />
+    <ClInclude Include="include\Range\Decorators\ByLineTo.h" />
+    <ClInclude Include="include\Range\Decorators\Chunks.h" />
+    <ClInclude Include="include\Range\Decorators\TakeByLine.h" />
     <ClInclude Include="include\Range\Decorators\Cycle.h" />
     <ClInclude Include="include\Range\Decorators\Filter.h" />
     <ClInclude Include="include\Range\Decorators\Join.h" />
@@ -949,7 +953,8 @@
     <ClInclude Include="include\Range\Iterator.hh" />
     <ClInclude Include="include\Range\Iterator\IteratorConcepts.h" />
     <ClInclude Include="include\Range\Iterator\IteratorRange.h" />
-    <ClInclude Include="include\Range\Iterator\RangeIterator.h" />
+    <ClInclude Include="include\Range\Iterator\RangeForSupport.h" />
+    <ClInclude Include="include\Range\Iterator\RangeForwardIterator.h" />
     <ClInclude Include="include\Range\Operations.h" />
     <ClInclude Include="include\Range\Output.hh" />
     <ClInclude Include="include\Range\Output\Inserter.h" />
@@ -985,6 +990,7 @@
     <ClInclude Include="include\Utils\Callback.h" />
     <ClInclude Include="include\Utils\Delegate.h" />
     <ClInclude Include="include\Utils\Finally.h" />
+    <ClInclude Include="include\Utils\Method.h" />
     <ClInclude Include="include\Utils\MiscTypes.h" />
     <ClInclude Include="include\Utils\Optional.h" />
   </ItemGroup>

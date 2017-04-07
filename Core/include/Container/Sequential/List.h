@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Algo/Comparison/Equals.h"
-#include "Range/Iterator.hh"
+#include "Range/Iterator/RangeForwardIterator.h"
 #include "Range/Decorators/Retro.h"
 #include "Memory/Allocator/AllocatorRef.h"
 #include "Container/AllForwardDecls.h"
@@ -19,8 +19,10 @@ template<typename T, class AllocatorType> class BList:
 	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
 public:
 	typedef T value_type;
-	typedef Range::ForwardIterator<BListRange<T>> iterator;
-	typedef Range::ForwardIterator<BListRange<const T>> const_iterator;
+	typedef Range::RangeForwardIterator<BListRange<T>> iterator;
+	typedef Range::RangeForwardIterator<BListRange<const T>> const_iterator;
+	typedef Range::RangeForwardIterator<Range::RRetro<BListRange<T>>> reverse_iterator;
+	typedef Range::RangeForwardIterator<Range::RRetro<BListRange<const T>>> const_reverse_iterator;
 	typedef AllocatorType Allocator;
 	typedef typename BListRange<T>::Node Node;
 
@@ -256,22 +258,22 @@ public:
 	//! Этот интерфейс предназначен для совместимости с обобщённым контейнеро-независимым кодом.
 	//! Использовать напрямую этот интерфейс не рекомендуется.
 	//!@{
-	forceinline iterator begin() {return Range::begin(mRange);}
-	forceinline iterator end() {return Range::end(mRange);}
-	forceinline const_iterator begin() const {return Range::begin(mRange.AsConstRange());}
-	forceinline const_iterator end() const {return Range::end(mRange.AsConstRange());}
+	forceinline iterator begin() {return {mRange};}
+	forceinline iterator end() {return null;}
+	forceinline const_iterator begin() const {return {mRange.AsConstRange()};}
+	forceinline const_iterator end() const {return null;}
 	forceinline const_iterator cbegin() const {return begin();}
-	forceinline const_iterator cend() const {return end();}
-	forceinline iterator rbegin() {return Range::Retro(mRange).begin();}
-	forceinline iterator rend() {return Range::Retro(mRange).end();}
-	forceinline const_iterator rbegin() const {return Range::begin(Retro(mRange.AsConstRange()));}
-	forceinline const_iterator rend() const {return Range::end(Retro(mRange.AsConstRange()));}
-	forceinline const_iterator crbegin() const {return rbegin();}
-	forceinline const_iterator crend() const {return rend();}
+	forceinline const_iterator cend() const {return null;}
+	forceinline reverse_iterator rbegin() {return {Range::Retro(mRange)};}
+	forceinline reverse_iterator rend() {return null;}
+	forceinline const_reverse_iterator rbegin() const {return {Retro(mRange.AsConstRange())};}
+	forceinline const_reverse_iterator rend() const {return null;}
+	forceinline const_reverse_iterator crbegin() const {return rbegin();}
+	forceinline const_reverse_iterator crend() const {return null;}
 
-	forceinline iterator insert(const_iterator pos, const T& value) {return Range::begin(Insert(pos, value));}
-	forceinline iterator insert(const_iterator pos, T&& value) {return Range::begin(Insert(pos, Meta::Move(value)));}
-	template<typename... Args> forceinline iterator emplace(const_iterator pos, Args&&... args) {return Range::begin(Emplace(pos, Meta::Forward<Args>(args)...));}
+	forceinline iterator insert(const_iterator pos, const T& value) {return {Insert(pos, value)};}
+	forceinline iterator insert(const_iterator pos, T&& value) {return {Insert(pos, Meta::Move(value))};}
+	template<typename... Args> forceinline iterator emplace(const_iterator pos, Args&&... args) {return {Emplace(pos, Meta::Forward<Args>(args)...)};}
 
 	forceinline void push_back(const T& value) {AddLast(value);}
 	forceinline void push_back(T&& value) {AddLast(Meta::Move(value));}

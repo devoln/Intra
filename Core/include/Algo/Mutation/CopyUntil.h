@@ -104,7 +104,7 @@ template<typename R, typename OR, typename X> forceinline Meta::EnableIf<
 size_t> CopyAdvanceToUntil(R& src, OR&& dst, const X& x)
 {
 	auto dstRange = Range::Forward<OR>(dst);
-	return Algo::CopyAdvanceToAdvance(src, dstRange, x);
+	return Algo::CopyAdvanceToAdvanceUntil(src, dstRange, x);
 }
 
 template<typename R, typename OR, typename X> forceinline Meta::EnableIf<
@@ -113,7 +113,7 @@ template<typename R, typename OR, typename X> forceinline Meta::EnableIf<
 size_t> CopyToAdvanceUntil(R&& src, OR& dst, const X& x)
 {
 	auto srcRange = Range::Forward<R>(src);
-	return Algo::CopyAdvanceToAdvance(srcRange, dst, x);
+	return Algo::CopyAdvanceToAdvanceUntil(srcRange, dst, x);
 }
 
 template<typename R, typename OR, typename X> forceinline Meta::EnableIf<
@@ -122,7 +122,7 @@ template<typename R, typename OR, typename X> forceinline Meta::EnableIf<
 size_t> CopyToUntil(R&& src, OR& dst, const X& x)
 {
 	auto srcRange = Range::Forward<R>(src);
-	return Algo::CopyAdvanceTo(srcRange, dst, x);
+	return Algo::CopyAdvanceToUntil(srcRange, dst, x);
 }
 
 }}

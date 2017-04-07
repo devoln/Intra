@@ -212,47 +212,100 @@ public:
 	forceinline bool operator!=(null_t) const
 	{return !operator==(null);}
 
-	void PushFont(Math::Vec3 color, float size=3,
+	FormattedWriter& PushFont(Math::Vec3 color, float size=3,
 		bool bold=false, bool italic=false, bool underline=false, bool strike=false)
-	{PushFont({color, size, bold, italic, underline, strike});}
+	{return PushFont({color, size, bold, italic, underline, strike});}
 
-	void PushFont(const FontDesc& newFont)
-	{mInterface->PushFont(*this, newFont);}
-
-	void PopFont() {mInterface->PopFont(*this);}
-
-	void BeginSpoiler(StringView label)
-	{mInterface->BeginSpoiler(*this, label);}
-
-	void BeginSpoiler() {BeginSpoiler("Show");}
-
-	void EndSpoiler() {mInterface->EndSpoiler(*this);}
-
-	void BeginCode() {mInterface->BeginCode(*this);}
-	void EndCode() {mInterface->EndCode(*this);}
-
-	void PushStyle(StringView style) {mInterface->PushStyle(*this, style);}
-	void PopStyle() {mInterface->PopStyle(*this);}
-
-	void HorLine() {mInterface->HorLine(*this);}
-
-	void LineBreak(size_t count=1) {while(count --> 0) mInterface->LineBreak(*this);}
-
-	template<typename Arg0, typename... Args>
-	void PrintLine(Arg0&& arg0, Args&&... args)
+	FormattedWriter& PushFont(const FontDesc& newFont)
 	{
-		Print(Meta::Forward<Arg0>(arg0), Meta::Forward<Args>(args)...);
-		LineBreak();
+		mInterface->PushFont(*this, newFont);
+		return *this;
 	}
 
-	void PrintCode(StringView code)
+	FormattedWriter& PopFont()
+	{
+		mInterface->PopFont(*this);
+		return *this;
+	}
+
+	FormattedWriter& BeginSpoiler(StringView label)
+	{
+		mInterface->BeginSpoiler(*this, label);
+		return *this;
+	}
+
+	FormattedWriter& BeginSpoiler() {return BeginSpoiler("Show");}
+
+	FormattedWriter& EndSpoiler()
+	{
+		mInterface->EndSpoiler(*this);
+		return *this;
+	}
+
+	FormattedWriter& BeginCode()
+	{
+		mInterface->BeginCode(*this);
+		return *this;
+	}
+
+	FormattedWriter& EndCode()
+	{
+		mInterface->EndCode(*this);
+		return *this;
+	}
+
+	FormattedWriter& PushStyle(StringView style)
+	{
+		mInterface->PushStyle(*this, style);
+		return *this;
+	}
+
+	FormattedWriter& PopStyle()
+	{
+		mInterface->PopStyle(*this);
+		return *this;
+	}
+
+	FormattedWriter& HorLine()
+	{
+		mInterface->HorLine(*this);
+		return *this;
+	}
+
+	FormattedWriter& LineBreak(size_t count=1)
+	{
+		while(count --> 0) mInterface->LineBreak(*this);
+		return *this;
+	}
+
+	template<typename Arg0, typename... Args>
+	FormattedWriter& Print(Arg0&& arg0, Args&&... args)
+	{
+		OutputStream::Print(Meta::Forward<Arg0>(arg0), Meta::Forward<Args>(args)...);
+		return *this;
+	}
+
+	template<typename Arg0, typename... Args>
+	FormattedWriter& PrintLine(Arg0&& arg0, Args&&... args)
+	{
+		OutputStream::Print(Meta::Forward<Arg0>(arg0), Meta::Forward<Args>(args)...);
+		LineBreak();
+		return *this;
+	}
+
+	FormattedWriter& PrintCode(StringView code)
 	{
 		BeginCode();
 		PrintPreformatted(code);
 		EndCode();
+		return *this;
 	}
 
-	void PrintPreformatted(StringView str) {mInterface->PrintPreformatted(*this, str);}
+	FormattedWriter& PrintPreformatted(StringView str)
+	{
+		mInterface->PrintPreformatted(*this, str);
+		return *this;
+	}
 
 private:
 	FormattedWriter(const FormattedWriter&) = delete;

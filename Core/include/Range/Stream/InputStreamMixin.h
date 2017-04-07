@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Platform/CppWarnings.h"
 #include "Platform/CppFeatures.h"
 #include "Meta/Type.h"
 #include "Algo/Mutation/Fill.h"
@@ -11,6 +12,10 @@
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
 #include "Range/Operations.h"
+#include "Range/Decorators/ByLine.h"
+#include "Range/Decorators/ByLineTo.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Range {
 
@@ -129,6 +134,20 @@ template<typename R, typename T> struct InputStreamMixin
 		if(!me.Empty() && me.First()=='\n') me.PopFirst();
 		return result;
 	}
+
+	forceinline RByLine<R, GenericString<ElementType>> ByLine()
+	{return {Meta::Move(*static_cast<R*>(this)), false};}
+
+	forceinline RByLine<R, GenericString<ElementType>> ByLine(Tags::TKeepTerminator)
+	{return {Meta::Move(*static_cast<R*>(this)), true};}
+
+	forceinline RByLineTo<R> ByLine(ArrayRange<char> buf)
+	{return {Meta::Move(*static_cast<R*>(this)), buf, false};}
+
+	forceinline RByLineTo<R> ByLine(ArrayRange<char> buf, Tags::TKeepTerminator)
+	{return {Meta::Move(*static_cast<R*>(this)), buf, true};}
 };
 
 }}
+
+INTRA_WARNING_POP

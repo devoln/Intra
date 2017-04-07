@@ -1,9 +1,7 @@
 #include "Platform/CppWarnings.h"
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
-#include "Sort.h"
 #include "Test/TestGroup.h"
-#include "Range/Header.h"
 #include "IO/FileSystem.h"
 #include "IO/HtmlWriter.h"
 #include "IO/FileWriter.h"
@@ -13,7 +11,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Algo/String/Path.h"
 #include "Platform/Time.h"
 #include "Platform/Errors.h"
+#include "Container/SparseArray.h"
 
+#include "Sort.h"
+#include "Range/Range.h"
+#include "IO/IO.h"
 #include "Serialization.h"
 
 using namespace Intra;
@@ -97,6 +99,17 @@ int main(int argc, const char* argv[])
 		TestGroup("Range-based streams", TestStreamRange);
 		TestGroup("STL and ranges interoperability", TestRangeStlInterop);
 		TestGroup("Unicode encoding conversions", TestUnicodeConversion);
+	}
+	if(TestGroup gr{logger, *output, "Containers"})
+	{
+		TestGroup("Sparse Range", TestSparseRange);
+		TestGroup("Sparse Array", TestSparseArray);
+	}
+	if(TestGroup gr{logger, *output, "IO"})
+	{
+		TestGroup("File", TestFileSyncIO);
+		TestGroup("Socket", TestSocketIO);
+		//TestGroup("HttpServer", TestHttpServer);
 	}
 	TestGroup(logger, *output, "Text serialization", TestTextSerialization);
 	TestGroup(logger, *output, "Binary serialization", TestBinarySerialization);

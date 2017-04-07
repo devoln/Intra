@@ -10,3 +10,5 @@
 #include "IO/LogSystem.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
+#include "IO/SocketReader.h"
+#include "IO/SocketWriter.h"

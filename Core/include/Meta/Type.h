@@ -56,10 +56,11 @@ struct EmptyType
 struct NonCopyableType
 {
 	NonCopyableType() = default;
-	NonCopyableType(const NonCopyableType&) = delete;
-	NonCopyableType& operator=(const NonCopyableType&) = delete;
 	NonCopyableType(NonCopyableType&&) {}
 	NonCopyableType& operator=(NonCopyableType&&) {return *this;}
+private:
+	NonCopyableType(const NonCopyableType&) {}
+	NonCopyableType& operator=(const NonCopyableType&) {return *this;}
 };
 
 template<typename T> struct WrapperStruct {T value;};

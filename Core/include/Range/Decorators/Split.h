@@ -9,6 +9,7 @@
 #include "Utils/Optional.h"
 #include "Range/Decorators/Take.h"
 #include "Range/Decorators/TakeUntil.h"
+#include "Algo/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -81,6 +82,11 @@ template<typename R, typename P1, typename P2 = bool(*)(const ValueTypeOfAs<R>&)
 RSplit<AsRangeResultNoCRef<R>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
 	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter=&Op::FalsePredicate<ValueTypeOfAs<R>>)
 {return {Range::Forward<R>(range), Meta::Forward<P1>(isSkippedDelimiter), Meta::Forward<P2>(isElementDelimiter)};}
+
+template<typename R, typename T=ValueTypeOfAs<R>> forceinline Meta::EnableIf<
+	IsAsForwardRange<R>::_,
+RSplit<AsRangeResultNoCRef<R>, bool(*)(T), bool(*)(const T&)>> SplitLines(R&& range)
+{return Split(Meta::Forward<R>(range), &Op::IsLineSeparator<T>);}
 
 INTRA_WARNING_POP
 

@@ -48,20 +48,20 @@ template<typename R, typename T> struct OutputStreamMixin
 	{WriteRawFrom(ArrayRange<const U>(&dst, 1u));}
 
 
-	template<typename Arg0> forceinline void Print(Arg0&& t)
-	{*static_cast<R*>(this) << Meta::Forward<Arg0>(t);}
+	template<typename Arg0> forceinline R& Print(Arg0&& t)
+	{return *static_cast<R*>(this) << Meta::Forward<Arg0>(t);}
 
 	template<typename Arg0, typename Arg1, typename... Args>
-	void Print(Arg0&& arg0, Arg1&& arg1, Args&&... args)
+	R& Print(Arg0&& arg0, Arg1&& arg1, Args&&... args)
 	{
 		Print(Meta::Forward<Arg0>(arg0));
-		Print(Meta::Forward<Arg1>(arg1), Meta::Forward<Args>(args)...);
+		return Print(Meta::Forward<Arg1>(arg1), Meta::Forward<Args>(args)...);
 	}
 
 	template<typename... Args>
-	void PrintLine(Args&&... args)
+	R& PrintLine(Args&&... args)
 	{
-		Print(Meta::Forward<Args>(args)..., "\r\n");
+		return Print(Meta::Forward<Args>(args)..., "\r\n");
 	}
 };
 

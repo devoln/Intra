@@ -5,6 +5,10 @@
 #include "Range/Operations.h"
 #include "Range/Generators/ArrayRange.h"
 
+INTRA_WARNING_PUSH
+INTRA_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+
 namespace Intra { namespace Range {
 
 template<class R, class B> class RBuffered:
@@ -100,3 +104,5 @@ RBuffered<AsRangeResultNoCRef<R>>> Buffered(R&& range, size_t bufferSize)
 {return {Range::Forward<R>(range), Array<ValueTypeOfAs<R>>::CreateWithCount(bufferSize)};}
 
 }}
+
+INTRA_WARNING_POP

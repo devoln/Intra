@@ -62,7 +62,6 @@
     <Type Name="Intra::Container::Array&lt;*&gt;">
         <DisplayString>{range}</DisplayString>
         <Expand>
-            <Item Name="Count" ExcludeView="simple">range.End-range.Begin</Item>
             <Item Name="Capacity" ExcludeView="simple">buffer.End-buffer.Begin</Item>
             <ExpandedItem>range</ExpandedItem>
         </Expand>

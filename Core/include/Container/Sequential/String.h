@@ -63,7 +63,7 @@ public:
 	forceinline GenericString(GenericString&& rhs):
 		m(rhs.m) {rhs.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
 	
-	~GenericString()
+	forceinline ~GenericString()
 	{
 		if(IsHeapAllocated()) freeLongData();
 	}
@@ -389,6 +389,8 @@ public:
 
 	template<class InputIt> forceinline GenericString& append(InputIt firstIt, InputIt endIt)
 	{while(firstIt!=endIt) *this += *endIt++;}
+
+	forceinline void clear() {SetLengthUninitialized(0);}
 	//!@}
 
 
@@ -503,6 +505,8 @@ forceinline DString operator ""_d(const dchar* str, size_t len)
 {return DString(str, len);}
 #endif
 
+template<typename T, typename... Args> forceinline String ToStringConsume(T&& value, Args&&... args)
+{return String::Format()(Meta::Forward<T>(value), Meta::Forward<Args>(args)...);}
 
 template<typename T, typename... Args> forceinline String ToString(const T& value, Args&&... args)
 {return String::Format()(value, Meta::Forward<Args>(args)...);}
@@ -516,6 +520,9 @@ forceinline StringView ToString(const char* value) {return StringView(value);}
 template<size_t N> forceinline StringView ToString(const char(&value)[N]) {return StringView(value);}
 
 
+template<typename T, typename... Args> forceinline WString ToWStringConsume(T&& value, Args&&... args)
+{return WString::Format()(Meta::Forward<T>(value), Meta::Forward<Args>(args)...);}
+
 template<typename T, typename... Args> forceinline WString ToWString(const T& value, Args&&... args)
 {return WString::Format()(value, Meta::Forward<Args>(args)...);}
 
@@ -524,6 +531,9 @@ forceinline WStringView ToWString(const WStringView& value) {return value;}
 forceinline WStringView ToWString(const wchar* value) {return WStringView(value);}
 template<size_t N> forceinline WStringView ToWString(const wchar(&value)[N]) {return WStringView(value);}
 
+
+template<typename T, typename... Args> forceinline DString ToDStringConsume(T&& value, Args&&... args)
+{return DString::Format()(Meta::Forward<T>(value), Meta::Forward<Args>(args)...);}
 
 template<typename T, typename... Args> forceinline DString ToDString(const T& value, Args&&... args)
 {return DString::Format()(value, Meta::Forward<Args>(args)...);}
@@ -535,8 +545,11 @@ template<size_t N> forceinline DStringView ToDString(const dchar(&value)[N]) {re
 
 }
 using Container::ToString;
+using Container::ToStringConsume;
 using Container::ToWString;
+using Container::ToWStringConsume;
 using Container::ToDString;
+using Container::ToDStringConsume;
 
 namespace Meta {
 

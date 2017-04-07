@@ -25,16 +25,28 @@
     <ClCompile Include="src\Serialization.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\IO\File.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IO\Socket.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Container\SparseArray.cpp">
+      <Filter>Source Files\Container</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Range\Header.h">
-      <Filter>Header Files\Range</Filter>
-    </ClInclude>
     <ClInclude Include="src\Sort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Serialization.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Range\Range.h">
+      <Filter>Header Files\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="src\IO\IO.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -55,6 +67,12 @@
     </Filter>
     <Filter Include="Source Files\Container">
       <UniqueIdentifier>{a9c27421-d494-4dc0-bfcb-dc0164cf379a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{9eac3a0c-c103-4427-b7a6-5aa7cf441097}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\IO">
+      <UniqueIdentifier>{59165f7a-a347-430a-8f7f-af292830dc12}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

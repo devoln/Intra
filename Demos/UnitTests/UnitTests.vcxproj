@@ -790,11 +790,15 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Range\Header.h" />
+    <ClInclude Include="src\IO\IO.h" />
+    <ClInclude Include="src\Range\Range.h" />
     <ClInclude Include="src\Serialization.h" />
     <ClInclude Include="src\Sort.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Container\SparseArray.cpp" />
+    <ClCompile Include="src\IO\File.cpp" />
+    <ClCompile Include="src\IO\Socket.cpp" />
     <ClCompile Include="src\Range\Composing.cpp" />
     <ClCompile Include="src\Range\Polymorphic.cpp" />
     <ClCompile Include="src\Range\StlInterop.cpp" />

@@ -2,13 +2,15 @@
 
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
-#include "Meta/Operators.h"
 #include "Range/ForwardDecls.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
-#include "Utils/Optional.h"
-#include "Range/Decorators/Take.h"
-#include "Algo/Search/Single.h"
+#include "Algo/Op.h"
+#include "Range/Output/OutputArrayRange.h"
+#include "Range/Generators/StringView.h"
+#include "Range/Output/Inserter.h"
+#include "Algo/Mutation/CopyUntil.h"
+#include "Container/ForwardDecls.h"
 
 namespace Intra { namespace Range {
 
@@ -16,7 +18,7 @@ INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-template<typename R> struct RByLine
+template<class R, class C> struct RByLine
 {
 	enum: bool {RangeIsFinite = IsFiniteRange<R>::_, RangeIsInfinite = IsInfiniteRange<R>::_};
 
@@ -28,47 +30,47 @@ template<typename R> struct RByLine
 	forceinline RByLine(const R& range, bool keepTerminator=false):
 		mOriginalRange(range), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	forceinline bool Empty() const {return mFirst.Empty();}
+	forceinline bool Empty() const {return mOriginalRange.Empty() && mFirst.empty();}
 
 	void PopFirst()
 	{
-		auto rangeCopy = mOriginalRange;
-		size_t lineLength = Algo::CountUntilAdvance(mOriginalRange,
-			[](char v) {return v=='\r' || v=='\n';});
-		if(!mOriginalRange.Empty())
-		{
-			bool CR = mOriginalRange.First()=='\r';
-			mOriginalRange.PopFirst();
-			if(mKeepTerminator) lineLength++;
-			if(CR && !mOriginalRange.Empty() && mOriginalRange.First()=='\n')
-			{
-				mOriginalRange.PopFirst();
-				if(mKeepTerminator) lineLength++;
-			}
-		}
-		mFirst = Take(mOriginalRange, lineLength);
+		mFirst.clear();
+		Algo::CopyAdvanceToUntil(mOriginalRange, LastAppender(mFirst), Op::IsLineSeparator<ValueTypeOf<R>>);
+		if(mOriginalRange.Empty()) return;
+
+		const auto nextChar = mOriginalRange.First();
+		if(mKeepTerminator) mFirst.push_back(nextChar);
+		const bool CR = nextChar == '\r';
+		mOriginalRange.PopFirst();
+
+		if(!CR || mOriginalRange.Empty() || mOriginalRange.First() != '\n') return;
+
+		if(mKeepTerminator) mFirst.push_back('\n');
+		mOriginalRange.PopFirst();
 	}
 
-	forceinline TakeResult<R> First() const
+	forceinline const C& First() const
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		return mFirst;
 	}
 
-	bool operator==(const RByLine& rhs) const
-	{return mOriginalRange==rhs.mOriginalRange;}
-
 private:
 	R mOriginalRange;
-	TakeResult<R> mFirst;
+	C mFirst;
 	bool mKeepTerminator;
 };
 
 
-template<typename R> forceinline Meta::EnableIf<
-	IsAsForwardCharRange<R>::_,
-RByLine<AsRangeResultNoCRef<R>>> ByLine(R&& range, bool keepTerminator=false)
-{return {Range::Forward<R>(range), keepTerminator};}
+template<typename R, typename AsR=AsRangeResultNoCRef<R>> forceinline Meta::EnableIf<
+	IsForwardCharRange<AsR>::_,
+RByLine<AsR, String>> ByLine(R&& range, Tags::TKeepTerminator)
+{return {Range::Forward<R>(range), true};}
+
+template<typename R, typename AsR=AsRangeResultNoCRef<R>> forceinline Meta::EnableIf<
+	IsForwardCharRange<AsR>::_,
+RByLine<AsR, String>> ByLine(R&& range)
+{return {Range::Forward<R>(range), false};}
 
 INTRA_WARNING_POP
 

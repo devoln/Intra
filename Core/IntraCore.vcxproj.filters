@@ -638,9 +638,6 @@
     <ClInclude Include="include\Range\Iterator\IteratorRange.h">
       <Filter>Заголовочные файлы\Range\Iterator</Filter>
     </ClInclude>
-    <ClInclude Include="include\Range\Iterator\RangeIterator.h">
-      <Filter>Заголовочные файлы\Range\Iterator</Filter>
-    </ClInclude>
     <ClInclude Include="include\Utils\AsciiSet.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
@@ -905,9 +902,6 @@
     <ClInclude Include="include\Algo\Raw\Write.h">
       <Filter>Заголовочные файлы\Algo\Raw</Filter>
     </ClInclude>
-    <ClInclude Include="include\Range\Decorators\ByLine.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
     <ClInclude Include="include\Range\Decorators\Join.h">
       <Filter>Заголовочные файлы\Range\Decorators</Filter>
     </ClInclude>
@@ -1093,6 +1087,30 @@
     </ClInclude>
     <ClInclude Include="include\Utils\Finally.h">
       <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Iterator\RangeForSupport.h">
+      <Filter>Заголовочные файлы\Range\Iterator</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\ByLineTo.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\TakeByLine.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Decorators\ByLine.h">
+      <Filter>Заголовочные файлы\Range\Decorators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Iterator\RangeForwardIterator.h">
+      <Filter>Заголовочные файлы\Range\Iterator</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Utils\Method.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\SocketReader.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IO\SocketWriter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

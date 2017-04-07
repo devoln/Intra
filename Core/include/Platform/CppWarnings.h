@@ -20,7 +20,7 @@
 #endif
 
 //TODO: в будущем исправить это
-#pragma warning(disable: 4710 4514)
+#pragma warning(disable: 4710 4714 4514)
 
 #define INTRA_DISABLE_REDUNDANT_WARNINGS \
 	__pragma(warning(disable: 4714 4514 4820 4711 4710 4061 4608 INTRA_REDUNDANT_WARNINGS_MSVC14))

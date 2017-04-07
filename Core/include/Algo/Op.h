@@ -52,7 +52,11 @@ bool> IsHorSpace(Char c) {return c==' ' || c=='\t';}
 
 template<typename Char> forceinline Meta::EnableIf<
 	Meta::IsCharType<Char>::_,
-bool> IsSpace(Char c) {return IsHorSpace(c) || c=='\r' || c=='\n';}
+bool> IsLineSeparator(Char c) {return c=='\r' || c=='\n';}
+
+template<typename Char> forceinline Meta::EnableIf<
+	Meta::IsCharType<Char>::_,
+bool> IsSpace(Char c) {return IsHorSpace(c) || IsLineSeparator(c);}
 
 template<typename T> forceinline bool TruePredicate(const T&) {return true;}
 template<typename T> forceinline bool FalsePredicate(const T&) {return false;}

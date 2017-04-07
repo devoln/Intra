@@ -4,6 +4,7 @@
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
 #include "Utils/Optional.h"
+#include "Utils/Method.h"
 
 namespace Intra { namespace Range {
 
@@ -11,7 +12,8 @@ INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-template<typename R, typename F> struct RMap
+template<typename R, typename F> struct RMap:
+	Meta::CopyableIf<Meta::IsCopyConstructible<R>::_ && Meta::IsCopyConstructible<F>::_>
 {
 private:
 	typedef Meta::ResultOf<F, ReturnValueTypeOf<R>> return_value_type;
@@ -27,7 +29,7 @@ public:
 	forceinline RMap(const R& range, F func):
 		OriginalRange(range), Function(func) {}
 
-	//Для совместимости с Visual Studio 2013:
+
 	RMap(const RMap&) = default;
 	RMap& operator=(const RMap&) = default;
 
@@ -40,6 +42,7 @@ public:
 		OriginalRange = Meta::Move(rhs.OriginalRange);
 		return *this;
 	}
+
 
 
 	forceinline return_value_type First() const
@@ -77,10 +80,16 @@ public:
 };
 
 
-template<typename R, typename F> forceinline /*Meta::EnableIf<
-	IsAsConsumableRange<R>::_,*/
-RMap<Meta::RemoveConstRef<AsRangeResult<R&&>>, F>/*>*/ Map(R&& range, F func)
+template<typename R, typename F, typename AsR=AsRangeResult<R>, typename T=ReturnValueTypeOf<AsR>> forceinline Meta::EnableIf<
+	IsConsumableRange<AsR>::_ &&
+	Meta::IsCallable<F, T>::_,
+RMap<Meta::RemoveConstRef<AsR>, F>> Map(R&& range, F func)
 {return {Range::Forward<R>(range), Meta::Move(func)};}
+
+template<typename R, typename RET, typename AsR=AsRangeResult<R>, typename T=ValueTypeOf<AsR>> forceinline Meta::EnableIf<
+	IsConsumableRange<AsR>::_,
+RMap<Meta::RemoveConstRef<AsR>, Utils::ConstMethodWrapper<T, RET>>> Map(R&& range, RET(T::*func)() const)
+{return {Range::Forward<R>(range), Utils::Method(func)};}
 
 INTRA_WARNING_POP
 

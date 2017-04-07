@@ -55,6 +55,12 @@ using Range::WStringView;
 using Range::DStringView;
 using Range::AsRange;
 
+namespace Tags {
+
+enum TKeepTerminator: bool {KeepTerminator = true};
+
+}
+
 INTRA_WARNING_POP
 
 }

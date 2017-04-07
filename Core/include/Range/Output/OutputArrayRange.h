@@ -47,8 +47,15 @@ public:
 	void PopFirst() {mRight.PopFirst();}
 	T& Last() const {return mRight.Last();}
 	void PopLast() {mRight.PopLast();}
+
+	//! Output диапазон переполнен, т.е. свободное место пусто.
 	bool Empty() const {return mRight.Empty();}
 	size_t PopFirstN(size_t count) {return mRight.PopFirstN(count);}
+
+	//! Равными null считаются только OutputArrayRange, которым присвоено null, или сконструированные по умолчанию.
+	//! Это поведение отличается от поведения большинства других диапазонов, для которых равенство null означает Empty.
+	forceinline bool operator==(null_t) const {return mBegin==null || (mBegin==mRight.Begin && mRight.Empty());}
+	forceinline bool operator!=(null_t) const {return !operator==(null);}
 };
 
 }
