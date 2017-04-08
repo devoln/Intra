@@ -13,8 +13,6 @@ template<typename T> struct AnotherEndian
 {
 	AnotherEndian() = default;
 	AnotherEndian(T rhs) {operator=(rhs);}
-	AnotherEndian(const AnotherEndian& rhs) = default;
-	AnotherEndian& operator=(const AnotherEndian& rhs) = default;
 
 	AnotherEndian& operator=(T rhs) {swap_bytes(bytes, reinterpret_cast<byte*>(&rhs)); return *this;}
 	AnotherEndian& operator+=(T rhs) {return operator=(*this+rhs);}

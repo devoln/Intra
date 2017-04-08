@@ -15,25 +15,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 class DrumInstrument: public IMusicalInstrument
 {
 public:
-	DrumInstrument():
-		SamplesCache(), Generators() {}
-
-	DrumInstrument(DrumInstrument&& rhs):
-		SamplesCache(Meta::Move(rhs.SamplesCache)),
-		Generators(Meta::Move(rhs.Generators)) {}
-
-	DrumInstrument& operator=(DrumInstrument&& rhs)
-	{
-		SamplesCache = Meta::Move(rhs.SamplesCache);
-		Generators = Meta::Move(rhs.Generators);
-		return *this;
-	}
-
-	DrumInstrument(const DrumInstrument& rhs) = default;
-	DrumInstrument& operator=(const DrumInstrument& rhs) = default;
-
-	~DrumInstrument();
-
 	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo,
 		float volume=1, uint sampleRate=44100, bool add=false) const override;
 

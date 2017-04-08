@@ -16,8 +16,6 @@ protected:
 	ASoundSource(uint sampleRate=0, ushort channelCount=0):
 		mSampleRate(sampleRate), mChannelCount(channelCount) {}
 
-	ASoundSource(const ASoundSource& rhs) = default;
-
 public:
 	virtual ~ASoundSource() {}
 	virtual size_t SampleCount() const = 0;

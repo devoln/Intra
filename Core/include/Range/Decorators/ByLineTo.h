@@ -33,6 +33,8 @@ public:
 
 	forceinline RByLineTo(RByLineTo&& rhs) {operator=(Meta::Move(rhs));}
 
+	RByLineTo(const RByLineTo& rhs) = delete;
+
 	RByLineTo& operator=(RByLineTo&& rhs)
 	{
 		mOriginalRange = Meta::Move(rhs.mOriginalRange);
@@ -40,6 +42,8 @@ public:
 		mKeepTerminator = rhs.mKeepTerminator;
 		return *this;
 	}
+
+	RByLineTo& operator=(const RByLineTo& rhs) = delete;
 
 	forceinline bool Empty() const {return mBuffer == null;}
 

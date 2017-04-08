@@ -14,8 +14,6 @@ struct AudioBuffer
 {
 	AudioBuffer(null_t=null): SampleRate(0), Samples(null) {}
 	AudioBuffer(size_t sampleCount, uint sampleRate=44100, ArrayRange<const float> initData=null);
-	AudioBuffer(const AudioBuffer& rhs): SampleRate(rhs.SampleRate), Samples(rhs.Samples) {}
-	AudioBuffer(AudioBuffer&& rhs): SampleRate(rhs.SampleRate), Samples(Meta::Move(rhs.Samples)) {}
 
 	double Duration() const {return SampleRate==0? 0: double(Samples.Count())/double(SampleRate);}
 	uint TimeToSamples(double time) const {return uint(time*SampleRate);}
@@ -95,13 +93,6 @@ struct AudioBuffer
 	bool operator!=(null_t) const {return !operator==(null);}
 
 	AudioBuffer& operator=(null_t) {SampleRate=0; Samples=null; return *this;}
-	AudioBuffer& operator=(const AudioBuffer& rhs) = default;
-	AudioBuffer& operator=(AudioBuffer&& rhs)
-	{
-		SampleRate = rhs.SampleRate;
-		Samples= Meta::Move(rhs.Samples);
-		return *this;
-	}
 
 	SoundInfo Info() const {return {Samples.Count(), SampleRate, 1, ValueType::Float};}
 

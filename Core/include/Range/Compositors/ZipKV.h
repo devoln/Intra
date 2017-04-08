@@ -27,16 +27,6 @@ public:
 	
 	forceinline RZipKV(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
 
-	forceinline RZipKV(const RZipKV& rhs) = default;
-	forceinline RZipKV(RZipKV&& rhs): OriginalRanges(Meta::Move(rhs.OriginalRanges)) {}
-
-	forceinline RZipKV& operator=(const RZipKV& rhs) = default;
-
-	forceinline RZipKV& operator=(RZipKV&& rhs)
-	{
-		OriginalRanges = Meta::Move(rhs.OriginalRanges);
-		return *this;
-	}
 
 	forceinline ReturnValueType First() const
 	{return {OriginalRanges.Key.First(), OriginalRanges.Value.First()};}

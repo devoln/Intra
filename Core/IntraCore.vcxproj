@@ -671,7 +671,6 @@
     <ClCompile Include="src\Algo\String\Ascii.cpp" />
     <ClCompile Include="src\Algo\String\Path.cpp" />
     <ClCompile Include="src\Data\BinarySerialization.cpp" />
-    <ClCompile Include="src\Data\Object.cpp" />
     <ClCompile Include="src\Data\Reflection.cpp" />
     <ClCompile Include="src\Data\Serialization\LanguageParams.cpp" />
     <ClCompile Include="src\Data\Serialization\TextSerializerParams.cpp" />

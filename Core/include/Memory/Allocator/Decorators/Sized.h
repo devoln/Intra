@@ -16,9 +16,7 @@ template<class A> struct ASized: A
 	size_t GetAlignment() const {return sizeof(size_t);}
 
 	ASized() = default;
-	ASized(const ASized&) = default;
 	ASized(A&& allocator): A(Meta::Move(allocator)) {}
-	ASized(ASized&& rhs): A(Meta::Move(rhs)) {}
 
 	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
 	{
@@ -49,13 +47,6 @@ template<class A> struct ASized: A
 
 	forceinline size_t GetAllocationSize(void* ptr) const
 	{return *(reinterpret_cast<size_t*>(ptr)-1);}
-
-
-	ASized& operator=(ASized&& rhs)
-	{
-		A::operator=(Meta::Move(rhs));
-		return *this;
-	}
 };
 
 }}

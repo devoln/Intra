@@ -27,21 +27,6 @@ public:
 	
 	forceinline RZip(OriginalRangeTuple ranges): OriginalRanges(ranges) {}
 
-	forceinline RZip(const RZip& rhs) = default;
-	forceinline RZip(RZip&& rhs): OriginalRanges(Meta::Move(rhs.OriginalRanges)) {}
-
-	forceinline RZip& operator=(const RZip& rhs)
-	{
-		OriginalRanges = rhs.OriginalRanges;
-		return *this;
-	}
-
-	forceinline RZip& operator=(RZip&& rhs)
-	{
-		OriginalRanges = Meta::Move(rhs.OriginalRanges);
-		return *this;
-	}
-
 	forceinline ReturnValueType First() const
 	{return Meta::TransformEachField(OriginalRanges, Fronter());}
 	

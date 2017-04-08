@@ -17,14 +17,6 @@ private:
 	enum: uint {BoundValue = 0xbcbcbcbc};
 public:
 	ABoundsChecked() = default;
-	ABoundsChecked(const ABoundsChecked&) = default;
-	ABoundsChecked(ABoundsChecked&& rhs): A(Meta::Move(rhs)) {}
-
-	ABoundsChecked& operator=(ABoundsChecked&& rhs)
-	{
-		A::operator=(Meta::Move(rhs));
-		return *this;
-	}
 
 	size_t GetAlignment() const {return sizeof(uint);}
 

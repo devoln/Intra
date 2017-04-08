@@ -27,21 +27,6 @@ template<typename R> struct RTake
 	forceinline RTake(R&& range, size_t count):
 		mOriginalRange(Meta::Move(range)) {set_len(count);}
 
-
-	//Для совместимости с Visual Studio 2013:
-	RTake(const RTake&) = default;
-	RTake& operator=(const RTake&) = default;
-
-	forceinline RTake(RTake&& rhs):
-		mOriginalRange(Meta::Move(rhs.mOriginalRange)), mLen(rhs.mLen) {}
-
-	forceinline RTake& operator=(RTake&& rhs)
-	{
-		mOriginalRange = Meta::Move(rhs.mOriginalRange);
-		mLen = rhs.mLen;
-		return *this;
-	}
-
 	template<typename U=R> forceinline Meta::EnableIf<
 		HasLength<U>::_ || IsInfiniteRange<U>::_,
 	bool> Empty() const {return mLen==0;}

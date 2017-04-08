@@ -30,21 +30,6 @@ public:
 		OriginalRange(range), Function(func) {}
 
 
-	RMap(const RMap&) = default;
-	RMap& operator=(const RMap&) = default;
-
-	forceinline RMap(RMap&& rhs):
-		OriginalRange(Meta::Move(rhs.OriginalRange)),
-		Function(Meta::Move(rhs.Function)) {}
-
-	forceinline RMap& operator=(RMap&& rhs)
-	{
-		OriginalRange = Meta::Move(rhs.OriginalRange);
-		return *this;
-	}
-
-
-
 	forceinline return_value_type First() const
 	{return Function()(OriginalRange.First());}
 

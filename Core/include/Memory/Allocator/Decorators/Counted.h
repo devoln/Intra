@@ -15,9 +15,7 @@ private:
 	size_t mCounter=0;
 public:
 	ACounted() = default;
-	ACounted(const ACounted&) = default;
 	ACounted(A&& allocator): A(Meta::Move(allocator)) {}
-	ACounted(ACounted&& rhs): A(Meta::Move(rhs)), mCounter(rhs.mCounter) {}
 
 	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
 	{
@@ -34,13 +32,6 @@ public:
 	}
 
 	size_t AllocationCount() const {return mCounter;}
-
-	ACounted& operator=(ACounted&& rhs)
-	{
-		A::operator=(Meta::Move(rhs));
-		mCounter = rhs.mCounter;
-		return *this;
-	}
 };
 
 INTRA_WARNING_POP

@@ -13,7 +13,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 struct uint24LE
 {
 	uint24LE() = default;
-	uint24LE(const uint24LE& rhs) = default;
 
 	uint24LE(uint v) {operator=(v);}
 
@@ -32,8 +31,6 @@ struct uint24LE
 		if(++data[0]==0 && ++data[1]==0) data[2]++;
 		return *this;
 	}
-
-	uint24LE& operator=(const uint24LE&) = default;
 
 	operator uint() const {return uint(data[0]) | (uint(data[1]) << 8u) | (uint(data[2]) << 16u);}
 
@@ -73,8 +70,6 @@ struct uint40LE
 		if(++data[0]==0 && ++data[1]==0 && ++data[2]==0 && ++data[3]==0) data[4]++;
 		return *this;
 	}
-
-	uint40LE& operator=(const uint40LE&) = default;
 
 	operator ulong64() const
 	{

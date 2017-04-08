@@ -42,8 +42,6 @@ class OsFileSystem: public IFileSystem
 {
 public:
 	OsFileSystem();
-	OsFileSystem(const OsFileSystem&) = default;
-	OsFileSystem& operator=(const OsFileSystem&) = default;
 
 	//! Проверить существования файла fileName.
 	bool FileExists(StringView fileName) const final;

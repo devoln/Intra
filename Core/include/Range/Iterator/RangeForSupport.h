@@ -40,15 +40,15 @@ template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ &&
 	(!Meta::IsCopyConstructible<Meta::RemoveConstRef<R>>::_ || !Meta::IsCopyAssignable<Meta::RemoveConstRef<R>>::_) &&
 	!Meta::IsConst<R>::_,
-RangeForIterLike<Meta::RemoveReference<R>>> begin(R&& range)
+RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 {return Meta::Move(range);}
 
 template<typename R> forceinline Meta::EnableIf<
 	IsInputRange<R>::_ &&
 	Meta::IsCopyConstructible<Meta::RemoveConstRef<R>>::_ && Meta::IsCopyAssignable<Meta::RemoveConstRef<R>>::_,
-RangeForIterLike<Meta::RemoveReference<R>>> begin(R&& range)
+RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 {
-	return {Meta::RemoveReference<R>(Meta::Forward<R>(range))};
+	return {Meta::RemoveConstRef<R>(Meta::Forward<R>(range))};
 }
 
 #ifndef INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT

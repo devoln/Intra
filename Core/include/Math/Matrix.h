@@ -98,12 +98,10 @@ public:
 	}
 
 	Matrix3(const Vector3<T>& right, const Vector3<T>& up, const Vector3<T>& forward) {rows[0]=right, rows[1]=up, rows[2]=forward;}
-	Matrix3(const Matrix3<T>& m) = default;
 	explicit Matrix3(const Matrix4<T>& m) {rows[0] = m[0].xyz, rows[1] = m[1].xyz, rows[2] = m[2].xyz;}
 
-	Matrix3& operator=(const Matrix3& m) = default;
-
 	bool operator==(const Matrix3& m) const {return memcmp(rows, m, sizeof(*this))==0;}
+	bool operator!=(const Matrix3& m) const {return !operator==(m);}
 
 	Matrix3 operator*(const Matrix3& rhs) const
 	{
@@ -307,10 +305,8 @@ template<typename T> struct Matrix4
 		rows[3] = Vector4<T>(translation, 1);
 	}
 
-	Matrix4(const Matrix4& m) = default;
-
-	Matrix4& operator=(const Matrix4& m) = default;
 	bool operator==(const Matrix4& m) const {return memcmp(rows, m, sizeof(*this))==0;}
+	bool operator!=(const Matrix4& m) const {return !operator==(m);}
 
 	static Matrix4 mul(const Matrix4& m1, const Matrix4& m2)
 	{

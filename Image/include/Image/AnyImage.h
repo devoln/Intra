@@ -21,25 +21,8 @@ public:
 	AnyImage(null_t=null):
 		Data(), Info(), SwapRB(false), LineAlignment(1) {}
 
-	AnyImage(const AnyImage& rhs) = default;
-
-	AnyImage(AnyImage&& rhs):
-		Data(Meta::Move(rhs.Data)), Info(rhs.Info),
-		SwapRB(rhs.SwapRB), LineAlignment(rhs.LineAlignment) {}
-
 	AnyImage(Math::USVec3 size, ImageFormat format, ushort mipmapCount=0, ImageType type=ImageType_2D):
 		Data(), Info(size, format, type, mipmapCount), SwapRB(false), LineAlignment(1) {}
-
-	AnyImage& operator=(const AnyImage& rhs) = default;
-
-	AnyImage& operator=(AnyImage&& rhs)
-	{
-		Data = Meta::Move(rhs.Data);
-		Info = rhs.Info;
-		SwapRB=  rhs.SwapRB;
-		LineAlignment = rhs.LineAlignment;
-		return *this;
-	}
 
 	bool operator==(null_t) const {return Data==null;}
 	bool operator!=(null_t) const {return !operator==(null);}

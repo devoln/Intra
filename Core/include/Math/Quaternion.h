@@ -24,7 +24,6 @@ template<typename T> struct Quaternion
 
 	forceinline Quaternion() = default;
 	forceinline Quaternion(T X, T Y=0, T Z=0, T W=1): x(X), y(Y), z(Z), w(W) {}
-	forceinline Quaternion(const Quaternion& q) = default;
 	forceinline Quaternion(const Vector3<T>& v): xyzw(v, 1) {}
 
 	Quaternion(T angle, const Vector3<T>& axis)
@@ -65,8 +64,6 @@ template<typename T> struct Quaternion
 	forceinline Quaternion& operator*=(T rhs) {xyzw *= rhs; return *this;}
 	forceinline Quaternion& operator/=(T rhs) {xyzw /= rhs; return *this;}
 	forceinline Quaternion& operator*=(const Quaternion& q) {return *this = *this*q;}
-
-	forceinline Quaternion& operator=(const Quaternion& rhs) = default;
 
 	//Порядок аналогичен умножению матрицы на вектор
 	Vector3<T> operator*(const Vector3<T>& v) const //Поворот вектора кватернионом

@@ -219,9 +219,6 @@
     <ClCompile Include="src\IO\Networking.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
-    <ClCompile Include="src\Data\Object.cpp">
-      <Filter>Файлы исходного кода\Data</Filter>
-    </ClCompile>
     <ClCompile Include="src\Algo\Reduction.cpp">
       <Filter>Файлы исходного кода\Algo</Filter>
     </ClCompile>

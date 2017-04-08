@@ -29,7 +29,7 @@ In addition to the library this repository also contains 3 demos projects:
 - [Bin2C](Demos/Bin2C) - Utility to convert any file into byte array in C code.
 
 ### Supported compilers:
-- MSVC 2013+;
+- MSVC 2015+;
 - g++ 4.8+;
 - Clang 3.3+.
 
@@ -80,7 +80,7 @@ make -j4
  
 
 ### Поддерживаемые компиляторы:
-- MSVC 2013+;
+- MSVC 2015+;
 - g++ 4.8+;
 - Clang 3.3+.
  

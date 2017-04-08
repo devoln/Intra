@@ -10,6 +10,7 @@
 namespace Intra {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 struct Variable
 {
@@ -85,41 +86,21 @@ class VariableArray
 {
 public:
 	VariableArray(): data(null), variables(null) {}
-	VariableArray(const VariableArray& rhs) = default;
-	VariableArray(VariableArray&& rhs): data(Meta::Move(rhs.data)), variables(Meta::Move(rhs.variables)) {}
-
-	VariableArray& operator=(const VariableArray& rhs) = default;
-	VariableArray& operator=(VariableArray&& rhs)
-	{
-		data = Meta::Move(rhs.data);
-		variables = Meta::Move(rhs.variables);
-		return *this;
-	}
 
 	const Variable& operator[](size_t index) const
-	{
-		return *reinterpret_cast<const Variable*>(data.Data() + variables[index].Offset);
-	}
+	{return *reinterpret_cast<const Variable*>(data.Data() + variables[index].Offset);}
 
 	template<typename T> T& Get(size_t index, size_t arrIndex)
-	{
-		return *reinterpret_cast<T*>(data.Data()+variables[index].Offset+arrIndex*sizeof(T));
-	}
+	{return *reinterpret_cast<T*>(data.Data()+variables[index].Offset+arrIndex*sizeof(T));}
 
 	template<typename T> const T& Get(size_t index, size_t arrIndex) const
-	{
-		return reinterpret_cast<const T*>(GetPtr(index))[arrIndex];
-	}
+	{return reinterpret_cast<const T*>(GetPtr(index))[arrIndex];}
 
 	const void* GetPtr(size_t index) const
-	{
-		return data.Data()+variables[index].Offset;
-	}
+	{return data.Data()+variables[index].Offset;}
 
 	AnyPtr GetPtr(size_t index)
-	{
-		return data.Data()+variables[index].Offset;
-	}
+	{return data.Data()+variables[index].Offset;}
 
 	void Add(const void* value, size_t bytes)
 	{
@@ -135,9 +116,7 @@ public:
 	}
 
 	void Set(size_t index, const void* arrData, size_t start, size_t bytes)
-	{
-		C::memcpy(&data[variables[index].Offset+start], arrData, bytes);
-	}
+	{C::memcpy(&data[variables[index].Offset+start], arrData, bytes);}
 
 	template<typename T> void Add(const T& value)
 	{
@@ -152,9 +131,7 @@ public:
 	}
 
 	template<typename T> void Set(size_t index, ArrayRange<const T> arr, size_t first=0)
-	{
-		Set(index, arr.Data(), first*sizeof(T), arr.Length()*sizeof(T));
-	}
+	{Set(index, arr.Data(), first*sizeof(T), arr.Length()*sizeof(T));}
 
 	void ReserveBytes(size_t bytes) {data.Reserve(bytes);}
 
@@ -174,8 +151,6 @@ private:
 	{
 		VarEntry() = default;
 		VarEntry(uint offset): Offset(offset) {}
-		VarEntry(const VarEntry&) = default;
-		VarEntry& operator=(const VarEntry&) = default;
 
 		bool operator==(const VarEntry& rhs) const {return Offset==rhs.Offset;}
 		bool operator!=(const VarEntry& rhs) const {return !operator==(rhs);}

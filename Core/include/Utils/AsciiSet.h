@@ -34,7 +34,6 @@ public:
 		Set(chars);
 	}
 
-	AsciiSet& operator=(const AsciiSet& rhs) = default;
 	AsciiSet& operator=(null_t) {Algo::FillZeros(v); return *this;}
 	bool operator==(null_t) const {return Algo::Equals(v, Null.v);}
 	bool operator!=(null_t) const {return !operator==(null);}

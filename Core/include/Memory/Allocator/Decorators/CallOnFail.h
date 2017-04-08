@@ -28,21 +28,13 @@ inline void NoMemoryAbort(size_t bytes, SourceInfo sourceInfo)
 template<typename A, void(*F)(size_t, SourceInfo) = NoMemoryBreakpoint> struct ACallOnFail: A
 {
 	ACallOnFail() = default;
-	ACallOnFail(const ACallOnFail&) = default;
 	ACallOnFail(A&& allocator): A(Meta::Move(allocator)) {}
-	ACallOnFail(ACallOnFail&& rhs): A(Meta::Move(rhs)) {}
 
 	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
 	{
 		auto result = A::Allocate(bytes, sourceInfo);
 		if(result==null) F(bytes, sourceInfo);
 		return result;
-	}
-
-	ACallOnFail& operator=(ACallOnFail&& rhs)
-	{
-		A::operator=(Meta::Move(rhs));
-		return *this;
 	}
 };
 

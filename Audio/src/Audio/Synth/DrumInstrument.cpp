@@ -4,8 +4,6 @@
 
 namespace Intra { namespace Audio { namespace Synth {
 
-DrumInstrument::~DrumInstrument() {}
-
 void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {

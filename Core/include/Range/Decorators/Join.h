@@ -1,6 +1,11 @@
 #pragma once
 
 #include "Range/Concepts.h"
+#include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 namespace Intra { namespace Range {
 
@@ -11,7 +16,6 @@ template<typename RR> class RJoin
 public:
 	RJoin(const RR& range): mOriginalRanges(range) {goToNearestNonEmptyElement();}
 	RJoin(RR&& range): mOriginalRanges(Meta::Move(range)) {goToNearestNonEmptyElement();}
-	RJoin(const RJoin& rhs) = default;
 
 	forceinline ReturnValueType First() const
 	{
@@ -74,3 +78,5 @@ RJoin<AsRR>> Join(RR&& range)
 {return {Range::Forward<RR>(range)};}
 
 }}
+
+INTRA_WARNING_POP

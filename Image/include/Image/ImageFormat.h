@@ -88,11 +88,9 @@ struct ImageFormat
 
 	explicit ImageFormat(ushort val): value(I(val)) {}
 	ImageFormat(I vt): value(vt) {}
-	ImageFormat(null_t = null): value(None) {}
-	ImageFormat(const ImageFormat& rhs) = default;
+	ImageFormat(null_t=null): value(None) {}
 
-	ImageFormat& operator=(null_t) { value = None; return *this; }
-	ImageFormat& operator=(const ImageFormat& rhs) = default;
+	ImageFormat& operator=(null_t) {value = None; return *this;}
 
 	bool operator==(null_t) const { return value==None; }
 	bool operator!=(null_t) const { return !operator==(null); }
@@ -101,11 +99,11 @@ struct ImageFormat
 	bool operator==(ImageFormat rhs) const { return value==rhs.value; }
 	bool operator!=(ImageFormat rhs) const { return !operator==(rhs); }
 
-	enum class FormatClass: byte { Normalized, FloatingPoint, Integral, Depth, Compressed, Base, Invalid };
+	enum class FormatClass: byte {Normalized, FloatingPoint, Integral, Depth, Compressed, Base, Invalid};
 
 	byte BitsPerPixel() const;
 	byte BitsPerComponent() const;
-	byte BytesPerPixel() const { return byte(!IsCompressed()? BitsPerPixel()/8: 0); }
+	byte BytesPerPixel() const {return byte(!IsCompressed()? BitsPerPixel()/8: 0);}
 
 	bool IsValid() const;
 
@@ -127,7 +125,7 @@ struct ImageFormat
 
 	//Упакованным считается несжатый формат, число бит на компоненту которого не кратно 8
 	bool IsPacked() const;
-	Math::UVec4 GetBitMasks(bool swapRB = false) const;
+	Math::UVec4 GetBitMasks(bool swapRB=false) const;
 
 	byte ComponentCount() const;
 	ValueType GetComponentType() const;

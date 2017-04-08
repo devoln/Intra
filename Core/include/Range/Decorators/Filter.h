@@ -24,20 +24,6 @@ template<typename R, typename P> struct RFilter
 		mOriginalRange(range), mPredicate(filterPredicate)
 		{skip_falses_front(mOriginalRange, filterPredicate);}
 
-	//Для совместимости с Visual Studio 2013:
-	RFilter(const RFilter&) = default;
-	RFilter& operator=(const RFilter&) = default;
-	
-	forceinline RFilter(RFilter&& rhs):
-		mOriginalRange(Meta::Move(rhs.mOriginalRange)),
-		mPredicate(Meta::Move(rhs.mPredicate)) {}
-
-	forceinline RFilter& operator=(RFilter&& rhs)
-	{
-		mOriginalRange = Meta::Move(rhs.mOriginalRange);
-		mPredicate = Meta::Move(rhs.mPredicate);
-		return *this;
-	}
 
 	forceinline ReturnValueTypeOf<R> First() const
 	{

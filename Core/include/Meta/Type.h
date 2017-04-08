@@ -58,9 +58,8 @@ struct NonCopyableType
 	NonCopyableType() = default;
 	NonCopyableType(NonCopyableType&&) {}
 	NonCopyableType& operator=(NonCopyableType&&) {return *this;}
-private:
-	NonCopyableType(const NonCopyableType&) {}
-	NonCopyableType& operator=(const NonCopyableType&) {return *this;}
+	NonCopyableType(const NonCopyableType&) = delete;
+	NonCopyableType& operator=(const NonCopyableType&) = delete;
 };
 
 template<typename T> struct WrapperStruct {T value;};
@@ -482,7 +481,7 @@ template<typename T, typename... Args> struct IsTriviallyConstructible:
 	TypeFromValue<bool, __has_trivial_copy(T)> {};
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER>=1900
 template<typename T> struct IsCopyConstructible: IsConstructible<T, const T&> {};
 template<> struct IsCopyConstructible<void>: TypeFromValue<bool, false> {};
 #else

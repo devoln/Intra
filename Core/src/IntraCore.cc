@@ -20,7 +20,6 @@
 #include "Data/Serialization/LanguageParams.cpp"
 #include "Data/Variable.cpp"
 #include "Data/ValueType.cpp"
-#include "Data/Object.cpp"
 
 #include "IO/ConsoleInput.cpp"
 #include "IO/ConsoleOutput.cpp"

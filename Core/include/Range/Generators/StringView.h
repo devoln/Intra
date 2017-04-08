@@ -25,8 +25,6 @@ template<typename Char> struct GenericStringView
 	template<size_t N> constexpr forceinline GenericStringView(Char(&stringLiteral)[N]):
 		mStart(stringLiteral), mEnd(stringLiteral+(N-1u)) {}
 
-	constexpr forceinline GenericStringView(const GenericStringView& rhs) = default;
-
 	//! Конструирование из любого подходящего диапазона или контейнера
 	template<typename R, typename=Meta::EnableIf<
 		IsAsArrayRange<R>::_ && !Meta::IsArrayType<Meta::RemoveReference<R>>::_ &&
@@ -138,8 +136,6 @@ template<typename Char> struct GenericStringView
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
 	forceinline GenericStringView& operator=(null_t) {mStart=mEnd=null; return *this;}
-
-	forceinline GenericStringView& operator=(const GenericStringView& rhs) = default;
 
 	bool operator<(const GenericStringView& rhs) const
 	{return Algo::LexCompare(*this, rhs)<0;}

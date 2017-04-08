@@ -163,11 +163,6 @@ public:
 			Insert(keyRange[i], *valuePtrRange[i]);
 	}
 
-	LinearMap(const LinearMap& rhs) = default;
-
-	forceinline LinearMap(LinearMap&& rhs):
-		mKeys(Meta::Move(rhs.mKeys)), mValues(Meta::Move(rhs.mValues)) {}
-
 	forceinline bool Empty() const {return mKeys.Empty();}
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator!=(null_t) const {return !Empty();}
@@ -344,19 +339,10 @@ public:
 	K& Key(size_t index) {return mKeys[index];}
 	V& Value(size_t index) {return mValues[index];}
 
-	LinearMap& operator=(const LinearMap& rhs) = default;
-
 	LinearMap& operator=(null_t)
 	{
 		mKeys.Clear();
 		mValues.Clear();
-		return *this;
-	}
-
-	LinearMap& operator=(LinearMap&& rhs)
-	{
-		mKeys = Meta::Move(rhs.mKeys);
-		mValues = Meta::Move(rhs.mValues);
 		return *this;
 	}
 

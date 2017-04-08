@@ -12,9 +12,7 @@ namespace Intra { namespace Memory {
 template<typename A, typename Sync> struct ASynchronized: A
 {
 	ASynchronized() = default;
-	ASynchronized(const ASynchronized&) = default;
 	ASynchronized(A&& allocator): A(Meta::Move(allocator)) {}
-	ASynchronized(ASynchronized&& rhs): A(Meta::Move(rhs)), mSync(Meta::Move(rhs.mSync)) {}
 
 	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
 	{
@@ -30,13 +28,6 @@ template<typename A, typename Sync> struct ASynchronized: A
 		mSync.Lock();
 		A::Free(ptr, size);
 		mSync.Unlock();
-	}
-
-	ASynchronized& operator=(ASynchronized&& rhs)
-	{
-		A::operator=(Meta::Move(rhs));
-		mSync = Meta::Move(rhs.mSync);
-		return *this;
 	}
 
 private:

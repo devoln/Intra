@@ -22,7 +22,6 @@ template<typename T, uint DIV> struct FixedPoint
 	static_assert(sizeof(T)<8, "64-bit FixedPoint not supported!");
 
 	FixedPoint() = default;
-	FixedPoint(const FixedPoint&) = default;
 	template<typename RHS> constexpr forceinline FixedPoint(RHS value): data(T(value*DIV)) {}
 
 	template<typename T2> forceinline operator T2() const {return cast<T2>();}

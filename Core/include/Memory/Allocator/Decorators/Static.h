@@ -3,15 +3,16 @@
 #include "Platform/FundamentalTypes.h"
 #include "Meta/Type.h"
 #include "Memory/Allocator/Concepts.h"
+#include "Platform/CppWarnings.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 namespace Intra { namespace Memory {
 
 template<typename A> struct AStatic
 {
 	size_t GetAlignment() const {return Get().GetAlignment();}
-
-	AStatic() = default;
-	AStatic(const AStatic&) = default;
 
 	static A& Get()
 	{
@@ -31,4 +32,6 @@ template<typename A> struct AStatic
 	{return Get().GetAllocationSize(ptr);}
 };
 
-} }
+}}
+
+INTRA_WARNING_POP

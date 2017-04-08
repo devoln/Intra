@@ -4,6 +4,9 @@
 #include "Platform/Debug.h"
 #include "Memory/Allocator/Basic/Pool.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+
 namespace Intra { namespace Memory {
 
 template<typename A> struct AGrowingPool: A
@@ -14,8 +17,6 @@ template<typename A> struct AGrowingPool: A
 
 	AGrowingPool(size_t initialSize, size_t elementSize, size_t alignment, SourceInfo sourceInfo)
 	{Init(initialSize, elementSize, alignment, sourceInfo);}
-
-	AGrowingPool(const AGrowingPool&) = default;
 
 	~AGrowingPool()
 	{
@@ -85,4 +86,6 @@ private:
 };
 
 }}
+
+INTRA_WARNING_POP
 

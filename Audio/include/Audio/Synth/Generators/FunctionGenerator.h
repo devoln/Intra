@@ -13,8 +13,6 @@ template<typename T> class FunctionGenerator
 	float mTime, mDT;
 	T mGenerator;
 public:
-	FunctionGenerator(const FunctionGenerator&) = default;
-
 	FunctionGenerator(T generator): mFreq(0), mAmplitude(0),
 		mTime(0), mDT(0), mGenerator(generator) {}
 
