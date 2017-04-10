@@ -79,7 +79,7 @@ char ConsoleInput::First() const
 #endif
 }
 
-size_t ConsoleInput::CopyAdvanceToAdvance(ArrayRange<char>& dst)
+size_t ConsoleInput::CopyAdvanceToAdvance(Span<char>& dst)
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	const size_t dstLen = dst.Length();

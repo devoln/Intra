@@ -234,7 +234,7 @@ public:
 
 
 
-Music ReadMidiFile(ArrayRange<const byte> fileData)
+Music ReadMidiFile(CSpan<byte> fileData)
 {
 	MidiReader reader(fileData);
 	Music result;
@@ -242,7 +242,7 @@ Music ReadMidiFile(ArrayRange<const byte> fileData)
 #ifndef INTRA_NO_AUDIO_SYNTH
 	static Synth::MusicalInstruments instr;
 
-	ArrayRange<Synth::IMusicalInstrument*> instruments = reader.instruments;
+	Span<Synth::IMusicalInstrument*> instruments = reader.instruments;
 
 	for(byte i=0; i<128; i++)
 		instruments[i] = &instr.Sine2Exp;

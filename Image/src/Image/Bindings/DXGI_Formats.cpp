@@ -1,7 +1,7 @@
 ﻿#include "Image/Bindings/DXGI_Formats.h"
 #include "Image/ImageFormat.h"
 #include "Algo/Mutation/Fill.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Image {
 

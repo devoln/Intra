@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Audio {
 
-void DiscreteFourierTransform(ArrayRange<float> outFreqs, ArrayRange<const short> samples);
+void DiscreteFourierTransform(Span<float> outFreqs, CSpan<short> samples);
 
 }}

@@ -69,7 +69,7 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 	const uint dataPos = stream.ReadRaw<uintLE>();
 
 	const uint hdrSize = stream.ReadRaw<uintLE>();
-	stream.ReadRawTo(ArrayRange<char>(reinterpret_cast<char*>(&bmpHdr), hdrSize-sizeof(uintLE)));
+	stream.ReadRawTo(Span<char>(reinterpret_cast<char*>(&bmpHdr), hdrSize-sizeof(uintLE)));
 	size_t bytesRead = 14+hdrSize;
 
 	//RLE4, RLE8 и встроенный jpeg\png не поддерживаются!
@@ -142,7 +142,7 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 			return result;
 		}
 
-		ArrayRange<const byte> paletteBytes(reinterpret_cast<byte*>(colorTable), sizeof(colorTable));
+		CSpan<byte> paletteBytes(reinterpret_cast<byte*>(colorTable), sizeof(colorTable));
 		ReadPalettedPixelDataBlock(stream, paletteBytes, bmpHdr.bitCount,
 			size, result.Info.Format, true, 4, result.LineAlignment, result.Data);
 		return result;

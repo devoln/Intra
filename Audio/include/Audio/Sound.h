@@ -53,7 +53,7 @@ public:
 
 	SoundInstance CreateInstance();
 
-	ArrayRange<SoundInstance* const> Instances() const {return mInstances;}
+	Span<SoundInstance* const> Instances() const {return mInstances;}
 
 	static void DeleteAllSounds()
 	{
@@ -159,7 +159,7 @@ public:
 
 	void UpdateBuffer() const;
 
-	static ArrayRange<StreamedSound* const> AllExistingInstances() {return all_existing_instances;}
+	static Span<StreamedSound* const> AllExistingInstances() {return all_existing_instances;}
 
 	static void UpdateAllExistingInstances()
 	{

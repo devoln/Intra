@@ -8,12 +8,12 @@ template<typename T> class LinearSet
 {
 public:
 	LinearSet() = default;
-	LinearSet(ArrayRange<const T> values) {Insert(values);}
+	LinearSet(CSpan<T> values) {Insert(values);}
 	LinearSet(const LinearSet<T>& rhs) {Insert(rhs);}
 
 	void Insert(T&& value) {if(!mData.Contains(value)) mData.AddLast(Meta::Move(value));}
 	void Insert(const T& value) {if(!mData.Contains(value)) mData.AddLast(value);}
-	void Insert(ArrayRange<const T> values) {for(auto& v: values) Insert(v);}
+	void Insert(CSpan<T> values) {for(auto& v: values) Insert(v);}
 
 	void Remove(const T& val)
 	{
@@ -31,11 +31,11 @@ public:
 	T& operator[](size_t i) {return mData[i];}
 	const T& operator[](size_t i) const {return mData[i];}
 
-	ArrayRange<T> AsRange() {return mData.AsRange();}
-	ArrayRange<const T> AsRange() const {return mData.AsConstRange();}
-	ArrayRange<const T> AsConstRange() const {return mData.AsConstRange();}
-	operator ArrayRange<T>() {return AsRange();}
-	operator ArrayRange<const T>() const {return AsConstRange();}
+	Span<T> AsRange() {return mData.AsRange();}
+	CSpan<T> AsRange() const {return mData.AsConstRange();}
+	CSpan<T> AsConstRange() const {return mData.AsConstRange();}
+	operator Span<T>() {return AsRange();}
+	operator CSpan<T>() const {return AsConstRange();}
 
 	typedef T value_type;
 
@@ -58,11 +58,11 @@ template<typename T, typename H=HasherObject<T>> class HashSet
 	typedef std::unordered_set<T, H> D;
 public:
 	explicit HashSet(size_t size=0) { if(size!=0) Reserve(size); }
-	HashSet(ArrayRange<const T> values) { Insert(values); }
+	HashSet(CSpan<T> values) { Insert(values); }
 	HashSet(const Set<T>& rhs) { Insert(rhs); }
 
 	void Insert(const T& value) { data.insert(value); }
-	void Insert(ArrayRange<const T> values) { data.insert(values.begin(), values.end()); }
+	void Insert(CSpan<T> values) { data.insert(values.begin(), values.end()); }
 	void Insert(const Set<T>& set) { data.insert(set.begin(), set.end()); }
 
 	void Remove(const T& val)

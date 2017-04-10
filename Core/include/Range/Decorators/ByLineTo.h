@@ -25,10 +25,10 @@ public:
 
 	forceinline RByLineTo(null_t=null): mKeepTerminator(false) {}
 
-	forceinline RByLineTo(R&& range, ArrayRange<value_type> buf, bool keepTerminator=false):
+	forceinline RByLineTo(R&& range, Span<value_type> buf, bool keepTerminator=false):
 		mOriginalRange(Meta::Move(range)), mBuffer(buf), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	forceinline RByLineTo(const R& range, ArrayRange<value_type> buf, bool keepTerminator=false):
+	forceinline RByLineTo(const R& range, Span<value_type> buf, bool keepTerminator=false):
 		mOriginalRange(range), mBuffer(buf), mKeepTerminator(keepTerminator) {PopFirst();}
 
 	forceinline RByLineTo(RByLineTo&& rhs) {operator=(Meta::Move(rhs));}

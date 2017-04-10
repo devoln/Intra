@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Generators/ArrayRange.h"
+#include "Generators/Span.h"
 #include "Generators/StringView.h"
 #include "Generators/ListRange.h"
 #include "Generators/Iota.h"

@@ -1,7 +1,7 @@
 ﻿#include "Audio/Synth/SawtoothSynth.h"
 #include "Audio/Synth/Generators/Sawtooth.h"
 #include "Audio/Synth/PeriodicSynth.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Platform/CppWarnings.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Transform.h"
@@ -13,7 +13,7 @@ namespace Intra { namespace Audio { namespace Synth {
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void PerfectSawtooth(double upPercent, float volume,
-	float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+	float freq, uint sampleRate, Span<float> inOutSamples, bool add)
 {
 	Generators::Sawtooth saw(float(upPercent/(1.0-upPercent)));
 	saw.SetParams(freq, volume, 1.0/sampleRate);
@@ -23,7 +23,7 @@ void PerfectSawtooth(double upPercent, float volume,
 
 
 void FastSawtooth(double upPercent, float volume, float freq,
-	uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+	uint sampleRate, Span<float> inOutSamples, bool add)
 {
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	const uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
@@ -46,7 +46,7 @@ struct SawtoothParams
 };
 
 void SawtoothSynthPassFunction(const SawtoothParams& params,
-		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
+		float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
 	const double updownPercent = params.UpdownRatio/(params.UpdownRatio+1);

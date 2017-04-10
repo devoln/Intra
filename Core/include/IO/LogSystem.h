@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppFeatures.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"
 #include "Container/Sequential/Array.h"
 #include "IO/FormattedWriter.h"

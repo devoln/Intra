@@ -9,7 +9,7 @@
 #include "Data/Serialization.hh"
 #include "Data/Reflection.h"
 #include "Platform/Time.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "IO/Std.h"
@@ -64,7 +64,7 @@ struct TestRef
 
 	TestRef& operator=(const TestRef&) = default;
 
-	ArrayRange<const int> intArray;
+	CSpan<int> intArray;
 	int fixedIntArray[3];
 	bool booleanVal;
 	float flt;
@@ -98,7 +98,7 @@ struct SuperTestRef
 	Array<StringView> strArr;
 	int foo;
 	StringView str;
-	ArrayRange<const short> vals;
+	CSpan<short> vals;
 	double dbl;
 	TestRef tests[3];
 	ushort bar;
@@ -183,7 +183,7 @@ double TestTextDeserialization(size_t times,
 	const Data::TextSerializerParams& params)
 {
 	char buf[1000];
-	Data::TextSerializer ser(lang, params, ArrayRange<char>(buf));
+	Data::TextSerializer ser(lang, params, Span<char>(buf));
 	ser << g_SuperTest;
 
 	auto deserializer = Data::TextDeserializer(lang, StringView(ser.Output.GetWrittenData()));
@@ -224,11 +224,11 @@ double TestTextSerialization(FormattedWriter& logger, StringView desc, size_t ti
 	const Data::LanguageParams& lang, const Data::TextSerializerParams& params)
 {
 	char buf[1000];
-	Data::TextSerializer ser(lang, params, ArrayRange<char>(buf));
+	Data::TextSerializer ser(lang, params, Span<char>(buf));
 	Timer tim;
 	for(size_t i=0; i<times; i++)
 	{
-		ser.ResetOutput(ArrayRange<char>(buf));
+		ser.ResetOutput(Span<char>(buf));
 		ser << g_SuperTest;
 	}
 	double result = tim.GetTime();

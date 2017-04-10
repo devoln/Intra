@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Container/ForwardDecls.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Platform/CppWarnings.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -12,7 +12,7 @@ template<typename T, typename Index> struct SparseRange
 {
 	static_assert(sizeof(T)>=sizeof(Index), "Type T must not be shorter than index!");
 
-	SparseRange(ArrayRange<T> sparseBuffer=null):
+	SparseRange(Span<T> sparseBuffer=null):
 		data(sparseBuffer), first_free(empty_index()) {}
 
 	SparseRange(SparseRange&& rhs):
@@ -83,13 +83,13 @@ template<typename T, typename Index> struct SparseRange
 	//! Возвращает диапазон, содержащий элементы разреженного массива.
 	//! Этот буфер безопасно использовать только в том случае, когда разреженный массив пуст, то есть выполняется Empty().
 	//! В этом случае добавление нового элемента в разреженный массив перезапишет все данные в этом буфере.
-	ArrayRange<T> GetInternalDataBuffer() {return data;}
+	Span<T> GetInternalDataBuffer() {return data;}
 
 	bool operator==(null_t) const {return Empty();}
 	bool operator!=(null_t) const {return !Empty();}
 
 private:
-	ArrayRange<T> data;
+	Span<T> data;
 	Index first_free;
 
 	T& append_first_free(Index* oIndex);
@@ -109,7 +109,7 @@ template<typename Index> struct SparseTypelessRange
 {
 	SparseTypelessRange(null_t=null): first_free(empty_index()), node_size(0) {}
 
-	SparseTypelessRange(ArrayRange<byte> sparseBuffer, size_t nodeSize):
+	SparseTypelessRange(Span<byte> sparseBuffer, size_t nodeSize):
 		data(sparseBuffer), first_free(empty_index()), node_size(nodeSize) {}
 
 	SparseTypelessRange(SparseTypelessRange&& rhs):
@@ -163,13 +163,13 @@ template<typename Index> struct SparseTypelessRange
 	//! Возвращает диапазон, содержащий элементы разреженного массива.
 	//! Этот буфер безопасно использовать только в том случае, когда разреженный массив пуст, то есть выполняется Empty().
 	//! В этом случае добавление нового элемента в разреженный массив перезапишет все данные в этом буфере.
-	ArrayRange<byte> GetInternalDataBuffer() {return data;}
+	Span<byte> GetInternalDataBuffer() {return data;}
 
 	bool operator==(null_t) const {return Empty();}
 	bool operator!=(null_t) const {return !Empty();}
 
 private:
-	ArrayRange<byte> data;
+	Span<byte> data;
 	Index first_free;
 	size_t node_size;
 

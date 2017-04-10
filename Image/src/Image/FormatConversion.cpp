@@ -33,7 +33,7 @@ template<typename T> static void SwapRedBlueTyped(size_t lineUnused,
 	}
 }
 
-void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes, ArrayRange<byte> data)
+void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes, Span<byte> data)
 {
 	const auto components = format.ComponentCount();
 	const auto bytesPerComp = format.GetComponentType().Size();
@@ -49,7 +49,7 @@ void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes,
 
 void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
-	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
+	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, Span<byte> dstBuf)
 {
 	INTRA_DEBUG_ASSERT(srcFormat.ComponentCount()>=3 || !swapRB);
 	const size_t usefulSrcLineBytes = size_t(sizes.x*srcFormat.BytesPerPixel());
@@ -136,9 +136,9 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	if(swapRB) SwapRedBlueChannels(dstFormat, dstAlignment, sizes, dstBuf);
 }
 
-void ReadPalettedPixelDataBlock(InputStream& stream, ArrayRange<const byte> palette,
+void ReadPalettedPixelDataBlock(InputStream& stream, CSpan<byte> palette,
 	ushort bpp, USVec2 sizes, ImageFormat format, bool flipVert,
-	ushort srcAlignment, ushort dstAlignment, ArrayRange<byte> dstBuf)
+	ushort srcAlignment, ushort dstAlignment, Span<byte> dstBuf)
 {
 	INTRA_DEBUG_ASSERT(palette.Length() >= 1u << bpp);
 	const ushort bytesPerPixel = format.BytesPerPixel();

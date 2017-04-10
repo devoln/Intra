@@ -5,7 +5,7 @@
 #include "Platform/CppWarnings.h"
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Copy.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Stream/Operators.h"
 #include "Range/Stream/OutputStreamMixin.h"
 #include "Memory/SmartRef/Shared.h"
@@ -79,7 +79,7 @@ public:
 		if(mBufferRest.Empty()) Flush();
 	}
 
-	size_t CopyAdvanceFromAdvance(ArrayRange<const char>& src)
+	size_t CopyAdvanceFromAdvance(CSpan<char>& src)
 	{
 		size_t totalBytesWritten = Algo::CopyAdvanceToAdvance(src, mBufferRest);
 		if(!mBufferRest.Empty()) return totalBytesWritten;
@@ -100,7 +100,7 @@ public:
 		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceFromAdvance(AR& src)
 	{
-		ArrayRange<const char> srcArr = {src.Data(), src.Length()};
+		CSpan<char> srcArr = {src.Data(), src.Length()};
 		size_t result = CopyAdvanceFromAdvance(srcArr);
 		Range::PopFirstExactly(src, result);
 		return result;
@@ -126,7 +126,7 @@ private:
 	Shared<OsFile> mFile;
 	ulong64 mOffset;
 	Array<char> mBuffer;
-	ArrayRange<char> mBufferRest;
+	Span<char> mBufferRest;
 };
 
 }}

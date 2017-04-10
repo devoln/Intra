@@ -7,7 +7,7 @@
 #include "Meta/Type.h"
 
 #include "PlacementNew.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Platform/Debug.h"
 
 
@@ -18,7 +18,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 //Вызов конструкторов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyConstructible<T>::_
-> Initialize(ArrayRange<T> dst)
+> Initialize(Span<T> dst)
 {
 	while(!dst.Empty())
 	{
@@ -30,7 +30,7 @@ template<typename T> Meta::EnableIf<
 //Для POD типов просто зануление памяти
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsTriviallyConstructible<T>::_
-> Initialize(ArrayRange<T> dst)
+> Initialize(Span<T> dst)
 {
 	if(dst.Empty()) return;
 	C::memset(dst.Begin, 0, dst.Length()*sizeof(T));
@@ -52,7 +52,7 @@ template<typename T> forceinline Meta::EnableIf<
 //Вызов деструкторов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyDestructible<T>::_
-> Destruct(ArrayRange<T> dst)
+> Destruct(Span<T> dst)
 {
 	while(!dst.Empty())
 	{
@@ -63,7 +63,7 @@ template<typename T> Meta::EnableIf<
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsTriviallyDestructible<T>::_
-> Destruct(ArrayRange<T> dst)
+> Destruct(Span<T> dst)
 {
 #ifdef INTRA_DEBUG
 	if(dst.Empty()) return;
@@ -89,7 +89,7 @@ template<typename T> Meta::EnableIf<
 }
 
 //Побитовое копирование
-template<typename T> void CopyBits(ArrayRange<T> dst, ArrayRange<const T> src)
+template<typename T> void CopyBits(Span<T> dst, CSpan<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
@@ -98,10 +98,10 @@ template<typename T> void CopyBits(ArrayRange<T> dst, ArrayRange<const T> src)
 
 template<typename T> void CopyBits(T* dst, const T* src, size_t count)
 {
-	CopyBits(ArrayRange<T>(dst, count), ArrayRange<const T>(src, count));
+	CopyBits(Span<T>(dst, count), CSpan<T>(src, count));
 }
 
-template<typename T> void CopyBitsBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+template<typename T> void CopyBitsBackwards(Span<T> dst, CSpan<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
@@ -109,7 +109,7 @@ template<typename T> void CopyBitsBackwards(ArrayRange<T> dst, ArrayRange<const 
 
 template<typename T> void CopyBitsBackwards(T* dst, const T* src, size_t count)
 {
-	CopyBitsBackwards(ArrayRange<T>(dst, count), ArrayRange<const T>(src, count));
+	CopyBitsBackwards(Span<T>(dst, count), CSpan<T>(src, count));
 }
 
 template<typename T> void CopyObjectBits(T& dst, const T& src)
@@ -149,7 +149,7 @@ template<typename OR, typename R> Meta::EnableIf<
 //Копирование оператором присваивания
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyAssignable<T>::_
-> CopyAssignBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyAssignBackwards(Span<T> dst, CSpan<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length() <= src.Length());
 	while(!dst.Empty())
@@ -162,7 +162,7 @@ template<typename T> Meta::EnableIf<
 
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyAssignable<T>::_
-> CopyAssignBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyAssignBackwards(Span<T> dst, CSpan<T> src)
 {
 	CopyBitsBackwards(dst, src);
 }
@@ -171,7 +171,7 @@ template<typename T> Meta::EnableIf<
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_ ||
 	!Meta::IsTriviallyDestructible<T>::_
-> CopyRecreate(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyRecreate(Span<T> dst, CSpan<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -185,7 +185,7 @@ template<typename T> Meta::EnableIf<
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyable<T>::_ &&
 	Meta::IsTriviallyDestructible<T>::_
-> CopyRecreate(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyRecreate(Span<T> dst, CSpan<T> src)
 {
 	CopyBits(dst, src);
 }
@@ -194,7 +194,7 @@ template<typename T> Meta::EnableIf<
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_ ||
 	!Meta::IsTriviallyDestructible<T>::_
-> CopyRecreateBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyRecreateBackwards(Span<T> dst, CSpan<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -208,14 +208,14 @@ template<typename T> Meta::EnableIf<
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyable<T>::_ &&
 	Meta::IsTriviallyDestructible<T>::_
-> CopyRecreateBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyRecreateBackwards(Span<T> dst, CSpan<T> src)
 {
 	CopyBitsBackwards(dst, src);
 }
 
 template<typename T, typename U> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
-> CopyInit(ArrayRange<T> dst, ArrayRange<const U> src)
+> CopyInit(Span<T> dst, CSpan<U> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
@@ -228,14 +228,14 @@ template<typename T, typename U> Meta::EnableIf<
 
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyable<T>::_
-> CopyInit(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyInit(Span<T> dst, CSpan<T> src)
 {
 	CopyBits(dst, src);
 }
 
 template<typename T, typename U> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
-> CopyInitBackwards(ArrayRange<T> dst, ArrayRange<const U> src)
+> CopyInitBackwards(Span<T> dst, CSpan<U> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!src.Empty())
@@ -248,7 +248,7 @@ template<typename T, typename U> Meta::EnableIf<
 
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyable<T>::_
-> CopyInitBackwards(ArrayRange<T> dst, ArrayRange<const T> src)
+> CopyInitBackwards(Span<T> dst, CSpan<T> src)
 {
 	CopyBitsBackwards(dst, src);
 }
@@ -256,7 +256,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
-> MoveInit(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInit(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -270,7 +270,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyMovable<T>::_
-> MoveInit(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInit(Span<T> dst, Span<T> src)
 {
 	CopyBits(dst, src.AsConstRange());
 }
@@ -278,7 +278,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
-> MoveInitBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitBackwards(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -292,13 +292,13 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyCopyable<T>::_
-> MoveInitBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitBackwards(Span<T> dst, Span<T> src)
 {CopyBitsBackwards(dst, src.AsConstRange());}
 
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
-> MoveInitDelete(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitDelete(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -313,7 +313,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyRelocatable<T>::_
-> MoveInitDelete(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitDelete(Span<T> dst, Span<T> src)
 {
 	CopyBits(dst, src.AsConstRange());
 	//if(!dst.Overlaps(src)) Destruct(src); //В дебаге перезаписывает память, в релизе ничего не делает. Если диапазоны перекрываются, будут проблемы!
@@ -322,7 +322,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
-> MoveInitDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitDeleteBackwards(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -337,7 +337,7 @@ template<typename T> Meta::EnableIf<
 //Инициализация конструктором перемещения и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyRelocatable<T>::_
-> MoveInitDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveInitDeleteBackwards(Span<T> dst, Span<T> src)
 {
 	CopyBitsBackwards(dst, src.AsConstRange());
 	//if(!dst.Overlaps(src)) Destruct(src); //В дебаге перезаписывает память, в релизе ничего не делает. Если диапазоны перекрываются, будут проблемы!
@@ -346,7 +346,7 @@ template<typename T> Meta::EnableIf<
 //Перемещение оператором присваивания и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
-> MoveAssignDelete(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveAssignDelete(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -360,7 +360,7 @@ template<typename T> Meta::EnableIf<
 
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyMovable<T>::_
-> MoveAssignDelete(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveAssignDelete(Span<T> dst, Span<T> src)
 {
 	CopyBits(dst, src);
 	if(!dst.Overlaps(src)) Destruct(src);
@@ -369,7 +369,7 @@ template<typename T> Meta::EnableIf<
 //Перемещение оператором присваивания и вызов деструкторов перемещённых элементов
 template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
-> MoveAssignDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveAssignDeleteBackwards(Span<T> dst, Span<T> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -383,7 +383,7 @@ template<typename T> Meta::EnableIf<
 
 template<typename T> Meta::EnableIf<
 	Meta::IsTriviallyMovable<T>::_
-> MoveAssignDeleteBackwards(ArrayRange<T> dst, ArrayRange<T> src)
+> MoveAssignDeleteBackwards(Span<T> dst, Span<T> src)
 {
 	CopyBitsBackwards(dst, src);
 	//if(!dst.Overlaps(src)) Destruct(src);
@@ -392,17 +392,17 @@ template<typename T> Meta::EnableIf<
 
 
 
-template<typename T, typename Allocator> ArrayRange<T> AllocateRangeUninitialized(
+template<typename T, typename Allocator> Span<T> AllocateRangeUninitialized(
 	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo)
 {
 	(void)allocator; //Чтобы устранить ложное предупреждение MSVC
 	size_t size = count*sizeof(T);
 	T* result = allocator.Allocate(size, sourceInfo);
 	count = size/sizeof(T);
-	return ArrayRange<T>(result, count);
+	return Span<T>(result, count);
 }
 
-template<typename T, typename Allocator> ArrayRange<T> AllocateRange(
+template<typename T, typename Allocator> Span<T> AllocateRange(
 	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo)
 {
 	auto result = AllocateRangeUninitialized(allocator, count, sourceInfo);
@@ -410,14 +410,14 @@ template<typename T, typename Allocator> ArrayRange<T> AllocateRange(
 	return result;
 }
 
-template<typename T, typename Allocator> void FreeRangeUninitialized(Allocator& allocator, ArrayRange<T> range)
+template<typename T, typename Allocator> void FreeRangeUninitialized(Allocator& allocator, Span<T> range)
 {
 	(void)allocator;
 	if(range==null) return;
 	allocator.Free(range.Begin, range.Length()*sizeof(T));
 }
 
-template<typename T, typename Allocator> void FreeRange(Allocator& allocator, ArrayRange<T> range)
+template<typename T, typename Allocator> void FreeRange(Allocator& allocator, Span<T> range)
 {
 	Memory::Destruct(range);
 	FreeRangeUninitialized(allocator, range);

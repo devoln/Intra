@@ -18,7 +18,7 @@ public:
 	char First() const;
 	void PopFirst();
 	forceinline bool Empty() const {return false;}
-	size_t CopyAdvanceToAdvance(ArrayRange<char>& dst);
+	size_t CopyAdvanceToAdvance(Span<char>& dst);
 
 	dchar GetChar();
 

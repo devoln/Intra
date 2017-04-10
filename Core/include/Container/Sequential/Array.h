@@ -4,7 +4,7 @@
 #include "Platform/InitializerList.h"
 #include "Platform/CppWarnings.h"
 #include "Container/ForwardDecls.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Comparison/Equals.h"
 #include "Algo/Search/Single.h"
 #include "Algo/Mutation/Copy.h"
@@ -28,9 +28,9 @@ public:
 		buffer(null), range(null) {Reserve(initialCapacity);}
 
 	Array(InitializerList<T> values):
-		Array(ArrayRange<const T>(values)) {}
+		Array(CSpan<T>(values)) {}
 	
-	Array(ArrayRange<const T> values): buffer(null), range(null)
+	Array(CSpan<T> values): buffer(null), range(null)
 	{
 		SetCountUninitialized(values.Length());
 		Memory::CopyInit(range, values);
@@ -56,7 +56,7 @@ public:
 
 	//! Создать контейнер из уже выделенного диапазона.
 	//! Внимание: rangeToOwn должен быть выделен тем же аллокатором, что и шаблонный аргумент Allocator!
-	static Array CreateAsOwnerOf(ArrayRange<T> rangeToOwn)
+	static Array CreateAsOwnerOf(Span<T> rangeToOwn)
 	{
 		Array result;
 		result.range = result.buffer = rangeToOwn;
@@ -94,7 +94,7 @@ public:
 		return *this;
 	}
 
-	Array& operator=(ArrayRange<const T> values) {return operator=(Array(values));}
+	Array& operator=(CSpan<T> values) {return operator=(Array(values));}
 	template<typename R> Meta::EnableIf<
 		Range::IsAsAccessibleRange<R>::_,
 	Array&> operator=(R&& values) {return operator=(Array(values));}
@@ -109,14 +109,14 @@ public:
 		return *this;
 	}
 
-	template<typename U> void Assign(ArrayRange<const U> rhs)
+	template<typename U> void Assign(CSpan<U> rhs)
 	{
 		Clear();
 		SetCountUninitialized(rhs.Length());
 		Memory::CopyInit(range, rhs);
 	}
 
-	template<typename U> void Assign(ArrayRange<U> rhs) {Assign(rhs.AsConstRange());}
+	template<typename U> void Assign(Span<U> rhs) {Assign(rhs.AsConstRange());}
 
 	//! Добавить новый элемент в начало массива копированием или перемещением value.
 	forceinline T& AddFirst(T&& value)
@@ -149,7 +149,7 @@ public:
 	> AddFirstRange(R&& values)
 	{
 		auto valueRange = Range::Forward<R>(values);
-		//INTRA_DEBUG_ASSERT(!range.Overlaps((ArrayRange<const byte>&)values));
+		//INTRA_DEBUG_ASSERT(!range.Overlaps((CSpan<byte>&)values));
 		const size_t valuesCount = Range::Count(values);
 		if(LeftSpace()<valuesCount) CheckSpace(0, valuesCount);
 		for(T* dst = (range.Begin -= valuesCount); !valueRange.Empty(); valueRange.PopFirst())
@@ -200,7 +200,7 @@ public:
 	> AddLastRange(R&& values)
 	{
 		auto valueRange = Range::Forward<R>(values);
-		//INTRA_DEBUG_ASSERT(!data.Overlaps((ArrayRange<const byte>&)values));
+		//INTRA_DEBUG_ASSERT(!data.Overlaps((CSpan<byte>&)values));
 		const size_t valuesCount = Range::Count(valueRange);
 		if(RightSpace()<valuesCount) CheckSpace(valuesCount, 0);
 		for(; !valueRange.Empty(); valueRange.PopFirst())
@@ -242,7 +242,7 @@ public:
 	//! будут перемещены конструктором перемещения и деструктором на values.Count() элементов вперёд.
 	//! Элементы, имеющие индексы >= pos, будут иметь индексы, увеличенные на values.Count().
 	//! Первый вставленный элемент будет иметь индекс pos.
-	template<typename U> void Insert(size_t pos, ArrayRange<const U> values)
+	template<typename U> void Insert(size_t pos, CSpan<U> values)
 	{
 		if(values.Empty()) return;
 		INTRA_DEBUG_ASSERT(!range.Overlaps(values));
@@ -252,9 +252,9 @@ public:
 		if(Count()+valuesCount>Capacity())
 		{
 			size_t newCapacity = Count()+valuesCount+Capacity()/2;
-			ArrayRange<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
+			Span<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
 				Memory::GlobalHeap, newCapacity, INTRA_SOURCE_INFO);
-			ArrayRange<T> newRange = newBuffer.Drop(LeftSpace()).Take(Count()+valuesCount);
+			Span<T> newRange = newBuffer.Drop(LeftSpace()).Take(Count()+valuesCount);
 			Memory::MoveInitDelete(newRange.Take(pos), range.Take(pos));
 			Memory::MoveInitDelete(newRange.Drop(pos+valuesCount), range.Drop(pos));
 			Memory::CopyInit(newRange.Drop(pos).Take(valuesCount), values);
@@ -278,7 +278,7 @@ public:
 		Memory::CopyInit<T>(range.Drop(pos).Take(valuesCount), values);
 	}
 
-	template<typename U> forceinline void Insert(const T* it, ArrayRange<const U> values)
+	template<typename U> forceinline void Insert(const T* it, CSpan<U> values)
 	{
 		INTRA_DEBUG_ASSERT(range.ContainsAddress(it));
 		Insert(it-range.Begin, values);
@@ -330,9 +330,9 @@ public:
 		if(rightPartSize <= Count()) Memory::Destruct(range.Drop(rightPartSize));
 
 		size_t newCapacity = rightPartSize+leftPartSize;
-		ArrayRange<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
+		Span<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
 			Memory::GlobalHeap, newCapacity, INTRA_SOURCE_INFO);
-		ArrayRange<T> newRange = newBuffer.Drop(leftPartSize).Take(Count());
+		Span<T> newRange = newBuffer.Drop(leftPartSize).Take(Count());
 
 		if(!buffer.Empty())
 		{
@@ -577,30 +577,30 @@ public:
 	forceinline bool IsFull() const {return Count()==Capacity();}
 
 
-	forceinline operator ArrayRange<T>() {return AsRange();}
-	forceinline operator ArrayRange<const T>() const {return AsRange();}
-	forceinline ArrayRange<T> AsRange() {return range;}
-	forceinline ArrayRange<const T> AsConstRange() const {return range.AsConstRange();}
-	forceinline ArrayRange<const T> AsRange() const {return AsConstRange();}
+	forceinline operator Span<T>() {return AsRange();}
+	forceinline operator CSpan<T>() const {return AsRange();}
+	forceinline Span<T> AsRange() {return range;}
+	forceinline CSpan<T> AsConstRange() const {return range.AsConstRange();}
+	forceinline CSpan<T> AsRange() const {return AsConstRange();}
 
-	forceinline ArrayRange<T> operator()(size_t firstIndex, size_t endIndex)
+	forceinline Span<T> operator()(size_t firstIndex, size_t endIndex)
 	{
 		INTRA_DEBUG_ASSERT(firstIndex <= endIndex);
 		INTRA_DEBUG_ASSERT(endIndex <= Count());
 		return range(firstIndex, endIndex);
 	}
 
-	forceinline ArrayRange<const T> operator()(size_t firstIndex, size_t endIndex) const
+	forceinline CSpan<T> operator()(size_t firstIndex, size_t endIndex) const
 	{
 		INTRA_DEBUG_ASSERT(firstIndex <= endIndex);
 		INTRA_DEBUG_ASSERT(endIndex <= Count());
 		return AsConstRange()(firstIndex, endIndex);
 	}
 
-	ArrayRange<T> Take(size_t count) {return range.Take(count);}
-	ArrayRange<const T> Take(size_t count) const {return AsConstRange().Take(count);}
-	ArrayRange<T> Drop(size_t count) {return range.Drop(count);}
-	ArrayRange<const T> Drop(size_t count) const {return AsConstRange().Drop(count);}
+	Span<T> Take(size_t count) {return range.Take(count);}
+	CSpan<T> Take(size_t count) const {return AsConstRange().Take(count);}
+	Span<T> Drop(size_t count) {return range.Drop(count);}
+	CSpan<T> Drop(size_t count) const {return AsConstRange().Drop(count);}
 
 
 	//! @defgroup Array_STL_Interface STL-подобный интерфейс для Array
@@ -643,7 +643,7 @@ public:
 	template<typename InputIt> forceinline iterator insert(const_iterator pos, InputIt first, InputIt last);
 
 	forceinline iterator insert(const T* pos, std::initializer_list<T> ilist)
-	{Insert(size_t(pos-Data()), ArrayRange<const T>(ilist));}
+	{Insert(size_t(pos-Data()), CSpan<T>(ilist));}
 
 	//! Отличается от std::vector<T>::erase тем, что инвалидирует все итераторы,
 	//! а не только те, которые идут после удаляемого элемента.
@@ -672,7 +672,7 @@ public:
 
 
 private:
-	ArrayRange<T> buffer, range;
+	Span<T> buffer, range;
 };
 
 template<typename T> forceinline T* begin(Array<T>& arr) {return arr.begin();}

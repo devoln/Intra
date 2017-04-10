@@ -1,10 +1,10 @@
 ﻿#include "Audio/AudioProcessing.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Math.h"
 
 namespace Intra {
 
-void DiscreteFourierTransform(ArrayRange<float> outFreqs, ArrayRange<const short> samples)
+void DiscreteFourierTransform(Span<float> outFreqs, CSpan<short> samples)
 {
     for(size_t i=0; i<outFreqs.Length(); i++)
     {

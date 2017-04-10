@@ -2,7 +2,7 @@
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Platform/CppWarnings.h"
 #include "Math/MathRanges.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Transform.h"
 #include "Algo/Mutation/Fill.h"
@@ -20,14 +20,14 @@ struct SineParams
 	float freqMultiplyer;
 };
 
-void PerfectSine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+void PerfectSine(float volume, float freq, uint sampleRate, Span<float> inOutSamples, bool add)
 {
 	Math::SineRange<float> sineRange(volume, 0, float(2*Math::PI*freq/sampleRate));
 	if(!add) Algo::CopyAdvanceToAdvance(sineRange, inOutSamples.Length(), inOutSamples);
 	else Algo::Add(inOutSamples, sineRange);
 }
 
-void FastSine(float volume, float freq, uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+void FastSine(float volume, float freq, uint sampleRate, Span<float> inOutSamples, bool add)
 {
 	const double samplesPerPeriod = float(sampleRate)/freq;
 	const uint count = GetGoodSignalPeriod(samplesPerPeriod, Math::Max(uint(freq/50), 5u));
@@ -42,7 +42,7 @@ void FastSine(float volume, float freq, uint sampleRate, ArrayRange<float> inOut
 }
 
 static void SineSynthPassFunction(const SineParams& params,
-	float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
+	float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
 	const float newFreq = freq*params.freqMultiplyer;
@@ -72,7 +72,7 @@ struct MultiSineParams
 };
 
 static void MultiSineSynthPassFunction(const MultiSineParams& params,
-		float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
+		float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
 	size_t start = Math::Random<ushort>::Global(20);
@@ -87,7 +87,7 @@ static void MultiSineSynthPassFunction(const MultiSineParams& params,
 	}
 }
 
-SynthPass CreateMultiSineSynthPass(ArrayRange<const SineHarmonic> harmonics)
+SynthPass CreateMultiSineSynthPass(CSpan<SineHarmonic> harmonics)
 {
 	MultiSineParams params;
 	const auto src = harmonics.Take(Meta::NumOf(params.harmonics));

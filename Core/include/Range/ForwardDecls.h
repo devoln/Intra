@@ -10,7 +10,8 @@ namespace Intra { namespace Range {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename T> struct ArrayRange;
+template<typename T> struct Span;
+template<typename T> using CSpan = Span<const T>;
 template<typename Char> struct GenericStringView;
 typedef GenericStringView<const char> StringView;
 typedef GenericStringView<const wchar> WStringView;
@@ -28,9 +29,9 @@ template<typename I1, typename I2=I1> struct IteratorRange;
 
 template<typename T, size_t N> Meta::EnableIf<
 	!Meta::IsCharType<T>::_,
-ArrayRange<T>> AsRange(T(&arr)[N]);
+Span<T>> AsRange(T(&arr)[N]);
 
-template<typename T> ArrayRange<const T> AsRange(InitializerList<T> arr);
+template<typename T> CSpan<T> AsRange(InitializerList<T> arr);
 
 template<typename T, size_t N> forceinline Meta::EnableIf<
 	Meta::IsCharType<T>::_,
@@ -48,7 +49,8 @@ FListRange<T, T>> AsRange(T& objectWithIntrusiveList);
 
 }
 
-using Range::ArrayRange;
+using Range::Span;
+using Range::CSpan;
 using Range::GenericStringView;
 using Range::StringView;
 using Range::WStringView;

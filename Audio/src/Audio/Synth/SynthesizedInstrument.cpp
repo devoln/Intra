@@ -8,9 +8,9 @@
 namespace Intra { namespace Audio { namespace Synth {
 
 SynthesizedInstrument::SynthesizedInstrument(Synth::SynthPass synth,
-	ArrayRange<const Synth::ModifierPass> modifiers,
+	CSpan<Synth::ModifierPass> modifiers,
 	Synth::AttenuationPass attenuator,
-	ArrayRange<const Synth::PostEffectPass> postEffects,
+	CSpan<Synth::PostEffectPass> postEffects,
 	float minNoteDuration, float fadeOffTime):
 	Synth(synth), Modifiers(modifiers), Attenuation(attenuator),
 	PostEffects(postEffects), MinNoteDuration(minNoteDuration), FadeOffTime(fadeOffTime) {}
@@ -41,7 +41,7 @@ SynthesizedInstrument& SynthesizedInstrument::operator=(SynthesizedInstrument&& 
 
 
 
-void SynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
+void SynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
 	INTRA_DEBUG_ASSERT(Synth!=null);
@@ -77,7 +77,7 @@ void SynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 	}
 }
 
-void CombinedSynthesizedInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
+void CombinedSynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
 	if(Combination==null || note.IsPause()) return;

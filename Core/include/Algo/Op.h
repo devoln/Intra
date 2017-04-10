@@ -3,7 +3,7 @@
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Op {
 
@@ -93,8 +93,8 @@ namespace Comparers
 	template<typename COMPARER, typename T, typename I> struct Indexed
 	{
 		COMPARER comparer;
-		ArrayRange<T> values;
-		Indexed(COMPARER c, ArrayRange<T> vals): comparer(c), values(vals) {}
+		Span<T> values;
+		Indexed(COMPARER c, Span<T> vals): comparer(c), values(vals) {}
 		bool operator()(const I& a, const I& b) const { return comparer(values[a], values[b]); }
 	};
 

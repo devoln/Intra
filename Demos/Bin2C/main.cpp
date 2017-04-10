@@ -118,7 +118,7 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 		Std.PrintLine("File ", inputFilePath, " is not opened!");
 		return;
 	}
-	ArrayRange<const byte> src = inputFileMapping.AsRange();
+	CSpan<byte> src = inputFileMapping.AsRange();
 	const byte* srcBytes = src.Begin;
 	FileWriter dst = OS.FileOpenWrite(outputFilePath);
 	dst << "const unsigned char " << binArrName << "[] = {";

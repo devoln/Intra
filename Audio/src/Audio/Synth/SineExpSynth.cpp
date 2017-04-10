@@ -2,7 +2,7 @@
 #include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/ExponentialAttenuation.h"
 #include "Audio/Synth/PeriodicSynth.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Simd.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Fill.h"
@@ -13,7 +13,7 @@
 namespace Intra { namespace Audio { namespace Synth {
 
 void FastSineExp(float volume, float coeff, float freq,
-	uint sampleRate, ArrayRange<float> inOutSamples, bool add)
+	uint sampleRate, Span<float> inOutSamples, bool add)
 {
 #if INTRA_DISABLED
 	float phi0 = 0;
@@ -123,7 +123,7 @@ struct SineExpParams
 };
 
 static void SineExpSynthPassFunction(const SineExpParams& params,
-	float freq, float volume, ArrayRange<float> inOutSamples, uint sampleRate, bool add)
+	float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
 	size_t start = Math::Random<ushort>::Global(20);
@@ -147,7 +147,7 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 	}
 }
 
-SynthPass CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics)
+SynthPass CreateSineExpSynthPass(CSpan<SineExpHarmonic> harmonics)
 {
 	SineExpParams params;
 	const auto src = harmonics.Take(Meta::NumOf(params.Harmonics));

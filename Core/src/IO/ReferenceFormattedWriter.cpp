@@ -51,7 +51,7 @@ struct ReferenceFormattedWriterOut
 	OutputStream* Stream;
 
 	forceinline void Put(char c) {Stream->Put(c);}
-	forceinline size_t CopyAdvanceFromAdvance(ArrayRange<const char>& src) {return Stream->CopyAdvanceFromAdvance(src);}
+	forceinline size_t CopyAdvanceFromAdvance(CSpan<char>& src) {return Stream->CopyAdvanceFromAdvance(src);}
 };
 
 FormattedWriter ReferenceFormattedWriter(FormattedWriter& writer)

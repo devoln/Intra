@@ -184,6 +184,9 @@
     <Filter Include="Заголовочные файлы\Range\Stream">
       <UniqueIdentifier>{5f03e135-27ac-4500-96bd-78aec12c876a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\Data\Format">
+      <UniqueIdentifier>{d87fdfde-88b4-4bdb-8012-5df20e4fde34}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Memory\Memory.cpp">
@@ -544,9 +547,6 @@
     </ClInclude>
     <ClInclude Include="include\Range\Output\Inserter.h">
       <Filter>Заголовочные файлы\Range\Output</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Range\Generators\ArrayRange.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
     </ClInclude>
     <ClInclude Include="include\Range\Generators\Count.h">
       <Filter>Заголовочные файлы\Range\Generators</Filter>
@@ -1108,6 +1108,30 @@
     </ClInclude>
     <ClInclude Include="include\IO\SocketWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Special\ZStringRange.h">
+      <Filter>Заголовочные файлы\Range\Special</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Generators\ZStringRange.h">
+      <Filter>Заголовочные файлы\Range\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Generators\FlatArrayOfArraysRange.h">
+      <Filter>Заголовочные файлы\Range\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Format\BinaryRaw.h">
+      <Filter>Заголовочные файлы\Data\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Format\BinaryParser.h">
+      <Filter>Заголовочные файлы\Data\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Data\Format\TextParser.h">
+      <Filter>Заголовочные файлы\Data\Format</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Range\Generators\Span.h">
+      <Filter>Заголовочные файлы\Range\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Memory\Allocator\Compositors\SegregatedPools.h">
+      <Filter>Заголовочные файлы\Memory\Allocator\Compositors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

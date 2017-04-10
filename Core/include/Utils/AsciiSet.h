@@ -4,7 +4,7 @@
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Mutation/Fill.h"
 #include "Algo/Comparison/Equals.h"
 
@@ -25,7 +25,7 @@ public:
 	template<uint N> forceinline AsciiSet(const char(&chars)[N])
 	{
 		Algo::FillZeros(v);
-		Set(ArrayRange<const char>(chars).DropBack());
+		Set(CSpan<char>(chars).DropBack());
 	}
 
 	template<typename CharRange> explicit AsciiSet(CharRange chars)
@@ -128,7 +128,7 @@ public:
 		return result;
 	}
 
-	template<size_t N> AsciiSet operator|(const char(&chars)[N]) const {return operator|(ArrayRange<const char>(chars).DropBack());}
+	template<size_t N> AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars).DropBack());}
 
 
 	static const AsciiSet Null, Spaces, Slashes, Digits;

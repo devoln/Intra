@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Platform/FundamentalTypes.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Memory {
 
@@ -9,10 +9,10 @@ struct FreeList
 {
 	FreeList(null_t=null): mNext(null) {}
 
-	FreeList(ArrayRange<byte> buf, size_t elementSize, size_t alignment): mNext(null)
+	FreeList(Span<byte> buf, size_t elementSize, size_t alignment): mNext(null)
 	{InitBuffer(buf, elementSize, alignment);}
 
-	void InitBuffer(ArrayRange<byte> buf, size_t elementSize, size_t alignment);
+	void InitBuffer(Span<byte> buf, size_t elementSize, size_t alignment);
 
 	AnyPtr Allocate();
 	void Free(void* ptr);
@@ -27,7 +27,7 @@ private:
 struct APool
 {
 	APool(null_t=null): mElementSize(0), mAlignment(0) {}
-	APool(ArrayRange<byte> buf, size_t elementSize, size_t allocatorAlignment):
+	APool(Span<byte> buf, size_t elementSize, size_t allocatorAlignment):
 		mList(buf, elementSize, allocatorAlignment),
 		mElementSize(ushort(elementSize)),
 		mAlignment(ushort(allocatorAlignment)) {}

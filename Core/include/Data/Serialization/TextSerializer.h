@@ -28,7 +28,7 @@ template<typename O> struct GenericTextSerializerStructVisitor
 {
 	GenericTextSerializer<O>* Me;
 	bool Began;
-	ArrayRange<const StringView> FieldNames;
+	CSpan<StringView> FieldNames;
 	TextSerializerParams::TypeFlags Type;
 
 	template<typename T> GenericTextSerializerStructVisitor<O>& operator()(T&& t);
@@ -133,7 +133,7 @@ public:
 	template<typename Tuple> Meta::EnableIf<
 		Meta::HasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
 		!HasReflectionFieldNamesMethod<Tuple>::_
-	> SerializeTuple(Tuple&& src, ArrayRange<const StringView> fieldNames = null)
+	> SerializeTuple(Tuple&& src, CSpan<StringView> fieldNames = null)
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
 		if((Params.ValuePerLine & TextSerializerParams::TypeFlags_Tuple) == 0)
@@ -288,8 +288,8 @@ template<typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<
 {
 	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
 	Algo::MultiReplaceToAdvance(v, serializer.Output, Range::ZipKV(
-		ArrayRange<const StringView>{"\n", "\r", "\t"},
-		ArrayRange<const StringView>{"\\n", "\\r", "\\t"}));
+		CSpan<StringView>{"\n", "\r", "\t"},
+		CSpan<StringView>{"\\n", "\\r", "\\t"}));
 	Algo::CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
 	return serializer;
 }

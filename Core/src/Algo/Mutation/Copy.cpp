@@ -1,10 +1,10 @@
 ﻿#include "Algo/Mutation/Copy.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Simd.h"
 
 namespace Intra { namespace Algo {
 
-void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst)
+void CastAdvanceToAdvance(CSpan<float>& src, Span<short>& dst)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
 #if(INTRA_SIMD_SUPPORT>=INTRA_SIMD_SSE && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)

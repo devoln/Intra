@@ -8,7 +8,7 @@
 
 namespace Intra { namespace Algo {
 
-void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, size_t* oWhichIndex)
+void StringFindAscii(StringView& str, CSpan<StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	if(stopSubStrSet.Empty())
 	{
@@ -44,7 +44,7 @@ void StringFindAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet
 	}
 }
 
-forceinline StringView StringReadUntilAscii(StringView& str, ArrayRange<const StringView> stopSubStrSet, size_t* oWhichIndex)
+forceinline StringView StringReadUntilAscii(StringView& str, CSpan<StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	const char* begin = str.Data();
 	StringFindAscii(str, stopSubStrSet, oWhichIndex);
@@ -52,7 +52,7 @@ forceinline StringView StringReadUntilAscii(StringView& str, ArrayRange<const St
 }
 
 size_t StringMultiReplaceAsciiLength(StringView src,
-	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
+	CSpan<StringView> fromSubStrs, CSpan<StringView> toSubStrs)
 {
 	INTRA_DEBUG_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	size_t substrIndex = 0;
@@ -66,7 +66,7 @@ size_t StringMultiReplaceAsciiLength(StringView src,
 }
 
 StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstBuffer,
-	ArrayRange<const StringView> fromSubStrs, ArrayRange<const StringView> toSubStrs)
+	CSpan<StringView> fromSubStrs, CSpan<StringView> toSubStrs)
 {
 	INTRA_DEBUG_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	char* begin = dstBuffer.Data();

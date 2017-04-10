@@ -9,7 +9,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.h"
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
@@ -33,7 +33,7 @@ void TestComposedRange(FormattedWriter& output)
 
 	//Бесконечная последовательность Фибоначчи вместе с диапазоном
 	auto fib = Recurrence(Op::Add<int>, 1, 1);
-	INTRA_ASSERT1(StartsWith(fib, ArrayRange<const int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
+	INTRA_ASSERT1(StartsWith(fib, CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
 
 	Array<int> fibArr;
 	fibArr.SetCountUninitialized(15);
@@ -46,7 +46,7 @@ void TestComposedRange(FormattedWriter& output)
 	output.PrintLine(fibArr);
 	output.LineBreak();
 	output.PrintLine("Вторая половина того же массива задом наперёд: ");
-	INTRA_ASSERT1(Algo::Equals(Retro(Drop(fibArr, fibArr.Count()/2)), ArrayRange<const int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(Drop(fibArr, fibArr.Count()/2)));
+	INTRA_ASSERT1(Algo::Equals(Retro(Drop(fibArr, fibArr.Count()/2)), CSpan<int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(Drop(fibArr, fibArr.Count()/2)));
 	output.PrintLine(Retro(Drop(fibArr, fibArr.Count()/2)));
 
 	//Вставляем в массив 15 чисел Фибонначчи, начиная с 6-го

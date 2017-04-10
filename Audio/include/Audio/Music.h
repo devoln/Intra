@@ -28,7 +28,7 @@ struct MusicTrack
 
 
 	MusicTrack(null_t=null): MusicTrack(null, null, 1, 0) {}
-	MusicTrack(ArrayRange<const NoteEntry> notes,
+	MusicTrack(CSpan<NoteEntry> notes,
 		Synth::IMusicalInstrument* instrument=null, float tempo=1, short toneOffset=0):
 		Notes(notes), Instrument(instrument), Tempo(tempo), ToneOffset(toneOffset) {}
 
@@ -57,7 +57,7 @@ struct MusicTrack
 struct Music
 {
 	Music(null_t=null): Tracks() {}
-	Music(ArrayRange<const MusicTrack> tracks): Tracks(tracks) {}
+	Music(CSpan<MusicTrack> tracks): Tracks(tracks) {}
 
 	double Duration() const;
 	AudioBuffer GetSamples(uint sampleRate=44100) const;

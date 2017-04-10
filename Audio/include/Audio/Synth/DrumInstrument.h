@@ -15,7 +15,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 class DrumInstrument: public IMusicalInstrument
 {
 public:
-	void GetNoteSamples(ArrayRange<float> dst, MusicNote note, float tempo,
+	void GetNoteSamples(Span<float> dst, MusicNote note, float tempo,
 		float volume=1, uint sampleRate=44100, bool add=false) const override;
 
 	uint GetNoteSampleCount(MusicNote note, float tempo, uint sampleRate=44100) const override

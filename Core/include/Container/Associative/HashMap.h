@@ -111,7 +111,7 @@ struct HashMapStatistics
 	size_t FreeBucketCount;
 	size_t MaxBucketLoad;
 	double AverageBucketLoad;
-	ArrayRange<size_t> BucketLoads;
+	Span<size_t> BucketLoads;
 };
 
 template<typename K, typename V, typename AllocatorType>
@@ -490,7 +490,7 @@ public:
     size_t Count() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[0]: 0;}
     size_t BucketCount() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[1]: 0;}
 
-	HashMapStatistics GetStats(ArrayRange<size_t> oBucketLoads)
+	HashMapStatistics GetStats(Span<size_t> oBucketLoads)
 	{
 		Algo::FillZeros(oBucketLoads);
 		HashMapStatistics result;

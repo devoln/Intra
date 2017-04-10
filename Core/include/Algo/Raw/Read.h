@@ -12,7 +12,7 @@ template<typename R> forceinline Meta::EnableIf<
 size_t> CopyAdvanceToRaw(R& src, void* dst, size_t n)
 {
 	typedef ValueTypeOf<R> T;
-	return Algo::CopyAdvanceTo(src, ArrayRange<T>(reinterpret_cast<T*>(dst), n));
+	return Algo::CopyAdvanceTo(src, Span<T>(reinterpret_cast<T*>(dst), n));
 }
 
 template<typename R> forceinline Meta::EnableIf<
@@ -25,7 +25,7 @@ size_t> CopyToRaw(R&& src, void* dst, size_t n)
 
 template<typename R, typename T> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<T>::_,
-size_t> CopyAdvanceToRaw(R& src, ArrayRange<T> dst)
+size_t> CopyAdvanceToRaw(R& src, Span<T> dst)
 {
 	size_t dstLen = dst.Length()*sizeof(T)/sizeof(src.First());
 	return CopyAdvanceToRaw(src, dst.Data(), dstLen);
@@ -33,7 +33,7 @@ size_t> CopyAdvanceToRaw(R& src, ArrayRange<T> dst)
 
 template<typename R, typename T> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<T>::_,
-size_t> CopyAdvanceToRaw(R& src, ArrayRange<T> dst, size_t n)
+size_t> CopyAdvanceToRaw(R& src, Span<T> dst, size_t n)
 {
 	size_t dstLen = dst.Length()*sizeof(T)/sizeof(src.First());
 	if(n>dstLen) n = dstLen;
@@ -55,6 +55,22 @@ T> ReadRaw(R& src)
 {
 	T result;
 	CopyAdvanceToRawOne(src, result);
+	return result;
+}
+
+template<typename R> Meta::EnableIf<
+	sizeof(ValueTypeOf<R>) == 1 && !Meta::IsConst<R>::_,
+ulong64> ParseVarUInt(R& src)
+{
+	ulong64 result = 0;
+	byte l = 0;
+	do
+	{
+		if(src.Empty()) return result;
+		l = byte(src.First());
+		src.PopFirst();
+		result = (result << 7) | (l & 0x7F);
+	} while(l & 0x80);
 	return result;
 }
 

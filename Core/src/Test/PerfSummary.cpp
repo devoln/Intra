@@ -10,8 +10,8 @@ using namespace IO;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-void PrintPerformanceResults(FormattedWriter& logger, StringView testName, ArrayRange<const StringView> comparedTypes,
-	ArrayRange<const double> set2Times, ArrayRange<const double> set1Times)
+void PrintPerformanceResults(FormattedWriter& logger, StringView testName, CSpan<StringView> comparedTypes,
+	CSpan<double> set2Times, CSpan<double> set1Times)
 {
 	INTRA_DEBUG_ASSERT_EQUALS(comparedTypes.Length(), set1Times.Length()+set2Times.Length());
 	static const Math::Vec3 set1Color = {0, 0, 0.75f},

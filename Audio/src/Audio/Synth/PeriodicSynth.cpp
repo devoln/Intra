@@ -1,5 +1,5 @@
 ﻿#include "Audio/Synth/PeriodicSynth.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Math.h"
 #include "Algo/Mutation/Copy.h"
 #include "Algo/Mutation/Transform.h"
@@ -26,7 +26,7 @@ uint GetGoodSignalPeriod(double samplesPerPeriod, uint maxPeriods)
 	return uint(Math::Round(fractionalCount*minDeltaN));
 }
 
-void RepeatFragmentInBuffer(ArrayRange<const float> fragmentSamples, ArrayRange<float> inOutSamples, bool add)
+void RepeatFragmentInBuffer(CSpan<float> fragmentSamples, Span<float> inOutSamples, bool add)
 {
 	const size_t copyPassCount = inOutSamples.Length()/fragmentSamples.Length();
 	if(!add) for(size_t c=0; c<copyPassCount; c++)

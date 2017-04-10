@@ -4,7 +4,7 @@
 #include "Platform/FundamentalTypes.h"
 #include "Thread/Thread.h"
 #include "Memory/Allocator/System.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Stream/Operators.h"
@@ -29,8 +29,8 @@ struct Buffer
 	const byte* End() const {return Data()+Size();}
 	byte* End() {return Data()+Size();}
 	size_t Size() const {return size;}
-	template<typename T> ArrayRange<T> AsRange() {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
-	template<typename T> ArrayRange<const T> AsRange() const {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
+	template<typename T> Span<T> AsRange() {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
+	template<typename T> CSpan<T> AsRange() const {return {reinterpret_cast<T*>(Data()), size/sizeof(T)};}
 
 private:
 	size_t size;

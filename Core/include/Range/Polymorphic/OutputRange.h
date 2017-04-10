@@ -5,7 +5,7 @@
 #include "Algo/Op.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/AsRange.h"
 #include "Range/Stream/OutputStreamMixin.h"
 
@@ -33,7 +33,7 @@ public:
 		virtual bool TryPut(const T& value) = 0;
 		virtual bool TryPut(T&& value) = 0;
 
-		virtual size_t CopyAdvanceFromAdvance(ArrayRange<const T>& src) = 0;
+		virtual size_t CopyAdvanceFromAdvance(CSpan<T>& src) = 0;
 	};
 
 	template<typename R> struct WrapperImpl: Interface
@@ -60,7 +60,7 @@ public:
 			return true;
 		}
 
-		size_t CopyAdvanceFromAdvance(ArrayRange<const T>& src) final
+		size_t CopyAdvanceFromAdvance(CSpan<T>& src) final
 		{return Algo::CopyAdvanceToAdvance(src, OriginalRange);}
 
 		R OriginalRange;
@@ -121,7 +121,7 @@ public:
 	forceinline bool TryPut(const T& value) {return mInterface!=null && mInterface->TryPut(value);}
 	forceinline bool TryPut(T&& value) {return mInterface!=null && mInterface->TryPut(Meta::Move(value));}
 
-	forceinline size_t CopyAdvanceFromAdvance(ArrayRange<const T>& dst)
+	forceinline size_t CopyAdvanceFromAdvance(CSpan<T>& dst)
 	{
 		if(mInterface==null) return 0;
 		return mInterface->CopyAdvanceFromAdvance(dst);
@@ -131,7 +131,7 @@ public:
 		Range::IsArrayRangeOfExactly<AR, T>::_ && !Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceFromAdvance(AR& src)
 	{
-		ArrayRange<const T> srcArr = {src.Data(), src.Length()};
+		CSpan<T> srcArr = {src.Data(), src.Length()};
 		size_t result = CopyAdvanceFromAdvance(srcArr);
 		Range::PopFirstExactly(src, result);
 		return result;

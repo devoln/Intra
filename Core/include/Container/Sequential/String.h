@@ -7,7 +7,7 @@
 #include "Container/ForwardDecls.h"
 #include "Container/Operations.hh"
 #include "Container/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"
 #include "Algo/String/CStr.h"
 #include "Memory/Memory.h"
@@ -321,8 +321,8 @@ public:
 	}
 
 	static GenericString MultiReplace(GenericStringView<const Char> str,
-		ArrayRange<const GenericStringView<const Char>> subStrs,
-		ArrayRange<const GenericStringView<const Char>> newSubStrs)
+		CSpan<GenericStringView<const Char>> subStrs,
+		CSpan<GenericStringView<const Char>> newSubStrs)
 	{
 		GenericString result;
 		Range::CountRange<Char> counter;

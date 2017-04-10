@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Audio/Synth/Generators/WhiteNoise.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -25,7 +25,7 @@ template<typename T> struct SamplerPassParams
 };
 
 template<typename T> void GeneratorSynthPassFunction(const SamplerPassParams<T>& params,
-	float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
+	float freq, float volume, Span<float> outSamples, uint sampleRate, bool add)
 {
 	const float dt = 1.0f/float(sampleRate);
 
@@ -57,7 +57,7 @@ struct WhiteNoisePassParams
 };
 
 void WhiteNoiseSynthPassFunction(const WhiteNoisePassParams& params,
-	float freq, float volume, ArrayRange<float> outSamples, uint sampleRate, bool add)
+	float freq, float volume, Span<float> outSamples, uint sampleRate, bool add)
 {
 	SamplerPassParams<Generators::WhiteNoise> p(
 		Generators::WhiteNoise(), params.Harmonics, params.Scale, params.FreqMultiplyer);

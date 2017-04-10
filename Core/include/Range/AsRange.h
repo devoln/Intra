@@ -21,13 +21,13 @@ template<typename T, typename=Meta::EnableIf<
 	!IsInputRange<T>::_ && HasAsRangeMethod<T>::_
 >> decltype(Meta::Val<T>().AsRange()) AsRange(T&& v) {return v.AsRange();}
 
-template<typename T> struct ArrayRange;
+template<typename T> struct Span;
 template<typename Char> struct GenericStringView;
 
 template<typename C, typename D=C, typename=Meta::EnableIf<
 	!IsInputRange<C>::_ && !HasAsRangeMethod<C>::_ &&
 	Container::Has_data<C>::_ && Container::Has_size<C>::_
->> forceinline ArrayRange<Meta::RemoveReference<decltype(*Meta::Val<D>().begin())>> AsRange(C&& v)
+>> forceinline Span<Meta::RemoveReference<decltype(*Meta::Val<D>().begin())>> AsRange(C&& v)
 {
 	typedef Meta::RemoveReference<decltype(*Meta::Val<C>().begin())> T;
 	return {const_cast<T*>(v.data()), v.size()};

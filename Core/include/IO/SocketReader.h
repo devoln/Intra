@@ -5,7 +5,7 @@
 #include "Platform/CppWarnings.h"
 #include "Container/Sequential/Array.h"
 #include "Algo/Mutation/Copy.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Stream/Operators.h"
 #include "Range/Stream/InputStreamMixin.h"
 
@@ -75,7 +75,7 @@ public:
 		return maxToPop-bytesLeft;
 	}
 
-	size_t CopyAdvanceToAdvance(ArrayRange<char>& dst)
+	size_t CopyAdvanceToAdvance(Span<char>& dst)
 	{
 		size_t totalBytesRead = Algo::CopyAdvanceToAdvance(mBufferRest, dst);
 		if(!mBufferRest.Empty()) return totalBytesRead;
@@ -95,13 +95,13 @@ public:
 		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceToAdvance(AR& dst)
 	{
-		ArrayRange<char> dstArr(dst.Data(), dst.Length());
+		Span<char> dstArr(dst.Data(), dst.Length());
 		const size_t result = CopyAdvanceToAdvance(dstArr);
 		Range::PopFirstExactly(dst, result);
 		return result;
 	}
 
-	forceinline ArrayRange<const char> BufferedData() const {return mBufferRest;}
+	forceinline CSpan<char> BufferedData() const {return mBufferRest;}
 
 	forceinline StreamSocket& Socket() {return mSocket;}
 	forceinline const StreamSocket& Socket() const {return mSocket;}
@@ -115,7 +115,7 @@ private:
 
 	StreamSocket mSocket;
 	Array<char> mBuffer;
-	ArrayRange<char> mBufferRest;
+	Span<char> mBufferRest;
 };
 
 }}

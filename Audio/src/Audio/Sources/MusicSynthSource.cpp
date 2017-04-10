@@ -92,7 +92,7 @@ void MusicSynthSource::FlushProcessedSamples()
 	mProcessedSamplesToFlush = 0;
 }
 
-size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<short> outShorts)
+size_t MusicSynthSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	size_t floatsRead = LoadNextNonNormalizedSamples(uint(outShorts.Length()));
 	auto minmax = mBuffer.GetMinMax(0, floatsRead);
@@ -105,7 +105,7 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 	return floatsRead/mChannelCount;
 }
 
-size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
+size_t MusicSynthSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	const size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
 	Algo::CopyToAdvance(Range::Take(mBuffer.Samples, floatsRead), outFloats);
@@ -115,7 +115,7 @@ size_t MusicSynthSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 	return floatsRead/mChannelCount;
 }
 
-size_t MusicSynthSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
+size_t MusicSynthSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 {
 	INTRA_DEBUG_ASSERT(mChannelCount==outFloats.Length());
 	INTRA_DEBUG_ASSERT(mChannelCount==1); //TODO: убрать это ограничение

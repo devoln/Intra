@@ -27,7 +27,7 @@ public:
 	//! Сериализовать массив простым копированием байт.
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_
-	> SerializeArray(ArrayRange<const T> v)
+	> SerializeArray(CSpan<T> v)
 	{
 		Algo::WriteRaw<uintLE>(Output, uint(v.Length()));
 		Algo::CopyToRawAdvance(v, Output);
@@ -36,7 +36,7 @@ public:
 	//! Сериализовать массив поэлементно.
 	template<typename T> forceinline Meta::EnableIf<
 		!Meta::IsTriviallySerializable<T>::_
-	> SerializeArray(ArrayRange<const T> v) {SerializeRange(v);}
+	> SerializeArray(CSpan<T> v) {SerializeRange(v);}
 
 	//! Сериализовать диапазон поэлементно.
 	template<typename R> void SerializeRange(R&& v)
@@ -63,7 +63,7 @@ public:
 	{
 		auto range = Range::Forward<R>(v);
 		typedef Range::ValueTypeOfAs<R> T;
-		SerializeArray(ArrayRange<const T>(range.Data(), range.Length()));
+		SerializeArray(CSpan<T>(range.Data(), range.Length()));
 		return *this;
 	}
 
@@ -103,7 +103,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_,
 	GenericBinarySerializer&> operator<<(C&& src)
 	{
-		Algo::CopyToRawAdvance(ArrayRange<T>(src), Output);
+		Algo::CopyToRawAdvance(Span<T>(src), Output);
 		return *this;
 	}
 

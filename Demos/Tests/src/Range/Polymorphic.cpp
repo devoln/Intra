@@ -1,6 +1,6 @@
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
@@ -76,7 +76,7 @@ int TestInlinedRange(int* arr, size_t count, size_t totalCount)
 
 int TestStaticRange(int* arr, size_t count, size_t totalCount)
 {
-	auto cycle = Range::Cycle(ArrayRange<int>(arr, count));
+	auto cycle = Range::Cycle(Span<int>(arr, count));
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
 	{
@@ -111,7 +111,7 @@ void RunPolymorphicRangePerfTests(FormattedWriter& output)
 	Std.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
 
 	PrintPerformanceResults(output, "CycledRange 100000000 times",
-		{"CycledRange*", "InputRange<int>", "InputRange<int>::GetNext", "manually inlined loop", "ArrayRange.Cycle"},
+		{"CycledRange*", "InputRange<int>", "InputRange<int>::GetNext", "manually inlined loop", "Span.Cycle"},
 		{time1, time2, time3},
 		{time4, time5});
 }

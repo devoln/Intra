@@ -5,7 +5,7 @@
 #include "Algo/Op.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/AsRange.h"
 #include "Range/Stream/InputStreamMixin.h"
 
@@ -39,7 +39,7 @@ template<typename T, bool Condition =
 
 	virtual size_t PopFirstN(size_t count) = 0;
 
-	virtual size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) = 0;
+	virtual size_t CopyAdvanceToAdvance(Span<Meta::RemoveConstRef<T>>& dst) = 0;
 };
 
 template<typename T> struct InputRangeInterface<T, false>
@@ -92,7 +92,7 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 	template<typename A> InputRangeImplFiller(A&& range):
 		base(Meta::Forward<A>(range)) {}
 
-	size_t CopyAdvanceToAdvance(ArrayRange<Meta::RemoveConstRef<T>>& dst) final
+	size_t CopyAdvanceToAdvance(Span<Meta::RemoveConstRef<T>>& dst) final
 	{return Algo::CopyAdvanceToAdvance(base::OriginalRange, dst);}
 };
 
@@ -177,7 +177,7 @@ public:
 		return mInterface->PopFirstN(count);
 	}
 
-	forceinline size_t CopyAdvanceToAdvance(ArrayRange<value_type>& dst)
+	forceinline size_t CopyAdvanceToAdvance(Span<value_type>& dst)
 	{
 		if(mInterface==null) return 0;
 		return mInterface->CopyAdvanceToAdvance(dst);
@@ -187,7 +187,7 @@ public:
 		Range::IsArrayRangeOfExactly<AR, value_type>::_ && !Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceToAdvance(AR& dst)
 	{
-		ArrayRange<value_type> dstArr = {dst.Data(), dst.Length()};
+		Span<value_type> dstArr = {dst.Data(), dst.Length()};
 		size_t result = CopyAdvanceToAdvance(dstArr);
 		Range::PopFirstExactly(dst, result);
 		return result;

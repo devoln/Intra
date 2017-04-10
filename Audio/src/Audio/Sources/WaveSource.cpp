@@ -27,7 +27,7 @@ struct WaveHeader
 };
 
 
-WaveSource::WaveSource(ArrayRange<const byte> srcFileData):
+WaveSource::WaveSource(CSpan<byte> srcFileData):
 	mData(null), mSampleCount(0), mCurrentDataPos(0)
 {
 	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(srcFileData.Begin);
@@ -45,7 +45,7 @@ WaveSource::WaveSource(ArrayRange<const byte> srcFileData):
 	mSampleCount = header.DataSize/sizeof(short)/mChannelCount;
 }
 
-size_t WaveSource::GetInterleavedSamples(ArrayRange<short> outShorts)
+size_t WaveSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	INTRA_DEBUG_ASSERT(!outShorts.Empty());
 	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
@@ -55,7 +55,7 @@ size_t WaveSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 	return shortsToRead/mChannelCount;
 }
 
-size_t WaveSource::GetInterleavedSamples(ArrayRange<float> outFloats)
+size_t WaveSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	INTRA_DEBUG_ASSERT(!outFloats.Empty());
 	Array<short> outShorts;
@@ -66,7 +66,7 @@ size_t WaveSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 	return result;
 }
 
-size_t WaveSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
+size_t WaveSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 {
 	INTRA_DEBUG_ASSERT(outFloats.Length()==mChannelCount);
 	const size_t outSamplesCount = outFloats.First().Length();

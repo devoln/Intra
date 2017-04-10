@@ -26,7 +26,7 @@ struct Job
 	Job(const Job& rhs):
 		function(rhs.function), parent(rhs.parent),
 		unfinishedJobs(rhs.unfinishedJobs.Load())
-		{Algo::CopyTo(ArrayRange<const byte>(rhs.data), ArrayRange<byte>(data));}
+		{Algo::CopyTo(CSpan<byte>(rhs.data), Span<byte>(data));}
 
 
 	template<typename T, typename S> static Job* parallel_for(T* data, uint count, Function function, const S& splitter)

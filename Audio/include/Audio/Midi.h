@@ -12,6 +12,6 @@ struct MidiDevice
 };
 
 Music ReadMidiFile(StringView path);
-Music ReadMidiFile(ArrayRange<const byte> fileData);
+Music ReadMidiFile(CSpan<byte> fileData);
 
 }}

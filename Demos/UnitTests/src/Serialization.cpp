@@ -99,9 +99,9 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	serializer << origE;
 	output.PrintLine("int origE[5] = ", origE);
 	
-	ArrayRange<const int> origF = origE;
+	CSpan<int> origF = origE;
 	serializer << origF;
-	output.PrintLine("ArrayRange<const int> originalF = ", origF);
+	output.PrintLine("CSpan<int> originalF = ", origF);
 	
 	Array<int> origG = origF;
 	serializer << origG;
@@ -137,8 +137,8 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	output.PrintLine("int resE[5] = ", resE);
 	INTRA_ASSERT2(Algo::Equals(origE, resE), origE, resE);
 
-	ArrayRange<const int> resF = deserializer.Deserialize<ArrayRange<const int>>();
-	output.PrintLine("ArrayRange<const int> resF = ", resF);
+	CSpan<int> resF = deserializer.Deserialize<CSpan<int>>();
+	output.PrintLine("CSpan<int> resF = ", resF);
 	INTRA_ASSERT2(Algo::Equals(origF, resF), origF, resF);
 
 	Array<int> resG = deserializer.Deserialize<Array<int>>();

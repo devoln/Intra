@@ -146,7 +146,7 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections)
 		0, null, null, null};
 	addrinfo* addrInfo = null;
 	char portStr[6];
-	ArrayRange<char>(portStr) << port << '\0';
+	Span<char>(portStr) << port << '\0';
 	const auto gaiErr = getaddrinfo(null, portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
@@ -223,7 +223,7 @@ StreamSocket::StreamSocket(SocketType type, StringView host, ushort port):
 		0, null, null, null};
 	addrinfo* addrInfo = null;
 	char portStr[6];
-	ArrayRange<char>(portStr) << port << '\0';
+	Span<char>(portStr) << port << '\0';
 	const auto gaiErr = getaddrinfo(String(host).CStr(), portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{

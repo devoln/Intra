@@ -1,12 +1,12 @@
 ﻿#include "Audio/Synth/PostEffects.hh"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/MathRanges.h"
 #include "Math/Math.h"
 #include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace PostEffects {
 
-void Chorus::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
+void Chorus::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	Array<float> copy(inOutSamples);
 	float radFreq = Frequency*2*float(Math::PI);
@@ -32,7 +32,7 @@ void Chorus::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 	}
 }
 
-void Echo::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
+void Echo::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	Array<float> copy(inOutSamples);
 	const double duration = double(inOutSamples.Length())/sampleRate;
@@ -51,14 +51,14 @@ void Echo::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 	}
 }
 
-void FilterDrive::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
+void FilterDrive::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	(void)sampleRate;
 	for(float& sample: inOutSamples)
 		sample = Math::Atan(sample*K);
 }
 
-void FilterHP::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
+void FilterHP::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	(void)sampleRate;
 	float S = 0;
@@ -70,7 +70,7 @@ void FilterHP::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
 	}
 }
 
-void FilterQ::operator()(ArrayRange<float> samples, uint sampleRate) const
+void FilterQ::operator()(Span<float> samples, uint sampleRate) const
 {
 	(void)sampleRate;
 	const float F = Frq/7019.0f;
@@ -83,7 +83,7 @@ void FilterQ::operator()(ArrayRange<float> samples, uint sampleRate) const
 	}
 }
 
-void Fade::operator()(ArrayRange<float> inOutSamples, uint sampleRate) const
+void Fade::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	(void)sampleRate;
 	if(FadeIn>0)

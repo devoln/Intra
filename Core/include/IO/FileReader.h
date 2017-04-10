@@ -93,7 +93,7 @@ public:
 		return result;
 	}
 
-	size_t CopyAdvanceToAdvance(ArrayRange<char>& dst)
+	size_t CopyAdvanceToAdvance(Span<char>& dst)
 	{
 		size_t totalBytesRead = Algo::CopyAdvanceToAdvance(mBufferRest, dst);
 		if(!mBufferRest.Empty()) return totalBytesRead;
@@ -114,14 +114,14 @@ public:
 		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceToAdvance(AR& dst)
 	{
-		ArrayRange<char> dstArr = {dst.Data(), dst.Length()};
+		Span<char> dstArr = {dst.Data(), dst.Length()};
 		size_t result = CopyAdvanceToAdvance(dstArr);
 		Range::PopFirstExactly(dst, result);
 		return result;
 	}
 
 	forceinline ulong64 PositionInFile() const {return mOffset-mBufferRest.Length();}
-	forceinline ArrayRange<const char> BufferedData() const {return mBufferRest;}
+	forceinline CSpan<char> BufferedData() const {return mBufferRest;}
 
 	forceinline const Shared<OsFile>& File() const {return mFile;}
 
@@ -136,7 +136,7 @@ private:
 	Shared<OsFile> mFile;
 	ulong64 mOffset, mSize;
 	Array<char> mBuffer;
-	ArrayRange<char> mBufferRest;
+	Span<char> mBufferRest;
 };
 
 }}

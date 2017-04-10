@@ -3,7 +3,7 @@
 #include "Algo/Search/Single.h"
 #include "Algo/Raw/Read.h"
 #include "Range/Generators/StringView.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Mutation/Fill.h"
 #include "Container/Sequential/String.h"
 #include "Platform/Debug.h"

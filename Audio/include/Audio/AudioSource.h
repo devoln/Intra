@@ -24,12 +24,12 @@ public:
 	//! Загрузить следующие семплы в формате чередующихся short каналов.
 	//! \param[out] outShorts Куда загружаются семплы. outShorts.Count() означает, сколько их загружать.
 	//! \returns Количество прочитанных семплов, то есть число прочитанных short'ов, делённое на ChannelCount.
-	virtual size_t GetInterleavedSamples(ArrayRange<short> outShorts) = 0;
+	virtual size_t GetInterleavedSamples(Span<short> outShorts) = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
 	//! \param[out] outFloats Куда загружаются семплы. outFloats.Count() означает, сколько их загружать.
 	//! \returns Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
-	virtual size_t GetInterleavedSamples(ArrayRange<float> outFloats) = 0;
+	virtual size_t GetInterleavedSamples(Span<float> outFloats) = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
 	//! \param[out] outFloats Каналы, в которые загружаются семплы.
@@ -37,7 +37,7 @@ public:
 	//! Для всех i outFloats[i].Count() должно быть одинаковым.
 	//! outFloats.Count() должно быть равно ChannelCount.
 	//! \returns Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
-	virtual size_t GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats) = 0;
+	virtual size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) = 0;
 
 	//! Получить данные следующих семплов в том формате, в котором они получаются перед конверсией.
 	//! \returns Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.

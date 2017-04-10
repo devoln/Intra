@@ -4,7 +4,7 @@
 
 namespace Intra { namespace Audio { namespace Synth {
 
-void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
+void DrumInstrument::GetNoteSamples(Span<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
 	AudioBuffer& bufRef = cache_note(note, tempo, sampleRate);
@@ -21,7 +21,7 @@ void DrumInstrument::GetNoteSamples(ArrayRange<float> inOutSamples,
 		return;
 	}
 
-	ArrayRange<const float> bufSampleRange = bufRef.Samples.AsConstRange().Take(inOutSamples.Length());
+	CSpan<float> bufSampleRange = bufRef.Samples.AsConstRange().Take(inOutSamples.Length());
 	if(!add) Memory::CopyBits(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
 	else Algo::Add(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
 }

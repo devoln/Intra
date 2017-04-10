@@ -1,15 +1,15 @@
 ﻿#pragma once
 
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Audio/Synth/Types.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
 namespace D {
 
 template<typename T> void ModifierPassFunction(const T& modifier,
-	float freq, ArrayRange<float> inOutSamples, uint sampleRate)
+	float freq, Span<float> inOutSamples, uint sampleRate)
 {
 	auto modifierCopy = modifier;
 	float t = 0.0f, dt = 1.0f/float(sampleRate);

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Data/ValueType.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 #include "Meta/Preprocessor.h"
@@ -47,7 +47,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasReflectionFieldNamesMethod, Meta::RemoveConst
     }
 	
 #define INTRA_IMPLEMENT_REFLECTION_FIELD_NAMES(A, ...) \
-	static ArrayRange<const StringView> ReflectionFieldNames()\
+	static CSpan<StringView> ReflectionFieldNames()\
 	{\
 		static const StringView fieldNames[] = \
 		{\

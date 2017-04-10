@@ -8,7 +8,7 @@ namespace Intra { namespace Algo { namespace Path {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-void NormalizeSlashesAndSpaces(ArrayRange<char>& path);
+void NormalizeSlashesAndSpaces(Span<char>& path);
 String AddTrailingSlash(StringView path);
 StringView RemoveTrailingSlash(StringView path);
 

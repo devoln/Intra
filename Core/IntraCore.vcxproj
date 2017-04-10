@@ -811,6 +811,9 @@
     <ClInclude Include="include\Container\Utility\SparseHandledArray.h" />
     <ClInclude Include="include\Container\Utility\Tree.h" />
     <ClInclude Include="include\Data.hh" />
+    <ClInclude Include="include\Data\Format\BinaryParser.h" />
+    <ClInclude Include="include\Data\Format\BinaryRaw.h" />
+    <ClInclude Include="include\Data\Format\TextParser.h" />
     <ClInclude Include="include\Data\Object.h" />
     <ClInclude Include="include\Data\Reflection.h" />
     <ClInclude Include="include\Data\Serialization.hh" />
@@ -862,6 +865,7 @@
     <ClInclude Include="include\Memory\Allocator\Basic\Pool.h" />
     <ClInclude Include="include\Memory\Allocator\Basic\Stack.h" />
     <ClInclude Include="include\Memory\Allocator\Compositors.hh" />
+    <ClInclude Include="include\Memory\Allocator\Compositors\SegregatedPools.h" />
     <ClInclude Include="include\Memory\Allocator\Concepts.h" />
     <ClInclude Include="include\Memory\Allocator\Decorators.hh" />
     <ClInclude Include="include\Memory\Allocator\Decorators\BoundsChecked.h" />
@@ -939,8 +943,9 @@
     <ClInclude Include="include\Range\Decorators\Transversal.h" />
     <ClInclude Include="include\Range\ForwardDecls.h" />
     <ClInclude Include="include\Range\Generators.hh" />
-    <ClInclude Include="include\Range\Generators\ArrayRange.h" />
+    <ClInclude Include="include\Range\Generators\Span.h" />
     <ClInclude Include="include\Range\Generators\Count.h" />
+    <ClInclude Include="include\Range\Generators\FlatArrayOfArraysRange.h" />
     <ClInclude Include="include\Range\Generators\Generate.h" />
     <ClInclude Include="include\Range\Generators\Iota.h" />
     <ClInclude Include="include\Range\Generators\ListRange.h" />
@@ -949,6 +954,7 @@
     <ClInclude Include="include\Range\Generators\Repeat.h" />
     <ClInclude Include="include\Range\Generators\Sequence.h" />
     <ClInclude Include="include\Range\Generators\StringView.h" />
+    <ClInclude Include="include\Range\Generators\ZStringRange.h" />
     <ClInclude Include="include\Range\Iterator.hh" />
     <ClInclude Include="include\Range\Iterator\IteratorConcepts.h" />
     <ClInclude Include="include\Range\Iterator\IteratorRange.h" />
@@ -970,6 +976,7 @@
     <ClInclude Include="include\Range\Special.hh" />
     <ClInclude Include="include\Range\Special\SparseRange.h" />
     <ClInclude Include="include\Range\Special\Unicode.h" />
+    <ClInclude Include="include\Range\Special\ZStringRange.h" />
     <ClInclude Include="include\Range\Stream.hh" />
     <ClInclude Include="include\Range\Stream\InputStreamMixin.h" />
     <ClInclude Include="include\Range\Stream\Operators.h" />

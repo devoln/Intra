@@ -3,7 +3,7 @@
 #include "Range/Concepts.h"
 #include "Container/ForwardDecls.h"
 #include "Range/Operations.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
@@ -69,7 +69,7 @@ public:
 		loadBuffer();
 	}
 
-	void CopyAdvanceToAdvance(ArrayRange<T>& dst)
+	void CopyAdvanceToAdvance(Span<T>& dst)
 	{
 		Algo::CopyAdvanceToAdvance(mBufferRange, dst);
 		Algo::CopyAdvanceToAdvance(mOriginalRange, dst);
@@ -89,13 +89,13 @@ private:
 	void loadBuffer() {mBufferRange = Take(mBuffer, Algo::CopyAdvanceTo(mOriginalRange, mBuffer));}
 
 	R mOriginalRange;
-	ArrayRange<T> mBuffer;
-	ArrayRange<T> mBufferRange;
+	Span<T> mBuffer;
+	Span<T> mBufferRange;
 };
 
 template<typename R> forceinline Meta::EnableIf<
 	IsAsAccessibleRange<R>::_,
-RBuffered<AsRangeResultNoCRef<R>>> Buffered(R&& range, ArrayRange<ValueTypeOfAs<R>> buffer)
+RBuffered<AsRangeResultNoCRef<R>>> Buffered(R&& range, Span<ValueTypeOfAs<R>> buffer)
 {return {Range::Forward<R>(range), buffer};}
 
 template<typename R> forceinline Meta::EnableIf<

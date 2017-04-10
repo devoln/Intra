@@ -2,7 +2,7 @@
 
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Copy.h"
 #include "Platform/CppWarnings.h"
 
@@ -26,12 +26,12 @@ template<typename R, typename OR> Meta::EnableIf<
 }
 
 //Оптимизированная перегрузка
-void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>& dst);
-forceinline void CastAdvanceToAdvance(ArrayRange<const float>&& src, ArrayRange<short>& dst)
+void CastAdvanceToAdvance(CSpan<float>& src, Span<short>& dst);
+forceinline void CastAdvanceToAdvance(CSpan<float>&& src, Span<short>& dst)
 {CastAdvanceToAdvance(src, dst);}
-forceinline void CastAdvanceToAdvance(ArrayRange<const float>& src, ArrayRange<short>&& dst)
+forceinline void CastAdvanceToAdvance(CSpan<float>& src, Span<short>&& dst)
 {CastAdvanceToAdvance(src, dst);}
-forceinline void CastAdvanceToAdvance(ArrayRange<const float>&& src, ArrayRange<short>&& dst)
+forceinline void CastAdvanceToAdvance(CSpan<float>&& src, Span<short>&& dst)
 {CastAdvanceToAdvance(src, dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
@@ -74,7 +74,7 @@ template<typename R, typename OR> Meta::EnableIf<
 //! Нормировать массив делением каждого элемента на NumericLimits<From>::Max
 template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<To>::_ && Meta::IsIntegralType<From>::_
-> CastToNormalized(ArrayRange<To> dst, ArrayRange<const From> src)
+> CastToNormalized(Span<To> dst, CSpan<From> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())
@@ -89,7 +89,7 @@ template<typename To, typename From> Meta::EnableIf<
 //! Предполагается, что -1.0 <= src[i] <= 1.0. Иначе произойдёт переполнение.
 template<typename To, typename From> Meta::EnableIf<
 	Meta::IsFloatType<From>::_ && Meta::IsIntegralType<To>::_
-> CastFromNormalized(ArrayRange<To> dst, ArrayRange<const From> src)
+> CastFromNormalized(Span<To> dst, CSpan<From> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
 	while(!dst.Empty())

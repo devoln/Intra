@@ -19,8 +19,8 @@ public:
 	typedef KeyValuePair<const K, V> CPair;
 	typedef KeyValuePair<K&, V&> PairRef;
 	typedef KeyValuePair<const K&, V&> CPairRef;
-	typedef Intra::Range::RZipKV<ArrayRange<const K>, ArrayRange<V>> Range;
-	typedef Intra::Range::RZipKV<ArrayRange<const K>, ArrayRange<const V>> ConstRange;
+	typedef Intra::Range::RZipKV<CSpan<K>, Span<V>> Range;
+	typedef Intra::Range::RZipKV<CSpan<K>, CSpan<V>> ConstRange;
 
 	typedef K key_type;
 	typedef V mapped_type;
@@ -130,13 +130,13 @@ public:
 	LinearMap(null_t=null):
 		mKeys(), mValues() {}
 
-	LinearMap(ArrayRange<const Pair> pairs):
+	LinearMap(CSpan<Pair> pairs):
 		mKeys(), mValues()
 	{
 		for(auto& p: pairs) Insert(p);
 	}
 
-	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V> valueRange):
+	LinearMap(CSpan<K> keyRange, CSpan<V> valueRange):
 		mKeys(), mValues()
 	{
 		INTRA_DEBUG_ASSERT(keyRange.Length()==valueRange.Length());
@@ -145,7 +145,7 @@ public:
 			Insert({keyRange[i], valueRange[i]});
 	}
 
-	LinearMap(ArrayRange<const K> keyRange, ArrayRange<const V* const> valuePtrRange):
+	LinearMap(CSpan<K> keyRange, CSpan<const V*> valuePtrRange):
 		mKeys(), mValues()
 	{
 		INTRA_DEBUG_ASSERT(keyRange.Length()==valuePtrRange.Length());
@@ -154,7 +154,7 @@ public:
 			Insert(keyRange[i], *valuePtrRange[i]);
 	}
 
-	LinearMap(ArrayRange<const K> keyRange, ArrayRange<V* const> valuePtrRange):
+	LinearMap(CSpan<K> keyRange, CSpan<V*> valuePtrRange):
 		mKeys(), mValues()
 	{
 		INTRA_DEBUG_ASSERT(keyRange.Count()==valuePtrRange.Count());
@@ -330,9 +330,9 @@ public:
 	forceinline CPairRef GetPair(size_t index) const {return {mKeys[index], mValues[index]};}
 	forceinline PairRef GetPair(size_t index) {return {mKeys[index], mValues[index]};}
 
-	ArrayRange<const K> Keys() const {return mKeys;}
-	ArrayRange<const V> Values() const {return mValues;}
-	ArrayRange<V> Values() {return mValues;}
+	CSpan<K> Keys() const {return mKeys;}
+	CSpan<V> Values() const {return mValues;}
+	Span<V> Values() {return mValues;}
 
 	const K& Key(size_t index) const {return mKeys[index];}
 	const V& Value(size_t index) const {return mValues[index];}

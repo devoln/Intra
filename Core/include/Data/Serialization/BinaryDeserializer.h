@@ -43,7 +43,7 @@ public:
 	//! Десериализация GenericStringView. Результат ссылается на данные в сериализованной области.
 	template<typename Char> GenericBinaryDeserializer& operator>>(GenericStringView<const Char>& dst)
 	{
-		ArrayRange<const Char> result;
+		CSpan<Char> result;
 		*this >> result;
 		dst = {result.Begin, result.End};
 		return *this;
@@ -57,7 +57,7 @@ public:
 	{
 		uint len = Deserialize<uintLE>();
 		dst.resize(len);
-		ArrayRange<T> dstArr(Container::Data(dst), dst.size());
+		Span<T> dstArr(Container::Data(dst), dst.size());
 		Algo::CopyAdvanceToRaw(Input, dstArr);
 		return *this;
 	}
@@ -83,7 +83,7 @@ public:
 		Container::IsStaticArrayContainer<C>::_,
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
-		ArrayRange<T> dstArr(Container::Data(dst), dst.size());
+		Span<T> dstArr(Container::Data(dst), dst.size());
 		Algo::CopyAdvanceToRaw(Input, dstArr);
 		return *this;
 	}
@@ -94,21 +94,21 @@ public:
 		Container::IsStaticArrayContainer<C>::_,
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
-		ArrayRange<T> dstArr(Container::Data(dst), dst.size());
+		Span<T> dstArr(Container::Data(dst), dst.size());
 		DeserializeToOutputRange(dstArr, dstArr.Length());
 		return *this;
 	}
 
 	
-	//! Десериализовать массив в ArrayRange.
+	//! Десериализовать массив в Span.
 	//! Это можно делать только для тривиально сериализуемых типов,
 	//! так как полученный dst ссылается на данные в сериализованной области.
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	GenericBinaryDeserializer&> operator>>(ArrayRange<const T>& dst)
+	GenericBinaryDeserializer&> operator>>(CSpan<T>& dst)
 	{
 		uint count = Deserialize<uintLE>();
-		dst = ArrayRange<const T>(reinterpret_cast<const T*>(Input.Data()), count);
+		dst = CSpan<T>(reinterpret_cast<const T*>(Input.Data()), count);
 		Range::PopFirstExactly(Input, count*sizeof(T));
 		return *this;
 	}
@@ -128,7 +128,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_,
 	GenericBinaryDeserializer&> operator>>(T(&dst)[N])
 	{
-		Algo::CopyAdvanceToRaw(Input, ArrayRange<T>(dst));
+		Algo::CopyAdvanceToRaw(Input, Span<T>(dst));
 		return *this;
 	}
 
@@ -160,7 +160,7 @@ public:
 	I Input;
 };
 
-typedef GenericBinaryDeserializer<ArrayRange<byte>> BinaryDeserializer;
+typedef GenericBinaryDeserializer<Span<byte>> BinaryDeserializer;
 
 
 //! Десериализовать runtime структуру

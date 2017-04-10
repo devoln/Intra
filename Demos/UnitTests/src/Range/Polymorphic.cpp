@@ -9,7 +9,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.h"
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
@@ -61,7 +61,7 @@ static void TestSumRange(FormattedWriter& output)
 	String myRange2Str = "Супер Диапазон";
 	//myRange = myRange2Str();
 	char c[40];
-	auto r = ArrayRange<char>(c);
+	auto r = Span<char>(c);
 	r << Meta::Move(myRange);
 
 	ivec3 vectors[] = {{1, 2, 3}, {1, 64, 7}, {43, 5, 342}, {5, 45, 4}};

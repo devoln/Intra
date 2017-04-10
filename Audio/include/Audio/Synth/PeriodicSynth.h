@@ -11,7 +11,7 @@ uint GetGoodSignalPeriod(double samplesPerPeriod, uint maxPeriods);
 
 //! Повторить фрагмент fragmentSamples в буфере inOutSamples.
 //! \param add Сложение (true) или присваивание (false).
-void RepeatFragmentInBuffer(ArrayRange<const float> fragmentSamples,
-	ArrayRange<float> inOutSamples, bool add);
+void RepeatFragmentInBuffer(CSpan<float> fragmentSamples,
+	Span<float> inOutSamples, bool add);
 
 }}}

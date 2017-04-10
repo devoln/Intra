@@ -3,7 +3,7 @@
 #include "Platform/FundamentalTypes.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/Debug.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -11,7 +11,7 @@ namespace Intra { namespace Memory {
 
 struct ALinear
 {
-	ALinear(ArrayRange<byte> buf=null, size_t allocatorAlignment=16):
+	ALinear(Span<byte> buf=null, size_t allocatorAlignment=16):
 		mStart(buf.Begin), mRest(buf), mAlignment(allocatorAlignment) {}
 
 	size_t GetAlignment() const {return mAlignment;}
@@ -33,7 +33,7 @@ struct ALinear
 
 private:
 	byte* mStart;
-	ArrayRange<byte> mRest;
+	Span<byte> mRest;
 	size_t mAlignment;
 };
 

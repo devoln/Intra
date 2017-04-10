@@ -57,7 +57,7 @@ struct ConsoleOutStream
 #endif
 	}
 
-	size_t CopyAdvanceFromAdvance(ArrayRange<const char>& src)
+	size_t CopyAdvanceFromAdvance(CSpan<char>& src)
 	{
 		if(src.Empty()) return 0;
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)

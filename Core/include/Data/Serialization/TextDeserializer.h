@@ -24,7 +24,7 @@ template<typename I> struct GenericTextDeserializer;
 template<typename I> struct GenericTextDeserializerStructVisitor
 {
 	GenericTextDeserializer<I>* Me;
-	ArrayRange<const StringView> FieldNames;
+	CSpan<StringView> FieldNames;
 	bool Began;
 	TextSerializerParams::TypeFlags Type;
 
@@ -42,13 +42,13 @@ template<typename I> struct GenericTextDeserializer
 		int counter=1;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, null,
 			Lang.StructInstanceOpen, Lang.StructInstanceClose, Lang.FieldSeparator,
-		ArrayRange<const Meta::Pair<StringView, StringView>>{
+		CSpan<Meta::Pair<StringView, StringView>>{
 			{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 			{Lang.OneLineCommentBegin, "\n"},
 			{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 			{Lang.ArrayOpen, Lang.ArrayClose}
 		},
-		ArrayRange<const Meta::Pair<StringView, StringView>>{});
+		CSpan<Meta::Pair<StringView, StringView>>{});
 		INTRA_DEBUG_ASSERT(counter==0 || counter==1);
 		return counter==0;
 	}
@@ -60,12 +60,12 @@ template<typename I> struct GenericTextDeserializer
 		size_t charsRead = 0;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, &charsRead,
 			StringView(), Lang.ArrayClose, Lang.ArrayElementSeparator,
-		ArrayRange<const Meta::Pair<StringView, StringView>>{
+		CSpan<Meta::Pair<StringView, StringView>>{
 			{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 			{Lang.OneLineCommentBegin, StringView("\n")},
 			{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd}
 		},
-		ArrayRange<const Meta::Pair<StringView, StringView>>{
+		CSpan<Meta::Pair<StringView, StringView>>{
 			{Lang.StructInstanceOpen, Lang.StructInstanceClose},
 			{Lang.ArrayOpen, Lang.ArrayClose}
 		});
@@ -186,13 +186,13 @@ template<typename I> struct GenericTextDeserializer
 		int counter = -1;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, null,
 			Lang.StructInstanceOpen, StringView(), StringView(),
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.ArrayOpen, Lang.ArrayClose}
 			}
 		);
@@ -207,13 +207,13 @@ template<typename I> struct GenericTextDeserializer
 		int counter = 1;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, null,
 			Lang.StructInstanceOpen, Lang.StructInstanceClose, StringView(),
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.ArrayOpen, Lang.ArrayClose}
 			}
 		);
@@ -261,7 +261,7 @@ template<typename I> struct GenericTextDeserializer
 		return false;
 	}
 
-	intptr ExpectOneOf(ArrayRange<const StringView> stringsToExpect)
+	intptr ExpectOneOf(CSpan<StringView> stringsToExpect)
 	{
 		SkipAllSpaces();
 		size_t maxStrLength=0;
@@ -275,7 +275,7 @@ template<typename I> struct GenericTextDeserializer
 		return -1;
 	}
 
-	void LogExpectError(StringView token, ArrayRange<const StringView> expected)
+	void LogExpectError(StringView token, CSpan<StringView> expected)
 	{
 		char buf[1024];
 		Range::OutputArrayRange<char> dst = buf;
@@ -288,7 +288,7 @@ template<typename I> struct GenericTextDeserializer
 
 
 	//! Десериализовать структуру со статической информацией о полях
-	template<typename T> void DeserializeStruct(T& dst, ArrayRange<const StringView> fieldNames)
+	template<typename T> void DeserializeStruct(T& dst, CSpan<StringView> fieldNames)
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
 		GenericTextDeserializerStructVisitor<I> visitor{this, fieldNames, false, TextSerializerParams::TypeFlags_Struct};
@@ -362,13 +362,13 @@ template<typename I> struct GenericTextDeserializer
 		int counter = -1;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, null,
 			Lang.ArrayOpen, StringView(), StringView(),
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.StructInstanceOpen, Lang.StructInstanceClose}
 			}
 		);
@@ -383,13 +383,13 @@ template<typename I> struct GenericTextDeserializer
 		int counter = 1;
 		Algo::TakeRecursiveBlockAdvance(Input, counter, null,
 			Lang.ArrayOpen, Lang.ArrayClose, StringView(),
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			ArrayRange<const Meta::Pair<StringView, StringView>>{
+			CSpan<Meta::Pair<StringView, StringView>>{
 				{Lang.StructInstanceOpen, Lang.StructInstanceClose}
 			}
 		);
@@ -527,7 +527,7 @@ template<typename I> struct GenericTextDeserializer
 	//! Десериализовать массив
 	template<typename T, size_t N> forceinline GenericTextDeserializer& operator>>(T(&arr)[N])
 	{
-		ArrayRange<T> range = arr;
+		Span<T> range = arr;
 		DeserializeRange(range);
 		return *this;
 	}

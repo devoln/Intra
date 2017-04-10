@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Container/ForwardDecls.h"
 
 namespace Intra { namespace Algo {
@@ -16,16 +16,16 @@ T> ExtractKey(T t) {return t;}
 template<typename T> forceinline size_t ExtractKey(T* t) {return reinterpret_cast<size_t>(t);}
 
 template<typename T, typename ExtractKeyFunc = Meta::MakeUnsignedType<T>(*)(T), size_t RadixLog=8>
-void RadixSort(ArrayRange<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
+void RadixSort(Span<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
 
 template<typename T, typename ExtractKeyFunc = size_t(*)(T*), size_t RadixLog=8>
-void RadixSort(ArrayRange<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
+void RadixSort(Span<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
 {RadixSort(arr.template Reinterpret<size_t>(), extractKey);}
 
 namespace D
 {
 	template<typename T, typename ExtractKeyFunc, size_t RadixLog> void radixSortPass(
-		ArrayRange<T> arr, ArrayRange<T> temp, size_t radixOffset, ExtractKeyFunc extractKey)
+		Span<T> arr, Span<T> temp, size_t radixOffset, ExtractKeyFunc extractKey)
 	{
 		enum: size_t {Radix = 1 << RadixLog, RadixMask = Radix-1};
 		const size_t count = arr.Length();
@@ -49,13 +49,13 @@ namespace D
 }
 
 template<typename T, typename ExtractKeyFunc, size_t RadixLog>
-void RadixSort(ArrayRange<T> arr, ExtractKeyFunc extractKey)
+void RadixSort(Span<T> arr, ExtractKeyFunc extractKey)
 {
 	enum: size_t {KeyBits = sizeof(extractKey(Meta::Val<T>()))*8};
 
 	Array<T> tempBuffer;
 	tempBuffer.SetCountUninitialized(arr.Length());
-	ArrayRange<T> dst = arr, temp = tempBuffer;
+	Span<T> dst = arr, temp = tempBuffer;
 	size_t shift = 0;
 	for(size_t i=0; i<KeyBits/RadixLog; i++)
 	{

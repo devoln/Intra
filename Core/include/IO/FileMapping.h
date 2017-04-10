@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Meta/Type.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -53,11 +53,11 @@ public:
 
 	const byte* Data() const {return static_cast<byte*>(mData);}
 
-	ArrayRange<const byte> AsRange() const {return {Data(), Length()};}
+	CSpan<byte> AsRange() const {return {Data(), Length()};}
 
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	ArrayRange<const T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
+	CSpan<T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
 };
 
 class WritableFileMapping: public BasicFileMapping
@@ -79,11 +79,11 @@ public:
 
 	byte* Data() const {return static_cast<byte*>(mData);}
 
-	ArrayRange<byte> AsRange() const {return{Data(), Length()};}
+	Span<byte> AsRange() const {return{Data(), Length()};}
 
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	ArrayRange<T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
+	Span<T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
 };
 
 }}

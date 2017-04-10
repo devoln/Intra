@@ -105,11 +105,11 @@ AnyImage LoadWithPlatform(InputStream stream)
 	for(;;)
 	{
 		HGLOBAL oldGlob = glob;
-		ArrayRange<char> oldData = {raw, size/2};
+		Span<char> oldData = {raw, size/2};
 		glob = GlobalAlloc(0, size);
 		if(glob==null) return null;
 		raw = static_cast<char*>(GlobalLock(glob));
-		ArrayRange<char> range = {raw, size};
+		Span<char> range = {raw, size};
 		if(oldGlob)
 		{
 			Algo::CopyToAdvance(oldData, range);

@@ -2,7 +2,7 @@
 
 #include "Platform/CppWarnings.h"
 #include "Platform/CppFeatures.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"
 #include "Container/ForwardDecls.h"
 

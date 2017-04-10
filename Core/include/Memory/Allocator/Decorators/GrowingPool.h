@@ -38,7 +38,7 @@ template<typename A> struct AGrowingPool: A
 			return;
 		}
 		mFirstBlock = A::Allocate(blockSize(initialSize), sourceInfo);
-		ArrayRange<byte> buf = {reinterpret_cast<byte*>(mFirstBlock)+blockSize(0), initialSize};
+		Span<byte> buf = {reinterpret_cast<byte*>(mFirstBlock)+blockSize(0), initialSize};
 		mList.InitBuffer(buf, elementSize, alignment),
 		mCapacity = initialSize;
 		mElementSize = ushort(elementSize);
@@ -57,7 +57,7 @@ template<typename A> struct AGrowingPool: A
 			auto newBlock = A::Allocate(blockSize(mCapacity), INTRA_SOURCE_INFO);
 			*reinterpret_cast<void**>(newBlock) = mFirstBlock;
 			mFirstBlock = newBlock;
-			ArrayRange<byte> newBuf(reinterpret_cast<byte*>(mFirstBlock)+blockSize(0), mCapacity);
+			Span<byte> newBuf(reinterpret_cast<byte*>(mFirstBlock)+blockSize(0), mCapacity);
 			new(&mList) FreeList(newBuf, mElementSize, mElementAlignment);
 			mCapacity *= 2;
 		}

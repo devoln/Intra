@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Intra::Range::ArrayRange&lt;char&gt;">
+  <Type Name="Intra::Range::Span&lt;char&gt;">
     <DisplayString>{Begin,[End-Begin]s8}</DisplayString>
     <StringView>Begin,[End-Begin]s8b</StringView>
     <Expand>
@@ -11,7 +11,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::ArrayRange&lt;wchar&gt;">
+  <Type Name="Intra::Range::Span&lt;wchar&gt;">
     <DisplayString>{Begin,[End-Begin]s16}</DisplayString>
     <StringView>Begin,[End-Begin]s16b</StringView>
     <Expand>
@@ -21,7 +21,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::ArrayRange&lt;dchar&gt;">
+  <Type Name="Intra::Range::Span&lt;dchar&gt;">
     <DisplayString>{Begin,[End-Begin]s32}</DisplayString>
     <StringView>Begin,[End-Begin]s32b</StringView>
     <Expand>
@@ -31,7 +31,7 @@
     </Expand>
   </Type>
 
-    <Type Name="Intra::Range::ArrayRange&lt;*&gt;">
+    <Type Name="Intra::Range::Span&lt;*&gt;">
         <DisplayString Condition="Begin==End">[]</DisplayString>
         <DisplayString Condition="Begin+1==End">[{Begin[0]}]</DisplayString>
         <DisplayString Condition="Begin+2==End">[{Begin[0]}, {Begin[1]}]</DisplayString>

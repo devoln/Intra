@@ -2,7 +2,7 @@
 #include "Algo/Mutation/Replace.h"
 #include "Range/Decorators/Retro.h"
 #include "Range/Generators/StringView.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Container/Sequential/String.h"
 #include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
@@ -11,7 +11,7 @@ namespace Intra { namespace Algo { namespace Path {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-void NormalizeSlashesAndSpaces(ArrayRange<char>& path)
+void NormalizeSlashesAndSpaces(Span<char>& path)
 {
 	TrimAdvance(path, Op::IsSpace<char>);
 	Replace(path, '\\', '/');

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IO/FormattedWriter.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace IO {
 

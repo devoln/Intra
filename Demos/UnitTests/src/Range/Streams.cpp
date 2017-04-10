@@ -10,7 +10,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/FormattedWriter.h"
 #include "Range/Stream.hh"
 #include "Algo/Reduction.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
 #include "Math/Random.h"
@@ -29,7 +29,7 @@ void TestArrayRangeStreams(FormattedWriter& output)
 	char bufOnStack[512];
 	Array<int> arrToFormat = {54, 3, 45, 56, 24};
 	int rawArr[] = {6, 3, 8, 3};
-	ArrayRange<char> buf = bufOnStack;
+	Span<char> buf = bufOnStack;
 	buf << "Мы пишем в сишный массив, как в поток." << '\r' << '\n' <<
 		"Парсим pi и прибавляем к нему 1: " <<
 		1.0f+Algo::Parse<float>("3.1415926") << "\r\n" <<

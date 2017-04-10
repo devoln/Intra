@@ -123,17 +123,17 @@ Sound Sound::FromSource(ASoundSource* src)
 	if(SoundAPI::InternalBufferType==ValueType::Short &&
 		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
-		ArrayRange<short> dst = ArrayRange<short>(lockedData, info.SampleCount*src->ChannelCount());
+		Span<short> dst = Span<short>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	else if(SoundAPI::InternalBufferType==ValueType::Float &&
 		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
-		ArrayRange<float> dst = ArrayRange<float>(lockedData, info.SampleCount*src->ChannelCount());
+		Span<float> dst = Span<float>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
 	//else if(SoundAPI::InternalBufferType==ValueType::Float && !SoundAPI::InternalChannelsInterleaved)
-		//src->GetUninterleavedSamples(ArrayRange<float>(lockedData, result.SampleCount*src->ChannelCount()));
+		//src->GetUninterleavedSamples(Span<float>(lockedData, result.SampleCount*src->ChannelCount()));
 	result.Unlock();
 	return result;
 }
@@ -202,16 +202,16 @@ size_t StreamingLoadCallback(void** dstSamples, uint channels,
 	{
 		if(type==ValueType::Float)
 		{
-			ArrayRange<float> ranges[16];
+			Span<float> ranges[16];
 			for(ushort c=0; c<channels; c++)
-				ranges[c] = ArrayRange<float>(static_cast<float*>(dstSamples[c]), sampleCount);
+				ranges[c] = Span<float>(static_cast<float*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});
 		}
 		if(type==ValueType::Short)
 		{
-			/*ArrayRange<short> ranges[16];
+			/*Span<short> ranges[16];
 			for(ushort c=0; c<channels; c++)
-				ranges[c] = ArrayRange<short>(static_cast<short*>(dstSamples[c]), sampleCount);
+				ranges[c] = Span<short>(static_cast<short*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});*/
 		}
 	}

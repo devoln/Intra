@@ -3,7 +3,7 @@
 
 namespace Intra { namespace Algo {
 
-template<> float Minimum(ArrayRange<const float> arr)
+template<> float Minimum(CSpan<float> arr)
 {
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
@@ -30,7 +30,7 @@ template<> float Minimum(ArrayRange<const float> arr)
 	return result;
 }
 
-template<> float Maximum(ArrayRange<const float> arr)
+template<> float Maximum(CSpan<float> arr)
 {
 	if(arr==null) return Math::NaN;
 	auto ptr = arr.Begin;
@@ -57,7 +57,7 @@ template<> float Maximum(ArrayRange<const float> arr)
 	return result;
 }
 
-template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maximum)
+template<> void MiniMax(CSpan<float> arr, float* minimum, float* maximum)
 {
 	if(minimum==null)
 	{

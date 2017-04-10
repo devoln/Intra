@@ -4,7 +4,7 @@
 #include "Platform/CppFeatures.h"
 #include "Meta/Type.h"
 #include "Range/ForwardDecls.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Comparison/Equals.h"
 #include "Algo/Comparison/LexCompare.h"
 #include "Algo/String/CStr.h"
@@ -159,7 +159,7 @@ template<typename Char> struct GenericStringView
 
 	forceinline constexpr GenericStringView TakeNone() const {return {mStart, mStart};}
 
-	forceinline constexpr ArrayRange<const Char> AsRange() const {return {mStart, mEnd};}
+	forceinline constexpr CSpan<Char> AsRange() const {return {mStart, mEnd};}
 
 
 	forceinline GenericStringView Drop(size_t count=1) const

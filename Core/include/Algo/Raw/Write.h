@@ -12,7 +12,7 @@ template<typename OR> forceinline Meta::EnableIf<
 size_t> CopyToRawAdvance(const void* src, OR& dst, size_t n)
 {
 	typedef ValueTypeOf<OR> T;
-	return CopyToAdvance(ArrayRange<const T>(reinterpret_cast<const T*>(src), n), dst);
+	return CopyToAdvance(CSpan<T>(reinterpret_cast<const T*>(src), n), dst);
 }
 
 template<typename OR> forceinline Meta::EnableIf<
@@ -25,7 +25,7 @@ size_t> CopyToRaw(const void* src, OR&& dst, size_t n)
 
 template<typename OR, typename T> Meta::EnableIf<
 	IsOutputRange<OR>::_ && !Meta::IsConst<T>::_,
-size_t> CopyToRawAdvance(ArrayRange<const T> src, OR& dst)
+size_t> CopyToRawAdvance(CSpan<T> src, OR& dst)
 {
 	size_t srcLen = src.Length()*sizeof(T)/sizeof(dst.First());
 	return CopyToRawAdvance(src.Data(), dst, srcLen);
@@ -33,7 +33,7 @@ size_t> CopyToRawAdvance(ArrayRange<const T> src, OR& dst)
 
 template<typename R, typename T> Meta::EnableIf<
 	IsOutputRange<R>::_ && !Meta::IsConst<T>::_,
-size_t> CopyToRawAdvance(ArrayRange<T> src, R& dst, size_t n)
+size_t> CopyToRawAdvance(Span<T> src, R& dst, size_t n)
 {
 	size_t srcLen = src.Length()*sizeof(T)/sizeof(dst.First());
 	if(n>srcLen) n = srcLen;

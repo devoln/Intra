@@ -1,12 +1,12 @@
 ﻿#include "Algo/Mutation/Transform.h"
 #include "Platform/Debug.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Simd.h"
 #include "Algo/Op.h"
 
 namespace Intra { namespace Algo {
 
-size_t AddAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2)
+size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 {
 	const size_t len = Op::Min(dstOp1.Length(), op2.Length());
 	dstOp1 = dstOp1.Take(len);
@@ -36,7 +36,7 @@ size_t AddAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2)
 	return len;
 }
 
-size_t MultiplyAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2)
+size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 {
 	const size_t len = Op::Min(dstOp1.Length(), op2.Length());
 	dstOp1 = dstOp1.Take(len);
@@ -65,7 +65,7 @@ size_t MultiplyAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2)
 	return len;
 }
 
-size_t MultiplyAdvance(ArrayRange<float>& dstOp1, float multiplyer)
+size_t MultiplyAdvance(Span<float>& dstOp1, float multiplyer)
 {
 	const size_t len = dstOp1.Length();
 	auto& dst = dstOp1.Begin;
@@ -91,7 +91,7 @@ size_t MultiplyAdvance(ArrayRange<float>& dstOp1, float multiplyer)
 	return len;
 }
 
-size_t MultiplyAdvance(ArrayRange<float>& dest, ArrayRange<const float>& op1, float multiplyer)
+size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 {
 	const size_t len = Op::Min(dest.Length(), op1.Length());
 	dest = dest.Take(len);
@@ -121,7 +121,7 @@ size_t MultiplyAdvance(ArrayRange<float>& dest, ArrayRange<const float>& op1, fl
 }
 
 
-size_t MulAddAdvance(ArrayRange<float>& dstOp1, float mul, float add)
+size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 {
 	const size_t len = dstOp1.Length();
 	auto& dst = dstOp1.Begin;

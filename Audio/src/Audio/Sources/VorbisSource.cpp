@@ -95,7 +95,7 @@ struct VorbisSource::Decoder
 
 
 
-VorbisSource::VorbisSource(ArrayRange<const byte> srcFileData): data(srcFileData)
+VorbisSource::VorbisSource(CSpan<byte> srcFileData): data(srcFileData)
 {
 	decoder = new Decoder;
 	decoder->stream.StartStream = srcFileData.Reinterpret<char>();
@@ -121,7 +121,7 @@ VorbisSource::~VorbisSource()
 size_t VorbisSource::SampleCount() const {return size_t(ov_pcm_total(&decoder->file, -1));}
 size_t VorbisSource::CurrentSamplePosition() const {return decoder->current_position;}
 
-size_t VorbisSource::GetInterleavedSamples(ArrayRange<short> outShorts)
+size_t VorbisSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	size_t totalSamplesRead=0;
 	while(!outShorts.Empty())
@@ -142,7 +142,7 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 	return totalSamplesRead;
 }
 
-size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
+size_t VorbisSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	size_t totalSamplesRead = 0;
 	while(!outFloats.Empty())
@@ -154,21 +154,21 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 		size_t samplesRead = size_t(bytesRead)/sizeof(float);
 		decoder->current_position += samplesRead;
 		totalSamplesRead += samplesRead;
-		ArrayRange<const float> inputChannels[8];
+		CSpan<float> inputChannels[8];
 		for(size_t i=0; i<channelCount; i++)
-			inputChannels[i] = ArrayRange<const float>(pcm[i], samplesRead);
-		Algo::Interleave(outFloats.Take(samplesRead), ArrayRange<const ArrayRange<const float>>(inputChannels, channelCount));
+			inputChannels[i] = CSpan<float>(pcm[i], samplesRead);
+		Algo::Interleave(outFloats.Take(samplesRead), CSpan<CSpan<float>>(inputChannels, channelCount));
 		outFloats.PopFirstExactly(samplesRead);
 	}
 	return totalSamplesRead;
 }
 
-size_t VorbisSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
+size_t VorbisSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 {
 	if(outFloats.Empty()) return 0;
 	INTRA_DEBUG_ASSERT(outFloats.Length()<=channelCount);
 	size_t totalSamplesRead = 0;
-	ArrayRange<float> outFloats1[8];
+	Span<float> outFloats1[8];
 	for(size_t i=0; i<outFloats.Length(); i++) outFloats1[i] = outFloats[i];
 	while(!outFloats1[0].Empty())
 	{
@@ -180,7 +180,7 @@ size_t VorbisSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>>
 		totalSamplesRead += samplesRead;
 		for(size_t i=0; i<outFloats.Length(); i++)
 		{
-			ArrayRange<const float>(pcm[i], samplesRead).CopyToAdvance(outFloats1[i]);
+			CSpan<float>(pcm[i], samplesRead).CopyToAdvance(outFloats1[i]);
 		}
 	}
 	return totalSamplesRead;
@@ -197,7 +197,7 @@ Array<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
 
 #elif(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
 
-VorbisSource::VorbisSource(ArrayRange<const byte> srcFileData): data(srcFileData)
+VorbisSource::VorbisSource(CSpan<byte> srcFileData): data(srcFileData)
 {
 	decoder = reinterpret_cast<DecoderHandle>(stb_vorbis_open_memory(
 		reinterpret_cast<byte*>(srcFileData.Begin), uint(srcFileData.Count()), null, null));
@@ -221,7 +221,7 @@ size_t VorbisSource::CurrentSamplePosition() const
 	return stb_vorbis_get_sample_offset(reinterpret_cast<stb_vorbis*>(decoder));
 }
 
-size_t VorbisSource::GetInterleavedSamples(ArrayRange<short> outShorts)
+size_t VorbisSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	const auto dec = reinterpret_cast<stb_vorbis*>(decoder);
 	size_t samplesRead = stb_vorbis_get_samples_short_interleaved(dec, channelCount, outShorts.Begin, int(outShorts.Count()));
@@ -229,7 +229,7 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<short> outShorts)
 	return samplesRead;
 }
 
-size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
+size_t VorbisSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	const auto dec = reinterpret_cast<stb_vorbis*>(decoder);
 	size_t shortsRead = channelCount*stb_vorbis_get_samples_float_interleaved(
@@ -238,7 +238,7 @@ size_t VorbisSource::GetInterleavedSamples(ArrayRange<float> outFloats)
 	return shortsRead/channelCount;
 }
 
-size_t VorbisSource::GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats)
+size_t VorbisSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 {
 	INTRA_DEBUG_ASSERT(outFloats.Length()==channelCount);
 	const auto dec = reinterpret_cast<stb_vorbis*>(decoder);

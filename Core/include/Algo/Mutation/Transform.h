@@ -3,7 +3,7 @@
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
 #include "Range/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/AsRange.h"
 
 namespace Intra { namespace Algo {
@@ -149,25 +149,25 @@ template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
 
 //! Складывать соотвествующие элементы диапазонов до тех пор, пока один из диапазонов не окажется пустым.
 //! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
-size_t AddAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2);
-size_t MultiplyAdvance(ArrayRange<float>& dstOp1, ArrayRange<const float>& op2);
-size_t MultiplyAdvance(ArrayRange<float>& dstOp1, float multiplyer);
-size_t MultiplyAdvance(ArrayRange<float>& dst, ArrayRange<const float>& op1, float multiplyer);
-size_t MulAddAdvance(ArrayRange<float>& dstOp1, float mul, float add);
+size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2);
+size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2);
+size_t MultiplyAdvance(Span<float>& dstOp1, float multiplyer);
+size_t MultiplyAdvance(Span<float>& dst, CSpan<float>& op1, float multiplyer);
+size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add);
 
 //! Складывать соответствующие элементы диапазонов.
 //! Если один из диапазонов короче другого, будет обработано столько элементов, какова минимальная длина.
 //! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
-forceinline size_t Add(ArrayRange<float> dstOp1, ArrayRange<const float> op2) {return AddAdvance(dstOp1, op2);}
-forceinline size_t Multiply(ArrayRange<float> dstOp1, ArrayRange<const float> op2) {return MultiplyAdvance(dstOp1, op2);}
-forceinline size_t Multiply(ArrayRange<float> dstOp1, float multiplyer) {return MultiplyAdvance(dstOp1, multiplyer);}
-forceinline size_t Multiply(ArrayRange<float> dst, ArrayRange<const float> op1, float multiplyer) {return MultiplyAdvance(dst, op1, multiplyer);}
-forceinline size_t MulAdd(ArrayRange<float> dstOp1, float mul, float add) {return MulAddAdvance(dstOp1, mul, add);}
+forceinline size_t Add(Span<float> dstOp1, CSpan<float> op2) {return AddAdvance(dstOp1, op2);}
+forceinline size_t Multiply(Span<float> dstOp1, CSpan<float> op2) {return MultiplyAdvance(dstOp1, op2);}
+forceinline size_t Multiply(Span<float> dstOp1, float multiplyer) {return MultiplyAdvance(dstOp1, multiplyer);}
+forceinline size_t Multiply(Span<float> dst, CSpan<float> op1, float multiplyer) {return MultiplyAdvance(dst, op1, multiplyer);}
+forceinline size_t MulAdd(Span<float> dstOp1, float mul, float add) {return MulAddAdvance(dstOp1, mul, add);}
 
 
 template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_ && !Meta::IsConst<R>::_
-> AddAdvance(ArrayRange<float>& dstOp1, R&& op2)
+> AddAdvance(Span<float>& dstOp1, R&& op2)
 {
 	while(!dstOp1.Empty())
 	{
@@ -178,7 +178,7 @@ template<typename R> Meta::EnableIf<
 
 template<typename R> Meta::EnableIf<
 	IsInputRange<R>::_
-> Add(ArrayRange<float> dstOp1, const R& op2)
+> Add(Span<float> dstOp1, const R& op2)
 {return AddAdvance(dstOp1, R(op2));}
 
 INTRA_WARNING_POP

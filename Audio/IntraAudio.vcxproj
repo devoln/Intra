@@ -742,7 +742,7 @@
     <ClInclude Include="include\Audio\Synth\Modifiers\AddPulsator.h" />
     <ClInclude Include="include\Audio\Synth\Modifiers\RelPulsator.h" />
     <ClInclude Include="include\Audio\Synth\PeriodicSynth.h" />
-    <ClInclude Include="include\Audio\Synth\PostEffects.h" />
+    <ClInclude Include="include\Audio\Synth\PostEffects.hh" />
     <ClInclude Include="include\Audio\Synth\PostEffects\Chorus.h" />
     <ClInclude Include="include\Audio\Synth\SawtoothSynth.h" />
     <ClInclude Include="include\Audio\Synth\SineExpSynth.h" />

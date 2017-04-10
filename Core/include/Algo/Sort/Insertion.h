@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Platform/CppWarnings.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"

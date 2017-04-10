@@ -105,7 +105,7 @@ public:
 	void Add(const void* value, size_t bytes)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(value), bytes));
+		data.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(value), bytes));
 	}
 
 	void* AddData(size_t bytes)
@@ -121,16 +121,16 @@ public:
 	template<typename T> void Add(const T& value)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(&value), sizeof(T)));
+		data.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), sizeof(T)));
 	}
 
 	void Add(const Variable& value, ValueType type)
 	{
 		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(ArrayRange<const byte>(reinterpret_cast<const byte*>(&value), type.Size()));
+		data.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), type.Size()));
 	}
 
-	template<typename T> void Set(size_t index, ArrayRange<const T> arr, size_t first=0)
+	template<typename T> void Set(size_t index, CSpan<T> arr, size_t first=0)
 	{Set(index, arr.Data(), first*sizeof(T), arr.Length()*sizeof(T));}
 
 	void ReserveBytes(size_t bytes) {data.Reserve(bytes);}

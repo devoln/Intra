@@ -170,9 +170,6 @@
     <ClInclude Include="include\Audio\Synth\PeriodicSynth.h">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
-    <ClInclude Include="include\Audio\Synth\PostEffects.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
     <ClInclude Include="include\Audio\Synth\SawtoothSynth.h">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
@@ -262,6 +259,9 @@
     </ClInclude>
     <ClInclude Include="include\Audio\MusicNote.h">
       <Filter>Заголовочные файлы\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Audio\Synth\PostEffects.hh">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

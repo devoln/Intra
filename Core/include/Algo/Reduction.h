@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppWarnings.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Range/Concepts.h"
 #include "Range/AsRange.h"
 
@@ -11,7 +11,7 @@ using namespace Range::Concepts;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename T> T Minimum(ArrayRange<const T> arr)
+template<typename T> T Minimum(CSpan<T> arr)
 {
 	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
@@ -24,7 +24,7 @@ template<typename T> T Minimum(ArrayRange<const T> arr)
 	return result;
 }
 
-template<typename T> T Maximum(ArrayRange<const T> arr)
+template<typename T> T Maximum(CSpan<T> arr)
 {
 	INTRA_DEBUG_ASSERT(!arr.Empty());
 	T result = arr.First();
@@ -37,7 +37,7 @@ template<typename T> T Maximum(ArrayRange<const T> arr)
 	return result;
 }
 
-template<typename T> void MiniMax(ArrayRange<const T> arr, T* oMinimum, T* oMaximum)
+template<typename T> void MiniMax(CSpan<T> arr, T* oMinimum, T* oMaximum)
 {
 	if(oMinimum==null)
 	{
@@ -63,9 +63,9 @@ template<typename T> void MiniMax(ArrayRange<const T> arr, T* oMinimum, T* oMaxi
 }
 
 //Оптимизированные специализации
-template<> float Minimum(ArrayRange<const float> arr);
-template<> float Maximum(ArrayRange<const float> arr);
-template<> void MiniMax(ArrayRange<const float> arr, float* minimum, float* maximum);
+template<> float Minimum(CSpan<float> arr);
+template<> float Maximum(CSpan<float> arr);
+template<> void MiniMax(CSpan<float> arr, float* minimum, float* maximum);
 
 
 template<typename R, typename F, typename S> Meta::EnableIf<

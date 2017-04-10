@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/PlatformInfo.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Container/Sequential/Array.h"
 #include "Audio/AudioSource.h"
 
@@ -28,10 +28,10 @@ class VorbisSource: public ASoundSource
 {
 	struct Decoder;
 	typedef Decoder* DecoderHandle;
-	ArrayRange<const byte> data;
+	CSpan<byte> data;
 	DecoderHandle decoder;
 public:
-	VorbisSource(ArrayRange<const byte> srcFileData);
+	VorbisSource(CSpan<byte> srcFileData);
 	~VorbisSource();
 
 	VorbisSource& operator=(const VorbisSource&) = delete;
@@ -39,9 +39,9 @@ public:
 	size_t SampleCount() const override;
 	size_t CurrentSamplePosition() const override;
 
-	size_t GetInterleavedSamples(ArrayRange<short> outShorts) override;
-	size_t GetInterleavedSamples(ArrayRange<float> outFloats) override;
-	size_t GetUninterleavedSamples(ArrayRange<const ArrayRange<float>> outFloats) override;
+	size_t GetInterleavedSamples(Span<short> outShorts) override;
+	size_t GetInterleavedSamples(Span<float> outFloats) override;
+	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
 	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* outType, bool* outInterleaved, size_t* outSamplesRead) override;
 };

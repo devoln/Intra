@@ -57,7 +57,7 @@ struct CompositeFormattedWriterOut
 
 	void Put(char c) {for(auto& stream: Attached) stream.Put(c);}
 
-	size_t CopyAdvanceFromAdvance(ArrayRange<const char>& src)
+	size_t CopyAdvanceFromAdvance(CSpan<char>& src)
 	{
 		size_t maxElementsCopied = 0;
 		for(auto& stream: Attached)

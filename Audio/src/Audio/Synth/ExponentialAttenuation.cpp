@@ -1,12 +1,12 @@
 ﻿#include "Audio/Synth/ExponentialAttenuation.h"
 #include "Math/Simd.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 #define OPTIMIZE
 
 namespace Intra { namespace Audio { namespace Synth {
 
-void ExponentialAttenuate(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek)
+void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek)
 {
 	float* const dstEnd = dst.Take(src.Length()).End;
 #ifndef OPTIMIZE
@@ -62,7 +62,7 @@ void ExponentialAttenuate(ArrayRange<float>& dst, ArrayRange<const float> src, f
 	while(dst.Begin<dstEnd) *dst.Begin++ = *src.Begin++ * exp, exp*=ek;
 }
 
-void ExponentialAttenuateAdd(ArrayRange<float>& dst, ArrayRange<const float> src, float& exp, float ek)
+void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek)
 {
 	const float* const dstEnd = dst.Take(src.Length()).End;
 
@@ -160,7 +160,7 @@ static void exponent_attenuation_inplace(float*& ptr, float* end, float& exp, fl
 #endif
 
 void ExponentialAttenuationPassFunction(const float& coeff,
-	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
+	float noteDuration, Span<float> inOutSamples, uint sampleRate)
 {
 	(void)noteDuration;
 	const float ek = Math::Exp(-coeff/float(sampleRate));

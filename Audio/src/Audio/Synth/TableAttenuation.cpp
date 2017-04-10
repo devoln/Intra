@@ -1,5 +1,5 @@
 ﻿#include "Audio/Synth/TableAttenuation.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Mutation/Copy.h"
 #include "Range/Decorators/Take.h"
 
@@ -12,7 +12,7 @@ struct TableAttenuatorParams
 };
 
 static void TableAttenuationPassFunction(const TableAttenuatorParams& table,
-	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
+	float noteDuration, Span<float> inOutSamples, uint sampleRate)
 {
 	INTRA_DEBUG_ASSERT(table.Len>=2);
 	const size_t samplesPerValue = inOutSamples.Length()/size_t(table.Len-1);
@@ -37,7 +37,7 @@ static void TableAttenuationPassFunction(const TableAttenuatorParams& table,
 	(void)sampleRate; (void)noteDuration;
 }
 
-AttenuationPass CreateTableAttenuationPass(ArrayRange<const norm8> table)
+AttenuationPass CreateTableAttenuationPass(CSpan<norm8> table)
 {
 	TableAttenuatorParams params;
 	params.Len = byte(table.Length());

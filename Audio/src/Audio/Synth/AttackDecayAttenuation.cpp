@@ -1,7 +1,7 @@
 ﻿#include "Audio/Synth/AttackDecayAttenuation.h"
 #include "Math/Math.h"
 #include "Math/Simd.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 #define OPTIMIZE
 
@@ -9,7 +9,7 @@
 namespace Intra { namespace Audio { namespace Synth {
 
 static void AttackDecayPassFunction(const AttackDecayParams& params,
-	float noteDuration, ArrayRange<float> inOutSamples, uint sampleRate)
+	float noteDuration, Span<float> inOutSamples, uint sampleRate)
 {
 	const double halfAttackTime = Math::Min(noteDuration*0.5, params.AttackTime)*0.5;
 	const double halfDecayTime = Math::Min(noteDuration*0.5, params.DecayTime)*0.5;

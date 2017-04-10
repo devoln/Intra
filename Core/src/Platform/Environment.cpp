@@ -15,7 +15,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra {
 
-ArrayRange<const StringView> GetCommandLineArguments()
+CSpan<StringView> GetCommandLineArguments()
 {
 	StringView result[] = {"program"};
 	return result;
@@ -44,7 +44,7 @@ ArrayRange<const StringView> GetCommandLineArguments()
 
 namespace Intra {
 
-ArrayRange<const StringView> GetCommandLineArguments()
+CSpan<StringView> GetCommandLineArguments()
 {
 	auto cmd = GetCommandLineW();
 	int argc = 0;
@@ -67,7 +67,7 @@ ArrayRange<const StringView> GetCommandLineArguments()
 
 namespace Intra {
 
-ArrayRange<const StringView> GetCommandLineArguments()
+CSpan<StringView> GetCommandLineArguments()
 {
 	static const StringView args[] = {{"program"}};
 	return args;
@@ -78,7 +78,7 @@ ArrayRange<const StringView> GetCommandLineArguments()
 #elif(defined(INTRA_PLATFORM_IS_UNIX))
 namespace Intra {
 
-ArrayRange<const StringView> GetCommandLineArguments()
+CSpan<StringView> GetCommandLineArguments()
 {
 	static const String cmdline = IO::OsFile::ReadAsString(
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)

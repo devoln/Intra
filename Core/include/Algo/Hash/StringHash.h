@@ -51,7 +51,7 @@ template<int len> constexpr inline StringHash::StringHash(const char(&str)[len])
 inline StringHash::StringHash(StringView sv): hash(Hash::Murmur3_32(sv, 0))
 {
 #ifdef _DEBUG
-	ArrayRange<char> dst = strEnd;
+	Span<char> dst = strEnd;
 	Algo::CopyToAdvance(sv.Tail(dst.Length()), dst);
 	Algo::FillZeros(dst);
 #endif

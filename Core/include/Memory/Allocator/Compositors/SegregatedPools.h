@@ -2,6 +2,7 @@
 
 #include "Memory/Allocator/Basic/Pool.h"
 #include "Memory/Allocator/System.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Memory {
 
@@ -22,7 +23,7 @@ template<size_t N> struct LogSizes
 template<typename FA, typename Traits = LogSizes<7>>
 struct ASegregatedPools: FA
 {
-	ASegregatedPools(FA&& fallback, ArrayRange<APool> pools): FA(Meta::Move(fallback))
+	ASegregatedPools(FA&& fallback, Span<APool> pools): FA(Meta::Move(fallback))
 	{
 		mAlignment = FA::GetAlignment();
 		for(auto& allocator: mPools)

@@ -45,7 +45,7 @@ template<typename Char> void GenerateRandomValue(GenericString<Char>& dst)
 		dst[i] = char('A'+Math::Random<uint>::Global(26));
 }
 
-template<typename T> ArrayRange<const T> GetRandomValueArray(size_t size)
+template<typename T> CSpan<T> GetRandomValueArray(size_t size)
 {
 	static Array<T> arr;
 	size_t oldSize = arr.Count();

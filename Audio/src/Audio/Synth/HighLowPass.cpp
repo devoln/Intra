@@ -1,6 +1,6 @@
 ﻿#include "Audio/Synth/HighLowPass.h"
 #include "Platform/CppWarnings.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Audio { namespace Synth {
@@ -18,7 +18,7 @@ struct HighLowPassParams
 };
 
 static void HighLowPassFunction(const HighLowPassParams& params,
-	ArrayRange<float> inOutSamples, uint sampleRate)
+	Span<float> inOutSamples, uint sampleRate)
 {
 	float c = Math::Tan(float(Math::PI)*params.CutoffFreq/float(sampleRate));
 	if(!params.HighPass) c = 1/c;

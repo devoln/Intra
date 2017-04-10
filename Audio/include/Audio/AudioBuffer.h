@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppWarnings.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Math/Vector.h"
 #include "Container/Sequential/Array.h"
 #include "Audio/SoundTypes.h"
@@ -13,14 +13,14 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 struct AudioBuffer
 {
 	AudioBuffer(null_t=null): SampleRate(0), Samples(null) {}
-	AudioBuffer(size_t sampleCount, uint sampleRate=44100, ArrayRange<const float> initData=null);
+	AudioBuffer(size_t sampleCount, uint sampleRate=44100, CSpan<float> initData=null);
 
 	double Duration() const {return SampleRate==0? 0: double(Samples.Count())/double(SampleRate);}
 	uint TimeToSamples(double time) const {return uint(time*SampleRate);}
 	double SamplesToTime(size_t samples) const {return double(samples)/double(SampleRate);}
 
-	void ConvertToShorts(size_t first, ArrayRange<short> outSamples) const;
-	void CastToShorts(size_t first, ArrayRange<short> outSamples) const;
+	void ConvertToShorts(size_t first, Span<short> outSamples) const;
+	void CastToShorts(size_t first, Span<short> outSamples) const;
 	void ShiftSamples(intptr samplesToShift);
 	void Clear(size_t startSample=0, size_t sampleCount=Meta::NumericLimits<size_t>::Max());
 

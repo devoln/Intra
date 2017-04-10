@@ -1,10 +1,10 @@
 #include "Memory/Allocator/Basic/Pool.h"
 #include "Memory/Align.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Memory {
 
-void FreeList::InitBuffer(ArrayRange<byte> buf, size_t elementSize, size_t alignment)
+void FreeList::InitBuffer(Span<byte> buf, size_t elementSize, size_t alignment)
 {
 	if(elementSize<sizeof(FreeList*))
 		elementSize = sizeof(FreeList*);

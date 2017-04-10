@@ -4,7 +4,7 @@
 #include "Algo/Sort/Insertion.h"
 #include "Algo/Sort/Heap.h"
 #include "Range/Concepts.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Meta/Pair.h"
 
 namespace Intra { namespace Algo {
@@ -58,7 +58,7 @@ template<typename T, typename C> void median(T* first, T* mid, T* last, C compar
 	med3(first+step, mid, last-step, comparer);
 }
 
-template<typename T, typename C> Pair<T*, T*> unguarded_partition(ArrayRange<T> range, C comparer)
+template<typename T, typename C> Pair<T*, T*> unguarded_partition(Span<T> range, C comparer)
 {
 	// partition [_First, _Last), using _Pred
 	T* mid = range.Data()+range.Length()/2;
@@ -114,7 +114,7 @@ template<typename T, typename C> Pair<T*, T*> unguarded_partition(ArrayRange<T> 
 	}
 }
 
-template<typename T, typename C> void sort_pass(ArrayRange<T> range,
+template<typename T, typename C> void sort_pass(Span<T> range,
 	intptr ideal, C comparer, size_t insertionSortThreshold=32)
 {
 	size_t count;
@@ -129,13 +129,13 @@ template<typename T, typename C> void sort_pass(ArrayRange<T> range,
 		if(mid.first-range.Begin < range.End-mid.second)
 		{
 			// loop on second Half
-			sort_pass(ArrayRange<T>(range.Begin, mid.first), ideal, comparer);
+			sort_pass(Span<T>(range.Begin, mid.first), ideal, comparer);
 			range.Begin = mid.second;
 			continue;
 		}
 
 		// loop on first Half
-		sort_pass(ArrayRange<T>(mid.second, range.End), ideal, comparer);
+		sort_pass(Span<T>(mid.second, range.End), ideal, comparer);
 		range.End = mid.first;
 	}
 	count = range.Length();
@@ -157,7 +157,7 @@ template<typename C, typename R, typename AsR> Meta::EnableIf<
 > QuickSort(R&& range, C comparer)
 {
 	auto rangeCopy = Range::Forward<R>(range);
-	ArrayRange<ValueTypeOf<AsR>> arr(rangeCopy.Data(), rangeCopy.Length());
+	Span<ValueTypeOf<AsR>> arr(rangeCopy.Data(), rangeCopy.Length());
 	D::sort_pass(arr, intptr(rangeCopy.Length()), comparer);
 }
 

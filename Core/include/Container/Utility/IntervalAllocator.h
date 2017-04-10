@@ -46,7 +46,7 @@ public:
 	size_t Count() const {return ranges.Count();}
 	T UsedLength() const {return used_length;}
 	T CompactLength() const {return compact_length;}
-	ArrayRange<const Interval> GetRanges() const {return ranges;}
+	CSpan<Interval> GetRanges() const {return ranges;}
 
 	Array<Interval> Compactify()
 	{

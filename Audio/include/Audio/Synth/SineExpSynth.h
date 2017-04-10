@@ -15,8 +15,8 @@ struct SineExpHarmonic
 };
 
 void FastSineExp(float volume, float coeff, float freq,
-	uint sampleRate, ArrayRange<float> inOutSamples, bool add);
+	uint sampleRate, Span<float> inOutSamples, bool add);
 
-SynthPass CreateSineExpSynthPass(ArrayRange<const SineExpHarmonic> harmonics);
+SynthPass CreateSineExpSynthPass(CSpan<SineExpHarmonic> harmonics);
 
 }}}

@@ -6,7 +6,7 @@
 
 namespace Intra {
 
-namespace Range {template<typename T> struct ArrayRange;}
+namespace Range {template<typename T> struct Span;}
 
 namespace Algo {
 

@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 
 namespace Intra { namespace Range {
 
 //!  ласс, ориентированный на использование в качестве выходного диапазона или потока.
-//! ¬ отличие от ArrayRange запоминает первоначальную позицию,
+//! ¬ отличие от Span запоминает первоначальную позицию,
 //! что позвол€ет запросить диапазон всех записанных элементов.
 template<typename T> class OutputArrayRange
 {
 	T* mBegin;
-	ArrayRange<T> mRight;
+	Span<T> mRight;
 public:
 	OutputArrayRange(null_t=null): mBegin(null), mRight(null) {}
 
@@ -27,7 +27,7 @@ public:
 	void Reset() {mRight.Begin = mBegin;}
 
 	//! ѕолучить диапазон всех записанных данных.
-	ArrayRange<T> GetWrittenData() const {return {mBegin, mRight.Begin};}
+	Span<T> GetWrittenData() const {return {mBegin, mRight.Begin};}
 
 	//! ¬озвращает количество записанных элементов.
 	size_t ElementsWritten() const {return size_t(mRight.Begin-mBegin);}

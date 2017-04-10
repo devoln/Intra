@@ -1,7 +1,7 @@
 ﻿#include "Audio/AudioBuffer.h"
 #include "Algo/Reduction.h"
 #include "Algo/Mutation/Cast.h"
-#include "Range/Generators/ArrayRange.h"
+#include "Range/Generators/Span.h"
 #include "Algo/Mutation/Fill.h"
 #include "Algo/Mutation/Transform.h"
 
@@ -12,7 +12,7 @@ using namespace Algo;
 using namespace Range;
 
 AudioBuffer::AudioBuffer(size_t sampleCount,
-	uint sampleRate, ArrayRange<const float> initData):
+	uint sampleRate, CSpan<float> initData):
 	SampleRate(sampleRate), Samples()
 {
 	if(!initData.Empty()) Samples.AddLastRange(initData);
@@ -29,13 +29,13 @@ void AudioBuffer::CopyFrom(size_t startSample,
 	CopyTo(Drop(src->Samples, srcStartSample), sampleCount, Drop(Samples, startSample));
 }
 
-void AudioBuffer::ConvertToShorts(size_t first, ArrayRange<short> outSamples) const
+void AudioBuffer::ConvertToShorts(size_t first, Span<short> outSamples) const
 {
 	const auto numSamples = Min(outSamples.Length(), Samples.Count()-first);
 	CastFromNormalized(outSamples.Take(numSamples), Drop(Samples, first).Take(numSamples));
 }
 
-void AudioBuffer::CastToShorts(size_t first, ArrayRange<short> outSamples) const
+void AudioBuffer::CastToShorts(size_t first, Span<short> outSamples) const
 {
 	CastToAdvance(Drop(Samples, first).Take(outSamples.Length()), outSamples);
 	FillZeros(outSamples);
