@@ -35,14 +35,14 @@ static ImageInfo GetInfoFromHeader(const byte* header)
 ImageInfo LoaderTGA::GetInfo(InputStream stream) const
 {
 	byte header[18];
-	stream.ReadRawTo(header);
+	stream.ReadRawTo(header, 18);
 	return GetInfoFromHeader(header);
 }
 
 AnyImage LoaderTGA::Load(InputStream stream) const
 {
 	byte header[18];
-	stream.ReadRawTo(header);
+	stream.ReadRawTo(header, 18);
 
 	const bool compressedRLE = (header[2]==10);
 

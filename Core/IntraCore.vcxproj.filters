@@ -1176,5 +1176,8 @@
     <Natvis Include="natvis\Utils.natvis">
       <Filter>natvis</Filter>
     </Natvis>
+    <Natvis Include="natvis\Endianess.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

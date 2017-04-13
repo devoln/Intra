@@ -49,7 +49,7 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 ImageInfo LoaderKTX::GetInfo(InputStream stream) const
 {
 	byte headerSignature[16];
-	stream.ReadRawTo(headerSignature);
+	stream.ReadRawTo(headerSignature, 16);
 	if(!IsValidHeader(headerSignature, 16)) return ImageInfo();
 	return GetImageInfoFromHeader(stream.ReadRaw<KtxHeader>());
 }

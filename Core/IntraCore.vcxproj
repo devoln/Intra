@@ -1007,6 +1007,7 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="natvis\Containers.natvis" />
+    <Natvis Include="natvis\Endianess.natvis" />
     <Natvis Include="natvis\Meta.natvis" />
     <Natvis Include="natvis\Range.natvis">
       <SubType>Designer</SubType>

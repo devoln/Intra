@@ -14,7 +14,7 @@ template<typename T> struct AnotherEndian
 	AnotherEndian() = default;
 	AnotherEndian(T rhs) {operator=(rhs);}
 
-	AnotherEndian& operator=(T rhs) {swap_bytes(bytes, reinterpret_cast<byte*>(&rhs)); return *this;}
+	AnotherEndian& operator=(T rhs) {swap_bytes(mBytes, reinterpret_cast<byte*>(&rhs)); return *this;}
 	AnotherEndian& operator+=(T rhs) {return operator=(*this+rhs);}
 	AnotherEndian& operator-=(T rhs) {return operator=(*this-rhs);}
 	AnotherEndian& operator*=(T rhs) {return operator=(*this*rhs);}
@@ -24,7 +24,7 @@ template<typename T> struct AnotherEndian
 	AnotherEndian& operator|=(T rhs) {return operator=(*this|rhs);}
 	AnotherEndian& operator^=(T rhs) {return operator=(*this^rhs);}
 
-	operator T() const {T result; swap_bytes(reinterpret_cast<byte*>(&result), bytes); return result;}
+	operator T() const {AnotherEndian result; swap_bytes(result.mBytes, mBytes); return result.mValue;}
 	template<typename U> operator U() const {return static_cast<U>(operator T());}
 
 private:
@@ -34,7 +34,11 @@ private:
 			dst[i] = src[sizeof(T)-1-i];
 	}
 
-	byte bytes[sizeof(T)];
+	union
+	{
+		T mValue;
+		byte mBytes[sizeof(T)];
+	};
 };
 
 static_assert(Meta::IsAlmostPod<AnotherEndian<int>>::_, "AnotherEndian must be POD.");

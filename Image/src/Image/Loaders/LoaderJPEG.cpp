@@ -18,7 +18,7 @@ ImageInfo LoaderJPEG::GetInfo(InputStream stream) const
 {
 	ImageInfo result = {{0, 0, 1}, null, ImageType_2D, 0};
 	byte SOI[2];
-	stream.ReadRawTo(SOI);
+	stream.ReadRawTo(SOI, 2);
 	if(!IsValidHeader(SOI, 2)) return result;
 	while(!stream.Empty())
 	{

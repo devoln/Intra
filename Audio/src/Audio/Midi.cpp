@@ -22,12 +22,7 @@ public:
 	Synth::IMusicalInstrument* instruments[128];
 	Synth::IMusicalInstrument* drumsInstrument = null;
 
-	struct MidiHeader
-	{
-		MidiHeader(): type(0), tracks(0), timeFormat(0) {}
-		shortBE type, tracks, timeFormat;
-	};
-	MidiHeader header;
+	short headerType, headerTracks, headerTimeFormat;
 
 	float startTickDuration = 0;
 	float globalTickDuration = 0;
@@ -54,19 +49,21 @@ public:
 			s = null;
 			return;
 		}
-		s.ReadRaw<MidiHeader>(header);
-		if(header.type>2)
+		headerType = s.ReadRaw<shortBE>();
+		headerTracks = s.ReadRaw<shortBE>();
+		headerTimeFormat = s.ReadRaw<shortBE>();
+
+		if(headerType>2)
 		{
 			s = null;
 			return;
 		}
-		const short timeFormat = header.timeFormat;
-		if(timeFormat<0)
+		if(headerTimeFormat<0)
 		{
-			const float framesPerSecond = (timeFormat >> 8)==29? 29.97f: float(timeFormat >> 8);
-			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/float(timeFormat & 0xFF);
+			const float framesPerSecond = (headerTimeFormat >> 8)==29? 29.97f: float(headerTimeFormat >> 8);
+			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/float(headerTimeFormat & 0xFF);
 		}
-		else startTickDuration = globalTickDuration = 60.0f/120/float(timeFormat);
+		else startTickDuration = globalTickDuration = 60.0f/120/float(headerTimeFormat);
 	}
 
 	MidiReader(const MidiReader&) = delete;
@@ -143,9 +140,9 @@ public:
 	{
 		if(startTickDuration==0) return null; //Файл имеет неверный формат или не открыт
 		char chunkType[4];
-		s.ReadRawTo(chunkType);
+		s.ReadRawTo(chunkType, 4);
 		uint size = s.ReadRaw<uintBE>();
-		if(!Algo::Equals(chunkType, "MTrk"))
+		if(!Algo::Equals(StringView::FromBuffer(chunkType), "MTrk"))
 		{
 			s.PopFirstN(size);
 			return null;
@@ -162,10 +159,10 @@ public:
 			events.AddLast(event);
 
 			if(event.status==0xFF && event.data[0]==0x51)
-				if(header.timeFormat>0)
+				if(headerTimeFormat>0)
 			{
 				const int value = (event.metadata[0] << 16)|(event.metadata[1] << 8)|event.metadata[2];
-				tempoChanges.AddLast(TempoChange{timeInTicks, float(value)/1000000.0f/float(header.timeFormat)*speed});
+				tempoChanges.AddLast(TempoChange{timeInTicks, float(value)/1000000.0f/float(headerTimeFormat)*speed});
 			}
 			if(event.status==0x99)
 				trackIsDrum = true;
@@ -341,7 +338,7 @@ Music ReadMidiFile(CSpan<byte> fileData)
 	instruments[127] = &instr.GunShot;
 	reader.drumsInstrument = &instr.Drums;
 #endif
-	for(int i=0; i<reader.header.tracks; i++)
+	for(int i=0; i<reader.headerTracks; i++)
 	{
 		auto track = reader.ReadTrack();
 		if(track.Notes==null) continue;

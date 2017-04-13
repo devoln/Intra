@@ -101,7 +101,7 @@ AnyImage AnyImage::FromStream(ForwardStream stream)
 {
 	auto oldStream = stream;
 	byte header[12];
-	stream.ReadRawTo(header);
+	stream.ReadRawTo(header, 12);
 	stream = Meta::Move(oldStream);
 
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
