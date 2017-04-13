@@ -11,7 +11,7 @@
 #include "Memory.hh"
 #include "Meta.hh"
 #include "Test.hh"
-#include "Thread.hh"
+#include "Async.hh"
 #include "Utils.hh"
 
 #endif

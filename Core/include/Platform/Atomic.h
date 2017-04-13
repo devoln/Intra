@@ -74,7 +74,7 @@ private:
 
 }
 #else
-#include "Thread/Thread.h"
+#include "Thread.h"
 
 namespace Intra {
 

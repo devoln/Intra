@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Range/Special/SparseRange.h"
+#include "SparseRange.h"
 #include "Memory/Memory.h"
 #include "Container/Sequential/Array.h"
 #include "Platform/CppWarnings.h"

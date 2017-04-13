@@ -2,7 +2,6 @@
 
 #include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
-#include "Thread/Thread.h"
 #include "Memory/Allocator/System.h"
 #include "Range/Generators/Span.h"
 #include "Range/Generators/StringView.h"

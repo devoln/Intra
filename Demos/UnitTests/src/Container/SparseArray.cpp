@@ -1,5 +1,5 @@
 #include "SparseArray.h"
-#include "Range/Special/SparseRange.h"
+#include "Container/Utility/SparseRange.h"
 #include "Container/Utility/SparseArray.h"
 #include "Utils/Finally.h"
 

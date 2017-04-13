@@ -5,7 +5,7 @@
 #include "Platform/CppFeatures.h"
 #include "Platform/CppWarnings.h"
 
-#include "Thread/Atomic.h"
+#include "Platform/Atomic.h"
 
 namespace Intra { namespace Memory {
 

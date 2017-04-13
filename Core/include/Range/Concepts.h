@@ -64,12 +64,19 @@ template<typename R, bool=IsArrayClass<R>::_> struct ValueTypeOfArray
 template<typename R> struct ValueTypeOfArray<R, false>
 {typedef void _;};
 
+template<typename R, bool=IsArrayClass<R>::_> struct ReturnValueTypeOfArray
+{typedef decltype(*Meta::Val<R>().Data()) _;};
+
+template<typename R> struct ReturnValueTypeOfArray<R, false>
+{typedef void _;};
+
 }
 
 template<typename R> using ReturnValueTypeOf = typename RD::ReturnValueTypeOf<R>::_;
 
 template<typename R> using ValueTypeOf = typename RD::ValueTypeOf<R>::_;
 template<typename R> using ValueTypeOfArray = typename RD::ValueTypeOfArray<R>::_;
+template<typename R> using ReturnValueTypeOfArray = typename RD::ReturnValueTypeOfArray<R>::_;
 template<typename R> using SliceTypeOf = Meta::ResultOfOrVoid<R, size_t, size_t>;
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLast, Meta::Val<T>().Last());

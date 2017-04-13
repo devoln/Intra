@@ -15,58 +15,62 @@ namespace Range {
 
 template<typename T> struct Span
 {
-	constexpr forceinline Span(null_t=null):
+	constexpr forceinline Span(null_t=null) noexcept:
 		Begin(null), End(null) {}
 
-	constexpr forceinline Span(InitializerList<Meta::RemoveConst<T>> list):
+	constexpr forceinline Span(InitializerList<Meta::RemoveConst<T>> list) noexcept:
 		Begin(list.begin()), End(list.end()) {}
 
-	template<size_t N> forceinline Span(T(&arr)[N]):
-		Begin(arr), End(arr+N) {}
+	template<size_t N> constexpr forceinline Span(T(&arr)[N]) noexcept:
+		Begin(arr), End(arr+N-Meta::IsCharType<T>::_) {}
+
+	template<size_t N> static constexpr forceinline Span FromBuffer(T(&arr)[N]) noexcept {return {arr, N};}
 
 	forceinline Span(T* startPtr, T* endPtr):
 		Begin(startPtr), End(endPtr) {INTRA_DEBUG_ASSERT(End >= Begin);}
 
-	constexpr forceinline Span(T* startPtr, size_t length):
+	constexpr forceinline Span(T* startPtr, size_t length) noexcept:
 		Begin(startPtr), End(startPtr+length) {}
 
-	constexpr forceinline Span(const Span& rhs):
+	constexpr forceinline Span(const Span& rhs) noexcept:
 		Begin(rhs.Begin), End(rhs.End) {}
 
 	template<typename R, typename=Meta::EnableIf<
-		IsArrayClass<R>::_ && Meta::TypeEqualsIgnoreCV<ValueTypeOfArray<R>, T>::_
-	>> forceinline Span(R&& rhs):
-		Span(rhs.Data(), rhs.Length()) {}
+		IsArrayClass<R>::_ &&
+		(Meta::TypeEqualsIgnoreRef<ReturnValueTypeOfArray<R>, T>::_ ||
+			Meta::TypeEqualsIgnoreRef<ReturnValueTypeOfArray<R>, Meta::RemoveConst<T>>::_)
+	>> forceinline Span(R&& rhs) noexcept: Span(rhs.Data(), rhs.Length()) {}
 
-	forceinline constexpr CSpan<T> AsConstRange() const {return CSpan<T>(Begin, End);}
-	forceinline constexpr operator CSpan<T>() const {return AsConstRange();}
+	constexpr forceinline Span<const T> AsConstRange() const noexcept {return CSpan<T>(Begin, End);}
+	constexpr forceinline operator Span<const T>() const noexcept {return AsConstRange();}
 
-	forceinline bool ContainsSubrange(const Span& subrange) const
+	forceinline constexpr bool ContainsSubrange(const Span& subrange) const noexcept
 	{return Begin<=subrange.Begin && End>=subrange.End;}
 
-	template<typename U> forceinline bool ContainsAddress(const U* address) const
+	template<typename U> forceinline constexpr bool ContainsAddress(const U* address) const noexcept
 	{return size_t(reinterpret_cast<const T*>(address)-Begin) <= Length();}
 
-	forceinline bool Overlaps(CSpan<T> rhs) const
+	forceinline constexpr bool Overlaps(Span<const T> rhs) const noexcept
 	{
 		return Begin<rhs.End && End>rhs.Begin &&
 			!Empty() && !rhs.Empty();
 	}
 
-	forceinline constexpr T* begin() const {return Begin;}
-	forceinline constexpr T* end() const {return End;}
+	forceinline constexpr T* begin() const noexcept {return Begin;}
+	forceinline constexpr T* end() const noexcept {return End;}
 
-	forceinline size_t Length() const {return size_t(End-Begin);}
-	forceinline constexpr bool Empty() const {return End<=Begin;}
-	forceinline constexpr T* Data() const {return Begin;}
+	forceinline size_t Length() const noexcept {return size_t(End-Begin);}
+	forceinline constexpr bool Empty() const noexcept {return End <= Begin;}
+	forceinline constexpr T* Data() const noexcept {return Begin;}
 
 	forceinline T& First() const {INTRA_DEBUG_ASSERT(!Empty()); return *Begin;}
 	forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); Begin++;}
+	forceinline T& Next() {INTRA_DEBUG_ASSERT(!Empty()); return *Begin++;}
 
 	forceinline T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return *(End-1);}
 	forceinline void PopLast() {INTRA_DEBUG_ASSERT(!Empty()); End--;}
 
-	forceinline size_t PopFirstN(size_t count)
+	forceinline size_t PopFirstN(size_t count) noexcept
 	{
 		if(count>Length()) count = Length();
 		Begin += count;
@@ -74,9 +78,12 @@ template<typename T> struct Span
 	}
 
 	forceinline void PopFirstExactly(size_t count)
-	{INTRA_DEBUG_ASSERT(count <= Length()); Begin += count;}
+	{
+		INTRA_DEBUG_ASSERT(count <= Length());
+		Begin += count;
+	}
 
-	forceinline size_t PopLastN(size_t count)
+	forceinline size_t PopLastN(size_t count) noexcept
 	{
 		if(count>Length()) count = Length();
 		End -= count;
@@ -84,15 +91,18 @@ template<typename T> struct Span
 	}
 
 	forceinline void PopLastExactly(size_t count)
-	{INTRA_DEBUG_ASSERT(count <= Length()); End -= count;}
+	{
+		INTRA_DEBUG_ASSERT(count <= Length());
+		End -= count;
+	}
 
-	forceinline Span<T> Drop(size_t count=1) const
+	forceinline Span<T> Drop(size_t count=1) const noexcept
 	{return Span(Length()<=count? End: Begin+count, End);}
 
-	forceinline Span<T> DropBack(size_t count=1) const
+	forceinline Span<T> DropBack(size_t count=1) const noexcept
 	{return Span(Begin, Length()<=count? Begin: End-count);}
 
-	forceinline Span<T> Take(size_t count) const
+	forceinline Span<T> Take(size_t count) const noexcept
 	{return Span(Begin, count>=Length()? End: Begin+count);}
 
 	forceinline Span<T> TakeExactly(size_t count) const
@@ -101,7 +111,7 @@ template<typename T> struct Span
 		return Span(Begin, Begin+count);
 	}
 
-	forceinline Span<T> Tail(size_t count) const
+	forceinline Span<T> Tail(size_t count) const noexcept
 	{return Span(Length()<count? Begin: End-count, End);}
 
 
@@ -123,34 +133,33 @@ template<typename T> struct Span
 
 
 	//! Сравниваются только указатели, но не содержимое.
-	forceinline bool operator==(const Span& rhs) const
+	forceinline constexpr bool operator==(const Span& rhs) const noexcept
 	{
-		return (Empty() && rhs.Empty()) ||
-			(Begin==rhs.Begin && End==rhs.End);
+		return  (Begin==rhs.Begin && End==rhs.End) || (Empty() && rhs.Empty());
 	}
 
-	forceinline bool operator==(null_t) const {return Empty();}
-	forceinline bool operator!=(null_t) const {return !Empty();}
+	forceinline constexpr bool operator==(null_t) const noexcept {return Empty();}
+	forceinline constexpr bool operator!=(null_t) const noexcept {return !Empty();}
 
-	forceinline Span& operator=(null_t)
-	{Begin=End=null; return *this;}
+	forceinline Span& operator=(null_t) noexcept
+	{Begin = End = null; return *this;}
 
 	forceinline T& operator[](size_t index) const
 	{
-		INTRA_DEBUG_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index < Length());
 		return Begin[index];
 	}
 
 	forceinline Span operator()(size_t firstIndex, size_t endIndex) const
 	{
-		INTRA_DEBUG_ASSERT(endIndex>=firstIndex && Begin+endIndex<=End);
+		INTRA_DEBUG_ASSERT(endIndex >= firstIndex && endIndex <= Length());
 		return Span(Begin+firstIndex, Begin+endIndex);
 	}
 
-	forceinline constexpr Span TakeNone() const {return {Begin, Begin};}
+	constexpr forceinline Span TakeNone() const noexcept {return {Begin, Begin};}
 
 
-	template<typename U> constexpr forceinline Span<U> Reinterpret() const
+	template<typename U> constexpr forceinline Span<U> Reinterpret() const noexcept
 	{
 		typedef U* UPtr;
 		return Span<U>(UPtr(Begin), UPtr(End));
@@ -175,15 +184,9 @@ static_assert(Meta::TypeEquals<ValueTypeOf<Span<float>>, float>::_, "IsArrayRang
 static_assert(IsArrayRange<Span<float>>::_, "IsArrayRange error.");
 static_assert(IsArrayRange<CSpan<char>>::_, "IsArrayRange error.");
 
-template<typename T, size_t N> forceinline Meta::EnableIf<
-	!Meta::IsCharType<T>::_,
-Span<T>> AsRange(T(&arr)[N]) {return Span<T>(arr);}
-
-
-template<typename T> forceinline CSpan<T> AsRange(InitializerList<T> arr)
-{return CSpan<T>(arr);}
-
-template<typename T> forceinline Span<T> Take(T* arrPtr, size_t n) {return Span<T>(arrPtr, n);}
+template<typename T, size_t N> forceinline constexpr Span<T> AsRange(T(&arr)[N]) noexcept {return Span<T>(arr);}
+template<typename T> forceinline constexpr CSpan<T> AsRange(InitializerList<T> arr) noexcept {return CSpan<T>(arr);}
+template<typename T> forceinline constexpr Span<T> Take(T* arrPtr, size_t n) noexcept {return Span<T>(arrPtr, n);}
 
 }
 

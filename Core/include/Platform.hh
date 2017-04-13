@@ -16,5 +16,7 @@
 #include "Platform/HardwareInfo.h"
 #include "Platform/PlatformInfo.h"
 #include "Platform/SharedLib.h"
+#include "Platform/Thread.h"
+#include "Platform/Atomic.h"
 
 #include "Platform/Time.h"

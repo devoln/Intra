@@ -1,10 +1,10 @@
-﻿#include "Thread/Job.h"
+﻿#include "Async/Job.h"
 
 #include "Platform/PlatformInfo.h"
 #include "Math/Random.h"
 #include "Container/Sequential/Array.h"
-#include "Thread/Thread.h"
-#include "Thread/Atomic.h"
+#include "Platform/Thread.h"
+#include "Platform/Atomic.h"
 
 #undef Yield
 

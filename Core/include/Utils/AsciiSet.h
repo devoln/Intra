@@ -5,7 +5,6 @@
 #include "Meta/Type.h"
 #include "Range/Concepts.h"
 #include "Range/Generators/Span.h"
-#include "Algo/Mutation/Fill.h"
 #include "Algo/Comparison/Equals.h"
 
 namespace Intra {
@@ -15,33 +14,31 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 //! Класс, содержащий множество символов из ASCII
 class AsciiSet
 {
-	enum: byte {BytesPerElement = sizeof(size_t), BitsPerElement = BytesPerElement*8,
+	enum: byte {BytesPerElement = sizeof(ulong64), BitsPerElement = BytesPerElement*8,
 		Mask = BitsPerElement-1, ElementCount = 16/BytesPerElement};
-	size_t v[ElementCount];
+	ulong64 v[ElementCount];
 
 public:
-	AsciiSet(null_t=null) {Algo::FillZeros(v);}
+	constexpr forceinline AsciiSet(null_t=null) noexcept: v{0,0} {}
 
-	template<uint N> forceinline AsciiSet(const char(&chars)[N])
+	template<uint N> forceinline AsciiSet(const char(&chars)[N]) noexcept: v{0,0}
 	{
-		Algo::FillZeros(v);
-		Set(CSpan<char>(chars).DropBack());
+		Set(CSpan<char>(chars));
 	}
 
-	template<typename CharRange> explicit AsciiSet(CharRange chars)
+	explicit forceinline AsciiSet(CSpan<char> chars): v{0,0}
 	{
-		Algo::FillZeros(v);
 		Set(chars);
 	}
 
-	AsciiSet& operator=(null_t) {Algo::FillZeros(v); return *this;}
-	bool operator==(null_t) const {return Algo::Equals(v, Null.v);}
-	bool operator!=(null_t) const {return !operator==(null);}
+	forceinline AsciiSet& operator=(null_t) {v[0]=v[1]=0; return *this;}
+	constexpr forceinline bool operator==(null_t) const noexcept {return v[0]==0 && v[1]==0;}
+	constexpr forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
 
 	bool operator[](char c) const
 	{
 		INTRA_DEBUG_ASSERT(byte(c)<128);
-		return (v[c/BitsPerElement] & (size_t(1) << (c & Mask))) != 0;
+		return (v[c/BitsPerElement] & (1ull << (c & Mask))) != 0;
 	}
 
 	bool Contains(char c) const
@@ -57,24 +54,18 @@ public:
 	forceinline void Set(char c)
 	{
 		if(c & 0x80) return;
-		v[c/BitsPerElement] |= size_t(1) << (size_t(c) & Mask);
+		v[c/BitsPerElement] |= 1ull << (size_t(c) & Mask);
 	}
 
 	forceinline void Reset(char c)
 	{
 		if(c & 0x80) return;
-		v[c/BitsPerElement] &= ~(size_t(1) << (size_t(c) & Mask));
+		v[c/BitsPerElement] &= ~(1ull << (size_t(c) & Mask));
 	}
 
-	template<typename CharRange> Meta::EnableIf<
-		Range::IsCharRange<CharRange>::_
-	> Set(CharRange chars)
+	forceinline void Set(CSpan<char> chars)
 	{
-		while(!chars.Empty())
-		{
-			Set(chars.First());
-			chars.PopFirst();
-		}
+		for(char c: chars) Set(c);
 	}
 	
 	template<typename CharRange> Meta::EnableIf<
@@ -128,7 +119,7 @@ public:
 		return result;
 	}
 
-	template<size_t N> AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars).DropBack());}
+	template<size_t N> AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars));}
 
 
 	static const AsciiSet Null, Spaces, Slashes, Digits;

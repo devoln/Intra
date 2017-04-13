@@ -38,10 +38,9 @@ public:
 
 	template<size_t N> Array(const T(&values)[N]): Array(Range::AsRange(values)) {}
 
-	template<typename R, typename = Meta::EnableIf<
-		!Meta::TypeEqualsIgnoreCVRef<R, Array>::_ &&
-		Range::IsAsConsumableRangeOf<R, T>::_ &&
-		(Range::IsAsForwardRange<R>::_ || Range::HasLength<Range::AsRangeResult<R>>::_)
+	template<typename R, typename AsR=Range::AsRangeResult<R>, typename = Meta::EnableIf<
+		!Meta::TypeEqualsIgnoreCVRef<R, Array>::_ && Range::IsInputRange<R>::_ &&
+		(Meta::IsCopyConstructible<AsR>::_ || Range::HasLength<AsR>::_)
 	>> Array(R&& values): buffer(null), range(null)
 	{AddLastRange(Range::Forward<R>(values));}
 

@@ -19,33 +19,25 @@ INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 template<class R> class RByLineTo: Meta::NonCopyableType
 {
 public:
-	typedef ValueTypeOf<R> value_type;
+	typedef ValueTypeOf<R> T;
 
 	enum: bool {RangeIsFinite = IsFiniteRange<R>::_, RangeIsInfinite = IsInfiniteRange<R>::_};
 
 	forceinline RByLineTo(null_t=null): mKeepTerminator(false) {}
 
-	forceinline RByLineTo(R&& range, Span<value_type> buf, bool keepTerminator=false):
+	forceinline RByLineTo(R&& range, GenericStringView<T> buf, bool keepTerminator=false):
 		mOriginalRange(Meta::Move(range)), mBuffer(buf), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	forceinline RByLineTo(const R& range, Span<value_type> buf, bool keepTerminator=false):
+	forceinline RByLineTo(const R& range, GenericStringView<T> buf, bool keepTerminator=false):
 		mOriginalRange(range), mBuffer(buf), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	forceinline RByLineTo(RByLineTo&& rhs) {operator=(Meta::Move(rhs));}
-
 	RByLineTo(const RByLineTo& rhs) = delete;
+	RByLineTo& operator=(const RByLineTo&) = delete;
 
-	RByLineTo& operator=(RByLineTo&& rhs)
-	{
-		mOriginalRange = Meta::Move(rhs.mOriginalRange);
-		mBuffer = Meta::Move(rhs.mBuffer);
-		mKeepTerminator = rhs.mKeepTerminator;
-		return *this;
-	}
+	forceinline RByLineTo(RByLineTo&& rhs) = default;
+	RByLineTo& operator=(RByLineTo&& rhs) = default;
 
-	RByLineTo& operator=(const RByLineTo& rhs) = delete;
-
-	forceinline bool Empty() const {return mBuffer == null;}
+	forceinline bool Empty() const noexcept {return mBuffer == null;}
 
 	void PopFirst()
 	{
@@ -74,7 +66,7 @@ public:
 		mOriginalRange.PopFirst();
 	}
 
-	forceinline GenericStringView<value_type> First() const
+	forceinline GenericStringView<const T> First() const
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		return mBuffer.GetWrittenData();
@@ -82,7 +74,7 @@ public:
 
 private:
 	R mOriginalRange;
-	OutputArrayRange<value_type> mBuffer;
+	OutputArrayRange<T> mBuffer;
 	bool mKeepTerminator;
 };
 

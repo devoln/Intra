@@ -121,12 +121,6 @@
     <Filter Include="Заголовочные файлы\Range\Special">
       <UniqueIdentifier>{1fc171a6-0995-40da-b806-90dea19b84a3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Thread">
-      <UniqueIdentifier>{6c087732-b67b-44aa-8cf7-e9a0e509dc66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Thread">
-      <UniqueIdentifier>{bb8065df-8e4e-4121-b1a4-ff03272211e7}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Range\Special">
       <UniqueIdentifier>{4f8cefa6-c55a-4909-83e6-9fb1242332d4}</UniqueIdentifier>
     </Filter>
@@ -186,6 +180,12 @@
     </Filter>
     <Filter Include="Заголовочные файлы\Data\Format">
       <UniqueIdentifier>{d87fdfde-88b4-4bdb-8012-5df20e4fde34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Async">
+      <UniqueIdentifier>{dc33adca-aeee-4c51-be80-748883bc24a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Async">
+      <UniqueIdentifier>{bd0266d1-c3d1-4893-8b0d-dbd20146c0c5}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -252,17 +252,8 @@
     <ClCompile Include="src\Utils\AsciiSet.cpp">
       <Filter>Файлы исходного кода\Utils</Filter>
     </ClCompile>
-    <ClCompile Include="src\Thread\Job.cpp">
-      <Filter>Файлы исходного кода\Thread</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Thread\Thread.cpp">
-      <Filter>Файлы исходного кода\Thread</Filter>
-    </ClCompile>
     <ClCompile Include="src\Range\Special\Unicode.cpp">
       <Filter>Файлы исходного кода\Range\Special</Filter>
-    </ClCompile>
-    <ClCompile Include="src\IntraCore.cc">
-      <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="src\Math\Math.cpp">
       <Filter>Файлы исходного кода\Math</Filter>
@@ -329,6 +320,12 @@
     </ClCompile>
     <ClCompile Include="src\IO\Socket.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Platform\Thread.cpp">
+      <Filter>Файлы исходного кода\Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Async\Job.cpp">
+      <Filter>Файлы исходного кода\Async</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -623,9 +620,6 @@
     <ClInclude Include="include\Range\AsRange.h">
       <Filter>Заголовочные файлы\Range</Filter>
     </ClInclude>
-    <ClInclude Include="include\Range\Special\SparseRange.h">
-      <Filter>Заголовочные файлы\Range\Special</Filter>
-    </ClInclude>
     <ClInclude Include="include\Range\Special\Unicode.h">
       <Filter>Заголовочные файлы\Range\Special</Filter>
     </ClInclude>
@@ -668,20 +662,8 @@
     <ClInclude Include="include\Test.hh">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="include\Thread.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="include\Utils.hh">
       <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Thread\Atomic.h">
-      <Filter>Заголовочные файлы\Thread</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Thread\Job.h">
-      <Filter>Заголовочные файлы\Thread</Filter>
-    </ClInclude>
-    <ClInclude Include="include\Thread\Thread.h">
-      <Filter>Заголовочные файлы\Thread</Filter>
     </ClInclude>
     <ClInclude Include="include\Algo\Hash.hh">
       <Filter>Заголовочные файлы\Algo</Filter>
@@ -1133,6 +1115,27 @@
     <ClInclude Include="include\Memory\Allocator\Compositors\SegregatedPools.h">
       <Filter>Заголовочные файлы\Memory\Allocator\Compositors</Filter>
     </ClInclude>
+    <ClInclude Include="include\Platform\Atomic.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Platform\Thread.h">
+      <Filter>Заголовочные файлы\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Async\Job.h">
+      <Filter>Заголовочные файлы\Async</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Async\Promise.h">
+      <Filter>Заголовочные файлы\Async</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Async\ThreadPool.h">
+      <Filter>Заголовочные файлы\Async</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Container\Utility\SparseRange.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Async.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="natvis\Core.natvis">
@@ -1144,11 +1147,11 @@
     <None Include="natvis\Math.natvis">
       <Filter>natvis</Filter>
     </None>
-    <None Include="include\Range\Special\SparseRange.inl">
-      <Filter>Заголовочные файлы\Range\Special</Filter>
-    </None>
     <None Include="natvis\IO.natvis">
       <Filter>natvis</Filter>
+    </None>
+    <None Include="include\Container\Utility\SparseRange.inl">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

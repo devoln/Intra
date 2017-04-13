@@ -87,7 +87,7 @@ private:
 
 struct UTF32: public DStringView
 {
-	constexpr UTF32(DStringView range=null): DStringView(range) {}
+	UTF32(DStringView range=null): DStringView(range) {}
 
 	WString ToUTF16(bool addNullTerminator) const;
 	String ToUTF8() const;

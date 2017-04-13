@@ -1,6 +1,6 @@
 #include "IO.h"
 
-#include "Thread/Thread.h"
+#include "Platform/Thread.h"
 #include "IO/Socket.h"
 #include "IO/SocketReader.h"
 #include "IO/SocketWriter.h"

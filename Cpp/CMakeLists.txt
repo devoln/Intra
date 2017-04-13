@@ -1,20 +1,37 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(IntraCore)
+project(IntraCpp)
 
 include(../Configurations.cmake)
 
 include_directories(include)
 
-init_project_sources(${CMAKE_CURRENT_SOURCE_DIR} CORE_HEADERS CORE_SOURCES)
+file(GLOB_RECURSE CPP_HEADERS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" include/*.h)
+file(GLOB_RECURSE CPP_SOURCES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" src/*.cpp)
+
+foreach(_source IN ITEMS ${CPP_HEADERS})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "/" "\\" _group_path "${_source_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
+
+foreach(_source IN ITEMS ${CPP_SOURCES})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "/" "\\" _group_path "${_source_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
 
 option(UNITY_BUILD "Use fast unity build." ON)
 if(UNITY_BUILD)
-enable_unity_build(IntraCore CORE_SOURCES)
+set_source_files_properties(${CPP_SOURCES} PROPERTIES HEADER_FILE_ONLY true)
 add_definitions(-DINTRA_UNITY_BUILD)
+else()
+set_source_files_properties(src/IntraCpp.cc PROPERTIES HEADER_FILE_ONLY true)
 endif()
+set(CORE_SOURCES ${CORE_SOURCES} src/IntraCore.cc)
 
 option(BUILD_DYNAMIC_LIB "Build a dynamic library instead of static." OFF)
+
 if(BUILD_DYNAMIC_LIB)
 add_library(IntraCore SHARED ${CORE_SOURCES} ${CORE_HEADERS})
 else()

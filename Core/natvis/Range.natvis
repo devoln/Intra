@@ -50,17 +50,17 @@
     </Type>
 
   <Type Name="Intra::Range::GenericStringView&lt;*&gt;">
-    <DisplayString Condition="sizeof(*mStart)==1" Optional="true">{mStart,[mEnd-mStart]s8}</DisplayString>
-    <DisplayString Condition="sizeof(*mStart)==2" Optional="true">{mStart,[mEnd-mStart]s16}</DisplayString>
-    <DisplayString Condition="sizeof(*mStart)==4" Optional="true">{mStart,[mEnd-mStart]s32}</DisplayString>
-    <StringView Condition="sizeof(*mStart)==1" Optional="true">mStart,[mEnd-mStart]s8b</StringView>
-    <StringView Condition="sizeof(*mStart)==2" Optional="true">mStart,[mEnd-mStart]s16b</StringView>
-    <StringView Condition="sizeof(*mStart)==4" Optional="true">mStart,[mEnd-mStart]s32b</StringView>
+    <DisplayString Condition="sizeof(*Begin)==1" Optional="true">{Begin,[End-Begin]s8}</DisplayString>
+    <DisplayString Condition="sizeof(*Begin)==2" Optional="true">{Begin,[End-Begin]s16}</DisplayString>
+    <DisplayString Condition="sizeof(*Begin)==4" Optional="true">{Begin,[End-Begin]s32}</DisplayString>
+    <StringView Condition="sizeof(*Begin)==1" Optional="true">Begin,[End-Begin]s8b</StringView>
+    <StringView Condition="sizeof(*Begin)==2" Optional="true">Begin,[End-Begin]s16b</StringView>
+    <StringView Condition="sizeof(*Begin)==4" Optional="true">Begin,[End-Begin]s32b</StringView>
     <Expand>
-      <Item Name="Length">mEnd-mStart</Item>
+      <Item Name="Length">End-Begin</Item>
       <ArrayItems>
-        <Size>mEnd-mStart</Size>
-        <ValuePointer>mStart</ValuePointer>
+        <Size>End-Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
       </ArrayItems>
     </Expand>
   </Type>

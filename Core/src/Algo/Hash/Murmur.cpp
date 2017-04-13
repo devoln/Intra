@@ -133,7 +133,7 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 	};
 	chars = key.Data();
 
-	while(key.End()-chars>=8)
+	while(key.end()-chars>=8)
 	{
 		uint k1 = *data++;
 		k1 *= m;
@@ -150,7 +150,7 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 		h2 ^= k2;
 	}
 
-	if(key.End()-chars>=4)
+	if(key.end()-chars>=4)
 	{
 		uint k1 = *data++;
 		k1 *= m;
@@ -160,7 +160,7 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 		h1 ^= k1;
 	}
 
-	switch(key.End()-chars)
+	switch(key.end()-chars)
 	{
 	case 3: h2 ^= uint(bytes[2] << 16);
 	case 2: h2 ^= uint(bytes[1] << 8);

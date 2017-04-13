@@ -3,7 +3,7 @@
 #include "Platform/CppWarnings.h"
 #include "Platform/FundamentalTypes.h"
 #include "Algo/Mutation/Copy.h"
-#include "Atomic.h"
+#include "Platform/Atomic.h"
 
 namespace Intra {
 

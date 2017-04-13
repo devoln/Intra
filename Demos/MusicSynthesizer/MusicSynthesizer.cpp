@@ -10,7 +10,7 @@
 #include "Platform/Time.h"
 #include "IO/Networking.h"
 #include "Platform/PlatformInfo.h"
-#include "Thread/Thread.h"
+#include "Platform/Thread.h"
 #include "Platform/Environment.h"
 #include "IO/Std.h"
 

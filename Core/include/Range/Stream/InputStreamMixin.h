@@ -141,11 +141,17 @@ template<typename R, typename T> struct InputStreamMixin
 	forceinline RByLine<R, GenericString<ElementType>> ByLine(Tags::TKeepTerminator)
 	{return {Meta::Move(*static_cast<R*>(this)), true};}
 
-	forceinline RByLineTo<R> ByLine(Span<char> buf)
+	forceinline RByLineTo<R> ByLine(GenericStringView<char> buf)
 	{return {Meta::Move(*static_cast<R*>(this)), buf, false};}
 
-	forceinline RByLineTo<R> ByLine(Span<char> buf, Tags::TKeepTerminator)
+	forceinline RByLineTo<R> ByLine(GenericStringView<char> buf, Tags::TKeepTerminator)
 	{return {Meta::Move(*static_cast<R*>(this)), buf, true};}
+
+	template<size_t N> forceinline RByLineTo<R> ByLine(char(&buf)[N])
+	{return ByLine(GenericStringView<char>::FromBuffer(buf));}
+
+	template<size_t N> forceinline RByLineTo<R> ByLine(char(&buf)[N], Tags::TKeepTerminator)
+	{return ByLine(GenericStringView<char>::FromBuffer(buf), Tags::KeepTerminator);}
 };
 
 }}

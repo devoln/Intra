@@ -50,6 +50,9 @@ namespace RD {
 template<typename T, bool=HasAsRange<T>::_> struct AsRangeResult
 {typedef T _;};
 
+template<typename T, size_t N> struct AsRangeResult<T[N], false>
+{typedef Span<T> _;};
+
 template<typename T> struct AsRangeResult<T, true>
 {typedef decltype(AsRange(Meta::Val<T>())) _;};
 

@@ -21,11 +21,10 @@ struct Object
 	StringMap<Array<String>> StringArrays;
 	StringMap<Array<Object>> ObjectArrays;
 
-	//Для компилируемости в GCC
-	Object(const Object&) = default;
-	Object(Object&&) = default;
-	Object& operator=(const Object&) = default;
-	Object& operator=(Object&&) = default;
+	Object(const Object&);
+	Object(Object&&);
+	Object& operator=(const Object&);
+	Object& operator=(Object&&);
 
 	Object(null_t=null) {}
 	Object& operator=(null_t)
@@ -63,6 +62,11 @@ struct Object
 		return defaultValue;
 	}
 };
+
+inline Object::Object(const Object&) = default;
+inline Object::Object(Object&&) = default;
+inline Object& Object::operator=(const Object&) = default;
+inline Object& Object::operator=(Object&&) = default;
 
 /*template<typename O>
 GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, const IConstObject& src)

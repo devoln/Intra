@@ -47,28 +47,27 @@ illegal_char:
 
 dchar UTF8::NextChar(size_t* oBytesRead) const
 {
-	const byte* srcPtr = reinterpret_cast<const byte*>(Text.Data());
-	const byte* srcEnd = reinterpret_cast<const byte*>(Text.End());
+	auto src = Text;
 	uint ch = 0;
-	size_t bytesToRead = UTF8::SequenceBytes(*srcPtr);
+	size_t bytesToRead = UTF8::SequenceBytes(src.First());
 
-	if(srcPtr+bytesToRead>srcEnd)
+	if(bytesToRead>src.Length())
 	{
 		if(oBytesRead!=null)
-			*oBytesRead = size_t(srcEnd-srcPtr);
+			*oBytesRead = src.Length();
 		return UTF32::ReplacementChar;
 	}
 
-	if(!isLegalUTF8(reinterpret_cast<const char*>(srcPtr), bytesToRead, oBytesRead))
+	if(!isLegalUTF8(src.Data(), bytesToRead, oBytesRead))
 		return UTF32::ReplacementChar;
 
 	static const uint offsetsFromUTF8[6] = {0, 0x00003080, 0x000E2080, 0x03C82080, 0xFA082080, 0x82082080};
 	for(size_t i=bytesToRead; i>1; i--)
 	{
-		ch += *srcPtr++;
+		ch += byte(src.Next());
 		ch <<= 6;
 	}
-	ch += (*srcPtr++) - offsetsFromUTF8[bytesToRead-1];
+	ch += byte(src.Next())-offsetsFromUTF8[bytesToRead-1];
 
 	if( ch>UTF32::MaxLegalChar || (ch>=SurrogateHighStart && ch<=SurrogateLowEnd) )
 		ch = UTF32::ReplacementChar;
@@ -79,16 +78,16 @@ dchar UTF8::NextChar(size_t* oBytesRead) const
 
 dchar UTF8::ReadPrevChar()
 {
-	auto oldEnd = Text.End();
+	auto oldEnd = Text.end();
 	if(!popBackChar()) return UTF32::ReplacementChar;
-	return UTF8({Text.End(), oldEnd}).NextChar();
+	return UTF8({Text.end(), oldEnd}).NextChar();
 }
 
 dchar UTF8::Last() const
 {
 	auto temp = *this;
 	if(!temp.popBackChar()) return UTF32::ReplacementChar;
-	return UTF8({temp.Text.End(), Text.End()}).NextChar();
+	return UTF8({temp.Text.end(), Text.end()}).NextChar();
 }
 
 void UTF8::PopFirst()
@@ -189,7 +188,7 @@ dchar UTF16::Last() const
 {
 	auto temp = *this;
 	if(!temp.popBackChar()) return UTF32::ReplacementChar;
-	return UTF16({temp.Text.End(), Text.End()}).ReadChar();
+	return UTF16({temp.Text.end(), Text.end()}).ReadChar();
 }
 
 

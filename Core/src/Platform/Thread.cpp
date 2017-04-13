@@ -1,9 +1,11 @@
-﻿#include "Thread/Thread.h"
+﻿#include "Platform/Thread.h"
+
+#include "Platform/Atomic.h"
+
 #include "Platform/CppWarnings.h"
 #include "Platform/PlatformInfo.h"
 #include "Platform/Debug.h"
 #include "Platform/Runtime.h"
-#include "Thread/Atomic.h"
 #include "Container/Utility/SparseArray.h"
 #include "Container/Associative/LinearMap.h"
 #include "Memory/SmartRef/Unique.h"

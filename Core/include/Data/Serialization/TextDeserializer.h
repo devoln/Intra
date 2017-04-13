@@ -300,7 +300,7 @@ template<typename I> struct GenericTextDeserializer
 		}
 
 		bool expectSeparator = false;
-		for(size_t i = 0; ; i++)
+		for(size_t i=0; ; i++)
 		{
 			SkipAllSpacesAndComments();
 			if(Algo::StartsWith(Input, Lang.StructInstanceClose)) break;

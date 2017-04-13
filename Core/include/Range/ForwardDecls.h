@@ -27,19 +27,8 @@ template<typename T, typename Node = BListNode<T>> struct BListRange;
 template<typename I1, typename I2=I1> struct IteratorRange;
 
 
-template<typename T, size_t N> Meta::EnableIf<
-	!Meta::IsCharType<T>::_,
-Span<T>> AsRange(T(&arr)[N]);
-
-template<typename T> CSpan<T> AsRange(InitializerList<T> arr);
-
-template<typename T, size_t N> forceinline Meta::EnableIf<
-	Meta::IsCharType<T>::_,
-GenericStringView<const T>> AsRange(const T(&stringLiteral)[N]);
-
-template<typename T, size_t N> forceinline Meta::EnableIf<
-	Meta::IsCharType<T>::_,
-GenericStringView<T>> AsRange(T(&charArr)[N]);
+template<typename T, size_t N> constexpr forceinline Span<T> AsRange(T(&arr)[N]) noexcept;
+template<typename T> constexpr forceinline CSpan<T> AsRange(InitializerList<T> arr) noexcept;
 
 template<typename T> Meta::EnableIf<
 	!IsInputRange<T>::_ &&

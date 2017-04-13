@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Platform/CppWarnings.h"
+#include "Platform/CppFeatures.h"
 #include "Meta/Type.h"
 #include "Meta/Pair.h"
 #include "Meta/Tuple.h"

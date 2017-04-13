@@ -5,15 +5,7 @@
 #include "Meta/TypeList.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-#ifdef _MSC_VER
-#pragma warning(disable: 4512 4626)
-
-#if _MSC_VER>=1900
-#pragma warning(disable: 5026 5027)
-#endif
-
-#endif
+INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 
 namespace Intra { namespace Meta {
 
