@@ -1,0 +1,14 @@
+﻿#pragma once
+
+#include "Concepts/Range.h"
+#include "Range/Operations.h"
+#include "Range/TupleOperation.h"
+#include "Range/ForwardDecls.h"
+#include "Concepts/RangeOf.h"
+
+#include "Range/Generators.hh"
+#include "Range/Decorators.hh"
+#include "Range/Compositors.hh"
+#include "Range/Iterator.hh"
+#include "Range/Polymorphic.hh"
+#include "Range/Special.hh"

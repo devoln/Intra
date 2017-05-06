@@ -1,20 +1,27 @@
 ﻿
+#include "Cpp/Warnings.h"
+
+#include "Utils/Logger.h"
+
 #include "Platform/Time.h"
 #include "Platform/HardwareInfo.h"
+#include "Platform/Signals.h"
+
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
 #include "IO/FileWriter.h"
 #include "IO/ConsoleInput.h"
 #include "IO/ConsoleOutput.h"
-#include "Algo/String/Path.h"
-#include "Platform/CppWarnings.h"
-#include "Platform/Errors.h"
+#include "IO/FilePath.h"
+#include "IO/FormattedLogger.h"
+
 #include "Test/PerfSummary.h"
+#include "Test/TestGroup.h"
+
 #include "Container/String.h"
 #include "Container/Array.h"
 #include "Container/Map.h"
-#include "Test/TestGroup.h"
 
 #include "PerfTestSerialization.h"
 #include "Range/Header.h"
@@ -33,8 +40,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace Intra::IO;
 
-
-CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
+CompositeFormattedWriter& InitOutput()
 {
 	static CompositeFormattedWriter logger;
 #ifndef INTRA_NO_LOGGING
@@ -44,18 +50,12 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 	const bool logExisted = OS.FileExists(logFileName);
 	FileWriter logFile = OS.FileOpenAppend(logFileName);
 	logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
-	FormattedWriter logWriter = HtmlWriter(Meta::Move(logFile), !logExisted);
-	const String datetime = DateTime::Now().ToString();
-	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
+	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
+	String datetime;
+	ToString(LastAppender(datetime), DateTime::Now());
+	StringView appName = IO::Path::ExtractName(CommandLineArguments.First());
 
-	String cmdline;
-	for(int i=1; i<argc; i++)
-	{
-		cmdline += StringView(argv[i]);
-		if(i+1<argc) cmdline+=' ';
-	}
-
-	logWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
+	logWriter.BeginSpoiler(appName+StringOf(CommandLineArguments.Drop(), " ", " ", " ")+datetime);
 	
 
 	Errors::CrashHandler=[](int signum)
@@ -66,14 +66,8 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 		logger = null;
 	};
 
-	cmdline = null;
-	for(int i=0; i<argc; i++)
-	{
-		cmdline += StringView(argv[i]);
-		if(i+1<argc) cmdline+='\n';
-	}
 	logWriter << "Command line arguments:";
-	logWriter.PrintCode(cmdline);
+	logWriter.PrintCode(StringOf(CommandLineArguments, "\n", "", ""));
 	logWriter.BeginSpoiler("System info");
 	auto memInfo = SystemMemoryInfo::Get();
 	auto procInfo = ProcessorInfo::Get();
@@ -91,7 +85,7 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);
 	logWriter.EndSpoiler();
-	logger.Attach(Meta::Move(logWriter));
+	logger.Attach(Cpp::Move(logWriter));
 #else
 	(void)argc; (void)argv;
 #endif
@@ -101,41 +95,26 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 }
 
 
-
-
-
-#include "Container/Sequential/Array.h"
-#include "Container/Associative/HashMap.h"
-#include "Container/Sequential/List.h"
-
-#if INTRA_DISABLED
-#include <unordered_map>
-#include <vector>
-#endif
-
-int main(int argc, const char* argv[])
+int main()
 {
 	Errors::InitSignals();
-	auto& logger = InitLogSystem(argc, argv);
+	auto& output = InitOutput();
 
-#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-	if(argc>=2 && StringView(argv[1])=="-a")
-#endif
-	TestGroup::YesForNestingLevel=0;
-	CompositeFormattedWriter emptyLogger;
+	if(CommandLineArguments.Get(1, null) == "-a")
+		TestGroup::YesForNestingLevel=0;
 	
-	TestGroup(emptyLogger, logger, "Random number generation", RunRandomPerfTests);
-	if(TestGroup gr{emptyLogger, logger, "Ranges"})
+	TestGroup(null, output, "Random number generation", RunRandomPerfTests);
+	if(TestGroup gr{null, output, "Ranges"})
 	{
 		TestGroup("Polymorphic range performance", RunPolymorphicRangePerfTests);
 	}
-	TestGroup(emptyLogger, logger, "std::string vs String", RunStringPerfTests);
-	TestGroup(emptyLogger, logger, "std::vector и std::deque vs Array", RunContainerPerfTests);
-	TestGroup(emptyLogger, logger, "Associative containers", RunMapPerfTests);
-	TestGroup(emptyLogger, logger, "Serialization and deserialization", RunSerializationPerfTests);
-	TestGroup(emptyLogger, logger, "Sort algorithms", RunSortPerfTests);
+	TestGroup(null, output, "std::string vs String", RunStringPerfTests);
+	TestGroup(null, output, "std::vector и std::deque vs Array", RunContainerPerfTests);
+	TestGroup(null, output, "Associative containers", RunMapPerfTests);
+	TestGroup(null, output, "Serialization and deserialization", RunSerializationPerfTests);
+	TestGroup(null, output, "Sort algorithms", RunSortPerfTests);
 
-	if(argc<2 || StringView(argv[1])!="-a")
+	if(CommandLineArguments.Get(1, null) != "-a")
 	{
 		ConsoleOut.PrintLine("Press any key to exit...");
 		ConsoleIn.GetChar();

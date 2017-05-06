@@ -4,12 +4,12 @@
 
 #include "PerfTestSerialization.h"
 
-#include "Platform/Compatibility.h"
-#include "Meta/Preprocessor.h"
+#include "Cpp/Compatibility.h"
+#include "Preprocessor/Preprocessor.h"
 #include "Data/Serialization.hh"
 #include "Data/Reflection.h"
 #include "Platform/Time.h"
-#include "Range/Generators/Span.h"
+#include "Utils/Span.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "IO/Std.h"

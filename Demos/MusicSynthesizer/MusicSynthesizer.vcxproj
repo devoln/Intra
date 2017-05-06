@@ -211,7 +211,7 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../../Libs/lib;$(OutDir)</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -220,7 +220,7 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../../Libs/lib;$(OutDir)</LibraryPath>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
@@ -232,39 +232,39 @@
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;../IntraCore/include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir)</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;../IntraCore/include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir)</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;..\IntraCore\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -272,7 +272,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;..\IntraCore\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -283,35 +283,35 @@
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);../IntraCore/include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir);../../Libs/lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include;$(SolutionDir)Audio/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include;$(SolutionDir)Audio/include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);../IntraCore/include</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(SolutionDir)Core/include;$(SolutionDir)Audio/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);../IntraCore/include</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -329,7 +329,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -352,7 +352,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -375,7 +375,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -398,7 +398,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -438,7 +438,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -478,7 +478,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -517,7 +517,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <GenerateMapFile>true</GenerateMapFile>
     </Link>
@@ -563,7 +563,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -604,7 +604,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>
@@ -645,7 +645,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -685,7 +685,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -724,7 +724,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -763,7 +763,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -790,7 +790,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib;$(OutDir)/IntraAudio.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>

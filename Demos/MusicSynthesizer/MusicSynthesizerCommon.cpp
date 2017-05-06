@@ -9,7 +9,7 @@
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
 #include "Platform/Time.h"
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -38,7 +38,7 @@ void PrintMusicInfo(const Music& music)
 		for(auto&& note: track.Notes)
 			noteCount += uint(!note.Note.IsPause());
 
-	Std.PrintLine("Длительность музыки: ", ToString(music.Duration(), 2), " с.");
+	Std.PrintLine("Длительность музыки: ", StringOf(music.Duration(), 2), " с.");
 	Std.PrintLine("Число нот: ", noteCount);
 	Std.PrintLine("Число дорожек: ", music.Tracks.Count());
 }
@@ -75,7 +75,7 @@ Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
 	if(printMessages)
 	{
 		auto time = tim.GetTime();
-		Std.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
+		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
 	}
 	return sound;
 }

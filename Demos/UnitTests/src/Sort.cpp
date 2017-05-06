@@ -1,11 +1,11 @@
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 
 #include "Sort.h"
 
-#include "Algo/Sort.hh"
+#include "Range/Sort.hh"
 #include "Container/Sequential/Array.h"
 #include "IO/FormattedWriter.h"
-#include "Platform/Debug.h"
+#include "Utils/Debug.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -28,49 +28,49 @@ void TestSort(IO::FormattedWriter& output)
 	Array<short> arrStdSort = arrUnsorted;
 	std::sort(arrStdSort.begin(), arrStdSort.end());
 	output.PrintLine("std::sort'ed array: ", arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrStdSort), arrStdSort);
+	INTRA_ASSERT1(Range::IsSorted(arrStdSort), arrStdSort);
 
 	Array<short> arrInsertion = arrUnsorted;
-	Algo::InsertionSort(arrInsertion);
+	Range::InsertionSort(arrInsertion);
 	output.PrintLine("InsertionSort'ed array: ", arrInsertion);
 	INTRA_ASSERT_EQUALS(arrInsertion, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrInsertion), arrInsertion);
+	INTRA_ASSERT1(Range::IsSorted(arrInsertion), arrInsertion);
 
 	Array<short> arrShell = arrUnsorted;
-	Algo::ShellSort(arrShell);
+	Range::ShellSort(arrShell);
 	output.PrintLine("ShellSort'ed array: ", arrShell);
 	INTRA_ASSERT_EQUALS(arrShell, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrShell), arrShell);
+	INTRA_ASSERT1(Range::IsSorted(arrShell), arrShell);
 	
 	Array<short> arrQuick = arrUnsorted;
-	Algo::QuickSort(arrQuick);
+	Range::QuickSort(arrQuick);
 	output.PrintLine("QuickSort'ed array: ", arrQuick);
 	INTRA_ASSERT_EQUALS(arrQuick, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrQuick), arrQuick);
+	INTRA_ASSERT1(Range::IsSorted(arrQuick), arrQuick);
 	
 	Array<short> arrRadix = arrUnsorted;
-	Algo::RadixSort(arrRadix.AsRange());
+	Range::RadixSort(arrRadix.AsRange());
 	output.PrintLine("RadixSort'ed array: ", arrRadix);
 	INTRA_ASSERT_EQUALS(arrRadix, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrRadix), arrRadix);
+	INTRA_ASSERT1(Range::IsSorted(arrRadix), arrRadix);
 	
 	Array<short> arrMerge = arrUnsorted;
-	Algo::MergeSort(arrMerge);
+	Range::MergeSort(arrMerge);
 	output.PrintLine("MergeSort'ed array: ", arrMerge);
 	INTRA_ASSERT_EQUALS(arrMerge, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrMerge), arrMerge);
+	INTRA_ASSERT1(Range::IsSorted(arrMerge), arrMerge);
 	
 	Array<short> arrHeap = arrUnsorted;
-	Algo::HeapSort(arrHeap);
+	Range::HeapSort(arrHeap);
 	output.PrintLine("HeapSort'ed array: ", arrHeap);
 	INTRA_ASSERT_EQUALS(arrHeap, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrHeap), arrHeap);
+	INTRA_ASSERT1(Range::IsSorted(arrHeap), arrHeap);
 	
 	Array<short> arrSelection = arrUnsorted;
-	Algo::SelectionSort(arrSelection);
+	Range::SelectionSort(arrSelection);
 	output.PrintLine("SelectionSort'ed array: ", arrSelection);
 	INTRA_ASSERT_EQUALS(arrSelection, arrStdSort);
-	INTRA_ASSERT1(Algo::IsSorted(arrSelection), arrSelection);
+	INTRA_ASSERT1(Range::IsSorted(arrSelection), arrSelection);
 };
 
 INTRA_WARNING_POP

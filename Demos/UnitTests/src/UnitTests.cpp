@@ -1,17 +1,20 @@
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/TestGroup.h"
+
 #include "IO/FileSystem.h"
 #include "IO/HtmlWriter.h"
 #include "IO/FileWriter.h"
 #include "IO/Std.h"
 #include "IO/ReferenceFormattedWriter.h"
 #include "IO/CompositeFormattedWriter.h"
-#include "Algo/String/Path.h"
+#include "IO/FilePath.h"
+
 #include "Platform/Time.h"
 #include "Platform/Errors.h"
 #include "Container/SparseArray.h"
+#include "IO/FormattedLogger.h"
 
 #include "Sort.h"
 #include "Range/Range.h"
@@ -21,11 +24,10 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace IO;
 
-CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
+CompositeFormattedWriter& InitOutput()
 {
 	static CompositeFormattedWriter logger;
-#ifndef INTRA_NO_LOGGING
-#ifndef INTRA_NO_FILE_LOGGING
+
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
@@ -35,19 +37,13 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
 	}
 	if(!logExisted && logFile!=null) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
-	FormattedWriter logWriter = HtmlWriter(Meta::Move(logFile), !logExisted);
+	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
 
-	const String datetime = DateTime::Now().ToString();
-	StringView appName = Algo::Path::ExtractName(StringView(argv[0]));
+	String datetime;
+	ToString(LastAppender(datetime), DateTime::Now());
+	StringView appName = IO::Path::ExtractName(CommandLineArguments.First());
 
-	String cmdline;
-	for(int i=1; i<argc; i++)
-	{
-		cmdline += StringView(argv[i]);
-		if(i+1<argc) cmdline+=' ';
-	}
-
-	logWriter.BeginSpoiler(appName+' '+cmdline+' '+datetime);
+	logWriter.BeginSpoiler(appName+StringOf(CommandLineArguments.Drop(), " ", " ", " ")+datetime);
 	
 	Errors::CrashHandler = [](int signum)
 	{
@@ -56,43 +52,35 @@ CompositeFormattedWriter& InitLogSystem(int argc, const char* argv[])
 		logger.PopFont();
 	};
 
-	cmdline = null;
-	for(int i=0; i<argc; i++)
-	{
-		cmdline += StringView(argv[i]);
-		if(i+1<argc) cmdline+='\n';
-	}
 	logWriter << "Command line arguments:";
-	logWriter.PrintCode(cmdline);
-	logger.Attach(Meta::Move(logWriter));
-#else
-	(void)argc; (void)argv;
-#endif
-#endif
+	logWriter.PrintCode(StringOf(CommandLineArguments, "\n", " ", " "));
+	logger.Attach(Cpp::Move(logWriter));
+
 	return logger;
 }
 
 int main(int argc, const char* argv[])
 {
 	Errors::InitSignals();
-	auto& logger = InitLogSystem(argc, argv);
+	auto& loggerOut = InitOutput();
 
-	CompositeFormattedWriter emptyLogger;
-	FormattedWriter* output = &Std;
+	FormattedWriter output = ReferenceFormattedWriter(Std);
 
 	StringView arg1 = argc>1? StringView(argv[1]): null;
-	if(Algo::StartsWith(arg1, "-"))
+	if(arg1.StartsWith("-"))
 	{
-		if(Algo::Contains(arg1, 'a'))
+		if(arg1.Contains('a'))
 			TestGroup::YesForNestingLevel = 0;
-		if(Algo::Contains(arg1, 'u'))
-			output = &emptyLogger;
-		if(!Algo::Contains(arg1, 's'))
-			logger.Attach(&Std);
+		if(arg1.Contains('u'))
+			output = CompositeFormattedWriter();
+		if(arg1.Contains('s'))
+			loggerOut.Attach(&Std);
 	}
-	else logger.Attach(&Std);
+	else loggerOut.Attach(&Std);
 
-	if(TestGroup gr{logger, *output, "Ranges"})
+	FormattedLogger logger(ReferenceFormattedWriter(loggerOut));
+
+	if(TestGroup gr{&logger, output, "Ranges"})
 	{
 		TestGroup("Composing complex ranges", TestComposedRange);
 		TestGroup("Polymorphic ranges", TestPolymorphicRange);
@@ -100,26 +88,26 @@ int main(int argc, const char* argv[])
 		TestGroup("STL and ranges interoperability", TestRangeStlInterop);
 		TestGroup("Unicode encoding conversions", TestUnicodeConversion);
 	}
-	if(TestGroup gr{logger, *output, "Containers"})
+	if(TestGroup gr{&logger, output, "Containers"})
 	{
 		TestGroup("Sparse Range", TestSparseRange);
 		TestGroup("Sparse Array", TestSparseArray);
 	}
-	if(TestGroup gr{logger, *output, "IO"})
+	if(TestGroup gr{&logger, output, "IO"})
 	{
 		TestGroup("File", TestFileSyncIO);
 		TestGroup("Socket", TestSocketIO);
 		//TestGroup("HttpServer", TestHttpServer);
 	}
-	TestGroup(logger, *output, "Text serialization", TestTextSerialization);
-	TestGroup(logger, *output, "Binary serialization", TestBinarySerialization);
-	TestGroup(logger, *output, "Sort algorithms", TestSort);
+	TestGroup(&logger, output, "Text serialization", TestTextSerialization);
+	TestGroup(&logger, output, "Binary serialization", TestBinarySerialization);
+	TestGroup(&logger, output, "Sort algorithms", TestSort);
 
 	if(TestGroup::GetTotalTestsFailed() != 0)
-		logger.PushFont({1, 0, 0}, 5, true, false, true);
-	else logger.PushFont({0, 0.75f, 0}, 5, true, false, true);
-	logger.PrintLine("Tests passed: ", TestGroup::GetTotalTestsPassed(), "/", TestGroup::GetTotalTests(), ".");
-	logger.PopFont();
+		loggerOut.PushFont({1, 0, 0}, 5, true, false, true);
+	else loggerOut.PushFont({0, 0.75f, 0}, 5, true, false, true);
+	loggerOut.PrintLine("Tests passed: ", TestGroup::GetTotalTestsPassed(), "/", TestGroup::GetTotalTests(), ".");
+	loggerOut.PopFont();
 
 	return 0;
 }

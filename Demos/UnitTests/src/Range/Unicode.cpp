@@ -1,6 +1,6 @@
 ﻿#include "Range/Special/Unicode.h"
 #include "IO/FormattedWriter.h"
-#include "Platform/Debug.h"
+#include "Utils/Debug.h"
 
 using namespace Intra;
 using namespace Range;

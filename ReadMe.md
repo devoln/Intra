@@ -1,28 +1,27 @@
 
-# IntraLib
+# Intra
 
 [![Build Status (master)](https://travis-ci.org/gammaker/Intra.svg?branch=master)](https://travis-ci.org/gammaker/Intra)
 
 ## English description
 
-This repository contains Intra library and its modules:
-- [Intra Core](Core)
-- [Intra Audio](Audio)
-- [Intra Image](Image)
+This library is my attempt to create general purpose library for C++ which is fast and convenient to use.
+In the distant future it is planned to replace STL and Boost with it.
+It is based on low level libraries to provide more features and more performance than it could provide, if it was based on C++ standard library or Boost.
+It doesn't require C++ standard library or other libraries, but may optionally use them in some parts depending on configuration.
+
+This library is very modular. To learn more about its modules see [Modules](Modules).
+This repository contains all Intra [modules](Modules) and [demos](Demos).
 
 This library contains the following functionality:
 - Containers: Array, BList, HashMap, LinearMap, String and others. Array is different from existing implementations of dynamic arrays by fast O(1) appending to the beginning of array.
-- Ranges and algorithms working with them.
- Range are implemented in the style of D language standard library. Range concept replaces iterator concept and provides more comfortable, functional and secure abstraction than STL iterators.
- Unlike STL iterators, ranges support decoration and composition, that enables programmer to create complex ranges, write code in functional style and to implement lazy evaluation.
- See examples [here](Demos/Tests/src/Ranges).
 - Automatic recursive structure serialization: binary and text. See examples [here](Demos/Tests/src/PerfTestSerialization.cpp).
 - Math functions and classes: FixedPoint, vectors, matrices, quaternions, geometric primitives.
 - Multiple image format loading.
 - Sound system and music intrument synthesis.
 - etc: timer, IO streams, basic classes for multithreading.
 
-In addition to the library this repository also contains 3 demos projects:
+In addition to the library this repository also contains 3 demo projects:
 - [MusicSynthesizer](Demos/MusicSynthesizer) - MIDI synthesizer. This project consist only of one file with main function. Most of the synthesizer code is located at IntraLib/Sound.
 - [Tests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL.
 - [UnitTests](Demos/UnitTests) - This project's source code contains many examples of Intra usage.

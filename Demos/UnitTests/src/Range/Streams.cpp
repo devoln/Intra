@@ -1,4 +1,4 @@
-﻿#include "Platform/CppWarnings.h"
+﻿#include "Cpp/Warnings.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -9,17 +9,16 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.h"
 #include "IO/FormattedWriter.h"
 #include "Range/Stream.hh"
-#include "Algo/Reduction.h"
-#include "Range/Generators/Span.h"
+#include "Range/Reduction.h"
+#include "Utils/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 
 using namespace Intra;
 using namespace IO;
 using namespace Range;
-using namespace Algo;
 
 
 void TestArrayRangeStreams(FormattedWriter& output)
@@ -32,7 +31,7 @@ void TestArrayRangeStreams(FormattedWriter& output)
 	Span<char> buf = bufOnStack;
 	buf << "Мы пишем в сишный массив, как в поток." << '\r' << '\n' <<
 		"Парсим pi и прибавляем к нему 1: " <<
-		1.0f+Algo::Parse<float>("3.1415926") << "\r\n" <<
+		1.0f+Range::Parse<float>("3.1415926") << "\r\n" <<
 		"Далее записан массив: " << arrToFormat <<
 		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, Math::Sqr<int>) <<
 		"\r\nКвадраты элементов другого массива: " << Map(rawArr, Math::Sqr<int>);
@@ -72,7 +71,8 @@ void TestCustomOutputStream(FormattedWriter& output)
 	};
 
 	StringView strings[] = {"Hello", ", ", "World", "!"};
-	output.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"", "Printing array: ", "\" и к массиву ", strings, ":");
+	output.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"",
+		"Printing array: ", "\" и к массиву ", strings, ":");
 	OutputCaesarCipher{output} << "Printing array: " << strings;
 	output.LineBreak();
 }

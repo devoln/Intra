@@ -2,7 +2,7 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Array.h"

@@ -1,18 +1,23 @@
-﻿#include "IO/ConsoleOutput.h"
+﻿#include "Cpp/PlatformDetect.h"
+
+#include "Platform/Time.h"
+#include "Platform/Environment.h"
+
+#include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
 #include "IO/FileSystem.h"
+#include "IO/Networking.h"
+#include "IO/Std.h"
+
+#include "Concurrency/Thread.h"
+
 #include "Audio/Midi.h"
 #include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
 #include "Audio/Sources/MusicSynthSource.h"
-#include "Platform/Time.h"
-#include "IO/Networking.h"
-#include "Platform/PlatformInfo.h"
-#include "Platform/Thread.h"
-#include "Platform/Environment.h"
-#include "IO/Std.h"
+
 
 #include "MusicSynthesizerCommon.h"
 
@@ -98,7 +103,7 @@ void PlayMusic(const Music& music, bool printPerf)
 	if(printPerf)
 	{
 		auto time = tim.GetTime();
-		Std.PrintLine("Время синтеза: ", ToString(time*1000, 2), " мс.");
+		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
 	}
 	static Sound snd;
 	snd = Sound(&buf);
@@ -171,8 +176,7 @@ int INTRA_CRTDECL main()
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 
-	auto args = GetCommandLineArguments();
-	String filePath = GetMidiPath(args.Length()>=2? args[1]: DefaultMidiName);
+	String filePath = GetMidiPath(CommandLineArguments.Length()>=2? CommandLineArguments[1]: DefaultMidiName);
 	
 	const bool success = PrintMidiFileInfo(filePath);
 	if(!success) return 1;

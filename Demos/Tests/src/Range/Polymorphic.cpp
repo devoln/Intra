@@ -1,9 +1,9 @@
 #include "Range/Stream.hh"
-#include "Algo/Reduction.h"
-#include "Range/Generators/Span.h"
+#include "Range/Reduction.h"
+#include "Utils/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 #include "Platform/Time.h"
 #include "Test/PerfSummary.h"
@@ -56,7 +56,7 @@ int TestPolymorphicRange3(InputRange<int> range, size_t totalCount)
 {
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
-		sum += range.GetNext();
+		sum += range.Next();
 	return sum;
 }
 

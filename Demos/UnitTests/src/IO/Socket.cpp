@@ -33,12 +33,12 @@ void TestSocketIO(FormattedWriter& output)
 		}
 		else output.PrintLine("Error waiting!");
 
-		SocketReader reader(Meta::Move(client));
+		SocketReader reader(Cpp::Move(client));
 		StringView firstLine = reader.ReadLine(strBuf);
 		output.PrintLine("ReadLine: ", firstLine);
 		if(firstLine != "Writer: Hello, Reader!") error = true;
 		OutputArrayRange<char> strOut = Range::Take(strBuf, 50);
-		Algo::ToString(strOut, reader.ByLine(Range::Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
+		ToString(strOut, reader.ByLine(Range::Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
 		StringView linesAsString = strOut.GetWrittenData();
 		output.PrintLine("Remaining line range: ", linesAsString);
 		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error = true;
@@ -51,7 +51,7 @@ void TestSocketIO(FormattedWriter& output)
 	INTRA_ASSERT_EQUALS(str, "Hello");
 	connectedClient.Send("World", 5);
 
-	SocketWriter writer(Meta::Move(connectedClient));
+	SocketWriter writer(Cpp::Move(connectedClient));
 	writer.PrintLine("Writer: Hello, Reader!")
 		.PrintLine("Second line.")
 		.PrintLine("Third line.");
@@ -77,10 +77,10 @@ void TestHttpServer(FormattedWriter& output)
 		output.PrintLine("Processing request: ")
 			.PrintLine(request);
 
-		SocketWriter response(Meta::Move(connectedClient));
+		SocketWriter response(Cpp::Move(connectedClient));
 
 		String str;
-		HtmlWriter(Range::LastAppender(str))
+		HtmlWriter(LastAppender(str))
 			.PushFont({0, 0, 0.75f}, 4, true)
 			.PrintPreformatted(request)
 			.PopFont()

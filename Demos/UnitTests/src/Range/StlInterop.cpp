@@ -1,11 +1,13 @@
-﻿#include "Platform/CppWarnings.h"
+﻿#include "Cpp/Warnings.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.hh"
 #include "IO/FormattedWriter.h"
 #include "Range/Output/OutputArrayRange.h"
 
+#if !defined(_HAS_EXCEPTIONS) && !defined(INTRA_EXCEPTIONS_ENABLED) && defined(_MSC_VER)
 #define _HAS_EXCEPTIONS 0
+#endif
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <vector>
@@ -19,7 +21,7 @@ INTRA_WARNING_POP
 using namespace Intra;
 using namespace Range;
 using namespace IO;
-using namespace Algo;
+using namespace Range;
 
 struct Point
 {
@@ -48,7 +50,7 @@ void TestRangeStlInterop(FormattedWriter& output)
 {
 	std::vector<std::string> stringVec = {"Hello", "Intra", "Ranges"};
 	output.PrintLine("Выводим std::vector<std::string> stringVec:");
-	INTRA_ASSERT_EQUALS(ToString(stringVec), "[Hello, Intra, Ranges]");
+	INTRA_ASSERT_EQUALS(StringOf(stringVec), "[Hello, Intra, Ranges]");
 	output.PrintLine(stringVec);
 	output.LineBreak();
 
@@ -60,7 +62,7 @@ void TestRangeStlInterop(FormattedWriter& output)
 	output.PrintLine("Переведём std::unordered_map<std::string, std::vector<int>> в строку на стеке и выведем её:");
 	char figuresTextBuf[200];
 	StringView figuresText = (OutputArrayRange<char>(figuresTextBuf) << figureMap).GetWrittenData();
-	INTRA_ASSERT_EQUALS(Algo::Count(figuresText, '['), Algo::Count(figuresText, ']'));
+	INTRA_ASSERT_EQUALS(Count(figuresText, '['), Count(figuresText, ']'));
 	output.PrintLine(figuresText);
 	output.LineBreak();
 	
@@ -77,14 +79,14 @@ void TestRangeStlInterop(FormattedWriter& output)
 
 	std::list<std::string> stringList(stringVec.begin(), stringVec.end());
 	output.PrintLine("Выводим std::list<std::string> stringList:");
-	INTRA_ASSERT_EQUALS(ToString(stringList), "[Hello, Intra, Ranges]");
+	INTRA_ASSERT_EQUALS(StringOf(stringList), "[Hello, Intra, Ranges]");
 	output.PrintLine(stringList);
 	output.LineBreak();
 
 	output.PrintLine("Добавляем в предыдущий список 5 элементов Cycle(stringVec)");
 	CopyTo(Take(Cycle(stringVec), 5), LastAppender(stringList));
 	output.PrintLine("Снова выводим stringList:");
-	INTRA_ASSERT_EQUALS(ToString(stringList), "[Hello, Intra, Ranges, Hello, Intra, Ranges, Hello, Intra]");
+	INTRA_ASSERT_EQUALS(StringOf(stringList), "[Hello, Intra, Ranges, Hello, Intra, Ranges, Hello, Intra]");
 	output.PrintLine(stringList);
 
 	std::list<char> charList(stringVec[0].begin(), stringVec[0].end());

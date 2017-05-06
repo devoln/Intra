@@ -2,15 +2,15 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestRandom.h"
 
 #include "Platform/Time.h"
 #include "Test/PerfSummary.h"
-#include "Platform/Compatibility.h"
-#include "Math/Random.h"
+#include "Cpp/Compatibility.h"
+#include "Random/FastUniform.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS

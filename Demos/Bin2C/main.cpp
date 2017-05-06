@@ -3,18 +3,18 @@
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
 #include "IO/FileSystem.h"
-#include "Range/Generators/StringView.h"
+#include "Utils/StringView.h"
 #include "Container/Sequential/String.h"
-#include "Algo/String/Parse.h"
-#include "Algo/String/Path.h"
-#include "Algo/Search/Trim.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/String/Parse.h"
+#include "Range/String/Path.h"
+#include "Range/Search/Trim.h"
+#include "Range/Mutation/Transform.h"
 #include "IO/Std.h"
 #include "Utils/AsciiSet.h"
 
 using namespace Intra;
 using namespace Intra::IO;
-using namespace Algo;
+using namespace Range;
 using namespace Op;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS

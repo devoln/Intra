@@ -210,14 +210,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
@@ -229,19 +229,19 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -249,7 +249,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -257,7 +257,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -265,7 +265,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -273,7 +273,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Modules;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -284,35 +284,35 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir);$(SolutionDir)../Libs/lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

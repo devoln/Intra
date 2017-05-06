@@ -1,0 +1,31 @@
+cmake_minimum_required(VERSION 2.8)
+
+if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+option(LIBRARY_IMAGE_LOADING_Gdiplus "Use Gdiplus for image loading" ON)
+endif()
+
+find_package(DevIL)
+if(DEVIL_FOUND)
+option(LIBRARY_IMAGE_LOADING_DevIL "Use DevIL for image loading" OFF)
+endif()
+
+find_package(Qt4)
+if(QT4_FOUND)
+option(LIBRARY_IMAGE_LOADING_Qt "Use Qt for image loading" OFF)
+endif()
+
+
+if(LIBRARY_IMAGE_LOADING_Gdiplus)
+add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_Gdiplus)
+target_link_libraries(Intra gdiplus)
+elseif(LIBRARY_IMAGE_LOADING_DevIL)
+add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_DevIL)
+include_directories(${DEVIL_INCLUDE_DIRS})
+target_link_libraries(Intra ${DEVIL_LIBRARIES})
+elseif(LIBRARY_IMAGE_LOADING_Qt)
+add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_Qt)
+include_directories(${QT4_INCLUDE_DIRS})
+target_link_libraries(Intra ${QT4_LIBRARIES})
+else()
+add_definitions(-DINTRA_LIBRARY_IMAGE_LOADING=INTRA_LIBRARY_IMAGE_LOADING_Dummy)
+endif()

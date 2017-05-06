@@ -2,11 +2,11 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 
 #include "Map.h"
 
-#include "Platform/Compatibility.h"
+#include "Cpp/Compatibility.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -87,7 +87,7 @@ template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
 			result += GetPairSecondValue(element);
 	}
 	const double time = timer.GetTime();
-	srand(Algo::ToHash(result));
+	srand(ToHash(result));
 	return time;
 }
 
@@ -103,7 +103,7 @@ template<typename K, typename V> double TestOrderedMapIterationSumValues(uint ti
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
 	const double time = timer.GetTime();
-	srand(Algo::ToHash(result));
+	srand(ToHash(result));
 	return time;
 }
 
@@ -118,7 +118,7 @@ template<typename MAP> double TestMapSuccessfulSearching(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
 	const double time = timer.GetTime();
-	srand(Algo::ToHash(result));
+	srand(ToHash(result));
 	return time;
 }
 
@@ -133,7 +133,7 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
 	const double time = timer.GetTime();
-	srand(Algo::ToHash(result));
+	srand(ToHash(result));
 
 	
 	size_t bucketLoads[20];
@@ -197,7 +197,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<String, uint>>(times, count),
-					TestMapPopulation<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
+					TestMapPopulation<std::unordered_map<String, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapPopulation<LinearMap<String, uint>>(times, count),
@@ -215,7 +215,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<Big<64>, uint>>(times, count),
-					TestMapPopulation<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
+					TestMapPopulation<std::unordered_map<Big<64>, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapPopulation<LinearMap<Big<64>, uint>>(times, count),
@@ -251,7 +251,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<String, uint>>(times, count),
@@ -269,7 +269,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<Big<64>, uint>>(times, count),
@@ -357,7 +357,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -375,7 +375,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),
@@ -412,7 +412,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, Algo::HasherObject>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -430,7 +430,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, Algo::HasherObject>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),

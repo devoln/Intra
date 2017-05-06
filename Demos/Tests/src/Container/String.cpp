@@ -8,12 +8,12 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
 
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "String.h"
 
-#include "Platform/Compatibility.h"
+#include "Cpp/Compatibility.h"
 #include "Test.hh"
 #include "IO/LogSystem.h"
 #include "Container/Sequential/String.h"
@@ -165,7 +165,7 @@ template<typename S> double TestStringConcatenation(uint times, size_t strsize)
 	S ss;
 	Timer timer;
 	for(uint j=0; j<times; j++)
-		ss=c+c;
+		ss = c+c;
 	return timer.GetTime();
 }
 

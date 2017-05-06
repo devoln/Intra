@@ -7,7 +7,7 @@
 #include "Range/Generators/Recurrence.h"
 #include "Range/Decorators/TakeByLine.h"
 #include "Range/Decorators/Map.h"
-#include "Platform/CppWarnings.h"
+#include "Cpp/Warnings.h"
 #include "Range/Iterator/RangeForSupport.h"
 #include "Platform/Endianess.h"
 
@@ -32,22 +32,22 @@ void TestFileSyncIO(FormattedWriter& output)
 		"Fibonacci sequence: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]");
 
 	INTRA_ASSERT_EQUALS(
-		ToString(Map(ByLine(fileContents), &String::Length)),
+		StringOf(Map(ByLine(fileContents), &String::Length)),
 		"[54, 13]");
 
 	INTRA_ASSERT_EQUALS(
-		ToString(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(), &String::Length)),
+		StringOf(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(), &String::Length)),
 		"[54, 13]");
 
 
 	char buf[100];
 	INTRA_ASSERT_EQUALS(
-		ToStringConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(buf), &StringView::Length)),
+		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(buf), &StringView::Length)),
 		"[54, 13]");
 
 	char smallBuf[10];
 	INTRA_ASSERT_EQUALS(
-		ToStringConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(smallBuf), &StringView::Length)),
+		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(smallBuf), &StringView::Length)),
 		"[10, 10, 10, 10, 10, 4, 10, 3]");
 
 	size_t sumLength = 0;
@@ -66,8 +66,8 @@ void TestFileSyncIO(FormattedWriter& output)
 		.PopFont();
 
 	StringView htmlString = AtIndex(OS.FileOpen("TestFileSyncIO.txt").ByLine(buf), 2);
-	INTRA_ASSERT(Algo::StartsWith(htmlString, "<font color"));
-	INTRA_ASSERT(Algo::Contains(htmlString, "Зелёный текст"));
+	INTRA_ASSERT(StartsWith(htmlString, "<font color"));
+	INTRA_ASSERT(Contains(htmlString, "Зелёный текст"));
 
 	FileReader file = OS.FileOpen("TestFileSyncIO.txt");
 	uint value = file.ReadRaw<uintLE>();

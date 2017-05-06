@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="Intra::AnotherEndian&lt;short&gt;">
+    <DisplayString>{(mValue >> 8) | (mValue &amp; 0xFF)}</DisplayString>
+    <Expand>
+      <Item Name="Value">(mValue >> 8) | ((mValue &amp; 0xFF) &lt;&lt; 8)</Item>
+      <Item Name="Native Value">mValue</Item>
+      <Item Name="Native Bytes">mBytes</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::AnotherEndian&lt;unsigned short&gt;">
+    <DisplayString>{(mValue >> 8) | (mValue &amp; 0xFF)}</DisplayString>
+    <Expand>
+      <Item Name="Value">(mValue >> 8) | ((mValue &amp; 0xFF) &lt;&lt; 8)</Item>
+      <Item Name="Native Value">mValue</Item>
+      <Item Name="Native Bytes">mBytes</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::AnotherEndian&lt;int&gt;">
+    <DisplayString>{(mValue >> 24) | ((mValue >> 8) &amp; 0xFF00) | ((mValue &amp; 0xFF00) &lt;&lt; 8) | ((mValue &amp; 0xFF) &lt;&lt; 24)}</DisplayString>
+    <Expand>
+      <Item Name="Value">(mValue >> 24) | ((mValue >> 8) &amp; 0xFF00) | ((mValue &amp; 0xFF00) &lt;&lt; 8) | ((mValue &amp; 0xFF) &lt;&lt; 24)</Item>
+      <Item Name="Native Value">mValue</Item>
+      <Item Name="Native Bytes">mBytes</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::AnotherEndian&lt;unsigned int&gt;">
+    <DisplayString>{(mValue >> 24) | ((mValue >> 8) &amp; 0xFF00) | ((mValue &amp; 0xFF00) &lt;&lt; 8) | ((mValue &amp; 0xFF) &lt;&lt; 24)}</DisplayString>
+    <Expand>
+      <Item Name="Value">(mValue >> 24) | ((mValue >> 8) &amp; 0xFF00) | ((mValue &amp; 0xFF00) &lt;&lt; 8) | ((mValue &amp; 0xFF) &lt;&lt; 24)</Item>
+      <Item Name="Native Value">mValue</Item>
+      <Item Name="Native Bytes">mBytes</Item>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

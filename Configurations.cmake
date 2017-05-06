@@ -120,8 +120,8 @@ elseif(MSVC)
 endif()
 
 function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
-  file(GLOB_RECURSE headers RELATIVE "${DIR}" include/*.h)
-  file(GLOB_RECURSE sources RELATIVE "${DIR}" src/*.cpp)
+  file(GLOB_RECURSE headers RELATIVE "${DIR}" *.h)
+  file(GLOB_RECURSE sources RELATIVE "${DIR}" *.cpp)
 
   foreach(_source IN ITEMS ${headers})
     get_filename_component(_source_path "${_source}" PATH)

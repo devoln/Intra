@@ -1,4 +1,4 @@
-﻿#include "Platform/CppWarnings.h"
+﻿#include "Cpp/Warnings.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -8,11 +8,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.h"
 #include "Range/Stream.hh"
-#include "Algo/Reduction.h"
-#include "Range/Generators/Span.h"
+#include "Range/Reduction.h"
+#include "Utils/Span.h"
 #include "Range.hh"
 #include "Math/MathRanges.h"
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 
 #include <stdlib.h>
@@ -20,7 +20,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace IO;
 using namespace Range;
-using namespace Algo;
+using namespace Range;
 
 template<typename T> static void PrintPolymorphicRange(FormattedWriter& output, InputRange<T> range)
 {
@@ -40,7 +40,7 @@ static int SumPolymorphicRange(InputRange<int> ints)
 {
 	int sum = 0;
 	while(!ints.Empty())
-		sum += ints.GetNext();
+		sum += ints.Next();
 	return sum;
 }
 
@@ -62,14 +62,14 @@ static void TestSumRange(FormattedWriter& output)
 	//myRange = myRange2Str();
 	char c[40];
 	auto r = Span<char>(c);
-	r << Meta::Move(myRange);
+	r << Cpp::Move(myRange);
 
 	ivec3 vectors[] = {{1, 2, 3}, {1, 64, 7}, {43, 5, 342}, {5, 45, 4}};
 	RandomAccessRange<ivec3&> vectors1;
 	vectors1 = vectors;
 	vectors1[1] = {2, 3, 4};
 	InputRange<int> xvectors = Map(vectors, [](const ivec3& v) {return v.x;});
-	int xsum = SumPolymorphicRange(Meta::Move(xvectors));
+	int xsum = SumPolymorphicRange(Cpp::Move(xvectors));
 	output.PrintLine("x sum of ", vectors, " = ", xsum);
 }
 
@@ -81,7 +81,7 @@ void TestComposedPolymorphicRange(FormattedWriter& output)
 	), 17)), 3), 22);
 	output.PrintLine("Представляем сложную последовательность в виде полиморфного input-диапазона:");
 	InputRange<int> someRecurrencePolymorphic = someRecurrence;
-	PrintPolymorphicRange(output, Meta::Move(someRecurrencePolymorphic));
+	PrintPolymorphicRange(output, Cpp::Move(someRecurrencePolymorphic));
 
 	output.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
 	InputRange<uint> seq = Map(
@@ -89,12 +89,12 @@ void TestComposedPolymorphicRange(FormattedWriter& output)
 			Take(Generate([]() {return Math::Random<uint>::Global(1000); }), 500),
 			[](uint x) {return x%7==0; }),
 		Math::Sqr<uint>);
-	PrintPolymorphicRange(output, Meta::Move(seq));
+	PrintPolymorphicRange(output, Cpp::Move(seq));
 
 	output.LineBreak();
 	output.PrintLine("Присвоили той же переменной seq диапазон другого типа и выведем его снова:");
 	seq = Take(Generate(rand), 50);
-	PrintPolymorphicRange(output, Meta::Move(seq));
+	PrintPolymorphicRange(output, Cpp::Move(seq));
 }
 
 void TestPolymorphicRange(FormattedWriter& output)
