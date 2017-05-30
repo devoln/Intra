@@ -7,8 +7,8 @@
 #include "Audio/Sources/WaveSource.h"
 #include "Audio/Sources/VorbisSource.h"
 #include "Audio/Sources/MusicSynthSource.h"
-#include "Algo/Comparison/StartsWith.h"
-#include "Algo/Search/Single.h"
+#include "Range/Comparison/StartsWith.h"
+#include "Range/Search/Single.h"
 #include "Cpp/Warnings.h"
 #include "IO/FileSystem.h"
 
@@ -43,7 +43,7 @@ Sound::Sound(const AudioBuffer* dataBuffer):
 	if(dataBuffer==null) return;
 	mData = SoundAPI::BufferCreate(mInfo.SampleCount, mInfo.Channels, mInfo.SampleRate);
 	SoundAPI::BufferSetDataInterleaved(mData, dataBuffer->Samples.Data(), mInfo.SampleType);
-	mInfo.SampleType = ValueType::Short;
+	mInfo.SampleType = Data::ValueType::Short;
 	all_existing_sounds.AddLast(this);
 }
 
@@ -80,7 +80,7 @@ Sound& Sound::operator=(Sound&& rhs)
 		inst->mSound = this;
 	mInfo = rhs.mInfo;
 	rhs.mData = null;
-	auto found = Algo::Find(Sound::all_existing_sounds, &rhs);
+	auto found = Sound::all_existing_sounds.AsRange().Find(&rhs);
 	if(!found.Empty()) found.First() = this;
 	return *this;
 }
@@ -95,17 +95,17 @@ Sound Sound::FromFile(StringView fileName)
 	Unique<ASoundSource> source;
 
 #ifndef INTRA_NO_WAVE_LOADER
-	if(Algo::StartsWith(fileSignature, "RIFF"))
+	if(fileSignature.StartsWith("RIFF"))
 		source = new Sources::WaveSource(fileMapping.AsRange());
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(Algo::StartsWith(fileSignature, "OggS"))
+	if(fileSignature.StartsWith("OggS"))
 		source = new Sources::VorbisSource(fileData);
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(Algo::StartsWith(fileSignature, "MThd"))
+	if(fileSignature.StartsWith("MThd"))
 		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), SoundAPI::InternalSampleRate());
 	else
 #endif
@@ -120,13 +120,13 @@ Sound Sound::FromSource(ASoundSource* src)
 		ushort(src->ChannelCount()), SoundAPI::InternalBufferType};
 	Sound result = Sound(info, null);
 	auto lockedData = result.Lock();
-	if(SoundAPI::InternalBufferType==ValueType::Short &&
+	if(SoundAPI::InternalBufferType == Data::ValueType::Short &&
 		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
 		Span<short> dst = Span<short>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
 	}
-	else if(SoundAPI::InternalBufferType==ValueType::Float &&
+	else if(SoundAPI::InternalBufferType == Data::ValueType::Float &&
 		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
 	{
 		Span<float> dst = Span<float>(lockedData, info.SampleCount*src->ChannelCount());
@@ -188,26 +188,26 @@ void SoundInstance::Stop() const
 
 
 size_t StreamingLoadCallback(void** dstSamples, uint channels,
-	ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData)
+	Data::ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData)
 {
 	auto src = reinterpret_cast<ASoundSource*>(additionalData);
 	if(interleaved || channels==1)
 	{
-		if(type==ValueType::Float)
+		if(type == Data::ValueType::Float)
 			return src->GetInterleavedSamples({static_cast<float*>(dstSamples[0]), sampleCount*src->ChannelCount()});
-		if(type==ValueType::Short)
+		if(type == Data::ValueType::Short)
 			return src->GetInterleavedSamples({static_cast<short*>(dstSamples[0]), sampleCount*src->ChannelCount()});
 	}
 	else
 	{
-		if(type==ValueType::Float)
+		if(type == Data::ValueType::Float)
 		{
 			Span<float> ranges[16];
 			for(ushort c=0; c<channels; c++)
 				ranges[c] = Span<float>(static_cast<float*>(dstSamples[c]), sampleCount);
 			return src->GetUninterleavedSamples({ranges, channels});
 		}
-		if(type==ValueType::Short)
+		if(type == Data::ValueType::Short)
 		{
 			/*Span<short> ranges[16];
 			for(ushort c=0; c<channels; c++)
@@ -233,17 +233,17 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 	if(fileMapping==null) return null;
 	SourceRef source=null;
 #ifndef INTRA_NO_WAVE_LOADER
-	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "RIFF"))
+	if(fileMapping.AsRangeOf<char>().StartsWith("RIFF"))
 		source = new Sources::WaveSource(fileMapping.AsRange());
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "OggS"))
+	if(fileMapping.AsRangeOf<char>().StartsWith("OggS"))
 		source = new Sources::VorbisSource(fileMapping.AsRange());
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(Algo::StartsWith(fileMapping.AsRangeOf<char>(), "MThd"))
+	if(fileMapping.AsRangeOf<char>().StartsWith("MThd"))
 		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), 48000);
 	else
 #endif
@@ -297,13 +297,13 @@ uint StreamedSound::InternalSampleRate()
 
 void StreamedSound::register_instance()
 {
-	INTRA_DEBUG_ASSERT(!Algo::Contains(all_existing_instances, this));
+	INTRA_DEBUG_ASSERT(!all_existing_instances.AsConstRange().Contains(this));
 	all_existing_instances.AddLast(this);
 }
 
 void StreamedSound::unregister_instance()
 {
-	INTRA_DEBUG_ASSERT(Algo::Contains(all_existing_instances, this));
+	INTRA_DEBUG_ASSERT(all_existing_instances.AsConstRange().Contains(this));
 	all_existing_instances.FindAndRemoveUnordered(this);
 }
 

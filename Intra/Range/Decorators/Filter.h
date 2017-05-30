@@ -29,7 +29,7 @@ template<typename R, typename P> struct RFilter
 	{skip_falses_front(mOriginalRange, filterPredicate);}
 
 
-	forceinline ReturnValueTypeOf<R> First() const
+	forceinline Concepts::ReturnValueTypeOf<R> First() const
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		return mOriginalRange.First();

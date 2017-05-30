@@ -1,12 +1,12 @@
 ﻿#include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Cpp/Warnings.h"
-#include "Math/MathRanges.h"
+#include "Math/SineRange.h"
 #include "Utils/Span.h"
-#include "Algo/Mutation/Copy.h"
-#include "Algo/Mutation/Transform.h"
-#include "Algo/Mutation/Fill.h"
-#include "Math/Random.h"
+#include "Range/Mutation/Copy.h"
+#include "Range/Mutation/Transform.h"
+#include "Range/Mutation/Fill.h"
+#include "Random/FastUniform.h"
 #include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Audio { namespace Synth {
@@ -23,8 +23,8 @@ struct SineParams
 void PerfectSine(float volume, float freq, uint sampleRate, Span<float> inOutSamples, bool add)
 {
 	Math::SineRange<float> sineRange(volume, 0, float(2*Math::PI*freq/sampleRate));
-	if(!add) Algo::CopyAdvanceToAdvance(sineRange, inOutSamples.Length(), inOutSamples);
-	else Algo::Add(inOutSamples, sineRange);
+	if(!add) CopyAdvanceToAdvance(sineRange, inOutSamples.Length(), inOutSamples);
+	else Add(inOutSamples, sineRange);
 }
 
 void FastSine(float volume, float freq, uint sampleRate, Span<float> inOutSamples, bool add)
@@ -51,13 +51,13 @@ static void SineSynthPassFunction(const SineParams& params,
 
 	FastSine(newVolume, newFreq, sampleRate, inOutSamples, add);
 
-	Math::Random<float> frandom(1278328923);
+	Random::FastUniform<float> frandom(1278328923);
 	for(ushort h=1; h<params.harmonics; h++)
 	{
 		newVolume/=2;
 		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
-		FastSine(newVolume, frequency, sampleRate, inOutSamples.Drop(Math::Random<ushort>::Global(20)), true);
+		FastSine(newVolume, frequency, sampleRate, inOutSamples.Drop(uint(frandom(20))), true);
 	}
 }
 
@@ -67,22 +67,23 @@ SynthPass CreateSineSynthPass(float scale, ushort harmonics, float freqMultiplye
 
 struct MultiSineParams
 {
-	byte len;
-	SineHarmonic harmonics[20];
+	byte Len;
+	SineHarmonic Harmonics[20];
 };
 
 static void MultiSineSynthPassFunction(const MultiSineParams& params,
 		float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	size_t start = Math::Random<ushort>::Global(20);
-	if(!add) Algo::FillZeros(inOutSamples.Take(start));
-	for(ushort h=0; h<params.len; h++)
+	const size_t start = Random::FastUniform<ushort>((inOutSamples.Length() << 5) | params.Len)(20);
+	if(!add) FillZeros(inOutSamples.Take(start));
+	inOutSamples.PopFirstN(start);
+	for(ushort h=0; h<params.Len; h++)
 	{
-		auto& harm = params.harmonics[h];
+		auto& harm = params.Harmonics[h];
 		FastSine(volume*float(harm.Scale),
 			freq*float(harm.FreqMultiplyer), sampleRate,
-			inOutSamples.Drop(start),
+			inOutSamples,
 			add || h>0);
 	}
 }
@@ -90,9 +91,9 @@ static void MultiSineSynthPassFunction(const MultiSineParams& params,
 SynthPass CreateMultiSineSynthPass(CSpan<SineHarmonic> harmonics)
 {
 	MultiSineParams params;
-	const auto src = harmonics.Take(Utils::LengthOf(params.harmonics));
-	params.len = byte(src.Length());
-	Algo::CopyTo(src, params.harmonics);
+	const auto src = harmonics.Take(Concepts::LengthOf(params.Harmonics));
+	params.Len = byte(src.Length());
+	CopyTo(src, params.Harmonics);
 	return SynthPass(MultiSineSynthPassFunction, params);
 }
 

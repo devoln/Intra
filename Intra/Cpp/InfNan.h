@@ -36,7 +36,8 @@ struct TNaN
 	constexpr forceinline operator real() const {return real(Infinity/Infinity);}
 
 	constexpr TNaN() {}
-} constexpr const NaN;
+};
+constexpr const TNaN NaN;
 
 constexpr forceinline bool operator==(float l, TNaN) {return NaN == l;}
 constexpr forceinline bool operator!=(float l, TNaN) {return NaN != l;}

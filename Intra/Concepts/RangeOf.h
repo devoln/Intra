@@ -13,6 +13,7 @@ namespace Intra {
 
 namespace Range {
 template<typename T> struct Span;
+template<typename I1, typename I2 = I1> struct IteratorRange;
 }
 
 namespace Concepts {
@@ -26,7 +27,6 @@ template<typename T> struct BListNode;
 template<typename T, typename Node = FListNode<T>> struct FListRange;
 template<typename T, typename Node = BListNode<T>> struct BListRange;
 
-template<typename I1, typename I2 = I1> struct IteratorRange;
 
 
 template<typename T> Meta::EnableIf<
@@ -50,8 +50,11 @@ template<typename T, typename = Meta::EnableIf<
 >> forceinline decltype(Meta::Val<T>().AsRange()) RangeOf(T&& v) {return v.AsRange();}
 
 template<typename C, typename D = C, typename = Meta::EnableIf<
-	!IsInputRange<C>::_ && !IsArrayClass<C>::_ && !HasAsRangeMethod<C>::_ && Has_begin_end<C>::_
->> forceinline IteratorRange<decltype(begin(Meta::Val<D>())), decltype(end(Meta::Val<D>()))> RangeOf(C&& v)
+	!IsInputRange<C>::_ &&
+	!IsArrayClass<C>::_ &&
+	!HasAsRangeMethod<C>::_ &&
+	Has_begin_end<C>::_
+>> forceinline Range::IteratorRange<decltype(begin(Meta::Val<D>())), decltype(end(Meta::Val<D>()))> RangeOf(C&& v)
 {return {begin(v), end(v)};}
 
 template<typename R> forceinline Meta::EnableIf<
@@ -161,7 +164,7 @@ Concepts::RangeOfType<R&&>> ForwardOutputOf(Meta::RemoveReference<R>&& t)
 
 }
 
-using Range::RangeOf;
+using Concepts::RangeOf;
 
 INTRA_WARNING_POP
 }

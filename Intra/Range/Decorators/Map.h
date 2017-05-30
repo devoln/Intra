@@ -16,7 +16,7 @@ template<typename R, typename F> struct RMap:
 	Meta::CopyableIf<Meta::IsCopyConstructible<R>::_ && Meta::IsCopyConstructible<F>::_>
 {
 private:
-	typedef Meta::ResultOf<F, ReturnValueTypeOf<R>> return_value_type;
+	typedef Meta::ResultOf<F, Concepts::ReturnValueTypeOf<R>> ReturnValueType;
 public:
 	enum: bool
 	{
@@ -34,7 +34,7 @@ public:
 		OriginalRange(range), Function(func) {}
 
 
-	forceinline return_value_type First() const
+	forceinline ReturnValueType First() const
 	{return Function()(OriginalRange.First());}
 
 	forceinline void PopFirst()
@@ -43,26 +43,29 @@ public:
 	forceinline bool Empty() const
 	{return OriginalRange.Empty() || Function==null;}
 
-	forceinline return_value_type Last() const
+	forceinline ReturnValueType Last() const
 	{return Function()(OriginalRange.Last());}
 
 	forceinline void PopLast() {OriginalRange.PopLast();}
 
-	forceinline return_value_type operator[](size_t index) const
+	forceinline ReturnValueType operator[](size_t index) const
 	{return Function()(OriginalRange[index]);}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasSlicing<U>::_,
-	RMap<SliceTypeOf<U>, F>> operator()(size_t start, size_t end) const
+	template<typename U = R> forceinline Meta::EnableIf<
+		Concepts::HasSlicing<U>::_,
+	RMap<Concepts::SliceTypeOf<U>, F>> operator()(size_t start, size_t end) const
 	{return {OriginalRange(start, end), Function()};}
 
-	template<typename U=R> forceinline Meta::EnableIf<
-		HasLength<U>::_,
+	template<typename U = R> forceinline Meta::EnableIf<
+		Concepts::HasLength<U>::_,
 	size_t> Length() const
 	{return OriginalRange.Length();}
 
 	forceinline bool operator==(const RMap& rhs) const
-	{return Function==rhs.Function && OriginalRange==rhs.OriginalRange;}
+	{
+		return Function == rhs.Function &&
+			OriginalRange == rhs.OriginalRange;
+	}
 
 	R OriginalRange;
 	Utils::Optional<F> Function;

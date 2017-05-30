@@ -52,13 +52,13 @@ protected:
 
 private:
 	template<typename R> using EnableCondition = Meta::EnableIf<
-		Meta::IsConvertible<ReturnValueTypeOfAs<R>, T>::_ &&
-		IsAsFiniteRandomAccessRange<R>::_ &&
+		Meta::IsConvertible<Concepts::ReturnValueTypeOfAs<R>, T>::_ &&
+		Concepts::IsAsFiniteRandomAccessRange<R>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, FiniteRandomAccessRange>::_
 	>;
 
 	template<typename R> forceinline static Interface* wrap(R&& range)
-	{return new WrapperImpl<Meta::RemoveConstRef<RangeOfType<R>>>(Range::Forward<R>(range));}
+	{return new WrapperImpl<Meta::RemoveConstRef<Concepts::RangeOfType<R>>>(Range::Forward<R>(range));}
 
 public:
 	typedef Meta::RemoveConstRef<T> value_type;

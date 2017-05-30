@@ -251,7 +251,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<String, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<String, uint>>(times, count),
@@ -269,7 +269,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count),
-					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
+					TestMapIterationSumValues<std::unordered_map<Big<64>, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapIterationSumValues<LinearMap<Big<64>, uint>>(times, count),
@@ -357,7 +357,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<String, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -375,7 +375,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
+					TestMapSuccessfulSearching<std::unordered_map<Big<64>, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapSuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),
@@ -412,7 +412,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<String, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, Range::HasherObject>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<String, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<String, uint>>(times, count),
@@ -430,7 +430,7 @@ void RunMapPerfTests(FormattedWriter& output)
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<Big<64>, uint>>(times, count),
-					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, Range::HasherObject>>(times, count)
+					TestMapUnsuccessfulSearching<std::unordered_map<Big<64>, uint, Hash::HasherObject>>(times, count)
 				},
 				{
 					TestMapUnsuccessfulSearching<LinearMap<Big<64>, uint>>(times, count),

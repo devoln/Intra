@@ -62,8 +62,9 @@ template<typename Char> struct GenericStringView: Span<Char>
 
 	bool operator==(const GenericStringView& rhs) const noexcept
 	{
-		return Length()==rhs.Length() &&
-			(Data()==rhs.Data() || C::memcmp(Data(), rhs.Data(), Length()*sizeof(Char)));
+		return Length() == rhs.Length() &&
+			(Data() == rhs.Data() ||
+				C::memcmp(Data(), rhs.Data(), Length()*sizeof(Char)));
 	}
 
 	forceinline bool operator!=(const GenericStringView& rhs) const noexcept {return !operator==(rhs);}
@@ -72,18 +73,18 @@ template<typename Char> struct GenericStringView: Span<Char>
 	constexpr forceinline bool operator!=(null_t) const noexcept {return !Empty();}
 
 	bool operator<(const GenericStringView& rhs) const noexcept
-	{return LexCompare(*this, rhs)<0;}
+	{return Utils::LexCompare(*this, rhs) < 0;}
 
 	bool operator<(const Char* rhs) const
 	{
 		return (rhs!=null && *rhs!='\0') && (Length()==0 ||
-			LexCompare(*this, GenericStringView(rhs, Length()))<0);
+			Utils::LexCompare(*this, GenericStringView(rhs, Length()))<0);
 	}
 
 	bool operator>(const Char* rhs) const
 	{
 		return !Empty() && (rhs==null || *rhs=='\0' ||
-			LexCompare(*this, GenericStringView(rhs, Length()))>0);
+			Utils::LexCompare(*this, GenericStringView(rhs, Length()))>0);
 	}
 
 

@@ -2,6 +2,9 @@
 
 #include "Cpp/Fundamental.h"
 #include "Cpp/Features.h"
+
+#include "Math/Math.h"
+
 #include "FastUniform.h"
 
 namespace Intra { namespace Random {
@@ -27,12 +30,12 @@ private:
 
 public:
 	static forceinline float Discrete(float t)
-	{return get(int(t+0.5f));}
+	{return get(size_t(t + 0.5f));}
 
 	static forceinline float Linear(float t)
 	{
 		const size_t n = size_t(t);
-		return LinearMix(get(n), get(n+1), Fract(t));
+		return Math::LinearMix(get(n), get(n+1), Fract(t));
 	}
 
 	static forceinline float Cubic(float t)

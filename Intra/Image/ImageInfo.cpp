@@ -2,7 +2,7 @@
 #include "Utils/StringView.h"
 #include "Container/Sequential/String.h"
 #include "Math/Math.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 #include "Cpp/Warnings.h"
 
 namespace Intra { namespace Image {

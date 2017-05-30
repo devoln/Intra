@@ -1,5 +1,5 @@
 ﻿#include "Audio/Sources/VorbisSource.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 #include "Range/Polymorphic/InputRange.h"
 
 #if(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_libvorbis)

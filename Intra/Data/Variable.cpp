@@ -151,7 +151,7 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::UInt: r.AsUInt = uint(d4.x); break;
 	case ValueType::Int: r.AsInt = int(d4.x); break;
 
-	case ValueType::Half: r.AsHalf = Half(d4.x); break;
+	case ValueType::Half: r.AsHalf = HalfFloat(d4.x); break;
 	case ValueType::Float: r.AsFloat = float(d4.x); break;
 	case ValueType::Double: r.AsDouble = d4.x; break;
 
@@ -170,7 +170,7 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::UVec2: r.AsUVec2 = UVec2(d4.xy); break;
 	case ValueType::IVec2: r.AsIVec2 = IVec2(d4.xy); break;
 
-	case ValueType::HVec2: r.AsHVec2 = HVec2(d4.xy); break;
+	case ValueType::HVec2: r.AsHVec2 = Vector2<HalfFloat>(d4.xy); break;
 	case ValueType::Vec2: r.AsVec2 = Vec2(d4.xy); break;
 	case ValueType::DVec2: r.AsDVec2 = d4.xy; break;
 
@@ -189,7 +189,7 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::UVec3: r.AsUVec3 = UVec3(d4.xyz); break;
 	case ValueType::IVec3: r.AsIVec3 = IVec3(d4.xyz); break;
 
-	case ValueType::HVec3: r.AsHVec3 = HVec3(d4.xyz); break;
+	case ValueType::HVec3: r.AsHVec3 = Vector3<HalfFloat>(d4.xyz); break;
 	case ValueType::Vec3: r.AsVec3 = Vec3(d4.xyz); break;
 	case ValueType::DVec3: r.AsDVec3 = d4.xyz; break;
 
@@ -208,7 +208,7 @@ void Variable::ConvertTypeFromDVec4(Variable& dst, ValueType dstType) const
 	case ValueType::UVec4: r.AsUVec4 = UVec4(d4); break;
 	case ValueType::IVec4: r.AsIVec4 = IVec4(d4); break;
 
-	case ValueType::HVec4: r.AsHVec4 = HVec4(d4); break;
+	case ValueType::HVec4: r.AsHVec4 = Vector4<HalfFloat>(d4); break;
 	case ValueType::Vec4: r.AsVec4 = Vec4(d4); break;
 	case ValueType::DVec4: r.AsDVec4 = d4; break;
 

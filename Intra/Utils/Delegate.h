@@ -66,6 +66,9 @@ public:
 
 
 
-}}
+}
+using Utils::Delegate;
+
+}
 
 INTRA_WARNING_POP

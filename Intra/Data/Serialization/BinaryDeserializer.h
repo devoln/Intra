@@ -79,7 +79,7 @@ public:
 	{
 		uint count = Deserialize<uintLE>();
 		dst.clear();
-		Container::Reserve(dst, count);
+		Concepts::Reserve(dst, count);
 		auto appender = Range::LastAppender(dst);
 		DeserializeToOutputRange(appender, count);
 		return *this;

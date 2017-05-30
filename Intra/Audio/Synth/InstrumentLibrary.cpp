@@ -1,12 +1,17 @@
 ﻿#ifndef INTRA_NO_AUDIO_SYNTH
 
 #include "Cpp/Warnings.h"
+
 INTRA_DISABLE_REDUNDANT_WARNINGS
+
+#include "Random/FastUniformNoise.h"
+
+#include "Container/Sequential/Array.h"
+#include "Container/Utility/Array2D.h"
+
 #include "Audio/Synth/InstrumentLibrary.h"
 #include "Audio/Synth/Generators/DrumPhysicalModel.h"
 #include "Audio/Synth/GeneratorSynth.h"
-#include "Container/Sequential/Array.h"
-#include "Container/Utility/Array2D.h"
 
 #include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/SineExpSynth.h"
@@ -55,7 +60,8 @@ static float DrumSample(float freq, float t)
 	a += Sin(825*x)*0.06103516f;
 	a += Sin(1025*x)*0.03051758f;
 	a *= exponent;
-	a += (RandomNoise::Linear(t*freq*freq/10) + RandomNoise::Linear(t*freq*freq))*0.1220703f;
+	a += (Random::FastUniformNoise::Linear(t*freq*freq/10) +
+		Random::FastUniformNoise::Linear(t*freq*freq))*0.1220703f;
 	a *= Exp(-15*t);
 	a = Clamp(a, -0.30517578f, 0.30517578f);
 	a *= 2.831055f;
@@ -177,22 +183,22 @@ MusicalInstruments::MusicalInstruments()
 
 	Bass1.Synth = CreateGeneratorSynthPass(Generators::RelModSine(0.25, 0.25), 0.2f, 1, 1.0f);
 	Bass1.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.28, 0.15, 0.11, 0.0});
+			{Norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.28, 0.15, 0.11, 0.0});
 
 	ElectricBassFinger.Synth = CreateGeneratorSynthPass(Generators::RelModSine(0.25, 0.25), 0.4f, 1, 1.0f);
 	ElectricBassFinger.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.28, 0.15, 0.11, 0.0});
+			{Norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.28, 0.15, 0.11, 0.0});
 
 	Bass2.Synth = CreateGeneratorSynthPass(Generators::RelModSine(0.75, 1), 0.3f, 2);
 	Bass2.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5,
+			{Norm8(0.7), 0.99, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5,
 		        0.42, 0.37, 0.33, 0.28, 0.24, 0.2, 0.15, 0.11, 0.0});
 
 
 
 	Bass3.Synth = CreateGeneratorSynthPass(Generators::RelModSine(0.75, 1), 1, 1);
 	Bass3.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.1), 0.4, 0.99, 0.9, 0.8, 0.6, 0.55, 0.48, 0.45, 0.42,
+			{Norm8(0.1), 0.4, 0.99, 0.9, 0.8, 0.6, 0.55, 0.48, 0.45, 0.42,
 		        0.37, 0.33, 0.28, 0.24, 0.2, 0.15, 0.11, 0.0});
 
 	
@@ -264,7 +270,7 @@ MusicalInstruments::MusicalInstruments()
 
 	SoundTrackFX2.Synth = CreateSawtoothSynthPass(5, 0.15f, 2, 0.5f);
 	SoundTrackFX2.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.1), 0.27, 0.41, 0.55, 0.74, 0.90, 0.99, 0.81, 0.62, 0.44, 0.25, 0.05});
+		{Norm8(0.1), 0.27, 0.41, 0.55, 0.74, 0.90, 0.99, 0.81, 0.62, 0.44, 0.25, 0.05});
 
 	
 
@@ -286,17 +292,17 @@ MusicalInstruments::MusicalInstruments()
 
 	ReverseCymbal.Synth = CreateWhiteNoiseSynthPass(0.2f, 1, 20);//CreateSawtoothSynthPass(1.0f, 0.5f, 1, 1.0f);
 	ReverseCymbal.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.1), 0.2, 0.45, 0.7, 0.99, 1.0, 0.32});
+		{Norm8(0.1), 0.2, 0.45, 0.7, 0.99, 1.0, 0.32});
 	ReverseCymbal.FadeOffTime = 1.0f;
 
 	Sawtooth.Synth = CreateSawtoothSynthPass(10, 0.25f, 1, 0.5f);
 	Sawtooth.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.5), 0.8, 0.996, 0.95, 0.92, 0.85, 0.72, 0.55, 0.42, 0.31, 0.17, 0.05});
+		{Norm8(0.5), 0.8, 0.996, 0.95, 0.92, 0.85, 0.72, 0.55, 0.42, 0.31, 0.17, 0.05});
 
 
 	LeadSquare.Synth = CreateGeneratorSynthPass(Generators::RelModSine(1.5, 2), 0.2f, 1, 0.5f);
 	LeadSquare.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.4), 0.7, 0.995, 0.98, 0.95, 0.92, 0.90, 0.89, 0.79, 0.57, 0.41, 0.22, 0.05});
+		{Norm8(0.4), 0.7, 0.995, 0.98, 0.95, 0.92, 0.90, 0.89, 0.79, 0.57, 0.41, 0.22, 0.05});
 
 	Crystal.Synth = CreateGeneratorSynthPass(Generators::RelModSine(0.75, 0.5f), 0.4f, 3, 1);
 	Crystal.Attenuation = CreateExponentialAttenuationPass(7);
@@ -344,12 +350,12 @@ MusicalInstruments::MusicalInstruments()
 
 	Atmosphere.Synth = CreateSineSynthPass(0.6f, 4, 0.5f);
 	Atmosphere.Attenuation = CreateTableAttenuationPass(
-		{norm8(0.995), 0.3, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
+		{Norm8(0.995), 0.3, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
 
 	Rain.Synth = CreateSawtoothSynthPass(2, 0.5f, 1, 1);
 	Rain.Modifiers.AddLast(CreateModifierPass(Modifiers::AddPulsator(1, 0.75f, 0.25f)));
 	Rain.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.7), 0.96, 0.7, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
+		{Norm8(0.7), 0.96, 0.7, 0.6, 0.5, 0.45, 0.3, 0.2, 0.15, 0.11, 0.08, 0.06, 0.02, 0.00});
 
 	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 0.5f, 5.0f, 0.35f);//CreateGuitar(15, 128, 3.5f, 1.1f);
 	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 0.5f, 5.0f, 0.3f);//CreateGuitar(15, 224, 3.5f, 1.7f);
@@ -358,7 +364,7 @@ MusicalInstruments::MusicalInstruments()
 	
 	OverdrivenGuitar.Modifiers.AddLast( CreateModifierPass(Modifiers::RelPulsator(6)) );
 	OverdrivenGuitar.Attenuation = CreateTableAttenuationPass(
-			{norm8(0.1), 0.3, 0.7, 0.8, 0.75, 0.3, 0.25, 0.2, 0.16, 0.12, 0.09, 0.06, 0.03, 0.01, 0});
+		{Norm8(0.1), 0.3, 0.7, 0.8, 0.75, 0.3, 0.25, 0.2, 0.16, 0.12, 0.09, 0.06, 0.03, 0.01, 0});
 
 	Trumpet.Synth = CreateSawtoothSynthPass(8, 0.15f, 1, 0.5f);
 	Trumpet.Attenuation = CreateAttackDecayPass(0.05, 0.7);
@@ -376,7 +382,7 @@ MusicalInstruments::MusicalInstruments()
 
 	Calliope.Synth = CreateGeneratorSynthPass(Generators::RelModSine(2.5, 1), 0.2f, 1, 0.5f);
 	Calliope.Attenuation = CreateTableAttenuationPass(
-		{norm8(0.4), 0.9, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.37, 0.33, 0.28, 0.24, 0.2, 0.15, 0.11, 0.0});
+		{Norm8(0.4), 0.9, 0.99, 0.9, 0.8, 0.7, 0.65, 0.6, 0.5, 0.42, 0.37, 0.33, 0.28, 0.24, 0.2, 0.15, 0.11, 0.0});
 
 
 	/*static SynthesizedInstrument violinInstr1={
@@ -419,7 +425,7 @@ MusicalInstruments::MusicalInstruments()
 
 	NewAge.Synth = CreateSineSynthPass(0.15f, 5, 0.5f);
 	NewAge.Attenuation = CreateTableAttenuationPass(
-	    {norm8(0.8), 0.995, 0.7, 0.5, 0.4, 0.05});
+	    {Norm8(0.8), 0.995, 0.7, 0.5, 0.4, 0.05});
 	NewAge.MinNoteDuration = 0.55f;
 
 

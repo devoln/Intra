@@ -12,9 +12,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra {
 
-CSpan<StringView> GetCommandLineArguments()
+static CSpan<StringView> getAndParseCommandLine()
 {
-	StringView result[] = {"program"};
+	static const StringView result[] = {"program"};
 	return result;
 }
 
@@ -41,13 +41,16 @@ namespace Intra {
 
 static CSpan<StringView> getAndParseCommandLine()
 {
+	static FixedArray<char> buf;
+	if(!buf.Empty()) return;
+
 	const wchar_t* const wcmdline = GetCommandLineW();
 	const wchar_t* wcmdptr = wcmdline;
 	size_t len = 0;
 	while(*wcmdptr++) len++;
 
 	const size_t maxArgCount = (len+1)/2;
-	static FixedArray<char> buf(maxArgCount*sizeof(StringView) + len*3);
+	buf.SetCount(maxArgCount*sizeof(StringView) + len*3);
 	const Span<StringView> argBuf = {reinterpret_cast<StringView*>(buf.Data()), maxArgCount};
 	const Span<char> charBuf = SpanOf(buf).Drop(maxArgCount*sizeof(StringView));
 
@@ -111,7 +114,40 @@ static CSpan<StringView> getAndParseCommandLine()
 	return argBuf.Take(argOutput.Length());
 }
 
-const CSpan<StringView> CommandLineArguments = getAndParseCommandLine();
+static TEnvironment::VarSet getAndParseEnvironmentVariables()
+{
+	const wchar_t* const wenv = GetEnvironmentStringsW();
+
+	size_t totalLen = 0;
+	size_t num = 0;
+	for(auto wenvPtr = wenv; *wenvPtr;)
+	{
+		totalLen += size_t(WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, null, 0, null, null)) - 1;
+		while(*wenvPtr++) {}
+		wenvPtr++;
+		num++;
+	}
+
+	FixedArray<char> buffer(num * sizeof(KeyValuePair<StringView, StringView>) + totalLen);
+
+	Span<char> dstChars = SpanOf(buffer).Drop(num * sizeof(KeyValuePair<StringView, StringView>));
+	auto dstPairs = SpanOfRaw<KeyValuePair<StringView, StringView>>(
+		buffer.Data(), num * sizeof(KeyValuePair<StringView, StringView>));
+	for(auto wenvPtr = wenv; *wenvPtr;)
+	{
+		const size_t len = size_t(WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, dstChars.Begin, dstChars.Length(), null, null)) - 1;
+		const StringView key = dstChars.FindBefore('=');
+		const StringView value = dstChars(key.Length() + 1, len);
+		dstChars.PopFirstExactly(len);
+		dstPairs.Put({key, value});
+
+		while(*wenvPtr++) {}
+		wenvPtr++;
+	}
+	return {buffer, num};
+}
+
+const CSpan<KeyValuePair<StringView, StringView>> EnvironmentVariables = getAndParseEnvironmentVariables();
 
 }
 
@@ -160,5 +196,15 @@ const CSpan<StringView> CommandLineArguments = getAndParseCommandLine();
 
 }
 #endif
+
+namespace Intra {
+
+CSpan<const KeyValuePair<StringView, StringView>> TEnvironment::VarSet::AsRange() const
+{
+	return SpanOfRaw<KeyValuePair<StringView, StringView>>(
+		data.Data(), count*sizeof(KeyValuePair<StringView, StringView>));
+}
+
+}
 
 INTRA_WARNING_POP

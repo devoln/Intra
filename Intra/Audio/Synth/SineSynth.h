@@ -2,14 +2,14 @@
 
 #include "Math/Fixed.h"
 #include "Types.h"
-#include "Range/ForwardDecls.h"
+#include "Utils/Span.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
 struct SineHarmonic
 {
-	FixedPoint<byte, 512> Scale;
-	FixedPoint<byte, 16> FreqMultiplyer;
+	Math::FixedPoint<byte, 512> Scale;
+	Math::FixedPoint<byte, 16> FreqMultiplyer;
 };
 
 void PerfectSine(float volume, float freq, uint sampleRate, Span<float> inOutSamples, bool add);

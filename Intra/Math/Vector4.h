@@ -134,7 +134,7 @@ public:
 	constexpr forceinline const T* Data() const noexcept {return &x;}
 	constexpr forceinline size_t Length() const noexcept {return 4;}
 
-	template<typename Index> constexpr forceinline T& operator[](Index index) {return (&x)[index];}
+	template<typename Index> forceinline T& operator[](Index index) {return (&x)[index];}
 	template<typename Index> constexpr forceinline const T& operator[](Index index) const {return (&x)[index];}
 
 	constexpr forceinline T MaxElement() const {return Max(xy.MaxElement(), zw.MaxElement());}
@@ -162,44 +162,44 @@ public:
 template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs == NaN;}
 template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs != NaN;}
 
-template<typename T> Vector4 ClosestPointOnLine(const Vector4<T>& lineA, const Vector4<T>& lineB) const
+template<typename T> Vector4<T> ClosestPointOnLine(const Vector4<T> pt, const Vector4<T>& lineA, const Vector4<T>& lineB)
 {
 	const Vector4<T> AB = Normalize(lineB - lineA);
-	const Vector4<T> t = Dot(AB, (*this - lineA));
+	const Vector4<T> t = Dot(AB, (pt - lineA));
 	if(t <= 0) return lineA;
-	if(t >= Distance(lineA, lineB)) return lineB;
-	return lineA+AB*t;
+	if(t*t >= DistanceSqr(lineA, lineB)) return lineB;
+	return lineA + AB*t;
 }
 
-template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, T v2)
+template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, T v2) noexcept
 {return {Min(v1.x, v2), Min(v1.y, v2), Min(v1.z, v2), Min(v1.w, v2)};}
 
-template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, const Vector4<T>& v2)
+template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, const Vector4<T>& v2) noexcept
 {return {Min(v1.x, v2.x), Min(v1.y, v2.y), Min(v1.z, v2.z), Min(v1.w, v2.w)};}
 
-template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, T v2)
+template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, T v2) noexcept
 {return {Max(v1.x, v2), Max(v1.y, v2), Max(v1.z, v2), Max(v1.w, v2)};}
 
-template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, const Vector4<T>& v2)
+template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, const Vector4<T>& v2) noexcept
 {return {Max(v1.x, v2.x), Max(v1.y, v2.y), Max(v1.z, v2.z), Max(v1.w, v2.w)};}
 
-template<typename T> constexpr forceinline Vector4<T> operator*(T n, const Vector4<T>& v) {return v*n;}
+template<typename T> constexpr forceinline Vector4<T> operator*(T n, const Vector4<T>& v) noexcept {return v*n;}
 
-template<typename T> constexpr T Dot(const Vector4<T>& l, const Vector4<T>& r) {return l.x*r.x + l.y*r.y+l.z*r.z + l.w*r.w;}
+template<typename T> constexpr T Dot(const Vector4<T>& l, const Vector4<T>& r) noexcept {return l.x*r.x + l.y*r.y+l.z*r.z + l.w*r.w;}
 
-template<typename T> constexpr forceinline T LengthSqr(const Vector4<T>& v) {return Dot(v,v);}
+template<typename T> constexpr forceinline T LengthSqr(const Vector4<T>& v) noexcept {return Dot(v, v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Length(const Vector4<T>& v) {return Sqrt(Dot(v,v));}
+template<typename T> INTRA_MATH_CONSTEXPR T Length(const Vector4<T>& v) {return Sqrt(Dot(v, v));}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Distance(const Vector4<T>& l, const Vector4<T>& r) {return Length(l-r);}
+template<typename T> INTRA_MATH_CONSTEXPR T Distance(const Vector4<T>& l, const Vector4<T>& r) {return Length(l - r);}
 
-template<typename T> constexpr T DistanceSqr(const Vector4<T>& l, const Vector4<T>& r) {return LengthSqr(l-r);}
+template<typename T> constexpr T DistanceSqr(const Vector4<T>& l, const Vector4<T>& r) noexcept {return LengthSqr(l - r);}
 
 
 
 template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Normalize(const Vector4<T>& v) {return v / Length(v);}
 
-template<typename T> constexpr Vector4<T> Reflect(const Vector4<T>& incident, const Vector4<T>& normal) {return incident - Dot(incident, normal)*2*normal;}
+template<typename T> constexpr Vector4<T> Reflect(const Vector4<T>& incident, const Vector4<T>& normal) noexcept {return incident - Dot(incident, normal)*2*normal;}
 
 template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector4<T> Refract(const Vector4<T>& I, const Vector4<T>& N, float eta)
 {
@@ -209,19 +209,19 @@ template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector4<T> Refract(const Vect
 	return eta*I - (eta*NI + Sqrt(k))*N;
 }
 
-template<typename T> constexpr Vector4<T> FaceForward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref)
+template<typename T> constexpr Vector4<T> FaceForward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref) noexcept
 {return N*Sign(-Dot(Nref, I));}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Floor(const Vector4<T>& v)
+template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Floor(const Vector4<T>& v) noexcept
 {return {Floor(v.x), Floor(v.y), Floor(v.z), Floor(v.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Fract(const Vector4<T>& v)
+template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Fract(const Vector4<T>& v) noexcept
 {return {Fract(v.x), Fract(v.y), Fract(v.z), Fract(v.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Round(const Vector4<T>& val)
+template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Round(const Vector4<T>& val) noexcept
 {return {Round(val.x), Round(val.y), Round(val.z), Round(val.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Exp(const Vector4<T>& v)
+template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Exp(const Vector4<T>& v) noexcept
 {return {T(Exp(v.x)), T(Exp(v.y)), T(Exp(v.z)), T(Exp(v.w))};}
 
 

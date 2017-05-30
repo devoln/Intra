@@ -17,11 +17,15 @@ INTRA_DEFINE_EXPRESSION_CHECKER(Has_empty, static_cast<bool>(Meta::Val<T>().empt
 INTRA_DEFINE_EXPRESSION_CHECKER(Has_reserve, Meta::Val<T>().reserve(size_t()));
 
 template<typename C> struct IsSequentialContainer: Meta::TypeFromValue<bool,
-	Has_push_back<Meta::RemoveConst<C>>::_ && Has_size<C>::_ && Has_empty<C>::_
+	Has_push_back<Meta::RemoveConst<C>>::_ &&
+	Has_size<C>::_ &&
+	Has_empty<C>::_
 > {};
 
 template<typename C> struct IsDynamicArrayContainer: Meta::TypeFromValue<bool,
-	IsSequentialContainer<C>::_ && Has_resize<Meta::RemoveConst<C>>::_ && Has_data<C>::_
+	IsSequentialContainer<C>::_ &&
+	Has_resize<Meta::RemoveConst<C>>::_ &&
+	Has_data<C>::_
 > {};
 
 template<typename C> struct IsStaticArrayContainer: Meta::TypeFromValue<bool,

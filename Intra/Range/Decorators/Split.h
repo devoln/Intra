@@ -86,7 +86,7 @@ template<typename R, typename P1, typename P2 = bool(*)(const Concepts::ValueTyp
 	Concepts::IsForwardRange<AsR>::_ &&
 	Meta::IsCallable<P1, T>::_ &&
 	Meta::IsCallable<P2, T>::_,
-RSplit<Meta::RemoveConstRef<T>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
+RSplit<Meta::RemoveConstRef<AsR>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
 	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter=&Op::FalsePredicate<T>)
 {return {Range::Forward<R>(range), Cpp::Forward<P1>(isSkippedDelimiter), Cpp::Forward<P2>(isElementDelimiter)};}
 

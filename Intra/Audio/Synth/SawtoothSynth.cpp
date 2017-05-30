@@ -3,10 +3,10 @@
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Utils/Span.h"
 #include "Cpp/Warnings.h"
-#include "Algo/Mutation/Copy.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Copy.h"
+#include "Range/Mutation/Transform.h"
 #include "Container/Sequential/Array.h"
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -17,8 +17,8 @@ void PerfectSawtooth(double upPercent, float volume,
 {
 	Generators::Sawtooth saw(float(upPercent/(1.0-upPercent)));
 	saw.SetParams(freq, volume, 1.0/sampleRate);
-	if(!add) Algo::CopyAdvanceToAdvance(saw, inOutSamples);
-	else Algo::Add(inOutSamples, saw);
+	if(!add) CopyAdvanceToAdvance(saw, inOutSamples);
+	else Add(inOutSamples, saw);
 }
 
 
@@ -56,13 +56,13 @@ void SawtoothSynthPassFunction(const SawtoothParams& params,
 
 	FastSawtooth(updownPercent, newVolume, newFreq, sampleRate, inOutSamples, add);
 
-	Math::Random<float> frandom(612651278);
+	Random::FastUniform<float> frandom(612651278+inOutSamples.Length()+uint(freq*1000));
 	for(ushort h=1; h<params.Harmonics; h++)
 	{
-		newVolume/=2;
+		newVolume /= 2;
 		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
-		size_t randomSampleOffset = Math::Random<ushort>::Global(20);
+		const size_t randomSampleOffset = (inOutSamples.Length()*(h+16807)) % 20;
 		FastSawtooth(updownPercent, newVolume, frequency, sampleRate, inOutSamples.Drop(randomSampleOffset), true);
 	}
 }

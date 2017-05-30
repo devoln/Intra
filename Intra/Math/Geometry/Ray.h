@@ -9,11 +9,16 @@ template<typename T> struct Ray
 	Ray() = default;
 	constexpr forceinline Ray(const Vector3<T>& origin, const Vector3<T>& direction) noexcept:
 		Origin(origin), Direction(direction) {}
+
+	template<typename T> constexpr Ray<T> Transform(const Matrix3<T>& mat, const Vector3<T>& offset)
+	{return Ray<T>((mat*Vector4<T>(Origin, 1)).xyz, mat*Direction);}
+
+	template<typename T> constexpr Ray<T> Transform(const Matrix4<T>& mat)
+	{return Ray<T>((mat*Vector4<T>(Origin, 1)).xyz, Matrix3<T>(mat)*Direction);}
+
 };
 
 typedef Ray<float> RayF;
 
-template<typename T> constexpr Ray<T> operator*(const Matrix4<T>& mat, const Ray<T>& r)
-{return Ray<T>(Vector3<T>(mat*Vector4<T>(r.Origin, 1)), Matrix3<T>(mat)*r.Direction);}
 
 }}

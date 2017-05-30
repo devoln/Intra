@@ -6,7 +6,7 @@
 #include "Container/Sequential/Array.h"
 #include "Range/Mutation/Copy.h"
 #include "Utils/Span.h"
-#include "Range/Stream/Operators.h"
+#include "Range/Stream/ToString.h"
 #include "Range/Stream/OutputStreamMixin.h"
 
 
@@ -83,7 +83,8 @@ public:
 	}
 
 	template<typename AR> Meta::EnableIf<
-		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
+		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
+		!Meta::IsConst<AR>::_,
 	size_t> PutAllAdvance(AR& src)
 	{
 		CSpan<char> srcArr(src.Data(), src.Length());

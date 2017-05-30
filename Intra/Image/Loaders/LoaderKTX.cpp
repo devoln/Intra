@@ -1,14 +1,13 @@
 ﻿#ifndef INTRA_NO_KTX_LOADER
 
 #include "Image/Loaders/LoaderKTX.h"
-#include "Image/AnyImage.h"
-#include "Image/Bindings/GLenumFormats.h"
+
 #include "Cpp/Warnings.h"
 
-namespace Intra { namespace Image {
+#include "Image/AnyImage.h"
+#include "Image/Bindings/GLenumFormats.h"
 
-using namespace Math;
-using namespace IO;
+namespace Intra { namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -16,7 +15,7 @@ struct KtxHeader
 {
 	uint glType, glTypeSize;
 	uint glFormat, glInternalFormat, glBaseInternalFormat;
-	UVec3 sizes;
+	Math::UVec3 sizes;
 	uint numberOfArrayElements, numberOfFaces, numberOfMipmapLevels;
 	uint bytesOfKeyValueData;
 };
@@ -42,7 +41,7 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 		else return {{0,0,0}, null, ImageType_End, 0};
 	}
 	else result.Type = ImageType_3D;
-	result.Size = Max(USVec3(header.sizes), USVec3(1));
+	result.Size = Math::Max(Math::USVec3(header.sizes), Math::USVec3(1));
 	return result;
 }
 
@@ -62,9 +61,7 @@ bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
 		0xAB, 0x4B, 0x54, 0x58, 0x20, 0x31,
 		0x31, 0xBB, 0x0D, 0x0A, 0x1A, 0x0A
 	};
-	auto headerByteRange = CSpan<byte>(
-		reinterpret_cast<const byte*>(header), sizeof(fileIdentifier));
-	return Algo::Equals(headerByteRange, fileIdentifier);
+	return Equals(SpanOfRaw(header, bytes), fileIdentifier);
 }
 
 AnyImage LoaderKTX::Load(InputStream stream) const

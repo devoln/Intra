@@ -126,9 +126,9 @@ template<typename I> struct GenericTextDeserializer
 
 	Range::TakeResult<I> ParseIdentifier()
 	{
-		static const AsciiSet isNotIdentifierFirstChar = AsciiSet::NotIdentifierChars|AsciiSet::Digits;
+		static const AsciiSet isNotIdentifierFirstChar = AsciiSets.NotIdentifierChars | AsciiSets.Digits;
 		return Range::ParseIdentifierAdvance(Input,
-			isNotIdentifierFirstChar, AsciiSet::NotIdentifierChars);
+			isNotIdentifierFirstChar, AsciiSets.NotIdentifierChars);
 	}
 
 	//! Прочитать имя поля и пропустить оператор присваивания, перейдя к правой части присваивания.

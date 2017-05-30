@@ -78,7 +78,7 @@ template<typename T> struct BListNode
 	forceinline BListNode* NextListNode() const {return Next;}
 };
 
-template<typename T, typename NodeType> struct BListRange
+template<typename T, typename NodeType = BListNode<T>> struct BListRange
 {
 	typedef NodeType Node;
 
@@ -140,8 +140,8 @@ template<typename T, typename NodeType> struct BListRange
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::TypeEquals<U, Node>::_,
-	const BListRange<const T>&> AsConstRange() const
-	{return *reinterpret_cast<const BListRange<const T>*>(this);}
+	const BListRange<const T, BListNode<const T>>&> AsConstRange() const
+	{return *reinterpret_cast<const BListRange<const T, BListNode<const T>>*>(this);}
 
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator==(const BListRange& rhs) const

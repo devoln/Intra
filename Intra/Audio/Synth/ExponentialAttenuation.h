@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Types.h"
+#include "Utils/Span.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 

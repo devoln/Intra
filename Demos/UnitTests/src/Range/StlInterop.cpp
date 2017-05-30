@@ -2,6 +2,7 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.hh"
+#include "Utils/IteratorRange.h"
 #include "IO/FormattedWriter.h"
 #include "Range/Output/OutputArrayRange.h"
 
@@ -101,7 +102,7 @@ void TestRangeStlInterop(FormattedWriter& output)
 	INTRA_ASSERT_EQUALS(charListStr, "Hello");
 	output.PrintLine("Выведем строку, сконструированную из deque символов: ", charListStr);
 
-	String charListDequeConcat = charList+charDeque;
+	String charListDequeConcat = charList + charDeque;
 	INTRA_ASSERT_EQUALS(charListDequeConcat, "HelloRanges");
 	output.PrintLine("Выведем строку, полученную конкатенацией связного списка и deque символов: ", charListDequeConcat);
 

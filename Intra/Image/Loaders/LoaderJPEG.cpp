@@ -2,7 +2,7 @@
 #include "Image/Loaders/LoaderPlatform.h"
 #include "Range/Polymorphic/InputRange.h"
 #include "Image/AnyImage.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 namespace Intra { namespace Image {
 

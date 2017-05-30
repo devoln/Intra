@@ -28,7 +28,7 @@ void RunRandomPerfTests(IO::FormattedWriter& logger)
 	std::random_device r;
 	std::mt19937 mt19937(r());
 
-	Math::Random<float> frandom(3787847832u);
+	Random::FastUniform<float> frandom(3787847832u);
 
 	Timer tim;
 

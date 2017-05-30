@@ -1,6 +1,6 @@
 ﻿#include "Image/Bindings/DXGI_Formats.h"
 #include "Image/ImageFormat.h"
-#include "Algo/Mutation/Fill.h"
+#include "Range/Mutation/Fill.h"
 #include "Utils/Span.h"
 
 namespace Intra { namespace Image {
@@ -50,7 +50,7 @@ ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* swapRB)
 	if(swapRB!=null) *swapRB = (
 		(fmt>=DXGI_FORMAT_B5G6R5_UNORM && fmt<=DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) ||
 		fmt==DXGI_FORMAT_B4G4R4A4_UNORM);
-	if(fmt>=Utils::LengthOf(dxgiFormatConvertTable)) return null;
+	if(fmt >= Concepts::LengthOf(dxgiFormatConvertTable)) return null;
 	return dxgiFormatConvertTable[fmt];
 }
 
@@ -60,8 +60,8 @@ DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB)
 	static bool inited = false;
 	if(!inited)
 	{
-		Algo::FillZeros(mapNoSwap);
-		Algo::FillZeros(mapSwap);
+		Range::FillZeros(mapNoSwap);
+		Range::FillZeros(mapSwap);
 		for(int i=DXGI_FORMAT_UNKNOWN+1; i<=DXGI_FORMAT_B4G4R4A4_UNORM; i++)
 		{
 			const auto dxgi = DXGI_FORMAT(i);

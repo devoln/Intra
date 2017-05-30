@@ -20,25 +20,49 @@ public:
 	Matrix3() = default;
 	
 	constexpr forceinline Matrix3(T rX, T rY, T rZ, T uX, T uY, T uZ, T oX, T oY, T oZ) noexcept:
-		Rows{{rX, rY, rZ}, {uX, uY, uZ}, {oX, oY, oZ}} {}
+		Rows {
+			{rX, rY, rZ},
+			{uX, uY, uZ},
+			{oX, oY, oZ}
+		} {}
 	
 	explicit Matrix3(const T data[9]) {C::memcpy(Rows, data, sizeof(*this));}
-	
-	constexpr forceinline Matrix3(const Vector2<T>& right, const Vector2<T>& up, const Vector2<T>& origin) noexcept:
-		Rows{{right.xy, 0}, {up.xy, 0}, {origin.xy, 1}} {}
 
-	constexpr forceinline Matrix3(const Vector3<T>& right, const Vector3<T>& up, const Vector3<T>& forward) noexcept:
-		Rows{right, up, forward} {}
+	constexpr forceinline Matrix3(const Vector3<T>& right,
+		const Vector3<T>& up, const Vector3<T>& forward) noexcept:
+	Rows{right, up, forward} {}
+	
+	//! Создать матрицу, задаюющую однородную систему координат.
+	//! @param right Правый вектор базиса
+	//! @param up Верхний вектор базиса
+	//! @param translation Вектор переноса
+	constexpr static forceinline Matrix3 FromAxesAndTranslation(
+		const Vector2<T>& right, const Vector2<T>& up, const Vector2<T>& translation) noexcept
+	{
+		return {
+			{right, translation.x},
+			{up, translation.y},
+			{0, 0, 1}
+		};
+	}
 
 	constexpr forceinline explicit Matrix3(const Matrix4<T>& m) noexcept:
-		Rows{m.Rows[0].xyz, m.Rows[1].xyz, m.Rows[2].xyz} {}
+		Rows {
+			m.Rows[0].xyz,
+			m.Rows[1].xyz,
+			m.Rows[2].xyz
+		} {}
 
 	constexpr bool operator==(const Matrix3& rhs) const noexcept
-	{return Rows[0] == rhs.Rows[0] && Rows[1] == rhs.Rows[1] && Rows[2] == rhs.Rows[2];}
+	{
+		return Rows[0] == rhs.Rows[0] &&
+			Rows[1] == rhs.Rows[1] &&
+			Rows[2] == rhs.Rows[2];
+	}
 	
-	constexpr bool operator!=(const Matrix3& rhs) const noexcept {return !operator==(m);}
+	constexpr forceinline bool operator!=(const Matrix3& rhs) const noexcept {return !operator==(rhs);}
 
-	constexpr forceinline Matrix3 operator*(const Matrix3& rhs) const noexcept
+	constexpr Matrix3 operator*(const Matrix3& rhs) const noexcept
 	{
 		return {
 			{
@@ -59,7 +83,7 @@ public:
 		};
 	}
 
-	constexpr forceinline Matrix3 TransposeMultiply(const Matrix3& rhs) const noexcept
+	constexpr Matrix3 TransposeMultiply(const Matrix3& rhs) const noexcept
 	{
 		return {
 			{
@@ -80,7 +104,7 @@ public:
 		};
 	}
 
-	constexpr forceinline Matrix3 MultiplyTranspose(const Matrix3& rhs) const noexcept
+	constexpr Matrix3 MultiplyTranspose(const Matrix3& rhs) const noexcept
 	{
 		return {
 			{
@@ -103,47 +127,150 @@ public:
 
 	forceinline Matrix3& operator*=(const Matrix3& m) noexcept {return *this = *this*m;}
 
-	constexpr Matrix3 operator*(T n) const noexcept {return {Rows[0]*n, Rows[1]*n, Rows[2]*n};}
-	constexpr Matrix3 operator/(T n) const {return {Rows[0]/n, Rows[1]/n, Rows[2]/n};}
+	constexpr Matrix3 operator*(T n) const noexcept
+	{
+		return {
+			Rows[0]*n,
+			Rows[1]*n,
+			Rows[2]*n
+		};
+	}
+
+	constexpr Matrix3 operator/(T n) const
+	{
+		return {
+			Rows[0]/n,
+			Rows[1]/n,
+			Rows[2]/n
+		};
+	}
 	
-	Matrix3& operator*=(T n) noexcept {Rows[0] *= n, Rows[1] *= n, Rows[2] *= n; return *this;}
-	Matrix3& operator/=(T n) {Rows[0] /= n, Rows[1] /= n, Rows[2] /= n; return *this;}
+	Matrix3& operator*=(T n) noexcept
+	{
+		Rows[0] *= n;
+		Rows[1] *= n;
+		Rows[2] *= n;
+		return *this;
+	}
+
+	Matrix3& operator/=(T n)
+	{
+		Rows[0] /= n;
+		Rows[1] /= n;
+		Rows[2] /= n;
+		return *this;
+	}
 	
-	constexpr Matrix3 operator+(const Matrix3& m) const noexcept {return Matrix3(Rows[0]+m[0], Rows[1]+m[1], Rows[2]+m[2]);}
-	constexpr Matrix3 operator-(const Matrix3& m) const noexcept {return Matrix3(Rows[0]-m[0], Rows[1]-m[1], Rows[2]-m[2]);}
+	constexpr Matrix3 operator+(const Matrix3& m) const noexcept
+	{
+		return {
+			Rows[0] + m.Rows[0],
+			Rows[1] + m.Rows[1],
+			Rows[2] + m.Rows[2]
+		};
+	}
+
+	constexpr Matrix3 operator-(const Matrix3& m) const noexcept
+	{
+		return {
+			Rows[0] - m.Rows[0],
+			Rows[1] - m.Rows[1],
+			Rows[2] - m.Rows[2]
+		};
+	}
 	
-	Matrix3& operator+=(const Matrix3& m) noexcept {Rows[0] += m[0], Rows[1] += m[1], Rows[2] += m[2]; return *this;}
-	Matrix3& operator-=(const Matrix3& m) noexcept {Rows[0] -= m[0], Rows[1] -= m[1], Rows[2] -= m[2]; return *this;}
+	Matrix3& operator+=(const Matrix3& m) noexcept
+	{
+		Rows[0] += m[0];
+		Rows[1] += m[1];
+		Rows[2] += m[2];
+		return *this;
+	}
+	Matrix3& operator-=(const Matrix3& m) noexcept
+	{
+		Rows[0] -= m[0];
+		Rows[1] -= m[1];
+		Rows[2] -= m[2];
+		return *this;
+	}
 
 	INTRA_MATH_CONSTEXPR Vector3<T> ExtractScaleVector() const noexcept
-	{return {Length(Rows[0]), Length(Rows[1]), Length(Rows[2])};}
+	{
+		return {
+			Length(Rows[0]),
+			Length(Rows[1]),
+			Length(Rows[2])
+		};
+	}
 	
 	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
-	INTRA_MATH_CONSTEXPR Matrix3 ExtractRotation() const {return {Normalize(Rows[0]), Normalize(Rows[1]), Normalize(Rows[2])}}
+	INTRA_MATH_CONSTEXPR Matrix3 ExtractRotation() const
+	{
+		return {
+			Normalize(Rows[0]),
+			Normalize(Rows[1]),
+			Normalize(Rows[2])
+		};
+	}
+
+	void DecomposeTransform(Matrix3* oRotation, Vector3<T>* oScaling) const
+	{
+		const Vector3<T> s = ExtractScaleVector();
+		if(oScaling) *oScaling = s;
+		if(oRotation) *oRotation = {Rows[0].xy/s.x, Rows[1].xy/s.y};
+	}
+
+	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
+	//INTRA_MATH_CONSTEXPR Matrix2 ExtractRotation2() const {return {Normalize(Rows[0].xy), Normalize(Rows[1].xy)}}
 
 	INTRA_MATH_CONSTEXPR Vector2<T> ExtractScaleVector2() const noexcept {return {Length(Rows[0].xy), Length(Rows[1].xy)};}
 	
-	constexpr const Vector2<T>& ExtractTranslation2() const {return Rows[2].xy;}
-	/*Matrix2 GetRotation2() const {Matrix2 result; DecomposeTransform2(&result, null); return result;}
-
+	//! Извлекает перенос, предполагая, что матрица задаёт однородную систему координат
+	constexpr Vector2<T> ExtractTranslation2() const {return {Rows[0].z, Rows[1].z};}
+	/*
 	void DecomposeTransform2(Matrix2* rotation, Vector2<T>* scaling, Vector2<T>* translation) const
 	{
 		const Vector2<T> s = GetScaling2();
-		if(scaling!=null) *scaling = s;
-		if(rotation!=null) *rotation = Matrix2(Vector2<T>(Rows[0])/s[0], Vector2<T>(Rows[1])/s[1]);
-		if(translation!=null) *translation = GetTranslation2();
+		if(oScaling) *oScaling = s;
+		if(oRotation) *oRotation = Matrix2(Vector2<T>(Rows[0])/s[0], Vector2<T>(Rows[1])/s[1]);
+		if(oTranslation) *oTranslation = GetTranslation2();
 	}*/
 
 	constexpr forceinline Vector3<T> Column(size_t i) const noexcept
-	{return {Rows[0][i], Rows[1][i], Rows[2][i]};}
+	{
+		return {
+			Rows[0][i],
+			Rows[1][i],
+			Rows[2][i]
+		};
+	}
 	
 	forceinline void SetColumn(size_t i, const Vector3<T>& value) noexcept
-	{Rows[0][i] = value.x; Rows[1][i] = value.y; Rows[2][i] = value.z;}
+	{
+		Rows[0][i] = value.x;
+		Rows[1][i] = value.y;
+		Rows[2][i] = value.z;
+	}
 
-	static constexpr const Matrix3 I{1,0,0, 0,1,0, 0,0,1};
+	//! Единичная матрица
+	static constexpr const Matrix3 Identity() noexcept
+	{
+		return {
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1
+		};
+	}
 
+	//! Матрица переноса на вектор translation в однородных координатах.
 	static constexpr forceinline Matrix3 CreateTranslation(const Vector2<T>& translation)
-	{return {1,0,0, 0,1,0, translation.x, translation.y, 1};}
+	{
+		return {
+			1, 0, translation.x,
+			0, 1, translation.y,
+			0, 0, 1
+		};
+	}
 
 	//! Возвращает матрицу поворота вокруг оси normalizedAxis на угол angleRadians, измеряемый в радианах.
 	//! Предполагает, что вектор normalizedAxis нормирован. Иначе получится некорректный результат.
@@ -165,7 +292,11 @@ public:
 		const T ys = normalizedAxis.y*s;
 		const T zs = normalizedAxis.z*s;
 
-		return {oxx+c, oxy+zs, ozx-ys, oxy-zs, oyy+c, oyz+xs, ozx+ys, oyz-xs, ozz+c};
+		return {
+			oxx + c, oxy + zs, ozx - ys,
+			oxy - zs, oyy + c, oyz + xs,
+			ozx + ys, oyz - xs, ozz + c
+		};
 	}
 
 	//! Возвращает матрицу поворота вокруг оси axis на угол angleRadians, измеряемый в радианах.
@@ -173,17 +304,43 @@ public:
 	{return CreateRotationNormalized(angleInRadians, Normalize(axis));}
 
 	static constexpr forceinline Matrix3 CreateScaling(const Vector3<T>& scale) noexcept
-	{return {scale.x,0,0, 0,scale.y,0, 0,0,scale.z};}
+	{
+		return {
+			scale.x, 0, 0,
+			0, scale.y, 0,
+			0, 0, scale.z
+		};
+	}
 
 	static constexpr forceinline Matrix3 CreateScaling(const Vector2<T>& scale) noexcept
-	{return {scale.x,0,0, 0,scale.y,0, 0,0,1};}
+	{
+		return {
+			scale.x, 0, 0,
+			0, scale.y, 0,
+			0, 0, 1
+		};
+	}
 
 	static constexpr forceinline Matrix3 CreateScaling(T x, T y, T z) noexcept
-	{return {x,0,0, 0,y,0, 0,0,z};}
+	{
+		return {
+			x, 0, 0,
+			0, y, 0,
+			0, 0, z
+		};
+	}
 
 	static constexpr forceinline Matrix3 CreateScaling(T factor) noexcept
-	{return {factor,0,0, 0,factor,0, 0,0,factor};}
+	{
+		return {
+			factor, 0, 0,
+			0, factor, 0,
+			0, 0, factor
+		};
+	}
 
+	//! Возвращает матрицу вращения на углы Эйлера.
+	//TODO: rotX, rotY, rotZ вроде некорректные названия.
 	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateRotationEuler(T rotX, T rotY, T rotZ)
 	{
 		const T cos_rx = T(Cos(rotX));
@@ -211,6 +368,10 @@ public:
 		};
 	}
 
+	//! Задаёт вращательную часть видовой матрицы, используя следующие параметры:
+	//! @param eye Положение наблюдателя.
+	//! @param center Точка, в которую смотрит наблюдатель.
+	//! @param up Направление вектора "вверх".
 	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
 	{
 		const Vector3<T> f = Normalize(center - eye);
@@ -235,14 +396,34 @@ public:
 		};
 	}
 
+	INTRA_EXTENDED_CONSTEXPR Matrix3 Orthogonalize() const
+	{
+		const T ll0 = LengthSqr(Rows[0]);
+		const auto r1 = Rows[1] - Rows[0]*(Dot(Rows[0], Rows[1])/ll0);
+		return {
+			Rows[0], r1,
+			Rows[2] - (Rows[0]*Dot(Rows[0], Rows[2])/ll0 + r1*Dot(r1, Rows[2])/LengthSqr(r1))
+		};
+	}
+
 	Vector3<T> Rows[3];
 };
 
 template<typename T> constexpr Vector3<T> operator*(const Vector3<T>& v, const Matrix3<T>& m) noexcept
-{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z,}
+{
+	return m.Rows[0] * v.x +
+		m.Rows[1] * v.y +
+		m.Rows[2] * v.z;
+}
 
 template<typename T> constexpr Vector3<T> operator*(const Matrix3<T>& m, const Vector3<T>& v) noexcept
-{return {Dot(m.Rows[0], v), Dot(m.Rows[1], v), Dot(m.Rows[2], v)};}
+{
+	return {
+		Dot(m.Rows[0], v),
+		Dot(m.Rows[1], v),
+		Dot(m.Rows[2], v)
+	};
+}
 
 template<typename T> constexpr Matrix3<T> Transpose(const Matrix3<T>& m) noexcept
 {

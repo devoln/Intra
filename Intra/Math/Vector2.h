@@ -15,6 +15,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Math {
 
+template<typename T> struct Vector3;
+template<typename T> struct Vector4;
+
 template<typename T> struct Vector2
 {
 	Vector2() = default;
@@ -25,22 +28,20 @@ template<typename T> struct Vector2
 	template<typename U> constexpr explicit forceinline Vector2(const Vector4<U>& v): x(T(v.x)), y(T(v.y)) {}
 
 	template<typename U> constexpr forceinline  Vector2 operator+(const Vector2<U>& rhs) const {return Vector2(x+rhs.x, y+rhs.y);}
-	template<typename U> forceinline Vector2& operator+=(const Vector2<U>& rhs) {x+=rhs.x, y+=rhs.y; return *this;}
+	template<typename U> forceinline Vector2& operator+=(const Vector2<U>& rhs) {x += rhs.x, y += rhs.y; return *this;}
 
 	constexpr forceinline Vector2 operator-() const {return {-x, -y};}
 	template<typename U> constexpr forceinline Vector2 operator-(const Vector2<U>& rhs) const {return Vector2(x-rhs.x, y-rhs.y);}
-	template<typename U> forceinline Vector2& operator-=(const Vector2<U>& rhs) {x-=rhs.x, y-=rhs.y; return *this;}
+	template<typename U> forceinline Vector2& operator-=(const Vector2<U>& rhs) {x -= rhs.x, y -= rhs.y; return *this;}
 
 	constexpr forceinline Vector2 operator*(T n) const {return {x*n, y*n};}
 	forceinline Vector2& operator*=(T n) {x*=n, y*=n; return *this;}
 
 	template<typename U> constexpr forceinline Vector2 operator*(const Vector2<U>& rhs) const {return Vector2(x*rhs.x, y*rhs.y);}
-	template<typename U> forceinline Vector2& operator*=(const Vector2<U>& rhs) {x*=rhs.x, y*=rhs.y; return *this;}
-
-	forceinline Vector2& operator*=(const Matrix3<T>& m) {return *this=*this*m;}
+	template<typename U> forceinline Vector2& operator*=(const Vector2<U>& rhs) {x *= rhs.x, y *= rhs.y; return *this;}
 
 	constexpr forceinline Vector2 operator/(T n) const {return {x/n, y/n};}
-	forceinline Vector2& operator/=(T n) {x/=n, y/=n; return *this;}
+	forceinline Vector2& operator/=(T n) {x /= n, y /= n; return *this;}
 	template<typename U> constexpr forceinline Vector2 operator/(const Vector2<U>& rhs) const {return Vector2(x/rhs.x, y/rhs.y);}
 	template<typename U> forceinline Vector2& operator/=(const Vector2<U>& rhs) {x /= rhs.x, y /= rhs.y; return *this;}
 

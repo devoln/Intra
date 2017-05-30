@@ -259,7 +259,7 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <IncludePath>$(SolutionDir)Intra$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
@@ -322,13 +322,15 @@
       <MinimalRebuild />
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnablePREfast>false</EnablePREfast>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -346,13 +348,15 @@
       </MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnablePREfast>false</EnablePREfast>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -367,13 +371,15 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>INTRA_EXCEPTIONS_ENABLED;INTRA_DEBUG;INTRA_STL_INTERFACE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -387,13 +393,15 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>INTRA_EXCEPTIONS_ENABLED;INTRA_DEBUG;INTRA_STL_INTERFACE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -423,8 +431,10 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -435,7 +445,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
@@ -467,8 +477,10 @@
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -479,7 +491,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
       <LinkTimeCodeGeneration>UseFastLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
@@ -508,8 +520,10 @@
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -520,7 +534,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
     </Link>
     <PostBuildEvent>
@@ -548,7 +562,8 @@
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <OmitFramePointers>true</OmitFramePointers>
@@ -565,7 +580,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
@@ -593,8 +608,10 @@
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
     </ClCompile>
     <Link>
@@ -606,7 +623,7 @@
       <FixedBaseAddress>true</FixedBaseAddress>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LargeAddressAware>true</LargeAddressAware>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
@@ -635,8 +652,10 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -645,7 +664,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -672,8 +691,10 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -682,7 +703,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -709,8 +730,10 @@
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -719,7 +742,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\$(Configuration) $(Platform)\" /I /D /Y</Command>
@@ -733,8 +756,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>INTRA_EXCEPTIONS_ENABLED;INTRA_DEBUG;INTRA_STL_INTERFACE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>
@@ -755,7 +780,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -770,8 +795,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>INTRA_EXCEPTIONS_ENABLED;INTRA_DEBUG;INTRA_STL_INTERFACE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
@@ -780,7 +807,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>uuid.lib</IgnoreSpecificDefaultLibraries>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>

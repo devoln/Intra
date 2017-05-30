@@ -6,7 +6,7 @@
 #include "Container/Sequential/Array.h"
 #include "Range/Mutation/Copy.h"
 #include "Utils/Span.h"
-#include "Range/Stream/Operators.h"
+#include "Range/Stream/Parse.h"
 #include "Range/Stream/InputStreamMixin.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -92,7 +92,8 @@ public:
 	}
 
 	template<typename AR> Meta::EnableIf<
-		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
+		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
+		!Meta::IsConst<AR>::_,
 	size_t> CopyAdvanceToAdvance(AR& dst)
 	{
 		Span<char> dstArr(dst.Data(), dst.Length());
@@ -110,7 +111,7 @@ private:
 	void loadBuffer()
 	{
 		const size_t bytesRead = mSocket.Receive(mBuffer.Data(), mBuffer.Length());
-		mBufferRest = mBuffer(0, bytesRead);
+		mBufferRest = mBuffer.Take(bytesRead);
 	}
 
 	StreamSocket mSocket;

@@ -142,9 +142,6 @@
     <Filter Include="Файлы исходного кода\Data\Serialization">
       <UniqueIdentifier>{8ce6fd71-5f3f-4a1d-aaea-088a709eca04}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Range\Raw">
-      <UniqueIdentifier>{f458f0f0-4a0f-4663-b20c-0bca4702b697}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Container">
       <UniqueIdentifier>{67a2aac7-835a-46b7-9ca1-1e07b7b2dcc4}</UniqueIdentifier>
     </Filter>
@@ -243,6 +240,9 @@
     </Filter>
     <Filter Include="Заголовочные файлы\Math\Geometry">
       <UniqueIdentifier>{95157fb5-03be-4bc0-9777-60b5c53b76e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Meta">
+      <UniqueIdentifier>{09c8e239-18f6-4ba7-b611-47b9ee20d734}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -494,6 +494,9 @@
     </ClCompile>
     <ClCompile Include="Image\ImageInfo.cpp">
       <Filter>Файлы исходного кода\Image</Filter>
+    </ClCompile>
+    <ClCompile Include="Platform\Signal.cpp">
+      <Filter>Файлы исходного кода\Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -889,12 +892,6 @@
     </ClInclude>
     <ClInclude Include="Range\Output\OutputArrayRange.h">
       <Filter>Заголовочные файлы\Range\Output</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Raw\Read.h">
-      <Filter>Заголовочные файлы\Range\Raw</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Raw\Write.h">
-      <Filter>Заголовочные файлы\Range\Raw</Filter>
     </ClInclude>
     <ClInclude Include="Range\Decorators\Join.h">
       <Filter>Заголовочные файлы\Range\Decorators</Filter>
@@ -1519,6 +1516,33 @@
     </ClInclude>
     <ClInclude Include="Math\Geometry\Ellipse.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Bind.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\EachField.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\GetField.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\Operators.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\Pair.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\Tuple.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\Type.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Meta\TypeList.h">
+      <Filter>Заголовочные файлы\Meta</Filter>
+    </ClInclude>
+    <ClInclude Include="Concepts\RangeOf.h">
+      <Filter>Заголовочные файлы\Concepts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -24,7 +24,7 @@ public:
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
 	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
 	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
-		ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override;
+		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override;
 
 	WaveSource& operator=(const WaveSource& rhs) = delete;
 };

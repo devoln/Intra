@@ -2,10 +2,10 @@
 #include "Audio/Synth/InstrumentLibrary.h"
 #include "IO/FileSystem.h"
 #include "IO/FileMapping.h"
-#include "Algo/Mutation/Fill.h"
+#include "Range/Mutation/Fill.h"
 #include "Cpp/Warnings.h"
 #include "Range/Polymorphic/InputRange.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 #include "Range/Output/OutputArrayRange.h"
 
 namespace Intra { namespace Audio {
@@ -38,7 +38,7 @@ public:
 	explicit MidiReader(InputStream stream): s(Cpp::Move(stream)),
 		instruments{}
 	{
-		if(!Algo::StartsAdvanceWith(s, "MThd"))
+		if(!StartsAdvanceWith(s, "MThd"))
 		{
 			s = null;
 			return;
@@ -142,12 +142,12 @@ public:
 		char chunkType[4];
 		s.ReadRawTo(chunkType, 4);
 		uint size = s.ReadRaw<uintBE>();
-		if(!Algo::Equals(StringView::FromBuffer(chunkType), "MTrk"))
+		if(!Equals(StringView::FromBuffer(chunkType), "MTrk"))
 		{
 			s.PopFirstN(size);
 			return null;
 		}
-		uint bytesRemaining=size;
+		uint bytesRemaining = size;
 		uint timeInTicks = 0;
 		bool trackIsDrum = false;
 		Array<MidiEvent> events;

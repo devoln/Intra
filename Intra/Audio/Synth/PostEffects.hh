@@ -2,7 +2,7 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
-#include "Range/ForwardDecls.h"
+#include "Utils/Span.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

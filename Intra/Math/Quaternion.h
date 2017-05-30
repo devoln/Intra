@@ -2,7 +2,7 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
-#include "Math/Matrix.h"
+#include "Math/Matrix3.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -25,20 +25,14 @@ template<typename T> struct Quaternion
 	};
 
 	forceinline Quaternion() = default;
-	forceinline Quaternion(T X, T Y=0, T Z=0, T W=1): x(X), y(Y), z(Z), w(W) {}
-	forceinline Quaternion(const Vector3<T>& v): xyzw(v, 1) {}
-
-	Quaternion(T angle, const Vector3<T>& axis)
-	{
-		xyz = axis*T(Sin(angle/2));
-		w = T(Cos(angle/2));
-	}
+	constexpr forceinline Quaternion(T X, T Y=0, T Z=0, T W=1): x(X), y(Y), z(Z), w(W) {}
+	constexpr forceinline Quaternion(const Vector3<T>& v): xyz(v), w(1) {}
 
 	Quaternion(const Matrix3<T>& mat);
 
-	forceinline Quaternion operator+() const {return *this;}
+	constexpr forceinline Quaternion operator+() const {return *this;}
 	
-	forceinline Quaternion operator-() const
+	constexpr forceinline Quaternion operator-() const
 	{return {-x, -y, -z, -w};}
 
 	forceinline Quaternion operator*(T rhs) const
@@ -53,7 +47,7 @@ template<typename T> struct Quaternion
 	forceinline Quaternion operator-(const Quaternion& rhs) const
 	{return {x-rhs.x, y-rhs.y, z-rhs.z, w-rhs.w};}
 
-	Quaternion operator*(const Quaternion& rhs) const
+	constexpr Quaternion operator*(const Quaternion& rhs) const
 	{
 		return {y*rhs.z - z*rhs.y + w*rhs.x + x*rhs.w,
 		        z*rhs.x - x*rhs.z + w*rhs.y + y*rhs.w,
@@ -67,38 +61,43 @@ template<typename T> struct Quaternion
 	forceinline Quaternion& operator/=(T rhs) {xyzw /= rhs; return *this;}
 	forceinline Quaternion& operator*=(const Quaternion& q) {return *this = *this*q;}
 
-	//Порядок аналогичен умножению матрицы на вектор
-	Vector3<T> operator*(const Vector3<T>& v) const //Поворот вектора кватернионом
+	//! Поворот вектора v кватернионом.
+	INTRA_EXTENDED_CONSTEXPR Vector3<T> operator*(const Vector3<T>& v) const
 	{
 #if INTRA_DISABLED
-		Quaternion p = Conjugate(*this) * Quaternion<T>(v) * *this;
+		const Quaternion p = Conjugate(*this) * Quaternion<T>(v) * *this;
 		return {p.x, p.y, p.z};
 #endif
-		Vector3<T> t = T(2.0)*Cross(v, xyz);
+		const Vector3<T> t = T(2.0)*Cross(v, xyz);
 		return v + w*t + Cross(t, xyz);
 	}
 
-	forceinline bool operator==(const Quaternion& rhs) const {return xyzw==rhs.xyzw;}
-	forceinline bool operator!=(const Quaternion& rhs) const {return !operator==(rhs);}
+	constexpr forceinline bool operator==(const Quaternion& rhs) const {return xyzw == rhs.xyzw;}
+	constexpr forceinline bool operator!=(const Quaternion& rhs) const {return !operator==(rhs);}
 
-	static Quaternion RotationEulerRad(T yaw, T pitch, T roll)
+	static INTRA_MATH_EXTENDED_CONSTEXPR Quaternion RotationEulerRad(T yaw, T pitch, T roll)
 	{
-		const T cx = T(Cos(yaw/2)), cy = T(Cos(pitch/2)), cz = T(Cos(roll/2));
-		const T sx = -T(Sin(yaw/2)), sy = -T(Sin(pitch/2)), sz = -T(Sin(roll/2));
-		const T cc = cx*cz, cs = cx*sz, sc = sx*cz, ss = sx*sz;
-		return Quat(cy*sc-sy*cs, cy*ss+sy*cc, cy*cs-sy*sc, cy*cc+sy*ss);
+		const T cx = T(Cos(yaw/2));
+		const T cy = T(Cos(pitch/2));
+		const T cz = T(Cos(roll/2));
+
+		const T sx = -T(Sin(yaw/2));
+		const T sy = -T(Sin(pitch/2));
+		const T sz = -T(Sin(roll/2));
+
+		const T cc = cx*cz;
+		const T cs = cx*sz;
+		const T sc = sx*cz;
+		const T ss = sx*sz;
+
+		return {cy*sc-sy*cs, cy*ss+sy*cc, cy*cs-sy*sc, cy*cc+sy*ss};
 	}
 
-	static Quaternion FromAngleAndAxis(T angle, const Vector3<T>& axis)
-	{
-		const T s = T(Sin(angle/2));
-		return {axis.x*s, axis.y*s, axis.z*s, T(Cos(angle/2))};
-	}
+	static INTRA_MATH_CONSTEXPR Quaternion FromAngleAndAxis(T angle, const Vector3<T>& axis)
+	{return {axis.x*Sin(angle/2), T(Cos(angle/2))};}
 
 	static Quaternion RotationEulerDeg(T yaw, T pitch, T roll)
-	{
-		return RotationEulerRad(T(yaw*(PI/180)), T(pitch*(PI/180)), T(roll*(PI/180)));
-	}
+	{return RotationEulerRad(T(yaw*(PI/180)), T(pitch*(PI/180)), T(roll*(PI/180)));}
 
 	//Ещё не протестировано
 	static Quaternion RotationBetweenVectors(Vector3<T> start, Vector3<T> dest)
@@ -109,15 +108,19 @@ template<typename T> struct Quaternion
 		const T cosTheta = Dot(start, dest);
 		if(cosTheta < T(-1 + 0.0001))
 		{
-			Vector3<T> rotationAxis = Cross(Vector3<T>(0,0,1), start);
-			if(Length(rotationAxis)<0.01)
-				rotationAxis = Cross(Vector3<T>(1,0,0), start);
-			return FromAngleAndAxis(T(180), Normalize(rotationAxis));
+			const Vector3<T> rotationAxis = {-start.y, start.x, 0}; //Cross(Vector3<T>(0, 0, 1), start);
+			T l = LengthSqr(rotationAxis.xy);
+			if(l<0.0001)
+			{
+				rotationAxis = {0, -start.z, start.y};// Cross(Vector3<T>(1, 0, 0), start);
+				l = LengthSqr(rotationAxis.yz);
+			}
+			return FromAngleAndAxis(T(PI), rotationAxis/Sqrt(l));
 		}
 
-		Vector3<T> rotationAxis=Cross(start, dest);
+		const Vector3<T> rotationAxis = Cross(start, dest);
 
-		const T s = T(Sqrt((1+cosTheta)*2));
+		const T s = T(Sqrt((1 + cosTheta)*2));
 		return {s/2,
 		        rotationAxis.x/s,
 		        rotationAxis.y/s,
@@ -125,9 +128,9 @@ template<typename T> struct Quaternion
 	}
 
 	//Ещё не протестировано
-	static Quaternion LookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
+	static Quaternion CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
 	{
-		auto delta = center-eye;
+		auto delta = center - eye;
 		auto rot1 = RotationBetweenVectors(Vector3<T>(0,0,1), delta);
 		auto right = Cross(delta, up);
 		auto desiredUp = Cross(right, delta);

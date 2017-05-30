@@ -12,7 +12,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/FilePath.h"
 
 #include "Platform/Time.h"
-#include "Platform/Errors.h"
+#include "Platform/Signal.h"
+#include "Platform/Environment.h"
+
 #include "Container/SparseArray.h"
 #include "IO/FormattedLogger.h"
 
@@ -43,7 +45,7 @@ CompositeFormattedWriter& InitOutput()
 	ToString(LastAppender(datetime), DateTime::Now());
 	StringView appName = IO::Path::ExtractName(CommandLineArguments.First());
 
-	logWriter.BeginSpoiler(appName+StringOf(CommandLineArguments.Drop(), " ", " ", " ")+datetime);
+	logWriter.BeginSpoiler(appName + StringOf(CommandLineArguments.Drop(), " ", " ", " ") + datetime);
 	
 	Errors::CrashHandler = [](int signum)
 	{

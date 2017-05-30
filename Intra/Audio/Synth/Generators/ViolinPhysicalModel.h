@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
-#include "Math/MathRanges.h"
+#include "Math/SineRange.h"
 #include "Audio/Music.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {

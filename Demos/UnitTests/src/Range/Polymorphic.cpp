@@ -9,9 +9,11 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.h"
 #include "Range/Stream.hh"
 #include "Range/Reduction.h"
-#include "Utils/Span.h"
 #include "Range.hh"
-#include "Math/MathRanges.h"
+
+#include "Utils/Span.h"
+#include "Utils/Bind.h"
+
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 
@@ -19,7 +21,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 using namespace Intra;
 using namespace IO;
-using namespace Range;
 using namespace Range;
 
 template<typename T> static void PrintPolymorphicRange(FormattedWriter& output, InputRange<T> range)
@@ -86,8 +87,8 @@ void TestComposedPolymorphicRange(FormattedWriter& output)
 	output.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
 	InputRange<uint> seq = Map(
 		Filter(
-			Take(Generate([]() {return Math::Random<uint>::Global(1000); }), 500),
-			[](uint x) {return x%7==0; }),
+			Take(Generate(Bind(Random::FastUniform<uint>(), 1000)), 500),
+			[](uint x) {return x % 7 == 0; }),
 		Math::Sqr<uint>);
 	PrintPolymorphicRange(output, Cpp::Move(seq));
 

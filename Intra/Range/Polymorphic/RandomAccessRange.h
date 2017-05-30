@@ -50,8 +50,8 @@ protected:
 
 private:
 	template<typename R> using EnableCondition = Meta::EnableIf<
-		Meta::IsConvertible<ReturnValueTypeOfAs<R>, T>::_ &&
-		IsAsRandomAccessRange<R>::_ &&
+		Meta::IsConvertible<Concepts::ReturnValueTypeOfAs<R>, T>::_ &&
+		Concepts::IsAsRandomAccessRange<R>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, RandomAccessRange>::_
 	>;
 

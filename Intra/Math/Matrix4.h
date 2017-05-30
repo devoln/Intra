@@ -22,17 +22,29 @@ template<typename T> struct Matrix4
 	
 	explicit Matrix4(const T data[16]) {C::memcpy(Rows, data, sizeof(*this));}
 
-	constexpr Matrix4(const Vector4<T>& right, const Vector4<T>& up,
-		const Vector4<T>& forward, const Vector4<T>& origin) noexcept:
-		Rows{right, up, forward, origin} {}
+	constexpr Matrix4(const Vector4<T>& row0, const Vector4<T>& row1,
+		const Vector4<T>& row2, const Vector4<T>& row3) noexcept:
+		Rows{row0, row1, row2, row3} {}
 
 	constexpr Matrix4(T rX, T rY, T rZ, T rW, T uX, T uY, T uZ, T uW,
 		T fX, T fY, T fZ, T fW, T oX, T oY, T oZ, T oW) noexcept:
-		Rows{{rX, rY, rZ, rW}, {uX, uY, uZ, uW}, {fX, fY, fZ, fW}, {oX, oY, oZ, oW}} {}
+	Rows {
+		{rX, rY, rZ, rW},
+		{uX, uY, uZ, uW},
+		{fX, fY, fZ, fW},
+		{oX, oY, oZ, oW}
+	} {}
 
-	constexpr Matrix4(const Vector3<T>& right, const Vector3<T>& up,
-		const Vector3<T>& forward, const Vector3<T>& origin = {0,0,0}) noexcept:
-		Rows{{right, 0}, {up, 0}, {forward, 0}, {origin, 1}} {}
+	constexpr static Matrix4 FromAxesAndTranslation(const Vector3<T>& right, const Vector3<T>& up,
+		const Vector3<T>& forward, const Vector3<T>& translation = {0,0,0}) noexcept
+	{
+		return {
+			Vector4<T>{right, translation.x},
+			Vector4<T>{up, translation.y},
+			Vector4<T>{forward, translation.z},
+			{0, 0, 0, 1}
+		};
+	}
 
 	static constexpr Matrix4 FromColumns(const Vector4<T>& col1, const Vector4<T>& col2,
 		const Vector4<T>& col3, const Vector4<T>& col4) noexcept
@@ -45,13 +57,30 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	constexpr explicit Matrix4(const Matrix3<T>& m, const Vector3<T>& translation={0,0,0}) noexcept:
-		Rows{{m.Rows[0], 0}, {m.Rows[1], 0}, {m.Rows[2], 0}, {translation, 1}} {}
+	constexpr static Matrix4 FromAxesAndTranslation(const Matrix3<T>& m, const Vector3<T>& translation={0,0,0}) noexcept
+	{
+		return {
+			Vector4<T>{m.Rows[0], translation.x},
+			Vector4<T>{m.Rows[1], translation.y},
+			Vector4<T>{m.Rows[2], translation.z},
+			{0, 0, 0, 1}
+		};
+	}
+
+	constexpr explicit Matrix4(const Matrix3<T>& m) noexcept:
+		Rows {
+			Vector4<T>{m.Rows[0], 0},
+			Vector4<T>{m.Rows[1], 0},
+			Vector4<T>{m.Rows[2], 0},
+			{0, 0, 0, 1}
+		} {}
 
 	constexpr bool operator==(const Matrix4& rhs) const noexcept
 	{
-		return Rows[0] == rhs.Rows[0] && Rows[1] == rhs.Rows[1] &&
-			Rows[2] == rhs.Rows[2] && Rows[3] == rhs.Rows[3];
+		return Rows[0] == rhs.Rows[0] &&
+			Rows[1] == rhs.Rows[1] &&
+			Rows[2] == rhs.Rows[2] &&
+			Rows[3] == rhs.Rows[3];
 	}
 
 	constexpr bool operator!=(const Matrix4& rhs) const noexcept {return !operator==(rhs);}
@@ -59,32 +88,90 @@ template<typename T> struct Matrix4
 	constexpr Matrix4 operator*(const Matrix4& rhs) const noexcept
 	{
 		return {
-			Rows[0].x*m2.Rows[0] + Rows[0].y*m2.Rows[1] + Rows[0].z*m2.Rows[2] + Rows[0].w*m2.Rows[3],
-			Rows[1].x*m2.Rows[0] + Rows[1].y*m2.Rows[1] + Rows[1].z*m2.Rows[2] + Rows[1].w*m2.Rows[3],
-			Rows[2].x*m2.Rows[0] + Rows[2].y*m2.Rows[1] + Rows[2].z*m2.Rows[2] + Rows[2].w*m2.Rows[3],
-			Rows[3].x*m2.Rows[0] + Rows[3].y*m2.Rows[1] + Rows[3].z*m2.Rows[2] + Rows[3].w*m2.Rows[3]
+			Rows[0].x*rhs.Rows[0] + Rows[0].y*rhs.Rows[1] + Rows[0].z*rhs.Rows[2] + Rows[0].w*rhs.Rows[3],
+			Rows[1].x*rhs.Rows[0] + Rows[1].y*rhs.Rows[1] + Rows[1].z*rhs.Rows[2] + Rows[1].w*rhs.Rows[3],
+			Rows[2].x*rhs.Rows[0] + Rows[2].y*rhs.Rows[1] + Rows[2].z*rhs.Rows[2] + Rows[2].w*rhs.Rows[3],
+			Rows[3].x*rhs.Rows[0] + Rows[3].y*rhs.Rows[1] + Rows[3].z*rhs.Rows[2] + Rows[3].w*rhs.Rows[3]
 		};
 	}
 
-	forceinline Matrix4& operator*=(const Matrix4& rhs) noexcept {return *this = *this*rhs;}
+	forceinline Matrix4& operator*=(const Matrix4& rhs) noexcept {return *this = *this * rhs;}
 
-	constexpr Matrix4 operator*(T n) const noexcept {return {Rows[0]*n, Rows[1]*n, Rows[2]*n, Rows[3]*n};}
-	constexpr Matrix4 operator/(T n) const {return {Rows[0]/n, Rows[1]/n, Rows[2]/n, Rows[3]/n};}
+	constexpr Matrix4 operator*(T x) const noexcept
+	{
+		return {
+			Rows[0] * x,
+			Rows[1] * x,
+			Rows[2] * x,
+			Rows[3] * x
+		};
+	}
+
+	constexpr Matrix4 operator/(T x) const
+	{
+		return {
+			Rows[0] / x,
+			Rows[1] / x,
+			Rows[2] / x,
+			Rows[3] / x
+		};
+	}
 	
-	Matrix4& operator*=(T n) noexcept {Rows[0] *= n; Rows[1] *= n; Rows[2] *= n; Rows[3] *= n; return *this;}
-	Matrix4& operator/=(T n) {Rows[0] /= n; Rows[1] /= n; Rows[2] /= n; Rows[3] /= n; return *this;}
+	Matrix4& operator*=(T n) noexcept
+	{
+		Rows[0] *= n;
+		Rows[1] *= n;
+		Rows[2] *= n;
+		Rows[3] *= n;
+		return *this;
+	}
+
+	Matrix4& operator/=(T n)
+	{
+		Rows[0] /= n;
+		Rows[1] /= n;
+		Rows[2] /= n;
+		Rows[3] /= n;
+		return *this;
+	}
 	
 	constexpr Matrix4 operator+(const Matrix4& rhs) const noexcept
-	{return {Rows[0] + rhs.Rows[0], Rows[1] + rhs.Rows[1], Rows[2] + rhs.Rows[2], Rows[3] + rhs.Rows[3]};}
+	{
+		return {
+			Rows[0] + rhs.Rows[0],
+			Rows[1] + rhs.Rows[1],
+			Rows[2] + rhs.Rows[2],
+			Rows[3] + rhs.Rows[3]
+		};
+	}
 	
 	constexpr Matrix4 operator-(const Matrix4& rhs) const noexcept
-	{return {Rows[0] - rhs.Rows[0], Rows[1] - rhs.Rows[1], Rows[2] - rhs.Rows[2], Rows[3] - rhs.Rows[3]};}
+	{
+		return {
+			Rows[0] - rhs.Rows[0],
+			Rows[1] - rhs.Rows[1],
+			Rows[2] - rhs.Rows[2],
+			Rows[3] - rhs.Rows[3]
+		};
+	}
 	
 	Matrix4& operator+=(const Matrix4& rhs) noexcept
-	{Rows[0] += rhs.Rows[0], Rows[1] += rhs.Rows[1], Rows[2] += rhs.Rows[2], Rows[3] += rhs.Rows[3]; return *this;}
+	{
+		Rows[0] += rhs.Rows[0];
+		Rows[1] += rhs.Rows[1];
+		Rows[2] += rhs.Rows[2];
+		Rows[3] += rhs.Rows[3];
+		return *this;
+	}
 	
 	Matrix4& operator-=(const Matrix4& rhs) noexcept
-	{Rows[0] -= rhs.Rows[0], Rows[1] -= rhs.Rows[1], Rows[2] -= rhs.Rows[2], Rows[3] -= rhs.Rows[3]; return *this;}
+	{
+		Rows[0] -= rhs.Rows[0];
+		Rows[1] -= rhs.Rows[1];
+		Rows[2] -= rhs.Rows[2];
+		Rows[3] -= rhs.Rows[3];
+		return *this;
+	}
 
 	//! Извлекает поворот из текущей матрицы.
 	//! Предполагает, что строки матрицы ортогональны и что матрица представляет собой композицию поворота, масштабирования и переноса.
@@ -92,16 +179,16 @@ template<typename T> struct Matrix4
 	INTRA_MATH_CONSTEXPR Matrix4 ExtractRotation3() const
 	{
 		return {
-			{Normalize(Rows[0].xyz), 0},
-			{Normalize(Rows[1].xyz), 0},
-			{Normalize(Rows[2].xyz), 0},
+			Vector4<T>{Normalize(Rows[0].xyz), 0},
+			Vector4<T>{Normalize(Rows[1].xyz), 0},
+			Vector4<T>{Normalize(Rows[2].xyz), 0},
 			{0, 0, 0, 1}
 		};
 	}
 
 	//! Извлекает поворот из текущей матрицы.
 	//! Предполагает, что строки матрицы ортогональны и что матрица представляет собой композицию поворота, масштабирования и переноса.
-	INTRA_MATH_CONSTEXPR Matrix4 ExtractRotationMat3() const
+	INTRA_MATH_CONSTEXPR Matrix3<T> ExtractRotationMat3() const
 	{
 		return {
 			Normalize(Rows[0].xyz),
@@ -110,11 +197,34 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	constexpr const Vector3<T>& ExtractTranslationVector() const {return Rows[3].xyz;}
-	INTRA_MATH_CONSTEXPR Vector3<T> ExtractScaleVector() const noexcept {return {Length(Rows[0].xyz), Length(Rows[1].xyz), Length(Rows[2].xyz)};}
+	constexpr Vector3<T> ExtractTranslationVector() const
+	{
+		return {
+			Rows[0].w,
+			Rows[1].w,
+			Rows[2].w
+		};
+	}
+
+	INTRA_MATH_CONSTEXPR Vector3<T> ExtractScaleVector() const noexcept
+	{
+		return {
+			Length(Rows[0].xyz),
+			Length(Rows[1].xyz),
+			Length(Rows[2].xyz)
+		};
+	}
 
 
-	forceinline constexpr Vector4<T> Column(uint i) const {return {Rows[0][i], Rows[1][i], Rows[2][i], Rows[3][i]};}
+	constexpr forceinline Vector4<T> Column(uint i) const noexcept
+	{
+		return {
+			Rows[0][i],
+			Rows[1][i],
+			Rows[2][i],
+			Rows[3][i]
+		};
+	}
 	
 	void SetColumn(size_t i, const Vector4<T>& value)
 	{
@@ -124,15 +234,24 @@ template<typename T> struct Matrix4
 		Rows[3][i] = value.w;
 	}
 
-	static constexpr const Matrix4 I;
+	//! Единичная матрица
+	static constexpr const Matrix4 Identity() noexcept
+	{
+		return {
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1
+		};
+	}
 
 	static constexpr Matrix4 CreateOrtho(T width, T height, T depth)
 	{
 		return {
-			{2/width, 0, 0, 0},
+			{2/width, 0,  0, 0},
 			{0, 2/height, 0, 0},
-			{0, 0, -2/depth 0},
-			{-1, -1,  -1,  1}
+			{0, 0, -2/depth, 0},
+			{-1, -1,    -1,  1}
 		};
 	}
 
@@ -149,10 +268,12 @@ template<typename T> struct Matrix4
 	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreatePerspective(T fovy, T znear, T zfar, T aspectRatio)
 	{
 		const T f = T(1) / T(Tan(fovy/360*PI));
-		return {f/aspectRatio, 0,            0,                    0,
-		        0,             f,            0,                    0,
-		        0,             0, (zfar + znear) / (znear - zfar),-1,
-		        0,             0, (2*zfar*znear) / (znear - zfar), 0};
+		return {
+			{f/aspectRatio, 0,            0,                    0},
+			{0,             f,            0,                    0},
+			{0,             0, (zfar + znear) / (znear - zfar),-1},
+			{0,             0, (2*zfar*znear) / (znear - zfar), 0}
+		};
 	}
 
 	INTRA_MATH_CONSTEXPR forceinline T ExtractPerspectiveFovY() const
@@ -170,49 +291,88 @@ template<typename T> struct Matrix4
 	static constexpr Matrix4 CreateTranslation(const Vector3<T>& translation) noexcept
 	{
 		return {
-			{1, 0, 0, 0},
-			{0, 1, 0, 0},
-			{0, 0, 1, 0},
-			{translation, 1}
+			{1, 0, 0, translation.x},
+			{0, 1, 0, translation.y},
+			{0, 0, 1, translation.z},
+			{0, 0, 0, 1}
 		};
 	}
 
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 LookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
+	//! Задаёт видовую матрицу, используя следующие параметры:
+	//! @param eye Положение наблюдателя.
+	//! @param center Точка, в которую смотрит наблюдатель.
+	//! @param up Направление вектора "вверх".
+	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
 	{
 		const Vector3<T> f = Normalize(center - eye);
 		Vector3<T> u = Normalize(up);
 		const Vector3<T> s = Normalize(Cross(f, u));
 		u = Cross(s, f);
 
-		return {s.x,           u.x,        -f.x,     0,
-		        s.y,           u.y,        -f.y,     0,
-		        s.z,           u.z,        -f.z,     0,
-		    -Dot(s, eye), -Dot(u, eye), Dot(f, eye), 1};
+		return {
+			{s.x,  u.x, -f.x, -Dot(s, eye)},
+			{s.y,  u.y, -f.y, -Dot(u, eye)},
+			{s.z,  u.z, -f.z,  Dot(f, eye)},
+			{0,     0,    0,        1}
+		};
 	}
 
 	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateRotation(T angle, const Vector3<T>& axis)
-	{return Matrix4(Matrix3<T>::Rotation3(angle, axis));}
+	{return Matrix4(Matrix3<T>::CreateRotation3(angle, axis));}
 	
 	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateRotationEuler(T rotX, T rotY, T rotZ)
 	{return Matrix4(Matrix3<T>::RotationEuler(rotX, rotY, rotZ));}
 
 	static constexpr forceinline Matrix4 CreateScaling(const Vector3<T>& scale) noexcept
-	{return {scale.x,0,0,0, 0,scale.y,0,0, 0,0,scale.z,0, 0,0,0,1};}
+	{
+		return {
+			scale.x, 0, 0, 0,
+			0, scale.y, 0, 0,
+			0, 0, scale.z, 0,
+			0,   0,   0,   1
+		};
+	}
 
 	static constexpr forceinline Matrix4 CreateScaling(T x, T y, T z) noexcept
-	{return {x,0,0,0, 0,y,0,0, 0,0,z,0, 0,0,0,1};}
+	{
+		return {
+			x, 0, 0, 0,
+			0, y, 0, 0,
+			0, 0, z, 0,
+			0, 0, 0, 1
+		};
+	}
 
 	static constexpr forceinline Matrix4 CreateScaling(T factor) noexcept
-	{return {factor,0,0,0, 0,factor,0,0, 0,0,factor,0, 0,0,0,1};}
+	{
+		return {
+			factor, 0, 0, 0,
+			0, factor, 0, 0,
+			0, 0, factor, 0,
+			0,   0, 0,    1
+		};
+	}
 
 	Vector4<T> Rows[4];
 };
 
 template<typename T> constexpr Vector4<T> operator*(const Vector4<T>& v, const Matrix4<T>& m) noexcept
-{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z + m.Rows[3] * v.w,}
+{
+	return m.Rows[0] * v.x +
+		m.Rows[1] * v.y +
+		m.Rows[2] * v.z +
+		m.Rows[3] * v.w;
+}
 
 template<typename T> constexpr Vector4<T> operator*(const Matrix4<T>& m, const Vector4<T>& v) noexcept
-{return {Dot(m.Rows[0], v), Dot(m.Rows[1], v), Dot(m.Rows[2], v), Dot(m.Rows[3], v)};}
+{
+	return {
+		Dot(m.Rows[0], v),
+		Dot(m.Rows[1], v),
+		Dot(m.Rows[2], v),
+		Dot(m.Rows[3], v)
+	};
+}
 
 
 template<typename T> constexpr Matrix4<T> Transpose(const Matrix4<T>& m) noexcept
@@ -227,13 +387,15 @@ template<typename T> constexpr Matrix4<T> Transpose(const Matrix4<T>& m) noexcep
 
 template<typename T> struct Plane;
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Matrix4<T> Reflect(const Matrix4<T>& m, const Plane<T>& plane) const
+template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Matrix4<T> Reflect(const Matrix4<T>& m, const Plane<T>& plane)
 {
 	const auto p = Normalize(plane);
-	return {-2*p.A*p.A+1, -2*p.B*p.A, -2*p.C*p.A, 0,
-	        -2*p.A*p.B, -2*p.B*p.B+1, -2*p.C*p.B, 0,
-	        -2*p.A*p.C, -2*p.B*p.C, -2*p.C*p.C+1, 0,
-	        -2*p.A*p.D, -2*p.B*p.D,   -2*p.C*p.D, 1};
+	return {
+		{-2*p.A*p.A+1, -2*p.B*p.A, -2*p.C*p.A, 0},
+		{-2*p.A*p.B, -2*p.B*p.B+1, -2*p.C*p.B, 0},
+		{-2*p.A*p.C, -2*p.B*p.C, -2*p.C*p.C+1, 0},
+		{-2*p.A*p.D, -2*p.B*p.D,   -2*p.C*p.D, 1}
+	};
 }
 
 template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
@@ -339,8 +501,8 @@ typedef Matrix4<uint> umat4x4;
 typedef Matrix4<int> imat4x4;
 typedef Matrix4<bool> bmat4x4;
 
-template<typename T> constexpr Matrix4<T> transpose(const Matrix4<T>& m) {return Transpose(m);}
-template<typename T> Matrix4<T> inverse(const Matrix4<T>& m) {return Inverse(m);}
+template<typename T> constexpr forceinline Matrix4<T> transpose(const Matrix4<T>& m) {return Transpose(m);}
+template<typename T> forceinline Matrix4<T> inverse(const Matrix4<T>& m) {return Inverse(m);}
 }
 
 namespace HLSL {

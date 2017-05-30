@@ -35,7 +35,7 @@ template<typename T> void GeneratorSynthPassFunction(const SamplerPassParams<T>&
 
 	float frequency = freq*params.FreqMultiplyer;
 
-	Math::Random<float> frandom(988959283);
+	Random::FastUniform<float> frandom(988959283);
 	for(ushort h=0; h<params.Harmonics; h++)
 	{
 		auto samplerCopy = params.Generator;

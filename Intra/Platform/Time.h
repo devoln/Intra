@@ -64,27 +64,18 @@ struct DateTime
 	static ulong64 StartupTimeBasedSeed();
 };
 
-template<class R> void ToString(R&& dst, const DateTime& dt)
+template<class R> R& operator<<(R&& stream, const DateTime& dt)
 {
-	dst.Put('0' + dt.Day / 10);
-	dst.Put('0' + dt.Day % 10);
-	dst.Put('.');
-	dst.Put('0' + dt.Month / 10);
-	dst.Put('0' + dt.Month % 10);
-	dst.Put('.');
-	if(dt.Year>10000) dst.Put('0' + dt.Year / 10000);
-	if(dt.Year>1000) dst.Put('0' + dt.Year / 1000 % 10);
-	if(dt.Year>100) dst.Put('0' + dt.Year / 100 % 10);
-	if(dt.Year>10) dst.Put('0' + dt.Year / 10 % 10);
-	dst.Put(' ');
-	dst.Put('0' + dt.Hour / 10);
-	dst.Put('0' + dt.Hour % 10);
-	dst.Put(':');
-	dst.Put('0' + dt.Minute / 10);
-	dst.Put('0' + dt.Minute % 10);
-	dst.Put(':');
-	dst.Put('0' + dt.Second / 10);
-	dst.Put('0' + dt.Second % 10);
+	stream << '0' + dt.Day / 10 << '0' + dt.Day % 10 << '.' <<
+		'0' + dt.Month / 10 << '0' + dt.Month % 10 << '.';
+	if(dt.Year > 10000) stream << '0' + dt.Year / 10000;
+	if(dt.Year > 1000) stream << '0' + dt.Year / 1000 % 10;
+	if(dt.Year > 100) stream << '0' + dt.Year / 100 % 10;
+	if(dt.Year > 10) stream << '0' + dt.Year / 10 % 10;
+	stream << ' ' << '0' + dt.Hour / 10 << '0' + dt.Hour % 10 << ':' <<
+		'0' + dt.Minute / 10 << '0' + dt.Minute % 10 << ':' <<
+		'0' + dt.Second / 10 << '0' + dt.Second % 10;
+	return stream;
 }
 
 INTRA_WARNING_POP

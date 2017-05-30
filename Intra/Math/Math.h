@@ -123,10 +123,10 @@ forceinline double Mod(double x, double y) {return ::fmod(x, y);}
 #elif defined(__clang__) || defined(__GNUC__)
 
 constexpr forceinline float Floor(float x) {return __builtin_floorf(x);}
-constexpr forceinline double Floor(double x) {return double(__builtin_floorl(x));}
+constexpr forceinline double Floor(double x) {return __builtin_floor(x);}
 constexpr forceinline real Floor(real x) {return __builtin_floorl(x);}
 constexpr forceinline float Ceil(float x) {return __builtin_ceilf(x);}
-constexpr forceinline double Ceil(double x) {return double(__builtin_ceill(x));}
+constexpr forceinline double Ceil(double x) {return __builtin_ceil(x);}
 constexpr forceinline real Ceil(real x) {return __builtin_ceill(x);}
 constexpr forceinline float Round(float x) {return Floor(x+0.5f);}
 constexpr forceinline double Round(double x) {return Floor(x+0.5);}
@@ -147,47 +147,51 @@ constexpr forceinline double Tan(double radians) {return __builtin_tan(radians);
 constexpr forceinline real Tan(real radians) {return __builtin_tanl(radians);}
 
 constexpr forceinline float Sinh(float x) {return __builtin_sinhf(x);}
-constexpr forceinline double Sinh(double x) {return double(__builtin_sinhl(x));}
+constexpr forceinline double Sinh(double x) {return __builtin_sinh(x);}
 constexpr forceinline real Sinh(real x) {return __builtin_sinhl(x);}
 constexpr forceinline float Cosh(float x) {return __builtin_coshf(x);}
-constexpr forceinline double Cosh(double x) {return double(__builtin_coshl(x));}
+constexpr forceinline double Cosh(double x) {return __builtin_cosh(x);}
 constexpr forceinline real Cosh(real x) {return __builtin_coshl(x);}
 constexpr forceinline float Tanh(float x) {return __builtin_tanhf(x);}
-constexpr forceinline double Tanh(double x) {return double(__builtin_tanhl(x));}
+constexpr forceinline double Tanh(double x) {return __builtin_tanhl(x);}
 constexpr forceinline real Tanh(real x) {return __builtin_tanhl(x);}
 
 constexpr forceinline float Asin(float x) {return __builtin_asinf(x);}
-constexpr forceinline double Asin(double x) {return double(__builtin_asinl(x));}
+constexpr forceinline double Asin(double x) {return __builtin_asin(x);}
 constexpr forceinline real Asin(real x) {return __builtin_asinl(x);}
 constexpr forceinline float Acos(float x) {return __builtin_acosf(x);}
-constexpr forceinline double Acos(double x) {return double(__builtin_acosl(x));}
+constexpr forceinline double Acos(double x) {return __builtin_acos(x);}
 constexpr forceinline real Acos(real x) {return __builtin_acosl(x);}
 constexpr forceinline float Atan(float x) {return __builtin_atanf(x);}
-constexpr forceinline double Atan(double x) {return double(__builtin_atanl(x));}
+constexpr forceinline double Atan(double x) {return __builtin_atan(x);}
 constexpr forceinline real Atan(real x) {return __builtin_atanl(x);}
 
 constexpr forceinline float Atanh(float x) {return __builtin_atanhf(x);}
-constexpr forceinline double Atanh(double x) {return double(__builtin_atanhl(x));}
+constexpr forceinline double Atanh(double x) {return __builtin_atanh(x);}
 constexpr forceinline real Atanh(real x) {return __builtin_atanhl(x);}
 
 constexpr forceinline float Sqrt(float x) {return __builtin_sqrtf(x);}
-constexpr forceinline double Sqrt(double x) {return double(__builtin_sqrtl(x));}
+constexpr forceinline double Sqrt(double x) {return __builtin_sqrt(x);}
 constexpr forceinline real Sqrt(real x) {return __builtin_sqrtl(x);}
 
 constexpr forceinline float Log(float x) {return __builtin_logf(x);}
-constexpr forceinline double Log(double x) {return double(__builtin_logl(x));}
+constexpr forceinline double Log(double x) {return __builtin_log(x);}
 constexpr forceinline real Log(real x) {return __builtin_logl(x);}
 
-constexpr forceinline float Mod(float x, float y) {return __builtin_fmodf(x, y);}
-constexpr forceinline double Mod(double x, double y) {return double(__builtin_fmodl(x, y));}
+forceinline float Mod(float x, float y) {return __builtin_fmodf(x, y);}
+constexpr forceinline double Mod(double x, double y) {return __builtin_fmod(x, y);}
 constexpr forceinline real Mod(real x, real y) {return __builtin_fmodl(x, y);}
 
 constexpr forceinline float Pow(float x, float power) {return __builtin_powf(x, power);}
-constexpr forceinline double Pow(double x, double power) {return double(__builtin_powl(x, power));}
+constexpr forceinline double Pow(double x, double power) {return __builtin_pow(x, power);}
 constexpr forceinline real Pow(real x, real power) {return __builtin_powl(x, power);}
 constexpr forceinline float Pow(float x, int power) {return __builtin_powif(x, power);}
 constexpr forceinline double Pow(double x, int power) {return __builtin_powi(x, power);}
 constexpr forceinline real Pow(real x, int power) {return __builtin_powil(x, power);}
+
+constexpr forceinline float Exp(float x) {return __builtin_expf(x);}
+constexpr forceinline double Exp(double x) {return __builtin_exp(x);}
+constexpr forceinline real Exp(real x) {return __builtin_expl(x);}
 
 #else
 

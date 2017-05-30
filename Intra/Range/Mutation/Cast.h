@@ -19,7 +19,7 @@ template<typename R, typename OR> Meta::EnableIf<
 {
 	while(!src.Empty())
 	{
-		dst.Put(ValueTypeOf<OR>(src.First()));
+		dst.Put(Concepts::ValueTypeOf<OR>(src.First()));
 		src.PopFirst();
 	}
 }

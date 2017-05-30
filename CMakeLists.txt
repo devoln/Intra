@@ -1,4 +1,4 @@
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(Modules)
+add_subdirectory(Intra)
 add_subdirectory(Demos)

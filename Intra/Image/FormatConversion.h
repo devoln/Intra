@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Math/Vector.h"
+#include "Math/Vector2.h"
 #include "Image/ImageFormat.h"
 #include "Range/ForwardDecls.h"
 #include "Math/Math.h"

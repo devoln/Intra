@@ -50,7 +50,7 @@ template<typename T> struct Aabb
 
 	//! Найти точку внутреннюю или граничную точку AABB, наиболее близкую к pt.
 	//! Предполагается, что AABB не ориентирован.
-	constexpr Vector3<T> ClosestPointUnoriented(const Vector3<T>& pt) const {return Clamp(pt, A, B);}
+	constexpr Vector3<T> ClosestPointUnoriented(const Vector3<T>& pt) const noexcept {return Clamp(pt, A, B);}
 
 	//! Найти точку внутреннюю или граничную точку AABB, наиболее близкую к pt.
 	constexpr Vector3<T> ClosestPoint(const Vector3<T>& pt) const {return Clamp(pt, Min(), Max());}
@@ -193,19 +193,33 @@ template<typename T> constexpr bool CheckIntersection(const Aabb<T>& a, const Aa
 
 //! Проверяет пересечение двух AABB.
 //! Оба они должны быть не ориентированными.
-template<typename T> constexpr bool CheckItersectionBothUnoriented(const Aabb<T>& a, const Aabb<T>& b)
+template<typename T> constexpr bool CheckItersectionBothUnoriented(const Aabb<T>& a, const Aabb<T>& b) noexcept
 {
 	return b.A.x <= a.B.x && b.A.y <= a.B.y && b.A.z <= a.B.z &&
 		a.A.x <= b.B.x && a.A.y <= b.B.y && a.A.z <= b.B.z;
 }
 
 
-template<typename T> constexpr T DistanceSqrUnoriented(const Aabb<T>& aabb, const Vector3<T>& pt)
+template<typename T> constexpr T DistanceSqrUnoriented(const Aabb<T>& aabb, const Vector3<T>& pt) noexcept
 {return DistanceSqr(pt, aabb.ClosestPointUnoriented(pt));}
 
-template<typename T> constexpr T DistanceSqr(const Aabb<T>& aabb, const Vector3<T>& pt)
+template<typename T> constexpr T DistanceSqr(const Aabb<T>& aabb, const Vector3<T>& pt) noexcept
 {return DistanceSqr(pt, aabb.ClosestPoint(pt));}
 
-template<typename T> T Distance(const Aabb<T>& aabb, const Vector3<T>& pt) {return T(Sqrt(DistanceSqr(aabb, pt)));}
+template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR T BoxSignedDistanceFromZero(const Vector3<T>& center, const Vector3<T>& extents)
+{
+	const auto d = Abs(center) - extents;
+	return Clamp(Max(d.y, d.z), d.x, T(0)) + Length(Max(d, T(0)));
+}
+
+template<typename T> INTRA_MATH_CONSTEXPR T BoxSignedDistance(
+	const Vector3<T>& center, const Vector3<T>& extents, const Vector3<T>& pt)
+{return BoxSignedDistanceFromZero(center - pt, extents);}
+
+template<typename T> INTRA_MATH_CONSTEXPR T SignedDistance(const Aabb<T>& aabb, const Vector3<T>& pt)
+{return BoxSignedDistance(aabb.Center(), aabb.Extents(), pt);}
+
+template<typename T> INTRA_MATH_CONSTEXPR T Distance(const Aabb<T>& aabb, const Vector3<T>& pt)
+{return T(Sqrt(DistanceSqr(aabb, pt)));}
 
 }}

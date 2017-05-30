@@ -172,7 +172,7 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	{
 		auto sym = StringView(strings[i]);
 		sym.CopyToAdvance(dst);
-		dst.TryPut('\n');
+		dst << '\n';
 		if(untilMain && ContainsMainFunction(sym)) break;
 	}
 
@@ -200,18 +200,13 @@ namespace Intra {
 
 StringView BuildErrorMessage(Span<char>& dst, StringView func, StringView file, unsigned line, StringView info, size_t stackFramesToSkip)
 {
-	StringView msg = dst;
-	file.CopyToAdvance(dst);
-	dst << '(';
+	const StringView msg = dst;
+	dst << file << '(';
 	AppendUInt(dst, line);
-	StringView("): internal error detected in function\n").CopyToAdvance(dst);
-	func.CopyToAdvance(dst);
-	dst << '\n';
-	info.CopyToAdvance(dst);
-	StringView("\n\nStack trace:\n").CopyToAdvance(dst);
-	StringView stackTrace = GetStackTrace(dst, 1+stackFramesToSkip, 50);
+	dst << "): internal error detected in function\n" << func << '\n' << info << "\n\nStack trace:\n";
+	const StringView stackTrace = GetStackTrace(dst, 1+stackFramesToSkip, 50);
 	if(stackTrace.Empty())
-		StringView("<Not supported on this platform>\n").CopyToAdvance(dst);
+		dst << "<Not supported on this platform>\n";
 	return {msg.Data(), dst.Data()};
 }
 
@@ -226,20 +221,20 @@ void FatalErrorMessageAbort(SourceInfo srcInfo, StringView msg)
 	if(was) return;
 	was = true;
 
-	char buffer[16384];
-	Span<char> buf = SpanOfBuffer(buffer);
-	const StringView fullMsg = BuildErrorMessage(buf, srcInfo.Function, srcInfo.File, srcInfo.Line, msg, 2);
+	char msgBuffer[16384];
+	Span<char> msgBuf = SpanOfBuffer(msgBuffer);
+	const StringView fullMsg = BuildErrorMessage(msgBuf, srcInfo.Function, srcInfo.File, srcInfo.Line, msg, 2);
 
 	PrintDebugMessage(fullMsg);
-	FixedArray<wchar_t> buffer(message.Length()+1+caption.Length()+1);
-	LPWSTR wmessage = buffer.Data();
-	LPWSTR wcaption = buffer.Data()+message.Length()+1;
-	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, message.Data(), int(message.Length()), wmessage, int(message.Length()));
-	int wcaptionLength = MultiByteToWideChar(CP_UTF8, 0, caption.Data(), int(caption.Length()), wcaption, int(caption.Length()));
+
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	FixedArray<wchar_t> wbuffer(msg.Length() + 1);
+	LPWSTR wmessage = wbuffer.Data();
+	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, fullMsg.Data(), int(fullMsg.Length()), wmessage, int(fullMsg.Length()));
 	wmessage[wmessageLength] = L'\0';
-	wcaption[wcaptionLength] = L'\0';
-	MessageBoxW(null, wmessage, wcaption, MB_ICONERROR);
-	ShowMessageBox(fullMsg, "Критическая ошибка!", MessageIcon::Error);
+	MessageBoxW(null, wmessage, L"Critical error", MB_ICONERROR);
+#endif
+
 	exit(1);
 #endif
 }

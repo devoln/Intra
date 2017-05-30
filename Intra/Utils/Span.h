@@ -106,15 +106,22 @@ template<typename T> struct Span
 	}
 
 	forceinline Span<T> Drop(size_t count=1) const noexcept
-	{return Span(Length()<=count? End: Begin+count, End);}
+	{return Span(Length() <= count? End: Begin+count, End);}
 
 	forceinline Span<T> DropLast(size_t count=1) const noexcept
-	{return Span(Begin, Length()<=count? Begin: End-count);}
+	{return Span(Begin, Length() <= count? Begin: End-count);}
 
-	forceinline Span<T> Take(size_t count) const noexcept
-	{return Span(Begin, count>=Length()? End: Begin+count);}
+	forceinline Span Take(size_t count) const noexcept
+	{return Span(Begin, count >= Length()? End: Begin + count);}
 
-	forceinline Span<T> TakeExactly(size_t count) const
+	forceinline Span TakeAdvance(size_t count) noexcept
+	{
+		const Span result = Take(count);
+		Begin = result.End;
+		return result;
+	}
+
+	forceinline Span TakeExactly(size_t count) const
 	{
 		INTRA_DEBUG_ASSERT(count <= Length());
 		return Span(Begin, Begin+count);
@@ -168,6 +175,14 @@ template<typename T> struct Span
 	Span> operator<<(T&& v) noexcept
 	{
 		if(!Empty()) *Begin++ = Cpp::Move(v);
+		return *this;
+	}
+
+	template<typename U=T> forceinline Meta::EnableIf<
+		!Meta::IsConst<U>::_,
+	Span> operator<<(Span<const T> v) noexcept
+	{
+		v.CopyAdvanceToAdvance(*this);
 		return *this;
 	}
 
@@ -239,6 +254,13 @@ template<typename T> struct Span
 		return result;
 	}
 
+	Span FindBefore(const T& v) const
+	{
+		Span result = {Begin, Begin};
+		while(result.End != End && *result.End != v) result.End++;
+		return result;
+	}
+
 	forceinline bool Contains(T c) {return !Find(c).Empty();}
 	forceinline bool Contains(Span<const T> arr) {return !Find(arr).Empty();}
 
@@ -262,6 +284,10 @@ template<typename T, size_t N> forceinline constexpr Span<T> SpanOf(T(&arr)[N]) 
 template<typename T, size_t N> forceinline constexpr CSpan<T> CSpanOf(const T(&arr)[N]) noexcept {return arr;}
 template<typename T> forceinline constexpr CSpan<T> SpanOf(InitializerList<T> arr) noexcept {return arr;}
 template<typename T> forceinline constexpr CSpan<T> CSpanOf(InitializerList<T> arr) noexcept {return arr;}
+
+template<typename T=byte> forceinline Span<T> SpanOfRaw(void* data, size_t bytes) noexcept {return {static_cast<T*>(data), bytes/sizeof(T)};}
+template<typename T=byte> forceinline CSpan<T> SpanOfRaw(const void* data, size_t bytes) noexcept {return {static_cast<const T*>(data), bytes/sizeof(T)};}
+template<typename T=byte> forceinline CSpan<T> CSpanOfRaw(const void* data, size_t bytes) noexcept {return SpanOfRaw(data, bytes);}
 
 #ifndef INTRA_UTILS_NO_CONCEPTS
 
@@ -296,6 +322,9 @@ using Range::CSpan;
 using Range::SpanOf;
 using Range::CSpanOf;
 using Range::SpanOfBuffer;
+using Range::SpanOfRaw;
+using Range::CSpanOfRaw;
+using Range::Take;
 }
 
 using Range::Span;
@@ -303,6 +332,9 @@ using Range::CSpan;
 using Range::SpanOf;
 using Range::CSpanOf;
 using Range::SpanOfBuffer;
+using Range::SpanOfRaw;
+using Range::CSpanOfRaw;
+using Range::Take;
 
 #ifndef INTRA_UTILS_NO_CONCEPTS
 namespace Concepts {

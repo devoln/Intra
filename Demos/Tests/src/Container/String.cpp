@@ -64,7 +64,7 @@ template<typename String> double TestStringWriting(uint times, size_t strsize)
 
 
 
-template<typename String> bool cmpString(const String& str1, const String& str2) {return str2==str1;}
+template<typename String> bool cmpString(const String& str1, const String& str2) {return str2 == str1;}
 
 template<typename String> double TestStringComparing1(uint times, size_t strsize)
 {

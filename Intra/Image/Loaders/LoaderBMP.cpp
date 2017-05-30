@@ -1,11 +1,11 @@
 ﻿#ifndef INTRA_NO_BMP_LOADER
 
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 #include "Container/Sequential/Array.h"
 #include "Image/Loaders/LoaderBMP.h"
 #include "Image/FormatConversion.h"
 #include "Image/AnyImage.h"
-#include "Math/Vector.h"
+#include "Math/Vector2.h"
 
 namespace Intra {
 
@@ -83,7 +83,7 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 		stream.ReadRawTo(Range::Take(colorTable, bmpHdr.clrUsed));
 		bytesRead += bmpHdr.clrUsed*sizeof(colorTable[0]);
 		for(uint i=0; i<bmpHdr.clrUsed; i++)
-			colorTable[i] = colorTable[i].swizzle(2, 1, 0, 3);
+			colorTable[i] = colorTable[i].swizzle<2, 1, 0, 3>();
 	}
 	else if(bmpHdr.bitCount<=8)
 	{

@@ -40,7 +40,7 @@ public:
 		Memory::CopyInit(range, values);
 	}
 
-	template<size_t N> Array(const T(&values)[N]): Array(RangeOf(values)) {}
+	template<size_t N> Array(const T(&values)[N]): Array(SpanOf(values)) {}
 
 	template<typename R,
 		typename AsR=Concepts::RangeOfType<R>,

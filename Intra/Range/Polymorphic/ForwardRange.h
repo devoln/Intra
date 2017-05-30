@@ -47,14 +47,14 @@ protected:
 
 private:
 	template<typename R> using EnableCondition = Meta::EnableIf<
-		Meta::IsConvertible<ReturnValueTypeOfAs<R>, T>::_ &&
-		IsAsForwardRange<R>::_ &&
+		Meta::IsConvertible<Concepts::ReturnValueTypeOfAs<R>, T>::_ &&
+		Concepts::IsAsForwardRange<R>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, ForwardRange>::_
 	>;
 
 	template<typename R> forceinline static Interface* wrap(R&& range)
 	{
-		typedef Meta::RemoveConstRef<RangeOfType<R>> Range;
+		typedef Meta::RemoveConstRef<Concepts::RangeOfType<R>> Range;
 		return new WrapperImpl<Range>(AsRange(Cpp::Forward<R>(range)));
 	}
 

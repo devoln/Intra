@@ -3,7 +3,7 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
 #include "ImageFormat.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 
 namespace Intra { namespace Image {
 

@@ -210,14 +210,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
@@ -229,19 +229,19 @@
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -249,7 +249,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -257,7 +257,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -265,7 +265,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -273,7 +273,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)/Modules;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -284,35 +284,35 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(OutDir);$(SolutionDir)../Libs/lib</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSdk_71A_LibraryPath_x64);$(OutDir);../Libs/lib</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
-    <IncludePath>$(SolutionDir)/Cpp/include;$(SolutionDir)/Meta/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
+    <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -322,14 +322,16 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -343,15 +345,17 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
       <EnablePREfast>false</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -366,14 +370,16 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>uuid.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -389,14 +395,16 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>uuid.lib</IgnoreSpecificDefaultLibraries>
     </Link>
     <PostBuildEvent>
@@ -428,15 +436,17 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <GenerateMapFile>true</GenerateMapFile>
@@ -470,15 +480,17 @@
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <GenerateMapFile>true</GenerateMapFile>
@@ -511,15 +523,17 @@
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <GenerateMapFile>true</GenerateMapFile>
@@ -555,15 +569,17 @@
       <OmitFramePointers>true</OmitFramePointers>
       <MinimalRebuild />
       <WholeProgramOptimization />
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <GenerateMapFile>true</GenerateMapFile>
@@ -596,15 +612,17 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>FastCall</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <GenerateMapFile>true</GenerateMapFile>
@@ -632,15 +650,17 @@
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
     </Link>
@@ -666,15 +686,17 @@
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
     </Link>
@@ -696,8 +718,10 @@
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
@@ -705,7 +729,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)Build\$(Configuration) $(Platform)\" /I /D /Y</Command>
@@ -734,15 +758,17 @@
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <MinimalRebuild />
       <WholeProgramOptimization />
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -758,8 +784,10 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>$(SolutionDir)Core/include/IntraCore.hh</ForcedIncludeFiles>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <ForcedIncludeFiles>
+      </ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
@@ -768,7 +796,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(OutDir)/IntraCore.lib</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
       <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
     </Link>
     <PostBuildEvent>

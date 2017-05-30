@@ -4,8 +4,9 @@
 #include "Image/AnyImage.h"
 #include "Image/Bindings/DXGI_Formats.h"
 #include "Cpp/Warnings.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 #include "Range/Polymorphic/OutputRange.h"
+#include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -186,7 +187,7 @@ static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10&
 	{
 		if(fd.format!=format.value || fd.swapRB!=swapRB) continue;
 		pf.rgbaBitMasks = fd.masks;
-		Algo::FillZeros(pf.fourCC);
+		Range::FillZeros(pf.fourCC);
 		return;
 	}
 
@@ -393,12 +394,12 @@ void LoaderDDS::Save(const AnyImage& img, OutputStream& stream) const
 	else header.flags |= DDSD_LINEARSIZE;
 	header.caps = DDSCAPS_TEXTURE;
 	header.caps4 = header.caps3 = header.caps2 = 0;
-	Algo::FillZeros(header.reserved1);
+	Range::FillZeros(header.reserved1);
 	header.reserved2 = 0;
 
 	DDS_HEADER_DXT10 dx10header;
-	Algo::FillZeros(dx10header.unused1);
-	Algo::FillZeros(dx10header.unused2);
+	Range::FillZeros(dx10header.unused1);
+	Range::FillZeros(dx10header.unused2);
 	dx10header.miscFlag = dx10header.miscFlags2 = 0;
 	dx10header.arraySize = img.Info.Size.z;
 	if(img.Info.Type==ImageType_Cube)

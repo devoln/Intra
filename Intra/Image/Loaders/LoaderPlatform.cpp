@@ -112,7 +112,7 @@ AnyImage LoadWithPlatform(InputStream stream)
 		Span<char> range = {raw, size};
 		if(oldGlob)
 		{
-			Algo::CopyToAdvance(oldData, range);
+			CopyToAdvance(oldData, range);
 			GlobalUnlock(oldGlob);
 			GlobalFree(oldGlob);
 		}

@@ -8,8 +8,7 @@
 #include "Range/Decorators/TakeByLine.h"
 #include "Range/Decorators/Map.h"
 #include "Cpp/Warnings.h"
-#include "Range/Iterator/RangeForSupport.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -36,7 +35,7 @@ void TestFileSyncIO(FormattedWriter& output)
 		"[54, 13]");
 
 	INTRA_ASSERT_EQUALS(
-		StringOf(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(), &String::Length)),
+		StringOf(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine<String>(), &String::Length)),
 		"[54, 13]");
 
 

@@ -5,15 +5,15 @@
 #include "IO/FileSystem.h"
 #include "Utils/StringView.h"
 #include "Container/Sequential/String.h"
-#include "Range/String/Parse.h"
-#include "Range/String/Path.h"
+#include "Range/Stream/Parse.h"
+#include "IO/FilePath.h"
 #include "Range/Search/Trim.h"
 #include "Range/Mutation/Transform.h"
 #include "IO/Std.h"
 #include "Utils/AsciiSet.h"
 
 using namespace Intra;
-using namespace Intra::IO;
+using namespace IO;
 using namespace Range;
 using namespace Op;
 
@@ -22,7 +22,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 {
 	String result = Path::ExtractName(path);
-	Transform(result.AsRange(), [](char c) {return AsciiSet::LatinAndDigits.Contains(c)? c: '_';});
+	Transform(result.AsRange(), [](char c) {return AsciiSets.LatinAndDigits.Contains(c)? c: '_';});
 	result = prefix+result;
 	if(IsDigit(result.First())) result = '_'+result;
 	return result;
@@ -92,7 +92,7 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 		}
 	}
 
-	if(outputFilePath==null) outputFilePath = inputFilePath+".c";
+	if(outputFilePath==null) outputFilePath = inputFilePath + ".c";
 	if(binArrName==null) binArrName = MakeIdentifierFromPath(inputFilePath);
 	if(valuesPerLine==0) valuesPerLine = 32;
 }
@@ -102,9 +102,9 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 inline size_t ByteToStr(byte x, char* dst)
 {
 	size_t len = 0;
-	if(x>=100) dst[len++] = char('0'+x/100);
-	if(x>=10) dst[len++] = char('0'+x/10%10);
-	dst[len++] = char('0'+x%10);
+	if(x>=100) dst[len++] = char('0' + x/100);
+	if(x>=10) dst[len++] = char('0' + x/10%10);
+	dst[len++] = char('0' + x%10);
 	return len;
 }
 

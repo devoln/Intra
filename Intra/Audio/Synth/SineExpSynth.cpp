@@ -3,11 +3,11 @@
 #include "Audio/Synth/ExponentialAttenuation.h"
 #include "Audio/Synth/PeriodicSynth.h"
 #include "Utils/Span.h"
-#include "Math/Simd.h"
-#include "Algo/Mutation/Copy.h"
-#include "Algo/Mutation/Fill.h"
+#include "Simd/Simd.h"
+#include "Range/Mutation/Copy.h"
+#include "Range/Mutation/Fill.h"
 #include "Container/Sequential/Array.h"
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 #include "Audio/AudioBuffer.h"
 
 namespace Intra { namespace Audio { namespace Synth {
@@ -126,9 +126,9 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 	float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	size_t start = Math::Random<ushort>::Global(20);
-	if(start>inOutSamples.Length()) start=inOutSamples.Length();
-	if(!add) Algo::FillZeros(inOutSamples.Take(start));
+	size_t start = Random::FastUniform<ushort>((inOutSamples.Length() << 5) | params.Len)(20);
+	if(start > inOutSamples.Length()) start = inOutSamples.Length();
+	if(!add) FillZeros(inOutSamples.Take(start));
 	inOutSamples.PopFirstN(start);
 	for(ushort h=0; h<params.Len; h++)
 	{
@@ -139,20 +139,20 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 			inOutSamples.Take(samplesToProcess),
 			add || h>0);
 	}
-	const bool allSamplesInitialized = add || params.Harmonics[0].LengthMultiplyer==norm8s(1);
+	const bool allSamplesInitialized = add || params.Harmonics[0].LengthMultiplyer == Norm8s(1);
 	if(!allSamplesInitialized)
 	{
 		const size_t samplesProcessed = size_t(float(inOutSamples.Length())*float(params.Harmonics[0].LengthMultiplyer));
-		Algo::FillZeros(inOutSamples.Drop(samplesProcessed));
+		FillZeros(inOutSamples.Drop(samplesProcessed));
 	}
 }
 
 SynthPass CreateSineExpSynthPass(CSpan<SineExpHarmonic> harmonics)
 {
 	SineExpParams params;
-	const auto src = harmonics.Take(Utils::LengthOf(params.Harmonics));
+	const auto src = harmonics.Take(Concepts::LengthOf(params.Harmonics));
 	params.Len = byte(src.Length());
-	Algo::CopyTo(src, params.Harmonics);
+	CopyTo(src, params.Harmonics);
 	return SynthPass(SineExpSynthPassFunction, params);
 }
 

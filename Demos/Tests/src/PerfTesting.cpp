@@ -3,9 +3,10 @@
 
 #include "Utils/Logger.h"
 
+#include "Platform/Environment.h"
 #include "Platform/Time.h"
 #include "Platform/HardwareInfo.h"
-#include "Platform/Signals.h"
+#include "Platform/Signal.h"
 
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"

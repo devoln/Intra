@@ -1,7 +1,7 @@
 ﻿#include "Audio/Synth/SynthesizedInstrument.h"
 #include "Audio/AudioBuffer.h"
 #include "Audio/Synth/Types.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Transform.h"
 
 #ifndef INTRA_NO_AUDIO_SYNTH
 
@@ -44,8 +44,8 @@ SynthesizedInstrument& SynthesizedInstrument::operator=(SynthesizedInstrument&& 
 void SynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
-	INTRA_DEBUG_ASSERT(Synth!=null);
-	if(Synth==null) return;
+	INTRA_DEBUG_ASSERT(Synth != null);
+	if(Synth == null) return;
 	auto noteDuration=note.AbsDuration(tempo);
 	if(noteDuration<0.00001 || note.IsPause() || volume==0) return;
 	noteDuration = Math::Max(noteDuration, MinNoteDuration)+FadeOffTime;
@@ -54,27 +54,26 @@ void SynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,
 	if(Modifiers==null && Attenuation==null && PostEffects==null) //Если синтез однопроходный, то промежуточный буфер не нужен
 	{
 		Synth(note.Frequency(), volume, inOutSamples.Take(noteSampleCount), sampleRate, add);
+		return;
 	}
-	else
+
+	Array<float> noteSampleArr;
+	noteSampleArr.SetCountUninitialized(noteSampleCount);
+	auto sampleBuf = noteSampleArr.Take(noteSampleCount);
+	Synth(note.Frequency(), volume, sampleBuf, sampleRate, false);
+	for(const ModifierPass& pass: Modifiers)
 	{
-		Array<float> noteSampleArr;
-		noteSampleArr.SetCountUninitialized(noteSampleCount);
-		auto sampleBuf = noteSampleArr(0, noteSampleCount);
-		Synth(note.Frequency(), volume, sampleBuf, sampleRate, false);
-		for(const ModifierPass& pass: Modifiers)
-		{
-			if(pass==null) continue;
-			pass(note.Frequency(), sampleBuf, sampleRate);
-		}
-		if(Attenuation!=null) Attenuation(noteDuration, sampleBuf/*result.Samples*/, sampleRate);
-		for(const PostEffectPass& postEffect: PostEffects)
-		{
-			if(postEffect==null) continue;
-			postEffect(sampleBuf, sampleRate);
-		}
-		if(!add) Algo::CopyTo(sampleBuf, inOutSamples);
-		else Algo::Add(inOutSamples.Take(noteSampleCount), sampleBuf.AsConstRange());
+		if(pass==null) continue;
+		pass(note.Frequency(), sampleBuf, sampleRate);
 	}
+	if(Attenuation!=null) Attenuation(noteDuration, sampleBuf/*result.Samples*/, sampleRate);
+	for(const PostEffectPass& postEffect: PostEffects)
+	{
+		if(postEffect==null) continue;
+		postEffect(sampleBuf, sampleRate);
+	}
+	if(!add) CopyTo(sampleBuf, inOutSamples);
+	else Add(inOutSamples.Take(noteSampleCount), sampleBuf.AsConstRange());
 }
 
 void CombinedSynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,

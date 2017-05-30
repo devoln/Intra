@@ -9,7 +9,7 @@ option(ENABLE_SSE OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
     set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
     set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
-    set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11 ${ADDITIONAL_COMPILER_PARAMETERS}")
+    set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11 ${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
@@ -51,6 +51,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -fexceptions")
     else()
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -fno-exceptions")
+    endif()
+	
+	if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -ftemplate-backtrace-limit=0")
     endif()
     
     set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -fno-rtti")

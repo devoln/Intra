@@ -2,7 +2,7 @@
 #include "Math/Math.h"
 #include "Cpp/Intrinsics.h"
 #include "Cpp/Warnings.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 namespace Intra { namespace Audio { namespace Sources {
 
@@ -49,7 +49,7 @@ size_t WaveSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	INTRA_DEBUG_ASSERT(!outShorts.Empty());
 	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
-	Algo::CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
+	CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
 	mCurrentDataPos += shortsToRead;
 	if(shortsToRead<outShorts.Length()) mCurrentDataPos = 0;
 	return shortsToRead/mChannelCount;
@@ -87,12 +87,12 @@ size_t WaveSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 }
 
 Array<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
+	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount-mCurrentDataPos);
 	if(oSamplesRead!=null) *oSamplesRead = shortsToRead/mChannelCount;
 	if(oInterleaved!=null) *oInterleaved = true;
-	if(oType!=null) *oType = ValueType::Short;
+	if(oType!=null) *oType = Data::ValueType::Short;
 	Array<const void*> resultPtrs;
 	resultPtrs.AddLast(mData.Begin+mCurrentDataPos);
 	mCurrentDataPos += shortsToRead;

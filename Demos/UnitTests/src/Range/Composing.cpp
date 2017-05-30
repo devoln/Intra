@@ -11,7 +11,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range/Reduction.h"
 #include "Utils/Span.h"
 #include "Range.hh"
-#include "Math/MathRanges.h"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 #include "Utils/AsciiSet.h"
@@ -45,7 +44,10 @@ void TestComposedRange(FormattedWriter& output)
 	output.PrintLine(fibArr);
 	output.LineBreak();
 	output.PrintLine("Вторая половина того же массива задом наперёд: ");
-	INTRA_ASSERT1(Equals(Retro(Drop(fibArr, fibArr.Count()/2)), CSpan<int>({610, 377, 233, 144, 89, 55, 34, 21})), Retro(Drop(fibArr, fibArr.Count()/2)));
+	INTRA_ASSERT1(Equals(
+		Retro(Drop(fibArr, fibArr.Count()/2)),
+		CSpan<int>({610, 377, 233, 144, 89, 55, 34, 21})
+	), Retro(Drop(fibArr, fibArr.Count()/2)));
 	output.PrintLine(Retro(Drop(fibArr, fibArr.Count()/2)));
 
 	//Вставляем в массив 15 чисел Фибонначчи, начиная с 6-го
@@ -126,7 +128,7 @@ void TestComposedRange(FormattedWriter& output)
 	StringView helloWorldCode = "int main()\n{\n\tprintf(\"HelloWorld!\");\n}";
 	output.PrintLine("Разобьём программу helloworld на токены. Её код:");
 	output.PrintLine(helloWorldCode);
-	auto tokens = Split(helloWorldCode, AsciiSet::Spaces, AsciiSet("(){},;"));
+	auto tokens = Split(helloWorldCode, AsciiSets.Spaces, AsciiSet("(){},;"));
 	output.PrintLine("Токены: ", StringOf(tokens, "\", \"", "[\"", "\"]"));
 
 	int arr[]={1, 4, 11, 6, 8};

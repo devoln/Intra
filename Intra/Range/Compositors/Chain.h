@@ -81,7 +81,7 @@ template<typename R0> struct RChain<R0>
 private:
 	typedef Concepts::ReturnValueTypeOf<R0> ReturnValueType;
 public:
-	enum: bool {RangeIsFinite = IsFiniteRange<R0>::_};
+	enum: bool {RangeIsFinite = Concepts::IsFiniteRange<R0>::_};
 
 	forceinline RChain(null_t=null) {}
 

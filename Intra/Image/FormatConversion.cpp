@@ -1,5 +1,5 @@
 ﻿#include "Image/FormatConversion.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 namespace Intra {
 
@@ -125,7 +125,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 				reinterpret_cast<UBVec3*>(dstPos.Begin):
 				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
 			if(swapRB) for(uint x = 0; x<sizes.x; x++)
-				*pixels++ = stream.ReadRaw<UBVec4>().swizzle(2, 1, 0);
+				*pixels++ = stream.ReadRaw<UBVec4>().swizzle<2, 1, 0>();
 			else for(uint x = 0; x<sizes.x; x++)
 				*pixels++ = stream.ReadRaw<UBVec4>().xyz;
 			if(flipVert) dstPos.PopLastExactly(dstLineBytes);

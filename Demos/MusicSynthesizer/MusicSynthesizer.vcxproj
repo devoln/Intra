@@ -321,7 +321,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
@@ -344,7 +345,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
@@ -367,7 +369,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
@@ -390,7 +393,8 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <ExceptionHandling>false</ExceptionHandling>
@@ -427,7 +431,8 @@
       <CallingConvention>Cdecl</CallingConvention>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -467,7 +472,8 @@
       <CallingConvention>Cdecl</CallingConvention>
       <OmitFramePointers>true</OmitFramePointers>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -506,7 +512,8 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <CallingConvention>Cdecl</CallingConvention>
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -551,7 +558,8 @@
       <OmitFramePointers>true</OmitFramePointers>
       <MinimalRebuild />
       <WholeProgramOptimization />
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -592,7 +600,8 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <PositionIndependentCode>false</PositionIndependentCode>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -634,7 +643,8 @@
       <ExceptionHandling>false</ExceptionHandling>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -674,7 +684,8 @@
       <ExceptionHandling>false</ExceptionHandling>
       <WholeProgramOptimization>true</WholeProgramOptimization>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -713,7 +724,8 @@
       <ControlFlowGuard>false</ControlFlowGuard>
       <ExceptionHandling>false</ExceptionHandling>
       <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -754,7 +766,8 @@
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <MinimalRebuild />
       <WholeProgramOptimization />
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
     </ClCompile>
@@ -779,7 +792,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>

@@ -9,7 +9,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(Has_size, static_cast<size_t>(Meta::Val<T>().siz
 INTRA_DEFINE_EXPRESSION_CHECKER(HasLength, static_cast<size_t>(Meta::Val<T>().Length()));
 INTRA_DEFINE_EXPRESSION_CHECKER(Has_data, static_cast<const void*>(Meta::Val<T>().data()));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasData, static_cast<const void*>(Meta::Val<T>().Data()));
-INTRA_DEFINE_EXPRESSION_CHECKER(Has_begin_end, begin(Meta::Val<T>()) != end(Meta::Val<T>()));
+INTRA_DEFINE_EXPRESSION_CHECKER(Has_begin_end, Meta::Val<T>().begin() != Meta::Val<T>().end());
 
 namespace D {
 template<typename R, bool = HasData<R>::_> struct ReturnTypeOfData {typedef void _;};
@@ -55,21 +55,43 @@ template<typename T> forceinline const T* DataOf(InitializerList<T> list) {retur
 
 template<typename T, size_t N> T* DataOf(T(&arr)[N]) {return arr;}
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasDataOf, static_cast<const void*>(DataOf(Meta::Val<T>())));
-INTRA_DEFINE_EXPRESSION_CHECKER(HasLengthOf, static_cast<size_t>(LengthOf(Meta::Val<T>())));
+template<typename T> struct IsInitializerList: Meta::FalseType {};
+template<typename T> struct IsInitializerList<InitializerList<T>>: Meta::TrueType {};
+
+template<typename T> struct HasDataOf: Meta::TypeFromValue<bool,
+	Has_data<T>::_ || HasData<T>::_ ||
+	Meta::IsArrayType<Meta::RemoveReference<T>>::_ ||
+	IsInitializerList<T>::_
+> {};
+
+template<typename T> struct HasLengthOf: Meta::TypeFromValue<bool,
+	Has_size<T>::_ || HasLength<T>::_ ||
+	Meta::IsArrayType<Meta::RemoveReference<T>>::_
+> {};
 
 template<typename R> struct IsArrayClass: Meta::TypeFromValue<bool,
 	HasDataOf<R>::_ && HasLengthOf<R>::_
 > {};
 
 namespace D {
-template<typename R, bool = HasDataOf<R>::_> struct PtrElementTypeOfArray {typedef void _;};
-template<typename R> struct PtrElementTypeOfArray<R, true> {typedef decltype(DataOf(Meta::Val<R>())) _;};
+template<typename R, int> struct PtrElementTypeOfArray {typedef void _;};
+
+template<typename R> struct PtrElementTypeOfArray<R, 1> {typedef decltype(Meta::Val<R>().Data()) _;};
+template<typename R> struct PtrElementTypeOfArray<R, 2> {typedef decltype(&*begin(Meta::Val<R>())) _;};
+template<typename R> struct PtrElementTypeOfArray<R, 3> {typedef decltype(Meta::Val<R>().data()) _;};
+template<typename T, size_t N> struct PtrElementTypeOfArray<T(&)[N], 0> {typedef T* _;};
+template<typename T> struct PtrElementTypeOfArray<InitializerList<T>, 0> {typedef const T* _;};
+
 template<typename R, bool = HasDataOf<R>::_> struct PtrElementTypeOfArrayOrDisable;
-template<typename R> struct PtrElementTypeOfArrayOrDisable<R, true> {typedef decltype(DataOf(Meta::Val<R>())) _;};
+template<typename R> struct PtrElementTypeOfArrayOrDisable<R, true> {typedef decltype(::Intra::Concepts::DataOf(Meta::Val<R>())) _;};
 }
 
-template<typename T> using PtrElementTypeOfArray = typename D::PtrElementTypeOfArray<T, HasDataOf<T>::_>::_;
+template<typename R> using PtrElementTypeOfArray = typename D::PtrElementTypeOfArray<R, 
+	HasData<R>::_? 1:
+		(Has_data<R>::_?
+			(Has_begin_end<R>::_? 2: 3): 0)
+>::_;
+
 template<typename T> using RefElementTypeOfArray = Meta::RemovePointer<PtrElementTypeOfArray<T>>&;
 template<typename T> using ElementTypeOfArray = Meta::RemoveConstPointer<PtrElementTypeOfArray<T>>;
 template<typename T> using ElementTypeOfArrayKeepConst = Meta::RemovePointer<PtrElementTypeOfArray<T>>;

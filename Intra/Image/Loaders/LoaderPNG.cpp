@@ -1,10 +1,11 @@
 ﻿#include "Image/Loaders/LoaderPNG.h"
 #include "Image/Loaders/LoaderPlatform.h"
-#include "Math/Vector.h"
-#include "Algo/Comparison/Equals.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Range/Comparison/Equals.h"
 #include "Image/AnyImage.h"
 #include "Range/Polymorphic/InputRange.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 namespace Intra { namespace Image {
 
@@ -13,7 +14,7 @@ bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
 	static const byte pngSignature[] = {137, 'P', 'N', 'G', 13, 10, 26, 10};
 	return headerSize>=8 &&
-		Algo::Equals(CSpan<byte>(headerBytes, sizeof(pngSignature)), pngSignature);
+		Equals(Take(headerBytes, sizeof(pngSignature)), SpanOf(pngSignature));
 }
 
 ImageInfo LoaderPNG::GetInfo(InputStream stream) const
@@ -23,7 +24,7 @@ ImageInfo LoaderPNG::GetInfo(InputStream stream) const
 	if(!IsValidHeader(headerSignature, 8)) return ImageInfo();
 	stream.PopFirstN(2*sizeof(intBE));
 
-	const Math::Vector2<uint> ihdrSize = stream.ReadRaw<Math::Vector2<uintBE>>();
+	const Math::UVec2 ihdrSize = stream.ReadRaw<Math::Vector2<uintBE>>();
 	const byte ihdrBitsPerComponent = stream.ReadRaw<byte>();
 	const byte ihdrColorType = stream.ReadRaw<byte>();
 

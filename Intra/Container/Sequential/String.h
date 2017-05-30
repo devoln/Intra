@@ -3,22 +3,29 @@
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
 #include "Cpp/Intrinsics.h"
+
 #include "Utils/Debug.h"
+
 #include "Container/ForwardDecls.h"
 #include "Container/Operations.hh"
 #include "Concepts/Container.h"
+
 #include "Utils/Span.h"
 #include "Utils/StringView.h"
 #include "Utils/ArrayAlgo.h"
+
 #include "Memory/Memory.h"
 #include "Memory/Allocator.hh"
+
 #include "Range/Special/Unicode.h"
-#include "Data/Reflection.h"
 #include "Range/Mutation/Fill.h"
 #include "Range/Mutation/Copy.h"
 #include "Range/Mutation/ReplaceSubrange.h"
 #include "Range/Decorators/TakeUntil.h"
 #include "Range/Compositors/Zip.h"
+
+#include "Data/Reflection.h"
+
 #include "StringFormatter.h"
 #include "Range/Output/Inserter.h"
 
@@ -49,10 +56,9 @@ public:
 	{SetLength(initialLength, filler);}
 
 	template<typename R=StringView,
-		typename AsR = Concepts::RangeOfType<R>,
 	typename = Meta::EnableIf<
-		Concepts::IsConsumableRangeOf<AsR, Char>::_ &&
-		Meta::IsCharType<Concepts::ValueTypeOf<AsR>>::_
+		Concepts::IsAsConsumableRangeOf<R, Char>::_ &&
+		Meta::IsCharType<Concepts::ValueTypeOfAs<R>>::_
 	>> forceinline GenericString(R&& rhs): GenericString(null)
 	{
 		SetLengthUninitialized(Range::Count(rhs));
@@ -722,8 +728,8 @@ typename AsS1 = Concepts::RangeOfType<S1>,
 typename AsS2 = Concepts::RangeOfType<S2>,
 typename Char = Concepts::ValueTypeOf<AsS1>>
 Meta::EnableIf<
-	(Concepts::IsInputRange<S1>::_ ||
-		Concepts::IsInputRange<S2>::_) &&
+	(Concepts::IsInputRange<AsS1>::_ ||
+		Concepts::IsInputRange<AsS2>::_) &&
 	Concepts::IsConsumableRange<AsS1>::_ &&
 	Concepts::IsConsumableRange<AsS2>::_ &&
 	(!Concepts::IsArrayClass<S1>::_ ||
@@ -780,6 +786,13 @@ GenericString<Char2>> operator+(Char lhs, R&& rhs)
 	result += Range::Forward<R>(rhs);
 	return result;
 }
+
+static_assert(Concepts::IsAsConsumableRange<String>::_, "ERROR!");
+static_assert(Concepts::IsAsConsumableRange<const String>::_, "ERROR!");
+static_assert(Concepts::IsSequentialContainer<String>::_, "ERROR!");
+static_assert(Concepts::IsSequentialContainer<const String>::_, "ERROR!");
+
+static_assert(Meta::TypeEquals<Concepts::RangeOfType<const String&>, StringView>::_, "ERROR!");
 
 }
 

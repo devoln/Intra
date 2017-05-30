@@ -3,7 +3,7 @@
 #include "Cpp/Warnings.h"
 #include "Utils/Logger.h"
 #include "IO/FormattedWriter.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

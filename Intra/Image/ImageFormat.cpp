@@ -22,7 +22,7 @@ struct FormatInfo
 	ushort HasSharedExponent: 1;
 	ushort Is_sRGB: 1;
 	byte BitsPerPixel; //Число битов на пиксель. Для сжатых форматов среднее
-	ValueType::I DataType;
+	Data::ValueType::I DataType;
 	ImageFormat::I BasicFormat;
 	const char* Name;
 };
@@ -34,106 +34,106 @@ static FormatInfo get_format_info(ImageFormat fmt)
 {
 	static const FormatInfo uncompressedFormatsInfoTable[]=
 	{
-		{0,0,0,0,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::None, "None"},
+		{0,0,0,0,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::None, "None"},
 
 		/////////////////////
 		//Unsigned normalized
-		{1,0,0,0,0,0,0,0,0,0,0,0,8,ValueType::Norm8, ImageFormat::R, "Red8"},
-		{1,0,0,0,0,1,0,0,0,0,0,0,8,ValueType::Norm8, ImageFormat::Luminance, "Luminance8"},
-		{1,0,0,0,0,0,1,0,0,0,0,0,8,ValueType::Norm8, ImageFormat::Alpha, "Alpha8"},
+		{1,0,0,0,0,0,0,0,0,0,0,0,8,Data::ValueType::Norm8, ImageFormat::R, "Red8"},
+		{1,0,0,0,0,1,0,0,0,0,0,0,8,Data::ValueType::Norm8, ImageFormat::Luminance, "Luminance8"},
+		{1,0,0,0,0,0,1,0,0,0,0,0,8,Data::ValueType::Norm8, ImageFormat::Alpha, "Alpha8"},
 
-		{1,0,0,0,0,0,0,0,0,1,0,0,16,ValueType::N8Vec2, ImageFormat::RG, "RG8"},
-		{1,0,0,0,0,1,1,0,0,1,0,0,16,ValueType::N8Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha8"},
+		{1,0,0,0,0,0,0,0,0,1,0,0,16,Data::ValueType::N8Vec2, ImageFormat::RG, "RG8"},
+		{1,0,0,0,0,1,1,0,0,1,0,0,16,Data::ValueType::N8Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha8"},
 
-		{1,0,0,0,0,0,0,0,0,2,0,0,24,ValueType::N8Vec3, ImageFormat::RGB, "RGB8"},
-		{1,0,0,0,0,0,1,0,0,3,0,0,32,ValueType::N8Vec4, ImageFormat::RGBA, "RGBA8"},
-		{1,0,0,0,0,0,0,0,0,2,0,0,32,ValueType::N8Vec4, ImageFormat::RGBA, "RGBX8"}, //альфа-канал не используется
+		{1,0,0,0,0,0,0,0,0,2,0,0,24,Data::ValueType::N8Vec3, ImageFormat::RGB, "RGB8"},
+		{1,0,0,0,0,0,1,0,0,3,0,0,32,Data::ValueType::N8Vec4, ImageFormat::RGBA, "RGBA8"},
+		{1,0,0,0,0,0,0,0,0,2,0,0,32,Data::ValueType::N8Vec4, ImageFormat::RGBA, "RGBX8"}, //альфа-канал не используется
 
-		{1,0,0,0,0,0,0,0,0,0,0,0,16,ValueType::Norm16, ImageFormat::R, "Red16"},
-		{1,0,0,0,0,1,0,0,0,0,0,0,16,ValueType::Norm16, ImageFormat::Luminance, "Luminance16"},
-		{1,0,0,0,0,0,1,0,0,0,0,0,16,ValueType::Norm16, ImageFormat::Alpha, "Alpha16"},
+		{1,0,0,0,0,0,0,0,0,0,0,0,16,Data::ValueType::Norm16, ImageFormat::R, "Red16"},
+		{1,0,0,0,0,1,0,0,0,0,0,0,16,Data::ValueType::Norm16, ImageFormat::Luminance, "Luminance16"},
+		{1,0,0,0,0,0,1,0,0,0,0,0,16,Data::ValueType::Norm16, ImageFormat::Alpha, "Alpha16"},
 
-		{1,0,0,0,0,0,0,0,0,1,0,0,32,ValueType::N16Vec2, ImageFormat::RG, "RG16"},
-		{1,0,0,0,0,1,1,0,0,1,0,0,32,ValueType::N16Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha16"},
+		{1,0,0,0,0,0,0,0,0,1,0,0,32,Data::ValueType::N16Vec2, ImageFormat::RG, "RG16"},
+		{1,0,0,0,0,1,1,0,0,1,0,0,32,Data::ValueType::N16Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha16"},
 
-		{1,0,0,0,0,0,0,0,0,2,0,0,48,ValueType::N16Vec3, ImageFormat::RGB, "RGB16"},
-		{1,0,0,0,0,0,1,0,0,3,0,0,64,ValueType::N16Vec4, ImageFormat::RGBA, "RGBA16"},
-		{1,0,0,0,0,0,0,0,0,2,0,0,64,ValueType::N16Vec4, ImageFormat::RGBA, "RGBX16"},
+		{1,0,0,0,0,0,0,0,0,2,0,0,48,Data::ValueType::N16Vec3, ImageFormat::RGB, "RGB16"},
+		{1,0,0,0,0,0,1,0,0,3,0,0,64,Data::ValueType::N16Vec4, ImageFormat::RGBA, "RGBA16"},
+		{1,0,0,0,0,0,0,0,0,2,0,0,64,Data::ValueType::N16Vec4, ImageFormat::RGBA, "RGBX16"},
 
-		{1,0,0,0,0,0,0,0,0,0,0,0,32,ValueType::Norm32, ImageFormat::R, "Red32"},
-		{1,0,0,0,0,1,0,0,0,0,0,0,32,ValueType::Norm32, ImageFormat::Luminance, "Luminance32"},
-		{1,0,0,0,0,0,1,0,0,0,0,0,32,ValueType::Norm32, ImageFormat::Alpha, "Alpha32"},
+		{1,0,0,0,0,0,0,0,0,0,0,0,32,Data::ValueType::Norm32, ImageFormat::R, "Red32"},
+		{1,0,0,0,0,1,0,0,0,0,0,0,32,Data::ValueType::Norm32, ImageFormat::Luminance, "Luminance32"},
+		{1,0,0,0,0,0,1,0,0,0,0,0,32,Data::ValueType::Norm32, ImageFormat::Alpha, "Alpha32"},
 
-		{1,0,0,0,0,0,0,0,0,1,0,0,64,ValueType::N32Vec2, ImageFormat::RG, "RG32"},
-		{1,0,0,0,0,1,1,0,0,1,0,0,64,ValueType::N32Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha32"}, //2 компонента
+		{1,0,0,0,0,0,0,0,0,1,0,0,64,Data::ValueType::N32Vec2, ImageFormat::RG, "RG32"},
+		{1,0,0,0,0,1,1,0,0,1,0,0,64,Data::ValueType::N32Vec2, ImageFormat::LuminanceAlpha, "LuminanceAlpha32"}, //2 компонента
 
-		{1,0,0,0,0,0,0,0,0,2,0,0,96,ValueType::N32Vec3, ImageFormat::RGB, "RGB32"},
-		{1,0,0,0,0,0,1,0,0,3,0,0,128,ValueType::N32Vec4, ImageFormat::RGBA, "RGBA32"},
-		{1,0,0,0,0,0,0,0,0,2,0,0,128,ValueType::N32Vec4, ImageFormat::RGBA, "RGBX32"}, //альфа не используется
+		{1,0,0,0,0,0,0,0,0,2,0,0,96,Data::ValueType::N32Vec3, ImageFormat::RGB, "RGB32"},
+		{1,0,0,0,0,0,1,0,0,3,0,0,128,Data::ValueType::N32Vec4, ImageFormat::RGBA, "RGBA32"},
+		{1,0,0,0,0,0,0,0,0,2,0,0,128,Data::ValueType::N32Vec4, ImageFormat::RGBA, "RGBX32"}, //альфа не используется
 
 		/////////
 		//Packed
-		{1,0,1,0,0,0,0,0,0,2,0,0,8,ValueType::NVec233, ImageFormat::RGB, "BGR233"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,16,ValueType::NVec565, ImageFormat::RGB, "RGB565"},
-		{1,0,1,0,0,0,1,0,0,3,0,0,16,ValueType::NVec1555, ImageFormat::RGBA, "A1_BGR5"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,16,ValueType::NVec1555, ImageFormat::RGBA, "X1_BGR5"},
-		{1,0,1,0,0,0,1,0,0,3,0,0,16,ValueType::NVec4444, ImageFormat::RGBA, "ABGR4"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,16,ValueType::NVec4444, ImageFormat::RGBA, "XBGR4"},
-		{1,0,1,0,0,0,1,0,0,3,0,0,32,ValueType::Vec10n10n10n2n, ImageFormat::RGBA, "RGB10A2"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,32,ValueType::N10Vec3, ImageFormat::RGB, "RGB10"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,16,ValueType::N5Vec3, ImageFormat::RGB, "RGB5"},
-		{1,0,1,0,0,0,1,0,0,3,0,0,16,ValueType::NVec5551, ImageFormat::RGBA, "RGB5A1"},
-		{1,0,1,0,0,0,1,0,0,3,0,0,16,ValueType::NVec4444, ImageFormat::RGBA, "RGBA4"},
-		{1,0,1,0,0,0,0,0,0,2,0,0,16,ValueType::NVec4444, ImageFormat::RGBA, "RGBX4"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,8,Data::ValueType::NVec233, ImageFormat::RGB, "BGR233"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,16,Data::ValueType::NVec565, ImageFormat::RGB, "RGB565"},
+		{1,0,1,0,0,0,1,0,0,3,0,0,16,Data::ValueType::NVec1555, ImageFormat::RGBA, "A1_BGR5"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,16,Data::ValueType::NVec1555, ImageFormat::RGBA, "X1_BGR5"},
+		{1,0,1,0,0,0,1,0,0,3,0,0,16,Data::ValueType::NVec4444, ImageFormat::RGBA, "ABGR4"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,16,Data::ValueType::NVec4444, ImageFormat::RGBA, "XBGR4"},
+		{1,0,1,0,0,0,1,0,0,3,0,0,32,Data::ValueType::Vec10n10n10n2n, ImageFormat::RGBA, "RGB10A2"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,32,Data::ValueType::N10Vec3, ImageFormat::RGB, "RGB10"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,16,Data::ValueType::N5Vec3, ImageFormat::RGB, "RGB5"},
+		{1,0,1,0,0,0,1,0,0,3,0,0,16,Data::ValueType::NVec5551, ImageFormat::RGBA, "RGB5A1"},
+		{1,0,1,0,0,0,1,0,0,3,0,0,16,Data::ValueType::NVec4444, ImageFormat::RGBA, "RGBA4"},
+		{1,0,1,0,0,0,0,0,0,2,0,0,16,Data::ValueType::NVec4444, ImageFormat::RGBA, "RGBX4"},
 
 
 		///////////////////
 		//Signed normalized
 
 		//8 bit
-		{1,1,0,0,0,0,0,0,0,0,0,0,8,ValueType::SNorm8, ImageFormat::Rs, "Red8s"},
-		{1,1,0,0,0,0,0,0,0,1,0,0,16,ValueType::S8Vec2, ImageFormat::RGs, "RG8s"},
-		{1,1,0,0,0,0,0,0,0,2,0,0,24,ValueType::S8Vec3, ImageFormat::RGBs, "RGB8s"},
-		{1,1,0,0,0,0,1,0,0,3,0,0,32,ValueType::S8Vec4, ImageFormat::RGBAs, "RGBA8s"},
+		{1,1,0,0,0,0,0,0,0,0,0,0,8,Data::ValueType::SNorm8, ImageFormat::Rs, "Red8s"},
+		{1,1,0,0,0,0,0,0,0,1,0,0,16,Data::ValueType::S8Vec2, ImageFormat::RGs, "RG8s"},
+		{1,1,0,0,0,0,0,0,0,2,0,0,24,Data::ValueType::S8Vec3, ImageFormat::RGBs, "RGB8s"},
+		{1,1,0,0,0,0,1,0,0,3,0,0,32,Data::ValueType::S8Vec4, ImageFormat::RGBAs, "RGBA8s"},
 
 		//16 bit
-		{1,1,0,0,0,0,0,0,0,0,0,0,16,ValueType::SNorm16, ImageFormat::Rs, "Red16s"},
-		{1,1,0,0,0,0,0,0,0,1,0,0,32,ValueType::S16Vec2, ImageFormat::RGs, "RG16s"},
-		{1,1,0,0,0,0,0,0,0,2,0,0,48,ValueType::S16Vec3, ImageFormat::RGBs, "RGB16s"},
-		{1,1,0,0,0,0,1,0,0,3,0,0,64,ValueType::S16Vec4, ImageFormat::RGBAs, "RGBA16s"},
+		{1,1,0,0,0,0,0,0,0,0,0,0,16,Data::ValueType::SNorm16, ImageFormat::Rs, "Red16s"},
+		{1,1,0,0,0,0,0,0,0,1,0,0,32,Data::ValueType::S16Vec2, ImageFormat::RGs, "RG16s"},
+		{1,1,0,0,0,0,0,0,0,2,0,0,48,Data::ValueType::S16Vec3, ImageFormat::RGBs, "RGB16s"},
+		{1,1,0,0,0,0,1,0,0,3,0,0,64,Data::ValueType::S16Vec4, ImageFormat::RGBAs, "RGBA16s"},
 
 		//32 bit
-		{1,1,0,0,0,0,0,0,0,0,0,0,32,ValueType::SNorm32, ImageFormat::Rs, "Red32s"},
-		{1,1,0,0,0,0,0,0,0,1,0,0,64,ValueType::S32Vec2, ImageFormat::RGs, "RG32s"},
-		{1,1,0,0,0,0,0,0,0,2,0,0,96,ValueType::S32Vec3, ImageFormat::RGBs, "RGB32s"},
-		{1,1,0,0,0,0,1,0,0,3,0,0,128,ValueType::S32Vec4, ImageFormat::RGBAs, "RGBA32s"},
+		{1,1,0,0,0,0,0,0,0,0,0,0,32,Data::ValueType::SNorm32, ImageFormat::Rs, "Red32s"},
+		{1,1,0,0,0,0,0,0,0,1,0,0,64,Data::ValueType::S32Vec2, ImageFormat::RGs, "RG32s"},
+		{1,1,0,0,0,0,0,0,0,2,0,0,96,Data::ValueType::S32Vec3, ImageFormat::RGBs, "RGB32s"},
+		{1,1,0,0,0,0,1,0,0,3,0,0,128,Data::ValueType::S32Vec4, ImageFormat::RGBAs, "RGBA32s"},
 
 		//sRGB
-		{1,0,0,0,0,0,0,0,0,2,0,1,24,ValueType::N8Vec3, ImageFormat::sRGB, "sRGB8"},
-		{1,0,0,0,0,0,1,0,0,3,0,1,32,ValueType::N8Vec4, ImageFormat::sRGB_A, "sRGB8_A8"},
+		{1,0,0,0,0,0,0,0,0,2,0,1,24,Data::ValueType::N8Vec3, ImageFormat::sRGB, "sRGB8"},
+		{1,0,0,0,0,0,1,0,0,3,0,1,32,Data::ValueType::N8Vec4, ImageFormat::sRGB_A, "sRGB8_A8"},
 
 		////////////////
 		//Floating point
 
 		//FP16
-		{2,1,0,0,0,0,0,0,0,0,0,0,16,ValueType::Half, ImageFormat::Rf, "Red16f"},
-		{2,1,0,0,0,1,0,0,0,0,0,0,16,ValueType::Half, ImageFormat::Luminancef, "Luminance16f"},
-		{2,1,0,0,0,0,0,0,0,1,0,0,32,ValueType::HVec2, ImageFormat::RGf, "RG16f"},
-		{2,1,0,0,0,0,0,0,0,2,0,0,48,ValueType::HVec3, ImageFormat::RGBf, "RGB16f"},
-		{2,1,0,0,0,0,1,0,0,3,0,0,64,ValueType::HVec4, ImageFormat::RGBAf, "RGBA16f"},
+		{2,1,0,0,0,0,0,0,0,0,0,0,16,Data::ValueType::Half, ImageFormat::Rf, "Red16f"},
+		{2,1,0,0,0,1,0,0,0,0,0,0,16,Data::ValueType::Half, ImageFormat::Luminancef, "Luminance16f"},
+		{2,1,0,0,0,0,0,0,0,1,0,0,32,Data::ValueType::HVec2, ImageFormat::RGf, "RG16f"},
+		{2,1,0,0,0,0,0,0,0,2,0,0,48,Data::ValueType::HVec3, ImageFormat::RGBf, "RGB16f"},
+		{2,1,0,0,0,0,1,0,0,3,0,0,64,Data::ValueType::HVec4, ImageFormat::RGBAf, "RGBA16f"},
 
 		//FP32
-		{2,1,0,0,0,0,0,0,0,0,0,0,32,ValueType::Float, ImageFormat::Rf, "Red32f"},
-		{2,1,0,0,0,1,0,0,0,0,0,0,32, ValueType::Float, ImageFormat::Luminancef, "Luminance32f"},
+		{2,1,0,0,0,0,0,0,0,0,0,0,32,Data::ValueType::Float, ImageFormat::Rf, "Red32f"},
+		{2,1,0,0,0,1,0,0,0,0,0,0,32, Data::ValueType::Float, ImageFormat::Luminancef, "Luminance32f"},
 
-		{2,1,0,0,0,0,0,0,0,1,0,0,64,ValueType::FVec2, ImageFormat::RGf, "RG32f"},
-		{2,1,0,0,0,0,0,0,0,2,0,0,96,ValueType::FVec3, ImageFormat::RGBf, "RGB32f"},
-		{2,1,0,0,0,0,1,0,0,3,0,0,128,ValueType::FVec4, ImageFormat::RGBAf, "RGBA32f"},
+		{2,1,0,0,0,0,0,0,0,1,0,0,64,Data::ValueType::FVec2, ImageFormat::RGf, "RG32f"},
+		{2,1,0,0,0,0,0,0,0,2,0,0,96,Data::ValueType::FVec3, ImageFormat::RGBf, "RGB32f"},
+		{2,1,0,0,0,0,1,0,0,3,0,0,128,Data::ValueType::FVec4, ImageFormat::RGBAf, "RGBA32f"},
 
 		//Packed
-		{2,0,1,0,0,0,0,0,0,2,0,0,32,ValueType::Vec11f11f10f, ImageFormat::RGBf, "R11G11B10f"},
-		{2,0,1,0,0,0,0,0,0,3,1,0,32,ValueType::UVec9995, ImageFormat::RGBf, "RGB9E5"},
-		{2,0,0,0,0,0,0,0,0,3,1,0,32,ValueType::UBVec4, ImageFormat::RGBf, "RGBE8"},
+		{2,0,1,0,0,0,0,0,0,2,0,0,32,Data::ValueType::Vec11f11f10f, ImageFormat::RGBf, "R11G11B10f"},
+		{2,0,1,0,0,0,0,0,0,3,1,0,32,Data::ValueType::UVec9995, ImageFormat::RGBf, "RGB9E5"},
+		{2,0,0,0,0,0,0,0,0,3,1,0,32,Data::ValueType::UBVec4, ImageFormat::RGBf, "RGBE8"},
 
 
 
@@ -141,54 +141,54 @@ static FormatInfo get_format_info(ImageFormat fmt)
 		//Unsigned integer
 
 		//8 bit
-		{3,0,0,0,0,0,0,0,0,0,0,0,8,  ValueType::Byte, ImageFormat::Ru, "Red8u"},
-		{3,0,0,0,0,0,0,0,0,1,0,0,16, ValueType::UBVec2, ImageFormat::RGu, "RG8u"},
-		{3,0,0,0,0,0,0,0,0,2,0,0,24, ValueType::UBVec3, ImageFormat::RGBu, "RGB8u"},
-		{3,0,0,0,0,0,1,0,0,3,0,0,32, ValueType::UBVec4, ImageFormat::RGBAu, "RGBA8u"},
+		{3,0,0,0,0,0,0,0,0,0,0,0,8,  Data::ValueType::Byte, ImageFormat::Ru, "Red8u"},
+		{3,0,0,0,0,0,0,0,0,1,0,0,16, Data::ValueType::UBVec2, ImageFormat::RGu, "RG8u"},
+		{3,0,0,0,0,0,0,0,0,2,0,0,24, Data::ValueType::UBVec3, ImageFormat::RGBu, "RGB8u"},
+		{3,0,0,0,0,0,1,0,0,3,0,0,32, Data::ValueType::UBVec4, ImageFormat::RGBAu, "RGBA8u"},
 
 		//16 bit
-		{3,0,0,0,0,0,0,0,0,0,0,0,16,ValueType::UShort, ImageFormat::Ru, "Red16u"},
-		{3,0,0,0,0,0,0,0,0,1,0,0,32,ValueType::USVec2, ImageFormat::RGu, "RG16u"},
-		{3,0,0,0,0,0,0,0,0,2,0,0,48,ValueType::USVec3, ImageFormat::RGBu, "RGB16u"},
-		{3,0,0,0,0,0,1,0,0,3,0,0,64,ValueType::USVec4, ImageFormat::RGBAu, "RGBA16u"},
+		{3,0,0,0,0,0,0,0,0,0,0,0,16,Data::ValueType::UShort, ImageFormat::Ru, "Red16u"},
+		{3,0,0,0,0,0,0,0,0,1,0,0,32,Data::ValueType::USVec2, ImageFormat::RGu, "RG16u"},
+		{3,0,0,0,0,0,0,0,0,2,0,0,48,Data::ValueType::USVec3, ImageFormat::RGBu, "RGB16u"},
+		{3,0,0,0,0,0,1,0,0,3,0,0,64,Data::ValueType::USVec4, ImageFormat::RGBAu, "RGBA16u"},
 
 
 		//32 bit
-		{3,0,0,0,0,0,0,0,0,0,0,0,32, ValueType::UInt, ImageFormat::Ru, "Red32u"},
-		{3,0,0,0,0,0,0,0,0,1,0,0,64, ValueType::UVec2, ImageFormat::RGu, "RG32u"},
-		{3,0,0,0,0,0,0,0,0,2,0,0,96, ValueType::UVec3, ImageFormat::RGBu, "RGB32u"},
-		{3,0,0,0,0,0,1,0,0,3,0,0,128,ValueType::UVec4, ImageFormat::RGBAu, "RGBA32u"},
+		{3,0,0,0,0,0,0,0,0,0,0,0,32, Data::ValueType::UInt, ImageFormat::Ru, "Red32u"},
+		{3,0,0,0,0,0,0,0,0,1,0,0,64, Data::ValueType::UVec2, ImageFormat::RGu, "RG32u"},
+		{3,0,0,0,0,0,0,0,0,2,0,0,96, Data::ValueType::UVec3, ImageFormat::RGBu, "RGB32u"},
+		{3,0,0,0,0,0,1,0,0,3,0,0,128,Data::ValueType::UVec4, ImageFormat::RGBAu, "RGBA32u"},
 
-		{3,0,1,0,0,0,0,0,0,3,0,0,32, ValueType::Vec10u10u10u2u, ImageFormat::RGBAu, "RGB10A2u"}, //Упакованные
+		{3,0,1,0,0,0,0,0,0,3,0,0,32, Data::ValueType::Vec10u10u10u2u, ImageFormat::RGBAu, "RGB10A2u"}, //Упакованные
 
 		/////////////////
 		//Signed integer
 
 		//8 bit
-		{3,1,0,0,0,0,0,0,0,0,0,0,8, ValueType::SByte, ImageFormat::Ri, "Red8i"},
-		{3,1,0,0,0,0,0,0,0,1,0,0,16, ValueType::SBVec2, ImageFormat::RGi, "RG8i"},
-		{3,1,0,0,0,0,0,0,0,2,0,0,24, ValueType::SBVec3, ImageFormat::RGBi, "RGB8i"},
-		{3,1,0,0,0,0,1,0,0,3,0,0,32, ValueType::SBVec4, ImageFormat::RGBAi, "RGBA8i"},
+		{3,1,0,0,0,0,0,0,0,0,0,0,8, Data::ValueType::SByte, ImageFormat::Ri, "Red8i"},
+		{3,1,0,0,0,0,0,0,0,1,0,0,16, Data::ValueType::SBVec2, ImageFormat::RGi, "RG8i"},
+		{3,1,0,0,0,0,0,0,0,2,0,0,24, Data::ValueType::SBVec3, ImageFormat::RGBi, "RGB8i"},
+		{3,1,0,0,0,0,1,0,0,3,0,0,32, Data::ValueType::SBVec4, ImageFormat::RGBAi, "RGBA8i"},
 
 		//16 bit
-		{3,1,0,0,0,0,0,0,0,0,0,0,16,ValueType::Short, ImageFormat::Ri, "Red16i"},
-		{3,1,0,0,0,0,0,0,0,1,0,0,32,ValueType::SVec2, ImageFormat::RGi, "RG16i"},
-		{3,1,0,0,0,0,0,0,0,2,0,0,48,ValueType::SVec3, ImageFormat::RGBi, "RGB16i"},
-		{3,1,0,0,0,0,1,0,0,3,0,0,64,ValueType::SVec4, ImageFormat::RGBAi, "RGBA16i"},
+		{3,1,0,0,0,0,0,0,0,0,0,0,16,Data::ValueType::Short, ImageFormat::Ri, "Red16i"},
+		{3,1,0,0,0,0,0,0,0,1,0,0,32,Data::ValueType::SVec2, ImageFormat::RGi, "RG16i"},
+		{3,1,0,0,0,0,0,0,0,2,0,0,48,Data::ValueType::SVec3, ImageFormat::RGBi, "RGB16i"},
+		{3,1,0,0,0,0,1,0,0,3,0,0,64,Data::ValueType::SVec4, ImageFormat::RGBAi, "RGBA16i"},
 
 		//32 bit
-		{3,1,0,0,0,0,0,0,0,0,0,0,32,ValueType::Int, ImageFormat::Ri, "Red32i"},
-		{3,1,0,0,0,0,0,0,0,1,0,0,64,ValueType::IVec2, ImageFormat::RGi, "RG32i"},
-		{3,1,0,0,0,0,0,0,0,2,0,0,96,ValueType::IVec3, ImageFormat::RGBi, "RGB32i"},
-		{3,1,0,0,0,0,1,0,0,3,0,0,128,ValueType::IVec4, ImageFormat::RGBAi, "RGBA32i"},
+		{3,1,0,0,0,0,0,0,0,0,0,0,32,Data::ValueType::Int, ImageFormat::Ri, "Red32i"},
+		{3,1,0,0,0,0,0,0,0,1,0,0,64,Data::ValueType::IVec2, ImageFormat::RGi, "RG32i"},
+		{3,1,0,0,0,0,0,0,0,2,0,0,96,Data::ValueType::IVec3, ImageFormat::RGBi, "RGB32i"},
+		{3,1,0,0,0,0,1,0,0,3,0,0,128,Data::ValueType::IVec4, ImageFormat::RGBAi, "RGBA32i"},
 
 		//Depth\Stencil
-		{1,0,0,0,0,0,0,1,0,0,0,0,16,ValueType::UShort, ImageFormat::Depth, "Depth16"},
-		{1,0,0,0,0,0,0,1,0,0,0,0,24,ValueType::UInt, ImageFormat::Depth, "Depth24"},
-		{1,0,0,0,0,0,0,1,1,1,0,0,32,ValueType::UInt, ImageFormat::DepthStencil, "Depth24Stencil8"},
-		{1,0,0,0,0,0,0,1,0,0,0,0,32,ValueType::UInt, ImageFormat::Depth, "Depth32"},
-		{2,0,0,0,0,0,0,1,0,0,0,0,32,ValueType::Float, ImageFormat::DepthF, "Depth32f"},
-		{2,0,0,0,0,0,0,1,1,1,0,0,40,ValueType::Void, ImageFormat::DepthF_Stencil, "Depth32fStencil8"}
+		{1,0,0,0,0,0,0,1,0,0,0,0,16,Data::ValueType::UShort, ImageFormat::Depth, "Depth16"},
+		{1,0,0,0,0,0,0,1,0,0,0,0,24,Data::ValueType::UInt, ImageFormat::Depth, "Depth24"},
+		{1,0,0,0,0,0,0,1,1,1,0,0,32,Data::ValueType::UInt, ImageFormat::DepthStencil, "Depth24Stencil8"},
+		{1,0,0,0,0,0,0,1,0,0,0,0,32,Data::ValueType::UInt, ImageFormat::Depth, "Depth32"},
+		{2,0,0,0,0,0,0,1,0,0,0,0,32,Data::ValueType::Float, ImageFormat::DepthF, "Depth32f"},
+		{2,0,0,0,0,0,0,1,1,1,0,0,40,Data::ValueType::Void, ImageFormat::DepthF_Stencil, "Depth32fStencil8"}
 	};
 	INTRA_CHECK_TABLE_SIZE(uncompressedFormatsInfoTable, ImageFormat::EndOfUncompressed);
 
@@ -196,113 +196,113 @@ static FormatInfo get_format_info(ImageFormat fmt)
 	{
 		////////////
 		//DXT
-		{1,0,0,0,1,0,0,0,0,2,0,0,4,ValueType::Void, ImageFormat::RGB,  "DXT1_RGB"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,4,ValueType::Void, ImageFormat::RGBA, "DXT1_RGBA"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "DXT3_RGBA"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "DXT5_RGBA"},
-		{1,0,0,0,1,0,0,0,0,2,0,1,4,ValueType::Void, ImageFormat::sRGB,   "DXT1_sRGB"},
-		{1,0,0,0,1,0,1,0,0,3,0,1,4,ValueType::Void, ImageFormat::sRGB_A, "DXT1_sRGB_A"},
-		{1,0,0,0,1,0,1,0,0,3,0,1,8,ValueType::Void, ImageFormat::sRGB_A, "DXT3_sRGB_A"},
-		{1,0,0,0,1,0,1,0,0,3,0,1,8,ValueType::Void, ImageFormat::sRGB_A, "DXT5_sRGB_A"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,4,Data::ValueType::Void, ImageFormat::RGB,  "DXT1_RGB"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,4,Data::ValueType::Void, ImageFormat::RGBA, "DXT1_RGBA"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "DXT3_RGBA"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "DXT5_RGBA"},
+		{1,0,0,0,1,0,0,0,0,2,0,1,4,Data::ValueType::Void, ImageFormat::sRGB,   "DXT1_sRGB"},
+		{1,0,0,0,1,0,1,0,0,3,0,1,4,Data::ValueType::Void, ImageFormat::sRGB_A, "DXT1_sRGB_A"},
+		{1,0,0,0,1,0,1,0,0,3,0,1,8,Data::ValueType::Void, ImageFormat::sRGB_A, "DXT3_sRGB_A"},
+		{1,0,0,0,1,0,1,0,0,3,0,1,8,Data::ValueType::Void, ImageFormat::sRGB_A, "DXT5_sRGB_A"},
 
 		///////////
 		//ETC
-		{1,0,0,0,1,0,0,0,0,2,0,0,4,ValueType::Void, ImageFormat::RGB, "ETC1_RGB"},
-		{1,0,0,0,1,0,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::R,  "EAC_Red"},
-		{1,0,0,0,1,0,0,0,0,1,0,0,8,ValueType::Void, ImageFormat::RG, "EAC_RG"},
-		{1,1,0,0,1,0,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::Rs,  "EAC_Rs"},
-		{1,1,0,0,1,0,0,0,0,1,0,0,8,ValueType::Void, ImageFormat::RGs, "EAC_RGs"},
-		{1,0,0,0,1,0,0,0,0,2,0,0,4,ValueType::Void, ImageFormat::RGB,  "ETC2_RGB"},
-		{1,0,0,0,1,0,0,0,0,2,0,1,4,ValueType::Void, ImageFormat::sRGB, "ETC2_sRGB"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "ETC2_RGBA"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "ETC2_RGB_BinAlpha"},
-		{1,0,0,0,1,0,1,0,0,3,0,1,8,ValueType::Void, ImageFormat::sRGB, "ETC2_sRGB_BinAlpha"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,4,Data::ValueType::Void, ImageFormat::RGB, "ETC1_RGB"},
+		{1,0,0,0,1,0,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::R,  "EAC_Red"},
+		{1,0,0,0,1,0,0,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::RG, "EAC_RG"},
+		{1,1,0,0,1,0,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::Rs,  "EAC_Rs"},
+		{1,1,0,0,1,0,0,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::RGs, "EAC_RGs"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,4,Data::ValueType::Void, ImageFormat::RGB,  "ETC2_RGB"},
+		{1,0,0,0,1,0,0,0,0,2,0,1,4,Data::ValueType::Void, ImageFormat::sRGB, "ETC2_sRGB"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "ETC2_RGBA"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "ETC2_RGB_BinAlpha"},
+		{1,0,0,0,1,0,1,0,0,3,0,1,8,Data::ValueType::Void, ImageFormat::sRGB, "ETC2_sRGB_BinAlpha"},
 
 		///////////
 		//ATC
-		{1,0,0,0,1,0,0,0,0,2,0,0,4,ValueType::Void, ImageFormat::RGB,  "ATC_RGB"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "ATC_RGB_ExplicitAlpha"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,8,ValueType::Void, ImageFormat::RGBA, "ATC_RGB_InterpolatedAlpha"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,4,Data::ValueType::Void, ImageFormat::RGB,  "ATC_RGB"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "ATC_RGB_ExplicitAlpha"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "ATC_RGB_InterpolatedAlpha"},
 
 		///////////
 		//BPTC
-		{1,0,0,0,1,0,0,0,0,2,0,0,8,ValueType::Void, ImageFormat::RGBA, "BPTC_RGBA"},
-		{1,0,0,0,1,0,0,0,0,2,0,1,8,ValueType::Void, ImageFormat::sRGB_A, "BPTC_sRGB_A"},
-		{2,1,0,0,1,0,0,0,0,2,0,0,8,ValueType::Void, ImageFormat::RGBf, "BPTC_RGBf"},
-		{2,0,0,0,1,0,0,0,0,2,0,0,8,ValueType::Void, ImageFormat::RGBf, "BPTC_RGBuf"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,8,Data::ValueType::Void, ImageFormat::RGBA, "BPTC_RGBA"},
+		{1,0,0,0,1,0,0,0,0,2,0,1,8,Data::ValueType::Void, ImageFormat::sRGB_A, "BPTC_sRGB_A"},
+		{2,1,0,0,1,0,0,0,0,2,0,0,8,Data::ValueType::Void, ImageFormat::RGBf, "BPTC_RGBf"},
+		{2,0,0,0,1,0,0,0,0,2,0,0,8,Data::ValueType::Void, ImageFormat::RGBf, "BPTC_RGBuf"},
 
 		//////////////
 		//RGTC
-		{1,0,0,0,1,0,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::R, "RGTC_Red"},
-		{1,1,0,0,1,0,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::Rs, "RGTC_SignedRed"},
-		{1,0,0,0,1,0,0,0,0,1,0,0,8,ValueType::Void, ImageFormat::RG, "RGTC_RG"},
-		{1,1,0,0,1,0,0,0,0,1,0,0,8,ValueType::Void, ImageFormat::RGs, "RGTC_SignedRG"},
+		{1,0,0,0,1,0,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::R, "RGTC_Red"},
+		{1,1,0,0,1,0,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::Rs, "RGTC_SignedRed"},
+		{1,0,0,0,1,0,0,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::RG, "RGTC_RG"},
+		{1,1,0,0,1,0,0,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::RGs, "RGTC_SignedRG"},
 
 		/////////////
 		//LATC
-		{1,0,0,0,1,1,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::Luminance, "LATC_Luminance"},
-		{1,1,0,0,1,1,0,0,0,0,0,0,4,ValueType::Void, ImageFormat::Luminance, "LATC_SignedLuminance"},
-		{1,0,0,0,1,1,1,0,0,1,0,0,8,ValueType::Void, ImageFormat::LuminanceAlpha, "LATC_LuminanceAlpha"},
-		{1,1,0,0,1,1,1,0,0,1,0,0,8,ValueType::Void, ImageFormat::LuminanceAlpha, "LATC_SignedLuminanceAlpha"},
+		{1,0,0,0,1,1,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::Luminance, "LATC_Luminance"},
+		{1,1,0,0,1,1,0,0,0,0,0,0,4,Data::ValueType::Void, ImageFormat::Luminance, "LATC_SignedLuminance"},
+		{1,0,0,0,1,1,1,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::LuminanceAlpha, "LATC_LuminanceAlpha"},
+		{1,1,0,0,1,1,1,0,0,1,0,0,8,Data::ValueType::Void, ImageFormat::LuminanceAlpha, "LATC_SignedLuminanceAlpha"},
 
 		/////////////
 		//PVRTC
-		{1,0,0,0,1,0,0,0,0,2,0,0,4,ValueType::Void, ImageFormat::RGB, "PVRTC_RGB_4bpp"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,2,ValueType::Void, ImageFormat::RGB, "PVRTC_RGB_2bpp"},
-		{1,0,0,0,1,0,1,0,0,3,0,0,4,ValueType::Void, ImageFormat::RGBA, "PVRTC_RGBA_4bpp"},
-		{1,0,0,0,1,0,0,0,0,2,0,0,2,ValueType::Void, ImageFormat::RGBA, "PVRTC_RGBA_2bpp"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,4,Data::ValueType::Void, ImageFormat::RGB, "PVRTC_RGB_4bpp"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,2,Data::ValueType::Void, ImageFormat::RGB, "PVRTC_RGB_2bpp"},
+		{1,0,0,0,1,0,1,0,0,3,0,0,4,Data::ValueType::Void, ImageFormat::RGBA, "PVRTC_RGBA_4bpp"},
+		{1,0,0,0,1,0,0,0,0,2,0,0,2,Data::ValueType::Void, ImageFormat::RGBA, "PVRTC_RGBA_2bpp"},
 	};
 	INTRA_CHECK_TABLE_SIZE(compressedFormatsInfoTable, ImageFormat::EndOfCompressed-ImageFormat::FirstOfCompressed);
 
 	static const FormatInfo basicFormatsInfoTable[]=
 	{
 		//Unsigned normalized
-		{1,0,0,1,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::R, "R"},
-		{1,0,0,1,0,1,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Luminance, "Luminance"},
-		{1,0,0,1,0,0,1,0,0,0,0,0,0,ValueType::Void, ImageFormat::Alpha, "Alpha"},
-		{1,0,0,1,0,0,0,0,0,1,0,0,0,ValueType::Void, ImageFormat::LuminanceAlpha, "LuminanceAlpha"},
-		{1,0,0,1,0,1,1,0,0,1,0,0,0,ValueType::Void, ImageFormat::RG, "RG"},
-		{1,0,0,1,0,0,0,0,0,2,0,0,0,ValueType::Void, ImageFormat::RGB, "RGB"},
-		{1,0,0,1,0,0,1,0,0,3,0,0,0,ValueType::Void, ImageFormat::RGBA, "RGBA"},
+		{1,0,0,1,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::R, "R"},
+		{1,0,0,1,0,1,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Luminance, "Luminance"},
+		{1,0,0,1,0,0,1,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Alpha, "Alpha"},
+		{1,0,0,1,0,0,0,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::LuminanceAlpha, "LuminanceAlpha"},
+		{1,0,0,1,0,1,1,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::RG, "RG"},
+		{1,0,0,1,0,0,0,0,0,2,0,0,0,Data::ValueType::Void, ImageFormat::RGB, "RGB"},
+		{1,0,0,1,0,0,1,0,0,3,0,0,0,Data::ValueType::Void, ImageFormat::RGBA, "RGBA"},
 
 		//Signed normalized
-		{1,1,0,1,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Rs, "Rs"},
-		{1,1,0,1,0,0,0,0,0,1,0,0,0,ValueType::Void, ImageFormat::RGs, "RGs"},
-		{1,1,0,1,0,0,0,0,0,2,0,0,0,ValueType::Void, ImageFormat::RGBs, "RGBs"},
-		{1,1,0,1,0,0,1,0,0,3,0,0,0,ValueType::Void, ImageFormat::RGBAs, "RGBAs"},
+		{1,1,0,1,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Rs, "Rs"},
+		{1,1,0,1,0,0,0,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::RGs, "RGs"},
+		{1,1,0,1,0,0,0,0,0,2,0,0,0,Data::ValueType::Void, ImageFormat::RGBs, "RGBs"},
+		{1,1,0,1,0,0,1,0,0,3,0,0,0,Data::ValueType::Void, ImageFormat::RGBAs, "RGBAs"},
 
 		//Unsigned integer
-		{3,0,0,1,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Ru, "Ru"},
-		{3,0,0,1,0,0,0,0,0,1,0,0,0,ValueType::Void, ImageFormat::RGu, "RGu"},
-		{3,0,0,1,0,0,0,0,0,2,0,0,0,ValueType::Void, ImageFormat::RGBu, "RGBu"},
-		{3,0,0,1,0,0,1,0,0,3,0,0,0,ValueType::Void, ImageFormat::RGBAu, "RGBAu"},
+		{3,0,0,1,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Ru, "Ru"},
+		{3,0,0,1,0,0,0,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::RGu, "RGu"},
+		{3,0,0,1,0,0,0,0,0,2,0,0,0,Data::ValueType::Void, ImageFormat::RGBu, "RGBu"},
+		{3,0,0,1,0,0,1,0,0,3,0,0,0,Data::ValueType::Void, ImageFormat::RGBAu, "RGBAu"},
 
 		//Signed integer
-		{3,1,0,1,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Ri, "Ri"},
-		{3,1,0,1,0,0,0,0,0,1,0,0,0,ValueType::Void, ImageFormat::RGi, "RGi"},
-		{3,1,0,1,0,0,0,0,0,2,0,0,0,ValueType::Void, ImageFormat::RGBi, "RGBi"},
-		{3,1,0,1,0,0,1,0,0,3,0,0,0,ValueType::Void, ImageFormat::RGBAi, "RGBAi"},
+		{3,1,0,1,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Ri, "Ri"},
+		{3,1,0,1,0,0,0,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::RGi, "RGi"},
+		{3,1,0,1,0,0,0,0,0,2,0,0,0,Data::ValueType::Void, ImageFormat::RGBi, "RGBi"},
+		{3,1,0,1,0,0,1,0,0,3,0,0,0,Data::ValueType::Void, ImageFormat::RGBAi, "RGBAi"},
 
 		//Floating point
-		{2,1,0,1,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Rf, "Rf"},
-		{2,1,0,1,0,1,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::Luminancef, "Luminancef"},
-		{2,1,0,1,0,0,0,0,0,1,0,0,0,ValueType::Void, ImageFormat::RGf, "RGf"},
-		{2,1,0,1,0,0,0,0,0,2,0,0,0,ValueType::Void, ImageFormat::RGBf, "RGBf"},
-		{2,1,0,1,0,0,1,0,0,3,0,0,0,ValueType::Void, ImageFormat::RGBAf, "RGBAf"},
+		{2,1,0,1,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Rf, "Rf"},
+		{2,1,0,1,0,1,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Luminancef, "Luminancef"},
+		{2,1,0,1,0,0,0,0,0,1,0,0,0,Data::ValueType::Void, ImageFormat::RGf, "RGf"},
+		{2,1,0,1,0,0,0,0,0,2,0,0,0,Data::ValueType::Void, ImageFormat::RGBf, "RGBf"},
+		{2,1,0,1,0,0,1,0,0,3,0,0,0,Data::ValueType::Void, ImageFormat::RGBAf, "RGBAf"},
 
 		//sRGB
-		{1,0,0,1,0,0,0,0,0,2,0,1,0,ValueType::Void, ImageFormat::sRGB, "sRGB"},
-		{1,0,0,1,0,0,1,0,0,3,0,1,0,ValueType::Void, ImageFormat::sRGB_A, "sRGB_A"},
+		{1,0,0,1,0,0,0,0,0,2,0,1,0,Data::ValueType::Void, ImageFormat::sRGB, "sRGB"},
+		{1,0,0,1,0,0,1,0,0,3,0,1,0,Data::ValueType::Void, ImageFormat::sRGB_A, "sRGB_A"},
 
 		//Depth
-		{1,0,0,1,0,0,0,1,0,0,0,0,0,ValueType::Void, ImageFormat::Depth, "Depth"},
-		{2,0,0,1,0,0,0,1,0,0,0,0,0,ValueType::Void, ImageFormat::DepthF, "DepthF"},
-		{1,0,0,1,0,0,0,1,1,1,0,0,0,ValueType::Void, ImageFormat::DepthStencil, "DepthStencil"},
-		{2,0,0,1,0,0,0,1,1,1,0,0,0,ValueType::Void, ImageFormat::DepthF_Stencil, "DepthF_Stencil"}
+		{1,0,0,1,0,0,0,1,0,0,0,0,0,Data::ValueType::Void, ImageFormat::Depth, "Depth"},
+		{2,0,0,1,0,0,0,1,0,0,0,0,0,Data::ValueType::Void, ImageFormat::DepthF, "DepthF"},
+		{1,0,0,1,0,0,0,1,1,1,0,0,0,Data::ValueType::Void, ImageFormat::DepthStencil, "DepthStencil"},
+		{2,0,0,1,0,0,0,1,1,1,0,0,0,Data::ValueType::Void, ImageFormat::DepthF_Stencil, "DepthF_Stencil"}
 	};
 	INTRA_CHECK_TABLE_SIZE(basicFormatsInfoTable, ImageFormat::EndOfBasic-ImageFormat::FirstOfBasic);
 
-	if(!fmt.IsValid()) return {0,0,0,0,0,0,0,0,0,0,0,0,0, ValueType::Void, ImageFormat::None, ""};
+	if(!fmt.IsValid()) return {0,0,0,0,0,0,0,0,0,0,0,0,0, Data::ValueType::Void, ImageFormat::None, ""};
 	if(fmt.value<ImageFormat::EndOfUncompressed)
 		return uncompressedFormatsInfoTable[fmt.value];
 
@@ -313,7 +313,7 @@ static FormatInfo get_format_info(ImageFormat fmt)
 		return basicFormatsInfoTable[fmt.value-ImageFormat::FirstOfBasic];
 
 	INTRA_FATAL_ERROR("Error in get_format_info!");
-	return {0,0,0,0,0,0,0,0,0,0,0,0,0,ValueType::Void, ImageFormat::None, ""};
+	return {0,0,0,0,0,0,0,0,0,0,0,0,0,Data::ValueType::Void, ImageFormat::None, ""};
 }
 
 ImageFormat ImageFormat::GetBasicFormat() const
@@ -373,12 +373,12 @@ bool ImageFormat::HasColor() const
 }
 
 bool ImageFormat::IsPacked() const  {return get_format_info(*this).IsPacked;}
-ValueType ImageFormat::GetValueType() const
+Data::ValueType ImageFormat::GetValueType() const
 {
-	return value<EndOfUncompressed? get_format_info(*this).DataType: ValueType::Void;
+	return value<EndOfUncompressed? get_format_info(*this).DataType: Data::ValueType::Void;
 }
 
-ValueType ImageFormat::GetComponentType() const {return GetValueType().ToScalarType();}
+Data::ValueType ImageFormat::GetComponentType() const {return GetValueType().ToScalarType();}
 StringView ImageFormat::ToString() const {return StringView(get_format_info(*this).Name);}
 
 ImageFormat ImageFormat::FromString(StringView str)
@@ -418,12 +418,12 @@ UVec4 ImageFormat::GetBitMasks(bool swapRB) const
 	INTRA_CHECK_TABLE_SIZE(formatBitMasks, RGBX4+1-Red8);
 
 	if(value<Red8 || value>RGBX4) return {0,0,0,0}; //Битовые маски определены только для несжатых нормализованных беззнаковых форматов, число бит на пиксель которых не больше 32
-	if(swapRB) return formatBitMasks[value-Red8].swizzle(2,1,0,3);
+	if(swapRB) return formatBitMasks[value-Red8].swizzle<2,1,0,3>();
 	return formatBitMasks[value-Red8];
 }
 
 bool ImageFormat::IsSRGB() const
-{return get_format_info(*this).Is_sRGB!=0;}
+{return get_format_info(*this).Is_sRGB != 0;}
 
 ImageFormat ImageFormat::ToSRGB() const
 {

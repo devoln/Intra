@@ -2,7 +2,8 @@
 
 #include "Image/Loaders/LoaderTGA.h"
 #include "Image/AnyImage.h"
-#include "Math/Vector.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
 #include "Image/FormatConversion.h"
 
 namespace Intra {

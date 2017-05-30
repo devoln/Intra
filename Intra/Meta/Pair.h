@@ -35,17 +35,16 @@ template<typename K, typename V> struct KeyValuePair
 	template<typename K1, typename V1> KeyValuePair(K1&& key, V1&& value):
 		Key(Cpp::Forward<K1>(key)), Value(Cpp::Forward<V1>(value)) {}
 
-	operator KeyValuePair<const K, V>() const
+	forceinline operator KeyValuePair<const K, V>() const
 	{return *reinterpret_cast<KeyValuePair<const K, V>*>(this);}
 
-	operator Meta::Pair<K,V>&() {return *reinterpret_cast<Meta::Pair<K,V>*>(this);}
-	operator const Meta::Pair<K,V>&() const {return *reinterpret_cast<Meta::Pair<K,V>*>(this);}
-
+	forceinline operator Pair<K,V>&() {return *reinterpret_cast<Meta::Pair<K,V>*>(this);}
+	forceinline operator const Pair<K,V>&() const {return *reinterpret_cast<Pair<K,V>*>(this);}
 };
 
 
 
-template<typename T1, typename T2> Meta::Pair<T1, T2> PairL(T1&& first, T2&& second)
+template<typename T1, typename T2> Pair<T1, T2> PairL(T1&& first, T2&& second)
 {return {Cpp::Forward<T1>(first), Cpp::Forward<T2>(second)};}
 
 template<typename K, typename V> KeyValuePair<K, V> KVPairL(K&& key, V&& value)

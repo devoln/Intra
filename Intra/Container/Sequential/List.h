@@ -196,7 +196,7 @@ public:
 
 
 	template<typename R> Meta::EnableIf<
-		Range::IsAsConsumableRangeOf<R, T>::_ &&
+		Concepts::IsAsConsumableRangeOf<R, T>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, BList>::_
 	> AddLastRange(R&& values)
 	{
@@ -206,7 +206,7 @@ public:
 	}
 
 	template<typename R> Meta::EnableIf<
-		Range::IsAsConsumableRangeOf<R, T>::_ &&
+		Concepts::IsAsConsumableRangeOf<R, T>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, BList>::_,
 	BList&> operator=(R&& values)
 	{

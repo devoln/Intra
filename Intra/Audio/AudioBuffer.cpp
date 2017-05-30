@@ -1,15 +1,11 @@
 ﻿#include "Audio/AudioBuffer.h"
-#include "Algo/Reduction.h"
-#include "Algo/Mutation/Cast.h"
+#include "Range/Reduction.h"
+#include "Range/Mutation/Cast.h"
 #include "Utils/Span.h"
-#include "Algo/Mutation/Fill.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Fill.h"
+#include "Range/Mutation/Transform.h"
 
 namespace Intra { namespace Audio {
-
-using namespace Math;
-using namespace Algo;
-using namespace Range;
 
 AudioBuffer::AudioBuffer(size_t sampleCount,
 	uint sampleRate, CSpan<float> initData):
@@ -26,25 +22,25 @@ void AudioBuffer::CopyFrom(size_t startSample,
 	INTRA_DEBUG_ASSERT(srcStartSample+sampleCount<=src->Samples.Count());
 	if(startSample+sampleCount>Samples.Count())
 		Samples.SetCount(startSample+sampleCount);
-	CopyTo(Drop(src->Samples, srcStartSample), sampleCount, Drop(Samples, startSample));
+	CopyTo(src->Samples.Drop(srcStartSample), sampleCount, Samples.Drop(startSample));
 }
 
 void AudioBuffer::ConvertToShorts(size_t first, Span<short> outSamples) const
 {
-	const auto numSamples = Min(outSamples.Length(), Samples.Count()-first);
-	CastFromNormalized(outSamples.Take(numSamples), Drop(Samples, first).Take(numSamples));
+	const auto numSamples = Math::Min(outSamples.Length(), Samples.Count()-first);
+	CastFromNormalized(outSamples.Take(numSamples), Samples.Drop(first).Take(numSamples));
 }
 
 void AudioBuffer::CastToShorts(size_t first, Span<short> outSamples) const
 {
-	CastToAdvance(Drop(Samples, first).Take(outSamples.Length()), outSamples);
+	CastToAdvance(Samples.Drop(first).Take(outSamples.Length()), outSamples);
 	FillZeros(outSamples);
 }
 
 void AudioBuffer::ShiftSamples(intptr samplesToShift)
 {
 	if(samplesToShift==0 || Samples==null) return;
-	if(size_t(Abs(samplesToShift))>=Samples.Count()) {Clear(); return;}
+	if(size_t(Math::Abs(samplesToShift))>=Samples.Count()) {Clear(); return;}
 	if(samplesToShift<0)
 	{
 		const size_t firstFreeSampleIndex = size_t(intptr(Samples.Count())+samplesToShift);
@@ -77,7 +73,7 @@ Meta::Pair<float, float> AudioBuffer::GetMinMax(size_t startSample, size_t sampl
 {
 	if(startSample>=Samples.Count()) return {-1,1};
 	if(sampleCount>Samples.Count()-startSample) sampleCount = Samples.Count()-startSample;
-	size_t endSample = Min(startSample+sampleCount, Samples.Count());
+	size_t endSample = Math::Min(startSample+sampleCount, Samples.Count());
 
 	Meta::Pair<float, float> result;
 	MiniMax(Samples(startSample, endSample), &result.first, &result.second);
@@ -90,9 +86,9 @@ void AudioBuffer::SetMinMax(float newMin, float newMax,
 	if(startSample>=Samples.Count()) return;
 	if(sampleCount==Meta::NumericLimits<size_t>::Max()) sampleCount = Samples.Count()-startSample;
 	if(minMax.first==0 && minMax.second==0) minMax = GetMinMax();
-	const size_t endSample = Min(startSample+sampleCount, Samples.Count());
+	const size_t endSample = Math::Min(startSample+sampleCount, Samples.Count());
 
-	const float multiplyer = (newMax-newMin) / (minMax.second-minMax.first);
+	const float multiplyer = (newMax - newMin) / (minMax.second - minMax.first);
 	const float add = -minMax.first*multiplyer+newMin;
 
 	MulAdd(Samples(startSample, endSample), multiplyer, add);

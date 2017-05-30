@@ -135,7 +135,7 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	int resE[5];
 	deserializer >> resE;
 	output.PrintLine("int resE[5] = ", resE);
-	INTRA_ASSERT2(Equals(origE, resE), origE, resE);
+	INTRA_ASSERT2(Range::Equals(origE, resE), origE, resE);
 
 	CSpan<int> resF = deserializer.Deserialize<CSpan<int>>();
 	output.PrintLine("CSpan<int> resF = ", resF);

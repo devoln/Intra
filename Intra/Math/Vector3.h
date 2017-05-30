@@ -14,6 +14,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Math {
 
+template<typename T> struct Vector2;
+template<typename T> struct Vector4;
+
 template<typename T> struct Vector3
 {
 	Vector3() = default;
@@ -21,7 +24,7 @@ template<typename T> struct Vector3
 	template<typename U, typename V, typename S> constexpr  forceinline Vector3(U X, V Y, S Z): x(T(X)), y(T(Y)), z(T(Z)) {}
 	template<typename U> explicit constexpr forceinline Vector3(const Vector2<U>& v, T Z=0): x(T(v.x)), y(T(v.y)), z(Z) {}
 	template<typename U> constexpr forceinline Vector3(const Vector3<U>& v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
-	template<typename U> constexpr forceinline explicit Vector3(Vector4<U> v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
+	template<typename U> constexpr forceinline explicit Vector3(const Vector4<U>& v): x(T(v.x)), y(T(v.y)), z(T(v.z)) {}
 
 	template<typename U> constexpr forceinline Vector3 operator+(const Vector3<U>& rhs) const
 	{return {x+rhs.x, y+rhs.y, z+rhs.z};}
@@ -121,7 +124,7 @@ template<typename T> struct Vector3
 	constexpr forceinline const T* Data() const noexcept {return &x;}
 	constexpr forceinline size_t Length() const noexcept {return 3;}
 
-	constexpr forceinline T& operator[](size_t index) {return (&x)[index];}
+	forceinline T& operator[](size_t index) {return (&x)[index];}
 	constexpr forceinline T operator[](size_t index) const {return (&x)[index];}
 
 	constexpr forceinline T MaxElement() const {return Max(xy.MaxElement(), z);}
@@ -145,12 +148,13 @@ template<typename T> struct Vector3
 template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs==NaN;}
 template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs!=NaN;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> ClosestPointOnLine(const Vector3<T>& lineA, const Vector3<T>& lineB) const
+template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> ClosestPointOnLine(
+	const Vector3<T>& pt, const Vector3<T>& lineA, const Vector3<T>& lineB)
 {
-	const Vector3<T> AB = Normalize(lineB-lineA);
-	const T t = Dot(AB, (*this-lineA));
+	const Vector3<T> AB = Normalize(lineB - lineA);
+	const T t = Dot(AB, (pt - lineA));
 	if(t <= 0) return lineA;
-	if(t >= Distance(lineA, lineB)) return lineB;
+	if(t*t >= DistanceSqr(lineA, lineB)) return lineB;
 	return lineA + AB*t;
 }
 

@@ -47,11 +47,15 @@ template<typename T, typename C> Pair<T*, T*> unguarded_partition(Span<T> range,
 	// partition [_First, _Last), using _Pred
 	T* const mid = range.Data()+range.Length()/2;
 	median(range.Begin, mid, range.End-1, comparer);
-	T* const pfirst = mid;
-	T* const pend = pfirst + 1;
+	T* pfirst = mid;
+	T* pend = pfirst + 1;
 
-	while(range.Begin<pfirst && !comparer(*(pfirst-1), *pfirst) && !comparer(*pfirst, *(pfirst-1))) pfirst--;
-	while(pend<range.End && !comparer(*pend, *pfirst) && !comparer(*pfirst, *pend)) ++pend;
+	while(range.Begin < pfirst &&
+		!comparer(*(pfirst - 1), *pfirst) &&
+		!comparer(*pfirst, *(pfirst - 1))) pfirst--;
+	while(pend < range.End &&
+		!comparer(*pend, *pfirst) &&
+		!comparer(*pfirst, *pend)) ++pend;
 
 	T* gfirst = pend;
 	T* gend = pfirst;

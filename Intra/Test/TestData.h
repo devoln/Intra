@@ -10,25 +10,30 @@ namespace Intra {
 template<size_t N> struct Big
 {
 	char c[N];
-	forceinline bool operator==(const Big& rhs) const {return C::memcmp(c, rhs.c, N)==0;}
+	forceinline bool operator==(const Big& rhs) const {return C::memcmp(c, rhs.c, N) == 0;}
 	forceinline bool operator!=(const Big& rhs) const {return !operator==(rhs);}
-	forceinline bool operator<(const Big& rhs) const {return C::memcmp(c, rhs.c, N)<0;}
-	Big& operator+=(const Big& rhs) {c[0]+=rhs.c[0]; return *this;}
+	forceinline bool operator<(const Big& rhs) const {return C::memcmp(c, rhs.c, N) < 0;}
+	Big& operator+=(const Big& rhs) {c[0] += rhs.c[0]; return *this;}
 
-	uint ToHash() const
-	{return Range::Hash::Murmur3_32(StringView(c, N), 0);}
+	uint ToHash() const {return Hash::Murmur3_32(StringView(c, N), 0);}
 };
 
 
 template<typename T> forceinline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
 > GenerateRandomValue(T& dst)
-{dst = Math::Random<T>::Global();}
+{
+	auto rand = Random::FastUniform<T>(uint(&dst));
+	dst = rand();
+}
 
 template<typename T> Meta::EnableIf<
 	Meta::IsFloatType<T>::_
 > GenerateRandomValue(T& dst)
-{dst = Math::Random<T>::Global.SignedNext()*1000;}
+{
+	auto rand = Random::FastUniform<T>(uint(&dst));
+	dst = rand()*1000;
+}
 
 template<size_t N> void GenerateRandomValue(Big<N>& dst)
 {
@@ -39,10 +44,11 @@ template<size_t N> void GenerateRandomValue(Big<N>& dst)
 
 template<typename Char> void GenerateRandomValue(GenericString<Char>& dst)
 {
-	const size_t size = Math::Random<uint>::Global(5, 30);
+	auto rand = Random::FastUniform<byte>(uint(&dst));
+	const size_t size = rand(5, 30);
 	dst.SetLengthUninitialized(size);
 	for(size_t i=0; i<size; i++)
-		dst[i] = char('A'+Math::Random<uint>::Global(26));
+		dst[i] = char('A' + rand(26));
 }
 
 template<typename T> CSpan<T> GetRandomValueArray(size_t size)
@@ -51,7 +57,7 @@ template<typename T> CSpan<T> GetRandomValueArray(size_t size)
 	size_t oldSize = arr.Count();
 	if(oldSize<size) arr.SetCount(size);
 	for(size_t i=oldSize; i<size; i++) GenerateRandomValue(arr[i]);
-	return arr(0, size);
+	return arr.Take(size);
 }
 
 template<typename MAP> void PopulateMapRandom(MAP& map, size_t count)
@@ -64,15 +70,15 @@ template<typename MAP> void PopulateMapRandom(MAP& map, size_t count)
 
 template<typename S> S GenerateRandomString(size_t len)
 {
-	Math::Random<int> rand(uint(len)^Math::Random<uint>::Global());
+	Random::FastUniform<int> rand(len);
 	S result;
 	result.resize(len);
 	for(char& c: result)
 	{
-		int v = rand(62);
-		if(v<10) c = char('0'+v);
-		else if(v<36) c = char('A'+v-10);
-		else c = char('a'+v-36);
+		const int v = rand(62);
+		if(v<10) c = char('0' + v);
+		else if(v<36) c = char('A' + v - 10);
+		else c = char('a' + v - 36);
 	}
 	return result;
 }

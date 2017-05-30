@@ -2,7 +2,6 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
-#include "Math/Vector.h"
 #include "Data/ValueType.h"
 
 namespace Intra { namespace Image {
@@ -128,8 +127,8 @@ struct ImageFormat
 	Math::UVec4 GetBitMasks(bool swapRB=false) const;
 
 	byte ComponentCount() const;
-	ValueType GetComponentType() const;
-	ValueType GetValueType() const;
+	Data::ValueType GetComponentType() const;
+	Data::ValueType GetValueType() const;
 	ImageFormat GetBasicFormat() const;
 	ImageFormat ToSRGB() const;
 	ImageFormat ToNonSRGB() const;

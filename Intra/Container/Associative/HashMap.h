@@ -44,15 +44,15 @@ private:
 	bool> compare_keys(const U& key, uint keyHash)
 	{
 		(void)keyHash;
-		return element.Key==key;
+		return element.Key == key;
 	}
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
 		!Meta::IsScalarType<U>::_,
 	bool> compare_keys(const U& key, uint keyHash)
 	{
-		if(Meta::WrapperStruct<uint>::value==keyHash) return true;
-		return element.Key==key;
+		if(Meta::WrapperStruct<uint>::value == keyHash) return true;
+		return element.Key == key;
 	}
 		
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<

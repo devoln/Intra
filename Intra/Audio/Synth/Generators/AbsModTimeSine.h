@@ -2,7 +2,7 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Math/MathRanges.h"
+#include "Math/SineRange.h"
 #include "Math/Math.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {

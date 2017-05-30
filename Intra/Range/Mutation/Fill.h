@@ -71,7 +71,8 @@ template<typename R> forceinline Meta::EnableIf<
 	Meta::IsAlmostPod<Concepts::ElementTypeOfArray<R>>::_
 > FillZeros(R&& dst)
 {
-	C::memset(Concepts::DataOf(dst), 0, Concepts::LengthOf(dst)*sizeof(dst.First()));
+	auto data = Concepts::DataOf(dst);
+	C::memset(data, 0, Concepts::LengthOf(dst)*sizeof(*data));
 }
 
 template<typename R, typename PR> forceinline Meta::EnableIf<

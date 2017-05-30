@@ -314,6 +314,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
     <ClCompile>
@@ -335,6 +338,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -352,6 +358,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|x64'">
     <ClCompile>
@@ -369,6 +378,9 @@
     <Link>
       <SubSystem>Windows</SubSystem>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -391,7 +403,8 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <AdditionalOptions>/Zm10 %(AdditionalOptions)</AdditionalOptions>
@@ -402,6 +415,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <ClCompile>
@@ -424,7 +440,8 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <PrecompiledHeaderFile>$(SolutionDir)Core/include/IntraCore.hh</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
@@ -435,6 +452,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <ClCompile>
@@ -468,6 +488,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <ClCompile>
@@ -498,12 +521,16 @@
       </PrecompiledHeaderFile>
       <MinimalRebuild />
       <WholeProgramOptimization />
+      <AdditionalOptions>-ftemplate-backtrace-limit=0 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <ClCompile>
@@ -540,6 +567,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -571,6 +601,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|x64'">
     <ClCompile>
@@ -602,6 +635,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
     <ClCompile>
@@ -633,6 +669,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <ClCompile>
@@ -666,6 +705,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <ClCompile>
@@ -688,6 +730,9 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>user32.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Audio\AudioBuffer.cpp" />
@@ -737,6 +782,7 @@
     <ClCompile Include="Image\Loaders\LoaderTGA.cpp" />
     <ClCompile Include="Image\Loaders\LoaderTIFF.cpp" />
     <ClCompile Include="IO\FilePath.cpp" />
+    <ClCompile Include="Platform\Signal.cpp" />
     <ClCompile Include="Range\Mutation\Cast.cpp" />
     <ClCompile Include="Range\Mutation\Transform.cpp" />
     <ClCompile Include="Range\Reduction.cpp" />
@@ -828,6 +874,7 @@
     <ClInclude Include="Concepts\IOutput.h" />
     <ClInclude Include="Concepts\Iterator.h" />
     <ClInclude Include="Concepts\Range.h" />
+    <ClInclude Include="Concepts\RangeOf.h" />
     <ClInclude Include="Cpp\Compatibility.h" />
     <ClInclude Include="Cpp\Features.h" />
     <ClInclude Include="Cpp\Fundamental.h" />
@@ -883,6 +930,13 @@
     <ClInclude Include="Math\Vector2.h" />
     <ClInclude Include="Math\Vector3.h" />
     <ClInclude Include="Math\Vector4.h" />
+    <ClInclude Include="Meta\EachField.h" />
+    <ClInclude Include="Meta\GetField.h" />
+    <ClInclude Include="Meta\Operators.h" />
+    <ClInclude Include="Meta\Pair.h" />
+    <ClInclude Include="Meta\Tuple.h" />
+    <ClInclude Include="Meta\Type.h" />
+    <ClInclude Include="Meta\TypeList.h" />
     <ClInclude Include="Random\FastUniform.h" />
     <ClInclude Include="Random\FastUniformNoise.h" />
     <ClInclude Include="Range\Comparison.hh" />
@@ -900,8 +954,6 @@
     <ClInclude Include="Range\Mutation\Replace.h" />
     <ClInclude Include="Range\Mutation\ReplaceSubrange.h" />
     <ClInclude Include="Range\Mutation\Transform.h" />
-    <ClInclude Include="Range\Raw\Read.h" />
-    <ClInclude Include="Range\Raw\Write.h" />
     <ClInclude Include="Range\Reduction.h" />
     <ClInclude Include="Range\Search.hh" />
     <ClInclude Include="Range\Search\Binary.h" />
@@ -1025,6 +1077,7 @@
     <ClInclude Include="Concurrency\Atomic.h" />
     <ClInclude Include="Simd\Simd.h" />
     <ClInclude Include="Utils\ArrayAlgo.h" />
+    <ClInclude Include="Utils\Bind.h" />
     <ClInclude Include="Utils\Debug.h" />
     <ClInclude Include="Cpp\Endianess.h" />
     <ClInclude Include="Platform\Environment.h" />

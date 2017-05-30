@@ -6,6 +6,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+INTRA_WARNING_DISABLE_LOSING_CONVERSION
+INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 #ifdef _MSC_VER
 
@@ -695,7 +697,7 @@ template<typename... Types> using CommonTypeRef = typename Meta::D::CommonTypeRe
 
 
 #define INTRA_DEFINE_HAS_METHOD_CHECKER(checker_name, method_name) \
-	INTRA_DEFINE_EXPRESSION_CHECKER(checker_name, Meta::Val<T>().method_name)
+	INTRA_DEFINE_EXPRESSION_CHECKER(checker_name, ::Intra::Meta::Val<T>().method_name)
 
 #define INTRA_DEFINE_HAS_MEMBER_TYPE(checker_name, Type) \
 	template<typename T, typename U=void> struct checker_name\

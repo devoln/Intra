@@ -4,10 +4,14 @@
 #include "Cpp/Warnings.h"
 #include "Utils/StringView.h"
 #include "Container/ForwardDecls.h"
-#include "Math/Math.h"
-#include "Math/Matrix.h"
+
 #include "Meta/TypeList.h"
+
+#include "Math/Math.h"
+#include "Math/Matrix3.h"
+#include "Math/Matrix4.h"
 #include "Math/Fixed.h"
+#include "Math/HalfFloat.h"
 
 namespace Intra { namespace Data {
 
@@ -138,7 +142,7 @@ struct ValueType
 		float, Math::Vec2, Math::Vec3, Math::Vec4,
 
 		double, Math::DVec2, Math::DVec3, Math::DVec4,
-		Math::Half, Math::HVec2, Math::HVec3, Math::HVec4,
+		Math::HalfFloat, Math::Vector2<Math::HalfFloat>, Math::Vector3<Math::HalfFloat>, Math::Vector4<Math::HalfFloat>,
 
 		null_t,
 
@@ -152,12 +156,12 @@ struct ValueType
 
 		null_t, null_t, null_t,
 
-		norm8s, Math::N8Vec2, Math::N8Vec3, Math::N8Vec4,
-		norm16s, Math::N16Vec2, Math::N16Vec3, Math::N16Vec4,
-		norm32s, Math::N32Vec2, Math::N32Vec3, Math::N32Vec4,
-		snorm8s, Math::S8Vec2, Math::S8Vec3, Math::S8Vec4,
-		snorm16s, Math::S16Vec2, Math::S16Vec3, Math::S16Vec4,
-		snorm32s, Math::S32Vec2, Math::S32Vec3, Math::S32Vec4,
+		Math::Norm8s, Math::N8Vec2, Math::N8Vec3, Math::N8Vec4,
+		Math::Norm16s, Math::N16Vec2, Math::N16Vec3, Math::N16Vec4,
+		Math::Norm32s, Math::N32Vec2, Math::N32Vec3, Math::N32Vec4,
+		Math::SNorm8s, Math::S8Vec2, Math::S8Vec3, Math::S8Vec4,
+		Math::SNorm16s, Math::S16Vec2, Math::S16Vec3, Math::S16Vec4,
+		Math::SNorm32s, Math::S32Vec2, Math::S32Vec3, Math::S32Vec4,
 
 		null_t, null_t, null_t, null_t, null_t, null_t,
 		null_t, null_t, null_t, null_t,

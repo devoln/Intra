@@ -1,7 +1,7 @@
 ﻿#include "Audio/Sources/MusicSynthSource.h"
 #include "Math/Math.h"
 #include "Cpp/Warnings.h"
-#include "Algo/Mutation/Fill.h"
+#include "Range/Mutation/Fill.h"
 
 namespace Intra { namespace Audio { namespace Sources {
 
@@ -108,8 +108,8 @@ size_t MusicSynthSource::GetInterleavedSamples(Span<short> outShorts)
 size_t MusicSynthSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	const size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
-	Algo::CopyToAdvance(Range::Take(mBuffer.Samples, floatsRead), outFloats);
-	Algo::FillZeros(outFloats);
+	CopyToAdvance(mBuffer.Samples.Take(floatsRead), outFloats);
+	FillZeros(outFloats);
 	mProcessedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
 	return floatsRead/mChannelCount;
@@ -123,10 +123,10 @@ size_t MusicSynthSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 }
 
 Array<const void*> MusicSynthSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
+	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	(void)maxSamplesToRead;
-	if(oType!=null) *oType=ValueType::Void;
+	if(oType!=null) *oType = Data::ValueType::Void;
 	if(oInterleaved!=null) *oInterleaved=false;
 	if(oSamplesRead!=null) *oSamplesRead=0;
 	return null; //На предпоследнем шаге сэмплы имеют тип float, но не нормированы
