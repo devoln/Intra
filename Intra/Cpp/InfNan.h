@@ -31,9 +31,9 @@ struct TNaN
 	constexpr forceinline bool operator!=(double rhs) const {return !operator==(rhs);}
 	constexpr forceinline bool operator!=(real rhs) const {return !operator==(double(rhs));}
 
-	constexpr forceinline operator float() const {return float(Infinity/Infinity);}
-	constexpr forceinline operator double() const {return double(Infinity/Infinity);}
-	constexpr forceinline operator real() const {return real(Infinity/Infinity);}
+	forceinline operator float() const {return float(Infinity/Infinity);}
+	forceinline operator double() const {return double(Infinity/Infinity);}
+	forceinline operator real() const {return real(Infinity/Infinity);}
 
 	constexpr TNaN() {}
 };

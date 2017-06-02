@@ -8,7 +8,7 @@ option(ENABLE_SSE OFF)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
     set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
-    set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code")
+    set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code -pedantic")
     set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11 ${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
@@ -142,6 +142,24 @@ function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
   set(${HEADER_VARIABLE_NAME} ${${HEADER_VARIABLE_NAME}} ${headers} PARENT_SCOPE)
   set(${SOURCE_VARIABLE_NAME} ${${SOURCE_VARIABLE_NAME}} ${sources} PARENT_SCOPE)
 endfunction(init_project_sources)
+
+
+function(exclude_project_sources_directory DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
+	foreach (TMP_PATH ${${HEADER_VARIABLE_NAME}})
+		string (FIND ${TMP_PATH} ${DIR} EXCLUDE_DIR_FOUND)
+		if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+			list (REMOVE_ITEM ${${HEADER_VARIABLE_NAME}} ${TMP_PATH})
+		endif ()
+	endforeach(TMP_PATH)
+	foreach (TMP_PATH ${${SOURCE_VARIABLE_NAME}})
+		string (FIND ${TMP_PATH} ${DIR} EXCLUDE_DIR_FOUND)
+		if (NOT ${EXCLUDE_DIR_FOUND} EQUAL -1)
+			list (REMOVE_ITEM ${${SOURCE_VARIABLE_NAME}} ${TMP_PATH})
+		endif ()
+	endforeach(TMP_PATH)
+endfunction(exclude_project_sources_directory)
+
+
 
 function(enable_unity_build UB_NAME SOURCE_VARIABLE_NAME)
   set(files ${${SOURCE_VARIABLE_NAME}})

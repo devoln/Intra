@@ -1,13 +1,19 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
-#include "Audio/SoundApiDeclarations.h"
-#include "Container/Sequential/Array.h"
+
 #include "Utils/Unique.h"
-#include "Container/Utility/SparseHandledArray.h"
-#include "Audio/SoundTypes.h"
-#include "Data/ValueType.h"
 #include "Utils/Callback.h"
+#include "Utils/ErrorStatus.h"
+
+#include "Container/Sequential/Array.h"
+#include "Container/Utility/SparseHandledArray.h"
+
+#include "Data/ValueType.h"
+
+#include "Audio/SoundApiDeclarations.h"
+#include "Audio/SoundTypes.h"
+
 
 namespace Intra { namespace Audio {
 
@@ -29,7 +35,6 @@ public:
 		mInfo(rhs.mInfo), mLockedSize(0)
 	{
 		operator=(Cpp::Move(rhs));
-		rhs.mData = null;
 	}
 
 	~Sound();
@@ -39,7 +44,7 @@ public:
     AnyPtr Lock();
 	void Unlock();
 
-	static Sound FromFile(StringView fileName);
+	static Sound FromFile(StringView fileName, ErrorStatus& status);
 	static Sound FromSource(ASoundSource* src);
 
 	Sound& operator=(Sound&& rhs);
@@ -57,9 +62,11 @@ public:
 
 	static void DeleteAllSounds()
 	{
-		for(auto sound: Sound::all_existing_sounds) *sound = null;
+		for(auto sound: all_existing_sounds)
+			sound->Release();
 	}
 
+	static Array<Sound*> all_existing_sounds;
 private:
 	SoundAPI::BufferHandle mData;
 	Array<SoundInstance*> mInstances;
@@ -67,7 +74,6 @@ private:
 	SoundInfo mInfo;
 	uint mLockedSize;
 
-	static Array<Sound*> all_existing_sounds;
 
 
 private:
@@ -134,7 +140,10 @@ public:
 	~StreamedSound() {release();}
 
 
-	static StreamedSound FromFile(StringView fileName, size_t bufferSizeInSamples=16384);
+	static StreamedSound FromFile(StringView fileName, size_t bufferSizeInSamples, ErrorStatus& status);
+
+	static StreamedSound FromFile(StringView fileName, ErrorStatus& status)
+	{return FromFile(fileName, 16384, status);}
 
 
 	StreamedSound& operator=(StreamedSound&& rhs)

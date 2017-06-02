@@ -8,7 +8,7 @@ namespace Range {
 template<typename T> struct Span;
 }
 
-namespace Utils {
+namespace Concepts {
 
 template<typename T> class IOutput
 {
@@ -43,7 +43,7 @@ public:
 };
 
 }
-using Utils::IOutput;
-using Utils::IOutputStream;
+using Concepts::IOutput;
+using Concepts::IOutputStream;
 
 }

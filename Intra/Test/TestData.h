@@ -23,7 +23,7 @@ template<typename T> forceinline Meta::EnableIf<
 	Meta::IsIntegralType<T>::_
 > GenerateRandomValue(T& dst)
 {
-	auto rand = Random::FastUniform<T>(uint(&dst));
+	auto rand = Random::FastUniform<T>(uint(size_t(&dst)));
 	dst = rand();
 }
 
@@ -44,7 +44,7 @@ template<size_t N> void GenerateRandomValue(Big<N>& dst)
 
 template<typename Char> void GenerateRandomValue(GenericString<Char>& dst)
 {
-	auto rand = Random::FastUniform<byte>(uint(&dst));
+	auto rand = Random::FastUniform<byte>(uint(size_t(&dst)));
 	const size_t size = rand(5, 30);
 	dst.SetLengthUninitialized(size);
 	for(size_t i=0; i<size; i++)
@@ -70,7 +70,7 @@ template<typename MAP> void PopulateMapRandom(MAP& map, size_t count)
 
 template<typename S> S GenerateRandomString(size_t len)
 {
-	Random::FastUniform<int> rand(len);
+	Random::FastUniform<int> rand((uint(len)));
 	S result;
 	result.resize(len);
 	for(char& c: result)

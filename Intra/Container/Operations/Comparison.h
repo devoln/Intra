@@ -29,7 +29,7 @@ template<typename L, typename R> forceinline Meta::EnableIf<
 	(Concepts::IsSequentialContainer<R>::_ &&
 		Concepts::IsAsConsumableRange<L>::_),
 bool> operator!=(L&& lhs, R&& rhs)
-{return !operator==(Cpp::Forward<L>(lhs), Cpp::Forward<R>(lhs));}
+{return !operator==(Cpp::Forward<L>(lhs), Cpp::Forward<R>(rhs));}
 
 template<typename L, typename T> forceinline Meta::EnableIf<
 	Concepts::IsSequentialContainer<L>::_,

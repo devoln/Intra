@@ -3,12 +3,17 @@
 #include "Cpp/Fundamental.h"
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Utils/Debug.h"
+#include "Cpp/InitializerList.h"
 
-namespace Intra { namespace Utils {
+#include "Debug.h"
+#include "Span.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+namespace Intra { namespace Utils {
+
+//! Динамический массив фиксированной длины.
+//! Не резервирует место и не содержит методов для вставки элементов.
 template<typename T> struct FixedArray
 {
 	forceinline FixedArray(null_t=null) noexcept: mData(null) {}
@@ -30,15 +35,37 @@ template<typename T> struct FixedArray
 	{return MakeOwnerOf({ptr, length});}
 
 	//! Конструктор, самостоятельно выделяющий память для length элементов.
-	forceinline FixedArray(size_t length): mData(length==0? null: new T[length], length) {}
+	//! Все элементы value-initialized, то есть POD типы инициализируются нулями,
+	//! а для не-POD классов и структур вызываются конструкторы по умолчанию.
+	forceinline FixedArray(size_t length):
+		mData(length == 0? null: new T[length](), length) {}
+	
+	FixedArray(CSpan<T> values):
+		FixedArray(values.Length()) {values.CopyTo(mData);}
+	
+	forceinline FixedArray(InitializerList<T> values):
+		FixedArray(SpanOf(values)) {}
 
-	forceinline ~FixedArray() noexcept {if(mData.Data()!=null) delete[] mData.Data();}
+	forceinline ~FixedArray() noexcept {delete[] mData.Data();}
 
-	forceinline FixedArray(const FixedArray& rhs) = delete;
-	FixedArray& operator=(const FixedArray& rhs) = delete;
+	FixedArray(const FixedArray& rhs):
+		mData(new T[rhs.Length()], rhs.Length()) {rhs.mData.CopyTo(mData);}
+
+	FixedArray& operator=(const FixedArray& rhs)
+	{
+		if(this == &rhs) return *this;
+		if(Length() < rhs.Length())
+		{
+			delete[] mData.Data();
+			mData = {new T[rhs.Length()], rhs.Length()};
+		}
+		else mData = mData.TakeExactly(rhs.Length());
+		rhs.mData.CopyTo(mData);
+		return *this;
+	}
 
 	forceinline FixedArray(FixedArray&& rhs) noexcept:
-		mData(rhs.mData) {rhs.mData=null;}
+		mData(rhs.mData) {rhs.mData = null;}
 
 	FixedArray& operator=(FixedArray&& rhs) noexcept
 	{
@@ -48,6 +75,7 @@ template<typename T> struct FixedArray
 		rhs.mData = null;
 		return *this;
 	}
+
 
 	forceinline FixedArray& operator=(null_t) noexcept
 	{
@@ -63,8 +91,11 @@ template<typename T> struct FixedArray
 	forceinline T& Last() const {return mData.Last();}
 	forceinline T& operator[](size_t index) const {return mData[index];}
 
+	//! Изменяет размер массива для хранения ровно count элементов.
+	//! Всегда приводит к перераспределению памяти, даже в случае уменьшения размера.
 	void SetCount(size_t count)
 	{
+		if(count == Length()) return;
 		FixedArray result(count);
 		mData.CopyTo(result);
 		operator=(Cpp::Move(result));
@@ -82,6 +113,10 @@ template<typename T> struct FixedArray
 		return result;
 	}
 
+	forceinline const Span<T>& AsRange() {return mData;}
+	forceinline CSpan<T> AsRange() const {return mData;}
+	forceinline CSpan<T> AsConstRange() const {return mData;}
+
 	forceinline bool operator==(null_t) const {return mData.Empty();}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
 
@@ -89,9 +124,9 @@ private:
 	Span<T> mData;
 };
 
-INTRA_WARNING_POP
-
 }
 using Utils::FixedArray;
 
 }
+
+INTRA_WARNING_POP

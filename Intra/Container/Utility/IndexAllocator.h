@@ -99,8 +99,8 @@ public:
 		mMaxCount = maxCount;
 	}
 
-	forceinline bool IsFull() const {return mCount==mMaxCount && mFreeList==null;}
-	forceinline bool IsId(T id) const {return id<mCount && !Range::Contains(mFreeList, id);}
+	forceinline bool IsFull() const {return mCount == mMaxCount && mFreeList == null;}
+	forceinline bool IsId(T id) const {return id < mCount && !Range::Contains(mFreeList, id);}
 
 private:
 	Array<T> mFreeList;

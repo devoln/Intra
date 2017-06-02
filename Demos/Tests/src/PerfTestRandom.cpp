@@ -7,7 +7,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestRandom.h"
 
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Test/PerfSummary.h"
 #include "Cpp/Compatibility.h"
 #include "Random/FastUniform.h"
@@ -30,16 +30,16 @@ void RunRandomPerfTests(IO::FormattedWriter& logger)
 
 	Random::FastUniform<float> frandom(3787847832u);
 
-	Timer tim;
+	Stopwatch tim;
 
 	for(int i=0; i<100000000; i++) g_A += float(mt19937())/float(mt19937.max());
-	double time2 = tim.GetTimeAndReset();
+	double time2 = tim.GetElapsedSecondsAndReset();
 
 	for(int i=0; i<100000000; i++) g_A += float(rand())/32767.0f;
-	double time1 = tim.GetTimeAndReset();
+	double time1 = tim.GetElapsedSecondsAndReset();
 
 	for(int i=0; i<100000000; i++) g_A += frandom();
-	double time3 = tim.GetTimeAndReset();
+	double time3 = tim.GetElapsedSecondsAndReset();
 
 
 	PrintPerformanceResults(logger, "float in range [0.0; 1.0] 100000000 times",

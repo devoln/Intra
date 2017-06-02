@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "Font/FontLoadingDeclarations.h"
-#include "Math/Vector.h"
-#include "Range/ForwardDecls.h"
+#include "Math/Vector2.h"
+#include "Utils/StringView.h"
 
 namespace Intra { namespace FontLoadingAPI {
 

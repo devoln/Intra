@@ -2,6 +2,8 @@
 
 #if(defined(_MSC_VER) && defined(INTRA_MINIMIZE_CRT))
 
+#define _NO_CRT_STDIO_INLINE
+
 #define INTRA_NOT_LINK_CRT_LIB
 
 #pragma comment(lib, "msvcrtOLD.lib")

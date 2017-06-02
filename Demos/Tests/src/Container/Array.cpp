@@ -10,7 +10,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
 #include "Container/Sequential/List.h"
@@ -27,23 +27,23 @@ INTRA_WARNING_POP
 
 
 using namespace Intra;
-using namespace Intra::IO;
+using namespace IO;
 
 template<typename ARR> double TestContainerAddLast(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
 		for(uint j=0; j<size; j++)
 			arr.push_back(j);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestArrayAddLastReserve(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
@@ -51,7 +51,7 @@ template<typename ARR> double TestArrayAddLastReserve(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			arr.push_back(j);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename C, typename T> void push_front(C& c, const T& v) {c.push_front(v);}
@@ -59,19 +59,19 @@ template<typename T> void push_front(std::vector<T>& c, const T& v) {c.insert(c.
 
 template<typename ARR> double TestContainerAddFirst(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
 		for(uint j=0; j<size; j++)
 			push_front(arr, j);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestArrayAddFirstReserve(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
@@ -79,7 +79,7 @@ template<typename ARR> double TestArrayAddFirstReserve(uint times, uint size)
 		for(uint j=0; j<size; j++)
 			push_front(arr, j);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -93,10 +93,10 @@ template<typename ARR> double TestContainerFirstElementRemove(uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<size; i++)
 		pop_front(arr);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerLastElementRemove(uint size)
@@ -106,10 +106,10 @@ template<typename ARR> double TestContainerLastElementRemove(uint size)
 	for(uint i=0; i<size; i++) 
 		arr.push_back(i);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<size; i++)
 		arr.pop_back();
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -120,22 +120,23 @@ template<typename ARR> double TestContainerMiddleElementRemove(uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=size; i>0; i--)
 		arr.erase(arr.begin()+intptr((i-1u)/2u));
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerRemoveRange(uint size, uint elementsToRemove)
 {
-	ARR arr(size);
+	ARR arr;
+	Concepts::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
-	Timer timer;
-	for(uint i=size-elementsToRemove; i>=elementsToRemove; i-=elementsToRemove)
-		arr.erase(arr.begin()+intptr(i/2u-elementsToRemove/2u+1u), arr.begin()+intptr(i/2u+elementsToRemove/2u));
-	return timer.GetTime();
+	Stopwatch timer;
+	for(uint i = size - elementsToRemove; i >= elementsToRemove; i -= elementsToRemove)
+		arr.erase(arr.begin()+intptr(i/2u - elementsToRemove/2u + 1u), arr.begin() + intptr(i/2u + elementsToRemove/2u));
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerCopying(uint times, uint size)
@@ -145,10 +146,12 @@ template<typename ARR> double TestContainerCopying(uint times, uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
-	Timer timer;
-	for(uint i=0; i<times; i++)
+	Stopwatch timer;
+	for(uint i = 0; i<times; i++)
+	{
 		ARR arr2(arr);
-	return timer.GetTime();
+	}
+	return timer.ElapsedSeconds();
 }
 
 
@@ -161,21 +164,21 @@ template<typename ARR> static ARR arrret(uint size)
 
 template<typename ARR> double TestContainerReturn(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		ARR arr = arrret<ARR>(size);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestArraySmallReserve(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
 		arr.reserve(size);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -183,26 +186,26 @@ static const String g_str="Строка, добавляемая в контей�
 
 template<typename ARR> double TestContainerStringAddLast(uint times, uint elements)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
 		for(uint j=0; j<elements; j++)
 			arr.push_back(g_str);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerStringAddFirst(uint times, uint elements)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		ARR arr;
 		for(uint j=0; j<elements; j++)
 			push_front(arr, g_str);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -214,10 +217,10 @@ template<typename ARR> double TestContainerFirstStringRemove(uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<size; i++)
 		pop_front(arr);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerLastStringRemove(uint size)
@@ -227,10 +230,10 @@ template<typename ARR> double TestContainerLastStringRemove(uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<size; i++)
 		arr.pop_back();
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerMiddleStringRemove(uint size)
@@ -240,10 +243,10 @@ template<typename ARR> double TestContainerMiddleStringRemove(uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=size; i>0; i--)
 		arr.erase(arr.begin()+intptr((i-1u)/2u));
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename ARR> double TestContainerStringRemoveRange(size_t size, size_t elementsToRemove)
@@ -253,10 +256,10 @@ template<typename ARR> double TestContainerStringRemoveRange(size_t size, size_t
 	for(size_t i=0; i<size; i++)
 		arr.push_back(g_str);
 
-	Timer timer;
+	Stopwatch timer;
 	for(size_t i=size-elementsToRemove/2-1; i>elementsToRemove/2; i-=elementsToRemove)
 		arr.erase(arr.begin() + intptr(i/2-elementsToRemove/2+1), arr.begin() + intptr(i/2+elementsToRemove/2));
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -267,10 +270,10 @@ template<typename ARR> double TestContainerStringCopying(uint times, uint size)
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		ARR arr2(arr);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -290,16 +293,16 @@ void RunContainerPerfTests(FormattedWriter& output)
 
 	if(TestGroup gr{"Добавление int в контейнер"})
 	{
-		PrintPerformanceResults(output, "В конец 10000000 элементов 10 раз",
+		PrintPerformanceResults(output, "В конец 10000000 элементов",
 			{"std::vector", "std::deque", "std::list", "Array", "BList"},
 			{
-				TestContainerAddLast<std::vector<uint>>(10, 10000000),
-				TestContainerAddLast<std::deque<uint>>(10, 10000000),
-				TestContainerAddLast<std::list<uint>>(10, 10000000)
+				TestContainerAddLast<std::vector<uint>>(1, 10000000),
+				TestContainerAddLast<std::deque<uint>>(1, 10000000),
+				TestContainerAddLast<std::list<uint>>(1, 10000000)
 			},
 			{
-				TestContainerAddLast<Array<uint>>(10, 10000000),
-				TestContainerAddLast<BList<uint>>(10, 10000000)
+				TestContainerAddLast<Array<uint>>(1, 10000000),
+				TestContainerAddLast<BList<uint>>(1, 10000000)
 			});
 
 		PrintPerformanceResults(output, "В начало 100000 элементов",
@@ -314,13 +317,13 @@ void RunContainerPerfTests(FormattedWriter& output)
 				TestContainerAddFirst<BList<uint>>(1, 100000)
 			});
 
-		PrintPerformanceResults(output, "В конец 10000000 элементов 10 раз с reserve",
+		PrintPerformanceResults(output, "В конец 10000000 элементов с reserve",
 			comparedArrays,
 			{
-				TestArrayAddLastReserve<std::vector<uint>>(10, 10000000)
+				TestArrayAddLastReserve<std::vector<uint>>(1, 10000000)
 			},
 			{
-				TestArrayAddLastReserve<Array<uint>>(10, 10000000)
+				TestArrayAddLastReserve<Array<uint>>(1, 10000000)
 			});
 
 		PrintPerformanceResults(output, "В начало 100000 элементов с reserve",
@@ -445,16 +448,16 @@ void RunContainerPerfTests(FormattedWriter& output)
 
 	if(TestGroup gr{"Добавление String в контейнер"})
 	{
-		PrintPerformanceResults(output, "В конец (1000000 элементов 10 раз)",
+		PrintPerformanceResults(output, "В конец (1000000 элементов)",
 			comparedContainers,
 			{
-				TestContainerStringAddLast<std::vector<String>>(10, 1000000),
-				TestContainerStringAddLast<std::deque<String>>(10, 1000000),
-				TestContainerStringAddLast<std::list<String>>(10, 1000000)
+				TestContainerStringAddLast<std::vector<String>>(1, 1000000),
+				TestContainerStringAddLast<std::deque<String>>(1, 1000000),
+				TestContainerStringAddLast<std::list<String>>(1, 1000000)
 			},
 			{
-				TestContainerStringAddLast<Array<String>>(10, 1000000),
-				TestContainerStringAddLast<BList<String>>(10, 1000000)
+				TestContainerStringAddLast<Array<String>>(1, 1000000),
+				TestContainerStringAddLast<BList<String>>(1, 1000000)
 			});
 
 		PrintPerformanceResults(output, "В начало (100000 элементов)",

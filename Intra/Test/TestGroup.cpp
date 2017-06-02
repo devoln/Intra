@@ -1,12 +1,16 @@
 #include "Test/TestGroup.h"
-#include "IO/LogSystem.h"
+
+#include "Utils/Debug.h"
+#include "Utils/Logger.h"
+
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
-#include "Utils/Debug.h"
+
+#include "IO/LogSystem.h"
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
 #include "IO/Std.h"
-#include "Utils/Logger.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -14,8 +18,8 @@ namespace Intra {
 
 using namespace IO;
 
-int TestGroup::nestingLevel=0;
-int TestGroup::YesForNestingLevel=1000000000;
+int TestGroup::nestingLevel = 0;
+int TestGroup::YesForNestingLevel = 1000000000;
 int TestGroup::totalTestsFailed = 0;
 int TestGroup::totalTestsPassed = 0;
 
@@ -47,7 +51,7 @@ void TestGroup::consoleAskToEnableTest()
 		dchar c = ConsoleIn.GetChar();
 		if(c=='y')
 		{
-			YesForNestingLevel = nestingLevel+1;
+			YesForNestingLevel = nestingLevel + 1;
 			Yes = true;
 			break;
 		}
@@ -67,12 +71,12 @@ void TestGroup::consoleAskToEnableTest()
 }
 
 TestGroup::TestGroup(StringView category):
-	TestGroup(currentTestGroup==null? null: currentTestGroup->Logger,
-		currentTestGroup==null? IO::Std: currentTestGroup->Output, category) {}
+	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
+		currentTestGroup == null? IO::Std: currentTestGroup->Output, category) {}
 
 TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
-	TestGroup(currentTestGroup==null? null: currentTestGroup->Logger,
-		currentTestGroup==null? IO::Std: currentTestGroup->Output, category, funcToTest) {}
+	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
+		currentTestGroup == null? IO::Std: currentTestGroup->Output, category, funcToTest) {}
 
 TestGroup::~TestGroup()
 {
@@ -81,7 +85,7 @@ TestGroup::~TestGroup()
 	if(!Yes) return;
 
 	PrintUnitTestResult();
-	if(mParentTestGroup!=null)
+	if(mParentTestGroup != null)
 	{
 		if(ErrorInfo == null)
 		{
@@ -94,38 +98,36 @@ TestGroup::~TestGroup()
 			totalTestsFailed++;
 		}
 	}
+	else if(mPassedChildren == 0 && mFailedChildren == 0)
+	{
+		if(ErrorInfo == null) totalTestsPassed++;
+		else totalTestsFailed++;
+	}
 	Output.EndSpoiler();
 	INTRA_HEAP_CHECK;
 }
 
 void TestGroup::PrintUnitTestResult()
 {
-	if(ErrorInfo==null && mFailedChildren==0)
-	{
-		Output.PushFont({0, 0.75f, 0}, 3.0f, true);
-		Output.PrintLine("Test [ ", Category, " ] PASSED!");
-		Output.PopFont();
-	}
+	if(Logger == null) return;
+	if(ErrorInfo == null && mFailedChildren == 0)
+		Logger->Success("Test [ " + Category + " ] PASSED!");
 	else
 	{
-		Output.PushFont({1, 0, 0}, 3.0f, true);
-		Output.PrintLine("Test [ ", Category, " ] FAILED!");
-		Output.PopFont();
+		Logger->Error("Test [ " + Category + " ] FAILED!");
 
-		Output.HorLine();
-		if(mFailedChildren!=0)
-			Output.PrintLine(mFailedChildren, " of ", mFailedChildren+mPassedChildren, " subtests were FAILED!");
-		Output.HorLine();
+		if(mFailedChildren != 0)
+			Logger->Error(String::Concat(mFailedChildren, " of ", mFailedChildren + mPassedChildren, " subtests were FAILED!"));
 	}
 }
 
 TestGroup* TestGroup::currentTestGroup = null;
 
-void TestGroup::processError(SourceInfo srcInfo, StringView msg)
+void TestGroup::processError(const Utils::SourceInfo& srcInfo, StringView msg)
 {
 	if(GetCurrent() == null)
 	{
-		FatalErrorMessageAbort(srcInfo, msg);
+		Utils::FatalErrorMessageAbort(srcInfo, msg);
 		return;
 	}
 	GetCurrent()->ErrorInfo = srcInfo;
@@ -135,7 +137,7 @@ void TestGroup::processError(SourceInfo srcInfo, StringView msg)
 		logger->Error(msg, srcInfo);
 		char stackTraceBuf[8192];
 		auto buf = SpanOfBuffer(stackTraceBuf);
-		logger->Error(GetStackTrace(buf, 2, 50), srcInfo);
+		logger->Error(Utils::GetStackTrace(buf, 2, 50), srcInfo);
 	}
 }
 

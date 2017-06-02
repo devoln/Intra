@@ -17,7 +17,7 @@ public:
 	ACounted() = default;
 	ACounted(A&& allocator): A(Cpp::Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{
 		auto result = A::Allocate(bytes, sourceInfo);
 		if(result!=null) mCounter++;

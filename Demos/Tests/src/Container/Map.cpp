@@ -19,7 +19,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
 #include "IO/LogSystem.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "IO/FormattedWriter.h"
 #include "IO/Std.h"
 
@@ -34,41 +34,15 @@ INTRA_WARNING_POP
 using namespace Intra;
 using namespace IO;
 
-void TestMaps(FormattedWriter& output)
-{
-	HashMap<String, int> map;
-	map["Строка"] = 6;
-	map["Тест"] = 4;
-	map["Вывод"] = 5;
-	map["Ассоциативного"] = 14;
-	map["Массива"] = 7;
-	map["HashMap"] = 11;
-
-	output.PrintLine("Заполнили HashMap, выведем его:");
-	output.PrintLine(map);
-	output.LineBreak();
-
-	auto mapRange = map.Find("Вывод");
-	mapRange.PopLast();
-
-	output.PrintLine("Выведем все элементы, вставленные начиная от \"Вывод\" и до предпоследнего элемента:");
-	output.PrintLine(mapRange);
-	output.LineBreak();
-
-	map.SortByKey();
-	output.PrintLine("Отсортируем элементы HashMap на месте:");
-	output.PrintLine(map);
-}
-
 template<typename MAP> double TestMapPopulation(uint times, uint size)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		MAP map;
 		PopulateMapRandom(map, size);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename K, typename V> V& GetPairSecondValue(std::pair<K,V>& p) {return p.second;}
@@ -79,14 +53,14 @@ template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
 {
 	MAP map;
 	PopulateMapRandom(map, size);
-	Timer timer;
+	Stopwatch timer;
 	typename MAP::mapped_type result = typename MAP::mapped_type();
 	for(uint i=0; i<times; i++)
 	{
 		for(auto&& element: map)
 			result += GetPairSecondValue(element);
 	}
-	const double time = timer.GetTime();
+	const double time = timer.ElapsedSeconds();
 	srand(ToHash(result));
 	return time;
 }
@@ -95,14 +69,14 @@ template<typename K, typename V> double TestOrderedMapIterationSumValues(uint ti
 {
 	HashMap<K, V> map;
 	PopulateMapRandom(map, size);
-	Timer timer;
+	Stopwatch timer;
 	V result = V();
 	for(uint i=0; i<times; i++)
 	{
 		map.SortByKey();
 		for(auto&& element: map) result += GetPairSecondValue(element);
 	}
-	const double time = timer.GetTime();
+	const double time = timer.ElapsedSeconds();
 	srand(ToHash(result));
 	return time;
 }
@@ -112,12 +86,12 @@ template<typename MAP> double TestMapSuccessfulSearching(uint times, uint size)
 	MAP map;
 	PopulateMapRandom(map, size);
 	auto keys = GetRandomValueArray<typename MAP::key_type>(size);
-	Timer timer;
+	Stopwatch timer;
 	typename MAP::mapped_type result = typename MAP::mapped_type();
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
-	const double time = timer.GetTime();
+	const double time = timer.ElapsedSeconds();
 	srand(ToHash(result));
 	return time;
 }
@@ -127,12 +101,12 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 	HashMap<String, uint> map;
 	PopulateMapRandom(map, size);
 	auto keys = GetRandomValueArray<String>(size);
-	Timer timer;
+	Stopwatch timer;
 	uint result = 0;
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += map[keys[j]];
-	const double time = timer.GetTime();
+	const double time = timer.ElapsedSeconds();
 	srand(ToHash(result));
 
 	
@@ -153,12 +127,12 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 	PopulateMapRandom(map, size);
 	auto keys = GetRandomValueArray<typename MAP::key_type>(size*2);
 	keys = keys.Drop(keys.Length()/2);
-	Timer timer;
+	Stopwatch timer;
 	uint result = 0;
 	for(uint i=0; i<times; i++)
 		for(uint j=0; j<size; j++)
 			result += (map.find(keys[j])!=map.end());
-	const double time = timer.GetTime();
+	const double time = timer.ElapsedSeconds();
 	srand(result);
 	return time;
 }
@@ -167,8 +141,6 @@ template<typename MAP> double TestMapUnsuccessfulSearching(uint times, uint size
 void RunMapPerfTests(FormattedWriter& output)
 {
 	static const StringView comparedContainers[] = {"std::map", "std::unordered_map", "LinearMap", "HashMap"};
-
-	TestGroup("Пример использования HashMap", TestMaps);
 
 	if(TestGroup gr{"Заполнение случайными ключами uint и значениями uint"})
 	{

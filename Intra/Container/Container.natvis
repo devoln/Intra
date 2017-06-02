@@ -90,10 +90,10 @@
     </Type>
 
   <Type Name="Intra::Container::HashMap&lt;*&gt;">
-    <DisplayString>Map({(reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]}) {range}</DisplayString>
+    <DisplayString>Map({(reinterpret_cast&lt;size_t*&gt;(mBucketHeads))[0]}) {mRange}</DisplayString>
     <Expand>
-      <Item Name="Count">bucket_heads!=null? (reinterpret_cast&lt;size_t*&gt;(bucket_heads))[0]: 0</Item>
-      <ExpandedItem>range</ExpandedItem>
+      <Item Name="Count">mBucketHeads!=null? (reinterpret_cast&lt;size_t*&gt;(mBucketHeads))[0]: 0</Item>
+      <ExpandedItem>mRange</ExpandedItem>
     </Expand>
   </Type>
 	  

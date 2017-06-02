@@ -20,7 +20,7 @@ template<typename A> struct AStatic
 		return allocator;
 	}
 
-	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	static AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{return Get().Allocate(bytes, sourceInfo);}
 
 	static void Free(void* ptr, size_t size)

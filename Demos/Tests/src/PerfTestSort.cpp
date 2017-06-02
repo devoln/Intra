@@ -1,11 +1,12 @@
 ﻿#include "Cpp/Warnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestSort.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
 #include "Range/Sort.hh"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "IO/FormattedWriter.h"
 #include "IO/CompositeFormattedWriter.h"
 
@@ -19,15 +20,14 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
 INTRA_WARNING_POP
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T, typename Comparer = Comparers::Function<T>>
 double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::InsertionSort(arr, comparer);
-	double result = tim.GetTime();
+	const double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -36,9 +36,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::ShellSort(arr, comparer);
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -47,9 +47,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::QuickSort(arr, comparer);
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -57,9 +57,9 @@ double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
 template<typename T> double TestRadixSorting(size_t size)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::RadixSort(arr.AsRange());
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -68,9 +68,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::MergeSort(arr, comparer);
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -79,9 +79,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::SelectionSort(arr, comparer);
-	const double result = tim.GetTime();
+	const double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -90,9 +90,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	Range::HeapSort(arr, comparer);
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }
@@ -101,9 +101,9 @@ template<typename T, typename Comparer = Comparers::Function<T>>
 double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
-	Timer tim;
+	Stopwatch tim;
 	std::sort(arr.begin(), arr.end(), comparer);
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
 	return result;
 }

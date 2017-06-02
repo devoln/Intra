@@ -2,6 +2,7 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
+
 #include "Utils/Debug.h"
 #include "Meta/Type.h"
 #include "Concepts/Range.h"
@@ -78,7 +79,7 @@ template<typename T> struct BListNode
 	forceinline BListNode* NextListNode() const {return Next;}
 };
 
-template<typename T, typename NodeType = BListNode<T>> struct BListRange
+template<typename T, typename NodeType> struct BListRange
 {
 	typedef NodeType Node;
 

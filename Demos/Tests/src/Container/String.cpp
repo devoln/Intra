@@ -9,6 +9,7 @@
 #endif
 
 #include "Cpp/Warnings.h"
+#include "Cpp/Runtime.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "String.h"
@@ -17,7 +18,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test.hh"
 #include "IO/LogSystem.h"
 #include "Container/Sequential/String.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Range/Output/OutputArrayRange.h"
 #include "Range/Output/Inserter.h"
 
@@ -39,27 +40,27 @@ template<typename String> double TestStringReading(uint times, size_t strsize)
 	int c=0;
 	String str = GenerateRandomString<String>(strsize);
 	
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 	{
 		for(size_t i=0; i<strsize; i++)
 			c += str[i];
 		srand(uint(c)); //Препятствуем оптимизации, удаляющей внешний цикл
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
 template<typename String> double TestStringWriting(uint times, size_t strsize)
 {
-	char c='d';
+	char c = 'd';
 	String str(strsize, ' ');
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 		for(uint i=0; i<strsize; i++)
-			str[i]=c;
-	return timer.GetTime();
+			str[i] = c;
+	return timer.ElapsedSeconds();
 }
 
 
@@ -72,10 +73,10 @@ template<typename String> double TestStringComparing1(uint times, size_t strsize
 	String str1 = GenerateRandomString<String>(strsize);
 	String str2 = str1;
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		func(str1, str2);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename String> double TestStringComparing2(uint times, size_t strsize)
@@ -84,10 +85,10 @@ template<typename String> double TestStringComparing2(uint times, size_t strsize
 	String str1 = GenerateRandomString<String>(strsize+1);
 	String str2(str1.begin(), str1.end()-1);
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		func(str1, str2);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename String> double TestStringComparing3(uint times, size_t strsize)
@@ -97,10 +98,10 @@ template<typename String> double TestStringComparing3(uint times, size_t strsize
 	String str2 = str1;
 	str2[0]='A';
 
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		func(str1, str2);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -108,41 +109,41 @@ template<typename String> double TestStringComparing3(uint times, size_t strsize
 template<typename String> double TestStringAccumulation1(uint times, size_t strsize, uint concatenations)
 {
 	String c = GenerateRandomString<String>(strsize);
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		String ss;
 		for(uint j=0; j<concatenations; j++)
 			ss += c;
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringAccumulation2(uint times, uint concatenations)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		S ss;
 		for(uint j=0; j<concatenations; j++)
 			ss += "str";
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringConcatenationChain(uint times, size_t strsize)
 {
 	S c = GenerateRandomString<S>(strsize);
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 		S ss = c+c+c+c+c+c+c+c+c+c;
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringConcatenationOptimizedChain(uint times, size_t strsize)
 {
 	S c = GenerateRandomString<S>(strsize);
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 	{
 		S ss = c;
@@ -156,17 +157,17 @@ template<typename S> double TestStringConcatenationOptimizedChain(uint times, si
 		ss += c;
 		ss += c;
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringConcatenation(uint times, size_t strsize)
 {
-	S c = GenerateRandomString<S>(strsize);
+	const S c = GenerateRandomString<S>(strsize);
 	S ss;
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
-		ss = c+c;
-	return timer.GetTime();
+		ss = c + c;
+	return timer.ElapsedSeconds();
 }
 
 
@@ -174,69 +175,69 @@ template<typename S> double TestStringConcatenation(uint times, size_t strsize)
 template<typename S> double TestStringAddChar(uint times)
 {
 	S ss;
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 		ss.push_back('g');
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringAddChar2(uint times, uint concatenations)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		S ss;
 		for(uint j=0; j<concatenations; j++)
-			ss=ss+'g';
+			ss = ss + 'g';
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestStringPlusChar(uint times, size_t strsize)
 {
 	S c = GenerateRandomString<S>(strsize);
-	Timer timer;
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
-		S ss = c+'g';
-	return timer.GetTime();
+		S ss = c + 'g';
+	return timer.ElapsedSeconds();
 }
 
 
 
 template<typename S> double TestStringCopying(uint times, size_t strsize)
 {
-	S str = GenerateRandomString<S>(strsize);
-	Timer timer;
+	const S str = GenerateRandomString<S>(strsize);
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
-		S copy=str;
-	return timer.GetTime();
+		S copy = str;
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestCStrToStringCopying(uint times, size_t strsize)
 {
 	S strr = GenerateRandomString<S>(strsize);
-	const char* str = strr.c_str();
-	Timer timer;
+	const char* const str = strr.c_str();
+	Stopwatch timer;
 	for(uint j=0; j<times; j++)
 		S copy = str;
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
 
 double TestSprintf(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	char str[40];
 	for(uint i=0; i<times; i++)
 		sprintf(str, "int=%i, double=%f!", i, 234.0963);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 #ifndef INTRA_MINIMIZE_CRT
 double TestStdToStringFormatting(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		std::string str = "int=";
@@ -245,24 +246,24 @@ double TestStdToStringFormatting(uint times)
 		str += std::to_string(234.0963);
 		str.push_back('!');
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 double TestStrStreamFormatting(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		std::stringstream ss;
 		ss << "int=" << i << ", double=" << 234.0963 << "!";
 		auto str = ss.str();
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 double TestSharedStrStreamFormatting(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	std::stringstream ss;
 	for(uint i = 0; i<times; i++)
 	{
@@ -272,22 +273,22 @@ double TestSharedStrStreamFormatting(uint times)
 		ss.seekp(0);
 		ss.seekg(0);
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 #endif
 
 template<typename S> double TestStringFormatting(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		S str = Container::StringFormatter<S>("int=<^>, double=<^>!")(i)(234.0963, 7);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 double TestStackStreamFormatting(uint times)
 {
 	char stackBuffer[40];
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
 		OutputArrayRange<char> strStream = stackBuffer;
@@ -295,18 +296,18 @@ double TestStackStreamFormatting(uint times)
 		auto str = strStream.GetWrittenData();
 		(void)str;
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 template<typename S> double TestAppenderStreamFormatting(uint times)
 {
-	Timer timer;
+	Stopwatch timer;
 	for(uint i = 0; i<times; i++)
 	{
 		S result;
 		LastAppender(result) << "int=" << i << ", double=" << 234.0963 << "!";
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -315,23 +316,23 @@ template<typename S> double TestStringSubStr(uint times)
 {
 	S str = "Очень длинная строка, из которой нужно извлечь подстроку много раз для того, "
 		"чтобы сравнить производительность извлечения подстрок классов String и std::string";
-	Timer timer;
+	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 		S substr = str.substr(4, 123-4);
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 double TestStringSubStrView(uint times)
 {
 	String str = "Очень длинная строка, из которой нужно извлечь подстроку много раз для того, "
 		"чтобы сравнить производительность извлечения подстрок классов String и std::string";
-	Timer timer;
+	Stopwatch timer;
 	for(uint i = 0; i<times; i++)
 	{
 		StringView substr = str(4, 123);
 		(void)substr;
 	}
-	return timer.GetTime();
+	return timer.ElapsedSeconds();
 }
 
 
@@ -366,7 +367,7 @@ void RunStringPerfTests(FormattedWriter& output)
 			{TestStringComparing2<std::string>(10000000, 2000)},
 			{TestStringComparing2<String>(10000000, 2000)});
 
-		PrintPerformanceResults(output, "Отличающиеся первым символом(2000 символов):",
+		PrintPerformanceResults(output, "Отличающиеся первым символом (2000 символов):",
 			comparedStrings,
 			{TestStringComparing3<std::string>(10000000, 2000)},
 			{TestStringComparing3<String>(10000000, 2000)});
@@ -399,17 +400,17 @@ void RunStringPerfTests(FormattedWriter& output)
 			{TestStringConcatenation<std::string>(1000000, 50)},
 			{TestStringConcatenation<String>(1000000, 50)});
 
-		PrintPerformanceResults(output, "Добавление символа в конец строки (ss+='g') 10000000 раз",
+		PrintPerformanceResults(output, "Добавление символа в конец строки (ss += 'g') 10000000 раз",
 			comparedStrings,
 			{TestStringAddChar<std::string>(10000000)},
 			{TestStringAddChar<String>(10000000)});
 
-		PrintPerformanceResults(output, "Добавление символа в конец строки (ss=ss+'g') 50000 раз, 10 повторений.",
+		PrintPerformanceResults(output, "Добавление символа в конец строки (ss = ss + 'g') 100000 раз",
 			comparedStrings,
-			{TestStringAddChar2<std::string>(10, 50000)},
-			{TestStringAddChar2<String>(10, 50000)});
+			{TestStringAddChar2<std::string>(1, 100000)},
+			{TestStringAddChar2<String>(1, 100000)});
 
-		PrintPerformanceResults(output, "Добавление символа в конец строки без изменения исходной (ss=c+'g', где c - строка из 100 симв.)",
+		PrintPerformanceResults(output, "Добавление символа в конец строки без изменения исходной (ss = c + 'g', где c - строка из 100 симв.)",
 			comparedStrings,
 			{TestStringPlusChar<std::string>(1000000, 100)},
 			{TestStringPlusChar<String>(1000000, 100)});

@@ -56,13 +56,13 @@ void SawtoothSynthPassFunction(const SawtoothParams& params,
 
 	FastSawtooth(updownPercent, newVolume, newFreq, sampleRate, inOutSamples, add);
 
-	Random::FastUniform<float> frandom(612651278+inOutSamples.Length()+uint(freq*1000));
+	Random::FastUniform<float> frandom(612651278u + uint(inOutSamples.Length()) + uint(freq*1000));
 	for(ushort h=1; h<params.Harmonics; h++)
 	{
 		newVolume /= 2;
 		float frequency = newFreq*float(1 << h);
 		frequency += frandom()*frequency*0.002f;
-		const size_t randomSampleOffset = (inOutSamples.Length()*(h+16807)) % 20;
+		const size_t randomSampleOffset = (inOutSamples.Length()*size_t(h + 16807)) % 20;
 		FastSawtooth(updownPercent, newVolume, frequency, sampleRate, inOutSamples.Drop(randomSampleOffset), true);
 	}
 }

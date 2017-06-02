@@ -82,8 +82,13 @@ template<typename R> struct PtrElementTypeOfArray<R, 3> {typedef decltype(Meta::
 template<typename T, size_t N> struct PtrElementTypeOfArray<T(&)[N], 0> {typedef T* _;};
 template<typename T> struct PtrElementTypeOfArray<InitializerList<T>, 0> {typedef const T* _;};
 
-template<typename R, bool = HasDataOf<R>::_> struct PtrElementTypeOfArrayOrDisable;
-template<typename R> struct PtrElementTypeOfArrayOrDisable<R, true> {typedef decltype(::Intra::Concepts::DataOf(Meta::Val<R>())) _;};
+template<typename R, int> struct PtrElementTypeOfArrayOrDisable;
+template<typename R> struct PtrElementTypeOfArrayOrDisable<R, 1> {typedef decltype(Meta::Val<R>().Data()) _;};
+template<typename R> struct PtrElementTypeOfArrayOrDisable<R, 2> {typedef decltype(&*begin(Meta::Val<R>())) _;};
+template<typename R> struct PtrElementTypeOfArrayOrDisable<R, 3> {typedef decltype(Meta::Val<R>().data()) _;};
+template<typename T, size_t N> struct PtrElementTypeOfArrayOrDisable<T(&)[N], 0> {typedef T* _;};
+template<typename T, size_t N> struct PtrElementTypeOfArrayOrDisable<T[N], 0> {typedef T* _;};
+template<typename T> struct PtrElementTypeOfArrayOrDisable<InitializerList<T>, 0> {typedef const T* _;};
 }
 
 template<typename R> using PtrElementTypeOfArray = typename D::PtrElementTypeOfArray<R, 
@@ -95,15 +100,27 @@ template<typename R> using PtrElementTypeOfArray = typename D::PtrElementTypeOfA
 template<typename T> using RefElementTypeOfArray = Meta::RemovePointer<PtrElementTypeOfArray<T>>&;
 template<typename T> using ElementTypeOfArray = Meta::RemoveConstPointer<PtrElementTypeOfArray<T>>;
 template<typename T> using ElementTypeOfArrayKeepConst = Meta::RemovePointer<PtrElementTypeOfArray<T>>;
-template<typename T> using PtrElementTypeOfArrayOrDisable = typename D::PtrElementTypeOfArrayOrDisable<T, HasDataOf<T>::_>::_;
+
+template<typename R> using PtrElementTypeOfArrayOrDisable = typename D::PtrElementTypeOfArrayOrDisable<R,
+	HasData<R>::_? 1:
+		(Has_data<R>::_?
+			(Has_begin_end<R>::_? 2: 3): 0)
+>::_;
+
 template<typename T> using RefElementTypeOfArrayOrDisable = Meta::RemovePointer<PtrElementTypeOfArrayOrDisable<T>>&;
 template<typename T> using ElementTypeOfArrayOrDisable = Meta::RemoveConstPointer<PtrElementTypeOfArrayOrDisable<T>>;
 template<typename T> using ElementTypeOfArrayKeepConstOrDisable = Meta::RemovePointer<PtrElementTypeOfArrayOrDisable<T>>;
 
 //! Проверяет, может ли массив Rhs быть присвоен массиву Lhs. Если это не array class, возвращает false.
 template<typename Lhs, typename Rhs> struct AreAssignableArrays: Meta::TypeFromValue<bool,
-	Meta::TypeEqualsNotVoid<Meta::RemovePointer<PtrElementTypeOfArray<Lhs>>, Meta::RemovePointer<PtrElementTypeOfArray<Rhs>>>::_ ||
-	Meta::TypeEqualsNotVoid<Meta::RemovePointer<PtrElementTypeOfArray<Lhs>>, Meta::RemoveConstPointer<PtrElementTypeOfArray<Rhs>>>::_
+	Meta::TypeEqualsNotVoid<
+		Meta::RemovePointer<PtrElementTypeOfArray<Lhs>>,
+		Meta::RemovePointer<PtrElementTypeOfArray<Rhs>>
+	>::_ ||
+	Meta::TypeEqualsNotVoid<
+		Meta::RemovePointer<PtrElementTypeOfArray<Lhs>>,
+		Meta::RemoveConstPointer<PtrElementTypeOfArray<Rhs>>
+	>::_
 > {};
 
 template<typename Lhs, typename T> struct IsAssignableToArrayOf: Meta::TypeFromValue<bool,

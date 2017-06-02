@@ -1,7 +1,11 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
+
 #include "Math/SineRange.h"
+
+#include "Utils/FixedArray.h"
+
 #include "Audio/Music.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
@@ -87,8 +91,8 @@ private:
 	float mFrc; //Натяжение струны
 	float mK1, mK2; //Коэффициенты, определяющие затухание звука в струне
 
-	Array<float> mP; //Позиция участка струны
-	Array<float> mS; //Скорость участка струны
+	FixedArray<float> mP; //Позиция участка струны
+	FixedArray<float> mS; //Скорость участка струны
 
 	uint mBowIndex;   //Участок струны, где работает смычок
 	uint mSoundIndex; //Участок струны, где снимается звук

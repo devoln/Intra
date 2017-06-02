@@ -34,6 +34,9 @@
     <ClCompile Include="src\Container\SparseArray.cpp">
       <Filter>Source Files\Container</Filter>
     </ClCompile>
+    <ClCompile Include="src\Container\HashMap.cpp">
+      <Filter>Source Files\Container</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Sort.h">
@@ -47,6 +50,12 @@
     </ClInclude>
     <ClInclude Include="src\IO\IO.h">
       <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Container\SparseArray.h">
+      <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Container\HashMap.h">
+      <Filter>Header Files\Container</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

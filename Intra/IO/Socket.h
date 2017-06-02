@@ -1,9 +1,13 @@
 #pragma once
 
 #include "Cpp/Fundamental.h"
-#include "Container/Sequential/String.h"
 #include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
+
+#include "Utils/ErrorStatus.h"
+
+#include "Container/Sequential/String.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
@@ -58,8 +62,8 @@ protected:
 	NativeHandle mHandle;
 	SocketType mType;
 
-	BasicSocket(null_t=null): mHandle(NullSocketHandle), mType(SocketType::End) {}
-	BasicSocket(SocketType type);
+	BasicSocket(null_t = null): mHandle(NullSocketHandle), mType(SocketType::End) {}
+	BasicSocket(SocketType type, ErrorStatus& status);
 
 	BasicSocket(BasicSocket&& rhs):
 		mHandle(rhs.mHandle), mType(rhs.mType) {rhs.mHandle = NullSocketHandle;}
@@ -77,7 +81,7 @@ class StreamSocket: public BasicSocket
 	friend class ServerSocket;
 public:
 	StreamSocket(null_t=null) {}
-	StreamSocket(SocketType type, StringView host, ushort port);
+	StreamSocket(SocketType type, StringView host, ushort port, ErrorStatus& status);
 	StreamSocket(StreamSocket&& rhs): BasicSocket(Cpp::Move(rhs)) {}
 	~StreamSocket() {Shutdown();}
 
@@ -102,10 +106,10 @@ public:
 	void ShutdownWriting();
 	void Shutdown();
 
-	size_t Read(void* dst, size_t bytes);
-	size_t Write(const void* src, size_t bytes);
-	size_t Receive(void* dst, size_t bytes);
-	size_t Send(const void* src, size_t bytes);
+	size_t Read(void* dst, size_t bytes, ErrorStatus& status);
+	size_t Write(const void* src, size_t bytes, ErrorStatus& status);
+	size_t Receive(void* dst, size_t bytes, ErrorStatus& status);
+	size_t Send(const void* src, size_t bytes, ErrorStatus& status);
 };
 
 class ServerSocket: public BasicSocket
@@ -114,7 +118,7 @@ public:
 	enum TNonBlocking {NonBlocking};
 
 	ServerSocket(null_t=null) {}
-	ServerSocket(SocketType type, ushort port, size_t maxConnections);
+	ServerSocket(SocketType type, ushort port, size_t maxConnections, ErrorStatus& status);
 
 	ServerSocket(ServerSocket&& rhs): BasicSocket(Cpp::Move(rhs)) {}
 
@@ -134,8 +138,8 @@ public:
 	bool WaitForConnection() const {return waitInput();}
 	bool HasConnections() const {return waitInputMs(0);}
 
-	StreamSocket Accept(String& oAddr);
-	StreamSocket Accept() {String addr; return Accept(addr);}
+	StreamSocket Accept(String& oAddr, ErrorStatus& status);
+	StreamSocket Accept(ErrorStatus& status) {String addr; return Accept(addr, status);}
 };
 
 }}

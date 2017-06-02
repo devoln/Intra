@@ -27,28 +27,15 @@ template<typename Char> struct GenericStringView: Span<Char>
 	constexpr forceinline Char* Data() const noexcept {return Span<Char>::Data();}
 
 	constexpr forceinline GenericStringView(null_t=null) noexcept {}
-	/*constexpr forceinline GenericStringView(const GenericStringView& rhs) noexcept: Span<Char>(static_cast<const Span<Char>&>(rhs)) {}
-	constexpr forceinline GenericStringView(const Span<Char>& rhs) noexcept: Span<Char>(rhs) {}
-
-	constexpr forceinline GenericStringView(InitializerList<MutT> list) noexcept:
-		Span<Char>(list.begin(), list.end()) {}
-
-	template<size_t N> constexpr forceinline GenericStringView(T(&arr)[N]) noexcept:
-		Span<Char>(arr) {}
-
-	constexpr forceinline GenericStringView(T* startPtr, size_t length) noexcept:
-		Span<Char>(startPtr, length) {}*/
-
-	
 
 	template<size_t N> static forceinline constexpr
 	GenericStringView FromBuffer(Char(&buffer)[N]) noexcept {return {buffer, buffer+N};}
 
 	//! Конструирование из ограниченной нулевым символом C-строки.
 	//! Сам нулевой символ при этом не входит в полученный диапазон.
-	//! Хотелось бы сделать его explicit, но не все компиляторы будут неявно конструировать StringView из строковых литералов.
+	//! Если сделать его explicit, то не все компиляторы будут неявно конструировать StringView из строковых литералов.
 	forceinline /*explicit*/ GenericStringView(Char* cstr):
-		Span<Char>(cstr, cstr==null? 0: Utils::CStringLength(cstr)) {}
+		Span<Char>(cstr, cstr == null? 0: Utils::CStringLength(cstr)) {}
 
 	//forceinline GenericStringView(Char* startPtr, Char* endPtr):
 		//Span<Char>(startPtr, endPtr) {}
@@ -56,15 +43,18 @@ template<typename Char> struct GenericStringView: Span<Char>
 	//Сравнение строк
 	bool operator==(const Char* rhs) const
 	{
-		return (Empty() && (rhs==null || *rhs=='\0')) ||
-			(rhs!=null && C::memcmp(Data(), rhs, Length()*sizeof(Char))==0 && rhs[Length()]=='\0');
+		return (Empty() &&
+				(rhs==null || *rhs=='\0')) ||
+			(rhs != null &&
+				C::memcmp(Data(), rhs, Length()*sizeof(Char)) == 0 &&
+				rhs[Length()] == '\0');
 	}
 
 	bool operator==(const GenericStringView& rhs) const noexcept
 	{
 		return Length() == rhs.Length() &&
 			(Data() == rhs.Data() ||
-				C::memcmp(Data(), rhs.Data(), Length()*sizeof(Char)));
+				C::memcmp(Data(), rhs.Data(), Length()*sizeof(Char)) == 0);
 	}
 
 	forceinline bool operator!=(const GenericStringView& rhs) const noexcept {return !operator==(rhs);}

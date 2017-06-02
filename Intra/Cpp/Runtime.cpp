@@ -10,7 +10,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 struct android_app;
 
 namespace Intra {
-	android_app *g_GlobalAndroidApp = null;
+	android_app* gGlobalAndroidApp = null;
 }
 
 #ifndef INTRA_NO_CMAIN
@@ -18,14 +18,14 @@ namespace Intra {
 extern "C" int main(int argc, const char* argv[]);
 void android_main(struct android_app* state)
 {
-	Intra::g_GlobalAndroidApp = state;
+	Intra::gGlobalAndroidApp = state;
 	const char* argv[] = {"program"};
 	main(1, &argv[0]);
 }
 
 #endif
 
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -51,7 +51,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmdline, int)
 	size_t len = 0;
 	while(*cmdptr++) len++;
 
-	const size_t argumentsStart = (len/2+1)*sizeof(size_t);
+	const size_t argumentsStart = (len/2 + 1)*sizeof(size_t);
 
 	static struct Buf
 	{
@@ -102,11 +102,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmdline, int)
 }
 #endif
 
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
 extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dsoSymbol)
 {
-	(void)func; (void)obj; (void)dsoSymbol;
+	(void)func;
+	(void)obj;
+	(void)dsoSymbol;
 	return 0;
 }
 
@@ -116,14 +118,13 @@ extern "C" int __cxa_thread_atexit(void(*func)(), void* obj, void* dsoSymbol)
 #if(defined(_MSC_VER) && defined(INTRA_MINIMIZE_CRT))
 
 #define _CRT_RAND_S
-#include <stdlib.h>
-#include "Platform/Debug.h"
+#include <cstdlib>
 namespace std {
 
 unsigned int INTRA_CRTDECL _Random_device()
 {
 	unsigned int ans;
-	if(rand_s(&ans)) INTRA_INTERNAL_ERROR("invalid random_device value");
+	if(rand_s(&ans)) abort();
 	return (ans);
 }
 
@@ -167,7 +168,8 @@ extern "C"
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <windows.h>
+#include <Windows.h>
+#include <cstdio>
 
 //thread_safe_statics.obj;utility_desktop.obj
 
@@ -195,6 +197,7 @@ BOOL INTRA_CRTDECL __vcrt_InitializeCriticalSectionEx(LPCRITICAL_SECTION critica
 }
 
 void INTRA_CRTDECL terminate() {abort();}
+extern "C" void INTRA_CRTDECL __std_terminate() {abort();}
 void INTRA_CRTDECL _invalid_parameter_noinfo_noreturn() {abort();}
 void _fastcall _guard_check_icall(unsigned int) {}
 

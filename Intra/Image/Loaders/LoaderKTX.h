@@ -3,11 +3,12 @@
 #ifndef INTRA_NO_DDS_LOADER
 
 #include "Loader.h"
+
 #include "Cpp/Warnings.h"
+#include "Concepts/IInput.h"
+#include "Concepts/IOutput.h"
 
 namespace Intra {
-
-namespace IO {class IOutputStream; class IInputStream;}
 
 namespace Image {
 
@@ -19,7 +20,7 @@ class LoaderKTX: public AImageLoader
 public:
 	ImageInfo GetInfo(InputStream stream) const override;
 	AnyImage Load(InputStream stream) const override;
-	void Save(const AnyImage& img, IO::IOutputStream& stream) const;
+	void Save(const AnyImage& img, IOutputStream<char>& stream) const;
 	bool IsValidHeader(const void* header, size_t headerSize) const override;
 	FileFormat FileFormatOfLoader() const override {return FileFormat::KTX;}
 

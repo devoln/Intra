@@ -142,6 +142,8 @@ public:
 
 	union
 	{
+INTRA_WARNING_PUSH
+INTRA_WARNING_DISABLE_PEDANTIC
 		struct
 		{
 			union
@@ -155,6 +157,7 @@ public:
 				Vector2<T> zw;
 			};
 		};
+INTRA_WARNING_POP
 		Vector3<T> xyz;
 	};
 };
@@ -189,19 +192,19 @@ template<typename T> constexpr T Dot(const Vector4<T>& l, const Vector4<T>& r) n
 
 template<typename T> constexpr forceinline T LengthSqr(const Vector4<T>& v) noexcept {return Dot(v, v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Length(const Vector4<T>& v) {return Sqrt(Dot(v, v));}
+template<typename T> T Length(const Vector4<T>& v) {return Sqrt(Dot(v, v));}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Distance(const Vector4<T>& l, const Vector4<T>& r) {return Length(l - r);}
+template<typename T> T Distance(const Vector4<T>& l, const Vector4<T>& r) {return Length(l - r);}
 
 template<typename T> constexpr T DistanceSqr(const Vector4<T>& l, const Vector4<T>& r) noexcept {return LengthSqr(l - r);}
 
 
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Normalize(const Vector4<T>& v) {return v / Length(v);}
+template<typename T> Vector4<T> Normalize(const Vector4<T>& v) {return v / Length(v);}
 
 template<typename T> constexpr Vector4<T> Reflect(const Vector4<T>& incident, const Vector4<T>& normal) noexcept {return incident - Dot(incident, normal)*2*normal;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector4<T> Refract(const Vector4<T>& I, const Vector4<T>& N, float eta)
+template<typename T> Vector4<T> Refract(const Vector4<T>& I, const Vector4<T>& N, float eta)
 {
 	const T NI = Dot(N, I);
 	const T k = T(1) - eta*eta * (T(1) - NI*NI);
@@ -212,16 +215,16 @@ template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector4<T> Refract(const Vect
 template<typename T> constexpr Vector4<T> FaceForward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref) noexcept
 {return N*Sign(-Dot(Nref, I));}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Floor(const Vector4<T>& v) noexcept
+template<typename T> Vector4<T> Floor(const Vector4<T>& v) noexcept
 {return {Floor(v.x), Floor(v.y), Floor(v.z), Floor(v.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Fract(const Vector4<T>& v) noexcept
+template<typename T> Vector4<T> Fract(const Vector4<T>& v) noexcept
 {return {Fract(v.x), Fract(v.y), Fract(v.z), Fract(v.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Round(const Vector4<T>& val) noexcept
+template<typename T> Vector4<T> Round(const Vector4<T>& val) noexcept
 {return {Round(val.x), Round(val.y), Round(val.z), Round(val.w)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector4<T> Exp(const Vector4<T>& v) noexcept
+template<typename T> Vector4<T> Exp(const Vector4<T>& v) noexcept
 {return {T(Exp(v.x)), T(Exp(v.y)), T(Exp(v.z)), T(Exp(v.w))};}
 
 
@@ -235,7 +238,7 @@ template<typename T> constexpr Vector4<T> Step(const Vector4<T>& edge, const Vec
 	};
 }
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector4<T> SmoothStep(T edge0, T edge1, const Vector4<T>& value)
+template<typename T> Vector4<T> SmoothStep(T edge0, T edge1, const Vector4<T>& value)
 {
 	const auto t = Clamp((value - Vector4<T>(edge0)) / (edge1 - edge0), 0, 1);
 	return t*t * T(3 - t*2);
@@ -250,11 +253,11 @@ template<typename T> constexpr Vector4<T> Abs(const Vector4<T>& v)
 
 namespace GLSL {
 template<typename T> constexpr forceinline T dot(const Vector4<T>& l, const Vector4<T>& r) {return Dot(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T length(const Vector4<T>& v) {return Length(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T distance(const Vector4<T>& l, const Vector4<T>& r) {return Distance(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline Vector4<T> normalize(const Vector4<T>& v) {return Normalize(v);}
+template<typename T> forceinline T length(const Vector4<T>& v) {return Length(v);}
+template<typename T> forceinline T distance(const Vector4<T>& l, const Vector4<T>& r) {return Distance(l, r);}
+template<typename T> forceinline Vector4<T> normalize(const Vector4<T>& v) {return Normalize(v);}
 template<typename T> constexpr forceinline Vector4<T> reflect(const Vector4<T>& incident, const Vector4<T>& normal) {return Reflect(incident, normal);}
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR forceinline Vector4<T> refract(const Vector4<T>& I, const Vector4<T>& N, float eta) {return Refract(I, N, eta);}
+template<typename T> forceinline Vector4<T> refract(const Vector4<T>& I, const Vector4<T>& N, float eta) {return Refract(I, N, eta);}
 template<typename T> constexpr forceinline Vector4<T> faceforward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref) {return FaceForward(N, I, Nref);}
 }
 

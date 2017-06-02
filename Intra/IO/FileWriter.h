@@ -21,7 +21,7 @@ using Range::operator<<;
 class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 {
 public:
-	forceinline FileWriter(null_t=null) {}
+	forceinline FileWriter(null_t=null): mOffset(0) {}
 
 	forceinline FileWriter(Shared<OsFile> file, ulong64 startOffset=0, size_t bufferSize=4096):
 		mFile(Cpp::Move(file)), mOffset(startOffset)
@@ -46,10 +46,10 @@ public:
 	}
 
 	FileWriter(const FileWriter&) = delete;
-	FileWriter(FileWriter&& rhs) {operator=(Cpp::Move(rhs));}
+	forceinline FileWriter(FileWriter&& rhs) {operator=(Cpp::Move(rhs));}
 
-	forceinline bool operator==(null_t) {return mFile==null;}
-	forceinline bool operator!=(null_t) {return mFile!=null;}
+	forceinline bool operator==(null_t) {return mFile == null;}
+	forceinline bool operator!=(null_t) {return mFile != null;}
 
 	FileWriter& operator=(const FileWriter& rhs) = delete;
 
@@ -67,6 +67,10 @@ public:
 	FileWriter& operator=(null_t)
 	{
 		Flush();
+		mFile = null;
+		mBuffer = null;
+		mBufferRest = null;
+		mOffset = 0;
 		return *this;
 	}
 
@@ -114,7 +118,7 @@ public:
 	{
 		if(mBuffer.Empty()) return;
 		const size_t bytesWritten = mBuffer.Length()-mBufferRest.Length();
-		mFile->SetSize(mOffset+bytesWritten);
+		mFile->SetSize(mOffset + bytesWritten);
 		mFile->WriteData(mOffset, mBuffer.Data(), bytesWritten);
 		mOffset += bytesWritten;
 		mBufferRest = mBuffer;

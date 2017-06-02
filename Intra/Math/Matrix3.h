@@ -194,7 +194,7 @@ public:
 		return *this;
 	}
 
-	INTRA_MATH_CONSTEXPR Vector3<T> ExtractScaleVector() const noexcept
+	Vector3<T> ExtractScaleVector() const noexcept
 	{
 		return {
 			Length(Rows[0]),
@@ -204,7 +204,7 @@ public:
 	}
 	
 	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
-	INTRA_MATH_CONSTEXPR Matrix3 ExtractRotation() const
+	Matrix3 ExtractRotation() const
 	{
 		return {
 			Normalize(Rows[0]),
@@ -221,9 +221,9 @@ public:
 	}
 
 	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
-	//INTRA_MATH_CONSTEXPR Matrix2 ExtractRotation2() const {return {Normalize(Rows[0].xy), Normalize(Rows[1].xy)}}
+	//Matrix2 ExtractRotation2() const {return {Normalize(Rows[0].xy), Normalize(Rows[1].xy)}}
 
-	INTRA_MATH_CONSTEXPR Vector2<T> ExtractScaleVector2() const noexcept {return {Length(Rows[0].xy), Length(Rows[1].xy)};}
+	Vector2<T> ExtractScaleVector2() const noexcept {return {Length(Rows[0].xy), Length(Rows[1].xy)};}
 	
 	//! Извлекает перенос, предполагая, что матрица задаёт однородную систему координат
 	constexpr Vector2<T> ExtractTranslation2() const {return {Rows[0].z, Rows[1].z};}
@@ -274,7 +274,7 @@ public:
 
 	//! Возвращает матрицу поворота вокруг оси normalizedAxis на угол angleRadians, измеряемый в радианах.
 	//! Предполагает, что вектор normalizedAxis нормирован. Иначе получится некорректный результат.
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateRotationNormalized(T angleInRadians, const Vector3<T>& normalizedAxis)
+	static Matrix3 CreateRotationNormalized(T angleInRadians, const Vector3<T>& normalizedAxis)
 	{
 		const T s = T(Sin(angleInRadians));
 		const T c = T(Cos(angleInRadians));
@@ -300,7 +300,7 @@ public:
 	}
 
 	//! Возвращает матрицу поворота вокруг оси axis на угол angleRadians, измеряемый в радианах.
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateRotation(T angleInRadians, const Vector3<T>& axis)
+	static Matrix3 CreateRotation(T angleInRadians, const Vector3<T>& axis)
 	{return CreateRotationNormalized(angleInRadians, Normalize(axis));}
 
 	static constexpr forceinline Matrix3 CreateScaling(const Vector3<T>& scale) noexcept
@@ -341,7 +341,7 @@ public:
 
 	//! Возвращает матрицу вращения на углы Эйлера.
 	//TODO: rotX, rotY, rotZ вроде некорректные названия.
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateRotationEuler(T rotX, T rotY, T rotZ)
+	static Matrix3 CreateRotationEuler(T rotX, T rotY, T rotZ)
 	{
 		const T cos_rx = T(Cos(rotX));
 		const T cos_ry = T(Cos(rotY));
@@ -372,7 +372,7 @@ public:
 	//! @param eye Положение наблюдателя.
 	//! @param center Точка, в которую смотрит наблюдатель.
 	//! @param up Направление вектора "вверх".
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
+	static Matrix3 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
 	{
 		const Vector3<T> f = Normalize(center - eye);
 		Vector3<T> u = Normalize(up);
@@ -386,7 +386,7 @@ public:
 		};
 	}
 
-	INTRA_MATH_EXTENDED_CONSTEXPR Matrix3 Orthonormalize() const
+	Matrix3 Orthonormalize() const
 	{
 		const auto r0 = Normalize(Rows[0]);
 		const auto r1 = Normalize(Rows[1] - r0*Dot(r0, Rows[1]));

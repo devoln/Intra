@@ -17,7 +17,6 @@
 namespace Intra { namespace Audio { namespace Sources {
 
 using namespace Math;
-using namespace IO;
 
 
 #if(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
@@ -186,12 +185,12 @@ size_t VorbisSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 	return totalSamplesRead;
 }
 
-Array<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
+FixedArray<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
+	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
-	if(outType!=null) *outType = ValueType::Float;
-	if(outInterleaved) *outInterleaved = true;
-	if(outSamplesRead) *outSamplesRead = 0;
+	if(oType) *outType = ValueType::Float;
+	if(oInterleaved) *oInterleaved = true;
+	if(oSamplesRead) *oSamplesRead = 0;
 	return null;
 }
 
@@ -252,7 +251,7 @@ size_t VorbisSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 	return shortsRead/channelCount;
 }
 
-Array<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
+FixedArray<const void*> VorbisSource::GetRawSamplesData(size_t maxSamplesToRead,
 	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	(void)maxSamplesToRead;

@@ -54,7 +54,7 @@ class Thread
 public:
 	typedef NativeData* NativeHandle;
 
-	typedef Utils::Delegate<void()> Func;
+	typedef Delegate<void()> Func;
 
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
 	Thread(null_t=null): mHandle(null), mJoined(false), mId(0) {}
@@ -163,7 +163,7 @@ private:
 
 
 #if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-#define INTRA_SYNCHRONIZED_BLOCK(mutex) if(auto INTRA_CONCATENATE_TOKENS($locker, __LINE__) = mutex.Locker())
+#define INTRA_SYNCHRONIZED_BLOCK(mutex) if(auto INTRA_CONCATENATE_TOKENS(locker__, __LINE__) = mutex.Locker())
 #else
 #define INTRA_SYNCHRONIZED_BLOCK(mutex)
 #endif

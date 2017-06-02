@@ -1,12 +1,13 @@
-﻿
-#include "Cpp/Warnings.h"
+﻿#include "Cpp/Warnings.h"
 
 #include "Utils/Logger.h"
 
-#include "Platform/Environment.h"
-#include "Platform/Time.h"
-#include "Platform/HardwareInfo.h"
-#include "Platform/Signal.h"
+#include "System/DateTime.h"
+#include "System/Environment.h"
+#include "System/Stopwatch.h"
+#include "System/ProcessorInfo.h"
+#include "System/RamInfo.h"
+#include "System/Signal.h"
 
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
@@ -39,7 +40,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include <stdlib.h>
 
 using namespace Intra;
-using namespace Intra::IO;
+using namespace IO;
 
 CompositeFormattedWriter& InitOutput()
 {
@@ -49,29 +50,29 @@ CompositeFormattedWriter& InitOutput()
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	FileWriter logFile = OS.FileOpenAppend(logFileName);
+	FileWriter logFile = OS.FileOpenAppend(logFileName, Error::Skip());
 	logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
 	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
 	String datetime;
-	ToString(LastAppender(datetime), DateTime::Now());
-	StringView appName = IO::Path::ExtractName(CommandLineArguments.First());
+	ToString(LastAppender(datetime), System::DateTime::Now());
+	StringView appName = IO::Path::ExtractName(System::Environment.CommandLine.First());
 
-	logWriter.BeginSpoiler(appName+StringOf(CommandLineArguments.Drop(), " ", " ", " ")+datetime);
+	logWriter.BeginSpoiler(appName+StringOf(System::Environment.CommandLine.Drop(), " ", " ", " ")+datetime);
 	
 
-	Errors::CrashHandler=[](int signum)
+	System::CrashHandler = [](int signum)
 	{
 		logger.PushFont({1, 0, 0}, 5, true);
-		logger.Print(Errors::CrashSignalDesc(signum));
+		logger.Print(System::CrashSignalDesc(signum));
 		logger.PopFont();
 		logger = null;
 	};
 
 	logWriter << "Command line arguments:";
-	logWriter.PrintCode(StringOf(CommandLineArguments, "\n", "", ""));
+	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", "", ""));
 	logWriter.BeginSpoiler("System info");
-	auto memInfo = SystemMemoryInfo::Get();
-	auto procInfo = ProcessorInfo::Get();
+	auto memInfo = System::RamInfo::Get();
+	auto procInfo = System::ProcessorInfo::Get();
 	logWriter.PrintCode(*String::Format(
 		"CPU:\r\n<^>\r\n"
 		"Cores: <^>\r\n"
@@ -98,10 +99,10 @@ CompositeFormattedWriter& InitOutput()
 
 int main()
 {
-	Errors::InitSignals();
+	System::InitSignals();
 	auto& output = InitOutput();
 
-	if(CommandLineArguments.Get(1, null) == "-a")
+	if(System::Environment.CommandLine.Get(1, null) == "-a")
 		TestGroup::YesForNestingLevel=0;
 	
 	TestGroup(null, output, "Random number generation", RunRandomPerfTests);
@@ -115,7 +116,7 @@ int main()
 	TestGroup(null, output, "Serialization and deserialization", RunSerializationPerfTests);
 	TestGroup(null, output, "Sort algorithms", RunSortPerfTests);
 
-	if(CommandLineArguments.Get(1, null) != "-a")
+	if(System::Environment.CommandLine.Get(1, null) != "-a")
 	{
 		ConsoleOut.PrintLine("Press any key to exit...");
 		ConsoleIn.GetChar();

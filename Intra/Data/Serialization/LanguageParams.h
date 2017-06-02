@@ -87,7 +87,7 @@ struct LanguageParams
 		TupleOpen, TupleClose, StructInstanceOpen, StructInstanceClose, OneLineCommentBegin, \
 		MultiLineCommentBegin, MultiLineCommentEnd, StringQuote, CharQuotes, \
 		ArrayOpen, ArrayClose, ArrayElementSeparator, MultiLineStringBegin, MultiLineStringEnd, \
-		FalseTrueNames, DecimalSeparator);
+		FalseTrueNames, DecimalSeparator)
 };
 
 INTRA_WARNING_POP

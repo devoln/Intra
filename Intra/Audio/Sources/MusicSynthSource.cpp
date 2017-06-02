@@ -3,9 +3,9 @@
 #include "Cpp/Warnings.h"
 #include "Range/Mutation/Fill.h"
 
-namespace Intra { namespace Audio { namespace Sources {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio { namespace Sources {
 
 #ifndef INTRA_NO_MUSIC_LOADER
 
@@ -17,9 +17,7 @@ MusicSynthSource::MusicSynthSource(const Music& data, uint sampleRate):
 	mCurrentPositions(data.Tracks.Count()),
 	mMaxVolume(-1000000), mProcessedSamplesToFlush(0)
 {
-	for(uint i=0; i<mData.Tracks.Count(); i++)
-		mCurrentPositions.AddLast(Position{0,0});
-
+	Range::FillZeros(mCurrentPositions);
 	for(const MusicTrack& track: data.Tracks)
 	{
 		if(track.Instrument==null) continue;
@@ -29,7 +27,7 @@ MusicSynthSource::MusicSynthSource(const Music& data, uint sampleRate):
 
 size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 {
-	const uint floatsToRead = Math::Min(maxFloatsToGet, uint(mSampleCount*mChannelCount-mCurrentSamplePos));
+	const uint floatsToRead = Math::Min(maxFloatsToGet, uint(mSampleCount*mChannelCount - mCurrentSamplePos));
 
 	for(uint i=0; i<mData.Tracks.Count(); i++)
 	{
@@ -46,7 +44,7 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 
 			size_t sampleCount = floatsToRead;
 			if(!note.IsPause()) sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, mSampleRate);
-			INTRA_DEBUG_ASSERT(int(trackPosition.samplePos)>=0);
+			INTRA_DEBUG_ASSERT(int(trackPosition.samplePos) >= 0);
 			if(mBuffer.Samples.Count()<trackPosition.samplePos+sampleCount)
 				mBuffer.Samples.SetCount(trackPosition.samplePos+sampleCount);
 			
@@ -102,7 +100,7 @@ size_t MusicSynthSource::GetInterleavedSamples(Span<short> outShorts)
 	mBuffer.CastToShorts(0, outShorts.Take(floatsRead));
 	mProcessedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
-	return floatsRead/mChannelCount;
+	return floatsRead / mChannelCount;
 }
 
 size_t MusicSynthSource::GetInterleavedSamples(Span<float> outFloats)
@@ -112,28 +110,28 @@ size_t MusicSynthSource::GetInterleavedSamples(Span<float> outFloats)
 	FillZeros(outFloats);
 	mProcessedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();
-	return floatsRead/mChannelCount;
+	return floatsRead / mChannelCount;
 }
 
 size_t MusicSynthSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 {
-	INTRA_DEBUG_ASSERT(mChannelCount==outFloats.Length());
-	INTRA_DEBUG_ASSERT(mChannelCount==1); //TODO: убрать это ограничение
+	INTRA_DEBUG_ASSERT(mChannelCount == outFloats.Length());
+	INTRA_DEBUG_ASSERT(mChannelCount == 1); //TODO: убрать это ограничение
 	return GetInterleavedSamples(outFloats.First());
 }
 
-Array<const void*> MusicSynthSource::GetRawSamplesData(size_t maxSamplesToRead,
+FixedArray<const void*> MusicSynthSource::GetRawSamplesData(size_t maxSamplesToRead,
 	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	(void)maxSamplesToRead;
-	if(oType!=null) *oType = Data::ValueType::Void;
-	if(oInterleaved!=null) *oInterleaved=false;
-	if(oSamplesRead!=null) *oSamplesRead=0;
+	if(oType) *oType = Data::ValueType::Void;
+	if(oInterleaved) *oInterleaved = false;
+	if(oSamplesRead) *oSamplesRead = 0;
 	return null; //На предпоследнем шаге сэмплы имеют тип float, но не нормированы
 }
 
 #endif
 
-INTRA_WARNING_POP
-
 }}}
+
+INTRA_WARNING_POP

@@ -3,6 +3,7 @@
 #include "Compatibility.h"
 #include "Features.h"
 #include "Warnings.h"
+#include "PlatformDetect.h"
 
 namespace Intra {
 
@@ -72,8 +73,8 @@ private:
 
 #ifdef INTRA_CHAR32_SUPPORT
 typedef char32_t dchar;
-#elif(!defined(__CHAR32_TYPE__) && INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
-static_assert(sizeof(wchar_t)==4,
+#elif(!defined(__CHAR32_TYPE__) && INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux)
+static_assert(sizeof(wchar_t) == 4,
 	"Error in platform specific dchar type definition.");
 typedef wchar_t dchar;
 #else

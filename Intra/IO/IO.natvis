@@ -32,7 +32,7 @@
   </Type>
 
   <Type Name="Intra::IO::FileReader">
-    <DisplayString Condition="mFile.mData==nullptr">null</DisplayString>
+    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
     <DisplayString>FileReader({mOffset-(mBufferRest.End-mBufferRest.Begin)}/{mSize}, {mFile.mData->Value,view(noparens)})</DisplayString>
     <StringView>mBufferRest.Begin,[mBufferRest.End-mBufferRest.Begin]s8b</StringView>
     <Expand>
@@ -45,7 +45,7 @@
   </Type>
 
   <Type Name="Intra::IO::FileWriter">
-    <DisplayString Condition="mFile.mData==nullptr">null</DisplayString>
+    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
     <DisplayString>FileWriter({mOffset+(mBufferRest.Begin-mBuffer.range.Begin)}, {mFile.mData->Value,view(noparens)})</DisplayString>
     <StringView>mBuffer.range.Begin,[mBufferRest.Begin-mBuffer.range.Begin]s8b</StringView>
     <Expand>

@@ -1,12 +1,14 @@
-#include "IO/Socket.h"
-#include "Utils/Finally.h"
+#include "Socket.h"
+
 #include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
-#include "IO/Std.h"
+
+#include "Std.h"
+#include "Utils/Finally.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN 
@@ -45,7 +47,7 @@ inline void closesocket(int socket) {close(socket);}
 
 namespace Intra { namespace IO {
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 struct WsaContext
 {
 	WSADATA wsaData;
@@ -110,12 +112,12 @@ static const byte socketConstants[][3] =
 
 void BasicSocket::initContext()
 {
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	static const WsaContext context;
 #endif
 }
 
-BasicSocket::BasicSocket(SocketType type): mType(type)
+BasicSocket::BasicSocket(SocketType type, ErrorStatus& status): mType(type)
 {
 	initContext();
 	mHandle = socket(
@@ -123,9 +125,7 @@ BasicSocket::BasicSocket(SocketType type): mType(type)
 		socketConstants[byte(type)][1],
 		socketConstants[byte(type)][2]);
 	if(mHandle == NullSocketHandle)
-	{
-		Std.PrintLine(getErrorMessage());
-	}
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 }
 
 void BasicSocket::Close()
@@ -136,8 +136,10 @@ void BasicSocket::Close()
 }
 
 
-ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections)
+ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections, ErrorStatus& status)
 {
+	if(status.WasUnhandledError()) return;
+
 	initContext();
 	const addrinfo hints = {AI_PASSIVE,
 		socketConstants[byte(type)][0],
@@ -150,7 +152,7 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections)
 	const auto gaiErr = getaddrinfo(null, portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
-		Std.PrintLine(gai_strerror(gaiErr));
+		status.Error(gai_strerror(gaiErr));
 		return;
 	}
 	auto addrAutoCleanup = Finally(freeaddrinfo, addrInfo);
@@ -196,16 +198,16 @@ bool BasicSocket::waitInput() const
 	return select(int(mHandle+1), &set, null, null, null) > 0;
 }
 
-StreamSocket ServerSocket::Accept(String& addr)
+StreamSocket ServerSocket::Accept(String& addr, ErrorStatus& status)
 {
-	if(mHandle == NullSocketHandle) return null;
+	if(mHandle == NullSocketHandle || status.WasUnhandledError()) return null;
 	sockaddr sAddr;
 	socklen_t sAddrLen = sizeof(sAddr);
 	StreamSocket result;
 	result.mHandle = accept(mHandle, &sAddr, &sAddrLen);
 	if(result.mHandle == NullSocketHandle)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 		return result;
 	}
 	result.mType = mType;
@@ -213,8 +215,8 @@ StreamSocket ServerSocket::Accept(String& addr)
 	return result;
 }
 
-StreamSocket::StreamSocket(SocketType type, StringView host, ushort port):
-	BasicSocket(type)
+StreamSocket::StreamSocket(SocketType type, StringView host, ushort port, ErrorStatus& status):
+	BasicSocket(type, status)
 {
 	const addrinfo hints = {0,
 		socketConstants[byte(type)][0],
@@ -227,53 +229,54 @@ StreamSocket::StreamSocket(SocketType type, StringView host, ushort port):
 	const auto gaiErr = getaddrinfo(String(host).CStr(), portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
-		Std.PrintLine(gai_strerror(gaiErr));
+		status.Error(gai_strerror(gaiErr), INTRA_SOURCE_INFO);
 		Close();
 		return;
 	}
 
 	if(connect(mHandle, addrInfo->ai_addr, socklen_t(addrInfo->ai_addrlen)) < 0)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 		Close();
 		return;
 	}
 }
 
-size_t StreamSocket::Receive(void* dst, size_t bytes)
+size_t StreamSocket::Receive(void* dst, size_t bytes, ErrorStatus& status)
 {
-	ssize_t result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), 0);
+	if(status.WasUnhandledError()) return 0;
+	const ssize_t result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), 0);
 	if(result == SOCKET_ERROR)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 		return 0;
 	}
 	return size_t(result);
 }
 
-size_t StreamSocket::Send(const void* src, size_t bytes)
+size_t StreamSocket::Send(const void* src, size_t bytes, ErrorStatus& status)
 {
 	ssize_t result = send(mHandle, static_cast<const char*>(src), bufsize_t(bytes), 0);
 	if(result == SOCKET_ERROR)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 		return 0;
 	}
 	return size_t(result);
 }
 
-size_t StreamSocket::Read(void* dst, size_t bytes)
+size_t StreamSocket::Read(void* dst, size_t bytes, ErrorStatus& status)
 {
 	ssize_t result = recv(mHandle, static_cast<char*>(dst), bufsize_t(bytes), MSG_WAITALL);
 	if(result == SOCKET_ERROR)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error(getErrorMessage(), INTRA_SOURCE_INFO);
 		return 0;
 	}
 	return size_t(result);
 }
 
-size_t StreamSocket::Write(const void* src, size_t bytes) {return Send(src, bytes);}
+size_t StreamSocket::Write(const void* src, size_t bytes, ErrorStatus& status) {return Send(src, bytes, status);}
 
 void StreamSocket::ShutdownReading()
 {

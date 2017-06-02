@@ -25,17 +25,11 @@
     <Filter Include="Заголовочные файлы\Math">
       <UniqueIdentifier>{fe834351-650f-44c0-816d-dd190bccf59e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Platform">
-      <UniqueIdentifier>{b5d3d486-4439-4913-9371-28edee13e59f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Utils">
       <UniqueIdentifier>{ba7797c5-7958-40ab-bc5d-7a9db9feb7e2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\IO">
       <UniqueIdentifier>{433133c3-68d7-4112-8b98-69240cd4d1e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Platform">
-      <UniqueIdentifier>{6199a1c5-b9e8-4756-84b0-4b35de9755ab}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Utils">
       <UniqueIdentifier>{ad522f90-9bcb-4118-a4c2-70af5c839dc3}</UniqueIdentifier>
@@ -244,13 +238,25 @@
     <Filter Include="Заголовочные файлы\Meta">
       <UniqueIdentifier>{09c8e239-18f6-4ba7-b611-47b9ee20d734}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Заголовочные файлы\System">
+      <UniqueIdentifier>{ab6c9195-b4b8-4cf3-838f-c3137b87f154}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\System">
+      <UniqueIdentifier>{9b3a3a57-1c8d-4248-8db9-ca0c7aac71c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Cpp">
+      <UniqueIdentifier>{c21dc6b6-7992-49da-9752-9d1df5d6c0d0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Font">
+      <UniqueIdentifier>{2c572eba-4b16-410f-b382-e6eb7d6b87ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Font">
+      <UniqueIdentifier>{ea99348a-cd14-4318-8dde-4397d8846035}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Memory\Memory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="Platform\HardwareInfo.cpp">
-      <Filter>Файлы исходного кода\Platform</Filter>
     </ClCompile>
     <ClCompile Include="IO\LogSystem.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
@@ -281,12 +287,6 @@
     </ClCompile>
     <ClCompile Include="Range\String\Ascii.cpp">
       <Filter>Файлы исходного кода\Range\String</Filter>
-    </ClCompile>
-    <ClCompile Include="Platform\Environment.cpp">
-      <Filter>Файлы исходного кода\Platform</Filter>
-    </ClCompile>
-    <ClCompile Include="Platform\Time.cpp">
-      <Filter>Файлы исходного кода\Platform</Filter>
     </ClCompile>
     <ClCompile Include="Range\Special\Unicode.cpp">
       <Filter>Файлы исходного кода\Range\Special</Filter>
@@ -495,8 +495,35 @@
     <ClCompile Include="Image\ImageInfo.cpp">
       <Filter>Файлы исходного кода\Image</Filter>
     </ClCompile>
-    <ClCompile Include="Platform\Signal.cpp">
-      <Filter>Файлы исходного кода\Platform</Filter>
+    <ClCompile Include="System\Environment.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\ProcessorInfo.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\RamInfo.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Signal.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Stopwatch.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\DateTime.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Sleep.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Cpp\Runtime.cpp">
+      <Filter>Файлы исходного кода\Cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="Font\FontLoading.cpp">
+      <Filter>Файлы исходного кода\Font</Filter>
+    </ClCompile>
+    <ClCompile Include="Font\FontLoading_STB.cpp">
+      <Filter>Файлы исходного кода\Font</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -505,9 +532,6 @@
     </ClInclude>
     <ClInclude Include="Math\Fixed.h">
       <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Platform\HardwareInfo.h">
-      <Filter>Заголовочные файлы\Platform</Filter>
     </ClInclude>
     <ClInclude Include="IO\LogSystem.h">
       <Filter>Заголовочные файлы\IO</Filter>
@@ -608,12 +632,6 @@
     <ClInclude Include="Range\Mutation\ReplaceSubrange.h">
       <Filter>Заголовочные файлы\Range\Mutation</Filter>
     </ClInclude>
-    <ClInclude Include="Platform\Environment.h">
-      <Filter>Заголовочные файлы\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="Platform\Time.h">
-      <Filter>Заголовочные файлы\Platform</Filter>
-    </ClInclude>
     <ClInclude Include="Range\Output\Inserter.h">
       <Filter>Заголовочные файлы\Range\Output</Filter>
     </ClInclude>
@@ -705,9 +723,6 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="Meta.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Platform.hh">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="Range.hh">
@@ -1133,9 +1148,6 @@
     <ClInclude Include="Cpp\Endianess.h">
       <Filter>Заголовочные файлы\Cpp</Filter>
     </ClInclude>
-    <ClInclude Include="Platform\Signal.h">
-      <Filter>Заголовочные файлы\Platform</Filter>
-    </ClInclude>
     <ClInclude Include="Concurrency\Thread.h">
       <Filter>Заголовочные файлы\Concurrency</Filter>
     </ClInclude>
@@ -1543,6 +1555,36 @@
     </ClInclude>
     <ClInclude Include="Concepts\RangeOf.h">
       <Filter>Заголовочные файлы\Concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Environment.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\ProcessorInfo.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\RamInfo.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Signal.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Stopwatch.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\DateTime.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Sleep.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="System.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Font\FontLoading.h">
+      <Filter>Заголовочные файлы\Font</Filter>
+    </ClInclude>
+    <ClInclude Include="Font\FontLoadingDeclarations.h">
+      <Filter>Заголовочные файлы\Font</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

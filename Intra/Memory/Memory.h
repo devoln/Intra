@@ -395,7 +395,7 @@ template<typename T> Meta::EnableIf<
 
 
 template<typename T, typename Allocator> Span<T> AllocateRangeUninitialized(
-	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo)
+	Allocator& allocator, size_t& count, const Utils::SourceInfo& sourceInfo)
 {
 	(void)allocator; //Чтобы устранить ложное предупреждение MSVC
 	size_t size = count*sizeof(T);
@@ -405,7 +405,7 @@ template<typename T, typename Allocator> Span<T> AllocateRangeUninitialized(
 }
 
 template<typename T, typename Allocator> Span<T> AllocateRange(
-	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo)
+	Allocator& allocator, size_t& count, const Utils::SourceInfo& sourceInfo)
 {
 	auto result = AllocateRangeUninitialized(allocator, count, sourceInfo);
 	Memory::Initialize(result);

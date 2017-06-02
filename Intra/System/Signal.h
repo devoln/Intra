@@ -8,7 +8,7 @@ namespace Intra {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Errors
+namespace System
 {
 	void InitSignals();
 	StringView CrashSignalName(int signum);

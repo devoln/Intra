@@ -22,7 +22,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Memory {
 
-AnyPtr MallocAllocator::Allocate(size_t bytes, const SourceInfo& sourceInfo)
+AnyPtr MallocAllocator::Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
 	return malloc(bytes);
@@ -32,7 +32,7 @@ void MallocAllocator::Free(void* ptr) {free(ptr);}
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
-AnyPtr SystemHeapAllocator::Allocate(size_t bytes, const SourceInfo& sourceInfo)
+AnyPtr SystemHeapAllocator::Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
 	return HeapAlloc(GetProcessHeap(), 0, bytes);
@@ -46,10 +46,10 @@ void SystemHeapAllocator::Free(void* ptr)
 #endif
 
 
-AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const SourceInfo& sourceInfo)
+AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
-#if(defined(INTRA_PLATFORM_IS_UNIX) && INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Android)
+#if(defined(INTRA_PLATFORM_IS_UNIX) && INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Android)
 	void* result;
 	if(posix_memalign(&result, alignment, bytes)==0) return result;
 	return null;
@@ -70,7 +70,7 @@ void AlignedSystemHeapAllocator::Free(void* ptr, size_t size)
 #endif
 }
 
-AnyPtr PageAllocator::Allocate(size_t& bytes, const SourceInfo& sourceInfo)
+AnyPtr PageAllocator::Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
 	size_t pageSize = VirtualMemoryPageSize();

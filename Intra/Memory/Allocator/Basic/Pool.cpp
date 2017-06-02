@@ -48,7 +48,7 @@ void FreeList::Free(void* ptr)
 }
 
 
-AnyPtr APool::Allocate(size_t& bytes, SourceInfo sourceInfo)
+AnyPtr APool::Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
 	INTRA_DEBUG_ASSERT(bytes <= mElementSize);

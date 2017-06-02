@@ -555,7 +555,12 @@ template<typename I> struct GenericTextDeserializer
 		return result;
 	}
 
-	void ResetStream(const I& stream) {Input=stream; Line=0; NestingLevel=0;}
+	void ResetStream(const I& stream)
+	{
+		Input = stream;
+		Line = 0;
+		NestingLevel = 0;
+	}
 
 	LanguageParams Lang;
 	int NestingLevel;

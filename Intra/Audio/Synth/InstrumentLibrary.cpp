@@ -27,7 +27,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth {
 
-using namespace IO;
 using namespace Math;
 
 

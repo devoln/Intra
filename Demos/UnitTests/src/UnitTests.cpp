@@ -11,9 +11,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/CompositeFormattedWriter.h"
 #include "IO/FilePath.h"
 
-#include "Platform/Time.h"
-#include "Platform/Signal.h"
-#include "Platform/Environment.h"
+#include "System/DateTime.h"
+#include "System/Signal.h"
+#include "System/Environment.h"
 
 #include "Container/SparseArray.h"
 #include "IO/FormattedLogger.h"
@@ -22,6 +22,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range/Range.h"
 #include "IO/IO.h"
 #include "Serialization.h"
+#include "Container/HashMap.h"
 
 using namespace Intra;
 using namespace IO;
@@ -33,7 +34,7 @@ CompositeFormattedWriter& InitOutput()
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	FileWriter logFile = OS.FileOpenAppend(logFileName);
+	FileWriter logFile = OS.FileOpenAppend(logFileName, Error::Skip());
 	if(logFile==null)
 	{
 		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
@@ -42,20 +43,20 @@ CompositeFormattedWriter& InitOutput()
 	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
 
 	String datetime;
-	ToString(LastAppender(datetime), DateTime::Now());
-	StringView appName = IO::Path::ExtractName(CommandLineArguments.First());
+	ToString(LastAppender(datetime), System::DateTime::Now());
+	StringView appName = IO::Path::ExtractName(System::Environment.CommandLine.First());
 
-	logWriter.BeginSpoiler(appName + StringOf(CommandLineArguments.Drop(), " ", " ", " ") + datetime);
+	logWriter.BeginSpoiler(appName + StringOf(System::Environment.CommandLine.Drop(), " ", " ", " ") + datetime);
 	
-	Errors::CrashHandler = [](int signum)
+	System::CrashHandler = [](int signum)
 	{
 		logger.PushFont({1, 0, 0}, 5, true);
-		logger.PrintLine(Errors::CrashSignalDesc(signum));
+		logger.PrintLine(System::CrashSignalDesc(signum));
 		logger.PopFont();
 	};
 
 	logWriter << "Command line arguments:";
-	logWriter.PrintCode(StringOf(CommandLineArguments, "\n", " ", " "));
+	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", " ", " "));
 	logger.Attach(Cpp::Move(logWriter));
 
 	return logger;
@@ -63,7 +64,7 @@ CompositeFormattedWriter& InitOutput()
 
 int main(int argc, const char* argv[])
 {
-	Errors::InitSignals();
+	System::InitSignals();
 	auto& loggerOut = InitOutput();
 
 	FormattedWriter output = ReferenceFormattedWriter(Std);
@@ -81,6 +82,7 @@ int main(int argc, const char* argv[])
 	else loggerOut.Attach(&Std);
 
 	FormattedLogger logger(ReferenceFormattedWriter(loggerOut));
+	logger.WriteLevelType = false;
 
 	if(TestGroup gr{&logger, output, "Ranges"})
 	{
@@ -94,6 +96,7 @@ int main(int argc, const char* argv[])
 	{
 		TestGroup("Sparse Range", TestSparseRange);
 		TestGroup("Sparse Array", TestSparseArray);
+		TestGroup("Map", TestMaps);
 	}
 	if(TestGroup gr{&logger, output, "IO"})
 	{

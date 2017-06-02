@@ -155,7 +155,7 @@
 
 #endif
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD ||\
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD ||\
 	defined(unix) || defined(__unix) || defined(__unix__))
 #define INTRA_PLATFORM_IS_UNIX
 #endif
@@ -163,26 +163,27 @@
 
 //Если что-то не было задано и не удалось определить, сообщаем об ошибке
 #ifndef INTRA_PLATFORM_ARCH
-#error Невозможно определить архитектуру целевого процессора!
+#error Cannot determine target processor architecture!
 #endif
 
 #ifndef INTRA_PLATFORM_OS
-#error Невозможно определить целевую ОС!
+#error Cannot determine target OS!
 #endif
 
 #ifndef INTRA_PLATFORM_ENDIANESS
-#error Не удаётся определить порядок байтов для данной платформы!
+#error Cannot determine byte order for this platform!
 #endif
 
 #ifndef INTRA_NO_FILE_LOGGING
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 #define INTRA_NO_FILE_LOGGING
 #endif
 
 #endif
 
-#if(!defined(INTRA_PLATFORM_IS_64) || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
+#if(!defined(INTRA_PLATFORM_IS_64) || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows ||\
+	INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 #define INTRA_SIZEOF_LONG 4
 #else
 #define INTRA_SIZEOF_LONG 8

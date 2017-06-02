@@ -51,7 +51,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasReflectionFieldNamesMethod, Meta::RemoveConst
 		static const StringView fieldNames[] = {\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_NAME, A, __VA_ARGS__)\
 		};\
-		return fieldNames;\
+		return CSpanOf(fieldNames);\
 	}
 
 //! Добавить метаинформацию к структуре. Первым указывается имя структуры\класса, далее перечисляются поля.

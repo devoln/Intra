@@ -2,12 +2,17 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
-#include "Image/ImageFormat.h"
-#include "Image/ImageInfo.h"
+
 #include "Math/Vector3.h"
-#include "Container/Sequential/Array.h"
+
 #include "Range/Polymorphic/InputRange.h"
 #include "Range/Polymorphic/ForwardRange.h"
+
+#include "Utils/FixedArray.h"
+#include "Container/Sequential/Array.h"
+
+#include "ImageFormat.h"
+#include "ImageInfo.h"
 
 namespace Intra { namespace Image {
 
@@ -44,7 +49,7 @@ public:
 		return const_cast<void*>( const_cast<const AnyImage*>(this)->GetMipmapDataPtr(mip) );
 	}
 
-	Array<const void*> GetMipmapPointers() const;
+	FixedArray<const void*> GetMipmapPointers() const;
 
 #ifndef INTRA_NO_IMAGE_LOADING
 	static FileFormat DetectFileFormatByHeader(byte header[12]);

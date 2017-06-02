@@ -126,7 +126,8 @@ static void SineExpSynthPassFunction(const SineExpParams& params,
 	float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
 	if(inOutSamples==null) return;
-	size_t start = Random::FastUniform<ushort>((inOutSamples.Length() << 5) | params.Len)(20);
+	auto rand = Random::FastUniform<ushort>(uint((inOutSamples.Length() << 5) | params.Len));
+	size_t start = rand(20);
 	if(start > inOutSamples.Length()) start = inOutSamples.Length();
 	if(!add) FillZeros(inOutSamples.Take(start));
 	inOutSamples.PopFirstN(start);

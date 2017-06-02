@@ -2,11 +2,10 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+
 #include "Data/ValueType.h"
 
 namespace Intra {
-
-namespace IO {class IInputStream;}
 
 namespace Audio {
 

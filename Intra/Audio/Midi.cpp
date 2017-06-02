@@ -35,12 +35,16 @@ public:
 #pragma warning(disable: 4351)
 #endif
 #endif
-	explicit MidiReader(InputStream stream): s(Cpp::Move(stream)),
-		instruments{}
+
+	ErrorStatus& mErrStatus;
+
+	explicit MidiReader(InputStream stream, ErrorStatus& errStatus):
+		s(Cpp::Move(stream)), instruments{}, mErrStatus(errStatus)
 	{
 		if(!StartsAdvanceWith(s, "MThd"))
 		{
 			s = null;
+			errStatus.Error("Invalid MIDI stream format!", INTRA_SOURCE_INFO);
 			return;
 		}
 		const uint chunkSize = s.ReadRaw<uintBE>();
@@ -56,11 +60,12 @@ public:
 		if(headerType>2)
 		{
 			s = null;
+			errStatus.Error("Invalid MIDI stream format!", INTRA_SOURCE_INFO);
 			return;
 		}
 		if(headerTimeFormat<0)
 		{
-			const float framesPerSecond = (headerTimeFormat >> 8)==29? 29.97f: float(headerTimeFormat >> 8);
+			const float framesPerSecond = (headerTimeFormat >> 8) == 29? 29.97f: float(headerTimeFormat >> 8);
 			startTickDuration = globalTickDuration = 1.0f/framesPerSecond/float(headerTimeFormat & 0xFF);
 		}
 		else startTickDuration = globalTickDuration = 60.0f/120/float(headerTimeFormat);
@@ -71,14 +76,14 @@ public:
 
 	uint ReadVarInt(uint* oReadBytes=null)
 	{
-		uint result=0;
-		if(oReadBytes!=null) *oReadBytes=0;
+		uint result = 0;
+		if(oReadBytes != null) *oReadBytes=0;
 		byte l = 0;
 		do
 		{
 			if(s.Empty()) return result;
 			l = s.ReadRaw<byte>();
-			if(oReadBytes!=null) ++*oReadBytes;
+			if(oReadBytes != null) ++*oReadBytes;
 			result = (result << 7) | (l & 0x7F);
 		} while(l & 0x80);
 		return result;
@@ -88,11 +93,16 @@ public:
 
 	struct MidiEvent
 	{
+		MidiEvent() = default;
+		MidiEvent(MidiEvent&&) = default;
+		MidiEvent(const MidiEvent&) = delete;
+		MidiEvent& operator=(const MidiEvent&) = delete;
+
 		byte status;
 		uint delay;
 		byte data[2];
 		byte track;
-		Array<byte> metadata;
+		FixedArray<byte> metadata;
 	};
 
 	struct TempoChange {uint tick; float tickDuration;};
@@ -101,10 +111,10 @@ public:
 	static size_t GetEventLength(byte status)
 	{
 		INTRA_DEBUG_ASSERT(status & 0x80);
-		if(status<0xC0) return 2;
-		if(status<0xE0) return 1;
-		if(status<0xF0) return 2;
-		return status==0xF2? 2u: status==0xF3? 1u: 0u;
+		if(status < 0xC0) return 2;
+		if(status < 0xE0) return 1;
+		if(status < 0xF0) return 2;
+		return status == 0xF2? 2u: status == 0xF3? 1u: 0u;
 	}
 
 	MidiEvent ReadEvent(uint* oReadBytes)
@@ -118,19 +128,19 @@ public:
 		event.status = status;
 
 		OutputArrayRange<byte> eventData(Range::Take(event.data, GetEventLength(status)));
-		if((firstByte & 0x80)==0) eventData.Put(firstByte);
+		if((firstByte & 0x80) == 0) eventData.Put(firstByte);
 		s.ReadRawToAdvance(eventData);
 		if(oReadBytes!=null) *oReadBytes = uint(((firstByte & 0x80)!=0)+delayBytes+eventData.ElementsWritten());
 
-		if(status==0xF0 || status==0xF7 || status==0xFF)
+		if(status == 0xF0 || status == 0xF7 || status == 0xFF)
 		{
-			if(status==0xFF) event.data[0] = s.ReadRaw<byte>();
+			if(status == 0xFF) event.data[0] = s.ReadRaw<byte>();
 			uint sizeRead;
 			uint msgLength = ReadVarInt(&sizeRead);
-			event.metadata.SetCountUninitialized(msgLength);
-			s.ReadRawTo(event.metadata);
-			if(status==0xFF) event.metadata.AddLast(0);
-			if(oReadBytes!=null) *oReadBytes += sizeRead+msgLength + (status==0xFF);
+			event.metadata.SetCount(msgLength + (status == 0xFF));
+			s.ReadRawTo(event.metadata.Data(), msgLength);
+			if(status == 0xFF) event.metadata.Last() = 0;
+			if(oReadBytes) *oReadBytes += sizeRead + msgLength + (status == 0xFF);
 		}
 
 		return event;
@@ -138,7 +148,7 @@ public:
 
 	MusicTrack ReadTrack()
 	{
-		if(startTickDuration==0) return null; //Файл имеет неверный формат или не открыт
+		if(startTickDuration == 0) return null; //Файл имеет неверный формат или не открыт
 		char chunkType[4];
 		s.ReadRawTo(chunkType, 4);
 		uint size = s.ReadRaw<uintBE>();
@@ -154,17 +164,16 @@ public:
 		while(bytesRemaining>0 && !s.Empty())
 		{
 			uint eventSize;
-			MidiEvent event = ReadEvent(&eventSize);
+			const MidiEvent& event = events.AddLast(ReadEvent(&eventSize));
 			timeInTicks += event.delay;
-			events.AddLast(event);
 
-			if(event.status==0xFF && event.data[0]==0x51)
+			if(event.status == 0xFF && event.data[0] == 0x51)
 				if(headerTimeFormat>0)
 			{
 				const int value = (event.metadata[0] << 16)|(event.metadata[1] << 8)|event.metadata[2];
 				tempoChanges.AddLast(TempoChange{timeInTicks, float(value)/1000000.0f/float(headerTimeFormat)*speed});
 			}
-			if(event.status==0x99)
+			if(event.status == 0x99)
 				trackIsDrum = true;
 			bytesRemaining -= eventSize;
 		}
@@ -181,26 +190,29 @@ public:
 			const byte eventType = byte(events[i].status >> 4);
 			//auto eventChannel=(events[i].status & 0xF);
 			time1InTicks += events[i].delay;
-			if(eventType==11 && events[i].data[0]==7)
-				currentVolume = events[i].data[1]/127.0f;
-			if(eventType==12) //Инструменты могут меняться несколько раз на дорожку, поэтому дорожку придётся разбивать на несколько
+			if(eventType == 11 && events[i].data[0] == 7)
+				currentVolume = events[i].data[1] / 127.0f;
+			if(eventType == 12) //Инструменты могут меняться несколько раз на дорожку, поэтому дорожку придётся разбивать на несколько
 			{
-				if(result.Instrument==null && events[i].data[0]<128)
+				if(result.Instrument == null && events[i].data[0] < 128)
 					result.Instrument = instruments[events[i].data[0]];
-				if(result.Instrument==null)
+				if(result.Instrument == null)
 					result.Instrument = instruments[0];
 			}
-			if(eventType!=9) continue;
+			if(eventType != 9) continue;
 
-			uint time2InTicks=0;
-			for(uint j=i+1; j<events.Count(); j++)
+			uint time2InTicks = 0;
+			for(uint j = i + 1; j<events.Count(); j++)
 			{
-				time2InTicks+=events[j].delay;
-				if(((events[j].status >> 4)==8 && events[j].data[0]==events[i].data[0]) ||
-					((events[j].status >> 4)==9 && events[j].data[1]==0 && events[j].data[0]==events[i].data[0]))
+				time2InTicks += events[j].delay;
+				if(((events[j].status >> 4) == 8 &&
+						events[j].data[0] == events[i].data[0]) ||
+					((events[j].status >> 4) == 9 &&
+						events[j].data[1] == 0 &&
+						events[j].data[0] == events[i].data[0]))
 				{
-					while(tempoChangeIndex<tempoChanges.Count() &&
-						time1InTicks>=tempoChanges[tempoChangeIndex].tick)
+					while(tempoChangeIndex < tempoChanges.Count() &&
+						time1InTicks >= tempoChanges[tempoChangeIndex].tick)
 					{
 						currentTickDuration = tempoChanges[tempoChangeIndex++].tickDuration;
 					}
@@ -211,7 +223,7 @@ public:
 					note.Duration = ushort(currentTickDuration*time2InTicks*2048);
 					auto delayInTicks = time1InTicks-lastTime1InTicks;
 					uint delay = uint(currentTickDuration*delayInTicks*2048);
-					while(delay>65534)
+					while(delay > 65534)
 					{
 						result.Notes.EmplaceLast(MusicNote::Pause(65534), ushort(65534), 1.0f);
 						delay -= 65534;
@@ -223,7 +235,7 @@ public:
 			}
 		}
 		events.SetCount(0);
-		if(result.Notes==null) return null;
+		if(result.Notes.Empty()) return null;
 		if(trackIsDrum) result.Instrument = drumsInstrument;
 		return result;
 	}
@@ -231,9 +243,11 @@ public:
 
 
 
-Music ReadMidiFile(CSpan<byte> fileData)
+Music ReadMidiFile(CSpan<byte> fileData, ErrorStatus& status)
 {
-	MidiReader reader(fileData);
+	if(status.WasUnhandledError()) return null;
+
+	MidiReader reader(fileData, status);
 	Music result;
 
 #ifndef INTRA_NO_AUDIO_SYNTH
@@ -352,11 +366,11 @@ Music ReadMidiFile(CSpan<byte> fileData)
 }
 
 
-Music ReadMidiFile(StringView path)
+Music ReadMidiFile(StringView path, ErrorStatus& status)
 {
-	auto fileMapping = OS.MapFile(path);
-	if(fileMapping==null) return null;
-	return ReadMidiFile(fileMapping.AsRange());
+	auto fileMapping = OS.MapFile(path, status);
+	if(fileMapping == null) return null;
+	return ReadMidiFile(fileMapping.AsRange(), status);
 }
 
 INTRA_WARNING_POP

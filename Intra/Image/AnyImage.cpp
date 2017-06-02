@@ -15,7 +15,7 @@ using namespace Math;
 AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
 	const void* data, ushort borderLeft, ushort borderTop, ushort borderRight, ushort borderBottom)
 {
-	if(data==null || size.x*size.y*size.z==0 || format==ImageFormat::End || type==ImageType_End)
+	if(data == null || size.x*size.y*size.z == 0 || format == ImageFormat::End || type == ImageType_End)
 		return null; //Переданы неверные параметры!
 
 	AnyImage result({size.x+borderLeft+borderRight, size.y+borderTop+borderBottom, 1}, format, 0, type);
@@ -24,7 +24,7 @@ AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
 		Range::FillZeros(result.Data);
 
 	result.LineAlignment = 1;
-	for(uint y = borderTop; y<uint(size.y+borderTop); y++)
+	for(uint y = borderTop; y < uint(size.y + borderTop); y++)
 	{
 		const uint dstOffset = y*result.Info.Size.x+borderLeft;
 		const uint srcOffset = y*size.x;
@@ -42,7 +42,7 @@ AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
 
 AnyImage AnyImage::ExtractChannel(char channelName, ImageFormat compatibleFormat, ushort newLineAlignment) const
 {
-	if(newLineAlignment==0) newLineAlignment = LineAlignment;
+	if(newLineAlignment == 0) newLineAlignment = LineAlignment;
 	const auto channelType = Info.Format.GetComponentType();
 
 	INTRA_DEBUG_ASSERT(compatibleFormat.GetValueType()==channelType);
@@ -84,12 +84,12 @@ const void* AnyImage::GetMipmapDataPtr(size_t mip) const
 	return ptr;
 }
 
-Array<const void*> AnyImage::GetMipmapPointers() const
+FixedArray<const void*> AnyImage::GetMipmapPointers() const
 {
 	ushort mc = Max<ushort>(Info.MipmapCount, ushort(1));
-	Array<const void*> result(mc);
+	FixedArray<const void*> result(mc);
 	for(ushort i = 0; i<mc; i++)
-		result.AddLast(GetMipmapDataPtr(i));
+		result[i] = GetMipmapDataPtr(i);
 	return result;
 }
 
@@ -119,13 +119,13 @@ FileFormat AnyImage::DetectFileFormatByHeader(byte header[12])
 
 ImageInfo AnyImage::GetImageInfo(ForwardStream stream, FileFormat* oFormat)
 {
-	if(oFormat!=null) *oFormat = FileFormat::Unknown;
+	if(oFormat) *oFormat = FileFormat::Unknown;
 	ImageInfo result;
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
 	{
 		result = loader.GetInfo(stream);
-		if(result==null) continue;
-		if(oFormat!=null) *oFormat = loader.FileFormatOfLoader();
+		if(result == null) continue;
+		if(oFormat) *oFormat = loader.FileFormatOfLoader();
 		break;
 	}
 	return result;

@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Cpp/Warnings.h"
+
 #include "Meta/Type.h"
+
 #include "Utils/Span.h"
 #include "Utils/StringView.h"
+#include "Utils/ErrorStatus.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -16,8 +19,8 @@ public:
 
 	void Close();
 
-	bool operator==(null_t) const {return mData==null;}
-	bool operator!=(null_t) const {return mData!=null;}
+	bool operator==(null_t) const {return mData == null;}
+	bool operator!=(null_t) const {return mData != null;}
 
 protected:
 	void* mData;
@@ -32,18 +35,18 @@ protected:
 	}
 
 	BasicFileMapping() {}
-	BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess);
+	BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status);
 	~BasicFileMapping() {Close();}
 };
 
 class FileMapping: public BasicFileMapping
 {
 public:
-	FileMapping(StringView fileName, ulong64 startByte, size_t bytes):
-		BasicFileMapping(fileName, startByte, bytes, false) {}
+	FileMapping(StringView fileName, ulong64 startByte, size_t bytes, ErrorStatus& status):
+		BasicFileMapping(fileName, startByte, bytes, false, status) {}
 
-	FileMapping(StringView fileName):
-		BasicFileMapping(fileName, 0, ~size_t(0), false) {}
+	FileMapping(StringView fileName, ErrorStatus& status):
+		BasicFileMapping(fileName, 0, ~size_t(0), false, status) {}
 
 	FileMapping(FileMapping&& rhs) {assign(Cpp::Move(rhs));}
 	FileMapping(const FileMapping&) = delete;
@@ -63,11 +66,11 @@ public:
 class WritableFileMapping: public BasicFileMapping
 {
 public:
-	WritableFileMapping(StringView fileName, ulong64 startByte, size_t bytes):
-		BasicFileMapping(fileName, startByte, bytes, true) {}
+	WritableFileMapping(StringView fileName, ulong64 startByte, size_t bytes, ErrorStatus& status):
+		BasicFileMapping(fileName, startByte, bytes, true, status) {}
 
-	WritableFileMapping(StringView fileName):
-		BasicFileMapping(fileName, 0, ~size_t(0), true) {}
+	WritableFileMapping(StringView fileName, ErrorStatus& status):
+		BasicFileMapping(fileName, 0, ~size_t(0), true, status) {}
 
 	WritableFileMapping(WritableFileMapping&& rhs) {assign(Cpp::Move(rhs));}
 	WritableFileMapping(const WritableFileMapping&) = delete;

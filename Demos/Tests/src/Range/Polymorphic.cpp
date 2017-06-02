@@ -4,7 +4,7 @@
 #include "Range.hh"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Test/PerfSummary.h"
 #include "IO/Std.h"
 
@@ -91,21 +91,21 @@ void RunPolymorphicRangePerfTests(FormattedWriter& output)
 	arr.SetCountUninitialized(1000);
 	IRange* range = new CycledRange(arr.Data(), arr.Count());
 
-	Timer tim;
+	Stopwatch tim;
 	int sum1 = TestPolymorphicRange(range, 100000000);
-	double time1 = tim.GetTimeAndReset();
+	double time1 = tim.GetElapsedSecondsAndReset();
 
 	int sum2 = TestPolymorphicRange2(Range::Cycle(arr), 100000000);
-	double time2 = tim.GetTimeAndReset();
+	double time2 = tim.GetElapsedSecondsAndReset();
 
 	int sum3 = TestPolymorphicRange3(Range::Cycle(arr), 100000000);
-	double time3 = tim.GetTimeAndReset();
+	double time3 = tim.GetElapsedSecondsAndReset();
 
 	int sum4 = TestInlinedRange(arr.Data(), 1000, 100000000);
-	double time4 = tim.GetTimeAndReset();
+	double time4 = tim.GetElapsedSecondsAndReset();
 		
 	int sum5 = TestStaticRange(arr.Data(), 1000, 100000000);
-	double time5 = tim.GetTimeAndReset();
+	double time5 = tim.GetElapsedSecondsAndReset();
 
 	Std.PrintLine(sum1, " ", sum2, " ", sum3, " ", sum4, " ", sum5);
 

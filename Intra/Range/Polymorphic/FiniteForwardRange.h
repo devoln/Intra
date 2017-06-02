@@ -55,7 +55,7 @@ private:
 	>;
 
 	template<typename R> forceinline static Interface* wrap(R&& range)
-	{return new WrapperImpl<Meta::RemoveConstRef<RangeOfType<R>>>(Range::Forward<R>(range));}
+	{return new WrapperImpl<Meta::RemoveConstRef<Concepts::RangeOfType<R>>>(Range::Forward<R>(range));}
 
 public:
 	typedef Meta::RemoveConstRef<T> value_type;

@@ -11,7 +11,8 @@ struct StructTest
 	float y;
 	String z[2];
 	Array<int> arr;
-	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr);
+
+	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr)
 };
 
 void TestTextSerialization(FormattedWriter& output)

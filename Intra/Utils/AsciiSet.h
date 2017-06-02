@@ -8,7 +8,7 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra {
+namespace Intra { namespace Utils {
 
 //! Класс, содержащий множество символов из ASCII
 class AsciiSet
@@ -71,29 +71,14 @@ public:
 		}
 	}
 
-	AsciiSet operator|(const AsciiSet& rhs) const
-	{
-		AsciiSet result;
-		result.v[0] = v[0] | rhs.v[0];
-		result.v[1] = v[1] | rhs.v[1];
-		return result;
-	}
+	constexpr forceinline AsciiSet operator|(const AsciiSet& rhs) const
+	{return {v[0] | rhs.v[0], v[1] | rhs.v[1]};}
 
-	AsciiSet operator~() const
-	{
-		AsciiSet result;
-		result.v[0] = ~v[0];
-		result.v[1] = ~v[1];
-		return result;
-	}
+	constexpr forceinline AsciiSet operator~() const
+	{return {~v[0], ~v[1]};}
 
-	AsciiSet operator&(const AsciiSet& rhs) const
-	{
-		AsciiSet result;
-		result.v[0] = v[0] & rhs.v[0];
-		result.v[1] = v[1] & rhs.v[1];
-		return result;
-	}
+	constexpr forceinline AsciiSet operator&(const AsciiSet& rhs) const
+	{return {v[0] & rhs.v[0], v[1] & rhs.v[1]};}
 
 	AsciiSet operator|(char c) const
 	{
@@ -119,14 +104,18 @@ struct TAsciiSets
 	AsciiSet Spaces{(1ull << ' ') | (1ull << '\t') | (1ull << '\r') | (1ull << '\n'), 0};
 	AsciiSet Slashes{1ULL << 47, 1ULL << 28};
 	AsciiSet Digits{0x03FF000000000000ULL, 0};
-	AsciiSet LatinLowercase{0, 0x3FFFFFF00000000ULL};
-	AsciiSet LatinUppercase{0, 0x3FFFFFF};
-	AsciiSet Latin{0, 0x3FFFFFF03FFFFFFULL};
-	AsciiSet LatinAndDigits{0x03FF000000000000ULL, 0x3FFFFFF03FFFFFFULL};
-	AsciiSet IdentifierChars{0x03FF000000000000ULL | (1ull << '$'), 0x3FFFFFF03FFFFFFULL | (1 << ('_'-64))};
-	AsciiSet NotIdentifierChars{~(0x03FF000000000000ULL | (1ull << '$')), ~(0x3FFFFFF03FFFFFFULL | (1 << ('_'-64)))};
+	AsciiSet LatinLowercase{0, 0x7FFFFFE00000000ULL};
+	AsciiSet LatinUppercase{0, 0x7FFFFFE};
+	AsciiSet Latin{0, 0x7FFFFFE07FFFFFEULL};
+	AsciiSet LatinAndDigits{0x03FF000000000000ULL, 0x7FFFFFE07FFFFFEULL};
+	AsciiSet IdentifierChars{0x03FF000000000000ULL | (1ULL << '$'), 0x7FFFFFE07FFFFFEULL | (1ULL << ('_' - 64u))};
+	AsciiSet NotIdentifierChars{~(0x03FF000000000000ULL | (1ULL << '$')), ~(0x7FFFFFE07FFFFFEULL | (1ULL << ('_' - 64u)))};
 };
-static constexpr const TAsciiSets AsciiSets;
+constexpr const TAsciiSets AsciiSets;
+
+}
+using Utils::AsciiSet;
+using Utils::AsciiSets;
 
 }
 

@@ -238,7 +238,8 @@ template<typename T> struct Span
 	Span Find(T c) const
 	{
 		Span result = *this;
-		while(!result.Empty() && result.Next() != c) {}
+		while(!result.Empty() && result.First() != c)
+			result.PopFirst();
 		return result;
 	}
 
@@ -280,8 +281,8 @@ template<typename T> using CSpan = Span<const T>;
 template<typename T> forceinline constexpr Span<T> Take(T* arrPtr, size_t n) noexcept {return {arrPtr, n};}
 
 template<typename T, size_t N> forceinline constexpr Span<T> SpanOfBuffer(T(&arr)[N]) noexcept {return {arr, N};}
-template<typename T, size_t N> forceinline constexpr Span<T> SpanOf(T(&arr)[N]) noexcept {return arr;}
-template<typename T, size_t N> forceinline constexpr CSpan<T> CSpanOf(const T(&arr)[N]) noexcept {return arr;}
+template<typename T, size_t N> forceinline constexpr Span<T> SpanOf(T(&arr)[N]) noexcept {return Span<T>(arr);}
+template<typename T, size_t N> forceinline constexpr CSpan<T> CSpanOf(const T(&arr)[N]) noexcept {return CSpan<T>(arr);}
 template<typename T> forceinline constexpr CSpan<T> SpanOf(InitializerList<T> arr) noexcept {return arr;}
 template<typename T> forceinline constexpr CSpan<T> CSpanOf(InitializerList<T> arr) noexcept {return arr;}
 
@@ -343,7 +344,7 @@ template<typename R> forceinline Meta::EnableIf<
 	!HasAsRangeMethod<R>::_,
 Span<Meta::RemovePointer<PtrElementTypeOfArrayOrDisable<R>>>> RangeOf(R&& r) noexcept {return SpanOf(r);}
 
-template<typename T, size_t N> forceinline constexpr Span<T> RangeOf(T(&arr)[N]) noexcept {return arr;}
+template<typename T, size_t N> forceinline constexpr Span<T> RangeOf(T(&arr)[N]) noexcept {return Span<T>(arr);}
 }
 #endif
 

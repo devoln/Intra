@@ -4,7 +4,9 @@
 #include "Cpp/Intrinsics.h"
 #include "Concepts/Array.h"
 
-namespace Intra { namespace Utils {
+namespace Intra {
+
+namespace Range {
 
 template<typename R1, typename R2> inline Meta::EnableIf<
 	Concepts::IsTrivCopyCompatibleArrayWith<R1, R2>::_,
@@ -32,6 +34,13 @@ int> LexCompare(const R1& r1, const R2& r2)
 	if(l1 > l2) return 1;
 	return 0;
 }
+
+}
+
+namespace Utils {
+
+using Range::Equals;
+using Range::LexCompare;
 
 forceinline size_t CStringLength(const char* str) {return C::strlen(str);}
 forceinline size_t CStringLength(const wchar_t* str) {return C::wcslen(str);}

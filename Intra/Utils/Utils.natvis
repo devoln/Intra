@@ -28,15 +28,14 @@
   </Type>
 
   <Type Name="Intra::Utils::FixedArray&lt;*&gt;">
-    <DisplayString Condition="mData.Begin==mData.End">null</DisplayString>
-    <DisplayString>FixedArray({mData})</DisplayString>
+    <DisplayString>{mData}</DisplayString>
     <Expand>
       <ExpandedItem>mData</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::AsciiSet">
-    <DisplayString>{v}</DisplayString>
+  <Type Name="Intra::Utils::AsciiSet">
+    <DisplayString>AsciiSet({v[0],X} {v[1],X})</DisplayString>
     <Expand>
       <Item Name="'\0'" Condition = "v[0] &amp; 1">0</Item>
       <Item Name="SOH" Condition = "(v[0] >> 1) &amp; 1">1</Item>

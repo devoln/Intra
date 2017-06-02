@@ -39,7 +39,7 @@ public:
 	{rhs.mRange = null; rhs.mCount = 0;}
 
 	template<typename R, typename = Meta::EnableIf<
-		Range::IsConsumableRangeOf<R, T>::_ &&
+		Concepts::IsConsumableRangeOf<R, T>::_ &&
 		!Meta::TypeEqualsIgnoreCVRef<R, BList>::_
 	>> forceinline BList(R&& values):
 		mRange(null), mCount(0)
@@ -100,7 +100,7 @@ public:
 			AddLast(Cpp::Forward<Args>(args)...);
 			return mRange;
 		}
-		Node* node = insert_node(pos.Range.FirstNode);
+		Node* const node = insert_node(pos.Range.FirstNode);
 		new(&node->Value) T(Cpp::Forward<Args>(args)...);
 		return BListRange<T>(node, mRange.LastNode);
 	}

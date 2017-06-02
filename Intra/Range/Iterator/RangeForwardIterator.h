@@ -26,4 +26,7 @@ template<typename R> struct RangeForwardIterator
 	R Range;
 };
 
-}}
+}
+using Range::RangeForwardIterator;
+
+}

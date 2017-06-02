@@ -3,7 +3,7 @@
 
 namespace Intra { namespace Memory {
 
-AnyPtr AStack::Allocate(size_t bytes, SourceInfo sourceInfo)
+AnyPtr AStack::Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
 {
 	(void)sourceInfo;
 

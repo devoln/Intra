@@ -1,16 +1,20 @@
 ﻿#include "Cpp/PlatformDetect.h"
-#include "Audio/SoundApi.h"
 #include "Cpp/Warnings.h"
+
+#include "SoundApi.h"
+
 #include "Memory/Allocator/Global.h"
 
-#if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
+#include "Data/ValueType.h"
+
+#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
-#elif(INTRA_PLATFORM_OS==PLATFORM_OS_Linux)
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux)
 #include <AL/al.h>
 #include <AL/alc.h>
 #else
@@ -29,7 +33,7 @@ using namespace Math;
 
 namespace SoundAPI {
 
-const ValueType::I InternalBufferType = ValueType::Short;
+const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
 const int InternalChannelsInterleaved = true;
 uint InternalSampleRate() {return 48000;}
 
@@ -139,13 +143,13 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 	return new Buffer(buffer, uint(sampleCount), sampleRate, channels, get_format(channels));
 }
 
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
+void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type)
 {
 	(void)type;
-	INTRA_DEBUG_ASSERT(data!=null);
-	INTRA_DEBUG_ASSERT(type==ValueType::Short);
+	INTRA_DEBUG_ASSERT(data != null);
+	INTRA_DEBUG_ASSERT(type == Data::ValueType::Short);
     alBufferData(snd->buffer, snd->alformat, data, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
+    INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
 }
 
 void* BufferLock(BufferHandle snd)
@@ -258,7 +262,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 {
 	const int alFmt = snd->channels==1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16;
 	const size_t samplesProcessed = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&snd->temp_buffer),
-		snd->channels, ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
+		snd->channels, Data::ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
 	if(samplesProcessed<snd->sampleCount)
 	{
 		short* const endOfData = snd->temp_buffer+snd->sampleCount*snd->channels;

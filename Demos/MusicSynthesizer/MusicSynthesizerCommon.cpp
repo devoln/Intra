@@ -8,7 +8,7 @@
 #include "Audio/AudioBuffer.h"
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Cpp/Warnings.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
@@ -46,18 +46,14 @@ void PrintMusicInfo(const Music& music)
 bool PrintMidiFileInfo(StringView filePath)
 {
 	Std.PrintLine("Загрузка midi файла ", filePath, "...");
-	auto fileMapping = OS.MapFile(filePath);
-	if(fileMapping==null)
-	{
-		Std.PrintLine("Файл не открыт!");
-		ConsoleIn.GetChar();
-		return false;
-	}
-	auto music = ReadMidiFile(fileMapping.AsRange());
 
-	if(music.Tracks==null)
+	FatalErrorStatus status;
+	auto fileMapping = OS.MapFile(filePath, status);
+	auto music = ReadMidiFile(fileMapping.AsRange(), status);
+
+	if(status.Handle())
 	{
-		Std.PrintLine("Ошибка!");
+		Std.PrintLine(status.GetLog());
 		ConsoleIn.GetChar();
 		return false;
 	}
@@ -70,12 +66,16 @@ bool PrintMidiFileInfo(StringView filePath)
 Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
 {
 	if(printMessages) Std.PrintLine("Синтез...");
-	Timer tim;
-	auto sound = Sound::FromFile(filePath);
+	FatalErrorStatus status;
+	Stopwatch sw;
+	auto sound = Sound::FromFile(filePath, status);
 	if(printMessages)
+		Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
+	if(status.Handle())
 	{
-		auto time = tim.GetTime();
-		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
+		Std.PrintLine(status.GetLog());
+		ConsoleIn.GetChar();
+		return null;
 	}
 	return sound;
 }

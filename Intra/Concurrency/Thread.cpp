@@ -317,6 +317,17 @@ void Mutex::Unlock()
 #include <pthread.h>
 #include <sched.h>
 
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <Windows.h>
+
+#else
+#include <unistd.h>
+#endif
+
 #ifdef _MSC_VER
 #pragma comment(lib, "pthread.lib")
 #endif
@@ -384,8 +395,14 @@ bool Thread::Join(uint timeoutMs)
 	waitData data = {wid, false};
 	if(pthread_create(&id, null, join_timeout_helper, &data) != 0) return -1;
 	
-	while(!data.done && timer.GetTimeMs()<timeoutNs);
-		Timer::Sleep(10);
+	while(!data.done && timer.GetTimeMs()<timeoutNs)
+	{
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+		Sleep(10);
+#else
+		usleep(10000);
+#endif
+	}
 	if(!data.done) pthread_cancel(id);
 	pthread_join(id, null);
 	if(data.done) Join();

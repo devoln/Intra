@@ -59,11 +59,8 @@ template<typename R, typename T> struct OutputStreamMixin
 		return Print(Cpp::Forward<Arg1>(arg1), Cpp::Forward<Args>(args)...);
 	}
 
-	template<typename... Args>
-	R& PrintLine(Args&&... args)
-	{
-		return Print(Cpp::Forward<Args>(args)..., "\r\n");
-	}
+	template<typename... Args> R& PrintLine(Args&&... args)
+	{return Print(Cpp::Forward<Args>(args)..., "\r\n");}
 };
 
 

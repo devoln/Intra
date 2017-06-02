@@ -1,9 +1,13 @@
 ﻿#include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
+
 #include "Audio/SoundApi.h"
+
 #include "Memory/Allocator/Global.h"
 
-#if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
+#include "Data/ValueType.h"
+
+#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -14,14 +18,14 @@ using namespace Math;
 
 namespace SoundAPI {
 
-const ValueType::I InternalBufferType = ValueType::Void;
+const Data::ValueType::I InternalBufferType = Data::ValueType::Void;
 const int InternalChannelsInterleaved = true;
 uint InternalSampleRate() {return 48000;}
 
 struct Buffer
 {
-	Buffer(uint sample_count, uint sample_rate, uint ch):
-		sampleCount(sample_count), sampleRate(sample_rate), channels(ch) {}
+	Buffer(uint sample_count, uint sampleRate, uint ch):
+		sampleCount(sample_count), sampleRate(sampleRate), channels(ch) {}
 
 	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
 
@@ -58,10 +62,12 @@ struct StreamedBuffer
 BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 {return new Buffer(uint(sampleCount), sampleRate, channels);}
 
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
+void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type)
 {
 	INTRA_DEBUG_ASSERT(data!=null);
-	(void)data; (void)snd; (void)type;
+	(void)data;
+	(void)snd;
+	(void)type;
 }
 
 void* BufferLock(BufferHandle snd)
@@ -119,7 +125,7 @@ void StreamedBufferDelete(StreamedBufferHandle snd) {(void)snd;}
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
-	INTRA_DEBUG_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd != null);
 	snd->looping = loop;
 }
 

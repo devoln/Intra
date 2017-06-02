@@ -33,7 +33,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 
+
 namespace Intra { namespace Container {
+
+template<typename F, typename T> void Call(F&& f, T&& arg) {f(Cpp::Forward<T>(arg));}
 
 template<typename Char> class GenericString
 {
@@ -66,7 +69,7 @@ public:
 	}
 
 	forceinline GenericString(const GenericString& rhs):
-		GenericString(rhs.AsConstRange()) {}
+		GenericString(rhs.Data(), rhs.Length()) {}
 	
 	forceinline GenericString(GenericString&& rhs):
 		m(rhs.m) {rhs.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
@@ -419,11 +422,15 @@ public:
 
 
 	//! Форматирование строки
-	//! \param format Строка, содержащая метки <^>, в которые будут подставляться аргументы.
-	//! \param () Используйте скобки для передачи параметров и указания их форматирования
-	//! \returns Прокси-объект для форматирования, неявно преобразующийся к String.
+	//! @param format Строка, содержащая метки <^>, в которые будут подставляться аргументы.
+	//! @param () Используйте скобки для передачи параметров и указания их форматирования
+	//! @return Прокси-объект для форматирования, неявно преобразующийся к String.
 	static forceinline StringFormatter<GenericString> Format(GenericStringView<const Char> format=null)
 	{return StringFormatter<GenericString>(format);}
+
+	//! Формирование строки как конкатенация строковых представлений аргугментов функции.
+	template<typename... Args> static forceinline GenericString Concat(Args&&... args)
+	{return StringFormatter<GenericString>(null).Arg(Cpp::Forward<Args>(args)...);}
 
 	forceinline GenericStringView<Char> View()
 	{return {Data(), Length()};}

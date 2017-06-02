@@ -52,7 +52,7 @@ struct ASegregatedPools: FA
 
 	size_t GetAlignment() const {return mAlignment;}
 
-    AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+    AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
     {
         size_t sizeClass = GetSizeClass(bytes);
  

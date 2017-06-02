@@ -128,11 +128,11 @@ template<typename T> constexpr T DistanceSqr(const Vector2<T>& l, const Vector2<
 
 
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector2<T> Normalize(const Vector2<T>& v) {return v/Length(v);}
+template<typename T> Vector2<T> Normalize(const Vector2<T>& v) {return v/Length(v);}
 
 template<typename T> constexpr Vector2<T> Reflect(const Vector2<T>& incident, const Vector2<T>& normal) {return incident - 2*Dot(incident, normal)*normal;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector2<T> Refract(const Vector2<T>& I, const Vector2<T>& N, float eta)
+template<typename T> Vector2<T> Refract(const Vector2<T>& I, const Vector2<T>& N, float eta)
 {
 	const T NI = Dot(N,I);
 	const T k = 1.0 - eta*eta * (1.0 - NI*NI);
@@ -196,11 +196,11 @@ template<typename T> Vector2<T> Abs(const Vector2<T>& v)
 
 namespace GLSL {
 template<typename T> constexpr forceinline T dot(const Vector2<T>& l, const Vector2<T>& r) {return Dot(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T length(const Vector2<T>& v) {return Length(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T distance(const Vector2<T>& l, const Vector2<T>& r) {return Distance(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline Vector2<T> normalize(const Vector2<T>& v) {return Normalize(v);}
+template<typename T> forceinline T length(const Vector2<T>& v) {return Length(v);}
+template<typename T> forceinline T distance(const Vector2<T>& l, const Vector2<T>& r) {return Distance(l, r);}
+template<typename T> forceinline Vector2<T> normalize(const Vector2<T>& v) {return Normalize(v);}
 template<typename T> constexpr forceinline Vector2<T> reflect(const Vector2<T>& incident, const Vector2<T>& normal) {return Reflect(incident, normal);}
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR forceinline Vector2<T> refract(const Vector2<T>& I, const Vector2<T>& N, float eta) {return Refract(I, N, eta);}
+template<typename T> forceinline Vector2<T> refract(const Vector2<T>& I, const Vector2<T>& N, float eta) {return Refract(I, N, eta);}
 template<typename T> constexpr forceinline Vector2<T> faceforward(const Vector2<T>& N, const Vector2<T>& I, const Vector2<T>& Nref) {return FaceForward(N, I, Nref);}
 }
 

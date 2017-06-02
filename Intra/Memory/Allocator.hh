@@ -64,7 +64,7 @@ struct BufferAllocator
 		return 32u*(category+1u);
 	}
 
-	Buffer* AllocateBuffer(size_t& bytes, const SourceInfo& sourceInfo)
+	Buffer* AllocateBuffer(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{
 		allocationCount++;
 		size_t totalBytes = bytes+sizeof(Buffer);
@@ -105,7 +105,7 @@ struct BufferAllocator
 		}
 	}
 
-	forceinline AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{
 		Buffer* result = AllocateBuffer(bytes, sourceInfo);
 		return result->Data();
@@ -165,8 +165,8 @@ INTRA_WARNING_POP
 }
 
 #define INTRA_NEW(type, allocator) new((allocator).Allocate(sizeof(type), INTRA_SOURCE_INFO)) type
-#define INTRA_DELETE(ptr, allocator) (Intra::Memory::DestructObj(*ptr), allocator.Free(ptr))
+#define INTRA_DELETE(ptr, allocator) (::Intra::Memory::DestructObj(*ptr), allocator.Free(ptr))
 
-#define INTRA_NEW_ARRAY(type, n, allocator) Intra::Memory::AllocateRange<type>((allocator), (n), INTRA_SOURCE_INFO)
-#define INTRA_DELETE_ARRAY(range, allocator) Intra::Memory::FreeRange((allocator), (range))
+#define INTRA_NEW_ARRAY(type, n, allocator) ::Intra::Memory::AllocateRange<type>((allocator), (n), INTRA_SOURCE_INFO)
+#define INTRA_DELETE_ARRAY(range, allocator) ::Intra::Memory::FreeRange((allocator), (range))
 

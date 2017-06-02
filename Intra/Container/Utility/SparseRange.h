@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Container/ForwardDecls.h"
 #include "Utils/Span.h"
+#include "Utils/FixedArray.h"
 #include "Cpp/Warnings.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -13,17 +13,22 @@ template<typename T, typename Index> struct SparseRange
 	static_assert(sizeof(T)>=sizeof(Index), "Type T must not be shorter than index!");
 
 	SparseRange(Span<T> sparseBuffer=null):
-		data(sparseBuffer), first_free(empty_index()) {}
+		mData(sparseBuffer), mFirstFree(empty_index()) {}
 
 	SparseRange(SparseRange&& rhs):
-		data(rhs.data), first_free(rhs.first_free)
-	{rhs.data = null; rhs.first_free = empty_index();}
+		mData(rhs.mData), mFirstFree(rhs.mFirstFree)
+	{
+		rhs.mData = null;
+		rhs.mFirstFree = empty_index();
+	}
 
 	SparseRange& operator=(SparseRange&& rhs)
 	{
 		Clear();
-		data = rhs.data; first_free = rhs.first_free;
-		rhs.data = null; rhs.first_free = empty_index();
+		mData = rhs.mData;
+		mFirstFree = rhs.mFirstFree;
+		rhs.mData = null;
+		rhs.mFirstFree = empty_index();
 		return *this;
 	}
 	~SparseRange() {Clear();}
@@ -54,28 +59,28 @@ template<typename T, typename Index> struct SparseRange
 
 	template<typename U=T> Meta::EnableIf<
 		Meta::IsTriviallyDestructible<U>::_
-	> Clear() {first_free = empty_index();}
+	> Clear() {mFirstFree = empty_index();}
 
 
-	void MakeNull() {Clear(); data=null;}
+	void MakeNull() {Clear(); mData=null;}
 
 	//! Доступ по индексу следует использовать только тогда, когда точно известно, что элемент с этим индексом не был удалён.
-	T& operator[](Index index) {return data[size_t(index)];}
-	const T& operator[](Index index) const {return data[size_t(index)];}
+	T& operator[](Index index) {return mData[size_t(index)];}
+	const T& operator[](Index index) const {return mData[size_t(index)];}
 
 	//! Возвращает, заполнен ли массив.
 	//! Это означает, что массив не содержит свободных элементов,
 	//! и следующая вставка элемента приведёт к перераспределению памяти.
-	bool IsFull() const {return first_free == end_index() || data.Empty();}
+	bool IsFull() const {return mFirstFree == end_index() || mData.Empty();}
 
 	//! Возвращает, пуст ли этот разреженный массив.
-	bool Empty() const {return first_free == empty_index();}
+	bool Empty() const {return mFirstFree == empty_index();}
 
-	Index Capacity() const {return Index(data.Length());}
+	Index Capacity() const {return Index(mData.Length());}
 
 
 	//! Возвращает битовое поле, каждый бит которого обозначает, существует ли элемент по соответствующему индексу или нет.
-	Array<flag32> DeadBitfield() const;
+	FixedArray<flag32> DeadBitfield() const;
 
 	//! Переместить этот разреженный массив в другой разреженный массив не меньшего размера.
 	void MoveTo(SparseRange& rhs);
@@ -83,14 +88,14 @@ template<typename T, typename Index> struct SparseRange
 	//! Возвращает диапазон, содержащий элементы разреженного массива.
 	//! Этот буфер безопасно использовать только в том случае, когда разреженный массив пуст, то есть выполняется Empty().
 	//! В этом случае добавление нового элемента в разреженный массив перезапишет все данные в этом буфере.
-	Span<T> GetInternalDataBuffer() {return data;}
+	Span<T> GetInternalDataBuffer() {return mData;}
 
 	bool operator==(null_t) const {return Empty();}
 	bool operator!=(null_t) const {return !Empty();}
 
 private:
-	Span<T> data;
-	Index first_free;
+	Span<T> mData;
+	Index mFirstFree;
 
 	T& append_first_free(Index* oIndex);
 	void init_free_list();
@@ -107,19 +112,28 @@ private:
 
 template<typename Index> struct SparseTypelessRange
 {
-	SparseTypelessRange(null_t=null): first_free(empty_index()), node_size(0) {}
+	SparseTypelessRange(null_t=null):
+		mFirstFree(empty_index()), mNodeSize(0) {}
 
 	SparseTypelessRange(Span<byte> sparseBuffer, size_t nodeSize):
-		data(sparseBuffer), first_free(empty_index()), node_size(nodeSize) {}
+		mData(sparseBuffer), mFirstFree(empty_index()), mNodeSize(nodeSize) {}
 
 	SparseTypelessRange(SparseTypelessRange&& rhs):
-		data(rhs.data), first_free(rhs.first_free), node_size(rhs.node_size)
-	{rhs.data = null; rhs.first_free = empty_index(); rhs.node_size=0;}
+		mData(rhs.mData), mFirstFree(rhs.mFirstFree), mNodeSize(rhs.mNodeSize)
+	{
+		rhs.mData = null;
+		rhs.mFirstFree = empty_index();
+		rhs.mNodeSize = 0;
+	}
 
 	SparseTypelessRange& operator=(SparseTypelessRange&& rhs)
 	{
-		data = rhs.data; first_free = rhs.first_free; node_size = rhs.node_size;
-		rhs.data = null; rhs.first_free = empty_index(); rhs.node_size = 0;
+		mData = rhs.mData;
+		mFirstFree = rhs.mFirstFree;
+		mNodeSize = rhs.mNodeSize;
+		rhs.mData = null;
+		rhs.mFirstFree = empty_index();
+		rhs.mNodeSize = 0;
 		return *this;
 	}
 
@@ -133,29 +147,29 @@ template<typename Index> struct SparseTypelessRange
 
 
 	//! Удалить все элементы массива
-	void Clear() {first_free = empty_index();}
+	void Clear() {mFirstFree = empty_index();}
 
 
-	void MakeNull() {Clear(); data=null;}
+	void MakeNull() {Clear(); mData=null;}
 
 	//! Доступ по индексу следует использовать только тогда, когда точно известно, что элемент с этим индексом не был удалён.
-	byte* operator[](Index index) {return data.Begin+index*node_size;}
-	const byte* operator[](Index index) const {return data.Begin+index*node_size;}
+	byte* operator[](Index index) {return mData[index*mNodeSize];}
+	const byte* operator[](Index index) const {return mData[index*mNodeSize];}
 
 	//! Возвращает, заполнен ли массив.
 	//! Это означает, что массив не содержит свободных элементов,
 	//! и следующая вставка элемента приведёт к перераспределению памяти.
-	bool IsFull() const {return first_free = end_index();}
+	bool IsFull() const {return mFirstFree = end_index();}
 
 
 	//! Возвращает, пуст ли этот разреженный массив.
-	bool Empty() const {return first_free = empty_index();}
+	bool Empty() const {return mFirstFree = empty_index();}
 
-	Index Capacity() const {return Index(data.Length()/node_size);}
+	Index Capacity() const {return Index(mData.Length()/mNodeSize);}
 
 
 	//! Возвращает битовое поле, каждый бит которого обозначает, существует ли элемент по соответствующему индексу или нет.
-	Array<flag32> DeadBitfield() const;
+	FixedArray<flag32> DeadBitfield() const;
 
 	//! Переместить этот разреженный массив в другой разреженный массив не меньшего размера.
 	void MoveTo(SparseTypelessRange& rhs);
@@ -163,15 +177,15 @@ template<typename Index> struct SparseTypelessRange
 	//! Возвращает диапазон, содержащий элементы разреженного массива.
 	//! Этот буфер безопасно использовать только в том случае, когда разреженный массив пуст, то есть выполняется Empty().
 	//! В этом случае добавление нового элемента в разреженный массив перезапишет все данные в этом буфере.
-	Span<byte> GetInternalDataBuffer() {return data;}
+	Span<byte> GetInternalDataBuffer() {return mData;}
 
 	bool operator==(null_t) const {return Empty();}
 	bool operator!=(null_t) const {return !Empty();}
 
 private:
-	Span<byte> data;
-	Index first_free;
-	size_t node_size;
+	Span<byte> mData;
+	Index mFirstFree;
+	size_t mNodeSize;
 
 	byte* append_first_free(Index* oIndex);
 	void init_free_list();

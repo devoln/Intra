@@ -28,8 +28,8 @@ template<typename T> class Array
 public:
 	Array(null_t=null): buffer(null), range(null) {}
 
-	explicit Array(size_t initialCapacity):
-		buffer(null), range(null) {Reserve(initialCapacity);}
+	//explicit Array(size_t initialCapacity):
+		//buffer(null), range(null) {Reserve(initialCapacity);}
 
 	Array(InitializerList<T> values):
 		Array(CSpan<T>(values)) {}

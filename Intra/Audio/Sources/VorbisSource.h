@@ -42,7 +42,7 @@ public:
 	size_t GetInterleavedSamples(Span<short> outShorts) override;
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
 	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
-	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
+	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* outType, bool* outInterleaved, size_t* outSamplesRead) override;
 };
 

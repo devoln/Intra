@@ -14,7 +14,7 @@ template<typename A, typename Sync> struct ASynchronized: A
 	ASynchronized() = default;
 	ASynchronized(A&& allocator): A(Cpp::Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{
 		mSync.Lock();
 		auto result = A::Allocate(bytes, sourceInfo);

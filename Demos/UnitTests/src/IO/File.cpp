@@ -18,11 +18,12 @@ using namespace Range;
 
 void TestFileSyncIO(FormattedWriter& output)
 {
-	OS.FileOpenOverwrite("TestFileSyncIO.txt")
-		.PrintLine("Fibonacci sequence: ", Take(Recurrence([](int a, int b) {return a+b;}, 1, 1), 10))
+	auto file111 = OS.FileOpenOverwrite("TestFileSyncIO.txt", Error::Skip());
+		file111.PrintLine("Fibonacci sequence: ", Take(Recurrence([](int a, int b) {return a+b;}, 1, 1), 10))
 		.PrintLine("Closing file.");
+	file111 = null;
 
-	String fileContents = OS.FileOpen("TestFileSyncIO.txt");
+	const String fileContents = OS.FileOpen("TestFileSyncIO.txt", Error::Skip());
 	output.PrintLine("Written file contents:")
 		.PrintLine(fileContents);
 
@@ -35,47 +36,47 @@ void TestFileSyncIO(FormattedWriter& output)
 		"[54, 13]");
 
 	INTRA_ASSERT_EQUALS(
-		StringOf(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine<String>(), &String::Length)),
+		StringOf(Map(OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine<String>(), &String::Length)),
 		"[54, 13]");
 
 
 	char buf[100];
 	INTRA_ASSERT_EQUALS(
-		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(buf), &StringView::Length)),
+		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(buf), &StringView::Length)),
 		"[54, 13]");
 
 	char smallBuf[10];
 	INTRA_ASSERT_EQUALS(
-		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt").ByLine(smallBuf), &StringView::Length)),
+		StringOfConsume(Map(OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(smallBuf), &StringView::Length)),
 		"[10, 10, 10, 10, 10, 4, 10, 3]");
 
 	size_t sumLength = 0;
-	for(auto str: OS.FileOpen("TestFileSyncIO.txt").ByLine(buf))
+	for(auto str: OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(buf))
 		sumLength += str.Length();
 	INTRA_ASSERT_EQUALS(sumLength, 67);
 
 	sumLength = 0;
-	for(auto str: OS.FileOpen("TestFileSyncIO.txt").ByLine(buf, Tags::KeepTerminator))
+	for(auto str: OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(buf, Tags::KeepTerminator))
 		sumLength += str.Length();
 	INTRA_ASSERT_EQUALS(sumLength, 71);
 
-	HtmlWriter(OS.FileOpenAppend("TestFileSyncIO.txt"))
+	HtmlWriter(OS.FileOpenAppend("TestFileSyncIO.txt", Error::Skip()))
 		.PushFont({0, 0.5f, 0}, 4, true)
 		.PrintLine("Зелёный текст")
 		.PopFont();
 
-	StringView htmlString = AtIndex(OS.FileOpen("TestFileSyncIO.txt").ByLine(buf), 2);
+	StringView htmlString = AtIndex(OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(buf), 2);
 	INTRA_ASSERT(StartsWith(htmlString, "<font color"));
 	INTRA_ASSERT(Contains(htmlString, "Зелёный текст"));
 
-	FileReader file = OS.FileOpen("TestFileSyncIO.txt");
+	FileReader file = OS.FileOpen("TestFileSyncIO.txt", Error::Skip());
 	uint value = file.ReadRaw<uintLE>();
 	INTRA_ASSERT_EQUALS(char(value & 255), 'F');
 	INTRA_ASSERT_EQUALS(char((value >> 8) & 255), 'i');
 	INTRA_ASSERT_EQUALS(char((value >> 16) & 255), 'b');
 	INTRA_ASSERT_EQUALS(char((value >> 24) & 255), 'o');
 
-	value = OS.FileOpen("TestFileSyncIO.txt").ReadRaw<uintBE>(); //Читаем беззнаковое число в порядке байт big-endian
+	value = OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ReadRaw<uintBE>(); //Читаем беззнаковое число в порядке байт big-endian
 	INTRA_ASSERT_EQUALS(char(value & 255), 'o');
 	INTRA_ASSERT_EQUALS(char((value >> 8) & 255), 'b');
 	INTRA_ASSERT_EQUALS(char((value >> 16) & 255), 'i');

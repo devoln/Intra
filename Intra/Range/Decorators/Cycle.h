@@ -35,7 +35,10 @@ template<typename R> struct RCycle
 	}
 
 	forceinline bool operator==(const RCycle& rhs) const
-	{return mOffsetRange==rhs.mOffsetRange && mOriginalRange==rhs.mOriginalRange;}
+	{
+		return mOffsetRange == rhs.mOffsetRange &&
+			mOriginalRange == rhs.mOriginalRange;
+	}
 
 private:
 	R mOriginalRange, mOffsetRange;
@@ -57,14 +60,19 @@ template<typename R> struct RCycleRandom
 	forceinline void PopFirst()
 	{
 		mCounter++;
-		if(mCounter==mOriginalRange.Length()) mCounter=0;
+		if(mCounter == mOriginalRange.Length()) mCounter=0;
 	}
 
 	forceinline Concepts::ReturnValueTypeOf<R> operator[](size_t index) const
-	{return mOriginalRange[(index+mCounter) % mOriginalRange.Length()];}
+	{
+		return mOriginalRange[(index+mCounter) % mOriginalRange.Length()];
+	}
 
 	forceinline bool operator==(const RCycleRandom& rhs) const
-	{return mOriginalRange==rhs.mOriginalRange && mCounter==rhs.mCounter;}
+	{
+		return mOriginalRange == rhs.mOriginalRange &&
+			mCounter == rhs.mCounter;
+	}
 
 	forceinline RTake<RCycleRandom<R>> operator()(size_t startIndex, size_t endIndex) const
 	{
@@ -79,19 +87,19 @@ private:
 	size_t mCounter;
 };
 
-template<typename R> forceinline Meta::EnableIf<
-	Concepts::IsAsInfiniteRange<R>::_,
-Concepts::RangeOfType<R&&>> Cycle(R&& range) {return Range::Forward<R>(range);}
+template<typename R, typename AsR = Concepts::RangeOfType<R&&>> forceinline Meta::EnableIf<
+	Concepts::IsInfiniteRange<AsR>::_,
+AsR> Cycle(R&& range) {return Range::Forward<R>(range);}
 
-template<typename R> forceinline Meta::EnableIf<
-	Concepts::IsAsNonInfiniteForwardRange<R>::_ &&
-	!Concepts::IsAsRandomAccessRange<R>::_,
-RCycle<Meta::RemoveConstRef<Concepts::RangeOfType<R>>>> Cycle(R&& range)
+template<typename R, typename AsR = Concepts::RangeOfTypeNoCRef<R>> forceinline Meta::EnableIf<
+	Concepts::IsNonInfiniteForwardRange<AsR>::_ &&
+	!Concepts::IsRandomAccessRange<AsR>::_,
+RCycle<AsR>> Cycle(R&& range)
 {return Range::Forward<R>(range);}
 
-template<typename R> forceinline Meta::EnableIf<
-	Concepts::IsAsNonInfiniteRandomAccessRange<R>::_,
-RCycleRandom<Meta::RemoveConstRef<Concepts::RangeOfType<R>>>> Cycle(R&& range)
+template<typename R, typename AsR = Concepts::RangeOfTypeNoCRef<R>> forceinline Meta::EnableIf<
+	Concepts::IsNonInfiniteRandomAccessRange<AsR>::_,
+RCycleRandom<AsR>> Cycle(R&& range)
 {return Range::Forward<R>(range);}
 
 INTRA_WARNING_POP

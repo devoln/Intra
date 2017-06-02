@@ -1,12 +1,19 @@
 ﻿#pragma once
 
+#include "Cpp/Warnings.h"
+
+#include "Meta/Pair.h"
+
 #include "Utils/Op.h"
-#include "Range/Sort/Insertion.h"
-#include "Range/Sort/Heap.h"
+#include "Utils/Span.h"
+
 #include "Concepts/Array.h"
 #include "Concepts/Range.h"
-#include "Utils/Span.h"
-#include "Meta/Pair.h"
+
+#include "Range/Sort/Insertion.h"
+#include "Range/Sort/Heap.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Range {
 
@@ -156,3 +163,5 @@ template<typename R> Meta::EnableIf<
 }
 
 }}
+
+INTRA_WARNING_POP

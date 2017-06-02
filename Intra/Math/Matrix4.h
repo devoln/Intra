@@ -176,7 +176,7 @@ template<typename T> struct Matrix4
 	//! Извлекает поворот из текущей матрицы.
 	//! Предполагает, что строки матрицы ортогональны и что матрица представляет собой композицию поворота, масштабирования и переноса.
 	//! Возвращает 4x4 матрицу, содержащую только поворот.
-	INTRA_MATH_CONSTEXPR Matrix4 ExtractRotation3() const
+	Matrix4 ExtractRotation3() const
 	{
 		return {
 			Vector4<T>{Normalize(Rows[0].xyz), 0},
@@ -188,7 +188,7 @@ template<typename T> struct Matrix4
 
 	//! Извлекает поворот из текущей матрицы.
 	//! Предполагает, что строки матрицы ортогональны и что матрица представляет собой композицию поворота, масштабирования и переноса.
-	INTRA_MATH_CONSTEXPR Matrix3<T> ExtractRotationMat3() const
+	Matrix3<T> ExtractRotationMat3() const
 	{
 		return {
 			Normalize(Rows[0].xyz),
@@ -206,7 +206,7 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	INTRA_MATH_CONSTEXPR Vector3<T> ExtractScaleVector() const noexcept
+	Vector3<T> ExtractScaleVector() const noexcept
 	{
 		return {
 			Length(Rows[0].xyz),
@@ -265,7 +265,7 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreatePerspective(T fovy, T znear, T zfar, T aspectRatio)
+	static Matrix4 CreatePerspective(T fovy, T znear, T zfar, T aspectRatio)
 	{
 		const T f = T(1) / T(Tan(fovy/360*PI));
 		return {
@@ -276,7 +276,7 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	INTRA_MATH_CONSTEXPR forceinline T ExtractPerspectiveFovY() const
+	forceinline T ExtractPerspectiveFovY() const
 	{return T(Atan(T(1) / Rows[1].y)*(360/PI));}
 
 	constexpr forceinline T ExtractPerspectiveAspectRatio() const
@@ -302,7 +302,7 @@ template<typename T> struct Matrix4
 	//! @param eye Положение наблюдателя.
 	//! @param center Точка, в которую смотрит наблюдатель.
 	//! @param up Направление вектора "вверх".
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
+	static Matrix4 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
 	{
 		const Vector3<T> f = Normalize(center - eye);
 		Vector3<T> u = Normalize(up);
@@ -317,10 +317,10 @@ template<typename T> struct Matrix4
 		};
 	}
 
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateRotation(T angle, const Vector3<T>& axis)
+	static Matrix4 CreateRotation(T angle, const Vector3<T>& axis)
 	{return Matrix4(Matrix3<T>::CreateRotation3(angle, axis));}
 	
-	static INTRA_MATH_EXTENDED_CONSTEXPR Matrix4 CreateRotationEuler(T rotX, T rotY, T rotZ)
+	static Matrix4 CreateRotationEuler(T rotX, T rotY, T rotZ)
 	{return Matrix4(Matrix3<T>::RotationEuler(rotX, rotY, rotZ));}
 
 	static constexpr forceinline Matrix4 CreateScaling(const Vector3<T>& scale) noexcept
@@ -387,7 +387,7 @@ template<typename T> constexpr Matrix4<T> Transpose(const Matrix4<T>& m) noexcep
 
 template<typename T> struct Plane;
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Matrix4<T> Reflect(const Matrix4<T>& m, const Plane<T>& plane)
+template<typename T> Matrix4<T> ReflectPlane(const Plane<T>& plane)
 {
 	const auto p = Normalize(plane);
 	return {

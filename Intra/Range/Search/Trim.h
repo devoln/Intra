@@ -1,7 +1,8 @@
 ﻿#pragma once
 
-#include "Concepts/Range.h"
 #include "Cpp/Warnings.h"
+#include "Concepts/Range.h"
+#include "Concepts/RangeOf.h"
 
 namespace Intra { namespace Range {
 

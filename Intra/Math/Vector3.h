@@ -4,6 +4,7 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
 #include "Cpp/InfNan.h"
+
 #include "Math/Math.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -132,6 +133,8 @@ template<typename T> struct Vector3
 
 	union
 	{
+INTRA_WARNING_PUSH
+INTRA_WARNING_DISABLE_PEDANTIC
 		struct
 		{
 			T x;
@@ -141,6 +144,7 @@ template<typename T> struct Vector3
 				Vector2<T> yz;
 			};
 		};
+INTRA_WARNING_POP
 		Vector2<T> xy;
 	};
 };
@@ -148,7 +152,7 @@ template<typename T> struct Vector3
 template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs==NaN;}
 template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs!=NaN;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> ClosestPointOnLine(
+template<typename T> Vector3<T> ClosestPointOnLine(
 	const Vector3<T>& pt, const Vector3<T>& lineA, const Vector3<T>& lineB)
 {
 	const Vector3<T> AB = Normalize(lineB - lineA);
@@ -174,20 +178,20 @@ template<typename T> constexpr forceinline Vector3<T> operator*(T n, const Vecto
 
 template<typename T> constexpr T Dot(const Vector3<T>& l, const Vector3<T>& r) {return l.x*r.x + l.y*r.y + l.z*r.z;}
 
-template<typename T> constexpr forceinline T LengthSqr(const Vector3<T>& v) {return Dot(v,v);}
-template<typename T> INTRA_MATH_CONSTEXPR T Length(const Vector3<T>& v) {return Sqrt(Dot(v,v));}
+template<typename T> constexpr forceinline T LengthSqr(const Vector3<T>& v) {return Dot(v, v);}
+template<typename T> T Length(const Vector3<T>& v) {return Sqrt(Dot(v, v));}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Distance(const Vector3<T>& l, const Vector3<T>& r) {return Length(l-r);}
+template<typename T> T Distance(const Vector3<T>& l, const Vector3<T>& r) {return Length(l - r);}
 
 template<typename T> constexpr forceinline T DistanceSqr(const Vector3<T>& l, const Vector3<T>& r) noexcept {return LengthSqr(l-r);}
 
 
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Normalize(const Vector3<T>& v) {return v/Length(v);}
+template<typename T> Vector3<T> Normalize(const Vector3<T>& v) {return v/Length(v);}
 
 template<typename T> constexpr Vector3<T> Reflect(const Vector3<T>& incident, const Vector3<T>& normal) {return incident - 2*Dot(incident, normal)*normal;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> Refract(const Vector3<T>& I, const Vector3<T>& N, float eta)
+template<typename T> Vector3<T> Refract(const Vector3<T>& I, const Vector3<T>& N, float eta)
 {
 	const T NI = Dot(N,I);
 	const T k = 1.0 - eta*eta * (1.0 - NI*NI);
@@ -207,21 +211,21 @@ template<typename T> constexpr Vector3<T> Cross(const Vector3<T>& v1, const Vect
 	};
 }
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Floor(const Vector3<T>& v)
+template<typename T> Vector3<T> Floor(const Vector3<T>& v)
 {return {Floor(v.x), Floor(v.y), Floor(v.z)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Ceil(const Vector3<T>& v)
+template<typename T> Vector3<T> Ceil(const Vector3<T>& v)
 {return {Ceil(v.x), Ceil(v.y), Ceil(v.z)};}
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Fract(const Vector3<T>& v)
+template<typename T> Vector3<T> Fract(const Vector3<T>& v)
 {return {Fract(v.x), Fract(v.y), Fract(v.z)};}
 
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Round(const Vector3<T>& val)
+template<typename T> Vector3<T> Round(const Vector3<T>& val)
 {return {Round(val.x), Round(val.y), Round(val.z)};}
 
 
-template<typename T> INTRA_MATH_CONSTEXPR Vector3<T> Exp(const Vector3<T>& v)
+template<typename T> Vector3<T> Exp(const Vector3<T>& v)
 {return {T(Exp(v.x)), T(Exp(v.y)), T(Exp(v.z))};}
 
 template<typename T> constexpr Vector3<T> Step(const Vector3<T>& edge, const Vector3<T>& value)
@@ -251,11 +255,11 @@ template<typename T> constexpr Vector3<T> Abs(const Vector3<T>& v)
 
 namespace GLSL {
 template<typename T> constexpr forceinline T dot(const Vector3<T>& l, const Vector3<T>& r) {return Dot(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T length(const Vector3<T>& v) {return Length(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T distance(const Vector3<T>& l, const Vector3<T>& r) {return Distance(l, r);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline Vector3<T> normalize(const Vector3<T>& v) {return Normalize(v);}
+template<typename T> forceinline T length(const Vector3<T>& v) {return Length(v);}
+template<typename T> forceinline T distance(const Vector3<T>& l, const Vector3<T>& r) {return Distance(l, r);}
+template<typename T> forceinline Vector3<T> normalize(const Vector3<T>& v) {return Normalize(v);}
 template<typename T> constexpr forceinline Vector3<T> reflect(const Vector3<T>& incident, const Vector3<T>& normal) {return Reflect(incident, normal);}
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR forceinline Vector3<T> refract(const Vector3<T>& I, const Vector3<T>& N, float eta) {return Refract(I, N, eta);}
+template<typename T> forceinline Vector3<T> refract(const Vector3<T>& I, const Vector3<T>& N, float eta) {return Refract(I, N, eta);}
 template<typename T> constexpr forceinline Vector3<T> faceforward(const Vector3<T>& N, const Vector3<T>& I, const Vector3<T>& Nref) {return FaceForward(N, I, Nref);}
 template<typename T> constexpr forceinline Vector3<T> cross(const Vector3<T>& v1, const Vector3<T>& v2) {return Cross(v1, v2);}
 }

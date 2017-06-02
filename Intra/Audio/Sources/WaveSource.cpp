@@ -1,12 +1,15 @@
 ﻿#include "Audio/Sources/WaveSource.h"
+
 #include "Math/Math.h"
+
 #include "Cpp/Intrinsics.h"
 #include "Cpp/Warnings.h"
 #include "Cpp/Endianess.h"
 
-namespace Intra { namespace Audio { namespace Sources {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio { namespace Sources {
 
 #ifndef INTRA_NO_WAVE_LOADER
 
@@ -62,7 +65,7 @@ size_t WaveSource::GetInterleavedSamples(Span<float> outFloats)
 	outShorts.SetCountUninitialized(outFloats.Length());
 	auto result = GetInterleavedSamples(outShorts);
 	for(size_t i=0; i<outFloats.Length(); i++)
-		outFloats[i] = (outShorts[i]+0.5f)/32767.5f;
+		outFloats[i] = (outShorts[i] + 0.5f) / 32767.5f;
 	return result;
 }
 
@@ -75,26 +78,25 @@ size_t WaveSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 		INTRA_DEBUG_ASSERT(outFloats[i].Length()==outSamplesCount);
 	}
 
-	Array<float> outShorts;
+	Array<short> outShorts;
 	outShorts.SetCountUninitialized(outSamplesCount*mChannelCount);
 	auto result = GetInterleavedSamples(outShorts);
 	for(size_t i=0, j=0; i<outShorts.Count(); i++)
 	{
 		for(ushort c=0; c<mChannelCount; c++)
-			outFloats[c][i] = (outShorts[j++]+0.5f)/32767.5f;
+			outFloats[c][i] = (outShorts[j++] + 0.5f)/32767.5f;
 	}
 	return result;
 }
 
-Array<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
+FixedArray<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
 	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
-	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount-mCurrentDataPos);
-	if(oSamplesRead!=null) *oSamplesRead = shortsToRead/mChannelCount;
-	if(oInterleaved!=null) *oInterleaved = true;
-	if(oType!=null) *oType = Data::ValueType::Short;
-	Array<const void*> resultPtrs;
-	resultPtrs.AddLast(mData.Begin+mCurrentDataPos);
+	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount - mCurrentDataPos);
+	if(oSamplesRead) *oSamplesRead = shortsToRead/mChannelCount;
+	if(oInterleaved) *oInterleaved = true;
+	if(oType) *oType = Data::ValueType::Short;
+	FixedArray<const void*> resultPtrs = {mData.Begin + mCurrentDataPos};
 	mCurrentDataPos += shortsToRead;
 	if(shortsToRead<maxSamplesToRead) mCurrentDataPos = 0;
 	return resultPtrs;
@@ -106,6 +108,6 @@ INTRA_DISABLE_LNK4221
 
 #endif
 
-INTRA_WARNING_POP
-
 }}}
+
+INTRA_WARNING_POP

@@ -7,9 +7,12 @@
 #include "Audio/Sources/WaveSource.h"
 #include "Audio/Sources/VorbisSource.h"
 #include "Audio/Sources/MusicSynthSource.h"
+
 #include "Range/Comparison/StartsWith.h"
 #include "Range/Search/Single.h"
+
 #include "Cpp/Warnings.h"
+
 #include "IO/FileSystem.h"
 
 
@@ -63,7 +66,8 @@ void Sound::Release()
 {
 	if(mData==null) return;
 	Sound::all_existing_sounds.FindAndRemoveUnordered(this);
-	while(!mInstances.Empty()) mInstances.Last()->Release(true);
+	while(!mInstances.Empty())
+		mInstances.Last()->Release(true);
 	SoundAPI::BufferDelete(mData);
 	mData = null;
 	mInfo = SoundInfo();
@@ -85,9 +89,9 @@ Sound& Sound::operator=(Sound&& rhs)
 	return *this;
 }
 
-Sound Sound::FromFile(StringView fileName)
+Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 {
-	auto fileMapping = OS.MapFile(fileName);
+	auto fileMapping = OS.MapFile(fileName, status);
 	if(fileMapping==null) return null;
 
 	auto fileSignature = fileMapping.AsRangeOf<char>();
@@ -102,14 +106,17 @@ Sound Sound::FromFile(StringView fileName)
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileSignature.StartsWith("OggS"))
 		source = new Sources::VorbisSource(fileData);
-	else 
+	else
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileSignature.StartsWith("MThd"))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), SoundAPI::InternalSampleRate());
+		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), SoundAPI::InternalSampleRate());
 	else
 #endif
+	{
+		status.Error("Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);
 		return null;
+	}
 
 	return FromSource(source.Ptr());
 }
@@ -227,11 +234,11 @@ StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples, OnClos
 	register_instance();
 }
 
-StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
+StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, ErrorStatus& status)
 {
-	auto fileMapping = OS.MapFile(fileName);
-	if(fileMapping==null) return null;
-	SourceRef source=null;
+	auto fileMapping = OS.MapFile(fileName, status);
+	if(status.WasError()) return null;
+	SourceRef source = null;
 #ifndef INTRA_NO_WAVE_LOADER
 	if(fileMapping.AsRangeOf<char>().StartsWith("RIFF"))
 		source = new Sources::WaveSource(fileMapping.AsRange());
@@ -244,10 +251,13 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileMapping.AsRangeOf<char>().StartsWith("MThd"))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange()), 48000);
+		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), 48000);
 	else
 #endif
+	{
+		status.Error("Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);
 		return null;
+	}
 
 	return StreamedSound(Cpp::Move(source), bufSize,
 		StreamedSound::OnCloseCallback(new FileMapping(Cpp::Move(fileMapping)),
@@ -260,8 +270,8 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize)
 
 void StreamedSound::release()
 {
-	if(mOnClose!=null) mOnClose();
-	if(mData==null) return;
+	if(mOnClose != null) mOnClose();
+	if(mData == null) return;
 	unregister_instance();
 	SoundAPI::StreamedBufferDelete(mData);
 }

@@ -5,13 +5,14 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
-void FormattedLogger::Log(LogLevel level, StringView msg, SourceInfo srcInfo)
+void FormattedLogger::Log(LogLevel level, StringView msg, const Utils::SourceInfo& srcInfo)
 {
 	if(level<Verbosity) return;
 	Math::Vec3 color;
 	switch(level)
 	{
 	case LogLevel::Info: color = InfoColor; break;
+	case LogLevel::Success: color = SuccessColor; break;
 	case LogLevel::PerfWarning: color = PerfWarningColor; break;
 	case LogLevel::Warning: color = WarningColor; break;
 	case LogLevel::Error: color = ErrorColor; break;
@@ -19,9 +20,10 @@ void FormattedLogger::Log(LogLevel level, StringView msg, SourceInfo srcInfo)
 	default: color = {0.5, 0.5, 0.5};
 	}
 	Writer.PushFont(color);
-	INTRA_DEBUG_ASSERT(level > All && level < None);
-	static const char* const names[] = {"info", "perf warning", "warning", "error", "critical error"};
-	Writer.PrintLine(srcInfo.File, '(', srcInfo.Line, ") ", names[size_t(level)-1], ": ", msg);
+	static const char* const names[] = {"INFO", "SUCCESS", "PERF WARNING", "WARNING", "ERROR", "CRITICAL ERROR"};
+	if(srcInfo != null) Writer.Print(srcInfo.File, '(', srcInfo.Line, ") ");
+	if(WriteLevelType) Writer.Print(names[size_t(level) - 1], ": ");
+	Writer.PrintLine(msg);
 	Writer.PopFont();
 }
 

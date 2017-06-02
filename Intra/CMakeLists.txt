@@ -4,9 +4,17 @@ project(Intra)
 
 include(../Configurations.cmake)
 
-include_directories(include)
+include_directories(.)
 
 init_project_sources(${CMAKE_CURRENT_SOURCE_DIR} INTRA_HEADERS INTRA_SOURCES)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Audio/CMakeLists.txt")
+option(ENABLE_AUDIO_MODULE "Compile Intra Audio module." ON)
+if(ENABLE_AUDIO_MODULE)
+else()
+exclude_project_sources_directory(/Audio/, INTRA_HEADERS INTRA_SOURCES)
+endif()
+endif()
 
 option(UNITY_BUILD "Use fast unity build." ON)
 if(UNITY_BUILD)
@@ -20,23 +28,25 @@ else()
 add_library(Intra STATIC ${INTRA_SOURCES} ${INTRA_HEADERS})
 endif()
 
-if(EXISTS "Audio/CMakeLists.txt")
-add_subdirectory(Audio)
+if(ENABLE_AUDIO_MODULE)
+include(Audio/CMakeLists.txt)
 endif()
 
-if(EXISTS "Image/CMakeLists.txt")
-add_subdirectory(Image)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Image/CMakeLists.txt")
+include(Image/CMakeLists.txt)
 endif()
 
-if(EXISTS "Concurrency/CMakeLists.txt")
-add_subdirectory(Concurrency)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Concurrency/CMakeLists.txt")
+include(Concurrency/CMakeLists.txt)
 endif()
 
-if(EXISTS "IO/CMakeLists.txt")
-add_subdirectory(IO)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/IO/CMakeLists.txt")
+include(IO/CMakeLists.txt)
 endif()
 
 
 #if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 #target_link_libraries(Intra Shlwapi)
 #endif()
+
+

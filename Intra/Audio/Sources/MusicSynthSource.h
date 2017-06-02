@@ -1,8 +1,11 @@
 ﻿#pragma once
 
+#include "Cpp/Warnings.h"
+
+#include "Utils/FixedArray.h"
+
 #include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
-#include "Cpp/Warnings.h"
 
 namespace Intra { namespace Audio { namespace Sources {
 
@@ -16,15 +19,22 @@ class MusicSynthSource: public ASoundSource
 	AudioBuffer mBuffer;
 	size_t mCurrentSamplePos, mSampleCount;
 
-	struct Position { uint samplePos; uint noteId; };
+	struct Position
+	{
+		uint samplePos;
+		uint noteId;
+	};
 
-	Array<Position> mCurrentPositions;
+	FixedArray<Position> mCurrentPositions;
 	float mMaxVolume;
 	size_t mProcessedSamplesToFlush;
 
 public:
 	MusicSynthSource(const Music& mydata, uint sampleRate=48000);
 	~MusicSynthSource() {}
+
+	MusicSynthSource(const MusicSynthSource&) = delete;
+	MusicSynthSource& operator=(const MusicSynthSource&) = delete;
 
 	size_t SampleCount() const override {return mSampleCount;}
 	size_t CurrentSamplePosition() const override {return mCurrentSamplePos; }
@@ -45,11 +55,8 @@ public:
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
 	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
 
-	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
+	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		Data::ValueType* outType, bool* outInterleaved, size_t* outSamplesRead) override;
-
-
-	MusicSynthSource& operator=(const MusicSynthSource&) = delete;
 };
 
 INTRA_WARNING_POP

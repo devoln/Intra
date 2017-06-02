@@ -2,8 +2,12 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+
 #include "Utils/StringView.h"
+#include "Utils/ErrorStatus.h"
+
 #include "Container/Sequential/String.h"
+
 #include "FileMapping.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -26,9 +30,9 @@ public:
 	virtual bool FileExists(StringView fileName) const = 0;
 	virtual bool FileDelete(StringView filename) = 0;
 	virtual bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) = 0;
-	virtual FileInfo FileGetInfo(StringView fileName) const = 0;
-	virtual ulong64 FileGetTime(StringView filename) const = 0;
-	virtual ulong64 FileGetSize(StringView filename) const = 0;
+	virtual FileInfo FileGetInfo(StringView fileName, ErrorStatus& status) const = 0;
+	virtual ulong64 FileGetTime(StringView filename, ErrorStatus& status) const = 0;
+	virtual ulong64 FileGetSize(StringView filename, ErrorStatus& status) const = 0;
 
 	virtual StringView CurrentDirectory() const = 0;
 	virtual void SetDirectory(StringView newDir) = 0;
@@ -57,13 +61,13 @@ public:
 	bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) final;
 
 	//! Возвращает информацию о файле fileName.
-	FileInfo FileGetInfo(StringView fileName) const final;
+	FileInfo FileGetInfo(StringView fileName, ErrorStatus& status) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetTime(StringView filename) const final;
+	ulong64 FileGetTime(StringView filename, ErrorStatus& status) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetSize(StringView filename) const final;
+	ulong64 FileGetSize(StringView filename, ErrorStatus& status) const final;
 
 	//! Возвращает текущую директорию, относительно которой производятся все файловые операции при указании относительного пути.
 	StringView CurrentDirectory() const final {return mCurrentDirectory;}
@@ -77,39 +81,40 @@ public:
 	//! Отобразить область файла с именем fileName в память с доступом только для чтения.
 	//! @param offset Начало отображаемой области.
 	//! @param bytes Размер отображаемой области в байтах.
-	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes)
-	{return FileMapping(GetFullFileName(fileName), offset, bytes);}
+	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
+	{return FileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
 	//! Отобразить целиком файл с именем fileName в память с доступом только для чтения.
-	FileMapping MapFile(StringView fileName)
-	{return FileMapping(GetFullFileName(fileName));}
+	FileMapping MapFile(StringView fileName, ErrorStatus& status)
+	{return FileMapping(GetFullFileName(fileName), status);}
 
 	//! Отобразить область файла с именем fileName в память с доступом для чтения и записи.
 	//! @param offset Начало отображаемой области.
 	//! @param bytes Размер отображаемой области в байтах.
-	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes)
-	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes);}
+	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
+	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
 	//! Отобразить целиком файл с именем fileName в память с доступом для чтения и записи.
-	WritableFileMapping MapFileWrite(StringView fileName)
-	{return WritableFileMapping(GetFullFileName(fileName));}
+	WritableFileMapping MapFileWrite(StringView fileName, ErrorStatus& status)
+	{return WritableFileMapping(GetFullFileName(fileName), status);}
 
 	//! Открыть файл fileName для чтения.
 	//! Если файл не существует или не удаётся открыть по другим причинам, вернёт null.
-	FileReader FileOpen(StringView fileName);
+	FileReader FileOpen(StringView fileName, ErrorStatus& status);
 
 	//! Открыть файл fileName для записи.
 	//! Если файл уже существует, запись происходит поверх данных, уже записанных в файл.
-	FileWriter FileOpenWrite(StringView fileName, ulong64 offset=0);
+	FileWriter FileOpenWrite(StringView fileName, ulong64 offset, ErrorStatus& status);
+	FileWriter FileOpenWrite(StringView fileName, ErrorStatus& status);
 
 	//! Открыть файл fileName для записи. Если файл уже существует, всё его содержимое будет стёрто.
-	FileWriter FileOpenOverwrite(StringView fileName);
+	FileWriter FileOpenOverwrite(StringView fileName, ErrorStatus& status);
 
 	//! Открыть файл fileName для записи в конец.
-	FileWriter FileOpenAppend(StringView fileName);
+	FileWriter FileOpenAppend(StringView fileName, ErrorStatus& status);
 
 	//! Прочитать файл целиком в строку.
-	String FileToString(StringView fileName);
+	String FileToString(StringView fileName, ErrorStatus& status);
 
 private:
 	String mCurrentDirectory;

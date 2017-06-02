@@ -1,4 +1,5 @@
 #include "Cpp/Warnings.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Sort.h"
 
@@ -12,7 +13,6 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
 INTRA_WARNING_POP
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 
 static const short arrayForSortTesting[] = {
@@ -71,6 +71,6 @@ void TestSort(IO::FormattedWriter& output)
 	output.PrintLine("SelectionSort'ed array: ", arrSelection);
 	INTRA_ASSERT_EQUALS(arrSelection, arrStdSort);
 	INTRA_ASSERT1(Range::IsSorted(arrSelection), arrSelection);
-};
+}
 
 INTRA_WARNING_POP

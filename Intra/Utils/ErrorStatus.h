@@ -20,7 +20,7 @@ enum class ErrorCode: byte {NoError, InvalidArguments, NotFound, OutOfMemory, Al
 class ErrorStatus
 {
 protected:
-	enum class State: byte {Ok, Error, HandledError};
+	enum class State: byte {Ok, Warning, Error, HandledError};
 	State mState = State::Ok;
 public:
 	void* operator new(size_t size) = delete;
@@ -30,14 +30,22 @@ public:
 	ErrorStatus(const ErrorStatus&) = delete;
 	ErrorStatus& operator=(const ErrorStatus&) = delete;
 
-	virtual void Error(StringView msg, SourceInfo srcInfo=null)
+	virtual void Error(StringView msg, SourceInfo srcInfo = null)
 	{
 		mState = State::Error;
 		(void)msg;
 		(void)srcInfo;
 	}
 
+	virtual void Warning(StringView msg, SourceInfo srcInfo = null)
+	{
+		if(mState == State::Ok) mState = State::Warning;
+		(void)msg;
+		(void)srcInfo;
+	}
+
 	forceinline bool WasError() const noexcept {return mState >= State::Error;}
+	forceinline bool WasUnhandledError() const noexcept {return mState == State::Error;}
 
 	forceinline bool Handle() noexcept
 	{
@@ -47,13 +55,14 @@ public:
 	}
 };
 
-//! См. Error::Skip.
+//! См. Error::Skip().
 class SkipErrorStatus: public ErrorStatus
 {
 public:
 	SkipErrorStatus() {}
 	SkipErrorStatus(SkipErrorStatus&&) {}
 	void Error(StringView, SourceInfo) override {}
+	void Warning(StringView, SourceInfo) override {}
 };
 
 //! Сохраняет всю информацию о произошедшей ошибке.
@@ -66,21 +75,27 @@ public:
 
 	~FatalErrorStatus() noexcept
 	{
-		FatalErrorMessageAbort(mSrcInfo, CSpanOf(mMsg));
+		if(mState != State::Error) return;
+		FatalErrorMessageAbort(null, mMsg, false);
 	}
 
 	void Error(StringView msg, SourceInfo srcInfo) override
 	{
 		mState = State::Error;
-		mSrcInfo = srcInfo;
-		mMsg.SetCount(msg.Length());
-		msg.CopyTo(mMsg);
+		mMsg = BuildAppendDiagnosticMessage(mMsg, "ERROR",
+			StringView(srcInfo.Function), StringView(srcInfo.File), srcInfo.Line, msg);
 	}
 
-	forceinline SourceInfo ErrorSourceInfo() const noexcept {return mSrcInfo;}
+	void Warning(StringView msg, SourceInfo srcInfo) override
+	{
+		if(mState < State::Warning) mState = State::Warning;
+		mMsg = BuildAppendDiagnosticMessage(mMsg, "WARNING",
+			StringView(srcInfo.Function), StringView(srcInfo.File), srcInfo.Line, msg);
+	}
+
+	StringView GetLog() const {return mMsg;}
 
 private:
-	SourceInfo mSrcInfo = {null, null, 0};
 	FixedArray<char> mMsg;
 };
 
@@ -93,7 +108,12 @@ namespace Error {
 //! Игнорирует все ошибки. Даже в случае ошибки WasError вернёт false.
 //! Применяется в случае, когда неуспешно выполненную операцию не нужно трактовать как ошибку,
 //! а нужно использовать поведение по умолчанию.
-inline Utils::SkipErrorStatus Skip() {return Utils::SkipErrorStatus();}
+inline Utils::SkipErrorStatus& Skip()
+{
+	static Utils::SkipErrorStatus result;
+	return result;
+}
+
 }
 
 }

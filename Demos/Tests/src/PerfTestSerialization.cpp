@@ -8,7 +8,7 @@
 #include "Preprocessor/Preprocessor.h"
 #include "Data/Serialization.hh"
 #include "Data/Reflection.h"
-#include "Platform/Time.h"
+#include "System/Stopwatch.h"
 #include "Utils/Span.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
@@ -28,7 +28,7 @@ struct Test
 	float flt;
 	Array<String> stringArray;
 
-	INTRA_ADD_REFLECTION(Test, intArray, fixedIntArray, booleanVal, flt, stringArray);
+	INTRA_ADD_REFLECTION(Test, intArray, fixedIntArray, booleanVal, flt, stringArray)
 };
 
 struct SuperTest
@@ -42,7 +42,7 @@ struct SuperTest
 	ushort bar;
 	Meta::Tuple<int, float, String> tuple;
 
-	INTRA_ADD_REFLECTION(SuperTest, strArr, foo, str, vals, dbl, tests, bar, tuple);
+	INTRA_ADD_REFLECTION(SuperTest, strArr, foo, str, vals, dbl, tests, bar, tuple)
 };
 
 
@@ -70,7 +70,7 @@ struct TestRef
 	float flt;
 	Array<StringView> stringArray;
 
-	INTRA_ADD_REFLECTION(TestRef, intArray, fixedIntArray, booleanVal, flt, stringArray);
+	INTRA_ADD_REFLECTION(TestRef, intArray, fixedIntArray, booleanVal, flt, stringArray)
 };
 
 struct SuperTestRef
@@ -104,7 +104,7 @@ struct SuperTestRef
 	ushort bar;
 	Meta::Tuple<int, float, StringView> tuple;
 
-	INTRA_ADD_REFLECTION(SuperTestRef, strArr, foo, str, vals, dbl, tests, bar, tuple);
+	INTRA_ADD_REFLECTION(SuperTestRef, strArr, foo, str, vals, dbl, tests, bar, tuple)
 };
 
 
@@ -196,13 +196,13 @@ double TestTextDeserialization(size_t times,
 		Std.LineBreak();
 	}
 
-	Timer tim;
+	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
 	{
 		deserializer.ResetStream(StringView(ser.Output.GetWrittenData()));
 		deserializer.Deserialize<SuperTest>();
 	}
-	return tim.GetTime();
+	return tim.ElapsedSeconds();
 }
 
 
@@ -211,13 +211,13 @@ double TestBinarySerialization(size_t times)
 {
 	byte buf[1000];
 	Data::BinarySerializer binser(buf);
-	Timer tim;
+	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
 	{
 		binser << g_SuperTest;
 		binser.Output.Reset();
 	}
-	return tim.GetTime();
+	return tim.ElapsedSeconds();
 }
 
 double TestTextSerialization(FormattedWriter& logger, StringView desc, size_t times,
@@ -225,13 +225,13 @@ double TestTextSerialization(FormattedWriter& logger, StringView desc, size_t ti
 {
 	char buf[1000];
 	Data::TextSerializer ser(lang, params, Span<char>(buf));
-	Timer tim;
+	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
 	{
 		ser.ResetOutput(Span<char>(buf));
 		ser << g_SuperTest;
 	}
-	double result = tim.GetTime();
+	double result = tim.ElapsedSeconds();
 	logger.BeginSpoiler("Serialization result to " + desc);
 	logger.PrintCode(ser.Output.GetWrittenData());
 	logger.EndSpoiler();
@@ -246,13 +246,13 @@ double TestBinaryDeserialization(size_t times)
 
 	Data::BinaryDeserializer bindeser(binser.Output.GetWrittenData());
 	SuperTest newTest;
-	Timer tim;
+	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
 	{
 		bindeser.Input = binser.Output.GetWrittenData();
 		bindeser >> newTest;
 	}
-	return tim.GetTime();
+	return tim.ElapsedSeconds();
 }
 
 double TestBinaryRefDeserialization(size_t times)
@@ -263,13 +263,13 @@ double TestBinaryRefDeserialization(size_t times)
 
 	Data::BinaryDeserializer bindeser(binser.Output.GetWrittenData());
 	SuperTestRef newTest;
-	Timer tim;
+	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
 	{
 		bindeser.Input = binser.Output.GetWrittenData();
 		bindeser >> newTest;
 	}
-	return tim.GetTime();
+	return tim.ElapsedSeconds();
 }
 
 
@@ -339,6 +339,7 @@ void RunSerializationPerfTests(FormattedWriter& output)
 
 	if(TestGroup gr{"Text deserialization"})
 	{
+		TestTextDeserialization(1, Data::LanguageParams::Xml, Data::TextSerializerParams::Verbose);
 		PrintPerformanceResults(output, "Deserializing struct 100000 times",
 			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
 			{

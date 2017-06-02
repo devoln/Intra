@@ -14,20 +14,10 @@
 
 
 #if((defined(__clang__) || defined(__GNUC__)) && !defined(INTRA_CRT_MATH) && defined(INTRA_CONSTEXPR_SUPPORT))
-#define INTRA_MATH_CONSTEXPR_SUPPORT
-
-#define INTRA_MATH_CONSTEXPR constexpr
-
-#ifdef INTRA_EXTENDED_CONSTEXPR_SUPPORT
-#define INTRA_MATH_EXTENDED_CONSTEXPR constexpr
-#else
-#define INTRA_MATH_EXTENDED_CONSTEXPR
+#include <cmath>
 #endif
 
-#else
-#define INTRA_MATH_CONSTEXPR
-#define INTRA_MATH_EXTENDED_CONSTEXPR
-#endif
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Math {
 
@@ -37,22 +27,20 @@ constexpr const double E = 2.71828182845904523536;
 using Cpp::NaN;
 using Cpp::Infinity;
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
 template<typename T> constexpr forceinline T Sqr(T n) noexcept {return n*n;}
 template<typename T> constexpr forceinline T Abs(T v) noexcept {return v >= 0? v: -v;}
 
-template<typename T> constexpr forceinline T Min(const T& t1, const T& t2) noexcept {return t1<t2? t1: t2;}
-template<typename T> constexpr forceinline T Max(const T& t1, const T& t2) noexcept {return t1<t2? t2: t1;}
+template<typename T> constexpr forceinline T Min(const T& t1, const T& t2) noexcept {return t1 < t2? t1: t2;}
+template<typename T> constexpr forceinline T Max(const T& t1, const T& t2) noexcept {return t1 < t2? t2: t1;}
 
-template<typename T> constexpr int ISign(T x) noexcept {return (x>0)-(x<0);}
+template<typename T> constexpr int ISign(T x) noexcept {return (x > 0) - (x < 0);}
 template<typename T> constexpr T Sign(T x) noexcept {return T(ISign(x));}
 
 template<typename T, typename N, typename X>
 constexpr auto Clamp(T v, N minv, X maxv) noexcept -> decltype(Max(minv, Min(maxv, v))) {return Max(minv, Min(maxv, v));}
 
-constexpr inline int IFloor(float x) noexcept {return int(x)-int(x<0);}
-constexpr inline intptr IFloor(double x) noexcept {return intptr(x)-intptr(x<0);}
+constexpr inline int IFloor(float x) noexcept {return int(x) - int(x < 0);}
+constexpr inline intptr IFloor(double x) noexcept {return intptr(x) - intptr(x < 0);}
 
 #ifdef INTRA_CRT_MATH
 float Floor(float v);
@@ -63,8 +51,8 @@ float Round(float v);
 double Round(double v);
 
 
-inline float Fract(float x) {return x-Floor(x);}
-inline double Fract(double x) {return x-Floor(x);}
+inline float Fract(float x) {return x - Floor(x);}
+inline double Fract(double x) {return x - Floor(x);}
 
 forceinline float Exp(float v) {return ::expf(v);}
 forceinline double Exp(double v) {return ::exp(v);}
@@ -122,76 +110,77 @@ forceinline double Mod(double x, double y) {return ::fmod(x, y);}
 
 #elif defined(__clang__) || defined(__GNUC__)
 
-constexpr forceinline float Floor(float x) {return __builtin_floorf(x);}
-constexpr forceinline double Floor(double x) {return __builtin_floor(x);}
-constexpr forceinline real Floor(real x) {return __builtin_floorl(x);}
-constexpr forceinline float Ceil(float x) {return __builtin_ceilf(x);}
-constexpr forceinline double Ceil(double x) {return __builtin_ceil(x);}
-constexpr forceinline real Ceil(real x) {return __builtin_ceill(x);}
-constexpr forceinline float Round(float x) {return Floor(x+0.5f);}
-constexpr forceinline double Round(double x) {return Floor(x+0.5);}
-constexpr forceinline real Round(real x) {return Floor(x+0.5);}
+forceinline float Floor(float x) {return __builtin_floorf(x);}
+forceinline double Floor(double x) {return __builtin_floor(x);}
+forceinline real Floor(real x) {return __builtin_floorl(x);}
+forceinline float Ceil(float x) {return __builtin_ceilf(x);}
+forceinline double Ceil(double x) {return __builtin_ceil(x);}
+forceinline real Ceil(real x) {return __builtin_ceill(x);}
+forceinline float Round(float x) {return Floor(x + 0.5f);}
+forceinline double Round(double x) {return Floor(x + 0.5);}
+forceinline real Round(real x) {return Floor(x + 0.5);}
 
-constexpr forceinline float Fract(float x) {return x-Floor(x);}
-constexpr forceinline double Fract(double x) {return x-Floor(x);}
-constexpr forceinline real Fract(real x) {return x-Floor(x);}
+forceinline float Fract(float x) {return x - Floor(x);}
+forceinline double Fract(double x) {return x - Floor(x);}
+forceinline real Fract(real x) {return x - Floor(x);}
 
-constexpr forceinline float Sin(float radians) {return __builtin_sinf(radians);}
-constexpr forceinline double Sin(double radians) {return __builtin_sin(radians);}
-constexpr forceinline real Sin(real radians) {return __builtin_sinl(radians);}
-constexpr forceinline float Cos(float radians) {return __builtin_cosf(radians);}
-constexpr forceinline double Cos(double radians) {return __builtin_cos(radians);}
-constexpr forceinline real Cos(real radians) {return __builtin_cosl(radians);}
-constexpr forceinline float Tan(float radians) {return __builtin_tanf(radians);}
-constexpr forceinline double Tan(double radians) {return __builtin_tan(radians);}
-constexpr forceinline real Tan(real radians) {return __builtin_tanl(radians);}
+forceinline float Sin(float radians) {return __builtin_sinf(radians);}
+forceinline double Sin(double radians) {return __builtin_sin(radians);}
+forceinline real Sin(real radians) {return __builtin_sinl(radians);}
+forceinline float Cos(float radians) {return __builtin_cosf(radians);}
+forceinline double Cos(double radians) {return __builtin_cos(radians);}
+forceinline real Cos(real radians) {return __builtin_cosl(radians);}
+forceinline float Tan(float radians) {return __builtin_tanf(radians);}
+forceinline double Tan(double radians) {return __builtin_tan(radians);}
+forceinline real Tan(real radians) {return __builtin_tanl(radians);}
 
-constexpr forceinline float Sinh(float x) {return __builtin_sinhf(x);}
-constexpr forceinline double Sinh(double x) {return __builtin_sinh(x);}
-constexpr forceinline real Sinh(real x) {return __builtin_sinhl(x);}
-constexpr forceinline float Cosh(float x) {return __builtin_coshf(x);}
-constexpr forceinline double Cosh(double x) {return __builtin_cosh(x);}
-constexpr forceinline real Cosh(real x) {return __builtin_coshl(x);}
-constexpr forceinline float Tanh(float x) {return __builtin_tanhf(x);}
-constexpr forceinline double Tanh(double x) {return __builtin_tanhl(x);}
-constexpr forceinline real Tanh(real x) {return __builtin_tanhl(x);}
+forceinline float Sinh(float x) {return __builtin_sinhf(x);}
+forceinline double Sinh(double x) {return __builtin_sinh(x);}
+forceinline real Sinh(real x) {return __builtin_sinhl(x);}
+forceinline float Cosh(float x) {return __builtin_coshf(x);}
+forceinline double Cosh(double x) {return __builtin_cosh(x);}
+forceinline real Cosh(real x) {return __builtin_coshl(x);}
+forceinline float Tanh(float x) {return __builtin_tanhf(x);}
+forceinline double Tanh(double x) {return __builtin_tanh(x);}
+forceinline real Tanh(real x) {return __builtin_tanhl(x);}
 
-constexpr forceinline float Asin(float x) {return __builtin_asinf(x);}
-constexpr forceinline double Asin(double x) {return __builtin_asin(x);}
-constexpr forceinline real Asin(real x) {return __builtin_asinl(x);}
-constexpr forceinline float Acos(float x) {return __builtin_acosf(x);}
-constexpr forceinline double Acos(double x) {return __builtin_acos(x);}
-constexpr forceinline real Acos(real x) {return __builtin_acosl(x);}
-constexpr forceinline float Atan(float x) {return __builtin_atanf(x);}
-constexpr forceinline double Atan(double x) {return __builtin_atan(x);}
-constexpr forceinline real Atan(real x) {return __builtin_atanl(x);}
+forceinline float Asin(float x) {return __builtin_asinf(x);}
+forceinline double Asin(double x) {return __builtin_asin(x);}
+forceinline real Asin(real x) {return __builtin_asinl(x);}
+forceinline float Acos(float x) {return __builtin_acosf(x);}
+forceinline double Acos(double x) {return __builtin_acos(x);}
+forceinline real Acos(real x) {return __builtin_acosl(x);}
 
-constexpr forceinline float Atanh(float x) {return __builtin_atanhf(x);}
-constexpr forceinline double Atanh(double x) {return __builtin_atanh(x);}
-constexpr forceinline real Atanh(real x) {return __builtin_atanhl(x);}
+forceinline float Atan(float x) {return ::atanf(x);}
+forceinline double Atan(double x) {return ::atan(x);}
+forceinline real Atan(real x) {return ::atanl(x);}
 
-constexpr forceinline float Sqrt(float x) {return __builtin_sqrtf(x);}
-constexpr forceinline double Sqrt(double x) {return __builtin_sqrt(x);}
-constexpr forceinline real Sqrt(real x) {return __builtin_sqrtl(x);}
+forceinline float Atanh(float x) {return __builtin_atanhf(x);}
+forceinline double Atanh(double x) {return __builtin_atanh(x);}
+forceinline real Atanh(real x) {return __builtin_atanhl(x);}
 
-constexpr forceinline float Log(float x) {return __builtin_logf(x);}
-constexpr forceinline double Log(double x) {return __builtin_log(x);}
-constexpr forceinline real Log(real x) {return __builtin_logl(x);}
+forceinline float Sqrt(float x) {return __builtin_sqrtf(x);}
+forceinline double Sqrt(double x) {return __builtin_sqrt(x);}
+forceinline real Sqrt(real x) {return __builtin_sqrtl(x);}
 
-forceinline float Mod(float x, float y) {return __builtin_fmodf(x, y);}
-constexpr forceinline double Mod(double x, double y) {return __builtin_fmod(x, y);}
-constexpr forceinline real Mod(real x, real y) {return __builtin_fmodl(x, y);}
+forceinline float Log(float x) {return __builtin_logf(x);}
+forceinline double Log(double x) {return __builtin_log(x);}
+forceinline real Log(real x) {return __builtin_logl(x);}
 
-constexpr forceinline float Pow(float x, float power) {return __builtin_powf(x, power);}
-constexpr forceinline double Pow(double x, double power) {return __builtin_pow(x, power);}
-constexpr forceinline real Pow(real x, real power) {return __builtin_powl(x, power);}
-constexpr forceinline float Pow(float x, int power) {return __builtin_powif(x, power);}
-constexpr forceinline double Pow(double x, int power) {return __builtin_powi(x, power);}
-constexpr forceinline real Pow(real x, int power) {return __builtin_powil(x, power);}
+forceinline float Mod(float x, float y) {return x - Floor(x / y);}
+forceinline double Mod(double x, double y) {return __builtin_fmod(x, y);}
+forceinline real Mod(real x, real y) {return __builtin_fmodl(x, y);}
 
-constexpr forceinline float Exp(float x) {return __builtin_expf(x);}
-constexpr forceinline double Exp(double x) {return __builtin_exp(x);}
-constexpr forceinline real Exp(real x) {return __builtin_expl(x);}
+forceinline float Pow(float x, float power) {return __builtin_powf(x, power);}
+forceinline double Pow(double x, double power) {return __builtin_pow(x, power);}
+forceinline real Pow(real x, real power) {return __builtin_powl(x, power);}
+forceinline float Pow(float x, int power) {return __builtin_powif(x, power);}
+forceinline double Pow(double x, int power) {return __builtin_powi(x, power);}
+forceinline real Pow(real x, int power) {return __builtin_powil(x, power);}
+
+forceinline float Exp(float x) {return __builtin_expf(x);}
+forceinline double Exp(double x) {return __builtin_exp(x);}
+forceinline real Exp(real x) {return __builtin_expl(x);}
 
 #else
 
@@ -199,6 +188,10 @@ constexpr forceinline real Exp(real x) {return __builtin_expl(x);}
 #if(INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86)
 
 #if(INTRA_COMPILER_INLINE_ASM_SYNTAX == INTRA_COMPILER_INLINE_ASM_SYNTAX_INTEL)
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4725)
+#endif
 
 inline double Sin(double a)
 {
@@ -484,16 +477,17 @@ inline uint GreatestCommonDivisor(uint a, uint b)
 
 
 //Линейная интерполяция скаляров и векторов
-template<typename T, typename U> INTRA_MATH_CONSTEXPR T LinearMix(T x, T y, U factor)
+template<typename T, typename U> constexpr T LinearMix(T x, T y, U factor)
 {return T(x*(U(1) - factor) + y*factor);}
 
-template<typename T> INTRA_MATH_CONSTEXPR T Step(T edge, T value) {return T(value >= edge);}
+template<typename T> constexpr T Step(T edge, T value) {return T(value >= edge);}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR T SmoothStep(T edge0, T edge1, T value)
-{
-	const T t = Clamp((value-edge0) / (edge1-edge0), T(0), T(1));
-	return t*t*(T(3) - t*2);
+namespace D {
+template<typename T> constexpr T SmoothStep_helper(T t) {return t*t*(T(3) - t*2);}
 }
+
+template<typename T> constexpr T SmoothStep(T edge0, T edge1, T value)
+{return D::SmoothStep_helper(Clamp((value - edge0) / (edge1 - edge0), T(0), T(1)));}
 
 namespace GLSL {
 
@@ -503,37 +497,37 @@ template<typename T> constexpr forceinline T max(const T& t1, const T& t2) {retu
 template<typename T> constexpr forceinline T sign(T x) {return Sign(x);}
 template<typename T> constexpr forceinline T abs(T x) {return Abs(x);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T floor(T v) {return Floor(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T ceil(T v) {return Ceil(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T round(T v) {return Round(v);}
+template<typename T> forceinline T floor(T v) {return Floor(v);}
+template<typename T> forceinline T ceil(T v) {return Ceil(v);}
+template<typename T> forceinline T round(T v) {return Round(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T fract(T v) {return Fract(v);}
+template<typename T> forceinline T fract(T v) {return Fract(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T sin(T v) {return Sin(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T cos(T v) {return Cos(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T tan(T v) {return Tan(v);}
+template<typename T> forceinline T sin(T v) {return Sin(v);}
+template<typename T> forceinline T cos(T v) {return Cos(v);}
+template<typename T> forceinline T tan(T v) {return Tan(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T sinh(T v) {return Sinh(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T cosh(T v) {return Cosh(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T tanh(T v) {return Tanh(v);}
+template<typename T> forceinline T sinh(T v) {return Sinh(v);}
+template<typename T> forceinline T cosh(T v) {return Cosh(v);}
+template<typename T> forceinline T tanh(T v) {return Tanh(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T asin(T v) {return Asin(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T acos(T v) {return Acos(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T atan(T v) {return Atan(v);}
+template<typename T> forceinline T asin(T v) {return Asin(v);}
+template<typename T> forceinline T acos(T v) {return Acos(v);}
+template<typename T> forceinline T atan(T v) {return Atan(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T sqrt(T v) {return Sqrt(v);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T log(T v) {return Log(v);}
+template<typename T> forceinline T sqrt(T v) {return Sqrt(v);}
+template<typename T> forceinline T log(T v) {return Log(v);}
 
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T mod(T x, T y) {return Mod(x, y);}
-template<typename T> INTRA_MATH_CONSTEXPR forceinline T pow(T x, T power) {return Pow(x, power);}
+template<typename T> forceinline T mod(T x, T y) {return Mod(x, y);}
+template<typename T> forceinline T pow(T x, T power) {return Pow(x, power);}
 
-template<typename T, typename N, typename X> INTRA_MATH_CONSTEXPR forceinline
+template<typename T, typename N, typename X> constexpr forceinline
 auto clamp(T v, N minv, X maxv) -> decltype(Clamp(v, minv, maxv)) {return Clamp(v, minv, maxv);}
 
-template<typename T, typename U> INTRA_MATH_CONSTEXPR forceinline T mix(T x, T y, U factor) {return LinearMix(x, y, factor);}
+template<typename T, typename U> constexpr forceinline T mix(T x, T y, U factor) {return LinearMix(x, y, factor);}
 
-template<typename T> INTRA_MATH_CONSTEXPR T step(T edge, T value) {return Step(edge, value);}
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR T smoothstep(T edge0, T edge1, T value) {return SmoothStep(edge0, edge1, value);}
+template<typename T> constexpr T step(T edge, T value) {return Step(edge, value);}
+template<typename T> constexpr T smoothstep(T edge0, T edge1, T value) {return SmoothStep(edge0, edge1, value);}
 
 }
 
@@ -553,7 +547,7 @@ inline float frandom(int* seed = &g_frandomSeed)
 }
 #endif
 
-inline uint CeilToNextPow2(uint v)
+INTRA_EXTENDED_CONSTEXPR inline uint CeilToNextPow2(uint v)
 {
 	v--;
 	v |= v >> 1;
@@ -565,9 +559,9 @@ inline uint CeilToNextPow2(uint v)
 }
 
 //Логарифм целого числа по основанию 2, округлённый вниз
-inline byte Log2i(uint x)
+INTRA_EXTENDED_CONSTEXPR inline byte Log2i(uint x)
 {
-	if(x==0) return byte(255);
+	if(x == 0) return byte(255);
 	uint n = 31;
 	if(x <= 0x0000ffff) n -= 16, x <<= 16;
 	if(x <= 0x00ffffff) n -= 8, x <<= 8;
@@ -577,8 +571,8 @@ inline byte Log2i(uint x)
 	return byte(n);
 }
 
-forceinline constexpr bool IsPow2(size_t x) {return x != 0 && ((x & (x - 1)) == 0);}
-
-INTRA_WARNING_POP
+constexpr forceinline bool IsPow2(size_t x) {return x != 0 && ((x & (x - 1)) == 0);}
 
 }}
+
+INTRA_WARNING_POP

@@ -2,6 +2,9 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+
+#include "Utils/FixedArray.h"
+
 #include "Audio/AudioSource.h"
 
 namespace Intra { namespace Audio { namespace Sources {
@@ -23,7 +26,7 @@ public:
 	size_t GetInterleavedSamples(Span<short> outShorts) override;
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
 	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
-	Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
+	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override;
 
 	WaveSource& operator=(const WaveSource& rhs) = delete;

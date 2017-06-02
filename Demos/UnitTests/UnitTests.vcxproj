@@ -94,7 +94,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -507,12 +507,12 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_EXCEPTIONS_ENABLED;INTRA_DEBUG;INTRA_STL_INTERFACE;INTRA_MINIMIZE_CRT;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_MINIMIZE_CRT;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <StringPooling>true</StringPooling>
-      <ExceptionHandling>Sync</ExceptionHandling>
+      <ExceptionHandling>false</ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -817,12 +817,15 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Container\HashMap.h" />
+    <ClInclude Include="src\Container\SparseArray.h" />
     <ClInclude Include="src\IO\IO.h" />
     <ClInclude Include="src\Range\Range.h" />
     <ClInclude Include="src\Serialization.h" />
     <ClInclude Include="src\Sort.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Container\HashMap.cpp" />
     <ClCompile Include="src\Container\SparseArray.cpp" />
     <ClCompile Include="src\IO\File.cpp" />
     <ClCompile Include="src\IO\Socket.cpp" />

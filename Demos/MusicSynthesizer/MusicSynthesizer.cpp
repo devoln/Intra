@@ -1,7 +1,8 @@
 ﻿#include "Cpp/PlatformDetect.h"
 
-#include "Platform/Time.h"
-#include "Platform/Environment.h"
+#include "System/Stopwatch.h"
+#include "System/Environment.h"
+#include "System/Sleep.h"
 
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
@@ -40,14 +41,15 @@ BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 	(void)CtrlType;
 	Intra::Audio::CleanUpSoundSystem();
 	exit(0);
+
 }
 
 #endif
 
 
 using namespace Intra;
-using namespace Intra::IO;
-using namespace Intra::Audio;
+using namespace IO;
+using namespace Audio;
 
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
@@ -66,8 +68,8 @@ void MainLoop(bool enableStreaming)
 			for(;;)
 			{
 				StreamedSound::UpdateAllExistingInstances();
-				Timer::SleepMs(1);
-			}		
+				System::SleepMs(1);
+			}
 		});
 	}
 	ConsoleIn.GetChar();
@@ -80,15 +82,17 @@ void MainLoop(bool enableStreaming)
 
 void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 {
+	StreamedSound streamedSound;
+	static Sound sound;
 	if(enableStreaming)
 	{
 		Std.PrintLine("Инициализация...");
-		static StreamedSound sound = StreamedSound::FromFile(filePath, 16384);
-		sound.Play();
+		streamedSound = StreamedSound::FromFile(filePath, 16384, Error::Skip());
+		streamedSound.Play();
 	}
 	else
 	{
-		static Sound sound = SynthSoundFromMidi(filePath, true);
+		sound = SynthSoundFromMidi(filePath, true);
 		auto inst = sound.CreateInstance();
 		inst.Play();
 	}
@@ -98,11 +102,11 @@ void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 
 void PlayMusic(const Music& music, bool printPerf)
 {
-	Timer tim;
+	Stopwatch sw;
 	AudioBuffer buf = music.GetSamples();
 	if(printPerf)
 	{
-		auto time = tim.GetTime();
+		auto time = sw.ElapsedSeconds();
 		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
 	}
 	static Sound snd;
@@ -164,19 +168,19 @@ int INTRA_CRTDECL main()
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
 #ifdef ENABLE_STREAMING
-	PlayUrl(("http://gammaker.github.io/midi/"+DefaultMidiName).CStr(), true);
+	PlayUrl(("http://gammaker.github.io/midi/" + DefaultMidiName).CStr(), true);
 #else
-	PlayUrl(("http://gammaker.github.io/midi/"+DefaultMidiName).CStr(), false);
+	PlayUrl(("http://gammaker.github.io/midi/" + DefaultMidiName).CStr(), false);
 #endif
 	MainLoop(false);
 #else
-	//Errors::InitSignals();
+	//System::InitSignals();
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 
-	String filePath = GetMidiPath(CommandLineArguments.Length()>=2? CommandLineArguments[1]: DefaultMidiName);
+	String filePath = GetMidiPath(Environment.CommandLine.Get(1, DefaultMidiName));
 	
 	const bool success = PrintMidiFileInfo(filePath);
 	if(!success) return 1;

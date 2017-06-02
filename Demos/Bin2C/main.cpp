@@ -112,7 +112,7 @@ inline size_t ByteToStr(byte x, char* dst)
 void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView binArrName,
 	int valuesPerLine, bool notabs, bool nospaces, bool singleline, bool endline)
 {
-	auto inputFileMapping = OS.MapFile(inputFilePath);
+	auto inputFileMapping = OS.MapFile(inputFilePath, Error::Skip());
 	if(inputFileMapping==null)
 	{
 		Std.PrintLine("File ", inputFilePath, " is not opened!");
@@ -120,7 +120,9 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	}
 	CSpan<byte> src = inputFileMapping.AsRange();
 	const byte* srcBytes = src.Begin;
-	FileWriter dst = OS.FileOpenWrite(outputFilePath);
+	FileWriter dst = OS.FileOpenWrite(outputFilePath, Error::Skip());
+	if(dst == null) return;
+
 	dst << "const unsigned char " << binArrName << "[] = {";
 	if(!singleline)
 	{

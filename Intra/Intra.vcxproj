@@ -94,7 +94,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v120_xp</PlatformToolset>
+    <PlatformToolset>v140_xp</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -463,7 +463,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;INTRA_NO_WAVE_LOADER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -521,7 +521,6 @@
       </PrecompiledHeaderFile>
       <MinimalRebuild />
       <WholeProgramOptimization />
-      <AdditionalOptions>-ftemplate-backtrace-limit=0 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -764,6 +763,9 @@
     <ClCompile Include="Audio\Synth\TableAttenuation.cpp" />
     <ClCompile Include="Concurrency\Job.cpp" />
     <ClCompile Include="Concurrency\Thread.cpp" />
+    <ClCompile Include="Cpp\Runtime.cpp" />
+    <ClCompile Include="Font\FontLoading.cpp" />
+    <ClCompile Include="Font\FontLoading_STB.cpp" />
     <ClCompile Include="Hash\Murmur.cpp" />
     <ClCompile Include="Image\AnyImage.cpp" />
     <ClCompile Include="Image\Bindings\DXGI_Formats.cpp" />
@@ -782,7 +784,6 @@
     <ClCompile Include="Image\Loaders\LoaderTGA.cpp" />
     <ClCompile Include="Image\Loaders\LoaderTIFF.cpp" />
     <ClCompile Include="IO\FilePath.cpp" />
-    <ClCompile Include="Platform\Signal.cpp" />
     <ClCompile Include="Range\Mutation\Cast.cpp" />
     <ClCompile Include="Range\Mutation\Transform.cpp" />
     <ClCompile Include="Range\Reduction.cpp" />
@@ -812,10 +813,14 @@
     <ClCompile Include="Memory\Allocator\System.cpp" />
     <ClCompile Include="Memory\Memory.cpp" />
     <ClCompile Include="Memory\VirtualMemory.cpp" />
-    <ClCompile Include="Platform\Environment.cpp" />
-    <ClCompile Include="Platform\HardwareInfo.cpp" />
-    <ClCompile Include="Platform\Time.cpp" />
     <ClCompile Include="Range\Special\Unicode.cpp" />
+    <ClCompile Include="System\DateTime.cpp" />
+    <ClCompile Include="System\Environment.cpp" />
+    <ClCompile Include="System\ProcessorInfo.cpp" />
+    <ClCompile Include="System\RamInfo.cpp" />
+    <ClCompile Include="System\Signal.cpp" />
+    <ClCompile Include="System\Sleep.cpp" />
+    <ClCompile Include="System\Stopwatch.cpp" />
     <ClCompile Include="Test\PerfSummary.cpp" />
     <ClCompile Include="Test\TestGroup.cpp" />
     <ClCompile Include="Utils\Debug.cpp" />
@@ -886,6 +891,8 @@
     <ClInclude Include="Cpp\Runtime.h" />
     <ClInclude Include="Cpp\SharedLib.h" />
     <ClInclude Include="Cpp\Warnings.h" />
+    <ClInclude Include="Font\FontLoading.h" />
+    <ClInclude Include="Font\FontLoadingDeclarations.h" />
     <ClInclude Include="Hash\Murmur.h" />
     <ClInclude Include="Hash\MurmurCT.h" />
     <ClInclude Include="Hash\StringHash.h" />
@@ -1073,18 +1080,21 @@
     <ClInclude Include="Memory\PlacementNew.h" />
     <ClInclude Include="Memory\VirtualMemory.h" />
     <ClInclude Include="Meta.hh" />
-    <ClInclude Include="Platform.hh" />
+    <ClInclude Include="System.hh" />
     <ClInclude Include="Concurrency\Atomic.h" />
     <ClInclude Include="Simd\Simd.h" />
+    <ClInclude Include="System\DateTime.h" />
+    <ClInclude Include="System\Environment.h" />
+    <ClInclude Include="System\ProcessorInfo.h" />
+    <ClInclude Include="System\RamInfo.h" />
+    <ClInclude Include="System\Signal.h" />
+    <ClInclude Include="System\Sleep.h" />
+    <ClInclude Include="System\Stopwatch.h" />
     <ClInclude Include="Utils\ArrayAlgo.h" />
     <ClInclude Include="Utils\Bind.h" />
     <ClInclude Include="Utils\Debug.h" />
     <ClInclude Include="Cpp\Endianess.h" />
-    <ClInclude Include="Platform\Environment.h" />
-    <ClInclude Include="Platform\Signal.h" />
-    <ClInclude Include="Platform\HardwareInfo.h" />
     <ClInclude Include="Concurrency\Thread.h" />
-    <ClInclude Include="Platform\Time.h" />
     <ClInclude Include="Range.hh" />
     <ClInclude Include="Range\Compositors.hh" />
     <ClInclude Include="Range\Compositors\AssociativeRange.h" />

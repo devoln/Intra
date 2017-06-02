@@ -24,7 +24,7 @@
 #pragma warning(disable: 4710 4714 4514)
 
 #define INTRA_DISABLE_REDUNDANT_WARNINGS \
-	__pragma(warning(disable: 4714 4514 4820 4711 4710 4061 4608 INTRA_REDUNDANT_WARNINGS_MSVC14))
+	__pragma(warning(disable: 4714 4514 4820 4711 4710 4061 4608 4571 INTRA_REDUNDANT_WARNINGS_MSVC14))
 //4714 - в дебаге не ругаться на то, что forceinline не сработал
 //4640 - создание в конструкторе локального статического объекта может привести к ошибкам при работе с потоками
 //4514 - подставляемая функция, не используемая в ссылках, была удалена
@@ -43,6 +43,7 @@
 
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
+#define INTRA_WARNING_DISABLE_PEDANTIC
 
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) \
 	__pragma(warning(disable: 4548 4987 4774 4702)) \
@@ -80,7 +81,8 @@
 	_Pragma("GCC diagnostic ignored \"-Wsign-conversion\"") \
 	_Pragma("GCC diagnostic ignored \"-Winit-self\"") \
 	_Pragma("GCC diagnostic ignored \"-Wunreachable-code\"") \
-	_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"")
+	_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
+	_Pragma("GCC diagnostic ignored \"-Wpedantic\"")
 
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
@@ -88,7 +90,8 @@
 #define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("GCC diagnostic ignored \"-Wctor-dtor-privacy\"")
 
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR
+#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR _Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
+#define INTRA_WARNING_DISABLE_PEDANTIC _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
 
 #define INTRA_DISABLE_LNK4221
 
@@ -109,13 +112,15 @@
 	_Pragma("clang diagnostic ignored \"-Wconversion\"") \
 	_Pragma("clang diagnostic ignored \"-Wsign-conversion\"") \
 	_Pragma("clang diagnostic ignored \"-Winit-self\"") \
-	_Pragma("clang diagnostic ignored \"-Wunreachable-code\"")
+	_Pragma("clang diagnostic ignored \"-Wunreachable-code\"") \
+	_Pragma("GCC diagnostic ignored \"-Wpedantic\"")
 
 #define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
 #define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR
+#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR _Pragma("clang diagnostic ignored \"-Wnon-virtual-dtor\"")
 #define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("clang diagnostic ignored \"-Wctor-dtor-privacy\"")
+#define INTRA_WARNING_DISABLE_PEDANTIC _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
 
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION
 

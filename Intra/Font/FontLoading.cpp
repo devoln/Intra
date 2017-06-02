@@ -2,7 +2,7 @@
 #include "Font/FontLoading.h"
 #include "Utils/StringView.h"
 #include "Container/Sequential/String.h"
-#include "Math/Vector.h"
+#include "Math/Vector2.h"
 
 
 #if INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Dummy

@@ -22,7 +22,7 @@ public:
 	ILogger* Logger;
 	IO::FormattedWriter& Output;
 	StringView Category;
-	SourceInfo ErrorInfo;
+	Utils::SourceInfo ErrorInfo;
 
 	operator bool() const {return Yes;}
 	TestGroup(ILogger* logger, IO::FormattedWriter& output, StringView category);
@@ -32,10 +32,10 @@ public:
 		TestGroup(logger, output, category)
 	{
 		if(!Yes) return;
-		auto oldCallback = gFatalErrorCallback;
-		gFatalErrorCallback = internalErrorTestFail;
+		auto oldCallback = Utils::gFatalErrorCallback;
+		Utils::gFatalErrorCallback = internalErrorTestFail;
 		tryCallTest(funcToTest);
-		gFatalErrorCallback = oldCallback;
+		Utils::gFatalErrorCallback = oldCallback;
 	}
 
 	TestGroup(StringView category);
@@ -45,7 +45,7 @@ public:
 	static TestGroup* GetCurrent() {return currentTestGroup;}
 	void PrintUnitTestResult();
 
-	static int GetTotalTests() {return totalTestsPassed+totalTestsFailed;}
+	static int GetTotalTests() {return totalTestsPassed + totalTestsFailed;}
 	static int GetTotalTestsPassed() {return totalTestsPassed;}
 	static int GetTotalTestsFailed() {return totalTestsFailed;}
 
@@ -77,7 +77,7 @@ private:
 	#endif
 	}
 
-	static void internalErrorTestFail(SourceInfo srcInfo, StringView msg)
+	static void internalErrorTestFail(const Utils::SourceInfo& srcInfo, StringView msg)
 	{
 		processError(srcInfo, msg);
 	#ifdef INTRA_EXCEPTIONS_ENABLED
@@ -87,7 +87,7 @@ private:
 	#endif
 	}
 
-	static void processError(SourceInfo srcInfo, StringView msg);
+	static void processError(const Utils::SourceInfo& srcInfo, StringView msg);
 };
 
 }

@@ -93,7 +93,7 @@ public:
 		const size_t maxLen = Range::MaxLengthOfToString(value, args...);
 		RequireSpace(maxLen);
 		ToString(mBufferRest, Cpp::Forward<T>(value), Cpp::Forward<Args>(args)...);
-		if(mFormatRest!=null) WriteNextPart();
+		if(mFormatRest != null) WriteNextPart();
 		return *this;
 	}
 
@@ -121,6 +121,15 @@ public:
 
 	forceinline StringFormatter& operator()(const Char* cstr)
 	{return operator()(GenericStringView<const Char>(cstr));}
+
+	template<typename Arg0> forceinline StringFormatter& Arg(Arg0&& arg0)
+	{return operator()(Cpp::Forward<Arg0>(arg0));}
+
+	template<typename Arg0, typename Arg1, typename... Args> StringFormatter& Arg(Arg0&& arg0, Arg1&& arg1, Args&&... args)
+	{
+		operator()(Cpp::Forward<Arg0>(arg0));
+		return Arg(Cpp::Forward<Arg1>(arg1), Cpp::Forward<Args>(args)...);
+	}
 };
 
 }}

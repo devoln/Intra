@@ -1,13 +1,17 @@
 #pragma once
 
 #include "Socket.h"
+
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Container/Sequential/Array.h"
-#include "Range/Mutation/Copy.h"
+
 #include "Utils/Span.h"
+
+#include "Range/Mutation/Copy.h"
 #include "Range/Stream/Parse.h"
 #include "Range/Stream/InputStreamMixin.h"
+
+#include "Container/Sequential/Array.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -72,7 +76,7 @@ public:
 			if(bytesLeft == 0) break;
 			loadBuffer();
 		}
-		return maxToPop-bytesLeft;
+		return maxToPop - bytesLeft;
 	}
 
 	size_t CopyAdvanceToAdvance(Span<char>& dst)
@@ -82,7 +86,7 @@ public:
 
 		if(dst.Length() >= mBuffer.Length())
 		{
-			const size_t bytesRead = mSocket.Read(dst.Data(), dst.Length());
+			const size_t bytesRead = mSocket.Read(dst.Data(), dst.Length(), Error::Skip());
 			dst.Begin += bytesRead;
 			totalBytesRead += bytesRead;
 		}
@@ -110,7 +114,7 @@ public:
 private:
 	void loadBuffer()
 	{
-		const size_t bytesRead = mSocket.Receive(mBuffer.Data(), mBuffer.Length());
+		const size_t bytesRead = mSocket.Receive(mBuffer.Data(), mBuffer.Length(), Error::Skip());
 		mBufferRest = mBuffer.Take(bytesRead);
 	}
 

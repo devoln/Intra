@@ -62,7 +62,7 @@ static GenericString<wchar_t> utf8ToWStringZ(StringView str)
 
 #endif
 
-OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
+OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorStatus& status):
 	mMode(mode), mOwning(true)
 {
 	mFullPath = OS.GetFullFileName(fileName);
@@ -80,23 +80,31 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering):
 	HANDLE hFile = CreateFileW(wFullFileName.Data(), desiredAccess,
 		FILE_SHARE_READ, null, creationDisposition, flagsAndAttributes, null);
 
-	if(hFile!=INVALID_HANDLE_VALUE) mHandle = reinterpret_cast<NativeHandle*>(hFile);
+	if(hFile != INVALID_HANDLE_VALUE) mHandle = reinterpret_cast<NativeHandle*>(hFile);
 	else
 	{
 		mHandle = null;
 		mOwning = false;
+
+		char* s = null;
+		FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
+			null, GetLastError(),
+			DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
+			(char*)&s, 0, null);
+		status.Error("Cannot open file " + fileName + ": " + StringView(s) + "!", INTRA_SOURCE_INFO);
+		LocalFree(s);
 	}
 #else
-	auto openFlags = (mMode == Mode::Read)? O_RDONLY: (mMode==Mode::Write? O_WRONLY: O_RDWR);
+	auto openFlags = (mMode == Mode::Read)? O_RDONLY: (mMode == Mode::Write? O_WRONLY: O_RDWR);
 	if(mMode != Mode::Read) openFlags |= O_CREAT;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
 	int fd = open(mFullPath.CStr(), openFlags, 0664);
 	if(fd != -1) mHandle = reinterpret_cast<NativeHandle*>(size_t(fd));
 	else
 	{
-		//Std.PrintLine("Cannot open file ", mFullPath, "! errno = ", StringView(strerror(errno)));
 		mHandle = null;
 		mOwning = false;
+		status.Error("Cannot open file " + fileName + "! errno = " + StringView(strerror(errno)));
 	}
 #endif
 }
@@ -169,8 +177,9 @@ void OsFile::SetSize(ulong64 size) const
 	INTRA_DEBUG_ASSERT(mHandle != null);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	LONG highSize = LONG(size >> 32);
-	SetFilePointer(HANDLE(mHandle), LONG(size), &highSize, FILE_BEGIN);
+	LARGE_INTEGER largeSize;
+	largeSize.QuadPart = long64(size);
+	SetFilePointerEx(HANDLE(mHandle), largeSize, null, FILE_BEGIN);
 	SetEndOfFile(HANDLE(mHandle));
 #else
 	const bool success = ftruncate64(int(size_t(mHandle)), off64_t(size)) == 0;
@@ -180,12 +189,11 @@ void OsFile::SetSize(ulong64 size) const
 
 
 
-String OsFile::ReadAsString(StringView fileName, bool& fileOpened)
+String OsFile::ReadAsString(StringView fileName, ErrorStatus& error)
 {
-	OsFile file(fileName, Mode::Read);
-	fileOpened = (file!=null);
-	if(!fileOpened) return null;
-	if(file.Size()!=0) return FileReader(SharedMove(file));
+	OsFile file(fileName, Mode::Read, error);
+	if(file == null) return null;
+	if(file.Size() != 0) return FileReader(SharedMove(file));
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	return null;

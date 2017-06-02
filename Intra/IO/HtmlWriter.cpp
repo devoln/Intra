@@ -83,7 +83,7 @@ public:
 
 	void beginSpoiler(OutputStream& s, StringView label) override
 	{
-		const uint rndSeed = uint(reinterpret_cast<size_t>(label.Data()))^ToHash(label)+rndCounter;
+		const uint rndSeed = (uint(reinterpret_cast<size_t>(label.Data())) ^ ToHash(label)) + rndCounter;
 		const ulong64 id = Random::FastUniform<ulong64>(rndSeed)();
 		s.Print(*String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label));
 	}

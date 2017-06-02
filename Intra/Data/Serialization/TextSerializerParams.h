@@ -41,7 +41,7 @@ struct TextSerializerParams
 	StringView LineEnding;
 
 	INTRA_ADD_REFLECTION(TextSerializerParams, UseStructInstanceTypeName, FieldAssignments,\
-		UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding);
+		UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding)
 };
 
 INTRA_WARNING_POP

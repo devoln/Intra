@@ -19,7 +19,7 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 	forceinline AllocatorRef(null_t=null): mAllocator() {}
 	forceinline AllocatorRef(A& allocatorRef): mAllocator(&allocatorRef) {}
 
-	forceinline AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo) const
+	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo) const
 	{
 		INTRA_DEBUG_ASSERT(mAllocator!=null);
 		return mAllocator->Allocate(bytes, sourceInfo);
@@ -41,10 +41,10 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 
 	A& GetRef() {return *mAllocator;}
 
-	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, SourceInfo sourceInfo)
+	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRangeUninitialized<T>(*mAllocator, count, sourceInfo);}
 
-	template<typename T> Span<T> AllocateRange(size_t& count, SourceInfo sourceInfo)
+	template<typename T> Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRange<T>(*mAllocator, count, sourceInfo);}
 
 protected:
@@ -60,10 +60,10 @@ template<typename A> struct AllocatorRef<A, Meta::EmptyType, true>: A
 
 	A& GetRef() const {return *const_cast<A*>(static_cast<const A*>(this));}
 
-	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, SourceInfo sourceInfo)
+	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRangeUninitialized<T>(*this, count, sourceInfo);}
 
-	template<typename T> Span<T> AllocateRange(size_t& count, SourceInfo sourceInfo)
+	template<typename T> Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRange<T>(*this, count, sourceInfo);}
 };
 

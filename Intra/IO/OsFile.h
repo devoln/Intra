@@ -5,6 +5,7 @@
 #include "Utils/StringView.h"
 #include "Utils/Span.h"
 #include "Utils/Debug.h"
+#include "Utils/ErrorStatus.h"
 
 #include "Range/Search/Single.h"
 #include "Range/Stream/RawRead.h"
@@ -21,7 +22,8 @@ class OsFile
 public:
 	enum class Mode {Read, Write, ReadWrite, None};
 
-	OsFile(StringView fileName, Mode mode, bool disableSystemBuffering=false);
+	OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorStatus& status);
+	OsFile(StringView fileName, Mode mode, ErrorStatus& status): OsFile(fileName, mode, false, status) {}
 	OsFile(null_t=null): mHandle(null), mMode(Mode::None), mOwning(false) {}
 	~OsFile() {Close();}
 	
@@ -74,12 +76,7 @@ public:
 	//! @param fileName Путь к файлу.
 	//! @param[out] oFileOpened Возвращает, был ли открыт файл.
 	//! @return Строка с содержимым всего файла или пустая строка, если файл не был открыт.
-	static String ReadAsString(StringView fileName, bool& oFileOpened);
-
-	//! Прочитать файл целиком в строку.
-	//! @param fileName Путь к файлу.
-	//! @return Строка с содержимым всего файла или пустая строка, если файл не был открыт.
-	static String ReadAsString(StringView fileName) {bool unused; return ReadAsString(fileName, unused);}
+	static String ReadAsString(StringView fileName, ErrorStatus& status);
 
 	struct NativeHandle;
 

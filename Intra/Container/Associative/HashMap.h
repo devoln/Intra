@@ -6,6 +6,7 @@
 #include "Meta/Tuple.h"
 
 #include "Utils/Op.h"
+#include "Utils/FixedArray.h"
 
 #include "Hash/ToHash.h"
 
@@ -41,7 +42,7 @@ private:
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
 		Meta::IsScalarType<U>::_,
-	bool> compare_keys(const U& key, uint keyHash)
+	bool> compareKeys(const U& key, uint keyHash)
 	{
 		(void)keyHash;
 		return element.Key == key;
@@ -49,7 +50,7 @@ private:
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
 		!Meta::IsScalarType<U>::_,
-	bool> compare_keys(const U& key, uint keyHash)
+	bool> compareKeys(const U& key, uint keyHash)
 	{
 		if(Meta::WrapperStruct<uint>::value == keyHash) return true;
 		return element.Key == key;
@@ -57,11 +58,11 @@ private:
 		
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
 		Meta::IsScalarType<U>::_
-	> init_key(uint keyHash) {(void)keyHash;}
+	> initKey(uint keyHash) {(void)keyHash;}
 
 	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
 		!Meta::IsScalarType<U>::_
-	> init_key(uint keyHash) {Meta::WrapperStruct<uint>::value = keyHash;}
+	> initKey(uint keyHash) {Meta::WrapperStruct<uint>::value = keyHash;}
 
 
 	HashNode* down;
@@ -135,10 +136,6 @@ public:
 	typedef HashTableRange<const value_type> ElementConstRange;
 
 
-	//typedef ::Range::ForwardRangeIterator<ElementRange> iterator;
-	//typedef ::Range::ForwardRangeIterator<ElementConstRange> const_iterator;
-
-
 	struct iterator
     {
         forceinline iterator(Node* nodePtr=null): node(nodePtr) {}
@@ -185,10 +182,10 @@ public:
  
 
 
-	HashMap(): range(null), bucket_heads(null) {}
+	HashMap(): mRange(null), mBucketHeads(null) {}
 
 	HashMap(const HashMap& rhs): AllocatorRef(rhs),
-		range(null), bucket_heads(null) {operator=(rhs);}
+		mRange(null), mBucketHeads(null) {operator=(rhs);}
 
 	~HashMap() {Clear();}
 
@@ -203,7 +200,7 @@ public:
 	{
 		if(rhs.Count()!=Count()) return false;
 
-		ElementRange rangeCopy = range;
+		ElementRange rangeCopy = mRange;
 		while(!rangeCopy.Empty())
 		{
 			ElementRange found = rhs.Find(rangeCopy.First().Key);
@@ -221,29 +218,29 @@ public:
 
 	V& operator[](const K& key)
 	{
-		if(bucket_heads==null)
-			return insert_node(key, V(), false)->element.Value;
+		if(mBucketHeads==null)
+			return insertNode(key, V(), false)->element.Value;
 		uint keyHash = ToHash(key);
-		Node* node = find_node(key, keyHash);
+		Node* node = findNode(key, keyHash);
 		if(node!=null) return node->element.Value;
-		return insert_node(key, V(), false)->element.Value;
+		return insertNode(key, V(), false)->element.Value;
 	}
 
 	ElementRange Insert(const value_type& pair)
-	{return ElementRange(insert_node(pair.Key, pair.Value), range.mLastNode);}
+	{return ElementRange(insertNode(pair.Key, pair.Value), mRange.mLastNode);}
 
 	ElementRange Insert(K&& key, V&& value)
-	{return ElementRange(insert_node(Cpp::Move(key), Cpp::Move(value)), range.mLastNode);}
+	{return ElementRange(insertNode(Cpp::Move(key), Cpp::Move(value)), mRange.mLastNode);}
 
 	ElementRange Insert(const K& key, const V& value)
-	{return ElementRange(insert_node(key, value), range.mLastNode);}
+	{return ElementRange(insertNode(key, value), mRange.mLastNode);}
 
 	void Insert(const HashMap& map)
 	{
-		ElementRange rangeCopy = map.range;
+		ElementRange rangeCopy = map.mRange;
 		while(!rangeCopy.Empty())
 		{
-			insert_node(rangeCopy.First().Key, rangeCopy.First().Value);
+			insertNode(rangeCopy.First().Key, rangeCopy.First().Value);
 			rangeCopy.PopFirst();
 		}
 	}
@@ -253,39 +250,39 @@ public:
 	ElementRange InsertNew(const K& key, const V& value)
 	{
 		const uint keyHash = ToHash(key);
-		if(bucket_heads != null)
+		if(mBucketHeads != null)
 		{
-			auto node = find_node(key, keyHash);
-			if(node != null) return ElementRange(node, range.mLastNode);
+			auto node = findNode(key, keyHash);
+			if(node != null) return ElementRange(node, mRange.mLastNode);
 		}
-		return ElementRange(insert_node(key, value, false), range.mLastNode);
+		return ElementRange(insertNode(key, value, false), mRange.mLastNode);
 	}
 
 	iterator InsertNew(K&& key, V&& value)
 	{
 		const uint keyHash = ToHash(key);
-		if(bucket_heads != null)
+		if(mBucketHeads != null)
 		{
-			auto node = find_node(key, keyHash);
-			if(node!=null) return ElementRange(node, range.mLastNode);
+			auto node = findNode(key, keyHash);
+			if(node!=null) return ElementRange(node, mRange.mLastNode);
 		}
-		return ElementRange(insert_node(Cpp::Move(key), Cpp::Move(value), false), range.mLastNode);
+		return ElementRange(insertNode(Cpp::Move(key), Cpp::Move(value), false), mRange.mLastNode);
 	}
 
 	//! Удалить элемент по ключу.
 	//! @return Возвращает, существовал ли элемент с таким ключом.
 	bool Remove(const K& key)
 	{
-		if(bucket_heads == null) return false;
+		if(mBucketHeads == null) return false;
 		const uint keyHash = ToHash(key);
 		Node* previous;
-		auto node = find_node(key, keyHash, previous);
+		auto node = findNode(key, keyHash, previous);
 		if(node==null) return false;
 
 		if(previous!=null) previous->down = node->down;
 		else get_bucket_head(keyHash) = node->down;
 
-		erase_node(node);
+		eraseNode(node);
 		return true;
 	}
 
@@ -293,7 +290,7 @@ public:
 	//! @return Возвращает диапазон, содержащий все элементы, идущие после удаляемого элемента.
 	ElementRange Remove(const_iterator it)
 	{
-		if(bucket_heads == null || it == null) return end();
+		if(mBucketHeads == null || it == null) return end();
 
 		auto node = it.Range.mFirstNode;
 		auto next = node->next;
@@ -314,7 +311,7 @@ public:
 		if(previous!=null) previous->down = node->down;
 		else bh = node->down;
 
-		erase_node(node);
+		eraseNode(node);
 		return iterator(next);
 	}
 
@@ -322,13 +319,13 @@ public:
 	{
 		if(!Empty())
 		{
-			while(!range.Empty())
+			while(!mRange.Empty())
 			{
-				Memory::DestructObj(range.First());
-				auto node = range.mFirstNode;
-				range.PopFirst();
-				free_node(node);
-				if(range.mFirstNode!=null) range.mFirstNode->prev = null;
+				Memory::DestructObj(mRange.First());
+				auto node = mRange.mFirstNode;
+				mRange.PopFirst();
+				freeNode(node);
+				if(mRange.mFirstNode!=null) mRange.mFirstNode->prev = null;
 			}
 			set_count(0);
 		}
@@ -337,32 +334,34 @@ public:
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
 	//! \param pred Предикат сравнения пар типа KeyValuePair<const K, V>
-	template<typename P> void SortByPair(P pred)
+	template<typename P> void SortByPair(const P& pred)
 	{
 		size_t numKeys = Count();
-		if(numKeys<=1) return;
+		if(numKeys <= 1) return;
 
-		Array<Node*> ptrs(numKeys);
-		auto ptr = range.mFirstNode;
+		FixedArray<Node*> ptrs(numKeys);
+		auto ptr = mRange.mFirstNode;
 
-		for(size_t i=0; i<numKeys; i++)
+		for(Node*& p: ptrs)
 		{
-			ptrs.AddLast(ptr);
+			p = ptr;
 			ptr = ptr->next;
 		}
 
 		Range::QuickSort(ptrs, [&pred](Node* lhs, Node* rhs)
-		{return pred(lhs->element, rhs->element);});
+		{
+			return pred(lhs->element, rhs->element);
+		});
 
-		range.mFirstNode = ptrs[0];
+		mRange.mFirstNode = ptrs[0];
 		ptrs[0]->prev = null;
 		for(uint i=1; i<numKeys; i++)
 		{
 			ptrs[i-1]->next = ptrs[i];
 			ptrs[i]->prev = ptrs[i-1];
 		}
-		range.mLastNode = ptrs.Last();
-		range.mLastNode->next = null;
+		mRange.mLastNode = ptrs.Last();
+		mRange.mLastNode->next = null;
 	}
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
@@ -402,11 +401,11 @@ public:
 	//! \return Диапазон, содержащий все элементы контейнера начиная с элемента с ключом key.
 	ElementRange Find(const K& key)
 	{
-		if(bucket_heads==null) return null;
+		if(mBucketHeads==null) return null;
 		uint keyHash = ToHash(key);
-		Node* node = find_node(key, keyHash);
+		Node* node = findNode(key, keyHash);
 		if(node==null) return null;
-		return ElementRange(node, range.mLastNode);
+		return ElementRange(node, mRange.mLastNode);
 	}
 
 	ElementConstRange Find(const K& key) const
@@ -444,9 +443,9 @@ public:
 
 	bool Contains(const K& key) const
 	{
-		if(bucket_heads==null) return false;
+		if(mBucketHeads == null) return false;
 		uint keyHash = ToHash(key);
-		return find_node(key, keyHash)!=null;
+		return findNode(key, keyHash)!=null;
 	}
 
 	/*Array<K> Keys() const
@@ -467,19 +466,19 @@ public:
 		return result;
 	}*/
 
-	const ElementRange& AsRange() {return range;}
-	const ElementConstRange& AsRange() const {return range.AsConstRange();}
-	const ElementConstRange& AsConstRange() const {return range.AsConstRange();}
+	const ElementRange& AsRange() {return mRange;}
+	const ElementConstRange& AsRange() const {return mRange.AsConstRange();}
+	const ElementConstRange& AsConstRange() const {return mRange.AsConstRange();}
 
-	const ElementRange& operator()() {return range;}
+	const ElementRange& operator()() {return mRange;}
 
-	iterator begin() {return iterator(range);}
-	const_iterator begin() const {return const_iterator(range);}
+	iterator begin() {return iterator(mRange);}
+	const_iterator begin() const {return const_iterator(mRange);}
 	iterator end() {return iterator(null);}
 	const_iterator end() const {return const_iterator(null);}
 
-	iterator rbegin() {return iterator(range.mLastNode);}
-	const_iterator rbegin() const {return const_iterator(range.mLastNode);}
+	iterator rbegin() {return iterator(mRange.mLastNode);}
+	const_iterator rbegin() const {return const_iterator(mRange.mLastNode);}
 	iterator rend() {return iterator(null);}
 	const_iterator rend() const {return const_iterator(null);}
 
@@ -491,8 +490,8 @@ public:
 	forceinline iterator find(const K& key) {return iterator(Find(key));}
 	forceinline const_iterator find(const K& key) const {return const_iterator(Find(key));}
 
-    size_t Count() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[0]: 0;}
-    size_t BucketCount() const {return bucket_heads!=null? (reinterpret_cast<size_t*>(bucket_heads))[1]: 0;}
+    size_t Count() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[0]: 0;}
+    size_t BucketCount() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[1]: 0;}
 
 	HashMapStatistics GetStats(Span<size_t> oBucketLoads)
 	{
@@ -529,56 +528,56 @@ public:
 private:
 	void allocate_buckets(size_t elementCount, size_t numBuckets)
 	{
-		delete[] bucket_heads;
+		delete[] mBucketHeads;
 
 		Node** ptrs = new Node*[numBuckets+2];
 		size_t* data = reinterpret_cast<size_t*>(ptrs);
 		data[0] = elementCount;
 		data[1] = numBuckets;
-		bucket_heads = ptrs;
+		mBucketHeads = ptrs;
 
 		reset_bucket_heads();
 	}
 
 	void reset_bucket_heads()
 	{
-		if(bucket_heads==null) return;
+		if(mBucketHeads==null) return;
 		size_t numBuckets = BucketCount();
 		Node** ptrs = get_bucket_heads();
 		for(uint i=0; i<numBuckets; i++) ptrs[i]=null;
 	}
 
     void set_count(size_t newCount)
-	{if(bucket_heads!=null) reinterpret_cast<size_t*>(bucket_heads)[0] = newCount;}
+	{if(mBucketHeads!=null) reinterpret_cast<size_t*>(mBucketHeads)[0] = newCount;}
 
 	forceinline Node** get_bucket_heads() const
-	{return bucket_heads!=null? bucket_heads+2: null;}
+	{return mBucketHeads!=null? mBucketHeads+2: null;}
 
 	forceinline Node*& get_bucket_head(size_t index) const
 	{return get_bucket_heads()[index & (BucketCount()-1)];}
 
-	ElementRange range;
-	Node** bucket_heads;
+	ElementRange mRange;
+	Node** mBucketHeads;
 
-	Node* find_node(const K& key, uint keyHash) const
+	Node* findNode(const K& key, uint keyHash) const
 	{
 		Node* node = get_bucket_head(keyHash);
 		while(node!=null)
 		{
-			if(node->compare_keys(key, keyHash)) return node;
+			if(node->compareKeys(key, keyHash)) return node;
 			node = node->down;
 		}
 		return null;
 	}
 
-	Node* find_node(const K& key, uint keyHash, Node*& previous) const
+	Node* findNode(const K& key, uint keyHash, Node*& previous) const
 	{
 		previous = null;
 
 		Node* node = get_bucket_head(keyHash);
 		while(node!=null)
 		{
-			if(node->compare_keys(key, keyHash)) return node;
+			if(node->compareKeys(key, keyHash)) return node;
 			previous = node;
 			node = node->Down();
 		}
@@ -587,7 +586,7 @@ private:
 
 	Node* insert_node_no_construct_or_assign(const K& key, bool* oExisting=null)
 	{
-		if(bucket_heads==null)
+		if(mBucketHeads==null)
 		{
 			allocate_buckets(Count(), 8);
 			rehash();
@@ -597,13 +596,13 @@ private:
 
 		if(oExisting!=null)
 		{
-			Node* existing = find_node(key, keyHash);
+			Node* existing = findNode(key, keyHash);
 			*oExisting = (existing!=null);
 			if(existing!=null) return existing;
 		}
 
-		Node* newNode = insert_node_after(range.mLastNode);
-		newNode->init_key(keyHash);
+		Node* newNode = insertNodeAfter(mRange.mLastNode);
+		newNode->initKey(keyHash);
 		auto& bh = get_bucket_head(keyHash);
 		newNode->down = bh;
 		bh = newNode;
@@ -611,7 +610,7 @@ private:
 		return newNode;
 	}
 
-	Node* insert_node(K&& key, V&& value, bool findExisting=true)
+	Node* insertNode(K&& key, V&& value, bool findExisting=true)
 	{
 		bool existed = false;
 		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
@@ -625,7 +624,7 @@ private:
 		return newNode;
 	}
 
-	Node* insert_node(const K& key, const V& value, bool findExisting=true)
+	Node* insertNode(const K& key, const V& value, bool findExisting=true)
 	{
 		bool existed = false;
 		Node* node = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
@@ -639,57 +638,57 @@ private:
 		return node;
 	}
 
-	Node* insert_node_after(Node* dest)
+	Node* insertNodeAfter(Node* dest)
 	{
-		Node* newNode = new_node();
+		Node* newNode = createNewNode();
 		newNode->next = dest==null? null: dest->next;
 		newNode->prev = dest;
 		if(newNode->next!=null) newNode->next->prev = newNode;
 		if(dest!=null) dest->next = newNode;
 
-		if(dest == range.mLastNode) range.mLastNode = newNode;
-		if(range.mFirstNode==null) range.mFirstNode = newNode;
+		if(dest == mRange.mLastNode) mRange.mLastNode = newNode;
+		if(mRange.mFirstNode==null) mRange.mFirstNode = newNode;
 
 		set_count(Count()+1);
 
 		return newNode;
 	}
 
-	Node* erase_node(Node* node)
+	Node* eraseNode(Node* node)
 	{
 		if(node==null) return null;
 
 		if(node->prev!=null) node->prev->next = node->next;
 		if(node->next!=null) node->next->prev = node->prev;
 
-		if(node == range.mFirstNode) range.mFirstNode = node->next;
-		if(node == range.mLastNode) range.mLastNode = node->prev;
+		if(node == mRange.mFirstNode) mRange.mFirstNode = node->next;
+		if(node == mRange.mLastNode) mRange.mLastNode = node->prev;
 		Node* result = node->next;
 
 		Memory::DestructObj(node->element);
-		free_node(node, sizeof(Node));
+		freeNode(node, sizeof(Node));
 		set_count(Count()-1);
 
 		return result;
 	}
 
-	Node* new_node()
+	Node* createNewNode()
 	{
 		size_t bytesToAllocate = sizeof(Node);
 		return AllocatorRef::Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
 	}
 
-	void free_node(Node* node)
+	void freeNode(Node* node)
 	{
 		AllocatorRef::Free(node, sizeof(Node));
 	}
 
 	void rehash()
 	{
-		ElementRange rangeCopy = range;
+		ElementRange rangeCopy = mRange;
 		while(!rangeCopy.Empty())
 		{
-			Node* node = rangeCopy.mFirstNode;
+			Node* const node = rangeCopy.mFirstNode;
 			uint keyHash = ToHash(node->element.Key);
 			auto& bh = get_bucket_head(keyHash);
 			node->down = bh;

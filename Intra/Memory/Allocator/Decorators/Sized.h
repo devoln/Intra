@@ -2,8 +2,10 @@
 
 #include "Cpp/Fundamental.h"
 #include "Cpp/Warnings.h"
+
 #include "Utils/AnyPtr.h"
 #include "Utils/Debug.h"
+
 #include "Meta/Type.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -19,7 +21,7 @@ template<class A> struct ASized: A
 	ASized() = default;
 	ASized(A&& allocator): A(Cpp::Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, Utils::SourceInfo sourceInfo)
 	{
 		INTRA_DEBUG_ASSERT(bytes!=0);
 		size_t totalBytes = bytes+sizeof(size_t);

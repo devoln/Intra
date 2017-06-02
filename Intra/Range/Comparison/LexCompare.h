@@ -13,8 +13,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Range {
 
-using Utils::LexCompare;
-
 template<typename R1, typename R2, typename P> Meta::EnableIf<
 	Concepts::IsForwardRange<R1>::_ &&
 	Concepts::IsForwardRange<R2>::_ &&
@@ -45,7 +43,7 @@ template<typename R1, typename R2> Meta::EnableIf<
 		Concepts::IsArrayClass<R1>::_ &&
 		Concepts::IsArrayClass<R2>::_ &&
 	(sizeof(Concepts::ElementTypeOfArray<R1>)==1 ||
-		INTRA_PLATFORM_ENDIANESS==INTRA_PLATFORM_ENDIANESS_BigEndian)),
+		INTRA_PLATFORM_ENDIANESS == INTRA_PLATFORM_ENDIANESS_BigEndian)),
 int> LexCompare(const R1& r1, const R2& r2)
 {return LexCompare(r1, r2, Op::Less<Concepts::ValueTypeOf<R1>, Concepts::ValueTypeOf<R2>>);}
 

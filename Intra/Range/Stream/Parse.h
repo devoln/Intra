@@ -98,6 +98,10 @@ X> ParseAdvance(R& src)
 	return result;
 }
 
+//! Сопоставляет начало исходного потока src со stringToExpect, игнорируя пробелы в начале src и stringToExpect.
+//! В случае совпадения сдвигает начало src в конец вхождения stringToExpect, а stringToExpect сдвигает в конец, делая его пустым.
+//! В случае несовпадения удаляет только пробелы из начала обоих потоков.
+//! @return Возвращает true в случае совпадения src и stringToExpect.
 template<typename R, typename CR> Meta::EnableIf<
 	Concepts::IsCharRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
@@ -107,7 +111,13 @@ bool> ExpectAdvance(R& src, CR& stringToExpect)
 {
 	TrimLeftAdvance(src, Op::IsSpace<Concepts::ValueTypeOf<R>>);
 	TrimLeftAdvance(stringToExpect, Op::IsSpace<Concepts::ValueTypeOf<R>>);
-	return StartsAdvanceWith(src, stringToExpect);
+	auto srcCopy = src;
+	if(StartsAdvanceWith(srcCopy, stringToExpect))
+	{
+		src = srcCopy;
+		return true;
+	}
+	return false;
 }
 
 template<typename X, typename R,

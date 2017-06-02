@@ -1,63 +1,71 @@
 ﻿#pragma once
 
-#include "Container/Sequential/Array.h"
+#include "Cpp/Warnings.h"
+#include "Cpp/Features.h"
 
-namespace Intra {
+#include "Utils/FixedArray.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra {
 
 template<typename T> class Array2D
 {
 public:
-	Array2D(null_t=null): data(), width(0) {}
+	forceinline Array2D(null_t=null): mData(), mWidth(0) {}
 	
 	Array2D(size_t lineWidth, size_t columnHeight):
-		data(), width(lineWidth) {data.SetCount(lineWidth*columnHeight);}
+		mData(lineWidth*columnHeight), mWidth(lineWidth) {}
 	
-	Array2D(const Array2D& rhs): data(rhs.data), width(rhs.width) {}
-	Array2D(Array2D&& rhs): data(Cpp::Move(rhs.data)), width(rhs.width) {}
+	Array2D(const Array2D& rhs) = default;
+	Array2D(Array2D&& rhs) = default;
+	Array2D& operator=(const Array2D& rhs) = default;
+	Array2D& operator=(Array2D&& rhs) = default;
 
 	forceinline T& operator()(size_t x, size_t y)
 	{
-		INTRA_DEBUG_ASSERT(x<Width() && y<Height());
-		return data[y*width+x];
+		INTRA_DEBUG_ASSERT(x < Width() && y < Height());
+		return mData[y*mWidth + x];
 	};
 
 	forceinline const T& operator()(size_t x, size_t y) const
 	{
-		INTRA_DEBUG_ASSERT(x<Width() && y<Height());
-		return data[y*width+x];
+		INTRA_DEBUG_ASSERT(x < Width() && y < Height());
+		return mData[y*mWidth + x];
 	}
 
-	forceinline T* Data() {return data.Data();}
-	forceinline const T* Data() const {return data.Data();}
-
-	Array2D& operator=(const Array2D& rhs)
+	forceinline Span<T> operator[](size_t y)
 	{
-		width = rhs.width;
-		data = rhs.data;
-		return *this;
+		INTRA_DEBUG_ASSERT(y < Height());
+		return {mData.Data() + y*mWidth, mWidth};
 	}
 
-	Array2D& operator=(Array2D&& rhs)
+	forceinline CSpan<T> operator[](size_t y) const
 	{
-		width = rhs.width;
-		data = Cpp::Move(rhs.data);
-		return *this;
+		INTRA_DEBUG_ASSERT(y < Height());
+		return {mData.Data() + y*mWidth, mWidth};
 	}
 
-	forceinline size_t SizeInBytes() const {return data.SizeInBytes();}
-	Array<T> MoveToLinearArray() {width = 0; return Cpp::Move(data);}
-	//ByteBuffer MoveToByteBuffer() {width = 0; return data.MoveToByteBuffer();}
+	forceinline T* Data() {return mData.Data();}
+	forceinline const T* Data() const {return mData.Data();}
 
-	forceinline size_t Width() const {return width;}
-	forceinline size_t Height() const {return data.Count()/width;}
+
+	forceinline size_t SizeInBytes() const {return mData.SizeInBytes();}
+
+	forceinline FixedArray<T> MoveToLinearArray()
+	{
+		mWidth = 0;
+		return Cpp::Move(mData);
+	}
+
+	forceinline size_t Width() const {return mWidth;}
+	forceinline size_t Height() const {return mData.Length() / mWidth;}
 
 private:
-	Array<T> data;
-	size_t width;
+	FixedArray<T> mData;
+	size_t mWidth;
 };
 
-INTRA_WARNING_POP
-
 }
+
+INTRA_WARNING_POP

@@ -16,7 +16,7 @@ struct AStack
 		mStart(buf.Begin), mRest(buf), mAlignment(allocatorAlignment) {}
 	
 	size_t GetAlignment() const {return mAlignment;}
-	AnyPtr Allocate(size_t size, SourceInfo sourceInfo);
+	AnyPtr Allocate(size_t size, const Utils::SourceInfo& sourceInfo);
 	void Free(void* ptr, size_t size);
 
 private:

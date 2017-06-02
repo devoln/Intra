@@ -20,7 +20,7 @@ public:
 
 	size_t GetAlignment() const {return sizeof(uint);}
 
-	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, Utils::SourceInfo sourceInfo)
 	{
 		bytes = Aligned(bytes, 4);
 		size_t totalBytes = bytes + 2*sizeof(uint);

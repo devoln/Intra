@@ -11,12 +11,12 @@
 #include "Math/HalfFloat.h"
 
 #include "Data/ValueType.h"
+#include "Utils/FixedArray.h"
 #include "Container/Sequential/Array.h"
 
-namespace Intra { namespace Data {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+
+namespace Intra { namespace Data {
 
 struct Variable
 {
@@ -91,66 +91,66 @@ struct Variable
 class VariableArray
 {
 public:
-	VariableArray(): data(null), variables(null) {}
+	VariableArray(): mData(null), mVariables(null) {}
 
 	const Variable& operator[](size_t index) const
-	{return *reinterpret_cast<const Variable*>(data.Data() + variables[index].Offset);}
+	{return *reinterpret_cast<const Variable*>(mData.Data() + mVariables[index].Offset);}
 
 	template<typename T> T& Get(size_t index, size_t arrIndex)
-	{return *reinterpret_cast<T*>(data.Data()+variables[index].Offset+arrIndex*sizeof(T));}
+	{return *reinterpret_cast<T*>(mData.Data() + mVariables[index].Offset + arrIndex*sizeof(T));}
 
 	template<typename T> const T& Get(size_t index, size_t arrIndex) const
 	{return reinterpret_cast<const T*>(GetPtr(index))[arrIndex];}
 
 	const void* GetPtr(size_t index) const
-	{return data.Data()+variables[index].Offset;}
+	{return mData.Data() + mVariables[index].Offset;}
 
 	AnyPtr GetPtr(size_t index)
-	{return data.Data()+variables[index].Offset;}
+	{return mData.Data() + mVariables[index].Offset;}
 
 	void Add(const void* value, size_t bytes)
 	{
-		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(CSpan<byte>(static_cast<const byte*>(value), bytes));
+		mVariables.EmplaceLast(uint(mData.Count()));
+		mData.AddLastRange(CSpan<byte>(static_cast<const byte*>(value), bytes));
 	}
 
 	void* AddData(size_t bytes)
 	{
-		variables.EmplaceLast(uint(data.Count()));
-		data.SetCountUninitialized(data.Count()+bytes);
-		return data.end()-bytes;
+		mVariables.EmplaceLast(uint(mData.Count()));
+		mData.SetCountUninitialized(mData.Count()+bytes);
+		return mData.end()-bytes;
 	}
 
 	void Set(size_t index, const void* arrData, size_t start, size_t bytes)
-	{C::memcpy(&data[variables[index].Offset+start], arrData, bytes);}
+	{C::memcpy(&mData[mVariables[index].Offset+start], arrData, bytes);}
 
 	template<typename T> void Add(const T& value)
 	{
-		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), sizeof(T)));
+		mVariables.EmplaceLast(uint(mData.Count()));
+		mData.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), sizeof(T)));
 	}
 
 	void Add(const Variable& value, ValueType type)
 	{
-		variables.EmplaceLast(uint(data.Count()));
-		data.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), type.Size()));
+		mVariables.EmplaceLast(uint(mData.Count()));
+		mData.AddLastRange(CSpan<byte>(reinterpret_cast<const byte*>(&value), type.Size()));
 	}
 
 	template<typename T> void Set(size_t index, CSpan<T> arr, size_t first=0)
 	{Set(index, arr.Data(), first*sizeof(T), arr.Length()*sizeof(T));}
 
-	void ReserveBytes(size_t bytes) {data.Reserve(bytes);}
+	void ReserveBytes(size_t bytes) {mData.Reserve(bytes);}
 
 	bool operator==(const VariableArray& rhs) const
-	{return data==rhs.data && variables==rhs.variables;}
+	{return mData == rhs.mData && mVariables == rhs.mVariables;}
 
-	bool operator==(null_t) const {return data==null;}
+	bool operator==(null_t) const {return mData==null;}
 	bool operator!=(null_t) const {return !operator==(null);}
 
-	size_t VariableCount() const {return variables.Count();}
-	size_t DataSizeInBytes() const {return data.Capacity();}
-	Array<byte>& Data() {return data;}
-	const Array<byte>& Data() const {return data;}
+	size_t VariableCount() const {return mVariables.Count();}
+	size_t DataSizeInBytes() const {return mData.Capacity();}
+	Array<byte>& Data() {return mData;}
+	const Array<byte>& Data() const {return mData;}
 
 private:
 	struct VarEntry
@@ -164,10 +164,10 @@ private:
 		uint Offset;
 	};
 
-	Array<byte> data;
-	Array<VarEntry> variables;
+	Array<byte> mData;
+	Array<VarEntry> mVariables;
 };
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

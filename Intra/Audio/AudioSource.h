@@ -1,13 +1,15 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
+#include "Cpp/Features.h"
+
 #include "AudioBuffer.h"
-#include "Container/Sequential/Array.h"
+#include "Utils/FixedArray.h"
 #include "Data/ValueType.h"
 
-namespace Intra { namespace Audio {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio {
 
 class ASoundSource
 {
@@ -32,23 +34,23 @@ public:
 	virtual size_t GetInterleavedSamples(Span<float> outFloats) = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
-	//! \param[out] outFloats Каналы, в которые загружаются семплы.
-	//! outFloats[i].Count() означает, сколько их загружать.
-	//! Для всех i outFloats[i].Count() должно быть одинаковым.
-	//! outFloats.Count() должно быть равно ChannelCount.
-	//! \returns Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
+	//! @param[out] outFloats Каналы, в которые загружаются семплы.
+	//! outFloats[i].Length() означает, сколько их загружать.
+	//! Для всех i outFloats[i].Length() должно быть одинаковым.
+	//! outFloats.Length() должно быть равно ChannelCount.
+	//! @return Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
 	virtual size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) = 0;
 
 	//! Получить данные следующих семплов в том формате, в котором они получаются перед конверсией.
-	//! \returns Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.
+	//! @return Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.
 	//! null, если не поддерживается потоком, либо существует несколько возможных вариантов выбора типа.
-	virtual Array<const void*> GetRawSamplesData(size_t maxSamplesToRead,
+	virtual FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		Data::ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
 	{
 		(void)maxSamplesToRead;
-		if(outType!=null) *outType = Data::ValueType::Void;
-		if(outInterleaved!=null) *outInterleaved=false;
-		if(outSamplesRead!=null) *outSamplesRead=0;
+		if(outType) *outType = Data::ValueType::Void;
+		if(outInterleaved) *outInterleaved = false;
+		if(outSamplesRead) *outSamplesRead = 0;
 		return null;
 	}
 
@@ -62,6 +64,6 @@ protected:
 	ushort mChannelCount;
 };
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

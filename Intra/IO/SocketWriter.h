@@ -1,13 +1,17 @@
 #pragma once
 
 #include "Socket.h"
+
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Container/Sequential/Array.h"
-#include "Range/Mutation/Copy.h"
+
 #include "Utils/Span.h"
+
+#include "Range/Mutation/Copy.h"
 #include "Range/Stream/ToString.h"
 #include "Range/Stream/OutputStreamMixin.h"
+
+#include "Container/Sequential/Array.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -74,7 +78,7 @@ public:
 		Flush();
 		if(src.Length() >= mBuffer.Length())
 		{
-			const size_t bytesWritten = mSocket.Write(src.Data(), src.Length());
+			const size_t bytesWritten = mSocket.Write(src.Data(), src.Length(), Error::Skip());
 			src.Begin += bytesWritten;
 			totalBytesWritten += bytesWritten;
 		}
@@ -97,7 +101,7 @@ public:
 	void Flush()
 	{
 		if(mBufferRest.Length() == mBuffer.Length()) return;
-		mSocket.Write(mBuffer.Data(), mBuffer.Length()-mBufferRest.Length());
+		mSocket.Write(mBuffer.Data(), mBuffer.Length() - mBufferRest.Length(), Error::Skip());
 		mBufferRest = mBuffer;
 	}
 

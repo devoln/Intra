@@ -1,6 +1,9 @@
-﻿#include "Platform/Errors.h"
-#include "Utils/StringView.h"
+﻿#include "System/Signal.h"
+
 #include "Cpp/Warnings.h"
+#include "Cpp/Compatibility.h"
+
+#include "Utils/StringView.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -11,14 +14,14 @@ namespace Intra {
 
 static void INTRA_CRTDECL SignalHandler(int signum)
 {
-	if(Errors::CrashHandler!=null)
-		Errors::CrashHandler(signum);
-	if(signum==SIGTERM) exit(1);
-	INTRA_FATAL_ERROR(Errors::CrashSignalDesc(signum));
+	if(System::CrashHandler != null)
+		System::CrashHandler(signum);
+	if(signum == SIGTERM) exit(1);
+	INTRA_FATAL_ERROR(System::CrashSignalDesc(signum));
 }
 
 
-namespace Errors {
+namespace System {
 
 void InitSignals()
 {

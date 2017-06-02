@@ -3,6 +3,7 @@
 #include "Cpp/Fundamental.h"
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
+
 #include "Callable.h"
 #include "Utils/Debug.h"
 #include "Unique.h"
@@ -21,19 +22,19 @@ public:
 	template<typename T> Delegate(R(*func)(const T&, Args...), const T& params):
 		mCallback(new FreeFuncCallable<R(Args...), T>(func, params)) {}
 
-	template<typename T, typename=Meta::EnableIf<
+	template<typename T, typename = Meta::EnableIf<
 		!Meta::IsFunction<T>::_
 	>> Delegate(const T& obj):
 		mCallback(new FunctorCallable<R(Args...), T>(obj)) {}
 
 	Delegate(R(*freeFunction)(Args...)):
-		mCallback(freeFunction==null? null: new FunctorCallable<R(Args...)>(freeFunction)) {}
+		mCallback(freeFunction == null? null: new FunctorCallable<R(Args...)>(freeFunction)) {}
 
 	template<typename T> Delegate(const T& obj, R(T::*method)(Args...)):
-		mCallback(method==null? null: new ObjectRefMethodCallable<R(Args...), T>(obj, method)) {}
+		mCallback(method == null? null: new ObjectRefMethodCallable<R(Args...), T>(obj, method)) {}
 
 	Delegate(const Delegate& rhs):
-		mCallback(rhs==null? null: rhs.mCallback->Clone()) {}
+		mCallback(rhs == null? null: rhs.mCallback->Clone()) {}
 
 	forceinline Delegate(Delegate&& rhs):
 		mCallback(Cpp::Move(rhs.mCallback)) {}
@@ -41,8 +42,8 @@ public:
 	forceinline R operator()(Args... args) const
 	{return mCallback->Call(Cpp::Forward<Args>(args)...);}
 
-	forceinline bool operator==(null_t) const {return mCallback==null;}
-	forceinline bool operator!=(null_t) const {return mCallback!=null;}
+	forceinline bool operator==(null_t) const {return mCallback == null;}
+	forceinline bool operator!=(null_t) const {return mCallback != null;}
 	forceinline bool operator!() const {return operator==(null);}
 
 

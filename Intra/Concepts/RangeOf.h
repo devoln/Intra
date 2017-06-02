@@ -14,6 +14,11 @@ namespace Intra {
 namespace Range {
 template<typename T> struct Span;
 template<typename I1, typename I2 = I1> struct IteratorRange;
+
+template<typename T> struct FListNode;
+template<typename T> struct BListNode;
+template<typename T, typename Node = FListNode<T>> struct FListRange;
+template<typename T, typename Node = BListNode<T>> struct BListRange;
 }
 
 namespace Concepts {
@@ -22,18 +27,20 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasNextListNodeMethod, ::Intra::Meta::Val<T>().NextListNode());
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPrevListNodeMethod, ::Intra::Meta::Val<T>().PrevListNode());
-template<typename T> struct FListNode;
-template<typename T> struct BListNode;
-template<typename T, typename Node = FListNode<T>> struct FListRange;
-template<typename T, typename Node = BListNode<T>> struct BListRange;
 
+}
 
+namespace Range {
 
 template<typename T> Meta::EnableIf<
-	!IsInputRange<T>::_ &&
-	HasNextListNodeMethod<T>::_/* &&
+	!Concepts::IsInputRange<T>::_ &&
+	Concepts::HasNextListNodeMethod<T>::_/* &&
 	  !HasPrevListNodeMethod<T>::_*/,
 FListRange<T, T>> RangeOf(T& objectWithIntrusiveList);
+
+}
+
+namespace Concepts {
 
 
 template<typename R> forceinline Meta::EnableIf<
