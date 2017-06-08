@@ -18,6 +18,7 @@ template<typename R> struct RangeForwardIterator
 	forceinline RangeForwardIterator& operator++() { Range.PopFirst(); return *this;}
 	forceinline RangeForwardIterator operator++(int) {auto copy = Range; Range.PopFirst(); return copy;}
 	forceinline return_value_type operator*() const {return Range.First();}
+	forceinline Meta::RemoveReference<return_value_type>* operator->() const {return &Range.First();}
 
 	forceinline bool operator==(const RangeForwardIterator& rhs) const {return Range==rhs.Range;}
 	forceinline bool operator!=(const RangeForwardIterator& rhs) const {return !operator==(rhs);}

@@ -53,30 +53,30 @@ static bool StdOutIsConsole()
 #endif
 }
 
-inline OsFile::NativeHandle* StdInHandle()
+inline OsFile::NativeHandle StdInHandle()
 {
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_INPUT_HANDLE));
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	return OsFile::NativeHandle(GetStdHandle(STD_INPUT_HANDLE));
 #else
-	return reinterpret_cast<OsFile::NativeHandle*>(size_t(STDIN_FILENO));
+	return OsFile::NativeHandle(size_t(STDIN_FILENO));
 #endif
 }
 
-inline OsFile::NativeHandle* StdOutHandle()
+inline OsFile::NativeHandle StdOutHandle()
 {
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_OUTPUT_HANDLE));
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	return OsFile::NativeHandle(GetStdHandle(STD_OUTPUT_HANDLE));
 #else
-	return reinterpret_cast<OsFile::NativeHandle*>(size_t(STDOUT_FILENO));
+	return OsFile::NativeHandle(STDOUT_FILENO);
 #endif
 }
 
-inline OsFile::NativeHandle* StdErrHandle()
+inline OsFile::NativeHandle StdErrHandle()
 {
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-	return reinterpret_cast<OsFile::NativeHandle*>(GetStdHandle(STD_ERROR_HANDLE));
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	return OsFile::NativeHandle(GetStdHandle(STD_ERROR_HANDLE));
 #else
-	return reinterpret_cast<OsFile::NativeHandle*>(size_t(STDERR_FILENO));
+	return OsFile::NativeHandle(STDERR_FILENO);
 #endif
 }
 

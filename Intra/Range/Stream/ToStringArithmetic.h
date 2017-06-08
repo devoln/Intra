@@ -29,25 +29,37 @@ template<typename R, typename Char, size_t N> Meta::EnableIf<
 
 template<typename R, typename Char> Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_ &&
-	Meta::IsCharType<Char>::_
+	Meta::IsCharType<Char>::_ &&
+	!Concepts::HasFull<R>::_
 > ToString(R&& dst, const Char* str)
-{while(*str!='\0') dst.Put(*str++);}
+{while(*str != '\0') dst.Put(*str++);}
+
+template<typename R, typename Char> Meta::EnableIf<
+	Concepts::IsOutputCharRange<R>::_ &&
+	Meta::IsCharType<Char>::_ &&
+	Concepts::HasFull<R>::_
+> ToString(R&& dst, const Char* str)
+{while(*str != '\0' && !dst.Full()) dst.Put(*str++);}
 
 template<typename R, typename X> Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_ &&
 	Meta::IsUnsignedIntegralType<X>::_
 > ToString(R&& dst, X number, int minWidth, char filler=' ', uint base=10, char minus='\0')
 {
-	INTRA_DEBUG_ASSERT(base>=2 && base<=36);
+	INTRA_DEBUG_ASSERT(base >= 2 && base <= 36);
 	char reversed[64];
 	char* rev = reversed;
-	do *rev++ = "0123456789abcdefghijklmnopqrstuvwxyz"[number%base], number = X(number/base);
-	while(number!=0);
+	do *rev++ = "0123456789abcdefghijklmnopqrstuvwxyz"[number % base], number = X(number / base);
+	while(number != 0);
 	if(minus) minWidth--;
-	for(int i=0, s=int(minWidth-(rev-reversed)); i<s; i++)
+	for(int i=0, s=int(minWidth - (rev - reversed)); i<s; i++)
+	{
+		if(Range::FullOrFalse(dst)) return;
 		dst.Put(filler);
+	}
+	if(Range::FullOrFalse(dst)) return;
 	if(minus) dst.Put(minus);
-	while(rev != reversed) dst.Put(*--rev);
+	while(rev != reversed && !Range::FullOrFalse(dst)) dst.Put(*--rev);
 }
 
 template<typename R, typename X> Meta::EnableIf<
@@ -58,19 +70,17 @@ template<typename R, typename X> Meta::EnableIf<
 {
 	char reversed[20];
 	char* rev = reversed;
-	do *rev++ = char(number%10+'0'), number/=10;
-	while(number!=0);
-	while(rev!=reversed) dst.Put(*--rev);
+	do *rev++ = char(number % 10 + '0'), number /= 10;
+	while(number != 0);
+	while(rev != reversed && !Range::FullOrFalse(dst)) dst.Put(*--rev);
 }
 
 template<typename R, typename X> Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_ &&
 	Meta::IsUnsignedIntegralType<X>::_ &&
-	sizeof(X)<sizeof(size_t)
+	sizeof(X) < sizeof(size_t)
 > ToString(R&& dst, X number)
-{
-	ToString(dst, size_t(number));
-}
+{ToString(dst, size_t(number));}
 
 
 template<typename R, typename X> forceinline Meta::EnableIf<
@@ -78,7 +88,7 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_
 > ToString(R&& dst, X number, int minWidth, Concepts::ValueTypeOf<R> filler=' ', uint base=10)
 {
-	ToString(dst, Meta::MakeUnsignedType<X>(number<0? -number: number),
+	ToString(dst, Meta::MakeUnsignedType<X>(number < 0? -number: number),
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
@@ -88,8 +98,9 @@ template<typename R, typename X> Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_
 > ToString(R&& dst, X number)
 {
-	if(number<0)
+	if(number < 0)
 	{
+		if(Range::FullOrFalse(dst)) return;
 		dst.Put('-');
 		number = X(-number);
 	}
@@ -101,11 +112,11 @@ template<typename R, typename X, typename=Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_
 >> void ToStringHexInt(R&& dst, X number)
 {
-	intptr digitPos = intptr(sizeof(X)*2);
-	while(digitPos --> 0)
+	intptr digitPos = intptr(sizeof(X) * 2);
+	while(digitPos --> 0 && !Range::FullOrFalse(dst))
 	{
 		int value = int(number >> (digitPos*4)) & 15;
-		if(value>9) value += 'A'-10;
+		if(value > 9) value += 'A'-10;
 		else value += '0';
 		dst.Put(Concepts::ValueTypeOf<R>(value));
 	}
@@ -116,8 +127,12 @@ template<typename R, typename X> forceinline Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_ &&
 	!Meta::IsCharType<X>::_
 > ToString(R&& dst, X* pointer)
-{ToStringHexInt(dst, reinterpret_cast<size_t>(pointer));}
+{ToStringHexInt(dst, size_t(pointer));}
 
+template<typename R, typename X> forceinline Meta::EnableIf<
+	Concepts::IsOutputCharRange<R>::_
+> ToString(R&& dst, null_t)
+{ToString(dst, "null");}
 
 template<typename R> Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_
@@ -142,30 +157,33 @@ template<typename R> Meta::EnableIf<
 
 	if(number < 0)
 	{
+		if(Range::FullOrFalse(dst)) return;
 		dst.Put('-');
 		number = -number;
 	}
 
 	const ulong64 integralPart = ulong64(number);
-	real fractional = number-real(integralPart);
-	if(fractional>0.99)
+	real fractional = number - real(integralPart);
+	if(fractional > 0.99)
 	{
 		ToString(dst, integralPart+1);
-		fractional=0;
+		fractional = 0;
 	}
 	else ToString(dst, integralPart);
 
-	if(preciseness==0) return;
+	if(preciseness == 0) return;
 
+	if(Range::FullOrFalse(dst)) return;
 	dst.Put(dot);
 	do
 	{
+		if(Range::FullOrFalse(dst)) return;
 		fractional *= 10;
 		int digit = int(fractional);
 		fractional -= digit;
 		if(fractional>0.99) fractional=0, digit++;
-		dst.Put(char('0'+digit));
-	} while((fractional>=0.01 || appendAllDigits) && --preciseness>0);
+		dst.Put(char('0' + digit));
+	} while((fractional >= 0.01 || appendAllDigits) && --preciseness > 0);
 }
 
 template<typename R, typename X> Meta::EnableIf<
@@ -191,16 +209,8 @@ template<typename R> Meta::EnableIf<
 {
 	INTRA_DEBUG_ASSERT(byte(value)<=1);
 	static const char* const boolStr[2] = {"false", "true"};
-	const char* str = boolStr[value!=false];
-	while(*str!='\0') dst.Put(*str++);
-}
-
-template<typename R> Meta::EnableIf<
-	Concepts::IsOutputCharRange<R>::_
-> ToString(R&& dst, null_t)
-{
-	const char* str = "null";
-	while(*str!='\0') dst.Put(*str++);
+	const char* str = boolStr[value != false];
+	while(*str != '\0' && !Range::FullOrFalse(dst)) dst.Put(*str++);
 }
 
 

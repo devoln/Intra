@@ -505,16 +505,16 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		bufferToLock=1;
 	}*/
 
-	if(snd->mStopSoon==2)
+	if(snd->mStopSoon == 2)
 	{
-		snd->mStopSoon=0;
+		snd->mStopSoon = 0;
 		StreamedSoundStop(snd);
 		return;
 	}
 
 	int bufsProcessed = snd->mBuffersProcessed;
 	snd->mBuffersProcessed = 0;
-	while(bufsProcessed!=0)
+	while(bufsProcessed != 0)
 	{
 		fill_next_buffer_data(snd);
 		if(snd->mNextBufferToFill == 1) snd->mNextBufferToFill = 0;

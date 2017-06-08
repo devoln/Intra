@@ -5,34 +5,33 @@
 #include "Cpp/Features.h"
 #include "Cpp/Fundamental.h"
 
-#include "Preprocessor/Preprocessor.h"
-
 #include "Utils/Delegate.h"
+#include "Utils/Unique.h"
+#include "Utils/StringView.h"
 
 #undef Yield
 
+#define INTRA_LIBRARY_THREAD_Dummy 0
+#define INTRA_LIBRARY_THREAD_WinAPI 1
+#define INTRA_LIBRARY_THREAD_CPPLIB 2
+#define INTRA_LIBRARY_THREAD_PThread 3
 
-#define INTRA_LIBRARY_THREADING_Dummy 0
-#define INTRA_LIBRARY_THREADING_WinAPI 1
-#define INTRA_LIBRARY_THREADING_CPPLIB 2
-#define INTRA_LIBRARY_THREADING_Qt 3
-#define INTRA_LIBRARY_THREADING_SDL 4
-#define INTRA_LIBRARY_THREADING_PThread 5
-
-#ifndef INTRA_LIBRARY_THREADING
+#ifndef INTRA_LIBRARY_THREAD
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_WinAPI
+
+#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_WinAPI
+
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
-#ifdef __EMSCRIPTEN_PTHREADS__ 
-#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_PThread
+#ifdef __EMSCRIPTEN_PTHREADS__
+#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_PThread
 #else
-#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_Dummy
+#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_Dummy
 #endif
 
 #else
-#define INTRA_LIBRARY_THREADING INTRA_LIBRARY_THREADING_PThread
+#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_PThread
 #endif
 
 #endif
@@ -43,42 +42,26 @@ namespace Intra { namespace Concurrency {
 
 class Thread
 {
+public:
 	struct Data;
 	typedef Data* Handle;
-#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Handle mHandle;
-	mutable bool mJoined;
-#endif
-	uint mId;
+private:
+	Unique<Data> mHandle;
 	struct NativeData;
 public:
 	typedef NativeData* NativeHandle;
 
 	typedef Delegate<void()> Func;
 
-#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	Thread(null_t=null): mHandle(null), mJoined(false), mId(0) {}
-	Thread(Thread&& rhs): mHandle(rhs.mHandle), mJoined(rhs.mJoined), mId(rhs.mId) {rhs.mHandle=null;}
-	Thread(const Func& func): mHandle(null), mJoined(false), mId(0) {create_thread(func);}
+	Thread(null_t=null) noexcept;
+	Thread(Thread&& rhs) = default;
+	Thread(Func func);
+	Thread(Func func, StringView name):
+		Thread(Cpp::Move(func)) {SetName(name);}
 
-	Thread& operator=(Thread&& rhs)
-	{
-		if(mHandle!=null) delete_thread();
-		mHandle = rhs.mHandle;
-		mJoined = rhs.mJoined;
-		mId = rhs.mId;
-		rhs.mHandle = null;
-		return *this;
-	}
-
-	//! Деструктор ждёт завершения потока.
-	~Thread() {if(mHandle!=null) delete_thread();}
-#else
-	Thread(null_t=null) {}
-	Thread(Thread&& rhs) {(void)rhs;}
-	Thread(Func func) {create_thread(Cpp::Move(func));}
-	Thread& operator=(Thread&& rhs) {(void)rhs; return *this;}
-#endif
+	//! Деструктор вызывает Interrupt и Join.
+	~Thread();
+	Thread& operator=(Thread&& rhs);
 
 	//! Блокировать выполнение текущего потока до тех пор,
 	//! пока указанный поток не завершится или не истечёт указанный таймаут.
@@ -86,6 +69,9 @@ public:
 	//! @return Возвращает true, если в результате поток завершил своё выполнение.
 	bool Join(uint timeoutInMs);
 
+	//! Блокировать выполнение текущего потока до тех пор,
+	//! пока не завершится указанный поток.
+	//! @return Возвращает true, если в результате поток завершил своё выполнение.
 	bool Join();
 
 	//! Отсоединить поток от объекта.
@@ -93,11 +79,18 @@ public:
 	//! поток продолжает выполняться независимо от него.
 	void Detach();
 
+	//! Установить флаг потока, который говорит о том, что пора завершаться.
+	void Interrupt();
+
+	bool IsInterrupted() const;
+
 	//! Возвращает, выполняется ли поток в данный момент.
 	bool IsRunning() const;
 
-	uint Id() const {return mId;}
-	static uint CurrentId();
+	void SetName(StringView name);
+	StringView GetName() const;
+
+	Handle GetHandle() const {return mHandle.get();}
 
 	//! @return Зависимый от платформы дескриптор потока:
 	//! Для Windows HANDLE (созданный через _beginthreadex\CreateThread)
@@ -105,72 +98,34 @@ public:
 	//! Полученный дескриптор нельзя использовать после Detach или уничтожения потока.
 	NativeHandle GetNativeHandle() const;
 
-	//! Отдаёт текущий квант времени ОС.
-	static void Yield();
-
 private:
-	void create_thread(Func func);
-	void delete_thread();
-
-
 	Thread(const Thread& rhs) = delete;
 	Thread& operator=(const Thread&) = delete;
 };
 
-
-template<typename T> class LockObject
+struct ThisThread
 {
-	T* mLockable;
-public:
-	forceinline LockObject(T& lockable): mLockable(&lockable) {lockable.Lock();}
-	forceinline LockObject(LockObject&& rhs): mLockable(rhs.mLockable) {rhs.mLockable = null;}
-	forceinline ~LockObject() {mLockable->Unlock();}
-	forceinline operator bool() const {return true;}
+	//! Установить флаг потока, который говорит о том, что пора завершаться.
+	//! Работает только для потоков, созданных с помощью класса Thread.
+	static void Interrupt();
 
-	LockObject(const LockObject&) = delete;
-	LockObject& operator=(const LockObject&) = delete;
+	static bool IsInterrupted();
+
+	//! Идентификатор текущего потока, созданного с помощью класса Thread.
+	//! Для остальных потоков вернёт null.
+	static Thread::Handle Handle();
+
+	static StringView Name();
+
+	//! Отдаёт текущий квант времени ОС.
+	static void Yield();
+
+	static bool Sleep(ulong64 milliseconds);
 };
-
-
-class Mutex
-{
-#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-	struct Data;
-	typedef Data* Handle;
-	Handle mHandle;
-#endif
-	struct NativeData;
-public:
-	typedef NativeData* NativeHandle;
-
-	Mutex(bool processPrivate=true);
-	~Mutex();
-
-	void Lock();
-	void Enter() {Lock();}
-	bool TryLock();
-	bool TryEnter() {return TryLock();}
-	void Unlock();
-	void Leave() {Unlock();}
-
-	LockObject<Mutex> Locker() {return *this;}
-
-private:
-	Mutex(const Mutex&) = delete;
-	Mutex& operator=(const Mutex&) = delete;
-};
-
-
-
-#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_Dummy)
-#define INTRA_SYNCHRONIZED_BLOCK(mutex) if(auto INTRA_CONCATENATE_TOKENS(locker__, __LINE__) = mutex.Locker())
-#else
-#define INTRA_SYNCHRONIZED_BLOCK(mutex)
-#endif
 
 }
 using Concurrency::Thread;
-using Concurrency::Mutex;
+using Concurrency::ThisThread;
 
 }
 

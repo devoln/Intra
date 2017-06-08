@@ -127,7 +127,7 @@ bool IsDebuggerAttached();
 	"\n" # arg1 " = " + ::Intra::StringOf(arg1)+\
 	"\n" # arg2 " = " + ::Intra::StringOf(arg2)), true))
 
-#define INTRA_ASSERT_EQUALS(lhs, rhs) (lhs)==(rhs)? (void)0: (void)(\
+#define INTRA_ASSERT_EQUALS(lhs, rhs) (lhs) == (rhs)? (void)0: (void)(\
     (INTRA_FATAL_ERROR(::Intra::StringView("Assertion " # lhs " == " # rhs " failed!\n")+\
 		::Intra::StringOf((lhs)) + " != " + ::Intra::StringOf((rhs))), true))
 

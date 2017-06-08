@@ -4,9 +4,9 @@
 #include "Meta/Type.h"
 #include "Meta/Operators.h"
 
-namespace Intra { namespace Utils {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Utils {
 
 template<typename T> struct Optional
 {
@@ -78,10 +78,10 @@ public:
 	forceinline bool operator!=(null_t) const {return mNotNull;}
 
 	//! Если тип T не имеет оператора сравнения, то сравнивается только наличие значения в обоих объектах.
-	template<typename U=T> forceinline Meta::EnableIf<
+	template<typename U = T> forceinline Meta::EnableIf<
 		!Meta::HasOpEquals<U>::_,
 	bool> operator==(const Optional& rhs) const
-	{return mNotNull==rhs.mNotNull;}
+	{return mNotNull == rhs.mNotNull;}
 
 	//! Если тип T имеет оператор сравнения, то сравнивается наличие значения в обоих объектах, и,
 	//! если значение содержится в обоих объектах, то сравниваются хранящиеся в нём значения.
@@ -89,8 +89,8 @@ public:
 		Meta::HasOpEquals<U>::_,
 	bool> operator==(const Optional& rhs) const
 	{
-		return mNotNull==rhs.mNotNull &&
-			(!mNotNull || value()==rhs.value());
+		return mNotNull == rhs.mNotNull &&
+			(!mNotNull || value() == rhs.value());
 	}
 
 	forceinline bool operator!=(const Optional& rhs) const {return !operator==(rhs);}
@@ -139,6 +139,6 @@ private:
 	{return reinterpret_cast<const T&>(mVal);}
 };
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

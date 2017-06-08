@@ -10,7 +10,7 @@
 #include "Concurrency/Atomic.h"
 #endif
 
-namespace Intra { namespace Memory {
+namespace Intra { namespace Utils {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -100,7 +100,7 @@ template<typename T> forceinline Shared<Meta::RemoveReference<T>> SharedMove(T&&
 INTRA_WARNING_POP
 
 }
-using Memory::Shared;
-using Memory::SharedMove;
+using Utils::Shared;
+using Utils::SharedMove;
 
 }

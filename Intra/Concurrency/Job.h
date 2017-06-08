@@ -2,6 +2,8 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+#include "Cpp/PlatformDetect.h"
+
 #include "Atomic.h"
 #include "Utils/Span.h"
 
@@ -28,7 +30,7 @@ struct Job
 	Job(const Job& rhs):
 		function(rhs.function), parent(rhs.parent),
 		unfinishedJobs(rhs.unfinishedJobs.Load())
-		{SpanOf(rhs.data).CopyTo(SpanOf(data));}
+	{SpanOf(rhs.data).CopyTo(SpanOf(data));}
 
 
 	template<typename T, typename S> static Job* parallel_for(T* data, uint count, Function function, const S& splitter)
@@ -102,29 +104,25 @@ void WorkerMain();
 class CountSplitter
 {
 public:
-	explicit CountSplitter(uint count_): count(count_) {}
+	explicit CountSplitter(uint count): mCount(count) {}
 
-	template <typename T> bool Split(uint count_) const
-	{
-		return count_ > count;
-	}
+	template<typename T> bool Split(uint count) const
+	{return count > mCount;}
 
 private:
-	uint count;
+	uint mCount;
 };
 
 class DataSizeSplitter
 {
 public:
-	explicit DataSizeSplitter(uint size_): size(size_) {}
+	explicit DataSizeSplitter(uint size): mSize(size) {}
 
-	template <typename T> bool Split(unsigned int count) const
-	{
-		return count*sizeof(T) > size;
-	}
+	template<typename T> bool Split(unsigned int count) const
+	{return count*sizeof(T) > mSize;}
 
 private:
-	uint size;
+	uint mSize;
 };
 
 INTRA_WARNING_POP

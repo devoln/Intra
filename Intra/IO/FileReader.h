@@ -26,11 +26,11 @@ class FileReader: public Range::InputStreamMixin<FileReader, char>
 public:
 	forceinline FileReader(null_t=null): mOffset(0), mSize(0) {}
 
-	forceinline FileReader(Shared<OsFile> file, size_t bufferSize=4096):
-		mFile(Cpp::Move(file)), mOffset(0), mSize(mFile==null? 0: mFile->Size())
+	forceinline FileReader(Shared<OsFile> file, size_t bufferSize = 4096):
+		mFile(Cpp::Move(file)), mOffset(0), mSize(mFile == null? 0: mFile->Size())
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
-		loadBuffer();
+		loadBuffer(Error::Skip());
 	}
 
 	forceinline FileReader(const FileReader& rhs) {operator=(rhs);}
@@ -42,8 +42,8 @@ public:
 		mOffset = rhs.mOffset;
 		mSize = rhs.mSize;
 		mBuffer.SetCountUninitialized(rhs.mBuffer.Length());
-		mBufferRest = mBuffer(0, rhs.mBufferRest.Length());
-		Range::CopyTo(rhs.mBufferRest, mBufferRest);
+		mBufferRest = mBuffer.Take(rhs.mBufferRest.Length());
+		CopyTo(rhs.mBufferRest, mBufferRest);
 		return *this;
 	}
 
@@ -72,20 +72,20 @@ public:
 	
 	forceinline bool Empty() const {return mBufferRest.Empty();}
 
-	forceinline size_t Length() const {return size_t(mSize+PositionInFile());}
+	forceinline size_t Length() const {return size_t(mSize - PositionInFile());}
 
 	forceinline bool operator==(null_t) const {return Empty();}
 	forceinline bool operator!=(null_t) const {return !Empty();}
 	
-	void PopFirst()
+	void PopFirst(ErrorStatus& status = Error::Skip())
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		mBufferRest.PopFirst();
 		if(!mBufferRest.Empty()) return;
-		loadBuffer();
+		loadBuffer(status);
 	}
 
-	size_t PopFirstN(size_t maxToPop)
+	size_t PopFirstN(size_t maxToPop, ErrorStatus& status = Error::Skip())
 	{
 		size_t result = mBufferRest.PopFirstN(maxToPop);
 		if(result == maxToPop) return result;
@@ -94,23 +94,23 @@ public:
 		if(mOffset+maxToPop > mSize) maxToPop = size_t(mSize-mOffset);
 		mOffset += maxToPop;
 		result += maxToPop;
-		loadBuffer();
+		loadBuffer(status);
 		return result;
 	}
 
-	size_t CopyAdvanceToAdvance(Span<char>& dst)
+	size_t CopyAdvanceToAdvance(Span<char>& dst, ErrorStatus& status = Error::Skip())
 	{
 		size_t totalBytesRead = Range::CopyAdvanceToAdvance(mBufferRest, dst);
 		if(!mBufferRest.Empty()) return totalBytesRead;
 
 		if(dst.Length() >= mBuffer.Length())
 		{
-			const size_t bytesRead = mFile->ReadData(mOffset, dst.Data(), dst.Length());
+			const size_t bytesRead = mFile->ReadData(mOffset, dst.Data(), dst.Length(), status);
 			mOffset += bytesRead;
 			dst.Begin += bytesRead;
 			totalBytesRead += bytesRead;
 		}
-		loadBuffer();
+		loadBuffer(status);
 		totalBytesRead += Range::CopyAdvanceToAdvance(mBufferRest, dst);
 		return totalBytesRead;
 	}
@@ -118,25 +118,25 @@ public:
 	template<typename AR> Meta::EnableIf<
 		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
 		!Meta::IsConst<AR>::_,
-	size_t> CopyAdvanceToAdvance(AR& dst)
+	size_t> CopyAdvanceToAdvance(AR& dst, ErrorStatus& status = Error::Skip())
 	{
 		Span<char> dstArr = {dst.Data(), dst.Length()};
-		size_t result = CopyAdvanceToAdvance(dstArr);
+		const size_t result = CopyAdvanceToAdvance(dstArr, status);
 		Range::PopFirstExactly(dst, result);
 		return result;
 	}
 
-	forceinline ulong64 PositionInFile() const {return mOffset-mBufferRest.Length();}
+	forceinline ulong64 PositionInFile() const {return mOffset - mBufferRest.Length();}
 	forceinline CSpan<char> BufferedData() const {return mBufferRest;}
 
 	forceinline const Shared<OsFile>& File() const {return mFile;}
 
 private:
-	void loadBuffer()
+	void loadBuffer(ErrorStatus& status)
 	{
-		const size_t bytesRead = mFile->ReadData(mOffset, mBuffer.Data(), mBuffer.Length());
+		const size_t bytesRead = mFile->ReadData(mOffset, mBuffer.Data(), mBuffer.Length(), status);
 		mOffset += bytesRead;
-		mBufferRest = mBuffer(0, bytesRead);
+		mBufferRest = mBuffer.Take(bytesRead);
 	}
 
 	Shared<OsFile> mFile;

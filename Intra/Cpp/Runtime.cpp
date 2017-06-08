@@ -4,8 +4,9 @@
 #include "Runtime.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_PEDANTIC
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
 
 struct android_app;
 
@@ -57,10 +58,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR cmdline, int)
 	{
 		char* data;
 		~Buf() {delete[] data;}
-	} buf = {new char[argumentsStart+len+2]};
+	} buf = {new char[argumentsStart + len + 2]};
 
 	const char** const argv = reinterpret_cast<const char**>(buf.data);
-	char* dstptr = (char*)argv+argumentsStart;
+	char* dstptr = buf.data + argumentsStart;
 	argv[0] = dstptr;
 
 	int argc = 0;

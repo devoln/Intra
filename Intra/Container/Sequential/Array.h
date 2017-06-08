@@ -548,10 +548,10 @@ public:
 	void SetCount(size_t newCount)
 	{
 		const size_t oldCount = Count();
-		if(newCount<=oldCount)
+		if(newCount <= oldCount)
 		{
 			Memory::Destruct<T>(range.Drop(newCount));
-			range.End = range.Begin+newCount;
+			range.End = range.Begin + newCount;
 			return;
 		}
 		SetCountUninitialized(newCount);

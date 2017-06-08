@@ -104,11 +104,11 @@ public:
 	}
 
 
-	forceinline bool Full() const {return mInterface==null || mInterface->Full();}
+	forceinline bool Full() const {return mInterface == null || mInterface->Full();}
 	forceinline void Put(const T& value) {mInterface->Put(value);}
 	forceinline void Put(T&& value) {mInterface->Put(Cpp::Move(value));}
-	forceinline bool TryPut(const T& value) {return mInterface!=null && mInterface->TryPut(value);}
-	forceinline bool TryPut(T&& value) {return mInterface!=null && mInterface->TryPut(Cpp::Move(value));}
+	forceinline bool TryPut(const T& value) {return mInterface != null && mInterface->TryPut(value);}
+	forceinline bool TryPut(T&& value) {return mInterface != null && mInterface->TryPut(Cpp::Move(value));}
 
 	forceinline size_t PutAllAdvance(CSpan<T>& dst)
 	{

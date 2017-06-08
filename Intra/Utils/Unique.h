@@ -5,7 +5,7 @@
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
 
-namespace Intra { namespace Memory {
+namespace Intra { namespace Utils {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -17,13 +17,13 @@ template<typename T> struct Unique
 	//! Передавать другие указатели запрещено.
 	forceinline Unique(T*&& ptrFromNew) noexcept: mPtr(ptrFromNew) {}
 
-	forceinline ~Unique() noexcept {if(mPtr!=null) delete mPtr;}
+	forceinline ~Unique() noexcept {delete mPtr;}
 
 	forceinline Unique(const Unique& rhs) = delete;
 	Unique& operator=(const Unique& rhs) = delete;
 
 	forceinline Unique(Unique&& rhs) noexcept:
-		mPtr(rhs.mPtr) {rhs.mPtr=null;}
+		mPtr(rhs.mPtr) {rhs.mPtr = null;}
 
 	template<typename... Args> forceinline static Unique New(Args&&... args) noexcept
 	{return new T(Cpp::Forward<Args>(args)...);}
@@ -57,7 +57,7 @@ template<typename T> struct Unique
 
 	forceinline T* Release()
 	{
-		T* result = mPtr;
+		T* const result = mPtr;
 		mPtr = null;
 		return result;
 	}
@@ -77,7 +77,7 @@ INTRA_WARNING_POP
 template<typename T> forceinline Unique<T> UniqueMove(T& rhs) {return new T(Cpp::Move(rhs));}
 
 }
-using Memory::Unique;
-using Memory::UniqueMove;
+using Utils::Unique;
+using Utils::UniqueMove;
 
 }

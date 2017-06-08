@@ -1,14 +1,18 @@
 #pragma once
 
 #include "OsFile.h"
+
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
+
 #include "Container/Sequential/Array.h"
+
 #include "Range/Mutation/Copy.h"
-#include "Utils/Span.h"
 #include "Range/Stream/ToString.h"
 #include "Range/Stream/OutputStreamMixin.h"
+
 #include "Utils/Shared.h"
+#include "Utils/Span.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -41,7 +45,7 @@ public:
 	forceinline static FileWriter Overwrite(Shared<OsFile> file, size_t bufferSize=4096)
 	{
 		if(file == null) return null;
-		file->SetSize(0);
+		file->SetSize(0, Error::Skip());
 		return FileWriter(Cpp::Move(file), 0, bufferSize);
 	}
 
@@ -55,7 +59,7 @@ public:
 
 	FileWriter& operator=(FileWriter&& rhs)
 	{
-		Flush();
+		Flush(Error::Skip());
 		mFile = Cpp::Move(rhs.mFile);
 		mOffset = rhs.mOffset;
 		mBuffer = Cpp::Move(rhs.mBuffer);
@@ -66,7 +70,7 @@ public:
 
 	FileWriter& operator=(null_t)
 	{
-		Flush();
+		Flush(Error::Skip());
 		mFile = null;
 		mBuffer = null;
 		mBufferRest = null;
@@ -74,26 +78,26 @@ public:
 		return *this;
 	}
 
-	forceinline ~FileWriter() {Flush();}
+	forceinline ~FileWriter() {Flush(Error::Skip());}
 
-	forceinline bool Empty() const {return mBufferRest.Empty();}
+	forceinline bool Full() const {return mBufferRest.Empty();}
 	
-	forceinline void Put(char c)
+	forceinline void Put(char c, ErrorStatus& status = Error::Skip())
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Full());
 		mBufferRest.Put(c);
-		if(mBufferRest.Empty()) Flush();
+		if(mBufferRest.Empty()) Flush(status);
 	}
 
-	size_t PutAllAdvance(CSpan<char>& src)
+	size_t PutAllAdvance(CSpan<char>& src, ErrorStatus& status = Error::Skip())
 	{
 		size_t totalBytesWritten = Range::CopyAdvanceToAdvance(src, mBufferRest);
 		if(!mBufferRest.Empty()) return totalBytesWritten;
 
-		Flush();
+		Flush(status);
 		if(src.Length() >= mBuffer.Length())
 		{
-			const size_t bytesWritten = mFile->WriteData(mOffset, src.Data(), src.Length());
+			const size_t bytesWritten = mFile->WriteData(mOffset, src.Data(), src.Length(), status);
 			mOffset += bytesWritten;
 			src.Begin += bytesWritten;
 			totalBytesWritten += bytesWritten;
@@ -105,26 +109,26 @@ public:
 	template<typename AR> Meta::EnableIf<
 		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
 		!Meta::IsConst<AR>::_,
-	size_t> PutAllAdvance(AR& src)
+	size_t> PutAllAdvance(AR& src, ErrorStatus& status = Error::Skip())
 	{
 		CSpan<char> srcArr = {src.Data(), src.Length()};
-		size_t result = PutAllAdvance(srcArr);
+		size_t result = PutAllAdvance(srcArr, status);
 		Range::PopFirstExactly(src, result);
 		return result;
 	}
 
 	//! Записать буфер в файл.
-	void Flush()
+	void Flush(ErrorStatus& status = Error::Skip())
 	{
 		if(mBuffer.Empty()) return;
-		const size_t bytesWritten = mBuffer.Length()-mBufferRest.Length();
-		mFile->SetSize(mOffset + bytesWritten);
-		mFile->WriteData(mOffset, mBuffer.Data(), bytesWritten);
+		const size_t bytesWritten = mBuffer.Length() - mBufferRest.Length();
+		mFile->SetSize(mOffset + bytesWritten, status);
+		mFile->WriteData(mOffset, mBuffer.Data(), bytesWritten, status);
 		mOffset += bytesWritten;
 		mBufferRest = mBuffer;
 	}
 
-	forceinline ulong64 PositionInFile() const {return mOffset+mBuffer.Length()-mBufferRest.Length();}
+	forceinline ulong64 PositionInFile() const {return mOffset + mBuffer.Length() - mBufferRest.Length();}
 	forceinline ulong64 FlushedPositionInFile() const {return mOffset;}
 
 	forceinline const Shared<OsFile>& File() const {return mFile;}

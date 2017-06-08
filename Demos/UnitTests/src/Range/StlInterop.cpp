@@ -1,14 +1,18 @@
 ﻿#include "Cpp/Warnings.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+#include "Cpp/Compatibility.h"
+#include "Cpp/Features.h"
+
+#if !defined(_HAS_EXCEPTIONS) && !defined(INTRA_EXCEPTIONS_ENABLED) && defined(_MSC_VER)
+#define _HAS_EXCEPTIONS 0
+#endif
+
 #include "Range.hh"
 #include "Utils/IteratorRange.h"
 #include "IO/FormattedWriter.h"
 #include "Range/Output/OutputArrayRange.h"
 
-#if !defined(_HAS_EXCEPTIONS) && !defined(INTRA_EXCEPTIONS_ENABLED) && defined(_MSC_VER)
-#define _HAS_EXCEPTIONS 0
-#endif
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <vector>
@@ -22,7 +26,6 @@ INTRA_WARNING_POP
 using namespace Intra;
 using namespace Range;
 using namespace IO;
-using namespace Range;
 
 struct Point
 {

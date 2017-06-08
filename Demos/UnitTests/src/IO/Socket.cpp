@@ -46,7 +46,7 @@ void TestSocketIO(FormattedWriter& output)
 		StringView linesAsString = strOut.GetWrittenData();
 		output.PrintLine("Remaining line range: ", linesAsString);
 		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error = true;
-	});
+	}, "TestSocketIO");
 	StreamSocket connectedClient = server.Accept(status);
 	char strBuf[100];
 	size_t len = connectedClient.Receive(strBuf, sizeof(strBuf), status);

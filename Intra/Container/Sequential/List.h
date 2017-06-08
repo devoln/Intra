@@ -21,12 +21,36 @@ template<typename T, class AllocatorType> class BList:
 	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
 public:
 	typedef T value_type;
-	typedef Range::RangeForwardIterator<BListRange<T>> iterator;
-	typedef Range::RangeForwardIterator<BListRange<const T>> const_iterator;
-	typedef Range::RangeForwardIterator<Range::RRetro<BListRange<T>>> reverse_iterator;
-	typedef Range::RangeForwardIterator<Range::RRetro<BListRange<const T>>> const_reverse_iterator;
+	//typedef Range::RangeForwardIterator<Range::RRetro<BListRange<T>>> reverse_iterator;
+	//typedef Range::RangeForwardIterator<Range::RRetro<BListRange<const T>>> const_reverse_iterator;
 	typedef AllocatorType Allocator;
 	typedef typename BListRange<T>::Node Node;
+	typedef typename BListRange<const T>::Node ConstNode;
+
+	struct iterator
+	{
+		iterator(null_t=null): mNode(null) {}
+		T& operator*() const {return mNode->Value;}
+		T* operator->() const {return &mNode->Value;}
+		iterator& operator++() {INTRA_DEBUG_ASSERT(mNode != null); mNode = mNode->Next;}
+		iterator& operator--() {INTRA_DEBUG_ASSERT(mNode != null); mNode = mNode->Prev;}
+	private:
+		iterator(Node* node): mNode(node) {}
+		Node* mNode;
+	};
+
+	struct const_iterator
+	{
+		const_iterator(null_t=null): mNode(null) {}
+		const_iterator(iterator it): mNode(reinterpret_cast<ConstNode*>(it.mNode)) {}
+		const T& operator*() const {return mNode->Value;}
+		const T* operator->() const {return &mNode->Value;}
+		const_iterator& operator++() {INTRA_DEBUG_ASSERT(mNode != null); mNode = mNode->Next;}
+		const_iterator& operator--() {INTRA_DEBUG_ASSERT(mNode != null); mNode = mNode->Prev;}
+	private:
+		const_iterator(ConstNode* node): mNode(node) {}
+		ConstNode* mNode;
+	};
 
 
 	forceinline BList(null_t=null): mRange(null), mCount(0) {}
@@ -54,23 +78,22 @@ public:
 	~BList() {Clear();}
 
 	//! Добавляет новый элемент в конец контейнера, сконструировав его на месте, используя переданные аргументы args.
-	//! \param args Аргументы конструктора T
-	//! \return Ссылка на добавленный элемент.
+	//! @param args Аргументы конструктора T
+	//! @return Ссылка на добавленный элемент.
 	template<typename... Args> forceinline T& EmplaceLast(Args&&... args)
 	{return *new(&add_last_node()->Value) T(Cpp::Forward<Args>(args)...);}
 
 	//! Добавляет новый элемент в конец контейнера как копию переданного значения.
-	//! \param value Значение, которое будет помещено в контейнер.
-	//! \return Ссылка на добавленный элемент.
+	//! @param value Значение, которое будет помещено в контейнер.
+	//! @return Ссылка на добавленный элемент.
 	forceinline T& AddLast(const T& value)
 	{return *new(&add_last_node()->Value) T(value);}
 
 	//! Добавляет элемент в конец контейнера перемещением переданного значения.
-	//! \param value Значение, которое будет перемещено в контейнер.
-	//! \return Ссылка на добавленный элемент.
+	//! @param value Значение, которое будет перемещено в контейнер.
+	//! @return Ссылка на добавленный элемент.
 	forceinline T& AddLast(T&& value)
 	{return *new(&add_last_node()->Value) T(Cpp::Move(value));}
-
 
 	//! Добавляет новый элемент в начало контейнера, сконструировав его на месте, используя переданные аргументы args.
 	//! \param args Аргументы конструктора T
@@ -90,43 +113,43 @@ public:
 
 
 	//! Вставляет новый элемент в указанную позицию контейнера, сконструировав его на месте, используя переданные аргументы args.
-	//! \param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
-	//! \param args Аргументы конструктора T
-	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
-	template<typename... Args> BListRange<T> Emplace(const_iterator pos, Args&&... args)
+	//! @param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
+	//! @param args Аргументы конструктора T
+	//! @return Итератор, указывающий на вставленный элемент.
+	template<typename... Args> iterator Emplace(const_iterator pos, Args&&... args)
 	{
-		if(pos.Range.FirstNode==null)
+		if(pos.mNode == null)
 		{
 			AddLast(Cpp::Forward<Args>(args)...);
 			return mRange;
 		}
-		Node* const node = insert_node(pos.Range.FirstNode);
+		Node* const node = insert_node(pos.mNode);
 		new(&node->Value) T(Cpp::Forward<Args>(args)...);
-		return BListRange<T>(node, mRange.LastNode);
+		return {node};
 	}
 
 	//! Вставляет новый элемент в указанную позицию контейнера как копию переданного значения.
-	//! \param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
-	//! \param value Вставляемый элемент
-	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
+	//! @param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
+	//! @param value Вставляемый элемент
+	//! @return Итератор, указывающий на вставленный элемент.
 	BListRange<T> Insert(const_iterator pos, const T& value) {return Emplace(pos, value);}
 
 	//! Вставляет новый элемент в указанную позицию контейнера перемещением переданного значения.
-	//! \param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
-	//! \param value Вставляемый элемент
-	//! \return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
-	BListRange<T> Insert(const_iterator pos, T&& value) {return Emplace(pos, Cpp::Move(value));}
+	//! @param pos Итератор элемента, непосредственно перед которым будет помещён добавляемый элемент.
+	//! @param value Вставляемый элемент
+	//! @return Диапазон, содержащий вставленный элемент и все последующие элементы до конца контейнера.
+	iterator Insert(const_iterator pos, T&& value) {return Emplace(pos, Cpp::Move(value));}
 
 	//! Удаляет элемент, находящийся в позиции pos.
 	//! \param Итератор, указывающий на удаляемый элемент.
 	//! \return Диапазон, содержащий все элементы списка, идущие после удалённого элемента.
-	BListRange<T> Remove(const_iterator pos)
+	iterator Remove(const_iterator pos)
 	{
-		INTRA_DEBUG_ASSERT(pos.Range.FirstNode!=null);
-		pos.Range.FirstNode->Value.~T();
-		Node* next = pos.Range.FirstNode->Next;
-		remove_node(pos.Range.FirstNode);
-		return BListRange<T>(next, mRange.LastNode);
+		INTRA_DEBUG_ASSERT(pos.mNode!=null);
+		pos.mNode->Value.~T();
+		Node* const next = pos.mNode->Next;
+		remove_node(pos.mNode);
+		return {next};
 	}
 
 	//! Удаляет первый элемент контейнера.
@@ -168,12 +191,12 @@ public:
 
 	void SetCount(size_t newCount)
 	{
-		while(mCount>newCount)
+		while(mCount > newCount)
 		{
 			RemoveLast();
 			mCount--;
 		}
-		while(mCount<newCount)
+		while(mCount < newCount)
 		{
 			EmplaceLast();
 			mCount++;
@@ -182,12 +205,12 @@ public:
 
 	void SetCount(size_t newCount, const T& value)
 	{
-		while(mCount>newCount)
+		while(mCount > newCount)
 		{
 			RemoveLast();
 			mCount--;
 		}
-		while(mCount<newCount)
+		while(mCount < newCount)
 		{
 			AddLast(value);
 			mCount++;
@@ -220,13 +243,13 @@ public:
 
 	BList& operator=(const BList& rhs)
 	{
-		if(this==&rhs) return *this;
+		if(this == &rhs) return *this;
 		return operator=(rhs.AsRange());
 	}
 
 	BList& operator=(BList&& rhs)
 	{
-		if(this==rhs) return *this;
+		if(this == rhs) return *this;
 		Clear();
 		mRange = rhs.mRange;
 		mCount = rhs.mCount;
@@ -242,6 +265,10 @@ public:
 
 	forceinline const T& First() const {return mRange.First();}
 	forceinline const T& Last() const {return mRange.Last();}
+
+	forceinline iterator LastIterator() {return {mRange.LastNode};}
+	forceinline const_iterator LastConstIterator() const {return {mRange.AsConstRange().LastNode};}
+	forceinline const_iterator LastIterator() const {return LastConstIterator();}
 
 	forceinline bool Empty() const {return mRange.Empty();}
 	forceinline bool operator==(null_t) const {return mRange.Empty();}
@@ -260,18 +287,18 @@ public:
 	//! Этот интерфейс предназначен для совместимости с обобщённым контейнеро-независимым кодом.
 	//! Использовать напрямую этот интерфейс не рекомендуется.
 	//!@{
-	forceinline iterator begin() {return {mRange};}
+	forceinline iterator begin() {return {mRange.FirstNode};}
 	forceinline iterator end() {return null;}
-	forceinline const_iterator begin() const {return {mRange.AsConstRange()};}
+	forceinline const_iterator begin() const {return {mRange.AsConstRange().FirstNode};}
 	forceinline const_iterator end() const {return null;}
 	forceinline const_iterator cbegin() const {return begin();}
 	forceinline const_iterator cend() const {return null;}
-	forceinline reverse_iterator rbegin() {return {Range::Retro(mRange)};}
-	forceinline reverse_iterator rend() {return null;}
-	forceinline const_reverse_iterator rbegin() const {return {Retro(mRange.AsConstRange())};}
-	forceinline const_reverse_iterator rend() const {return null;}
-	forceinline const_reverse_iterator crbegin() const {return rbegin();}
-	forceinline const_reverse_iterator crend() const {return null;}
+	//forceinline reverse_iterator rbegin() {return {Range::Retro(mRange)};}
+	//forceinline reverse_iterator rend() {return null;}
+	//forceinline const_reverse_iterator rbegin() const {return {Retro(mRange.AsConstRange())};}
+	//forceinline const_reverse_iterator rend() const {return null;}
+	//forceinline const_reverse_iterator crbegin() const {return rbegin();}
+	//forceinline const_reverse_iterator crend() const {return null;}
 
 	forceinline iterator insert(const_iterator pos, const T& value) {return {Insert(pos, value)};}
 	forceinline iterator insert(const_iterator pos, T&& value) {return {Insert(pos, Cpp::Move(value))};}

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(UnitTests)
 
-set(USE_EXCEPTIONS 1)
+#set(USE_EXCEPTIONS 1)
 include(../../Configurations.cmake)
 
 include_directories(../../Intra)

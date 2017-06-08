@@ -73,12 +73,12 @@
 #endif
 #define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT
 
-#if __GNUC__>=5 && __GNUC_MINOR__>=0
+#if(__GNUC__ >= 5 && __GNUC_MINOR__ >= 0 && __cplusplus > 201103L)
 #define INTRA_VARIABLE_TEMPLATE_SUPPORT
 #define INTRA_EXTENDED_CONSTEXPR_SUPPORT
 #endif
 
-#if __GNUC__>=6 && __GNUC_MINOR__>=0
+#if(__GNUC__ >= 6 && __GNUC_MINOR__ >= 0 && __cplusplus > 201103L)
 #define INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT
 #endif
 
@@ -93,12 +93,12 @@
 
 #if defined(_MSC_VER) && !defined(__GNUC__)
 
-#if _MSC_VER>=1910 //Visual Studio 2017
+#if _MSC_VER >= 1910 //Visual Studio 2017
 #define INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT
 #define INTRA_EXTENDED_CONSTEXPR_SUPPORT
 #endif
 
-#if _MSC_VER>=1900 //Visual Studio 2015
+#if _MSC_VER >= 1900 //Visual Studio 2015
 #define INTRA_CHAR16_SUPPORT
 #define INTRA_CHAR32_SUPPORT
 #define INTRA_USER_DEFINED_LITERAL_SUPPORT
@@ -111,7 +111,7 @@
 #define INTRA_UNICODE_STRING_LITERAL_SUPPORT
 #endif
 
-#if _MSC_VER>=1800 //Visual Studio 2013
+#if _MSC_VER >= 1800 //Visual Studio 2013
 #define INTRA_NON_STATIC_DATA_INITIALIZER_SUPPORT
 #define INTRA_INITIALIZER_LIST_SUPPORT
 #define INTRA_RAW_STRING_LITERAL_SUPPORT
@@ -121,12 +121,12 @@
 #define INTRA_VARIADIC_TEMPLATE_SUPPORT
 #endif
 
-#if _MSC_VER>=1700 //Visual Studio 2012
+#if _MSC_VER >= 1700 //Visual Studio 2012
 #define INTRA_FORWARD_DECLARED_ENUM_SUPPORT
 #define INTRA_RANGE_BASED_FOR_SUPPORT
 #endif
 
-#if _MSC_VER>=1600 //Visual Studio 2010
+#if _MSC_VER >= 1600 //Visual Studio 2010
 #define INTRA_FINAL_SUPPORT
 #define INTRA_STRONG_TYPED_ENUM_SUPPORT
 #define INTRA_TRAILING_RETURN_TYPE_SUPPORT
@@ -134,7 +134,7 @@
 #define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT //No destructors for thread_local objects
 #endif
 
-#if _MSC_VER>=1400
+#if _MSC_VER >= 1400
 #define INTRA_OVERRIDE_SUPPORT
 #endif
 

@@ -137,14 +137,30 @@ template<typename T> struct Span
 		return len;
 	}
 
+	size_t MoveAdvanceToAdvance(Span<MutT>& dst) noexcept
+	{
+		const size_t len = Length() < dst.Length()? Length(): dst.Length();
+		for(size_t i=0; i<len; i++) *dst.Begin++ = Cpp::Move(*Begin++);
+		return len;
+	}
+
 	forceinline size_t CopyTo(Span<MutT> dst) const
 	{return Span(*this).CopyAdvanceToAdvance(dst);}
+
+	forceinline size_t MoveTo(Span<MutT> dst) const
+	{return Span(*this).MoveAdvanceToAdvance(dst);}
 
 	forceinline size_t CopyAdvanceTo(Span<MutT> dst)
 	{return CopyAdvanceToAdvance(dst);}
 
+	forceinline size_t MoveAdvanceTo(Span<MutT> dst)
+	{return MoveAdvanceToAdvance(dst);}
+
 	forceinline size_t CopyToAdvance(Span<MutT>& dst) const
 	{return Span(*this).CopyAdvanceToAdvance(dst);}
+
+	forceinline size_t MoveToAdvance(Span<MutT>& dst) const
+	{return Span(*this).MoveAdvanceToAdvance(dst);}
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::IsConst<U>::_

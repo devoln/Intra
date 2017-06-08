@@ -13,12 +13,9 @@ namespace Intra { namespace Concurrency {
 using namespace Math;
 
 class WorkStealingQueue;
-namespace
-{
-	Array<WorkStealingQueue*> queues;
-}
+static Array<WorkStealingQueue*> queues;
 
-#if(INTRA_LIBRARY_THREADING!=INTRA_LIBRARY_THREADING_CPPLIB)
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_CPPLIB)
 class WorkStealingQueue
 {
 public:
@@ -34,14 +31,16 @@ public:
 
 	void Push(Job* job)
 	{
-		auto locker = mMutex.Locker();
-		jobs[bottom % NUMBER_OF_JOBS] = job;
-		++bottom;
+		INTRA_SYNCHRONIZED_BLOCK(mMutex)
+		{
+			jobs[bottom % NUMBER_OF_JOBS] = job;
+			++bottom;
+		}
 	}
 
 	Job* Pop()
 	{
-		auto locker = mMutex.Locker();
+		auto locker = MakeLock(mMutex);
 		const int jobCount = int(bottom)-int(top);
 		if(jobCount <= 0)
 		{
@@ -55,15 +54,15 @@ public:
 
 	Job* Steal()
 	{
-		auto locker = mMutex.Locker();
-		const int jobCount = int(bottom)-int(top);
+		auto locker = MakeLock(mMutex);
+		const int jobCount = int(bottom) - int(top);
 		if(jobCount <= 0)
 		{
 			// no job there to steal
 			return null;
 		}
 
-		Job* job = jobs[top % NUMBER_OF_JOBS];
+		Job* const job = jobs[top % NUMBER_OF_JOBS];
 		++top;
 		return job;
 	}
@@ -216,7 +215,7 @@ Job* Job::Get()
 		if(stealQueue == &wsqueue)
 		{
 			// don't try to steal from ourselves
-			Thread::Yield();
+			ThisThread::Yield();
 			return null;
 		}
 
@@ -224,7 +223,7 @@ Job* Job::Get()
 		if(stolenJob->IsEmpty())
 		{
 			// we couldn't steal a job from the other queue either, so we just yield our time slice for now
-			Thread::Yield();
+			ThisThread::Yield();
 			return null;
 		}
 

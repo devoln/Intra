@@ -42,7 +42,7 @@ template<typename Char> class GenericString
 {
 public:
 	GenericString(const Char* str):
-		GenericString(str, (str==null)? 0: Utils::CStringLength(str)) {}
+		GenericString(str, (str == null)? 0: Utils::CStringLength(str)) {}
 
 	forceinline GenericString(null_t=null) {m = {null, 0, SSO_CAPACITY_FIELD_FOR_EMPTY};}
 
@@ -53,15 +53,15 @@ public:
 	}
 
 	explicit forceinline GenericString(const Char* startPtr, const Char* endPtr):
-		GenericString(startPtr, size_t(endPtr-startPtr)) {}
+		GenericString(startPtr, size_t(endPtr - startPtr)) {}
 	
 	explicit forceinline GenericString(size_t initialLength, Char filler): GenericString(null)
 	{SetLength(initialLength, filler);}
 
-	template<typename R=StringView,
+	template<typename R = StringView, typename AsR = Concepts::RangeOfType<R>,
 	typename = Meta::EnableIf<
-		Concepts::IsAsConsumableRangeOf<R, Char>::_ &&
-		Meta::IsCharType<Concepts::ValueTypeOfAs<R>>::_
+		Concepts::IsConsumableRangeOf<AsR, Char>::_ &&
+		Meta::IsCharType<Concepts::ValueTypeOf<AsR>>::_
 	>> forceinline GenericString(R&& rhs): GenericString(null)
 	{
 		SetLengthUninitialized(Range::Count(rhs));
@@ -124,8 +124,9 @@ public:
 
 	//! Присваивание строк
 	//!@{
-	GenericString& operator=(GenericString&& rhs)
+	GenericString& operator=(GenericString&& rhs) noexcept
 	{
+		if(this == &rhs) return *this;
 		if(IsHeapAllocated()) freeLongData();
 		m = rhs.m;
 		rhs.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;
@@ -134,6 +135,8 @@ public:
 
 	GenericString& operator=(GenericStringView<const Char> rhs)
 	{
+		if(sameRange(rhs)) return *this;
+		INTRA_DEBUG_ASSERT(!containsView(rhs));
 		SetLengthUninitialized(0);
 		SetLengthUninitialized(rhs.Length());
 		C::memcpy(Data(), rhs.Data(), rhs.Length()*sizeof(Char));
@@ -175,15 +178,15 @@ public:
 	{
 		const size_t oldLen = Length();
 		const bool wasAllocated = IsHeapAllocated();
-		if(!wasAllocated && oldLen<SSO_BUFFER_CAPACITY_CHARS)
+		if(!wasAllocated && oldLen < SSO_BUFFER_CAPACITY_CHARS)
 		{
 			shortLenIncrement();
 			mBuffer[oldLen]=rhs;
 		}
 		else
 		{
-			if(!wasAllocated || getLongCapacity()==oldLen)
-				Reallocate(oldLen+1+oldLen/2);
+			if(!wasAllocated || getLongCapacity() == oldLen)
+				Reallocate(oldLen + 1 + oldLen/2);
 			m.Data[m.Len++] = rhs;
 		}
 		return *this;
@@ -199,8 +202,8 @@ public:
 	//! Убедиться, что буфер строки имеет достаточно свободного места для хранения minCapacity символов.
 	forceinline void Reserve(size_t minCapacity)
 	{
-		if(Capacity()<minCapacity)
-			Reallocate(minCapacity+Length()/2);
+		if(Capacity() < minCapacity)
+			Reallocate(minCapacity + Length()/2);
 	}
 
 
@@ -208,11 +211,11 @@ public:
 	void Reallocate(size_t newCapacity)
 	{
 		const bool wasAllocated = IsHeapAllocated();
-		if(!wasAllocated && newCapacity<=SSO_BUFFER_CAPACITY_CHARS) return;
+		if(!wasAllocated && newCapacity <= SSO_BUFFER_CAPACITY_CHARS) return;
 		const size_t len = Length();
-		if(newCapacity<len) newCapacity=len;
+		if(newCapacity < len) newCapacity = len;
 		Char* newData;
-		if(newCapacity>SSO_BUFFER_CAPACITY_CHARS)
+		if(newCapacity > SSO_BUFFER_CAPACITY_CHARS)
 		{
 			size_t newCapacityInBytes = newCapacity*sizeof(Char);
 			newData = Memory::GlobalHeap.Allocate(newCapacityInBytes, INTRA_SOURCE_INFO);
@@ -227,7 +230,7 @@ public:
 		const size_t oldLongCapacity = getLongCapacity();
 		C::memcpy(newData, Data(), len*sizeof(Char));
 		if(wasAllocated) Memory::GlobalHeap.Free(oldData, oldLongCapacity*sizeof(Char));
-		if(newData!=mBuffer)
+		if(newData != mBuffer)
 		{
 			m.Data = newData;
 			setLongCapacity(newCapacity);
@@ -236,12 +239,11 @@ public:
 	}
 
 	//! Если ёмкость буфера вмещает больше, чем длина строки более, чем на 20%, она уменьшается, чтобы совпадать с длиной.
-	//! Реальный размер буфера может получиться больше, чем длина строки. Это зависит от используемого аллокатора.
 	forceinline void TrimExcessCapacity()
-	{if(Capacity()>Length()*5/4) Reallocate(Length());}
+	{if(Capacity() > Length() * 5/4) Reallocate(Length());}
 
 	//! Убедиться, что буфер строки имеет достаточно свободного места для добавления minSpace символов в конец.
-	forceinline void RequireSpace(size_t minSpace) {Reserve(Length()+minSpace);}
+	forceinline void RequireSpace(size_t minSpace) {Reserve(Length() + minSpace);}
 
 	//! Установить длину строки в newLen.
 	//! Если newLen<Length(), то лишние символы отбрасываются.
@@ -282,13 +284,13 @@ public:
 
 	forceinline Char& operator[](size_t index)
 	{
-		INTRA_DEBUG_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index < Length());
 		return Data()[index];
 	}
 
 	forceinline const Char& operator[](size_t index) const
 	{
-		INTRA_DEBUG_ASSERT(index<Length());
+		INTRA_DEBUG_ASSERT(index < Length());
 		return Data()[index];
 	}
 
@@ -483,16 +485,16 @@ private:
 			SSO_BUFFER_CAPACITY_CHARS << 1
 	};
 
-	forceinline void setShortLength(size_t len)
-	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char((SSO_BUFFER_CAPACITY_CHARS-len) << SSO_SHORT_SIZE_SHIFT);}
+	forceinline void setShortLength(size_t len) noexcept
+	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char((SSO_BUFFER_CAPACITY_CHARS - len) << SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline size_t getShortLength() const
+	forceinline size_t getShortLength() const noexcept
 	{return SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline void setLongCapacity(size_t newCapacity)
+	forceinline void setLongCapacity(size_t newCapacity) noexcept
 	{m.Capacity = (newCapacity << SSO_CAPACITY_RIGHT_SHIFT)|SSO_LONG_BIT_MASK;}
 
-	forceinline size_t getLongCapacity() const
+	forceinline size_t getLongCapacity() const noexcept
 	{return (m.Capacity & SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT;}
 
 	forceinline void shortLenDecrement()
@@ -501,19 +503,25 @@ private:
 	forceinline void shortLenIncrement()
 	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char(mBuffer[SSO_BUFFER_CAPACITY_CHARS] - (1 << SSO_SHORT_SIZE_SHIFT));}
 
-	forceinline bool emptyShort() const 
-	{return mBuffer[SSO_BUFFER_CAPACITY_CHARS]==Char(SSO_BUFFER_CAPACITY_CHARS << SSO_SHORT_SIZE_SHIFT);}
+	forceinline bool emptyShort() const noexcept
+	{return mBuffer[SSO_BUFFER_CAPACITY_CHARS] == Char(SSO_BUFFER_CAPACITY_CHARS << SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline void resetToEmptySsoWithoutFreeing()
+	forceinline void resetToEmptySsoWithoutFreeing() noexcept
 	{m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
 
-	forceinline void freeLongData()
+	forceinline void freeLongData() noexcept
 	{Memory::GlobalHeap.Free(m.Data, getLongCapacity()*sizeof(Char));}
+
+	forceinline bool containsView(StringView rhs) const noexcept
+	{return Data() <= rhs.Data() && rhs.Data() < End();}
+
+	forceinline bool sameRange(StringView rhs) const noexcept
+	{return Data() == rhs.Data() && Length() == rhs.Length();}
 };
 
 template<typename Char> forceinline
 GenericString<Char> operator+(GenericString<Char>&& lhs, GenericStringView<const Char> rhs)
-{return Cpp::Move(lhs+=rhs);}
+{return Cpp::Move(lhs += rhs);}
 
 template<typename R,
 	typename Char = Concepts::ValueTypeOfAs<R>

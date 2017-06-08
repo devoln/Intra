@@ -2,7 +2,6 @@
 
 #include "System/Stopwatch.h"
 #include "System/Environment.h"
-#include "System/Sleep.h"
 
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
@@ -24,7 +23,7 @@
 
 //#define ENABLE_STREAMING
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #ifdef _MSC_VER
 #pragma warning(disable: 4668)
 #endif
@@ -32,7 +31,7 @@
 #define WIN32_MEAN_AND_LEAN
 struct IUnknown;
 INTRA_DISABLE_REDUNDANT_WARNINGS
-#include <windows.h>
+#include <Windows.h>
 #endif
 
 
@@ -40,8 +39,7 @@ BOOL WINAPI ConsoleCloseHandler(DWORD CtrlType)
 {
 	(void)CtrlType;
 	Intra::Audio::CleanUpSoundSystem();
-	exit(0);
-
+	return false;
 }
 
 #endif
@@ -52,25 +50,25 @@ using namespace IO;
 using namespace Audio;
 
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 #include <emscripten.h>
 #endif
 
 void MainLoop(bool enableStreaming)
 {
-#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
 	ConsoleOut.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
 	Thread thr;
 	if(enableStreaming)
 	{
 		thr = Thread([]()
 		{
-			for(;;)
+			while(!ThisThread::IsInterrupted())
 			{
 				StreamedSound::UpdateAllExistingInstances();
-				System::SleepMs(1);
+				ThisThread::Sleep(1);
 			}
-		});
+		}, "Sound Streamer");
 	}
 	ConsoleIn.GetChar();
 
@@ -125,7 +123,7 @@ void PlayMusicStream(const Music& music)
 	sound.Play();
 }
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
 extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size_t size, bool enableStreaming)
 {
@@ -152,7 +150,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreami
 void SoundTest()
 {
 	AudioBuffer buf(2000000, 44100);
-	for(uint t=0; t<buf.Samples.Count(); t++)
+	for(uint t=0; t < buf.Samples.Count(); t++)
 		buf.Samples[t] = (byte( ( (((((t>>3)|(t>>7))*5)|(t>>4))&0xff)/4 + (((((t>>3)|(t>>12))*5)|(t>>7))&0xff)*3/4 ) )-128)/127.0f;
 	Sound snd = Sound(&buf);
 	snd.CreateInstance().Play();
@@ -164,9 +162,7 @@ static const StringView DefaultMidiName = "Merry Christmas.mid";
 
 int INTRA_CRTDECL main()
 {
-#if(INTRA_PLATFORM_OS!=INTRA_PLATFORM_OS_Emscripten)
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Emscripten)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 #ifdef ENABLE_STREAMING
 	PlayUrl(("http://gammaker.github.io/midi/" + DefaultMidiName).CStr(), true);
 #else
@@ -176,11 +172,11 @@ int INTRA_CRTDECL main()
 #else
 	//System::InitSignals();
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 
-	String filePath = GetMidiPath(Environment.CommandLine.Get(1, DefaultMidiName));
+	const String filePath = GetMidiPath(Environment.CommandLine.Get(1, DefaultMidiName));
 	
 	const bool success = PrintMidiFileInfo(filePath);
 	if(!success) return 1;
@@ -192,7 +188,5 @@ int INTRA_CRTDECL main()
 
 #endif
 	CleanUpSoundSystem();
-
-#endif
 	return 0;
 }

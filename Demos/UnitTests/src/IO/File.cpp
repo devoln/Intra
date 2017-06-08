@@ -4,9 +4,13 @@
 #include "IO/FileSystem.h"
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
+
 #include "Range/Generators/Recurrence.h"
 #include "Range/Decorators/TakeByLine.h"
 #include "Range/Decorators/Map.h"
+#include "Range/Polymorphic/OutputRange.h"
+#include "Range/Polymorphic/InputRange.h"
+
 #include "Cpp/Warnings.h"
 #include "Cpp/Endianess.h"
 
@@ -60,10 +64,13 @@ void TestFileSyncIO(FormattedWriter& output)
 		sumLength += str.Length();
 	INTRA_ASSERT_EQUALS(sumLength, 71);
 
-	HtmlWriter(OS.FileOpenAppend("TestFileSyncIO.txt", Error::Skip()))
-		.PushFont({0, 0.5f, 0}, 4, true)
-		.PrintLine("Зелёный текст")
-		.PopFont();
+	auto writer = HtmlWriter(OS.FileOpenAppend("TestFileSyncIO.txt", Error::Skip()));
+	writer.PushFont({0, 0.5f, 0}, 4, true);
+	writer.PrintLine("Зелёный текст");
+	writer.PopFont();
+	writer = null;
+
+	String newFileContents = OS.FileOpen("TestFileSyncIO.txt", Error::Skip());
 
 	StringView htmlString = AtIndex(OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ByLine(buf), 2);
 	INTRA_ASSERT(StartsWith(htmlString, "<font color"));

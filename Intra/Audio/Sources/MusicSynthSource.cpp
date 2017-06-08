@@ -20,7 +20,7 @@ MusicSynthSource::MusicSynthSource(const Music& data, uint sampleRate):
 	Range::FillZeros(mCurrentPositions);
 	for(const MusicTrack& track: data.Tracks)
 	{
-		if(track.Instrument==null) continue;
+		if(track.Instrument == null) continue;
 		track.Instrument->PrepareToPlay(track, sampleRate);
 	}
 }
@@ -45,8 +45,8 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			size_t sampleCount = floatsToRead;
 			if(!note.IsPause()) sampleCount = track.Instrument->GetNoteSampleCount(note, track.Tempo, mSampleRate);
 			INTRA_DEBUG_ASSERT(int(trackPosition.samplePos) >= 0);
-			if(mBuffer.Samples.Count()<trackPosition.samplePos+sampleCount)
-				mBuffer.Samples.SetCount(trackPosition.samplePos+sampleCount);
+			if(mBuffer.Samples.Count() < trackPosition.samplePos + sampleCount)
+				mBuffer.Samples.SetCount(trackPosition.samplePos + sampleCount);
 			
 			if(!note.IsPause() && volume>0.0001f)
 			{
@@ -55,7 +55,7 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 			}
 			trackPosition.noteId++;
 		}
-		if(trackPosition.noteId==track.Notes.Count())
+		if(trackPosition.noteId == track.Notes.Count())
 		{
 			trackPosition.samplePos=0;
 			continue;
@@ -63,7 +63,7 @@ size_t MusicSynthSource::LoadNextNonNormalizedSamples(uint maxFloatsToGet)
 		trackPosition.samplePos -= maxFloatsToGet;
 	}
 
-	if(floatsToRead<maxFloatsToGet)
+	if(floatsToRead < maxFloatsToGet)
 	{
 		mCurrentSamplePos = 0;
 		for(Position& pos: mCurrentPositions) pos.noteId=0;

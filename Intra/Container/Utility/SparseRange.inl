@@ -113,7 +113,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 	Index* prevEmpty = &dst.mFirstFree;
 	for(size_t i=0; i<mData.Length(); i++)
 	{
-		if(deadBitfield[i/ValueBits] & (1 << (i % ValueBits)))
+		if(deadBitfield[i/ValueBits] & (1u << (i % ValueBits)))
 		{
 			//Используем свободные элементы для удлинения списка индексов свободных элементов
 			*prevEmpty = Index(i);

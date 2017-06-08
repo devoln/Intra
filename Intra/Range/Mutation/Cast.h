@@ -90,10 +90,11 @@ template<typename To, typename From> Meta::EnableIf<
 //! Заполнить массив dst элементами из src, умноженными на NumericLimits<To>::Max.
 //! Предполагается, что -1.0 <= src[i] <= 1.0. Иначе произойдёт переполнение.
 template<typename To, typename From> Meta::EnableIf<
-	Meta::IsFloatType<From>::_ && Meta::IsIntegralType<To>::_
+	Meta::IsFloatType<From>::_ &&
+	Meta::IsSignedIntegralType<To>::_
 > CastFromNormalized(Span<To> dst, CSpan<From> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		dst.First() = To(src.First() * Meta::NumericLimits<From>::Max());

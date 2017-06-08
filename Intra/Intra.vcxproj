@@ -762,6 +762,7 @@
     <ClCompile Include="Audio\Synth\SynthesizedInstrument.cpp" />
     <ClCompile Include="Audio\Synth\TableAttenuation.cpp" />
     <ClCompile Include="Concurrency\Job.cpp" />
+    <ClCompile Include="Concurrency\Mutex.cpp" />
     <ClCompile Include="Concurrency\Thread.cpp" />
     <ClCompile Include="Cpp\Runtime.cpp" />
     <ClCompile Include="Font\FontLoading.cpp" />
@@ -819,7 +820,6 @@
     <ClCompile Include="System\ProcessorInfo.cpp" />
     <ClCompile Include="System\RamInfo.cpp" />
     <ClCompile Include="System\Signal.cpp" />
-    <ClCompile Include="System\Sleep.cpp" />
     <ClCompile Include="System\Stopwatch.cpp" />
     <ClCompile Include="Test\PerfSummary.cpp" />
     <ClCompile Include="Test\TestGroup.cpp" />
@@ -880,6 +880,18 @@
     <ClInclude Include="Concepts\Iterator.h" />
     <ClInclude Include="Concepts\Range.h" />
     <ClInclude Include="Concepts\RangeOf.h" />
+    <ClInclude Include="Concurrency\detail\BasicThreadData.hxx" />
+    <ClInclude Include="Concurrency\detail\MutexCpp11.hxx" />
+    <ClInclude Include="Concurrency\detail\MutexDummy.hxx" />
+    <ClInclude Include="Concurrency\detail\MutexPThread.hxx" />
+    <ClInclude Include="Concurrency\detail\MutexWinAPI.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadCommonWinAPI.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadCpp11.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadDummy.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadPThread.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadWinAPI.hxx" />
+    <ClInclude Include="Concurrency\Lock.h" />
+    <ClInclude Include="Concurrency\Mutex.h" />
     <ClInclude Include="Cpp\Compatibility.h" />
     <ClInclude Include="Cpp\Features.h" />
     <ClInclude Include="Cpp\Fundamental.h" />
@@ -944,6 +956,11 @@
     <ClInclude Include="Meta\Tuple.h" />
     <ClInclude Include="Meta\Type.h" />
     <ClInclude Include="Meta\TypeList.h" />
+    <ClInclude Include="Preprocessor.hh" />
+    <ClInclude Include="Preprocessor\Macro2ForEach.h" />
+    <ClInclude Include="Preprocessor\Macro2ForEachIndex.h" />
+    <ClInclude Include="Preprocessor\Operations.h" />
+    <ClInclude Include="Preprocessor\VariadicCommon.h" />
     <ClInclude Include="Random\FastUniform.h" />
     <ClInclude Include="Random\FastUniformNoise.h" />
     <ClInclude Include="Range\Comparison.hh" />
@@ -1088,7 +1105,6 @@
     <ClInclude Include="System\ProcessorInfo.h" />
     <ClInclude Include="System\RamInfo.h" />
     <ClInclude Include="System\Signal.h" />
-    <ClInclude Include="System\Sleep.h" />
     <ClInclude Include="System\Stopwatch.h" />
     <ClInclude Include="Utils\ArrayAlgo.h" />
     <ClInclude Include="Utils\Bind.h" />

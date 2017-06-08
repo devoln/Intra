@@ -46,12 +46,12 @@ template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	Concepts::HasEmpty<OR>::_ &&
+	Concepts::HasFull<OR>::_ &&
 	!Concepts::IsInfiniteRange<OR>::_,
 size_t> CopyAdvanceToAdvanceByOne(R& src, OR& dst)
 {
 	size_t minLen = 0;
-	while(!src.Empty() && !dst.Empty())
+	while(!src.Empty() && !dst.Full())
 	{
 		dst.Put(src.First());
 		src.PopFirst();
@@ -63,7 +63,7 @@ size_t> CopyAdvanceToAdvanceByOne(R& src, OR& dst)
 template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	(!Concepts::HasEmpty<OR>::_ ||
+	(!Concepts::HasFull<OR>::_ ||
 		Concepts::IsInfiniteRange<OR>::_),
 size_t> CopyAdvanceToAdvanceByOne(R& src, OR& dst)
 {
@@ -93,7 +93,7 @@ template<typename R, typename OR> Meta::EnableIf<
 	!Concepts::IsTrivCopyCompatibleArrayWith<R, OR>::_ &&
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	Concepts::HasEmpty<OR>::_ && !Concepts::IsInfiniteRange<OR>::_ &&
+	Concepts::HasFull<OR>::_ && !Concepts::IsInfiniteRange<OR>::_ &&
 	!Concepts::HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
 	!Concepts::HasPutAllAdvanceMethod<OR&, R&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
@@ -104,7 +104,7 @@ template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	(!Concepts::HasEmpty<OR>::_ ||
+	(!Concepts::HasFull<OR>::_ ||
 		Concepts::IsInfiniteRange<OR>::_) &&
 	!Concepts::HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
 	!Concepts::HasPutAllAdvanceMethod<OR&, R&>::_,
@@ -124,7 +124,7 @@ template<typename R, typename OR> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
 	(!Concepts::IsInfiniteRange<R>::_ ||
-		Concepts::HasEmpty<OR>::_) &&
+		Concepts::HasFull<OR>::_) &&
 	Concepts::HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
 	!Concepts::IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
@@ -134,7 +134,7 @@ template<typename R, typename OR> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
 	(!Concepts::IsInfiniteRange<R>::_ ||
-		Concepts::HasEmpty<OR>::_) &&
+		Concepts::HasFull<OR>::_) &&
 	!Concepts::HasCopyAdvanceToAdvanceMethod<R&, OR&>::_ &&
 	Concepts::HasPutAllAdvanceMethod<OR&, R&>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst)
@@ -143,12 +143,12 @@ size_t> CopyAdvanceToAdvance(R& src, OR& dst)
 template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	Concepts::HasEmpty<OR>::_ &&
+	Concepts::HasFull<OR>::_ &&
 	!Concepts::IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 {
 	size_t left = n;
-	while(!src.Empty() && !dst.Empty() && left --> 0)
+	while(!src.Empty() && !dst.Full() && left --> 0)
 	{
 		dst.Put(src.First());
 		src.PopFirst();
@@ -159,7 +159,7 @@ size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	!Concepts::HasEmpty<OR>::_ &&
+	!Concepts::HasFull<OR>::_ &&
 	!Concepts::IsTrivCopyCompatibleArrayWith<R, OR>::_,
 size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 {
@@ -187,12 +187,12 @@ size_t> CopyAdvanceToAdvance(R& src, size_t n, OR& dst)
 template<typename R, typename OR, typename P> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ && !Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	Concepts::HasEmpty<OR>::_ &&
+	Concepts::HasFull<OR>::_ &&
 	Meta::IsCallable<P, Concepts::ValueTypeOf<R>>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 {
 	size_t count = 0;
-	while(!src.Empty() && !dst.Empty())
+	while(!src.Empty() && !dst.Full())
 	{
 		auto value = src.First();
 		if(pred(value))
@@ -209,7 +209,7 @@ template<typename R, typename OR, typename P> Meta::EnableIf<
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsOutputRangeOf<OR, Concepts::ValueTypeOf<R>>::_ &&
-	!Concepts::HasEmpty<OR>::_ &&
+	!Concepts::HasFull<OR>::_ &&
 	Meta::IsCallable<P, Concepts::ValueTypeOf<R>>::_,
 size_t> CopyAdvanceToAdvance(R& src, OR& dst, P pred)
 {

@@ -61,11 +61,11 @@ public:
 
 	forceinline ~SocketWriter() {Flush();}
 
-	forceinline bool Empty() const {return mBufferRest.Empty();}
+	forceinline bool Full() const {return mBufferRest.Empty();}
 	
 	forceinline void Put(char c)
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		INTRA_DEBUG_ASSERT(!Full());
 		mBufferRest.Put(c);
 		if(mBufferRest.Empty()) Flush();
 	}

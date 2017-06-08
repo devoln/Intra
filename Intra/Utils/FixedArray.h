@@ -56,8 +56,9 @@ template<typename T> struct FixedArray
 		if(this == &rhs) return *this;
 		if(Length() < rhs.Length())
 		{
-			delete[] mData.Data();
+			auto oldData = mData.Data();
 			mData = {new T[rhs.Length()], rhs.Length()};
+			delete[] oldData;
 		}
 		else mData = mData.TakeExactly(rhs.Length());
 		rhs.mData.CopyTo(mData);
@@ -97,7 +98,7 @@ template<typename T> struct FixedArray
 	{
 		if(count == Length()) return;
 		FixedArray result(count);
-		mData.CopyTo(result);
+		mData.MoveTo(result);
 		operator=(Cpp::Move(result));
 	}
 

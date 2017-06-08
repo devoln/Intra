@@ -89,7 +89,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 		FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
 			null, GetLastError(),
 			DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-			(char*)&s, 0, null);
+			reinterpret_cast<char*>(&s), 0, null);
 		status.Error("Cannot open file " + fileName + " for mapping: " + StringView(s) + "!", INTRA_SOURCE_INFO);
 		LocalFree(s);
 		return;
@@ -107,7 +107,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 		FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
 			null, GetLastError(),
 			DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-			(char*)&s, 0, null);
+			reinterpret_cast<char*>(&s), 0, null);
 		status.Error("Cannot CreateFileMapping " + fileName + ": " + StringView(s) + "!", INTRA_SOURCE_INFO);
 		LocalFree(s);
 		return;

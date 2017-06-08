@@ -19,7 +19,7 @@ template<typename Char, size_t N> Meta::EnableIf<
 	Meta::IsCharType<Char>::_,
 size_t> MaxLengthOfToString(const Char* str) {return Utils::CStringLength(str);}
 
-template<typename T=char, typename X> static Meta::EnableIf<
+template<typename T=char, typename X> Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number, int minWidth, T filler=' ', uint base=10, T minus='\0')
 {
@@ -33,7 +33,7 @@ size_t> MaxLengthOfToString(X number, int minWidth, T filler=' ', uint base=10, 
 }
 
 
-template<typename X> static forceinline Meta::EnableIf<
+template<typename X> forceinline Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number)
 {
@@ -41,7 +41,7 @@ size_t> MaxLengthOfToString(X number)
 	return sizeof(X)<2? 3: sizeof(X)==2? 5: sizeof(X)<=4? 10: sizeof(X)<=8? 18: 35;
 }
 
-template<typename T = char, typename X> static forceinline Meta::EnableIf<
+template<typename T = char, typename X> forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number, int minWidth, T filler = ' ', uint base = 10)
 {
@@ -49,7 +49,7 @@ size_t> MaxLengthOfToString(X number, int minWidth, T filler = ' ', uint base = 
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
-template<typename X> static forceinline Meta::EnableIf<
+template<typename X> forceinline Meta::EnableIf<
 	Meta::IsSignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number)
 {
@@ -57,12 +57,14 @@ size_t> MaxLengthOfToString(X number)
 	return sizeof(X)<2? 4: sizeof(X)==2? 6: sizeof(X)<=4? 11: sizeof(X)<=8? 18: 35;
 }
 
-template<typename X> static forceinline Meta::EnableIf<
+template<typename X> forceinline Meta::EnableIf<
 	!Meta::IsCharType<X>::_,
 size_t> MaxLengthOfToString(X* pointer) {(void)pointer; return sizeof(X*)*2;}
 
+forceinline size_t MaxLengthOfToString(null_t) {return 4;}
 
-template<typename X, typename T=char> static forceinline Meta::EnableIf<
+
+template<typename X, typename T=char> forceinline Meta::EnableIf<
 	Meta::IsFloatType<X>::_,
 size_t> MaxLengthOfToString(X number, int preciseness=2, T dot='.', bool appendAllDigits=false)
 {
@@ -70,12 +72,12 @@ size_t> MaxLengthOfToString(X number, int preciseness=2, T dot='.', bool appendA
 	return size_t(20+1+(preciseness+1));
 }
 
-template<typename Char> static forceinline Meta::EnableIf<
+template<typename Char> forceinline Meta::EnableIf<
 	Meta::IsCharType<Char>::_,
 size_t> MaxLengthOfToString(Char character, size_t repeat=1) {(void)character; return repeat;}
 
 
-forceinline size_t MaxLengthOfToString(bool value) {return 4u+!value;}
+forceinline size_t MaxLengthOfToString(bool value) {return 4u + !value;}
 
 template<typename SRC,
 	typename AsSRC = Concepts::RangeOfType<SRC>

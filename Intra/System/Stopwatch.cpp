@@ -41,14 +41,14 @@ double Stopwatch::ElapsedSeconds() const
 {
 	LARGE_INTEGER current;
 	QueryPerformanceCounter(&current);
-	return double(current.QuadPart - mData) / gStopwatchPerformanceFrequency;
+	return double(ulong64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
 }
 
 double Stopwatch::GetElapsedSecondsAndReset()
 {
 	LARGE_INTEGER current;
 	QueryPerformanceCounter(&current);
-	const double result = double(current.QuadPart - mData) / gStopwatchPerformanceFrequency;
+	const double result = double(ulong64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
 	mData = ulong64(current.QuadPart);
 	return result;
 }

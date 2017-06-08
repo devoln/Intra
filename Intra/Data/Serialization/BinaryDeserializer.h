@@ -3,8 +3,6 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Endianess.h"
 
-#include "Preprocessor/Preprocessor.h"
-
 #include "Meta/Type.h"
 #include "Meta/EachField.h"
 
@@ -15,9 +13,9 @@
 
 #include "Container/Operations/Append.h"
 
-namespace Intra { namespace Data {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Data {
 
 template<typename I> class GenericBinaryDeserializer
 {
@@ -177,6 +175,6 @@ typedef GenericBinaryDeserializer<Span<byte>> BinaryDeserializer;
 //void DeserializeStructBinary(BinaryDeserializer& deserializer, const StructReflection& reflection, void*& dst);
 
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

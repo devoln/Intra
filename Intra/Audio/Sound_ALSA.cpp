@@ -1,11 +1,16 @@
-﻿#include "Audio/SoundApi.h"
+﻿#include "SoundApi.h"
+
 #include "Cpp/Warnings.h"
+
 #include "Memory/Allocator/Global.h"
+
 #include "Range/Mutation/Fill.h"
+
+#include "Data/ValueType.h"
 
 //#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
 
-#if(INTRA_LIBRARY_SOUND_SYSTEM==INTRA_LIBRARY_SOUND_SYSTEM_ALSA)
+#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_ALSA)
 
 
 #include <alsa/asoundlib.h>
@@ -17,7 +22,7 @@ using namespace Intra::Math;
 
 namespace SoundAPI {
 
-const ValueType::I InternalBufferType = ValueType::Short;
+const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
 const int InternalChannelsInterleaved = true;
 
 struct Buffer
@@ -69,26 +74,20 @@ struct StreamedBuffer
 
 struct Context
 {
-	Context(): playbackDevice(null), PrimaryBufferSampleCount(16384) {}
+	Context(): Device(null), PrimaryBufferSampleCount(16384) {}
 
 	~Context()
 	{
-		if(playbackDevice==null) return;
-		alcMakeContextCurrent(null);
-		alcDestroyContext(alc);
-		alc = null;
-		if(ald==null) return;
-		alcCloseDevice(ald);
+		if(Device == null) return;
+		snd_pcm_close(Device);
 	}
 
 	void Prepare()
 	{
-		if(Device!=null) return;
-
-		snd_pcm_sw_params_t* swParams;
+		if(Device != null) return;
 		
 		int err = snd_pcm_open(&Device, "default", SND_PCM_STREAM_PLAYBACK, 0);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
@@ -96,14 +95,14 @@ struct Context
 
 		snd_pcm_hw_params_t* hwParams;
 		err = snd_pcm_hw_params_malloc(&hwParams);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_hw_params_any(Device, hwParams);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
@@ -124,15 +123,15 @@ struct Context
 		}
 
 		uint exactSampleRate = SW_OUTPUT_DEVICE_SAMPLE_RATE;
-		err = snd_pcm_hw_params_set_rate_near(Device, hwParams, &exactRate, 0);
-		if(err<0)
+		err = snd_pcm_hw_params_set_rate_near(Device, hwParams, &exactSampleRate, 0);
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_hw_params_set_channels(Device, hwParams, 2);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
@@ -140,7 +139,7 @@ struct Context
 
 		unsigned long exactSize = PrimaryBufferSampleCount*2; 
 		err = snd_pcm_hw_params_set_buffer_size_near(Device, hwParams, &exactSize);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
@@ -161,43 +160,44 @@ struct Context
 
 		snd_pcm_hw_params_free(hwParams);
 
-		err = snd_pcm_sw_params_malloc (&sw_params);
-		if(err<0)
+		snd_pcm_sw_params_t* swParams;
+		err = snd_pcm_sw_params_malloc(&swParams);
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
-		err = snd_pcm_sw_params_current (dev->playbackDevice, sw_params);
-		if(err<0)
+		err = snd_pcm_sw_params_current(Device, swParams);
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_sw_params_set_avail_min(Device, swParams, PrimaryBufferSampleCount);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_sw_params_set_start_threshold(Device, swParams, 0);
-		if (err<0)
+		if (err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_sw_params(Device, swParams);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
 		}
 
 		err = snd_pcm_prepare(Device);
-		if(err<0)
+		if(err < 0)
 		{
 			INTRA_DEBUGGER_BREAKPOINT;
 			return;
@@ -213,14 +213,6 @@ struct Context
 };
 static Context context;
 
-
-static ushort get_format(uint channels)
-{
-	INTRA_DEBUG_ASSERT(channels>0 && channels<=2);
-    if(channels==1) return AL_FORMAT_MONO16;
-    if(channels==2) return AL_FORMAT_STEREO16;
-    return 0;
-}
 
 BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 {
@@ -349,12 +341,12 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 {
 	const int alFmt = snd->channels==1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16;
 	const size_t samplesProcessed = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&snd->temp_buffer),
-		snd->channels, ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
-	if(samplesProcessed<snd->sampleCount)
+		snd->channels, Data::ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
+	if(samplesProcessed < snd->sampleCount)
 	{
 		short* const endOfData = snd->temp_buffer+snd->sampleCount*snd->channels;
 		const size_t totalSamplesInBuffer = (snd->sampleCount-samplesProcessed)*snd->channels;
-		Algo::FillZeros(Range::Take(endOfData, totalSamplesInBuffer));
+		FillZeros(Range::Take(endOfData, totalSamplesInBuffer));
 		snd->stop_soon = true;
 	}
 	alBufferData(snd->buffers[index], alFmt, snd->temp_buffer, int(snd->SizeInBytes()), int(snd->sampleRate));
@@ -402,7 +394,7 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		alSourceUnqueueBuffers(snd->source, 1, snd->buffers);
 		load_buffer(snd, 0);
 		alSourceQueueBuffers(snd->source, 1, snd->buffers);
-		core::swap(snd->buffers[0], snd->buffers[1]);
+		Cpp::Swap(snd->buffers[0], snd->buffers[1]);
 	}
 }
 

@@ -60,7 +60,7 @@
     <DisplayString>Composite{Attached}</DisplayString>
     <Expand>
       <ArrayItems>
-        <Size>Attached.range.End-Attached.range.Begin</Size>
+        <Size>Attached.range.End - Attached.range.Begin</Size>
         <ValuePointer>Attached.range.Begin</ValuePointer>
       </ArrayItems>
     </Expand>
