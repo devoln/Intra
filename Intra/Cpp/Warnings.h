@@ -5,7 +5,7 @@
 #define INTRA_WARNING_PUSH __pragma(warning(push))
 #define INTRA_WARNING_POP __pragma(warning(pop))
 
-#if _MSC_VER>=1900
+#if _MSC_VER >= 1900
 #define INTRA_REDUNDANT_WARNINGS_MSVC14 4577 4868
 //4577 - чтобы не ругался на noexcept при отключённых исключениях
 //4868 - компилятор не может принудительно применить порядок вычисления "слева направо" для списка инициализаторов, заключенных в фигурные скобки
@@ -43,6 +43,8 @@
 
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
+#define INTRA_WARNING_DISABLE_UNREACHABLE_CODE __pragma(warning(disable: 4702))
+
 #define INTRA_WARNING_DISABLE_PEDANTIC
 
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) \
@@ -63,68 +65,29 @@
 #define INTRA_DISABLE_LNK4221
 #endif
 
-#elif defined(__GNUC__)
+#elif defined(__GNUC__) && !defined(__clang__)
 #define INTRA_WARNING_PUSH \
 	_Pragma("GCC diagnostic push")
 #define INTRA_WARNING_POP \
 	_Pragma("GCC diagnostic pop")
 
-#define INTRA_WARNING_DISABLE_SIGN_CONVERSION \
-	_Pragma("GCC diagnostic ignored \"-Wsign-conversion\"")
-
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS \
-	INTRA_WARNING_PUSH \
-	_Pragma("GCC diagnostic ignored \"-Wall\"") \
-	_Pragma("GCC diagnostic ignored \"-Wextra\"") \
-	_Pragma("GCC diagnostic ignored \"-Wold-style-cast\"") \
-	_Pragma("GCC diagnostic ignored \"-Wconversion\"") \
-	_Pragma("GCC diagnostic ignored \"-Wsign-conversion\"") \
-	_Pragma("GCC diagnostic ignored \"-Winit-self\"") \
-	_Pragma("GCC diagnostic ignored \"-Wunreachable-code\"") \
-	_Pragma("GCC diagnostic ignored \"-Wpointer-arith\"") \
-	_Pragma("GCC diagnostic ignored \"-Wpedantic\"")
-
-#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("GCC diagnostic ignored \"-Wctor-dtor-privacy\"")
-
-#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR _Pragma("GCC diagnostic ignored \"-Wnon-virtual-dtor\"")
-#define INTRA_WARNING_DISABLE_PEDANTIC _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
-
-#define INTRA_DISABLE_LNK4221
+#define INTRA_IGNORE_WARNING_HELPER0(x) #x
+#define INTRA_IGNORE_WARNING_HELPER1(x) INTRA_IGNORE_WARNING_HELPER0(GCC diagnostic ignored x)
+#define INTRA_IGNORE_WARNING_HELPER2(y) INTRA_IGNORE_WARNING_HELPER1(#y)
+#define INTRA_IGNORE_WARNING(x) _Pragma(INTRA_IGNORE_WARNING_HELPER2(-W ## x))
 
 #elif defined(__clang__)
+
 #define INTRA_WARNING_PUSH \
 	_Pragma("clang diagnostic push")
+
 #define INTRA_WARNING_POP \
 	_Pragma("clang diagnostic pop")
 
-#define INTRA_WARNING_DISABLE_SIGN_CONVERSION \
-	_Pragma("clang diagnostic ignored \"-Wsign-conversion\"")
-
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS \
-	INTRA_WARNING_PUSH \
-	_Pragma("clang diagnostic ignored \"-Wall\"") \
-	_Pragma("clang diagnostic ignored \"-Wextra\"") \
-	_Pragma("clang diagnostic ignored \"-Wold-style-cast\"") \
-	_Pragma("clang diagnostic ignored \"-Wconversion\"") \
-	_Pragma("clang diagnostic ignored \"-Wsign-conversion\"") \
-	_Pragma("clang diagnostic ignored \"-Winit-self\"") \
-	_Pragma("clang diagnostic ignored \"-Wunreachable-code\"") \
-	_Pragma("GCC diagnostic ignored \"-Wpedantic\"")
-
-#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR _Pragma("clang diagnostic ignored \"-Wnon-virtual-dtor\"")
-#define INTRA_DISABLE_REDUNDANT_WARNINGS _Pragma("clang diagnostic ignored \"-Wctor-dtor-privacy\"")
-#define INTRA_WARNING_DISABLE_PEDANTIC _Pragma("GCC diagnostic ignored \"-Wpedantic\"")
-
-#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
-
-#define INTRA_DISABLE_LNK4221
+#define INTRA_IGNORE_WARNING_HELPER0(x) #x
+#define INTRA_IGNORE_WARNING_HELPER1(x) INTRA_IGNORE_WARNING_HELPER0(clang diagnostic ignored x)
+#define INTRA_IGNORE_WARNING_HELPER2(y) INTRA_IGNORE_WARNING_HELPER1(#y)
+#define INTRA_IGNORE_WARNING(x) _Pragma(INTRA_IGNORE_WARNING_HELPER2(-W ## x))
 
 #else
 
@@ -141,6 +104,34 @@
 
 #define INTRA_DISABLE_LNK4221
 
+#endif
+
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
+#define INTRA_PUSH_DISABLE_ALL_WARNINGS \
+	INTRA_WARNING_PUSH \
+	INTRA_IGNORE_WARNING(all) \
+	INTRA_IGNORE_WARNING(extra) \
+	INTRA_IGNORE_WARNING(old-style-cast) \
+	INTRA_IGNORE_WARNING(conversion) \
+	INTRA_IGNORE_WARNING(sign-conversion) \
+	INTRA_IGNORE_WARNING(init-self) \
+	INTRA_IGNORE_WARNING(unreachable-code) \
+	INTRA_IGNORE_WARNING(pointer-arith) \
+	INTRA_IGNORE_WARNING(pedantic)
+
+#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
+#define INTRA_DISABLE_REDUNDANT_WARNINGS INTRA_IGNORE_WARNING(ctor-dtor-privacy)
+
+#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR INTRA_IGNORE_WARNING(non-virtual-dtor)
+#define INTRA_WARNING_DISABLE_PEDANTIC INTRA_IGNORE_WARNING(pedantic)
+
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION INTRA_IGNORE_WARNING(conversion)
+#define INTRA_WARNING_DISABLE_SIGN_CONVERSION INTRA_IGNORE_WARNING(sign-conversion)
+#define INTRA_WARNING_DISABLE_UNREACHABLE_CODE INTRA_IGNORE_WARNING(unreachable-code)
+
+#define INTRA_DISABLE_LNK4221
 #endif
 
 #define INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS \

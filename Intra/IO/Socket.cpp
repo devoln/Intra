@@ -11,12 +11,12 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
 #ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN 
+#define WIN32_LEAN_AND_MEAN
 #endif
 
 #ifdef _MSC_VER
 #pragma comment(lib, "Ws2_32.lib")
-#pragma warning(disable: 4548) //Ругался на FD_SET
+#pragma warning(disable: 4548) //warning in FD_SET
 #endif
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -100,14 +100,18 @@ static const byte socketConstants[][3] =
 	{AF_INET6, SOCK_RAW, IPPROTO_IGMP},
 	{AF_INET, SOCK_RAW, IPPROTO_ICMP},
 	{AF_INET6, SOCK_RAW, IPPROTO_IGMP},
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	{AF_BTH, SOCK_STREAM, BTHPROTO_RFCOMM},
 #else
 	{0, 0, 0},
 #endif
 	{AF_INET, SOCK_RAW, IPPROTO_ICMPV6},
 	{AF_INET6, SOCK_RAW, IPPROTO_ICMPV6},
+#ifdef AF_IRDA
 	{AF_IRDA, SOCK_STREAM, 0}
+#else
+	{0, 0, 0}
+#endif
 };
 
 void BasicSocket::initContext()
@@ -164,13 +168,15 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections, 
 		return;
 	}
 
+	int reuseAddrEnable = 1;
+	setsockopt(mHandle, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<char*>(&reuseAddrEnable), sizeof(int));
+
 	if(bind(mHandle, addrInfo->ai_addr, socklen_t(addrInfo->ai_addrlen)) != 0)
 	{
 		Std.PrintLine(getErrorMessage());
 		Close();
 		return;
 	}
-	addrInfo = null;
 
 	if(listen(mHandle, int(maxConnections)) < 0)
 	{
@@ -186,7 +192,7 @@ bool BasicSocket::waitInputMs(size_t milliseconds) const
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
 	timeval timeout = {long(milliseconds/1000), long(milliseconds % 1000 * 1000)};
-	return select(int(mHandle+1), &set, null, null, &timeout) > 0;
+	return select(int(mHandle + 1), &set, null, null, &timeout) > 0;
 }
 
 bool BasicSocket::waitInput() const
@@ -195,7 +201,7 @@ bool BasicSocket::waitInput() const
 	fd_set set;
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
-	return select(int(mHandle+1), &set, null, null, null) > 0;
+	return select(int(mHandle + 1), &set, null, null, null) > 0;
 }
 
 StreamSocket ServerSocket::Accept(String& addr, ErrorStatus& status)

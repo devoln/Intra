@@ -1,6 +1,7 @@
 #include "IO.h"
 
 #include "Concurrency/Thread.h"
+#include "Concurrency/Atomic.h"
 
 #include "IO/Socket.h"
 #include "IO/SocketReader.h"
@@ -21,7 +22,7 @@ void TestSocketIO(FormattedWriter& output)
 	if(server == null) output.PrintLine("Couldn't start server.");
 	INTRA_ASSERT(server != null);
 
-	bool error = false;
+	Atomic<bool> error(false);
 	Thread thread([&]() {
 		FatalErrorStatus status2;
 		StreamSocket client(SocketType::TCP, "localhost", 8080, status2);
@@ -32,7 +33,7 @@ void TestSocketIO(FormattedWriter& output)
 		{
 			size_t len = client.Receive(strBuf, sizeof(strBuf), status2);
 			str = StringView(strBuf, len);
-			output.PrintLine(str);
+			output.PrintLine("[Received] ", str);
 			if(str != "World") error = true;
 		}
 		else output.PrintLine("Error waiting!");
@@ -54,18 +55,14 @@ void TestSocketIO(FormattedWriter& output)
 	output.PrintLine(str);
 	INTRA_ASSERT_EQUALS(str, "Hello");
 	connectedClient.Send("World", 5, status);
+	output.PrintLine("[Sent] World");
 
 	SocketWriter writer(Cpp::Move(connectedClient));
 	writer.PrintLine("Writer: Hello, Reader!")
 		.PrintLine("Second line.")
 		.PrintLine("Third line.");
 
-	writer.Flush();
-	writer.Socket().Shutdown();
-	connectedClient = null;
-	thread = null;
-	server = null;
-	//INTRA_ASSERT(!error);
+	INTRA_ASSERT(!error);
 }
 
 void TestHttpServer(FormattedWriter& output)

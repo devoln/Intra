@@ -49,4 +49,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 target_link_libraries(Intra Shlwapi)
 endif()
 
-
+if(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+target_link_libraries(Intra execinfo)
+endif()

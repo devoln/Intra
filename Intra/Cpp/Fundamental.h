@@ -55,10 +55,11 @@ typedef long double real;
 #ifdef INTRA_CHAR16_SUPPORT
 typedef char16_t wchar;
 #else
-#if(!defined(__CHAR16_TYPE__) && INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(!defined(__CHAR16_TYPE__) && INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 static_assert(sizeof(wchar_t)==2, "Error in platform specific wchar type definition.");
 typedef wchar_t wchar;
 #else
+#define INTRA_WCHAR_EMULATED
 struct wchar
 {
 	forceinline wchar() = default;
@@ -78,6 +79,7 @@ static_assert(sizeof(wchar_t) == 4,
 	"Error in platform specific dchar type definition.");
 typedef wchar_t dchar;
 #else
+#define INTRA_DCHAR_EMULATED
 struct dchar
 {
 	forceinline dchar() = default;

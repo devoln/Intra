@@ -163,7 +163,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus
 	totalBytesRead += bytesRead;
 	return totalBytesRead;
 #else
-	auto bytesRead = pread64(int(size_t(mHandle)), dst, bytes, off64_t(fileOffset));
+	auto bytesRead = pread(int(size_t(mHandle)), dst, bytes, off_t(fileOffset));
 	if(bytesRead < 0)
 	{
 		bytesRead = 0;
@@ -183,8 +183,8 @@ ulong64 OsFile::Size(ErrorStatus& status) const
 		ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
 	return ulong64(result.QuadPart);
 #else
-	const off64_t result = lseek64(int(size_t(mHandle)), 0, SEEK_END);
-	if(result == off64_t(-1))
+	const off_t result = lseek(int(size_t(mHandle)), 0, SEEK_END);
+	if(result == off_t(-1))
 	{
 		ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
 		return 0;
@@ -219,7 +219,7 @@ size_t OsFile::WriteData(ulong64 fileOffset, const void* src, size_t bytes, Erro
 	if(!WriteFile(HANDLE(mHandle), psrc, DWORD(bytes), &bytesWritten, &overlapped))
 		ProcessLastError(status, String::Concat("Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 #else
-	auto bytesWritten = pwrite64(int(size_t(mHandle)), src, bytes, off64_t(fileOffset));
+	auto bytesWritten = pwrite(int(size_t(mHandle)), src, bytes, off_t(fileOffset));
 	if(bytesWritten < 0)
 	{
 		bytesWritten = 0;
@@ -240,7 +240,7 @@ void OsFile::SetSize(ulong64 size, ErrorStatus& status) const
 	if(!SetEndOfFile(HANDLE(mHandle)))
 		ProcessLastError(status, String::Concat("Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
 #else
-	if(ftruncate64(int(size_t(mHandle)), off64_t(size)) != 0)
+	if(ftruncate(int(size_t(mHandle)), off_t(size)) != 0)
 		ProcessLastError(status, String::Concat("Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
 #endif
 }

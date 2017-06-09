@@ -121,13 +121,15 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	(void)untilMain;
 	return null;
 #else
+	enum {MAX_STACK_FRAMES = 50};
+
 	SymSetOptions(SYMOPT_DEFERRED_LOADS|SYMOPT_INCLUDE_32BIT_MODULES|SYMOPT_UNDNAME);
 	if(!SymInitialize(GetCurrentProcess(), "http://msdl.microsoft.com/download/symbols", true))
 		return null;
 
-	if(maxFrames>50) maxFrames = 50;
-	void* addrs[50] = {0};
-	ushort frames = CaptureStackBackTrace(DWORD(2+framesToSkip), maxFrames, addrs, null);
+	if(maxFrames > MAX_STACK_FRAMES) maxFrames = MAX_STACK_FRAMES;
+	void* addrs[MAX_STACK_FRAMES] = {0};
+	ushort frames = CaptureStackBackTrace(DWORD(2 + framesToSkip), maxFrames, addrs, null);
 
 	const auto dstStart = dst;
 	for(ushort i=0; i<frames; i++)
@@ -155,21 +157,28 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 
 }}
 
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux)
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
 #include <execinfo.h>
 
 namespace Intra { namespace Utils {
 
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
-	if(framesToSkip>50) return null;
-	if(maxFrames+framesToSkip>50) maxFrames = 50-framesToSkip;
-	void* pointerArr[50];
-	size_t size = size_t(backtrace(pointerArr, int(maxFrames+framesToSkip)));
-	char** strings = backtrace_symbols(pointerArr, int(size+framesToSkip));
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
+	typedef size_t backtrace_size;
+#else
+	typedef int backtrace_size;
+#endif
+
+	enum {MAX_STACK_FRAMES = 50};
+	if(framesToSkip > MAX_STACK_FRAMES) return null;
+	if(maxFrames + framesToSkip > MAX_STACK_FRAMES) maxFrames = MAX_STACK_FRAMES - framesToSkip;
+	void* pointerArr[MAX_STACK_FRAMES];
+	size_t size = size_t(backtrace(pointerArr, backtrace_size(maxFrames + framesToSkip)));
+	char** strings = backtrace_symbols(pointerArr, backtrace_size(size + framesToSkip));
 
 	const auto dstStart = dst;
-	for(size_t i=framesToSkip; i<size+framesToSkip; i++)
+	for(size_t i = framesToSkip; i < size + framesToSkip; i++)
 	{
 		auto sym = StringView(strings[i]);
 		sym.CopyToAdvance(dst);

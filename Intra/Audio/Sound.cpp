@@ -16,12 +16,12 @@
 #include "IO/FileSystem.h"
 
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 namespace Intra { namespace Audio {
 
 using namespace Intra::Math;
 using namespace Intra::IO;
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 Array<Sound*> Sound::all_existing_sounds;
 
@@ -123,12 +123,15 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 
 Sound Sound::FromSource(ASoundSource* src)
 {
+	INTRA_WARNING_DISABLE_UNREACHABLE_CODE
+
 	const SoundInfo info = {src->SampleCount(), src->SampleRate(),
 		ushort(src->ChannelCount()), SoundAPI::InternalBufferType};
+
 	Sound result = Sound(info, null);
 	auto lockedData = result.Lock();
 	if(SoundAPI::InternalBufferType == Data::ValueType::Short &&
-		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
+		(SoundAPI::InternalChannelsInterleaved || info.Channels == 1))
 	{
 		Span<short> dst = Span<short>(lockedData, info.SampleCount*src->ChannelCount());
 		src->GetInterleavedSamples(dst);
@@ -244,7 +247,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 		source = new Sources::WaveSource(fileMapping.AsRange());
 	else
 #endif
-#if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
+#if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileMapping.AsRangeOf<char>().StartsWith("OggS"))
 		source = new Sources::VorbisSource(fileMapping.AsRange());
 	else 
@@ -326,6 +329,6 @@ void CleanUpSoundSystem()
 	SoundAPI::SoundSystemCleanUp();
 }
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

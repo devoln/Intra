@@ -18,14 +18,14 @@
 #define INTRA_DISABLED 0
 
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 
-#if __GNUC__==4 && __GNUC_MINOR__>=3 || __GNUC__>=5
+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 3 || __GNUC__ >= 5
 #define INTRA_VARIADIC_TEMPLATE_SUPPORT
 #define INTRA_STATIC_ASSERT_SUPPORT
 #endif
 
-#if __GNUC__==4 && __GNUC_MINOR__>=4 || __GNUC__>=5
+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 4 || __GNUC__ >= 5
 #define INTRA_INITIALIZER_LIST_SUPPORT
 #define INTRA_TRAILING_RETURN_TYPE_SUPPORT
 #define INTRA_STRONG_TYPED_ENUM_SUPPORT
@@ -199,6 +199,8 @@
 
 #if __has_feature(cxx_unicode_literals)
 #define INTRA_UNICODE_STRING_LITERAL_SUPPORT
+#define INTRA_CHAR16_SUPPORT
+#define INTRA_CHAR32_SUPPORT
 #endif
 
 #if __has_feature(cxx_unrestricted_unions)

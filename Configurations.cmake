@@ -14,6 +14,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
     endif()
+	
+	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+	
+	else()
+	set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -D_FILE_OFFSET_BITS=64")
+	endif()
 
     option(COMPILE_32_BIT "Compile as 32 bit application." OFF)
     option(COMPILE_64_BIT "Compile as 64 bit application." OFF)

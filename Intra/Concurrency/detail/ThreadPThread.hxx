@@ -6,6 +6,10 @@
 #include <pthread.h>
 #include <sched.h>
 
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
+#include <pthread_np.h>
+#endif
+
 #if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Windows)
 #include <unistd.h>
 #endif

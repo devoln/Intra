@@ -101,14 +101,20 @@ typedef GenericStringView<wchar> MutWStringView;
 typedef GenericStringView<dchar> MutDStringView;
 
 #ifdef INTRA_USER_DEFINED_LITERAL_SUPPORT
+
 constexpr forceinline StringView operator"" _v(const char* str, size_t len) noexcept
 {return {str, len};}
 
+#ifndef INTRA_WCHAR_EMULATED
 constexpr forceinline WStringView operator"" _wv(const wchar* str, size_t len) noexcept
 {return {str, len};}
+#endif
 
+#ifndef INTRA_DCHAR_EMULATED
 constexpr forceinline DStringView operator"" _dv(const dchar* str, size_t len) noexcept
 {return {str, len};}
+#endif
+
 #endif
 
 }
