@@ -28,7 +28,7 @@ void InitSignals()
 	signal(SIGSEGV, SignalHandler);
 	signal(SIGTERM, SignalHandler);
 	signal(SIGILL, SignalHandler);
-	signal(SIGABRT, SignalHandler);
+	//signal(SIGABRT, SignalHandler);
 	signal(SIGFPE, SignalHandler);
 }
 

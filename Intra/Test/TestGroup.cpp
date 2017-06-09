@@ -137,7 +137,7 @@ void TestGroup::processError(const Utils::SourceInfo& srcInfo, StringView msg)
 		logger->Error(msg, srcInfo);
 		char stackTraceBuf[8192];
 		auto buf = SpanOfBuffer(stackTraceBuf);
-		logger->Error(Utils::GetStackTrace(buf, 2, 50), srcInfo);
+		logger->Error(Utils::GetStackTrace(buf, 3, 50), null);
 	}
 }
 

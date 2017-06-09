@@ -99,7 +99,7 @@ static bool ContainsMainFunction(StringView sym)
 {
 	const StringView found = sym.Find("main");
 	if(found.Empty()) return false;
-	if(found.Data() > sym.Data() && !IsSeparatorChar(found.Data()[-1])) return false;
+	if(found.Data() > sym.Data() && !IsSeparatorChar(found.Data()[-1]) && found.Data()[-1] != '_') return false;
 	if(found.Length() > 4 && !IsSeparatorChar(found[4])) return false;
 	return true;
 }
@@ -129,7 +129,7 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 
 	if(maxFrames > MAX_STACK_FRAMES) maxFrames = MAX_STACK_FRAMES;
 	void* addrs[MAX_STACK_FRAMES] = {0};
-	ushort frames = CaptureStackBackTrace(DWORD(2 + framesToSkip), maxFrames, addrs, null);
+	ushort frames = CaptureStackBackTrace(DWORD(1 + framesToSkip), maxFrames, addrs, null);
 
 	const auto dstStart = dst;
 	for(ushort i=0; i<frames; i++)
@@ -140,10 +140,18 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 		info->MaxNameLen = 1024;
 
 		DWORD64 displacement = 0;
+		DWORD options = SymGetOptions();
+		DWORD newOptions = options & ~SYMOPT_UNDNAME;
+		newOptions = newOptions | SYMOPT_PUBLICS_ONLY;
+		SymSetOptions(newOptions);
 		if(SymFromAddr(GetCurrentProcess(), size_t(addrs[i]), &displacement, info))
 		{
-			auto sym = StringView(info->Name, info->NameLen);
-			sym.CopyToAdvance(dst);
+			auto len = UnDecorateSymbolName(info->Name, dst.Data(), dst.Length(),
+				UNDNAME_NO_ACCESS_SPECIFIERS|UNDNAME_NO_MEMBER_TYPE|UNDNAME_NO_MS_KEYWORDS|
+				UNDNAME_NO_THROW_SIGNATURES|UNDNAME_NO_ALLOCATION_MODEL|UNDNAME_NO_ALLOCATION_LANGUAGE|
+				UNDNAME_NO_CV_THISTYPE|UNDNAME_NO_LEADING_UNDERSCORES|UNDNAME_NO_THISTYPE);
+			auto sym = dst.Take(len);
+			dst.PopFirstN(len);
 			dst << '\n';
 			if(untilMain && ContainsMainFunction(sym)) break;
 		}
@@ -160,6 +168,32 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
 #include <execinfo.h>
 
+#if defined(__GNUC__)// && !defined(__clang__)
+#include <cxxabi.h>
+static Intra::StringView TryDemangle(Intra::Span<char>& dst, Intra::StringView mangledName)
+{
+	auto start = dst;
+	int status;
+	char buf[1024];
+	Intra::SpanOfBuffer(buf) << mangledName << '\0';
+	auto demangledName = abi::__cxa_demangle(buf, 0, 0, &status);
+	if(status == 0)
+	{
+		dst << Intra::StringView(demangledName);
+		free(demangledName);
+	}
+	else dst << Intra::StringView(mangledName);
+	return {start.Data(), dst.Data()};
+}
+#else
+static Intra::StringView TryDemangle(Intra::Span<char>& dst, Intra::StringView mangledName)
+{
+	auto start = dst;
+	dst << Intra::StringView(mangledName);
+	return {start.Data(), dst.Data()};
+}
+#endif
+
 namespace Intra { namespace Utils {
 
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
@@ -169,6 +203,8 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 #else
 	typedef int backtrace_size;
 #endif
+
+	framesToSkip++;
 
 	enum {MAX_STACK_FRAMES = 50};
 	if(framesToSkip > MAX_STACK_FRAMES) return null;
@@ -180,8 +216,11 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	const auto dstStart = dst;
 	for(size_t i = framesToSkip; i < size + framesToSkip; i++)
 	{
-		auto sym = StringView(strings[i]);
-		sym.CopyToAdvance(dst);
+		StringView fullStr(strings[i]);
+		StringView moduleName = fullStr.FindBefore('(');
+		StringView mangledName = fullStr.Drop(moduleName.Length() + 1).FindBefore(')').FindBefore('+');
+		dst << '[' << moduleName << "] ";
+		auto sym = TryDemangle(dst, mangledName);
 		dst << '\n';
 		if(untilMain && ContainsMainFunction(sym)) break;
 	}
@@ -220,7 +259,7 @@ StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 	if(stackFramesToSkip == ~size_t())
 	{
 		dst << "\nStack trace:\n";
-		const StringView stackTrace = GetStackTrace(dst, 1+stackFramesToSkip, 50);
+		const StringView stackTrace = GetStackTrace(dst, stackFramesToSkip + 1, 50);
 		if(stackTrace.Empty())
 			dst << "<Not supported on this platform>\n";
 	}

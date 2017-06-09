@@ -23,7 +23,7 @@ using namespace Range;
 void TestFileSyncIO(FormattedWriter& output)
 {
 	auto file111 = OS.FileOpenOverwrite("TestFileSyncIO.txt", Error::Skip());
-		file111.PrintLine("Fibonacci sequence: ", Take(Recurrence([](int a, int b) {return a+b;}, 1, 1), 10))
+		file111.PrintLine("Fibonacci sequence: ", Take(Recurrence([](int a, int b) {return a + b;}, 1, 1), 10))
 		.PrintLine("Closing file.");
 	file111 = null;
 

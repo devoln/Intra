@@ -31,6 +31,7 @@ void TestSocketIO(FormattedWriter& output)
 		char strBuf[100];
 		if(client.WaitForInput())
 		{
+			output.PrintLine("[Receiving...]");
 			size_t len = client.Receive(strBuf, sizeof(strBuf), status2);
 			str = StringView(strBuf, len);
 			output.PrintLine("[Received] ", str);

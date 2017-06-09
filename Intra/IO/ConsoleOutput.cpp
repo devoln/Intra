@@ -111,11 +111,14 @@ public:
 			ushort consoleCode = 0;
 			if(newFont.Color!=Math::Vec3(-1))
 			{
-				if(newFont.Color.z>=0.25f) consoleCode |= FOREGROUND_BLUE;
-				if(newFont.Color.y>=0.25f) consoleCode |= FOREGROUND_GREEN;
-				if(newFont.Color.x>=0.25f) consoleCode |= FOREGROUND_RED;
-				if(newFont.Color.x>=0.5f || newFont.Color.y>=0.5f || newFont.Color.z>=0.5f)
-					consoleCode |= FOREGROUND_INTENSITY;
+				const float maxColorChannel = Op::Max(Op::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				if(maxColorChannel >= 0.25f)
+				{
+					if(newFont.Color.z >= maxColorChannel / 2) consoleCode |= FOREGROUND_BLUE;
+					if(newFont.Color.y >= maxColorChannel / 2) consoleCode |= FOREGROUND_GREEN;
+					if(newFont.Color.x >= maxColorChannel / 2) consoleCode |= FOREGROUND_RED;
+					if(maxColorChannel >= 0.5f) consoleCode |= FOREGROUND_INTENSITY;
+				}
 			}
 			else consoleCode |= FOREGROUND_BLUE|FOREGROUND_GREEN|FOREGROUND_RED;
 			if(newFont.Underline) consoleCode |= COMMON_LVB_UNDERSCORE;
@@ -129,16 +132,20 @@ public:
 			s.Print("\x1B[0m");
 			if(newFont.Color != Math::Vec3(-1))
 			{
+				const float maxColorChannel = Op::Max(Op::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
 				int code = 0;
 				int colorCode = 30;
-				if(newFont.Color.x>=0.25f) colorCode += 1;
-				if(newFont.Color.y>=0.25f) colorCode += 2;
-				if(newFont.Color.z>=0.25f) colorCode += 4;
-				if(newFont.Color.x<0.5f && newFont.Color.y<0.5f && newFont.Color.z<0.5f) code = 2;
-				s.Print("\x1B[", code, ';', colorCode, 'm');
+				if(maxColorChannel >= 0.25f)
+				{
+					if(newFont.Color.x >= maxColorChannel / 2) colorCode += 1;
+					if(newFont.Color.y >= maxColorChannel / 2) colorCode += 2;
+					if(newFont.Color.z >= maxColorChannel / 2) colorCode += 4;
+				}
+				if(maxColorChannel < 0.5f) code = 2;
+				s << "\x1B[" << code << ';' << colorCode << 'm';
 			}
-			if(newFont.Bold) s.Print("\x1B[1m");
-			if(newFont.Underline) s.Print("\x1B[4m");
+			if(newFont.Bold) s <<"\x1B[1m";
+			if(newFont.Underline) s << "\x1B[4m";
 		}
 #endif
 	}

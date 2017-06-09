@@ -22,11 +22,11 @@ public:
 
 	FormattedWriter Writer;
 	LogLevel Verbosity = LogLevel::All;
-	Math::Vec3 InfoColor = {0.5f, 0.5f, 0.5f};
+	Math::Vec3 InfoColor = {0.45f, 0.45f, 0.45f};
 	Math::Vec3 SuccessColor = {0, 0.75f, 0};
-	Math::Vec3 PerfWarningColor = {0.75f, 0.75f, 0.2f};
+	Math::Vec3 PerfWarningColor = {0.55f, 0.55f, 0.2f};
 	Math::Vec3 WarningColor = {0.9f, 0.75f, 0.2f};
-	Math::Vec3 ErrorColor = {0.9f, 0.4f, 0.25f};
+	Math::Vec3 ErrorColor = {0.9f, 0.4f, 0.2f};
 	Math::Vec3 CriticalErrorColor = {1, 0, 0};
 	bool WriteLevelType = true;
 };

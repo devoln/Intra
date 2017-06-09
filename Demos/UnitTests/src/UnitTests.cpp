@@ -47,13 +47,6 @@ CompositeFormattedWriter& InitOutput()
 	StringView appName = IO::Path::ExtractName(System::Environment.CommandLine.First());
 
 	logWriter.BeginSpoiler(appName + StringOf(System::Environment.CommandLine.Drop(), " ", " ", " ") + datetime);
-	
-	System::CrashHandler = [](int signum)
-	{
-		logger.PushFont({1, 0, 0}, 5, true);
-		logger.PrintLine(System::CrashSignalDesc(signum));
-		logger.PopFont();
-	};
 
 	logWriter << "Command line arguments:";
 	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", " ", " "));

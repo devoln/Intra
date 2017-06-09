@@ -7,7 +7,7 @@ namespace Intra { namespace IO {
 
 void FormattedLogger::Log(LogLevel level, StringView msg, const Utils::SourceInfo& srcInfo)
 {
-	if(level<Verbosity) return;
+	if(level < Verbosity) return;
 	Math::Vec3 color;
 	switch(level)
 	{

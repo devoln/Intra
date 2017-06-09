@@ -180,7 +180,7 @@ template<typename T> struct Span
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::IsConst<U>::_,
-	Span> operator<<(const T& v)
+	Span&> operator<<(const T& v)
 	{
 		if(!Empty()) *Begin++ = v;
 		return *this;
@@ -188,7 +188,7 @@ template<typename T> struct Span
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::IsConst<U>::_,
-	Span> operator<<(T&& v) noexcept
+	Span&> operator<<(T&& v) noexcept
 	{
 		if(!Empty()) *Begin++ = Cpp::Move(v);
 		return *this;
@@ -196,7 +196,7 @@ template<typename T> struct Span
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::IsConst<U>::_,
-	Span> operator<<(Span<const T> v) noexcept
+	Span&> operator<<(Span<const T> v) noexcept
 	{
 		v.CopyAdvanceToAdvance(*this);
 		return *this;

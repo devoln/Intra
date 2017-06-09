@@ -74,6 +74,8 @@ static void ProcessLastError(ErrorStatus& status, StringView message, const Util
 
 #else
 
+INTRA_WARNING_DISABLE_UNUSED_FUNCTION
+
 static forceinline StringView strerrorHelper(int, const char* buf)
 {return StringView(buf);}
 

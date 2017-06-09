@@ -2,10 +2,13 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
-#include "IO/FormattedWriter.h"
+
 #include "Utils/Logger.h"
 #include "Utils/Delegate.h"
 #include "Utils/Debug.h"
+#include "Utils/Finally.h"
+
+#include "IO/FormattedWriter.h"
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -79,12 +82,19 @@ private:
 
 	static void internalErrorTestFail(const Utils::SourceInfo& srcInfo, StringView msg)
 	{
+		static bool alreadyCalled = false;
+		if(alreadyCalled) abort();
+		alreadyCalled = true;
+		auto acCleanup = Finally([&]() {alreadyCalled = false;});
 		processError(srcInfo, msg);
 	#ifdef INTRA_EXCEPTIONS_ENABLED
-		throw TestException();
-	#else
-		INTRA_HEAP_CHECK;
+		if(GetCurrent() != null)
+		{
+			GetCurrent()->Logger->Error("Test stack unwinding...");
+			throw TestException();
+		}
 	#endif
+		exit(totalTestsFailed + 1);
 	}
 
 	static void processError(const Utils::SourceInfo& srcInfo, StringView msg);

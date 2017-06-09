@@ -22,11 +22,12 @@ namespace Intra { namespace Concurrency { namespace detail {
 void SetNativeThreadName(HANDLE threadHandle, StringView name)
 {
 	const DWORD MS_VC_EXCEPTION = 0x406D1388;
-	String nameCopy = name;
+	char buf[128];
+	Span<char>(buf) << name.Take(127) << '\0';
 #pragma pack(push, 8)
 	struct {DWORD dwType; const char* szName; DWORD dwThreadID; DWORD dwFlags;}
-	info = {0x1000, nameCopy.CStr(), ::GetThreadId(threadHandle), 0};
-#pragma pack(pop) 
+	info = {0x1000, buf, ::GetThreadId(threadHandle), 0};
+#pragma pack(pop)
 
 #pragma warning(push)  
 #pragma warning(disable: 6320 6322)  
