@@ -6,7 +6,6 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
 
-#include "IO/LogSystem.h"
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
 #include "IO/Std.h"

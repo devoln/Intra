@@ -1,14 +1,22 @@
 #pragma once
 
 #include "Concurrency/Thread.h"
+#include "Concurrency/CondVar.h"
+#include "Concurrency/Mutex.h"
+
 #include "BasicThreadData.hxx"
+
+#include "Utils/Finally.h"
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #include "ThreadCommonWinAPI.hxx"
 #endif
 
+INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <thread>
 #include <future>
+#include <condition_variable>
+INTRA_WARNING_POP
 
 #undef Yield
 
@@ -17,6 +25,8 @@ namespace Intra { namespace Concurrency {
 struct Thread::Data: detail::BasicThreadData
 {
 	std::thread Thread;
+	SeparateCondVar CV;
+	size_t NumWaiters = 0;
 
 	Data(Func func)
 	{
@@ -24,27 +34,57 @@ struct Thread::Data: detail::BasicThreadData
 		Thread = std::thread(&BasicThreadData::ThreadFunc, this);
 	}
 
-	bool Join()
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
+
+	~Data()
 	{
-		Thread.join();
-		return true;
+		//Деструктор вызывается только в том случае, когда на объект не осталось внешних ссылок.
+		//Владеющий объект потока удалён или отсоединён, а сам поток завершил выполнение своей функции.
+		//Но могут остаться потоки, которые вызвали Join до этого и ещё не успели проснуться и выйти оттуда.
+		while(NumWaiters > 0) MakeLock(StateMutex); //Ждёт завершения Join
 	}
 
-	bool Join(uint timeOutMs)
+	bool Join()
 	{
-		auto future = std::async(std::launch::async, &std::thread::join, &Thread);
-		return future.wait_for(std::chrono::milliseconds(timeOutMs)) != std::future_status::timeout;
+		if(!Thread.joinable()) return !IsRunning.GetRelaxed();
+		auto lck = MakeLock(StateMutex);
+		NumWaiters++;
+		INTRA_FINALLY(NumWaiters--);
+		if(CV.Wait(lck, [this](){return !IsRunning.GetRelaxed();}))
+		{
+			if(Thread.joinable()) Thread.detach();
+			return true;
+		}
+		return false;
+	}
+
+	bool Join(ulong64 timeOutMs)
+	{
+		if(!Thread.joinable()) return !IsRunning.GetRelaxed();
+		auto lck = MakeLock(StateMutex);
+		NumWaiters++;
+		INTRA_FINALLY(NumWaiters--);
+		if(CV.WaitMs(lck, timeOutMs, [this]() {return !IsRunning.GetRelaxed();}))
+		{
+			if(Thread.joinable()) Thread.detach();
+			return true;
+		}
+		return false;
 	}
 
 	void Detach()
 	{
-		Thread.detach();
+		if(IsDetached) return;
+		if(Thread.joinable()) Thread.detach();
 
-		INTRA_SYNCHRONIZED_BLOCK(GlobalThreadMutex)
+		bool wasRunning = true;
+		INTRA_SYNCHRONIZED(StateMutex)
 		{
-			if(!IsRunning) delete this;
+			if(!IsRunning.GetRelaxed()) wasRunning = false;
 			else IsDetached = true;
 		}
+		if(!wasRunning) delete this;
 	}
 
 	void SetName()
@@ -57,20 +97,26 @@ struct Thread::Data: detail::BasicThreadData
 	NativeHandle GetNativeHandle()
 	{return NativeHandle(Thread.native_handle());}
 
-	~Data()
+	void OnFinish() final
 	{
-		if(IsDetached) return;
-		Interrupt();
-		if(!Join()) Detach();
+		BasicThreadData::OnFinish();
+		CV.NotifyAll();
 	}
 };
 
-void ThisThread::Yield() {std::this_thread::yield();}
+void TThisThread::Yield() {std::this_thread::yield();}
 
-bool ThisThread::Sleep(ulong64 milliseconds)
+bool TThisThread::Sleep(ulong64 milliseconds)
 {
-	std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
-	return true;
+	const auto hndl = Thread::Data::Current;
+	if(hndl == null)
+	{
+		std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
+		return true;
+	}
+	auto lck = MakeLock(hndl->StateMutex);
+	hndl->CV.WaitMs(lck, milliseconds, []() {return false;});
+	return !IsInterrupted();
 }
 
 }}

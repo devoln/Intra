@@ -508,7 +508,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_MINIMIZE_CRT;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <StringPooling>true</StringPooling>
@@ -713,7 +713,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_MINIMIZE_CRT;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>

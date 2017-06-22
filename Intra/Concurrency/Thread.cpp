@@ -7,17 +7,17 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
+
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #include "detail/ThreadCommonWinAPI.hxx"
+#else
+#include <pthread.h>
 #endif
 
 #include "detail/BasicThreadData.hxx"
 
-#if(INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_Dummy)
-
-#include "detail/ThreadDummy.hxx"
-
-#elif(INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_CPPLIB)
+#if(INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_Cpp11)
 
 #include "detail/ThreadCpp11.hxx"
 
@@ -27,8 +27,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #elif(INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_PThread)
 
-#include "detail/ThreadPThread.hxx"
 #include "detail/ThreadSleep.hxx"
+#include "detail/ThreadPThread.hxx"
 
 #endif
 
@@ -45,15 +45,22 @@ Thread::Thread(Func func):
 
 Thread::Thread(null_t) noexcept {}
 
-Thread::~Thread() {}
+Thread::Thread(Thread&&) noexcept = default;
+
+Thread::~Thread()
+{
+	if(mHandle == null) return;
+	Interrupt();
+	if(!Join()) Detach();
+}
 
 Thread& Thread::operator=(Thread&&) = default;
 
 bool Thread::Join()
 {return mHandle == null || mHandle->Join();}
 
-bool Thread::Join(uint timeoutMs)
-{return mHandle == null || mHandle->Join(timeoutMs);}
+bool Thread::JoinMs(ulong64 timeout)
+{return mHandle == null || mHandle->Join(timeout);}
 
 void Thread::Interrupt()
 {
@@ -62,10 +69,13 @@ void Thread::Interrupt()
 }
 
 bool Thread::IsInterrupted() const
-{return mHandle != null && mHandle->IsInterrupted;}
+{
+	if(mHandle == null) return false;
+	return mHandle->IsInterrupted.GetRelaxed();
+}
 
 bool Thread::IsRunning() const
-{return mHandle != null && mHandle->IsRunning;}
+{return mHandle != null && mHandle->IsRunning.GetRelaxed();}
 
 void Thread::SetName(StringView name)
 {
@@ -74,8 +84,11 @@ void Thread::SetName(StringView name)
 	mHandle->SetName();
 }
 
-StringView Thread::GetName() const
-{return mHandle == null? null: mHandle->Name;}
+StringView Thread::Name() const
+{
+	if(mHandle == null) return null;
+	return mHandle->Name;
+}
 
 void Thread::Detach()
 {
@@ -89,27 +102,94 @@ Thread::NativeHandle Thread::GetNativeHandle() const
 		mHandle->GetNativeHandle();
 }
 
-Thread::Handle ThisThread::Handle()
-{return Thread::Data::Current;}
+bool Thread::IsInterruptionEnabled() const
+{
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	return !mHandle->ForceInterruptionDisabled.GetRelaxed();
+#else
+	return false;
+#endif
+}
 
-void ThisThread::Interrupt()
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+void Thread::allowInterruption(bool allow)
+{
+	mHandle->ForceInterruptionDisabled.Set(!allow);
+}
+#endif
+
+#ifdef INTRA_DEBUG
+Thread::Handle TThisThread::getHandle()
+{
+	return Thread::Data::Current;
+}
+#endif
+
+Thread::NativeHandle TThisThread::NativeHandle()
+{
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	return Thread::NativeHandle(GetCurrentThread());
+#else
+	thread_local pthread_t self = pthread_self();
+	return Thread::NativeHandle(&self);
+#endif
+}
+
+void TThisThread::Interrupt()
 {
 	if(Thread::Data::Current == null) return;
 	Thread::Data::Current->Interrupt();
 }
 
-bool ThisThread::IsInterrupted()
+bool TThisThread::IsInterrupted()
 {
-	return Thread::Data::Current == null? false:
-		Thread::Data::Current->IsInterrupted.Load();
+	if(Thread::Data::Current == null) return false;
+	return Thread::Data::Current->IsInterrupted.GetRelaxed();
 }
 
-StringView ThisThread::Name()
+bool TThisThread::IsInterruptionEnabled()
+{
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	if(Thread::Data::Current == null) return false;
+	return !Thread::Data::Current->ForceInterruptionDisabled.GetRelaxed();
+#else
+	return false;
+#endif
+}
+
+StringView TThisThread::Name()
 {
 	return Thread::Data::Current == null? null:
 		Thread::Data::Current->Name;
 }
 
+#if !defined(INTRA_THREAD_NO_FULL_INTERRUPT) || defined(INTRA_DEBUG)
+void TThisThread::onWait(SeparateCondVar* cv, Mutex* mutex)
+{
+	auto hndl = Thread::Data::Current;
+	if(hndl == null || hndl->ForceInterruptionDisabled.GetRelaxed()) return;
+	if(cv) hndl->InterruptableAction();
+	if(mutex == &hndl->StateMutex)
+	{
+		hndl->WaitedCondVar = cv;
+		return;
+	}
+	INTRA_SYNCHRONIZED(hndl->StateMutex)
+		hndl->WaitedCondVar = cv;
+}
+
+void TThisThread::allowInterruption(bool allow)
+{
+	if(Thread::Data::Current == null) return;
+	Thread::Data::Current->ForceInterruptionDisabled.Set(!allow);
+}
+
+#endif
+
+const TThisThread ThisThread;
+
 }}
+
+#endif
 
 INTRA_WARNING_POP

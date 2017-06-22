@@ -259,13 +259,19 @@
     <Filter Include="Заголовочные файлы\Preprocessor">
       <UniqueIdentifier>{c4072275-bfdb-4283-a7b2-d2f9cf84ffac}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\System\detail">
+      <UniqueIdentifier>{760e68ea-d828-45d4-bee3-4d51954f8aed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\System\detail">
+      <UniqueIdentifier>{6f10b7b7-e59b-4ee8-ab05-465f5c2a9594}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Concurrency\detail">
+      <UniqueIdentifier>{b067ca83-a359-43e1-ad83-9dde69cd7268}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Memory\Memory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="IO\LogSystem.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="Data\BinarySerialization.cpp">
       <Filter>Файлы исходного кода\Data</Filter>
@@ -333,9 +339,6 @@
     <ClCompile Include="IO\OsFile.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
-    <ClCompile Include="IO\CompositeFormattedWriter.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
     <ClCompile Include="IO\ConsoleOutput.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
@@ -343,9 +346,6 @@
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="IO\Std.cpp">
-      <Filter>Файлы исходного кода\IO</Filter>
-    </ClCompile>
-    <ClCompile Include="IO\ReferenceFormattedWriter.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="IO\Socket.cpp">
@@ -531,6 +531,15 @@
     <ClCompile Include="Concurrency\Mutex.cpp">
       <Filter>Файлы исходного кода\Concurrency</Filter>
     </ClCompile>
+    <ClCompile Include="System\detail\Common.cpp">
+      <Filter>Файлы исходного кода\System\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="System\DLL.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Concurrency\CondVar.cpp">
+      <Filter>Файлы исходного кода\Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utils\Callback.h">
@@ -538,9 +547,6 @@
     </ClInclude>
     <ClInclude Include="Math\Fixed.h">
       <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="IO\LogSystem.h">
-      <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="IO\Networking.h">
       <Filter>Заголовочные файлы\IO</Filter>
@@ -1022,9 +1028,6 @@
     <ClInclude Include="IO\HtmlWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
-    <ClInclude Include="IO\CompositeFormattedWriter.h">
-      <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
     <ClInclude Include="Range\Compositors\ZipKV.h">
       <Filter>Заголовочные файлы\Range\Compositors</Filter>
     </ClInclude>
@@ -1065,9 +1068,6 @@
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="IO\Std.h">
-      <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="IO\ReferenceFormattedWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="Range\Output.hh">
@@ -1610,9 +1610,6 @@
     <ClInclude Include="Concurrency\detail\ThreadCommonWinAPI.hxx">
       <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Concurrency\detail\MutexDummy.hxx">
-      <Filter>Файлы исходного кода\Concurrency\detail</Filter>
-    </ClInclude>
     <ClInclude Include="Concurrency\detail\ThreadDummy.hxx">
       <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
@@ -1639,6 +1636,42 @@
     </ClInclude>
     <ClInclude Include="Preprocessor.hh">
       <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="System\detail\Common.h">
+      <Filter>Заголовочные файлы\System\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\CondVar.h">
+      <Filter>Заголовочные файлы\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\CondVarCpp11.hxx">
+      <Filter>Файлы исходного кода\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\CondVarPThread.hxx">
+      <Filter>Файлы исходного кода\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\CondVarWinAPI.hxx">
+      <Filter>Файлы исходного кода\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="System\DLL.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\Synchronized.h">
+      <Filter>Заголовочные файлы\Concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\AtomicCpp11.h">
+      <Filter>Заголовочные файлы\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\AtomicGNU.h">
+      <Filter>Заголовочные файлы\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\AtomicMSVC.h">
+      <Filter>Заголовочные файлы\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="IO\Formatter.h">
+      <Filter>Заголовочные файлы\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\ThreadSleep.hxx">
+      <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1681,6 +1714,9 @@
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Range\RangePolymorphic.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="System\System.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

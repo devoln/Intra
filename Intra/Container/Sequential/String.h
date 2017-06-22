@@ -434,6 +434,17 @@ public:
 	template<typename... Args> static forceinline GenericString Concat(Args&&... args)
 	{return StringFormatter<GenericString>(null).Arg(Cpp::Forward<Args>(args)...);}
 
+	template<typename Arg> GenericString& operator<<(Arg&& value)
+	{
+		const size_t maxLen = Range::MaxLengthOfToString(value);
+		size_t oldLen = Length();
+		SetLengthUninitialized(Length() + maxLen);
+		auto bufferRest = Tail(maxLen);
+		ToString(bufferRest, Cpp::Forward<Arg>(value));
+		SetLengthUninitialized(Length() - bufferRest.Length());
+		return *this;
+	}
+
 	forceinline GenericStringView<Char> View()
 	{return {Data(), Length()};}
 	
@@ -759,9 +770,9 @@ GenericString<Char>> operator+(S1&& lhs, S2&& rhs)
 	return result;
 }
 
-template<typename R, typename Char,
+template<typename R,
 	typename AsR = Concepts::RangeOfType<R>,
-	typename Char2 = Concepts::ValueTypeOf<AsR>
+	typename Char = Concepts::ValueTypeOf<AsR>
 > Meta::EnableIf<
 	Concepts::IsConsumableRange<AsR>::_ &&
 	//Чтобы не конфликтовать с STL
@@ -769,12 +780,10 @@ template<typename R, typename Char,
 		Concepts::HasAsRangeMethod<R>::_ ||
 		Concepts::IsInputRange<R>::_) &&
 
-	Meta::IsCharType<Char2>::_ &&
-	(Meta::IsCharType<Char>::_ ||
-		Meta::IsIntegralType<Char>::_),
-GenericString<Char2>> operator+(R&& lhs, Char rhs)
+	Meta::IsCharType<Char>::_,
+GenericString<Char>> operator+(R&& lhs, Char rhs)
 {
-	GenericString<Char2> result;
+	GenericString<Char> result;
 	result.Reserve(Range::LengthOr0(lhs)+1);
 	result += Range::Forward<R>(lhs);
 	result += rhs;

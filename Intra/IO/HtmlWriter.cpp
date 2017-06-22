@@ -1,4 +1,5 @@
 #include "IO/HtmlWriter.h"
+#include "Range/Stream/ToString.h"
 
 namespace Intra { namespace IO {
 
@@ -29,72 +30,72 @@ static const StringView HtmlWriter_CssLoggerCode = "<style type=\"text/css\">"
 	".perf {color: #aaaa00; font-size: 75%;}\r\n"
 	"</style>";
 
-class HtmlWriterImpl final: public FormattedWriter::BasicImpl
+class HtmlFormatter final: public BasicFormatter
 {
 	uint rndCounter = 1;
 public:
-	using FormattedWriter::BasicImpl::PushFont;
-	using FormattedWriter::BasicImpl::PopFont;
+	using BasicFormatter::PushFont;
+	using BasicFormatter::PopFont;
 
-	void BeginCode(OutputStream& s) override {s.Print("\n<pre>\n");}
-	void EndCode(OutputStream& s) override {s.Print("\n</pre>\n");}
+	void BeginCode(IOutputStream<char>& s) override {s << "\n<pre>\n";}
+	void EndCode(IOutputStream<char>& s) override {s << "\n</pre>\n";}
 
-	void PushStyle(OutputStream& s, StringView style) override {s.Print("<span class='", style, "'>");}
-	void PopStyle(OutputStream& s) override {s.Print("</span>");}
+	void PushStyle(IOutputStream<char>& s, StringView style) override {s << "<span class='" << style << "'>";}
+	void PopStyle(IOutputStream<char>& s) override {s << "</span>";}
 
-	void HorLine(OutputStream& s) override {s.Print("<hr>");}
+	void HorLine(IOutputStream<char>& s) override {s << "<hr>";}
 
-	void LineBreak(OutputStream& s) override {s.PrintLine("<br />");}
+	void LineBreak(IOutputStream<char>& s) override {s << "<br />\n";}
 
-	void PrintPreformatted(OutputStream& s, StringView text) override
+	void PrintPreformatted(IOutputStream<char>& s, StringView text) override
 	{
-		s.Print(String::MultiReplace(text,
+		s << String::MultiReplace(text,
 			{"&",      "<",     ">",   "\r\n",   "\n",     "\r"},
 			{"&amp;", "&lt;", "&gt;", "<br />", "<br />", "<br />"}
-		));
+		);
 	}
 
-	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) override
+	void PushFont(IOutputStream<char>& s, const FontDesc& newFont, const FontDesc& curFont) override
 	{
-		if(curFont.Underline && !newFont.Underline) s.Print("</ins>");
-		if(curFont.Italic && !newFont.Italic) s.Print("</i>");
-		if(curFont.Bold && !newFont.Bold) s.Print("</b>");
+		if(curFont.Underline && !newFont.Underline) s << "</ins>";
+		if(curFont.Italic && !newFont.Italic) s << "</i>";
+		if(curFont.Bold && !newFont.Bold) s << "</b>";
 		if(curFont.Color != newFont.Color || curFont.Size != newFont.Size)
 		{
 			const auto c = Math::USVec3(Math::Min(newFont.Color*255.0f, 255.0f));
-			String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
-			s.Print("<font color=", colstr, " size=", newFont.Size, ">");
+			const String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
+			s << "<font color=" << colstr << " size=" << newFont.Size << ">";
 		}
-		if(!curFont.Bold && newFont.Bold) s.Print("<b>");
-		if(!curFont.Italic && newFont.Italic) s.Print("<i>");
-		if(!curFont.Underline && newFont.Underline) s.Print("<ins>");
+		if(!curFont.Bold && newFont.Bold) s << "<b>";
+		if(!curFont.Italic && newFont.Italic) s << "<i>";
+		if(!curFont.Underline && newFont.Underline) s << "<ins>";
 	}
 
-	void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) override
+	void PopFont(IOutputStream<char>& s, const FontDesc& curFont, const FontDesc& prevFont) override
 	{
-		if(curFont.Bold && !prevFont.Bold) s.Print("</b>");
-		if(curFont.Italic && !prevFont.Italic) s.Print("</i>");
-		if(curFont.Underline && !prevFont.Underline) s.Print("</ins>");
-		s.Print("</font>");
-		if(!curFont.Bold && prevFont.Bold) s.Print("<b>");
-		if(!curFont.Italic && prevFont.Italic) s.Print("<i>");
-		if(!curFont.Underline && prevFont.Underline) s.Print("<ins>");
+		if(curFont.Bold && !prevFont.Bold) s << "</b>";
+		if(curFont.Italic && !prevFont.Italic) s << "</i>";
+		if(curFont.Underline && !prevFont.Underline) s << "</ins>";
+		s << "</font>";
+		if(!curFont.Bold && prevFont.Bold) s << "<b>";
+		if(!curFont.Italic && prevFont.Italic) s << "<i>";
+		if(!curFont.Underline && prevFont.Underline) s << "<ins>";
 	}
 
-	void beginSpoiler(OutputStream& s, StringView label) override
+	void beginSpoiler(IOutputStream<char>& s, StringView label) override
 	{
 		const uint rndSeed = (uint(reinterpret_cast<size_t>(label.Data())) ^ ToHash(label)) + rndCounter;
 		const ulong64 id = Random::FastUniform<ulong64>(rndSeed)();
-		s.Print(*String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label));
+		s << *String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label);
 	}
 
-	void endSpoiler(OutputStream& s) override {s.Print(HtmlWriter_SpoilerEndCode);}
+	void endSpoiler(IOutputStream<char>& s) override {s << HtmlWriter_SpoilerEndCode;}
 };
 
 FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions)
 {
 	if(addDefinitions) stream.Print(HtmlWriter_CssSpoilerCode);
-	return FormattedWriter(Cpp::Move(stream), new HtmlWriterImpl);
+	return FormattedWriter(Cpp::Move(stream), new HtmlFormatter);
 }
 
 }}

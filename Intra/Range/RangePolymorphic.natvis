@@ -17,14 +17,14 @@
   </Type>
 
   <Type Name="Intra::Range::OutputRange&lt;*&gt;">
-    <DisplayString Condition="mInterface.mPtr == nullptr">null</DisplayString>
-    <DisplayString>{*mInterface.mPtr}</DisplayString>
+    <DisplayString Condition="mStream.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*mStream.mPtr}</DisplayString>
     <Expand>
-      <ExpandedItem>*mInterface.mPtr</ExpandedItem>
+      <ExpandedItem>*mStream.mPtr</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::OutputRange&lt;*&gt;::WrapperImpl&lt;*&gt;">
+  <Type Name="Intra::Range::OutputRangePolymorphicWrapper&lt;*,*&gt;">
     <DisplayString>{OriginalRange}</DisplayString>
     <Expand>
       <ExpandedItem>OriginalRange</ExpandedItem>

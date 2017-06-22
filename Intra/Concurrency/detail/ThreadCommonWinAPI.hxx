@@ -12,6 +12,7 @@
 #endif
 
 #include <Windows.h>
+#undef Yield
 
 #ifdef _MSC_VER
 #pragma warning(pop)

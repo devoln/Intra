@@ -8,8 +8,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 namespace Intra {
 
 namespace Meta {
-INTRA_DEFINE_EXPRESSION_CHECKER2(HasOpEquals, Val<T1>()==Val<T2>(),, = U1);
-INTRA_DEFINE_EXPRESSION_CHECKER2(HasOpNotEquals, Val<T1>()!=Val<T2>(),, = U1);
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasOpEquals, Val<T1>() == Val<T2>(),, = U1);
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasOpNotEquals, Val<T1>() != Val<T2>(),, = U1);
 }
 
 template<typename T1, typename T2> Meta::EnableIf<

@@ -3,8 +3,11 @@
 #include "Cpp/PlatformDetect.h"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/Array.h"
+
 #include "Thread.h"
+#include "Mutex.h"
 #include "Atomic.h"
+#include "Lock.h"
 
 #undef Yield
 
@@ -15,11 +18,11 @@ using namespace Math;
 class WorkStealingQueue;
 static Array<WorkStealingQueue*> queues;
 
-#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_CPPLIB)
+#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_None)
 class WorkStealingQueue
 {
 public:
-	WorkStealingQueue(): jobs(), bottom(0), top(0), mMutex()
+	WorkStealingQueue(): mJobs(), mBottom(0), mTop(0), mMutex()
 	{
 		queues.AddLast(this);
 	}
@@ -31,45 +34,35 @@ public:
 
 	void Push(Job* job)
 	{
-		INTRA_SYNCHRONIZED_BLOCK(mMutex)
+		INTRA_SYNCHRONIZED(mMutex)
 		{
-			jobs[bottom % NUMBER_OF_JOBS] = job;
-			++bottom;
+			jobs[mBottom++ % NUMBER_OF_JOBS] = job;
 		}
 	}
 
 	Job* Pop()
 	{
 		auto locker = MakeLock(mMutex);
-		const int jobCount = int(bottom)-int(top);
+		const int jobCount = int(mBottom) - int(mTop);
 		if(jobCount <= 0)
 		{
 			// no job left in the queue
 			return null;
 		}
-
-		--bottom;
-		return jobs[bottom % NUMBER_OF_JOBS];
+		return jobs[--mBottom % NUMBER_OF_JOBS];
 	}
 
 	Job* Steal()
 	{
 		auto locker = MakeLock(mMutex);
-		const int jobCount = int(bottom) - int(top);
-		if(jobCount <= 0)
-		{
-			// no job there to steal
-			return null;
-		}
-
-		Job* const job = jobs[top % NUMBER_OF_JOBS];
-		++top;
-		return job;
+		const int jobCount = int(mBottom) - int(mTop);
+		if(jobCount <= 0) return null;
+		return mJobs[mTop++ % NUMBER_OF_JOBS];
 	}
 
 private:
-	Array<Job*> jobs;
-	uint bottom, top;
+	Array<Job*> mJobs;
+	uint mBottom, mTop;
 	Mutex mMutex;
 };
 #else
@@ -81,32 +74,29 @@ public:
 		queues.AddLast(this);
 	}
 
-	static const uint NUMBER_OF_JOBS = 4096;
+	WorkStealingQueue(const WorkStealingQueue&) = delete;
+	WorkStealingQueue& operator=(const WorkStealingQueue&) = delete;
+
+	enum {NUMBER_OF_JOBS = 4096};
 
 	void Push(Job* job)
 	{
-		long b = bottom;
-		jobs[b % NUMBER_OF_JOBS] = job;
+		int b = mBottom.GetRelaxed();
+		mJobs[size_t(b % NUMBER_OF_JOBS)] = job;
 
-		// ensure the job is written before b+1 is published to other threads.
-		// on x86/64, a compiler barrier is enough.
-		//On other platforms (PowerPC, ARM, …) you would need a memory fence instead.
-		//Furthermore, notice that the store operation also doesn’t need to be carried out atomically in this case, because the only other operation writing to bottom is Pop(), which cannot be carried out concurrently.
-		INTRA_COMPILER_BARRIER;
-
-		bottom = b+1;
+		mBottom.Set(b + 1);
 	}
 
 	Job* Pop()
 	{
-		long b = bottom - 1;
-		_InterlockedExchange(&bottom, b);
+		const int b = mBottom.GetRelaxed() - 1;
+		mBottom.Set(b);
 
-		long t = top;
+		int t = mTop.Get();
 		if(t <= b)
 		{
 			// non-empty queue
-			Job* job = jobs[b % NUMBER_OF_JOBS];
+			Job* job = mJobs[size_t(b % NUMBER_OF_JOBS)];
 			if(t != b)
 			{
 				// there's still more than one item left in the queue
@@ -114,39 +104,35 @@ public:
 			}
 
 			// this is the last item in the queue
-			if(std::atomic_compare_exchange_strong(&top, &t, t+1))
+			if(mTop.CompareSet(t, t + 1))
 			{
 				// failed race against steal operation
 				job = null;
 			}
 
-			bottom = t+1;
+			mBottom.SetRelaxed(t + 1);
 			return job;
 		}
 		else
 		{
 			// deque was already empty
-			bottom = t;
+			mBottom.SetRelaxed(t);
 			return null;
 		}
 	}
 
 	Job* Steal()
 	{
-		long t = top;
+		int t = mTop.Get();
 
-		// ensure that top is always read before bottom.
-		// loads will not be reordered with other loads on x86, so a compiler barrier is enough.
-		INTRA_COMPILER_BARRIER;
-
-		long b = bottom;
+		int b = mBottom.GetRelaxed();
 		if(t < b)
 		{
 			// non-empty queue
-			Job* job = jobs[t % NUMBER_OF_JOBS];
+			Job* job = mJobs[size_t(t % NUMBER_OF_JOBS)];
 
-			// the interlocked function serves as a compiler barrier, and guarantees that the read happens before the CAS.
-			if(std::atomic_compare_exchange_strong(&top, &t, t+1))
+			// serves as a compiler barrier, and guarantees that the read happens before the CAS.
+			if(mTop.CompareSet(t, t + 1))
 			{
 				// a concurrent steal or pop operation removed an element from the deque in the meantime.
 				return null;
@@ -162,9 +148,8 @@ public:
 	}
 
 private:
-	Array<Job*> jobs;
-	std::atomic<long> top;
-	long bottom;
+	Array<Job*> mJobs;
+	AtomicInt mTop, mBottom;
 };
 #endif
 
@@ -174,7 +159,7 @@ private:
 namespace
 {
 	/*thread_local*/ WorkStealingQueue wsqueue;
-	Atomic<int> JobToDeleteCount;
+	AtomicInt JobToDeleteCount;
 	Array<Job*> JobsToDelete;
 }
 
@@ -184,24 +169,24 @@ void WorkerMain()
 	while(workerThreadActive)
 	{
 		Job* job = Job::Get();
-		if(job!=null) job->Execute();
+		if(job != null) job->Execute();
 	}
 }
 
 
-enum {MaxJobCount=4096};
-static /*thread_local*/ Array<Job> g_jobAllocator;
+enum {MaxJobCount = 4096};
+static thread_local Array<Job> g_jobAllocator;
 static thread_local uint g_allocatedJobs = 0u;
 
 Job* Job::Allocate()
 {
 	const uint index = g_allocatedJobs++;
-	return &g_jobAllocator[(index-1) % MaxJobCount];
+	return &g_jobAllocator[(index - 1) % MaxJobCount];
 }
 
 bool Job::IsEmpty()
 {
-	return unfinishedJobs==-1;
+	return mUnfinishedJobCount.GetRelaxed() == -1;
 }
 
 Job* Job::Get()
@@ -215,7 +200,7 @@ Job* Job::Get()
 		if(stealQueue == &wsqueue)
 		{
 			// don't try to steal from ourselves
-			ThisThread::Yield();
+			ThisThread.Yield();
 			return null;
 		}
 
@@ -223,7 +208,7 @@ Job* Job::Get()
 		if(stolenJob->IsEmpty())
 		{
 			// we couldn't steal a job from the other queue either, so we just yield our time slice for now
-			ThisThread::Yield();
+			ThisThread.Yield();
 			return null;
 		}
 
@@ -235,13 +220,13 @@ Job* Job::Get()
 
 void Job::Finish()
 {
-	const int unfinished_jobs = --unfinishedJobs;
-	if(unfinished_jobs==0 && parent) parent->Finish();
+	const int unfinishedJobs = mUnfinishedJobCount.Increment();
+	if(unfinishedJobs == 0 && mParent != null) mParent->Finish();
 }
 
 void Job::Execute()
 {
-	function(this, data);
+	mFunction(this, data);
 	Finish();
 }
 
@@ -250,21 +235,21 @@ Job* Job::CreateJob(Job::Function function)
 	g_jobAllocator.SetCountUninitialized(MaxJobCount);
 
 	Job* result = Job::Allocate();
-	result->function = function;
-	result->parent = null;
-	result->unfinishedJobs = 1;
+	result->mFunction = function;
+	result->mParent = null;
+	result->mUnfinishedJobCount.Set(1);
 
 	return result;
 }
 
 Job* Job::CreateJobAsChild(Job* parent, Job::Function function)
 {
-	++parent->unfinishedJobs;
+	parent->mUnfinishedJobCount.Increment();
 
 	Job* result = Job::Allocate();
-	result->function = function;
-	result->parent = parent;
-	result->unfinishedJobs = 1;
+	result->mFunction = function;
+	result->mParent = parent;
+	result->mUnfinishedJobCount.Set(1);
 
 	return result;
 }
@@ -278,12 +263,11 @@ void Job::Run()
 
 void Job::Wait() const
 {
-	while(unfinishedJobs!=0)
+	while(mUnfinishedJobCount.Get() != 0)
 	{
 		Job* nextJob = Job::Get();
-		if(nextJob!=null) nextJob->Execute();
+		if(nextJob != null) nextJob->Execute();
 	}
 }
 
 }}
-

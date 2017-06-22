@@ -1,20 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Intra::IO::FormattedWriter::BasicImpl">
+  <Type Name="Intra::IO::BasicFormatter">
+    <DisplayString>BasicFormatter</DisplayString>
     <Expand>
-      <Item Name="FontStack">mFontStack</Item>
+      <Item Name="FontStack">mFontStack,view(simple)</Item>
       <Item Name="SpoilerNesting">mSpoilerNesting</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::IO::FormattedWriter">
-    <DisplayString Condition="mInterface.mPtr==nullptr">null</DisplayString>
-    <DisplayString>{*mInterface.mPtr}:{*(Intra::Range::OutputStream*)this}</DisplayString>
+  <Type Name="Intra::IO::FormattedWriter::FormattedStream">
+    <DisplayString Condition="mStream != nullptr">({*mFormatter} => {*mStream})</DisplayString>
+    <DisplayString>Ref{*mWriter}</DisplayString>
     <Expand>
-      <ExpandedItem>*mInterface.mPtr</ExpandedItem>
-      <ExpandedItem>*(Intra::Range::OutputStream*)this</ExpandedItem>
-      <Item Name="ExternalReferences">mRefCount</Item>
+      <Synthetic Name="[Formatter]" Condition="mStream != nullptr">
+        <DisplayString>{*mFormatter}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream != nullptr">*mFormatter</ExpandedItem>
+      <Synthetic Name="[OutputStream]" Condition="mStream != nullptr">
+        <DisplayString>{*mStream}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream != nullptr">*mStream</ExpandedItem>
+
+      <Synthetic Name="[FormattedWriter Reference]" Condition="mStream == nullptr">
+        <DisplayString>{mWriter}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream == nullptr">*mWriter</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::IO::FormattedWriter">
+    <DisplayString Condition="mFormattedStreams.range.Begin+1 == mFormattedStreams.range.End">{*mFormattedStreams.range.Begin}</DisplayString>
+    <DisplayString>{mFormattedStreams}</DisplayString>
+    <Expand>
+      <Synthetic Name="Referenced" Condition="mRefCount.mValue != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <Synthetic Name="Referenced" Condition="mRefCount.mValue._My_val != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <Synthetic Name="Referenced" Condition="mRefCount != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <ExpandedItem Condition="mFormattedStreams.range.Begin + 1 &lt; mFormattedStreams.range.End">mFormattedStreams,view(simple)</ExpandedItem>
+      <ExpandedItem Condition="mFormattedStreams.range.Begin + 1 == mFormattedStreams.range.End">*mFormattedStreams.range.Begin</ExpandedItem>
     </Expand>
   </Type>
 
@@ -26,8 +49,8 @@
     <Expand>
       <Item Name="Full Path">mFullPath</Item>
       <Item Name="Mode">mMode,en</Item>
-      <Item Name="Handle (ref)" Condition="!mOwning">size_t(mHandle)</Item>
-      <Item Name="Handle" Condition="mOwning">size_t(mHandle)</Item>
+      <Synthetic Name="Handle (ref)" Condition="!mOwning"><DisplayString>&lt;{size_t(mHandle)}&gt;</DisplayString></Synthetic>
+      <Synthetic Name="Handle" Condition="mOwning"><DisplayString>&lt;{size_t(mHandle)}&gt;</DisplayString></Synthetic>
     </Expand>
   </Type>
 
@@ -56,38 +79,23 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::IO::CompositeFormattedWriterImpl">
-    <DisplayString>Composite{Attached}</DisplayString>
-    <Expand>
-      <ArrayItems>
-        <Size>Attached.range.End - Attached.range.Begin</Size>
-        <ValuePointer>Attached.range.Begin</ValuePointer>
-      </ArrayItems>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::IO::CompositeFormattedWriterOut">
-    <DisplayString></DisplayString>
-    <Expand>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::IO::ReferenceFormattedWriterImpl">
-    <DisplayString>Ref:{*Writer}</DisplayString>
-    <Expand>
-      <ExpandedItem>*Writer</ExpandedItem>
-    </Expand>
-  </Type>
-
   <Type Name="Intra::IO::ConsoleOutStream">
     <DisplayString>ConsoleOut</DisplayString>
     <Expand>
     </Expand>
   </Type>
 
-  <Type Name="Intra::IO::HtmlWriterImpl">
+  <Type Name="Intra::IO::ConsoleFormatter">
+    <DisplayString>ConsoleFormatter</DisplayString>
+    <Expand>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::IO::HtmlFormatter">
     <DisplayString>Html</DisplayString>
     <Expand>
+      <Item Name="FontStack">mFontStack,view(simple)</Item>
+      <Item Name="SpoilerNesting">mSpoilerNesting</Item>
     </Expand>
   </Type>
   

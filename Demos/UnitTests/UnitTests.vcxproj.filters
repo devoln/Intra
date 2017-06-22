@@ -37,6 +37,12 @@
     <ClCompile Include="src\Container\HashMap.cpp">
       <Filter>Source Files\Container</Filter>
     </ClCompile>
+    <ClCompile Include="src\Concurrency\Atomic.cpp">
+      <Filter>Source Files\Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Concurrency\Interruption.cpp">
+      <Filter>Source Files\Concurrency</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Sort.h">
@@ -56,6 +62,9 @@
     </ClInclude>
     <ClInclude Include="src\Container\HashMap.h">
       <Filter>Header Files\Container</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Concurrency\Concurrency.h">
+      <Filter>Header Files\Concurrency</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,6 +91,12 @@
     </Filter>
     <Filter Include="Source Files\IO">
       <UniqueIdentifier>{59165f7a-a347-430a-8f7f-af292830dc12}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Concurrency">
+      <UniqueIdentifier>{b7753205-8c86-46bf-8d05-10749b945306}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Concurrency">
+      <UniqueIdentifier>{37221297-1cfc-46f9-bcba-be22bcbe57f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

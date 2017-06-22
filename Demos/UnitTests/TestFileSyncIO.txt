@@ -1,4 +1,0 @@
-Fibonacci sequence: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55]
-Closing file.
-<font color=007f00 size=4.0><b>Зелёный текст<br />
-</b></font>

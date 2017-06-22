@@ -61,14 +61,14 @@ void MainLoop(bool enableStreaming)
 	Thread thr;
 	if(enableStreaming)
 	{
-		thr = Thread([]()
+		thr = Thread("Sound Streamer", []()
 		{
-			while(!ThisThread::IsInterrupted())
+			while(!ThisThread.IsInterrupted())
 			{
 				StreamedSound::UpdateAllExistingInstances();
-				ThisThread::Sleep(1);
+				ThisThread.Sleep(1);
 			}
-		}, "Sound Streamer");
+		});
 	}
 	ConsoleIn.GetChar();
 

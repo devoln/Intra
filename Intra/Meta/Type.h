@@ -299,6 +299,7 @@ template<typename T> struct IsEnumType: TypeFromValue<bool, __is_enum(T)> {};
 template<typename T> struct IsEmptyClass: TypeFromValue<bool, __is_empty(T)> {};
 template<typename T> struct IsTriviallyDestructible: TypeFromValue<bool, __has_trivial_destructor(T)> {};
 template<class T, class From> struct IsInherited: TypeFromValue<bool, IsClass<T>::_ && __is_base_of(From, T)> {};
+template<class T> struct HasVirtualDestructor: TypeFromValue<bool, IsClass<T>::_ && __has_virtual_destructor(T)> {};
 
 //! Определить, является ли тип скалярным: арифметическим, указателем, перечислением или null_t.
 template<typename T> struct IsScalarType: TypeFromValue<bool,

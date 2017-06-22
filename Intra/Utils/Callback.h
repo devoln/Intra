@@ -3,15 +3,13 @@
 #include "Cpp/Intrinsics.h"
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
+#include "Cpp/Features.h"
+
 #include "Meta/Type.h"
 
+#include "Utils/Debug.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
-#ifdef _MSC_VER
-#pragma warning(disable: 4191)
-#endif
 
 namespace Intra { namespace Utils {
 
@@ -22,28 +20,37 @@ public:
 	typedef R(*TFunc)(void*, Args...);
 	typedef R(*FreeFunc)(Args...);
 
-	Callback(null_t=null): obj(null), func(null) {}
-	Callback(void* o, TFunc f): obj(o), func(f) {}
+	constexpr forceinline Callback(null_t=null) noexcept: mObj(null), mFunc(null) {}
+	constexpr forceinline Callback(FreeFunc f) noexcept: mObj(null), mFreeFunc(f) {}
+	constexpr forceinline Callback(void* o, TFunc f) noexcept: mObj(o), mFunc(f) {}
 
-	R operator()(Args... a) const
+	template<typename T, typename = Meta::EnableIf<
+		!Meta::TypeEquals<T, Callback>::_
+	>> forceinline Callback(T& o) noexcept:
+		mObj(&o), mFunc([](void* o, Args... args) {
+		return (*static_cast<T*>(o))(Cpp::Forward<Args>(args)...);
+	}) {}
+
+	forceinline R operator()(Args... a) const
 	{
-		return obj? func(obj, Cpp::Forward<Args>(a)...):
-			freefunc(Cpp::Forward<Args>(a)...);
+		return mObj == null?
+			mFunc(mObj, Cpp::Forward<Args>(a)...):
+			mFreeFunc(Cpp::Forward<Args>(a)...);
 	}
 
-	bool operator==(null_t) const {return func==null;}
-	bool operator!=(null_t) const {return !operator==(null);}
-	bool operator!() const {return operator==(null);}
+	constexpr forceinline bool operator==(null_t) const noexcept {return mFunc == null;}
+	constexpr forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	constexpr forceinline bool operator!() const noexcept {return operator==(null);}
 
-	bool operator==(const Callback<R(Args...)>& rhs) const {return obj==rhs.obj && func==rhs.func;}
-	bool operator!= (const Callback<R(Args...)>& rhs) const {return !operator==(rhs);}
+	constexpr forceinline bool operator==(const Callback<R(Args...)>& rhs) const noexcept {return mObj == rhs.mObj && mFunc == rhs.mFunc;}
+	constexpr forceinline bool operator!=(const Callback<R(Args...)>& rhs) const noexcept {return !operator==(rhs);}
 
 private:
-	void* obj;
+	void* mObj;
 	union
 	{
-		TFunc func;
-		FreeFunc freefunc;
+		TFunc mFunc;
+		FreeFunc mFreeFunc;
 	};
 };
 

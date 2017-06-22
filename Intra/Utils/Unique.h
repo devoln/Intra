@@ -68,6 +68,8 @@ template<typename T> struct Unique
 	forceinline bool operator==(null_t) const {return mPtr==null;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
 
+	forceinline explicit operator bool() const {return mPtr != null;}
+
 private:
 	T* mPtr;
 };

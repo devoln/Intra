@@ -22,8 +22,8 @@ void TestSocketIO(FormattedWriter& output)
 	if(server == null) output.PrintLine("Couldn't start server.");
 	INTRA_ASSERT(server != null);
 
-	Atomic<bool> error(false);
-	Thread thread([&]() {
+	AtomicBool error{false};
+	Thread thread("TestSocketIO", [&]() {
 		FatalErrorStatus status2;
 		StreamSocket client(SocketType::TCP, "localhost", 8080, status2);
 		StringView str = "Hello";
@@ -35,20 +35,20 @@ void TestSocketIO(FormattedWriter& output)
 			size_t len = client.Receive(strBuf, sizeof(strBuf), status2);
 			str = StringView(strBuf, len);
 			output.PrintLine("[Received] ", str);
-			if(str != "World") error = true;
+			if(str != "World") error.Set(true);
 		}
 		else output.PrintLine("Error waiting!");
 
 		SocketReader reader(Cpp::Move(client));
 		StringView firstLine = reader.ReadLine(strBuf);
 		output.PrintLine("ReadLine: ", firstLine);
-		if(firstLine != "Writer: Hello, Reader!") error = true;
+		if(firstLine != "Writer: Hello, Reader!") error.Set(true);
 		OutputArrayRange<char> strOut = Range::Take(strBuf, 50);
 		ToString(strOut, reader.ByLine(Range::Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
 		StringView linesAsString = strOut.GetWrittenData();
 		output.PrintLine("Remaining line range: ", linesAsString);
-		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error = true;
-	}, "TestSocketIO");
+		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error.Set(true);
+	});
 	StreamSocket connectedClient = server.Accept(status);
 	char strBuf[100];
 	size_t len = connectedClient.Receive(strBuf, sizeof(strBuf), status);
@@ -63,7 +63,7 @@ void TestSocketIO(FormattedWriter& output)
 		.PrintLine("Second line.")
 		.PrintLine("Third line.");
 
-	INTRA_ASSERT(!error);
+	INTRA_ASSERT(!error.Get());
 }
 
 void TestHttpServer(FormattedWriter& output)

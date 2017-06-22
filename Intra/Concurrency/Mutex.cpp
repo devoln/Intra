@@ -6,11 +6,7 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-#if(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_Dummy)
-
-#include "detail/MutexDummy.hxx"
-
-#elif(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_CPPLIB)
+#if(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_Cpp11)
 
 #include "detail/MutexCpp11.hxx"
 
@@ -23,5 +19,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "detail/MutexPThread.hxx"
 
 #endif
+
+namespace Intra { namespace Concurrency {
+const int Mutex::DataSize = Mutex::DATA_SIZE;
+const int Mutex::ImplementationType = INTRA_LIBRARY_MUTEX;
+}}
 
 INTRA_WARNING_POP

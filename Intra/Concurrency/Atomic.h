@@ -6,232 +6,313 @@
 
 #include "Thread.h"
 
-#define INTRA_LIBRARY_ATOMIC_Dummy 0
-#define INTRA_LIBRARY_ATOMIC_WinAPI 1
-#define INTRA_LIBRARY_ATOMIC_CPPLIB 2
-#define INTRA_LIBRARY_ATOMIC_Mutex 3
+#define INTRA_LIBRARY_ATOMIC_None 0
+#define INTRA_LIBRARY_ATOMIC_MSVC 1
+#define INTRA_LIBRARY_ATOMIC_GNU 2
+#define INTRA_LIBRARY_ATOMIC_Cpp11 3
+
+//#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_GNU
 
 #ifndef INTRA_LIBRARY_ATOMIC
 
-/*#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_WinAPI
-*/
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-
-/*#ifdef __EMSCRIPTEN_PTHREADS__
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_PThread
-#else*/
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_Dummy
-//#endif
-
+#if(defined(INTRA_LIBRARY_THREAD) && INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_Cpp11)
+#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_Cpp11
+#elif defined(_MSC_VER) && (!defined(__clang__) || defined(__c2__))
+#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_MSVC
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten && !defined(__EMSCRIPTEN_PTHREADS__))
+#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_None
 #else
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_Mutex
+#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_GNU
 #endif
 
 #endif
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_CPPLIB)
+#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Cpp11)
 #include <atomic>
+#endif
+
 namespace Intra { namespace Concurrency {
 
-template<typename T> struct Atomic: public std::atomic<T>
+//! Это перечисление описывает, как должен быть упорядочен обычный (неатомарный) доступ к памяти по отношению к атомарной операции.
+enum class MemoryOrder
 {
-	Atomic() noexcept {}
-	Atomic(T val) noexcept: std::atomic<T>(val) {}
-	Atomic(const Atomic&) = delete;
+	//! Никаких ограничений на порядок к доступу памяти не накладывается.
+	//! Гарантируется только атомарность операции.
+	//! Чаще всего применяется, когда нужна атомарность самой переменной,
+	//! и эта переменная не используется для синхронизации других общих данных.
+	Relaxed,
 
-	forceinline T Load() const noexcept {return load();}
-	forceinline T Exchange(T val) noexcept {return exchange(val);}
-	forceinline void Store(T val) noexcept {store(val);}
-	forceinline bool CompareExchangeWeak(T& expected, T desired) {compare_exchange_weak(expected, desired);}
+	Consume,
 
-	using std::atomic<T>::operator=(T rhs);
+	Acquire,
+
+	Release,
+
+	//! Комбинация Acquire и Release.
+	AcquireRelease,
+
+	//! Все ограничения AcquireRelease, а также
+	//! существует единый общий порядок, при котором все потоки видят все изменения.
+	//! Является наиболее интуитивно понятным, но препятствует оптимизации.
+	SequentiallyConsistent
 };
 
-}}
-#elif(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Dummy)
-
-
-namespace Intra { namespace Concurrency {
-
-template<typename T> struct Atomic
+template<typename T> class AtomicBase
 {
-	forceinline Atomic() noexcept {}
-	forceinline Atomic(T val) noexcept: mValue(val) {}
-	Atomic(const Atomic&) = delete;
+	AtomicBase(const AtomicBase&) = delete;
+	AtomicBase& operator=(const AtomicBase&) = delete;
+public:
+	AtomicBase() noexcept: mValue{} {}
+	AtomicBase(T val) noexcept: mValue{val} {}
 
-	forceinline T Load() const noexcept {return mValue;}
-	forceinline T load() const noexcept {return Load();}
-	forceinline T Exchange(T val) noexcept {T result = mValue; mValue=val; return result;}
-	forceinline T exchange(T val) noexcept {return Exchange(val);}
-	forceinline void Store(T val) noexcept {mValue = val;}
-	//forceinline bool CompareExchangeWeak(T& expected, T desired) {}
-	//forceinline bool compare_exchange_weak(T& expected, T desired) {return CompareExchangeWeak(expected, desired);}
+	//! @defgroup AtomicBase_Get
+	//! Возвращает текущее значение.
+	//!@{
+	forceinline T Get() const noexcept;
+	forceinline T GetRelaxed() const noexcept;
+	forceinline T GetConsume() const noexcept;
+	forceinline T GetAcquire() const noexcept;
+	//!@}
 
-	forceinline T operator++() {return ++mValue;}
-	forceinline T operator++() volatile {return ++mValue;}
-	forceinline T operator++(int) {return mValue++;}
-	forceinline T operator++(int) volatile {return mValue++;}
-	forceinline T operator--() {return --mValue;}
-	forceinline T operator--() volatile {return --mValue;}
-	forceinline T operator--(int) {return mValue--;}
-	forceinline T operator--(int) volatile {return mValue--;}
 
-	forceinline T operator=(T rhs) {return mValue = rhs;}
-	forceinline Atomic& operator=(const Atomic&) = delete;
+	
+	//! @defgroup AtomicBase_GetSet
+	//! Атомарно устанавливает новое значение и возвращает предыдущее.
+	//!@{
+	forceinline T GetSet(T val) noexcept;
+	forceinline T GetSetRelaxed(T val) noexcept;
+	forceinline T GetSetConsume(T val) noexcept;
+	forceinline T GetSetAcquire(T val) noexcept;
+	forceinline T GetSetRelease(T val) noexcept;
+	forceinline T GetSetAcquireRelease(T val) noexcept;
+	//!@}
 
-	forceinline T operator+=(T arg) {return mValue += arg;}
-	forceinline T operator+=(T arg) volatile {return mValue += arg;}
-	forceinline T operator-=(T arg) {return mValue -= arg;}
-	forceinline T operator-=(T arg) volatile {return mValue -= arg;}
-	forceinline T operator&=(T arg) {return mValue &= arg;}
-	forceinline T operator&=(T arg) volatile {return mValue &= arg;}
-	forceinline T operator|=(T arg) {return mValue |= arg;}
-	forceinline T operator|=(T arg) volatile {return mValue |= arg;}
-	forceinline T operator^=(T arg) {return mValue ^= arg;}
-	forceinline T operator^=(T arg) volatile {return mValue ^= arg;}
+	
+	//! @defgroup AtomicBase_Set
+	//! Устанавливает новое значение.
+	//!@{
+	forceinline void Set(T val) noexcept;
+	forceinline void SetRelaxed(T val) noexcept;
+	forceinline void SetRelease(T val) noexcept;
+	//!@}
 
-	forceinline operator T() const noexcept {return mValue;}
 
-private:
+	//! @defgroup AtomicBase_WeakCompareSet
+	//! Атомарно устанавливает значение desired, если текущее значение равно expected (*), иначе записывает в expected текущее значение.
+	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать StrongCompareSet.
+	//!@{
+	forceinline bool WeakCompareSet(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSetRelaxed(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSetConsume(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSetAcquire(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSetRelease(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSetAcquireRelease(T& expected, T desired) noexcept;
+	//!@}
+
+	//! @defgroup AtomicBase_CompareSet
+	//! Атомарно устанавливает значение desired, если текущее значение равно expected, иначе записывает в expected текущее значение.
+	//! На некоторых платформах может быть медленнее, чем WeakCompareSet.
+	//!@{
+	forceinline bool CompareSet(T& expected, T desired) noexcept;
+	forceinline bool CompareSetRelaxed(T& expected, T desired) noexcept;
+	forceinline bool CompareSetConsume(T& expected, T desired) noexcept;
+	forceinline bool CompareSetAcquire(T& expected, T desired) noexcept;
+	forceinline bool CompareSetRelease(T& expected, T desired) noexcept;
+	forceinline bool CompareSetAcquireRelease(T& expected, T desired) noexcept;
+	//!@}
+
+protected:
+#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Cpp11)
+	std::atomic<T> mValue;
+#else
 	T mValue;
+#endif
 };
 
-template<typename T> struct Atomic<T*>
+template<typename T> class AtomicInteger: public AtomicBase<T>
 {
-	forceinline Atomic() noexcept {}
-	forceinline Atomic(T* val) noexcept: mValue(val) {}
-	Atomic(const Atomic&) = delete;
+	AtomicInteger(const AtomicInteger&) = delete;
+	AtomicInteger& operator=(const AtomicInteger&) = delete;
+public:
+	AtomicInteger(T value = T()): AtomicBase<T>(value) {};
 
-	forceinline T* Load() const noexcept {return mValue;}
-	forceinline T* load() const noexcept {return Load();}
-	forceinline T* Exchange(T* val) noexcept {T* result = mValue; mValue = val; return result;}
-	forceinline T* exchange(T* val) noexcept {return Exchange(val);}
-	forceinline void Store(T* val) noexcept {mValue = val;}
-	//forceinline bool CompareExchangeWeak(T*& expected, T* desired) {}
-	//forceinline bool compare_exchange_weak(T*& expected, T* desired) {return CompareExchangeWeak(expected, desired);}
+	//! @defgroup AtomicInteger_GetAdd
+	//! Прибавляет число к теущему значению и возвращает предыдущее значение.
+	//!@{
+	forceinline T GetAdd(T rhs) noexcept;
+	forceinline T GetAddRelaxed(T rhs) noexcept;
+	forceinline T GetAddConsume(T rhs) noexcept;
+	forceinline T GetAddAcquire(T rhs) noexcept;
+	forceinline T GetAddRelease(T rhs) noexcept;
+	forceinline T GetAddAcquireRelease(T rhs) noexcept;
+	//!@}
 
-	forceinline T operator++() {return ++mValue;}
-	forceinline T operator++() volatile {return ++mValue;}
-	forceinline T operator++(int) {return mValue++;}
-	forceinline T operator++(int) volatile {return mValue++;}
-	forceinline T operator--() {return --mValue;}
-	forceinline T operator--() volatile {return --mValue;}
-	forceinline T operator--(int) {return mValue--;}
-	forceinline T operator--(int) volatile {return mValue--;}
+	//! @defgroup AtomicInteger_GetSub
+	//! Вычитает число из теущего значения и возвращает предыдущее значение.
+	//!@{
+	forceinline T GetSub(T rhs) noexcept;
+	forceinline T GetSubRelaxed(T rhs) noexcept;
+	forceinline T GetSubConsume(T rhs) noexcept;
+	forceinline T GetSubAcquire(T rhs) noexcept;
+	forceinline T GetSubRelease(T rhs) noexcept;
+	forceinline T GetSubAcquireRelease(T rhs) noexcept;
+	//!@}
 
-	forceinline T operator=(T* rhs) {return mValue = rhs;}
-	forceinline Atomic& operator=(const Atomic&) = delete;
+	//! @defgroup AtomicInteger_GetAnd
+	//! Применяет побитовое И к теущему значению и возвращает предыдущее значение.
+	//!@{
+	forceinline T GetAnd(T rhs) noexcept;
+	forceinline T GetAndRelaxed(T rhs) noexcept;
+	forceinline T GetAndConsume(T rhs) noexcept;
+	forceinline T GetAndAcquire(T rhs) noexcept;
+	forceinline T GetAndRelease(T rhs) noexcept;
+	forceinline T GetAndAcquireRelease(T rhs) noexcept;
+	//!@}
 
-	forceinline T* operator+=(T* arg) {return mValue += arg;}
-	forceinline T* operator+=(T* arg) volatile {return mValue += arg;}
-	forceinline T* operator-=(T* arg) {return mValue -= arg;}
-	forceinline T* operator-=(T* arg) volatile {return mValue -= arg;}
+	//! @defgroup AtomicInteger_GetOr
+	//! Применяет побитовое ИЛИ к теущему значению и возвращает предыдущее значение.
+	//!@{
+	forceinline T GetOr(T rhs) noexcept;
+	forceinline T GetOrRelaxed(T rhs) noexcept;
+	forceinline T GetOrConsume(T rhs) noexcept;
+	forceinline T GetOrAcquire(T rhs) noexcept;
+	forceinline T GetOrRelease(T rhs) noexcept;
+	forceinline T GetOrAcquireRelease(T rhs) noexcept;
+	//!@}
 
-	forceinline operator T*() const noexcept {return mValue;}
-	forceinline T* operator->() const noexcept {return mValue;}
+	//! @defgroup AtomicInteger_GetXor
+	//! Применяет побитовое ИСКЛ. ИЛИ к теущему значению и возвращает предыдущее значение.
+	//!@{
+	forceinline T GetXor(T rhs) noexcept;
+	forceinline T GetXorRelaxed(T rhs) noexcept;
+	forceinline T GetXorConsume(T rhs) noexcept;
+	forceinline T GetXorAcquire(T rhs) noexcept;
+	forceinline T GetXorRelease(T rhs) noexcept;
+	forceinline T GetXorAcquireRelease(T rhs) noexcept;
+	//!@}
 
-private:
-	T* mValue;
+
+	//! @defgroup AtomicInteger_Add
+	//! Прибавляет число к теущему значению и возвращает новое значение.
+	//!@{
+	forceinline T Add(T rhs) noexcept;
+	forceinline T AddRelaxed(T rhs) noexcept;
+	forceinline T AddConsume(T rhs) noexcept;
+	forceinline T AddAcquire(T rhs) noexcept;
+	forceinline T AddRelease(T rhs) noexcept;
+	forceinline T AddAcquireRelease(T rhs) noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_Sub
+	//! Вычитает число из теущего значения и возвращает новое значение.
+	//!@{
+	forceinline T Sub(T rhs) noexcept;
+	forceinline T SubRelaxed(T rhs) noexcept;
+	forceinline T SubConsume(T rhs) noexcept;
+	forceinline T SubAcquire(T rhs) noexcept;
+	forceinline T SubRelease(T rhs) noexcept;
+	forceinline T SubAcquireRelease(T rhs) noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_And
+	//! Применяет побитовое И к теущему значению и возвращает новое значение.
+	//!@{
+	forceinline T And(T rhs) noexcept;
+	forceinline T AndRelaxed(T rhs) noexcept;
+	forceinline T AndConsume(T rhs) noexcept;
+	forceinline T AndAcquire(T rhs) noexcept;
+	forceinline T AndRelease(T rhs) noexcept;
+	forceinline T AndAcquireRelease(T rhs) noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_Or
+	//! Применяет побитовое ИЛИ к теущему значению и возвращает новое значение.
+	//!@{
+	forceinline T Or(T rhs) noexcept;
+	forceinline T OrRelaxed(T rhs) noexcept;
+	forceinline T OrConsume(T rhs) noexcept;
+	forceinline T OrAcquire(T rhs) noexcept;
+	forceinline T OrRelease(T rhs) noexcept;
+	forceinline T OrAcquireRelease(T rhs) noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_Xor
+	//! Применяет побитовое ИСКЛ. ИЛИ к теущему значению и возвращает новое значение.
+	//!@{
+	forceinline T Xor(T rhs) noexcept;
+	forceinline T XorRelaxed(T rhs) noexcept;
+	forceinline T XorConsume(T rhs) noexcept;
+	forceinline T XorAcquire(T rhs) noexcept;
+	forceinline T XorRelease(T rhs) noexcept;
+	forceinline T XorAcquireRelease(T rhs) noexcept;
+	//!@}
+
+
+	//! @defgroup AtomicInteger_Increment
+	//! Увеличивает текущее значение на 1 и возвращает новое значение.
+	//!@{
+	forceinline T Increment() noexcept;
+	forceinline T IncrementRelaxed() noexcept;
+	forceinline T IncrementConsume() noexcept;
+	forceinline T IncrementAcquire() noexcept;
+	forceinline T IncrementRelease() noexcept;
+	forceinline T IncrementAcquireRelease() noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_Decrement
+	//! Уменьшает текущее значение на 1 и возвращает новое значение.
+	//!@{
+	forceinline T Decrement() noexcept;
+	forceinline T DecrementRelaxed() noexcept;
+	forceinline T DecrementConsume() noexcept;
+	forceinline T DecrementAcquire() noexcept;
+	forceinline T DecrementRelease() noexcept;
+	forceinline T DecrementAcquireRelease() noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_GetIncrement
+	//! Увеличивает текущее значение на 1 и возвращает старое значение.
+	//!@{
+	forceinline T GetIncrement() noexcept;
+	forceinline T GetIncrementRelaxed() noexcept;
+	forceinline T GetIncrementConsume() noexcept;
+	forceinline T GetIncrementAcquire() noexcept;
+	forceinline T GetIncrementRelease() noexcept;
+	forceinline T GetIncrementAcquireRelease() noexcept;
+	//!@}
+
+	//! @defgroup AtomicInteger_GetDecrement
+	//! Уменьшает текущее значение на 1 и возвращает старое значение.
+	//!@{
+	forceinline T GetDecrement() noexcept;
+	forceinline T GetDecrementRelaxed() noexcept;
+	forceinline T GetDecrementConsume() noexcept;
+	forceinline T GetDecrementAcquire() noexcept;
+	forceinline T GetDecrementRelease() noexcept;
+	forceinline T GetDecrementAcquireRelease() noexcept;
+	//!@}
 };
+
+typedef AtomicBase<bool> AtomicBool;
+typedef AtomicInteger<int> AtomicInt;
+typedef AtomicInteger<long64> AtomicLong;
 
 }}
-#elif(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Mutex)
-#include "Thread.h"
-#include "Mutex.h"
-#include "Lock.h"
 
-namespace Intra { namespace Concurrency {
-
-//TODO: добавить специализации шаблона Atomic для некоторых типов, используя compiler intrinsics.
-
-template<typename T> struct Atomic
-{
-	Atomic() noexcept {}
-	Atomic(T val) noexcept: mValue(val) {}
-	Atomic(const Atomic&) = delete;
-
-	T Load() const noexcept {auto locker = MakeLock(mMutex); return mValue;}
-	T load() const noexcept {return Load();}
-	T Exchange(T val) noexcept {auto locker = MakeLock(mMutex); {T result = mValue; mValue = val; return result;}}
-	T exchange(T val) noexcept {return Exchange(val);}
-	void Store(T val) noexcept {auto locker = MakeLock(mMutex); mValue = val;}
-	void store(T val) noexcept {Store(val);}
-	//bool CompareExchangeWeak(T& expected, T desired) {}
-	//bool compare_exchange_weak(T& expected, T desired) {return CompareExchangeWeak(expected, desired);}
-
-	T operator++() {auto locker = MakeLock(mMutex); return ++mValue;}
-	T operator++(int) {auto locker = MakeLock(mMutex); return mValue++;}
-	T operator--() {auto locker = MakeLock(mMutex); return --mValue;}
-	T operator--(int) {auto locker = MakeLock(mMutex); return mValue--;}
-
-	T operator=(T rhs) {auto locker = MakeLock(mMutex); return mValue = rhs;}
-	Atomic& operator=(const Atomic&) = delete;
-
-	T operator+=(T arg) {auto locker = MakeLock(mMutex); return mValue += arg;}
-	T operator-=(T arg) {auto locker = MakeLock(mMutex); return mValue -= arg;}
-	T operator&=(T arg) {auto locker = MakeLock(mMutex); return mValue &= arg;}
-	T operator|=(T arg) {auto locker = MakeLock(mMutex); return mValue |= arg;}
-	T operator^=(T arg) {auto locker = MakeLock(mMutex); return mValue ^= arg;}
-
-	operator T() const noexcept {return Load();}
-
-private:
-	T mValue;
-	mutable Mutex mMutex;
-};
-
-template<typename T> struct Atomic<T*>
-{
-	Atomic() noexcept {}
-	Atomic(T* val) noexcept: mValue(val) {}
-	Atomic(const Atomic&) = delete;
-
-	T* Load() const noexcept {auto locker = MakeLock(mMutex); return mValue;}
-	T* load() const noexcept {return Load();}
-
-	T* Exchange(T* val) noexcept
-	{
-		auto locker = MakeLock(mMutex);
-		T* result = mValue;
-		mValue = val;
-		return result;
-	}
-
-	T* exchange(T* val) noexcept {return Exchange(val);}
-	void Store(T* val) noexcept {auto locker = MakeLock(mMutex); mValue = val;}
-	void store(T* val) noexcept {Store(val);}
-	//bool CompareExchangeWeak(T*& expected, T* desired) {}
-	//bool compare_exchange_weak(T*& expected, T* desired) {return CompareExchangeWeak(expected, desired);}
-
-	T* operator++() {auto locker = MakeLock(mMutex); return ++mValue;}
-	T* operator++(int) {auto locker = MakeLock(mMutex); return mValue++;}
-	T* operator--() {auto locker = MakeLock(mMutex); return --mValue;}
-	T* operator--(int) {auto locker = MakeLock(mMutex); return mValue--;}
-
-	T* operator=(T* rhs) {auto locker = MakeLock(mMutex); return mValue = rhs;}
-	Atomic& operator=(const Atomic&) = delete;
-
-	T* operator+=(T arg) {auto locker = MakeLock(mMutex); return mValue += arg;}
-	T* operator-=(T arg) {auto locker = MakeLock(mMutex); return mValue -= arg;}
-
-	operator T*() const noexcept {return Load();}
-	T* operator->() const noexcept {return Load();}
-
-private:
-	T* mValue;
-	mutable Mutex mMutex;
-};
-
-}}
-
+#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Cpp11)
+#include "detail/AtomicCpp11.h"
+#elif(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_MSVC)
+#include "detail/AtomicMSVC.h"
+#elif(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_GNU)
+#include "detail/AtomicGNU.h"
 #endif
 
 namespace Intra {
-using Concurrency::Atomic;
+using Concurrency::AtomicBool;
+using Concurrency::AtomicInt;
+using Concurrency::AtomicLong;
 }
 
 INTRA_WARNING_POP

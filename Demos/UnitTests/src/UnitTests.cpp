@@ -7,8 +7,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/HtmlWriter.h"
 #include "IO/FileWriter.h"
 #include "IO/Std.h"
-#include "IO/ReferenceFormattedWriter.h"
-#include "IO/CompositeFormattedWriter.h"
 #include "IO/FilePath.h"
 
 #include "System/DateTime.h"
@@ -24,12 +22,14 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Serialization.h"
 #include "Container/HashMap.h"
 
+#include "Concurrency/Concurrency.h"
+
 using namespace Intra;
 using namespace IO;
 
-CompositeFormattedWriter& InitOutput()
+FormattedWriter& InitOutput()
 {
-	static CompositeFormattedWriter logger;
+	static FormattedWriter logger;
 
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
@@ -48,7 +48,7 @@ CompositeFormattedWriter& InitOutput()
 
 	logWriter.BeginSpoiler(appName + StringOf(System::Environment.CommandLine.Drop(), " ", " ", " ") + datetime);
 
-	logWriter << "Command line arguments:";
+	logWriter.Print("Command line arguments:");
 	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", " ", " "));
 	logger.Attach(Cpp::Move(logWriter));
 
@@ -60,7 +60,7 @@ int main(int argc, const char* argv[])
 	System::InitSignals();
 	auto& loggerOut = InitOutput();
 
-	FormattedWriter output = ReferenceFormattedWriter(Std);
+	FormattedWriter output(&Std);
 
 	StringView arg1 = argc>1? StringView(argv[1]): null;
 	if(arg1.StartsWith("-"))
@@ -68,13 +68,13 @@ int main(int argc, const char* argv[])
 		if(arg1.Contains('a'))
 			TestGroup::YesForNestingLevel = 0;
 		if(arg1.Contains('u'))
-			output = CompositeFormattedWriter();
+			output = null;
 		if(arg1.Contains('s'))
 			loggerOut.Attach(&Std);
 	}
 	else loggerOut.Attach(&Std);
 
-	FormattedLogger logger(ReferenceFormattedWriter(loggerOut));
+	FormattedLogger logger{FormattedWriter(&loggerOut)};
 	logger.WriteLevelType = false;
 
 	if(TestGroup gr{&logger, output, "Ranges"})
@@ -100,6 +100,11 @@ int main(int argc, const char* argv[])
 	TestGroup(&logger, output, "Text serialization", TestTextSerialization);
 	TestGroup(&logger, output, "Binary serialization", TestBinarySerialization);
 	TestGroup(&logger, output, "Sort algorithms", TestSort);
+	if(TestGroup gr{&logger, output, "Concurrency"})
+	{
+		TestGroup("Atomics", TestAtomics);
+		TestGroup("Thread interruption", TestInterruption);
+	}
 
 	if(TestGroup::GetTotalTestsFailed() != 0)
 		loggerOut.PushFont({1, 0, 0}, 5, true, false, true);

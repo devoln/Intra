@@ -156,15 +156,15 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections, 
 	const auto gaiErr = getaddrinfo(null, portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
-		status.Error(gai_strerror(gaiErr));
+		status.Error(StringView("getaddrinfo failed: ") + StringView(gai_strerror(gaiErr)), INTRA_SOURCE_INFO);
 		return;
 	}
-	auto addrAutoCleanup = Finally(freeaddrinfo, addrInfo);
+	INTRA_FINALLY_CALL(freeaddrinfo, addrInfo);
 
 	mHandle = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol);
 	if(mHandle == NullSocketHandle)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error("Socket creation falied: " + getErrorMessage());
 		return;
 	}
 
@@ -173,14 +173,14 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections, 
 
 	if(bind(mHandle, addrInfo->ai_addr, socklen_t(addrInfo->ai_addrlen)) != 0)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error("Socket bind failed: " + getErrorMessage(), INTRA_SOURCE_INFO);
 		Close();
 		return;
 	}
 
 	if(listen(mHandle, int(maxConnections)) < 0)
 	{
-		Std.PrintLine(getErrorMessage());
+		status.Error("Socket listen failed: " + getErrorMessage(), INTRA_SOURCE_INFO);
 		Close();
 		return;
 	}

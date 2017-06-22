@@ -1,213 +1,193 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
-#include "Math/Vector3.h"
 #include "Container/Sequential/String.h"
 #include "Utils/StringView.h"
-#include "Container/Sequential/Array.h"
-#include "Range/Polymorphic/OutputRange.h"
 #include "Utils/Unique.h"
+#include "Concurrency/Atomic.h"
+#include "Formatter.h"
+#include "Container/Utility/SparseArray.h"
+#include "Range/Search/Single.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
 
-struct FontDesc
-{
-	//! Цвет шрифта. Отрицательное значение означает, что нужно использовать цвет по умолчанию.
-	Math::Vec3 Color;
-	float Size;
-	bool Bold, Italic, Underline, Strike;
-
-	static const FontDesc& Default()
-	{
-		static const FontDesc result = {{-1, -1, -1}, 3, false, false, false, false};
-		return result;
-	}
-
-	bool operator==(const FontDesc& rhs) const
-	{
-		return Color==rhs.Color && Size==rhs.Size &&
-			Bold==rhs.Bold && Italic==rhs.Italic &&
-			Underline==rhs.Underline && Strike==rhs.Strike;
-	}
-
-	bool operator!=(const FontDesc& rhs) const {return !operator==(rhs);}
-};
-
-class FormattedWriter: public OutputStream
+class FormattedWriter
 {
 public:
-	class Interface
+	struct FormattedStream
 	{
-	public:
-		virtual ~Interface() {}
+		bool IsOwner() const {return mStream != null;}
 
-		virtual void CleanUp(OutputStream& s) = 0;
-		virtual void BeginCode(OutputStream& s) = 0;
-		virtual void EndCode(OutputStream& s) = 0;
-		virtual void PushStyle(OutputStream& s, StringView style) = 0;
-		virtual void PopStyle(OutputStream& s) = 0;
-		virtual void HorLine(OutputStream& s) = 0;
-		virtual void LineBreak(OutputStream& s) = 0;
-		virtual void PrintPreformatted(OutputStream& s, StringView text) = 0;
-		virtual void BeginSpoiler(OutputStream& s, StringView label) = 0;
-		virtual void EndSpoiler(OutputStream& s) = 0;
+		~FormattedStream() {clear();}
 
-		virtual void PushFont(OutputStream& s, const FontDesc& newFont) = 0;
-		virtual void PopFont(OutputStream& s) = 0;
+		forceinline FormattedStream(Unique<IOutputStream<char>> stream, Unique<IFormatter> formatter):
+			mStream(stream.Release()), mFormatter(formatter.Release())
+		{
+			INTRA_ASSERT(stream != null || formatter == null);
+		}
+
+		forceinline FormattedStream(OutputStream stream, Unique<IFormatter> formatter):
+			FormattedStream(Cpp::Move(stream.Stream), Cpp::Move(formatter)) {}
+
+		forceinline FormattedStream(FormattedWriter* writerRef):
+			mStream(null), mWriter(writerRef) {mWriter->mRefCount.IncrementRelaxed();}
+
+		forceinline bool operator==(null_t) const {return mStream == null && mFormatter == null;}
+		forceinline bool operator!=(null_t) const {return !operator==(null);}
+
+		forceinline FormattedStream(null_t=null):
+			mStream(null), mFormatter(null) {}
+
+		forceinline FormattedStream(FormattedStream&& rhs):
+			mStream(rhs.mStream), mFormatter(rhs.mFormatter)
+		{
+			rhs.mStream = null;
+			rhs.mFormatter = null;
+		}
+
+		forceinline FormattedStream(const FormattedStream& rhs) = delete;
+
+	private:
+		void clear()
+		{
+			if(!IsOwner())
+			{
+				if(mWriter) mWriter->mRefCount.DecrementRelaxed();
+				return;
+			}
+			if(mFormatter)
+			{
+				mFormatter->CleanUp(*mStream);
+				delete mFormatter;
+			}
+			delete mStream;
+		}
+
+		FormattedStream& operator=(FormattedStream&& fs)
+		{
+			clear();
+			mStream = fs.mStream;
+			mFormatter = fs.mFormatter;
+			fs.mStream = null;
+			fs.mFormatter = null;
+			return *this;
+		}
+
+		FormattedStream& operator=(const FormattedStream&) = delete;
+
+		void reset()
+		{
+			clear();
+			mStream = null;
+			mFormatter = null;
+		}
+
+		friend class FormattedWriter;
+
+		IOutputStream<char>* mStream;
+		union
+		{
+			IFormatter* mFormatter;
+			FormattedWriter* mWriter;
+		};
 	};
 
-	class BasicImpl: public Interface
-	{
-	public:
-		void CleanUp(OutputStream& s) override
-		{
-			while(mSpoilerNesting != 0)
-				EndSpoiler(s);
-			while(!mFontStack.Empty()) PopFont(s);
-		}
+private:
+	Array<FormattedStream> mFormattedStreams;
+	AtomicInt mRefCount;
 
-		void BeginCode(OutputStream& s) override
-		{
-			LineBreak(s);
-			s.Print("___________________");
-			LineBreak(s);
-		}
-
-		void EndCode(OutputStream& s) override
-		{
-			LineBreak(s);
-			s.Print("___________________");
-			LineBreak(s);
-		}
-
-		void PushStyle(OutputStream& s, StringView style) override {(void)s; (void)style;}
-		void PopStyle(OutputStream& s) override {(void)s;}
-
-		void HorLine(OutputStream& s) override
-		{
-			s.Print("__________________________________________________");
-			LineBreak(s);
-		}
-
-		void LineBreak(OutputStream& s) override
-		{
-			s.Put('\r');
-			s.Put('\n');
-		}
-
-		void PrintPreformatted(OutputStream& s, StringView text) override {s.Print(text);}
-
-		virtual void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont)
-		{(void)s; (void)newFont; (void)curFont;}
-
-		virtual void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont)
-		{(void)s; (void)curFont; (void)prevFont;}
-		
-		void PushFont(OutputStream& s, const FontDesc& newFont) override
-		{
-			PushFont(s, newFont, GetCurrentFont());
-			mFontStack.AddLast(newFont);
-		}
-
-		void PopFont(OutputStream& s) override
-		{
-			PopFont(s, GetCurrentFont(), GetPrevFont());
-			mFontStack.RemoveLast();
-		}
-
-		void BeginSpoiler(OutputStream& s, StringView label) final
-		{
-			beginSpoiler(s, label);
-			mSpoilerNesting++;
-		}
-
-		void EndSpoiler(OutputStream& s) final
-		{
-			INTRA_DEBUG_ASSERT(mSpoilerNesting != 0);
-			if(mSpoilerNesting == 0) return;
-			endSpoiler(s);
-			mSpoilerNesting--;
-		}
-
-		virtual void beginSpoiler(OutputStream& s, StringView label)
-		{
-			LineBreak(s);
-			s.Print(label);
-			LineBreak(s);
-			s.Print("{");
-			LineBreak(s);
-		}
-
-		virtual void endSpoiler(OutputStream& s)
-		{
-			s.Print("}");
-			LineBreak(s);
-		}
-
-		const FontDesc& GetCurrentFont() const
-		{
-			if(mFontStack.Empty())
-				return FontDesc::Default();
-			return mFontStack.Last();
-		}
-
-		const FontDesc& GetPrevFont() const
-		{
-			if(mFontStack.Length()<2)
-				return FontDesc::Default();
-			return mFontStack[mFontStack.Length()-2];
-		}
-
-		size_t mSpoilerNesting = 0;
-		Array<FontDesc> mFontStack;
-	};
-
-	Unique<Interface> mInterface;
-	size_t mRefCount = 0;
 public:
-	FormattedWriter(null_t=null):
-		OutputStream(null), mInterface(null) {}
+	FormattedWriter(null_t=null) {}
 
-	explicit FormattedWriter(OutputStream stream):
-		OutputStream(Cpp::Move(stream)),
-		mInterface(new BasicImpl) {}
+	explicit FormattedWriter(OutputStream stream)
+	{
+		mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), new BasicFormatter);
+	}
 
-	FormattedWriter(OutputStream stream, Interface* impl):
-		OutputStream(Cpp::Move(stream)),
-		mInterface(Cpp::Move(impl)) {}
+	explicit FormattedWriter(FormattedWriter* writerRef)
+	{
+		mFormattedStreams.EmplaceLast(writerRef);
+	}
+
+	FormattedWriter(OutputStream stream, IFormatter* formatter)
+	{
+		mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), Cpp::Move(formatter));
+	}
 
 	FormattedWriter(FormattedWriter&& rhs):
-		OutputStream(Cpp::Move(rhs)),
-		mInterface(Cpp::Move(rhs.mInterface))
-	{}
+		mFormattedStreams(Cpp::Move(rhs.mFormattedStreams))
+	{
+		INTRA_ASSERT(rhs.mRefCount.Get() == 0);
+	}
 
 	~FormattedWriter()
 	{
-		INTRA_DEBUG_ASSERT(mRefCount == 0);
+		INTRA_ASSERT(mRefCount.Get() == 0);
 		operator=(null);
 	}
 
 	FormattedWriter& operator=(FormattedWriter&& rhs)
 	{
 		if(this == &rhs) return *this;
-		OutputStream::operator=(Cpp::Move(rhs));
-		if(mInterface!=null) mInterface->CleanUp(*this);
-		mInterface = Cpp::Move(rhs.mInterface);
+		INTRA_ASSERT(mRefCount.Get() == 0);
+		INTRA_ASSERT(rhs.mRefCount.Get() == 0);
+		mFormattedStreams = Cpp::Move(rhs.mFormattedStreams);
 		return *this;
 	}
 
 	FormattedWriter& operator=(null_t)
 	{
-		if(mInterface != null) mInterface->CleanUp(*this);
-		OutputStream::operator=(null);
-		mInterface = null;
+		mFormattedStreams = null;
 		return *this;
 	}
 
-	forceinline bool operator==(null_t) const
-	{return Full() || mInterface==null;}
+	size_t Attach(OutputStream stream)
+	{
+		const size_t index = Range::CountUntil(mFormattedStreams, null);
+		if(index == mFormattedStreams.Length())
+			mFormattedStreams.EmplaceLast(Cpp::Move(stream), new BasicFormatter);
+		else mFormattedStreams[index] = {Cpp::Move(stream.Stream), new BasicFormatter};
+		return index;
+	}
+
+	size_t Attach(FormattedWriter* writerRef)
+	{
+		const size_t index = Range::CountUntil(mFormattedStreams, null);
+		if(index == mFormattedStreams.Length())
+			mFormattedStreams.EmplaceLast(writerRef);
+		else mFormattedStreams[index] = {writerRef};
+		return index;
+	}
+
+	size_t Attach(FormattedWriter&& writer)
+	{
+		const size_t index = mFormattedStreams.Length();
+		for(auto& fs: writer.mFormattedStreams)
+		{
+			if(fs == null) continue;
+			mFormattedStreams.AddLast(Cpp::Move(fs));
+		}
+		return index;
+	}
+
+	size_t Attach(OutputStream stream, IFormatter* formatter)
+	{
+		const size_t index = Range::CountUntil(mFormattedStreams, null);
+		if(index == mFormattedStreams.Length())
+			mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), Cpp::Move(formatter));
+		else mFormattedStreams[index] = {Cpp::Move(stream.Stream), Cpp::Move(formatter)};
+		return index;
+	}
+
+
+	bool operator==(null_t) const
+	{
+		for(auto& fs: mFormattedStreams)
+			if(fs != null) return false;
+		return true;
+	}
 
 	forceinline bool operator!=(null_t) const
 	{return !operator==(null);}
@@ -218,19 +198,31 @@ public:
 
 	FormattedWriter& PushFont(const FontDesc& newFont)
 	{
-		mInterface->PushFont(*this, newFont);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PushFont(*fs.mStream, newFont);
+			else fs.mWriter->PushFont(newFont);
+		}
 		return *this;
 	}
 
 	FormattedWriter& PopFont()
 	{
-		mInterface->PopFont(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PopFont(*fs.mStream);
+			else fs.mWriter->PopFont();
+		}
 		return *this;
 	}
 
 	FormattedWriter& BeginSpoiler(StringView label)
 	{
-		mInterface->BeginSpoiler(*this, label);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->BeginSpoiler(*fs.mStream, label);
+			else fs.mWriter->BeginSpoiler(label);
+		}
 		return *this;
 	}
 
@@ -238,57 +230,94 @@ public:
 
 	FormattedWriter& EndSpoiler()
 	{
-		mInterface->EndSpoiler(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->EndSpoiler(*fs.mStream);
+			else fs.mWriter->EndSpoiler();
+		}
 		return *this;
 	}
 
 	FormattedWriter& BeginCode()
 	{
-		mInterface->BeginCode(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->BeginCode(*fs.mStream);
+			else fs.mWriter->BeginCode();
+		}
 		return *this;
 	}
 
 	FormattedWriter& EndCode()
 	{
-		mInterface->EndCode(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->EndCode(*fs.mStream);
+			else fs.mWriter->EndCode();
+		}
 		return *this;
 	}
 
 	FormattedWriter& PushStyle(StringView style)
 	{
-		mInterface->PushStyle(*this, style);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PushStyle(*fs.mStream, style);
+			else fs.mWriter->PushStyle(style);
+		}
 		return *this;
 	}
 
 	FormattedWriter& PopStyle()
 	{
-		mInterface->PopStyle(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PopStyle(*fs.mStream);
+			else fs.mWriter->PopStyle();
+		}
 		return *this;
 	}
 
 	FormattedWriter& HorLine()
 	{
-		mInterface->HorLine(*this);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->HorLine(*fs.mStream);
+			else fs.mWriter->HorLine();
+		}
 		return *this;
 	}
 
 	FormattedWriter& LineBreak(size_t count=1)
 	{
-		while(count --> 0) mInterface->LineBreak(*this);
+		while(count --> 0)
+		{
+			for(auto& fs: mFormattedStreams)
+			{
+				if(fs.IsOwner()) fs.mFormatter->LineBreak(*fs.mStream);
+				else fs.mWriter->LineBreak();
+			}
+		}
 		return *this;
 	}
 
 	template<typename Arg0, typename... Args>
 	FormattedWriter& Print(Arg0&& arg0, Args&&... args)
 	{
-		OutputStream::Print(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PrintPreformatted(*fs.mStream, String::Concat(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...));
+			else fs.mWriter->PrintPreformatted(String::Concat(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...));
+		}
 		return *this;
 	}
+
+	template<typename T> FormattedWriter& operator<<(T&& x) {return Print(x);}
 
 	template<typename Arg0, typename... Args>
 	FormattedWriter& PrintLine(Arg0&& arg0, Args&&... args)
 	{
-		OutputStream::Print(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...);
+		Print(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...);
 		LineBreak();
 		return *this;
 	}
@@ -303,7 +332,11 @@ public:
 
 	FormattedWriter& PrintPreformatted(StringView str)
 	{
-		mInterface->PrintPreformatted(*this, str);
+		for(auto& fs: mFormattedStreams)
+		{
+			if(fs.IsOwner()) fs.mFormatter->PrintPreformatted(*fs.mStream, str);
+			else fs.mWriter->PrintPreformatted(str);
+		}
 		return *this;
 	}
 
@@ -312,6 +345,9 @@ private:
 	FormattedWriter& operator=(const FormattedWriter&) = delete;
 };
 
-}}
+}
+using IO::FormattedWriter;
+
+}
 
 INTRA_WARNING_POP

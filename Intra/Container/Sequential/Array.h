@@ -28,8 +28,7 @@ template<typename T> class Array
 public:
 	Array(null_t=null): buffer(null), range(null) {}
 
-	//explicit Array(size_t initialCapacity):
-		//buffer(null), range(null) {Reserve(initialCapacity);}
+	explicit Array(size_t initialCount): buffer(null), range(null) {SetCount(initialCount);}
 
 	Array(InitializerList<T> values):
 		Array(CSpan<T>(values)) {}
@@ -310,6 +309,7 @@ public:
 
 	//! Добавить новый элемент в конец.
 	forceinline Array& operator<<(const T& value) {AddLast(value); return *this;}
+	forceinline Array& operator<<(T&& value) {AddLast(Cpp::Move(value)); return *this;}
 
 	//! Прочитать и удалить последний элемент.
 	forceinline Array& operator>>(T& value)
@@ -547,30 +547,22 @@ public:
 	//! Изменить количество занятых элементов массива (с удалением лишних элементов или инициализацией по умолчанию новых)
 	void SetCount(size_t newCount)
 	{
-		const size_t oldCount = Count();
-		if(newCount <= oldCount)
-		{
-			Memory::Destruct<T>(range.Drop(newCount));
-			range.End = range.Begin + newCount;
-			return;
-		}
-		SetCountUninitialized(newCount);
+		const size_t oldCount = setCountNotConstruct(newCount);
 		Memory::Initialize<T>(range.Drop(oldCount));
+	}
+
+	//! Изменить количество занятых элементов массива (с удалением лишних элементов или инициализацией новых с аргументами args)
+	template<typename... Args> void SetCountEmplace(size_t newCount, Args&&... args)
+	{
+		const size_t oldCount = setCountNotConstruct(newCount);
+		for(T& obj: range.Drop(oldCount)) new(&obj) T(args...);
 	}
 
 	//! Изменить количество занятых элементов массива (с удалением лишних элементов или инициализацией копированием новых)
 	void SetCount(size_t newCount, const T& initValue)
 	{
-		const size_t oldCount = Count();
-		if(newCount<=oldCount)
-		{
-			Memory::Destruct<T>(range.Drop(newCount));
-			range.End = range.Begin+newCount;
-			return;
-		}
-		SetCountUninitialized(newCount);
-		for(T* dst = range.Begin+oldCount; dst<range.End; dst++)
-			new(dst) T(initValue);
+		const size_t oldCount = setCountNotConstruct(newCount);
+		for(T& dst: Drop(oldCount)) new(dst) T(initValue);
 	}
 
 	//! Изменить количество занятых элементов массива без вызова лишних элементов или инициализации новых.
@@ -683,6 +675,19 @@ public:
 
 
 private:
+	size_t setCountNotConstruct(size_t newCount)
+	{
+		const size_t oldCount = Count();
+		if(newCount <= oldCount)
+		{
+			Memory::Destruct<T>(range.Drop(newCount));
+			range.End = range.Begin + newCount;
+			return oldCount;
+		}
+		SetCountUninitialized(newCount);
+		return oldCount;
+	}
+
 	Span<T> buffer, range;
 };
 

@@ -54,25 +54,27 @@ void TestCustomOutputStream(FormattedWriter& output)
 	{
 		void Put(char ch)
 		{
-			if(ch>='A' && ch<='Z')
+			if(ch >= 'A' && ch <= 'Z')
 			{
-				if(ch=='Z') ch = 'A';
+				if(ch == 'Z') ch = 'A';
 				else ch++;
 			}
-			if(ch>='a' && ch<='z')
+			if(ch >= 'a' && ch <= 'z')
 			{
-				if(ch=='z') ch = 'a';
+				if(ch == 'z') ch = 'a';
 				else ch++;
 			}
 			Output << ch;
 		}
-		OutputStream& Output;
+		OutputStream Output;
 	};
 
 	StringView strings[] = {"Hello", ", ", "World", "!"};
 	output.PrintLine("Воспользуемся шифрующим потоком, применив его к строке \"",
 		"Printing array: ", "\" и к массиву ", strings, ":");
-	OutputCaesarCipher{output} << "Printing array: " << strings;
+	String dst;
+	OutputCaesarCipher{LastAppender(dst)} << "Printing array: " << strings;
+	output << dst;
 	output.LineBreak();
 }
 

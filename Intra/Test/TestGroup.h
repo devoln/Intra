@@ -15,7 +15,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra {
 
-typedef Utils::Delegate<void(IO::FormattedWriter&)> TestFunction;
+typedef Delegate<void(IO::FormattedWriter&)> TestFunction;
 
 class TestGroup
 {
@@ -85,7 +85,7 @@ private:
 		static bool alreadyCalled = false;
 		if(alreadyCalled) abort();
 		alreadyCalled = true;
-		auto acCleanup = Finally([&]() {alreadyCalled = false;});
+		INTRA_FINALLY(alreadyCalled = false);
 		processError(srcInfo, msg);
 	#ifdef INTRA_EXCEPTIONS_ENABLED
 		if(GetCurrent() != null)

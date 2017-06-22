@@ -32,7 +32,7 @@ namespace Intra { namespace IO {
 struct ConsoleOutStream
 {
 	ConsoleOutStream()
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 		: mOutputHandle(GetStdHandle(STD_OUTPUT_HANDLE))
 #endif
 	{}
@@ -41,7 +41,7 @@ struct ConsoleOutStream
 
 	void Put(char c)
 	{
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 		mWriteBuf[mWriteBufCount++] = c;
 		size_t charLen = UTF8::SequenceBytes(mWriteBuf[0]);
 		if(mWriteBufCount < charLen) return;
@@ -60,7 +60,7 @@ struct ConsoleOutStream
 	size_t CopyAdvanceFromAdvance(CSpan<char>& src)
 	{
 		if(src.Empty()) return 0;
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 		const size_t totalBytesToWrite = src.Length();
 		while(mWriteBufCount != 0)
 		{
@@ -88,22 +88,22 @@ struct ConsoleOutStream
 	}
 
 private:
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	byte mWriteBufCount = 0;
 	char mWriteBuf[6];
 	void* mOutputHandle;
 #endif
 };
 
-class ConsoleWriterImpl final: public FormattedWriter::BasicImpl
+class ConsoleFormatter final: public BasicFormatter
 {
 public:
-	using FormattedWriter::BasicImpl::PushFont;
-	using FormattedWriter::BasicImpl::PopFont;
+	using BasicFormatter::PushFont;
+	using BasicFormatter::PopFont;
 
-	void PushFont(OutputStream& s, const FontDesc& newFont, const FontDesc& curFont) override
+	void PushFont(IOutputStream<char>& s, const FontDesc& newFont, const FontDesc& curFont) override
 	{
-#if INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+#if INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows
 		(void)s;
 		if(curFont.Color != newFont.Color ||
 			curFont.Underline != newFont.Underline)
@@ -129,7 +129,7 @@ public:
 			curFont.Bold != newFont.Bold ||
 			curFont.Underline != newFont.Underline)
 		{
-			s.Print("\x1B[0m");
+			s << "\x1B[0m";
 			if(newFont.Color != Math::Vec3(-1))
 			{
 				const float maxColorChannel = Op::Max(Op::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
@@ -150,11 +150,11 @@ public:
 #endif
 	}
 
-	void PopFont(OutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) override
+	void PopFont(IOutputStream<char>& s, const FontDesc& curFont, const FontDesc& prevFont) override
 	{PushFont(s, prevFont, curFont);}
 };
 
-FormattedWriter ConsoleOutput() {return FormattedWriter(ConsoleOutStream(), new ConsoleWriterImpl);}
+FormattedWriter ConsoleOutput() {return FormattedWriter(ConsoleOutStream(), new ConsoleFormatter);}
 FormattedWriter ConsoleOut = ConsoleOutput();
 
 }}

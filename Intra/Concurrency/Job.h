@@ -17,9 +17,9 @@ struct Job
 {
 	typedef void(*Function)(Job*, const void*);
 
-	Function function;
-	Job* parent;
-	Concurrency::Atomic<int> unfinishedJobs;
+	Function mFunction;
+	Job* mParent;
+	Concurrency::AtomicInt mUnfinishedJobCount;
 #ifndef INTRA_PLATFORM_IS_64
 	enum {PADDING_SIZE = 52};
 #else
@@ -28,8 +28,8 @@ struct Job
 	byte data[PADDING_SIZE];
 
 	Job(const Job& rhs):
-		function(rhs.function), parent(rhs.parent),
-		unfinishedJobs(rhs.unfinishedJobs.Load())
+		mFunction(rhs.mFunction), mParent(rhs.mParent),
+		mUnfinishedJobCount(rhs.mUnfinishedJobCount.Get())
 	{SpanOf(rhs.data).CopyTo(SpanOf(data));}
 
 

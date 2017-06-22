@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "IO/LogSystem.h"
+#include "IO/FormattedWriter.h"
 
 void RunStringPerfTests(Intra::IO::FormattedWriter& logger);
 

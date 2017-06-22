@@ -133,8 +133,8 @@ public:
 		mSampleSource(Cpp::Move(rhs.mSampleSource)),
 		mOnClose(rhs.mOnClose), mData(rhs.mData)
 	{
-		rhs.mData=null;
-		rhs.mOnClose=null;
+		rhs.mData = null;
+		rhs.mOnClose = null;
 	}
 
 	~StreamedSound() {release();}

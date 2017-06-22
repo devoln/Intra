@@ -6,9 +6,6 @@ namespace Intra {
 
 namespace Range {
 template<typename T> struct Span;
-}
-
-namespace Concepts {
 
 template<typename T> class IOutput
 {
@@ -43,7 +40,13 @@ public:
 };
 
 }
-using Concepts::IOutput;
-using Concepts::IOutputStream;
+
+namespace Concepts {
+using Range::IOutput;
+using Range::IOutputStream;
+}
+
+using Range::IOutput;
+using Range::IOutputStream;
 
 }

@@ -2,13 +2,13 @@
 #include "Cpp/Endianess.h"
 #include "Range/Polymorphic/InputRange.h"
 
-#if(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
+#if(INTRA_LIBRARY_VORBIS_DECODER == INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
 
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 #include <stdio.h>
 
-#elif(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
+#elif(INTRA_LIBRARY_VORBIS_DECODER == INTRA_LIBRARY_VORBIS_DECODER_STB)
 
 #include "stb_vorbis.h"
 
@@ -19,7 +19,7 @@ namespace Intra { namespace Audio { namespace Sources {
 using namespace Math;
 
 
-#if(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
+#if(INTRA_LIBRARY_VORBIS_DECODER == INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
 
 struct OggStream
 {

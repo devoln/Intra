@@ -16,7 +16,7 @@ namespace Intra { namespace Utils {
 //! Не резервирует место и не содержит методов для вставки элементов.
 template<typename T> struct FixedArray
 {
-	forceinline FixedArray(null_t=null) noexcept: mData(null) {}
+	forceinline FixedArray(null_t = null) noexcept: mData(null) {}
 	
 	//! Создаёт новый FixedArray, передавая ему во владение диапазон элементов.
 	//! Этот метод предполагает, что элементы диапазона выделены как new T[...].

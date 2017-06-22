@@ -8,7 +8,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Range/Sort.hh"
 #include "System/Stopwatch.h"
 #include "IO/FormattedWriter.h"
-#include "IO/CompositeFormattedWriter.h"
 
 using namespace Intra;
 
@@ -188,9 +187,8 @@ template<typename T> void TestAndPrintIntegralTypeSorts(IO::FormattedWriter& out
 		});
 }
 
-void RunSortPerfTests(IO::FormattedWriter& output)
+void RunSortPerfTests(FormattedWriter& output)
 {
-	IO::CompositeFormattedWriter emptyLogger;
 	if(TestGroup gr{"Sorting of random generated arrays of short"})
 		TestAndPrintIntegralTypeSorts<short>(output, "short");
 

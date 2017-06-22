@@ -499,7 +499,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_QIFIST;INTRA_MINEXE=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_QIFIST;INTRA_MINEXE=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -711,7 +711,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>

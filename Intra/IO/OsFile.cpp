@@ -9,6 +9,8 @@
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
 
+#include "System/detail/Common.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(defined(INTRA_PLATFORM_IS_UNIX) || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
@@ -17,7 +19,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <string.h>
 
 #elif INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows
@@ -47,66 +48,40 @@ struct IUnknown;
 
 namespace Intra { namespace IO {
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-
-static GenericString<wchar_t> utf8ToWStringZ(StringView str)
-{
-	GenericString<wchar_t> wfn;
-	wfn.SetLengthUninitialized(str.Length());
-	const int wlen = MultiByteToWideChar(CP_UTF8, 0, str.Data(),
-		int(str.Length()), wfn.Data(), int(wfn.Length()));
-	wfn.SetLengthUninitialized(size_t(wlen + 1));
-	wfn.Last() = 0;
-	return wfn;
-}
-
-static void ProcessLastError(ErrorStatus& status, StringView message, const Utils::SourceInfo& srcInfo)
-{
-	const auto le = GetLastError();
-	char* s = null;
-	FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
-		null, le,
-		DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-		reinterpret_cast<char*>(&s), 0, null);
-	status.Error(message + StringView(s) + "!", srcInfo);
-	LocalFree(s);
-}
-
-#else
-
-INTRA_WARNING_DISABLE_UNUSED_FUNCTION
-
-static forceinline StringView strerrorHelper(int, const char* buf)
-{return StringView(buf);}
-
-static forceinline StringView strerrorHelper(const char* str, const char*)
-{return StringView(str);}
-
-static void ProcessLastError(ErrorStatus& status, StringView message, const Utils::SourceInfo& srcInfo)
-{
-	char buf[64];
-	status.Error(message + strerrorHelper(strerror_r(errno, buf, sizeof(buf)), buf) + "!", srcInfo);
-}
-
-#endif
-
 OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorStatus& status):
 	mMode(mode), mOwning(true)
 {
 	mFullPath = OS.GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	auto wFullFileName = utf8ToWStringZ(mFullPath);
+	auto wFullFileName = System::detail::Utf8ToWStringZ(mFullPath);
 
 	DWORD desiredAccess = GENERIC_READ;
 	if(mode == Mode::Write) desiredAccess = GENERIC_WRITE;
 	if(mode == Mode::ReadWrite) desiredAccess |= GENERIC_WRITE;
 
 	const DWORD creationDisposition = DWORD(mode == Mode::Read? OPEN_EXISTING: OPEN_ALWAYS);
-	DWORD flagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-	if(disableSystemBuffering) flagsAndAttributes |= FILE_FLAG_NO_BUFFERING;
+	DWORD attributes = FILE_ATTRIBUTE_NORMAL;
+	DWORD flags = 0;
+	if(disableSystemBuffering) flags |= FILE_FLAG_NO_BUFFERING;
 
+#if defined(WINAPI_FAMILY_PARTITION) && defined(WINAPI_PARTITION_DESKTOP)
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && _WIN32_WINNT >= 0x0602
+#define WINSTORE_APP
+	CREATEFILE2_EXTENDED_PARAMETERS params{};
+	params.dwSize = sizeof(params);
+	params.dwFileAttributes = attributes;
+	params.dwFileFlags = flags;
+	const HANDLE hFile = CreateFile2(wFullFileName.Data(), desiredAccess,
+		FILE_SHARE_READ, creationDisposition, &params);
+#endif
+#endif
+
+#ifndef WINSTORE_APP
 	const HANDLE hFile = CreateFileW(wFullFileName.Data(), desiredAccess,
-		FILE_SHARE_READ, null, creationDisposition, flagsAndAttributes, null);
+		FILE_SHARE_READ, null, creationDisposition, flags|attributes, null);
+#else
+#undef WINTORE_APP
+#endif
 
 	if(hFile != INVALID_HANDLE_VALUE) mHandle = NativeHandle(hFile);
 	else mHandle = null;
@@ -121,7 +96,7 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, Erro
 	if(mHandle == null)
 	{
 		mOwning = false;
-		ProcessLastError(status, "Cannot open file " + fileName + ": ", INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, "Cannot open file " + fileName + ": ", INTRA_SOURCE_INFO);
 	}
 }
 
@@ -151,7 +126,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus
 		overlapped.Offset = DWORD(fileOffset);
 		overlapped.OffsetHigh = DWORD(fileOffset >> 32);
 		if(!ReadFile(HANDLE(mHandle), pdst, 0xFFFF0000, &bytesRead, &overlapped) && GetLastError() != ERROR_HANDLE_EOF)
-			ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+			System::detail::ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 		fileOffset += bytesRead;
 		totalBytesRead += bytesRead;
 		bytes -= bytesRead;
@@ -161,7 +136,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus
 	overlapped.Offset = DWORD(fileOffset);
 	overlapped.OffsetHigh = DWORD(fileOffset >> 32);
 	if(!ReadFile(HANDLE(mHandle), pdst, DWORD(bytes), &bytesRead, &overlapped) && GetLastError() != ERROR_HANDLE_EOF)
-		ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 	totalBytesRead += bytesRead;
 	return totalBytesRead;
 #else
@@ -169,7 +144,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus
 	if(bytesRead < 0)
 	{
 		bytesRead = 0;
-		ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat("Cannot read file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 	}
 	return size_t(bytesRead);
 #endif
@@ -182,13 +157,13 @@ ulong64 OsFile::Size(ErrorStatus& status) const
 	LARGE_INTEGER result;
 	result.QuadPart = 0;
 	if(GetFileSizeEx(HANDLE(mHandle), &result) == 0 && GetLastError() != 0)
-		ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
 	return ulong64(result.QuadPart);
 #else
 	const off_t result = lseek(int(size_t(mHandle)), 0, SEEK_END);
 	if(result == off_t(-1))
 	{
-		ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
 		return 0;
 	}
 	return size_t(result);
@@ -209,7 +184,8 @@ size_t OsFile::WriteData(ulong64 fileOffset, const void* src, size_t bytes, Erro
 		overlapped.Offset = DWORD(fileOffset);
 		overlapped.OffsetHigh = DWORD(fileOffset >> 32);
 		if(!WriteFile(HANDLE(mHandle), psrc, 0xFFFF0000, &bytesWritten, &overlapped))
-			ProcessLastError(status, String::Concat("Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+			System::detail::ProcessLastError(status, String::Concat(
+				"Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 		fileOffset += bytesWritten;
 		totalBytesWritten += bytesWritten;
 		bytes -= bytesWritten;
@@ -219,13 +195,15 @@ size_t OsFile::WriteData(ulong64 fileOffset, const void* src, size_t bytes, Erro
 	overlapped.Offset = DWORD(fileOffset);
 	overlapped.OffsetHigh = DWORD(fileOffset >> 32);
 	if(!WriteFile(HANDLE(mHandle), psrc, DWORD(bytes), &bytesWritten, &overlapped))
-		ProcessLastError(status, String::Concat("Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat(
+			"Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 #else
 	auto bytesWritten = pwrite(int(size_t(mHandle)), src, bytes, off_t(fileOffset));
 	if(bytesWritten < 0)
 	{
 		bytesWritten = 0;
-		ProcessLastError(status, String::Concat("Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat(
+			"Cannot write file ", FullPath(), " at offset ", fileOffset, ": "), INTRA_SOURCE_INFO);
 	}
 #endif
 	return size_t(bytesWritten);
@@ -240,10 +218,12 @@ void OsFile::SetSize(ulong64 size, ErrorStatus& status) const
 	largeSize.QuadPart = long64(size);
 	SetFilePointerEx(HANDLE(mHandle), largeSize, null, FILE_BEGIN);
 	if(!SetEndOfFile(HANDLE(mHandle)))
-		ProcessLastError(status, String::Concat("Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat(
+			"Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
 #else
 	if(ftruncate(int(size_t(mHandle)), off_t(size)) != 0)
-		ProcessLastError(status, String::Concat("Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, String::Concat(
+			"Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
 #endif
 }
 

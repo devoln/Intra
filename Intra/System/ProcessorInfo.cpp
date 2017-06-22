@@ -30,7 +30,7 @@ ProcessorInfo ProcessorInfo::Get()
 	SYSTEM_INFO sysInfo;
 	GetSystemInfo(&sysInfo);
 	result.LogicalProcessorNumber = ushort(sysInfo.dwNumberOfProcessors);
-//#ifdef INTRA_XP_SUPPORT
+//#ifndef INTRA_DROP_XP_SUPPORT
 	result.CoreNumber = result.LogicalProcessorNumber;
 /*#else
 	SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX logicalProcInfoEx[16];

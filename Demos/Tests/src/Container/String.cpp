@@ -16,7 +16,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Cpp/Compatibility.h"
 #include "Test.hh"
-#include "IO/LogSystem.h"
 #include "Container/Sequential/String.h"
 #include "System/Stopwatch.h"
 #include "Range/Output/OutputArrayRange.h"

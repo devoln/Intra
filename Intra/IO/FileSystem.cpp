@@ -13,6 +13,8 @@
 #include "IO/FileWriter.h"
 #include "IO/Std.h"
 
+#include "System/detail/Common.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <sys/stat.h>
@@ -25,7 +27,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <cstdio>
 #include <errno.h>
 
-#elif INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows
+#elif INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -54,7 +56,7 @@ namespace Intra { namespace IO {
 
 static String osGetCurrentDirectory()
 {
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	wchar_t wpath[MAX_PATH];
 	uint wlength = GetCurrentDirectoryW(MAX_PATH, wpath);
 	char path[MAX_PATH*3];
@@ -78,35 +80,22 @@ String OsFileSystem::GetFullFileName(StringView fileName) const
 	//TODO: сделать обработку и удаление ../, ./ и повтор€ющихс€ слешей
 	String result = fileName;
 	bool nameIsFull = false;
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	Range::Replace(result, '/', '\\');
-	nameIsFull = Range::StartsWith(Range::Drop(result), ":\\");
+	nameIsFull = Range::StartsWith(result, "\\") || result.Drop().StartsWith(":\\");
 #else
 	Range::Replace(result, '\\', '/');
 	nameIsFull = Range::StartsWith(result, '/');
 #endif
-	if(!nameIsFull) result = mCurrentDirectory+result;
+	if(!nameIsFull) result = mCurrentDirectory + result;
 	return result;
 }
-
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
-static GenericString<wchar_t> utf8ToWStringZ_FS(StringView str)
-{
-	GenericString<wchar_t> wfn;
-	wfn.SetLengthUninitialized(str.Length());
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, str.Data(),
-		int(str.Length()), wfn.Data(), int(wfn.Length()));
-	wfn.SetLengthUninitialized(size_t(wlen+1));
-	wfn.Last() = 0;
-	return wfn;
-}
-#endif
 
 bool OsFileSystem::FileExists(StringView fileName) const
 {
 	String fullFileName = GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	auto wfn = utf8ToWStringZ_FS(fullFileName);
+	auto wfn = System::detail::Utf8ToWStringZ(fullFileName);
 	return PathFileExistsW(wfn.Data()) != 0;
 #else
 	return access(fullFileName.CStr(), 0) != -1;
@@ -117,7 +106,7 @@ bool OsFileSystem::FileDelete(StringView fileName)
 {
 	String fullFileName = GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	auto wfn = utf8ToWStringZ_FS(fullFileName);
+	auto wfn = System::detail::Utf8ToWStringZ(fullFileName);
 	return DeleteFileW(wfn.Data()) != 0;
 #else
 	return remove(fullFileName.CStr()) == 0;
@@ -137,8 +126,8 @@ bool OsFileSystem::FileMove(StringView oldFileName, StringView newFileName, bool
 	}
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	auto wOldFN = utf8ToWStringZ_FS(oldFullFileName);
-	auto wNewFN = utf8ToWStringZ_FS(newFullFileName);
+	const auto wOldFN = System::detail::Utf8ToWStringZ(oldFullFileName);
+	const auto wNewFN = System::detail::Utf8ToWStringZ(newFullFileName);
 	return MoveFileExW(wOldFN.Data(), wNewFN.Data(), MOVEFILE_COPY_ALLOWED) != 0;
 #else
 	return rename(oldFullFileName.CStr(), newFullFileName.CStr()) == 0;
@@ -152,25 +141,19 @@ FileInfo OsFileSystem::FileGetInfo(StringView fileName, ErrorStatus& status) con
 	String fullFileName = GetFullFileName(fileName);
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	WIN32_FILE_ATTRIBUTE_DATA fad;
-	if(!GetFileAttributesExW(utf8ToWStringZ_FS(fullFileName).Data(), GetFileExInfoStandard, &fad))
+	if(!GetFileAttributesExW(System::detail::Utf8ToWStringZ(fullFileName).Data(), GetFileExInfoStandard, &fad))
 	{
-		char* s = null;
-		FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
-			null, GetLastError(),
-			DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-			reinterpret_cast<char*>(&s), 0, null);
-		status.Error("Cannot get attributes of file " + fileName + ": " + StringView(s) + "!", INTRA_SOURCE_INFO);
-		LocalFree(s);
+		System::detail::ProcessLastError(status, "Cannot get attributes of file " + fileName + ": ", INTRA_SOURCE_INFO);
 		return {0, 0};
 	}
-	result.Size = (ulong64(fad.nFileSizeHigh) << 32)|fad.nFileSizeLow;
+	result.Size = (ulong64(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
 	result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32) | fad.ftLastWriteTime.dwLowDateTime;
 #else
 	struct stat attrib;
 	const bool success = stat(fullFileName.CStr(), &attrib) == 0;
 	if(!success)
 	{
-		status.Error("Cannot get attributes of file " + fileName + ": " + StringView(strerror(errno)) + "!", INTRA_SOURCE_INFO);
+		System::detail::ProcessLastError(status, "Cannot get attributes of file " + fileName + ": ", INTRA_SOURCE_INFO);
 		return {0, 0};
 	}
 	result.LastModified = ulong64(attrib.st_mtime);

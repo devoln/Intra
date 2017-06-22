@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::System::TEnvironment">
+    <DisplayString>Environment(...)</DisplayString>
+    <StringView>$env</StringView>
+    <Expand>
+      <Item Name="CommandLine">CommandLine</Item>
+      <Item Name="Environment Variables">$env</Item>
+      <Item Name="Process ID">$pid</Item>
+    </Expand>
+  </Type>
+
+  
+</AutoVisualizer>

@@ -9,11 +9,21 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 namespace Intra { namespace Container {
 
 //! Разреженный массив
-template<typename T, typename Index> class SparseArray
+template<typename T, typename Index = size_t> class SparseArray
 {
 public:
 	forceinline SparseArray(null_t=null) {}
 	explicit SparseArray(Index size): mData(Memory::AllocateRangeUninitialized(size)) {}
+
+	SparseArray(InitializerList<T> values):
+		SparseArray(CSpan<T>(values)) {}
+	
+	SparseArray(CSpan<T> values): mData(values.Length())
+	{
+		for(auto& v: values) Add(v);
+	}
+
+	template<size_t N> SparseArray(const T(&values)[N]): SparseArray(SpanOf(values)) {}
 
 	//! Переместить элемент в массив.
 	//! \param[in] val Перемещаемый элемент.
@@ -77,7 +87,7 @@ private:
 	void check_space()
 	{
 		if(!IsFull()) return;
-		size_t count = Capacity()+Capacity()/2;
+		size_t count = Capacity() + Capacity()/2;
 		if(count == 0) count = 4;
 		auto range = Memory::AllocateRangeUninitialized<T>(Memory::GlobalHeap, count, INTRA_SOURCE_INFO);
 		Range::SparseRange<T, Index> newData(range);

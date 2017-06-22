@@ -208,92 +208,96 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath);$(SolutionDir)../Libs/lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath);$(SolutionDir)../Libs/lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
     <EnableCppCoreCheck>false</EnableCppCoreCheck>
     <EnableExperimentalCppCoreCheck>false</EnableExperimentalCppCoreCheck>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|x64'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|x64'">
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;../../Lib/lib</LibraryPath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;../../Lib/lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;../../Lib/lib</LibraryPath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;../../Lib/lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSdk_71A_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(LLVMInstallDir)\lib\clang\3.9\lib\windows;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|x64'">
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <OutDir>$(SolutionDir)Build\$(Configuration) $(Platform)\</OutDir>
-    <IncludePath>$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64;$(OutDir)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -463,7 +467,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;INTRA_NO_WAVE_LOADER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;INTRA_NO_WAVE_LOADER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -645,7 +649,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
@@ -761,6 +765,7 @@
     <ClCompile Include="Audio\Synth\SineSynth.cpp" />
     <ClCompile Include="Audio\Synth\SynthesizedInstrument.cpp" />
     <ClCompile Include="Audio\Synth\TableAttenuation.cpp" />
+    <ClCompile Include="Concurrency\CondVar.cpp" />
     <ClCompile Include="Concurrency\Job.cpp" />
     <ClCompile Include="Concurrency\Mutex.cpp" />
     <ClCompile Include="Concurrency\Thread.cpp" />
@@ -795,17 +800,14 @@
     <ClCompile Include="Data\Serialization\TextSerializerParams.cpp" />
     <ClCompile Include="Data\ValueType.cpp" />
     <ClCompile Include="Data\Variable.cpp" />
-    <ClCompile Include="IO\CompositeFormattedWriter.cpp" />
     <ClCompile Include="IO\ConsoleInput.cpp" />
     <ClCompile Include="IO\ConsoleOutput.cpp" />
     <ClCompile Include="IO\FileMapping.cpp" />
     <ClCompile Include="IO\FileSystem.cpp" />
     <ClCompile Include="IO\FormattedLogger.cpp" />
     <ClCompile Include="IO\HtmlWriter.cpp" />
-    <ClCompile Include="IO\LogSystem.cpp" />
     <ClCompile Include="IO\Networking.cpp" />
     <ClCompile Include="IO\OsFile.cpp" />
-    <ClCompile Include="IO\ReferenceFormattedWriter.cpp" />
     <ClCompile Include="IO\Socket.cpp" />
     <ClCompile Include="IO\Std.cpp" />
     <ClCompile Include="Memory\Allocator\Basic\Pool.cpp" />
@@ -816,9 +818,11 @@
     <ClCompile Include="Memory\VirtualMemory.cpp" />
     <ClCompile Include="Range\Special\Unicode.cpp" />
     <ClCompile Include="System\DateTime.cpp" />
+    <ClCompile Include="System\detail\Common.cpp" />
     <ClCompile Include="System\Environment.cpp" />
     <ClCompile Include="System\ProcessorInfo.cpp" />
     <ClCompile Include="System\RamInfo.cpp" />
+    <ClCompile Include="System\DLL.cpp" />
     <ClCompile Include="System\Signal.cpp" />
     <ClCompile Include="System\Stopwatch.cpp" />
     <ClCompile Include="Test\PerfSummary.cpp" />
@@ -880,18 +884,26 @@
     <ClInclude Include="Concepts\Iterator.h" />
     <ClInclude Include="Concepts\Range.h" />
     <ClInclude Include="Concepts\RangeOf.h" />
+    <ClInclude Include="Concurrency\CondVar.h" />
+    <ClInclude Include="Concurrency\detail\AtomicCpp11.h" />
+    <ClInclude Include="Concurrency\detail\AtomicGNU.h" />
+    <ClInclude Include="Concurrency\detail\AtomicMSVC.h" />
     <ClInclude Include="Concurrency\detail\BasicThreadData.hxx" />
+    <ClInclude Include="Concurrency\detail\CondVarCpp11.hxx" />
+    <ClInclude Include="Concurrency\detail\CondVarPThread.hxx" />
+    <ClInclude Include="Concurrency\detail\CondVarWinAPI.hxx" />
     <ClInclude Include="Concurrency\detail\MutexCpp11.hxx" />
-    <ClInclude Include="Concurrency\detail\MutexDummy.hxx" />
     <ClInclude Include="Concurrency\detail\MutexPThread.hxx" />
     <ClInclude Include="Concurrency\detail\MutexWinAPI.hxx" />
     <ClInclude Include="Concurrency\detail\ThreadCommonWinAPI.hxx" />
     <ClInclude Include="Concurrency\detail\ThreadCpp11.hxx" />
     <ClInclude Include="Concurrency\detail\ThreadDummy.hxx" />
     <ClInclude Include="Concurrency\detail\ThreadPThread.hxx" />
+    <ClInclude Include="Concurrency\detail\ThreadSleep.hxx" />
     <ClInclude Include="Concurrency\detail\ThreadWinAPI.hxx" />
     <ClInclude Include="Concurrency\Lock.h" />
     <ClInclude Include="Concurrency\Mutex.h" />
+    <ClInclude Include="Concurrency\Synchronized.h" />
     <ClInclude Include="Cpp\Compatibility.h" />
     <ClInclude Include="Cpp\Features.h" />
     <ClInclude Include="Cpp\Fundamental.h" />
@@ -931,6 +943,7 @@
     <ClInclude Include="Image\Loaders\LoaderTGA.h" />
     <ClInclude Include="Image\Loaders\LoaderTIFF.h" />
     <ClInclude Include="IO\FilePath.h" />
+    <ClInclude Include="IO\Formatter.h" />
     <ClInclude Include="Math\ExponentRange.h" />
     <ClInclude Include="Math\Geometry\Aabb.h" />
     <ClInclude Include="Math\Geometry\BoundingVolume.h" />
@@ -1049,7 +1062,6 @@
     <ClInclude Include="IO.hh" />
     <ClInclude Include="IO\FormattedLogger.h" />
     <ClInclude Include="IO\SocketReader.h" />
-    <ClInclude Include="IO\CompositeFormattedWriter.h" />
     <ClInclude Include="IO\ConsoleInput.h" />
     <ClInclude Include="IO\ConsoleOutput.h" />
     <ClInclude Include="IO\FileMapping.h" />
@@ -1058,10 +1070,8 @@
     <ClInclude Include="IO\FileWriter.h" />
     <ClInclude Include="IO\FormattedWriter.h" />
     <ClInclude Include="IO\HtmlWriter.h" />
-    <ClInclude Include="IO\LogSystem.h" />
     <ClInclude Include="IO\Networking.h" />
     <ClInclude Include="IO\OsFile.h" />
-    <ClInclude Include="IO\ReferenceFormattedWriter.h" />
     <ClInclude Include="IO\Socket.h" />
     <ClInclude Include="IO\SocketWriter.h" />
     <ClInclude Include="IO\Std.h" />
@@ -1101,9 +1111,11 @@
     <ClInclude Include="Concurrency\Atomic.h" />
     <ClInclude Include="Simd\Simd.h" />
     <ClInclude Include="System\DateTime.h" />
+    <ClInclude Include="System\detail\Common.h" />
     <ClInclude Include="System\Environment.h" />
     <ClInclude Include="System\ProcessorInfo.h" />
     <ClInclude Include="System\RamInfo.h" />
+    <ClInclude Include="System\DLL.h" />
     <ClInclude Include="System\Signal.h" />
     <ClInclude Include="System\Stopwatch.h" />
     <ClInclude Include="Utils\ArrayAlgo.h" />
@@ -1200,17 +1212,22 @@
     <None Include="Container\Utility\SparseRange.inl" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="Concurrency\Concurrency.natvis" />
+    <Natvis Include="Concurrency\Concurrency.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
     <Natvis Include="Container\Container.natvis" />
     <Natvis Include="Cpp\Cpp.natvis" />
     <Natvis Include="Image\Image.natvis" />
-    <Natvis Include="IO\IO.natvis" />
+    <Natvis Include="IO\IO.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
     <Natvis Include="Math\Math.natvis" />
     <Natvis Include="Meta\Meta.natvis" />
     <Natvis Include="Range\Range.natvis" />
     <Natvis Include="Range\RangeConstruction.natvis" />
     <Natvis Include="Range\RangeIteration.natvis" />
     <Natvis Include="Range\RangePolymorphic.natvis" />
+    <Natvis Include="System\System.natvis" />
     <Natvis Include="Utils\Utils.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

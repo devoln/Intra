@@ -4,6 +4,7 @@
     <Type Name="Intra::Container::GenericString&lt;char&gt;">
         <DisplayString Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">{m.Data,[m.Len]s8}</DisplayString>
         <DisplayString Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">{mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s8}</DisplayString>
+        <DisplayString>&lt;ERROR&gt;</DisplayString>  
         <StringView Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">m.Data,[m.Len]s8b</StringView>
         <StringView Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s8b</StringView>
         <Expand> 
@@ -18,6 +19,7 @@
   <Type Name="Intra::Container::GenericString&lt;char16_t&gt;">
     <DisplayString Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">{m.Data,[m.Len]su}</DisplayString>
     <DisplayString Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">{mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]su}</DisplayString>
+    <DisplayString>&lt;ERROR&gt;</DisplayString>
     <StringView Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">m.Data,[m.Len]sub</StringView>
     <StringView Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]sub</StringView>
     <Expand>
@@ -32,6 +34,7 @@
   <Type Name="Intra::Container::GenericString&lt;wchar_t&gt;">
     <DisplayString Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">{m.Data,[m.Len]su}</DisplayString>
     <DisplayString Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">{mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]su}</DisplayString>
+    <DisplayString>&lt;ERROR&gt;</DisplayString>
     <StringView Condition="m.Capacity &amp; SSO_LONG_BIT_MASK">m.Data,[m.Len]sub</StringView>
     <StringView Condition="!(m.Capacity &amp; SSO_LONG_BIT_MASK)">mBuffer,[SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]sub</StringView>
     <Expand>
@@ -60,10 +63,14 @@
   
 	
     <Type Name="Intra::Container::Array&lt;*&gt;">
+        <DisplayString IncludeView="Length">{range,view(Length)}</DisplayString>
         <DisplayString>{range}</DisplayString>
         <Expand>
-            <Item Name="Capacity" ExcludeView="simple">buffer.End-buffer.Begin</Item>
-            <ExpandedItem>range</ExpandedItem>
+            <Item Name="Capacity" ExcludeView="simple">buffer.End - range.Begin</Item>
+            <Item Name="Left Capacity" ExcludeView="simple">range.Begin - buffer.Begin</Item>
+            <Item Name="Total Capacity" ExcludeView="simple">buffer.End - buffer.Begin</Item>
+            <Item Name="Length" ExcludeView="simple">range.End - range.Begin</Item>
+            <ExpandedItem>range,view(simple)</ExpandedItem>
         </Expand>
     </Type>
 

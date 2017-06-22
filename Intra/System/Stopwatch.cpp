@@ -68,20 +68,39 @@ static ulong64 clock_gettime_nsecs(clockid_t clkId)
 	return ulong64(ts.tv_sec*1000000000 + ts.tv_nsec);
 }
 
-Stopwatch::Stopwatch(): mData(clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID)) {}
+Stopwatch::Stopwatch(): mData(clock_gettime_nsecs(CLOCK_REALTIME)) {}
 Stopwatch::~Stopwatch() = default;
 
-void Stopwatch::Reset() {mData = clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID);}
+void Stopwatch::Reset() {mData = clock_gettime_nsecs(CLOCK_REALTIME);}
 
-double Stopwatch::ElapsedSeconds() const {return double(clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID) - mData) / 1000000000;}
+double Stopwatch::ElapsedSeconds() const {return double(clock_gettime_nsecs(CLOCK_REALTIME) - mData) / 1000000000;}
 
 double Stopwatch::GetElapsedSecondsAndReset()
+{
+	const auto newData = clock_gettime_nsecs(CLOCK_REALTIME);
+	const double result = double(newData - mData) / 1000000000;
+	mData = newData;
+	return result;
+}
+
+#if 0
+
+CpuStopwatch::CpuStopwatch(): mData(clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID)) {}
+CpuStopwatch::~CpuStopwatch() = default;
+
+void CpuStopwatch::Reset() {mData = clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID);}
+
+double CpuStopwatch::ElapsedSeconds() const {return double(clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID) - mData) / 1000000000;}
+
+double CpuStopwatch::GetElapsedSecondsAndReset()
 {
 	const auto newData = clock_gettime_nsecs(CLOCK_PROCESS_CPUTIME_ID);
 	const double result = double(newData - mData) / 1000000000;
 	mData = newData;
 	return result;
 }
+
+#endif
 
 }}
 
@@ -135,7 +154,7 @@ double Stopwatch::GetElapsedSecondsAndReset()
 }}
 
 
-#elif(INTRA_LIBRARY_STOPWATCH == INTRA_LIBRARY_STOPWATCH_CPPLIB)
+#elif(INTRA_LIBRARY_STOPWATCH == INTRA_LIBRARY_STOPWATCH_Cpp11)
 
 #if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
 #define _HAS_EXCEPTIONS 0
@@ -182,7 +201,5 @@ void Stopwatch::Reset()
 #else
 #error "INTRA_LIBRARY_STOPWATCH define is invalid!"
 #endif
-
-
 
 INTRA_WARNING_POP

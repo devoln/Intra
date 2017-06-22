@@ -6,6 +6,12 @@
 #include "Cpp/InfNan.h"
 #include "Cpp/PlatformDetect.h"
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#undef min
+#undef max
+#endif
+
 #if(!defined(INTRA_CRT_MATH) && !defined(__clang__) && !defined(__GNUC__) && \
 	(!defined(_MSC_VER) || INTRA_PLATFORM_ARCH != INTRA_PLATFORM_X86))
 #define INTRA_CRT_MATH

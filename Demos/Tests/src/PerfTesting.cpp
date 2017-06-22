@@ -42,9 +42,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace IO;
 
-CompositeFormattedWriter& InitOutput()
+FormattedWriter& InitOutput()
 {
-	static CompositeFormattedWriter logger;
+	static FormattedWriter logger;
 #ifndef INTRA_NO_LOGGING
 #ifndef INTRA_NO_FILE_LOGGING
 	//Инициализация лога

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Concurrency/Thread.h"
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
@@ -12,6 +14,7 @@
 #endif
 
 #include <Windows.h>
+#undef Yield
 
 #ifdef _MSC_VER
 #pragma warning(pop)
@@ -25,12 +28,12 @@ namespace Intra { namespace Concurrency {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
-bool ThisThread::Sleep(ulong64 milliseconds)
+static bool ThisThreadSleep(ulong64 milliseconds)
 {
 	if(milliseconds == 0)
 	{
 		Yield();
-		return;
+		return true;
 	}
 
 	while(milliseconds >= INFINITE - 1)
@@ -44,7 +47,7 @@ bool ThisThread::Sleep(ulong64 milliseconds)
 
 #else
 
-bool ThisThread::Sleep(ulong64 milliseconds)
+static bool ThisThreadSleep(ulong64 milliseconds)
 {
 	while(milliseconds / 1000 >= 0xFFFFFFFF)
 	{

@@ -18,7 +18,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
-#include "IO/LogSystem.h"
 #include "System/Stopwatch.h"
 #include "IO/FormattedWriter.h"
 #include "IO/Std.h"

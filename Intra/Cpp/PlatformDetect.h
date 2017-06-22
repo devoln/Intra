@@ -22,13 +22,12 @@
 
 //! Типы операционной системы
 #define INTRA_PLATFORM_OS_Windows 0
-#define INTRA_PLATFORM_OS_WindowsPhone 1
-#define INTRA_PLATFORM_OS_Linux 2
-#define INTRA_PLATFORM_OS_Android 3
-#define INTRA_PLATFORM_OS_FreeBSD 4
-#define INTRA_PLATFORM_OS_iOS 5
-#define INTRA_PLATFORM_OS_MacOS 6
-#define INTRA_PLATFORM_OS_Emscripten 7
+#define INTRA_PLATFORM_OS_Linux 1
+#define INTRA_PLATFORM_OS_Android 2
+#define INTRA_PLATFORM_OS_FreeBSD 3
+#define INTRA_PLATFORM_OS_iOS 4
+#define INTRA_PLATFORM_OS_MacOS 5
+#define INTRA_PLATFORM_OS_Emscripten 6
 
 //Пытаемся автоматически определить ОС
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)

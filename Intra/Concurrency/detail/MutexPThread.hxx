@@ -8,23 +8,33 @@
 
 namespace Intra { namespace Concurrency {
 
-Mutex::Mutex(): mHandle(null)
+static void createMutex(void* mutexData, bool recursive)
 {
-	pthread_mutex_t* mutex = new pthread_mutex_t;
 	pthread_mutexattr_t attr;
 	pthread_mutexattr_init(&attr);
-	pthread_mutex_init(mutex, &attr);
-	mHandle = Handle(mutex);
+	pthread_mutexattr_settype(&attr, recursive? PTHREAD_MUTEX_RECURSIVE: PTHREAD_MUTEX_ERRORCHECK);
+	pthread_mutex_init(static_cast<pthread_mutex_t*>(mutexData), &attr);
 }
 
-Mutex::~Mutex()
+Mutex::Mutex()
 {
-	pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(mHandle));
-	delete reinterpret_cast<pthread_mutex_t*>(mHandle);
+	static_assert(sizeof(mData) >= sizeof(pthread_mutex_t), "Invalid DATA_SIZE in Mutex.h!");
+	createMutex(mData, false);
 }
+Mutex::~Mutex() {pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(mData));}
+void Mutex::Lock() {pthread_mutex_lock(reinterpret_cast<pthread_mutex_t*>(mData));}
+bool Mutex::TryLock() {return pthread_mutex_trylock(reinterpret_cast<pthread_mutex_t*>(mData)) != 0;}
+void Mutex::Unlock() {pthread_mutex_unlock(reinterpret_cast<pthread_mutex_t*>(mData));}
 
-void Mutex::Lock() {pthread_mutex_lock(reinterpret_cast<pthread_mutex_t*>(mHandle));}
-bool Mutex::TryLock() {return pthread_mutex_trylock(reinterpret_cast<pthread_mutex_t*>(mHandle))!=0;}
-void Mutex::Unlock() {pthread_mutex_unlock(reinterpret_cast<pthread_mutex_t*>(mHandle));}
+
+RecursiveMutex::RecursiveMutex()
+{
+	static_assert(sizeof(mData) >= sizeof(pthread_mutex_t), "Invalid DATA_SIZE in Mutex.h!");
+	createMutex(mData, true);
+}
+RecursiveMutex::~RecursiveMutex() {pthread_mutex_destroy(reinterpret_cast<pthread_mutex_t*>(mData));}
+void RecursiveMutex::Lock() {pthread_mutex_lock(reinterpret_cast<pthread_mutex_t*>(mData));}
+bool RecursiveMutex::TryLock() {return pthread_mutex_trylock(reinterpret_cast<pthread_mutex_t*>(mData)) != 0;}
+void RecursiveMutex::Unlock() {pthread_mutex_unlock(reinterpret_cast<pthread_mutex_t*>(mData));}
 
 }}

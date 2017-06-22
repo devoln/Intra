@@ -20,7 +20,7 @@ template<typename R, typename RW> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsNonInfiniteForwardRange<RW>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<RW>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<RW>, Concepts::ValueTypeOf<R>>::_,
 R&> FindAdvance(R& range, const RW& what, size_t* ioIndex=null)
 {
 	while(!range.Empty() && !StartsWith(range, what))
@@ -44,7 +44,7 @@ template<typename R, typename RW,
 > forceinline Meta::EnableIf<
 	Concepts::IsConsumableRange<AsR>::_ &&
 	Concepts::IsNonInfiniteForwardRange<AsRW>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<AsR>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<AsR>>::_,
 AsR> Find(R&& range, RW&& what, size_t* ioIndex=null)
 {
 	auto rangeCopy = Range::Forward<R>(range);
@@ -244,7 +244,7 @@ template<typename R, typename RW,
 	Concepts::IsNonInfiniteForwardRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsAsNonInfiniteForwardRange<RW>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<R>>::_,
 size_t> CountUntilAdvance(R& range, RW&& what)
 {
 	size_t index=0;
@@ -261,7 +261,7 @@ template<typename R, typename RW,
 > forceinline Meta::EnableIf<
 	Concepts::IsNonInfiniteForwardRange<AsR>::_ &&
 	Concepts::IsNonInfiniteForwardRange<AsRW>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<AsR>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<AsRW>, Concepts::ValueTypeOf<AsR>>::_,
 size_t> CountUntil(R&& range, RW&& what)
 {
 	auto rangeCopy = Range::Forward<R>(range);

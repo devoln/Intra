@@ -20,16 +20,16 @@ template<class R, typename X> Meta::EnableIf<
 	!Meta::IsConst<R>::_ &&
 	!Meta::IsCallable<X, Concepts::ValueTypeOf<R>>::_ &&
 	!(Concepts::IsFiniteForwardRange<X>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<X>, Concepts::ValueTypeOf<R>>::_),
+		Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<X>>::_),
 R&&> FindAdvance(R&& range, const X& what, size_t* ioIndex=null)
 {
 	size_t index = 0;
-	while(!range.Empty() && !(range.First()==what))
+	while(!range.Empty() && !(range.First() == what))
 	{
 		range.PopFirst();
 		index++;
 	}
-	if(ioIndex!=null) *ioIndex += index;
+	if(ioIndex) *ioIndex += index;
 	return Cpp::Forward<R>(range);
 }
 
@@ -67,7 +67,7 @@ template<class R, class Ws> Meta::EnableIf<
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsNonInfiniteForwardRange<Ws>::_ &&
 	!Meta::IsConst<Ws>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<Ws>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<Ws>>::_,
 R&> FindAdvanceAnyAdvance(R& range, Ws& whats,
 	size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
@@ -79,7 +79,7 @@ R&> FindAdvanceAnyAdvance(R& range, Ws& whats,
 		whatIndex = 0;
 		while(!whats.Empty())
 		{
-			if(range.First()!=whats.First())
+			if(!(range.First() == whats.First()))
 			{
 				whats.PopFirst();
 				whatIndex++;
@@ -106,7 +106,7 @@ template<class R, class Ws,
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsNonInfiniteForwardRange<AsWs>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<AsWs>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<AsWs>>::_,
 R&> FindAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex=null)
 {
 	auto whatsCopy = Range::Forward<Ws>(whats);
@@ -125,7 +125,7 @@ size_t> CountAdvance(R& range, const X& x)
 	size_t result=0;
 	while(!range.Empty())
 	{
-		if(range.First()==x) result++;
+		if(range.First() == x) result++;
 		range.PopFirst();
 	}
 	return result;
@@ -171,7 +171,7 @@ template<class R, typename X> forceinline Meta::EnableIf<
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	!(Concepts::IsNonInfiniteForwardRange<X>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<X>, Concepts::ValueTypeOf<R>>::_),
+	Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<X>>::_),
 size_t> CountUntilAdvance(R&& range, const X& valOrPred)
 {
 	size_t index=0;
@@ -188,7 +188,7 @@ template<class R, class Ws> forceinline Meta::EnableIf<
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsForwardRange<Ws>::_ &&
 	!Meta::IsConst<Ws>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<Ws>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<Ws>>::_,
 size_t> CountUntilAdvanceAnyAdvance(R&& range, Ws&& whats)
 {
 	size_t index=0;
@@ -206,7 +206,7 @@ template<class R, class Ws,
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
 	!Meta::IsConst<R>::_ &&
 	Concepts::IsForwardRange<AsWs>::_ &&
-	Meta::IsConvertible<Concepts::ValueTypeOf<AsWs>, Concepts::ValueTypeOf<R>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<R>, Concepts::ValueTypeOf<AsWs>>::_,
 size_t> CountUntilAdvanceAny(R&& range, Ws&& whats)
 {
 	size_t index = 0;
@@ -225,7 +225,7 @@ template<class R, typename X,
 	typename T = Concepts::ValueTypeOf<AsR>
 > forceinline Meta::EnableIf<
 	Concepts::IsNonInfiniteForwardRange<AsR>::_ &&
-	(Meta::IsConvertible<X, T>::_ ||
+	(Meta::HasOpEquals<T, X>::_ ||
 		Meta::IsCallable<X, T>::_),
 size_t> CountUntil(R&& range, const X& valueOrPred)
 {
@@ -242,7 +242,7 @@ template<class R, typename X,
 	typename AsR = Concepts::RangeOfTypeNoCRef<R>
 > Meta::EnableIf<
 	Concepts::IsNonInfiniteForwardRange<AsR>::_ &&
-	Meta::IsConvertible<X, Concepts::ValueTypeOf<AsR>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<AsR>, X>::_,
 AsR> Find(R&& range, const X& what, size_t* ioIndex=null)
 {
 	auto result = Range::Forward<R>(range);
@@ -254,7 +254,7 @@ template<class R, typename X,
 	typename AsR = Concepts::RangeOfType<R>
 > forceinline Meta::EnableIf<
 	Concepts::IsNonInfiniteForwardRange<AsR>::_ &&
-	Meta::IsConvertible<X, Concepts::ValueTypeOf<AsR>>::_,
+	Meta::HasOpEquals<Concepts::ValueTypeOf<AsR>, X>::_,
 bool> Contains(R&& range, const X& what)
 {return !Find(Range::Forward<R>(range), what).Empty();}
 

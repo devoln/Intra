@@ -11,9 +11,9 @@
 
 #undef Yield
 
-#define INTRA_LIBRARY_THREAD_Dummy 0
+#define INTRA_LIBRARY_THREAD_None 0
 #define INTRA_LIBRARY_THREAD_WinAPI 1
-#define INTRA_LIBRARY_THREAD_CPPLIB 2
+#define INTRA_LIBRARY_THREAD_Cpp11 2
 #define INTRA_LIBRARY_THREAD_PThread 3
 
 #ifndef INTRA_LIBRARY_THREAD
@@ -27,7 +27,7 @@
 #ifdef __EMSCRIPTEN_PTHREADS__
 #define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_PThread
 #else
-#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_Dummy
+#define INTRA_LIBRARY_THREAD INTRA_LIBRARY_THREAD_None
 #endif
 
 #else
@@ -40,6 +40,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Concurrency {
 
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 class Thread
 {
 public:
@@ -47,16 +48,17 @@ public:
 	typedef Data* Handle;
 private:
 	Unique<Data> mHandle;
-	struct NativeData;
 public:
-	typedef NativeData* NativeHandle;
+	//! В Windows HANDLE.
+	//! В остальных системах pthread_t*.
+	typedef void* NativeHandle;
 
 	typedef Delegate<void()> Func;
 
 	Thread(null_t=null) noexcept;
-	Thread(Thread&& rhs) = default;
-	Thread(Func func);
-	Thread(Func func, StringView name):
+	Thread(Thread&& rhs) noexcept;
+	explicit Thread(Func func);
+	explicit Thread(StringView name, Func func):
 		Thread(Cpp::Move(func)) {SetName(name);}
 
 	//! Деструктор вызывает Interrupt и Join.
@@ -64,10 +66,10 @@ public:
 	Thread& operator=(Thread&& rhs);
 
 	//! Блокировать выполнение текущего потока до тех пор,
-	//! пока указанный поток не завершится или не истечёт указанный таймаут.
-	//! @param timeoutInMs Таймаут в миллисекундах.
+	//! пока указанный поток не завершится, не истечёт указанный таймаут, либо не будет вызван Interrupt на этом потоке.
+	//! @param timeout Таймаут в миллисекундах.
 	//! @return Возвращает true, если в результате поток завершил своё выполнение.
-	bool Join(uint timeoutInMs);
+	bool JoinMs(ulong64 timeout);
 
 	//! Блокировать выполнение текущего потока до тех пор,
 	//! пока не завершится указанный поток.
@@ -79,18 +81,38 @@ public:
 	//! поток продолжает выполняться независимо от него.
 	void Detach();
 
-	//! Установить флаг потока, который говорит о том, что пора завершаться.
+	//! Установить флаг прерывания потока.
+	//! Если механизм прерывания потока не был отключён вызовом DisableInterruption(false)
+	//! или через #define INTRA_THREAD_NO_FULL_INTERRUPT, то
+	//! прерывает ожидание на Sleep, Join/JoinMs, CondVar::Wait/WaitMs и эти функции возвращают false.
 	void Interrupt();
 
+	//! Возвращает флаг прерывания потока.
 	bool IsInterrupted() const;
+
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	//! Разрешить методу Interrupt прерывать ожидание данного потока.
+	forceinline void EnableInterruption() {allowInterruption(true);}
+#endif
+	//! Запретить методу Interrupt прерывать ожидание данного потока.
+	forceinline void DisableInterruption()
+	{
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+		allowInterruption(false);
+#endif
+	}
+
+	//! Возвращает true, если для данного потока включена поддержка прерывания ожидания.
+	bool IsInterruptionEnabled() const;
 
 	//! Возвращает, выполняется ли поток в данный момент.
 	bool IsRunning() const;
 
+	//! Установить имя потока. Оно может отображаться в отладчике.
 	void SetName(StringView name);
-	StringView GetName() const;
 
-	Handle GetHandle() const {return mHandle.get();}
+	//! Получить имя потока, установленное через SetName.
+	StringView Name() const;
 
 	//! @return Зависимый от платформы дескриптор потока:
 	//! Для Windows HANDLE (созданный через _beginthreadex\CreateThread)
@@ -101,19 +123,30 @@ public:
 private:
 	Thread(const Thread& rhs) = delete;
 	Thread& operator=(const Thread&) = delete;
+
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	void allowInterruption(bool allow);
+#endif
 };
 
-struct ThisThread
+class SeparateCondVar;
+class Mutex;
+
+struct TThisThread
 {
+	constexpr forceinline TThisThread() {}
+	TThisThread(const TThisThread&) = delete;
+	TThisThread& operator=(const TThisThread&) = delete;
+
 	//! Установить флаг потока, который говорит о том, что пора завершаться.
 	//! Работает только для потоков, созданных с помощью класса Thread.
 	static void Interrupt();
 
 	static bool IsInterrupted();
 
-	//! Идентификатор текущего потока, созданного с помощью класса Thread.
-	//! Для остальных потоков вернёт null.
-	static Thread::Handle Handle();
+	//! Дескриптор ОС текущего потока.
+	static Thread::NativeHandle NativeHandle();
+
 
 	static StringView Name();
 
@@ -121,11 +154,45 @@ struct ThisThread
 	static void Yield();
 
 	static bool Sleep(ulong64 milliseconds);
+
+	#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	//! Разрешить методу Interrupt прерывать ожидание данного потока.
+	static forceinline void EnableInterruption() {allowInterruption(true);}
+#endif
+	//! Запретить методу Interrupt прерывать ожидание данного потока.
+	static forceinline void DisableInterruption()
+	{
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+		allowInterruption(false);
+#endif
+	}
+
+	//! Возвращает true, если для данного потока включена поддержка прерывания ожидания.
+	static bool IsInterruptionEnabled();
+
+private:
+#if !defined(INTRA_THREAD_NO_FULL_INTERRUPT) || defined(INTRA_DEBUG)
+	friend class SeparateCondVar;
+	static void onWait(SeparateCondVar* cv, Mutex* mutex);
+	static void allowInterruption(bool allow);
+#endif
+
+#ifdef INTRA_DEBUG
+	static Thread::Handle getHandle();
+#endif
 };
+extern const TThisThread ThisThread;
+#else
+class Thread;
+struct TThisThread;
+#endif
 
 }
 using Concurrency::Thread;
+
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 using Concurrency::ThisThread;
+#endif
 
 }
 

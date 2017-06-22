@@ -62,4 +62,10 @@ using Utils::Finally;
 
 }
 
+#define INTRA_FINALLY(...) \
+	auto INTRA_CONCATENATE_TOKENS(finally__, __LINE__) = ::Intra::Utils::Finally([&](){__VA_ARGS__;})
+
+#define INTRA_FINALLY_CALL(...) \
+	auto INTRA_CONCATENATE_TOKENS(finally__, __LINE__) = ::Intra::Utils::Finally(__VA_ARGS__)
+
 INTRA_WARNING_POP

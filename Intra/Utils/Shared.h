@@ -28,13 +28,21 @@ template<typename T> class Shared
 
 		forceinline void Release()
 		{
-			INTRA_DEBUG_ASSERT(RefCount > 0);
-			if(--RefCount == 0) delete this;
+			INTRA_DEBUG_ASSERT(GetRC() != 0);
+			if(DecRef()) delete this;
 		}
 		
 		T Value;
 #ifndef INTRA_UTILS_NO_CONCURRENCY
-		Atomic<uint> RefCount;
+		AtomicInt RefCount;
+		forceinline void IncRef() {RefCount.IncrementRelaxed();}
+		forceinline uint GetRC() {return uint(RefCount.GetRelaxed());}
+		forceinline bool DecRef() {return RefCount.DecrementAcquireRelease() == 0;}
+#else
+		forceinline void IncRef() {++RefCount;}
+		forceinline uint GetRC() {return RefCount;}
+		forceinline bool DecRef() {return --RefCount == 0;}
+		uint RefCount;
 #endif
 
 		Data(const Data&) = delete;
@@ -43,23 +51,39 @@ template<typename T> class Shared
 	forceinline Shared(Data* data): mData(data) {}
 public:
 	forceinline Shared(null_t=null): mData(null) {}
-	forceinline Shared(const Shared& rhs): mData(rhs.mData) {if(mData!=null) ++mData->RefCount;}
+	forceinline Shared(const Shared& rhs): mData(rhs.mData)
+	{
+		if(mData != null) mData->IncRef();
+	}
+
+	template<typename U, typename = Meta::EnableIf<
+		Meta::IsInherited<U, T>::_ && Meta::HasVirtualDestructor<T>::_
+	>> forceinline Shared(const Shared<U>& rhs): mData(rhs.mData)
+	{
+		if(mData != null) mData->IncRef();
+	}
+
 	forceinline Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = null;}
-	forceinline ~Shared() {if(mData!=null) mData->Release();}
+	
+	template<typename U, typename = Meta::EnableIf<
+		Meta::IsInherited<U, T>::_ && Meta::HasVirtualDestructor<T>::_
+	>> forceinline Shared(Shared<U>&& rhs): mData(rhs.mData) {rhs.mData = null;}
+
+	forceinline ~Shared() {if(mData != null) mData->Release();}
 
 	Shared& operator=(const Shared& rhs)
 	{
-		if(mData==rhs.mData) return *this;
-		if(mData!=null) mData->Release();
+		if(mData == rhs.mData) return *this;
+		if(mData != null) mData->Release();
 		mData = rhs.mData;
-		if(mData!=null) ++mData->RefCount;
+		if(mData != null) mData->IncRef();
 		return *this;
 	}
 
 	Shared& operator=(Shared&& rhs)
 	{
-		if(mData==rhs.mData) return *this;
-		if(mData!=null) mData->Release();
+		if(mData == rhs.mData) return *this;
+		if(mData != null) mData->Release();
 		mData = rhs.mData;
 		rhs.mData = null;
 		return *this;
@@ -79,16 +103,18 @@ public:
 	forceinline uint use_count() const
 	{
 		if(mData == null) return 0;
-		return mData->RefCount;
+		return mData->GetRC();
 	}
 
-	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mData!=null); return mData->Value;}
-	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mData!=null); return &mData->Value;}
+	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mData != null); return mData->Value;}
+	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mData != null); return &mData->Value;}
 
-	forceinline bool operator==(null_t) const {return mData==null;}
+	forceinline bool operator==(null_t) const {return mData == null;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
-	forceinline bool operator==(const Shared& rhs) const {return mData==rhs.mData;}
+	forceinline bool operator==(const Shared& rhs) const {return mData == rhs.mData;}
 	forceinline bool operator!=(const Shared& rhs) const {return !operator==(rhs);}
+
+	forceinline explicit operator bool() const {return mData != null;}
 
 private:
 	Data* mData;

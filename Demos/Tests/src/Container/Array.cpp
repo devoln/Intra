@@ -14,7 +14,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
 #include "Container/Sequential/List.h"
-#include "IO/LogSystem.h"
 
 
 

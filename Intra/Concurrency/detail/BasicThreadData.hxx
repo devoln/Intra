@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Concurrency/Mutex.h"
+#include "Concurrency/CondVar.h"
 #include "Concurrency/Lock.h"
 #include "Concurrency/Atomic.h"
 #include "Container/Sequential/String.h"
@@ -14,13 +15,38 @@ struct BasicThreadData
 {
 	Thread::Func Function;
 	bool IsDetached = false;
-	Atomic<bool> IsRunning{true};
-	Atomic<bool> IsInterrupted{false};
+	AtomicBool IsRunning{true};
+	AtomicBool IsInterrupted{false};
 	String Name;
+	Mutex StateMutex;
 
-	void InterruptableAction() {}
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	AtomicBool ForceInterruptionDisabled{false};
+#endif
+#if !defined(INTRA_THREAD_NO_FULL_INTERRUPT) || defined(INTRA_DEBUG)
+	SeparateCondVar* WaitedCondVar = null;
+#endif
 
-	void Interrupt() {IsInterrupted = true;}
+	virtual ~BasicThreadData() {}
+
+	bool InterruptableAction()
+	{
+		return IsInterrupted.Get();
+	}
+
+	void Interrupt()
+	{
+		IsInterrupted.Set(true);
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+		if(ForceInterruptionDisabled.Get()) return;
+		INTRA_SYNCHRONIZED(StateMutex)
+		{
+			if(WaitedCondVar)
+				WaitedCondVar->NotifyAll();
+		}
+#endif
+	}
+
 	void SetName() {}
 
 	void ThreadFunc()
@@ -30,19 +56,23 @@ struct BasicThreadData
 		Function();
 		Function = null;
 
-		INTRA_SYNCHRONIZED_BLOCK(GlobalThreadMutex)
+		bool wasDetached = false;
+		INTRA_SYNCHRONIZED(StateMutex)
 		{
-			IsRunning = false;
-			if(IsDetached)
-				delete this;
+			OnFinish();
+			wasDetached = IsDetached;
 		}
+		if(wasDetached) delete this;
+	}
+
+	virtual void OnFinish()
+	{
+		IsRunning.Set(false);
 	}
 
 	static thread_local Thread::Handle Current;
-	static Mutex GlobalThreadMutex;
 };
 thread_local Thread::Handle BasicThreadData::Current = null;
-Mutex BasicThreadData::GlobalThreadMutex;
 
 }}}
 

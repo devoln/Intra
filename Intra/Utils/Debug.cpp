@@ -1,6 +1,8 @@
 ﻿#include "Debug.h"
+
 #include "Cpp/Warnings.h"
 #include "Cpp/Intrinsics.h"
+
 #include "StringView.h"
 #include "Span.h"
 #include "FixedArray.h"
@@ -63,7 +65,7 @@ static void AppendUInt(Span<char>& dst, unsigned val)
 	char* lineStrPtr = lineStr + 10;
 	do *--lineStrPtr = char('0' + val % 10), val /= 10;
 	while(val != 0);
-	while(lineStrPtr != lineStr && !dst.Empty()) dst.Put(*lineStrPtr++);
+	while(lineStrPtr != lineStr + 10 && !dst.Full()) dst.Put(*lineStrPtr++);
 }
 
 void PrintDebugMessage(StringView message, StringView file, unsigned line)
@@ -80,7 +82,7 @@ void PrintDebugMessage(StringView message, StringView file, unsigned line)
 bool IsDebuggerAttached()
 {
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	return IsDebuggerPresent() != FALSE;
+	return ::IsDebuggerPresent() != FALSE;
 #else
 	return false;
 #endif

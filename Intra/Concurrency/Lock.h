@@ -16,7 +16,9 @@ public:
 	forceinline Lock(T& lockable): mLockable(&lockable) {lockable.Lock();}
 	forceinline Lock(Lock&& rhs): mLockable(rhs.mLockable) {rhs.mLockable = null;}
 	forceinline ~Lock() {mLockable->Unlock();}
-	forceinline operator bool() const {return true;}
+	forceinline operator bool() const noexcept {return true;}
+
+	T& Primitive() {return *mLockable;}
 
 private:
 	Lock(const Lock&) = delete;
@@ -24,8 +26,9 @@ private:
 };
 
 template<typename T> static forceinline Lock<T> MakeLock(T& lockable) {return lockable;}
+template<typename T> static forceinline Lock<T> MakeLock(T* lockable) {return *lockable;}
 
-#define INTRA_SYNCHRONIZED_BLOCK(lockable) \
+#define INTRA_SYNCHRONIZED(lockable) \
 	if(auto INTRA_CONCATENATE_TOKENS(locker__, __LINE__) = ::Intra::Concurrency::MakeLock(lockable))
 
 }}
