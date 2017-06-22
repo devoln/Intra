@@ -21,12 +21,6 @@ namespace Intra { namespace Range {
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
-template<typename R, typename Char, size_t N> Meta::EnableIf<
-	Concepts::IsOutputCharRange<R>::_ &&
-	Meta::IsCharType<Char>::_
-> ToString(R&& dst, const Char(&str)[N])
-{CopyToAdvance(str, dst);}
-
 template<typename R, typename Char> Meta::EnableIf<
 	Concepts::IsOutputCharRange<R>::_ &&
 	Meta::IsCharType<Char>::_ &&

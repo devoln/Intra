@@ -146,7 +146,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000u/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<uint, uint>>(times, count),
@@ -164,7 +164,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<String, uint>>(times, count),
@@ -182,7 +182,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapPopulation<std::map<Big<64>, uint>>(times, count),
@@ -200,7 +200,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<uint, uint>>(times, count),
@@ -218,7 +218,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count),
@@ -236,7 +236,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count),
@@ -256,7 +256,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<uint, uint>>(times, count)
@@ -272,7 +272,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<String, uint>>(times, count)
@@ -288,7 +288,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 10000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				{"std::map", "HashMap"},
 				{
 					TestMapIterationSumValues<std::map<Big<64>, uint>>(times, count)
@@ -306,7 +306,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<uint, uint>>(times, count),
@@ -324,7 +324,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<String, uint>>(times, count),
@@ -342,7 +342,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapSuccessfulSearching<std::map<Big<64>, uint>>(times, count),
@@ -361,7 +361,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=1000000; count*=10)
 		{
 			uint times = 1000000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<uint, uint>>(times, count),
@@ -379,7 +379,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<String, uint>>(times, count),
@@ -397,7 +397,7 @@ void RunMapPerfTests(FormattedWriter& output)
 		for(uint count=1; count<=100000; count*=10)
 		{
 			uint times = 100000/count;
-			PrintPerformanceResults(output, *String::Format()(count)(" элементов, ")(times)(" раз"),
+			PrintPerformanceResults(output, String() << count << " элементов, " << times << " раз",
 				comparedContainers,
 				{
 					TestMapUnsuccessfulSearching<std::map<Big<64>, uint>>(times, count),

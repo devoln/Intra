@@ -18,6 +18,7 @@ void TestInterruption(FormattedWriter& output)
 	Thread thr("Sleeper", [&]() {
 		if(ThisThread.Sleep(500)) flag.Set(true);
 	});
+	ThisThread.Sleep(1);
 	thr.Interrupt();
 
 	Stopwatch clock;
@@ -33,6 +34,7 @@ void TestInterruption(FormattedWriter& output)
 		INTRA_SYNCHRONIZED(cv)
 			cv.WaitMs(500, []() {return false;});
 	});
+	ThisThread.Sleep(1);
 	thr.Interrupt();
 
 	clock.Reset();
@@ -47,11 +49,12 @@ void TestInterruption(FormattedWriter& output)
 		ThisThread.DisableInterruption();
 		ThisThread.Sleep(500);
 	});
+	ThisThread.Sleep(1);
 	thr.Interrupt();
 
 	clock.Reset();
 	thr.Join();
 	elapsedUs = clock.ElapsedUs();
 	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
-	INTRA_ASSERT1(elapsedUs > 498000 || Utils::IsDebuggerAttached(), elapsedUs);
+	INTRA_ASSERT1(elapsedUs >= 485000 || Utils::IsDebuggerAttached(), elapsedUs);
 }

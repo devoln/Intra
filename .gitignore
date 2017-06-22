@@ -1,3 +1,15 @@
+CMakeCache.txt
+CMakeFiles
+*/Makefile
+cmake_install.cmake
+Intra.UB.cc
+libIntra.a
+TestFileSyncIO.txt
+Demos/MusicSynthesizer/MusicSynthesizer
+Demos/Bin2C/Bin2C
+Demos/Tests/Tests
+Demos/UnitTests/UnitTests
+
 /Demos/EngineDemo/
 /IgnoredModules/
 .vs/

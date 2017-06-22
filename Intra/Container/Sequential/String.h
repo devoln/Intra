@@ -46,6 +46,13 @@ public:
 
 	forceinline GenericString(null_t=null) {m = {null, 0, SSO_CAPACITY_FIELD_FOR_EMPTY};}
 
+	forceinline static GenericString CreateReserve(size_t reservedCapacity)
+	{
+		GenericString result;
+		result.Reserve(reservedCapacity);
+		return result;
+	}
+
 	explicit GenericString(const Char* str, size_t strLength): GenericString(null)
 	{
 		SetLengthUninitialized(strLength);
@@ -437,7 +444,6 @@ public:
 	template<typename Arg> GenericString& operator<<(Arg&& value)
 	{
 		const size_t maxLen = Range::MaxLengthOfToString(value);
-		size_t oldLen = Length();
 		SetLengthUninitialized(Length() + maxLen);
 		auto bufferRest = Tail(maxLen);
 		ToString(bufferRest, Cpp::Forward<Arg>(value));

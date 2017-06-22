@@ -133,8 +133,9 @@ AnyPtr SeparateCondVar::NativeHandle()
 #ifndef INTRA_DROP_XP_SUPPORT
 	if(!initCondVarApiFunctions()) return null;
 	return &reinterpret_cast<VistaCondVar*>(mData)->cv;
-#endif
+#else
 	return &reinterpret_cast<BasicCondVarData*>(mData)->cv;
+#endif
 }
 
 }}
