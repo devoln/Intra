@@ -56,5 +56,5 @@ void TestInterruption(FormattedWriter& output)
 	thr.Join();
 	elapsedUs = clock.ElapsedUs();
 	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
-	INTRA_ASSERT1(elapsedUs >= 485000 || Utils::IsDebuggerAttached(), elapsedUs);
+	INTRA_ASSERT1(elapsedUs >= 480000 || Utils::IsDebuggerAttached(), elapsedUs);
 }

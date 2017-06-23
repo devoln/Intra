@@ -53,7 +53,13 @@ public:
 	enum {DATA_SIZE = 80}; //TODO: узнать точный размер std::mutex на разных платформах или хотя бы максимальный
 #endif
 #elif(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_WinAPI)
+
+#ifdef INTRA_PLATFORM_IS_64
+	enum {DATA_SIZE = 40};
+#else
 	enum {DATA_SIZE = 24};
+#endif
+
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
 #ifdef INTRA_PLATFORM_IS_64
 	enum {DATA_SIZE = 40};
@@ -64,6 +70,8 @@ public:
 	enum {DATA_SIZE = 44};
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
 	enum {DATA_SIZE = 44};
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+	enum {DATA_SIZE = sizeof(void*)};
 #else
 	enum {DATA_SIZE = 80};
 #endif

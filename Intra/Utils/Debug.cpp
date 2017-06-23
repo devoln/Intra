@@ -17,6 +17,17 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #ifdef _MSC_VER
+
+#if defined(WINAPI_FAMILY_PARTITION) && defined(WINAPI_PARTITION_DESKTOP)
+#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && _WIN32_WINNT >= 0x0602
+#define WINSTORE_APP
+#endif
+#endif
+
+#ifndef WINSTORE_APP
+#pragma comment(lib, "user32.lib")
+#endif
+
 #pragma warning(push)
 #pragma warning(disable: 4668)
 #endif
@@ -299,7 +310,7 @@ void FatalErrorMessageAbort(const SourceInfo& srcInfo, StringView msg, bool prin
 
 	PrintDebugMessage(fullMsg);
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows && !defined(WINSTORE_APP))
 	FixedArray<wchar_t> wbuffer(msg.Length() + 1);
 	LPWSTR wmessage = wbuffer.Data();
 	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, fullMsg.Data(), int(fullMsg.Length()), wmessage, int(fullMsg.Length()));

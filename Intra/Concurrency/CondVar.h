@@ -23,7 +23,7 @@ public:
 #ifdef INTRA_DROP_XP_SUPPORT
 	enum {DATA_SIZE = sizeof(void*)};
 #else
-	enum {DATA_SIZE = sizeof(void*) + sizeof(Mutex) + sizeof(void*)*3*2 + sizeof(int)*2 + sizeof(int)};
+	enum {DATA_SIZE = sizeof(void*) + sizeof(Mutex) + sizeof(void*)*3*2 + sizeof(int)*2 + sizeof(size_t)};
 #endif
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
 	enum {DATA_SIZE = 48};

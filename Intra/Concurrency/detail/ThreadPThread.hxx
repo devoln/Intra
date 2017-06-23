@@ -136,7 +136,7 @@ void TThisThread::Yield()
 bool TThisThread::Sleep(ulong64 milliseconds)
 {
 	const auto hndl = Thread::Data::Current;
-	if(hndl == null)
+	if(hndl == null || !ThisThread.IsInterruptionEnabled())
 	{
 		ThisThreadSleep(milliseconds);
 		return true;

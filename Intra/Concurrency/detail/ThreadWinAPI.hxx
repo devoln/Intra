@@ -30,7 +30,8 @@ struct Thread::Data: detail::BasicThreadData
 	static unsigned __stdcall ThreadProc(void* lpParam)
 #endif
 	{
-		Thread::Handle(lpParam)->ThreadFunc();
+		const auto thread = Thread::Handle(lpParam);
+		thread->ThreadFunc();
 		return 0;
 	}
 
@@ -43,7 +44,7 @@ struct Thread::Data: detail::BasicThreadData
 
 #ifdef INTRA_DEBUG
 	enum {HASH_LEN = 127};
-	DWORD Id;
+	DWORD Id = 0;
 	static Mutex ThreadHashTableMutex;
 	static Handle ThreadHashTable[HASH_LEN];
 #endif
@@ -118,7 +119,7 @@ struct Thread::Data: detail::BasicThreadData
 			return;
 		}
 #ifdef INTRA_DEBUG
-		Id = GetThreadId(Thread);
+		Id = detail::GetThreadId(Thread);
 		INTRA_SYNCHRONIZED(ThreadHashTableMutex)
 			ThreadHashTable[Id % HASH_LEN] = this;
 #endif

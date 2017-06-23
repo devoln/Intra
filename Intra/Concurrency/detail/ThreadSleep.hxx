@@ -32,7 +32,7 @@ static bool ThisThreadSleep(ulong64 milliseconds)
 {
 	if(milliseconds == 0)
 	{
-		Yield();
+		ThisThread.Yield();
 		return true;
 	}
 

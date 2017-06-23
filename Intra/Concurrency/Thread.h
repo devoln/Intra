@@ -174,6 +174,8 @@ private:
 #if !defined(INTRA_THREAD_NO_FULL_INTERRUPT) || defined(INTRA_DEBUG)
 	friend class SeparateCondVar;
 	static void onWait(SeparateCondVar* cv, Mutex* mutex);
+#endif
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 	static void allowInterruption(bool allow);
 #endif
 

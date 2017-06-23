@@ -19,7 +19,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 #endif
 struct IUnknown;
-#include <windows.h>
+#include <Windows.h>
 #include <MMSystem.h>
 #include <dsound.h>
 

@@ -112,5 +112,5 @@ int main(int argc, const char* argv[])
 	loggerOut.PrintLine("Tests passed: ", TestGroup::GetTotalTestsPassed(), "/", TestGroup::GetTotalTests(), ".");
 	loggerOut.PopFont();
 
-	return 0;
+	return TestGroup::GetTotalTestsFailed();
 }

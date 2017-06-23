@@ -167,7 +167,10 @@ StringView TThisThread::Name()
 void TThisThread::onWait(SeparateCondVar* cv, Mutex* mutex)
 {
 	auto hndl = Thread::Data::Current;
-	if(hndl == null || hndl->ForceInterruptionDisabled.GetRelaxed()) return;
+	if(hndl == null) return;
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
+	if(hndl->ForceInterruptionDisabled.GetRelaxed()) return;
+#endif
 	if(cv) hndl->InterruptableAction();
 	if(mutex == &hndl->StateMutex)
 	{
@@ -178,12 +181,14 @@ void TThisThread::onWait(SeparateCondVar* cv, Mutex* mutex)
 		hndl->WaitedCondVar = cv;
 }
 
+#endif
+
+#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 void TThisThread::allowInterruption(bool allow)
 {
 	if(Thread::Data::Current == null) return;
 	Thread::Data::Current->ForceInterruptionDisabled.Set(!allow);
 }
-
 #endif
 
 const TThisThread ThisThread;

@@ -48,12 +48,11 @@
     </Expand>
   </Type>
 
-
   <Type Name="Intra::Concurrency::Thread">
     <DisplayString Condition="mHandle.mPtr == nullptr">null</DisplayString>
-    <DisplayString>{*mHandle.mPtr}</DisplayString>
+    <DisplayString>{*(Intra::Concurrency::detail::BasicThreadData*)mHandle.mPtr}</DisplayString>
     <Expand>
-      <ExpandedItem>*mHandle.mPtr</ExpandedItem>
+      <ExpandedItem>*(Intra::Concurrency::detail::BasicThreadData*)mHandle.mPtr</ExpandedItem>
     </Expand>
   </Type>
 

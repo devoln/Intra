@@ -4,6 +4,8 @@ CMakeFiles
 cmake_install.cmake
 Intra.UB.cc
 libIntra.a
+Intra.lib
+*.exe
 TestFileSyncIO.txt
 Demos/MusicSynthesizer/MusicSynthesizer
 Demos/Bin2C/Bin2C

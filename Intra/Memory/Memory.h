@@ -12,6 +12,8 @@
 #include "Utils/Span.h"
 #include "Utils/Debug.h"
 
+#include "Range/Operations.h"
+
 
 namespace Intra { namespace Memory {
 

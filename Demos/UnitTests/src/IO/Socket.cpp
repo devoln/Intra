@@ -2,6 +2,7 @@
 
 #include "Concurrency/Thread.h"
 #include "Concurrency/Atomic.h"
+#include "Concurrency/Synchronized.h"
 
 #include "IO/Socket.h"
 #include "IO/SocketReader.h"
@@ -19,44 +20,52 @@ void TestSocketIO(FormattedWriter& output)
 	FatalErrorStatus status;
 	output.PrintLine("Started TestSocketIO.");
 	ServerSocket server(SocketType::TCP, 8080, 4, status);
-	if(server == null) output.PrintLine("Couldn't start server.");
+	if(server == null) output.PrintLine("Couldn't start server on port 8080.");
+	else output.PrintLine("Server started on port 8080.");
 	INTRA_ASSERT(server != null);
 
+	Synchronized<FormattedWriter> syncOutput(&output);
+
 	AtomicBool error{false};
+	output.PrintLine("Starting client thread...");
 	Thread thread("TestSocketIO", [&]() {
+		syncOutput->PrintLine("Started client thread.");
 		FatalErrorStatus status2;
 		StreamSocket client(SocketType::TCP, "localhost", 8080, status2);
 		StringView str = "Hello";
+		syncOutput->PrintLine("Client connected, sending data...");
 		client.Send(str.Data(), str.Length(), status2);
 		char strBuf[100];
+		syncOutput->PrintLine("Data sent, waiting for input...");
 		if(client.WaitForInput())
 		{
-			output.PrintLine("[Receiving...]");
+			syncOutput->PrintLine("[Receiving...]");
 			size_t len = client.Receive(strBuf, sizeof(strBuf), status2);
 			str = StringView(strBuf, len);
-			output.PrintLine("[Received] ", str);
+			syncOutput->PrintLine("[Received] ", str);
 			if(str != "World") error.Set(true);
 		}
-		else output.PrintLine("Error waiting!");
+		else syncOutput->PrintLine("Error waiting!");
 
 		SocketReader reader(Cpp::Move(client));
 		StringView firstLine = reader.ReadLine(strBuf);
-		output.PrintLine("ReadLine: ", firstLine);
+		syncOutput->PrintLine("ReadLine: ", firstLine);
 		if(firstLine != "Writer: Hello, Reader!") error.Set(true);
 		OutputArrayRange<char> strOut = Range::Take(strBuf, 50);
 		ToString(strOut, reader.ByLine(Range::Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
 		StringView linesAsString = strOut.GetWrittenData();
-		output.PrintLine("Remaining line range: ", linesAsString);
+		syncOutput->PrintLine("Remaining line range: ", linesAsString);
 		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error.Set(true);
 	});
+	syncOutput->PrintLine("Client thread started, acception connection...");
 	StreamSocket connectedClient = server.Accept(status);
 	char strBuf[100];
 	size_t len = connectedClient.Receive(strBuf, sizeof(strBuf), status);
 	StringView str(strBuf, len);
-	output.PrintLine(str);
+	syncOutput->PrintLine(str);
 	INTRA_ASSERT_EQUALS(str, "Hello");
 	connectedClient.Send("World", 5, status);
-	output.PrintLine("[Sent] World");
+	syncOutput->PrintLine("[Sent] World");
 
 	SocketWriter writer(Cpp::Move(connectedClient));
 	writer.PrintLine("Writer: Hello, Reader!")
