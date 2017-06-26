@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Math/Fixed.h"
-#include "Range/ForwardDecls.h"
+#include "Math/FixedPoint.h"
+#include "Utils/Span.h"
 #include "Types.h"
 
 namespace Intra { namespace Audio { namespace Synth {

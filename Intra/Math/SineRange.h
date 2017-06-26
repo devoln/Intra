@@ -28,7 +28,7 @@ template<typename T> struct SineRange
 	
 	forceinline void PopFirst()
 	{
-		const T newS = mK*mS2-mS1;
+		const T newS = mK*mS2 - mS1;
 		mS1 = mS2;
 		mS2 = newS;
 	}

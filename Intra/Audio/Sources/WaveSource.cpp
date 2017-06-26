@@ -2,7 +2,7 @@
 #include "Math/Math.h"
 #include "Cpp/Intrinsics.h"
 #include "Cpp/Warnings.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Endianess.h"
 
 namespace Intra { namespace Audio { namespace Sources {
 
@@ -48,11 +48,11 @@ WaveSource::WaveSource(CSpan<byte> srcFileData):
 size_t WaveSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	INTRA_DEBUG_ASSERT(!outShorts.Empty());
-	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
-	Algo::CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
+	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount - mCurrentDataPos);
+	CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
 	mCurrentDataPos += shortsToRead;
-	if(shortsToRead<outShorts.Length()) mCurrentDataPos = 0;
-	return shortsToRead/mChannelCount;
+	if(shortsToRead < outShorts.Length()) mCurrentDataPos = 0;
+	return shortsToRead / mChannelCount;
 }
 
 size_t WaveSource::GetInterleavedSamples(Span<float> outFloats)
@@ -81,18 +81,18 @@ size_t WaveSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 	for(size_t i=0, j=0; i<outShorts.Count(); i++)
 	{
 		for(ushort c=0; c<mChannelCount; c++)
-			outFloats[c][i] = (outShorts[j++]+0.5f)/32767.5f;
+			outFloats[c][i] = (outShorts[j++] + 0.5f) / 32767.5f;
 	}
 	return result;
 }
 
 Array<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
-	ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
+	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
-	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount-mCurrentDataPos);
-	if(oSamplesRead!=null) *oSamplesRead = shortsToRead/mChannelCount;
-	if(oInterleaved!=null) *oInterleaved = true;
-	if(oType!=null) *oType = ValueType::Short;
+	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount - mCurrentDataPos);
+	if(oSamplesRead) *oSamplesRead = shortsToRead/mChannelCount;
+	if(oInterleaved) *oInterleaved = true;
+	if(oType) *oType = Data::ValueType::Short;
 	Array<const void*> resultPtrs;
 	resultPtrs.AddLast(mData.Begin+mCurrentDataPos);
 	mCurrentDataPos += shortsToRead;

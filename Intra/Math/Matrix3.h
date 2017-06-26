@@ -36,7 +36,7 @@ public:
 	constexpr bool operator==(const Matrix3& rhs) const noexcept
 	{return Rows[0] == rhs.Rows[0] && Rows[1] == rhs.Rows[1] && Rows[2] == rhs.Rows[2];}
 	
-	constexpr bool operator!=(const Matrix3& rhs) const noexcept {return !operator==(m);}
+	constexpr bool operator!=(const Matrix3& rhs) const noexcept {return !operator==(rhs);}
 
 	constexpr forceinline Matrix3 operator*(const Matrix3& rhs) const noexcept
 	{
@@ -119,7 +119,7 @@ public:
 	{return {Length(Rows[0]), Length(Rows[1]), Length(Rows[2])};}
 	
 	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
-	INTRA_MATH_CONSTEXPR Matrix3 ExtractRotation() const {return {Normalize(Rows[0]), Normalize(Rows[1]), Normalize(Rows[2])}}
+	INTRA_MATH_CONSTEXPR Matrix3 ExtractRotation() const {return {Normalize(Rows[0]), Normalize(Rows[1]), Normalize(Rows[2])};}
 
 	INTRA_MATH_CONSTEXPR Vector2<T> ExtractScaleVector2() const noexcept {return {Length(Rows[0].xy), Length(Rows[1].xy)};}
 	
@@ -239,7 +239,9 @@ public:
 };
 
 template<typename T> constexpr Vector3<T> operator*(const Vector3<T>& v, const Matrix3<T>& m) noexcept
-{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z,}
+{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z;}
+
+template<typename T> forceinline Vector3<T>& operator*=(Vector3<T>& v, const Matrix3<T>& m) noexcept {return v = v*m;}
 
 template<typename T> constexpr Vector3<T> operator*(const Matrix3<T>& m, const Vector3<T>& v) noexcept
 {return {Dot(m.Rows[0], v), Dot(m.Rows[1], v), Dot(m.Rows[2], v)};}

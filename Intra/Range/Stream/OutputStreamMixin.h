@@ -16,7 +16,7 @@ template<typename R, typename T> struct OutputStreamMixin
 	size_t> WriteRawFromAdvance(Span<U>& src, size_t maxElementsToRead)
 	{
 		auto src1 = src.Take(maxElementsToRead).template Reinterpret<const T>();
-		size_t elementsRead = CopyAdvanceToAdvance(src1, *static_cast<R*>(this))*sizeof(T)/sizeof(U);
+		size_t elementsRead = ReadToAdvance(src1, *static_cast<R*>(this))*sizeof(T)/sizeof(U);
 		src.Begin += elementsRead;
 		return elementsRead;
 	}

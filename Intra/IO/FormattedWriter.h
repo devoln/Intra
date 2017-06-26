@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
-#include "Math/Vector.h"
+#include "Math/Vector3.h"
 #include "Container/Sequential/String.h"
 #include "Utils/StringView.h"
 #include "Container/Sequential/Array.h"

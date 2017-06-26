@@ -18,6 +18,7 @@
 #include "Range/Operations.h"
 #include "Range/Decorators/ByLine.h"
 #include "Range/Decorators/ByLineTo.h"
+#include "Range/Stream/RawRead.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -29,22 +30,22 @@ template<typename R, typename T> struct InputStreamMixin
 
 	template<typename U> Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawToAdvance(Span<U>& dst, size_t maxElementsToRead)
+	size_t> RawReadToAdvance(Span<U>& dst, size_t maxElementsToRead)
 	{
 		auto dst1 = dst.Take(maxElementsToRead).template Reinterpret<T>();
-		size_t elementsRead = CopyAdvanceToAdvance(*static_cast<R*>(this), dst1)*sizeof(T)/sizeof(U);
+		size_t elementsRead = ReadToAdvance(*static_cast<R*>(this), dst1)*sizeof(T)/sizeof(U);
 		dst.Begin += elementsRead;
 		return elementsRead;
 	}
 
-	template<typename R1, typename U=Concepts::ValueTypeOf<R1>> Meta::EnableIf<
+	template<typename R1, typename U = Concepts::ValueTypeOf<R1>> Meta::EnableIf<
 		Concepts::IsOutputRange<R1>::_ &&
 		Concepts::IsArrayClass<R1>::_ &&
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawToAdvance(R1& dst, size_t maxElementsToRead)
+	size_t> RawReadToAdvance(R1& dst, size_t maxElementsToRead)
 	{
 		Span<U> dst1 = dst;
-		size_t result = ReadRawToAdvance(dst1, maxElementsToRead);
+		size_t result = RawReadToAdvance(dst1, maxElementsToRead);
 		PopFirstExactly(dst, result);
 		return result;
 	}
@@ -54,11 +55,11 @@ template<typename R, typename T> struct InputStreamMixin
 	> forceinline Meta::EnableIf<
 		Concepts::IsOutputRange<R1>::_ &&
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawToAdvance(R1& dst)
-	{return ReadRawToAdvance(dst, dst.Length());}
+	size_t> RawReadToAdvance(R1& dst)
+	{return RawReadToAdvance(dst, dst.Length());}
 
-	forceinline size_t ReadRawTo(void* dst, size_t bytes)
-	{return ReadRawTo(Span<char>(reinterpret_cast<char*>(dst), bytes));}
+	forceinline size_t RawReadTo(void* dst, size_t bytes)
+	{return RawReadTo(Span<char>(static_cast<char*>(dst), bytes));}
 
 
 	template<typename R1,
@@ -68,28 +69,28 @@ template<typename R, typename T> struct InputStreamMixin
 		Concepts::IsOutputRange<AsR1>::_ &&
 		Concepts::IsArrayClass<AsR1>::_ &&
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> ReadRawTo(R1&& dst)
+	size_t> RawReadTo(R1&& dst)
 	{
 		Span<U> range = Range::Forward<R1>(dst);
-		return ReadRawToAdvance(range);
+		return RawReadToAdvance(range);
 	}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_
-	> ReadRaw(U& dst)
-	{ReadRawTo(Span<U>(&dst, 1u));}
+	> RawRead(U& dst)
+	{RawReadTo(Span<U>(&dst, 1u));}
 
-	template<typename U> forceinline U ReadRaw()
+	template<typename U> forceinline U RawRead()
 	{
 		U result;
-		ReadRaw(result);
+		RawRead(result);
 		return result;
 	}
 
 	template<typename X> GenericStringView<const ElementType> ReadUntilAdvance(const X& x, Span<ElementType>& buf)
 	{
 		const auto oldBuf = buf;
-		const size_t len = CopyAdvanceToAdvanceUntil(*static_cast<R*>(this), buf, x);
+		const size_t len = ReadToAdvanceUntil(*static_cast<R*>(this), buf, x);
 		return {oldBuf.Data(), len};
 	}
 
@@ -106,7 +107,7 @@ template<typename R, typename T> struct InputStreamMixin
 		{
 			ElementType buf[64];
 			auto bufR = SpanBuffer(buf);
-			const size_t len = CopyAdvanceToAdvanceUntil(me, bufR, x);
+			const size_t len = ReadToAdvanceUntil(me, bufR, x);
 			result += GenericStringView<const ElementType>(buf, len);
 		}
 		return result;
@@ -122,7 +123,7 @@ template<typename R, typename T> struct InputStreamMixin
 		{
 			ElementType buf[64];
 			auto bufR = SpanBuffer(buf);
-			const size_t len = CopyAdvanceToAdvanceUntil(me, bufR, pred);
+			const size_t len = ReadToAdvanceUntil(me, bufR, pred);
 			result += GenericStringView<const ElementType>(buf, len);
 		}
 		return result;

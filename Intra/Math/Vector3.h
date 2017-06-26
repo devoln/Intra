@@ -145,10 +145,10 @@ template<typename T> struct Vector3
 template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs==NaN;}
 template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs!=NaN;}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> ClosestPointOnLine(const Vector3<T>& lineA, const Vector3<T>& lineB) const
+template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> ClosestPointOnLine(const Vector3<T>& lineA, const Vector3<T>& lineB, const Vector3<T>& pt)
 {
 	const Vector3<T> AB = Normalize(lineB-lineA);
-	const T t = Dot(AB, (*this-lineA));
+	const T t = Dot(AB, pt - lineA);
 	if(t <= 0) return lineA;
 	if(t >= Distance(lineA, lineB)) return lineB;
 	return lineA + AB*t;

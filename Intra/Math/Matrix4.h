@@ -59,10 +59,10 @@ template<typename T> struct Matrix4
 	constexpr Matrix4 operator*(const Matrix4& rhs) const noexcept
 	{
 		return {
-			Rows[0].x*m2.Rows[0] + Rows[0].y*m2.Rows[1] + Rows[0].z*m2.Rows[2] + Rows[0].w*m2.Rows[3],
-			Rows[1].x*m2.Rows[0] + Rows[1].y*m2.Rows[1] + Rows[1].z*m2.Rows[2] + Rows[1].w*m2.Rows[3],
-			Rows[2].x*m2.Rows[0] + Rows[2].y*m2.Rows[1] + Rows[2].z*m2.Rows[2] + Rows[2].w*m2.Rows[3],
-			Rows[3].x*m2.Rows[0] + Rows[3].y*m2.Rows[1] + Rows[3].z*m2.Rows[2] + Rows[3].w*m2.Rows[3]
+			Rows[0].x*rhs.Rows[0] + Rows[0].y*rhs.Rows[1] + Rows[0].z*rhs.Rows[2] + Rows[0].w*rhs.Rows[3],
+			Rows[1].x*rhs.Rows[0] + Rows[1].y*rhs.Rows[1] + Rows[1].z*rhs.Rows[2] + Rows[1].w*rhs.Rows[3],
+			Rows[2].x*rhs.Rows[0] + Rows[2].y*rhs.Rows[1] + Rows[2].z*rhs.Rows[2] + Rows[2].w*rhs.Rows[3],
+			Rows[3].x*rhs.Rows[0] + Rows[3].y*rhs.Rows[1] + Rows[3].z*rhs.Rows[2] + Rows[3].w*rhs.Rows[3]
 		};
 	}
 
@@ -124,14 +124,14 @@ template<typename T> struct Matrix4
 		Rows[3][i] = value.w;
 	}
 
-	static constexpr const Matrix4 I;
+	static constexpr const Matrix4 I{1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1};
 
 	static constexpr Matrix4 CreateOrtho(T width, T height, T depth)
 	{
 		return {
 			{2/width, 0, 0, 0},
 			{0, 2/height, 0, 0},
-			{0, 0, -2/depth 0},
+			{0, 0, -2/depth, 0},
 			{-1, -1,  -1,  1}
 		};
 	}
@@ -209,7 +209,9 @@ template<typename T> struct Matrix4
 };
 
 template<typename T> constexpr Vector4<T> operator*(const Vector4<T>& v, const Matrix4<T>& m) noexcept
-{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z + m.Rows[3] * v.w,}
+{return m.Rows[0] * v.x + m.Rows[1] * v.y + m.Rows[2] * v.z + m.Rows[3] * v.w;}
+
+template<typename T> forceinline Vector4<T>& operator*=(Vector4<T>& v, const Matrix4<T>& m) noexcept {return v = v*m;}
 
 template<typename T> constexpr Vector4<T> operator*(const Matrix4<T>& m, const Vector4<T>& v) noexcept
 {return {Dot(m.Rows[0], v), Dot(m.Rows[1], v), Dot(m.Rows[2], v), Dot(m.Rows[3], v)};}
@@ -227,7 +229,7 @@ template<typename T> constexpr Matrix4<T> Transpose(const Matrix4<T>& m) noexcep
 
 template<typename T> struct Plane;
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Matrix4<T> Reflect(const Matrix4<T>& m, const Plane<T>& plane) const
+template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Matrix4<T> Reflect(const Matrix4<T>& m, const Plane<T>& plane)
 {
 	const auto p = Normalize(plane);
 	return {-2*p.A*p.A+1, -2*p.B*p.A, -2*p.C*p.A, 0,

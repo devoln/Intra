@@ -2,10 +2,14 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+
 #include "Image/ImageFormat.h"
 #include "Image/ImageInfo.h"
-#include "Math/Vector.h"
+
+#include "Math/Vector3.h"
+
 #include "Container/Sequential/Array.h"
+
 #include "Range/Polymorphic/InputRange.h"
 #include "Range/Polymorphic/ForwardRange.h"
 

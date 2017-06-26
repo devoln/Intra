@@ -1,5 +1,7 @@
 ﻿#include "Image/FormatConversion.h"
-#include "Platform/Endianess.h"
+#include "Cpp/Fundamental.h"
+#include "Cpp/Endianess.h"
+#include "Range/Stream/RawRead.h"
 
 namespace Intra {
 
@@ -9,11 +11,11 @@ namespace Image {
 
 uint ConvertColorBits(uint color, uint fromBitCount, uint toBitCount)
 {
-	if(toBitCount<fromBitCount)
-		color >>= fromBitCount-toBitCount;
+	if(toBitCount < fromBitCount)
+		color >>= fromBitCount-  toBitCount;
 	else
 	{
-		color <<= toBitCount-fromBitCount;
+		color <<= toBitCount - fromBitCount;
 		if(color>0) color |= Math::BitCountToMask(toBitCount-fromBitCount);
 	}
 	return color;
@@ -47,7 +49,7 @@ void SwapRedBlueChannels(ImageFormat format, ushort lineAlignment, USVec2 sizes,
 
 
 
-void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
+void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, ushort srcAlignment, ushort dstAlignment, Span<byte> dstBuf)
 {
@@ -63,7 +65,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 
 	if(srcFormat==dstFormat && srcLineBytes==dstLineBytes && !swapRB && !flipVert)
 	{
-		stream.ReadRawTo(Range::Take(dstBuf, srcDataSize));
+		RawReadTo(stream, dstBuf.Take(srcDataSize));
 		return;
 	}
 
@@ -74,14 +76,14 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 		{
 			if(flipVert)
 			{
-				stream.ReadRawTo(dstPos.Tail(usefulSrcLineBytes));
+				RawReadTo(stream, dstPos.Tail(usefulSrcLineBytes));
 				dstPos.PopLastExactly(dstLineBytes);
 			}
 			else
 			{
-				stream.ReadRawTo(dstPos.Take(usefulSrcLineBytes));
+				RawReadTo(stream, dstPos.Take(usefulSrcLineBytes));
 				dstPos.PopFirstExactly(dstLineBytes);
-				//Algo::FillZeros(dstPos.Drop(usefulSrcLineBytes));
+				//FillZeros(dstPos.Drop(usefulSrcLineBytes));
 			}
 			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
 		}
@@ -94,7 +96,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
 			for(uint x=0; x<sizes.x; x++)
 			{
-				ushort color = stream.ReadRaw<ushortLE>();
+				ushort color = Range::RawRead<ushortLE>(stream);
 				*pixels++ = {(color >> 11) << 3, ((color >> 6) & 0x1f) << 3, ((color >> 1) & 0x1f) << 3};
 			}
 			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
@@ -110,7 +112,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
 			for(uint x=0; x<sizes.x; x++)
 			{
-				ushort color = stream.ReadRaw<ushortLE>();
+				ushort color = Range::RawRead<ushortLE>(stream);
 				*pixels++ = {((color >> 10) & 0x1f) << 3, ((color >> 5) & 0x1f) << 3, (color & 0x1f) << 3};
 			}
 			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
@@ -125,9 +127,9 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 				reinterpret_cast<UBVec3*>(dstPos.Begin):
 				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
 			if(swapRB) for(uint x = 0; x<sizes.x; x++)
-				*pixels++ = stream.ReadRaw<UBVec4>().swizzle(2, 1, 0);
+				*pixels++ = Range::RawRead<UBVec4>(stream).swizzle<2, 1, 0>();
 			else for(uint x = 0; x<sizes.x; x++)
-				*pixels++ = stream.ReadRaw<UBVec4>().xyz;
+				*pixels++ = Range::RawRead<UBVec4>(stream).xyz;
 			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
 			else dstPos.PopFirstExactly(dstLineBytes);
 			stream.PopFirstN(srcLineBytes-usefulSrcLineBytes);
@@ -136,7 +138,7 @@ void ReadPixelDataBlock(InputStream& stream, USVec2 sizes,
 	if(swapRB) SwapRedBlueChannels(dstFormat, dstAlignment, sizes, dstBuf);
 }
 
-void ReadPalettedPixelDataBlock(InputStream& stream, CSpan<byte> palette,
+void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
 	ushort bpp, USVec2 sizes, ImageFormat format, bool flipVert,
 	ushort srcAlignment, ushort dstAlignment, Span<byte> dstBuf)
 {
@@ -156,7 +158,7 @@ void ReadPalettedPixelDataBlock(InputStream& stream, CSpan<byte> palette,
 		byte* linePos = pos;
 		if(bpp==1) for(uint j=0; j<sizes.x; j += 8)
 		{
-			byte colorIndices = stream.ReadRaw<byte>();
+			byte colorIndices = Range::RawRead<byte>(stream);
 			for(int k=0; k<8; k++)
 			{
 				size_t bytesLeftToCopy = bytesPerPixel;
@@ -167,7 +169,7 @@ void ReadPalettedPixelDataBlock(InputStream& stream, CSpan<byte> palette,
 		}
 		else if(bpp==4) for(uint j=0; j<sizes.x; j += 2)
 		{
-			byte colorIndices = stream.ReadRaw<byte>();
+			const byte colorIndices = Range::RawRead<byte>(stream);
 			const byte* paletteSrc = palette.Data() + (colorIndices >> 4)*bytesPerPixel;
 			size_t bytesLeftToCopy = bytesPerPixel;
 			while(bytesLeftToCopy --> 0) *linePos++ = *paletteSrc++;
@@ -176,7 +178,7 @@ void ReadPalettedPixelDataBlock(InputStream& stream, CSpan<byte> palette,
 		}
 		else if(bpp==8) for(uint j = 0; j<sizes.x; j++)
 		{
-			byte colorIndex = stream.ReadRaw<byte>();
+			const byte colorIndex = Range::RawRead<byte>(stream);
 			size_t bytesLeftToCopy = bytesPerPixel;
 			const byte* paletteSrc = palette.Data() + colorIndex*bytesPerPixel;
 			while(bytesLeftToCopy--> 0) *linePos++ = *paletteSrc++;

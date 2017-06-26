@@ -1,6 +1,6 @@
 ﻿#include "Audio/Synth/AttackDecayAttenuation.h"
 #include "Math/Math.h"
-#include "Math/Simd.h"
+#include "Simd/Simd.h"
 #include "Utils/Span.h"
 
 #define OPTIMIZE

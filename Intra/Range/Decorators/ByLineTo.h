@@ -46,7 +46,7 @@ public:
 	void PopFirst()
 	{
 		mBuffer.Reset();
-		CopyAdvanceToAdvanceUntil(mOriginalRange, mBuffer, Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
+		ReadToAdvanceUntil(mOriginalRange, mBuffer, Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
 		if(mOriginalRange.Empty())
 		{
 			if(mBuffer.ElementsWritten() == 0) mBuffer = null;

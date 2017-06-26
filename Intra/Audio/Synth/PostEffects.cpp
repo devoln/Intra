@@ -1,6 +1,6 @@
 ﻿#include "Audio/Synth/PostEffects.hh"
 #include "Utils/Span.h"
-#include "Math/MathRanges.h"
+#include "Math/SineRange.h"
 #include "Math/Math.h"
 #include "Container/Sequential/Array.h"
 

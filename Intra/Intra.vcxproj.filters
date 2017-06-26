@@ -500,9 +500,6 @@
     <ClInclude Include="Utils\Callback.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Fixed.h">
-      <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
     <ClInclude Include="Platform\HardwareInfo.h">
       <Filter>Заголовочные файлы\Platform</Filter>
     </ClInclude>
@@ -520,9 +517,6 @@
     </ClInclude>
     <ClInclude Include="Data\Reflection.h">
       <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Shapes.h">
-      <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
     <ClInclude Include="Data\ValueType.h">
       <Filter>Заголовочные файлы\Data</Filter>
@@ -1519,6 +1513,18 @@
     </ClInclude>
     <ClInclude Include="Math\Geometry\Ellipse.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\Line.h">
+      <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\LineSegment.h">
+      <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry.hh">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\FixedPoint.h">
+      <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

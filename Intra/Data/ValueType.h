@@ -4,10 +4,16 @@
 #include "Cpp/Warnings.h"
 #include "Utils/StringView.h"
 #include "Container/ForwardDecls.h"
+
 #include "Math/Math.h"
-#include "Math/Matrix.h"
+#include "Math/Matrix3.h"
+#include "Math/Matrix4.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include "Meta/TypeList.h"
-#include "Math/Fixed.h"
+#include "Math/FixedPoint.h"
+#include "Math/HalfFloat.h"
 
 namespace Intra { namespace Data {
 
@@ -138,7 +144,7 @@ struct ValueType
 		float, Math::Vec2, Math::Vec3, Math::Vec4,
 
 		double, Math::DVec2, Math::DVec3, Math::DVec4,
-		Math::Half, Math::HVec2, Math::HVec3, Math::HVec4,
+		Math::HalfFloat, Math::Vector2<Math::HalfFloat>, Math::Vector3<Math::HalfFloat>, Math::Vector4<Math::HalfFloat>,
 
 		null_t,
 

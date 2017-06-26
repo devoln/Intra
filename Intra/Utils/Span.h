@@ -123,7 +123,7 @@ template<typename T> struct Span
 	forceinline Span<T> Tail(size_t count) const noexcept
 	{return Span(Length()<count? Begin: End-count, End);}
 
-	size_t CopyAdvanceToAdvance(Span<MutT>& dst)
+	size_t ReadToAdvance(Span<MutT>& dst)
 	{
 		const size_t len = Length()<dst.Length()? Length(): dst.Length();
 		for(size_t i=0; i<len; i++) *dst.Begin++ = *Begin++;
@@ -131,13 +131,13 @@ template<typename T> struct Span
 	}
 
 	forceinline size_t CopyTo(Span<MutT> dst) const
-	{return Span(*this).CopyAdvanceToAdvance(dst);}
+	{return Span(*this).ReadToAdvance(dst);}
 
-	forceinline size_t CopyAdvanceTo(Span<MutT> dst)
-	{return CopyAdvanceToAdvance(dst);}
+	forceinline size_t ReadTo(Span<MutT> dst)
+	{return ReadToAdvance(dst);}
 
 	forceinline size_t CopyToAdvance(Span<MutT>& dst) const
-	{return Span(*this).CopyAdvanceToAdvance(dst);}
+	{return Span(*this).ReadToAdvance(dst);}
 
 	template<typename U=T> forceinline Meta::EnableIf<
 		!Meta::IsConst<U>::_

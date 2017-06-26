@@ -57,7 +57,7 @@ public:
 
 	static void DeleteAllSounds()
 	{
-		for(auto sound: Sound::all_existing_sounds) *sound = null;
+		for(auto sound: Sound::allExistingSounds) *sound = null;
 	}
 
 private:
@@ -67,7 +67,7 @@ private:
 	SoundInfo mInfo;
 	uint mLockedSize;
 
-	static Array<Sound*> all_existing_sounds;
+	static Array<Sound*> allExistingSounds;
 
 
 private:
@@ -159,7 +159,7 @@ public:
 
 	void UpdateBuffer() const;
 
-	static Span<StreamedSound* const> AllExistingInstances() {return all_existing_instances;}
+	static Span<StreamedSound* const> AllExistingInstances() {return allExistingInstances;}
 
 	static void UpdateAllExistingInstances()
 	{
@@ -171,7 +171,7 @@ public:
 
 	static void DeleteAllSounds()
 	{
-		for(auto sound: StreamedSound::all_existing_instances) *sound = null;
+		for(auto sound: StreamedSound::allExistingInstances) *sound = null;
 	}
 
 private:
@@ -183,7 +183,7 @@ private:
 
 	void register_instance();
 	void unregister_instance();
-	static Array<StreamedSound*> all_existing_instances;
+	static Array<StreamedSound*> allExistingInstances;
 
 	void release();
 };

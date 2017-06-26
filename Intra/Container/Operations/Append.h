@@ -39,7 +39,7 @@ SC&> operator+=(SC& lhs, R&& rhs)
 	auto r = Range::Forward<R>(rhs);
 	const size_t oldLen = Concepts::LengthOf(lhs);
 	Concepts::SetCountTryNotInit(lhs, oldLen+Count(r));
-	CopyAdvanceTo(r, Drop(lhs, oldLen));
+	ReadTo(r, Drop(lhs, oldLen));
 	return lhs;
 }
 

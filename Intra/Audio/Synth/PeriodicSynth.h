@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Range/ForwardDecls.h"
+#include "Cpp/Fundamental.h"
+#include "Utils/Span.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 

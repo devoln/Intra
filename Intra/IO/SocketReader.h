@@ -75,9 +75,9 @@ public:
 		return maxToPop-bytesLeft;
 	}
 
-	size_t CopyAdvanceToAdvance(Span<char>& dst)
+	size_t ReadToAdvance(Span<char>& dst)
 	{
-		size_t totalBytesRead = Range::CopyAdvanceToAdvance(mBufferRest, dst);
+		size_t totalBytesRead = Range::ReadToAdvance(mBufferRest, dst);
 		if(!mBufferRest.Empty()) return totalBytesRead;
 
 		if(dst.Length() >= mBuffer.Length())
@@ -87,16 +87,16 @@ public:
 			totalBytesRead += bytesRead;
 		}
 		loadBuffer();
-		totalBytesRead += Range::CopyAdvanceToAdvance(mBufferRest, dst);
+		totalBytesRead += Range::ReadToAdvance(mBufferRest, dst);
 		return totalBytesRead;
 	}
 
 	template<typename AR> Meta::EnableIf<
 		Range::IsArrayRangeOfExactly<AR, char>::_ && !Meta::IsConst<AR>::_,
-	size_t> CopyAdvanceToAdvance(AR& dst)
+	size_t> ReadToAdvance(AR& dst)
 	{
 		Span<char> dstArr(dst.Data(), dst.Length());
-		const size_t result = CopyAdvanceToAdvance(dstArr);
+		const size_t result = ReadToAdvance(dstArr);
 		Range::PopFirstExactly(dst, result);
 		return result;
 	}

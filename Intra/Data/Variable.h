@@ -2,9 +2,16 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
-#include "Math/Vector.h"
-#include "Math/Matrix.h"
+
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
+#include "Math/Matrix3.h"
+#include "Math/Matrix4.h"
+#include "Math/HalfFloat.h"
+
 #include "Data/ValueType.h"
+
 #include "Container/Sequential/Array.h"
 
 namespace Intra { namespace Data {
@@ -16,10 +23,10 @@ struct Variable
 {
 	union
 	{
-		Math::Half AsHalf;
-		Math::HVec2 AsHVec2;
-		Math::HVec3 AsHVec3;
-		Math::HVec4 AsHVec4;
+		Math::HalfFloat AsHalf;
+		Math::Vector2<Math::HalfFloat> AsHVec2;
+		Math::Vector3<Math::HalfFloat> AsHVec3;
+		Math::Vector4<Math::HalfFloat> AsHVec4;
 
 		float AsFloat;
 		Math::Vec2 AsVec2;

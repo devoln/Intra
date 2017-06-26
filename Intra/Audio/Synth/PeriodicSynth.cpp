@@ -1,8 +1,8 @@
 ﻿#include "Audio/Synth/PeriodicSynth.h"
 #include "Utils/Span.h"
 #include "Math/Math.h"
-#include "Algo/Mutation/Copy.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Copy.h"
+#include "Range/Mutation/Transform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -30,15 +30,15 @@ void RepeatFragmentInBuffer(CSpan<float> fragmentSamples, Span<float> inOutSampl
 {
 	const size_t copyPassCount = inOutSamples.Length()/fragmentSamples.Length();
 	if(!add) for(size_t c=0; c<copyPassCount; c++)
-		Algo::CopyToAdvance(fragmentSamples, inOutSamples);
+		fragmentSamples.CopyToAdvance(inOutSamples);
 	else for(size_t c=0; c<copyPassCount; c++)
 	{
-		Algo::Add(inOutSamples.TakeExactly(fragmentSamples.Length()), fragmentSamples);
+		Add(inOutSamples.TakeExactly(fragmentSamples.Length()), fragmentSamples);
 		inOutSamples.PopFirstExactly(fragmentSamples.Length());
 	}
 
-	if(!add) Algo::CopyToAdvance(fragmentSamples.Take(inOutSamples.Length()), inOutSamples);
-	else Algo::Add(inOutSamples, fragmentSamples.Take(inOutSamples.Length()));
+	if(!add) CopyToAdvance(fragmentSamples.Take(inOutSamples.Length()), inOutSamples);
+	else Add(inOutSamples, fragmentSamples.Take(inOutSamples.Length()));
 }
 
 }}}

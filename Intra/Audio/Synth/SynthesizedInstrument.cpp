@@ -1,7 +1,7 @@
 ﻿#include "Audio/Synth/SynthesizedInstrument.h"
 #include "Audio/AudioBuffer.h"
 #include "Audio/Synth/Types.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Transform.h"
 
 #ifndef INTRA_NO_AUDIO_SYNTH
 
@@ -72,8 +72,8 @@ void SynthesizedInstrument::GetNoteSamples(Span<float> inOutSamples,
 			if(postEffect==null) continue;
 			postEffect(sampleBuf, sampleRate);
 		}
-		if(!add) Algo::CopyTo(sampleBuf, inOutSamples);
-		else Algo::Add(inOutSamples.Take(noteSampleCount), sampleBuf.AsConstRange());
+		if(!add) CopyTo(sampleBuf, inOutSamples);
+		else Add(inOutSamples.Take(noteSampleCount), sampleBuf.AsConstRange());
 	}
 }
 

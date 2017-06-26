@@ -1,6 +1,6 @@
 ﻿#include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
-#include "Algo/Mutation/Fill.h"
+#include "Range/Mutation/Fill.h"
 #include "Audio/Sources/MusicSynthSource.h"
 #include "Cpp/Warnings.h"
 
@@ -47,7 +47,7 @@ AudioBuffer MusicTrack::GetSamples(uint sampleRate) const
 	const auto duration = Duration();
 	AudioBuffer result(size_t(duration*sampleRate), sampleRate);
 	if(result.Samples==null) return result;
-	Algo::FillZeros(result.Samples);
+	Range::FillZeros(result.Samples);
 	uint samplePos = 0;
 	for(uint i=0; i<Notes.Count(); i++)
 	{

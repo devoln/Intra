@@ -24,14 +24,6 @@ template<typename T> struct Plane
 
 	constexpr forceinline Plane(const T& a, const T& b, const T& c, const T& d) noexcept: AsVec4(a, b, c, d) {}
 
-	INTRA_EXTENDED_CONSTEXPR short ClassifySphere(const Sphere<T>& sphere) const noexcept
-	{
-		const T dist = Dot(sphere.Center, Normal) + D;
-		if(Abs(dist) < sphere.Radius) return 0;
-		if(dist >= sphere.Radius) return 1;
-		return -1;
-	}
-
 	union
 	{
 		struct

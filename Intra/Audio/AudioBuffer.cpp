@@ -1,14 +1,13 @@
 ﻿#include "Audio/AudioBuffer.h"
-#include "Algo/Reduction.h"
-#include "Algo/Mutation/Cast.h"
+#include "Range/Reduction.h"
+#include "Range/Mutation/Cast.h"
 #include "Utils/Span.h"
-#include "Algo/Mutation/Fill.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Fill.h"
+#include "Range/Mutation/Transform.h"
 
 namespace Intra { namespace Audio {
 
 using namespace Math;
-using namespace Algo;
 using namespace Range;
 
 AudioBuffer::AudioBuffer(size_t sampleCount,

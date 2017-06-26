@@ -51,7 +51,7 @@ public:
 		}
 
 		size_t PutAllAdvance(CSpan<T>& src) final
-		{return CopyAdvanceToAdvance(src, OriginalRange);}
+		{return ReadToAdvance(src, OriginalRange);}
 
 		R OriginalRange;
 	};

@@ -1,6 +1,7 @@
 ﻿#include "Audio/Synth/ExponentialAttenuation.h"
-#include "Math/Simd.h"
+#include "Simd/Simd.h"
 #include "Utils/Span.h"
+#include "Math/Math.h"
 
 #define OPTIMIZE
 
@@ -172,3 +173,5 @@ AttenuationPass CreateExponentialAttenuationPass(float coeff)
 {return AttenuationPass(ExponentialAttenuationPassFunction, coeff);}
 
 }}}
+
+#undef OPTIMIZE

@@ -1,6 +1,6 @@
 ﻿#include "Audio/Synth/DrumInstrument.h"
 #include "Audio/AudioBuffer.h"
-#include "Algo/Mutation/Transform.h"
+#include "Range/Mutation/Transform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -8,22 +8,22 @@ void DrumInstrument::GetNoteSamples(Span<float> inOutSamples,
 	MusicNote note, float tempo, float volume, uint sampleRate, bool add) const
 {
 	AudioBuffer& bufRef = cache_note(note, tempo, sampleRate);
-	if(Math::Abs(volume-1.0f)>0.001f)
+	if(Math::Abs(volume - 1.0f) > 0.001f)
 	{
 		Array<float> bufSamples;
 		if(add)
 		{
-			bufSamples = Range::Take(bufRef.Samples, inOutSamples.Length());
-			Algo::Multiply(bufSamples, volume);
-			Algo::Add(inOutSamples.Take(bufSamples.Length()), bufSamples.AsConstRange());
+			bufSamples = bufRef.Samples.Take(inOutSamples.Length());
+			Multiply(bufSamples.AsRange(), volume);
+			Add(inOutSamples.Take(bufSamples.Length()), bufSamples.AsConstRange());
 		}
-		else Algo::Multiply(inOutSamples, bufRef.Samples.AsConstRange().Take(inOutSamples.Length()), volume);
+		else Multiply(inOutSamples, bufRef.Samples.AsConstRange().Take(inOutSamples.Length()), volume);
 		return;
 	}
 
 	CSpan<float> bufSampleRange = bufRef.Samples.AsConstRange().Take(inOutSamples.Length());
 	if(!add) Memory::CopyBits(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
-	else Algo::Add(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
+	else Add(inOutSamples.Take(bufSampleRange.Length()), bufSampleRange);
 }
 
 

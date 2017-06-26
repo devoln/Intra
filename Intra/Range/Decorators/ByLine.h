@@ -39,7 +39,7 @@ template<class R, class C> struct RByLine
 	void PopFirst()
 	{
 		mFirst.clear();
-		CopyAdvanceToUntil(mOriginalRange, LastAppender(mFirst), Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
+		ReadToUntil(mOriginalRange, LastAppender(mFirst), Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
 		if(mOriginalRange.Empty()) return;
 
 		const auto nextChar = mOriginalRange.First();

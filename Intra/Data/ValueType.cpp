@@ -1,7 +1,10 @@
 ﻿#include "ValueType.h"
 
-#include "Math/Vector.h"
-#include "Math/Matrix.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
+#include "Math/Matrix3.h"
+#include "Math/Matrix4.h"
 
 #include "Utils/StringView.h"
 #include "Container/Associative/HashMap.h"

@@ -1,12 +1,17 @@
 ﻿#include "Audio/Midi.h"
 #include "Audio/Synth/InstrumentLibrary.h"
+
+#include "Cpp/Warnings.h"
+#include "Cpp/Endianess.h"
+
+#include "Range/Polymorphic/InputRange.h"
+#include "Range/Output/OutputArrayRange.h"
+#include "Range/Mutation/Fill.h"
+#include "Range/Comparison/StartsWith.h"
+#include "Range/Comparison/Equals.h"
+
 #include "IO/FileSystem.h"
 #include "IO/FileMapping.h"
-#include "Algo/Mutation/Fill.h"
-#include "Cpp/Warnings.h"
-#include "Range/Polymorphic/InputRange.h"
-#include "Platform/Endianess.h"
-#include "Range/Output/OutputArrayRange.h"
 
 namespace Intra { namespace Audio {
 
@@ -38,20 +43,20 @@ public:
 	explicit MidiReader(InputStream stream): s(Cpp::Move(stream)),
 		instruments{}
 	{
-		if(!Algo::StartsAdvanceWith(s, "MThd"))
+		if(!Range::StartsAdvanceWith(s, "MThd"))
 		{
 			s = null;
 			return;
 		}
-		const uint chunkSize = s.ReadRaw<uintBE>();
+		const uint chunkSize = s.RawRead<uintBE>();
 		if(chunkSize!=6)
 		{
 			s = null;
 			return;
 		}
-		headerType = s.ReadRaw<shortBE>();
-		headerTracks = s.ReadRaw<shortBE>();
-		headerTimeFormat = s.ReadRaw<shortBE>();
+		headerType = s.RawRead<shortBE>();
+		headerTracks = s.RawRead<shortBE>();
+		headerTimeFormat = s.RawRead<shortBE>();
 
 		if(headerType>2)
 		{
@@ -71,14 +76,14 @@ public:
 
 	uint ReadVarInt(uint* oReadBytes=null)
 	{
-		uint result=0;
-		if(oReadBytes!=null) *oReadBytes=0;
+		uint result = 0;
+		if(oReadBytes) *oReadBytes=0;
 		byte l = 0;
 		do
 		{
 			if(s.Empty()) return result;
-			l = s.ReadRaw<byte>();
-			if(oReadBytes!=null) ++*oReadBytes;
+			l = s.RawRead<byte>();
+			if(oReadBytes) ++*oReadBytes;
 			result = (result << 7) | (l & 0x7F);
 		} while(l & 0x80);
 		return result;
@@ -113,22 +118,22 @@ public:
 		event.track = track;
 		uint delayBytes;
 		event.delay = ReadVarInt(&delayBytes);
-		byte firstByte = s.ReadRaw<byte>();
+		byte firstByte = s.RawRead<byte>();
 		if(firstByte & 0x80) status = firstByte;
 		event.status = status;
 
 		OutputArrayRange<byte> eventData(Range::Take(event.data, GetEventLength(status)));
 		if((firstByte & 0x80)==0) eventData.Put(firstByte);
-		s.ReadRawToAdvance(eventData);
+		s.RawReadToAdvance(eventData);
 		if(oReadBytes!=null) *oReadBytes = uint(((firstByte & 0x80)!=0)+delayBytes+eventData.ElementsWritten());
 
 		if(status==0xF0 || status==0xF7 || status==0xFF)
 		{
-			if(status==0xFF) event.data[0] = s.ReadRaw<byte>();
+			if(status==0xFF) event.data[0] = s.RawRead<byte>();
 			uint sizeRead;
 			uint msgLength = ReadVarInt(&sizeRead);
 			event.metadata.SetCountUninitialized(msgLength);
-			s.ReadRawTo(event.metadata);
+			s.RawReadTo(event.metadata);
 			if(status==0xFF) event.metadata.AddLast(0);
 			if(oReadBytes!=null) *oReadBytes += sizeRead+msgLength + (status==0xFF);
 		}
@@ -140,9 +145,9 @@ public:
 	{
 		if(startTickDuration==0) return null; //Файл имеет неверный формат или не открыт
 		char chunkType[4];
-		s.ReadRawTo(chunkType, 4);
-		uint size = s.ReadRaw<uintBE>();
-		if(!Algo::Equals(StringView::FromBuffer(chunkType), "MTrk"))
+		s.RawReadTo(chunkType, 4);
+		uint size = s.RawRead<uintBE>();
+		if(!Range::Equals(StringView::FromBuffer(chunkType), "MTrk"))
 		{
 			s.PopFirstN(size);
 			return null;

@@ -32,7 +32,7 @@ public:
 	static forceinline float Linear(float t)
 	{
 		const size_t n = size_t(t);
-		return LinearMix(get(n), get(n+1), Fract(t));
+		return Math::LinearMix(get(n), get(n+1), Fract(t));
 	}
 
 	static forceinline float Cubic(float t)

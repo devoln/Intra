@@ -37,7 +37,7 @@ struct IUnknown;
 
 namespace Intra { namespace Audio { namespace SoundAPI {
 
-const ValueType::I InternalBufferType = ValueType::Short;
+const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
 const int InternalChannelsInterleaved = true;
 uint InternalSampleRate() {return 48000;}
 
@@ -200,13 +200,13 @@ BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
 	return result;
 }
 
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
+void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type)
 {
 	if(snd==null || data==null) return;
 	auto lockedData = static_cast<short*>(BufferLock(snd));
-	if(type==ValueType::Short)
-		memcpy(lockedData, data, snd->sampleCount*type.Size());
-	else if(type==ValueType::Float)
+	if(type == Data::ValueType::Short)
+		C::memcpy(lockedData, data, snd->sampleCount*type.Size());
+	else if(type == Data::ValueType::Float)
 	{
 		for(size_t i=0; i<snd->sampleCount; i++)
 			lockedData[i] = short((static_cast<const float*>(data))[i]*32767.5f-0.5f);
@@ -214,7 +214,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 	BufferUnlock(snd);
 }
 
-void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType type)
+void BufferSetDataChannels(BufferHandle snd, const void* const* data, Data::ValueType type)
 {
 	if(snd->channels==1)
 	{
@@ -223,7 +223,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 	}
 
 	auto lockedData = static_cast<short*>(BufferLock(snd));
-	if(type==ValueType::Short)
+	if(type == Data::ValueType::Short)
 	{
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
@@ -232,7 +232,7 @@ void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType 
 				lockedData[j++] = channelSamples[i];
 			}
 	}
-	else if(type==ValueType::Float)
+	else if(type == Data::ValueType::Float)
 	{
 		for(size_t i=0, j=0; i<snd->sampleCount; i++)
 			for(uint c=0; c<snd->channels; c++)
@@ -363,7 +363,7 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 
 	DWORD lockedSize; void* lockedData;
 	result->mBuffer->Lock(0, result->SizeInBytes()*2, &lockedData, &lockedSize, null, null, 0);
-	callback.CallbackFunction(&lockedData, channels, ValueType::Short, true, sampleCount, callback.CallbackData);
+	callback.CallbackFunction(&lockedData, channels, Data::ValueType::Short, true, sampleCount, callback.CallbackData);
 	result->mBuffer->Unlock(lockedData, result->SizeInBytes()*2, null, 0);
 
 	IDirectSoundNotify* notify;
@@ -466,13 +466,13 @@ void fill_next_buffer_data(StreamedBufferHandle snd)
 	}
 
 	const size_t samplesRead = snd->mStreamingCallback.CallbackFunction(reinterpret_cast<void**>(&data), snd->mChannels,
-		ValueType::Short, true, snd->mSampleCount, snd->mStreamingCallback.CallbackData);
+		Data::ValueType::Short, true, snd->mSampleCount, snd->mStreamingCallback.CallbackData);
 	if(samplesRead<snd->mSampleCount)
 	{
 		void* ptr = data+samplesRead;
 		if(snd->mLooping)
 		{
-			snd->mStreamingCallback.CallbackFunction(&ptr, 1, ValueType::Short, true,
+			snd->mStreamingCallback.CallbackFunction(&ptr, 1, Data::ValueType::Short, true,
 				uint(snd->mSampleCount-samplesRead), snd->mStreamingCallback.CallbackData);
 		}
 		else

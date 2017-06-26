@@ -136,6 +136,10 @@ constexpr forceinline float Fract(float x) {return x-Floor(x);}
 constexpr forceinline double Fract(double x) {return x-Floor(x);}
 constexpr forceinline real Fract(real x) {return x-Floor(x);}
 
+constexpr forceinline float Exp(float x) {return __builtin_expf(x);}
+constexpr forceinline double Exp(double x) {return __builtin_exp(x);}
+constexpr forceinline real Exp(real x) {return __builtin_expl(x);}
+
 constexpr forceinline float Sin(float radians) {return __builtin_sinf(radians);}
 constexpr forceinline double Sin(double radians) {return __builtin_sin(radians);}
 constexpr forceinline real Sin(real radians) {return __builtin_sinl(radians);}

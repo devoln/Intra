@@ -866,11 +866,15 @@
     <ClInclude Include="Image\Loaders\LoaderTIFF.h" />
     <ClInclude Include="IO\FilePath.h" />
     <ClInclude Include="Math\ExponentRange.h" />
+    <ClInclude Include="Math\FixedPoint.h" />
+    <ClInclude Include="Math\Geometry.hh" />
     <ClInclude Include="Math\Geometry\Aabb.h" />
     <ClInclude Include="Math\Geometry\BoundingVolume.h" />
     <ClInclude Include="Math\Geometry\Ellipse.h" />
     <ClInclude Include="Math\Geometry\Frustum.h" />
     <ClInclude Include="Math\Geometry\Intersection.h" />
+    <ClInclude Include="Math\Geometry\Line.h" />
+    <ClInclude Include="Math\Geometry\LineSegment.h" />
     <ClInclude Include="Math\Geometry\Obb.h" />
     <ClInclude Include="Math\Geometry\Plane.h" />
     <ClInclude Include="Math\Geometry\Ray.h" />
@@ -991,10 +995,8 @@
     <ClInclude Include="IO\Std.h" />
     <ClInclude Include="Math.hh" />
     <ClInclude Include="Math\Bit.h" />
-    <ClInclude Include="Math\Fixed.h" />
     <ClInclude Include="Math\Math.h" />
     <ClInclude Include="Math\Quaternion.h" />
-    <ClInclude Include="Math\Shapes.h" />
     <ClInclude Include="Memory.hh" />
     <ClInclude Include="Memory\Align.h" />
     <ClInclude Include="Memory\Allocator.hh" />

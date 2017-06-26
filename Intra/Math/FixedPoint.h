@@ -5,7 +5,9 @@
 
 #include "Meta/Type.h"
 
-#include "Vector.h"
+#include "Vector2.h"
+#include "Vector3.h"
+#include "Vector4.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

@@ -1,6 +1,8 @@
 ﻿#include "Audio/Synth/TableAttenuation.h"
+
 #include "Utils/Span.h"
-#include "Algo/Mutation/Copy.h"
+
+#include "Range/Mutation/Copy.h"
 #include "Range/Decorators/Take.h"
 
 namespace Intra { namespace Audio { namespace Synth {
@@ -41,7 +43,7 @@ AttenuationPass CreateTableAttenuationPass(CSpan<norm8> table)
 {
 	TableAttenuatorParams params;
 	params.Len = byte(table.Length());
-	Algo::CopyTo(table, params.Table);
+	CopyTo(table, params.Table);
 	return AttenuationPass(TableAttenuationPassFunction, params);
 }
 

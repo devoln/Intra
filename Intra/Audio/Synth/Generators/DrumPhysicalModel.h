@@ -4,7 +4,7 @@
 
 #ifndef INTRA_NO_AUDIO_SYNTH
 
-#include "Math/Random.h"
+#include "Random/FastUniform.h"
 #include "Container/Utility/Array2D.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
@@ -18,7 +18,7 @@ class DrumPhysicalModel
 	float mFrc, mK1, mK2;
 	Array2D<float> mP, mS, mF;
 	float mAmplitude, mdt;
-	Math::Random<float> mFRandom;
+	Random::FastUniform<float> mFRandom;
 	float mPrevRand;
 
 public:

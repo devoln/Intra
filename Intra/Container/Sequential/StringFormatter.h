@@ -44,7 +44,7 @@ private:
 	{
 		RequireSpace(mFormatRest.Length());
 		size_t partLen = CountUntil(mFormatRest, "<^>");
-		Range::CopyAdvanceToAdvance(mFormatRest, partLen, mBufferRest);
+		Range::ReadToAdvance(mFormatRest, partLen, mBufferRest);
 		mFormatRest.PopFirstN(3);
 	}
 

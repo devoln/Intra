@@ -26,7 +26,7 @@ INTRA_DEFINE_EXPRESSION_CHECKER(HasPopFirstN, static_cast<size_t>(Meta::Val<T>()
 INTRA_DEFINE_EXPRESSION_CHECKER(HasPopLastN, static_cast<size_t>(Meta::Val<T>().PopLastN(size_t())));
 INTRA_DEFINE_EXPRESSION_CHECKER(Has_value_type, Meta::Val<typename Meta::RemoveReference<T>::value_type>());
 
-INTRA_DEFINE_EXPRESSION_CHECKER2(HasCopyAdvanceToAdvanceMethod, Meta::Val<T1>().CopyAdvanceToAdvance(Meta::Val<T2&>()),,);
+INTRA_DEFINE_EXPRESSION_CHECKER2(HasReadToAdvanceMethod, Meta::Val<T1>().ReadToAdvance(Meta::Val<T2&>()),,);
 INTRA_DEFINE_EXPRESSION_CHECKER2(HasPutAllAdvanceMethod, Meta::Val<T1>().PutAllAdvance(Meta::Val<T2&>()),,);
 
 template<typename R> struct HasSlicing: Meta::IsCallable<R, size_t, size_t> {};
@@ -336,6 +336,7 @@ template<typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	(!Meta::IsCopyConstructible<Meta::RemoveConstRef<R>>::_ ||
 		!Meta::IsCopyAssignable<Meta::RemoveConstRef<R>>::_) &&
+	!Meta::IsAbstractClass<R>::_ &&
 	!Meta::IsConst<R>::_,
 RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 {return Cpp::Move(range);}
@@ -343,7 +344,8 @@ RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 template<typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	Meta::IsCopyConstructible<Meta::RemoveConstRef<R>>::_ &&
-	Meta::IsCopyAssignable<Meta::RemoveConstRef<R>>::_,
+	Meta::IsCopyAssignable<Meta::RemoveConstRef<R>>::_ &&
+	!Meta::IsAbstractClass<R>::_,
 RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 {return {Meta::RemoveConstRef<R>(Cpp::Forward<R>(range))};}
 
@@ -351,6 +353,7 @@ RangeForIterLike<Meta::RemoveConstRef<R>>> begin(R&& range)
 
 template<typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
+	!Meta::IsAbstractClass<R>::_ &&
 	!Meta::IsConst<R>::_,
 RangeForIterLike<Meta::RemoveReference<R>>> end(R&&)
 {return null;}

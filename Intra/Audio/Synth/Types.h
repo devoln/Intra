@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 #include "Utils/Delegate.h"
-#include "Range/ForwardDecls.h"
 #include "Audio/MusicNote.h"
+#include "Utils/Span.h"
 
 namespace Intra { namespace Audio {
 

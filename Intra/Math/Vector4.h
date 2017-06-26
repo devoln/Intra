@@ -162,13 +162,13 @@ public:
 template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs == NaN;}
 template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs != NaN;}
 
-template<typename T> Vector4 ClosestPointOnLine(const Vector4<T>& lineA, const Vector4<T>& lineB) const
+template<typename T> Vector4<T> ClosestPointOnLine(const Vector4<T>& lineA, const Vector4<T>& lineB, const Vector4<T>& pt)
 {
 	const Vector4<T> AB = Normalize(lineB - lineA);
-	const Vector4<T> t = Dot(AB, (*this - lineA));
+	const Vector4<T> t = Dot(AB, pt - lineA);
 	if(t <= 0) return lineA;
-	if(t >= Distance(lineA, lineB)) return lineB;
-	return lineA+AB*t;
+	if(t*t >= DistanceSqr(lineA, lineB)) return lineB;
+	return lineA + AB*t;
 }
 
 template<typename T> constexpr Vector4<T> Min(const Vector4<T>& v1, T v2)
@@ -185,7 +185,7 @@ template<typename T> constexpr Vector4<T> Max(const Vector4<T>& v1, const Vector
 
 template<typename T> constexpr forceinline Vector4<T> operator*(T n, const Vector4<T>& v) {return v*n;}
 
-template<typename T> constexpr T Dot(const Vector4<T>& l, const Vector4<T>& r) {return l.x*r.x + l.y*r.y+l.z*r.z + l.w*r.w;}
+template<typename T> constexpr T Dot(const Vector4<T>& l, const Vector4<T>& r) {return l.x*r.x + l.y*r.y + l.z*r.z + l.w*r.w;}
 
 template<typename T> constexpr forceinline T LengthSqr(const Vector4<T>& v) {return Dot(v,v);}
 

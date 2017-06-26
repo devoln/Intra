@@ -19,7 +19,7 @@ template<typename R, typename OR> Meta::EnableIf<
 {
 	while(!src.Empty())
 	{
-		dst.Put(ValueTypeOf<OR>(src.First()));
+		dst.Put(Concepts::ValueTypeOf<OR>(src.First()));
 		src.PopFirst();
 	}
 }
@@ -39,7 +39,7 @@ template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsOutputRange<OR>::_ &&
 	Concepts::ValueTypeEquals<R, OR>::_
 > CastAdvanceToAdvance(R& src, OR& dst)
-{CopyAdvanceToAdvance(src, dst);}
+{ReadToAdvance(src, dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsNonInfiniteInputRange<R>::_ &&

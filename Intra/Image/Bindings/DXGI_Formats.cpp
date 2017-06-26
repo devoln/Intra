@@ -1,6 +1,6 @@
 ﻿#include "Image/Bindings/DXGI_Formats.h"
 #include "Image/ImageFormat.h"
-#include "Algo/Mutation/Fill.h"
+
 #include "Utils/Span.h"
 
 namespace Intra { namespace Image {
@@ -45,23 +45,22 @@ static const ImageFormat dxgiFormatConvertTable[]=
 };
 INTRA_CHECK_TABLE_SIZE(dxgiFormatConvertTable, DXGI_FORMAT_B4G4R4A4_UNORM+1);
 
-ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* swapRB)
+ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* oSwapRB)
 {
-	if(swapRB!=null) *swapRB = (
-		(fmt>=DXGI_FORMAT_B5G6R5_UNORM && fmt<=DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) ||
-		fmt==DXGI_FORMAT_B4G4R4A4_UNORM);
-	if(fmt>=Utils::LengthOf(dxgiFormatConvertTable)) return null;
+	if(oSwapRB!=null) *oSwapRB = (
+		(fmt >= DXGI_FORMAT_B5G6R5_UNORM && fmt <= DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) ||
+		fmt == DXGI_FORMAT_B4G4R4A4_UNORM);
+	if(fmt >= Concepts::LengthOf(dxgiFormatConvertTable)) return null;
 	return dxgiFormatConvertTable[fmt];
 }
 
 DXGI_FORMAT DXGI_FromImageFormat(ImageFormat fmt, bool swapRB)
 {
-	static DXGI_FORMAT mapNoSwap[ImageFormat::End], mapSwap[ImageFormat::End];
+	static DXGI_FORMAT mapNoSwap[ImageFormat::End] = {};
+	static DXGI_FORMAT mapSwap[ImageFormat::End] = {};
 	static bool inited = false;
 	if(!inited)
 	{
-		Algo::FillZeros(mapNoSwap);
-		Algo::FillZeros(mapSwap);
 		for(int i=DXGI_FORMAT_UNKNOWN+1; i<=DXGI_FORMAT_B4G4R4A4_UNORM; i++)
 		{
 			const auto dxgi = DXGI_FORMAT(i);

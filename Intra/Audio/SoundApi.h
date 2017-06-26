@@ -28,14 +28,14 @@
 
 namespace Intra { namespace Audio { namespace SoundAPI {
 
-extern const ValueType::I InternalBufferType;
+extern const Data::ValueType::I InternalBufferType;
 extern const int InternalChannelsInterleaved;
 
 uint InternalSampleRate();
 
 BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate);
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type);
-void BufferSetDataChannels(BufferHandle snd, const void* const* data, ValueType type);
+void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type);
+void BufferSetDataChannels(BufferHandle snd, const void* const* data, Data::ValueType type);
 void* BufferLock(BufferHandle snd);
 void BufferUnlock(BufferHandle snd);
 void BufferDelete(BufferHandle snd);
@@ -50,7 +50,7 @@ void InstanceSetDeleteOnStop(InstanceHandle snd, bool del);
 struct StreamingCallback
 {
 	typedef size_t(*CallbackFunctionType)(void** dstSamples, uint channels,
-		ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData);
+		Data::ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData);
 
 	CallbackFunctionType CallbackFunction;
 	void* CallbackData;

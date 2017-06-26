@@ -68,7 +68,7 @@ public:
 
 	size_t PutAllAdvance(CSpan<char>& src)
 	{
-		size_t totalBytesWritten = Range::CopyAdvanceToAdvance(src, mBufferRest);
+		size_t totalBytesWritten = Range::ReadToAdvance(src, mBufferRest);
 		if(!mBufferRest.Empty()) return totalBytesWritten;
 
 		Flush();
@@ -78,7 +78,7 @@ public:
 			src.Begin += bytesWritten;
 			totalBytesWritten += bytesWritten;
 		}
-		totalBytesWritten += Range::CopyAdvanceToAdvance(src, mBufferRest);
+		totalBytesWritten += Range::ReadToAdvance(src, mBufferRest);
 		return totalBytesWritten;
 	}
 

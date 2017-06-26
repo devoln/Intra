@@ -2,7 +2,7 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
-#include "Math/Random.h"
+#include "Random/FastUniformNoise.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 
@@ -20,8 +20,8 @@ struct WhiteNoise
 
 	forceinline float NextSample() {PopFirst(); return First();}
 	forceinline void PopFirst() {mS += mDS;}
-	forceinline float First() const {return mAmplitude*Math::RandomNoise::Linear(mS);}
-	bool Empty() const {return false;}
+	forceinline float First() const {return mAmplitude*Random::FastUniformNoise::Linear(mS);}
+	forceinline bool Empty() const {return false;}
 
 private:
 	float mAmplitude;
