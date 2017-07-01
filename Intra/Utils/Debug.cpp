@@ -83,7 +83,7 @@ void PrintDebugMessage(StringView message, StringView file, unsigned line)
 {
 	FixedArray<char> buffer(14 + file.Length() + message.Length());
 	Span<char> dst = buffer;
-	file.CopyToAdvance(dst);
+	file.WriteTo(dst);
 	dst << '(';
 	AppendUInt(dst, line);
 	dst << "): " << message;

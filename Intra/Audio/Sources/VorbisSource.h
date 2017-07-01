@@ -24,7 +24,7 @@ namespace Intra { namespace Audio { namespace Sources {
 
 #if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
 
-class VorbisSource: public ASoundSource
+class VorbisSource: public AAudioSource
 {
 	struct Decoder;
 	typedef Decoder* DecoderHandle;

@@ -2,6 +2,7 @@
 #include "Math/Math.h"
 #include "Simd/Simd.h"
 #include "Utils/Span.h"
+#include "Funal/Bind.h"
 
 #define OPTIMIZE
 
@@ -211,6 +212,6 @@ static void AttackDecayPassFunction(const AttackDecayParams& params,
 }
 
 AttenuationPass CreateAttackDecayPass(double attackTime, double decayTime)
-{return AttenuationPass(AttackDecayPassFunction, AttackDecayParams{attackTime, decayTime});}
+{return Funal::Bind(AttackDecayPassFunction, AttackDecayParams{attackTime, decayTime});}
 
 }}}

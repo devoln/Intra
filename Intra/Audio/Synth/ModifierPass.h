@@ -1,8 +1,11 @@
 ﻿#pragma once
 
 #include "Utils/Span.h"
-#include "Audio/Synth/Types.h"
 #include "Utils/Span.h"
+
+#include "Funal/Bind.h"
+
+#include "Audio/Synth/Types.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -24,6 +27,6 @@ template<typename T> void ModifierPassFunction(const T& modifier,
 }
 
 template<typename T> ModifierPass CreateModifierPass(T modifier)
-{return ModifierPass(D::ModifierPassFunction<T>, modifier);}
+{return Funal::Bind(D::ModifierPassFunction<T>, modifier);}
 
 }}}

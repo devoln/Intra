@@ -23,19 +23,19 @@ struct KtxHeader
 static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 {
 	ImageInfo result = {{0,0,0}, null, ImageType_End, 0};
-	if(header.sizes.y==0 && header.sizes.z==0) return result; //1D текстуры не поддерживаются
-	if(header.numberOfFaces!=1 && header.numberOfFaces!=6) return result; //Текстуры либо кубические и содержат 6 граней, либо некубические
+	if(header.sizes.y == 0 && header.sizes.z == 0) return result; //1D текстуры не поддерживаются
+	if(header.numberOfFaces != 1 && header.numberOfFaces != 6) return result; //Текстуры либо кубические и содержат 6 граней, либо некубические
 	result.Format = GLenumToImageFormat(ushort(header.glInternalFormat));
-	if(result.Format==null) return result;
+	if(result.Format == null) return result;
 	result.MipmapCount = ushort(header.numberOfMipmapLevels);
-	if(header.sizes.z==0)
+	if(header.sizes.z == 0)
 	{
-		if(header.numberOfFaces==1)
-			if(header.numberOfArrayElements==0)
+		if(header.numberOfFaces == 1)
+			if(header.numberOfArrayElements == 0)
 				result.Type = ImageType_2D;
 			else result.Type = ImageType_2DArray;
-		else if(header.numberOfFaces==6)
-			if(header.numberOfArrayElements==0)
+		else if(header.numberOfFaces == 6)
+			if(header.numberOfArrayElements == 0)
 				result.Type = ImageType_Cube;
 			else result.Type = ImageType_CubeArray;
 		else return {{0,0,0}, null, ImageType_End, 0};
@@ -45,12 +45,12 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 	return result;
 }
 
-ImageInfo LoaderKTX::GetInfo(InputStream stream) const
+ImageInfo LoaderKTX::GetInfo(IInputStream& stream) const
 {
 	byte headerSignature[16];
-	stream.ReadRawTo(headerSignature, 16);
+	RawReadTo(stream, headerSignature, 16);
 	if(!IsValidHeader(headerSignature, 16)) return ImageInfo();
-	return GetImageInfoFromHeader(stream.ReadRaw<KtxHeader>());
+	return GetImageInfoFromHeader(Range::RawRead<KtxHeader>(stream));
 }
 
 bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
@@ -64,16 +64,16 @@ bool LoaderKTX::IsValidHeader(const void* header, size_t bytes) const
 	return Equals(SpanOfRaw(header, bytes), fileIdentifier);
 }
 
-AnyImage LoaderKTX::Load(InputStream stream) const
+AnyImage LoaderKTX::Load(IInputStream& stream) const
 {
 	stream.PopFirstN(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
 
-	if(stream.ReadRaw<uint>() != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
+	if(Range::RawRead<uint>(stream) != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
 		return null;
 
-	auto header = stream.ReadRaw<KtxHeader>();
+	auto header = Range::RawRead<KtxHeader>(stream);
 	auto info = GetImageInfoFromHeader(header);
-	if(info.Type==ImageType_End)
+	if(info.Type == ImageType_End)
 		return null;
 
 	AnyImage result;
@@ -89,20 +89,20 @@ AnyImage LoaderKTX::Load(InputStream stream) const
 
 	for(ushort i=0; i<info.MipmapCount; i++)
 	{
-		uint imageSize = stream.ReadRaw<uint>();
-		if(result.Info.Type==ImageType_Cube)
+		const uint imageSize = Range::RawRead<uint>(stream);
+		if(result.Info.Type == ImageType_Cube)
 		{
 			for(ushort j=0; j<6; j++)
 			{
-				stream.ReadRawTo(pos, imageSize);
+				RawReadTo(stream, pos, imageSize);
 				pos += imageSize;
 				pos += 3-(imageSize+3)%4;
 			}
 			continue;
 		}
-		stream.ReadRawTo(pos, imageSize);
+		RawReadTo(stream, pos, imageSize);
 		pos += imageSize;
-		pos += 3-(imageSize+3)%4;
+		pos += 3 - (imageSize + 3) % 4;
 	}
 	return result;
 }

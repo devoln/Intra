@@ -23,13 +23,12 @@ template<typename T=char, typename X> Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_,
 size_t> MaxLengthOfToString(X number, int minWidth, T filler=' ', uint base=10, T minus='\0')
 {
-	(void)number;
-	(void)filler;
+	(void)number; (void)filler;
 	size_t maxLog;
 	if(base<8) maxLog = sizeof(X)*8;
 	else if(base<16) maxLog = (sizeof(X)*8+2)/3;
 	else maxLog = sizeof(X)*2;
-	return Op::Max(maxLog+(minus!='\0'), size_t(minWidth));
+	return Funal::Max(maxLog + (minus != '\0'), size_t(minWidth));
 }
 
 

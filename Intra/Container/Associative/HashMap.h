@@ -5,7 +5,7 @@
 #include "Meta/Type.h"
 #include "Meta/Tuple.h"
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Utils/FixedArray.h"
 
 #include "Hash/ToHash.h"
@@ -366,7 +366,7 @@ public:
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
 	//! \param pred Предикат сравнения ключей.
-	template<typename P = Comparers::Function<K>> void SortByKey(P pred = Op::Less<K>)
+	template<typename P = Funal::TLess> void SortByKey(P pred = Funal::Less)
 	{
 		SortByPair([&pred](const KeyValuePair<const K, V>& lhs, const KeyValuePair<const K, V>& rhs)
 		{
@@ -376,7 +376,7 @@ public:
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
 	//! \param pred Предикат сравнения ключей.
-	template<typename P = Comparers::Function<V>> void SortByValue(P pred = Op::Less<V>)
+	template<typename P = Funal::TLess> void SortByValue(P pred = Funal::Less)
 	{
 		SortByPair([&pred](const KeyValuePair<const K, V>& lhs, const KeyValuePair<const K, V>& rhs)
 		{

@@ -2,9 +2,11 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Utils/Op.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
+#include "Funal/Op.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -34,9 +36,9 @@ template<typename T, typename C> void heap_shift_down(T arr[], size_t i, size_t 
 //! - Неустойчив;
 //! - На почти отсортированных массивах работает так же долго, как и для хаотичных данных;
 //! - Для N меньше нескольких тысяч ShellSort быстрее.
-template<typename R, typename C=Comparers::Function<Concepts::ElementTypeOfArray<R>>> Meta::EnableIf<
+template<typename R, typename C=Funal::TLess> Meta::EnableIf<
 	Concepts::IsAssignableArrayClass<R>::_
-> HeapSort(R&& range, C comparer=Op::Less<Concepts::ValueTypeOf<R>>)
+> HeapSort(R&& range, C comparer = Funal::Less)
 {
 	const size_t count = Concepts::LengthOf(range);
 

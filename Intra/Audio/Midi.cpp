@@ -47,15 +47,15 @@ public:
 			errStatus.Error("Invalid MIDI stream format!", INTRA_SOURCE_INFO);
 			return;
 		}
-		const uint chunkSize = s.ReadRaw<uintBE>();
+		const uint chunkSize = s.RawRead<uintBE>();
 		if(chunkSize!=6)
 		{
 			s = null;
 			return;
 		}
-		headerType = s.ReadRaw<shortBE>();
-		headerTracks = s.ReadRaw<shortBE>();
-		headerTimeFormat = s.ReadRaw<shortBE>();
+		headerType = s.RawRead<shortBE>();
+		headerTracks = s.RawRead<shortBE>();
+		headerTimeFormat = s.RawRead<shortBE>();
 
 		if(headerType>2)
 		{
@@ -82,7 +82,7 @@ public:
 		do
 		{
 			if(s.Empty()) return result;
-			l = s.ReadRaw<byte>();
+			l = s.RawRead<byte>();
 			if(oReadBytes != null) ++*oReadBytes;
 			result = (result << 7) | (l & 0x7F);
 		} while(l & 0x80);
@@ -123,22 +123,22 @@ public:
 		event.track = track;
 		uint delayBytes;
 		event.delay = ReadVarInt(&delayBytes);
-		byte firstByte = s.ReadRaw<byte>();
+		byte firstByte = s.RawRead<byte>();
 		if(firstByte & 0x80) status = firstByte;
 		event.status = status;
 
 		OutputArrayRange<byte> eventData(Range::Take(event.data, GetEventLength(status)));
 		if((firstByte & 0x80) == 0) eventData.Put(firstByte);
-		s.ReadRawToAdvance(eventData);
+		s.RawReadWrite(eventData);
 		if(oReadBytes!=null) *oReadBytes = uint(((firstByte & 0x80)!=0)+delayBytes+eventData.ElementsWritten());
 
 		if(status == 0xF0 || status == 0xF7 || status == 0xFF)
 		{
-			if(status == 0xFF) event.data[0] = s.ReadRaw<byte>();
+			if(status == 0xFF) event.data[0] = s.RawRead<byte>();
 			uint sizeRead;
 			uint msgLength = ReadVarInt(&sizeRead);
 			event.metadata.SetCount(msgLength + (status == 0xFF));
-			s.ReadRawTo(event.metadata.Data(), msgLength);
+			s.RawReadTo(event.metadata.Data(), msgLength);
 			if(status == 0xFF) event.metadata.Last() = 0;
 			if(oReadBytes) *oReadBytes += sizeRead + msgLength + (status == 0xFF);
 		}
@@ -150,8 +150,8 @@ public:
 	{
 		if(startTickDuration == 0) return null; //Файл имеет неверный формат или не открыт
 		char chunkType[4];
-		s.ReadRawTo(chunkType, 4);
-		uint size = s.ReadRaw<uintBE>();
+		s.RawReadTo(chunkType, 4);
+		uint size = s.RawRead<uintBE>();
 		if(!Equals(StringView::FromBuffer(chunkType), "MTrk"))
 		{
 			s.PopFirstN(size);
@@ -168,7 +168,7 @@ public:
 			timeInTicks += event.delay;
 
 			if(event.status == 0xFF && event.data[0] == 0x51)
-				if(headerTimeFormat>0)
+				if(headerTimeFormat > 0)
 			{
 				const int value = (event.metadata[0] << 16)|(event.metadata[1] << 8)|event.metadata[2];
 				tempoChanges.AddLast(TempoChange{timeInTicks, float(value)/1000000.0f/float(headerTimeFormat)*speed});

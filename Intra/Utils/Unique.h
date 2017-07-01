@@ -15,7 +15,9 @@ template<typename T> struct Unique
 
 	//! Этот конструктор предполагает, что объект выделен как new T(...).
 	//! Передавать другие указатели запрещено.
-	forceinline Unique(T*&& ptrFromNew) noexcept: mPtr(ptrFromNew) {}
+	//! Объект по переданному указателю переходит во владение
+	//! нового экземпляра Unique и освобождается в деструкторе, используя delete.
+	forceinline Unique(T* ptrFromNew) noexcept: mPtr(ptrFromNew) {}
 
 	forceinline ~Unique() noexcept {delete mPtr;}
 

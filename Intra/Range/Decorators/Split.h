@@ -2,14 +2,18 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
+
 #include "Meta/Operators.h"
-#include "Range/ForwardDecls.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
+#include "Funal/Op.h"
 #include "Utils/Optional.h"
+
+#include "Range/ForwardDecls.h"
 #include "Range/Decorators/Take.h"
 #include "Range/Decorators/TakeUntil.h"
-#include "Utils/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -40,7 +44,7 @@ template<typename R, typename P1, typename P2> struct RSplit
 
 	void PopFirst()
 	{
-		if(mIsSkippedDelimiter!=null)
+		if(mIsSkippedDelimiter != null)
 			while(!mOriginalRange.Empty() &&
 				mIsSkippedDelimiter()(mOriginalRange.First()))
 					mOriginalRange.PopFirst();
@@ -69,7 +73,7 @@ template<typename R, typename P1, typename P2> struct RSplit
 	}
 
 	bool operator==(const RSplit& rhs) const
-	{return mOriginalRange==rhs.mOriginalRange;}
+	{return mOriginalRange == rhs.mOriginalRange;}
 
 private:
 	R mOriginalRange;
@@ -79,7 +83,7 @@ private:
 };
 
 
-template<typename R, typename P1, typename P2 = bool(*)(const Concepts::ValueTypeOfAs<R>&),
+template<typename R, typename P1, typename P2 = Funal::TFalse,
 	typename AsR = Concepts::RangeOfType<R>,
 	typename T = Concepts::ValueTypeOf<AsR>
 > forceinline Meta::EnableIf<
@@ -87,7 +91,7 @@ template<typename R, typename P1, typename P2 = bool(*)(const Concepts::ValueTyp
 	Meta::IsCallable<P1, T>::_ &&
 	Meta::IsCallable<P2, T>::_,
 RSplit<Meta::RemoveConstRef<AsR>, Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> Split(
-	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter=&Op::FalsePredicate<T>)
+	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter = Funal::False)
 {return {Range::Forward<R>(range), Cpp::Forward<P1>(isSkippedDelimiter), Cpp::Forward<P2>(isElementDelimiter)};}
 
 template<typename R,
@@ -95,8 +99,8 @@ template<typename R,
 	typename T = Concepts::ValueTypeOf<AsR>
 > forceinline Meta::EnableIf<
 	Concepts::IsForwardRange<AsR>::_,
-RSplit<Meta::RemoveConstRef<T>, bool(*)(T), bool(*)(const T&)>> SplitLines(R&& range)
-{return Split(Cpp::Forward<R>(range), &Op::IsLineSeparator<T>);}
+RSplit<Meta::RemoveConstRef<T>, Funal::TIsLineSeparator, Funal::TFalse>> SplitLines(R&& range)
+{return Split(Cpp::Forward<R>(range), Funal::IsLineSeparator, Funal::False);}
 
 INTRA_WARNING_POP
 

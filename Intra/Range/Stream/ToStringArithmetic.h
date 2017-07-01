@@ -6,7 +6,6 @@
 #include "Meta/Type.h"
 #include "Meta/EachField.h"
 
-#include "Utils/Op.h"
 #include "Utils/Debug.h"
 
 #include "Concepts/Range.h"
@@ -135,17 +134,17 @@ template<typename R> Meta::EnableIf<
 {
 	if(number == Cpp::NaN)
 	{
-		CopyToAdvance("NaN", dst);
+		WriteTo("NaN", dst);
 		return;
 	}
 	if(number == Cpp::Infinity)
 	{
-		CopyToAdvance("Infinity", dst);
+		WriteTo("Infinity", dst);
 		return;
 	}
 	if(number == -Cpp::Infinity)
 	{
-		CopyToAdvance("-Infinity", dst);
+		WriteTo("-Infinity", dst);
 		return;
 	}
 

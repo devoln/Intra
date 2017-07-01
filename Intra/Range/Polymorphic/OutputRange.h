@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Utils/Unique.h"
-#include "Utils/Op.h"
 #include "Utils/Span.h"
+
+#include "Funal/Op.h"
 
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
@@ -19,7 +20,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
-template<typename T, typename R> class OutputRangePolymorphicWrapper: public IOutputStream<T>
+template<typename T, typename R> class OutputRangePolymorphicWrapper: public IOutputEx<T>
 {
 public:
 	template<typename A> forceinline OutputRangePolymorphicWrapper(A&& range):
@@ -45,12 +46,12 @@ public:
 	}
 
 	size_t PutAllAdvance(CSpan<T>& src) final
-	{return CopyAdvanceToAdvance(src, OriginalRange);}
+	{return ReadWrite(src, OriginalRange);}
 
 	R OriginalRange;
 };
 
-template<typename T, typename R> forceinline IOutputStream<T>* WrapOutputRange(R&& range)
+template<typename T, typename R> forceinline IOutputEx<T>* WrapOutputRange(R&& range)
 {
 	return new OutputRangePolymorphicWrapper<T, Concepts::RangeOfTypeNoCRef<R&&>>(RangeOf(Cpp::Forward<R>(range)));
 }
@@ -67,7 +68,7 @@ template<typename T> class OutputRange: public Meta::SelectType<
 public:
 	forceinline OutputRange(null_t=null): Stream(null) {}
 
-	forceinline OutputRange(Unique<IOutputStream<T>> stream): Stream(Cpp::Move(stream)) {}
+	forceinline OutputRange(Unique<IOutputEx<T>> stream): Stream(Cpp::Move(stream)) {}
 
 	forceinline OutputRange(OutputRange&& rhs):
 		Stream(Cpp::Move(rhs.Stream)) {}
@@ -128,7 +129,7 @@ public:
 		return result;
 	}
 
-	Unique<IOutputStream<T>> Stream;
+	Unique<IOutputEx<T>> Stream;
 };
 
 typedef OutputRange<char> OutputStream;

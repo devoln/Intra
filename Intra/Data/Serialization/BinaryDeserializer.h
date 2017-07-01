@@ -40,7 +40,7 @@ public:
 		!Concepts::IsInputRange<T>::_,
 	GenericBinaryDeserializer&> operator>>(T& dst)
 	{
-		Range::CopyAdvanceToRawOne(Input, dst);
+		Range::RawRead(Input, dst);
 		return *this;
 	}
 
@@ -64,7 +64,7 @@ public:
 		uint len = Deserialize<uintLE>();
 		dst.resize(len);
 		Span<T> dstArr(dst.data(), dst.size());
-		Range::CopyAdvanceToRaw(Input, dstArr);
+		Range::RawReadTo(Input, dstArr);
 		return *this;
 	}
 
@@ -90,7 +90,7 @@ public:
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
 		Span<T> dstArr(dst.data(), dst.size());
-		Range::CopyAdvanceToRaw(Input, dstArr);
+		Range::RawReadTo(Input, dstArr);
 		return *this;
 	}
 
@@ -136,7 +136,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_,
 	GenericBinaryDeserializer&> operator>>(T(&dst)[N])
 	{
-		Range::CopyAdvanceToRaw(Input, Span<T>(dst));
+		Range::RawReadTo(Input, Span<T>(dst));
 		return *this;
 	}
 

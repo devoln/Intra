@@ -14,12 +14,12 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void NormalizeSlashesAndSpaces(Span<char>& path)
 {
-	TrimAdvance(path, Op::IsSpace<char>);
+	TrimAdvance(path, Funal::IsSpace);
 	Replace(path, '\\', '/');
 }
 
 String AddTrailingSlash(StringView path)
-{return (path.Last()=='/' || path.Last()=='\\')? String(path): path+'/';}
+{return Funal::IsAnySlash(path.Last())? String(path): path+'/';}
 
 StringView RemoveTrailingSlash(StringView path)
 {return TrimRight(path, IsPathSeparator);}

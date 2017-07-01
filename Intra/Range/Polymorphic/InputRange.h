@@ -3,7 +3,7 @@
 #include "Utils/Unique.h"
 #include "Utils/Span.h"
 #include "Range/Operations.h"
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Range/Mutation/Copy.h"
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
@@ -26,17 +26,17 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 namespace DP {
 
-template<typename T, bool Condition =
+template<typename T, bool =
 	Meta::IsCopyAssignable<Meta::RemoveConstRef<T>>::_ &&
 	!Meta::IsAbstractClass<Meta::RemoveConstRef<T>>::_
-> class InputRangeInterface: public IInputStream<T> {};
+> class InputRangeInterface: public IInputEx<T> {};
 
 template<typename T> struct InputRangeInterface<T, false>: public IInput<T>
 {
 	virtual size_t PopFirstN(size_t count) = 0;
 };
 
-template<typename T, typename R, typename PARENT, bool Condition =
+template<typename T, typename R, typename PARENT, bool =
 	Meta::IsCopyAssignable<Meta::RemoveConstRef<T>>::_ &&
 	!Meta::IsAbstractClass<Meta::RemoveConstRef<T>>::_
 > struct InputRangeImplFiller: PARENT
@@ -68,8 +68,8 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 	template<typename A> InputRangeImplFiller(A&& range):
 		base(Cpp::Forward<A>(range)) {}
 
-	size_t CopyAdvanceToAdvance(Span<Meta::RemoveConstRef<T>>& dst) final
-	{return Range::CopyAdvanceToAdvance(base::OriginalRange, dst);}
+	size_t ReadWrite(Span<Meta::RemoveConstRef<T>>& dst) final
+	{return Range::ReadWrite(base::OriginalRange, dst);}
 };
 
 }
@@ -149,26 +149,28 @@ public:
 
 	forceinline size_t PopFirstN(size_t count)
 	{
-		if(mInterface==null) return 0;
+		if(mInterface == null) return 0;
 		return mInterface->PopFirstN(count);
 	}
 
-	forceinline size_t CopyAdvanceToAdvance(Span<value_type>& dst)
+	forceinline size_t ReadWrite(Span<value_type>& dst)
 	{
-		if(mInterface==null) return 0;
-		return mInterface->CopyAdvanceToAdvance(dst);
+		if(mInterface == null) return 0;
+		return mInterface->ReadWrite(dst);
 	}
 
 	template<typename AR> Meta::EnableIf<
 		Concepts::IsArrayRangeOfExactly<AR, value_type>::_ &&
 		!Meta::IsConst<AR>::_,
-	size_t> CopyAdvanceToAdvance(AR& dst)
+	size_t> ReadWrite(AR& dst)
 	{
 		Span<value_type> dstArr = SpanOf(dst);
-		size_t result = CopyAdvanceToAdvance(dstArr);
+		size_t result = ReadWrite(dstArr);
 		PopFirstExactly(dst, result);
 		return result;
 	}
+
+	forceinline operator Interface&() {return *mInterface;}
 
 protected:
 	Unique<Interface> mInterface;

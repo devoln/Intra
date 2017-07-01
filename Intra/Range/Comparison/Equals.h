@@ -6,7 +6,8 @@
 #include "Utils/Span.h"
 #include "Utils/ArrayAlgo.h"
 #include "Concepts/RangeOf.h"
-#include "Utils/Op.h"
+
+#include "Funal/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -67,9 +68,7 @@ template<typename R1, typename R2> forceinline Meta::EnableIf<
 	Concepts::IsForwardRange<R2>::_,
 bool> Equals(R1&& lhs, R2&& rhs)
 {
-	return Equals(
-		Cpp::Forward<R1>(lhs), Cpp::Forward<R2>(rhs),
-		Op::Equal<Concepts::ValueTypeOf<R1>, Concepts::ValueTypeOf<R2>>);
+	return Equals(Cpp::Forward<R1>(lhs), Cpp::Forward<R2>(rhs), Funal::Equal);
 }
 
 

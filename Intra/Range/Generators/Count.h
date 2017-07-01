@@ -27,4 +27,7 @@ template<typename T> struct CountRange
 
 INTRA_WARNING_POP
 
-}}
+}
+using Range::CountRange;
+
+}

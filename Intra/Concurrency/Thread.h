@@ -5,7 +5,8 @@
 #include "Cpp/Features.h"
 #include "Cpp/Fundamental.h"
 
-#include "Utils/Delegate.h"
+#include "Funal/Delegate.h"
+
 #include "Utils/Unique.h"
 #include "Utils/StringView.h"
 

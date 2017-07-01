@@ -39,7 +39,7 @@ template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsOutputRange<OR>::_ &&
 	Concepts::ValueTypeEquals<R, OR>::_
 > CastAdvanceToAdvance(R& src, OR& dst)
-{CopyAdvanceToAdvance(src, dst);}
+{ReadWrite(src, dst);}
 
 template<typename R, typename OR> Meta::EnableIf<
 	Concepts::IsNonInfiniteInputRange<R>::_ &&
@@ -78,13 +78,9 @@ template<typename To, typename From> Meta::EnableIf<
 	Meta::IsIntegralType<From>::_
 > CastToNormalized(Span<To> dst, CSpan<From> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
-	while(!dst.Empty())
-	{
-		dst.First() = To(src.First()) / To(Meta::NumericLimits<From>::Max());
-		dst.PopFirst();
-		src.PopFirst();
-	}
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
+	while(dst.Begin < dst.End)
+		*dst.Begin++ = To(*src.Begin++) / To(Meta::NumericLimits<From>::Max());
 }
 
 //! Заполнить массив dst элементами из src, умноженными на NumericLimits<To>::Max.
@@ -95,12 +91,8 @@ template<typename To, typename From> Meta::EnableIf<
 > CastFromNormalized(Span<To> dst, CSpan<From> src)
 {
 	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
-	while(!dst.Empty())
-	{
-		dst.First() = To(src.First() * Meta::NumericLimits<From>::Max());
-		dst.PopFirst();
-		src.PopFirst();
-	}
+	while(dst.Begin < dst.End)
+		*dst.Begin++ = To(*src.Begin++ * Meta::NumericLimits<From>::Max());
 }
 
 INTRA_WARNING_POP

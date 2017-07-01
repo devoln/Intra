@@ -2,6 +2,7 @@
 #include "Cpp/Warnings.h"
 #include "Utils/Span.h"
 #include "Container/Sequential/Array.h"
+#include "Funal/Bind.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -43,13 +44,13 @@ static void HighLowPassFunction(const HighLowPassParams& params,
 
 PostEffectPass CreateLowPass(float rezAmount, float cutoffFreq)
 {
-	return PostEffectPass(HighLowPassFunction,
+	return Funal::Bind(HighLowPassFunction,
 		HighLowPassParams{rezAmount, cutoffFreq, false});
 }
 
 PostEffectPass CreateHighPass(float rezAmount, float cutoffFreq)
 {
-	return PostEffectPass(HighLowPassFunction,
+	return Funal::Bind(HighLowPassFunction,
 		HighLowPassParams{rezAmount, cutoffFreq, true});
 }
 

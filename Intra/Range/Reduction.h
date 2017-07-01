@@ -35,35 +35,41 @@ template<typename T> T Maximum(CSpan<T> arr)
 	return result;
 }
 
-template<typename T> void MiniMax(CSpan<T> arr, T* oMinimum, T* oMaximum)
+template<typename T> Pair<T> MiniMax(CSpan<T> arr)
 {
-	if(oMinimum==null)
+	Pair<T> minmax;
+	auto& arr0 = *arr.Begin++;
+	if((arr.Length() & 1) == 0)
 	{
-		if(oMaximum!=null) *oMaximum = Maximum(arr);
-		return;
+		const auto& arr1 = *arr.Begin++;
+		const bool less = arr1 < arr0;
+		minmax.first = less? arr1: arr0;
+		minmax.second = less? arr0: arr1;
 	}
-	if(oMaximum==null)
+	else minmax.first = minmax.second = arr0;
+
+	const auto end = arr.End - 1;
+	while(arr.Begin < end)
 	{
-		*oMinimum = Minimum(arr);
-		return;
+		if(arr.Begin[1] < arr.Begin[0])
+		{
+			if(minmax.second < arr.Begin[0]) minmax.second = *arr.Begin++;
+			if(arr[1] < minmax.first) minmax.first = *++arr.Begin;
+		}
+		else
+		{
+			if(minmax.second < arr.Begin[1]) minmax.second = ++arr.Begin;
+			if(arr.Begin[0] < minmax.first) minmax.first = *arr.Begin++;
+		}
 	}
 
-	INTRA_DEBUG_ASSERT(!arr.Empty());
-	*oMaximum = *oMinimum = arr.First();
-	arr.PopFirst();
-
-	while(!arr.Empty())
-	{
-		if(arr.First()<*oMinimum) *oMinimum = arr.First();
-		if(*oMaximum<arr.First()) *oMaximum = arr.First();
-		arr.PopFirst();
-	}
+	return minmax;
 }
 
 //Оптимизированные специализации
 template<> float Minimum(CSpan<float> arr);
 template<> float Maximum(CSpan<float> arr);
-template<> void MiniMax(CSpan<float> arr, float* minimum, float* maximum);
+template<> Pair<float> MiniMax(CSpan<float> arr);
 
 
 template<typename R, typename F, typename S> Meta::EnableIf<

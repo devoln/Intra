@@ -8,54 +8,57 @@ namespace Intra { namespace Range {
 
 template<typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_,
-size_t> CopyAdvanceToRaw(R& src, void* dst, size_t n)
+size_t> RawReadTo(R& src, void* dst, size_t n)
 {
-	return CopyAdvanceTo(src, Take(reinterpret_cast<Concepts::ValueTypeOf<R>*>(dst), n));
+	return ReadTo(src, Take(static_cast<Concepts::ValueTypeOf<R>*>(dst), n));
 }
 
-template<typename R> forceinline Meta::EnableIf<
-	Concepts::IsAsInputRange<R>::_,
-size_t> CopyToRaw(R&& src, void* dst, size_t n)
+template<typename R,
+	typename AsR = Concepts::RangeOfType<R>
+> forceinline Meta::EnableIf<
+	Concepts::IsInputRange<AsR>::_,
+size_t> RawCopyTo(R&& src, void* dst, size_t n)
 {
 	auto srcCopy = Range::Forward<R>(src);
-	return CopyAdvanceToRaw(srcCopy, dst, n);
+	return RawReadTo(srcCopy, dst, n);
 }
 
 template<typename R, typename T> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	!Meta::IsConst<T>::_,
-size_t> CopyAdvanceToRaw(R& src, Span<T> dst)
+size_t> RawReadTo(R& src, Span<T> dst)
 {
-	size_t dstLen = dst.Length()*sizeof(T)/sizeof(src.First());
-	return CopyAdvanceToRaw(src, dst.Data(), dstLen);
+	const size_t dstLen = dst.Length()*sizeof(T)/sizeof(src.First());
+	return RawReadTo(src, dst.Data(), dstLen);
 }
 
 template<typename R, typename T> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
 	!Meta::IsConst<T>::_,
-size_t> CopyAdvanceToRaw(R& src, Span<T> dst, size_t n)
+size_t> RawReadTo(R& src, Span<T> dst, size_t n)
 {
 	const size_t dstLen = dst.Length()*sizeof(T)/sizeof(src.First());
 	if(n > dstLen) n = dstLen;
-	return CopyAdvanceToRaw(src, dst.Data(), n);
+	return RawReadTo(src, dst.Data(), n);
 }
 
-template<typename R, typename T> Meta::EnableIf<
+template<typename T, typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&
-	!Meta::IsConst<T>::_,
-size_t> CopyAdvanceToRawOne(R& src, T& dst)
+	!Meta::IsConst<R>::_ &&
+	!Meta::IsConst<T>::_
+> RawRead(R& srcRange, T& dstElement)
 {
-	static_assert(sizeof(T)%sizeof(src.First())==0, "Error!");
-	return CopyAdvanceToRaw(src, &dst, sizeof(T)/sizeof(src.First()));
+	static_assert(sizeof(T) % sizeof(srcRange.First()) == 0, "Error!");
+	RawReadTo(srcRange, &dstElement, sizeof(T)/sizeof(srcRange.First()));
 }
 
 
 template<typename T, typename R> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_,
-T> ReadRaw(R& src)
+T> RawRead(R& src)
 {
 	T result;
-	CopyAdvanceToRawOne(src, result);
+	RawRead(src, result);
 	return result;
 }
 

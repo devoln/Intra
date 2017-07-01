@@ -7,7 +7,6 @@
 #include "Concepts/RangeOf.h"
 
 #include "Utils/StringView.h"
-#include "Utils/Op.h"
 
 #include "Range/Operations.h"
 #include "Range/ForwardDecls.h"
@@ -26,7 +25,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 	Meta::IsCharType<Char>::_,
 R&&> operator<<(R&& dst, const Char(&str)[N])
 {
-	CopyToAdvance(str, dst);
+	WriteTo(str, dst);
 	return Cpp::Forward<R>(dst);
 }*/
 
@@ -66,7 +65,7 @@ template<typename R, typename SRC,
 	Meta::IsCharType<Concepts::ValueTypeOf<AsSRC>>::_,
 R&&> operator<<(R&& dst, SRC&& src)
 {
-	CopyToAdvance(Range::Forward<SRC>(src), dst);
+	WriteTo(Range::Forward<SRC>(src), dst);
 	return Cpp::Forward<R>(dst);
 }
 
@@ -112,11 +111,11 @@ template<typename R, typename Tuple, typename SR, typename LR, typename RR> Meta
 	Concepts::IsAsCharRange<RR>::_
 > ToString(R&& dst, Tuple&& tuple, SR&& separator, LR&& lBracket, RR&& rBracket)
 {
-	CopyToAdvance(Range::Forward<LR>(lBracket), dst);
+	WriteTo(Range::Forward<LR>(lBracket), dst);
 	auto sep = Range::Forward<SR>(separator);
 	D::TupleAppender<R, Concepts::RangeOfTypeNoCRef<SR>> appender(true, dst, sep);
 	Meta::ForEachField(Cpp::Forward<Tuple>(tuple), appender);
-	CopyToAdvance(Range::Forward<RR>(rBracket), dst);
+	WriteTo(Range::Forward<RR>(rBracket), dst);
 }
 
 template<typename R, typename VR, typename SR, typename LR, typename RR> Meta::EnableIf<
@@ -129,7 +128,7 @@ template<typename R, typename VR, typename SR, typename LR, typename RR> Meta::E
 > ToString(R&& dst, VR&& r, SR&& separator, LR&& lBracket, RR&& rBracket)
 {
 	auto range = Range::Forward<VR>(r);
-	CopyToAdvance(Range::Forward<LR>(lBracket), dst);
+	WriteTo(Range::Forward<LR>(lBracket), dst);
 	if(!range.Empty())
 	{
 		dst << range.First();
@@ -137,11 +136,11 @@ template<typename R, typename VR, typename SR, typename LR, typename RR> Meta::E
 	}
 	while(!range.Empty())
 	{
-		CopyToAdvance(separator, dst);
+		WriteTo(separator, dst);
 		dst << range.First();
 		range.PopFirst();
 	}
-	CopyToAdvance(Range::Forward<RR>(rBracket), dst);
+	WriteTo(Range::Forward<RR>(rBracket), dst);
 }
 
 template<typename R, typename VR> Meta::EnableIf<
@@ -160,7 +159,7 @@ namespace D {
 template<typename Range, typename CR> template<typename V>
 void TupleAppender<Range, CR>::operator()(const V& value)
 {
-	if(!First) CopyToAdvance(Separator, DstRange);
+	if(!First) WriteTo(Separator, DstRange);
 	DstRange << value;
 	First = false;
 }

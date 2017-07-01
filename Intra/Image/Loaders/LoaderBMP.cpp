@@ -14,10 +14,10 @@ using namespace Math;
 namespace Image {
 
 
-ImageInfo LoaderBMP::GetInfo(InputStream stream) const
+ImageInfo LoaderBMP::GetInfo(IInputStream& stream) const
 {
 	byte headerBegin[14];
-	stream.ReadRawTo(headerBegin, 14);
+	RawReadTo(stream, headerBegin, 14);
 	if(!IsValidHeader(headerBegin, sizeof(headerBegin))) return ImageInfo();
 	struct HeaderPart
 	{
@@ -26,7 +26,7 @@ ImageInfo LoaderBMP::GetInfo(InputStream stream) const
 		ushort colorPlanes;
 		ushort bitsPerPixel;
 	};
-	HeaderPart hdrPart = stream.ReadRaw<HeaderPart>();
+	HeaderPart hdrPart = Range::RawRead<HeaderPart>(stream);
 
 	ImageFormat fmt;
 	if(hdrPart.bitsPerPixel==32) fmt = ImageFormat::RGBA8;
@@ -40,7 +40,7 @@ ImageInfo LoaderBMP::GetInfo(InputStream stream) const
 	return {USVec3(hdrPart.size, 1), fmt, ImageType_2D, 0};
 }
 
-AnyImage LoaderBMP::Load(InputStream stream) const
+AnyImage LoaderBMP::Load(IInputStream& stream) const
 {
 	struct BitmapHeader
 	{
@@ -62,14 +62,14 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 
 	stream.PopFirstN(2); //Предполагается, что идентификатор формата уже проверен
 
-	uint fileSize = stream.ReadRaw<uintLE>();
+	uint fileSize = Range::RawRead<uintLE>(stream);
 	(void)fileSize;
-	stream.ReadRaw<uint>();
-	const uint dataPos = stream.ReadRaw<uintLE>();
+	Range::RawRead<uint>(stream);
+	const uint dataPos = Range::RawRead<uintLE>(stream);
 
-	const uint hdrSize = stream.ReadRaw<uintLE>();
-	stream.ReadRawTo(Span<char>(reinterpret_cast<char*>(&bmpHdr), hdrSize-sizeof(uintLE)));
-	size_t bytesRead = 14+hdrSize;
+	const uint hdrSize = Range::RawRead<uintLE>(stream);
+	RawReadTo(stream, Span<char>(reinterpret_cast<char*>(&bmpHdr), hdrSize - sizeof(uintLE)));
+	size_t bytesRead = 14 + hdrSize;
 
 	//RLE4, RLE8 и встроенный jpeg\png не поддерживаются!
 	if(bmpHdr.Compression!=0 && bmpHdr.Compression!=3)
@@ -80,7 +80,7 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 	UBVec4 colorTable[256];
 	if(bmpHdr.clrUsed!=0)
 	{
-		stream.ReadRawTo(Range::Take(colorTable, bmpHdr.clrUsed));
+		RawReadTo(stream, Range::Take(colorTable, bmpHdr.clrUsed));
 		bytesRead += bmpHdr.clrUsed*sizeof(colorTable[0]);
 		for(uint i=0; i<bmpHdr.clrUsed; i++)
 			colorTable[i] = colorTable[i].swizzle<2, 1, 0, 3>();
@@ -112,12 +112,12 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 	stream.PopFirstN(dataPos-bytesRead);
 	bytesRead = dataPos;
 
-	if(bmpHdr.Compression==0)
+	if(bmpHdr.Compression == 0)
 	{
-		result.SwapRB = (bmpHdr.bitCount==24 || bmpHdr.bitCount==32);
+		result.SwapRB = (bmpHdr.bitCount == 24 || bmpHdr.bitCount == 32);
 		const USVec2 size = {result.Info.Size.x, result.Info.Size.y};
 
-		if(bmpHdr.bitCount==16)
+		if(bmpHdr.bitCount == 16)
 		{
 			ReadPixelDataBlock(stream, size,
 				ImageFormat::RGB5A1, result.Info.Format, false, true,
@@ -164,7 +164,7 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 	{
 		pixels -= result.Info.Size.x;
 		uint index = 0;
-		stream.ReadRawTo(line.AsRange());
+		RawReadTo(stream, line.AsRange());
 
 		byte* linePtr = line.Data();
 
@@ -193,8 +193,8 @@ AnyImage LoaderBMP::Load(InputStream stream) const
 bool LoaderBMP::IsValidHeader(const void* header, size_t headerSize) const
 {
 	const char* headerBytes = reinterpret_cast<const char*>(header);
-	return headerSize>=14 &&
-		headerBytes[0]=='B' && headerBytes[1]=='M';
+	return headerSize >= 14 &&
+		headerBytes[0] == 'B' && headerBytes[1] == 'M';
 }
 
 

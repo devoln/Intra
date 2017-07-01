@@ -1,9 +1,10 @@
 #pragma once
 
+#include "Funal/Op.h"
+
 #include "Range/Decorators/Take.h"
 #include "Range/Operations.h"
 #include "Range/Generators/Count.h"
-#include "Utils/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -33,7 +34,7 @@ template<typename R> struct RChunks
 	{
 		INTRA_DEBUG_ASSERT(index<Length());
 		const size_t startIndex = index*mChunkLen;
-		const size_t endIndex = Op::Min(startIndex+mChunkLen, mOriginalRange.Length());
+		const size_t endIndex = Funal::Min(startIndex + mChunkLen, mOriginalRange.Length());
 		return mOriginalRange(startIndex, endIndex);
 	}
 
@@ -45,7 +46,7 @@ template<typename R> struct RChunks
 		INTRA_DEBUG_ASSERT(end <= Length());
 		INTRA_DEBUG_ASSERT(start <= end);
 		const size_t startIndex = start*mChunkLen;
-		const size_t endIndex = Op::Min(end*mChunkLen, mOriginalRange.Length());
+		const size_t endIndex = Funal::Min(end*mChunkLen, mOriginalRange.Length());
 		return {mOriginalRange(startIndex, endIndex), mChunkLen};
 	}
 

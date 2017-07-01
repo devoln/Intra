@@ -1,11 +1,18 @@
 #include "Range/Stream.hh"
 #include "Range/Reduction.h"
+
 #include "Utils/Span.h"
+
 #include "Range.hh"
+
 #include "Random/FastUniform.h"
+
 #include "Container/Sequential/List.h"
+
 #include "System/Stopwatch.h"
+
 #include "Test/PerfSummary.h"
+
 #include "IO/Std.h"
 
 using namespace Intra;

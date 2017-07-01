@@ -22,7 +22,7 @@ public:
 
 		~FormattedStream() {clear();}
 
-		forceinline FormattedStream(Unique<IOutputStream<char>> stream, Unique<IFormatter> formatter):
+		forceinline FormattedStream(Unique<IOutputStream> stream, Unique<IFormatter> formatter):
 			mStream(stream.Release()), mFormatter(formatter.Release())
 		{
 			INTRA_ASSERT(stream != null || formatter == null);
@@ -86,7 +86,7 @@ public:
 
 		friend class FormattedWriter;
 
-		IOutputStream<char>* mStream;
+		IOutputStream* mStream;
 		union
 		{
 			IFormatter* mFormatter;

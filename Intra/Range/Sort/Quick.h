@@ -4,7 +4,7 @@
 
 #include "Meta/Pair.h"
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Utils/Span.h"
 
 #include "Concepts/Array.h"
@@ -49,7 +49,7 @@ template<typename T, typename C> void median(T* first, T* mid, T* last, C compar
 	med3(first+step, mid, last-step, comparer);
 }
 
-template<typename T, typename C> Pair<T*, T*> unguarded_partition(Span<T> range, C comparer)
+template<typename T, typename C> Pair<T*> unguarded_partition(Span<T> range, C comparer)
 {
 	// partition [_First, _Last), using _Pred
 	T* const mid = range.Data()+range.Length()/2;
@@ -113,7 +113,7 @@ template<typename T, typename C> void sort_pass(Span<T> range,
 	intptr ideal, C comparer, size_t insertionSortThreshold=32)
 {
 	size_t count;
-	while(range.Length()>insertionSortThreshold && ideal>0)
+	while(range.Length() > insertionSortThreshold && ideal > 0)
 	{
 		count = range.Length();
 
@@ -158,8 +158,7 @@ template<typename R> Meta::EnableIf<
 	Concepts::IsAssignableArrayClass<R>::_
 > QuickSort(R&& range)
 {
-	return QuickSort<Comparers::Function<Concepts::ElementTypeOfArray<R>>>(
-		Range::Forward<R>(range), Op::Less<Concepts::ElementTypeOfArray<R>>);
+	return QuickSort<Funal::TLess>(Range::Forward<R>(range), Funal::Less);
 }
 
 }}

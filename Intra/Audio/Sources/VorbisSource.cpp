@@ -30,7 +30,7 @@ struct OggStream
 	static size_t ReadCallback(void* ptr, size_t size, size_t nmemb, void* datasource)
 	{
 		auto& os = reinterpret_cast<Decoder*>(datasource)->stream;
-		size_t result = os.stream.ReadRaw(ptr, size*nmemb);
+		size_t result = os.stream.RawRead(ptr, size*nmemb);
 		Pos += result;
 		return result;
 	}
@@ -179,7 +179,7 @@ size_t VorbisSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 		totalSamplesRead += samplesRead;
 		for(size_t i=0; i<outFloats.Length(); i++)
 		{
-			CSpan<float>(pcm[i], samplesRead).CopyToAdvance(outFloats1[i]);
+			CSpan<float>(pcm[i], samplesRead).WriteTo(outFloats1[i]);
 		}
 	}
 	return totalSamplesRead;

@@ -21,6 +21,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 //! Также он не может использоваться с incomplete типами.
 template<typename T> class Shared
 {
+	template<typename U> friend class SharedClass;
 	struct Data
 	{
 		template<typename... Args> forceinline Data(Args&&... args):
@@ -35,11 +36,11 @@ template<typename T> class Shared
 		T Value;
 #ifndef INTRA_UTILS_NO_CONCURRENCY
 		AtomicInt RefCount;
-		forceinline void IncRef() {RefCount.IncrementRelaxed();}
+		forceinline uint IncRef() {return uint(RefCount.GetIncrementRelaxed());}
 		forceinline uint GetRC() {return uint(RefCount.GetRelaxed());}
 		forceinline bool DecRef() {return RefCount.DecrementAcquireRelease() == 0;}
 #else
-		forceinline void IncRef() {++RefCount;}
+		forceinline uint IncRef() {return RefCount++;}
 		forceinline uint GetRC() {return RefCount;}
 		forceinline bool DecRef() {return --RefCount == 0;}
 		uint RefCount;
@@ -57,7 +58,7 @@ public:
 	}
 
 	template<typename U, typename = Meta::EnableIf<
-		Meta::IsInherited<U, T>::_ && Meta::HasVirtualDestructor<T>::_
+		Meta::IsInherited<U, T>::_// && Meta::HasVirtualDestructor<T>::_
 	>> forceinline Shared(const Shared<U>& rhs): mData(rhs.mData)
 	{
 		if(mData != null) mData->IncRef();
@@ -66,7 +67,7 @@ public:
 	forceinline Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = null;}
 	
 	template<typename U, typename = Meta::EnableIf<
-		Meta::IsInherited<U, T>::_ && Meta::HasVirtualDestructor<T>::_
+		Meta::IsInherited<U, T>::_// && Meta::HasVirtualDestructor<T>::_
 	>> forceinline Shared(Shared<U>&& rhs): mData(rhs.mData) {rhs.mData = null;}
 
 	forceinline ~Shared() {if(mData != null) mData->Release();}
@@ -120,6 +121,27 @@ private:
 	Data* mData;
 };
 
+template<typename T> class SharedClass
+{
+	void* operator new(size_t bytes) = delete;
+	void operator delete(void* ptr, size_t bytes) = delete;
+
+public:
+	//! Получить умный указатель Shared из этого экземпляра класса.
+	//! Если уже запущено удаление экземпляра класса вследствие обнуления счётчика ссылок, вернёт null.
+	//! Этот факт может использоваться в случае, когда деструктор объекта ждёт, пока текущий поток освободит ресурс.
+	//! Нельзя использовать с уже удалённым объектом.
+	forceinline Shared<T> SharedThis()
+	{
+		void* const address = reinterpret_cast<char*>(this) - Meta::MemberOffset(&Shared<T>::Data::Value);
+		const auto data = static_cast<Shared<T>::Data*>(address);
+		if(data->IncRef()) return data;
+
+		//Счётчик ссылок уже нулевой, объект находится в процессе удаления.
+		return null;
+	}
+};
+
 template<typename T> forceinline Shared<Meta::RemoveReference<T>> SharedMove(T&& rhs)
 {return Shared<Meta::RemoveReference<T>>::New(Cpp::Move(rhs));}
 
@@ -128,5 +150,6 @@ INTRA_WARNING_POP
 }
 using Utils::Shared;
 using Utils::SharedMove;
+using Utils::SharedClass;
 
 }

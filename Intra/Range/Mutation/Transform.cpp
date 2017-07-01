@@ -2,13 +2,13 @@
 #include "Utils/Debug.h"
 #include "Utils/Span.h"
 #include "Simd/Simd.h"
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 
 namespace Intra { namespace Range {
 
 size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 {
-	const size_t len = Op::Min(dstOp1.Length(), op2.Length());
+	const size_t len = Funal::Min(dstOp1.Length(), op2.Length());
 	dstOp1 = dstOp1.Take(len);
 	op2 = op2.Take(len);
 
@@ -16,7 +16,7 @@ size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 	auto& src = op2.Begin;
 
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	while(dst<dstOp1.End-3)
+	while(dst < dstOp1.End - 3)
 	{
 		*dst++ += *src++;
 		*dst++ += *src++;
@@ -24,8 +24,8 @@ size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 		*dst++ += *src++;
 	}
 #else
-	while(dst<dstOp1.End && size_t(dst)%16!=0) *dst++ += *src++;
-	while(dst<dstOp1.End-3)
+	while(dst < dstOp1.End && size_t(dst) % 16 != 0) *dst++ += *src++;
+	while(dst < dstOp1.End-3)
 	{
 		Simd::Get(dst, Simd::Add(Simd::SetFloat4(dst), Simd::SetFloat4U(src)));
 		dst += 4;
@@ -38,7 +38,7 @@ size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 
 size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 {
-	const size_t len = Op::Min(dstOp1.Length(), op2.Length());
+	const size_t len = Funal::Min(dstOp1.Length(), op2.Length());
 	dstOp1 = dstOp1.Take(len);
 	op2 = op2.Take(len);
 	auto& dst = dstOp1.Begin;
@@ -53,8 +53,8 @@ size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2)
 		*dst++ *= *src++;
 	}
 #else
-	while(dst<dstOp1.End && size_t(dst)%16!=0) *dst++ *= *src++;
-	while(dst<dstOp1.End-3)
+	while(dst < dstOp1.End && size_t(dst) % 16 != 0) *dst++ *= *src++;
+	while(dst < dstOp1.End - 3)
 	{
 		Simd::Get(dst, Simd::Mul(Simd::SetFloat4(dst), Simd::SetFloat4U(src)));
 		dst += 4;
@@ -79,21 +79,21 @@ size_t MultiplyAdvance(Span<float>& dstOp1, float multiplyer)
 		*dst++ *= multiplyer;
 	}
 #else
-	while(dst<dstOp1.End && size_t(dst)%16!=0) *dst++ *= multiplyer;
+	while(dst < dstOp1.End && size_t(dst) % 16 != 0) *dst++ *= multiplyer;
 	Simd::float4 multiplyerVec = Simd::SetFloat4(multiplyer);
-	while(dst<dstOp1.End-3)
+	while(dst < dstOp1.End - 3)
 	{
 		Simd::Get(dst, Simd::Mul(Simd::SetFloat4(dst), multiplyerVec));
 		dst += 4;
 	}
 #endif
-	while(dst<dstOp1.End) *dst++ *= multiplyer;
+	while(dst < dstOp1.End) *dst++ *= multiplyer;
 	return len;
 }
 
 size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 {
-	const size_t len = Op::Min(dest.Length(), op1.Length());
+	const size_t len = Funal::Min(dest.Length(), op1.Length());
 	dest = dest.Take(len);
 	op1 = op1.Take(len);
 	auto& dst = dest.Begin;
@@ -107,16 +107,16 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 		*dst++ = *src++ * multiplyer;
 	}
 #else
-	while(dst<dest.End && size_t(dst)%16!=0) *dst++ = *src++ * multiplyer;
+	while(dst < dest.End && size_t(dst) % 16 != 0) *dst++ = *src++ * multiplyer;
 	Simd::float4 multiplyerVec = Simd::SetFloat4(multiplyer);
-	while(dst < dest.End-3)
+	while(dst < dest.End - 3)
 	{
 		Simd::Get(dst, Simd::Mul(Simd::SetFloat4U(src), multiplyerVec));
 		dst += 4;
 		src += 4;
 	}
 #endif
-	while(dst<dest.End) *dst++ = *src++ * multiplyer;
+	while(dst < dest.End) *dst++ = *src++ * multiplyer;
 	return len;
 }
 

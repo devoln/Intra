@@ -13,7 +13,7 @@ namespace Intra { namespace Audio { namespace Sources {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-class MusicSynthSource: public ASoundSource
+class MusicSynthSource: public AAudioSource
 {
 	Music mData;
 	AudioBuffer mBuffer;

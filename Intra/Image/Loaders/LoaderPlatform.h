@@ -14,10 +14,10 @@
 //Пытаемся автоматически определить доступную системную библиотеку для загрузки изображений
 #ifndef INTRA_LIBRARY_IMAGE_LOADING
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_Gdiplus
-#elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Android)
-//TODO: сделать загрузку изображений через JNI
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
+//TODO: сделать загрузку изображений средствами Java через JNI
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_None
 #else
 #define INTRA_LIBRARY_IMAGE_LOADING INTRA_LIBRARY_IMAGE_LOADING_None
@@ -39,7 +39,7 @@ namespace Intra { namespace Image {
 //! DevIL (сторонняя библиотека)
 //! STB image (сторонняя библиотека)
 //! SDL image (сторонняя библиотека)
-AnyImage LoadWithPlatform(InputStream stream);
+AnyImage LoadWithPlatform(IInputStream& stream);
 
 }}
 

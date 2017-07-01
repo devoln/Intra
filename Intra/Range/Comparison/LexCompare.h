@@ -3,7 +3,8 @@
 #include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
+
 #include "Utils/ArrayAlgo.h"
 #include "Utils/StringView.h"
 
@@ -45,7 +46,7 @@ template<typename R1, typename R2> Meta::EnableIf<
 	(sizeof(Concepts::ElementTypeOfArray<R1>)==1 ||
 		INTRA_PLATFORM_ENDIANESS == INTRA_PLATFORM_ENDIANESS_BigEndian)),
 int> LexCompare(const R1& r1, const R2& r2)
-{return LexCompare(r1, r2, Op::Less<Concepts::ValueTypeOf<R1>, Concepts::ValueTypeOf<R2>>);}
+{return LexCompare(r1, r2, Funal::Less);}
 
 }}
 

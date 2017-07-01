@@ -2,14 +2,19 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Range/ForwardDecls.h"
+
+#include "Utils/StringView.h"
+
+#include "Funal/Op.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
-#include "Utils/Op.h"
+
+#include "Range/ForwardDecls.h"
 #include "Range/Output/OutputArrayRange.h"
-#include "Utils/StringView.h"
 #include "Range/Output/Inserter.h"
 #include "Range/Mutation/CopyUntil.h"
+
 #include "Container/ForwardDecls.h"
 
 namespace Intra { namespace Range {
@@ -39,7 +44,7 @@ template<class R, class C> struct RByLine
 	void PopFirst()
 	{
 		mFirst.clear();
-		CopyAdvanceToUntil(mOriginalRange, LastAppender(mFirst), Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
+		ReadToUntil(mOriginalRange, LastAppender(mFirst), Funal::IsLineSeparator);
 		if(mOriginalRange.Empty()) return;
 
 		const auto nextChar = mOriginalRange.First();

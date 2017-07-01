@@ -52,7 +52,7 @@ inline StringHash::StringHash(StringView sv): hash(Hash::Murmur3_32(sv, 0))
 {
 #ifdef _DEBUG
 	Span<char> dst = strEnd;
-	Range::CopyToAdvance(sv.Tail(dst.Length()), dst);
+	Range::WriteTo(sv.Tail(dst.Length()), dst);
 	Range::FillZeros(dst);
 #endif
 }

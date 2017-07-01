@@ -1,6 +1,8 @@
 #include "IO/ConsoleOutput.h"
-#include "Range/Special/Unicode.h"
+
 #include "Cpp/Warnings.h"
+
+#include "Range/Special/Unicode.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -57,7 +59,7 @@ struct ConsoleOutStream
 #endif
 	}
 
-	size_t CopyAdvanceFromAdvance(CSpan<char>& src)
+	size_t ReadFromAdvance(CSpan<char>& src)
 	{
 		if(src.Empty()) return 0;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
@@ -101,7 +103,7 @@ public:
 	using BasicFormatter::PushFont;
 	using BasicFormatter::PopFont;
 
-	void PushFont(IOutputStream<char>& s, const FontDesc& newFont, const FontDesc& curFont) override
+	void PushFont(IOutputStream& s, const FontDesc& newFont, const FontDesc& curFont) override
 	{
 #if INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows
 		(void)s;
@@ -111,7 +113,7 @@ public:
 			ushort consoleCode = 0;
 			if(newFont.Color!=Math::Vec3(-1))
 			{
-				const float maxColorChannel = Op::Max(Op::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = Funal::Max(Funal::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
 				if(maxColorChannel >= 0.25f)
 				{
 					if(newFont.Color.z >= maxColorChannel / 2) consoleCode |= FOREGROUND_BLUE;
@@ -132,7 +134,7 @@ public:
 			s << "\x1B[0m";
 			if(newFont.Color != Math::Vec3(-1))
 			{
-				const float maxColorChannel = Op::Max(Op::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = Funal::Max(Funal::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
 				int code = 0;
 				int colorCode = 30;
 				if(maxColorChannel >= 0.25f)
@@ -150,7 +152,7 @@ public:
 #endif
 	}
 
-	void PopFont(IOutputStream<char>& s, const FontDesc& curFont, const FontDesc& prevFont) override
+	void PopFont(IOutputStream& s, const FontDesc& curFont, const FontDesc& prevFont) override
 	{PushFont(s, prevFont, curFont);}
 };
 

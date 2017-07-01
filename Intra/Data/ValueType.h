@@ -2,16 +2,21 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Utils/StringView.h"
-#include "Container/ForwardDecls.h"
 
-#include "Meta/TypeList.h"
+#include "Utils/StringView.h"
+
+#include "Container/ForwardDecls.h"
 
 #include "Math/Math.h"
 #include "Math/Matrix3.h"
 #include "Math/Matrix4.h"
-#include "Math/Fixed.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
+#include "Math/FixedPoint.h"
 #include "Math/HalfFloat.h"
+
+#include "Meta/TypeList.h"
 
 namespace Intra { namespace Data {
 
@@ -92,34 +97,34 @@ struct ValueType
 
 	constexpr bool IsScalar() const
 	{
-		return (value==Float || value==Double || value==Half) ||
-			(value>=FirstOfInteger && value<EndOfInteger && (value-FirstOfInteger)%4==0) ||
-			(value>=FirstOfNormalized && value<EndOfNormalized && (value-FirstOfNormalized)%4==0);
+		return (value == Float || value == Double || value == Half) ||
+			(value >= FirstOfInteger && value < EndOfInteger && (value - FirstOfInteger) % 4 == 0) ||
+			(value >= FirstOfNormalized && value < EndOfNormalized && (value - FirstOfNormalized) % 4 == 0);
 	}
 
-	constexpr bool IsPod() const {return value<EndOfPod;}
+	constexpr bool IsPod() const {return value < EndOfPod;}
 
-	constexpr bool IsValid() const {return value!=Void && value<End;}
-	constexpr bool IsMatrix() const {return value>=FirstOfMatrices && value<EndOfMatrices;}
-	constexpr bool IsVector() const {return value>=FirstOfVectors && value<EndOfVectors && !IsScalar();}
+	constexpr bool IsValid() const {return value != Void && value < End;}
+	constexpr bool IsMatrix() const {return value >= FirstOfMatrices && value < EndOfMatrices;}
+	constexpr bool IsVector() const {return value >= FirstOfVectors && value < EndOfVectors && !IsScalar();}
 
 	constexpr bool IsPacked() const
 	{
-		return (value==Vec11f11f10f ||
-			(value>=FirstOfPackedInt && value<EndOfPackedInt) ||
-			(value>=FirstOfPackedNorm && value<EndOfPackedNorm));
+		return (value == Vec11f11f10f ||
+			(value >= FirstOfPackedInt && value < EndOfPackedInt) ||
+			(value >= FirstOfPackedNorm && value < EndOfPackedNorm));
 	}
 
 	constexpr bool IsNormalized() const
 	{
-		return (value>=FirstOfNormalized && value<EndOfNormalized) ||
-			(value>=FirstOfPackedNorm && value<EndOfPackedNorm);
+		return (value >= FirstOfNormalized && value < EndOfNormalized) ||
+			(value >= FirstOfPackedNorm && value < EndOfPackedNorm);
 	}
 
 	constexpr bool IsInteger() const
 	{
-		return (value>=FirstOfInteger && value<EndOfInteger) ||
-			(value>=FirstOfPackedInt && value<EndOfPackedInt);
+		return (value >= FirstOfInteger && value < EndOfInteger) ||
+			(value >= FirstOfPackedInt && value < EndOfPackedInt);
 	}
 
 	//Возвращает размерность вектора или 1 если это скаляр. Для матриц не работает

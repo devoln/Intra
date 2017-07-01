@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Meta/Tuple.h"
 #include "Concepts/Range.h"
 
@@ -27,7 +27,7 @@ template<typename R0> size_t MinLength(const Meta::Tuple<R0>& ranges)
 {return ranges.first.Length();}
 
 template<typename R0, typename R1, typename... Rs> size_t MinLength(const Meta::Tuple<R0, R1, Rs...>& ranges)
-{return Op::Min(ranges.first.Length(), MinLength(ranges.next));}
+{return Funal::Min(ranges.first.Length(), MinLength(ranges.next));}
 
 
 template<typename... Rs> struct AllHasLength;

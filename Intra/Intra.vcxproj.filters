@@ -268,6 +268,15 @@
     <Filter Include="Заголовочные файлы\Concurrency\detail">
       <UniqueIdentifier>{b067ca83-a359-43e1-ad83-9dde69cd7268}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Image\Loaders\detail">
+      <UniqueIdentifier>{6809f218-55f3-4817-b98b-2eda9501e124}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Audio\detail">
+      <UniqueIdentifier>{d3efa6a9-ef2f-4403-a984-67d16fb6f745}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Funal">
+      <UniqueIdentifier>{02aa42ee-f3c6-4562-96c8-5ac2ba3a7af2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Memory\Memory.cpp">
@@ -385,21 +394,6 @@
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Audio\Sound.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sound_ALSA.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sound_DirectSound.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sound_Dummy.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sound_Emscripten.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sound_OpenAL.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Audio\Synth\AttackDecayAttenuation.cpp">
@@ -542,12 +536,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Utils\Callback.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Fixed.h">
-      <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
     <ClInclude Include="IO\Networking.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
@@ -559,9 +547,6 @@
     </ClInclude>
     <ClInclude Include="Data\Reflection.h">
       <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Shapes.h">
-      <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
     <ClInclude Include="Data\ValueType.h">
       <Filter>Заголовочные файлы\Data</Filter>
@@ -995,12 +980,6 @@
     <ClInclude Include="Container.hh">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Delegate.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Callable.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Container\Sequential\ExtArray.h">
       <Filter>Заголовочные файлы\Container\Sequential</Filter>
     </ClInclude>
@@ -1090,9 +1069,6 @@
     </ClInclude>
     <ClInclude Include="Range\Iterator\RangeForwardIterator.h">
       <Filter>Заголовочные файлы\Range\Iterator</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Method.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="IO\SocketReader.h">
       <Filter>Заголовочные файлы\IO</Filter>
@@ -1274,9 +1250,6 @@
     <ClInclude Include="Utils\IteratorRange.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Op.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Promise.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
@@ -1299,12 +1272,6 @@
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Sound.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\SoundApi.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\SoundApiDeclarations.h">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Audio\SoundTypes.h">
@@ -1535,9 +1502,6 @@
     <ClInclude Include="Math\Geometry\Ellipse.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Bind.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Meta\EachField.h">
       <Filter>Заголовочные файлы\Meta</Filter>
     </ClInclude>
@@ -1673,6 +1637,69 @@
     <ClInclude Include="Concurrency\detail\ThreadSleep.hxx">
       <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
+    <ClInclude Include="Math\FixedPoint.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\Line.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\LineSegment.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Image\Loaders\detail\LoaderDevIL.hxx">
+      <Filter>Файлы исходного кода\Image\Loaders\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Image\Loaders\detail\LoaderGdiplus.hxx">
+      <Filter>Файлы исходного кода\Image\Loaders\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Image\Loaders\detail\LoaderQt.hxx">
+      <Filter>Файлы исходного кода\Image\Loaders\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundALSA.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundDirectSound.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundDummy.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundOpenAL.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundWebAudio.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\detail\SoundBasicData.hxx">
+      <Filter>Файлы исходного кода\Audio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\Bind.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\Delegate.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\Method.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\Op.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\Functor.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\ObjectMethod.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\FuncRef.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
+    <ClInclude Include="Funal\ValueRef.h">
+      <Filter>Заголовочные файлы\Funal</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Container\Utility\SparseRange.inl">
@@ -1717,6 +1744,9 @@
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="System\System.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="Funal\Funal.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

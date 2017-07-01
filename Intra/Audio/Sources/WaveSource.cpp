@@ -51,11 +51,11 @@ WaveSource::WaveSource(CSpan<byte> srcFileData):
 size_t WaveSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	INTRA_DEBUG_ASSERT(!outShorts.Empty());
-	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount-mCurrentDataPos);
+	const auto shortsToRead = Math::Min(outShorts.Length(), mSampleCount*mChannelCount - mCurrentDataPos);
 	CopyTo(mData.Drop(mCurrentDataPos).Take(shortsToRead), outShorts);
 	mCurrentDataPos += shortsToRead;
-	if(shortsToRead<outShorts.Length()) mCurrentDataPos = 0;
-	return shortsToRead/mChannelCount;
+	if(shortsToRead < outShorts.Length()) mCurrentDataPos = 0;
+	return shortsToRead / mChannelCount;
 }
 
 size_t WaveSource::GetInterleavedSamples(Span<float> outFloats)
@@ -84,7 +84,7 @@ size_t WaveSource::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 	for(size_t i=0, j=0; i<outShorts.Count(); i++)
 	{
 		for(ushort c=0; c<mChannelCount; c++)
-			outFloats[c][i] = (outShorts[j++] + 0.5f)/32767.5f;
+			outFloats[c][i] = (outShorts[j++] + 0.5f) / 32767.5f;
 	}
 	return result;
 }
@@ -93,12 +93,12 @@ FixedArray<const void*> WaveSource::GetRawSamplesData(size_t maxSamplesToRead,
 	Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 {
 	const auto shortsToRead = Math::Min(maxSamplesToRead, mSampleCount*mChannelCount - mCurrentDataPos);
-	if(oSamplesRead) *oSamplesRead = shortsToRead/mChannelCount;
+	if(oSamplesRead) *oSamplesRead = shortsToRead / mChannelCount;
 	if(oInterleaved) *oInterleaved = true;
 	if(oType) *oType = Data::ValueType::Short;
-	FixedArray<const void*> resultPtrs = {mData.Begin + mCurrentDataPos};
+	FixedArray<const void*> resultPtrs{mData.Begin + mCurrentDataPos};
 	mCurrentDataPos += shortsToRead;
-	if(shortsToRead<maxSamplesToRead) mCurrentDataPos = 0;
+	if(shortsToRead < maxSamplesToRead) mCurrentDataPos = 0;
 	return resultPtrs;
 }
 

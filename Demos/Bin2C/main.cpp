@@ -3,7 +3,10 @@
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
 #include "IO/FileSystem.h"
+
 #include "Utils/StringView.h"
+#include "Funal/Op.h"
+
 #include "Container/Sequential/String.h"
 #include "Range/Stream/Parse.h"
 #include "IO/FilePath.h"
@@ -15,7 +18,7 @@
 using namespace Intra;
 using namespace IO;
 using namespace Range;
-using namespace Op;
+using namespace Funal;
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -24,13 +27,13 @@ static String MakeIdentifierFromPath(StringView path, StringView prefix=null)
 	String result = Path::ExtractName(path);
 	Transform(result.AsRange(), [](char c) {return AsciiSets.LatinAndDigits.Contains(c)? c: '_';});
 	result = prefix+result;
-	if(IsDigit(result.First())) result = '_'+result;
+	if(IsDigit(result.First())) result = '_' + result;
 	return result;
 }
 
 StringView PathFromCmdLine(const char* path)
 {
-	return Trim(Trim(StringView(path), '"'), IsSpace<char>);
+	return Trim(Trim(StringView(path), '"'), IsSpace);
 }
 
 static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath, String& outputFilePath,
@@ -54,47 +57,47 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 			continue;
 		}
 
-		if(arg=="-notabs")
+		if(arg == "-notabs")
 		{
 			notabs = true;
 			continue;
 		}
-		if(arg=="-nospaces")
+		if(arg == "-nospaces")
 		{
 			nospaces = true;
 			continue;
 		}
-		if(arg=="-singleline")
+		if(arg == "-singleline")
 		{
 			singleline = true;
 			continue;
 		}
-		if(arg=="-endline")
+		if(arg == "-endline")
 		{
 			endline = true;
 			continue;
 		}
 
-		if(arg=="-o")
+		if(arg == "-o")
 		{
 			outputFilePath = PathFromCmdLine(argv[++i]);
 			continue;
 		}
-		if(arg=="-varname")
+		if(arg == "-varname")
 		{
 			binArrName = PathFromCmdLine(argv[++i]);
 			continue;
 		}
-		if(arg=="-per-line")
+		if(arg == "-per-line")
 		{
 			StringView(argv[++i]) >> valuesPerLine;
 			continue;
 		}
 	}
 
-	if(outputFilePath==null) outputFilePath = inputFilePath + ".c";
-	if(binArrName==null) binArrName = MakeIdentifierFromPath(inputFilePath);
-	if(valuesPerLine==0) valuesPerLine = 32;
+	if(outputFilePath == null) outputFilePath = inputFilePath + ".c";
+	if(binArrName == null) binArrName = MakeIdentifierFromPath(inputFilePath);
+	if(valuesPerLine == 0) valuesPerLine = 32;
 }
 
 
@@ -102,8 +105,8 @@ static void ParseCommandLine(int argc, const char* argv[], String& inputFilePath
 inline size_t ByteToStr(byte x, char* dst)
 {
 	size_t len = 0;
-	if(x>=100) dst[len++] = char('0' + x/100);
-	if(x>=10) dst[len++] = char('0' + x/10%10);
+	if(x >= 100) dst[len++] = char('0' + x/100);
+	if(x >= 10) dst[len++] = char('0' + x/10%10);
 	dst[len++] = char('0' + x%10);
 	return len;
 }
@@ -131,26 +134,26 @@ void ConvertFile(StringView inputFilePath, StringView outputFilePath, StringView
 	}
 	char dataToPrint[10]={',', ' '};
 	static const char dataToPrintPerLine[4]="\r\n\t";
-	const size_t sizeToPrintPerLineCount = 3u-size_t(notabs);
-	size_t sizeToPrint = 2u-size_t(nospaces);
+	const size_t sizeToPrintPerLineCount = 3u - size_t(notabs);
+	size_t sizeToPrint = 2u - size_t(nospaces);
 
 	if(src!=null) dst << int(srcBytes[0]);
-	if(singleline) for(size_t i=1; i<src.Length(); i++)
+	if(singleline) for(size_t i = 1; i < src.Length(); i++)
 	{
 		size_t n = sizeToPrint;
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteRawFrom(dataToPrint, n);
+		dst.RawWriteFrom(dataToPrint, n);
 	}
-	else for(size_t i=1; i<src.Length(); i++)
+	else for(size_t i = 1; i < src.Length(); i++)
 	{
 		size_t n = sizeToPrint;
-		if(!singleline && i%size_t(valuesPerLine)==0)
+		if(!singleline && i % size_t(valuesPerLine) == 0)
 		{
-			C::memcpy(dataToPrint+n, dataToPrintPerLine, sizeToPrintPerLineCount);
+			C::memcpy(dataToPrint + n, dataToPrintPerLine, sizeToPrintPerLineCount);
 			n += sizeToPrintPerLineCount;
 		}
 		n += ByteToStr(srcBytes[i], dataToPrint+n);
-		dst.WriteRawFrom(dataToPrint, n);
+		dst.RawWriteFrom(dataToPrint, n);
 	}
 	if(!singleline) dst << "\r\n";
 	dst << "};";

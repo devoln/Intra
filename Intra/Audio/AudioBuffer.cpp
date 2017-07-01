@@ -69,29 +69,23 @@ void AudioBuffer::MixWith(const AudioBuffer& rhs,
 	Add(dst, src);
 }
 
-Meta::Pair<float, float> AudioBuffer::GetMinMax(size_t startSample, size_t sampleCount) const
+Pair<float, float> AudioBuffer::GetMinMax(size_t startSample, size_t sampleCount) const
 {
-	if(startSample>=Samples.Count()) return {-1,1};
-	if(sampleCount>Samples.Count()-startSample) sampleCount = Samples.Count()-startSample;
-	size_t endSample = Math::Min(startSample+sampleCount, Samples.Count());
-
-	Meta::Pair<float, float> result;
-	MiniMax(Samples(startSample, endSample), &result.first, &result.second);
-	return result;
+	if(startSample >= Samples.Count()) return {-1, 1};
+	return MiniMax(Samples.Drop(startSample).Take(sampleCount));
 }
 
 void AudioBuffer::SetMinMax(float newMin, float newMax,
-	size_t startSample, size_t sampleCount, Meta::Pair<float, float> minMax)
+	size_t startSample, size_t sampleCount, Pair<float, float> minMax)
 {
-	if(startSample>=Samples.Count()) return;
-	if(sampleCount==Meta::NumericLimits<size_t>::Max()) sampleCount = Samples.Count()-startSample;
-	if(minMax.first==0 && minMax.second==0) minMax = GetMinMax();
-	const size_t endSample = Math::Min(startSample+sampleCount, Samples.Count());
+	auto range = Samples.Drop(startSample).Take(sampleCount);
+	if(range.Empty()) return;
+	if(minMax.first == 0 && minMax.second == 0) minMax = MiniMax(range.AsConstRange());
 
 	const float multiplyer = (newMax - newMin) / (minMax.second - minMax.first);
-	const float add = -minMax.first*multiplyer+newMin;
+	const float add = -minMax.first*multiplyer + newMin;
 
-	MulAdd(Samples(startSample, endSample), multiplyer, add);
+	MulAdd(range, multiplyer, add);
 }
 
 }}

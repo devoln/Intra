@@ -25,8 +25,8 @@ protected:
 public:
 	AImageLoader* NextListNode() const {return mNextLoader;}
 
-	virtual ImageInfo GetInfo(InputStream stream) const = 0;
-	virtual AnyImage Load(InputStream stream) const = 0;
+	virtual ImageInfo GetInfo(IInputStream& stream) const = 0;
+	virtual AnyImage Load(IInputStream& stream) const = 0;
 	virtual bool IsValidHeader(const void* header, size_t headerSize) const = 0;
 	virtual FileFormat FileFormatOfLoader() const = 0;
 

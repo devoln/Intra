@@ -30,8 +30,8 @@ AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
 		const uint srcOffset = y*size.x;
 		const uint bpp = format.BytesPerPixel();
 		const uint lineSize = size.x*bpp;
-		C::memcpy(result.Data.Data()+dstOffset*bpp,
-			reinterpret_cast<const byte*>(data)+srcOffset*bpp, lineSize);
+		C::memcpy(result.Data.Data() + dstOffset*bpp,
+			reinterpret_cast<const byte*>(data) + srcOffset*bpp, lineSize);
 	}
 
 	return result;
@@ -99,13 +99,13 @@ AnyImage AnyImage::FromStream(ForwardStream stream)
 {
 	auto oldStream = stream;
 	byte header[12];
-	stream.ReadRawTo(header, 12);
+	stream.RawReadTo(header, sizeof(header));
 	stream = Cpp::Move(oldStream);
 
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
 	{
 		if(!loader.IsValidHeader(header, 12)) continue;
-		return loader.Load(Cpp::Move(stream));
+		return loader.Load(stream);
 	}
 	return null;
 }

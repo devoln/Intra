@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Range/Operations.h"
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Range/Mutation/Copy.h"
 #include "Concepts/Range.h"
 #include "Utils/Span.h"
@@ -100,6 +100,8 @@ public:
 		operator=(AsRange(arr));
 		return *this;
 	}
+
+	forceinline operator Interface&() {return *static_cast<Interface*>(InputRange<T>::mInterface.Ptr());}
 
 protected:
 	ForwardRange(Interface* interfacePtr): InputRange<T>(interfacePtr) {}

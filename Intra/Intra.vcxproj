@@ -831,11 +831,6 @@
     <ClCompile Include="Audio\Midi.cpp" />
     <ClCompile Include="Audio\Music.cpp" />
     <ClCompile Include="Audio\Sound.cpp" />
-    <ClCompile Include="Audio\Sound_ALSA.cpp" />
-    <ClCompile Include="Audio\Sound_DirectSound.cpp" />
-    <ClCompile Include="Audio\Sound_Dummy.cpp" />
-    <ClCompile Include="Audio\Sound_Emscripten.cpp" />
-    <ClCompile Include="Audio\Sound_OpenAL.cpp" />
     <ClCompile Include="Audio\Sources\MusicSynthSource.cpp" />
     <ClCompile Include="Audio\Sources\VorbisSource.cpp" />
     <ClCompile Include="Audio\Sources\WaveSource.cpp" />
@@ -920,12 +915,16 @@
     <ClInclude Include="Audio\AudioBuffer.h" />
     <ClInclude Include="Audio\AudioProcessing.h" />
     <ClInclude Include="Audio\AudioSource.h" />
+    <ClInclude Include="Audio\detail\SoundALSA.hxx" />
+    <ClInclude Include="Audio\detail\SoundBasicData.hxx" />
+    <ClInclude Include="Audio\detail\SoundDirectSound.hxx" />
+    <ClInclude Include="Audio\detail\SoundDummy.hxx" />
+    <ClInclude Include="Audio\detail\SoundOpenAL.hxx" />
+    <ClInclude Include="Audio\detail\SoundWebAudio.hxx" />
     <ClInclude Include="Audio\Midi.h" />
     <ClInclude Include="Audio\Music.h" />
     <ClInclude Include="Audio\MusicNote.h" />
     <ClInclude Include="Audio\Sound.h" />
-    <ClInclude Include="Audio\SoundApi.h" />
-    <ClInclude Include="Audio\SoundApiDeclarations.h" />
     <ClInclude Include="Audio\SoundTypes.h" />
     <ClInclude Include="Audio\Sources.hh" />
     <ClInclude Include="Audio\Sources\MusicSynthSource.h" />
@@ -1004,6 +1003,14 @@
     <ClInclude Include="Cpp\Warnings.h" />
     <ClInclude Include="Font\FontLoading.h" />
     <ClInclude Include="Font\FontLoadingDeclarations.h" />
+    <ClInclude Include="Funal\Bind.h" />
+    <ClInclude Include="Funal\Functor.h" />
+    <ClInclude Include="Funal\FuncRef.h" />
+    <ClInclude Include="Funal\Delegate.h" />
+    <ClInclude Include="Funal\Method.h" />
+    <ClInclude Include="Funal\ObjectMethod.h" />
+    <ClInclude Include="Funal\Op.h" />
+    <ClInclude Include="Funal\ValueRef.h" />
     <ClInclude Include="Hash\Murmur.h" />
     <ClInclude Include="Hash\MurmurCT.h" />
     <ClInclude Include="Hash\StringHash.h" />
@@ -1019,6 +1026,9 @@
     <ClInclude Include="Image\ImageFormat.h" />
     <ClInclude Include="Image\ImageInfo.h" />
     <ClInclude Include="Image\Loaders.hh" />
+    <ClInclude Include="Image\Loaders\detail\LoaderDevIL.hxx" />
+    <ClInclude Include="Image\Loaders\detail\LoaderGdiplus.hxx" />
+    <ClInclude Include="Image\Loaders\detail\LoaderQt.hxx" />
     <ClInclude Include="Image\Loaders\Loader.h" />
     <ClInclude Include="Image\Loaders\LoaderBMP.h" />
     <ClInclude Include="Image\Loaders\LoaderDDS.h" />
@@ -1032,11 +1042,15 @@
     <ClInclude Include="IO\FilePath.h" />
     <ClInclude Include="IO\Formatter.h" />
     <ClInclude Include="Math\ExponentRange.h" />
+    <ClInclude Include="Math\FixedPoint.h" />
+    <ClInclude Include="Math\Geometry.hh" />
     <ClInclude Include="Math\Geometry\Aabb.h" />
     <ClInclude Include="Math\Geometry\BoundingVolume.h" />
     <ClInclude Include="Math\Geometry\Ellipse.h" />
     <ClInclude Include="Math\Geometry\Frustum.h" />
     <ClInclude Include="Math\Geometry\Intersection.h" />
+    <ClInclude Include="Math\Geometry\Line.h" />
+    <ClInclude Include="Math\Geometry\LineSegment.h" />
     <ClInclude Include="Math\Geometry\Obb.h" />
     <ClInclude Include="Math\Geometry\Plane.h" />
     <ClInclude Include="Math\Geometry\Ray.h" />
@@ -1164,10 +1178,8 @@
     <ClInclude Include="IO\Std.h" />
     <ClInclude Include="Math.hh" />
     <ClInclude Include="Math\Bit.h" />
-    <ClInclude Include="Math\Fixed.h" />
     <ClInclude Include="Math\Math.h" />
     <ClInclude Include="Math\Quaternion.h" />
-    <ClInclude Include="Math\Shapes.h" />
     <ClInclude Include="Memory.hh" />
     <ClInclude Include="Memory\Align.h" />
     <ClInclude Include="Memory\Allocator.hh" />
@@ -1206,7 +1218,6 @@
     <ClInclude Include="System\Signal.h" />
     <ClInclude Include="System\Stopwatch.h" />
     <ClInclude Include="Utils\ArrayAlgo.h" />
-    <ClInclude Include="Utils\Bind.h" />
     <ClInclude Include="Utils\Debug.h" />
     <ClInclude Include="Cpp\Endianess.h" />
     <ClInclude Include="Concurrency\Thread.h" />
@@ -1276,15 +1287,10 @@
     <ClInclude Include="Utils.hh" />
     <ClInclude Include="Utils\AnyPtr.h" />
     <ClInclude Include="Utils\AsciiSet.h" />
-    <ClInclude Include="Utils\Callable.h" />
-    <ClInclude Include="Utils\Callback.h" />
-    <ClInclude Include="Utils\Delegate.h" />
     <ClInclude Include="Utils\ErrorStatus.h" />
     <ClInclude Include="Utils\Finally.h" />
     <ClInclude Include="Utils\IteratorRange.h" />
     <ClInclude Include="Utils\Logger.h" />
-    <ClInclude Include="Utils\Method.h" />
-    <ClInclude Include="Utils\Op.h" />
     <ClInclude Include="Utils\Optional.h" />
     <ClInclude Include="Utils\Promise.h" />
     <ClInclude Include="Utils\Shared.h" />
@@ -1304,6 +1310,7 @@
     </Natvis>
     <Natvis Include="Container\Container.natvis" />
     <Natvis Include="Cpp\Cpp.natvis" />
+    <Natvis Include="Funal\Funal.natvis" />
     <Natvis Include="Image\Image.natvis" />
     <Natvis Include="IO\IO.natvis">
       <SubType>Designer</SubType>

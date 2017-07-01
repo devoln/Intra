@@ -2,12 +2,15 @@
 
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
-#include "Range/ForwardDecls.h"
+
+#include "Funal/Op.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
+#include "Range/ForwardDecls.h"
 #include "Range/Decorators/Take.h"
 #include "Range/Search/Single.h"
-#include "Utils/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -36,7 +39,7 @@ template<typename R> struct RTakeByLine
 	void PopFirst()
 	{
 		const auto rangeCopy = mOriginalRange;
-		size_t lineLength = CountUntilAdvance(mOriginalRange, Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
+		size_t lineLength = CountUntilAdvance(mOriginalRange, Funal::IsLineSeparator);
 		if(!mOriginalRange.Empty())
 		{
 			const bool CR = mOriginalRange.First() == '\r';

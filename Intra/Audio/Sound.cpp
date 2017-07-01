@@ -1,12 +1,14 @@
-﻿#include "Audio/Sound.h"
-#include "Audio/AudioBuffer.h"
-#include "Audio/SoundApi.h"
-#include "Audio/AudioSource.h"
-#include "Audio/Music.h"
-#include "Audio/Midi.h"
-#include "Audio/Sources/WaveSource.h"
-#include "Audio/Sources/VorbisSource.h"
-#include "Audio/Sources/MusicSynthSource.h"
+﻿#include "Sound.h"
+#include "AudioBuffer.h"
+#include "AudioSource.h"
+#include "Music.h"
+#include "Midi.h"
+#include "Sources/WaveSource.h"
+#include "Sources/VorbisSource.h"
+#include "Sources/MusicSynthSource.h"
+#include "SoundTypes.h"
+
+#include "Funal/ValueRef.h"
 
 #include "Range/Comparison/StartsWith.h"
 #include "Range/Search/Single.h"
@@ -15,79 +17,55 @@
 
 #include "IO/FileSystem.h"
 
+#if(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_DirectSound)
+#include "detail/SoundDirectSound.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_OpenAL)
+#include "detail/SoundOpenAL.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_ALSA)
+#include "detail/SoundALSA.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_WebAudio)
+#include "detail/SoundWebAudio.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_Qt)
+#include "detail/SoundQt.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_SDL)
+#include "detail/SoundSDL.hxx"
+#elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_Dummy)
+#include "detail/SoundDummy.hxx"
+#endif
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio {
 
-using namespace Intra::Math;
-using namespace Intra::IO;
+using namespace Math;
+using namespace IO;
+using Data::ValueType;
 
-Array<Sound*> Sound::all_existing_sounds;
+Sound::Sound(null_t) {}
 
 Sound::Sound(const SoundInfo& bufferInfo, const void* initData):
-	mData(SoundAPI::BufferCreate(bufferInfo.SampleCount, bufferInfo.Channels, bufferInfo.SampleRate)),
-	mInstances(),
-	mLockedBits(null),
-	mInfo(bufferInfo),
-	mLockedSize(0)
+	mData(Shared<Data>::New(bufferInfo))
 {
-	if(initData!=null) SoundAPI::BufferSetDataInterleaved(mData, initData, mInfo.SampleType);
-	all_existing_sounds.AddLast(this);
+	if(initData) mData->SetDataInterleaved(initData, bufferInfo.SampleType);
 }
 
-Sound::Sound(const AudioBuffer* dataBuffer):
-	mData(null),
-	mInstances(),
-	mLockedBits(null),
-	mInfo(dataBuffer==null? SoundInfo(): dataBuffer->Info()),
-	mLockedSize(0)
+Sound::Sound(const AudioBuffer& dataBuffer)
 {
-	if(dataBuffer==null) return;
-	mData = SoundAPI::BufferCreate(mInfo.SampleCount, mInfo.Channels, mInfo.SampleRate);
-	SoundAPI::BufferSetDataInterleaved(mData, dataBuffer->Samples.Data(), mInfo.SampleType);
-	mInfo.SampleType = Data::ValueType::Short;
-	all_existing_sounds.AddLast(this);
+	SoundInfo info(dataBuffer.Samples.Length(), dataBuffer.SampleRate, 1, ValueType::Short);
+	mData = Shared<Data>::New(info);
+	mData->SetDataInterleaved(dataBuffer.Samples.Data(), ValueType::Float);
 }
+
+Sound::Sound(Sound&& rhs): mData(Cpp::Move(rhs.mData)) {}
 
 Sound::~Sound() {Release();}
 
-AnyPtr Sound::Lock()
-{
-	return SoundAPI::BufferLock(mData);
-}
+AnyPtr Sound::Lock() {return mData->Lock();}
+void Sound::Unlock() {mData->Unlock();}
+void Sound::Release() {mData = null;}
 
-void Sound::Unlock()
-{
-	SoundAPI::BufferUnlock(mData);
-}
-
-void Sound::Release()
-{
-	if(mData==null) return;
-	Sound::all_existing_sounds.FindAndRemoveUnordered(this);
-	while(!mInstances.Empty())
-		mInstances.Last()->Release(true);
-	SoundAPI::BufferDelete(mData);
-	mData = null;
-	mInfo = SoundInfo();
-}
-
-Sound& Sound::operator=(Sound&& rhs)
-{
-	Release();
-	mData = rhs.mData;
-	mLockedBits = rhs.mLockedBits;
-	mLockedSize = rhs.mLockedSize;
-	mInstances = Cpp::Move(rhs.mInstances);
-	for(auto inst: mInstances)
-		inst->mSound = this;
-	mInfo = rhs.mInfo;
-	rhs.mData = null;
-	auto found = Sound::all_existing_sounds.AsRange().Find(&rhs);
-	if(!found.Empty()) found.First() = this;
-	return *this;
-}
+Sound& Sound::operator=(Sound&& rhs) = default;
 
 Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 {
@@ -96,7 +74,7 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 
-	Unique<ASoundSource> source;
+	Unique<AAudioSource> source;
 
 #ifndef INTRA_NO_WAVE_LOADER
 	if(fileSignature.StartsWith("RIFF"))
@@ -110,7 +88,7 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileSignature.StartsWith("MThd"))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), SoundAPI::InternalSampleRate());
+		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), DefaultSampleRate());
 	else
 #endif
 	{
@@ -118,124 +96,75 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 		return null;
 	}
 
-	return FromSource(source.Ptr());
+	return FromSource(*source);
 }
 
-Sound Sound::FromSource(ASoundSource* src)
+Sound Sound::FromSource(AAudioSource& src)
 {
 	INTRA_WARNING_DISABLE_UNREACHABLE_CODE
+	INTRA_WARNING_DISABLE_CONSTANT_CONDITION
 
-	const SoundInfo info = {src->SampleCount(), src->SampleRate(),
-		ushort(src->ChannelCount()), SoundAPI::InternalBufferType};
+	const SoundInfo info = {src.SampleCount(), src.SampleRate(),
+		ushort(src.ChannelCount()), InternalBufferType};
 
 	Sound result = Sound(info, null);
-	auto lockedData = result.Lock();
-	if(SoundAPI::InternalBufferType == Data::ValueType::Short &&
-		(SoundAPI::InternalChannelsInterleaved || info.Channels == 1))
+	void* lockedData = result.Lock();
+	INTRA_FINALLY(result.Unlock());
+	if(InternalBufferType == ValueType::Short &&
+		(InternalChannelsInterleaved || info.Channels == 1))
 	{
-		Span<short> dst = Span<short>(lockedData, info.SampleCount*src->ChannelCount());
-		src->GetInterleavedSamples(dst);
+		Span<short> dst = SpanOfRawElements<short>(lockedData, info.SampleCount*src.ChannelCount());
+		src.GetInterleavedSamples(dst);
+		return result;
 	}
-	else if(SoundAPI::InternalBufferType == Data::ValueType::Float &&
-		(SoundAPI::InternalChannelsInterleaved || info.Channels==1))
+	if(InternalBufferType == ValueType::Float &&
+		(InternalChannelsInterleaved || info.Channels == 1))
 	{
-		Span<float> dst = Span<float>(lockedData, info.SampleCount*src->ChannelCount());
-		src->GetInterleavedSamples(dst);
+		Span<float> dst = SpanOfRawElements<float>(lockedData, info.SampleCount*src.ChannelCount());
+		src.GetInterleavedSamples(dst);
+		return result;
 	}
-	//else if(SoundAPI::InternalBufferType==ValueType::Float && !SoundAPI::InternalChannelsInterleaved)
-		//src->GetUninterleavedSamples(Span<float>(lockedData, result.SampleCount*src->ChannelCount()));
-	result.Unlock();
+	//else if(InternalBufferType == ValueType::Float && !InternalChannelsInterleaved)
+		//src.GetUninterleavedSamples(SpanOfRawElements<float>(lockedData, result.SampleCount*src.ChannelCount()));
 	return result;
 }
 
-
-
-SoundInstance Sound::CreateInstance()
+void Sound::ReleaseAllSounds()
 {
-	INTRA_DEBUG_ASSERT(mData!=null);
-	return SoundInstance(this, SoundAPI::InstanceCreate(mData));
+	SoundContext::Instance().ReleaseAllSounds();
 }
 
-SoundInstance::SoundInstance(Sound* mySound, SoundAPI::InstanceHandle inst):
-	mSound(mySound), mData(inst)
+Sound::Instance Sound::CreateInstance()
 {
-	if(mSound==null) return;
-	mSound->mInstances.AddLast(this);
+	INTRA_DEBUG_ASSERT(mData != null);
+	return Instance(*this);
 }
 
-void SoundInstance::Release(bool force)
-{
-	if(mData!=null)
-	{
-		if(IsPlaying() && !force) SoundAPI::InstanceSetDeleteOnStop(mData, true);
-		else SoundAPI::InstanceDelete(mData);
-		mData = null;
-	}
-	mSound->mInstances.FindAndRemoveUnordered(this);
-	mSound = null;
-}
+Sound::Instance::Instance(Sound& sound):
+	mData(Shared<Data>::New(sound.mData)) {}
 
-SoundInstance::~SoundInstance() {Release();}
+Sound::Instance::Instance(null_t) {}
+Sound::Instance::Instance(Instance&&) = default;
+Sound::Instance& Sound::Instance::operator=(Instance&&) = default;
 
-void SoundInstance::Play(bool loop) const
-{
-	if(mData==null) return;
-	SoundAPI::InstancePlay(mData, loop);
-}
+void Sound::Instance::Release() {mData = null;}
 
-bool SoundInstance::IsPlaying() const
-{
-	if(mData==null) return false;
-	return SoundAPI::InstanceIsPlaying(mData);
-}
+Sound::Instance::~Instance() {Release();}
 
-void SoundInstance::Stop() const
-{
-	if(mData==null) return;
-	SoundAPI::InstanceStop(mData);
-}
+void Sound::Instance::Play(bool loop) const {if(mData) mData->Play(loop);}
+bool Sound::Instance::IsPlaying() const {return mData && mData->IsPlaying();}
+void Sound::Instance::Stop() const {if(mData) mData->Stop();}
 
+StreamedSound::StreamedSound(null_t) {}
 
+StreamedSound::StreamedSound(StreamedSound&&) = default;
 
-size_t StreamingLoadCallback(void** dstSamples, uint channels,
-	Data::ValueType::I type, bool interleaved, size_t sampleCount, void* additionalData)
-{
-	auto src = reinterpret_cast<ASoundSource*>(additionalData);
-	if(interleaved || channels==1)
-	{
-		if(type == Data::ValueType::Float)
-			return src->GetInterleavedSamples({static_cast<float*>(dstSamples[0]), sampleCount*src->ChannelCount()});
-		if(type == Data::ValueType::Short)
-			return src->GetInterleavedSamples({static_cast<short*>(dstSamples[0]), sampleCount*src->ChannelCount()});
-	}
-	else
-	{
-		if(type == Data::ValueType::Float)
-		{
-			Span<float> ranges[16];
-			for(ushort c=0; c<channels; c++)
-				ranges[c] = Span<float>(static_cast<float*>(dstSamples[c]), sampleCount);
-			return src->GetUninterleavedSamples({ranges, channels});
-		}
-		if(type == Data::ValueType::Short)
-		{
-			/*Span<short> ranges[16];
-			for(ushort c=0; c<channels; c++)
-				ranges[c] = Span<short>(static_cast<short*>(dstSamples[c]), sampleCount);
-			return src->GetUninterleavedSamples({ranges, channels});*/
-		}
-	}
-	return 0;
-}
+StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples):
+	mData(Shared<Data>::New(Cpp::Move(src), bufferSizeInSamples)) {}
 
+StreamedSound::~StreamedSound() {release();}
 
-StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples, OnCloseCallback onClose):
-	mSampleSource(Cpp::Move(src)), mOnClose(onClose), mData(null)
-{
-	mData = SoundAPI::StreamedBufferCreate(bufferSizeInSamples, mSampleSource->ChannelCount(),
-		mSampleSource->SampleRate(), {StreamingLoadCallback, mSampleSource.Ptr()});
-	register_instance();
-}
+StreamedSound& StreamedSound::operator=(StreamedSound&& rhs) = default;
 
 StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, ErrorStatus& status)
 {
@@ -262,71 +191,75 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 		return null;
 	}
 
-	return StreamedSound(Cpp::Move(source), bufSize,
-		StreamedSound::OnCloseCallback(new FileMapping(Cpp::Move(fileMapping)),
-			[](void* o)
-		{
-			delete static_cast<FileMapping*>(o);
-		})
-	);
+	source->OnCloseResource = Funal::Value(Cpp::Move(fileMapping));
+	return StreamedSound(Cpp::Move(source), bufSize);
 }
 
 void StreamedSound::release()
 {
-	if(mOnClose != null) mOnClose();
-	if(mData == null) return;
-	unregister_instance();
-	SoundAPI::StreamedBufferDelete(mData);
+	mData = null;
 }
 
 void StreamedSound::Play(bool loop) const
 {
-	if(mData==null) return;
-	SoundAPI::StreamedSoundPlay(mData, loop);
+	if(!mData) return;
+	mData->Play(loop);
 }
 
 bool StreamedSound::IsPlaying() const
 {
-	if(mData==null) return false;
-	return SoundAPI::StreamedSoundIsPlaying(mData);
+	if(!mData) return false;
+	return mData->IsPlaying();
 }
 
 void StreamedSound::Stop() const
 {
-	if(mData==null) return;
-	SoundAPI::StreamedSoundStop(mData);
+	if(!mData) return;
+	mData->Stop();
 }
 
 void StreamedSound::UpdateBuffer() const
 {
-	if(mData==null) return;
-	SoundAPI::StreamedSoundUpdate(mData);
+	if(!mData) return;
+	mData->Update();
 }
 
-uint StreamedSound::InternalSampleRate()
+void StreamedSound::UpdateAllExistingInstances()
 {
-	return SoundAPI::InternalSampleRate();
+	auto& context = SoundContext::Instance();
+	Array<Shared<StreamedSound::Data>> soundsToUpdate;
+
+	//Этот мьютекс захватывается в деструкторе каждого объекта.
+	INTRA_SYNCHRONIZED(context.MyMutex)
+	{
+		//Когда мы попадаем сюда, каждый элемент context->AllStreamedSounds
+		//либо жив, либо находится в процессе удаления до захвата этого мьютекса.
+		soundsToUpdate.Reserve(context.AllStreamedSounds.Length());
+		for(auto snd: context.AllStreamedSounds)
+		{
+			auto ptr = snd->SharedThis();
+			if(!ptr || ptr->IsReleased()) continue; //Объект в процессе удаления, обновлять его не нужно.
+			soundsToUpdate.AddLast(Cpp::Move(ptr)); //Объект будет жить как минимум до завершения его обновления.
+		}
+	}
+
+	//Эта часть медленная, поэтому мы и вынесли её из критической секции.
+	for(auto& ptr: soundsToUpdate)
+	{
+		ptr->Update();
+		ptr = null;
+	}
 }
 
-void StreamedSound::register_instance()
+void StreamedSound::ReleaseAllSounds()
 {
-	INTRA_DEBUG_ASSERT(!all_existing_instances.AsConstRange().Contains(this));
-	all_existing_instances.AddLast(this);
+	SoundContext::Instance().ReleaseAllStreamedSounds();
 }
-
-void StreamedSound::unregister_instance()
-{
-	INTRA_DEBUG_ASSERT(all_existing_instances.AsConstRange().Contains(this));
-	all_existing_instances.FindAndRemoveUnordered(this);
-}
-
-Array<StreamedSound*> StreamedSound::all_existing_instances;
 
 void CleanUpSoundSystem()
 {
-	StreamedSound::DeleteAllSounds();
-	Sound::DeleteAllSounds();
-	SoundAPI::SoundSystemCleanUp();
+	Sound::ReleaseAllSounds();
+	StreamedSound::ReleaseAllSounds();
 }
 
 }}

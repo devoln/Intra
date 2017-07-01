@@ -7,30 +7,40 @@
 #include "Utils/FixedArray.h"
 #include "Data/ValueType.h"
 
+#include "Funal/Delegate.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio {
 
-class ASoundSource
+class AAudioSource
 {
-	ASoundSource& operator=(const ASoundSource& rhs) = delete;
 protected:
-	ASoundSource(uint sampleRate=0, ushort channelCount=0):
+	AAudioSource(uint sampleRate=0, ushort channelCount=0):
 		mSampleRate(sampleRate), mChannelCount(channelCount) {}
 
+
 public:
-	virtual ~ASoundSource() {}
+	AAudioSource(AAudioSource&&) = default;
+	AAudioSource(const AAudioSource&) = delete;
+	AAudioSource& operator=(AAudioSource&&) = default;
+	AAudioSource& operator=(const AAudioSource&) = delete;
+
+	typedef Funal::Delegate<void()> OnCloseResourceCallback;
+	AAudioSource(OnCloseResourceCallback onCloseResource): OnCloseResource(Cpp::Move(onCloseResource)) {}
+
+	virtual ~AAudioSource() {if(OnCloseResource) OnCloseResource();}
 	virtual size_t SampleCount() const = 0;
 	virtual size_t CurrentSamplePosition() const = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся short каналов.
-	//! \param[out] outShorts Куда загружаются семплы. outShorts.Count() означает, сколько их загружать.
-	//! \returns Количество прочитанных семплов, то есть число прочитанных short'ов, делённое на ChannelCount.
+	//! @param[out] outShorts Куда загружаются семплы. outShorts.Count() означает, сколько их загружать.
+	//! @return Количество прочитанных семплов, то есть число прочитанных short'ов, делённое на ChannelCount.
 	virtual size_t GetInterleavedSamples(Span<short> outShorts) = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
-	//! \param[out] outFloats Куда загружаются семплы. outFloats.Count() означает, сколько их загружать.
-	//! \returns Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
+	//! @param[out] outFloats Куда загружаются семплы. outFloats.Count() означает, сколько их загружать.
+	//! @return Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
 	virtual size_t GetInterleavedSamples(Span<float> outFloats) = 0;
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
@@ -45,20 +55,21 @@ public:
 	//! @return Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.
 	//! null, если не поддерживается потоком, либо существует несколько возможных вариантов выбора типа.
 	virtual FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
-		Data::ValueType* outType, bool* outInterleaved, size_t* outSamplesRead)
+		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
 	{
 		(void)maxSamplesToRead;
-		if(outType) *outType = Data::ValueType::Void;
-		if(outInterleaved) *outInterleaved = false;
-		if(outSamplesRead) *outSamplesRead = 0;
+		if(oType) *oType = Data::ValueType::Void;
+		if(oInterleaved) *oInterleaved = false;
+		if(oSamplesRead) *oSamplesRead = 0;
 		return null;
 	}
 
 	//! Сколько непрочитанных семплов осталось в потоке
-	forceinline size_t SamplesLeft() const {return SampleCount()-CurrentSamplePosition();}
+	forceinline size_t SamplesLeft() const {return SampleCount() - CurrentSamplePosition();}
 	forceinline uint SampleRate() const {return mSampleRate;}
 	forceinline uint ChannelCount() const {return mChannelCount;}
 
+	OnCloseResourceCallback OnCloseResource;
 protected:
 	uint mSampleRate;
 	ushort mChannelCount;

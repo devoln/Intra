@@ -1,9 +1,12 @@
 ﻿#pragma once
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
+
 #include "Concepts/Array.h"
 #include "Concepts/Range.h"
+
 #include "Container/ForwardDecls.h"
+
 #include "Range/Mutation/Copy.h"
 
 namespace Intra { namespace Range {
@@ -68,9 +71,9 @@ template<typename T, typename C> T* merge_sort_pass(T* up, T* down, size_t left,
 //! - Лучшее, среднее и худшее время: O(n Log n);
 //! - На «почти отсортированных» массивах работает столь же долго, как на хаотичных;
 //! - Требует дополнительной памяти по размеру исходного массива.
-template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOf<R>>> Meta::EnableIf<
+template<typename R, typename C = Funal::TLess> Meta::EnableIf<
 	!Meta::IsConst<Concepts::RefElementTypeOfArrayOrDisable<R>>::_
-> MergeSort(R&& range, C comparer=Op::Less<Concepts::ValueTypeOf<R>>)
+> MergeSort(R&& range, C comparer = Funal::Less)
 {
 	Array<Concepts::ValueTypeOf<R>> temp;
 	temp.SetCountUninitialized(Concepts::LengthOf(range));

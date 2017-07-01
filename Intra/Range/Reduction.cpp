@@ -1,20 +1,23 @@
-﻿#include "Range/Reduction.h"
-#include "Simd/Simd.h"
+﻿#include "Reduction.h"
+
 #include "Cpp/InfNan.h"
-#include "Utils/Op.h"
+
+#include "Simd/Simd.h"
+
+#include "Funal/Op.h"
 
 namespace Intra { namespace Range {
 
 template<> float Minimum(CSpan<float> arr)
 {
-	if(arr==null) return Cpp::NaN;
+	if(arr.Empty()) return Cpp::NaN;
 	auto ptr = arr.Begin;
 
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
 	float result = *ptr++;
 #else
 	Simd::float4 mini = Simd::SetFloat4(*ptr);
-	while(ptr<arr.End-3)
+	while(ptr < arr.End - 3)
 	{
 		Simd::float4 v = Simd::SetFloat4U(ptr);
 		mini = Simd::Min(mini, v);
@@ -22,9 +25,9 @@ template<> float Minimum(CSpan<float> arr)
 	}
 	float minis[4];
 	Simd::GetU(minis, mini);
-	float result = Op::Min(Op::Min(minis[0], minis[1]), Op::Min(minis[2], minis[3]));
+	float result = Funal::Min(Funal::Min(minis[0], minis[1]), Funal::Min(minis[2], minis[3]));
 #endif
-	while(ptr<arr.End)
+	while(ptr < arr.End)
 	{
 		if(result < *ptr) result = *ptr;
 		ptr++;
@@ -49,7 +52,7 @@ template<> float Maximum(CSpan<float> arr)
 	}
 	float maxis[4];
 	Simd::GetU(maxis, maxi);
-	float result = Op::Max( Op::Max(maxis[0], maxis[1]), Op::Max(maxis[2], maxis[3]) );
+	float result = Funal::Max( Funal::Max(maxis[0], maxis[1]), Funal::Max(maxis[2], maxis[3]) );
 #endif
 	while(ptr<arr.End)
 	{
@@ -59,48 +62,42 @@ template<> float Maximum(CSpan<float> arr)
 	return result;
 }
 
-template<> void MiniMax(CSpan<float> arr, float* oMinimum, float* oMaximum)
+template<> Pair<float> MiniMax(CSpan<float> arr)
 {
-	if(oMinimum == null)
-	{
-		if(oMaximum != null) *oMaximum = Maximum(arr);
-		return;
-	}
-	if(oMaximum == null)
-	{
-		*oMinimum = Minimum(arr);
-		return;
-	}
-
-	if(arr.Empty())
-	{
-		*oMinimum = *oMaximum = Cpp::NaN;
-		return;
-	}
+	if(arr.Empty()) return {Cpp::NaN, Cpp::NaN};
 	auto ptr = arr.Begin;
-#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	*oMaximum = *oMinimum = *ptr++;
+	Pair<float> minimax;
+#if(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
+	minimax.first = minimax.second = *ptr++;
 #else
-	Simd::float4 mini = Simd::SetFloat4(*ptr);
-	Simd::float4 maxi = Simd::SetFloat4(*ptr);
-	while(ptr<arr.End-3)
+	Simd::float4 mini;
+	Simd::float4 maxi;
+	if(ptr < arr.End - 3)
 	{
-		Simd::float4 v = Simd::SetFloat4U(ptr);
-		mini = Simd::Min(mini, v);
-		maxi = Simd::Max(maxi, v);
-		ptr+=4;
+		mini = Simd::SetFloat4(ptr);
+		maxi = Simd::SetFloat4(ptr);
+		ptr += 4;
+		while(ptr < arr.End - 3)
+		{
+			Simd::float4 v = Simd::SetFloat4U(ptr);
+			mini = Simd::Min(mini, v);
+			maxi = Simd::Max(maxi, v);
+			ptr += 4;
+		}
+		float minis[4]; Simd::GetU(minis, mini);
+		float maxis[4]; Simd::GetU(maxis, maxi);
+		minimax.first = Funal::Min( Funal::Min(minis[0], minis[1]), Funal::Min(minis[2], minis[3]) );
+		minimax.second = Funal::Max( Funal::Max(maxis[0], maxis[1]), Funal::Max(maxis[2], maxis[3]) );
 	}
-	float minis[4]; Simd::GetU(minis, mini);
-	float maxis[4]; Simd::GetU(maxis, maxi);
-	*oMinimum = Op::Min( Op::Min(minis[0], minis[1]), Op::Min(minis[2], minis[3]) );
-	*oMaximum = Op::Max( Op::Max(maxis[0], maxis[1]), Op::Max(maxis[2], maxis[3]) );
+	else minimax.first = minimax.second = *ptr++;
 #endif
-	while(ptr<arr.End)
+	while(ptr < arr.End)
 	{
-		if(*ptr < *oMinimum) *oMinimum = *ptr;
-		if(*oMaximum < *ptr) *oMaximum = *ptr;
+		if(*ptr < minimax.first) minimax.first = *ptr;
+		if(minimax.second < *ptr) minimax.second = *ptr;
 		ptr++;
 	}
+	return minimax;
 }
 
 }}

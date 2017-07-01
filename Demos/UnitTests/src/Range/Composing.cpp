@@ -30,7 +30,7 @@ void TestComposedRange(FormattedWriter& output)
 	output.LineBreak();
 
 	//Бесконечная последовательность Фибоначчи вместе с диапазоном
-	auto fib = Recurrence(Op::Add<int>, 1, 1);
+	auto fib = Recurrence(Funal::Add, 1, 1);
 	INTRA_ASSERT1(StartsWith(fib, CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
 
 	Array<int> fibArr;
@@ -78,7 +78,7 @@ void TestComposedRange(FormattedWriter& output)
 		Retro(Stride(Take(chain, 40), 2)),
 		someRecurrence,
 		Stride(Take(Drop(Cycle(Take(fib, 19)), 5), 50), 3),
-		Take(Recurrence(Op::Mul<ulong64>, 2ull, 3ull), 9)
+		Take(Recurrence(Funal::Mul, 2ull, 3ull), 9)
 	);
 
 	output.PrintLine(StringOf(megaZip, ",\n  ", "[\n  ", "\n]"));
@@ -132,7 +132,7 @@ void TestComposedRange(FormattedWriter& output)
 	output.PrintLine("Токены: ", StringOf(tokens, "\", \"", "[\"", "\"]"));
 
 	int arr[]={1, 4, 11, 6, 8};
-	output.PrintLine("max of ", arr, " = ", Reduce(arr, Op::Max<int>));
+	output.PrintLine("max of ", arr, " = ", Reduce(arr, Funal::Max));
 
 	output.LineBreak();
 	output.PrintLine("Код в 4 строки, эквивалентный примеру из "

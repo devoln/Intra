@@ -1,11 +1,18 @@
 ﻿#include "Audio/Synth/SawtoothSynth.h"
 #include "Audio/Synth/Generators/Sawtooth.h"
 #include "Audio/Synth/PeriodicSynth.h"
-#include "Utils/Span.h"
+
 #include "Cpp/Warnings.h"
+
+#include "Utils/Span.h"
+
+#include "Funal/Bind.h"
+
 #include "Range/Mutation/Copy.h"
 #include "Range/Mutation/Transform.h"
+
 #include "Container/Sequential/Array.h"
+
 #include "Random/FastUniform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
@@ -15,9 +22,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 void PerfectSawtooth(double upPercent, float volume,
 	float freq, uint sampleRate, Span<float> inOutSamples, bool add)
 {
-	Generators::Sawtooth saw(float(upPercent/(1.0-upPercent)));
-	saw.SetParams(freq, volume, 1.0/sampleRate);
-	if(!add) CopyAdvanceToAdvance(saw, inOutSamples);
+	Generators::Sawtooth saw(float(upPercent / (1.0 - upPercent)));
+	saw.SetParams(freq, volume, 1.0 / sampleRate);
+	if(!add) ReadWrite(saw, inOutSamples);
 	else Add(inOutSamples, saw);
 }
 
@@ -48,7 +55,7 @@ struct SawtoothParams
 void SawtoothSynthPassFunction(const SawtoothParams& params,
 		float freq, float volume, Span<float> inOutSamples, uint sampleRate, bool add)
 {
-	if(inOutSamples==null) return;
+	if(inOutSamples == null) return;
 	const double updownPercent = params.UpdownRatio/(params.UpdownRatio+1);
 	const float newFreq = freq*params.FreqMultiplyer;
 	const float maxValue = 2.0f-2.0f/float(1 << params.Harmonics);
@@ -68,7 +75,7 @@ void SawtoothSynthPassFunction(const SawtoothParams& params,
 }
 
 SynthPass CreateSawtoothSynthPass(float updownRatio, float scale, ushort harmonics, float freqMultiplyer)
-{return SynthPass(SawtoothSynthPassFunction, SawtoothParams{updownRatio, harmonics, scale, freqMultiplyer});}
+{return Funal::Bind(SawtoothSynthPassFunction, SawtoothParams{updownRatio, harmonics, scale, freqMultiplyer});}
 
 INTRA_WARNING_POP
 

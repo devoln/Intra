@@ -130,7 +130,7 @@ template<typename T> struct Span
 	forceinline Span<T> Tail(size_t count) const noexcept
 	{return Span(Length()<count? Begin: End-count, End);}
 
-	size_t CopyAdvanceToAdvance(Span<MutT>& dst)
+	size_t ReadWrite(Span<MutT>& dst)
 	{
 		const size_t len = Length()<dst.Length()? Length(): dst.Length();
 		for(size_t i=0; i<len; i++) *dst.Begin++ = *Begin++;
@@ -145,19 +145,19 @@ template<typename T> struct Span
 	}
 
 	forceinline size_t CopyTo(Span<MutT> dst) const
-	{return Span(*this).CopyAdvanceToAdvance(dst);}
+	{return Span(*this).ReadWrite(dst);}
 
 	forceinline size_t MoveTo(Span<MutT> dst) const
 	{return Span(*this).MoveAdvanceToAdvance(dst);}
 
-	forceinline size_t CopyAdvanceTo(Span<MutT> dst)
-	{return CopyAdvanceToAdvance(dst);}
+	forceinline size_t ReadTo(Span<MutT> dst)
+	{return ReadWrite(dst);}
 
 	forceinline size_t MoveAdvanceTo(Span<MutT> dst)
 	{return MoveAdvanceToAdvance(dst);}
 
-	forceinline size_t CopyToAdvance(Span<MutT>& dst) const
-	{return Span(*this).CopyAdvanceToAdvance(dst);}
+	forceinline size_t WriteTo(Span<MutT>& dst) const
+	{return Span(*this).ReadWrite(dst);}
 
 	forceinline size_t MoveToAdvance(Span<MutT>& dst) const
 	{return Span(*this).MoveAdvanceToAdvance(dst);}
@@ -198,7 +198,7 @@ template<typename T> struct Span
 		!Meta::IsConst<U>::_,
 	Span&> operator<<(Span<const T> v) noexcept
 	{
-		v.CopyAdvanceToAdvance(*this);
+		v.ReadWrite(*this);
 		return *this;
 	}
 
@@ -206,7 +206,7 @@ template<typename T> struct Span
 	//! Сравниваются только указатели, но не содержимое.
 	forceinline constexpr bool operator==(const Span& rhs) const noexcept
 	{
-		return (Begin==rhs.Begin && End==rhs.End) ||
+		return (Begin == rhs.Begin && End == rhs.End) ||
 			(Empty() && rhs.Empty());
 	}
 	forceinline constexpr bool operator!=(const Span& rhs) const noexcept {return !operator==(rhs);}
@@ -225,7 +225,7 @@ template<typename T> struct Span
 
 	forceinline T& Get(size_t index, T& defaultValue) const
 	{
-		if(index<Length()) return Begin[index];
+		if(index < Length()) return Begin[index];
 		return defaultValue;
 	}
 
@@ -233,14 +233,14 @@ template<typename T> struct Span
 		!Meta::IsConst<U>::_,
 	const T&> Get(size_t index, const T& defaultValue) const
 	{
-		if(index<Length()) return Begin[index];
+		if(index < Length()) return Begin[index];
 		return defaultValue;
 	}
 
 	forceinline Span operator()(size_t firstIndex, size_t endIndex) const
 	{
 		INTRA_DEBUG_ASSERT(endIndex >= firstIndex && endIndex <= Length());
-		return Span(Begin+firstIndex, Begin+endIndex);
+		return Span(Begin + firstIndex, Begin + endIndex);
 	}
 
 	constexpr forceinline Span TakeNone() const noexcept {return {Begin, Begin};}
@@ -249,7 +249,7 @@ template<typename T> struct Span
 	template<typename U=T> forceinline Meta::EnableIf<
 		Meta::IsArithmeticType<U>::_,
 	bool> StartsWith(Span<const T> str) const noexcept
-	{return Length() >= str.Length() && C::memcmp(Data(), str.Data(), str.Length()*sizeof(T))==0;}
+	{return Length() >= str.Length() && C::memcmp(Data(), str.Data(), str.Length()*sizeof(T)) == 0;}
 
 	Span Find(T c) const
 	{
@@ -304,7 +304,11 @@ template<typename T> forceinline constexpr CSpan<T> CSpanOf(InitializerList<T> a
 
 template<typename T=byte> forceinline Span<T> SpanOfRaw(void* data, size_t bytes) noexcept {return {static_cast<T*>(data), bytes/sizeof(T)};}
 template<typename T=byte> forceinline CSpan<T> SpanOfRaw(const void* data, size_t bytes) noexcept {return {static_cast<const T*>(data), bytes/sizeof(T)};}
-template<typename T=byte> forceinline CSpan<T> CSpanOfRaw(const void* data, size_t bytes) noexcept {return SpanOfRaw(data, bytes);}
+template<typename T=byte> forceinline CSpan<T> CSpanOfRaw(const void* data, size_t bytes) noexcept {return SpanOfRaw<T>(data, bytes);}
+
+template<typename T> forceinline Span<T> SpanOfRawElements(void* data, size_t elements) noexcept {return {static_cast<T*>(data), elements};}
+template<typename T> forceinline CSpan<T> SpanOfRawElements(const void* data, size_t elements) noexcept {return {static_cast<const T*>(data), elements};}
+template<typename T> forceinline CSpan<T> CSpanOfRawElements(const void* data, size_t elements) noexcept {return SpanOfRawElements<T>(data, elements);}
 
 #ifndef INTRA_UTILS_NO_CONCEPTS
 
@@ -341,6 +345,8 @@ using Range::CSpanOf;
 using Range::SpanOfBuffer;
 using Range::SpanOfRaw;
 using Range::CSpanOfRaw;
+using Range::SpanOfRawElements;
+using Range::CSpanOfRawElements;
 using Range::Take;
 }
 
@@ -351,6 +357,8 @@ using Range::CSpanOf;
 using Range::SpanOfBuffer;
 using Range::SpanOfRaw;
 using Range::CSpanOfRaw;
+using Range::SpanOfRawElements;
+using Range::CSpanOfRawElements;
 using Range::Take;
 
 #ifndef INTRA_UTILS_NO_CONCEPTS

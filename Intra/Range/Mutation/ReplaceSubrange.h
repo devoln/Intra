@@ -22,12 +22,12 @@ TakeResult<OR>> MultiReplaceAdvanceToAdvance(R& src, OR& dstBuffer, const RR& re
 	size_t index = 0;
 	auto resultStart = Cpp::Forward<OR>(dstBuffer);
 	size_t substrIndex = 0;
-	while(CopyToAdvance(
+	while(WriteTo(
 		TakeUntilAdvanceAny(src, Unzip<0>(replacementSubranges), &index, &substrIndex),
 			dstBuffer), !src.Empty())
 	{
 		auto&& replacement = AtIndex(replacementSubranges, substrIndex);
-		CopyToAdvance(Meta::Get<1>(replacement), dstBuffer);
+		WriteTo(Meta::Get<1>(replacement), dstBuffer);
 		PopFirstExactly(src, Count(Meta::Get<0>(replacement)));
 		index += Count(Meta::Get<1>(replacement));
 	}
@@ -76,7 +76,7 @@ TakeResult<Concepts::RangeOfType<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer
 	auto src = Range::Forward<R>(range);
 	size_t index = 0;
 	auto resultBufferStart = dstBuffer;
-	while(CopyToAdvance(TakeUntilAdvance(src, entryStart, &index), dstBuffer), !src.Empty())
+	while(WriteTo(TakeUntilAdvance(src, entryStart, &index), dstBuffer), !src.Empty())
 	{
 		PopFirstExactly(src, Count(entryStart));
 		int counter = 1;
@@ -84,7 +84,7 @@ TakeResult<Concepts::RangeOfType<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer
 		if(counter>0)
 		{
 			INTRA_DEBUG_ASSERT(src.Empty());
-			CopyToAdvance(entryStr, dstBuffer);
+			WriteTo(entryStr, dstBuffer);
 			index += Count(entryStr);
 			break;
 		}
@@ -93,12 +93,12 @@ TakeResult<Concepts::RangeOfType<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer
 		FindAdvance(substituionsCopy, Meta::TupleElementEquals<0>(entryStr));
 		if(substituionsCopy.Empty())
 		{
-			CopyToAdvance(unknownSubstitution, dstBuffer);
+			WriteTo(unknownSubstitution, dstBuffer);
 			index += Count(unknownSubstitution);
 		}
 		else
 		{
-			CopyToAdvance(substituionsCopy.First(), dstBuffer);
+			WriteTo(substituionsCopy.First(), dstBuffer);
 			index += Count(substituionsCopy.First());
 		}
 	}

@@ -5,13 +5,10 @@
 
 #include "Data/ValueType.h"
 
-namespace Intra {
-
-namespace Audio {
+namespace Intra { namespace Audio {
 
 struct AudioBuffer;
-class SoundInstance;
-class ASoundSource;
+class AAudioSource;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

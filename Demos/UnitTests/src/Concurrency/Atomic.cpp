@@ -5,7 +5,7 @@
 #include "Concurrency/Mutex.h"
 #include "Concurrency/Lock.h"
 #include "Concurrency/Synchronized.h"
-#include "Utils/Bind.h"
+#include "Funal/Bind.h"
 #include "Range/ForEach.h"
 
 using namespace Intra;
@@ -36,7 +36,7 @@ void TestAtomics(FormattedWriter& output)
 
 	for(size_t i = 0; i < 10; i++)
 		atomicThreads << Thread("AtomicIncrementer " + StringOf(i),
-			Bind(TestAtomicIncrementThread, &counter, 100000));
+			Funal::Bind(TestAtomicIncrementThread, &counter, 100000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Atomic counter value GetRelaxed: ", counter.GetRelaxed());
@@ -45,7 +45,7 @@ void TestAtomics(FormattedWriter& output)
 
 	for(size_t i = 0; i < atomicThreads.Length(); i++)
 		atomicThreads[i] = Thread("AtomicSubtracter " + StringOf(i),
-			Bind(TestAtomicSubThread, &counter, 10000));
+			Funal::Bind(TestAtomicSubThread, &counter, 10000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Atomic counter value GetRelaxed: ", counter.GetRelaxed());
@@ -55,7 +55,7 @@ void TestAtomics(FormattedWriter& output)
 	Synchronized<int> intCounter = counter.GetRelaxed();
 	for(size_t i = 0; i < atomicThreads.Length(); i++)
 		atomicThreads[i] = Thread("TestSynchronizedAdder " + StringOf(i),
-			Bind(TestSynchronizedAddThread, &intCounter, 100000));
+			Funal::Bind(TestSynchronizedAddThread, &intCounter, 100000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Synchronized counter value: ", intCounter);

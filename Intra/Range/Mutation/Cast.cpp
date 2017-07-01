@@ -8,11 +8,11 @@ void CastAdvanceToAdvance(CSpan<float>& src, Span<short>& dst)
 {
 	INTRA_DEBUG_ASSERT(dst.Length() >= src.Length());
 #if(INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86)
-	while(src.Begin<src.End-3)
+	while(src.Begin < src.End - 3)
 	{
 		*(__m64*)dst.Begin = _mm_cvtps_pi16(Simd::SetFloat4U(src.Begin));
-		src.Begin+=4;
-		dst.Begin+=4;
+		src.Begin += 4;
+		dst.Begin += 4;
 	}
 	_mm_empty();
 #else

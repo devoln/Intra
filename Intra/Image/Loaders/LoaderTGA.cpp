@@ -32,17 +32,17 @@ static ImageInfo GetInfoFromHeader(const byte* header)
 	};
 }
 
-ImageInfo LoaderTGA::GetInfo(InputStream stream) const
+ImageInfo LoaderTGA::GetInfo(IInputStream& stream) const
 {
 	byte header[18];
-	stream.ReadRawTo(header, 18);
+	RawReadTo(stream, header, 18);
 	return GetInfoFromHeader(header);
 }
 
-AnyImage LoaderTGA::Load(InputStream stream) const
+AnyImage LoaderTGA::Load(IInputStream& stream) const
 {
 	byte header[18];
-	stream.ReadRawTo(header, 18);
+	RawReadTo(stream, header, 18);
 
 	const bool compressedRLE = (header[2]==10);
 
@@ -70,13 +70,13 @@ AnyImage LoaderTGA::Load(InputStream stream) const
 	byte* pos = result.Data.End() - result.Info.Size.x*bytesPerPixel;
 	for(uint currentPixel = 0; currentPixel<pixelcount;)
 	{
-		int chunkheader = stream.ReadRaw<byte>();
-		if(chunkheader<128)
+		int chunkheader = Range::RawRead<byte>(stream);
+		if(chunkheader < 128)
 		{
 			chunkheader++;
 			for(; chunkheader--!=0; currentPixel++)
 			{
-				stream.ReadRawTo(pos+index*3, bytesPerPixel);
+				RawReadTo(stream, pos+index*3, bytesPerPixel);
 				index++;
 				if(index==result.Info.Size.x)
 				{
@@ -88,7 +88,7 @@ AnyImage LoaderTGA::Load(InputStream stream) const
 		}
 		chunkheader -= 127;
 		byte colorBuffer[4];
-		stream.ReadRawTo(colorBuffer, bytesPerPixel);
+		RawReadTo(stream, colorBuffer, bytesPerPixel);
 		for(; chunkheader--!=0; currentPixel++)
 		{
 			C::memcpy(pos+index*3, colorBuffer, bytesPerPixel);
@@ -109,10 +109,10 @@ bool LoaderTGA::IsValidHeader(const void* header, size_t headerSize) const
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
 	
 	for(int i: {0, 1, 3, 4, 5, 6, 8, 9, 10, 11})
-		if(headerBytes[i]!=0) return false;
+		if(headerBytes[i] != 0) return false;
 
 	//Поддерживаются пока только форматы 2 (несжатый) и 10 (RLE)
-	if(headerBytes[2]!=10 && headerBytes[2]!=2) return false;
+	if(headerBytes[2] != 10 && headerBytes[2] != 2) return false;
 
 	return true;
 }

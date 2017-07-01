@@ -9,7 +9,7 @@ INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 #ifdef _MSC_VER
 #pragma warning(disable: 4512 4626)
 
-#if _MSC_VER>=1900
+#if _MSC_VER >= 1900
 #pragma warning(disable: 5026 5027)
 #endif
 
@@ -20,10 +20,17 @@ namespace Intra { namespace Meta {
 INTRA_DEFINE_EXPRESSION_CHECKER(Has_first_second, (Val<T>().first, Val<T>().second));
 INTRA_DEFINE_EXPRESSION_CHECKER(HasKeyValue, (Val<T>().Key, Val<T>().Value));
 
-template<typename T1, typename T2> struct Pair
+template<typename T1, typename T2 = T1> struct Pair
 {
 	T1 first;
 	T2 second;
+};
+
+template<typename T> struct Pair<T, T>
+{
+	T first, second;
+	T& operator[](size_t i) {return i? second: first;}
+	const T& operator[](size_t i) const {return i? second: first;}
 };
 
 template<typename K, typename V> struct KeyValuePair

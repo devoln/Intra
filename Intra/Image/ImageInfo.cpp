@@ -1,9 +1,13 @@
 ﻿#include "Image/ImageInfo.h"
+
+#include "Cpp/Warnings.h"
+
 #include "Utils/StringView.h"
+
 #include "Container/Sequential/String.h"
+
 #include "Math/Math.h"
 #include "Math/Vector3.h"
-#include "Cpp/Warnings.h"
 
 namespace Intra { namespace Image {
 
@@ -57,7 +61,7 @@ size_t ImageInfo::CalculateMipmapDataSize(size_t mip, size_t lineAlignment) cons
 	if(!Format.IsCompressed())
 		alignmentBytes = lineAlignment-1-(sz.x*bpp/8+lineAlignment-1)%lineAlignment;
 	else for(uint k = 0; k<dims; k++)
-		if(sz[k]%4!=0) sz[k] = ushort((sz[k]/4+1)*4);
+		if(sz[k]%4 != 0) sz[k] = ushort((sz[k]/4+1)*4);
 	return (sz.x*bpp/8+alignmentBytes)*sz.y*sz.z;
 }
 

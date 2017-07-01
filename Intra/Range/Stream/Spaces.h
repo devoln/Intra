@@ -5,7 +5,7 @@
 
 #include "Concepts/Range.h"
 
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 
 namespace Intra { namespace Range {
 
@@ -18,7 +18,7 @@ size_t> SkipSpacesCountLinesAdvance(R& src)
 {
 	size_t lines = 0;
 	bool wasCR = false;
-	while(!src.Empty() && Op::IsSpace(src.First()))
+	while(!src.Empty() && Funal::IsSpace(src.First()))
 	{
 		char c = src.First();
 		if(c=='\r' || (c=='\n' && !wasCR))

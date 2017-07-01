@@ -17,31 +17,31 @@ bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 		Equals(Take(headerBytes, sizeof(pngSignature)), SpanOf(pngSignature));
 }
 
-ImageInfo LoaderPNG::GetInfo(InputStream stream) const
+ImageInfo LoaderPNG::GetInfo(IInputStream& stream) const
 {
 	byte headerSignature[8];
-	stream.ReadRawTo(headerSignature, 8);
+	RawReadTo(stream, headerSignature, 8);
 	if(!IsValidHeader(headerSignature, 8)) return ImageInfo();
 	stream.PopFirstN(2*sizeof(intBE));
 
-	const Math::UVec2 ihdrSize = stream.ReadRaw<Math::Vector2<uintBE>>();
-	const byte ihdrBitsPerComponent = stream.ReadRaw<byte>();
-	const byte ihdrColorType = stream.ReadRaw<byte>();
+	const Math::UVec2 ihdrSize = Range::RawRead<Math::Vector2<uintBE>>(stream);
+	const byte ihdrBitsPerComponent = Range::RawRead<byte>(stream);
+	const byte ihdrColorType = Range::RawRead<byte>(stream);
 
 	ImageFormat fmt = null;
-	if(ihdrBitsPerComponent==8)
+	if(ihdrBitsPerComponent == 8)
 	{
-		if(ihdrColorType==0) fmt = ImageFormat::Luminance8;
-		else if(ihdrColorType==4) fmt = ImageFormat::LuminanceAlpha8;
-		else if(ihdrColorType==2) fmt = ImageFormat::RGB8;
-		else if(ihdrColorType==6) fmt = ImageFormat::RGBA8;
+		if(ihdrColorType == 0) fmt = ImageFormat::Luminance8;
+		else if(ihdrColorType == 4) fmt = ImageFormat::LuminanceAlpha8;
+		else if(ihdrColorType == 2) fmt = ImageFormat::RGB8;
+		else if(ihdrColorType == 6) fmt = ImageFormat::RGBA8;
 	}
 	else if(ihdrBitsPerComponent==16)
 	{
-		if(ihdrColorType==0) fmt = ImageFormat::Luminance16;
-		//else if(ihdrColorType==4) fmt = ImageFormat::LuminanceAlpha16;
-		else if(ihdrColorType==2) fmt = ImageFormat::RGB16;
-		else if(ihdrColorType==6) fmt = ImageFormat::RGBA16;
+		if(ihdrColorType == 0) fmt = ImageFormat::Luminance16;
+		//else if(ihdrColorType == 4) fmt = ImageFormat::LuminanceAlpha16;
+		else if(ihdrColorType == 2) fmt = ImageFormat::RGB16;
+		else if(ihdrColorType == 6) fmt = ImageFormat::RGBA16;
 	}
 	return {
 		Math::USVec3(ihdrSize.x, ihdrSize.y, 1),
@@ -49,12 +49,12 @@ ImageInfo LoaderPNG::GetInfo(InputStream stream) const
 	};
 }
 
-AnyImage LoaderPNG::Load(InputStream stream) const
+AnyImage LoaderPNG::Load(IInputStream& stream) const
 {
 #ifdef INTRA_USE_LIBPNG
 	//TODO: сделать загрузку через libjpeg
 #elif(INTRA_LIBRARY_IMAGE_LOADING!=INTRA_LIBRARY_IMAGE_LOADING_None)
-	return LoadWithPlatform(Cpp::Move(stream));
+	return LoadWithPlatform(stream);
 #else
 	(void)stream;
 	return null;

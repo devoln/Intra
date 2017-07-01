@@ -107,28 +107,23 @@ void PlayMusic(const Music& music, bool printPerf)
 		auto time = sw.ElapsedSeconds();
 		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
 	}
-	static Sound snd;
-	snd = Sound(&buf);
-	auto inst = snd.CreateInstance();
-	inst.Play();
+	Sound(buf).CreateInstance().Play();
 }
 
 void PlayMusicStream(const Music& music)
 {
-	const auto sampleRate = StreamedSound::InternalSampleRate();
+	const auto sampleRate = Sound::DefaultSampleRate();
 	Std.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
 	Std.PrintLine("Инициализация...");
-	static StreamedSound sound;
-	sound = StreamedSound(new Sources::MusicSynthSource(music, sampleRate));
-	sound.Play();
+	StreamedSound(new Sources::MusicSynthSource(music, sampleRate)).Play();
 }
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
 extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size_t size, bool enableStreaming)
 {
-	StreamedSound::DeleteAllSounds();
-	Sound::DeleteAllSounds();
+	StreamedSound::ReleaseAllSounds();
+	Sound::ReleaseAllSounds();
 
 	auto music = ReadMidiFile({data, size});
 	PrintMusicInfo(music);

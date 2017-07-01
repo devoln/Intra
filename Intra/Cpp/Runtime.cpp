@@ -16,15 +16,8 @@ namespace detail {
 
 struct ThreadLocalStorage
 {
-	ThreadLocalStorage()
-	{
-		pthread_key_create(&Key, ThreadDataDestructor);
-	}
-
-	~ThreadLocalStorage()
-	{
-		pthread_key_delete(Key);
-	}
+	ThreadLocalStorage() {pthread_key_create(&Key, ThreadDataDestructor);}
+	~ThreadLocalStorage() {pthread_key_delete(Key);}
 
 	pthread_key_t Key;
 
@@ -191,20 +184,19 @@ unsigned int INTRA_CRTDECL _Random_device()
 
 }
 
-#if _MSC_VER>=1800
+#if(_MSC_VER >= 1800)
 
 #include <stdlib.h>
 
 //extern "C" int _imp___fdtest(float*) {return -1;} //Это заглушка для недостающего символа. Она может вызвать ошибки с математической библиотекой
 
-namespace std
-{
-	void _cdecl _Xbad_alloc() { abort(); }
-	void _cdecl _Xbad_function_call() { abort(); }
-	void _cdecl _Xout_of_range(const char*) { abort(); }
-	void _cdecl _Xlength_error(const char*) { abort(); }
-	const char* _cdecl _Syserror_map(int) { return "error"; }
-	const char* _cdecl _Winerror_map(int) { return "error"; }
+namespace std {
+void _cdecl _Xbad_alloc() {abort();}
+void _cdecl _Xbad_function_call() {abort();}
+void _cdecl _Xout_of_range(const char*) {abort();}
+void _cdecl _Xlength_error(const char*) {abort();}
+const char* _cdecl _Syserror_map(int) {return "error";}
+const char* _cdecl _Winerror_map(int) {return "error";}
 }
 extern "C" void _cdecl _except_handler4_common() {}
 
@@ -224,7 +216,7 @@ extern "C"
 
 #endif
 
-#if(_MSC_VER>=1900)
+#if(_MSC_VER >= 1900)
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -337,9 +329,9 @@ void* memset(void* dst, int c, size_t count)
 #pragma function(memcpy)
 void* memcpy(void* dst, const void* src, size_t count)
 {
-	char *dst8 = (char*)dst;
-	const char *src8 = (const char*)src;
-	while(count--) *dst8++ = *src8++;
+	char* dst8 = static_cast<char*>(dst);
+	const char* src8 = static_cast<const char*>(src);
+	while(count --> 0) *dst8++ = *src8++;
 	return dst;
 }
 
@@ -383,9 +375,9 @@ static
 #endif
 void INTRA_CRTDECL _initterm(_PVFV* pfbegin, _PVFV* pfend)
 {
-	while(pfbegin<pfend)
+	while(pfbegin < pfend)
 	{
-		if(*pfbegin!=null) (**pfbegin)();
+		if(*pfbegin != null) (**pfbegin)();
 		++pfbegin;
 	}
 }
@@ -399,8 +391,8 @@ extern "C" void mainCRTStartup()
 	_initterm(__xi_a, __xi_z);
 	_initterm(__xc_a, __xc_z);
 
-	int argc=0;
-	char* argv[]={""};
+	int argc = 0;
+	char* argv[] = {""};
 	main(argc, argv);
 
 	/* and finally... */
@@ -411,7 +403,7 @@ extern "C" void mainCRTStartup()
 
 #endif
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 void* INTRA_CRTDECL malloc(size_t bytes)
 {return HeapAlloc(g_hHeap, 0, bytes);}
 

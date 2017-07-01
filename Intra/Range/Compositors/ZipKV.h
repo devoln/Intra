@@ -3,7 +3,7 @@
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
 #include "Meta/Pair.h"
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 
 
 INTRA_WARNING_PUSH
@@ -61,7 +61,7 @@ public:
 		Concepts::HasLength<KU>::_ &&
 		Concepts::HasLength<VR>::_,
 	size_t> Length() const
-	{return Op::Min(OriginalRanges.Key.Length(), OriginalRanges.Value.Length());}
+	{return Funal::Min(OriginalRanges.Key.Length(), OriginalRanges.Value.Length());}
 
 	template<typename KU=KR> forceinline Meta::EnableIf<
 		Concepts::HasIndex<KU>::_ &&

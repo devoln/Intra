@@ -12,7 +12,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Range.hh"
 
 #include "Utils/Span.h"
-#include "Utils/Bind.h"
+#include "Funal/Bind.h"
 
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
@@ -22,6 +22,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 using namespace Intra;
 using namespace IO;
 using namespace Range;
+using namespace Funal;
 
 template<typename T> static void PrintPolymorphicRange(FormattedWriter& output, InputRange<T> range)
 {
@@ -88,7 +89,7 @@ void TestComposedPolymorphicRange(FormattedWriter& output)
 	InputRange<uint> seq = Map(
 		Filter(
 			Take(Generate(Bind(Random::FastUniform<uint>(), 1000)), 500),
-			[](uint x) {return x % 7 == 0; }),
+			[](uint x) {return x % 7 == 0;}),
 		Math::Sqr<uint>);
 	PrintPolymorphicRange(output, Cpp::Move(seq));
 

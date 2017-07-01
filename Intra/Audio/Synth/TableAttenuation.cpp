@@ -1,5 +1,9 @@
 ﻿#include "Audio/Synth/TableAttenuation.h"
+
 #include "Utils/Span.h"
+
+#include "Funal/Bind.h"
+
 #include "Range/Mutation/Copy.h"
 #include "Range/Decorators/Take.h"
 
@@ -42,7 +46,7 @@ AttenuationPass CreateTableAttenuationPass(CSpan<Norm8> table)
 	TableAttenuatorParams params;
 	params.Len = byte(table.Length());
 	CopyTo(table, params.Table);
-	return AttenuationPass(TableAttenuationPassFunction, params);
+	return Funal::Bind(TableAttenuationPassFunction, params);
 }
 
 }}}

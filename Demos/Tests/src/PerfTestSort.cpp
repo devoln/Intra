@@ -20,8 +20,8 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestInsertionSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -31,8 +31,8 @@ double TestInsertionSorting(size_t size, Comparer comparer = Op::Less<T>)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestShellSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -42,8 +42,8 @@ double TestShellSorting(size_t size, Comparer comparer = Op::Less<T>)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestQuickSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestQuickSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -63,8 +63,8 @@ template<typename T> double TestRadixSorting(size_t size)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestMergeSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -74,8 +74,8 @@ double TestMergeSorting(size_t size, Comparer comparer = Op::Less<T>)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestSelectionSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -85,8 +85,8 @@ double TestSelectionSorting(size_t size, Comparer comparer = Op::Less<T>)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestHeapSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -96,8 +96,8 @@ double TestHeapSorting(size_t size, Comparer comparer = Op::Less<T>)
 	return result;
 }
 
-template<typename T, typename Comparer = Comparers::Function<T>>
-double TestStdSorting(size_t size, Comparer comparer = Op::Less<T>)
+template<typename T, typename Comparer = Funal::TLess>
+double TestStdSorting(size_t size, Comparer comparer = Funal::Less)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;

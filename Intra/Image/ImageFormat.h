@@ -2,6 +2,9 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
+#include "Math/Vector2.h"
+#include "Math/Vector3.h"
+#include "Math/Vector4.h"
 #include "Data/ValueType.h"
 
 namespace Intra { namespace Image {

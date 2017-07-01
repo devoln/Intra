@@ -6,8 +6,9 @@
 #include "Concurrency/Lock.h"
 #include "Concurrency/Synchronized.h"
 #include "Concurrency/CondVar.h"
-#include "Utils/Bind.h"
+
 #include "Range/ForEach.h"
+
 #include "System/Stopwatch.h"
 
 using namespace Intra;

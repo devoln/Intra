@@ -3,9 +3,13 @@
 #include "Image/Loaders/LoaderDDS.h"
 #include "Image/AnyImage.h"
 #include "Image/Bindings/DXGI_Formats.h"
+
 #include "Cpp/Warnings.h"
 #include "Cpp/Endianess.h"
-#include "Range/Polymorphic/OutputRange.h"
+
+#include "Range/Stream/RawRead.h"
+#include "Range/Stream/RawWrite.h"
+
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -303,22 +307,22 @@ bool LoaderDDS::IsValidHeader(const void* header, size_t headerSize) const
 		headerBytes[2]=='S' && headerBytes[3]==' ');
 }
 
-ImageInfo LoaderDDS::GetInfo(InputStream stream) const
+ImageInfo LoaderDDS::GetInfo(IInputStream& stream) const
 {
 	ImageInfo errResult = {{0,0,0}, null, ImageType_End, 0};
 
 	byte headerSignature[4];
-	stream.ReadRawTo(headerSignature, 4);
+	RawReadTo(stream, headerSignature, 4);
 
 	const bool isDDS = IsValidHeader(headerSignature, 4);
 	if(!isDDS) return errResult;
 
-	DDS_HEADER hdr = stream.ReadRaw<DDS_HEADER>();
-	if(hdr.size!=124) return errResult;
+	const DDS_HEADER hdr = Range::RawRead<DDS_HEADER>(stream);
+	if(hdr.size != 124) return errResult;
 
 	DDS_HEADER_DXT10 dx10header;
 	if(has_dx10_header(hdr.ddspf))
-		dx10header = stream.ReadRaw<DDS_HEADER_DXT10>();
+		dx10header = Range::RawRead<DDS_HEADER_DXT10>(stream);
 	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	ImageInfo result;
@@ -335,18 +339,18 @@ ImageInfo LoaderDDS::GetInfo(InputStream stream) const
 }
 
 
-AnyImage LoaderDDS::Load(InputStream stream) const
+AnyImage LoaderDDS::Load(IInputStream& stream) const
 {
 	stream.PopFirstN(4); //Пропускаем идентификатор, предполагая, что он уже проверен
 
-	DDS_HEADER header = stream.ReadRaw<DDS_HEADER>();
-	if(header.size!=124)
+	const DDS_HEADER header = Range::RawRead<DDS_HEADER>(stream);
+	if(header.size != 124)
 		return null;
 
 	DDS_HEADER_DXT10 dx10header;
 
 	if(has_dx10_header(header.ddspf))
-		dx10header = stream.ReadRaw<DDS_HEADER_DXT10>();
+		dx10header = Range::RawRead<DDS_HEADER_DXT10>(stream);
 	else dx10header.resourceDimension = D3D10_RESOURCE_DIMENSION_UNKNOWN;
 
 	bool swapRB;
@@ -354,10 +358,10 @@ AnyImage LoaderDDS::Load(InputStream stream) const
 	iInfo.Size = {header.width, header.height, Max(1u, header.depth)};
 	iInfo.Format = GetFormat(header, dx10header, &swapRB);
 	iInfo.Type = GetImageTypeFromHeaders(header, dx10header);
-	if(iInfo.Type==ImageType_2DArray) iInfo.Size.z = ushort(dx10header.arraySize);
+	if(iInfo.Type == ImageType_2DArray) iInfo.Size.z = ushort(dx10header.arraySize);
 	iInfo.MipmapCount=0;
 	if(header.flags & DDSD_MIPMAPCOUNT) iInfo.MipmapCount = Max(ushort(1), ushort(header.mipMapCount));
-	if(iInfo.Format==null || iInfo.Type==ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z==0)
+	if(iInfo.Format == null || iInfo.Type == ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z == 0)
 		return null;
 
 	/*if(!iInfo.format.IsCompressed())
@@ -371,17 +375,17 @@ AnyImage LoaderDDS::Load(InputStream stream) const
 	result.Info = iInfo;
 	result.LineAlignment = 1;
 
-	if(iInfo.MipmapCount==0) iInfo.MipmapCount=1;
+	if(iInfo.MipmapCount == 0) iInfo.MipmapCount = 1;
 	size_t dataSize = iInfo.CalculateFullDataSize(result.LineAlignment);
 	result.Data.SetCountUninitialized(dataSize);
-	stream.ReadRawTo(result.Data.Data(), dataSize);
+	RawReadTo(stream, result.Data.Data(), dataSize);
 	return result;
 }
 
 
-void LoaderDDS::Save(const AnyImage& img, OutputStream& stream) const
+void LoaderDDS::Save(const AnyImage& img, IOutputStream& stream) const
 {
-	stream.WriteRawFrom("DDS ");
+	stream << "DDS ";
 
 	DDS_HEADER header;
 	header.size = sizeof(header);
@@ -389,7 +393,7 @@ void LoaderDDS::Save(const AnyImage& img, OutputStream& stream) const
 	header.width = img.Info.Size.x;
 	header.height = img.Info.Size.y;
 	header.depth = img.Info.Size.z;
-	header.mipMapCount = img.Info.MipmapCount==0? ushort(1): img.Info.MipmapCount;
+	header.mipMapCount = img.Info.MipmapCount == 0? ushort(1): img.Info.MipmapCount;
 	if(!img.Info.Format.IsCompressed()) header.flags |= DDSD_PITCH;
 	else header.flags |= DDSD_LINEARSIZE;
 	header.caps = DDSCAPS_TEXTURE;
@@ -428,16 +432,17 @@ void LoaderDDS::Save(const AnyImage& img, OutputStream& stream) const
 	if(img.Info.Format.IsCompressedBC1_BC7())
 	{
 		uint blockSize = img.Info.Format.BitsPerPixel()*4u*4u/8u; //4*4 верно не для всех сжатых форматов, но верно для BC1-BC7
-		header.pitchOrLinearSize = Max(1u, ((img.Info.Size.x+3u)/4u)) * blockSize;
+		header.pitchOrLinearSize = Max(1u, ((img.Info.Size.x + 3u)/4u)) * blockSize;
 	}
-	else header.pitchOrLinearSize = (uint(img.Info.Size.x)*img.Info.Format.BitsPerPixel()+7u)/8u;
+	else header.pitchOrLinearSize = (uint(img.Info.Size.x)*img.Info.Format.BitsPerPixel() + 7u) / 8u;
 
-	stream.WriteRaw<DDS_HEADER>(header);
+	Range::RawWrite<DDS_HEADER>(stream, header);
 	if(has_dx10_header(header.ddspf))
-		stream.WriteRaw<DDS_HEADER_DXT10>(dx10header);
+		Range::RawWrite<DDS_HEADER_DXT10>(stream, dx10header);
 	size_t dataSize = img.Info.CalculateFullDataSize(img.LineAlignment);
 	INTRA_ASSERT_EQUALS(dataSize, img.Data.Count());
-	stream.WriteRawFrom(img.Data.Take(dataSize));
+
+	RawWriteFrom(stream, img.Data.Take(dataSize));
 }
 
 const LoaderDDS LoaderDDS::Instance;

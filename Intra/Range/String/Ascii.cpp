@@ -73,9 +73,9 @@ StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstB
 	INTRA_DEBUG_ASSERT(fromSubStrs.Length()==toSubStrs.Length());
 	char* begin = dstBuffer.Data();
 	size_t substrIndex=0;
-	while(CopyToAdvance(StringReadUntilAscii(src, fromSubStrs, &substrIndex), dstBuffer), !src.Empty())
+	while(WriteTo(StringReadUntilAscii(src, fromSubStrs, &substrIndex), dstBuffer), !src.Empty())
 	{
-		CopyToAdvance(toSubStrs[substrIndex], dstBuffer);
+		WriteTo(toSubStrs[substrIndex], dstBuffer);
 		src.PopFirstExactly(fromSubStrs[substrIndex].Length());
 	}
 	return StringView(begin, dstBuffer.Data());

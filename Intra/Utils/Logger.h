@@ -1,9 +1,12 @@
 #pragma once
 
 #include "Cpp/Features.h"
+
 #include "StringView.h"
+
 #include "Utils/Debug.h"
-#include "Delegate.h"
+
+#include "Funal/Delegate.h"
 
 namespace Intra { namespace Utils {
 

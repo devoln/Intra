@@ -77,21 +77,21 @@ void TestFileSyncIO(FormattedWriter& output)
 	INTRA_ASSERT(Contains(htmlString, "Зелёный текст"));
 
 	FileReader file = OS.FileOpen("TestFileSyncIO.txt", Error::Skip());
-	uint value = file.ReadRaw<uintLE>();
+	uint value = file.RawRead<uintLE>();
 	INTRA_ASSERT_EQUALS(char(value & 255), 'F');
 	INTRA_ASSERT_EQUALS(char((value >> 8) & 255), 'i');
 	INTRA_ASSERT_EQUALS(char((value >> 16) & 255), 'b');
 	INTRA_ASSERT_EQUALS(char((value >> 24) & 255), 'o');
 
-	value = OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).ReadRaw<uintBE>(); //Читаем беззнаковое число в порядке байт big-endian
+	value = OS.FileOpen("TestFileSyncIO.txt", Error::Skip()).RawRead<uintBE>(); //Читаем беззнаковое число в порядке байт big-endian
 	INTRA_ASSERT_EQUALS(char(value & 255), 'o');
 	INTRA_ASSERT_EQUALS(char((value >> 8) & 255), 'b');
 	INTRA_ASSERT_EQUALS(char((value >> 16) & 255), 'i');
 	INTRA_ASSERT_EQUALS(char((value >> 24) & 255), 'F');
 
 	FileReader file2 = file;
-	uint value1 = file.ReadRaw<uintLE>();
-	uint value2 = file2.ReadRaw<uintLE>();
+	uint value1 = file.RawRead<uintLE>();
+	uint value2 = file2.RawRead<uintLE>();
 	INTRA_ASSERT_EQUALS(value1, value2);
 
 	//Запись в стандартный вывод. Если это консоль, то на неё выведется цветной текст.

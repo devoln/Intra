@@ -5,7 +5,7 @@
 #include "Range/ForwardDecls.h"
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
-#include "Utils/Op.h"
+#include "Funal/Op.h"
 #include "Range/Output/OutputArrayRange.h"
 #include "Utils/StringView.h"
 #include "Range/Mutation/CopyUntil.h"
@@ -46,7 +46,7 @@ public:
 	void PopFirst()
 	{
 		mBuffer.Reset();
-		CopyAdvanceToAdvanceUntil(mOriginalRange, mBuffer, Op::IsLineSeparator<Concepts::ValueTypeOf<R>>);
+		ReadWriteUntil(mOriginalRange, mBuffer, Funal::IsLineSeparator);
 		if(mOriginalRange.Empty())
 		{
 			if(mBuffer.ElementsWritten() == 0) mBuffer = null;

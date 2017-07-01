@@ -1,7 +1,9 @@
 ﻿#pragma once
 
-#include "Utils/Delegate.h"
 #include "Utils/Span.h"
+
+#include "Funal/Delegate.h"
+
 #include "Audio/MusicNote.h"
 
 namespace Intra { namespace Audio {
@@ -21,9 +23,20 @@ public:
 	virtual void PrepareToPlay(const MusicTrack& /*track*/, uint /*sampleRate*/) const {}
 };
 
-typedef Delegate<void(float freq, float volume, Span<float> outSamples, uint sampleRate, bool add)> SynthPass;
-typedef Delegate<void(float freq, Span<float> inOutSamples, uint sampleRate)> ModifierPass;
-typedef Delegate<void(float noteDuration, Span<float> inOutSamples, uint sampleRate)> AttenuationPass;
-typedef Delegate<void(Span<float> inOutSamples, uint sampleRate)> PostEffectPass;
+typedef Funal::CopyableDelegate<void(
+	float freq, float volume, Span<float> outSamples, uint sampleRate, bool add
+)> SynthPass;
+
+typedef Funal::CopyableDelegate<void(
+	float freq, Span<float> inOutSamples, uint sampleRate
+)> ModifierPass;
+
+typedef Funal::CopyableDelegate<void(
+	float noteDuration, Span<float> inOutSamples, uint sampleRate
+)> AttenuationPass;
+
+typedef Funal::CopyableDelegate<void(
+	Span<float> inOutSamples, uint sampleRate
+)> PostEffectPass;
 
 }}}

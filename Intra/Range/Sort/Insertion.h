@@ -1,9 +1,14 @@
 ﻿#pragma once
 
 #include "Utils/Span.h"
+
+#include "Funal/Op.h"
+
 #include "Cpp/Warnings.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
 #include "Range/Operations.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -18,10 +23,10 @@ namespace Intra { namespace Range {
 //! - Самый эффективный алгоритм для сортировки до нескольких десятков элементов;
 //! - Эффективен, если массив уже частично отсортирован;
 //! - Устойчив.
-template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOf<R>>> Meta::EnableIf<
+template<typename R, typename C = Funal::TLess> Meta::EnableIf<
 	Concepts::IsRandomAccessRangeWithLength<R>::_ &&
 	Concepts::IsAssignableRange<R>::_
-> InsertionSort(const R& range, C comparer = Op::Less<Concepts::ValueTypeOf<R>>)
+> InsertionSort(const R& range, C comparer = Funal::Less)
 {
 	const size_t count = Count(range);
 	for(size_t x=1; x<count; x++)
@@ -31,21 +36,21 @@ template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOf<R>>> M
 	}
 }
 
-template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOfAs<R>>,
+template<typename R, typename C = Funal::TLess,
 	typename AsR = Concepts::RangeOfType<R>
 > forceinline Meta::EnableIf<
 	!Concepts::IsInputRange<R>::_ &&
 	Concepts::IsRandomAccessRangeWithLength<AsR>::_ &&
 	Concepts::IsAssignableRange<AsR>::_
-> InsertionSort(R&& range, C comparer=Op::Less<Concepts::ValueTypeOf<R>>)
+> InsertionSort(R&& range, C comparer = Funal::Less)
 {InsertionSort(Range::Forward<R>(range), comparer);}
 
 //! Сортировка Шелла массива array с предикатом сравнения comparer.
-template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOf<R>>>
+template<typename R, typename C=Funal::TLess>
 Meta::EnableIf<
 	Concepts::IsRandomAccessRangeWithLength<R>::_ &&
 	Concepts::IsAssignableRange<R>::_
-> ShellSort(const R& range, C comparer=Op::Less<Concepts::ValueTypeOf<R>>)
+> ShellSort(const R& range, C comparer = Funal::Less)
 {
 	const size_t count = Count(range);
 	for(size_t d=count/2; d!=0; d/=2)
@@ -54,13 +59,13 @@ Meta::EnableIf<
 				Cpp::Swap(range[j], range[j-d]);
 }
 
-template<typename R, typename C=Comparers::Function<Concepts::ValueTypeOfAs<R>>,
+template<typename R, typename C=Funal::TLess,
 	typename AsR=Concepts::RangeOfType<R>
 > forceinline Meta::EnableIf<
 	!Concepts::IsInputRange<R>::_ &&
 	Concepts::IsRandomAccessRangeWithLength<AsR>::_ &&
 	Concepts::IsAssignableRange<AsR>::_
-> ShellSort(R&& range, C comparer=Op::Less<Concepts::ValueTypeOf<R>>)
+> ShellSort(R&& range, C comparer = Funal::Less)
 {ShellSort(Range::Forward<R>(range), comparer);}
 
 }}

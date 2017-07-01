@@ -13,40 +13,40 @@ template<typename R, typename T> struct OutputStreamMixin
 {
 	template<typename U> Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> WriteRawFromAdvance(Span<U>& src, size_t maxElementsToRead)
+	size_t> RawWriteFromAdvance(Span<U>& src, size_t maxElementsToRead)
 	{
 		auto src1 = src.Take(maxElementsToRead).template Reinterpret<const T>();
-		size_t elementsRead = CopyAdvanceToAdvance(src1, *static_cast<R*>(this))*sizeof(T)/sizeof(U);
+		size_t elementsRead = ReadWrite(src1, *static_cast<R*>(this))*sizeof(T)/sizeof(U);
 		src.Begin += elementsRead;
 		return elementsRead;
 	}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> WriteRawFromAdvance(Span<U>& src)
-	{return WriteRawFromAdvance(src, src.Length());}
+	size_t> RawWriteFromAdvance(Span<U>& src)
+	{return RawWriteFromAdvance(src, src.Length());}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> WriteRawFrom(Span<U> src)
-	{return WriteRawFromAdvance(src);}
+	size_t> RawWriteFrom(Span<U> src)
+	{return RawWriteFromAdvance(src);}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_,
-	size_t> WriteRawFrom(U* src, size_t n)
-	{return WriteRawFrom(Span<U>(src, n));}
+	size_t> RawWriteFrom(U* src, size_t n)
+	{return RawWriteFrom(Span<U>(src, n));}
 
 	template<typename R1> forceinline Meta::EnableIf<
 		!Concepts::IsInputRange<R1>::_ &&
 		Concepts::IsArrayClass<R1>::_ &&
 		Meta::IsTriviallySerializable<Concepts::ElementTypeOfArray<R1>>::_,
-	size_t> WriteRawFrom(R1&& dst)
-	{return WriteRawFrom(CSpanOf(dst));}
+	size_t> RawWriteFrom(R1&& dst)
+	{return RawWriteFrom(CSpanOf(dst));}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_
-	> WriteRaw(const U& dst)
-	{WriteRawFrom(CSpan<U>(&dst, 1u));}
+	> RawWrite(const U& dst)
+	{RawWriteFrom(CSpan<U>(&dst, 1u));}
 
 
 	template<typename Arg0> forceinline R& Print(Arg0&& t)

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Math/Fixed.h"
+#include "Math/FixedPoint.h"
 #include "Utils/Span.h"
 #include "Types.h"
 

@@ -9,7 +9,7 @@ INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_LOSING_CONVERSION
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
-namespace Intra { namespace Utils {
+namespace Intra { namespace Funal {
 
 template<typename F, typename A1> struct TBind1
 {
@@ -86,9 +86,6 @@ template<typename F, typename Arg1, typename Arg2, typename Arg3, typename Arg4,
 TBind4<F, Arg1, Arg2, Arg3, Arg4> Bind(F&& f, Arg1&& arg1, Arg2&& arg2, Arg3&& arg3, Arg4&& arg4, Arg5&& arg5)
 {return {Cpp::Forward<F>(f), Cpp::Forward<Arg1>(arg1), Cpp::Forward<Arg2>(arg2), Cpp::Forward<Arg3>(arg3), Cpp::Forward<Arg4>(arg4), Cpp::Forward<Arg5>(arg5)};}
 
-}
-using Utils::Bind;
-
-}
+}}
 
 INTRA_WARNING_POP

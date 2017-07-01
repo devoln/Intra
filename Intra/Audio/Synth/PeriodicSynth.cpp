@@ -30,14 +30,14 @@ void RepeatFragmentInBuffer(CSpan<float> fragmentSamples, Span<float> inOutSampl
 {
 	const size_t copyPassCount = inOutSamples.Length()/fragmentSamples.Length();
 	if(!add) for(size_t c=0; c<copyPassCount; c++)
-		CopyToAdvance(fragmentSamples, inOutSamples);
+		WriteTo(fragmentSamples, inOutSamples);
 	else for(size_t c=0; c<copyPassCount; c++)
 	{
 		Add(inOutSamples.TakeExactly(fragmentSamples.Length()), fragmentSamples);
 		inOutSamples.PopFirstExactly(fragmentSamples.Length());
 	}
 
-	if(!add) CopyToAdvance(fragmentSamples.Take(inOutSamples.Length()), inOutSamples);
+	if(!add) WriteTo(fragmentSamples.Take(inOutSamples.Length()), inOutSamples);
 	else Add(inOutSamples, fragmentSamples.Take(inOutSamples.Length()));
 }
 

@@ -2,13 +2,21 @@
 #include "Audio/Synth/SineSynth.h"
 #include "Audio/Synth/ExponentialAttenuation.h"
 #include "Audio/Synth/PeriodicSynth.h"
+#include "Audio/AudioBuffer.h"
+
 #include "Utils/Span.h"
+
+#include "Funal/Bind.h"
+
 #include "Simd/Simd.h"
+
 #include "Range/Mutation/Copy.h"
 #include "Range/Mutation/Fill.h"
+
 #include "Container/Sequential/Array.h"
+
 #include "Random/FastUniform.h"
-#include "Audio/AudioBuffer.h"
+
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -154,7 +162,7 @@ SynthPass CreateSineExpSynthPass(CSpan<SineExpHarmonic> harmonics)
 	const auto src = harmonics.Take(Concepts::LengthOf(params.Harmonics));
 	params.Len = byte(src.Length());
 	CopyTo(src, params.Harmonics);
-	return SynthPass(SineExpSynthPassFunction, params);
+	return Funal::Bind(SineExpSynthPassFunction, params);
 }
 
 }}}

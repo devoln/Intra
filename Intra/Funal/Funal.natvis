@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+  <Type Name="Intra::Funal::Delegate&lt;*&gt;">
+    <DisplayString Condition="mFunctor.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*mFunctor.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*mFunctor.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::CopyableDelegate&lt;*&gt;">
+    <DisplayString Condition="mFunctor.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*mFunctor.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*mFunctor.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

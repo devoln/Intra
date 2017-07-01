@@ -84,7 +84,7 @@ public:
 	{
 		INTRA_DEBUG_ASSERT(!name.Empty());
 		Range::CopyToAdvanceByOne(Lang.LeftFieldNameBeginQuote, Output);
-		Range::CopyToAdvance(name, Output);
+		Range::WriteTo(name, Output);
 		Range::CopyToAdvanceByOne(Lang.LeftFieldNameEndQuote, Output);
 
 		if(Params.UseAssignmentSpaces)
@@ -109,7 +109,7 @@ public:
 			Output.Put(' ');
 
 		Range::CopyToAdvanceByOne(Lang.RightFieldNameBeginQuote, Output);
-		Range::CopyToAdvance(name, Output);
+		Range::WriteTo(name, Output);
 		Range::CopyToAdvanceByOne(Lang.RightFieldNameEndQuote, Output);
 	}
 

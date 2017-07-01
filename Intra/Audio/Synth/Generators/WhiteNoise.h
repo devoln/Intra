@@ -21,7 +21,7 @@ struct WhiteNoise
 	forceinline float NextSample() {PopFirst(); return First();}
 	forceinline void PopFirst() {mS += mDS;}
 	forceinline float First() const {return mAmplitude*Random::FastUniformNoise::Linear(mS);}
-	bool Empty() const {return false;}
+	forceinline bool Empty() const {return false;}
 
 private:
 	float mAmplitude;

@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "Range/ForwardDecls.h"
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
 #include "Utils/Optional.h"
-#include "Utils/Method.h"
+
+#include "Funal/Method.h"
 
 namespace Intra { namespace Range {
 
@@ -86,8 +87,8 @@ template<typename R, typename RET,
 	typename T = Concepts::ValueTypeOf<AsR>
 > forceinline Meta::EnableIf<
 	Concepts::IsConsumableRange<AsR>::_,
-RMap<Meta::RemoveConstRef<AsR>, Utils::ConstMethodWrapper<T, RET>>> Map(R&& range, RET(T::*func)() const)
-{return {Range::Forward<R>(range), Utils::Method(func)};}
+RMap<Meta::RemoveConstRef<AsR>, Funal::ConstMethodWrapper<T, RET>>> Map(R&& range, RET(T::*func)() const)
+{return {Range::Forward<R>(range), Funal::Method(func)};}
 
 INTRA_WARNING_POP
 

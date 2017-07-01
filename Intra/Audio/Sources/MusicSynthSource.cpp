@@ -11,7 +11,7 @@ namespace Intra { namespace Audio { namespace Sources {
 
 
 MusicSynthSource::MusicSynthSource(const Music& data, uint sampleRate):
-	ASoundSource(sampleRate, 1),
+	AAudioSource(sampleRate, 1),
 	mData(data), mBuffer(), mCurrentSamplePos(0),
 	mSampleCount(size_t(mData.Duration()*sampleRate)),
 	mCurrentPositions(data.Tracks.Count()),
@@ -106,7 +106,7 @@ size_t MusicSynthSource::GetInterleavedSamples(Span<short> outShorts)
 size_t MusicSynthSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	const size_t floatsRead = LoadNextNormalizedSamples(uint(outFloats.Length()));
-	CopyToAdvance(mBuffer.Samples.Take(floatsRead), outFloats);
+	WriteTo(mBuffer.Samples.Take(floatsRead), outFloats);
 	FillZeros(outFloats);
 	mProcessedSamplesToFlush = floatsRead;
 	FlushProcessedSamples();

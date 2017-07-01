@@ -2,6 +2,7 @@
 #include "Simd/Simd.h"
 #include "Utils/Span.h"
 #include "Math/Math.h"
+#include "Funal/Bind.h"
 
 #define OPTIMIZE
 
@@ -12,7 +13,7 @@ void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float 
 	float* const dstEnd = dst.Take(src.Length()).End;
 #ifndef OPTIMIZE
 
-#elif(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	float ek8 = ek*ek;
 	ek8 *= ek8;
 	ek8 *= ek8;
@@ -170,6 +171,8 @@ void ExponentialAttenuationPassFunction(const float& coeff,
 }
 
 AttenuationPass CreateExponentialAttenuationPass(float coeff)
-{return AttenuationPass(ExponentialAttenuationPassFunction, coeff);}
+{return Funal::Bind(ExponentialAttenuationPassFunction, coeff);}
 
 }}}
+
+#undef OPTIMIZE

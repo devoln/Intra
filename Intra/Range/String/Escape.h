@@ -46,12 +46,12 @@ TakeResult<OR>> StringEscapeToAdvance(const R& src, OR&& dstBuffer,
 	auto range = src;
 	auto dstBegin = dstBuffer;
 	AsciiSet escapeCharset = AsciiSet(charsToEscape);
-	while(CopyToAdvance(TakeUntilAdvance(src, escapeCharset, dstBuffer)), !src.Empty())
+	while(WriteTo(TakeUntilAdvance(src, escapeCharset, dstBuffer)), !src.Empty())
 	{
 		dstBuffer.Put(escapeChar);
 		size_t index = 0;
 		Find(charsToEscape, src.First(), &index);
-		CopyToAdvance(AtIndex(escapeSequences, index), dstBuffer);
+		WriteTo(AtIndex(escapeSequences, index), dstBuffer);
 	}
 	return Take(dstBegin, DistanceTo(dstBegin, dstBuffer));
 }

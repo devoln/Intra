@@ -2,7 +2,7 @@
 
 #include "Cpp/Features.h"
 
-namespace Intra { namespace Utils {
+namespace Intra { namespace Funal {
 
 template<class T, typename R, typename... Args> struct MethodWrapper
 {
@@ -26,8 +26,4 @@ forceinline MethodWrapper<T, R, Args...> Method(R(T::*ptr)(Args...)) {return {pt
 template<typename T, typename R, typename... Args>
 forceinline ConstMethodWrapper<T, R, Args...> Method(R(T::*ptr)(Args...) const) {return {ptr};}
 
-}
-using Utils::Method;
-
-}
-
+}}

@@ -36,8 +36,8 @@ public:
 		Meta::IsTriviallySerializable<T>::_
 	> SerializeArray(CSpan<T> v)
 	{
-		Range::WriteRaw<uintLE>(Output, uint(v.Length()));
-		Range::CopyToRawAdvance(v, Output);
+		Range::RawWrite<uintLE>(Output, uint(v.Length()));
+		Range::RawWriteFrom(Output, v);
 	}
 
 	//! Сериализовать массив поэлементно.
@@ -48,7 +48,7 @@ public:
 	//! Сериализовать диапазон поэлементно.
 	template<typename R> void SerializeRange(R&& v)
 	{
-		Range::WriteRaw<uintLE>(Output, uint(Range::Count(v)));
+		Range::RawWrite<uintLE>(Output, uint(Range::Count(v)));
 		Range::ForEach(Cpp::Forward<R>(v), *this);
 	}
 
@@ -59,7 +59,7 @@ public:
 		!Concepts::IsInputRange<T>::_,
 	GenericBinarySerializer&> operator<<(const T& v)
 	{
-		Range::WriteRaw<T>(Output, v);
+		Range::RawWrite<T>(Output, v);
 		return *this;
 	}
 
@@ -90,7 +90,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_,
 	GenericBinarySerializer&> operator<<(T(&src)[N])
 	{
-		Range::CopyToRawAdvance(src, Output, sizeof(T)*N/sizeof(Concepts::ValueTypeOf<O>));
+		Range::RawWriteFrom(Output, src, sizeof(T)*N);
 		return *this;
 	}
 
@@ -109,7 +109,7 @@ public:
 		Meta::IsTriviallySerializable<T>::_,
 	GenericBinarySerializer&> operator<<(C&& src)
 	{
-		Range::CopyToRawAdvance(SpanOf(src), Output);
+		Range::RawWriteFrom(Output, SpanOf(src));
 		return *this;
 	}
 
@@ -136,15 +136,15 @@ public:
 	//! Получить размер в байтах, который займёт элемент value при сериализации без учёта выравнивания.
 	template<typename T> static size_t SerializedSizeOf(T&& value)
 	{
-		GenericBinarySerializer<Range::CountRange<byte>> dummy({});
+		GenericBinarySerializer<CountRange<byte>> dummy({});
 		dummy << Cpp::Forward<T>(value);
 		return dummy.Output.Counter;
 	}
 
 	O Output;
 };
-typedef GenericBinarySerializer<Range::OutputArrayRange<byte>> BinarySerializer;
-typedef GenericBinarySerializer<Range::CountRange<byte>> DummyBinarySerializer;
+typedef GenericBinarySerializer<OutputArrayRange<byte>> BinarySerializer;
+typedef GenericBinarySerializer<CountRange<byte>> DummyBinarySerializer;
 
 INTRA_WARNING_POP
 

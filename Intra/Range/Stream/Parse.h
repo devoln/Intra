@@ -1,13 +1,16 @@
 ﻿#pragma once
 
+#include "Cpp/Warnings.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
+#include "Funal/Op.h"
+
 #include "Range/Decorators/Take.h"
 #include "Range/Decorators/TakeUntil.h"
 #include "Range/Search/Trim.h"
 #include "Range/Search/Distance.h"
-#include "Utils/Op.h"
-#include "Cpp/Warnings.h"
 #include "Range/Stream/Spaces.h"
 
 namespace Intra { namespace Range {
@@ -24,7 +27,7 @@ bool> ParseSignAdvance(R& src)
 	while(!src.Empty())
 	{
 		if(src.First()=='-') minus = !minus;
-		else if(src.First()!='+' && !Op::IsSpace(src.First())) break;
+		else if(src.First() != '+' && !Funal::IsSpace(src.First())) break;
 		src.PopFirst();
 	}
 	return minus;
@@ -36,7 +39,7 @@ template<typename X, typename R> Meta::EnableIf<
 	Meta::IsUnsignedIntegralType<X>::_,
 X> ParseAdvance(R& src)
 {
-	TrimLeftAdvance(src, Op::IsSpace<Concepts::ValueTypeOf<R>>);
+	TrimLeftAdvance(src, Funal::IsSpace);
 	X result = 0;
 	while(!src.Empty())
 	{
@@ -109,8 +112,8 @@ template<typename R, typename CR> Meta::EnableIf<
 	!Meta::IsConst<CR>::_,
 bool> ExpectAdvance(R& src, CR& stringToExpect)
 {
-	TrimLeftAdvance(src, Op::IsSpace<Concepts::ValueTypeOf<R>>);
-	TrimLeftAdvance(stringToExpect, Op::IsSpace<Concepts::ValueTypeOf<R>>);
+	TrimLeftAdvance(src, Funal::IsSpace);
+	TrimLeftAdvance(stringToExpect, Funal::IsSpace);
 	auto srcCopy = src;
 	if(StartsAdvanceWith(srcCopy, stringToExpect))
 	{
@@ -150,7 +153,7 @@ template<typename R, typename P1, typename P2> Meta::EnableIf<
 	Meta::IsCallable<P2, Concepts::ValueTypeOf<R>>::_,
 TakeResult<R>> ParseIdentifierAdvance(R& src, P1 isNotIdentifierFirstChar, P2 isNotIdentifierChar)
 {
-	TrimLeftAdvance(src, Op::IsHorSpace<char>);
+	TrimLeftAdvance(src, Funal::IsHorSpace);
 	if(src.Empty() || isNotIdentifierFirstChar(src.First())) return null;
 	auto result = src;
 	src.PopFirst();

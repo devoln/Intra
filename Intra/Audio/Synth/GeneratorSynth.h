@@ -1,8 +1,13 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
+
 #include "Audio/Synth/Generators/WhiteNoise.h"
+
 #include "Utils/Span.h"
+#include "Funal/Bind.h"
+
+#include "Random/FastUniform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -70,13 +75,13 @@ template<typename T> SynthPass CreateGeneratorSynthPass(
 	T generator, float scale=1, ushort harmonics=1, float freqMultiplyer=1)
 {
 	D::SamplerPassParams<T> params = {generator, harmonics, scale, freqMultiplyer};
-	return SynthPass(D::GeneratorSynthPassFunction<T>, params);
+	return Funal::Bind(D::GeneratorSynthPassFunction<T>, params);
 }
 
 SynthPass CreateWhiteNoiseSynthPass(float scale=1, ushort harmonics=1, float freqMultiplyer=1)
 {
 	D::WhiteNoisePassParams params = {harmonics, scale, freqMultiplyer};
-	return SynthPass(D::WhiteNoiseSynthPassFunction, params);
+	return Funal::Bind(D::WhiteNoiseSynthPassFunction, params);
 }
 
 INTRA_WARNING_POP

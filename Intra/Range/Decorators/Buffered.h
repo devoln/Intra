@@ -69,10 +69,10 @@ public:
 		loadBuffer();
 	}
 
-	void CopyAdvanceToAdvance(Span<T>& dst)
+	void ReadWrite(Span<T>& dst)
 	{
-		CopyAdvanceToAdvance(mBufferRange, dst);
-		CopyAdvanceToAdvance(mOriginalRange, dst);
+		ReadWrite(mBufferRange, dst);
+		ReadWrite(mOriginalRange, dst);
 		if(!mBufferRange.Empty()) return;
 		loadBuffer();
 	}
@@ -86,7 +86,7 @@ public:
 	}
 
 private:
-	void loadBuffer() {mBufferRange = Take(mBuffer, CopyAdvanceTo(mOriginalRange, mBuffer));}
+	void loadBuffer() {mBufferRange = Take(mBuffer, ReadTo(mOriginalRange, mBuffer));}
 
 	R mOriginalRange;
 	Span<T> mBuffer;

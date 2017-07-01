@@ -33,20 +33,24 @@ public:
 	}
 };
 
-template<typename T> class IOutputStream: public IOutput<T>
+template<typename T> class IOutputEx: public IOutput<T>
 {
 public:
 	virtual size_t PutAllAdvance(Span<const T>& src) = 0;
 };
 
+typedef IOutputEx<char> IOutputStream;
+
 }
 
 namespace Concepts {
 using Range::IOutput;
+using Range::IOutputEx;
 using Range::IOutputStream;
 }
 
 using Range::IOutput;
+using Range::IOutputEx;
 using Range::IOutputStream;
 
 }

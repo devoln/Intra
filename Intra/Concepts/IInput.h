@@ -7,9 +7,6 @@ namespace Intra {
 
 namespace Range {
 template<typename T> struct Span;
-}
-
-namespace Concepts {
 
 template<typename T> class IInput
 {
@@ -29,7 +26,7 @@ public:
 	}
 };
 
-template<typename T> class IInputStream: public IInput<T>
+template<typename T> class IInputEx: public IInput<T>
 {
 public:
 	virtual size_t PopFirstN(size_t count)
@@ -42,11 +39,19 @@ public:
 		return count;
 	}
 
-	virtual size_t CopyAdvanceToAdvance(Span<Meta::RemoveConstRef<T>>& dst) = 0;
+	virtual size_t ReadWrite(Span<Meta::RemoveConstRef<T>>& dst) = 0;
 };
 
+typedef IInputEx<char> IInputStream;
+
+}
+namespace Concepts {
+using Range::IInput;
+using Range::IInputEx;
+using Range::IInputStream;
 }
 using Concepts::IInput;
+using Concepts::IInputEx;
 using Concepts::IInputStream;
 
 }

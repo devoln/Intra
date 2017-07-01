@@ -21,7 +21,7 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 namespace Intra { namespace Meta {
 
 template<typename T> T&& Val();
-struct UniFunctor {template<typename T> void operator()(T);};
+struct UniFunctor {template<typename... Args> void operator()(Args&&...);};
 
 using Cpp::TypeFromValue;
 using Cpp::FalseType;

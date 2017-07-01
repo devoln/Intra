@@ -1,4 +1,6 @@
-﻿#include "SoundApi.h"
+﻿#pragma once
+
+#include "Sound.h"
 
 #include "Cpp/Warnings.h"
 
@@ -8,10 +10,6 @@
 
 #include "Data/ValueType.h"
 
-//#define INTRA_LIBRARY_SOUND_SYSTEM INTRA_LIBRARY_SOUND_SYSTEM_ALSA
-
-#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_ALSA)
-
 
 #include <alsa/asoundlib.h>
 
@@ -19,8 +17,6 @@
 namespace Intra { namespace Audio {
 
 using namespace Intra::Math;
-
-namespace SoundAPI {
 
 const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
 const int InternalChannelsInterleaved = true;
@@ -400,8 +396,3 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 
 }}
 
-#else
-
-INTRA_DISABLE_LNK4221
-
-#endif

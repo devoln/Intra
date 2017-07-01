@@ -1,11 +1,14 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
-#include "Range/Operations.h"
-#include "Utils/Op.h"
-#include "Range/Mutation/Copy.h"
-#include "Concepts/Range.h"
+
 #include "Utils/Span.h"
+#include "Funal/Op.h"
+
+#include "Range/Operations.h"
+#include "Range/Mutation/Copy.h"
+
+#include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
 
 #include "InputRange.h"
