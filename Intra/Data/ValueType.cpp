@@ -36,6 +36,7 @@ ushort ValueType::Size() const
 		sizeof(uint),   sizeof(Math::UVec2),  sizeof(Math::UVec3),  sizeof(Math::UVec4),
 		sizeof(sbyte),  sizeof(Math::SBVec2), sizeof(Math::SBVec3), sizeof(Math::SBVec4),
 		sizeof(short),  sizeof(Math::SVec2),  sizeof(Math::SVec3),  sizeof(Math::SVec4),
+		3,6,9,12,
 		sizeof(int),    sizeof(Math::IVec2),  sizeof(Math::IVec3),  sizeof(Math::IVec4),
 
 		1,2,2,2,4,4,
@@ -122,6 +123,7 @@ StringView ValueType::ToStringGLSL() const
 		null, null, null, null,
 		null, null, null, null,
 		null, null, null, null,
+		null, null, null, null,
 
 		null, null, null, null, null, null,
 		null, null, null, null,
@@ -164,6 +166,7 @@ StringView ValueType::ToString() const
 		"Norm32",  "N32Vec2", "N32Vec3", "N32Vec4",
 		"SNorm8",  "S8Vec2",  "S8Vec3",  "S8Vec4",
 		"SNorm16", "S16Vec2", "S16Vec3", "S16Vec4",
+		"SNorm24", "S24Vec2", "S24Vec3", "S24Vec4",
 		"SNorm32", "S32Vec2", "S32Vec3", "S32Vec4",
 
 		"NVec233", "NVec565", "NVec1555", "NVec4444", "Vec10n10n10n2n", "Vec10s10s10s2s",

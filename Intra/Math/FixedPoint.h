@@ -31,10 +31,10 @@ template<typename T, uint DIV> struct FixedPoint
 	template<typename T2, uint DIV2> constexpr forceinline explicit FixedPoint(const FixedPoint<T2, DIV2>& rhs): data(T(long64(rhs.data)*DIV/DIV2)) {}
 	FixedPoint(const FixedPoint&) = default;
 
-	constexpr forceinline FixedPoint operator+(FixedPoint rhs) const {return FixedPoint(data+rhs.data);}
-	constexpr forceinline FixedPoint operator-(FixedPoint rhs) const {return FixedPoint(data-rhs.data);}
-	constexpr forceinline FixedPoint operator*(FixedPoint rhs) const {return FixedPoint(data*rhs.data/DIV);}
-	constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(data*DIV/rhs.data);}
+	constexpr forceinline FixedPoint operator+(FixedPoint rhs) const {return FixedPoint(data + rhs.data);}
+	constexpr forceinline FixedPoint operator-(FixedPoint rhs) const {return FixedPoint(data - rhs.data);}
+	constexpr forceinline FixedPoint operator*(FixedPoint rhs) const {return FixedPoint(data * rhs.data / DIV);}
+	constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(data * DIV / rhs.data);}
 	constexpr forceinline FixedPoint operator-() const {return CastFromInt(-data);}
 
 	forceinline FixedPoint& operator+=(FixedPoint rhs) {data = T(data+rhs.data); return *this;}

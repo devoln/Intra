@@ -13,7 +13,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct SineRange
 {
-	enum: bool {RangeIsInfnite = true};
+	enum: bool {RangeIsInfinite = true};
 
 	SineRange(null_t=null):
 		mS1(0), mS2(0), mK(0) {}
@@ -23,10 +23,17 @@ template<typename T> struct SineRange
 		mS2(amplitude*Math::Sin(dphi)),
 		mK(2*Math::Cos(dphi)) {}
 
-	forceinline bool Empty() const {return false;}
-	forceinline T First() const {return mS2;}
+	forceinline bool Empty() const noexcept {return false;}
+	forceinline T First() const noexcept {return mS1;}
+
+	forceinline T Next() noexcept
+	{
+		const T result = mS1;
+		PopFirst();
+		return result;
+	}
 	
-	forceinline void PopFirst()
+	forceinline void PopFirst() noexcept
 	{
 		const T newS = mK*mS2 - mS1;
 		mS1 = mS2;

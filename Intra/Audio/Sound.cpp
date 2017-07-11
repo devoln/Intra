@@ -1,11 +1,9 @@
 ﻿#include "Sound.h"
 #include "AudioBuffer.h"
 #include "AudioSource.h"
-#include "Music.h"
-#include "Midi.h"
-#include "Sources/WaveSource.h"
-#include "Sources/VorbisSource.h"
-#include "Sources/MusicSynthSource.h"
+#include "Sources/Wave.h"
+#include "Sources/Vorbis.h"
+#include "Sources/MidiSynth.h"
 #include "SoundTypes.h"
 
 #include "Funal/ValueRef.h"
@@ -44,25 +42,24 @@ using Data::ValueType;
 
 Sound::Sound(null_t) {}
 
-Sound::Sound(const SoundInfo& bufferInfo, const void* initData):
-	mData(Shared<Data>::New(bufferInfo))
+Sound::Sound(const SoundInfo& bufferInfo, const void* initData)
 {
-	if(initData) mData->SetDataInterleaved(initData, bufferInfo.SampleType);
+	Sources::Wave src(null, bufferInfo, initData);
+	mData = Shared<Data>::New(src);
 }
 
 Sound::Sound(const AudioBuffer& dataBuffer)
 {
-	SoundInfo info(dataBuffer.Samples.Length(), dataBuffer.SampleRate, 1, ValueType::Short);
-	mData = Shared<Data>::New(info);
-	mData->SetDataInterleaved(dataBuffer.Samples.Data(), ValueType::Float);
+	Sources::Wave src(null, dataBuffer.SampleRate, 1, dataBuffer.Samples);
+	mData = Shared<Data>::New(src);
 }
 
 Sound::Sound(Sound&& rhs): mData(Cpp::Move(rhs.mData)) {}
 
+Sound::Sound(IAudioSource& src): mData(Shared<Data>::New(src)) {}
+
 Sound::~Sound() {Release();}
 
-AnyPtr Sound::Lock() {return mData->Lock();}
-void Sound::Unlock() {mData->Unlock();}
 void Sound::Release() {mData = null;}
 
 Sound& Sound::operator=(Sound&& rhs) = default;
@@ -74,21 +71,23 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 
-	Unique<AAudioSource> source;
+	Unique<IAudioSource> source;
 
 #ifndef INTRA_NO_WAVE_LOADER
 	if(fileSignature.StartsWith("RIFF"))
-		source = new Sources::WaveSource(fileMapping.AsRange());
+		source = new Sources::Wave(null, fileMapping.AsRange());
 	else
 #endif
-#if(INTRA_LIBRARY_VORBIS_DECODER!=INTRA_LIBRARY_VORBIS_DECODER_None)
+#if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileSignature.StartsWith("OggS"))
-		source = new Sources::VorbisSource(fileData);
+		source = new Sources::Vorbis(fileData);
 	else
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
 	if(fileSignature.StartsWith("MThd"))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), DefaultSampleRate());
+		source = new Sources::MidiSynth(
+			Midi::MidiFileParser::CreateSingleOrderedMessageStream(fileMapping),
+			null, DefaultSampleRate());
 	else
 #endif
 	{
@@ -96,37 +95,7 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 		return null;
 	}
 
-	return FromSource(*source);
-}
-
-Sound Sound::FromSource(AAudioSource& src)
-{
-	INTRA_WARNING_DISABLE_UNREACHABLE_CODE
-	INTRA_WARNING_DISABLE_CONSTANT_CONDITION
-
-	const SoundInfo info = {src.SampleCount(), src.SampleRate(),
-		ushort(src.ChannelCount()), InternalBufferType};
-
-	Sound result = Sound(info, null);
-	void* lockedData = result.Lock();
-	INTRA_FINALLY(result.Unlock());
-	if(InternalBufferType == ValueType::Short &&
-		(InternalChannelsInterleaved || info.Channels == 1))
-	{
-		Span<short> dst = SpanOfRawElements<short>(lockedData, info.SampleCount*src.ChannelCount());
-		src.GetInterleavedSamples(dst);
-		return result;
-	}
-	if(InternalBufferType == ValueType::Float &&
-		(InternalChannelsInterleaved || info.Channels == 1))
-	{
-		Span<float> dst = SpanOfRawElements<float>(lockedData, info.SampleCount*src.ChannelCount());
-		src.GetInterleavedSamples(dst);
-		return result;
-	}
-	//else if(InternalBufferType == ValueType::Float && !InternalChannelsInterleaved)
-		//src.GetUninterleavedSamples(SpanOfRawElements<float>(lockedData, result.SampleCount*src.ChannelCount()));
-	return result;
+	return Sound(*source);
 }
 
 void Sound::ReleaseAllSounds()
@@ -159,7 +128,7 @@ StreamedSound::StreamedSound(null_t) {}
 
 StreamedSound::StreamedSound(StreamedSound&&) = default;
 
-StreamedSound::StreamedSound(SourceRef&& src, size_t bufferSizeInSamples):
+StreamedSound::StreamedSound(Unique<IAudioSource> src, size_t bufferSizeInSamples):
 	mData(Shared<Data>::New(Cpp::Move(src), bufferSizeInSamples)) {}
 
 StreamedSound::~StreamedSound() {release();}
@@ -170,20 +139,23 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 {
 	auto fileMapping = OS.MapFile(fileName, status);
 	if(status.WasError()) return null;
-	SourceRef source = null;
+	Unique<IAudioSource> source;
+	auto fileSignature = fileMapping.AsRangeOf<char>();
 #ifndef INTRA_NO_WAVE_LOADER
-	if(fileMapping.AsRangeOf<char>().StartsWith("RIFF"))
-		source = new Sources::WaveSource(fileMapping.AsRange());
+	if(fileSignature.StartsWith("RIFF"))
+		source = new Sources::Wave(Funal::Value(Cpp::Move(fileMapping)), fileMapping);
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
-	if(fileMapping.AsRangeOf<char>().StartsWith("OggS"))
-		source = new Sources::VorbisSource(fileMapping.AsRange());
+	if(fileSignature.StartsWith("OggS"))
+		source = new Sources::Vorbis(Funal::Value(Cpp::Move(fileMapping)), fileMapping);
 	else 
 #endif
 #ifndef INTRA_NO_MUSIC_LOADER
-	if(fileMapping.AsRangeOf<char>().StartsWith("MThd"))
-		source = new Sources::MusicSynthSource(ReadMidiFile(fileMapping.AsRange(), status), 48000);
+	if(fileSignature.StartsWith("MThd"))
+		source = new Sources::MidiSynth(
+			Midi::MidiFileParser::CreateSingleOrderedMessageStream(fileMapping),
+			null, Sound::DefaultSampleRate());
 	else
 #endif
 	{
@@ -191,7 +163,6 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 		return null;
 	}
 
-	source->OnCloseResource = Funal::Value(Cpp::Move(fileMapping));
 	return StreamedSound(Cpp::Move(source), bufSize);
 }
 

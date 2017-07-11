@@ -1,5 +1,5 @@
 #pragma once
 
-#include "Sources/MusicSynthSource.h"
-#include "Sources/VorbisSource.h"
-#include "Sources/WaveSource.h"
+#include "Sources/MusicSynth.h"
+#include "Sources/Vorbis.h"
+#include "Sources/Wave.h"

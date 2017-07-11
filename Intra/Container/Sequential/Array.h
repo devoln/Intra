@@ -42,10 +42,10 @@ public:
 	template<size_t N> Array(const T(&values)[N]): Array(SpanOf(values)) {}
 
 	template<typename R,
-		typename AsR=Concepts::RangeOfType<R>,
+		typename AsR=Concepts::RangeOfTypeNoCRef<R>,
 	typename = Meta::EnableIf<
 		!Meta::TypeEqualsIgnoreCVRef<R, Array>::_ &&
-		Concepts::IsInputRange<R>::_ &&
+		Concepts::IsInputRange<AsR>::_ &&
 		(Meta::IsCopyConstructible<AsR>::_ ||
 			Concepts::HasLength<AsR>::_)
 	>> Array(R&& values): buffer(null), range(null)

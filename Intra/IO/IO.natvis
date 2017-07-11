@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+  <Type Name="Intra::IO::FileMapping">
+    <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Optional="true">Map({mFilePath}){mData}</DisplayString>
+    <DisplayString>Map{mData}</DisplayString>
+    <Expand>
+      <Item Name="File Path" Optional="true">mFilePath</Item>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::IO::WritableFileMapping">
+    <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Optional="true">MapWrite({mFilePath}){mData}</DisplayString>
+    <DisplayString>WritableFileMapping{mData}</DisplayString>
+    <Expand>
+      <Item Name="File Path" Optional="true">mFilePath</Item>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+
   <Type Name="Intra::IO::BasicFormatter">
     <DisplayString>BasicFormatter</DisplayString>
     <Expand>

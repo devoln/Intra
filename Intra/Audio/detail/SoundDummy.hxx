@@ -1,145 +1,84 @@
 ﻿#include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
 
-#include "Audio/SoundApi.h"
+#include "Audio/Sound.h"
 
-#include "Memory/Allocator/Global.h"
+#include "Range/Mutation/Fill.h"
+#include "Range/Mutation/Cast.h"
 
 #include "Data/ValueType.h"
 
-#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_Dummy)
+#include "SoundBasicData.hxx"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-
 namespace Intra { namespace Audio {
 
-using namespace Math;
+using Data::ValueType;
 
-namespace SoundAPI {
+uint Sound::DefaultSampleRate() {return 0;}
 
-const Data::ValueType::I InternalBufferType = Data::ValueType::Void;
-const int InternalChannelsInterleaved = true;
-uint InternalSampleRate() {return 48000;}
 
-struct Buffer
+struct SoundContext: detail::SoundBasicContext
 {
-	Buffer(uint sample_count, uint sampleRate, uint ch):
-		sampleCount(sample_count), sampleRate(sampleRate), channels(ch) {}
+	forceinline void ReleaseAllSounds() {}
+	forceinline void ReleaseAllStreamedSounds() {}
 
-	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
+	forceinline SoundContext() {}
 
-	uint sampleCount;
-	uint sampleRate;
-	uint channels;
+	static SoundContext& Instance()
+	{
+		static SoundContext context;
+		return context;
+	}
 
-	void* locked_bits=null;
+	SoundContext(const SoundContext&) = delete;
+	SoundContext& operator=(const SoundContext&) = delete;
 };
 
-struct Instance
+struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 {
-	Instance(BufferHandle myParent): parent(myParent) {}
+	forceinline Data(IAudioSource& src): SoundBasicData(src) {}
 
-	BufferHandle parent;
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
 
-	bool deleteOnStop=false;
+	forceinline void SetDataInterleaved(const void* data, ValueType type) {(void)data; (void)type;}
+	forceinline void Release() {}
+	forceinline void ReleaseAllInstances() {}
+	forceinline bool IsReleased() const {return false;}
+};
+
+struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
+{
+	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent)) {}
+
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
+
+	forceinline void Release() {}
+	forceinline void Play(bool loop) {(void)loop;}
+	forceinline bool IsPlaying() {return false;}
+	forceinline void Stop() {}
 };
 
 
-struct StreamedBuffer
+struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
-	//StreamedBuffer(uint bufs[2], StreamingCallback callback, uint sample_count, uint sample_rate, ushort ch):
-		//buffers{bufs[0], bufs[1]}, streamingCallback(callback), sampleCount(sampleCount), sampleRate(sample_rate), channels(ch) {}
+	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = false):
+		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount) {(void)autoStreamingEnabled;}
 
-	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
 
-	uint sampleCount; //Размер половины буфера
-	uint sampleRate;
-	uint channels;
-	bool looping=false;
+	forceinline void Release() {}
+	forceinline bool IsReleased() const {return false;}
+	forceinline void Play(bool loop) {(void)loop;}
+	forceinline bool IsPlaying() const {return false;}
+	forceinline void Stop() {}
+	forceinline void Update() {}
 };
 
-BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
-{return new Buffer(uint(sampleCount), sampleRate, channels);}
-
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type)
-{
-	INTRA_DEBUG_ASSERT(data!=null);
-	(void)data;
-	(void)snd;
-	(void)type;
-}
-
-void* BufferLock(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-	size_t size = snd->SizeInBytes();
-    snd->locked_bits = Memory::GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
-	return snd->locked_bits;
-}
-
-void BufferUnlock(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
-    snd->locked_bits=null;
-}
-
-void BufferDelete(BufferHandle snd) {delete snd;}
-
-InstanceHandle InstanceCreate(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-	return new Instance(snd);
-}
-
-void InstanceSetDeleteOnStop(InstanceHandle instance, bool del) {if(del) delete instance;}
-
-void InstanceDelete(InstanceHandle instance) {delete instance;}
-
-void InstancePlay(InstanceHandle instance, bool loop)
-{
-	INTRA_DEBUG_ASSERT(instance!=null);
-	(void)instance; (void)loop;
-}
-
-bool InstanceIsPlaying(InstanceHandle instance) {(void)instance; return false;}
-
-void InstanceStop(InstanceHandle instance) {(void)instance;}
-
-StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
-	uint channels, uint sampleRate, StreamingCallback callback)
-{
-	if(sampleCount==0 || channels==0 ||
-		sampleRate==0 || callback.CallbackFunction==null)
-			return null;
-	StreamedBufferHandle result = new StreamedBuffer;
-	result->sampleCount = uint(sampleCount);
-	result->sampleRate = sampleRate;
-	result->channels = channels;
-	return result;
-}
-
-void StreamedBufferSetDeleteOnStop(StreamedBufferHandle snd, bool del) {if(del) delete snd;}
-void StreamedBufferDelete(StreamedBufferHandle snd) {(void)snd;}
-
-void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
-{
-	INTRA_DEBUG_ASSERT(snd != null);
-	snd->looping = loop;
-}
-
-bool StreamedSoundIsPlaying(StreamedBufferHandle si) {(void)si; return false;}
-void StreamedSoundStop(StreamedBufferHandle snd) {(void)snd;}
-void StreamedSoundUpdate(StreamedBufferHandle snd) {(void)snd;}
-void SoundSystemCleanUp() {}
-
-}}}
+}}
 
 INTRA_WARNING_POP
-
-#else
-
-INTRA_DISABLE_LNK4221
-
-#endif

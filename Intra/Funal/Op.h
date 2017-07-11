@@ -64,12 +64,18 @@ INTRA_DEFINE_PREDICATE2(NotEqual, a != b);
 
 template<typename P> struct TNot1: P
 {
+private:
+	typedef P WrappedPredicate;
+public:
 	constexpr forceinline TNot1(P pred): P(Cpp::Move(pred)) {}
 	template<typename T> constexpr forceinline bool operator()(const T& a) const {return !P::operator()(a);}
 };
 
 template<typename P> struct TNot2: P
 {
+private:
+	typedef P WrappedPredicate;
+public:
 	constexpr forceinline TNot2(P pred): P(Cpp::Move(pred)) {}
 	template<typename T1, typename T2> constexpr forceinline bool operator()(const T1& a, const T2& b) const {return !P::operator()(a, b);}
 };
@@ -88,12 +94,20 @@ TNot2<Meta::RemoveConstRef<P>>> operator!(P&& p) {return Cpp::Forward<P>(p);}
 
 template<typename P1, typename P2> struct TAnd1: P1, P2
 {
+private:
+	typedef P1 WrappedPredicate1;
+	typedef P2 WrappedPredicate2;
+public:
 	constexpr forceinline TAnd1(P1 pred1, P2 pred2): P1(Cpp::Move(pred1)), P2(Cpp::Move(pred2)) {}
 	template<typename T> constexpr forceinline bool operator()(const T& a) const {return P1::operator()(a) && P2::operator()(a);}
 };
 
 template<typename P1, typename P2> struct TAnd2: P1, P2
 {
+private:
+	typedef P1 WrappedPredicate1;
+	typedef P2 WrappedPredicate2;
+public:
 	constexpr forceinline TAnd2(P1 pred1, P2 pred2): P1(Cpp::Move(pred1)), P2(Cpp::Move(pred2)) {}
 	template<typename T1, typename T2> constexpr forceinline bool operator()(const T1& a, const T2& b) const {return P1::operator()(a, b) && P2::operator()(a, b);}
 };
@@ -145,9 +159,20 @@ TOr2<Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> operator||(P1&& p1, P2
 INTRA_DEFINE_PREDICATE1(IsEven, (a & 1) == 0);
 INTRA_DEFINE_PREDICATE1(IsOdd, (a & 1) != 0);
 INTRA_DEFINE_PREDICATE1(IsHorSpace, a == ' ' || a == '\t');
-INTRA_DEFINE_PREDICATE1(IsLineSeparator, a == ' \r' || a == '\n');
-constexpr static const auto IsSpace = IsHorSpace || IsLineSeparator;
+INTRA_DEFINE_PREDICATE1(IsLineSeparator, a == '\r' || a == '\n');
+INTRA_DEFINE_PREDICATE1(IsSpace, a == ' ' || a == '\t' || a == '\r' || a == '\n');
 INTRA_DEFINE_PREDICATE1(IsAnySlash, a == '\\' || a == '/');
+INTRA_DEFINE_PREDICATE1(IsDigit, uint(a - '0') <= '9');
+INTRA_DEFINE_PREDICATE1(IsUpperLatin, uint(a - 'A') <= 'Z' - 'A');
+INTRA_DEFINE_PREDICATE1(IsLowerLatin, uint(a - 'a') <= 'z' - 'a');
+INTRA_DEFINE_PREDICATE1(IsLatin, uint(a - 'A') <= 'Z' - 'A' || uint(a - 'a') <= 'z' - 'a');
+INTRA_DEFINE_PREDICATE1(IsAsciiChar, uint(a) <= 127);
+INTRA_DEFINE_PREDICATE1(IsControlChar, uint(a) <= 31 || a == 127);
+
+INTRA_DEFINE_PREDICATE1(IsEmpty, a.Empty());
+INTRA_DEFINE_PREDICATE1(IsFull, a.Full());
+
+#undef INTRA_DEFINE_PREDICATE1
 
 struct TTrue
 {
@@ -172,7 +197,6 @@ constexpr static const TFalse False{};
 INTRA_DEFINE_UNARY_OP(ToLowerAscii, T((unsigned(a - 'A') > 'Z' - 'A')? a: a + ('a' - 'A')));
 INTRA_DEFINE_UNARY_OP(ToUpperAscii, T((unsigned(a - 'a') > 'z' - 'a')? a: a - ('a' - 'A')));
 
-INTRA_DEFINE_PREDICATE1(IsDigit, uint(a - '0') <= '9');
 
 namespace Comparers {
 	template<typename T> using Function = bool(*)(const T& a, const T& b);

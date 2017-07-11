@@ -53,13 +53,13 @@ DrumPhysicalModel::DrumPhysicalModel(null_t):
 	mCnt(0), mDX(0), mDY(0),
 	mFrc(0), mK1(0), mK2(0),
 	mP(), mS(), mF(),
-	mAmplitude(1), mdt(0), mFRandom(), mPrevRand(0) {}
+	mFRandom(), mPrevRand(0) {}
 
 DrumPhysicalModel::DrumPhysicalModel(byte count, byte dx, byte dy, float frc, float kDemp, float kRand):
 	mCnt(count), mDX(dx), mDY(dy),
 	mFrc(frc), mK1(0), mK2(0),
 	mP(dx, dy), mS(dx, dy), mF(dx, dy),
-	mAmplitude(1), mdt(1.0f/44100.0f), mFRandom(), mPrevRand(0)
+	mFRandom(), mPrevRand(0)
 {
 	mK1 = 1.0f - kDemp*0.333f*frc;
 	mK2 = (1.0f-mK1)*0.25f;
@@ -78,13 +78,6 @@ DrumPhysicalModel::DrumPhysicalModel(byte count, byte dx, byte dy, float frc, fl
 	mF(dx/2u, 1) = frc;
 	mS(0, 0) = 10;
 	mS(dx/2u, dy/2u) = -10;
-}
-
-void DrumPhysicalModel::SetParams(float frequency, float amplitude, double step)
-{
-	(void)frequency;
-	mAmplitude = amplitude;
-	mdt = float(step);
 }
 
 float DrumPhysicalModel::sRand()

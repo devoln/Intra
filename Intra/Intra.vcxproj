@@ -237,32 +237,32 @@
     <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(LibraryPath);$(SolutionDir)../Libs/lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
-    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
-    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(SolutionDir)Build\$(Configuration)\;C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -271,7 +271,7 @@
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">
     <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
@@ -279,7 +279,7 @@
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);../../Libs/lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
     <IncludePath>$(SolutionDir)..\Libs\include;$(ProjectDir);$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);C:\Program Files (x86)\OpenAL 1.1 SDK\include</IncludePath>
@@ -287,7 +287,7 @@
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
-    <LibraryPath>$(SolutionDir)..\Libs\lib;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(NETFXKitsDir)Lib\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <EnableCppCoreCheck>false</EnableCppCoreCheck>
     <EnableExperimentalCppCoreCheck>false</EnableExperimentalCppCoreCheck>
   </PropertyGroup>
@@ -828,25 +828,28 @@
     <ClCompile Include="Audio\AudioBuffer.cpp" />
     <ClCompile Include="Audio\AudioProcessing.cpp" />
     <ClCompile Include="Audio\AudioSource.cpp" />
-    <ClCompile Include="Audio\Midi.cpp" />
-    <ClCompile Include="Audio\Music.cpp" />
+    <ClCompile Include="Audio\Midi\MidiFileParser.cpp" />
+    <ClCompile Include="Audio\Midi\RawEvent.cpp" />
+    <ClCompile Include="Audio\Midi\TrackCombiner.cpp" />
+    <ClCompile Include="Audio\Midi\TrackParser.cpp" />
+    <ClCompile Include="Audio\Resample.cpp" />
+    <ClCompile Include="Audio\SampleConversion.cpp" />
     <ClCompile Include="Audio\Sound.cpp" />
-    <ClCompile Include="Audio\Sources\MusicSynthSource.cpp" />
-    <ClCompile Include="Audio\Sources\VorbisSource.cpp" />
-    <ClCompile Include="Audio\Sources\WaveSource.cpp" />
-    <ClCompile Include="Audio\Synth\AttackDecayAttenuation.cpp" />
-    <ClCompile Include="Audio\Synth\DrumInstrument.cpp" />
+    <ClCompile Include="Audio\SoundDriverInfo.cpp" />
+    <ClCompile Include="Audio\Sources\MidiSynth.cpp" />
+    <ClCompile Include="Audio\Sources\Vorbis.cpp" />
+    <ClCompile Include="Audio\Sources\Wave.cpp" />
+    <ClCompile Include="Audio\Synth\ADSR.cpp" />
+    <ClCompile Include="Audio\Synth\Chorus.cpp" />
     <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp" />
     <ClCompile Include="Audio\Synth\Generators\DrumPhysicalModel.cpp" />
-    <ClCompile Include="Audio\Synth\HighLowPass.cpp" />
-    <ClCompile Include="Audio\Synth\InstrumentLibrary.cpp" />
-    <ClCompile Include="Audio\Synth\PeriodicSynth.cpp" />
+    <ClCompile Include="Audio\Synth\Filter.cpp" />
+    <ClCompile Include="Audio\Synth\NoteSampler.cpp" />
     <ClCompile Include="Audio\Synth\PostEffects.cpp" />
-    <ClCompile Include="Audio\Synth\SawtoothSynth.cpp" />
-    <ClCompile Include="Audio\Synth\SineExpSynth.cpp" />
-    <ClCompile Include="Audio\Synth\SineSynth.cpp" />
-    <ClCompile Include="Audio\Synth\SynthesizedInstrument.cpp" />
-    <ClCompile Include="Audio\Synth\TableAttenuation.cpp" />
+    <ClCompile Include="Audio\Synth\Octaves.cpp" />
+    <ClCompile Include="Audio\Synth\RecordedSampler.cpp" />
+    <ClCompile Include="Audio\Synth\WaveTableSampler.cpp" />
+    <ClCompile Include="Audio\Synth\WhiteNoiseSampler.cpp" />
     <ClCompile Include="Concurrency\CondVar.cpp" />
     <ClCompile Include="Concurrency\Job.cpp" />
     <ClCompile Include="Concurrency\Mutex.cpp" />
@@ -921,47 +924,41 @@
     <ClInclude Include="Audio\detail\SoundDummy.hxx" />
     <ClInclude Include="Audio\detail\SoundOpenAL.hxx" />
     <ClInclude Include="Audio\detail\SoundWebAudio.hxx" />
-    <ClInclude Include="Audio\Midi.h" />
-    <ClInclude Include="Audio\Music.h" />
+    <ClInclude Include="Audio\Midi\DeviceState.h" />
+    <ClInclude Include="Audio\Midi\Messages.h" />
+    <ClInclude Include="Audio\Midi\MidiFileParser.h" />
+    <ClInclude Include="Audio\Midi\RawEvent.h" />
+    <ClInclude Include="Audio\Midi\TrackCombiner.h" />
+    <ClInclude Include="Audio\Midi\TrackParser.h" />
+    <ClInclude Include="Audio\Resample.h" />
+    <ClInclude Include="Audio\SampleConversion.h" />
     <ClInclude Include="Audio\MusicNote.h" />
     <ClInclude Include="Audio\Sound.h" />
+    <ClInclude Include="Audio\SoundDriverInfo.h" />
     <ClInclude Include="Audio\SoundTypes.h" />
     <ClInclude Include="Audio\Sources.hh" />
-    <ClInclude Include="Audio\Sources\MusicSynthSource.h" />
-    <ClInclude Include="Audio\Sources\VorbisSource.h" />
-    <ClInclude Include="Audio\Sources\WaveSource.h" />
+    <ClInclude Include="Audio\Sources\MidiSynth.h" />
+    <ClInclude Include="Audio\Sources\Vorbis.h" />
+    <ClInclude Include="Audio\Sources\Wave.h" />
     <ClInclude Include="Audio\Synth.hh" />
-    <ClInclude Include="Audio\Synth\AttackDecayAttenuation.h" />
-    <ClInclude Include="Audio\Synth\AttenuatorPass.h" />
-    <ClInclude Include="Audio\Synth\DrumInstrument.h" />
+    <ClInclude Include="Audio\Synth\ADSR.h" />
+    <ClInclude Include="Audio\Synth\Chorus.h" />
     <ClInclude Include="Audio\Synth\ExponentialAttenuation.h" />
     <ClInclude Include="Audio\Synth\Generators.hh" />
-    <ClInclude Include="Audio\Synth\GeneratorSynth.h" />
-    <ClInclude Include="Audio\Synth\Generators\AbsModSine.h" />
-    <ClInclude Include="Audio\Synth\Generators\AbsModTimeSine.h" />
+    <ClInclude Include="Audio\Synth\RecordedSampler.h" />
+    <ClInclude Include="Audio\Synth\WhiteNoiseSampler.h" />
     <ClInclude Include="Audio\Synth\Generators\DrumPhysicalModel.h" />
     <ClInclude Include="Audio\Synth\Generators\FunctionGenerator.h" />
-    <ClInclude Include="Audio\Synth\Generators\Rectangular.h" />
-    <ClInclude Include="Audio\Synth\Generators\RelModSine.h" />
-    <ClInclude Include="Audio\Synth\Generators\RelModTimeSine.h" />
+    <ClInclude Include="Audio\Synth\Generators\Pulse.h" />
     <ClInclude Include="Audio\Synth\Generators\Sawtooth.h" />
+    <ClInclude Include="Audio\Synth\Generators\Square.h" />
     <ClInclude Include="Audio\Synth\Generators\ViolinPhysicalModel.h" />
     <ClInclude Include="Audio\Synth\Generators\WhiteNoise.h" />
-    <ClInclude Include="Audio\Synth\HighLowPass.h" />
-    <ClInclude Include="Audio\Synth\InstrumentLibrary.h" />
-    <ClInclude Include="Audio\Synth\ModifierPass.h" />
-    <ClInclude Include="Audio\Synth\Modifiers.hh" />
-    <ClInclude Include="Audio\Synth\Modifiers\AbsPulsator.h" />
-    <ClInclude Include="Audio\Synth\Modifiers\AddPulsator.h" />
-    <ClInclude Include="Audio\Synth\Modifiers\RelPulsator.h" />
-    <ClInclude Include="Audio\Synth\PeriodicSynth.h" />
-    <ClInclude Include="Audio\Synth\PostEffects.hh" />
-    <ClInclude Include="Audio\Synth\PostEffects\Chorus.h" />
-    <ClInclude Include="Audio\Synth\SawtoothSynth.h" />
-    <ClInclude Include="Audio\Synth\SineExpSynth.h" />
-    <ClInclude Include="Audio\Synth\SineSynth.h" />
-    <ClInclude Include="Audio\Synth\SynthesizedInstrument.h" />
-    <ClInclude Include="Audio\Synth\TableAttenuation.h" />
+    <ClInclude Include="Audio\Synth\Filter.h" />
+    <ClInclude Include="Audio\Synth\Octaves.h" />
+    <ClInclude Include="Audio\Synth\WaveTableSampler.h" />
+    <ClInclude Include="Audio\Synth\NoteSampler.h" />
+    <ClInclude Include="Audio\Synth\MusicalInstrument.h" />
     <ClInclude Include="Audio\Synth\Types.h" />
     <ClInclude Include="Concepts\Array.h" />
     <ClInclude Include="Concepts\Container.h" />
@@ -990,6 +987,7 @@
     <ClInclude Include="Concurrency\Lock.h" />
     <ClInclude Include="Concurrency\Mutex.h" />
     <ClInclude Include="Concurrency\Synchronized.h" />
+    <ClInclude Include="Container\Utility\OwningArrayRange.h" />
     <ClInclude Include="Cpp\Compatibility.h" />
     <ClInclude Include="Cpp\Features.h" />
     <ClInclude Include="Cpp\Fundamental.h" />
@@ -1088,10 +1086,12 @@
     <ClInclude Include="Range\Mutation\Copy.h" />
     <ClInclude Include="Range\Mutation\CopyUntil.h" />
     <ClInclude Include="Range\Mutation\Fill.h" />
+    <ClInclude Include="Range\Mutation\Heap.h" />
     <ClInclude Include="Range\Mutation\Remove.h" />
     <ClInclude Include="Range\Mutation\Replace.h" />
     <ClInclude Include="Range\Mutation\ReplaceSubrange.h" />
     <ClInclude Include="Range\Mutation\Transform.h" />
+    <ClInclude Include="Range\Mutation\Union.h" />
     <ClInclude Include="Range\Reduction.h" />
     <ClInclude Include="Range\Search.hh" />
     <ClInclude Include="Range\Search\Binary.h" />
@@ -1303,6 +1303,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Container\Utility\SparseRange.inl" />
+    <None Include="Cpp\Cpp.natstepfilter" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="Concurrency\Concurrency.natvis">
@@ -1322,7 +1323,9 @@
     <Natvis Include="Range\RangeIteration.natvis" />
     <Natvis Include="Range\RangePolymorphic.natvis" />
     <Natvis Include="System\System.natvis" />
-    <Natvis Include="Utils\Utils.natvis" />
+    <Natvis Include="Utils\Utils.natvis">
+      <SubType>Designer</SubType>
+    </Natvis>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

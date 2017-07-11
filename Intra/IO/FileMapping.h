@@ -8,6 +8,8 @@
 #include "Utils/StringView.h"
 #include "Utils/ErrorStatus.h"
 
+#include "Container/Sequential/String.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace IO {
@@ -15,7 +17,26 @@ namespace Intra { namespace IO {
 class BasicFileMapping
 {
 public:
-	size_t Length() const {return mSize;}
+	BasicFileMapping(BasicFileMapping&& rhs):
+		mData(rhs.mData)
+#ifdef INTRA_DEBUG
+		, mFilePath(Cpp::Move(rhs.mFilePath))
+#endif
+	{rhs.mData = null;}
+
+	BasicFileMapping& operator=(BasicFileMapping&& rhs)
+	{
+		Cpp::Swap(mData, rhs.mData);
+#ifdef INTRA_DEBUG
+		mFilePath = Cpp::Move(rhs.mFilePath);
+#endif
+		return *this;
+	}
+
+	BasicFileMapping(const BasicFileMapping&) = delete;
+	BasicFileMapping& operator=(const BasicFileMapping&) = delete;
+
+	size_t Length() const {return mData.Length();}
 
 	void Close();
 
@@ -23,16 +44,8 @@ public:
 	bool operator!=(null_t) const {return mData != null;}
 
 protected:
-	void* mData;
-	size_t mSize;
-
-	void assign(BasicFileMapping&& rhs)
-	{
-		mData = rhs.mData;
-		mSize = rhs.mSize;
-		rhs.mData = null;
-		rhs.mSize = 0;
-	}
+	Span<byte> mData;
+	String mFilePath;
 
 	BasicFileMapping() {}
 	BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status);
@@ -48,19 +61,19 @@ public:
 	FileMapping(StringView fileName, ErrorStatus& status):
 		BasicFileMapping(fileName, 0, ~size_t(0), false, status) {}
 
-	FileMapping(FileMapping&& rhs) {assign(Cpp::Move(rhs));}
+	FileMapping(FileMapping&&) = default;
 	FileMapping(const FileMapping&) = delete;
 
-	FileMapping& operator=(FileMapping&& rhs) {assign(Cpp::Move(rhs)); return *this;}
+	FileMapping& operator=(FileMapping&&) = default;
 	FileMapping& operator=(const FileMapping&) = delete;
 
-	const byte* Data() const {return static_cast<byte*>(mData);}
+	const byte* Data() const {return mData.Data();}
 
-	CSpan<byte> AsRange() const {return {Data(), Length()};}
+	CSpan<byte> AsRange() const {return mData;}
 
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	CSpan<T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
+	CSpan<T>> AsRangeOf() const {return CSpanOfRaw<T>(mData.Data(), mData.Length());}
 };
 
 class WritableFileMapping: public BasicFileMapping
@@ -72,21 +85,21 @@ public:
 	WritableFileMapping(StringView fileName, ErrorStatus& status):
 		BasicFileMapping(fileName, 0, ~size_t(0), true, status) {}
 
-	WritableFileMapping(WritableFileMapping&& rhs) {assign(Cpp::Move(rhs));}
+	WritableFileMapping(WritableFileMapping&&) = default;
 	WritableFileMapping(const WritableFileMapping&) = delete;
 
-	WritableFileMapping& operator=(WritableFileMapping&& rhs) {assign(Cpp::Move(rhs)); return *this;}
+	WritableFileMapping& operator=(WritableFileMapping&&) = default;
 	WritableFileMapping& operator=(const WritableFileMapping&) = delete;
 
 	void Flush();
 
-	byte* Data() const {return static_cast<byte*>(mData);}
+	byte* Data() const {return mData.Data();}
 
-	Span<byte> AsRange() const {return{Data(), Length()};}
+	Span<byte> AsRange() const {return mData;}
 
 	template<typename T> Meta::EnableIf<
 		Meta::IsTriviallySerializable<T>::_,
-	Span<T>> AsRangeOf() const {return {static_cast<T*>(mData), mSize/sizeof(T)};}
+	Span<T>> AsRangeOf() const {return SpanOfRaw<T>(mData.Data(), mData.Length());}
 };
 
 }}

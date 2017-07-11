@@ -6,6 +6,7 @@
 #include "Utils/Finally.h"
 
 #include "Range/Mutation/Cast.h"
+#include "Range/Mutation/Fill.h"
 
 #include "Concurrency/Atomic.h"
 #include "Concurrency/Mutex.h"
@@ -48,9 +49,6 @@ namespace Intra { namespace Audio {
 
 using Data::ValueType;
 
-const ValueType::I InternalBufferType = ValueType::Short;
-const bool InternalChannelsInterleaved = true;
-
 uint Sound::DefaultSampleRate() {return 48000;}
 
 
@@ -83,8 +81,11 @@ private:
 
 	~SoundContext()
 	{
+		ReleaseAllSounds();
+		ReleaseAllStreamedSounds();
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
+			mPrimary->Stop();
 			mPrimary->Release();
 			mContext->Release();
 		}
@@ -110,14 +111,14 @@ public:
 	void ReleaseAllStreamedSounds();
 };
 
-struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
-{
-	Data(const SoundInfo& info): SoundBasicData(info)
+struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
+	Data(IAudioSource& src): SoundBasicData(src)
 	{
-		const ushort blockAlign = ushort(sizeof(ushort)*info.Channels);
+		Info.SampleType = ValueType::SNorm16;
+		const ushort blockAlign = ushort(sizeof(short)*Info.Channels);
 		WAVEFORMATEX wfx = {
-			WAVE_FORMAT_PCM, ushort(info.Channels), info.SampleRate,
-			info.SampleRate*blockAlign, blockAlign, 16, sizeof(WAVEFORMATEX)
+			WAVE_FORMAT_PCM, ushort(Info.Channels), Info.SampleRate,
+			Info.SampleRate*blockAlign, blockAlign, 16, sizeof(WAVEFORMATEX)
 		};
 		const DSBUFFERDESC dsbd = {sizeof(DSBUFFERDESC),
 			DSBCAPS_GLOBALFOCUS|DSBCAPS_CTRLFREQUENCY|DSBCAPS_CTRLPAN|
@@ -126,7 +127,17 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 		auto& context = SoundContext::Instance();
 		if(!context.Device()) return;
 		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
-		INTRA_SYNCHRONIZED(context.MyMutex) context.AllSounds.AddLast(this);
+
+		void* dstData;
+		DWORD lockedSize;
+		Buffer->Lock(0, Info.GetBufferSize(), &dstData, &lockedSize, null, null, 0);
+		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
+		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
+		src.GetInterleavedSamples(dst);
+		Buffer->Unlock(dstData, Info.GetBufferSize(), null, 0);
+
+		INTRA_SYNCHRONIZED(context.MyMutex)
+			context.AllSounds.AddLast(this);
 	}
 
 	forceinline ~Data() {Release();}
@@ -137,9 +148,13 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 	void SetDataInterleaved(const void* data, ValueType type)
 	{
 		if(data == null) return;
-		auto dst = SpanOfRawElements<short>(Lock(), Info.SampleCount*Info.Channels);
-		INTRA_FINALLY(Unlock());
-		if(type == ValueType::Short)
+		void* dstData;
+		DWORD lockedSize;
+		Buffer->Lock(0, Info.GetBufferSize(), &dstData, &lockedSize, null, null, 0);
+		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
+		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
+		INTRA_FINALLY(Buffer->Unlock(dstData, Info.GetBufferSize(), null, 0));
+		if(type == ValueType::SNorm16)
 		{
 			auto src = SpanOfRawElements<short>(data, dst.Length());
 			CopyTo(src, dst);
@@ -147,55 +162,9 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 		}
 		if(type == ValueType::Float)
 		{
-			auto src = SpanOfRawElements<float>(data, Info.SampleCount*Info.Channels);
+			auto src = SpanOfRawElements<float>(data, dst.Length());
 			CastFromNormalized(dst, src);
 		}
-	}
-
-	void SetDataChannels(const void* const* data, ValueType type)
-	{
-		if(Info.Channels == 1)
-		{
-			SetDataInterleaved(data[0], type);
-			return;
-		}
-
-		auto lockedData = static_cast<short*>(Lock());
-		INTRA_FINALLY(Unlock());
-		if(type == ValueType::Short)
-		{
-			for(size_t i = 0, j = 0; i < Info.SampleCount; i++)
-				for(uint c = 0; c < Info.Channels; c++)
-				{
-					const short* const channelSamples = static_cast<const short*>(data[c]);
-					lockedData[j++] = channelSamples[i];
-				}
-			return;
-		}
-		if(type == ValueType::Float)
-		{
-			for(size_t i = 0, j = 0; i < Info.SampleCount; i++)
-				for(uint c = 0; c < Info.Channels; c++)
-				{
-					const float* const channelSamples = static_cast<const float*>(data[c]);
-					lockedData[j++] = short(channelSamples[i]*32767.5f - 0.5f);
-				}
-		}
-	}
-
-	void* Lock()
-	{
-		INTRA_DEBUG_ASSERT(LockedBits == null);
-		DWORD lockedSize;
-		Buffer->Lock(0, Info.GetBufferSize(), &LockedBits, &lockedSize, null, null, 0);
-		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
-		return LockedBits;
-	}
-
-	void Unlock()
-	{
-		INTRA_DEBUG_ASSERT(LockedBits != null);
-		Buffer->Unlock(LockedBits, Info.GetBufferSize(), null, 0);
 	}
 
 	void Release()
@@ -223,6 +192,8 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 		}
 		return result;
 	}
+
+	forceinline void Update() {}
 
 	IDirectSoundBuffer* Buffer;
 
@@ -352,11 +323,13 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
-	Data(StreamedSound::SourceRef source, size_t bufferSampleCount):
-		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount)
+	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = true):
+		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount),
+		AutoStreamingEnabled(autoStreamingEnabled)
 	{
-		auto context = SoundContext::Device();
-		if(!context) return;
+		INTRA_DEBUG_ASSERT(Source != null);
+		auto& context = SoundContext::Instance();
+		if(!context.Device()) return;
 
 		const ushort blockAlign = ushort(sizeof(ushort) * Source->ChannelCount());
 		WAVEFORMATEX wfx = {
@@ -368,12 +341,13 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 			GetBufferSize()*2, 0, &wfx, {}
 		};
 
-		if(FAILED(context->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
-
+		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
 
 		DWORD lockedSize; void* lockedData;
 		Buffer->Lock(0, GetBufferSize()*2, &lockedData, &lockedSize, null, null, 0);
-		Source->GetInterleavedSamples(SpanOfRaw<short>(lockedData, lockedSize));
+		const auto dst = SpanOfRaw<short>(lockedData, lockedSize);
+		if(Source) Source->GetInterleavedSamples(dst);
+		else FillZeros(dst);
 		Buffer->Unlock(lockedData, lockedSize, null, 0);
 
 		IDirectSoundNotify* notify;
@@ -393,6 +367,8 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		RegisterWaitForSingleObject(&NotifyLoadWaits[1], NotifyLoadEvents[1], WaitLoadCallback, this, INFINITE, 0);
 		notify->SetNotificationPositions(2, positionNotify);
 		notify->Release();
+
+		INTRA_SYNCHRONIZED(context.MyMutex) context.AllStreamedSounds.AddLast(this);
 	}
 
 	Data(const Data&) = delete;
@@ -414,6 +390,12 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 			if(!Buffer) return;
 			Buffer->Stop();
 			Buffer->Release();
+			Buffer = null;
+		}
+		auto& context = SoundContext::Instance();
+		INTRA_SYNCHRONIZED(context.MyMutex)
+		{
+			context.AllStreamedSounds.FindAndRemoveUnordered(this);
 		}
 		SelfRef = null;
 	}
@@ -434,8 +416,8 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		{
 			Looping = loop;
 			StopSoon = 0;
-			Buffer->Play(0, 0, DSBPLAY_LOOPING);
 			SelfRef = SharedThis();
+			Buffer->Play(0, 0, DSBPLAY_LOOPING);
 		}
 	}
 
@@ -471,27 +453,31 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	{
 		auto snd = static_cast<StreamedSound::Data*>(lpParameter);
 		snd->BuffersProcessed.Increment();
+		if(snd->AutoStreamingEnabled) snd->Update();
 	}
 
-	AnyPtr lock(uint no)
+	AnyPtr lock(uint no, void*& lockedBits, DWORD& lockedSize, void*& lockedBits2, DWORD& lockedSize2)
 	{
 		const size_t lockSampleStart = no == 0? 0: BufferSampleCount;
 		const HRESULT lockResult = Buffer->Lock(uint(lockSampleStart*sizeof(short)*Source->ChannelCount()),
-			GetBufferSize(), &LockedBits, &LockedSize, &LockedBits2, &LockedSize2, 0);
+			GetBufferSize(), &lockedBits, &lockedSize, &lockedBits2, &lockedSize2, 0);
 		INTRA_DEBUG_ASSERT(!FAILED(lockResult));
 		if(FAILED(lockResult)) return null;
-		return LockedBits;
+		return lockedBits;
 	}
 
-	void unlock()
+	void unlock(void* lockedBits, DWORD lockedSize, void* lockedBits2, DWORD lockedSize2)
 	{
-		Buffer->Unlock(LockedBits, LockedSize, LockedBits2, LockedSize2);
+		Buffer->Unlock(lockedBits, lockedSize, lockedBits2, lockedSize2);
 	}
 
 	void fill_next_buffer_data()
 	{
-		short* data = lock(NextBufferToFill);
-		INTRA_FINALLY(unlock());
+		void* lockedBits;
+		DWORD lockedSize;
+		void* lockedBits2;
+		DWORD lockedSize2;
+		short* data = lock(NextBufferToFill, lockedBits, lockedSize, lockedBits2, lockedSize2);
 		if(data == null) return;
 
 		auto buffer = SpanOfRaw<short>(data, GetBufferSize());
@@ -500,24 +486,30 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 			//Достигнут конец потока данных, поэтому зануляем оставшийся буфер.
 			//Когда он закончится, воспроизведение будет остановлено.
 			FillZeros(buffer);
+			unlock(lockedBits, lockedSize, lockedBits2, lockedSize2);
 			SelfRef = null;
 			return;
 		}
 
 		const size_t samplesRead = Source->GetInterleavedSamples(buffer);
-		if(samplesRead == BufferSampleCount) return;
+		if(samplesRead == BufferSampleCount)
+		{
+			unlock(lockedBits, lockedSize, lockedBits2, lockedSize2);
+			return;
+		}
 
 		buffer.PopFirstExactly(samplesRead * Source->ChannelCount());
 		if(!Looping)
 		{
 			FillZeros(buffer);
 			StopSoon = 1;
+			unlock(lockedBits, lockedSize, lockedBits2, lockedSize2);
 			return;
 		}
 		Source->GetInterleavedSamples(buffer);
 	}
 
-	void Update()
+	void UpdateST()
 	{
 		if(Buffer == null || StopSoon == 2)
 		{
@@ -535,6 +527,11 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		}
 	}
 
+	void Update()
+	{
+		INTRA_SYNCHRONIZED(MyMutex) UpdateST();
+	}
+
 	IDirectSoundBuffer* Buffer;
 
 	HANDLE NotifyLoadEvents[2]{};
@@ -544,12 +541,9 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 	AtomicInt BuffersProcessed{0};
 	byte NextBufferToFill = 1;
+	bool AutoStreamingEnabled = true;
 
-	Mutex MyMutex;
-	DWORD LockedSize = 0;
-	void* LockedBits = null;
-	DWORD LockedSize2 = 0;
-	void* LockedBits2 = null;
+	RecursiveMutex MyMutex;
 };
 
 void SoundContext::ReleaseAllSounds()

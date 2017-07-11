@@ -301,6 +301,9 @@ public:
 		return Data()[index];
 	}
 
+	forceinline char Get(size_t index, Char defaultChar='\0') const noexcept
+	{return index < Length()? Data()[index]: defaultChar;}
+
 	forceinline bool Empty() const
 	{return IsHeapAllocated()? m.Len==0: emptyShort();}
 

@@ -2,6 +2,7 @@
 
 #include "Audio/Sound.h"
 #include "Audio/SoundTypes.h"
+#include "Audio/AudioSource.h"
 
 #include "Container/Sequential/List.h"
 
@@ -25,7 +26,8 @@ struct SoundBasicContext
 
 struct SoundBasicData
 {
-	SoundBasicData(const SoundInfo& info): Info(info) {}
+	SoundBasicData(IAudioSource& src):
+		Info(src.SamplesLeft(), src.SampleRate(), ushort(src.ChannelCount()), Data::ValueType::Void) {}
 
 	Mutex MyMutex;
 	SoundInfo Info;
@@ -49,12 +51,12 @@ struct SoundInstanceBasicData
 
 struct StreamedSoundBasicData
 {
-	StreamedSoundBasicData(StreamedSound::SourceRef source, size_t bufferSampleCount):
+	StreamedSoundBasicData(Unique<IAudioSource> source, size_t bufferSampleCount):
 		Source(Cpp::Move(source)), BufferSampleCount(bufferSampleCount) {}
 
-	size_t GetBufferSize() {return Source->ChannelCount() * BufferSampleCount;}
+	size_t GetBufferSize() {return Source->ChannelCount() * BufferSampleCount * sizeof(short);}
 
-	StreamedSound::SourceRef Source;
+	Unique<IAudioSource> Source;
 	Shared<StreamedSound::Data> SelfRef;
 	size_t BufferSampleCount;
 	StreamedSound::OnStopCallback OnStop;

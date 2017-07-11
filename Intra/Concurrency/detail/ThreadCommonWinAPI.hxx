@@ -25,7 +25,7 @@ namespace Intra { namespace Concurrency { namespace detail {
 static DWORD GetThreadId(HANDLE thread)
 {
 #ifdef INTRA_DROP_XP_SUPPORT
-	return ::GetThreadId(threadHandle);
+	return ::GetThreadId(thread);
 #else
 	static struct Kernel32Dll
 	{

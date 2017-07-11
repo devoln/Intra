@@ -49,9 +49,10 @@ template<typename T> class Shared
 		Data(const Data&) = delete;
 		Data& operator=(const Data&) = delete;
 	};
-	forceinline Shared(Data* data): mData(data) {}
+	constexpr forceinline Shared(Data* data): mData(data) {}
 public:
-	forceinline Shared(null_t=null): mData(null) {}
+	constexpr forceinline Shared(null_t=null): mData(null) {}
+
 	forceinline Shared(const Shared& rhs): mData(rhs.mData)
 	{
 		if(mData != null) mData->IncRef();
@@ -75,28 +76,26 @@ public:
 	Shared& operator=(const Shared& rhs)
 	{
 		if(mData == rhs.mData) return *this;
-		if(mData != null) mData->Release();
-		mData = rhs.mData;
-		if(mData != null) mData->IncRef();
+		Shared temp(rhs);
+		Cpp::Swap(mData, temp.mData);
 		return *this;
 	}
 
-	Shared& operator=(Shared&& rhs)
+	forceinline Shared& operator=(Shared&& rhs)
 	{
-		if(mData == rhs.mData) return *this;
-		if(mData != null) mData->Release();
-		mData = rhs.mData;
-		rhs.mData = null;
+		Cpp::Swap(mData, rhs.mData);
 		return *this;
 	}
 
 	forceinline Shared& operator=(null_t)
 	{
-		if(mData==null) return *this;
-		mData->Release();
+		Shared temp(mData);
 		mData = null;
 		return *this;
 	}
+
+	constexpr forceinline T* Ptr() const noexcept {return mData? &mData->Value: null;}
+	constexpr forceinline T* get() const noexcept {return Ptr();}
 
 	template<typename... Args> forceinline static Shared New(Args&&... args)
 	{return new Data(Cpp::Forward<Args>(args)...);}
@@ -110,12 +109,12 @@ public:
 	forceinline T& operator*() const {INTRA_DEBUG_ASSERT(mData != null); return mData->Value;}
 	forceinline T* operator->() const {INTRA_DEBUG_ASSERT(mData != null); return &mData->Value;}
 
-	forceinline bool operator==(null_t) const {return mData == null;}
-	forceinline bool operator!=(null_t) const {return !operator==(null);}
-	forceinline bool operator==(const Shared& rhs) const {return mData == rhs.mData;}
-	forceinline bool operator!=(const Shared& rhs) const {return !operator==(rhs);}
+	constexpr forceinline bool operator==(null_t) const {return mData == null;}
+	constexpr forceinline bool operator!=(null_t) const {return !operator==(null);}
+	constexpr forceinline bool operator==(const Shared& rhs) const {return mData == rhs.mData;}
+	constexpr forceinline bool operator!=(const Shared& rhs) const {return !operator==(rhs);}
 
-	forceinline explicit operator bool() const {return mData != null;}
+	constexpr forceinline explicit operator bool() const {return mData != null;}
 
 private:
 	Data* mData;
@@ -126,6 +125,8 @@ template<typename T> class SharedClass
 	void* operator new(size_t bytes) = delete;
 	void operator delete(void* ptr, size_t bytes) = delete;
 
+	typedef typename Shared<T>::Data DerivedData;
+
 public:
 	//! Получить умный указатель Shared из этого экземпляра класса.
 	//! Если уже запущено удаление экземпляра класса вследствие обнуления счётчика ссылок, вернёт null.
@@ -133,8 +134,8 @@ public:
 	//! Нельзя использовать с уже удалённым объектом.
 	forceinline Shared<T> SharedThis()
 	{
-		void* const address = reinterpret_cast<char*>(this) - Meta::MemberOffset(&Shared<T>::Data::Value);
-		const auto data = static_cast<Shared<T>::Data*>(address);
+		void* const address = reinterpret_cast<char*>(this) - Meta::MemberOffset(&DerivedData::Value);
+		const auto data = static_cast<DerivedData*>(address);
 		if(data->IncRef()) return data;
 
 		//Счётчик ссылок уже нулевой, объект находится в процессе удаления.

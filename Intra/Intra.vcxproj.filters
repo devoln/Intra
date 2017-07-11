@@ -190,12 +190,6 @@
     <Filter Include="Заголовочные файлы\Audio\Synth\Generators">
       <UniqueIdentifier>{e2714f38-647f-4573-8a10-be801e9fed6f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Audio\Synth\PostEffects">
-      <UniqueIdentifier>{6bee255b-0372-4a77-ad74-953473e06334}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Audio\Synth\Modifiers">
-      <UniqueIdentifier>{ddc2a655-26b7-4ef6-a093-38ef5c64f308}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Audio">
       <UniqueIdentifier>{efd71faf-4a58-45cd-b959-365646ffdc3e}</UniqueIdentifier>
     </Filter>
@@ -207,12 +201,6 @@
     </Filter>
     <Filter Include="Файлы исходного кода\Audio\Synth\Generators">
       <UniqueIdentifier>{e4690402-99c3-4250-91bf-f91accfd8716}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Audio\Synth\Modifiers">
-      <UniqueIdentifier>{7c5f0ff1-a7a9-4dc3-9610-60b35a3984a5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Audio\Synth\PostEffects">
-      <UniqueIdentifier>{517ba498-5330-4a14-89ca-599370886619}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Image">
       <UniqueIdentifier>{72c8336f-753e-4be3-83a6-f3c572acfb59}</UniqueIdentifier>
@@ -276,6 +264,12 @@
     </Filter>
     <Filter Include="Заголовочные файлы\Funal">
       <UniqueIdentifier>{02aa42ee-f3c6-4562-96c8-5ac2ba3a7af2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Audio\Midi">
+      <UniqueIdentifier>{286a2136-9012-4f46-a25f-b7203d866cae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Audio\Midi">
+      <UniqueIdentifier>{f5c11979-b83d-44df-8c69-2aa710fce890}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -387,62 +381,17 @@
     <ClCompile Include="Audio\AudioSource.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Midi.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Music.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\Sound.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Synth\AttackDecayAttenuation.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\DrumInstrument.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\HighLowPass.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\InstrumentLibrary.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\PeriodicSynth.cpp">
       <Filter>Файлы исходного кода\Audio\Synth</Filter>
     </ClCompile>
     <ClCompile Include="Audio\Synth\PostEffects.cpp">
       <Filter>Файлы исходного кода\Audio\Synth</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Synth\SawtoothSynth.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\SineExpSynth.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\SineSynth.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\SynthesizedInstrument.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Synth\TableAttenuation.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\Synth\Generators\DrumPhysicalModel.cpp">
       <Filter>Файлы исходного кода\Audio\Synth\Generators</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sources\MusicSynthSource.cpp">
-      <Filter>Файлы исходного кода\Audio\Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sources\VorbisSource.cpp">
-      <Filter>Файлы исходного кода\Audio\Sources</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Sources\WaveSource.cpp">
-      <Filter>Файлы исходного кода\Audio\Sources</Filter>
     </ClCompile>
     <ClCompile Include="Utils\Debug.cpp">
       <Filter>Файлы исходного кода\Utils</Filter>
@@ -533,6 +482,60 @@
     </ClCompile>
     <ClCompile Include="Concurrency\CondVar.cpp">
       <Filter>Файлы исходного кода\Concurrency</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\SoundDriverInfo.cpp">
+      <Filter>Файлы исходного кода\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Sources\Vorbis.cpp">
+      <Filter>Файлы исходного кода\Audio\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Sources\Wave.cpp">
+      <Filter>Файлы исходного кода\Audio\Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\SampleConversion.cpp">
+      <Filter>Файлы исходного кода\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\NoteSampler.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Resample.cpp">
+      <Filter>Файлы исходного кода\Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\ADSR.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\Filter.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\WaveTableSampler.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\Octaves.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\WhiteNoiseSampler.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\Chorus.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\RawEvent.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\MidiFileParser.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\TrackCombiner.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\TrackParser.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\RecordedSampler.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Sources\MidiSynth.cpp">
+      <Filter>Файлы исходного кода\Audio\Sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1262,12 +1265,6 @@
     <ClInclude Include="Audio\AudioSource.h">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Midi.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Music.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\MusicNote.h">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
@@ -1283,65 +1280,14 @@
     <ClInclude Include="Audio\Synth.hh">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Synth\AttackDecayAttenuation.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\AttenuatorPass.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\DrumInstrument.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\Synth\ExponentialAttenuation.h">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\Generators.hh">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Synth\GeneratorSynth.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\HighLowPass.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\InstrumentLibrary.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\ModifierPass.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Modifiers.hh">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\PeriodicSynth.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\PostEffects.hh">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\SawtoothSynth.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\SineExpSynth.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\SineSynth.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\SynthesizedInstrument.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\TableAttenuation.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\Synth\Types.h">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\AbsModSine.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\AbsModTimeSine.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\Generators\DrumPhysicalModel.h">
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
@@ -1349,44 +1295,11 @@
     <ClInclude Include="Audio\Synth\Generators\FunctionGenerator.h">
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\Rectangular.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\RelModSine.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\RelModTimeSine.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\Sawtooth.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\Synth\Generators\ViolinPhysicalModel.h">
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\Generators\WhiteNoise.h">
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Modifiers\AbsPulsator.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Modifiers</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Modifiers\AddPulsator.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Modifiers</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Modifiers\RelPulsator.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Modifiers</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\PostEffects\Chorus.h">
-      <Filter>Заголовочные файлы\Audio\Synth\PostEffects</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\MusicSynthSource.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\VorbisSource.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\WaveSource.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
     </ClInclude>
     <ClInclude Include="Image\AnyImage.h">
       <Filter>Заголовочные файлы\Image</Filter>
@@ -1637,16 +1550,7 @@
     <ClInclude Include="Concurrency\detail\ThreadSleep.hxx">
       <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Math\FixedPoint.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="Math\Geometry.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Geometry\Line.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Geometry\LineSegment.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="Image\Loaders\detail\LoaderDevIL.hxx">
@@ -1700,10 +1604,103 @@
     <ClInclude Include="Funal\ValueRef.h">
       <Filter>Заголовочные файлы\Funal</Filter>
     </ClInclude>
+    <ClInclude Include="Audio\SoundDriverInfo.h">
+      <Filter>Заголовочные файлы\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Sources\Vorbis.h">
+      <Filter>Заголовочные файлы\Audio\Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Sources\Wave.h">
+      <Filter>Заголовочные файлы\Audio\Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\SampleConversion.h">
+      <Filter>Заголовочные файлы\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Range\Mutation\Union.h">
+      <Filter>Заголовочные файлы\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Range\Mutation\Heap.h">
+      <Filter>Заголовочные файлы\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\Line.h">
+      <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\LineSegment.h">
+      <Filter>Заголовочные файлы\Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\FixedPoint.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Generators\Sawtooth.h">
+      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Generators\Square.h">
+      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\NoteSampler.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Resample.h">
+      <Filter>Заголовочные файлы\Audio</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\MusicalInstrument.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\ADSR.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Filter.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\WaveTableSampler.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Octaves.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\WhiteNoiseSampler.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Generators\Pulse.h">
+      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\Chorus.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\RawEvent.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\Messages.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\DeviceState.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\MidiFileParser.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\TrackCombiner.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Midi\TrackParser.h">
+      <Filter>Заголовочные файлы\Audio\Midi</Filter>
+    </ClInclude>
+    <ClInclude Include="Container\Utility\OwningArrayRange.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\RecordedSampler.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Sources\MidiSynth.h">
+      <Filter>Заголовочные файлы\Audio\Sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Container\Utility\SparseRange.inl">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </None>
+    <None Include="Cpp\Cpp.natstepfilter">
+      <Filter>natvis</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

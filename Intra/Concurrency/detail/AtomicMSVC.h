@@ -236,20 +236,33 @@ template<> forceinline void AtomicBase<long64>::SetRelease(long64 val) noexcept 
 #endif
 
 
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSet(T& expected, T desired) noexcept {return CompareSet(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetRelaxed(T& expected, T desired) noexcept {return CompareSetRelaxed(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetConsume(T& expected, T desired) noexcept {return CompareSetConsume(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetAcquire(T& expected, T desired) noexcept {return CompareSetAcquire(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetRelease(T& expected, T desired) noexcept {return CompareSetRelease(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetAcquireRelease(T& expected, T desired) noexcept {return CompareSetAcquireRelease(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSet(T expected, T desired) noexcept {return CompareSet(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetRelaxed(T expected, T desired) noexcept {return CompareSetRelaxed(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetConsume(T expected, T desired) noexcept {return CompareSetConsume(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetAcquire(T expected, T desired) noexcept {return CompareSetAcquire(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetRelease(T expected, T desired) noexcept {return CompareSetRelease(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareSetAcquireRelease(T expected, T desired) noexcept {return CompareSetAcquireRelease(expected, desired);}
+
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSet(T& expected, T desired) noexcept {return CompareGetSet(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSetRelaxed(T& expected, T desired) noexcept {return CompareGetSetRelaxed(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSetConsume(T& expected, T desired) noexcept {return CompareGetSetConsume(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSetAcquire(T& expected, T desired) noexcept {return CompareGetSetAcquire(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSetRelease(T& expected, T desired) noexcept {return CompareGetSetRelease(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::WeakCompareGetSetAcquireRelease(T& expected, T desired) noexcept {return CompareGetSetAcquireRelease(expected, desired);}
 
 
 #define INTRA_ATOMIC_CAS(type, size, mo, mosuf) \
-template<> forceinline bool AtomicBase<type>::CompareSet ## mo(type& expected, type desired) noexcept \
+template<> forceinline bool AtomicBase<type>::CompareSet ## mo(type expected, type desired) noexcept \
 { \
-	const type oldExpected = expected; \
-	const auto prev = INTRA_CONCATENATE_TOKENS(INTRA_CONCATENATE_TOKENS(_InterlockedCompareExchange, size), mosuf)(AnyPtr(&mValue), desired, oldExpected); \
-	if(reinterpret_cast<const type&>(prev) == oldExpected) return true; \
+	const auto prev = INTRA_CONCATENATE_TOKENS(INTRA_CONCATENATE_TOKENS(_InterlockedCompareExchange, size), mosuf)(AnyPtr(&mValue), desired, expected); \
+	return reinterpret_cast<const type&>(prev) == expected; \
+}
+
+#define INTRA_ATOMIC_CAS2(type, size, mo, mosuf) \
+template<> forceinline bool AtomicBase<type>::CompareGetSet ## mo(type& expected, type desired) noexcept \
+{ \
+	const auto prev = INTRA_CONCATENATE_TOKENS(INTRA_CONCATENATE_TOKENS(_InterlockedCompareExchange, size), mosuf)(AnyPtr(&mValue), desired, expected); \
+	if(reinterpret_cast<const type&>(prev) == expected) return true; \
 	expected = reinterpret_cast<const type&>(prev); \
 	return false; \
 }
@@ -270,10 +283,28 @@ INTRA_ATOMIC_CAS(bool, 8, Release, INTRIN_RELEASE_SUFFIX())
 INTRA_ATOMIC_CAS(int, , Release, INTRIN_RELEASE_SUFFIX())
 INTRA_ATOMIC_CAS(long64, 64, Release, INTRIN_RELEASE_SUFFIX())
 
-template<typename T> forceinline bool AtomicBase<T>::CompareSetAcquireRelease(T& expected, T desired) noexcept {return CompareSet(expected, desired);}
-template<typename T> forceinline bool AtomicBase<T>::CompareSetConsume(T& expected, T desired) noexcept {return CompareSetAcquire(expected, desired);}
 
+INTRA_ATOMIC_CAS2(bool, 8, , )
+INTRA_ATOMIC_CAS2(int, , , )
+INTRA_ATOMIC_CAS2(long64, 64, , )
 
+INTRA_ATOMIC_CAS2(bool, 8, Relaxed, INTRIN_RELAXED_SUFFIX())
+INTRA_ATOMIC_CAS2(int, , Relaxed, INTRIN_RELAXED_SUFFIX())
+INTRA_ATOMIC_CAS2(long64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
+
+INTRA_ATOMIC_CAS2(bool, 8, Acquire, INTRIN_ACQUIRE_SUFFIX())
+INTRA_ATOMIC_CAS2(int, , Acquire, INTRIN_ACQUIRE_SUFFIX())
+INTRA_ATOMIC_CAS2(long64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
+
+INTRA_ATOMIC_CAS2(bool, 8, Release, INTRIN_RELEASE_SUFFIX())
+INTRA_ATOMIC_CAS2(int, , Release, INTRIN_RELEASE_SUFFIX())
+INTRA_ATOMIC_CAS2(long64, 64, Release, INTRIN_RELEASE_SUFFIX())
+
+template<typename T> forceinline bool AtomicBase<T>::CompareSetAcquireRelease(T expected, T desired) noexcept {return CompareSet(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::CompareSetConsume(T expected, T desired) noexcept {return CompareSetAcquire(expected, desired);}
+
+template<typename T> forceinline bool AtomicBase<T>::CompareGetSetAcquireRelease(T& expected, T desired) noexcept {return CompareGetSet(expected, desired);}
+template<typename T> forceinline bool AtomicBase<T>::CompareGetSetConsume(T& expected, T desired) noexcept {return CompareGetSetAcquire(expected, desired);}
 
 
 #define INTRA_ATOMIC_BINARY_ONE(type, op, mo, func, negation) \

@@ -1,15 +1,25 @@
 ﻿#include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
 
-#include "SoundApi.h"
+#include "Audio/Sound.h"
 
 #include "Memory/Allocator/Global.h"
 
+#include "Range/Mutation/Fill.h"
+#include "Range/Mutation/Cast.h"
+
 #include "Data/ValueType.h"
 
-#if(INTRA_LIBRARY_SOUND_SYSTEM == INTRA_LIBRARY_SOUND_SYSTEM_OpenAL)
+#include "Concurrency/Mutex.h"
+#include "Concurrency/Lock.h"
+
+#include "SoundBasicData.hxx"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+#ifdef _MSC_VER
+#pragma warning(disable: 4668)
+#endif
 
 #ifdef __APPLE__
 #include <OpenAL/al.h>
@@ -29,76 +39,17 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio {
 
-using namespace Math;
+using Data::ValueType;
 
-namespace SoundAPI {
+uint Sound::DefaultSampleRate() {return 44100;}
 
-const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
-const int InternalChannelsInterleaved = true;
-uint InternalSampleRate() {return 48000;}
 
-struct Buffer
+struct SoundContext: detail::SoundBasicContext
 {
-	Buffer(uint buf, uint sample_count, uint sample_rate, uint ch, ushort format):
-		buffer(buf), sampleCount(sample_count), sampleRate(sample_rate), channels(ch), alformat(format) {}
-
-	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
-
-	uint buffer;
-	uint sampleCount;
-	uint sampleRate;
-	uint channels;
-	ushort alformat;
-
-	void* locked_bits=null;
-};
-
-struct Instance
-{
-	Instance(uint src, BufferHandle my_parent): source(src), parent(my_parent) {}
-
-	uint source;
-	BufferHandle parent;
-
-	bool deleteOnStop=false;
-};
-
-
-struct StreamedBuffer
-{
-	//StreamedBuffer(uint bufs[2], StreamingCallback callback, uint sample_count, uint sample_rate, ushort ch):
-		//buffers{bufs[0], bufs[1]}, streamingCallback(callback), sampleCount(sampleCount), sampleRate(sample_rate), channels(ch) {}
-
-	uint SizeInBytes() const {return uint(sampleCount*channels*sizeof(short));}
-
-	uint buffers[2];
-	uint source;
-	uint sampleCount; //Размер половины буфера
-	uint sampleRate;
-	uint channels;
-	StreamingCallback streamingCallback;
-	short* temp_buffer;
-
-	bool deleteOnStop=false;
-	bool looping=false;
-	byte stop_soon=0;
-};
-
-
-struct Context
-{
-	Context(): ald(null), alc(null) {}
-
-	~Context()
+	SoundContext()
 	{
-		Clean();
-	}
-
-	void Prepare()
-	{
-		if(alc!=null) return;
 		const ALCchar* defaultDevice = reinterpret_cast<const ALCchar*>(alcGetString(null, ALC_DEFAULT_DEVICE_SPECIFIER));
-		if(ald==null) ald = alcOpenDevice(defaultDevice);
+		ald = alcOpenDevice(defaultDevice);
 		alc = alcCreateContext(ald, null);
 		alcMakeContextCurrent(alc);
 		alcProcessContext(alc);
@@ -107,229 +58,366 @@ struct Context
 		//alListenerfv(AL_ORIENTATION, Vec3(0,0,0));
 	}
 
+	~SoundContext()
+	{
+		Clean();
+	}
+
 	void Clean()
 	{
-		if(alc==null) return;
+		if(alc == null) return;
+		ReleaseAllSounds();
+		ReleaseAllStreamedSounds();
 		alcMakeContextCurrent(null);
 		alcDestroyContext(alc);
 		alc = null;
-		if(ald==null) return;
+		if(ald == null) return;
 		alcCloseDevice(ald);
 	}
 
-	Context(const Context&) = delete;
-	Context& operator=(const Context&) = delete;
+	void ReleaseAllSounds();
+	void ReleaseAllStreamedSounds();
+
+	//Очистка уже не используемых буферов и источников звука
+	void GC();
+
+	static SoundContext& Instance()
+	{
+		static SoundContext context;
+		return context;
+	}
+
+	SoundContext(const SoundContext&) = delete;
+	SoundContext& operator=(const SoundContext&) = delete;
 
 
 	ALCdevice* ald;
 	ALCcontext* alc;
 };
-static Context context;
 
-
-static ushort get_format(uint channels)
+struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 {
-	INTRA_DEBUG_ASSERT(channels>0 && channels<=2);
-    if(channels==1) return AL_FORMAT_MONO16;
-    if(channels==2) return AL_FORMAT_STEREO16;
-    return 0;
-}
-
-BufferHandle BufferCreate(size_t sampleCount, uint channels, uint sampleRate)
-{
-	context.Prepare();
-	uint buffer;
-	alGenBuffers(1, &buffer);
-	return new Buffer(buffer, uint(sampleCount), sampleRate, channels, get_format(channels));
-}
-
-void BufferSetDataInterleaved(BufferHandle snd, const void* data, Data::ValueType type)
-{
-	(void)type;
-	INTRA_DEBUG_ASSERT(data != null);
-	INTRA_DEBUG_ASSERT(type == Data::ValueType::Short);
-    alBufferData(snd->buffer, snd->alformat, data, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
-}
-
-void* BufferLock(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-	size_t bytesToAllocate = snd->SizeInBytes();
-    snd->locked_bits = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
-	return snd->locked_bits;
-}
-
-void BufferUnlock(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-    alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
-    Memory::GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
-    snd->locked_bits=null;
-}
-
-void BufferDelete(BufferHandle snd)
-{
-	if(snd==null) return;
-	alDeleteBuffers(1, &snd->buffer);
-	delete snd;
-}
-
-InstanceHandle InstanceCreate(BufferHandle snd)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-	uint source;
-	alGenSources(1, &source);
-	//alSource3f(source, AL_POSITION, 0, 0, 0);
-	//alSource3f(source, AL_VELOCITY, 0, 0, 0);
-	//alSource3f(source, AL_DIRECTION, 0, 0, 0);
-	//alSourcef(source, AL_ROLLOFF_FACTOR, 0);
-	//alSourcei(source, AL_SOURCE_RELATIVE, true);
-	alSourcei(source, AL_BUFFER, int(snd->buffer));
-	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
-	return new Instance(source, snd);
-}
-
-void InstanceSetDeleteOnStop(InstanceHandle si, bool del)
-{
-	si->deleteOnStop = del;
-}
-
-void InstanceDelete(InstanceHandle si)
-{
-	if(si==null) return;
-	alDeleteSources(1, &si->source);
-	delete si;
-}
-
-void InstancePlay(InstanceHandle si, bool loop)
-{
-	INTRA_DEBUG_ASSERT(si!=null);
-	alSourcei(si->source, AL_LOOPING, loop);
-	alSourcePlay(si->source);
-	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
-}
-
-bool InstanceIsPlaying(InstanceHandle si)
-{
-	if(si==null) return false;
-	ALenum state;
-	alGetSourcei(si->source, AL_SOURCE_STATE, &state);
-	return (state==AL_PLAYING);
-}
-
-void InstanceStop(InstanceHandle si)
-{
-	if(si==null) return;
-	alSourceStop(si->source);
-}
-
-StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
-	uint channels, uint sampleRate, StreamingCallback callback)
-{
-	context.Prepare();
-	if(sampleCount==0 || channels==0 ||
-		sampleRate==0 || callback.CallbackFunction==null)
-			return null;
-	INTRA_DEBUG_ASSERT(channels<=2);
-	StreamedBufferHandle result = new StreamedBuffer;
-	alGenBuffers(2, result->buffers);
-	alGenSources(1, &result->source);
-	result->sampleCount = uint(sampleCount);
-	result->sampleRate = sampleRate;
-	result->channels = channels;
-	result->streamingCallback = callback;
-	size_t bytesToAllocate = result->SizeInBytes();
-	result->temp_buffer = Memory::GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
-	return result;
-}
-
-void StreamedBufferSetDeleteOnStop(StreamedBufferHandle snd, bool del)
-{
-	snd->deleteOnStop = del;
-}
-
-void StreamedBufferDelete(StreamedBufferHandle snd)
-{
-	alDeleteSources(1, &snd->source);
-	alDeleteBuffers(2, snd->buffers);
-	Memory::GlobalHeap.Free(snd->temp_buffer, snd->SizeInBytes());
-}
-
-
-static void load_buffer(StreamedBufferHandle snd, size_t index)
-{
-	const int alFmt = snd->channels==1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16;
-	const size_t samplesProcessed = snd->streamingCallback.CallbackFunction(reinterpret_cast<void**>(&snd->temp_buffer),
-		snd->channels, Data::ValueType::Short, true, snd->sampleCount, snd->streamingCallback.CallbackData);
-	if(samplesProcessed<snd->sampleCount)
+	Data(IAudioSource& src): SoundBasicData(src)
 	{
-		short* const endOfData = snd->temp_buffer+snd->sampleCount*snd->channels;
-		const size_t totalSamplesInBuffer = (snd->sampleCount-samplesProcessed)*snd->channels;
-		C::memset(endOfData, 0, totalSamplesInBuffer*sizeof(short));
-		snd->stop_soon = true;
-	}
-	alBufferData(snd->buffers[index], alFmt, snd->temp_buffer, int(snd->SizeInBytes()), int(snd->sampleRate));
-}
+		Info.SampleType = ValueType::SNorm16;
+		auto& context = SoundContext::Instance();
+		context.GC();
+		uint buffer = 0;
+		alGenBuffers(1, &buffer);
+		INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
+		AlFormat = ushort(Info.Channels == 1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16);
+		Buffer.Set(int(buffer));
 
-
-void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
-{
-	INTRA_DEBUG_ASSERT(snd!=null);
-	load_buffer(snd, 0);
-	if(!snd->stop_soon) load_buffer(snd, 1);
-	alSourceQueueBuffers(snd->source, 2, snd->buffers);
-	alSourcePlay(snd->source);
-	snd->looping = loop;
-}
-
-bool StreamedSoundIsPlaying(StreamedBufferHandle si)
-{
-	int state;
-	alGetSourcei(si->source, AL_SOURCE_STATE, &state);
-	return state==AL_PLAYING;
-}
-
-void StreamedSoundStop(StreamedBufferHandle snd)
-{
-	if(!StreamedSoundIsPlaying(snd)) return;
-	alSourceStop(snd->source);
-	alSourceUnqueueBuffers(snd->source, 2, snd->buffers);
-	snd->stop_soon = false;
-	if(snd->deleteOnStop) StreamedBufferDelete(snd);
-}
-
-void StreamedSoundUpdate(StreamedBufferHandle snd)
-{
-	int countProcessed;
-	alGetSourcei(snd->source, AL_BUFFERS_PROCESSED, &countProcessed);
-	while(countProcessed--!=0)
-	{
-		if(snd->stop_soon && !snd->looping)
+		ValueType srcType;
+		bool srcInterleaved;
+		auto srcRawData = src.GetRawSamplesData(0, &srcType, &srcInterleaved, null);
+		if(srcRawData != null && srcType == ValueType::SNorm16 && (srcInterleaved || src.ChannelCount() == 1))
 		{
-			StreamedSoundStop(snd);
-			snd->stop_soon = false;
-			return;
+			SetDataInterleaved(srcRawData.First(), ValueType::SNorm16);
 		}
-		alSourceUnqueueBuffers(snd->source, 1, snd->buffers);
-		load_buffer(snd, 0);
-		alSourceQueueBuffers(snd->source, 1, snd->buffers);
-		Cpp::Swap(snd->buffers[0], snd->buffers[1]);
+		else
+		{
+			Array<short> dst;
+			dst.SetCountUninitialized(Info.SampleCount);
+			src.GetInterleavedSamples(dst);
+			SetDataInterleaved(dst.Data(), ValueType::SNorm16);
+		}
+
+		INTRA_SYNCHRONIZED(context.MyMutex)
+		{
+			context.AllSounds.AddLast(this);
+		}
+	}
+
+	forceinline ~Data() {Release();}
+
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
+
+	void SetDataInterleaved(const void* data, ValueType type)
+	{
+		(void)type;
+		INTRA_DEBUG_ASSERT(data != null);
+		if(type == ValueType::SNorm16)
+		{
+			alBufferData(uint(Buffer.Get()), AlFormat, data, int(Info.GetBufferSize()), int(Info.SampleRate));
+		}
+		if(type == ValueType::Float)
+		{
+			auto src = SpanOfRawElements<float>(data, Info.SampleCount*Info.Channels);
+			Array<short> dst;
+			dst.SetCountUninitialized(src.Length());
+			CastFromNormalized(dst.AsRange(), src);
+			alBufferData(uint(Buffer.Get()), AlFormat, dst.Data(), int(Info.GetBufferSize()), int(Info.SampleRate));
+		}
+		INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
+	}
+
+	void Release()
+	{
+		uint buffer = uint(Buffer.GetSet(0));
+		if(!buffer) return;
+		ReleaseAllInstances();
+		alDeleteBuffers(1, &buffer);
+		auto& context = SoundContext::Instance();
+		INTRA_SYNCHRONIZED(context.MyMutex)
+		{
+			context.AllSounds.FindAndRemoveUnordered(this);
+		}
+	}
+
+	void ReleaseAllInstances();
+
+	forceinline bool IsReleased() const {return Buffer.Get() == 0;}
+
+	//Убирает ссылки на экземпляры, воспроизведение которых было завершено.
+	//Если на текущий буфер не останется ссылок, он автоматически будет удалён.
+	void GC();
+
+	AtomicInt Buffer;
+	ushort AlFormat;
+
+	Synchronized<Array<Sound::Instance::Data*>> PlayingSources;
+};
+
+struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
+{
+	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent))
+	{
+		INTRA_DEBUG_ASSERT(Parent != null);
+		uint source = 0;
+		SoundContext::Instance().GC();
+		alGenSources(1, &source);
+		//alSource3f(source, AL_POSITION, 0, 0, 0);
+		//alSource3f(source, AL_VELOCITY, 0, 0, 0);
+		//alSource3f(source, AL_DIRECTION, 0, 0, 0);
+		//alSourcef(source, AL_ROLLOFF_FACTOR, 0);
+		//alSourcei(source, AL_SOURCE_RELATIVE, true);
+		alSourcei(source, AL_BUFFER, int(Parent->Buffer.Get()));
+		INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
+		AlSource.Set(int(source));
+	}
+
+	~Data() {Release();}
+
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
+
+	void Release()
+	{
+		uint source = uint(AlSource.GetSet(0));
+		if(!source) return;
+		Parent->PlayingSources->FindAndRemoveUnordered(this);
+		alDeleteSources(1, &source);
+		SelfRef = null;
+	}
+
+	static void checkError()
+	{
+#ifdef INTRA_DEBUG
+		const auto err = alGetError();
+		INTRA_DEBUG_ASSERT(err == AL_NO_ERROR || err == AL_INVALID_NAME);
+#endif
+	}
+
+	void Play(bool loop)
+	{
+		const uint source = uint(AlSource.Get());
+		if(!source) return;
+		if(IsPlaying()) return;
+		SelfRef = SharedThis();
+		Parent->PlayingSources->AddLast(this);
+		alSourcei(source, AL_LOOPING, loop);
+		checkError();
+		alSourcePlay(source);
+		checkError();
+	}
+
+	bool IsPlaying()
+	{
+		ALenum state;
+		alGetSourcei(uint(AlSource.Get()), AL_SOURCE_STATE, &state);
+		return state == AL_PLAYING;
+	}
+
+	void Stop()
+	{
+		const uint source = uint(AlSource.Get());
+		if(!source) return;
+		Parent->PlayingSources->FindAndRemoveUnordered(this);
+		alSourceStop(source);
+		SelfRef = null;
+	}
+
+	Shared<Data> SelfRef;
+	AtomicInt AlSource;
+};
+
+
+struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
+{
+	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = false):
+		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount),
+		TempBuffer(Source->ChannelCount() * BufferSampleCount)
+	{
+		(void)autoStreamingEnabled; //not supported
+
+		INTRA_DEBUG_ASSERT(Source != null);
+		INTRA_DEBUG_ASSERT(Source->ChannelCount() <= 2);
+		auto& context = SoundContext::Instance();
+		alGenBuffers(2, AlBuffers);
+		uint alsource = 0;
+		alGenSources(1, &alsource);
+		AlSource.SetRelaxed(int(alsource));
+
+		INTRA_SYNCHRONIZED(context.MyMutex)
+		{
+			context.AllStreamedSounds.AddLast(this);
+		}
+	}
+
+	Data(const Data&) = delete;
+	Data& operator=(const Data&) = delete;
+
+	~Data() {Release();}
+
+	void Release()
+	{
+		uint source = uint(AlSource.GetSet(0));
+		if(!source) return;
+		alDeleteSources(1, &source);
+		alDeleteBuffers(2, AlBuffers);
+		TempBuffer = null;
+		auto& context = SoundContext::Instance();
+		INTRA_SYNCHRONIZED(context.MyMutex)
+		{
+			context.AllStreamedSounds.FindAndRemoveUnordered(this);
+		}
+	}
+
+	forceinline bool IsReleased() const {return AlSource.Get() == 0;}
+
+	bool loadBuffer(size_t index)
+	{
+		const int alFmt = Source->ChannelCount() == 1? AL_FORMAT_MONO16: AL_FORMAT_STEREO16;
+		const size_t samplesProcessed = Source->GetInterleavedSamples(TempBuffer);
+		bool stopSoon = false;
+		if(samplesProcessed < BufferSampleCount)
+		{
+			FillZeros(TempBuffer.AsRange().Drop(samplesProcessed));
+			stopSoon = Status.CompareSet(STATUS_PLAYING, STATUS_STOPPING);
+		}
+		alBufferData(AlBuffers[index], alFmt, TempBuffer.Data(),
+			int(GetBufferSize()), int(Source->SampleRate()));
+		return stopSoon;
+	}
+
+	void Play(bool loop)
+	{
+		uint source = uint(AlSource.Get());
+		if(!source) return;
+		if(Status.GetSet(loop? STATUS_LOOPING: STATUS_PLAYING) != STATUS_STOPPED) return;
+		SelfRef = SharedThis();
+		bool stopSoon = loadBuffer(0);
+		if(!stopSoon) loadBuffer(1);
+		alSourceQueueBuffers(source, 2, AlBuffers);
+		alSourcePlay(source);
+	}
+
+	forceinline bool IsPlaying() const {return Status.Get() != STATUS_STOPPED;}
+
+	void Stop()
+	{
+		if(Status.GetSet(STATUS_STOPPED) == STATUS_STOPPED) return;
+		const uint source = uint(AlSource.Get());
+		alSourceStop(source);
+		alSourceUnqueueBuffers(source, 2, AlBuffers);
+		SelfRef = null;
+	}
+
+	void Update()
+	{
+		int countProcessed;
+		const uint source = uint(AlSource.Get());
+		alGetSourcei(source, AL_BUFFERS_PROCESSED, &countProcessed);
+		while(countProcessed --> 0)
+		{
+			if(Status.Get() == STATUS_STOPPING)
+			{
+				Stop();
+				return;
+			}
+			alSourceUnqueueBuffers(source, 1, AlBuffers);
+			loadBuffer(0);
+			alSourceQueueBuffers(source, 1, AlBuffers);
+			Cpp::Swap(AlBuffers[0], AlBuffers[1]);
+		}
+	}
+
+	uint AlBuffers[2];
+	AtomicInt AlSource;
+	FixedArray<short> TempBuffer;
+
+	enum {STATUS_STOPPED, STATUS_PLAYING, STATUS_LOOPING, STATUS_STOPPING};
+	AtomicInt Status{STATUS_STOPPED};
+};
+
+void SoundContext::ReleaseAllSounds()
+{
+	Array<Sound::Data*> soundsToRelease;
+	INTRA_SYNCHRONIZED(MyMutex)
+	{
+		soundsToRelease = Cpp::Move(AllSounds);
+	}
+	for(auto snd: soundsToRelease) snd->Release();
+}
+
+void SoundContext::ReleaseAllStreamedSounds()
+{
+	Array<StreamedSound::Data*> soundsToRelease;
+	INTRA_SYNCHRONIZED(MyMutex)
+	{
+		soundsToRelease = Cpp::Move(AllStreamedSounds);
+	}
+	for(auto snd: soundsToRelease) snd->Release();
+}
+
+void SoundContext::GC()
+{
+	INTRA_SYNCHRONIZED(MyMutex)
+	{
+		for(auto snd: AllSounds) snd->GC();
 	}
 }
 
-void SoundSystemCleanUp()
+void Sound::Data::GC()
 {
-	context.Clean();
+	Array<Shared<Sound::Instance::Data>> stoppedSources;
+	INTRA_SYNCHRONIZED(PlayingSources)
+	{
+		for(size_t i = 0; i < PlayingSources.Value.Length(); i++)
+		{
+			auto src = PlayingSources.Value[i];
+			if(src->IsPlaying()) continue;
+			stoppedSources.AddLast(src->SharedThis());
+			src->SelfRef = null;
+			PlayingSources.Value.RemoveUnordered(i--);
+		}
+	}
 }
+
+void Sound::Data::ReleaseAllInstances()
+{
+	Array<Shared<Sound::Instance::Data>> playingSources;
+	INTRA_SYNCHRONIZED(PlayingSources)
+	{
+		playingSources.Reserve(PlayingSources.Value.Length());
+		for(auto src: PlayingSources.Value) playingSources.AddLast(src->SharedThis());
+		PlayingSources.Value = null;
+	}
+	for(auto& src: playingSources) src->Release();
+}
+
+}}
 
 INTRA_WARNING_POP
-
-}}}
-
-#else
-
-INTRA_DISABLE_LNK4221
-
-#endif

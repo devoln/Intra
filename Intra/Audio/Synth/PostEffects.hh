@@ -2,23 +2,16 @@
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
+
 #include "Utils/Span.h"
+
+#include "Math/SineRange.h"
+
+#include "Types.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth { namespace PostEffects {
-
-struct Chorus
-{
-	float MaxDelay;
-	float Frequency;
-	float MainVolume, SecondaryVolume;
-
-	Chorus(float maxDelay=0.03f, float frequency=3, float mainVolume=0.5f, float secondaryVolume=0.5f):
-		MaxDelay(maxDelay), Frequency(frequency), MainVolume(mainVolume), SecondaryVolume(secondaryVolume) {}
-
-	void operator()(Span<float> inOutSamples, uint sampleRate) const;
-};
 
 struct Echo
 {

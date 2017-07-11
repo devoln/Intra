@@ -44,7 +44,7 @@ template<typename R0, typename... RANGES> struct RRoundRobin
 	forceinline bool operator==(const RRoundRobin& rhs) const
 	{
 		return ((mRange0.Empty() && rhs.mRange0.Empty()) ||
-			(mRange0==rhs.mRange0 && mCounter==rhs.mCounter)) && mNext==rhs.mNext;
+			(mRange0 == rhs.mRange0 && mCounter == rhs.mCounter)) && mNext == rhs.mNext;
 	}
 
 	forceinline bool operator!=(const RRoundRobin& rhs) const

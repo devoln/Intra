@@ -311,7 +311,7 @@ void FatalErrorMessageAbort(const SourceInfo& srcInfo, StringView msg, bool prin
 	PrintDebugMessage(fullMsg);
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows && !defined(WINSTORE_APP))
-	FixedArray<wchar_t> wbuffer(msg.Length() + 1);
+	FixedArray<wchar_t> wbuffer(fullMsg.Length() + 1);
 	LPWSTR wmessage = wbuffer.Data();
 	int wmessageLength = MultiByteToWideChar(CP_UTF8, 0, fullMsg.Data(), int(fullMsg.Length()), wmessage, int(fullMsg.Length()));
 	wmessage[wmessageLength] = L'\0';

@@ -35,6 +35,10 @@
 
 #endif
 
+#if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_OpenAL)
+#define INTRA_LIBRARY_SOUND_AUTO_STREAMING_SUPPORTED
+#endif
+
 namespace Intra { namespace Audio {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -49,16 +53,13 @@ public:
 	explicit Sound(const AudioBuffer& data);
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 	Sound(Sound&& rhs);
+	Sound(IAudioSource& src);
 
 	~Sound();
 
 	void Release();
 
-    AnyPtr Lock();
-	void Unlock();
-
 	static Sound FromFile(StringView fileName, ErrorStatus& status);
-	static Sound FromSource(AAudioSource& src);
 
 	Sound& operator=(Sound&& rhs);
 	Sound& operator=(null_t) {Release(); return *this;}
@@ -108,11 +109,10 @@ private:
 class StreamedSound
 {
 public:
-	typedef Unique<AAudioSource> SourceRef;
 	typedef Delegate<void()> OnStopCallback;
 
 	StreamedSound(null_t=null);
-	StreamedSound(SourceRef&& src, size_t bufferSizeInSamples=16384);
+	StreamedSound(Unique<IAudioSource> src, size_t bufferSizeInSamples=16384);
 	StreamedSound(StreamedSound&& rhs);
 	~StreamedSound();
 

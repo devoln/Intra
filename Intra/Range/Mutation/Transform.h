@@ -163,16 +163,17 @@ size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2);
 size_t MultiplyAdvance(Span<float>& dstOp1, float multiplyer);
 size_t MultiplyAdvance(Span<float>& dst, CSpan<float>& op1, float multiplyer);
 size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add);
+size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Multiplyer);
 
 //! Складывать соответствующие элементы диапазонов.
 //! Если один из диапазонов короче другого, будет обработано столько элементов, какова минимальная длина.
 //! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
 forceinline size_t Add(Span<float> dstOp1, CSpan<float> op2) {return AddAdvance(dstOp1, op2);}
 forceinline size_t Multiply(Span<float> dstOp1, CSpan<float> op2) {return MultiplyAdvance(dstOp1, op2);}
-forceinline size_t Multiply(Span<float> dstOp1, float multiplyer) {return MultiplyAdvance(dstOp1, multiplyer);}
-forceinline size_t Multiply(Span<float> dst, CSpan<float> op1, float multiplyer) {return MultiplyAdvance(dst, op1, multiplyer);}
+forceinline size_t Multiply(Span<float> dstOp1, float multiplier) {return MultiplyAdvance(dstOp1, multiplier);}
+forceinline size_t Multiply(Span<float> dst, CSpan<float> op1, float multiplier) {return MultiplyAdvance(dst, op1, multiplier);}
 forceinline size_t MulAdd(Span<float> dstOp1, float mul, float add) {return MulAddAdvance(dstOp1, mul, add);}
-
+forceinline size_t AddMultiplied(Span<float> dst, CSpan<float> op1, float multiplier) {return AddMultipliedAdvance(dst, op1, multiplier);}
 
 template<typename R> Meta::EnableIf<
 	Concepts::IsInputRange<R>::_ &&

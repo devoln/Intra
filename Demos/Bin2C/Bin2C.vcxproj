@@ -235,21 +235,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugXP|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);../../Libs/lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug 2017|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../Libs/lib;$(OutDir);C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSdk_71A_IncludePath);$(SolutionDir)Core/include</IncludePath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
@@ -282,7 +282,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
@@ -290,7 +290,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(OutDir);$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
@@ -298,7 +298,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
@@ -306,7 +306,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)Core/include</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>
@@ -314,7 +314,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)/Intra;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <GenerateManifest>false</GenerateManifest>

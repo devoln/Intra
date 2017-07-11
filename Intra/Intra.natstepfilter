@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<StepFilter xmlns="http://schemas.microsoft.com/vstudio/debugger/natstepfilter/2010">  
+    <Function><Name>Intra::Cpp::Move&lt;.*</Name><Action>NoStepInto</Action></Function>  
+    <Function><Name>Intra::Cpp::Forward&lt;.*</Name><Action>NoStepInto</Action></Function> 
+	<Function><Name>Intra::Range::Forward&lt;.*</Name><Action>NoStepInto</Action></Function> 
+	<Function><Name>Intra::Funal::Delegate&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Funal::CopyableDelegate&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Funal::MethodWrapper&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Funal::ObjectMethodWrapper&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Funal::ObjectConstMethodWrapper&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Funal::TBind.*&lt;.*&gt;::operator()</Name><Action>NoStepInto</Action></Function>
+	
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::operator[]</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Span</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Span&lt;.*&gt;</Name><Action>StepInto</Action></Function>
+	<Function><Name>Intra::Range::SpanOf&lt;.*&gt;</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::SpanOfBuffer&lt;.*&gt;</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::SpanOfRaw&lt;.*&gt;</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::SpanOfRawElements&lt;.*&gt;</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::begin</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::end</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Data</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Length</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Empty</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Full</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Next</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Last</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::PopFirst</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::PopLast</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::Put</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::operator&lt;&lt;</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Range::Span&lt;.*&gt;::operator=</Name><Action>NoStepInto</Action></Function>
+	
+	<Function><Name>Intra::Utils::Unique&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Utils::Shared&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Utils::UniqueMove&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>Intra::Utils::SharedMove&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	
+	<Function><Name>Intra::Error::Skip</Name><Action>NoStepInto</Action></Function>
+</StepFilter>

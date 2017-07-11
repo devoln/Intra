@@ -11,7 +11,7 @@ template<class T, typename R, typename... Args> struct ObjectMethodWrapper
 	T* ObjectRef;
 	MethodPtr Method;
 
-	forceinline R operator()(T& object, Args... args) const
+	forceinline R operator()(Args... args) const
 	{
 		INTRA_DEBUG_ASSERT(ObjectRef != null);
 		INTRA_DEBUG_ASSERT(Method != null);

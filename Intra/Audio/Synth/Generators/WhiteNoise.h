@@ -18,7 +18,6 @@ struct WhiteNoise
 		mDS = float(frequency*step);
 	}
 
-	forceinline float NextSample() {PopFirst(); return First();}
 	forceinline void PopFirst() {mS += mDS;}
 	forceinline float First() const {return mAmplitude*Random::FastUniformNoise::Linear(mS);}
 	forceinline bool Empty() const {return false;}

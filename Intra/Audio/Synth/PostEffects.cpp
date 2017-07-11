@@ -6,32 +6,6 @@
 
 namespace Intra { namespace Audio { namespace Synth { namespace PostEffects {
 
-void Chorus::operator()(Span<float> inOutSamples, uint sampleRate) const
-{
-	Array<float> copy(inOutSamples);
-	float radFreq = Frequency*2*float(Math::PI);
-	const double duration = double(inOutSamples.Length())/sampleRate;
-	float t = 0.0f;
-	float dt = 1.0f/float(sampleRate);
-	Math::SineRange<float> sineRange(MaxDelay, 0, radFreq*dt);
-	size_t samplesProcessed = 0;
-	while(!inOutSamples.Empty())
-	{
-		auto st = sineRange.First();
-		sineRange.PopFirst();
-		if(t>=-st && t<duration-st)
-		{
-			size_t index = samplesProcessed+size_t(st*float(sampleRate));
-			if(index>=copy.Count()) index = copy.Count()-1;
-			inOutSamples.First() *= MainVolume;
-			inOutSamples.First() += copy[index]*SecondaryVolume;
-		}
-		t += dt;
-		inOutSamples.PopFirst();
-		samplesProcessed++;
-	}
-}
-
 void Echo::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	Array<float> copy(inOutSamples);
@@ -77,8 +51,8 @@ void FilterQ::operator()(Span<float> samples, uint sampleRate) const
 	float P = 0, S = 0;
 	for(float& sample: samples)
 	{
-		P += S*F+sample;
-		S = (S-P*F)*K;
+		P += S*F + sample;
+		S = (S - P*F)*K;
 		sample = P;
 	}
 }

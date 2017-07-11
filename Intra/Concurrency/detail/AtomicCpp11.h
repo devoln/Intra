@@ -23,6 +23,10 @@ template<typename T> forceinline T AtomicBase<T>::GetSet ## mo(T val) noexcept \
 {return mValue.exchange(val, std::memory_order_ ## stdmo);}
 
 #define INTRA_ATOMIC_METHOD_CAS(method, stdmethod, mo, stdmo) \
+template<typename T> forceinline bool AtomicBase<T>::method ## mo(T expected, T desired) noexcept \
+{return mValue.stdmethod(expected, desired, std::memory_order_ ## stdmo);}
+
+#define INTRA_ATOMIC_METHOD_CAS2(method, stdmethod, mo, stdmo) \
 template<typename T> forceinline bool AtomicBase<T>::method ## mo(T& expected, T desired) noexcept \
 {return mValue.stdmethod(expected, desired, std::memory_order_ ## stdmo);}
 
@@ -49,12 +53,26 @@ INTRA_ATOMIC_METHOD_CAS(WeakCompareSet, compare_exchange_weak, Acquire, acquire)
 INTRA_ATOMIC_METHOD_CAS(WeakCompareSet, compare_exchange_weak, Release, release)
 INTRA_ATOMIC_METHOD_CAS(WeakCompareSet, compare_exchange_weak, AcquireRelease, acq_rel)
 
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, , seq_cst)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, Relaxed, relaxed)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, Consume, consume)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, Acquire, acquire)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, Release, release)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, compare_exchange_weak, AcquireRelease, acq_rel)
+
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, , seq_cst)
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, Relaxed, relaxed)
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, Consume, consume)
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, Acquire, acquire)
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, Release, release)
 INTRA_ATOMIC_METHOD_CAS(CompareSet, compare_exchange_strong, AcquireRelease, acq_rel)
+
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, , seq_cst)
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, Relaxed, relaxed)
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, Consume, consume)
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, Acquire, acquire)
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, Release, release)
+INTRA_ATOMIC_METHOD_CAS(CompareGetSet, compare_exchange_strong, AcquireRelease, acq_rel)
 
 #define INTRA_ATOMIC_METHOD_PREBINARY_ONE(method, stdmethod, mo, stdmo) \
 template<typename T> forceinline T AtomicInteger<T>::method ## mo(T rhs) noexcept \

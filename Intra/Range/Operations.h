@@ -87,7 +87,7 @@ template<typename R> forceinline Meta::EnableIf<
 > PopFirstExactly(R& range, size_t elementsToPop)
 {
 	size_t poppedElements = range.PopFirstN(elementsToPop);
-	INTRA_DEBUG_ASSERT(poppedElements==elementsToPop);
+	INTRA_DEBUG_ASSERT(poppedElements == elementsToPop);
 	(void)poppedElements;
 }
 

@@ -17,4 +17,94 @@
     </Expand>
   </Type>
 
+  <Type Name="Intra::Funal::Functor&lt;*,*&gt;">
+    <DisplayString>{Obj}</DisplayString>
+    <Expand>
+      <ExpandedItem>Obj</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::CopyableFunctor&lt;*,*&gt;">
+    <DisplayString>{Obj}</DisplayString>
+    <Expand>
+      <ExpandedItem>Obj</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::TValue&lt;*&gt;">
+    <DisplayString>{Value}</DisplayString>
+    <Expand>
+      <ExpandedItem>Value</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::TRef&lt;*&gt;">
+    <DisplayString>{&amp;Ref}</DisplayString>
+    <Expand>
+      <ExpandedItem>&amp;Ref</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  <Type Name="Intra::Funal::FuncRef&lt;*&gt;">
+    <DisplayString Condition="mObjRef == nullptr">{mFreeFunc}</DisplayString>
+    <DisplayString>(ObjRef({mObjRef}), Func({mFunc}))</DisplayString>
+    <Expand>
+      <Item Name="Object" Condition="mObjRef != nullptr">mObjRef</Item>
+      <Item Name="Function" Condition="mObjRef != nullptr">*mFunc</Item>
+      <Item Name="Function" Condition="mObjRef == nullptr">*mFreeFunc</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::ObjectMethodWrapper&lt;*,*&gt;">
+    <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
+    <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
+    <Expand>
+      <Item Name="Object">ObjectRef</Item>
+      <Item Name="Method">Method</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::ObjectConstMethodWrapper&lt;*,*&gt;">
+    <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
+    <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
+    <Expand>
+      <Item Name="Object">ObjectRef</Item>
+      <Item Name="Method">Method</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Funal::TLess"><DisplayString>Less</DisplayString></Type>
+  <Type Name="Intra::Funal::TLEqual"><DisplayString>LEqual</DisplayString></Type>
+  <Type Name="Intra::Funal::TGreater"><DisplayString>Greater</DisplayString></Type>
+  <Type Name="Intra::Funal::TGEqual"><DisplayString>GEqual</DisplayString></Type>
+  <Type Name="Intra::Funal::TEqual"><DisplayString>Equal</DisplayString></Type>
+  <Type Name="Intra::Funal::TNotEqual"><DisplayString>!Equal</DisplayString></Type>
+  
+  <Type Name="Intra::Funal::TNot1&lt;*&gt;"><DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString></Type>
+  <Type Name="Intra::Funal::TNot2&lt;*&gt;"><DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString></Type>
+  
+  <Type Name="Intra::Funal::TAnd1&lt;*&gt;"><DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString></Type>
+  <Type Name="Intra::Funal::TAnd2&lt;*&gt;"><DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString></Type>
+  <Type Name="Intra::Funal::TOr1&lt;*&gt;"><DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString></Type>
+  <Type Name="Intra::Funal::TOr2&lt;*&gt;"><DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString></Type>
+  
+  <Type Name="Intra::Funal::TIsEven"><DisplayString>IsEven</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsOdd"><DisplayString>IsOdd</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsHorSpace"><DisplayString>IsHorSpace</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsLineSeparator"><DisplayString>IsLineSeparator</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsSpace"><DisplayString>IsSpace</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsAnySlash"><DisplayString>IsAnySlash</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsDigit"><DisplayString>IsDigit</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsLowerLatin"><DisplayString>IsLowerLatin</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsUpperLatin"><DisplayString>IsUpperLatin</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsLatin"><DisplayString>IsLatin</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsAsciiChar"><DisplayString>IsAsciiChar</DisplayString></Type>
+  <Type Name="Intra::Funal::TIsControlChar"><DisplayString>IsControlChar</DisplayString></Type>
+  
+  <Type Name="Intra::Funal::TTrue"><DisplayString>True</DisplayString></Type>
+  <Type Name="Intra::Funal::TFalse"><DisplayString>False</DisplayString></Type>
+  
+  <Type Name="Intra::Funal::TToLowerAscii"><DisplayString>ToLowerAscii</DisplayString></Type>
+  <Type Name="Intra::Funal::TToUpperAscii"><DisplayString>ToUpperAscii</DisplayString></Type>
+  
 </AutoVisualizer>

@@ -52,6 +52,7 @@ struct ValueType
 		Norm32,  N32Vec2, N32Vec3, N32Vec4,
 		SNorm8,  S8Vec2,  S8Vec3,  S8Vec4,
 		SNorm16, S16Vec2, S16Vec3, S16Vec4,
+		SNorm24, S24Vec2, S24Vec3, S24Vec4,
 		SNorm32, S32Vec2, S32Vec3, S32Vec4,
 
 		NVec233, NVec565, NVec1555, NVec4444, Vec10n10n10n2n, Vec10s10s10s2s,
@@ -166,6 +167,8 @@ struct ValueType
 		Math::Norm32s, Math::N32Vec2, Math::N32Vec3, Math::N32Vec4,
 		Math::SNorm8s, Math::S8Vec2, Math::S8Vec3, Math::S8Vec4,
 		Math::SNorm16s, Math::S16Vec2, Math::S16Vec3, Math::S16Vec4,
+		null_t, null_t, null_t, null_t,
+		//Math::SNorm24s, Math::S24Vec2, Math::S24Vec3, Math::S24Vec4,
 		Math::SNorm32s, Math::S32Vec2, Math::S32Vec3, Math::S32Vec4,
 
 		null_t, null_t, null_t, null_t, null_t, null_t,

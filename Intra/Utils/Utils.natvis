@@ -22,8 +22,15 @@
     <DisplayString Condition="mData == nullptr">null</DisplayString>
     <DisplayString>Shared({mData->RefCount}, {(void*)mData}) {{{mData->Value}}}</DisplayString>
     <Expand>
-      <ExpandedItem Condition="mData!=nullptr">mData->Value</ExpandedItem>
-      <Item Name="RefCount" Condition="mData!=nullptr">mData->RefCount</Item>
+      <ExpandedItem Condition="mData != nullptr">mData->Value</ExpandedItem>
+      <Item Name="RefCount" Condition="mData != nullptr">mData->RefCount</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Utils::SharedClass&lt;*&gt;" Inheritable="false">
+    <DisplayString>{((DerivedData*)this)->RefCount} references</DisplayString>
+    <Expand>
+      <Item Name="RefCount">((DerivedData*)this)->RefCount</Item>
     </Expand>
   </Type>
 

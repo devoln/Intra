@@ -34,7 +34,7 @@ template<typename T> struct Span
 		Begin(list.begin()), End(list.end()) {}
 
 	template<size_t N> constexpr forceinline Span(T(&arr)[N]) noexcept:
-		Begin(arr), End(arr+N-Meta::IsCharType<T>::_) {}
+		Begin(arr), End(arr + N - Meta::IsCharType<T>::_) {}
 
 	forceinline Span(T* startPtr, T* endPtr):
 		Begin(startPtr), End(endPtr) {INTRA_DEBUG_ASSERT(End >= Begin);}
@@ -53,21 +53,21 @@ template<typename T> struct Span
 	constexpr forceinline operator Span<const T>() const noexcept {return AsConstRange();}
 
 	forceinline constexpr bool ContainsSubrange(const Span& subrange) const noexcept
-	{return Begin<=subrange.Begin && End>=subrange.End;}
+	{return Begin <= subrange.Begin && End >= subrange.End;}
 
 	template<typename U> forceinline constexpr bool ContainsAddress(const U* address) const noexcept
-	{return size_t(reinterpret_cast<const T*>(address)-Begin) <= Length();}
+	{return size_t(reinterpret_cast<const T*>(address) - Begin) <= Length();}
 
 	forceinline constexpr bool Overlaps(Span<const T> rhs) const noexcept
 	{
-		return Begin<rhs.End && End>rhs.Begin &&
+		return Begin < rhs.End && End > rhs.Begin &&
 			!Empty() && !rhs.Empty();
 	}
 
 	forceinline constexpr T* begin() const noexcept {return Begin;}
 	forceinline constexpr T* end() const noexcept {return End;}
 
-	forceinline size_t Length() const noexcept {return size_t(End-Begin);}
+	forceinline size_t Length() const noexcept {return size_t(End - Begin);}
 	forceinline constexpr bool Empty() const noexcept {return End <= Begin;}
 	forceinline constexpr bool Full() const noexcept {return End <= Begin;}
 	forceinline constexpr T* Data() const noexcept {return Begin;}

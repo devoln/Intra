@@ -4,7 +4,9 @@
 #include "Cpp/Features.h"
 
 #include "AudioBuffer.h"
+
 #include "Utils/FixedArray.h"
+
 #include "Data/ValueType.h"
 
 #include "Funal/Delegate.h"
@@ -13,25 +15,38 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio {
 
-class AAudioSource
+class IAudioSource
 {
 protected:
-	AAudioSource(uint sampleRate=0, ushort channelCount=0):
-		mSampleRate(sampleRate), mChannelCount(channelCount) {}
-
-
+	IAudioSource() {}
 public:
-	AAudioSource(AAudioSource&&) = default;
-	AAudioSource(const AAudioSource&) = delete;
-	AAudioSource& operator=(AAudioSource&&) = default;
-	AAudioSource& operator=(const AAudioSource&) = delete;
+	virtual ~IAudioSource() {}
 
-	typedef Funal::Delegate<void()> OnCloseResourceCallback;
-	AAudioSource(OnCloseResourceCallback onCloseResource): OnCloseResource(Cpp::Move(onCloseResource)) {}
+	//! Частота дискретизации потока семплов.
+	virtual uint SampleRate() const = 0;
 
-	virtual ~AAudioSource() {if(OnCloseResource) OnCloseResource();}
-	virtual size_t SampleCount() const = 0;
-	virtual size_t CurrentSamplePosition() const = 0;
+	//! Количество каналов, которое имеет поток.
+	virtual uint ChannelCount() const = 0;
+
+	//! Полное количество семплов в потоке. Возвращает ~size_t(), если оно неизвестно.
+	virtual size_t SampleCount() const {return ~size_t();}
+
+	//! Текущая позиция в потоке в семплах.
+	virtual size_t SamplePosition() const = 0;
+
+	//! Установить текущую позицию потока в семплах.
+	//! Если не удалось выполнить эту операцию или поток её не поддерживает, возвращает false.
+	virtual bool SetSamplePosition(size_t position) {(void)position; return false;}
+
+	//! Сколько непрочитанных семплов осталось в потоке.
+	//! Если это значение неизвестно, возвращает ~size_t().
+	forceinline size_t SamplesLeft() const
+	{
+		const size_t totalSamples = SampleCount();
+		if(totalSamples == ~size_t()) return ~size_t();
+		return totalSamples - SamplePosition();
+	}
+
 
 	//! Загрузить следующие семплы в формате чередующихся short каналов.
 	//! @param[out] outShorts Куда загружаются семплы. outShorts.Count() означает, сколько их загружать.
@@ -55,7 +70,26 @@ public:
 	//! @return Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.
 	//! null, если не поддерживается потоком, либо существует несколько возможных вариантов выбора типа.
 	virtual FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
-		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead)
+		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) = 0;
+};
+
+class BasicAudioSource: public IAudioSource
+{
+public:
+	typedef Funal::Delegate<void()> OnCloseResourceCallback;
+protected:
+	BasicAudioSource(OnCloseResourceCallback onClose, uint sampleRate=0, ushort numChannels=0):
+		mOnCloseResource(Cpp::Move(onClose)), mSampleRate(sampleRate), mChannelCount(numChannels) {}
+public:
+	BasicAudioSource(BasicAudioSource&&) = default;
+	BasicAudioSource(const BasicAudioSource&) = delete;
+	BasicAudioSource& operator=(BasicAudioSource&&) = default;
+	BasicAudioSource& operator=(const BasicAudioSource&) = delete;
+
+	~BasicAudioSource() {if(mOnCloseResource) mOnCloseResource();}
+
+	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
+		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override
 	{
 		(void)maxSamplesToRead;
 		if(oType) *oType = Data::ValueType::Void;
@@ -63,16 +97,31 @@ public:
 		if(oSamplesRead) *oSamplesRead = 0;
 		return null;
 	}
+	
 
-	//! Сколько непрочитанных семплов осталось в потоке
-	forceinline size_t SamplesLeft() const {return SampleCount() - CurrentSamplePosition();}
-	forceinline uint SampleRate() const {return mSampleRate;}
-	forceinline uint ChannelCount() const {return mChannelCount;}
+	uint SampleRate() const final {return mSampleRate;}
+	uint ChannelCount() const final {return mChannelCount;}
 
-	OnCloseResourceCallback OnCloseResource;
 protected:
+	OnCloseResourceCallback mOnCloseResource;
 	uint mSampleRate;
 	ushort mChannelCount;
+};
+
+class SeparateFloatAudioSource: public BasicAudioSource
+{
+protected:
+	using BasicAudioSource::BasicAudioSource;
+	using BasicAudioSource::operator=;
+
+public:
+	SeparateFloatAudioSource(SeparateFloatAudioSource&&) = default;
+	SeparateFloatAudioSource(const SeparateFloatAudioSource&) = delete;
+	SeparateFloatAudioSource& operator=(SeparateFloatAudioSource&&) = default;
+	SeparateFloatAudioSource& operator=(const SeparateFloatAudioSource&) = delete;
+
+	size_t GetInterleavedSamples(Span<short> outShorts) override;
+	size_t GetInterleavedSamples(Span<float> outFloats) override;
 };
 
 }}

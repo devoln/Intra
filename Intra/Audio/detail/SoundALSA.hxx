@@ -18,9 +18,6 @@ namespace Intra { namespace Audio {
 
 using namespace Intra::Math;
 
-const Data::ValueType::I InternalBufferType = Data::ValueType::Short;
-const int InternalChannelsInterleaved = true;
-
 struct Buffer
 {
 	Buffer(uint buf, uint sample_count, uint sample_rate, uint ch, ushort format):

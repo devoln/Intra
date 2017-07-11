@@ -3,49 +3,39 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
 
-namespace Intra { namespace Audio {
-
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio {
 
 struct MusicNote
 {
-	enum NoteType: byte {C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, H};
-	static const float BasicFrequencies[12]; //Таблица соответствия нот субконтроктавы частотам
+	enum Type: byte {C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B};
 
-	MusicNote(byte octave, NoteType note, ushort duration):
-		Octave(octave), Note(note), Duration(duration) {}
+	//Таблица соответствия нот субконтроктавы частотам
+	static /*constexpr*/ const float BasicFrequencies[12];/* = {
+		16.352f, 17.324f, 18.354f, 19.445f, 20.602f, 21.827f,
+		23.125f, 24.500f, 25.957f, 27.500f, 29.135f, 30.868f
+	};*/
 
-	MusicNote(null_t=null):
-		Octave(255), Note(NoteType(255)), Duration(0) {}
+	forceinline MusicNote(byte octave, Type note): NoteOctave(byte((octave << 4) | byte(note))) {}
+	forceinline MusicNote(null_t=null): NoteOctave(255) {}
 
-	static MusicNote Pause(ushort duration)
-	{
-		MusicNote result;
-		result.Duration = duration;
-		return result;
-	}
-
-	bool IsPause() const {return Octave==255 && Duration!=0;}
-
-	operator NoteType() const {return Note;}
-	bool operator==(const MusicNote& rhs) const
-	{return Octave==rhs.Octave && Note==rhs.Note && Duration==rhs.Duration;}
+	forceinline Type Note() const {return Type(NoteOctave & 15);}
+	forceinline byte Octave() const {return byte(NoteOctave >> 4);}
 	
-	bool operator!=(const MusicNote& rhs) const {return !operator==(rhs);}
+	forceinline bool operator==(const MusicNote& rhs) const {return NoteOctave == rhs.NoteOctave;}
+	forceinline bool operator!=(const MusicNote& rhs) const {return !operator==(rhs);}
 	
-	bool operator==(null_t) const
-	{return Duration==0 || (Octave!=255 && (Octave>=8 || Note>=12));}
-	
-	bool operator!=(null_t) const {return !operator==(null);}
+	forceinline bool operator==(null_t) const noexcept {return NoteOctave == 255;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
 
-	float Frequency() const {return BasicFrequencies[Note]*float(1 << Octave);}
-	float AbsDuration(float tempo) const {return Duration*tempo/2048;}
+	forceinline float Frequency() const {return BasicFrequencies[byte(Note())]*float(1 << Octave());}
 
-	byte Octave; //0 - субконтроктава, дальше по порядку. Если Octave==255, то это не нота, а пауза
-	NoteType Note;
-	ushort Duration; //Относительная длительность ноты в 1/2048 долях
+	//! Запакованные в один байт нота и октава.
+	//! Младшие 4 бита - нота, старшие биты - октава, начиная с субконтроктавы.
+	byte NoteOctave;
 };
 
-INTRA_WARNING_POP
-
 }}
+
+INTRA_WARNING_POP

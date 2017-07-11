@@ -21,9 +21,21 @@
     <ClCompile Include="MusicSynthesizerCommon.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
+    <ClCompile Include="InstrumentLibrary.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="MidiInstrumentMapping.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MusicSynthesizerCommon.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="InstrumentLibrary.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="MidiInstrumentMapping.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

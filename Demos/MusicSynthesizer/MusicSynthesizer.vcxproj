@@ -238,7 +238,7 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../../Libs/lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
@@ -247,7 +247,7 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);../../Libs/lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
@@ -256,7 +256,7 @@
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);../../Libs/lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <CodeAnalysisRuleSet>NativeMinimumRules.ruleset</CodeAnalysisRuleSet>
     <RunCodeAnalysis>false</RunCodeAnalysis>
     <EnableCppCoreCheck>false</EnableCppCoreCheck>
@@ -286,28 +286,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release 2017|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseMin|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32;$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);$(SolutionDir)../Libs/lib;$(OutDir)</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Clang|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
@@ -315,7 +315,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release MSClang|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)Intra;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSdk_71A_LibraryPath_x86);..\..\Libs\lib;$(OutDir);C:\Program Files (x86)\Microsoft SDKs\Windows\v7.1A\lib</LibraryPath>
+    <LibraryPath>$(SolutionDir)..\Libs\lib32;$(LibraryPath);C:\Program Files %28x86%29\OpenAL 1.1 SDK\libs\Win32</LibraryPath>
     <OutDir>$(SolutionDir)Build\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\Cache\VisualStudio\$(SolutionName)\$(ProjectName)\$(Configuration) $(Platform)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
@@ -508,7 +508,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -904,10 +904,14 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="InstrumentLibrary.cpp" />
+    <ClCompile Include="MidiInstrumentMapping.cpp" />
     <ClCompile Include="MusicSynthesizer.cpp" />
     <ClCompile Include="MusicSynthesizerCommon.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="InstrumentLibrary.h" />
+    <ClInclude Include="MidiInstrumentMapping.h" />
     <ClInclude Include="MusicSynthesizerCommon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

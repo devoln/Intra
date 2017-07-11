@@ -8,7 +8,7 @@
 namespace Intra { namespace Audio {
 
 struct AudioBuffer;
-class AAudioSource;
+class IAudioSource;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

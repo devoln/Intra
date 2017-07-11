@@ -1,52 +1,43 @@
-﻿#pragma once
+#pragma once
 
-#include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
+#include "Cpp/Warnings.h"
+
 #include "Math/Math.h"
 
-namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 
 struct Sawtooth
 {
 	enum: bool {RangeIsInfinite = true};
 
-	Sawtooth(float updownRatio):
-		mP(0), mDP(0), mFreq(0),
-		mUpdownValue(updownRatio/(updownRatio+1)),
-		mC1(0), mC2(0), mAmplitude(0) {}
-
-	void SetParams(float newFreq, float newAmplitude, double step)
-	{
-		mFreq = newFreq;
-		mAmplitude = newAmplitude;
-		mC1 = 2.0f*mAmplitude/mUpdownValue;
-		mC2 = 2.0f*mAmplitude/(1.0f-mUpdownValue);
-		mP = mUpdownValue*0.5f;
-		mDP = (step*mFreq);
-	}
-
-	forceinline float NextSample() {PopFirst(); return First();}
+	Sawtooth(float updownRatio, float freq, float amplitude, uint sampleRate):
+		mUpdownValue(updownRatio / (updownRatio + 1)), mFreq(freq),
+		mP(mUpdownValue/2), mDP(mFreq / sampleRate),
+		mC1(2*mAmplitude/mUpdownValue), mC2(2*amplitude / (1 - mUpdownValue)), mAmplitude(amplitude)
+	{}
 
 	forceinline void PopFirst() {mP += mDP;}
 
 	float First() const
 	{
-		float sawPos = float(Math::Fract(mP));
-		return sawPos<mUpdownValue?
-			sawPos*mC1-mAmplitude:
-			mAmplitude-(sawPos-mUpdownValue)*mC2;
+		const float sawPos = float(Math::Fract(mP));
+		return sawPos < mUpdownValue?
+			sawPos*mC1 - mAmplitude:
+			mAmplitude - (sawPos - mUpdownValue)*mC2;
 	}
 
 	forceinline bool Empty() const {return false;}
 
 private:
+	float mUpdownValue, mFreq;
 	double mP, mDP;
-	float mFreq;
-	float mUpdownValue, mC1, mC2, mAmplitude;
+	float mC1, mC2, mAmplitude;
 };
 
-INTRA_WARNING_POP
-
 }}}}
+
+INTRA_WARNING_POP

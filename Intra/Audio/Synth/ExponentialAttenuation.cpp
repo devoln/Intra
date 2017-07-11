@@ -1,17 +1,21 @@
 ﻿#include "Audio/Synth/ExponentialAttenuation.h"
+
 #include "Simd/Simd.h"
+
 #include "Utils/Span.h"
+
 #include "Math/Math.h"
+
 #include "Funal/Bind.h"
 
-#define OPTIMIZE
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth {
 
 void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek)
 {
 	float* const dstEnd = dst.Take(src.Length()).End;
-#ifndef OPTIMIZE
+#if INTRA_MINEXE > 2
 
 #elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	float ek8 = ek*ek;
@@ -56,21 +60,25 @@ void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float 
 		Simd::GetU(dst.Begin, r0);
 		r4 = Simd::Mul(r4, ek_8);
 		Simd::GetU(dst.Begin+4, r3);
-		dst.Begin+=8;
-		src.Begin+=8;
+		dst.Begin += 8;
+		src.Begin += 8;
 	}
 	exp = Simd::GetX(r1);
 #endif
-	while(dst.Begin<dstEnd) *dst.Begin++ = *src.Begin++ * exp, exp*=ek;
+	while(dst.Begin < dstEnd)
+	{
+		*dst.Begin++ = *src.Begin++ * exp;
+		exp *= ek;
+	}
 }
 
 void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek)
 {
 	const float* const dstEnd = dst.Take(src.Length()).End;
 
-#ifndef OPTIMIZE
+#if INTRA_MINEXE > 2
 
-#elif(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	float ek8 = ek*ek;
 	ek8 *= ek8;
 	ek8 *= ek8;
@@ -113,17 +121,22 @@ void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, flo
 		Simd::GetU(dst.Begin, Simd::Add(Simd::SetFloat4U(dst.Begin), r0));
 		r4 = Simd::Mul(r4, ek_8);
 		Simd::GetU(dst.Begin+4, Simd::Add(Simd::SetFloat4U(dst.Begin+4), r3));
-		dst.Begin+=8; src.Begin+=8;
+		dst.Begin += 8;
+		src.Begin += 8;
 	}
 	exp = Simd::GetX(r1);
 #endif
-	while(dst.Begin<dstEnd) *dst.Begin++ += *src.Begin++ * exp, exp*=ek;
+	while(dst.Begin < dstEnd)
+	{
+		*dst.Begin++ += *src.Begin++ * exp;
+		exp *= ek;
+	}
 }
 
 #if INTRA_DISABLED
 static void exponent_attenuation_inplace(float*& ptr, float* end, float& exp, float ek)
 {
-#ifndef OPTIMIZE
+#if INTRA_MINEXE > 2
 
 #elif !defined(INTRA_USE_PDO)
 	float ek8 = ek*ek;
@@ -151,28 +164,25 @@ static void exponent_attenuation_inplace(float*& ptr, float* end, float& exp, fl
 	{
 		Simd::GetU(ptr, Simd::Mul(Simd::SetU(ptr), exp_4));
 		exp_4 = Simd::Mul(exp_4, ek_4);
-		ptr+=4;
+		ptr += 4;
 	}
 	exp = Simd::GetX(exp_4);
-#elif INTRA_PLATFORM_ARCH==INTRA_PLATFORM_ARM
+#elif INTRA_PLATFORM_ARCH == INTRA_PLATFORM_ARM
 
 #endif
-	while(ptr<end) *ptr++*=exp, exp*=ek;
+	while(ptr<end)
+	{
+		*ptr++ *= exp;
+		exp *= ek;
+	}
 }
 #endif
 
-void ExponentialAttenuationPassFunction(const float& coeff,
-	float noteDuration, Span<float> inOutSamples, uint sampleRate)
+void ExponentAttenuator::operator()(Span<float> inOutSamples)
 {
-	(void)noteDuration;
-	const float ek = Math::Exp(-coeff/float(sampleRate));
-	float exp = 1.0f;
-	ExponentialAttenuate(inOutSamples, inOutSamples, exp, ek);
+	ExponentialAttenuate(inOutSamples, inOutSamples, mFactor, mFactorStep);
 }
-
-AttenuationPass CreateExponentialAttenuationPass(float coeff)
-{return Funal::Bind(ExponentialAttenuationPassFunction, coeff);}
 
 }}}
 
-#undef OPTIMIZE
+INTRA_WARNING_POP

@@ -2,6 +2,7 @@
 
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
+
 #include "Utils/Debug.h"
 
 namespace Intra { namespace Range {
@@ -16,24 +17,25 @@ template<typename R> struct RTake
 {
 	enum: bool {RangeIsFinite=true};
 
-	forceinline RTake(null_t=null):
+	template<typename U=R, typename = Meta::EnableIf<
+		!Meta::IsReference<U>::_>
+	> forceinline RTake(null_t=null):
 		mOriginalRange(null), mLen(0) {}
 
-	forceinline RTake(const R& range, size_t count):
-		mOriginalRange(range) {set_len(count);}
+	template<typename R2> forceinline RTake(R2&& range, size_t count):
+		mOriginalRange(Cpp::Forward<R2>(range)) {set_len(count);}
 
-	forceinline RTake(R&& range, size_t count):
-		mOriginalRange(Cpp::Move(range)) {set_len(count);}
+	forceinline ~RTake() {destruct();}
 
-	template<typename U=R> forceinline Meta::EnableIf<
+	template<typename U = Meta::RemoveConstRef<R>> forceinline Meta::EnableIf<
 		Concepts::HasLength<U>::_ ||
 		Concepts::IsInfiniteRange<U>::_,
-	bool> Empty() const {return mLen==0;}
+	bool> Empty() const {return mLen == 0;}
 
-	template<typename U=R> forceinline Meta::EnableIf<
+	template<typename U = Meta::RemoveConstRef<R>> forceinline Meta::EnableIf<
 		!Concepts::HasLength<U>::_ &&
-		Concepts::IsFiniteRange<U>::_,
-	bool> Empty() const {return mLen==0 || mOriginalRange.Empty();}
+		!Concepts::IsInfiniteRange<U>::_,
+	bool> Empty() const {return mLen == 0 || mOriginalRange.Empty();}
 
 
 	forceinline Concepts::ReturnValueTypeOf<R> First() const
@@ -49,11 +51,11 @@ template<typename R> struct RTake
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		Concepts::HasIndex<U>::_,
-	Concepts::ReturnValueTypeOf<R>> operator[](size_t index) const {return mOriginalRange[index];}
+	Concepts::ReturnValueTypeOf<U>> operator[](size_t index) const {return mOriginalRange[index];}
 
 
 	forceinline bool operator==(const RTake& rhs) const
-	{return mLen==rhs.mLen && (mLen==0 || mOriginalRange==rhs.mOriginalRange);}
+	{return mLen == rhs.mLen && (mLen == 0 || mOriginalRange == rhs.mOriginalRange);}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		Concepts::HasLength<U>::_ ||
@@ -85,12 +87,21 @@ private:
 	> set_len(size_t maxLen)
 	{
 		mLen = mOriginalRange.Length();
-		if(mLen>maxLen) mLen = maxLen;
+		if(mLen > maxLen) mLen = maxLen;
 	}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		!Concepts::HasLength<U>::_
 	> set_len(size_t maxLen) {mLen = maxLen;}
+
+
+	template<typename U=R> forceinline Meta::EnableIf<
+		Meta::IsReference<U>::_
+	> destruct() {Range::PopFirstN(mOriginalRange, mLen);}
+
+	template<typename U=R> forceinline Meta::EnableIf<
+		!Meta::IsReference<U>::_
+	> destruct() {}
 };
 
 

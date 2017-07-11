@@ -101,26 +101,50 @@ public:
 
 	//! @defgroup AtomicBase_WeakCompareSet
 	//! Атомарно устанавливает значение desired, если текущее значение равно expected (*), иначе записывает в expected текущее значение.
-	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать StrongCompareSet.
+	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать CompareSet.
 	//!@{
-	forceinline bool WeakCompareSet(T& expected, T desired) noexcept;
-	forceinline bool WeakCompareSetRelaxed(T& expected, T desired) noexcept;
-	forceinline bool WeakCompareSetConsume(T& expected, T desired) noexcept;
-	forceinline bool WeakCompareSetAcquire(T& expected, T desired) noexcept;
-	forceinline bool WeakCompareSetRelease(T& expected, T desired) noexcept;
-	forceinline bool WeakCompareSetAcquireRelease(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareSet(T expected, T desired) noexcept;
+	forceinline bool WeakCompareSetRelaxed(T expected, T desired) noexcept;
+	forceinline bool WeakCompareSetConsume(T expected, T desired) noexcept;
+	forceinline bool WeakCompareSetAcquire(T expected, T desired) noexcept;
+	forceinline bool WeakCompareSetRelease(T expected, T desired) noexcept;
+	forceinline bool WeakCompareSetAcquireRelease(T expected, T desired) noexcept;
+	//!@}
+
+	//! @defgroup AtomicBase_WeakCompareSet
+	//! Атомарно устанавливает значение desired, если текущее значение равно expected (*), иначе записывает в expected текущее значение.
+	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать CompareGetSet.
+	//!@{
+	forceinline bool WeakCompareGetSet(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareGetSetRelaxed(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareGetSetConsume(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareGetSetAcquire(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareGetSetRelease(T& expected, T desired) noexcept;
+	forceinline bool WeakCompareGetSetAcquireRelease(T& expected, T desired) noexcept;
 	//!@}
 
 	//! @defgroup AtomicBase_CompareSet
 	//! Атомарно устанавливает значение desired, если текущее значение равно expected, иначе записывает в expected текущее значение.
 	//! На некоторых платформах может быть медленнее, чем WeakCompareSet.
 	//!@{
-	forceinline bool CompareSet(T& expected, T desired) noexcept;
-	forceinline bool CompareSetRelaxed(T& expected, T desired) noexcept;
-	forceinline bool CompareSetConsume(T& expected, T desired) noexcept;
-	forceinline bool CompareSetAcquire(T& expected, T desired) noexcept;
-	forceinline bool CompareSetRelease(T& expected, T desired) noexcept;
-	forceinline bool CompareSetAcquireRelease(T& expected, T desired) noexcept;
+	forceinline bool CompareSet(T expected, T desired) noexcept;
+	forceinline bool CompareSetRelaxed(T expected, T desired) noexcept;
+	forceinline bool CompareSetConsume(T expected, T desired) noexcept;
+	forceinline bool CompareSetAcquire(T expected, T desired) noexcept;
+	forceinline bool CompareSetRelease(T expected, T desired) noexcept;
+	forceinline bool CompareSetAcquireRelease(T expected, T desired) noexcept;
+	//!@}
+
+	//! @defgroup AtomicBase_CompareSet
+	//! Атомарно устанавливает значение desired, если текущее значение равно expected.
+	//! На некоторых платформах может быть медленнее, чем WeakCompareGetSet.
+	//!@{
+	forceinline bool CompareGetSet(T& expected, T desired) noexcept;
+	forceinline bool CompareGetSetRelaxed(T& expected, T desired) noexcept;
+	forceinline bool CompareGetSetConsume(T& expected, T desired) noexcept;
+	forceinline bool CompareGetSetAcquire(T& expected, T desired) noexcept;
+	forceinline bool CompareGetSetRelease(T& expected, T desired) noexcept;
+	forceinline bool CompareGetSetAcquireRelease(T& expected, T desired) noexcept;
 	//!@}
 
 protected:

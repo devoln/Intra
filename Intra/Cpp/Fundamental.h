@@ -122,6 +122,7 @@ template<typename T> constexpr forceinline T&& Forward(D::RemoveReference<T>&& t
 
 template<typename T> forceinline void Swap(T&& a, T&& b)
 {
+	if(&a == &b) return;
 	auto temp = Move(a);
 	a = Move(b);
 	b = Move(temp);

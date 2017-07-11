@@ -16,7 +16,9 @@
 #include "Audio/AudioBuffer.h"
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
-#include "Audio/Sources/MusicSynthSource.h"
+#include "Audio/Sources/MusicSynth.h"
+
+#include "Audio/Sources/Wave.h"
 
 
 #include "MusicSynthesizerCommon.h"
@@ -80,13 +82,11 @@ void MainLoop(bool enableStreaming)
 
 void LoadAndPlaySound(StringView filePath, bool enableStreaming)
 {
-	StreamedSound streamedSound;
 	static Sound sound;
 	if(enableStreaming)
 	{
 		Std.PrintLine("Инициализация...");
-		streamedSound = StreamedSound::FromFile(filePath, 16384, Error::Skip());
-		streamedSound.Play();
+		StreamedSound::FromFile(filePath, 16384, Error::Skip()).Play();
 	}
 	else
 	{
@@ -115,7 +115,7 @@ void PlayMusicStream(const Music& music)
 	const auto sampleRate = Sound::DefaultSampleRate();
 	Std.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
 	Std.PrintLine("Инициализация...");
-	StreamedSound(new Sources::MusicSynthSource(music, sampleRate)).Play();
+	StreamedSound(new Sources::MusicSynth(null, music, sampleRate)).Play();
 }
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)

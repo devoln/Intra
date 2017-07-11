@@ -13,7 +13,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 template<typename T> struct ExponentRange
 {
-	enum: bool {RangeIsFinite = false};
+	enum: bool {RangeIsInfinite = true};
 
 	ExponentRange(T scale=0, double step=0, T k=0):
 		mEkSr(T(Math::Exp(-k*step))), mExponent(scale/mEkSr) {}

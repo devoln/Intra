@@ -94,6 +94,7 @@ template<typename T> struct TRangeOfTypeNoCRef
 }
 
 template<typename T> using RangeOfType = typename RD::TRangeOfType<T>::_;
+template<typename T> using RangeOfTypeNoRef = Meta::RemoveReference<typename RD::TRangeOfType<T>::_>;
 template<typename T> using RangeOfTypeNoCRef = typename RD::TRangeOfTypeNoCRef<T>::_;
 
 

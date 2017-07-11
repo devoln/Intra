@@ -22,6 +22,10 @@ template<typename T> forceinline T AtomicBase<T>::GetSet ## mo(T val) noexcept \
 {return __atomic_exchange_n(&mValue, val, __ATOMIC_ ## MO);}
 
 #define INTRA_ATOMIC_METHOD_CAS(method, MO, weak) \
+template<typename T> forceinline bool AtomicBase<T>::method(T expected, T desired) noexcept \
+{return __atomic_compare_exchange_n(&mValue, &expected, desired, weak, __ATOMIC_ ## MO, __ATOMIC_ ## MO);}
+
+#define INTRA_ATOMIC_METHOD_CAS2(method, MO, weak) \
 template<typename T> forceinline bool AtomicBase<T>::method(T& expected, T desired) noexcept \
 {return __atomic_compare_exchange_n(&mValue, &expected, desired, weak, __ATOMIC_ ## MO, __ATOMIC_ ## MO);}
 
@@ -48,12 +52,26 @@ INTRA_ATOMIC_METHOD_CAS(WeakCompareSetAcquire, ACQUIRE, true)
 INTRA_ATOMIC_METHOD_CAS(WeakCompareSetRelease, RELEASE, true)
 INTRA_ATOMIC_METHOD_CAS(WeakCompareSetAcquireRelease, ACQ_REL, true)
 
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSet, SEQ_CST, true)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSetRelaxed, RELAXED, true)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSetConsume, CONSUME, true)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSetAcquire, ACQUIRE, true)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSetRelease, RELEASE, true)
+INTRA_ATOMIC_METHOD_CAS2(WeakCompareGetSetAcquireRelease, ACQ_REL, true)
+
 INTRA_ATOMIC_METHOD_CAS(CompareSet, SEQ_CST, false)
 INTRA_ATOMIC_METHOD_CAS(CompareSetRelaxed, RELAXED, false)
 INTRA_ATOMIC_METHOD_CAS(CompareSetConsume, CONSUME, false)
 INTRA_ATOMIC_METHOD_CAS(CompareSetAcquire, ACQUIRE, false)
 INTRA_ATOMIC_METHOD_CAS(CompareSetRelease, RELEASE, false)
 INTRA_ATOMIC_METHOD_CAS(CompareSetAcquireRelease, ACQ_REL, false)
+
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSet, SEQ_CST, false)
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSetRelaxed, RELAXED, false)
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSetConsume, CONSUME, false)
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSetAcquire, ACQUIRE, false)
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSetRelease, RELEASE, false)
+INTRA_ATOMIC_METHOD_CAS2(CompareGetSetAcquireRelease, ACQ_REL, false)
 
 #define INTRA_ATOMIC_METHOD_BINARY_ONE(method, stdmethod, mo, MO) \
 template<typename T> forceinline T AtomicInteger<T>::method ## mo(T rhs) noexcept \

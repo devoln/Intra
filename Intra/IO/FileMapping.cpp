@@ -46,8 +46,8 @@ struct IUnknown;
 
 namespace Intra { namespace IO {
 
-BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status):
-	mData(null), mSize(0)
+BasicFileMapping::BasicFileMapping(StringView fileName,
+	ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status)
 {
 	if(status.WasError()) return;
 	String fullFileName = OS.GetFullFileName(fileName);
@@ -58,7 +58,6 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 		bytes = size_t(size - startByte);
 
 	if(startByte + bytes > size) return;
-	mSize = bytes;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 	mData = Memory::GlobalHeap.Allocate(mSize, INTRA_SOURCE_INFO);
 	OS.FileOpen(fullFileName).ReadData(startByte, mData, mSize);
@@ -87,7 +86,6 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 	if(hFile == INVALID_HANDLE_VALUE)
 	{
 		System::detail::ProcessLastError(status, "Cannot open file " + fileName + " for mapping: ", INTRA_SOURCE_INFO);
-		mSize = 0;
 		return;
 	}
 	INTRA_FINALLY_CALL(CloseHandle, hFile);
@@ -95,17 +93,17 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 	const DWORD flProtect = DWORD(writeAccess? PAGE_READWRITE: PAGE_READONLY);
 
 #ifndef WINSTORE_APP
-	const DWORD lowSize = DWORD(mSize + startByte);
-	const DWORD highSize = DWORD(ulong64(mSize + startByte) >> 32);
+	const DWORD lowSize = DWORD(bytes + startByte);
+	const DWORD highSize = DWORD(ulong64(bytes + startByte) >> 32);
 	const HANDLE fileMapping = CreateFileMappingW(hFile, null, flProtect, highSize, lowSize, null);
 #else
-	const HANDLE fileMapping = CreateFileMappingFromApp(hFile, null, flProtect, mSize, null);
+	const HANDLE fileMapping = CreateFileMappingFromApp(hFile, null, flProtect, bytes, null);
 #endif
+	INTRA_FINALLY_CALL(CloseHandle, fileMapping);
 
 	if(fileMapping == null)
 	{
 		System::detail::ProcessLastError(status, "Cannot CreateFileMapping " + fileName + ": ", INTRA_SOURCE_INFO);
-		mSize = 0;
 		return;
 	}
 
@@ -113,32 +111,37 @@ BasicFileMapping::BasicFileMapping(StringView fileName, ulong64 startByte, size_
 #ifndef WINSTORE_APP
 	const DWORD lowOffset = DWORD(startByte);
 	const DWORD highOffset = DWORD(startByte >> 32);
-	mData = MapViewOfFile(fileMapping, mapDesiredAccess, highOffset, lowOffset, mSize);
+	void* data = MapViewOfFile(fileMapping, mapDesiredAccess, highOffset, lowOffset, bytes);
 #else
-	mData = MapViewOfFileFromApp(fileMapping, mapDesiredAccess, startByte);
+	void* data = MapViewOfFileFromApp(fileMapping, mapDesiredAccess, startByte);
 #endif
-
-	CloseHandle(fileMapping);
+	if(!data)
+	{
+		System::detail::ProcessLastError(status, "Cannot MapViewOfFile " + fileName + ": ", INTRA_SOURCE_INFO);
+		return;
+	}
 #else
 	int fd = open(fullFileName.CStr(), writeAccess? O_RDONLY: O_RDWR);
 	if(fd <= 0)
 	{
 		System::detail::ProcessLastError(status, "Cannot open file " + fileName + " for mapping: ", INTRA_SOURCE_INFO);
-		mSize = 0;
 		return;
 	}
 	INTRA_FINALLY_CALL(close, fd);
 
-	mData = mmap(null, bytes,
+	void* data = mmap(null, bytes,
 		writeAccess? PROT_WRITE: PROT_READ,
 		MAP_SHARED, fd, long(startByte));
 
-	if(mData == MAP_FAILED || mData == null)
+	if(data == MAP_FAILED || data == null)
 	{
-		mData = null;
-		mSize = 0;
 		System::detail::ProcessLastError(status, "Cannot mmap " + fileName + ": ", INTRA_SOURCE_INFO);
+		return;
 	}
+#endif
+	mData = SpanOfRaw(data, bytes);
+#ifdef INTRA_DEBUG
+	mFilePath = Cpp::Move(fullFileName);
 #endif
 }
 
@@ -146,14 +149,16 @@ void BasicFileMapping::Close()
 {
 	if(mData == null) return;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-	Memory::GlobalHeap.Free(mData, mSize);
+	Memory::GlobalHeap.Free(mData.Data(), mData.Length());
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	UnmapViewOfFile(mData);
+	UnmapViewOfFile(mData.Data());
 #else
-	munmap(mData, mSize);
+	munmap(mData.Data(), mData.Length());
 #endif
 	mData = null;
-	mSize = 0;
+#ifdef INTRA_DEBUG
+	mFilePath = null;
+#endif
 }
 
 void WritableFileMapping::Flush()
@@ -161,9 +166,9 @@ void WritableFileMapping::Flush()
 	if(mData == null) return;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
-	FlushViewOfFile(mData, 0);
+	FlushViewOfFile(mData.Data(), 0);
 #else
-	msync(mData, mSize, MS_SYNC);
+	msync(mData, mData.Length(), MS_SYNC);
 #endif
 }
 
