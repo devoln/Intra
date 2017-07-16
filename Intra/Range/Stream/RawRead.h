@@ -10,7 +10,7 @@ template<typename R> forceinline Meta::EnableIf<
 	Concepts::IsInputRange<R>::_,
 size_t> RawReadTo(R& src, void* dst, size_t n)
 {
-	return ReadTo(src, Take(static_cast<Concepts::ValueTypeOf<R>*>(dst), n));
+	return ReadTo(src, SpanOfPtr(static_cast<Concepts::ValueTypeOf<R>*>(dst), n));
 }
 
 template<typename R,
@@ -50,7 +50,7 @@ size_t> RawReadWrite(R& src, Span<U>& dst, size_t maxElementsToRead)
 {
 	typedef Concepts::ValueTypeOf<R> T;
 	auto dst1 = dst.Take(maxElementsToRead).template Reinterpret<T>();
-	size_t elementsRead = ReadWrite(src, *static_cast<R*>(this), dst1)*sizeof(T)/sizeof(U);
+	size_t elementsRead = ReadWrite(src, dst1)*sizeof(T)/sizeof(U);
 	dst.Begin += elementsRead;
 	return elementsRead;
 }

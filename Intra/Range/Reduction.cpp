@@ -77,7 +77,7 @@ template<> Pair<float> MiniMax(CSpan<float> arr)
 	{
 		mini = Simd::SetFloat4U(arr.Begin);
 		maxi = Simd::SetFloat4U(arr.Begin);
-		if(size_t(arr.Begin) & 12) arr.Begin += (size_t(arr.Begin) & 12) >> 2;
+		if(size_t(arr.Begin) & 12) arr.Begin += 4 - ((size_t(arr.Begin) & 12) >> 2);
 		else arr.Begin += 4;
 		while(arr.End - arr.Begin >= 4)
 		{

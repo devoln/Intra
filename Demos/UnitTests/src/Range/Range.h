@@ -7,3 +7,4 @@ void TestPolymorphicRange(Intra::IO::FormattedWriter& output);
 void TestStreamRange(Intra::IO::FormattedWriter& output);
 void TestRangeStlInterop(Intra::IO::FormattedWriter& output);
 void TestUnicodeConversion(Intra::IO::FormattedWriter& output);
+void TestHeap(Intra::IO::FormattedWriter& output);

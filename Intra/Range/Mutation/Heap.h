@@ -92,7 +92,7 @@ template<typename R, typename P = const Funal::TLess&,
 	Meta::IsCallable<P, VT, VT>::_
 > HeapBuild(R&& range, P&& comparer = Funal::Less)
 {
-	auto r = Range::Forward<R>(r);
+	auto r = Range::Forward<R>(range);
 	size_t i = r.Length() / 2;
 	while(i --> 0) HeapOrder(Cpp::Move(r), i, Cpp::Forward<P>(comparer));
 }
@@ -110,7 +110,7 @@ template<typename R, typename P = const Funal::TLess&,
 T&> HeapPop(R&& range, P&& comparer = Funal::Less)
 {
 	Cpp::Swap(range.First(), range.Last());
-	HeapOrder(Cpp::Forward<R>(range), 0, Cpp::Forward<P>(comparer));
+	HeapOrder(Range::DropLast(range), 0, Cpp::Forward<P>(comparer));
 	return range.Last();
 }
 

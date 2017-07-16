@@ -3,13 +3,20 @@
 #include "IO/ConsoleInput.h"
 #include "IO/Std.h"
 #include "IO/FileSystem.h"
-#include "Audio/Midi.h"
-#include "Audio/Music.h"
+#include "IO/FileReader.h"
+
+#include "Container/Sequential/String.h"
+
+#include "Audio/Midi/MidiFileParser.h"
 #include "Audio/AudioBuffer.h"
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
+#include "Audio/Sources/MidiSynth.h"
+
 #include "System/Stopwatch.h"
 #include "Cpp/Warnings.h"
+
+#include "MidiInstrumentMapping.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -31,16 +38,14 @@ String GetMidiPath(StringView fileName)
 }
 
 
-void PrintMusicInfo(const Music& music)
+Midi::MidiFileInfo PrintMidiInfo(InputStream stream, ErrorStatus& status)
 {
-	uint noteCount = 0;
-	for(auto&& track: music.Tracks)
-		for(auto&& note: track.Notes)
-			noteCount += uint(!note.Note.IsPause());
-
-	Std.PrintLine("Длительность музыки: ", StringOf(music.Duration(), 2), " с.");
-	Std.PrintLine("Число нот: ", noteCount);
-	Std.PrintLine("Число дорожек: ", music.Tracks.Count());
+	Midi::MidiFileInfo info(Cpp::Move(stream), status);
+	Std.PrintLine("Длительность музыки: ", StringOf(info.Duration, 2), " с.");
+	Std.PrintLine("Число нот: ", info.NoteCount);
+	Std.PrintLine("Число дорожек: ", info.TrackCount);
+	Std.PrintLine("Число каналов: ", info.ChannelsUsed);
+	return info;
 }
 
 bool PrintMidiFileInfo(StringView filePath)
@@ -48,8 +53,8 @@ bool PrintMidiFileInfo(StringView filePath)
 	Std.PrintLine("Загрузка midi файла ", filePath, "...");
 
 	FatalErrorStatus status;
-	auto fileMapping = OS.MapFile(filePath, status);
-	auto music = ReadMidiFile(fileMapping.AsRange(), status);
+	auto file = OS.FileOpen(filePath, status);
+	if(file) PrintMidiInfo(Cpp::Move(file), status);
 
 	if(status.Handle())
 	{
@@ -58,19 +63,37 @@ bool PrintMidiFileInfo(StringView filePath)
 		return false;
 	}
 
-	PrintMusicInfo(music);
-
 	return true;
 }
 
-Sound SynthSoundFromMidi(StringView filePath, bool printMessages)
+Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFiletream, double duration, float startingVolume, ErrorStatus& status)
+{
+	return new Sources::MidiSynth(
+		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(midiFiletream), status),
+		duration, GetMapping(), startingVolume, null, Sound::DefaultSampleRate(), true);
+}
+
+Sound CreateSoundFromMidi(InputStream midiFiletream, double duration, float startingVolume, bool printMessages)
 {
 	if(printMessages) Std.PrintLine("Синтез...");
 	FatalErrorStatus status;
 	Stopwatch sw;
-	auto sound = Sound::FromFile(filePath, status);
-	if(printMessages)
-		Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
+	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFiletream), duration, startingVolume, status));
+	if(printMessages) Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
+	if(status.Handle())
+	{
+		Std.PrintLine(status.GetLog());
+		ConsoleIn.GetChar();
+		return null;
+	}
+	return sound;
+}
+
+StreamedSound CreateStreamedSoundFromMidi(InputStream midiFiletream, float startingVolume, bool printMessages)
+{
+	if(printMessages) Std.PrintLine("Инициализация синтезатора...");
+	FatalErrorStatus status;
+	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFiletream), Cpp::Infinity, startingVolume, status), 4096);
 	if(status.Handle())
 	{
 		Std.PrintLine(status.GetLog());

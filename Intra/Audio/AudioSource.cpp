@@ -1,6 +1,8 @@
 ﻿#include "Audio/AudioSource.h"
 #include "SampleConversion.h"
 
+#include "Range/Operations.h"
+
 namespace Intra { namespace Audio {
 
 
@@ -30,7 +32,7 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 {
 	float tempSamples[4096];
-	const size_t samplesPerChannel = Concepts::LengthOf(tempSamples) / mChannelCount;
+	const size_t samplesPerChannel = Math::Min(Concepts::LengthOf(tempSamples), outShorts.Length()) / mChannelCount;
 	Span<float> channels[16];
 	const auto channelCSpan = Range::Take(channels, mChannelCount).Reinterpret<CSpan<float>>();
 	INTRA_DEBUG_ASSERT(mChannelCount < 16);
@@ -42,7 +44,7 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 	{
 		const size_t samplesRead = GetUninterleavedSamples(Range::Take(channels, mChannelCount));
 		totalSamplesRead += samplesRead;
-		InterleaveFloatsCastToShorts(outShorts.Take(samplesRead*mChannelCount), channelCSpan);
+		InterleaveFloatsCastToShorts(outShorts.TakeAdvance(samplesRead*mChannelCount), channelCSpan);
 	}
 	return totalSamplesRead;
 }

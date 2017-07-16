@@ -203,7 +203,7 @@ public:
 
 	//! Добавить все значения указанного диапазона в конец массива.
 	template<typename R,
-		typename AsR = Concepts::RangeOfType<R>
+		typename AsR = Concepts::RangeOfTypeNoCRef<R>
 	> Meta::EnableIf<
 		Concepts::IsConsumableRangeOf<AsR, T>::_ &&
 		(Concepts::IsForwardRange<AsR>::_ ||
@@ -220,7 +220,7 @@ public:
 
 	//! Добавить все значения указанного диапазона в конец массива.
 	template<typename R,
-		typename AsR = Concepts::RangeOfType<R>
+		typename AsR = Concepts::RangeOfTypeNoCRef<R>
 	> Meta::EnableIf<
 		Concepts::IsConsumableRangeOf<AsR, T>::_ &&
 		!(Concepts::IsForwardRange<AsR>::_ ||
@@ -433,7 +433,7 @@ public:
 	forceinline void Remove(T* ptr)
 	{
 		INTRA_DEBUG_ASSERT(range.ContainsAddress(ptr));
-		Remove(ptr-range.Begin);
+		Remove(ptr - range.Begin);
 	}
 
 	//! Удаление всех элементов в диапазоне [removeStart; removeEnd)
@@ -441,24 +441,24 @@ public:
 	{
 		INTRA_DEBUG_ASSERT(removeStart <= removeEnd);
 		INTRA_DEBUG_ASSERT(removeEnd <= Count());
-		if(removeEnd==removeStart) return;
+		if(removeEnd == removeStart) return;
 		const size_t elementsToRemove = removeEnd-removeStart;
 		Memory::Destruct<T>(range(removeStart, removeEnd));
 
 		//Быстрые частные случаи
-		if(removeEnd==Count())
+		if(removeEnd == Count())
 		{
 			range.End -= elementsToRemove;
 			return;
 		}
 
-		if(removeStart==0)
+		if(removeStart == 0)
 		{
 			range.Begin += elementsToRemove;
 			return;
 		}
 
-		if(removeStart+elementsToRemove/2>=Count()/4)
+		if(removeStart + elementsToRemove/2 >= Count()/4)
 		{
 			Memory::MoveInitDelete<T>(
 				range.Drop(removeStart).DropLast(elementsToRemove),
@@ -478,7 +478,7 @@ public:
 	forceinline void FindAndRemove(const T& value)
 	{
 		size_t found = range.CountUntil(value);
-		if(found!=Count()) Remove(found);
+		if(found != Count()) Remove(found);
 	}
 	//!@}
 
@@ -501,15 +501,15 @@ public:
 	//! Быстрое удаление путём переноса последнего элемента (без смещения).
 	forceinline void RemoveUnordered(size_t index)
 	{
-		INTRA_DEBUG_ASSERT(index<Count());
-		if(index<Count()-1) range[index] = Cpp::Move(*--range.End);
-		RemoveLast();
+		INTRA_DEBUG_ASSERT(index < Count());
+		if(index < Count() - 1) range[index] = Cpp::Move(*--range.End);
+		else RemoveLast();
 	}
 
 	void FindAndRemoveUnordered(const T& value)
 	{
 		size_t index = Range::CountUntil(range, value);
-		if(index!=Count()) RemoveUnordered(index);
+		if(index != Count()) RemoveUnordered(index);
 	}
 	//!@}
 

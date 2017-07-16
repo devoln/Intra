@@ -96,9 +96,17 @@ constexpr const null_t null = nullptr;
 
 namespace Cpp {
 
-template<typename T, T value> struct TypeFromValue {enum {_=value };};
-typedef TypeFromValue<bool, false> FalseType;
-typedef TypeFromValue<bool, true> TrueType;
+template<typename T, T value> struct TypeFromValue
+{
+#ifdef INTRA_CONSTEXPR_SUPPORT
+	static constexpr T _ = value;
+#else
+	enum {_ = value};
+#endif
+};
+template<bool value> using BoolType = TypeFromValue<bool, value>;
+typedef BoolType<false> FalseType;
+typedef BoolType<true> TrueType;
 
 namespace D {
 template<typename T> struct TRemoveReference {typedef T _;};

@@ -3,25 +3,27 @@
 #include "Cpp/Warnings.h"
 
 #include "Audio/Synth/MusicalInstrument.h"
-#include "Audio/Synth/DrumInstrument.h"
+#include "Audio/Synth/Types.h"
+#include "Audio/Synth/RecordedSampler.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 using Intra::Audio::Synth::MusicalInstrument;
-using Intra::Audio::Synth::DrumInstrument;
+using Intra::Audio::Synth::RecordedSampler;
+using Intra::Audio::Synth::GenericDrumInstrument;
 
 struct InstrumentLibrary
 {
 	InstrumentLibrary();
 
 	MusicalInstrument Piano, ElectricPiano, ElectricPiano2;
-	MusicalInstrument Vibraphone, Glockenspiel, NewAge, Crystal;
+	MusicalInstrument Vibraphone, Glockenspiel, NewAge, Crystal, Pad5Bowed;
 	MusicalInstrument Kalimba;
 	MusicalInstrument Bass1, Bass2, Bass3, ElectricBassFinger;
 	MusicalInstrument ElectricBassPick;
 	MusicalInstrument SynthBass1, SynthBass2;
 	MusicalInstrument SynthBrass, Lead5Charang;
-	MusicalInstrument Birds, SynthVoice, SoundTrackFX2;
+	MusicalInstrument Birds, SynthVoice, ChoirAahs, SoundTrackFX2;
 	MusicalInstrument Pad7Halo, Pad8Sweep, PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble;
 	MusicalInstrument Flute, PanFlute;
 	MusicalInstrument Guitar, GuitarSteel;
@@ -39,7 +41,7 @@ struct InstrumentLibrary
 	MusicalInstrument GunShot, Applause, Seashore, Helicopter, PhoneRing;
 
 	MusicalInstrument DrumSound2;
-	RecordedDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat;
+	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat;
 
 	static MusicalInstrument CreateGuitar(size_t n=15, float c=128, float d=1.5,
 		float e=0.75, float f=1, float freqMult=0.5f, float volume=0.6f);

@@ -71,7 +71,7 @@ static CSpan<StringView> getAndParseCommandLine()
 		{
 			if(a != '"') continue;
 			dstPtr += WideCharToMultiByte(CP_UTF8, 0,
-				wargStart, int(wcmdptr-1-wargStart), dstPtr, int(len), null, null);
+				wargStart, int(wcmdptr-1-wargStart), dstPtr, int(charBuf.end()-dstPtr), null, null);
 			wargStart = wcmdptr;
 			if(*wcmdptr == '"')
 			{
@@ -157,7 +157,7 @@ String TEnvironment::Get(StringView var, bool* oExists) const
 {
 	FixedArray<wchar_t> buffer(32767 + var.Length() + 1);
 	const size_t wvarLen = size_t(MultiByteToWideChar(CP_UTF8, 0, var.Data(), int(var.Length()), buffer.Data(), int(var.Length())));
-	Span<wchar_t> wvar = Range::Take(buffer.Data(), wvarLen + 1);
+	Span<wchar_t> wvar = SpanOfPtr(buffer.Data(), wvarLen + 1);
 	wvar.Last() = L'\0';
 	const size_t wresultLen = GetEnvironmentVariableW(wvar.Data(), buffer.Data() + wvarLen + 1, 32767);
 	if(wresultLen == 0)

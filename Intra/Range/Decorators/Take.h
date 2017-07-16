@@ -3,17 +3,21 @@
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
 
+#include "Meta/Type.h"
+
 #include "Utils/Debug.h"
+
+#include "Range/Operations.h"
 
 namespace Intra { namespace Range {
 
 INTRA_WARNING_PUSH
 INTRA_DISABLE_REDUNDANT_WARNINGS
-INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
 INTRA_DEFINE_EXPRESSION_CHECKER(HasTake, Meta::Val<T>().Take(size_t()));
 
-template<typename R> struct RTake
+template<typename R> struct RTake: Meta::CopyableIf<!Meta::IsReference<R>::_>
 {
 	enum: bool {RangeIsFinite=true};
 
@@ -25,7 +29,10 @@ template<typename R> struct RTake
 	template<typename R2> forceinline RTake(R2&& range, size_t count):
 		mOriginalRange(Cpp::Forward<R2>(range)) {set_len(count);}
 
-	forceinline ~RTake() {destruct();}
+	RTake(RTake&&) = default;
+	RTake(const RTake&) = default;
+	RTake& operator=(RTake&&) = default;
+	RTake& operator=(const RTake&) = default;
 
 	template<typename U = Meta::RemoveConstRef<R>> forceinline Meta::EnableIf<
 		Concepts::HasLength<U>::_ ||
@@ -53,14 +60,12 @@ template<typename R> struct RTake
 		Concepts::HasIndex<U>::_,
 	Concepts::ReturnValueTypeOf<U>> operator[](size_t index) const {return mOriginalRange[index];}
 
-
-	forceinline bool operator==(const RTake& rhs) const
-	{return mLen == rhs.mLen && (mLen == 0 || mOriginalRange == rhs.mOriginalRange);}
-
 	template<typename U=R> forceinline Meta::EnableIf<
 		Concepts::HasLength<U>::_ ||
 		Concepts::IsInfiniteRange<U>::_,
-	size_t> Length() const {return mLen;}
+	size_t> Length() const noexcept {return mLen;}
+
+	forceinline size_t LengthLimit() const noexcept {return mLen;}
 
 	template<typename U=R> forceinline Meta::EnableIf<
 		Concepts::HasSlicing<U>::_,
@@ -93,15 +98,6 @@ private:
 	template<typename U=R> forceinline Meta::EnableIf<
 		!Concepts::HasLength<U>::_
 	> set_len(size_t maxLen) {mLen = maxLen;}
-
-
-	template<typename U=R> forceinline Meta::EnableIf<
-		Meta::IsReference<U>::_
-	> destruct() {Range::PopFirstN(mOriginalRange, mLen);}
-
-	template<typename U=R> forceinline Meta::EnableIf<
-		!Meta::IsReference<U>::_
-	> destruct() {}
 };
 
 

@@ -65,7 +65,6 @@
   </Type>
 
   <Type Name="Intra::Concurrency::Mutex">
-    <DisplayString Condition="mData == nullptr">null</DisplayString>
     <DisplayString IncludeView="NumWaiters" Condition="ImplementationType==1" Optional="true">
       {((-1 - ((RTL_CRITICAL_SECTION*)mData)->LockCount) >> 2) - (((RTL_CRITICAL_SECTION*)mData)->RecursionCount - 1)}
     </DisplayString>
@@ -104,7 +103,6 @@
   </Type>
   
   <Type Name="Intra::Concurrency::RecursiveMutex">
-    <DisplayString Condition="mHandle == nullptr">null</DisplayString>
     <DisplayString>Recursive{*(Mutex*)this}</DisplayString>
     <Expand>
       <ExpandedItem>*(Mutex*)this</ExpandedItem>

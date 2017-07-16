@@ -1,4 +1,5 @@
 #include "Octaves.h"
+#include "Random/FastUniform.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -21,7 +22,7 @@ void SelfOctaveMix(CSpan<float> src, Span<float> dst, float multiplier)
 	}
 }
 
-void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount)
+void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount, uint maxSampleDelay)
 {
 	if(octavesCount == 1) return;
 	if(octavesCount == 2)
@@ -31,12 +32,14 @@ void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount)
 		return;
 	}
 
-	buffer = DecimateX2Linear(srcResult, buffer);
+	Random::FastUniform<uint> rand(3453411347u ^ srcResult.Length() ^ (buffer.Length() << 10) ^ (octavesCount << 20) ^ uint(size_t(srcResult.Data()) >> 3));
+	buffer = DecimateX2Linear(buffer, srcResult);
 	float volume = 0.5f;
-	while(octavesCount--> 1)
+	while(octavesCount --> 1)
 	{
 		auto result = srcResult;
-		while(!result.Empty()) result.PopFirstN(AddMultiplied(srcResult, buffer, volume));
+		result.PopFirstN(AddMultiplied(result, buffer.Drop(rand(maxSampleDelay)), volume));
+		while(!result.Empty()) result.PopFirstN(AddMultiplied(result, buffer, volume));
 		buffer = DecimateX2LinearInPlace(buffer);
 		volume /= 2;
 	}

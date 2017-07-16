@@ -8,7 +8,6 @@
 #include "WaveTableSampler.h"
 #include "WhiteNoiseSampler.h"
 #include "ExponentialAttenuation.h"
-#include "AttackDecayAttenuation.h"
 #include "ADSR.h"
 #include "NoteSampler.h"
 #include "Chorus.h"
@@ -29,7 +28,7 @@ struct MusicalInstrument
 	ChorusFactory Chorus;
 	Array<GenericModifierFactory> GenericModifiers;
 
-	NoteSampler operator()(float freq, float volume, uint sampleRate, size_t sampleCount) const;
+	NoteSampler operator()(float freq, float volume, uint sampleRate) const;
 };
 
 }}}

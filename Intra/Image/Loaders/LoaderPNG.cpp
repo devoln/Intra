@@ -14,7 +14,7 @@ bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
 	static const byte pngSignature[] = {137, 'P', 'N', 'G', 13, 10, 26, 10};
 	return headerSize>=8 &&
-		Equals(Take(headerBytes, sizeof(pngSignature)), SpanOf(pngSignature));
+		Equals(SpanOfPtr(headerBytes, sizeof(pngSignature)), SpanOf(pngSignature));
 }
 
 ImageInfo LoaderPNG::GetInfo(IInputStream& stream) const

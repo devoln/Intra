@@ -54,6 +54,7 @@ public:
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 	Sound(Sound&& rhs);
 	Sound(IAudioSource& src);
+	Sound(Unique<IAudioSource> src): Sound(*src) {}
 
 	~Sound();
 

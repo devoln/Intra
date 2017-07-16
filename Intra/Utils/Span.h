@@ -237,6 +237,13 @@ template<typename T> struct Span
 		return defaultValue;
 	}
 
+	forceinline T Get(size_t index) const
+	{
+		if(index < Length()) return Begin[index];
+		return T();
+	}
+
+
 	forceinline Span operator()(size_t firstIndex, size_t endIndex) const
 	{
 		INTRA_DEBUG_ASSERT(endIndex >= firstIndex && endIndex <= Length());
@@ -294,8 +301,9 @@ template<typename T> struct Span
 
 template<typename T> using CSpan = Span<const T>;
 
-template<typename T> forceinline constexpr Span<T> Take(T* arrPtr, size_t n) noexcept {return {arrPtr, n};}
+template<typename T, size_t N> forceinline constexpr Span<T> Take(T(&arr)[N], size_t n) noexcept {return {arr, n<N? n: N};}
 
+template<typename T> forceinline constexpr Span<T> SpanOfPtr(T* arrPtr, size_t n) noexcept {return {arrPtr, n};}
 template<typename T, size_t N> forceinline constexpr Span<T> SpanOfBuffer(T(&arr)[N]) noexcept {return {arr, N};}
 template<typename T, size_t N> forceinline constexpr Span<T> SpanOf(T(&arr)[N]) noexcept {return Span<T>(arr);}
 template<typename T, size_t N> forceinline constexpr CSpan<T> CSpanOf(const T(&arr)[N]) noexcept {return CSpan<T>(arr);}
@@ -342,6 +350,7 @@ using Range::Span;
 using Range::CSpan;
 using Range::SpanOf;
 using Range::CSpanOf;
+using Range::SpanOfPtr;
 using Range::SpanOfBuffer;
 using Range::SpanOfRaw;
 using Range::CSpanOfRaw;
@@ -354,6 +363,7 @@ using Range::Span;
 using Range::CSpan;
 using Range::SpanOf;
 using Range::CSpanOf;
+using Range::SpanOfPtr;
 using Range::SpanOfBuffer;
 using Range::SpanOfRaw;
 using Range::CSpanOfRaw;

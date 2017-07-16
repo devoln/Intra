@@ -6,9 +6,13 @@
     <DisplayString>{Begin,[End-Begin]s8}</DisplayString>
     <StringView>Begin,[End-Begin]s8b</StringView>
     <Expand>
-      <Item Name="Length">End - Begin</Item>
-      <Item Name="Begin">Begin</Item>
-      <Item Name="End">End</Item>
+      <Item Name="Length" ExcludeView="simple">End - Begin</Item>
+      <Item Name="Begin" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End - Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
     </Expand>
   </Type>
 
@@ -17,9 +21,13 @@
     <DisplayString>{Begin,[End-Begin]s16}</DisplayString>
     <StringView>Begin,[End-Begin]s16b</StringView>
     <Expand>
-      <Item Name="Length">End-Begin</Item>
-      <Item Name="Begin">Begin</Item>
-      <Item Name="End">End</Item>
+      <Item Name="Length" ExcludeView="simple">End-Begin</Item>
+      <Item Name="Begin" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End - Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
     </Expand>
   </Type>
 
@@ -28,15 +36,19 @@
     <DisplayString>{Begin,[End-Begin]s32}</DisplayString>
     <StringView>Begin,[End-Begin]s32b</StringView>
     <Expand>
-      <Item Name="Length">End - Begin</Item>
-      <Item Name="Begin">Begin</Item>
-      <Item Name="End">End</Item>
+      <Item Name="Length" ExcludeView="simple">End - Begin</Item>
+      <Item Name="Begin" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End - Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
     </Expand>
   </Type>
 
     <Type Name="Intra::Range::Span&lt;*&gt;">
         <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
-        <DisplayString Condition="Begin==End">[]</DisplayString>
+        <DisplayString Condition="Begin == End">[]</DisplayString>
         <DisplayString Condition="Begin+1==End">[{Begin[0]}]</DisplayString>
         <DisplayString Condition="Begin+2==End">[{Begin[0]}, {Begin[1]}]</DisplayString>
         <DisplayString Condition="Begin+3==End">[{Begin[0]}, {Begin[1]}, {Begin[2]}]</DisplayString>
@@ -107,16 +119,16 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::HashTableRange&lt;*&gt;" Priority="MediumLow">
-    <DisplayString Condition="first_node==null || first_node->prev==last_node">[]</DisplayString>
-    <DisplayString Condition="first_node==last_node">[{first_node->element}]</DisplayString>
-    <DisplayString Condition="first_node->next==last_node">[{first_node->element}, {first_node->next->element}]</DisplayString>
-    <DisplayString Condition="first_node->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}]</DisplayString>
-    <DisplayString Condition="first_node->next->next->next==last_node">[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, {first_node->next->next->next->element}]</DisplayString>
-    <DisplayString>[{first_node->element}, {first_node->next->element}, {first_node->next->next->element}, ..., {last_node->element}]</DisplayString>
+  <Type Name="Intra::Container::HashTableRange&lt;*&gt;" Priority="MediumLow">
+    <DisplayString Condition="mFirstNode==null || mFirstNode->prev==mLastNode">[]</DisplayString>
+    <DisplayString Condition="mFirstNode==mLastNode">[{mFirstNode->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, {mFirstNode->next->next->next->element}]</DisplayString>
+    <DisplayString>[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, ..., {mLastNode->element}]</DisplayString>
     <Expand>
       <LinkedListItems>
-        <HeadPointer>first_node</HeadPointer>
+        <HeadPointer>mFirstNode</HeadPointer>
         <NextPointer>next</NextPointer>
         <ValueNode>element</ValueNode>
       </LinkedListItems>
@@ -161,8 +173,8 @@
   </Type>
   
   
-  <Type Name="Intra::Math::SineRange&lt;*&gt;" Priority="Medium">
-    <DisplayString>Sine[{mS2}, {mK*mS2-mS1}, {mK*(mK*mS2-mS1)-mS2}, ...]</DisplayString>
+  <Type Name="Intra::Range::SineRange&lt;*&gt;" Priority="Medium">
+    <DisplayString>Sine[{mS1}, {mS2}, {mK*mS2-mS1}, {mK*(mK*mS2-mS1)-mS2}, ...]</DisplayString>
   </Type>
 
 </AutoVisualizer>

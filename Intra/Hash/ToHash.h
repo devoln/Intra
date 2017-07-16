@@ -2,7 +2,9 @@
 
 #include "Cpp/Fundamental.h"
 #include "Cpp/Warnings.h"
+
 #include "Meta/Type.h"
+
 #include "Murmur.h"
 
 namespace Intra { namespace Hash {

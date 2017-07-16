@@ -21,7 +21,11 @@ struct RecordedDrumInstrument
 	Array<float> Data;
 	float VolumeScale = 1;
 
-	RecordedSampler operator()(float volume, uint sampleRate) {return {Data, volume*VolumeScale};}
+	RecordedSampler operator()(float volume, uint sampleRate) const
+	{
+		(void)sampleRate;
+		return {Data, volume*VolumeScale};
+	}
 
 };
 

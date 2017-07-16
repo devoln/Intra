@@ -27,6 +27,7 @@ Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src)
 {
 	const size_t newLen = (src.Length() + 1) / 2;
 	INTRA_DEBUG_ASSERT(dst.Length() >= newLen);
+	if(newLen != 0) dst[0] = src[0];
 	for(size_t i = 1; i < newLen; i++)
 		dst[i] = (src[2*i - 1] + src[2*i]) / 2;
 	return dst.Take(newLen);

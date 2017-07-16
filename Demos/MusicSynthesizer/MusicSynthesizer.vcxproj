@@ -508,7 +508,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NO_WAVE_LOADER;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -521,11 +521,11 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
       <CallingConvention>Cdecl</CallingConvention>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -535,6 +535,7 @@
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <FixedBaseAddress>true</FixedBaseAddress>
       <AdditionalDependencies>$(OutDir)/Intra.lib</AdditionalDependencies>
+      <GenerateMapFile>true</GenerateMapFile>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -590,7 +591,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_QIFIST;INTRA_MINEXE=3;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NO_WAVE_LOADER;INTRA_MINEXE=3;INTRA_QIFIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -602,11 +603,11 @@
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <ControlFlowGuard>false</ControlFlowGuard>
       <CallingConvention>Cdecl</CallingConvention>
-      <AdditionalOptions>/QIfist /Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
+      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

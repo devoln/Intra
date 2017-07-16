@@ -84,6 +84,7 @@ int main(int argc, const char* argv[])
 		TestGroup("Range-based streams", TestStreamRange);
 		TestGroup("STL and ranges interoperability", TestRangeStlInterop);
 		TestGroup("Unicode encoding conversions", TestUnicodeConversion);
+		TestGroup("Heap algorithms", TestHeap);
 	}
 	if(TestGroup gr{&logger, output, "Containers"})
 	{

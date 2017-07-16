@@ -1,10 +1,15 @@
 ﻿#pragma once
 
+#include "Cpp/Warnings.h"
+#include "Cpp/Features.h"
+
 #include "Types.h"
 
 #include "Utils/Span.h"
 
 #include "Math/Math.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -31,14 +36,17 @@ struct ExponentAttenuatorFactory
 	ExponentAttenuatorFactory(float startVolume, float expCoeff):
 		StartVolume(startVolume), ExpCoeff(expCoeff) {}
 
-	ExponentAttenuator operator()(float freq, float volume, uint sampleRate, size_t sampleCount) const
+	ExponentAttenuator operator()(float freq, float volume, uint sampleRate) const
 	{
-		(void)freq; (void)volume; (void)sampleCount;
+		(void)freq; (void)volume;
 		return ExponentAttenuator(StartVolume, ExpCoeff, sampleRate);
 	}
 
 	forceinline bool operator==(null_t) const noexcept {return StartVolume == 1 && ExpCoeff == 0;}
 	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return operator!=(null);}
 };
 
 }}}
+
+INTRA_WARNING_POP

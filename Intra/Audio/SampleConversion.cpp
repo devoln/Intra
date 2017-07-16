@@ -95,8 +95,10 @@ void InterleaveFloats(Span<float> dst, CSpan<float> src1, CSpan<float> src2, CSp
 
 template<typename T> void genericInterleave(Span<T> dst, Span<CSpan<T>> src)
 {
+	CSpan<T> srcs[16];
+	auto srcsSpan = Range::Take(srcs, src.CopyTo(srcs));
 	while(dst.End != dst.Begin)
-		for(auto& srci: src)
+		for(auto& srci: srcsSpan)
 			*dst.Begin++ = *srci.Begin++;
 }
 
@@ -326,8 +328,10 @@ void DeinterleaveFloats(CSpan<float> src, Span<float> dst1, Span<float> dst2, Sp
 
 template<typename T> void genericDeinterleave(CSpan<T> src, Span<Span<T>> dst)
 {
+	Span<T> dsts[16];
+	auto dstsSpan = Range::Take(dsts, dst.CopyTo(dsts));
 	while(src.End != src.Begin)
-		for(auto& dsti: dst)
+		for(auto& dsti: dstsSpan)
 			*dsti.Begin++ = *src.Begin++;
 }
 
@@ -557,9 +561,10 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 
 static void genericInterleaveCast(Span<short> dst, Span<CSpan<float>> src)
 {
-	const size_t numChannels = src.Length();
+	CSpan<float> srcs[16];
+	auto srcsSpan = Range::Take(srcs, src.CopyTo(srcs));
 	while(dst.End != dst.Begin)
-		for(auto srci: src)
+		for(auto& srci: srcsSpan)
 			*dst.Begin++ = short(*srci.Begin++ * 32767);
 }
 
@@ -570,13 +575,13 @@ void InterleaveFloatsCastToShorts(Span<short> dst, Span<CSpan<float>> src)
 #endif
 	{
 #if(INTRA_MINEXE == 0)
-	case 2: InterleaveFloatsCastToShorts(dst, src[0], src[1]);
-	case 3: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2]);
-	case 4: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3]);
-	case 5: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4]);
-	case 6: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5]);
-	case 7: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5], src[6]);
-	case 8: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7]);
+	case 2: InterleaveFloatsCastToShorts(dst, src[0], src[1]); return;
+	case 3: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2]); return;
+	case 4: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3]); return;
+	case 5: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4]); return;
+	case 6: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5]); return;
+	case 7: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5], src[6]); return;
+	case 8: InterleaveFloatsCastToShorts(dst, src[0], src[1], src[2], src[3], src[4], src[5], src[6], src[7]); return;
 	default:
 #endif
 		genericInterleaveCast(dst, src);
@@ -678,8 +683,10 @@ void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<short> dst1, Span<sho
 
 static void genericDeinterleaveCastToShorts(CSpan<float> src, Span<Span<short>> dst)
 {
+	Span<short> dsts[16];
+	auto dstsSpan = Range::Take(dsts, dst.CopyTo(dsts));
 	while(src.End != src.Begin)
-		for(auto& dsti: dst)
+		for(auto& dsti: dstsSpan)
 			*dsti.Begin++ = short(*src.Begin++ * 32767);
 }
 
@@ -798,8 +805,10 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<flo
 
 static void genericDeinterleaveCastToFloats(CSpan<short> src, Span<Span<float>> dst)
 {
+	Span<float> dsts[16];
+	auto dstsSpan = Range::Take(dsts, dst.CopyTo(dsts));
 	while(src.End != src.Begin)
-		for(auto& dsti: dst)
+		for(auto& dsti: dstsSpan)
 			*dsti.Begin++ = *src.Begin++ / 32768.0f;
 }
 
@@ -810,13 +819,13 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<Span<float>> dst)
 #endif
 	{
 #if(INTRA_MINEXE == 0)
-	case 2: DeinterleaveShortsCastToFloats(src, dst[0], dst[1]);
-	case 3: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2]);
-	case 4: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3]);
-	case 5: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4]);
-	case 6: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5]);
-	case 7: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6]);
-	case 8: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7]);
+	case 2: DeinterleaveShortsCastToFloats(src, dst[0], dst[1]); return;
+	case 3: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2]); return;
+	case 4: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3]); return;
+	case 5: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4]); return;
+	case 6: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5]); return;
+	case 7: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6]); return;
+	case 8: DeinterleaveShortsCastToFloats(src, dst[0], dst[1], dst[2], dst[3], dst[4], dst[5], dst[6], dst[7]); return;
 	default:
 #endif
 		genericDeinterleaveCastToFloats(src, dst);

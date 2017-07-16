@@ -70,12 +70,13 @@ public:
 
 	forceinline char First() const {return mBufferRest.First();}
 	
-	forceinline bool Empty() const {return mBufferRest.Empty();}
+	forceinline bool Empty() const noexcept {return mBufferRest.Empty();}
 
 	forceinline size_t Length() const {return size_t(mSize - PositionInFile());}
 
-	forceinline bool operator==(null_t) const {return Empty();}
-	forceinline bool operator!=(null_t) const {return !Empty();}
+	forceinline bool operator==(null_t) const noexcept {return Empty();}
+	forceinline bool operator!=(null_t) const noexcept {return !Empty();}
+	forceinline explicit operator bool() const noexcept {return !Empty();}
 	
 	void PopFirst(ErrorStatus& status = Error::Skip())
 	{

@@ -2,7 +2,9 @@
 
 #include "Cpp/Fundamental.h"
 #include "Cpp/Warnings.h"
+
 #include "Types.h"
+
 #include "Utils/StringView.h"
 
 namespace Intra { namespace Hash {

@@ -15,7 +15,7 @@ namespace detail {
 
 struct SoundBasicContext
 {
-	Mutex MyMutex;
+	RecursiveMutex MyMutex;
 	Array<Sound::Data*> AllSounds;
 	Array<StreamedSound::Data*> AllStreamedSounds;
 
@@ -29,7 +29,7 @@ struct SoundBasicData
 	SoundBasicData(IAudioSource& src):
 		Info(src.SamplesLeft(), src.SampleRate(), ushort(src.ChannelCount()), Data::ValueType::Void) {}
 
-	Mutex MyMutex;
+	RecursiveMutex MyMutex;
 	SoundInfo Info;
 
 	SoundBasicData(const SoundBasicData&) = delete;
@@ -40,7 +40,7 @@ struct SoundInstanceBasicData
 {
 	SoundInstanceBasicData(Shared<Sound::Data> parent): Parent(Cpp::Move(parent)) {}
 
-	Mutex MyMutex;
+	RecursiveMutex MyMutex;
 	Shared<Sound::Data> Parent;
 	Shared<Sound::Instance::Data> SelfRef;
 	Delegate<void()> OnStop;

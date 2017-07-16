@@ -65,10 +65,10 @@ template<typename R, typename P> struct RFilter
 		mOriginalRange.PopLast();
 	}
 
-	forceinline bool Empty() const {return mOriginalRange.Empty() || mPredicate==null;}
+	forceinline bool Empty() const {return mOriginalRange.Empty() || mPredicate == null;}
 
 	//TODO BUG: FilterResults with same range but different predicates are considered equal!
-	forceinline bool operator==(const RFilter& rhs) const {return mOriginalRange==rhs.mOriginalRange;}
+	forceinline bool operator==(const RFilter& rhs) const {return mOriginalRange == rhs.mOriginalRange;}
 
 private:
 	static void forceinline skip_falses_front(R& originalRange, const P& p)

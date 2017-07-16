@@ -30,11 +30,12 @@ struct WhiteNoiseInstrument
 	forceinline WhiteNoiseInstrument(float volumeScale, float freqMult = 1):
 		VolumeScale(volumeScale), FreqMultiplier(freqMult) {}
 
-	WhiteNoiseSampler operator()(float freq, float volume, uint sampleRate, size_t sampleCount) const
-	{
-		(void)volume; (void)sampleCount;
-		return WhiteNoiseSampler(freq*FreqMultiplier/sampleCount, volume*VolumeScale);
-	}
+	WhiteNoiseSampler operator()(float freq, float volume, uint sampleRate) const
+	{return WhiteNoiseSampler(freq*FreqMultiplier/sampleRate, volume*VolumeScale);}
+
+	forceinline explicit operator bool() const noexcept {return VolumeScale > 0;}
+	forceinline bool operator==(null_t) const noexcept {return VolumeScale <= 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
 };
 
 }}}

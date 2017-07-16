@@ -29,9 +29,6 @@ public:
 
 	forceinline void PopFirst() {mFront = mFunc()();}
 
-	forceinline bool operator==(const RGenerate& rhs) const
-	{return mFunc==null && rhs.mFunc==null;}
-
 private:
 	Utils::Optional<F> mFunc;
 	value_type mFront;

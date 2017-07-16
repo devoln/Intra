@@ -74,6 +74,13 @@
         </Expand>
     </Type>
 
+  <Type Name="Intra::Container::OwningArrayRange&lt;*&gt;">
+    <DisplayString>{Elements}</DisplayString>
+    <Expand>
+      <ExpandedItem>Elements</ExpandedItem>
+    </Expand>
+  </Type>
+
   <Type Name="Intra::Container::LinearSet&lt;*&gt;">
     <DisplayString>{mData}</DisplayString>
     <Expand>
@@ -97,9 +104,10 @@
     </Type>
 
   <Type Name="Intra::Container::HashMap&lt;*&gt;">
-    <DisplayString>Map({(reinterpret_cast&lt;size_t*&gt;(mBucketHeads))[0]}) {mRange}</DisplayString>
+    <DisplayString Condition="mBucketHeads == nullptr">Map(0) []</DisplayString>
+    <DisplayString>Map({((size_t*)(mBucketHeads))[0]}) {mRange}</DisplayString>
     <Expand>
-      <Item Name="Count">mBucketHeads!=null? (reinterpret_cast&lt;size_t*&gt;(mBucketHeads))[0]: 0</Item>
+      <Item Name="Count">mBucketHeads != nullptr? ((size_t*)(mBucketHeads))[0]: 0</Item>
       <ExpandedItem>mRange</ExpandedItem>
     </Expand>
   </Type>

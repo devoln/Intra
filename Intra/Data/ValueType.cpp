@@ -50,21 +50,21 @@ ushort ValueType::Size() const
 	};
 	INTRA_CHECK_TABLE_SIZE(matSizeTable, EndOfMatrices-FirstOfMatrices);
 
-	if(value<EndOfVectors) return scalarVecSizeTable[value];
-	if(value<EndOfMatrices) return matSizeTable[value-FirstOfMatrices];
-	if(value==ValueType::Char) return sizeof(char);
+	if(value < EndOfVectors) return scalarVecSizeTable[value];
+	if(value < EndOfMatrices) return matSizeTable[value - FirstOfMatrices];
+	if(value == ValueType::Char) return sizeof(char);
 	return INTRA_FATAL_ERROR("Unknown type of this ValueType!"), ushort(0);
 }
 
 //Возвращает размерность вектора или 1 если это скаляр. Для матриц не работает
 byte ValueType::Dimensions() const
 {
-	if(value>=FirstOfFloat && value<EndOfFloat) return byte( (value-FirstOfFloat)%4+1 );
-	if(value>=FirstOfInteger && value<EndOfInteger) return byte( (value-FirstOfInteger)%4+1 );
-	if(value>=FirstOfNormalized && value<EndOfNormalized) return byte( (value-FirstOfNormalized)%4+1 );
-	if(value==Vec11f11f10f || value==NVec332 || value==NVec565) return 3;
-	if(value==NVec5551 || value==NVec4444 || value==Vec10n10n10n2n ||
-		value==Vec10s10s10s2s || value==Vec10u10u10u2u || value==UVec9995) return 4;
+	if(value >= FirstOfFloat && value < EndOfFloat) return byte( (value - FirstOfFloat)%4 + 1 );
+	if(value >= FirstOfInteger && value < EndOfInteger) return byte( (value - FirstOfInteger)%4 + 1 );
+	if(value >= FirstOfNormalized && value < EndOfNormalized) return byte( (value - FirstOfNormalized)%4 + 1 );
+	if(value == Vec11f11f10f || value == NVec332 || value == NVec565) return 3;
+	if(value == NVec5551 || value == NVec4444 || value == Vec10n10n10n2n ||
+		value == Vec10s10s10s2s || value == Vec10u10u10u2u || value == UVec9995) return 4;
 	return 0;
 }
 

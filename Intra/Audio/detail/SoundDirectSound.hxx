@@ -16,6 +16,8 @@
 
 #include "SoundBasicData.hxx"
 
+#include <stdio.h>
+
 #define INITGUID
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -167,21 +169,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 		}
 	}
 
-	void Release()
-	{
-		INTRA_SYNCHRONIZED(MyMutex)
-		{
-			if(!Buffer) return;
-			Buffer->Stop();
-			Buffer->Release();
-			Buffer = null;
-		}
-		auto& context = SoundContext::Instance();
-		INTRA_SYNCHRONIZED(context.MyMutex)
-		{
-			context.AllSounds.FindAndRemoveUnordered(this);
-		}
-	}
+	void Release();
 
 	bool IsReleased()
 	{
@@ -198,6 +186,8 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 	IDirectSoundBuffer* Buffer;
 
 	void* LockedBits = null;
+
+	Array<Sound::Instance::Data*> Instances;
 };
 
 
@@ -240,11 +230,16 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 			NotifyOnStopEvent, OnStopCallback, this, INFINITE, 0);
 		notify->SetNotificationPositions(1, &stopNotify);
 		notify->Release();
+
+		INTRA_SYNCHRONIZED(Parent->MyMutex)
+		{
+			Parent->Instances.AddLast(this);
+		}
 	}
 
 	~Data()
 	{
-		(void)UnregisterWait(NotifyOnStopWait);
+		UnregisterWaitEx(NotifyOnStopWait, INVALID_HANDLE_VALUE);
 		CloseHandle(NotifyOnStopEvent);
 		Release();
 	}
@@ -312,7 +307,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		}
 	}
 
-	Mutex MyMutex;
+	RecursiveMutex MyMutex;
 
 	IDirectSoundBuffer* DupBuffer;
 
@@ -564,6 +559,23 @@ void SoundContext::ReleaseAllStreamedSounds()
 		soundsToRelease = Cpp::Move(AllStreamedSounds);
 	}
 	for(auto snd: soundsToRelease) snd->Release();
+}
+
+void Sound::Data::Release()
+{
+	INTRA_SYNCHRONIZED(MyMutex)
+	{
+		if(!Buffer) return;
+		Buffer->Stop();
+		Buffer->Release();
+		Buffer = null;
+		for(auto inst: Instances) inst->Release();
+	}
+	auto& context = SoundContext::Instance();
+	INTRA_SYNCHRONIZED(context.MyMutex)
+	{
+		context.AllSounds.FindAndRemoveUnordered(this);
+	}
 }
 
 }}

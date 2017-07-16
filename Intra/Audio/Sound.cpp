@@ -83,13 +83,6 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 		source = new Sources::Vorbis(fileData);
 	else
 #endif
-#ifndef INTRA_NO_MUSIC_LOADER
-	if(fileSignature.StartsWith("MThd"))
-		source = new Sources::MidiSynth(
-			Midi::MidiFileParser::CreateSingleOrderedMessageStream(fileMapping),
-			null, DefaultSampleRate());
-	else
-#endif
 	{
 		status.Error("Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);
 		return null;
@@ -150,13 +143,6 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 	if(fileSignature.StartsWith("OggS"))
 		source = new Sources::Vorbis(Funal::Value(Cpp::Move(fileMapping)), fileMapping);
 	else 
-#endif
-#ifndef INTRA_NO_MUSIC_LOADER
-	if(fileSignature.StartsWith("MThd"))
-		source = new Sources::MidiSynth(
-			Midi::MidiFileParser::CreateSingleOrderedMessageStream(fileMapping),
-			null, Sound::DefaultSampleRate());
-	else
 #endif
 	{
 		status.Error("Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);

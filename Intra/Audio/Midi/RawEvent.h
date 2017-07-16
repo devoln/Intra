@@ -75,7 +75,7 @@ public:
 		return mCurrentEvent;
 	}
 
-	forceinline bool Empty() const {return mCurrentEvent.Status() == 0;}
+	forceinline bool Empty() const {return mStream.Empty();}
 };
 
 }}}

@@ -9,8 +9,8 @@ bool TrackCombiner::trackTimeComparer(const TrackParser& a, const TrackParser& b
 	return a.NextEventTime(mState) > b.NextEventTime(mState);
 }
 
-TrackCombiner::TrackCombiner(short headerTimeFormat, IDevice* device):
-	mState(headerTimeFormat), mDevice(device) {}
+TrackCombiner::TrackCombiner(short headerTimeFormat):
+	mState(headerTimeFormat) {}
 
 void TrackCombiner::AddTrack(TrackParser track)
 {
@@ -18,11 +18,10 @@ void TrackCombiner::AddTrack(TrackParser track)
 		ObjectMethod(this, &TrackCombiner::trackTimeComparer));
 }
 
-void TrackCombiner::ProcessEvent()
+void TrackCombiner::ProcessEvent(IDevice& device)
 {
-	INTRA_DEBUG_ASSERT(mDevice != null);
 	auto& track = Range::HeapPop(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
-	track.ProcessEvent(mState, *mDevice);
+	track.ProcessEvent(mState, device);
 	if(track.Empty()) mTracks.RemoveLast();
 	else Range::HeapPush(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
 }

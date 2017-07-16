@@ -3,27 +3,26 @@
 #include "System/Stopwatch.h"
 #include "System/Environment.h"
 
+#include "Range/Polymorphic/InputRange.h"
+#include "Range/Polymorphic/ForwardRange.h"
+
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
 #include "IO/FileSystem.h"
+#include "IO/FileReader.h"
 #include "IO/Networking.h"
 #include "IO/Std.h"
 
 #include "Concurrency/Thread.h"
 
-#include "Audio/Midi.h"
-#include "Audio/Music.h"
 #include "Audio/AudioBuffer.h"
 #include "Audio/Sound.h"
 #include "Audio/AudioSource.h"
-#include "Audio/Sources/MusicSynth.h"
 
 #include "Audio/Sources/Wave.h"
 
 
 #include "MusicSynthesizerCommon.h"
-
-//#define ENABLE_STREAMING
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #ifdef _MSC_VER
@@ -73,49 +72,34 @@ void MainLoop(bool enableStreaming)
 		});
 	}
 	ConsoleIn.GetChar();
-
 #else
 	(void)enableStreaming;
 	emscripten_set_main_loop([]() {}, 30, 1);
 #endif
 }
 
-void LoadAndPlaySound(StringView filePath, bool enableStreaming)
+void PrintInfoAndPlayMidiStream(ForwardStream stream, bool enableStreaming)
 {
-	static Sound sound;
-	if(enableStreaming)
+	FatalErrorStatus status;
+	auto info = PrintMidiInfo(stream, status);
+	if(status.Handle())
 	{
-		Std.PrintLine("Инициализация...");
-		StreamedSound::FromFile(filePath, 16384, Error::Skip()).Play();
+		Std.PrintLine(status.GetLog());
+		ConsoleIn.GetChar();
+		return;
 	}
-	else
-	{
-		sound = SynthSoundFromMidi(filePath, true);
-		auto inst = sound.CreateInstance();
-		inst.Play();
-	}
+
+	Std.PrintLine("Частота дискретизации: ", Sound::DefaultSampleRate(), " Гц");
+	if(enableStreaming) CreateStreamedSoundFromMidi(Cpp::Move(stream), 0.5f, true).Play();
+	else CreateSoundFromMidi(Cpp::Move(stream), info.Duration, 0.5f, true).CreateInstance().Play();
 	Std.PrintLine("Воспроизведение...");
 	MainLoop(enableStreaming);
 }
 
-void PlayMusic(const Music& music, bool printPerf)
+void PrintInfoAndPlayMidiFile(StringView filePath, bool enableStreaming)
 {
-	Stopwatch sw;
-	AudioBuffer buf = music.GetSamples();
-	if(printPerf)
-	{
-		auto time = sw.ElapsedSeconds();
-		Std.PrintLine("Время синтеза: ", StringOf(time*1000, 2), " мс.");
-	}
-	Sound(buf).CreateInstance().Play();
-}
-
-void PlayMusicStream(const Music& music)
-{
-	const auto sampleRate = Sound::DefaultSampleRate();
-	Std.PrintLine("Частота дискретизации: ", sampleRate, " Гц");
-	Std.PrintLine("Инициализация...");
-	StreamedSound(new Sources::MusicSynth(null, music, sampleRate)).Play();
+	Std.PrintLine("Открытие MIDI файла: ", filePath);
+	PrintInfoAndPlayMidiStream(OS.FileOpen(filePath, Error::Skip()), enableStreaming);
 }
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
@@ -125,11 +109,7 @@ extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size
 	StreamedSound::ReleaseAllSounds();
 	Sound::ReleaseAllSounds();
 
-	auto music = ReadMidiFile({data, size});
-	PrintMusicInfo(music);
-	if(enableStreaming) PlayMusicStream(music);
-	else PlayMusic(music, true);
-	Std.PrintLine("Воспроизведение...");
+	PrintInfoAndPlayMidiStream(SpanOfRaw<const char>(data, size), enableStreaming);
 }
 
 extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)
@@ -152,18 +132,9 @@ void SoundTest()
 }
 #endif
 
-
-static const StringView DefaultMidiName = "Merry Christmas.mid";
-
 int INTRA_CRTDECL main()
 {
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-#ifdef ENABLE_STREAMING
-	PlayUrl(("http://gammaker.github.io/midi/" + DefaultMidiName).CStr(), true);
-#else
-	PlayUrl(("http://gammaker.github.io/midi/" + DefaultMidiName).CStr(), false);
-#endif
-	MainLoop(false);
 #else
 	//System::InitSignals();
 
@@ -171,15 +142,11 @@ int INTRA_CRTDECL main()
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 
-	const String filePath = GetMidiPath(Environment.CommandLine.Get(1, DefaultMidiName));
+	const StringView DefaultMidiPath = "Merry Christmas.mid";
+	const String filePath = GetMidiPath(Environment.CommandLine.Get(1, DefaultMidiPath));
 	
-	const bool success = PrintMidiFileInfo(filePath);
-	if(!success) return 1;
-#ifdef ENABLE_STREAMING
-	LoadAndPlaySound(filePath, true);
-#else
-	LoadAndPlaySound(filePath, false);
-#endif
+	const bool enableStreaming = false;
+	PrintInfoAndPlayMidiFile(filePath, enableStreaming);
 
 #endif
 	CleanUpSoundSystem();

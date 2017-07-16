@@ -1,7 +1,11 @@
 ﻿#pragma once
 
 #include "Cpp/Warnings.h"
+
+#include "Meta/Pair.h"
+
 #include "Utils/Span.h"
+
 #include "Concepts/Range.h"
 #include "Concepts/RangeOf.h"
 

@@ -84,7 +84,7 @@ template<typename T> struct HashTableRange
 	forceinline bool operator==(const HashTableRange& rhs) const
 	{
 		return (Empty() && rhs.Empty()) ||
-			(mFirstNode==rhs.mFirstNode && mLastNode==rhs.mLastNode);
+			(mFirstNode == rhs.mFirstNode && mLastNode == rhs.mLastNode);
 	}
 	forceinline bool operator!=(const HashTableRange& rhs) const {return !operator==(rhs);}
 	forceinline bool operator==(null_t) const {return Empty();}
@@ -92,7 +92,7 @@ template<typename T> struct HashTableRange
 
 	forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); mFirstNode = mFirstNode->next;}
 	forceinline void PopLast() {INTRA_DEBUG_ASSERT(!Empty()); mLastNode = mLastNode->prev;}
-	forceinline bool Empty() const {return mFirstNode==null || mFirstNode->prev==mLastNode;}
+	forceinline bool Empty() const {return mFirstNode == null || mFirstNode->prev == mLastNode;}
 	forceinline T& First() const {INTRA_DEBUG_ASSERT(!Empty()); return mFirstNode->element;}
 	forceinline T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return mLastNode->element;}
 
@@ -166,8 +166,8 @@ public:
  
         forceinline bool operator==(const const_iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const const_iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node!=null); node = node->next;}
-        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node!=null); node = node->prev;}
+        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node != null); node = node->next;}
+        forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node != null); node = node->prev;}
  
         forceinline const_iterator& operator++() {GotoNext(); return *this;}
         forceinline const_iterator operator++(int) {const_iterator it = *this; GotoNext(); return it;}
@@ -182,7 +182,7 @@ public:
  
 
 
-	HashMap(): mRange(null), mBucketHeads(null) {}
+	HashMap(null_t=null): mRange(null), mBucketHeads(null) {}
 
 	HashMap(const HashMap& rhs): AllocatorRef(rhs),
 		mRange(null), mBucketHeads(null) {operator=(rhs);}
@@ -193,6 +193,12 @@ public:
 	{
 		Clear();
 		Insert(rhs);
+		return *this;
+	}
+
+	HashMap& operator=(null_t)
+	{
+		Clear();
 		return *this;
 	}
 
@@ -212,7 +218,7 @@ public:
 
 	bool operator!=(const HashMap& rhs) const {return !operator==(rhs);}
 
-	bool Empty() const {return Count()==0;}
+	bool Empty() const {return Count() == 0;}
 	bool operator==(null_t) const {return Empty();}
 	bool operator!=(null_t) const {return !Empty();}
 
@@ -277,9 +283,9 @@ public:
 		const uint keyHash = ToHash(key);
 		Node* previous;
 		auto node = findNode(key, keyHash, previous);
-		if(node==null) return false;
+		if(node == null) return false;
 
-		if(previous!=null) previous->down = node->down;
+		if(previous != null) previous->down = node->down;
 		else get_bucket_head(keyHash) = node->down;
 
 		eraseNode(node);
@@ -290,9 +296,9 @@ public:
 	//! @return Возвращает диапазон, содержащий все элементы, идущие после удаляемого элемента.
 	ElementRange Remove(const_iterator it)
 	{
-		if(mBucketHeads == null || it == null) return end();
+		if(mBucketHeads == null || it == null) return null;
 
-		auto node = it.Range.mFirstNode;
+		auto node = it.node;
 		auto next = node->next;
 
 		uint keyHash = ToHash(node->element.Key);
@@ -312,7 +318,7 @@ public:
 		else bh = node->down;
 
 		eraseNode(node);
-		return iterator(next);
+		return ElementRange(next, mRange.mLastNode);
 	}
 
 	void Clear()
@@ -656,7 +662,7 @@ private:
 
 	Node* eraseNode(Node* node)
 	{
-		if(node==null) return null;
+		if(node == null) return null;
 
 		if(node->prev!=null) node->prev->next = node->next;
 		if(node->next!=null) node->next->prev = node->prev;
@@ -666,7 +672,7 @@ private:
 		Node* result = node->next;
 
 		Memory::DestructObj(node->element);
-		freeNode(node, sizeof(Node));
+		freeNode(node);
 		set_count(Count()-1);
 
 		return result;

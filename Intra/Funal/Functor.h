@@ -106,7 +106,7 @@ private:
 
 template<typename FuncSignature, typename T = FuncSignature*> class CopyableMutableFunctor;
 template<typename T, typename R, typename... Args>
-class CopyableMutableFunctor<R(Args...), T>: public ICopyableFunctor<R(Args...)>
+class CopyableMutableFunctor<R(Args...), T>: public ICopyableMutableFunctor<R(Args...)>
 {
 public:
 	CopyableMutableFunctor(T&& obj): Obj(Cpp::Move(obj)) {}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cpp/Warnings.h"
+#include "Cpp/InfNan.h"
 
 #include "Utils/Span.h"
 
@@ -13,16 +14,21 @@ class AdsrAttenuator
 	size_t mAttackSamples;
 	size_t mDecaySamples;
 	float mSustainVolume;
-	size_t mSustainSamples;
 	size_t mReleaseSamples;
 	float mU, mDU;
 public:
+	AdsrAttenuator(null_t=null);
 	AdsrAttenuator(float attackTime, float decayTime,
-		float sustainVolume, float releaseTime, uint sampleRate, size_t sampleCount);
+		float sustainVolume, float releaseTime, uint sampleRate);
 
 	void operator()(Span<float> inOutSamples);
 
-	void NoteOff();
+	void NoteRelease();
+	size_t SamplesLeft() const noexcept {return mSustainVolume == -1? mReleaseSamples: ~size_t();}
+
+	forceinline explicit operator bool() const noexcept {return mU > -1;}
+	forceinline bool operator==(null_t) const noexcept {return !bool(*this);}
+	forceinline bool operator!=(null_t) const noexcept {return bool(*this);}
 
 private:
 	void beginAttack();
@@ -41,19 +47,20 @@ struct AdsrAttenuatorFactory
 	float ReleaseTime;
 
 	AdsrAttenuatorFactory(null_t=null):
-		AttackTime(0), DecayTime(0), SustainVolume(1), ReleaseTime(0) {}
+		AttackTime(0), DecayTime(0), SustainVolume(1), ReleaseTime(Cpp::Infinity) {}
 
 	AdsrAttenuatorFactory(float attackTime, float decayTime, float sustainVolume, float releaseTime):
 		AttackTime(attackTime), DecayTime(decayTime), SustainVolume(sustainVolume), ReleaseTime(releaseTime) {}
 
-	AdsrAttenuator operator()(float freq, float volume, uint sampleRate, size_t sampleCount) const
+	AdsrAttenuator operator()(float freq, float volume, uint sampleRate) const
 	{
 		(void)freq; (void)volume;
-		return AdsrAttenuator(AttackTime, DecayTime, SustainVolume, ReleaseTime, sampleRate, sampleCount);
+		return AdsrAttenuator(AttackTime, DecayTime, SustainVolume, ReleaseTime, sampleRate);
 	}
 
-	bool operator==(null_t) const noexcept {return AttackTime == 0 && DecayTime == 0 && SustainVolume == 1 && ReleaseTime == 0;}
+	bool operator==(null_t) const noexcept {return AttackTime == 0 && DecayTime == 0 && SustainVolume == 1 && ReleaseTime == Cpp::Infinity;}
 	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return operator!=(null);}
 };
 
 }}}

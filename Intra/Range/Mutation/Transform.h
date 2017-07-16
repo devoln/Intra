@@ -159,6 +159,13 @@ template<typename R1, typename R2, typename OR, typename F> Meta::EnableIf<
 //! Складывать соотвествующие элементы диапазонов до тех пор, пока один из диапазонов не окажется пустым.
 //! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
 size_t AddAdvance(Span<float>& dstOp1, CSpan<float>& op2);
+
+inline size_t AddAdvance(Span<float>& dstOp1, Span<float>& op2)
+{
+	CSpan<float> op2Const = op2;
+	return op2.PopFirstN(AddAdvance(dstOp1, op2Const));
+}
+
 size_t MultiplyAdvance(Span<float>& dstOp1, CSpan<float>& op2);
 size_t MultiplyAdvance(Span<float>& dstOp1, float multiplyer);
 size_t MultiplyAdvance(Span<float>& dst, CSpan<float>& op1, float multiplyer);
@@ -169,6 +176,9 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 //! Если один из диапазонов короче другого, будет обработано столько элементов, какова минимальная длина.
 //! @return Количество обработанных элементов, то есть наименьшее количество элементов двух аргументов.
 forceinline size_t Add(Span<float> dstOp1, CSpan<float> op2) {return AddAdvance(dstOp1, op2);}
+
+forceinline size_t Add(Span<float> dstOp1, Span<float> op2) {return AddAdvance(dstOp1, op2);}
+
 forceinline size_t Multiply(Span<float> dstOp1, CSpan<float> op2) {return MultiplyAdvance(dstOp1, op2);}
 forceinline size_t Multiply(Span<float> dstOp1, float multiplier) {return MultiplyAdvance(dstOp1, multiplier);}
 forceinline size_t Multiply(Span<float> dst, CSpan<float> op1, float multiplier) {return MultiplyAdvance(dst, op1, multiplier);}

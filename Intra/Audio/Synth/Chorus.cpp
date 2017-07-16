@@ -6,7 +6,7 @@ namespace Intra { namespace Audio { namespace Synth {
 
 void Chorus::operator()(Span<float> inOutSamples)
 {
-	const float oscillatorOffset = DelayCircularBuffer.Length()*0.5f + 0.5f;
+	const float oscillatorOffset = DelayCircularBuffer.Length()*0.5f;
 	for(float& sample: inOutSamples)
 	{
 		DelayCircularBuffer[CircularBufferOffset++] = sample;
@@ -14,7 +14,7 @@ void Chorus::operator()(Span<float> inOutSamples)
 
 		const size_t delayInSamples = size_t(Oscillator.Next() + oscillatorOffset);
 		size_t sampleIndex = CircularBufferOffset;
-		if(sampleIndex > delayInSamples) sampleIndex += DelayCircularBuffer.Length();
+		if(sampleIndex < delayInSamples) sampleIndex += DelayCircularBuffer.Length();
 		sampleIndex -= delayInSamples;
 
 		sample *= MainVolume;

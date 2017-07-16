@@ -3,6 +3,8 @@
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
 
+#include "Meta/Type.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 

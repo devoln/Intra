@@ -16,6 +16,9 @@ template<typename F, typename A1> struct TBind1
 	template<typename... Args> forceinline Meta::ResultOf<F, A1, Args&&...> operator()(Args&&... args)
 	{return Func(Arg1, Cpp::Forward<Args>(args)...);}
 
+	template<typename... Args> forceinline Meta::ResultOf<F, A1, Args&&...> operator()(Args&&... args) const
+	{return Func(Arg1, Cpp::Forward<Args>(args)...);}
+
 	F Func;
 	A1 Arg1;
 };
@@ -23,6 +26,9 @@ template<typename F, typename A1> struct TBind1
 template<typename F, typename A1, typename A2> struct TBind2
 {
 	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, Args&&...> operator()(Args&&... args)
+	{return Func(Arg1, Arg2, Cpp::Forward<Args>(args)...);}
+
+	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, Args&&...> operator()(Args&&... args) const
 	{return Func(Arg1, Arg2, Cpp::Forward<Args>(args)...);}
 
 	F Func;
@@ -33,6 +39,9 @@ template<typename F, typename A1, typename A2> struct TBind2
 template<typename F, typename A1, typename A2, typename A3> struct TBind3
 {
 	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, Args&&...> operator()(Args&&... args)
+	{return Func(Arg1, Arg2, Arg3, Cpp::Forward<Args>(args)...);}
+
+	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, Args&&...> operator()(Args&&... args) const
 	{return Func(Arg1, Arg2, Arg3, Cpp::Forward<Args>(args)...);}
 
 	F Func;
@@ -46,6 +55,9 @@ template<typename F, typename A1, typename A2, typename A3, typename A4> struct 
 	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, A4, Args&&...> operator()(Args&&... args)
 	{return Func(Arg1, Arg2, Arg3, Arg4, Cpp::Forward<Args>(args)...);}
 
+	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, A4, Args&&...> operator()(Args&&... args) const
+	{return Func(Arg1, Arg2, Arg3, Arg4, Cpp::Forward<Args>(args)...);}
+
 	F Func;
 	A1 Arg1;
 	A2 Arg2;
@@ -56,6 +68,9 @@ template<typename F, typename A1, typename A2, typename A3, typename A4> struct 
 template<typename F, typename A1, typename A2, typename A3, typename A4, typename A5> struct TBind5
 {
 	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, A4, A5, Args&&...> operator()(Args&&... args)
+	{return Func(Arg1, Arg2, Arg3, Arg4, Arg5, Cpp::Forward<Args>(args)...);}
+
+	template<typename... Args> forceinline Meta::ResultOf<F, A1, A2, A3, A4, A5, Args&&...> operator()(Args&&... args) const
 	{return Func(Arg1, Arg2, Arg3, Arg4, Arg5, Cpp::Forward<Args>(args)...);}
 
 	F Func;

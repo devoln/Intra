@@ -61,7 +61,19 @@ public:
 	//! ¬озвращает парсер событий следующего трека.
 	TrackParser NextTrackParser();
 
-	static TrackCombiner CreateSingleOrderedMessageStream(InputStream stream, IDevice* device, ErrorStatus& status);
+	static TrackCombiner CreateSingleOrderedMessageStream(InputStream stream, ErrorStatus& status);
+};
+
+struct MidiFileInfo
+{
+	explicit MidiFileInfo(InputStream stream, ErrorStatus& status);
+
+	byte Format;
+	ushort TrackCount;
+	ushort ChannelsUsed;
+	size_t NoteCount, MaxSimultaneousNotes;
+	double Duration;
+	float MaxVolume;
 };
 
 }}}

@@ -19,12 +19,15 @@ void TestInterruption(FormattedWriter& output)
 	Thread thr("Sleeper", [&]() {
 		if(ThisThread.Sleep(500)) flag.Set(true);
 	});
+	Stopwatch clock;
 	ThisThread.Sleep(1);
+	auto elapsedUs = clock.ElapsedUs();
+	output.PrintLine("ThisThread.Sleep(1) time: ", elapsedUs, u8" μs.");
 	thr.Interrupt();
 
-	Stopwatch clock;
+	clock.Reset();
 	thr.Join();
-	auto elapsedUs = clock.ElapsedUs();
+	elapsedUs = clock.ElapsedUs();
 	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 	INTRA_ASSERT(!flag.Get());

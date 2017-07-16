@@ -1,6 +1,5 @@
-#pragma once
-
 #include "RecordedSampler.h"
+
 #include "Range/Mutation/Copy.h"
 #include "Range/Mutation/Transform.h"
 

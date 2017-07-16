@@ -3,8 +3,6 @@
 #include "Cpp/Warnings.h"
 #include "Cpp/Features.h"
 
-#include "AudioBuffer.h"
-
 #include "Utils/FixedArray.h"
 
 #include "Data/ValueType.h"
@@ -98,7 +96,6 @@ public:
 		return null;
 	}
 	
-
 	uint SampleRate() const final {return mSampleRate;}
 	uint ChannelCount() const final {return mChannelCount;}
 
@@ -111,9 +108,8 @@ protected:
 class SeparateFloatAudioSource: public BasicAudioSource
 {
 protected:
-	using BasicAudioSource::BasicAudioSource;
-	using BasicAudioSource::operator=;
-
+	SeparateFloatAudioSource(OnCloseResourceCallback onClose, uint sampleRate=0, ushort numChannels=0):
+		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels) {}
 public:
 	SeparateFloatAudioSource(SeparateFloatAudioSource&&) = default;
 	SeparateFloatAudioSource(const SeparateFloatAudioSource&) = delete;

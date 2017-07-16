@@ -498,7 +498,6 @@
       </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
-      <AdditionalOptions>/Zm10 %(AdditionalOptions)</AdditionalOptions>
       <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
@@ -554,7 +553,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_MINIMIZE_CRT;INTRA_STL_INTERFACE;INTRA_MINEXE=3;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;INTRA_QIFIST;_CONSOLE;INTRA_NO_WAVE_LOADER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;INTRA_QIFIST;INTRA_NO_LOGGING;INTRA_NO_ERROR_CHECKING;_CONSOLE;INTRA_NO_WAVE_LOADER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -568,11 +567,11 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <CallingConvention>Cdecl</CallingConvention>
       <InlineFunctionExpansion>Default</InlineFunctionExpansion>
-      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
       <ForcedIncludeFiles>
       </ForcedIncludeFiles>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
+      <AdditionalOptions>/QIfist %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -828,10 +827,12 @@
     <ClCompile Include="Audio\AudioBuffer.cpp" />
     <ClCompile Include="Audio\AudioProcessing.cpp" />
     <ClCompile Include="Audio\AudioSource.cpp" />
+    <ClCompile Include="Audio\Midi\DeviceState.cpp" />
     <ClCompile Include="Audio\Midi\MidiFileParser.cpp" />
     <ClCompile Include="Audio\Midi\RawEvent.cpp" />
     <ClCompile Include="Audio\Midi\TrackCombiner.cpp" />
     <ClCompile Include="Audio\Midi\TrackParser.cpp" />
+    <ClCompile Include="Audio\MusicNote.cpp" />
     <ClCompile Include="Audio\Resample.cpp" />
     <ClCompile Include="Audio\SampleConversion.cpp" />
     <ClCompile Include="Audio\Sound.cpp" />
@@ -844,6 +845,7 @@
     <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp" />
     <ClCompile Include="Audio\Synth\Generators\DrumPhysicalModel.cpp" />
     <ClCompile Include="Audio\Synth\Filter.cpp" />
+    <ClCompile Include="Audio\Synth\MusicalInstrument.cpp" />
     <ClCompile Include="Audio\Synth\NoteSampler.cpp" />
     <ClCompile Include="Audio\Synth\PostEffects.cpp" />
     <ClCompile Include="Audio\Synth\Octaves.cpp" />
@@ -1306,6 +1308,7 @@
     <None Include="Cpp\Cpp.natstepfilter" />
   </ItemGroup>
   <ItemGroup>
+    <Natvis Include="Audio\Midi\Midi.natvis" />
     <Natvis Include="Concurrency\Concurrency.natvis">
       <SubType>Designer</SubType>
     </Natvis>

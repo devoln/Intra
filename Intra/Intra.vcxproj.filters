@@ -537,6 +537,15 @@
     <ClCompile Include="Audio\Sources\MidiSynth.cpp">
       <Filter>Файлы исходного кода\Audio\Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Audio\Synth\MusicalInstrument.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\DeviceState.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\MusicNote.cpp">
+      <Filter>Файлы исходного кода\Audio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IO\Networking.h">
@@ -1725,9 +1734,6 @@
     <Natvis Include="Meta\Meta.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="Range\Range.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
     <Natvis Include="Range\RangeConstruction.natvis">
       <Filter>natvis</Filter>
     </Natvis>
@@ -1744,6 +1750,12 @@
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Funal\Funal.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="Audio\Midi\Midi.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="Range\Range.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

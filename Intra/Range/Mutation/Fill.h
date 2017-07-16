@@ -1,14 +1,19 @@
 ﻿#pragma once
 
-#include "Range/ForwardDecls.h"
-#include "Range/Decorators/Cycle.h"
 #include "Cpp/Warnings.h"
-#include "Concepts/Range.h"
+#include "Cpp/Features.h"
 #include "Cpp/Intrinsics.h"
 
-namespace Intra { namespace Range {
+#include "Concepts/Range.h"
+
+#include "Range/ForwardDecls.h"
+#include "Range/Decorators/Cycle.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_WARNING_DISABLE_LOSING_CONVERSION
+INTRA_WARNING_DISABLE_SIGN_CONVERSION
+
+namespace Intra { namespace Range {
 
 template<typename T, typename R> Meta::EnableIf<
 	Concepts::IsAssignableRange<R>::_ &&
@@ -84,7 +89,6 @@ template<typename R, typename PR> forceinline Meta::EnableIf<
 	FillPatternAdvance(dst, Range::Forward<PR>(pattern));
 }
 
-INTRA_WARNING_POP
-
 }}
 
+INTRA_WARNING_POP

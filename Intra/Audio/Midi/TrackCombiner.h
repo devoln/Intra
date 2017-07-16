@@ -16,15 +16,13 @@ class TrackCombiner
 {
 	Array<TrackParser> mTracks;
 	DeviceState mState;
-	IDevice* mDevice;
 public:
-
-	explicit TrackCombiner(short headerTimeFormat, IDevice* device);
+	explicit TrackCombiner(short headerTimeFormat);
 
 	void AddTrack(TrackParser track);
 
-	void ProcessEvent();
-	void ProcessAllEvents() {while(!mTracks.Empty()) ProcessEvent();}
+	void ProcessEvent(IDevice& device);
+	void ProcessAllEvents(IDevice& device) {while(!mTracks.Empty()) ProcessEvent(device);}
 
 	forceinline bool Empty() const noexcept {return mTracks.Empty();}
 	double NextEventTime() const;

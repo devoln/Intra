@@ -12,7 +12,7 @@ INTRA_WARNING_DISABLE_SIGN_CONVERSION
 #ifdef _MSC_VER
 
 #pragma warning(disable: 4310) //Не ругаться на приведение констант с усечением значения
-#if _MSC_VER>=1900
+#if _MSC_VER >= 1900
 #pragma warning(disable: 4647) //__is_pod(...) имеет другое значение в предыдущих версиях
 #endif
 
@@ -298,7 +298,7 @@ template<typename T> struct IsClass: TypeFromValue<bool, __is_class(T)> {};
 template<typename T> struct IsEnumType: TypeFromValue<bool, __is_enum(T)> {};
 template<typename T> struct IsEmptyClass: TypeFromValue<bool, __is_empty(T)> {};
 template<typename T> struct IsTriviallyDestructible: TypeFromValue<bool, __has_trivial_destructor(T)> {};
-template<class T, class From> struct IsInherited: TypeFromValue<bool, IsClass<T>::_ && __is_base_of(From, T)> {};
+template<class T, class From> struct IsInherited: TypeFromValue<bool, __is_base_of(From, T)> {};
 template<class T> struct HasVirtualDestructor: TypeFromValue<bool, IsClass<T>::_ && __has_virtual_destructor(T)> {};
 
 //! Определить, является ли тип скалярным: арифметическим, указателем, перечислением или null_t.

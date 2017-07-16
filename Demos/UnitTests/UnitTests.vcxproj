@@ -687,7 +687,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_DEBUG;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -917,6 +917,7 @@
     <ClInclude Include="src\Sort.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Delegate.cpp" />
     <ClCompile Include="src\Concurrency\Atomic.cpp" />
     <ClCompile Include="src\Concurrency\Interruption.cpp" />
     <ClCompile Include="src\Container\HashMap.cpp" />
@@ -924,6 +925,7 @@
     <ClCompile Include="src\IO\File.cpp" />
     <ClCompile Include="src\IO\Socket.cpp" />
     <ClCompile Include="src\Range\Composing.cpp" />
+    <ClCompile Include="src\Range\Heap.cpp" />
     <ClCompile Include="src\Range\Polymorphic.cpp" />
     <ClCompile Include="src\Range\StlInterop.cpp" />
     <ClCompile Include="src\Range\Streams.cpp" />

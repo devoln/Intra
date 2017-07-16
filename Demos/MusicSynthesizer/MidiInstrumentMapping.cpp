@@ -1,4 +1,9 @@
-#include "Audio/Midi.h"
+#include "MidiInstrumentMapping.h"
+
+#include "Range/Mutation/Fill.h"
+
+#include "Audio/Synth/Types.h"
+
 #include "InstrumentLibrary.h"
 
 using namespace Intra;
@@ -8,9 +13,9 @@ using namespace Synth;
 MidiInstrumentSet GetMapping()
 {
 	static InstrumentLibrary lib;
-	MidiSynthInstrumentSet result;
+	MidiInstrumentSet result;
 
-	Span<Synth::MusicalInstrument*> instruments = result.Instruments;
+	Span<MusicalInstrument*> instruments = result.Instruments;
 
 	for(byte i = 0; i < 128; i++)
 		instruments[i] = &lib.Sine2Exp;
@@ -63,7 +68,7 @@ MidiInstrumentSet GetMapping()
 	instruments[119] = &lib.ReverseCymbal;
 	instruments[99] = &lib.Atmosphere;
 
-	static const byte vibraphones[] = {8, 10,  11, 12, 88, 92, 108};
+	static const byte vibraphones[] = {8, 10, 11, 12, 88, 92, 108};
 	for(const byte code: vibraphones) instruments[code] = &lib.Vibraphone;
 
 	instruments[9] = &lib.Glockenspiel;
@@ -78,6 +83,7 @@ MidiInstrumentSet GetMapping()
 
 	static const byte synthVoices[] = {52, 53, 54, 83, 85, 100};
 	for(const byte code: synthVoices) instruments[code] = &lib.SynthVoice;
+	instruments[52] = &lib.ChoirAahs;
 
 	static const byte soundTrackFx[] = {44, 97};
 	for(const byte code: soundTrackFx) instruments[code] = &lib.SoundTrackFX2;

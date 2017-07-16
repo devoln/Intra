@@ -7,6 +7,7 @@
 
 #include "Data/ValueType.h"
 
+#include "Audio/SoundTypes.h"
 #include "Audio/AudioSource.h"
 
 namespace Intra { namespace Audio { namespace Sources {
@@ -15,6 +16,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class Wave: public BasicAudioSource
 {
+//#if 0
 	CSpan<byte> mData;
 	size_t mSampleCount = 0, mCurrentDataPos = 0;
 	Data::ValueType mDataType;
@@ -47,6 +49,7 @@ public:
 
 	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		Data::ValueType* oType, bool* oInterleaved, size_t* oSamplesRead) override;
+//#endif
 };
 
 INTRA_WARNING_POP

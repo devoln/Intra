@@ -58,7 +58,8 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		NoteOff noteOff;
 		noteOff.Time = Time;
 		noteOff.NoteOctaveOrDrumId = data0;
-		noteOff.Velocity = data1;
+		noteOff.Velocity = type == RawEvent::Type::NoteOn? byte(64): data1;
+		noteOff.Channel = channel;
 		device.OnNoteOff(noteOff);
 		return;
 	}

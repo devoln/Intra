@@ -102,12 +102,11 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 	if(multiplyer == 1) return ReadWrite(op1, dest);
 
 	const size_t len = Funal::Min(dest.Length(), op1.Length());
-	dest = dest.Take(len);
-	op1 = op1.Take(len);
 	auto& dst = dest.Begin;
 	auto& src = op1.Begin;
+	auto dstend = dst + len;
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	while(dst<dest.End-3)
+	while(dst < dstend-3)
 	{
 		*dst++ = *src++ * multiplyer;
 		*dst++ = *src++ * multiplyer;
@@ -115,16 +114,16 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 		*dst++ = *src++ * multiplyer;
 	}
 #else
-	while(dst < dest.End && size_t(dst) % 16 != 0) *dst++ = *src++ * multiplyer;
+	while(dst < dstend && size_t(dst) % 16 != 0) *dst++ = *src++ * multiplyer;
 	Simd::float4 multiplyerVec = Simd::SetFloat4(multiplyer);
-	while(dst < dest.End - 3)
+	while(dst < dstend - 3)
 	{
 		Simd::Get(dst, Simd::Mul(Simd::SetFloat4U(src), multiplyerVec));
 		dst += 4;
 		src += 4;
 	}
 #endif
-	while(dst < dest.End) *dst++ = *src++ * multiplyer;
+	while(dst < dstend) *dst++ = *src++ * multiplyer;
 	return len;
 }
 
@@ -133,12 +132,11 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 	if(op2Multiplyer == 1) return AddAdvance(dstOp1, op2);
 
 	const size_t len = Funal::Min(dstOp1.Length(), op2.Length());
-	dstOp1 = dstOp1.Take(len);
-	op2 = op2.Take(len);
 	auto& dst = dstOp1.Begin;
 	auto& src = op2.Begin;
+	auto dstend = dst + len;
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	while(dst < dstOp1.End-3)
+	while(dst + 3 < dstend)
 	{
 		*dst++ += *src++ * op2Multiplyer;
 		*dst++ += *src++ * op2Multiplyer;
@@ -146,9 +144,9 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 		*dst++ += *src++ * op2Multiplyer;
 	}
 #else
-	while(dst < dstOp1.End && size_t(dst) % 16 != 0) *dst++ += *src++ * op2Multiplyer;
+	while(dst + 3 < dstend && size_t(dst) % 16 != 0) *dst++ += *src++ * op2Multiplyer;
 	Simd::float4 multiplyerVec = Simd::SetFloat4(op2Multiplyer);
-	while(dst < dstOp1.End - 3)
+	while(dst + 3 < dstend)
 	{
 		auto dstVal = Simd::SetFloat4(dst);
 		auto srcVal = Simd::SetFloat4U(src);
@@ -157,7 +155,7 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 		src += 4;
 	}
 #endif
-	while(dst < dstOp1.End) *dst++ += *src++ * op2Multiplyer;
+	while(dst < dstend) *dst++ += *src++ * op2Multiplyer;
 	return len;
 }
 
@@ -168,7 +166,7 @@ size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 	auto& dst = dstOp1.Begin;
 
 #if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	while(dst<dstOp1.End-3)
+	while(dst + 3 < dstOp1.End)
 	{
 		*dst = *dst * mul + add; dst++;
 		*dst = *dst * mul + add; dst++;
@@ -176,11 +174,11 @@ size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 		*dst = *dst * mul + add; dst++;
 	}
 #else
-	while(dst<dstOp1.End && size_t(dst) % 16 != 0)
+	while(dst < dstOp1.End && size_t(dst) % 16 != 0)
 		*dst = *dst * mul + add, dst++;
 	Simd::float4 addVec = Simd::SetFloat4(add);
 	Simd::float4 mulVec = Simd::SetFloat4(mul);
-	while(dst<dstOp1.End-3)
+	while(dst < dstOp1.End-3)
 	{
 		Simd::float4 v = Simd::SetFloat4(dst);
 		v = Simd::Mul(v, mulVec);
@@ -190,7 +188,7 @@ size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 	}
 #endif
 
-	while(dst<dstOp1.End) *dst = *dst * mul + add, dst++;
+	while(dst < dstOp1.End) *dst = *dst * mul + add, dst++;
 	return len;
 }
 

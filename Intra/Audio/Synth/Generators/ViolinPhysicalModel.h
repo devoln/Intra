@@ -6,7 +6,7 @@
 
 #include "Utils/FixedArray.h"
 
-#include "Audio/Music.h"
+#include "Audio/MusicNote.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 

@@ -20,7 +20,7 @@ template<typename T> struct SineRange
 
 	SineRange(T amplitude, T phi0, T dphi):
 		mS1(amplitude*Math::Sin(phi0)),
-		mS2(amplitude*Math::Sin(dphi)),
+		mS2(amplitude*Math::Sin(phi0+dphi)),
 		mK(2*Math::Cos(dphi)) {}
 
 	forceinline bool Empty() const noexcept {return false;}
