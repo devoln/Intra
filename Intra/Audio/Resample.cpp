@@ -10,27 +10,43 @@ void ResampleLinear(CSpan<float> src, Span<float> dst)
 	const size_t srcL1 = src.Length() - 1;
 	const size_t dstL1 = dst.Length() - 1;
 	const float ratio = float(srcL1) / dstL1;
-	for(size_t i = 0; i <= dstL1; i++)
+	for(size_t i = 0; i < dstL1; i++)
 		dst[i] = LinearSample(src, i*ratio);
+	dst.Last() = src.Last();
 }
 
 
 Span<float> DecimateX2LinearInPlace(Span<float> inOutSamples)
 {
-	const size_t newLen = (inOutSamples.Length() + 1) / 2;
-	for(size_t i = 1; i < newLen; i++)
-		inOutSamples[i] = (inOutSamples[2*i - 1] + inOutSamples[2*i]) / 2;
-	return inOutSamples.Take(newLen);
+	const size_t newLen = inOutSamples.Length() / 2;
+	for(size_t i = 0; i < newLen; i++)
+		inOutSamples.Begin[i] = (inOutSamples.Begin[2*i] + inOutSamples.Begin[2*i + 1]) * 0.5f;
+	return inOutSamples.TakeExactly(newLen);
 }
 
 Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src)
 {
-	const size_t newLen = (src.Length() + 1) / 2;
+	const size_t newLen = src.Length() / 2;
 	INTRA_DEBUG_ASSERT(dst.Length() >= newLen);
-	if(newLen != 0) dst[0] = src[0];
-	for(size_t i = 1; i < newLen; i++)
-		dst[i] = (src[2*i - 1] + src[2*i]) / 2;
-	return dst.Take(newLen);
+	for(size_t i = 0; i < newLen; i++)
+		dst.Begin[i] = (src.Begin[2*i] + src.Begin[2*i + 1]) * 0.5f;
+	return dst.TakeExactly(newLen);
+}
+
+Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src)
+{
+	const size_t newLen = src.Length()*2;
+	dst = dst.TakeExactly(newLen);
+	if(src.Empty()) return dst;
+
+	dst.First() = src.First();
+	for(size_t i = 1; i < src.Length(); i++)
+	{
+		dst.Begin[2*i - 1] = src.Begin[i-1];
+		dst.Begin[2*i] = (src.Begin[i-1] + src.Begin[i]) * 0.5f;
+	}
+	dst.Last() = src.Last();
+	return dst;
 }
 
 }}

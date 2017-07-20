@@ -7,6 +7,8 @@
 #include "Range/Decorators/Take.h"
 #include "Range/Polymorphic/InputRange.h"
 
+#include "Container/Utility/StaticBitset.h"
+
 #include "RawEvent.h"
 #include "TrackParser.h"
 #include "TrackCombiner.h"
@@ -74,6 +76,8 @@ struct MidiFileInfo
 	size_t NoteCount, MaxSimultaneousNotes;
 	double Duration;
 	float MaxVolume;
+	StaticBitset<128> UsedInstrumentsFlags;
+	StaticBitset<128> UsedDrumInstrumentsFlags;
 };
 
 }}}

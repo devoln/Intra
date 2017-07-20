@@ -25,6 +25,7 @@ struct WaveHeader
 	ushortLE FormatTag, Channels;
 	uintLE SampleRate, BytesPerSec;
 	ushortLE BlockAlign, BitsPerSample;
+
 	char data[4];
 	uintLE DataSize;
 };
@@ -143,6 +144,59 @@ FixedArray<const void*> Wave::GetRawSamplesData(size_t maxSamplesToRead,
 	mCurrentDataPos += shortsToRead;
 	if(shortsToRead < maxSamplesToRead) mCurrentDataPos = 0;
 	return resultPtrs;
+}
+
+
+
+void WriteWave(IAudioSource& source, OutputStream& stream, Data::ValueType sampleType)
+{
+	WaveHeader header;
+	SpanOfBuffer(header.RIFF) << "RIFF";
+	SpanOfBuffer(header.WAVE) << "WAVE";
+	SpanOfBuffer(header.data) << "data";
+	SpanOfBuffer(header.fmt) << "fmt ";
+	header.Channels = ushort(source.ChannelCount());
+	header.SampleRate = source.SampleRate();
+	ushort bpp = sampleType.Size();
+	header.BitsPerSample =  ushort(bpp*8);
+	header.DataSize = source.SamplesLeft()*bpp*header.Channels;
+	header.BlockAlign = ushort(bpp*header.Channels);
+	header.BytesPerSec = bpp*header.Channels*header.SampleRate;
+	header.FormatTag = ushort(sampleType != Data::ValueType::Float? 1: 3);
+	header.FormatChunkSize = 16;
+	header.WaveformChunkSize = sizeof(WaveHeader)-sizeof(header.RIFF)-sizeof(header.WaveformChunkSize) + header.DataSize;
+
+	if(header.FormatTag != 1)
+	{
+		INTRA_DEBUG_ASSERT(false); //Not supported yet
+		return;
+	}
+
+	stream.RawWrite(header);
+
+	if(sampleType == Data::ValueType::Short || sampleType == Data::ValueType::SNorm16)
+	{
+		short samples[1024];
+		for(;;)
+		{
+			size_t samplesRead = source.GetInterleavedSamples(samples);
+			stream.RawWriteFrom(Take(samples, samplesRead*header.Channels));
+			if(samplesRead < size_t(1024/header.Channels)) return;
+		}
+	}
+
+	/*if(sampleType == Data::ValueType::Float)
+	{
+		float samples[1024];
+		for(;;)
+		{
+			size_t samplesRead = source.GetInterleavedSamples(samples);
+			stream.RawWriteFrom(Take(samples, samplesRead));
+			if(samplesRead < 1024) return;
+		}
+	}*/
+
+	INTRA_DEBUG_ASSERT(false); //Not supported yet
 }
 
 }}}

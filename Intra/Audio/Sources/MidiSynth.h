@@ -12,6 +12,7 @@
 #include "Audio/Midi/Messages.h"
 #include "Audio/Midi/MidiFileParser.h"
 #include "Audio/Synth/NoteSampler.h"
+#include "Audio/Synth/InstrumentSet.h"
 
 namespace Intra { namespace Audio { namespace Sources {
 

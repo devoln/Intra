@@ -1,4 +1,6 @@
 ﻿#include "Audio/Synth/Generators/DrumPhysicalModel.h"
+#include "Range/Mutation/Copy.h"
+#include "Range/Mutation/Transform.h"
 
 #ifndef INTRA_NO_AUDIO_SYNTH
 
@@ -86,6 +88,13 @@ float DrumPhysicalModel::sRand()
 	const float result = rand - mPrevRand;
 	mPrevRand = rand;
 	return result;
+}
+
+Span<float> DrumPhysicalModel::operator()(Span<float> dst, bool add)
+{
+	if(add) AddAdvance(dst, *this);
+	else ReadWrite(*this, dst);
+	return dst;
 }
 
 }}}}

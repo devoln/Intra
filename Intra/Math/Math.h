@@ -48,6 +48,27 @@ constexpr auto Clamp(T v, N minv, X maxv) noexcept -> decltype(Max(minv, Min(max
 constexpr inline int IFloor(float x) noexcept {return int(x) - int(x < 0);}
 constexpr inline intptr IFloor(double x) noexcept {return intptr(x) - intptr(x < 0);}
 
+//! Для фиксированной запятой 16:16.
+inline int FixedPointLog(int x)
+{
+	int y = 0xa65af;
+	if(x < 0x00008000) x <<= 16, y -= 0xb1721;
+	if(x < 0x00800000) x <<= 8, y -= 0x58b91;
+	if(x < 0x08000000) x <<= 4, y -= 0x2c5c8;
+	if(x < 0x20000000) x <<= 2, y -= 0x162e4;
+	if(x < 0x40000000) x <<= 1, y -= 0x0b172;
+	int t = x + (x >> 1); if((t & 0x80000000) == 0) x = t, y -= 0x067cd;
+	t = x + (x >> 2); if((t & 0x80000000) == 0) x = t, y -= 0x03920;
+	t = x + ( x >> 3); if((t & 0x80000000) == 0) x = t, y -= 0x01e27;
+	t = x + (x >> 4); if((t & 0x80000000) == 0) x = t, y -= 0x00f85;
+	t = x + ( x >> 5); if((t & 0x80000000) == 0) x = t, y -= 0x007e1;
+	t = x + (x >> 6); if((t & 0x80000000) == 0) x = t, y -= 0x003f8;
+	t = x + (x >> 7); if((t & 0x80000000) == 0) x = t, y -= 0x001fe;
+	x = int(0x80000000 - x);
+	y -= x >> 15;
+	return y;
+}
+
 #ifdef INTRA_CRT_MATH
 float Floor(float v);
 double Floor(double v);
@@ -409,7 +430,7 @@ inline float Asin(float x) {return Atan(x/Sqrt(1.0f - x*x));}
 
 
 
-template<typename T> T Log(T v)
+/*template<typename T> T Log(T v)
 {
 	T P = v;
 	T N = 0.0;
@@ -430,10 +451,15 @@ template<typename T> T Log(T v)
 		N = ((L + R) / T(E));
 	} while(!(Abs(N-A)<T(0.01)));
 	return N;
-}
+}*/
 
-inline float Pow(float v, float power) {return power==0.0f? 1.0f: Exp(Log(v)*power);}
-inline double Pow(double v, double power) {return power==0.0? 1.0f: Exp(Log(v)*power);}
+//! Логарифм для чисел, меньших 65535
+inline float Log(float x) {return FixedPointLog(int(x * 65535))/65536.0f;}
+inline double Log(double x) {return FixedPointLog(int(x * 65535))/65536.0;}
+inline real Log(real x) {return FixedPointLog(int(x * 65535))/65536.0;}
+
+inline float Pow(float v, float power) {return power == 0.0f? 1.0f: Exp(Log(v)*power);}
+inline double Pow(double v, double power) {return power == 0.0f? 1.0f: Exp(Log(v)*power);}
 
 #endif
 
@@ -446,6 +472,8 @@ template<typename T> T Pow(T x, int y)
 		if((n >>= 1) == 0) return (y<0? T(1)/z: z);
 	}
 }
+
+template<typename T> forceinline T Pow2(T x) {return Exp(x*T(0.6931472));}
 
 
 

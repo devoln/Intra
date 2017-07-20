@@ -11,6 +11,7 @@
 
 #include "Types.h"
 #include "Filter.h"
+#include "WaveTable.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -32,48 +33,49 @@ class WaveTableSampler
 	Array<float> mSampleFragment;
 	float mFragmentOffset;
 	float mRate;
-	float mRateAcceleration;
 	float mAttenuation;
 	float mAttenuationStep;
 
 	WaveTableSampler(const void* params, WaveForm wave, uint octaves,
-		float acceleration, float expCoeff, float volume,
+		float attenuationPerSample, float volume,
 		float freq, uint sampleRate);
 
 public:
 	WaveTableSampler(null_t=null) {}
 
+	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff, float volume);
+
 	template<typename F, typename = Meta::EnableIf<
 		Meta::IsCallable<F, Span<float>, float, float, uint>::_
-	>> forceinline WaveTableSampler(F wave, uint octaves, float acceleration,
+	>> forceinline WaveTableSampler(F wave, uint octaves,
 		float expCoeff, float volume, float freq, uint sampleRate):
 		WaveTableSampler(&wave, WaveFormWrapper<F>, octaves,
-			acceleration, expCoeff, volume,
+			expCoeff, volume,
 			freq, sampleRate) {}
 
-	static WaveTableSampler Sine(uint octaves, float acceleration,
+	static WaveTableSampler Sine(uint octaves,
 		float expCoeff, float volume, float freq, uint sampleRate);
 
-	static WaveTableSampler Sawtooth(uint octaves, float acceleration,
+	static WaveTableSampler Sawtooth(uint octaves,
 		float updownRatio, float expCoeff, float volume,
 		float freq, uint sampleRate);
 
-	static WaveTableSampler Square(uint octaves, float acceleration,
+	static WaveTableSampler Square(uint octaves,
 		float updownRatio, float expCoeff, float volume, float freq, uint sampleRate);
 
-	static WaveTableSampler WhiteNoise(uint octaves, float acceleration,
+	static WaveTableSampler WhiteNoise(uint octaves,
 		float expCoeff, float volume, float freq, uint sampleRate);
 
-	static WaveTableSampler WaveTable(uint octaves, float acceleration,
+	static WaveTableSampler WavePeriod(uint octaves,
 		CSpan<float> wave, float expCoeff, float volume, float freq, uint sampleRate);
 
 	Span<float> operator()(Span<float> dst, bool add);
+	Span<float> operator()(Span<float> dstLeft, Span<float> dstRight, bool add);
 
 	void MultiplyPitch(float freqMultiplier)
 	{
 		mRate *= freqMultiplier;
-		mRateAcceleration *= freqMultiplier;
-		if(mRateAcceleration == 0 && Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
+		if(Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
 	}
 
 private:
@@ -99,12 +101,34 @@ struct WaveInstrument
 	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
 };
 
-struct WaveTableInstrument
+struct PeriodicInstrument
 {
 	Array<float> Table;
 	float ExpCoeff;
 	uint Octaves;
-	float RateAcceleration;
+
+	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
+};
+
+struct WaveTableCache
+{
+	typedef Delegate<WaveTable(float freq, uint sampleRate)> GeneratorType;
+	mutable Array<WaveTable> Tables;
+	GeneratorType Generator;
+	float MaxRateDistance = 1;
+
+	WaveTable& Get(float freq, uint sampleRate) const;
+
+	WaveTableCache() {}
+	WaveTableCache(const WaveTableCache&) = delete;
+	WaveTableCache& operator=(const WaveTableCache&) = delete;
+};
+
+struct WaveTableInstrument
+{
+	WaveTableCache* Tables;
+	float ExpCoeff;
+	float VolumeScale;
 
 	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
 };

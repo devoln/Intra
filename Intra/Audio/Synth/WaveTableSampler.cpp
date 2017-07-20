@@ -49,9 +49,9 @@ uint GetGoodSignalPeriod(double samplesPerPeriod, uint maxPeriods, double eps)
 	return uint(Math::Round(fractionalCount*minDeltaN));
 }
 
-WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octaves, float rateAcceleration,
+WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octaves,
 	float expCoeff, float volume, float freq, uint sampleRate):
-	mRate(1), mRateAcceleration(rateAcceleration), mAttenuation(1), mAttenuationStep(1)
+	mRate(1), mAttenuation(1), mAttenuationStep(1)
 {
 	INTRA_DEBUG_ASSERT(octaves >= 1);
 	const float samplesPerPeriod = float(sampleRate)/freq;
@@ -59,18 +59,12 @@ WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octav
 	const uint goodSignalPeriodSamples = uint(Math::Round(samplesPerPeriod*(1 << (octaves - 1))*goodPeriod));
 	freq = sampleRate*(1 << (octaves - 1))*goodPeriod / float(goodSignalPeriodSamples);
 	mSampleFragment.SetCountUninitialized(goodSignalPeriodSamples);
-#ifdef INTRA_DEBUG
-	Range::Fill(mSampleFragment, 1000000);
-#endif
 
 	if(octaves > 1)
 	{
 		volume *= 2.0f - 2.0f/float(1 << octaves);
 		Array<float> buffer;
 		buffer.SetCountUninitialized(goodSignalPeriodSamples);
-#ifdef INTRA_DEBUG
-		Range::Fill(buffer, 1000000);
-#endif
 		wave(params, octaves == 2? buffer: mSampleFragment, freq, volume, sampleRate);
 		Span<float> src = octaves == 2? buffer: mSampleFragment;
 		GenOctaves(src, octaves > 2? buffer: mSampleFragment, octaves, 20);
@@ -85,6 +79,26 @@ WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octav
 	const float ek = Math::Exp(-expCoeff/float(sampleRate));
 	Span<float> dst = mSampleFragment;
 	ExponentialAttenuate(dst, mSampleFragment, mAttenuationStep, ek);
+}
+
+WaveTableSampler::WaveTableSampler(CSpan<float> periodicWave, float rate, float attenuationPerSample, float volume):
+	mRate(1), mAttenuation(1), mAttenuationStep(1)
+{
+	Random::FastUniform<uint> rand(1436491347u ^ periodicWave.Length() ^ uint(rate*1537) ^ uint(volume * 349885324) ^ uint(size_t(this) >> 3));
+	//mSampleFragment = periodicWave;
+	mSampleFragment.SetCountUninitialized(size_t(Math::Round(periodicWave.Length()/rate)));
+	mFragmentOffset = float(rand(mSampleFragment.Length()));
+	ResampleLinear(periodicWave, mSampleFragment);
+
+	if(attenuationPerSample == 1)
+	{
+		Range::Multiply(mSampleFragment, volume);
+		return;
+	}
+
+	mAttenuation = volume;
+	Span<float> dst = mSampleFragment;
+	ExponentialAttenuate(dst, mSampleFragment, mAttenuationStep, attenuationPerSample);
 }
 
 void WaveTableSampler::generateWithDefaultRate(Span<float> dst, bool add)
@@ -124,14 +138,12 @@ void WaveTableSampler::generateWithVaryingRate(Span<float> dst, bool add)
 		const float sample = mSampleFragment[i]*(mAttenuation - factor) + mSampleFragment[j]*factor;
 		if(!add) *dst.Begin++ = sample;
 		else *dst.Begin++ += sample;
-		mRate += mRateAcceleration;
-		if(mRate < 0.25f) mRate = 0.25f;
 	}
 }
 
 Span<float> WaveTableSampler::operator()(Span<float> dst, bool add)
 {
-	if(mRate == 1 && mRateAcceleration == 0) generateWithDefaultRate(dst, add);
+	if(mRate == 1) generateWithDefaultRate(dst, add);
 	else
 	{
 		auto dstCopy = dst;
@@ -140,7 +152,7 @@ Span<float> WaveTableSampler::operator()(Span<float> dst, bool add)
 	return mAttenuation < 0.0001f? dst.Tail(1): dst.Tail(0);
 }
 
-WaveTableSampler WaveTableSampler::Sine(uint octaves, float rateAcceleration,
+WaveTableSampler WaveTableSampler::Sine(uint octaves,
 	float expCoeff, float volume, float freq, uint sampleRate)
 {
 	return WaveTableSampler(
@@ -148,10 +160,10 @@ WaveTableSampler WaveTableSampler::Sine(uint octaves, float rateAcceleration,
 	{
 		Math::SineRange<float> sine(volume, 0, float(2*Math::PI*freq/sampleRate));
 		ReadTo(sine, dst);
-	}, octaves, rateAcceleration/sampleRate, expCoeff, volume, freq, sampleRate);
+	}, octaves, expCoeff, volume, freq, sampleRate);
 }
 
-WaveTableSampler WaveTableSampler::Sawtooth(uint octaves, float rateAcceleration, float updownRatio,
+WaveTableSampler WaveTableSampler::Sawtooth(uint octaves, float updownRatio,
 	float expCoeff, float volume, float freq, uint sampleRate)
 {
 	return WaveTableSampler(
@@ -159,10 +171,10 @@ WaveTableSampler WaveTableSampler::Sawtooth(uint octaves, float rateAcceleration
 	{
 		Generators::Sawtooth saw(updownRatio, freq, volume, sampleRate);
 		ReadTo(saw, dst);
-	}, octaves, rateAcceleration/sampleRate, expCoeff, volume, freq, sampleRate);
+	}, octaves, expCoeff, volume, freq, sampleRate);
 }
 
-WaveTableSampler WaveTableSampler::Square(uint octaves, float rateAcceleration, float updownRatio,
+WaveTableSampler WaveTableSampler::Square(uint octaves, float updownRatio,
 	float expCoeff, float volume, float freq, uint sampleRate)
 {
 	return WaveTableSampler(
@@ -179,10 +191,10 @@ WaveTableSampler WaveTableSampler::Square(uint octaves, float rateAcceleration, 
 			ReadTo(rect, dst);
 		}
 		Multiply(dst, volume);
-	}, octaves, rateAcceleration/sampleRate, expCoeff, volume, freq, sampleRate);
+	}, octaves, expCoeff, volume, freq, sampleRate);
 }
 
-WaveTableSampler WaveTableSampler::WhiteNoise(uint octaves, float rateAcceleration,
+WaveTableSampler WaveTableSampler::WhiteNoise(uint octaves,
 	float expCoeff, float volume, float freq, uint sampleRate)
 {
 	return WaveTableSampler(
@@ -194,23 +206,23 @@ WaveTableSampler WaveTableSampler::WhiteNoise(uint octaves, float rateAccelerati
 		auto samplePeriod = dst.Take(samplesPerPeriod);
 		for(size_t i = 0; i < samplesPerPeriod; i++) dst.Put(noise.SignedNext()*volume);
 		while(!dst.Full()) WriteTo(samplePeriod, dst);
-	}, octaves, rateAcceleration/sampleRate, expCoeff, volume, freq, sampleRate);
+	}, octaves, expCoeff, volume, freq, sampleRate);
 }
 
-WaveTableSampler WaveTableSampler::WaveTable(uint octaves, float rateAcceleration,
-	CSpan<float> table, float expCoeff, float volume, float freq, uint sampleRate)
+WaveTableSampler WaveTableSampler::WavePeriod(uint octaves, CSpan<float> period,
+	float expCoeff, float volume, float freq, uint sampleRate)
 {
 	return WaveTableSampler(
-		[table](Span<float> dst, float freq, float volume, uint sampleRate)
+		[period](Span<float> dst, float freq, float volume, uint sampleRate)
 	{
 		uint samplesPerPeriod = uint(Math::Round(float(sampleRate)/freq));
 		if(samplesPerPeriod == 0) samplesPerPeriod = 1;
 		auto samplePeriod = dst.Take(samplesPerPeriod);
-		ResampleLinear(table, dst);
+		ResampleLinear(period, dst);
 		Multiply(dst, volume);
 		dst.PopFirstN(samplesPerPeriod);
 		while(!dst.Full()) WriteTo(samplePeriod, dst);
-	}, octaves, rateAcceleration/sampleRate, expCoeff, volume, freq, sampleRate);
+	}, octaves, expCoeff, volume, freq, sampleRate);
 }
 
 WaveTableSampler WaveInstrument::operator()(float freq, float volume, uint sampleRate) const
@@ -218,27 +230,56 @@ WaveTableSampler WaveInstrument::operator()(float freq, float volume, uint sampl
 	switch(Type)
 	{
 	case WaveType::Sine:
-		return WaveTableSampler::Sine(Octaves, RateAcceleration, ExpCoeff,
+		return WaveTableSampler::Sine(Octaves, ExpCoeff,
 			volume*Scale, freq*FreqMultiplier, sampleRate);
 
 	case WaveType::Sawtooth:
-		return WaveTableSampler::Sawtooth(Octaves, RateAcceleration, UpdownRatio, ExpCoeff,
+		return WaveTableSampler::Sawtooth(Octaves, UpdownRatio, ExpCoeff,
 			volume*Scale, freq*FreqMultiplier, sampleRate);
 
 	case WaveType::Square:
-		return WaveTableSampler::Square(Octaves, RateAcceleration, UpdownRatio, ExpCoeff,
+		return WaveTableSampler::Square(Octaves, UpdownRatio, ExpCoeff,
 			volume*Scale, freq*FreqMultiplier, sampleRate);
 
 	case WaveType::WhiteNoise:
-		return WaveTableSampler::WhiteNoise(Octaves, RateAcceleration, ExpCoeff,
+		return WaveTableSampler::WhiteNoise(Octaves, ExpCoeff,
 			volume*Scale, freq*FreqMultiplier, sampleRate);
 	}
 	return null;
 }
 
+WaveTableSampler PeriodicInstrument::operator()(float freq, float volume, uint sampleRate) const
+{
+	return WaveTableSampler::WavePeriod(Octaves, Table, ExpCoeff, volume, freq, sampleRate);
+}
+
 WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint sampleRate) const
 {
-	return WaveTableSampler::WaveTable(Octaves, RateAcceleration, Table, ExpCoeff, volume, freq, sampleRate);
+	auto& table = Tables->Get(freq, sampleRate);
+	const float ratio = freq/sampleRate;
+	const size_t level = table.NearestLevelForRatio(ratio);
+	const auto samples = table.LevelSamples(level);
+	return WaveTableSampler(samples, ratio/table.LevelRatio(level), Math::Exp(-ExpCoeff/sampleRate), volume*VolumeScale);
+}
+
+
+WaveTable& WaveTableCache::Get(float freq, uint sampleRate) const
+{
+	float minRate = 1000000;
+	size_t minRateIndex = 0;
+	float freqSampleRateRatio = freq/sampleRate;
+	for(size_t i = 0; i < Tables.Length(); i++)
+	{
+		float rate;
+		if(freqSampleRateRatio > Tables[i].BaseLevelRatio) rate = freqSampleRateRatio / Tables[i].BaseLevelRatio;
+		else rate = Tables[i].BaseLevelRatio / freqSampleRateRatio;
+		if(0.9999f < rate && rate < 1.0001f) return Tables[i];
+		if(minRate >= rate) continue;
+		minRate = rate;
+		minRateIndex = i;
+	}
+	if(minRate <= MaxRateDistance || Generator == null) return Tables[minRateIndex];
+	return Tables.AddLast(Generator(freq, sampleRate));
 }
 
 }}}

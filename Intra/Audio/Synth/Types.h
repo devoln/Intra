@@ -12,6 +12,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio {
 
+namespace Midi {
+struct MidiFileInfo;
+}
+
 struct MusicTrack;
 namespace Synth {
 
@@ -133,15 +137,6 @@ typedef Funal::CopyableDelegate<GenericSampler(
 typedef Funal::CopyableDelegate<GenericModifier(
 	float freq, float volume, uint sampleRate
 )> GenericModifierFactory;
-
-
-struct MusicalInstrument;
-
-struct MidiInstrumentSet
-{
-	MusicalInstrument* Instruments[128]{null};
-	GenericDrumInstrument* DrumInstruments[128]{null};
-};
 
 }}}
 

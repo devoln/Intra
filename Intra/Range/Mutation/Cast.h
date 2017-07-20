@@ -92,7 +92,7 @@ template<typename To, typename From> Meta::EnableIf<
 {
 	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(dst.Begin < dst.End)
-		*dst.Begin++ = To(*src.Begin++ * Meta::NumericLimits<From>::Max());
+		*dst.Begin++ = To(*src.Begin++ * Meta::NumericLimits<To>::Max());
 }
 
 INTRA_WARNING_POP

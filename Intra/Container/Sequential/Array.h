@@ -239,7 +239,7 @@ public:
 	//! элементов конструктором по умолчанию и один элемент конструктором копирования или перемещения от value.
 	template<typename U> T& Set(size_t pos, U&& value)
 	{
-		if(pos>=Count())
+		if(pos >= Count())
 		{
 			Reserve(pos+1);
 			SetCount(pos);
@@ -263,9 +263,9 @@ public:
 		const size_t valuesCount = values.Count();
 
 		//Если не хватает места, перераспределяем память и копируем элементы
-		if(Count()+valuesCount>Capacity())
+		if(Count() + valuesCount > Capacity())
 		{
-			size_t newCapacity = Count()+valuesCount+Capacity()/2;
+			size_t newCapacity = Count() + valuesCount + Capacity()/2;
 			Span<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
 				Memory::GlobalHeap, newCapacity, INTRA_SOURCE_INFO);
 			Span<T> newRange = newBuffer.Drop(LeftSpace()).Take(Count()+valuesCount);
@@ -279,10 +279,10 @@ public:
 		}
 
 		//Добавляем элемент, перемещая ближайшую к концу часть массива
-		if(pos>=(Count()+valuesCount)/2 || LeftSpace()<valuesCount)
+		if(pos >= (Count() + valuesCount)/2 || LeftSpace() < valuesCount)
 		{
 			range.End += valuesCount;
-			Memory::MoveInitDeleteBackwards<T>(range.Drop(pos+valuesCount), range.Drop(pos).DropBack(valuesCount));
+			Memory::MoveInitDeleteBackwards<T>(range.Drop(pos+valuesCount), range.Drop(pos).DropLast(valuesCount));
 		}
 		else
 		{
@@ -339,7 +339,7 @@ public:
 	//! Установить новый размер буфера массива (не влезающие элементы удаляются).
 	void Resize(size_t rightPartSize, size_t leftPartSize=0)
 	{
-		if(rightPartSize+leftPartSize==0) {*this=null; return;}
+		if(rightPartSize+leftPartSize==0) {*this = null; return;}
 
 		//Удаляем элементы, выходящие за границы массива
 		if(rightPartSize <= Count()) Memory::Destruct(range.Drop(rightPartSize));
@@ -365,10 +365,10 @@ public:
 	{
 		const size_t currentRightPartSize = size_t(buffer.End-range.Begin);
 		const size_t currentLeftSpace = LeftSpace();
-		if(rightPart<=currentRightPartSize && leftSpace<=currentLeftSpace) return;
+		if(rightPart <= currentRightPartSize && leftSpace <= currentLeftSpace) return;
 
 		const size_t currentSize = Capacity();
-		if(rightPart>0)
+		if(rightPart > 0)
 		{
 			if(leftSpace>0) Resize(currentSize/4+rightPart, currentSize/4+leftSpace);
 			else Resize(currentSize/2+rightPart, currentLeftSpace);
@@ -377,7 +377,7 @@ public:
 	}
 
 	//! Убедиться, что буфер массива может вместить rightSpace новых элементов при добавлении их в конец и имеет leftSpace места для добавления в начало.
-	forceinline void CheckSpace(size_t rightSpace, size_t leftSpace=0) {Reserve(Count()+rightSpace, leftSpace);}
+	forceinline void CheckSpace(size_t rightSpace, size_t leftSpace=0) {Reserve(Count() + rightSpace, leftSpace);}
 
 	//! Удалить все элементы из массива, не освобождая занятую ими память.
 	forceinline void Clear()
@@ -388,13 +388,13 @@ public:
 	}
 
 	//! Возвращает, является ли массив пустым.
-	forceinline bool Empty() const {return range.Empty();}
+	forceinline bool Empty() const noexcept {return range.Empty();}
 
 	//! Количество элементов, которые можно вставить в начало массива до перераспределения буфера.
-	forceinline size_t LeftSpace() const {return size_t(range.Begin-buffer.Begin);}
+	forceinline size_t LeftSpace() const noexcept {return size_t(range.Begin - buffer.Begin);}
 
 	//! Возвращает true, если массив не имеет свободного места для вставки элемента в начало массива.
-	forceinline bool NoLeftSpace() const {return range.Begin==buffer.Begin;}
+	forceinline bool NoLeftSpace() const noexcept {return range.Begin == buffer.Begin;}
 
 	//! Количество элементов, которые можно вставить в конец массива до перераспределения буфера.
 	forceinline size_t RightSpace() const {return size_t(buffer.End-range.End);}
@@ -417,7 +417,7 @@ public:
 
 		// Соотношение 1/4 вместо 1/2 было выбрано, потому что перемещение перекрывающихся
 		// участков памяти вправо в ~2 раза медленнее, чем влево
-		if(index>=Count()/4) //Перемещаем правую часть влево
+		if(index >= Count()/4) //Перемещаем правую часть влево
 		{
 			Memory::MoveInitDelete<T>({range.Begin+index, range.End-1}, {range.Begin+index+1, range.End});
 			--range.End;
@@ -515,7 +515,7 @@ public:
 
 	//! Освободить незанятую память массива, уменьшив буфер до количества элементов в массиве,
 	//! если ёмкость превышает количество элементов более, чем на 25%.
-	forceinline void TrimExcessCapacity() {if(Capacity()>Count()*5/4) Resize(Count());}
+	forceinline void TrimExcessCapacity() {if(Capacity() > Count() * 5/4) Resize(Count());}
 
 
 	forceinline T& operator[](size_t index) {INTRA_DEBUG_ASSERT(index<Count()); return range.Begin[index];}
@@ -536,12 +536,12 @@ public:
 
 
 	//! Возвращает суммарный размер в байтах элементов в массиве
-	forceinline size_t SizeInBytes() const {return Count()*sizeof(T);}
+	forceinline size_t SizeInBytes() const noexcept {return Count()*sizeof(T);}
 
 	//!@{
 	//! Возвращает количество элементов в массиве
-	forceinline size_t Count() const {return range.Length();}
-	forceinline size_t Length() const {return Count();}
+	forceinline size_t Count() const noexcept {return range.Length();}
+	forceinline size_t Length() const noexcept {return Count();}
 	//!@}
 
 	//! Изменить количество занятых элементов массива (с удалением лишних элементов или инициализацией по умолчанию новых)
@@ -565,13 +565,21 @@ public:
 		for(T& dst: Drop(oldCount)) new(dst) T(initValue);
 	}
 
-	//! Изменить количество занятых элементов массива без вызова лишних элементов или инициализации новых.
-	//! Инициализировать\удалять элементы придётся вручную, либо использовать этот метод только для POD типов!
+	//! Изменить количество занятых элементов массива без вызова денструтора лишних элементов или инициализации новых.
+	//! Вызывать конструкторы или деструкторы элементов придётся вручную, либо использовать этот метод только для POD типов!
 	void SetCountUninitialized(size_t newCount)
 	{
 		Reserve(newCount, 0);
-		if(newCount==0) range.Begin = buffer.Begin;
+		if(newCount == 0) range.Begin = buffer.Begin;
 		range.End = range.Begin + newCount;
+	}
+
+	//! Добавить к началу newElements элементов массива без их инициализации.
+	//! Вызывать конструкторы или деструкторы элементов придётся вручную, либо использовать этот метод только для POD типов!
+	void AddLeftUninitialized(size_t newElements)
+	{
+		Reserve(0, newElements);
+		range.Begin -= newElements;
 	}
 
 	//! Получить текущий размер буфера массива

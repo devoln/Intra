@@ -546,6 +546,15 @@
     <ClCompile Include="Audio\MusicNote.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Audio\Synth\WaveTable.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\WaveTableGeneration.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Synth\InstrumentSet.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IO\Networking.h">
@@ -1702,6 +1711,18 @@
     </ClInclude>
     <ClInclude Include="Audio\Sources\MidiSynth.h">
       <Filter>Заголовочные файлы\Audio\Sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\WaveTable.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\WaveTableGeneration.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Container\Utility\StaticBitset.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\InstrumentSet.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

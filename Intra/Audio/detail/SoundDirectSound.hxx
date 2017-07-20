@@ -116,6 +116,7 @@ public:
 struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 	Data(IAudioSource& src): SoundBasicData(src)
 	{
+		INTRA_DEBUG_ASSERT(src.SampleCount() > 0);
 		Info.SampleType = ValueType::SNorm16;
 		const ushort blockAlign = ushort(sizeof(short)*Info.Channels);
 		WAVEFORMATEX wfx = {

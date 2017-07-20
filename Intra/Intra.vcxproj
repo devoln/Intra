@@ -480,7 +480,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_USE_CRT_MATH;INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -845,11 +845,14 @@
     <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp" />
     <ClCompile Include="Audio\Synth\Generators\DrumPhysicalModel.cpp" />
     <ClCompile Include="Audio\Synth\Filter.cpp" />
+    <ClCompile Include="Audio\Synth\InstrumentSet.cpp" />
     <ClCompile Include="Audio\Synth\MusicalInstrument.cpp" />
     <ClCompile Include="Audio\Synth\NoteSampler.cpp" />
     <ClCompile Include="Audio\Synth\PostEffects.cpp" />
     <ClCompile Include="Audio\Synth\Octaves.cpp" />
     <ClCompile Include="Audio\Synth\RecordedSampler.cpp" />
+    <ClCompile Include="Audio\Synth\WaveTable.cpp" />
+    <ClCompile Include="Audio\Synth\WaveTableGeneration.cpp" />
     <ClCompile Include="Audio\Synth\WaveTableSampler.cpp" />
     <ClCompile Include="Audio\Synth\WhiteNoiseSampler.cpp" />
     <ClCompile Include="Concurrency\CondVar.cpp" />
@@ -947,7 +950,10 @@
     <ClInclude Include="Audio\Synth\Chorus.h" />
     <ClInclude Include="Audio\Synth\ExponentialAttenuation.h" />
     <ClInclude Include="Audio\Synth\Generators.hh" />
+    <ClInclude Include="Audio\Synth\InstrumentSet.h" />
     <ClInclude Include="Audio\Synth\RecordedSampler.h" />
+    <ClInclude Include="Audio\Synth\WaveTable.h" />
+    <ClInclude Include="Audio\Synth\WaveTableGeneration.h" />
     <ClInclude Include="Audio\Synth\WhiteNoiseSampler.h" />
     <ClInclude Include="Audio\Synth\Generators\DrumPhysicalModel.h" />
     <ClInclude Include="Audio\Synth\Generators\FunctionGenerator.h" />
@@ -990,6 +996,7 @@
     <ClInclude Include="Concurrency\Mutex.h" />
     <ClInclude Include="Concurrency\Synchronized.h" />
     <ClInclude Include="Container\Utility\OwningArrayRange.h" />
+    <ClInclude Include="Container\Utility\StaticBitset.h" />
     <ClInclude Include="Cpp\Compatibility.h" />
     <ClInclude Include="Cpp\Features.h" />
     <ClInclude Include="Cpp\Fundamental.h" />

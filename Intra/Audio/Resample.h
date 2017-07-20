@@ -22,4 +22,8 @@ Span<float> DecimateX2LinearInPlace(Span<float> inOutSamples);
 //! @return Поддиапазон dst, в котором содержится результирующий сигнал.
 Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src);
 
+//! Линейный ресемплинг с отношением 2 буфера src в буфер dst.
+//! @return Поддиапазон dst, в котором содержится результирующий сигнал.
+Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src);
+
 }}

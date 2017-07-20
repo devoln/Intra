@@ -5,6 +5,7 @@
 #include "Audio/Synth/Types.h"
 
 #include "InstrumentLibrary.h"
+#include "Audio/Synth/InstrumentSet.h"
 
 using namespace Intra;
 using namespace Audio;
@@ -21,20 +22,20 @@ MidiInstrumentSet GetMapping()
 		instruments[i] = &lib.Sine2Exp;
 	instruments[117] = null; //Melodic Tom не реализован, а стандартное пищание плохо звучит. Поэтому просто отключим этот инструмент
 
-	static const byte pianos[] = {0,1,2,3,6,7, 105, 107};
+	static const byte pianos[] = {0,1,2,3,7, 105, 107};
 	for(const byte code: pianos) instruments[code] = &lib.Piano;
 
 	instruments[4] = &lib.ElectricPiano;
 	instruments[5] = &lib.ElectricPiano2;
 
-	static const byte organs[] = {16, 18, 19, 20, 22, 23};
+	static const byte organs[] = {16, 19, 20, 22, 23};
 	for(const byte code: organs) instruments[code] = &lib.Organ;
 
 	instruments[21] = &lib.Accordion;
 
 	instruments[17] = &lib.PercussiveOrgan;
 
-	static const byte guitars[] = {24, 26, 27, 28, 29, 30, 31, 46};
+	static const byte guitars[] = {6, 24, 26, 27, 28, 29, 30, 31, 46};
 	for(const byte code: guitars) instruments[code] = &lib.Guitar;
 
 	instruments[25] = &lib.GuitarSteel;
@@ -47,9 +48,10 @@ MidiInstrumentSet GetMapping()
 
 	instruments[47] = &lib.GunShot;
 
-	static const byte padSweeps[] = {40, 41, 42, 43, 45, 49, 50, 51,  89, 90, 93, 94, 95, 102};
+	static const byte padSweeps[] = {43, 45, 49, 50, 51,  89, 90, 93, 94, 95, 102};
 	for(const byte code: padSweeps) instruments[code] = &lib.Pad8Sweep;
 
+	instruments[40] = instruments[41] = instruments[42] = &lib.Violin;
 	instruments[48] = &lib.StringEnsemble;
 
 	static const byte panFlutes[] = {71, 75};
@@ -81,9 +83,11 @@ MidiInstrumentSet GetMapping()
 	static const byte kalimbas[] = {13, 15, 108, 112};
 	for(const byte code: kalimbas) instruments[code] = &lib.Kalimba;
 
-	static const byte synthVoices[] = {52, 53, 54, 83, 85, 100};
+	static const byte synthVoices[] = {18, 52, 53, 54, 83, 85, 100};
 	for(const byte code: synthVoices) instruments[code] = &lib.SynthVoice;
 	instruments[52] = &lib.ChoirAahs;
+
+	instruments[18] = &lib.RockOrgan;
 
 	static const byte soundTrackFx[] = {44, 97};
 	for(const byte code: soundTrackFx) instruments[code] = &lib.SoundTrackFX2;

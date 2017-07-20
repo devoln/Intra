@@ -59,10 +59,6 @@ bool MidiSynth::synthNote(Synth::NoteSampler& sampler, Span<float> dstLeft, Span
 
 size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 {
-#ifdef INTRA_DEBUG
-	for(auto s: outFloatChannels) Fill(s, 1000000);
-#endif
-
 	if(outFloatChannels.Empty()) return 0;
 	Span<float> dstLeft = outFloatChannels.First();
 	Span<float> dstRight = outFloatChannels.Get(1).Take(dstLeft.Length());
@@ -111,13 +107,16 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 			if(mMaxSample < maxSample) mMaxSample = maxSample;
 			Multiply(dstLeftBeforeEvent, 1.0f/mMaxSample);
 			Multiply(dstRightBeforeEvent, 1.0f/mMaxSample);
-			INTRA_ASSERT2(mMaxSample < 3, mMaxSample, nextTime);
 		}
 		dstLeft.PopFirstExactly(dstLeftBeforeEvent.Length());
 		dstRight.PopFirstExactly(dstRightBeforeEvent.Length());
 		totalSamplesProcessed += dstLeftBeforeEvent.Length();
 		mTime += double(dstLeftBeforeEvent.Length())/mSampleRate;
-		if(mPlayingNotes.Empty() && nextTime == Cpp::Infinity) break;
+		if(mPlayingNotes.Empty() && nextTime == Cpp::Infinity)
+		{
+			totalSamplesProcessed--;
+			break;
+		}
 	}
 
 	return totalSamplesProcessed;
@@ -125,6 +124,7 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 
 void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 {
+	if(noteOn.Volume == 0) return;
 	const ushort id = noteOn.Id();
 	NoteEntry* newNote = null;
 	auto found = mPlayingNotes.Find(id);

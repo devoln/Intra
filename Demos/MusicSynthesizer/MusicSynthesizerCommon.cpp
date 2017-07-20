@@ -66,19 +66,20 @@ bool PrintMidiFileInfo(StringView filePath)
 	return true;
 }
 
-Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFiletream, double duration, float startingVolume, ErrorStatus& status)
+Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFiletream,
+	double duration, float startingVolume, ErrorStatus& status, uint sampleRate)
 {
 	return new Sources::MidiSynth(
 		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(midiFiletream), status),
-		duration, GetMapping(), startingVolume, null, Sound::DefaultSampleRate(), true);
+		duration, GetMapping(), startingVolume, null, sampleRate == 0? Sound::DefaultSampleRate(): sampleRate, true);
 }
 
-Sound CreateSoundFromMidi(InputStream midiFiletream, double duration, float startingVolume, bool printMessages)
+Sound CreateSoundFromMidi(ForwardStream midiFilestream, double duration, float startingVolume, bool printMessages)
 {
 	if(printMessages) Std.PrintLine("Синтез...");
 	FatalErrorStatus status;
 	Stopwatch sw;
-	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFiletream), duration, startingVolume, status));
+	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFilestream), duration, startingVolume, status));
 	if(printMessages) Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
 	if(status.Handle())
 	{
@@ -89,11 +90,13 @@ Sound CreateSoundFromMidi(InputStream midiFiletream, double duration, float star
 	return sound;
 }
 
-StreamedSound CreateStreamedSoundFromMidi(InputStream midiFiletream, float startingVolume, bool printMessages)
+StreamedSound CreateStreamedSoundFromMidi(ForwardStream midiFileStream, float startingVolume, bool printMessages)
 {
+	Midi::MidiFileInfo info(midiFileStream, Error::Skip());
+	GetMapping().Preload(info, Sound::DefaultSampleRate());
 	if(printMessages) Std.PrintLine("Инициализация синтезатора...");
 	FatalErrorStatus status;
-	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFiletream), Cpp::Infinity, startingVolume, status), 4096);
+	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFileStream), Cpp::Infinity, startingVolume, status), 4096);
 	if(status.Handle())
 	{
 		Std.PrintLine(status.GetLog());

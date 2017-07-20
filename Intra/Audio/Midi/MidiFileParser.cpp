@@ -112,6 +112,8 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 		size_t MaxSimultaneousNotes = 0;
 		HashMap<ushort, float> NoteVolumeMap;
 		bool ChannelIsUsed[16]{false};
+		StaticBitset<128>* UsedInstrumentsFlags;
+		StaticBitset<128>* UsedDrumInstrumentsFlags;
 
 		void OnNoteOn(const NoteOn& noteOn) final
 		{
@@ -119,6 +121,8 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 			auto& volume = NoteVolumeMap[noteOn.Id()];
 			if(volume != 0 && Math::Abs(Time - noteOn.Time) < 0.0001)
 				return;
+			if(noteOn.Channel == 9) UsedDrumInstrumentsFlags->Set(noteOn.NoteOctaveOrDrumId);
+			else UsedInstrumentsFlags->Set(noteOn.Instrument);
 			Time = noteOn.Time;
 			if(MaxSimultaneousNotes < NoteVolumeMap.Count())
 				MaxSimultaneousNotes = NoteVolumeMap.Count();
@@ -152,6 +156,8 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 			for(auto it: notesToRemove) NoteVolumeMap.Remove(it);
 		}
 	} countingDevice;
+	countingDevice.UsedInstrumentsFlags = &UsedInstrumentsFlags;
+	countingDevice.UsedDrumInstrumentsFlags = &UsedDrumInstrumentsFlags;
 
 	combiner.ProcessAllEvents(countingDevice);
 

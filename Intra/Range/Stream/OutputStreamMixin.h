@@ -40,8 +40,8 @@ template<typename R, typename T> struct OutputStreamMixin
 		!Concepts::IsInputRange<R1>::_ &&
 		Concepts::IsArrayClass<R1>::_ &&
 		Meta::IsTriviallySerializable<Concepts::ElementTypeOfArray<R1>>::_,
-	size_t> RawWriteFrom(R1&& dst)
-	{return RawWriteFrom(CSpanOf(dst));}
+	size_t> RawWriteFrom(R1&& src)
+	{return RawWriteFrom(CSpanOf(src));}
 
 	template<typename U> forceinline Meta::EnableIf<
 		Meta::IsTriviallySerializable<U>::_

@@ -1,6 +1,10 @@
 #pragma once
 
-#include "Audio/Synth/Types.h"
+namespace Intra { namespace Audio { namespace Synth {
+
+struct MidiInstrumentSet;
+
+}}}
 
 Intra::Audio::Synth::MidiInstrumentSet GetMapping();
 

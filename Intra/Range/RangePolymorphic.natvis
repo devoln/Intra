@@ -17,10 +17,10 @@
   </Type>
 
   <Type Name="Intra::Range::OutputRange&lt;*&gt;">
-    <DisplayString Condition="mStream.mPtr == nullptr">null</DisplayString>
-    <DisplayString>{*mStream.mPtr}</DisplayString>
+    <DisplayString Condition="Stream.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*Stream.mPtr}</DisplayString>
     <Expand>
-      <ExpandedItem>*mStream.mPtr</ExpandedItem>
+      <ExpandedItem>*Stream.mPtr</ExpandedItem>
     </Expand>
   </Type>
 

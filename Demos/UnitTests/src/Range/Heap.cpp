@@ -7,8 +7,6 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Range/Mutation/Heap.h"
 #include "IO/FormattedWriter.h"
 
-#include <algorithm>
-
 using namespace Intra;
 using namespace IO;
 using namespace Range;

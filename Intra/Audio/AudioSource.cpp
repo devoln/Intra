@@ -24,6 +24,7 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 	{
 		const size_t samplesRead = GetUninterleavedSamples(Range::Take(channels, mChannelCount));
 		totalSamplesRead += samplesRead;
+		if(samplesRead < samplesPerChannel) break;
 		InterleaveFloats(outFloats.Take(samplesRead*mChannelCount), channelCSpan);
 	}
 	return totalSamplesRead;
@@ -44,6 +45,7 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 	{
 		const size_t samplesRead = GetUninterleavedSamples(Range::Take(channels, mChannelCount));
 		totalSamplesRead += samplesRead;
+		if(samplesRead < samplesPerChannel) break;
 		InterleaveFloatsCastToShorts(outShorts.TakeAdvance(samplesRead*mChannelCount), channelCSpan);
 	}
 	return totalSamplesRead;

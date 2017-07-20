@@ -6,6 +6,7 @@
 
 #include "Random/FastUniform.h"
 #include "Container/Utility/Array2D.h"
+#include "Audio/Synth/Types.h"
 
 namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 
@@ -33,6 +34,8 @@ public:
 
 	DrumPhysicalModel(byte count, byte dx, byte dy, float frc, float kDemp, float kRand);
 	float sRand();
+
+	Span<float> operator()(Span<float> dst, bool add);
 };
 
 INTRA_WARNING_POP
