@@ -1,4 +1,4 @@
-#include "IO/FileSystem.h"
+п»ї#include "IO/FileSystem.h"
 
 #include "Cpp/PlatformDetect.h"
 
@@ -77,7 +77,7 @@ OsFileSystem::OsFileSystem():
 
 String OsFileSystem::GetFullFileName(StringView fileName) const
 {
-	//TODO: сделать обработку и удаление ../, ./ и повторяющихся слешей
+	//TODO: СЃРґРµР»Р°С‚СЊ РѕР±СЂР°Р±РѕС‚РєСѓ Рё СѓРґР°Р»РµРЅРёРµ ../, ./ Рё РїРѕРІС‚РѕСЂВ¤СЋС‰РёС…СЃВ¤ СЃР»РµС€РµР№
 	String result = fileName;
 	bool nameIsFull = false;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)

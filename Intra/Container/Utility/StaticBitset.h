@@ -18,13 +18,13 @@ template<size_t N> struct StaticBitset
 	void Set(size_t index)
 	{
 		INTRA_DEBUG_ASSERT(index < N);
-		Data[index >> 5] |= 1 << (index & 31);
+		Data[index >> 5] |= 1u << (index & 31);
 	}
 
 	void Reset(size_t index)
 	{
 		INTRA_DEBUG_ASSERT(index < N);
-		Data[index >> 5] &= ~(1 << (index & 31));
+		Data[index >> 5] &= ~(1u << (index & 31));
 	}
 };
 

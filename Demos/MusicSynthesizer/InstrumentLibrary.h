@@ -22,31 +22,33 @@ struct InstrumentLibrary
 	InstrumentLibrary(const InstrumentLibrary&) = delete;
 	InstrumentLibrary& operator=(const InstrumentLibrary&) = delete;
 
-	WaveTableCache ChoirATables, ChoirOTables, SynthStringTables, SynthBrassTables, ViolinTables;
+	WaveTableCache ChoirATables, ChoirOTables, SynthStringTables, SynthVoiceTables, SynthBrassTables, LeadSawtoothTables, OrchestraHitTables, LeadSquareTables, RainTables;
+	WaveTableCache ViolinTables, FluteTables, CalliopeTables;
+	WaveTableCache VibraphoneTables, GlockenspielTables, MarimbaTables, XylophoneTables, NewAgeTables, AtmosphereTables;
 
 	MusicalInstrument Piano, ElectricPiano, ElectricPiano2;
-	MusicalInstrument Vibraphone, Glockenspiel, NewAge, Crystal, Pad5Bowed;
+	MusicalInstrument Vibraphone, Glockenspiel, NewAge, Crystal, Pad5Bowed, Marimba, Xylophone;
 	MusicalInstrument Kalimba;
-	MusicalInstrument Bass1, Bass2, Bass3, ElectricBassFinger;
+	MusicalInstrument Bass1, Bass2, Bass3, ElectricBassFinger, SlapBass;
 	MusicalInstrument ElectricBassPick;
 	MusicalInstrument SynthBass1, SynthBass2;
 	MusicalInstrument SynthBrass, Lead5Charang;
-	MusicalInstrument Birds, SynthVoice, ChoirAahs, RockOrgan, SoundTrackFX2;
-	MusicalInstrument Pad7Halo, Pad8Sweep, PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble;
-	MusicalInstrument Flute, PanFlute;
+	MusicalInstrument Birds, SynthVoice, VoiceOohs, ChoirAahs, RockOrgan, SoundTrackFX2;
+	MusicalInstrument FxGoblins, PadPolysynth, Pad7Halo, Pad8Sweep, SynthStrings, PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble, TremoloStrings;
+	MusicalInstrument Flute, PanFlute, Piccolo, FrenchHorn;
 	MusicalInstrument Guitar, GuitarSteel;
 	MusicalInstrument Guitar1, OverdrivenGuitar;
-	MusicalInstrument Trumpet, Piccolo, Oboe, FretlessBass, Sax, Calliope;
+	MusicalInstrument Trumpet, Tuba, Oboe, FretlessBass, Sax, Calliope;
 	MusicalInstrument Violin;
 	MusicalInstrument Organ, PercussiveOrgan;
-	MusicalInstrument Whistle;
+	MusicalInstrument Whistle, Ocarina;
 	MusicalInstrument Sine2Exp;
-	MusicalInstrument Sawtooth;
+	MusicalInstrument LeadSawtooth;
 	MusicalInstrument Accordion;
 	MusicalInstrument BassLead;
 	MusicalInstrument OrchestraHit;
 	MusicalInstrument LeadSquare;
-	MusicalInstrument GunShot, Applause, Seashore, Helicopter, PhoneRing;
+	MusicalInstrument GunShot, Timpani, Applause, Seashore, Helicopter, PhoneRing;
 
 	MusicalInstrument DrumSound2;
 	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat;

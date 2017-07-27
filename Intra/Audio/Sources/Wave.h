@@ -25,11 +25,11 @@ public:
 		BasicAudioSource(Cpp::Move(onClose), info.SampleRate, info.Channels),
 		mData(SpanOfRaw(data, info.GetBufferSize())), mDataType(info.SampleType) {}
 
-	Wave(OnCloseResourceCallback onClose, size_t sampleRate, ushort numChannels, CSpan<short> data):
+	Wave(OnCloseResourceCallback onClose, uint sampleRate, ushort numChannels, CSpan<short> data):
 		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels),
 		mData(data.Reinterpret<byte>()), mSampleCount(data.Length()), mDataType(Data::ValueType::SNorm16) {}
 
-	Wave(OnCloseResourceCallback onClose, size_t sampleRate, ushort numChannels, CSpan<float> data):
+	Wave(OnCloseResourceCallback onClose, uint sampleRate, ushort numChannels, CSpan<float> data):
 		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels),
 		mData(data.Reinterpret<byte>()), mSampleCount(data.Length()), mDataType(Data::ValueType::Float) {}
 

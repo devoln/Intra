@@ -555,6 +555,9 @@
     <ClCompile Include="Audio\Synth\InstrumentSet.cpp">
       <Filter>Файлы исходного кода\Audio\Synth</Filter>
     </ClCompile>
+    <ClCompile Include="Audio\Synth\TubeSampler.cpp">
+      <Filter>Файлы исходного кода\Audio\Synth</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IO\Networking.h">
@@ -1722,6 +1725,9 @@
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\InstrumentSet.h">
+      <Filter>Заголовочные файлы\Audio\Synth</Filter>
+    </ClInclude>
+    <ClInclude Include="Audio\Synth\TubeSampler.h">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
   </ItemGroup>

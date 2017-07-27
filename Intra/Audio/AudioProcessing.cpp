@@ -12,7 +12,7 @@ void DiscreteFourierTransform(Span<float> outFreqs, CSpan<short> samples)
 {
     for(size_t i=0; i<outFreqs.Length(); i++)
     {
-        const float wi = float(2*i*Math::PI/samples.Length());
+        const float wi = float(2*double(i)*Math::PI/double(samples.Length()));
         const float sii = Math::Sin(wi), coi = Math::Cos(wi);
 
         float co = 1, si = 0, acco = 0, acsi = 0;
@@ -168,8 +168,8 @@ void InplaceInverseFFTNonNormalized(Span<float> real, Span<float> imag)
 void InplaceInverseFFT(Span<float> real, Span<float> imag)
 {
 	InplaceInverseFFTNonNormalized(real, imag);
-	Multiply(imag, 1.0f/real.Length());
-	Multiply(real, 1.0f/real.Length());
+	Multiply(imag, 1.0f/float(real.Length()));
+	Multiply(real, 1.0f/float(real.Length()));
 }
 
 

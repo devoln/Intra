@@ -30,7 +30,7 @@ public:
 	template<typename T, typename NRT = Meta::RemoveConstRef<T>, typename = Meta::EnableIf<
 		Meta::IsCallable<NRT, Args...>::_
 	>> CopyableDelegate(T&& obj):
-		mFunctor(new Impl<NRT>(obj)) {}
+		mFunctor(new Impl<NRT>(Cpp::Forward<T>(obj))) {}
 
 	CopyableDelegate(R(*freeFunction)(Args...))
 	{if(freeFunction) mFunctor = new Impl<R(*)(Args...)>(freeFunction);}
@@ -45,7 +45,7 @@ public:
 		mFunctor(Cpp::Move(functor)) {}
 
 	forceinline CopyableDelegate(const CopyableDelegate& rhs):
-		mFunctor(rhs? null: rhs.mFunctor->Clone()) {}
+		mFunctor(rhs? rhs.mFunctor->Clone(): null) {}
 
 	forceinline CopyableDelegate(CopyableDelegate&& rhs) = default;
 
@@ -89,7 +89,7 @@ public:
 		//!Meta::IsFunction<NRT>::_ &&
 		Meta::IsCallable<NRT, Args...>::_
 	>> CopyableMutableDelegate(T&& obj):
-		mFunctor(new Impl<NRT>(obj)) {}
+		mFunctor(new Impl<NRT>(Cpp::Forward<T>(obj))) {}
 
 	CopyableMutableDelegate(FunctionPtr freeFunction)
 	{if(freeFunction) mFunctor = new Impl<FunctionPtr>(freeFunction);}
@@ -104,7 +104,7 @@ public:
 		mFunctor(Cpp::Move(functor)) {}
 
 	forceinline CopyableMutableDelegate(const CopyableMutableDelegate& rhs):
-		mFunctor(rhs? null: rhs.mFunctor->Clone()) {}
+		mFunctor(rhs? rhs.mFunctor->Clone(): null) {}
 
 	forceinline CopyableMutableDelegate(CopyableMutableDelegate&& rhs) = default;
 

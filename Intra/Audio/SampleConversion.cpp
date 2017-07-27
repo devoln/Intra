@@ -471,7 +471,7 @@ void DeinterleaveShorts(CSpan<short> src, Span<Span<short>> dst)
 #if(INTRA_MINEXE == 0)
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 1)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -480,7 +480,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2, CSpan<float> src3)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 2)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -491,7 +491,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1,
 	CSpan<float> src2, CSpan<float> src3, CSpan<float> src4)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 3)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -503,7 +503,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1,
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2,
 	CSpan<float> src3, CSpan<float> src4, CSpan<float> src5)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 4)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -516,7 +516,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2,
 	CSpan<float> src3, CSpan<float> src4, CSpan<float> src5, CSpan<float> src6)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 5)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -530,7 +530,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2,
 	CSpan<float> src3, CSpan<float> src4, CSpan<float> src5, CSpan<float> src6, CSpan<float> src7)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 6)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);
@@ -545,7 +545,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2, CSpan<float> src3,
 	CSpan<float> src4, CSpan<float> src5, CSpan<float> src6, CSpan<float> src7, CSpan<float> src8)
 {
-	while(dst.End != dst.Begin)
+	while(dst.End > dst.Begin + 7)
 	{
 		*dst.Begin++ = short(*src1.Begin++ * 32767);
 		*dst.Begin++ = short(*src2.Begin++ * 32767);

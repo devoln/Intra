@@ -9,9 +9,9 @@ void ResampleLinear(CSpan<float> src, Span<float> dst)
 {
 	const size_t srcL1 = src.Length() - 1;
 	const size_t dstL1 = dst.Length() - 1;
-	const float ratio = float(srcL1) / dstL1;
+	const float ratio = float(srcL1) / float(dstL1);
 	for(size_t i = 0; i < dstL1; i++)
-		dst[i] = LinearSample(src, i*ratio);
+		dst[i] = LinearSample(src, float(i)*ratio);
 	dst.Last() = src.Last();
 }
 

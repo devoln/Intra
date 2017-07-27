@@ -16,7 +16,7 @@ struct Sawtooth
 
 	Sawtooth(float updownRatio, float freq, float amplitude, uint sampleRate):
 		mUpdownValue(updownRatio / (updownRatio + 1)), mFreq(freq),
-		mP(mUpdownValue/2), mDP(mFreq / sampleRate),
+		mP(mUpdownValue/2), mDP(mFreq / float(sampleRate)),
 		mC1(2*amplitude/mUpdownValue), mC2(2*amplitude / (1 - mUpdownValue)), mAmplitude(amplitude)
 	{}
 

@@ -28,15 +28,7 @@ struct CachedDrumInstrument
 	CachedDrumInstrument(GenericSampler sampler, size_t sampleCount = 44100, float volumeScale = 1):
 		DataSampler(Cpp::Move(sampler)), VolumeScale(volumeScale) {Data.SetCountUninitialized(sampleCount);}
 
-	RecordedSampler operator()(float volume, uint sampleRate) const
-	{
-		if(SampleRate == 0)
-		{
-			SampleRate = sampleRate;
-			DataSampler(Data, false);
-		}
-		return {Data, volume*VolumeScale, float(SampleRate)/sampleRate};
-	}
+	RecordedSampler operator()(float volume, uint sampleRate) const;
 
 	void Preload(uint sampleRate = 44100) const {operator()(1, sampleRate);}
 };

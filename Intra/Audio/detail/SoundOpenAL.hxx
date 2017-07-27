@@ -118,7 +118,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 		else
 		{
 			Array<short> dst;
-			dst.SetCountUninitialized(Info.SampleCount);
+			dst.SetCountUninitialized(Info.SampleCount*src.ChannelCount());
 			src.GetInterleavedSamples(dst);
 			SetDataInterleaved(dst.Data(), ValueType::SNorm16);
 		}

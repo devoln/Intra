@@ -51,7 +51,7 @@ public:
 	>> Array(R&& values): buffer(null), range(null)
 	{AddLastRange(Range::Forward<R>(values));}
 
-	Array(Array&& rhs): buffer(rhs.buffer), range(rhs.range)
+	forceinline Array(Array&& rhs) noexcept: buffer(rhs.buffer), range(rhs.range)
 	{rhs.buffer = null; rhs.range = null;}
 
 	Array(const Array& rhs): Array(rhs.AsConstRange()) {}
@@ -612,6 +612,8 @@ public:
 	CSpan<T> Take(size_t count) const {return AsConstRange().Take(count);}
 	Span<T> Drop(size_t count) {return range.Drop(count);}
 	CSpan<T> Drop(size_t count) const {return AsConstRange().Drop(count);}
+	Span<T> Tail(size_t count) {return range.Tail(count);}
+	CSpan<T> Tail(size_t count) const {return AsConstRange().Tail(count);}
 
 
 	//! @defgroup Array_STL_Interface STL-подобный интерфейс для Array

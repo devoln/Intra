@@ -85,11 +85,13 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 			if(removeThisNote) mOffPlayingNotes.RemoveUnordered(i--);
 			add = true;
 		}
+		int i = 0;
 		for(auto it = mPlayingNotes.begin(); it != mPlayingNotes.end(); ++it)
 		{
 			const bool removeThisNote = synthNote(it->Value.Sampler, dstLeftBeforeEvent, dstRightBeforeEvent, add);
 			if(removeThisNote) notesToRemove.AddLast(it);
 			add = true;
+			i++;
 		}
 		for(auto it: notesToRemove) mPlayingNotes.Remove(it);
 		if(!add)
@@ -154,7 +156,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 		newNote->Channel = noteOn.Channel;
 		newNote->Time = noteOn.Time;
 		newNote->NoteOctaveOrDrumId = noteOn.NoteOctaveOrDrumId;
-		newNote->Sampler.Pan = noteOn.Pan/64.0f;
+		newNote->Sampler.SetPan(noteOn.Pan/64.0f);
 		const float freqMult = pitchBendToFreqMultiplier(mCurrentPitchBend[noteOn.Channel]);
 		newNote->Sampler.MultiplyPitch(freqMult);
 	}
@@ -162,7 +164,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 
 float MidiSynth::pitchBendToFreqMultiplier(short relativePitchBend) const
 {
-	return Math::Pow(2.0f, relativePitchBend / 8192.0f * mPitchBendRangeInSemitones / 12);
+	return Math::Pow2(relativePitchBend / 8192.0f * mPitchBendRangeInSemitones / 12);
 }
 
 void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
@@ -178,7 +180,7 @@ void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
 
 void MidiSynth::OnPitchBend(const Midi::PitchBend& pitchBend)
 {
-	const short shift = pitchBend.Pitch - mCurrentPitchBend[pitchBend.Channel];
+	const short shift = short(pitchBend.Pitch - mCurrentPitchBend[pitchBend.Channel]);
 	mCurrentPitchBend[pitchBend.Channel] = pitchBend.Pitch;
 	const float freqMult = pitchBendToFreqMultiplier(shift);
 	for(auto& note: mPlayingNotes)
@@ -190,13 +192,15 @@ void MidiSynth::OnPitchBend(const Midi::PitchBend& pitchBend)
 
 void MidiSynth::OnAllNotesOff(byte channel)
 {
-	for(auto& note: mPlayingNotes)
+	Array<NoteMap::iterator> notesToRemove;
+	for(auto it = mPlayingNotes.begin(); it != mPlayingNotes.end(); ++it)
 	{
-		if((note.Key >> 8) != channel) continue;
-		note.Value.Sampler.NoteRelease();
-		mOffPlayingNotes.AddLast(Cpp::Move(note.Value));
+		if((it->Key >> 8) != channel) continue;
+		it->Value.Sampler.NoteRelease();
+		mOffPlayingNotes.AddLast(Cpp::Move(it->Value));
+		notesToRemove.AddLast(it);
 	}
-	mPlayingNotes.Clear();
+	for(auto it: notesToRemove) mPlayingNotes.Remove(it);
 }
 
 Unique<MidiSynth> MidiSynth::FromFile(StringView path, double duration, const Synth::MidiInstrumentSet& instruments,

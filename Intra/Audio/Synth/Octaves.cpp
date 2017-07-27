@@ -32,7 +32,7 @@ void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount, u
 		return;
 	}
 
-	Random::FastUniform<uint> rand(3453411347u ^ srcResult.Length() ^ (buffer.Length() << 10) ^ (octavesCount << 20) ^ uint(size_t(srcResult.Data()) >> 3));
+	Random::FastUniform<uint> rand(3453411347u ^ uint(srcResult.Length()) ^ uint(buffer.Length() << 10) ^ (octavesCount << 20));
 	buffer = DecimateX2Linear(buffer, srcResult);
 	float volume = 0.5f;
 	while(octavesCount --> 1)

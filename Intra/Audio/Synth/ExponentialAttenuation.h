@@ -16,13 +16,15 @@ namespace Intra { namespace Audio { namespace Synth {
 //Копирует src в dst с затуханием, пока не кончится либо dst, либо src.
 void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek);
 void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek);
+void ExponentialLinearAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek, float& u, float du);
+void ExponentialLinearAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek, float& u, float du);
 
 class ExponentAttenuator
 {
 	float mFactor, mFactorStep;
 public:
 	ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
-		mFactor(startVolume), mFactorStep(Math::Exp(-expCoeff/sampleRate)) {}
+		mFactor(startVolume), mFactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
 
 	void operator()(Span<float> inOutSamples);
 };

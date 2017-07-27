@@ -12,6 +12,7 @@
 #include "Types.h"
 #include "Filter.h"
 #include "WaveTable.h"
+#include "ADSR.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -30,47 +31,58 @@ class WaveTableSampler
 		Span<float> dst, float freq, float volume, uint sampleRate)
 	{(*static_cast<const F*>(params))(dst, freq, volume, sampleRate);}
 
-	Array<float> mSampleFragment;
+	Array<float> mSampleFragmentData;
+	CSpan<float> mSampleFragment;
 	float mFragmentOffset;
 	float mRate;
 	float mAttenuation;
 	float mAttenuationStep;
+	float mRightPanMultiplier;
+	Math::SineRange<float> mFreqOscillator;
+	AdsrAttenuator mADSR;
 
 	WaveTableSampler(const void* params, WaveForm wave, uint octaves,
 		float attenuationPerSample, float volume,
-		float freq, uint sampleRate);
+		float freq, uint sampleRate, float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 public:
 	WaveTableSampler(null_t=null) {}
 
-	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff, float volume);
+	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff,
+		float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 	template<typename F, typename = Meta::EnableIf<
 		Meta::IsCallable<F, Span<float>, float, float, uint>::_
 	>> forceinline WaveTableSampler(F wave, uint octaves,
-		float expCoeff, float volume, float freq, uint sampleRate):
+		float expCoeff, float volume, float freq, uint sampleRate, float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null):
 		WaveTableSampler(&wave, WaveFormWrapper<F>, octaves,
-			expCoeff, volume,
-			freq, sampleRate) {}
+			expCoeff, volume, freq, sampleRate, vibratoFrequency, vibratoValue, adsr) {}
+
+	forceinline bool OwnDataArray() const noexcept {return !mSampleFragmentData.Empty();}
 
 	static WaveTableSampler Sine(uint octaves,
-		float expCoeff, float volume, float freq, uint sampleRate);
+		float expCoeff, float volume, float freq, uint sampleRate,
+		float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 	static WaveTableSampler Sawtooth(uint octaves,
 		float updownRatio, float expCoeff, float volume,
-		float freq, uint sampleRate);
+		float freq, uint sampleRate,
+		float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 	static WaveTableSampler Square(uint octaves,
-		float updownRatio, float expCoeff, float volume, float freq, uint sampleRate);
+		float updownRatio, float expCoeff, float volume, float freq, uint sampleRate,
+		float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 	static WaveTableSampler WhiteNoise(uint octaves,
-		float expCoeff, float volume, float freq, uint sampleRate);
+		float expCoeff, float volume, float freq, uint sampleRate,
+		float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
-	static WaveTableSampler WavePeriod(uint octaves,
-		CSpan<float> wave, float expCoeff, float volume, float freq, uint sampleRate);
+	static WaveTableSampler WavePeriod(uint octaves, CSpan<float> wave, float expCoeff, float volume,
+		float freq, uint sampleRate,
+		float vibratoFrequency, float vibratoValue, const AdsrAttenuator& adsr = null);
 
 	Span<float> operator()(Span<float> dst, bool add);
-	Span<float> operator()(Span<float> dstLeft, Span<float> dstRight, bool add);
+	size_t operator()(Span<float> dstLeft, Span<float> dstRight, bool add);
 
 	void MultiplyPitch(float freqMultiplier)
 	{
@@ -78,9 +90,22 @@ public:
 		if(Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
 	}
 
+	void SetPan(float newPan)
+	{
+		mRightPanMultiplier = (newPan + 1) * 0.5f;
+	}
+
+	void NoteRelease()
+	{
+		mADSR.NoteRelease();
+	}
+
 private:
-	void generateWithDefaultRate(Span<float> dst, bool add);
-	void generateWithVaryingRate(Span<float> dst, bool add);
+	void generateWithDefaultRate(Span<float> dst, bool add,
+		float& fragmentOffset, float& attenuation, AdsrAttenuator& adsr);
+
+	void generateWithVaryingRate(Span<float> dst, bool add,
+		float& fragmentOffset, float& attenuation, Math::SineRange<float>& freqOscillator, AdsrAttenuator& adsr);
 };
 
 enum class WaveType: byte {Sine, Sawtooth, Square, WhiteNoise};
@@ -92,7 +117,9 @@ struct WaveInstrument
 	float ExpCoeff = 0;
 	float FreqMultiplier = 1;
 	uint Octaves = 1;
-	float RateAcceleration = 0;
+	float VibratoFrequency = 0;
+	float VibratoValue = 0;
+	AdsrAttenuatorFactory ADSR;
 
 	//Отношение времени нарастания к спаду в пилообразной волне.
 	//Отношение времени значения 1 ко времени -1 в прямоугольном импульсе.
@@ -104,8 +131,11 @@ struct WaveInstrument
 struct PeriodicInstrument
 {
 	Array<float> Table;
-	float ExpCoeff;
-	uint Octaves;
+	float ExpCoeff = 0;
+	uint Octaves = 1;
+	float VibratoFrequency = 0;
+	float VibratoValue = 0;
+	AdsrAttenuatorFactory ADSR;
 
 	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
 };
@@ -115,7 +145,7 @@ struct WaveTableCache
 	typedef Delegate<WaveTable(float freq, uint sampleRate)> GeneratorType;
 	mutable Array<WaveTable> Tables;
 	GeneratorType Generator;
-	float MaxRateDistance = 1;
+	bool AllowMipmaps = false;
 
 	WaveTable& Get(float freq, uint sampleRate) const;
 
@@ -126,9 +156,12 @@ struct WaveTableCache
 
 struct WaveTableInstrument
 {
-	WaveTableCache* Tables;
-	float ExpCoeff;
-	float VolumeScale;
+	WaveTableCache* Tables = null;
+	float ExpCoeff = 0;
+	float VolumeScale = 0;
+	float VibratoFrequency = 0;
+	float VibratoValue = 0;
+	AdsrAttenuatorFactory ADSR;
 
 	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
 };

@@ -14,6 +14,18 @@ Span<float> RecordedSampler::operator()(Span<float> dst, bool add)
 	return dst;
 }
 
+RecordedSampler CachedDrumInstrument::operator()(float volume, uint sampleRate) const
+{
+	if(SampleRate == 0)
+	{
+		SampleRate = sampleRate;
+		DataSampler(Data, false);
+		float u = 1;
+		LinearMultiply(Data.Tail(300), u, -0.00333f);
+	}
+	return {Data, volume*VolumeScale, float(SampleRate)/float(sampleRate)};
+}
+
 
 }}}
 

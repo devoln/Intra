@@ -12,14 +12,12 @@
 #undef max
 #endif
 
-#if(!defined(INTRA_CRT_MATH) && !defined(__clang__) && !defined(__GNUC__) && \
+#if(!defined(INTRA_USE_CRT_MATH) && !defined(__clang__) && !defined(__GNUC__) && \
 	(!defined(_MSC_VER) || INTRA_PLATFORM_ARCH != INTRA_PLATFORM_X86))
-#define INTRA_CRT_MATH
-#include <math.h>
+#define INTRA_USE_CRT_MATH
 #endif
 
-
-#if((defined(__clang__) || defined(__GNUC__)) && !defined(INTRA_CRT_MATH) && defined(INTRA_CONSTEXPR_SUPPORT))
+#ifdef INTRA_USE_CRT_MATH
 #include <cmath>
 #endif
 
@@ -49,7 +47,7 @@ constexpr inline int IFloor(float x) noexcept {return int(x) - int(x < 0);}
 constexpr inline intptr IFloor(double x) noexcept {return intptr(x) - intptr(x < 0);}
 
 //! Для фиксированной запятой 16:16.
-inline int FixedPointLog(int x)
+inline int FixedPointLog(uint x)
 {
 	int y = 0xa65af;
 	if(x < 0x00008000) x <<= 16, y -= 0xb1721;
@@ -57,19 +55,19 @@ inline int FixedPointLog(int x)
 	if(x < 0x08000000) x <<= 4, y -= 0x2c5c8;
 	if(x < 0x20000000) x <<= 2, y -= 0x162e4;
 	if(x < 0x40000000) x <<= 1, y -= 0x0b172;
-	int t = x + (x >> 1); if((t & 0x80000000) == 0) x = t, y -= 0x067cd;
-	t = x + (x >> 2); if((t & 0x80000000) == 0) x = t, y -= 0x03920;
-	t = x + ( x >> 3); if((t & 0x80000000) == 0) x = t, y -= 0x01e27;
-	t = x + (x >> 4); if((t & 0x80000000) == 0) x = t, y -= 0x00f85;
-	t = x + ( x >> 5); if((t & 0x80000000) == 0) x = t, y -= 0x007e1;
-	t = x + (x >> 6); if((t & 0x80000000) == 0) x = t, y -= 0x003f8;
-	t = x + (x >> 7); if((t & 0x80000000) == 0) x = t, y -= 0x001fe;
-	x = int(0x80000000 - x);
-	y -= x >> 15;
+	uint t = x + (x >> 1); if((t & 0x80000000u) == 0) x = t, y -= 0x067cd;
+	t = x + (x >> 2); if((t & 0x80000000u) == 0) x = t, y -= 0x03920;
+	t = x + ( x >> 3); if((t & 0x80000000u) == 0) x = t, y -= 0x01e27;
+	t = x + (x >> 4); if((t & 0x80000000u) == 0) x = t, y -= 0x00f85;
+	t = x + ( x >> 5); if((t & 0x80000000u) == 0) x = t, y -= 0x007e1;
+	t = x + (x >> 6); if((t & 0x80000000u) == 0) x = t, y -= 0x003f8;
+	t = x + (x >> 7); if((t & 0x80000000u) == 0) x = t, y -= 0x001fe;
+	x = uint(0x80000000 - uint(x));
+	y -= int(x >> 15);
 	return y;
 }
 
-#ifdef INTRA_CRT_MATH
+#ifdef INTRA_USE_CRT_MATH
 float Floor(float v);
 double Floor(double v);
 float Ceil(float v);
@@ -178,9 +176,9 @@ forceinline float Acos(float x) {return __builtin_acosf(x);}
 forceinline double Acos(double x) {return __builtin_acos(x);}
 forceinline real Acos(real x) {return __builtin_acosl(x);}
 
-forceinline float Atan(float x) {return ::atanf(x);}
-forceinline double Atan(double x) {return ::atan(x);}
-forceinline real Atan(real x) {return ::atanl(x);}
+forceinline float Atan(float x) {return __builtin_atanf(x);}
+forceinline double Atan(double x) {return __builtin_atan(x);}
+forceinline real Atan(real x) {return __builtin_atanl(x);}
 
 forceinline float Atanh(float x) {return __builtin_atanhf(x);}
 forceinline double Atanh(double x) {return __builtin_atanh(x);}
@@ -194,7 +192,7 @@ forceinline float Log(float x) {return __builtin_logf(x);}
 forceinline double Log(double x) {return __builtin_log(x);}
 forceinline real Log(real x) {return __builtin_logl(x);}
 
-forceinline float Mod(float x, float y) {return x - Floor(x / y);}
+forceinline float Mod(float x, float y) {return __builtin_fmodf(x, y);}
 forceinline double Mod(double x, double y) {return __builtin_fmod(x, y);}
 forceinline real Mod(real x, real y) {return __builtin_fmodl(x, y);}
 
@@ -293,7 +291,7 @@ inline double Mod(double x, double y)
 	{
 		fld y
 		fld x
-		fprem1
+		fprem
 		fstp r
 		fstp y
 	}
@@ -454,22 +452,22 @@ inline float Asin(float x) {return Atan(x/Sqrt(1.0f - x*x));}
 }*/
 
 //! Логарифм для чисел, меньших 65535
-inline float Log(float x) {return FixedPointLog(int(x * 65535))/65536.0f;}
-inline double Log(double x) {return FixedPointLog(int(x * 65535))/65536.0;}
-inline real Log(real x) {return FixedPointLog(int(x * 65535))/65536.0;}
+inline float Log(float x) {return float(FixedPointLog(uint(x * 65536)))/65536.0f;}
+inline double Log(double x) {return double(FixedPointLog(uint(x * 65536)))/65536.0;}
+inline real Log(real x) {return real(FixedPointLog(uint(x * 65536)))/65536.0;}
 
 inline float Pow(float v, float power) {return power == 0.0f? 1.0f: Exp(Log(v)*power);}
-inline double Pow(double v, double power) {return power == 0.0f? 1.0f: Exp(Log(v)*power);}
+inline double Pow(double v, double power) {return power == 0.0? 1.0: Exp(Log(v)*power);}
 
 #endif
 
-template<typename T> T Pow(T x, int y)
+template<typename T> T PowInt(T x, int y)
 {
-	uint n = uint(y>0? y: -y);
-	for(T z = T(1); ; x*=x)
+	uint n = uint(Abs(y));
+	for(T z = T(1); ; x *= x)
 	{
-		if((n & 1) != 0) z*=x;
-		if((n >>= 1) == 0) return (y<0? T(1)/z: z);
+		if((n & 1) != 0) z *= x;
+		if((n >>= 1) == 0) return (y < 0? T(1)/z: z);
 	}
 }
 

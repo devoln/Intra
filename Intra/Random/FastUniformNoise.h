@@ -17,7 +17,7 @@ private:
 		Data(): data(new float[16384])
 		{
 			FastUniform<float> fRandom(3259417823U);
-			for(size_t i=0; i<16384; i++) data[i] = fRandom();
+			for(size_t i=0; i<16384; i++) data[i] = fRandom.SignedNext();
 		}
 		
 		~Data() {delete[] data;}
@@ -26,7 +26,6 @@ private:
 	};
 
 	static forceinline float get(size_t index) {static Data data; return data.data[index & 16383];}
-	static float Fract(float t) {return t-float(intptr(t)-intptr(t<0));}
 
 public:
 	static forceinline float Discrete(float t)
@@ -35,13 +34,13 @@ public:
 	static forceinline float Linear(float t)
 	{
 		const size_t n = size_t(t);
-		return Math::LinearMix(get(n), get(n+1), Fract(t));
+		return Math::LinearMix(get(n), get(n+1), Math::Fract(t));
 	}
 
 	static forceinline float Cubic(float t)
 	{
 		const size_t n = size_t(t);
-		const float x = Fract(t), x2 = x*x;
+		const float x = Math::Fract(t), x2 = x*x;
 		return 0.5f*( ( ( (2.0f-x)*x2 - x ) ) * get(n+16383) + 
 			(x2*(3.0f*x-5.0f) + 2.0f) * get(n) + 
 			((4.0f-3.0f*x)*x2 + x) * get(n+1) + 

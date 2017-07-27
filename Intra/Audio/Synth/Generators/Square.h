@@ -11,7 +11,7 @@ namespace Intra { namespace Audio { namespace Synth { namespace Generators {
 struct Square
 {
 	Square(float frequency, uint sampleRate):
-		mPhase(0), mDeltaPhase(frequency*2 / sampleRate) {}
+		mPhase(0), mDeltaPhase(frequency*2 / float(sampleRate)) {}
 
 	forceinline void PopFirst() { mPhase += mDeltaPhase; }
 	forceinline float First() const { return float(int(mPhase) & 1)*2.0f - 1.0f; }

@@ -105,8 +105,8 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 	auto& dst = dest.Begin;
 	auto& src = op1.Begin;
 	auto dstend = dst + len;
-#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
-	while(dst < dstend-3)
+#if(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
+	while(dst + 3 < dstend)
 	{
 		*dst++ = *src++ * multiplyer;
 		*dst++ = *src++ * multiplyer;
@@ -116,7 +116,7 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 #else
 	while(dst < dstend && size_t(dst) % 16 != 0) *dst++ = *src++ * multiplyer;
 	Simd::float4 multiplyerVec = Simd::SetFloat4(multiplyer);
-	while(dst < dstend - 3)
+	while(dst + 3 < dstend)
 	{
 		Simd::Get(dst, Simd::Mul(Simd::SetFloat4U(src), multiplyerVec));
 		dst += 4;
@@ -190,6 +190,109 @@ size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 
 	while(dst < dstOp1.End) *dst = *dst * mul + add, dst++;
 	return len;
+}
+
+void LinearMultiply(Span<float> dst, float& u, float du)
+{
+#if INTRA_MINEXE >= 3
+#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
+	const float du4 = 4*du;
+	while(dst.Begin + 3 < dst.End)
+	{
+		*dst.Begin++ *= u;
+		*dst.Begin++ *= u;
+		*dst.Begin++ *= u;
+		*dst.Begin++ *= u;
+		u += du4;
+	}
+#else
+	Simd::float4 u4 = Simd::SetFloat4(u, u + du, u + 2*du, u + 3*du);
+	Simd::float4 du4 = Simd::SetFloat4(4*du);
+	while(dst.Begin + 3 < dst.End)
+	{
+		Simd::float4 v = Simd::SetFloat4U(dst.Begin);
+		Simd::GetU(dst.Begin, Simd::Mul(v, u4));
+		u4 = Simd::Add(u4, du4);
+		dst.Begin += 4;
+	}
+	u = Simd::GetX(u4);
+#endif
+	while(dst.Begin < dst.End)
+	{
+		*dst.Begin++ *= u;
+		u += du;
+	}
+}
+
+void LinearMultiply(Span<float> dst, CSpan<float> src, float& u, float du)
+{
+	dst = dst.Take(src.Length());
+	src = src.Take(dst.Length());
+#if INTRA_MINEXE >= 3
+#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
+	const float du4 = 4*du;
+	while(dst.Begin + 3 < dst.End)
+	{
+		*dst.Begin++ = *src.Begin++ * u;
+		*dst.Begin++ = *src.Begin++ * u;
+		*dst.Begin++ = *src.Begin++ * u;
+		*dst.Begin++ = *src.Begin++ * u;
+		u += du4;
+	}
+#else
+	Simd::float4 u4 = Simd::SetFloat4(u, u + du, u + 2*du, u + 3*du);
+	const Simd::float4 du4 = Simd::SetFloat4(4*du);
+	while(dst.Begin + 3 < dst.End)
+	{
+		const Simd::float4 v = Simd::SetFloat4U(src.Begin);
+		Simd::GetU(dst.Begin, Simd::Mul(v, u4));
+		u4 = Simd::Add(u4, du4);
+		src.Begin += 4;
+		dst.Begin += 4;
+	}
+	u = Simd::GetX(u4);
+#endif
+	while(dst.Begin < dst.End)
+	{
+		*dst.Begin++ = *src.Begin++ * u;
+		u += du;
+	}
+}
+
+void LinearMultiplyAdd(Span<float> dst, CSpan<float> src, float& u, float du)
+{
+	dst = dst.Take(src.Length());
+	src = src.Take(dst.Length());
+#if INTRA_MINEXE >= 3
+#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
+	const float du4 = 4*du;
+	while(dst.Begin + 3 < dst.End)
+	{
+		*dst.Begin++ += *src.Begin++ * u;
+		*dst.Begin++ += *src.Begin++ * u;
+		*dst.Begin++ += *src.Begin++ * u;
+		*dst.Begin++ += *src.Begin++ * u;
+		u += du4;
+	}
+#else
+	Simd::float4 u4 = Simd::SetFloat4(u, u + du, u + 2*du, u + 3*du);
+	const Simd::float4 du4 = Simd::SetFloat4(4*du);
+	while(dst.Begin + 3 < dst.End)
+	{
+		const Simd::float4 vsrc = Simd::SetFloat4U(src.Begin);
+		const Simd::float4 vdst = Simd::SetFloat4U(dst.Begin);
+		Simd::GetU(dst.Begin, Simd::Add(vdst, Simd::Mul(vsrc, u4)));
+		u4 = Simd::Add(u4, du4);
+		src.Begin += 4;
+		dst.Begin += 4;
+	}
+	u = Simd::GetX(u4);
+#endif
+	while(dst.Begin < dst.End)
+	{
+		*dst.Begin++ += *src.Begin++ * u;
+		u += du;
+	}
 }
 
 }}

@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
@@ -16,7 +16,7 @@ namespace Intra { namespace IO {
 
 struct FileInfo
 {
-	bool Exist() const {return Size!=0 || LastModified!=0;}
+	bool Exist() const {return Size != 0 || LastModified != 0;}
 
 	ulong64 Size;
 	ulong64 LastModified;
@@ -47,73 +47,73 @@ class OsFileSystem: public IFileSystem
 public:
 	OsFileSystem();
 
-	//! Проверить существования файла fileName.
+	//! РџСЂРѕРІРµСЂРёС‚СЊ СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёСЏ С„Р°Р№Р»Р° fileName.
 	bool FileExists(StringView fileName) const final;
 
-	//! Удалить файл fileName.
-	//! Если файл не существует или его нельзя удалить, возвращает false.
-	//! \return true, если операция была выполнена.
+	//! РЈРґР°Р»РёС‚СЊ С„Р°Р№Р» fileName.
+	//! Р•СЃР»Рё С„Р°Р№Р» РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РёР»Рё РµРіРѕ РЅРµР»СЊР·СЏ СѓРґР°Р»РёС‚СЊ, РІРѕР·РІСЂР°С‰Р°РµС‚ false.
+	//! \return true, РµСЃР»Рё РѕРїРµСЂР°С†РёСЏ Р±С‹Р»Р° РІС‹РїРѕР»РЅРµРЅР°.
 	bool FileDelete(StringView fileName) final;
 
-	//! Переместить и\или переименовать файл или директорию oldFilename в newFilename.
-	//! Если файл уже существует, поведение функции зависит от параметра overwriteExisting.
-	//! \return true, если операция была выполнена.
+	//! РџРµСЂРµРјРµСЃС‚РёС‚СЊ Рё\РёР»Рё РїРµСЂРµРёРјРµРЅРѕРІР°С‚СЊ С„Р°Р№Р» РёР»Рё РґРёСЂРµРєС‚РѕСЂРёСЋ oldFilename РІ newFilename.
+	//! Р•СЃР»Рё С„Р°Р№Р» СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚, РїРѕРІРµРґРµРЅРёРµ С„СѓРЅРєС†РёРё Р·Р°РІРёСЃРёС‚ РѕС‚ РїР°СЂР°РјРµС‚СЂР° overwriteExisting.
+	//! \return true, РµСЃР»Рё РѕРїРµСЂР°С†РёСЏ Р±С‹Р»Р° РІС‹РїРѕР»РЅРµРЅР°.
 	bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) final;
 
-	//! Возвращает информацию о файле fileName.
+	//! Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ С„Р°Р№Р»Рµ fileName.
 	FileInfo FileGetInfo(StringView fileName, ErrorStatus& status) const final;
 
-	//! Вовзаращает время последней модификации файла fileName.
+	//! Р’РѕРІР·Р°СЂР°С‰Р°РµС‚ РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµР№ РјРѕРґРёС„РёРєР°С†РёРё С„Р°Р№Р»Р° fileName.
 	ulong64 FileGetTime(StringView filename, ErrorStatus& status) const final;
 
-	//! Вовзаращает время последней модификации файла fileName.
+	//! Р’РѕРІР·Р°СЂР°С‰Р°РµС‚ РІСЂРµРјСЏ РїРѕСЃР»РµРґРЅРµР№ РјРѕРґРёС„РёРєР°С†РёРё С„Р°Р№Р»Р° fileName.
 	ulong64 FileGetSize(StringView filename, ErrorStatus& status) const final;
 
-	//! Возвращает текущую директорию, относительно которой производятся все файловые операции при указании относительного пути.
+	//! Р’РѕР·РІСЂР°С‰Р°РµС‚ С‚РµРєСѓС‰СѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ, РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕ РєРѕС‚РѕСЂРѕР№ РїСЂРѕРёР·РІРѕРґСЏС‚СЃСЏ РІСЃРµ С„Р°Р№Р»РѕРІС‹Рµ РѕРїРµСЂР°С†РёРё РїСЂРё СѓРєР°Р·Р°РЅРёРё РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕРіРѕ РїСѓС‚Рё.
 	StringView CurrentDirectory() const final {return mCurrentDirectory;}
 
-	//! Установить текущую директорию.
+	//! РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С‚РµРєСѓС‰СѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ.
 	void SetDirectory(StringView newDir) final {mCurrentDirectory = newDir;}
 
-	//! Получить полный путь к файлу fileName.
+	//! РџРѕР»СѓС‡РёС‚СЊ РїРѕР»РЅС‹Р№ РїСѓС‚СЊ Рє С„Р°Р№Р»Сѓ fileName.
 	String GetFullFileName(StringView fileName) const;
 
-	//! Отобразить область файла с именем fileName в память с доступом только для чтения.
-	//! @param offset Начало отображаемой области.
-	//! @param bytes Размер отображаемой области в байтах.
+	//! РћС‚РѕР±СЂР°Р·РёС‚СЊ РѕР±Р»Р°СЃС‚СЊ С„Р°Р№Р»Р° СЃ РёРјРµРЅРµРј fileName РІ РїР°РјСЏС‚СЊ СЃ РґРѕСЃС‚СѓРїРѕРј С‚РѕР»СЊРєРѕ РґР»СЏ С‡С‚РµРЅРёСЏ.
+	//! @param offset РќР°С‡Р°Р»Рѕ РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕР№ РѕР±Р»Р°СЃС‚Рё.
+	//! @param bytes Р Р°Р·РјРµСЂ РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕР№ РѕР±Р»Р°СЃС‚Рё РІ Р±Р°Р№С‚Р°С….
 	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
 	{return FileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
-	//! Отобразить целиком файл с именем fileName в память с доступом только для чтения.
+	//! РћС‚РѕР±СЂР°Р·РёС‚СЊ С†РµР»РёРєРѕРј С„Р°Р№Р» СЃ РёРјРµРЅРµРј fileName РІ РїР°РјСЏС‚СЊ СЃ РґРѕСЃС‚СѓРїРѕРј С‚РѕР»СЊРєРѕ РґР»СЏ С‡С‚РµРЅРёСЏ.
 	FileMapping MapFile(StringView fileName, ErrorStatus& status)
 	{return FileMapping(GetFullFileName(fileName), status);}
 
-	//! Отобразить область файла с именем fileName в память с доступом для чтения и записи.
-	//! @param offset Начало отображаемой области.
-	//! @param bytes Размер отображаемой области в байтах.
+	//! РћС‚РѕР±СЂР°Р·РёС‚СЊ РѕР±Р»Р°СЃС‚СЊ С„Р°Р№Р»Р° СЃ РёРјРµРЅРµРј fileName РІ РїР°РјСЏС‚СЊ СЃ РґРѕСЃС‚СѓРїРѕРј РґР»СЏ С‡С‚РµРЅРёСЏ Рё Р·Р°РїРёСЃРё.
+	//! @param offset РќР°С‡Р°Р»Рѕ РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕР№ РѕР±Р»Р°СЃС‚Рё.
+	//! @param bytes Р Р°Р·РјРµСЂ РѕС‚РѕР±СЂР°Р¶Р°РµРјРѕР№ РѕР±Р»Р°СЃС‚Рё РІ Р±Р°Р№С‚Р°С….
 	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
 	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
-	//! Отобразить целиком файл с именем fileName в память с доступом для чтения и записи.
+	//! РћС‚РѕР±СЂР°Р·РёС‚СЊ С†РµР»РёРєРѕРј С„Р°Р№Р» СЃ РёРјРµРЅРµРј fileName РІ РїР°РјСЏС‚СЊ СЃ РґРѕСЃС‚СѓРїРѕРј РґР»СЏ С‡С‚РµРЅРёСЏ Рё Р·Р°РїРёСЃРё.
 	WritableFileMapping MapFileWrite(StringView fileName, ErrorStatus& status)
 	{return WritableFileMapping(GetFullFileName(fileName), status);}
 
-	//! Открыть файл fileName для чтения.
-	//! Если файл не существует или не удаётся открыть по другим причинам, вернёт null.
+	//! РћС‚РєСЂС‹С‚СЊ С„Р°Р№Р» fileName РґР»СЏ С‡С‚РµРЅРёСЏ.
+	//! Р•СЃР»Рё С„Р°Р№Р» РЅРµ СЃСѓС‰РµСЃС‚РІСѓРµС‚ РёР»Рё РЅРµ СѓРґР°С‘С‚СЃСЏ РѕС‚РєСЂС‹С‚СЊ РїРѕ РґСЂСѓРіРёРј РїСЂРёС‡РёРЅР°Рј, РІРµСЂРЅС‘С‚ null.
 	FileReader FileOpen(StringView fileName, ErrorStatus& status);
 
-	//! Открыть файл fileName для записи.
-	//! Если файл уже существует, запись происходит поверх данных, уже записанных в файл.
+	//! РћС‚РєСЂС‹С‚СЊ С„Р°Р№Р» fileName РґР»СЏ Р·Р°РїРёСЃРё.
+	//! Р•СЃР»Рё С„Р°Р№Р» СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚, Р·Р°РїРёСЃСЊ РїСЂРѕРёСЃС…РѕРґРёС‚ РїРѕРІРµСЂС… РґР°РЅРЅС‹С…, СѓР¶Рµ Р·Р°РїРёСЃР°РЅРЅС‹С… РІ С„Р°Р№Р».
 	FileWriter FileOpenWrite(StringView fileName, ulong64 offset, ErrorStatus& status);
 	FileWriter FileOpenWrite(StringView fileName, ErrorStatus& status);
 
-	//! Открыть файл fileName для записи. Если файл уже существует, всё его содержимое будет стёрто.
+	//! РћС‚РєСЂС‹С‚СЊ С„Р°Р№Р» fileName РґР»СЏ Р·Р°РїРёСЃРё. Р•СЃР»Рё С„Р°Р№Р» СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚, РІСЃС‘ РµРіРѕ СЃРѕРґРµСЂР¶РёРјРѕРµ Р±СѓРґРµС‚ СЃС‚С‘СЂС‚Рѕ.
 	FileWriter FileOpenOverwrite(StringView fileName, ErrorStatus& status);
 
-	//! Открыть файл fileName для записи в конец.
+	//! РћС‚РєСЂС‹С‚СЊ С„Р°Р№Р» fileName РґР»СЏ Р·Р°РїРёСЃРё РІ РєРѕРЅРµС†.
 	FileWriter FileOpenAppend(StringView fileName, ErrorStatus& status);
 
-	//! Прочитать файл целиком в строку.
+	//! РџСЂРѕС‡РёС‚Р°С‚СЊ С„Р°Р№Р» С†РµР»РёРєРѕРј РІ СЃС‚СЂРѕРєСѓ.
 	String FileToString(StringView fileName, ErrorStatus& status);
 
 private:

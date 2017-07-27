@@ -29,11 +29,13 @@ public:
 
 	void MultiplyPitch(float freqMultiplier);
 	void NoteRelease();
+	void SetPan(float pan);
 
-	bool Empty() const noexcept {return WaveTableSamplers.Empty() && GenericSamplers.Empty() || ADSR.SamplesLeft() == 0;}
+	bool Empty() const noexcept {return (WaveTableSamplers.Empty() && GenericSamplers.Empty()) || ADSR.SamplesLeft() == 0;}
 
 private:
 	void fill(Span<float> dst, bool add);
+	void fillStereo(Span<float> dstLeft, Span<float> dstRight, bool add);
 	void applyModifiers(Span<float> dst);
 };
 

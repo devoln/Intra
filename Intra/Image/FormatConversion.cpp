@@ -142,7 +142,7 @@ void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
 	ushort bpp, USVec2 sizes, ImageFormat format, bool flipVert,
 	ushort srcAlignment, ushort dstAlignment, Span<byte> dstBuf)
 {
-	INTRA_DEBUG_ASSERT(palette.Length() >= 1u << bpp);
+	INTRA_DEBUG_ASSERT(palette.Length() >= size_t(1) << bpp);
 	const ushort bytesPerPixel = format.BytesPerPixel();
 	const uint usefulSrcLineBytes = uint(sizes.x*bpp)/8u;
 	const uint usefulDstLineBytes = uint(sizes.x*bytesPerPixel);

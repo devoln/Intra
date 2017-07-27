@@ -19,7 +19,7 @@ namespace Intra { namespace Audio { namespace Midi {
 struct TrackParser
 {
 	InputRange<RawEvent> Events;
-	double Time;
+	double Time = 0;
 
 	TrackParser(InputRange<RawEvent> events, double time=0);
 

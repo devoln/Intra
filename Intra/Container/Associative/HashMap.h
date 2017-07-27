@@ -143,7 +143,10 @@ public:
  
 		forceinline bool operator==(const iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {INTRA_DEBUG_ASSERT(node != null); node = node->next;}
+        forceinline void GotoNext() {
+			INTRA_DEBUG_ASSERT(node != null);
+			node = node->next;
+		}
         forceinline void GotoPrev() {INTRA_DEBUG_ASSERT(node != null); node = node->prev;}
  
         forceinline iterator& operator++() {GotoNext(); return *this;}
@@ -306,7 +309,7 @@ public:
 		Node* previous = null;
 		auto& bh = get_bucket_head(keyHash);
 		auto current = bh;
-		while(current!=null && current!=node)
+		while(current != null && current != node)
 		{
 			previous = current;
 			current = current->down;
@@ -314,7 +317,7 @@ public:
 
 		INTRA_DEBUG_ASSERT(current == node);
 
-		if(previous!=null) previous->down = node->down;
+		if(previous != null) previous->down = node->down;
 		else bh = node->down;
 
 		eraseNode(node);
@@ -333,6 +336,7 @@ public:
 				freeNode(node);
 				if(mRange.mFirstNode!=null) mRange.mFirstNode->prev = null;
 			}
+			mRange.mLastNode = null;
 			set_count(0);
 		}
 		reset_bucket_heads();
@@ -394,7 +398,7 @@ public:
 	bool Rehash(size_t numBuckets)
 	{
 		if(numBuckets == BucketCount()) return true;
-		if(numBuckets==0 || numBuckets < Count()) return false;
+		if(numBuckets == 0 || numBuckets < Count()) return false;
 
 		INTRA_DEBUG_ASSERT(Math::IsPow2(numBuckets));
 
@@ -547,10 +551,10 @@ private:
 
 	void reset_bucket_heads()
 	{
-		if(mBucketHeads==null) return;
+		if(mBucketHeads == null) return;
 		size_t numBuckets = BucketCount();
 		Node** ptrs = get_bucket_heads();
-		for(uint i=0; i<numBuckets; i++) ptrs[i]=null;
+		for(uint i = 0; i < numBuckets; i++) ptrs[i] = null;
 	}
 
     void set_count(size_t newCount)
@@ -581,7 +585,7 @@ private:
 		previous = null;
 
 		Node* node = get_bucket_head(keyHash);
-		while(node!=null)
+		while(node != null)
 		{
 			if(node->compareKeys(key, keyHash)) return node;
 			previous = node;
@@ -622,7 +626,7 @@ private:
 		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
 		if(!existed) new(&newNode->element) value_type(Cpp::Move(key), Cpp::Move(value));
 		else newNode->element.Value = Cpp::Move(value);
-		if(Count()>BucketCount())
+		if(Count() > BucketCount())
 		{
 			allocate_buckets(Count(), BucketCount()*2);
 			rehash();
@@ -664,8 +668,8 @@ private:
 	{
 		if(node == null) return null;
 
-		if(node->prev!=null) node->prev->next = node->next;
-		if(node->next!=null) node->next->prev = node->prev;
+		if(node->prev != null) node->prev->next = node->next;
+		if(node->next != null) node->next->prev = node->prev;
 
 		if(node == mRange.mFirstNode) mRange.mFirstNode = node->next;
 		if(node == mRange.mLastNode) mRange.mLastNode = node->prev;

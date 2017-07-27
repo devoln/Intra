@@ -8,7 +8,7 @@ Span<float> NoteSampler::operator()(Span<float> dst, bool add)
 {
 	auto notProcessedPart = dst.Drop(ADSR.SamplesLeft());
 	dst = dst.Take(ADSR.SamplesLeft());
-	if(add && !Modifiers.Empty())
+	if(add && (!Modifiers.Empty() || ADSR))
 	{
 		float tempArr[1024];
 		while(!dst.Full() && !Empty())
@@ -27,6 +27,13 @@ Span<float> NoteSampler::operator()(Span<float> dst, bool add)
 
 size_t NoteSampler::operator()(Span<float> dstLeft, Span<float> dstRight, bool add)
 {
+	if(Modifiers.Empty() && !ADSR && GenericSamplers.Empty())
+	{
+		const size_t sampleCount = Math::Min(ADSR.SamplesLeft(), dstLeft.Length());
+		fillStereo(dstLeft.Take(sampleCount), dstRight.Take(sampleCount), add);
+		return sampleCount;
+	}
+
 	size_t sampleCount = 0;
 	dstLeft = dstLeft.Take(ADSR.SamplesLeft());
 	dstRight = dstRight.Take(ADSR.SamplesLeft());
@@ -79,6 +86,36 @@ void NoteSampler::fill(Span<float> dst, bool add)
 	if(!add) FillZeros(dst);
 }
 
+void NoteSampler::fillStereo(Span<float> dstLeft, Span<float> dstRight, bool add)
+{
+#ifdef INTRA_DEBUG
+	if(!add)
+	{
+		Fill(dstLeft, 1000000);
+		Fill(dstRight, 1000000);
+	}
+#endif
+	for(size_t i = 0; i < WaveTableSamplers.Length(); i++)
+	{
+		size_t samplesProcessed = WaveTableSamplers[i](dstLeft, dstRight, add);
+		if(samplesProcessed != dstLeft.Length())
+		{
+			if(!add)
+			{
+				FillZeros(dstLeft.Drop(samplesProcessed));
+				FillZeros(dstRight.Drop(samplesProcessed));
+			}
+			WaveTableSamplers.RemoveUnordered(i--);
+		}
+		add = true;
+	}
+	if(!add)
+	{
+		FillZeros(dstLeft);
+		FillZeros(dstRight);
+	}
+}
+
 void NoteSampler::applyModifiers(Span<float> dst)
 {
 	for(auto& mod: Modifiers) mod(dst);
@@ -102,8 +139,15 @@ void NoteSampler::MultiplyPitch(float freqMultiplier)
 
 void NoteSampler::NoteRelease()
 {
+	for(auto& sampler: WaveTableSamplers) sampler.NoteRelease();
 	for(auto& sampler: GenericSamplers) sampler.NoteRelease();
 	if(ADSR) ADSR.NoteRelease();
+}
+
+void NoteSampler::SetPan(float pan)
+{
+	for(auto& sampler: WaveTableSamplers) sampler.SetPan(pan);
+	Pan = pan;
 }
 
 }}}

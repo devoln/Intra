@@ -85,7 +85,7 @@ void TrackParser::processSystemEvent(DeviceState& state, const RawEvent& event)
 				(byte(event.MetaData()[0]) << 16)|
 				(byte(event.MetaData()[1]) << 8)|
 				byte(event.MetaData()[2]);
-			state.TickDuration = value/1000000.0f/float(state.HeaderTimeFormat);
+			state.TickDuration = float(value)/(1000000.0f*float(state.HeaderTimeFormat));
 		}
 		return;
 	}

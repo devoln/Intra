@@ -202,6 +202,10 @@ template<typename R> Meta::EnableIf<
 > Add(Span<float> dstOp1, const R& op2)
 {return AddAdvance(dstOp1, R(op2));}
 
+void LinearMultiply(Span<float> dst, float& u, float du);
+void LinearMultiply(Span<float> dst, CSpan<float> src, float& u, float du);
+void LinearMultiplyAdd(Span<float> dst, CSpan<float> src, float& u, float du);
+
 INTRA_WARNING_POP
 
 }}

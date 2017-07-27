@@ -154,7 +154,7 @@ TOr2<Meta::RemoveConstRef<P1>, Meta::RemoveConstRef<P2>>> operator||(P1&& p1, P2
 #define INTRA_DEFINE_PREDICATE1(name, op) struct T ## name: detail::TPred1 {\
 	constexpr forceinline T ## name() noexcept {}\
 	template<typename T> constexpr forceinline bool operator()(const T& a) const {return op;}\
-}; constexpr static const T ## name name{};
+}; constexpr static const T ## name name{}
 
 INTRA_DEFINE_PREDICATE1(IsEven, (a & 1) == 0);
 INTRA_DEFINE_PREDICATE1(IsOdd, (a & 1) != 0);

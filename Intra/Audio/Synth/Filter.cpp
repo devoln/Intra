@@ -3,10 +3,13 @@
 #include "Container/Sequential/Array.h"
 #include "Types.h"
 #include "Range/Mutation/Transform.h"
+#include "Range/Reduction.h"
 
-namespace Intra { namespace Audio { namespace Synth {
+#include <stdio.h>
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+namespace Intra { namespace Audio { namespace Synth {
 
 FilterCoeffs FilterCoeffs::Calculate(float rezAmount, float cutoffRatio, FilterType type)
 {
@@ -151,6 +154,51 @@ void Filter::operator()(Span<float> inOutSamples)
 	}
 }
 
-INTRA_WARNING_POP
+
+void ResonanceFilter::operator()(Span<float> inOutSamples)
+{
+	for(float& sample: inOutSamples)
+	{
+		sample += S*DeltaPhase + PrevSample;
+		PrevSample = sample;
+
+		S -= sample*DeltaPhase;
+		S *= QFactor;
+	}
+}
+
+void DriveEffect::operator()(Span<float> inOutSamples)
+{
+	static const float halfPi = float(Math::PI)*0.5f;
+	for(float& sample: inOutSamples)
+	{
+		const float s = sample*K;
+		const float x = s + 0.5f / (1 + s*s) - 0.5f;
+		//sample = Math::Atan(x);
+		sample = x > 0? halfPi * x / (x + 1): -halfPi * x / (x - 1);
+	}
+}
+
+void SoftHighPassFilter::operator()(Span<float> inOutSamples)
+{
+	const float K1 = 1 - K;
+	for(float& sample: inOutSamples)
+	{
+		S *= K;
+		S += sample*K1;
+		sample -= S;
+	}
+}
+
+void NormalizeEffect::operator()(Span<float> inOutSamples)
+{
+	auto minimax = Range::MiniMax(inOutSamples.AsConstRange());
+	float absMax = Math::Max(Math::Abs(minimax.first), Math::Abs(minimax.second));
+	if(AbsMax < absMax) AbsMax = absMax;
+	const float multiplier = 1 / AbsMax;
+	Multiply(inOutSamples, multiplier*Volume);
+}
 
 }}}
+
+INTRA_WARNING_POP

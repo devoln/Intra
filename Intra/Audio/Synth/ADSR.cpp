@@ -10,123 +10,151 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 namespace Intra { namespace Audio { namespace Synth {
 
 AdsrAttenuator::AdsrAttenuator(null_t):
-	mAttackSamples(0),
-	mDecaySamples(0),
-	mSustainVolume(1),
-	mReleaseSamples(0),
-	mU(-1), mDU(0)
+	AttackSamples(0),
+	DecaySamples(0),
+	SustainVolume(1),
+	ReleaseSamples(0),
+	U(-1), DU(0)
 {}
 
 AdsrAttenuator::AdsrAttenuator(float attackTime, float decayTime,
 	float sustainVolume, float releaseTime, uint sampleRate):
-	mAttackSamples(size_t(attackTime*sampleRate)),
-	mDecaySamples(size_t(decayTime*sampleRate)),
-	mSustainVolume(sustainVolume),
-	mReleaseSamples(releaseTime == Cpp::Infinity? ~size_t(): size_t(releaseTime*sampleRate))
+	AttackSamples(size_t(attackTime*float(sampleRate))),
+	DecaySamples(size_t(decayTime*float(sampleRate))),
+	SustainVolume(sustainVolume),
+	ReleaseSamples(releaseTime == Cpp::Infinity? ~size_t(): size_t(releaseTime*float(sampleRate)))
 {
-	if(mAttackSamples == 0 && mDecaySamples == 0 && mSustainVolume == 1 && mReleaseSamples == ~size_t())
+	if(AttackSamples == 0 && DecaySamples == 0 && SustainVolume == 1 && ReleaseSamples == ~size_t())
 	{
-		mU = -1;
+		U = -1;
+		DU = 0;
 		return;
 	}
-	if(mAttackSamples != 0) beginAttack();
-	else beginDecay();
+	if(AttackSamples != 0) beginAttack();
+	else if(DecaySamples != 0) beginDecay();
+	else beginSustain();
 }
 
 void AdsrAttenuator::operator()(Span<float> inOutSamples)
 {
-	if(mAttackSamples != 0)
+	if(AttackSamples != 0)
 	{
 		attack(inOutSamples);
-		if(mAttackSamples == 0 && mDecaySamples != 0) beginDecay();
+		if(AttackSamples == 0)
+		{
+			if(DecaySamples != 0) beginDecay();
+			else beginSustain();
+		}
 	}
-	if(mAttackSamples != 0) return;
+	if(AttackSamples != 0) return;
 
-	if(mDecaySamples != 0) decay(inOutSamples);
-	if(mDecaySamples != 0) return;
-	if(mSustainVolume == -1) release(inOutSamples);
-	else Multiply(inOutSamples, mU);
+	if(DecaySamples != 0)
+	{
+		decay(inOutSamples);
+		if(DecaySamples == 0) beginSustain();
+	}
+	if(DecaySamples != 0) return;
+	if(SustainVolume == -1) release(inOutSamples);
+	else Multiply(inOutSamples, U);
+}
+
+size_t AdsrAttenuator::CurrentStateSamplesLeft() const
+{
+	if(AttackSamples != 0) return AttackSamples;
+	if(DecaySamples != 0) return DecaySamples;
+	if(SustainVolume == -1) return ReleaseSamples;
+	return ~size_t();
+}
+
+void AdsrAttenuator::SamplesProcessedExternally(size_t numSamples)
+{
+	if(AttackSamples != 0)
+	{
+		const size_t processed = Math::Min(numSamples, AttackSamples);
+		numSamples -= processed;
+		AttackSamples -= processed;
+		if(AttackSamples == 0)
+		{
+			if(DecaySamples != 0) beginDecay();
+			else beginSustain();
+		}
+	}
+	if(numSamples == 0) return;
+
+	if(DecaySamples != 0)
+	{
+		const size_t processed = Math::Min(numSamples, DecaySamples);
+		numSamples -= processed;
+		DecaySamples -= processed;
+		if(DecaySamples == 0) beginSustain();
+	}
+	if(numSamples == 0) return;
+	if(SustainVolume == -1)
+	{
+		const size_t processed = Math::Min(numSamples, ReleaseSamples);
+		numSamples -= processed;
+		ReleaseSamples -= processed;
+	}
 }
 
 void AdsrAttenuator::beginAttack()
 {
-	INTRA_ASSERT(mSustainVolume != -1);
-	mU = 0;
-	mDU = 1.0f / mAttackSamples;
+	INTRA_ASSERT(SustainVolume != -1);
+	U = 0;
+	DU = 1.0f / float(AttackSamples);
+}
+
+void AdsrAttenuator::beginSustain()
+{
+	INTRA_ASSERT(SustainVolume != -1);
+	U = SustainVolume;
+	DU = 0;
 }
 
 void AdsrAttenuator::beginDecay()
 {
-	INTRA_ASSERT(mSustainVolume != -1);
-	mU = 1;
-	mDU = (mSustainVolume - mU) / mDecaySamples;
+	INTRA_ASSERT(SustainVolume != -1);
+	U = 1;
+	DU = (SustainVolume - U) / float(DecaySamples);
 }
 
 void AdsrAttenuator::NoteRelease()
 {
-	mAttackSamples = 0;
-	mDecaySamples = 0;
-	mSustainVolume = -1;
+	if(!*this) return;
+	AttackSamples = 0;
+	DecaySamples = 0;
+	SustainVolume = -1;
 	beginRelease();
 }
 
 void AdsrAttenuator::beginRelease()
 {
-	mDU = -mU / mReleaseSamples;
-}
-
-static void LinearMultiply(float*& ptr, float* end, float& u, float du)
-{
-#if INTRA_MINEXE >= 3
-#elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
-	const float du4 = 4*du;
-	while(ptr + 3 < end)
-	{
-		*ptr++ *= u;
-		*ptr++ *= u;
-		*ptr++ *= u;
-		*ptr++ *= u;
-		u += du4;
-	}
-#else
-	Simd::float4 u4 = Simd::SetFloat4(u, u + du, u + 2*du, u + 3*du);
-	Simd::float4 du4 = Simd::SetFloat4(4*du);
-	while(ptr + 3 < end)
-	{
-		Simd::float4 v = Simd::SetFloat4U(ptr);
-		Simd::GetU(ptr, Simd::Mul(v, u4));
-		u4 = Simd::Add(u4, du4);
-		ptr += 4;
-	}
-	u = Simd::GetX(u4);
-#endif
-	while(ptr < end)
-	{
-		*ptr++ *= u;
-		u += du;
-	}
+	DU = -U / float(ReleaseSamples);
 }
 
 void AdsrAttenuator::attack(Span<float>& inOutSamples)
 {
-	auto end = inOutSamples.Take(mAttackSamples).End;
-	mAttackSamples -= size_t(end - inOutSamples.Begin);
-	LinearMultiply(inOutSamples.Begin, end, mU, mDU);
+	auto dst = inOutSamples.Take(AttackSamples);
+	AttackSamples -= dst.Length();
+	LinearMultiply(dst, U, DU);
+	inOutSamples.PopFirstExactly(dst.Length());
 }
 
 void AdsrAttenuator::decay(Span<float>& inOutSamples)
 {
-	auto end = inOutSamples.Take(mDecaySamples).End;
-	mDecaySamples -= size_t(end - inOutSamples.Begin);
-	LinearMultiply(inOutSamples.Begin, end, mU, mDU);
+	auto dst = inOutSamples.Take(DecaySamples);
+	DecaySamples -= dst.Length();
+	LinearMultiply(dst, U, DU);
+	inOutSamples.PopFirstExactly(dst.Length());
 }
 
 void AdsrAttenuator::release(Span<float>& inOutSamples)
 {
-	if(mReleaseSamples == ~size_t()) return;
-	auto end = inOutSamples.Take(mReleaseSamples).End;
-	mReleaseSamples -= size_t(end - inOutSamples.Begin);
-	LinearMultiply(inOutSamples.Begin, end, mU, mDU);
+	if(ReleaseSamples == ~size_t()) return;
+	auto dst = inOutSamples.Take(ReleaseSamples);
+	ReleaseSamples -= dst.Length();
+	LinearMultiply(dst, U, DU);
+	inOutSamples.PopFirstExactly(dst.Length());
 }
 
 }}}

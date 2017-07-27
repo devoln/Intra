@@ -24,7 +24,7 @@ struct Chorus
 	Chorus(size_t maxDelaySamples, float delayFreqPerSample, float mainVolume=0.5f, float secondaryVolume=0.5f):
 		DelayCircularBuffer(maxDelaySamples), CircularBufferOffset(0),
 		MainVolume(mainVolume), SecondaryVolume(secondaryVolume),
-		Oscillator(maxDelaySamples*0.5f, float(-Math::PI/2), float(2*Math::PI*delayFreqPerSample)) {}
+		Oscillator(float(maxDelaySamples)*0.5f, float(-Math::PI/2), float(2*Math::PI*delayFreqPerSample)) {}
 
 	void operator()(Span<float> inOutSamples);
 };
@@ -45,7 +45,7 @@ struct ChorusFactory
 	Chorus operator()(float freq, float volume, uint sampleRate) const
 	{
 		(void)freq; (void)volume;
-		return Chorus(size_t(MaxDelay*sampleRate), DelayFrequency/sampleRate, MainVolume, SecondaryVolume);
+		return Chorus(size_t(MaxDelay*float(sampleRate)), DelayFrequency/float(sampleRate), MainVolume, SecondaryVolume);
 	}
 
 	forceinline bool operator==(null_t) const noexcept {return MaxDelay == 0 || SecondaryVolume == 0;}

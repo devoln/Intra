@@ -5,6 +5,8 @@
 #include "Utils/Span.h"
 #include "Utils/Debug.h"
 
+#include "Math/Math.h"
+
 #include "Types.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -43,7 +45,7 @@ struct Filter: FilterCoeffs
 	Filter(const FilterCoeffs& coeffs): FilterCoeffs(coeffs) {}
 
 	Filter(float rezAmount, float cutoffFreq, uint sampleRate, FilterType type):
-		Filter(rezAmount, cutoffFreq/sampleRate, type) {}
+		Filter(rezAmount, cutoffFreq/float(sampleRate), type) {}
 
 	Filter(float rezAmount, float cutoffRatio, FilterType type):
 		FilterCoeffs(FilterCoeffs::Calculate(rezAmount, cutoffRatio, type)) {}
@@ -91,12 +93,109 @@ struct FilterFactory
 	forceinline bool operator==(null_t) const {return Coeffs == null && Type == FilterType::End;}
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
 
-	Filter operator()(float freq, float volume, uint sampleRate, size_t sampleCount) const
+	Filter operator()(float freq, float volume, uint sampleRate) const
 	{
-		(void)freq; (void)volume; (void)sampleCount;
+		(void)freq; (void)volume;
 		if(CutoffFrequency <= 0) return Filter(Coeffs);
 		return Filter(RezAmount, CutoffFrequency, sampleRate, Type);
 	}
+};
+
+
+struct DriveEffect
+{
+	float K;
+	DriveEffect(float k=0): K(k) {}
+
+	void operator()(Span<float> inOutSamples);
+	forceinline DriveEffect operator()(float freq, float volume, uint sampleRate) const
+	{
+		(void)freq; (void)volume; (void)sampleRate;
+		return *this;
+	}
+};
+
+struct ResonanceFilter
+{
+	float DeltaPhase, QFactor;
+	float PrevSample, S;
+
+	ResonanceFilter(null_t=null): DeltaPhase(0), QFactor(0), PrevSample(0), S(0) {}
+
+	ResonanceFilter(float dphi, float qfactor):
+		DeltaPhase(dphi), QFactor(qfactor), PrevSample(0), S(0) {}
+
+	forceinline bool operator==(null_t) const noexcept {return DeltaPhase == 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+
+	void operator()(Span<float> inOutSamples);
+};
+
+struct ResonanceFilterFactory
+{
+	float Frequency;
+	float QFactor;
+
+	forceinline ResonanceFilterFactory(null_t = null): Frequency(0), QFactor(0) {}
+	forceinline ResonanceFilterFactory(float frequency, float qfactor):
+		Frequency(frequency), QFactor(qfactor) {}
+
+	forceinline bool operator==(null_t) const noexcept {return Frequency == 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+
+	ResonanceFilter operator()(float freq, float volume, uint sampleRate) const
+	{
+		(void)volume;
+		return {(Frequency<0? -freq*Frequency: Frequency)*2*float(Math::PI)/float(sampleRate), QFactor};
+	}
+};
+
+struct SoftHighPassFilter
+{
+	float K;
+	float S;
+	SoftHighPassFilter(float k = 0): K(k), S(0) {}
+
+	void operator()(Span<float> inOutSamples);
+};
+
+struct SoftHighPassFilterFactory
+{
+	float CutoffFrequency;
+
+	forceinline SoftHighPassFilterFactory(null_t=null): CutoffFrequency(0) {}
+	forceinline SoftHighPassFilterFactory(float frequency):
+		CutoffFrequency(frequency) {}
+
+	forceinline bool operator==(null_t) const noexcept {return CutoffFrequency == 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+
+	SoftHighPassFilter operator()(float freq, float volume, uint sampleRate) const
+	{
+		(void)volume;
+		const float f = (CutoffFrequency < 0? -freq: 1)*CutoffFrequency;
+		const float w =  2*float(Math::PI)*f;
+		return {1 / (1 + w/float(sampleRate))};
+	}
+};
+
+struct NormalizeEffect
+{
+	float Volume;
+	float AbsMax;
+
+	NormalizeEffect(float volume = 1): Volume(volume), AbsMax(0) {}
+
+	forceinline NormalizeEffect operator()(float freq, float volume, uint sampleRate) const
+	{
+		(void)freq; (void)volume; (void)sampleRate;
+		return *this;
+	}
+
+	void operator()(Span<float> inOutSamples);
 };
 
 }}}

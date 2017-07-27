@@ -18,14 +18,18 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 {
 	const size_t N = wavetableAmplitudes.Length()*2;
 	const float bwi = (Math::Pow2(bandwidthCents/1200 - 1) - 0.5f)*freqSampleRateRatio*Math::Pow(harmFreqMultiplier, harmBandwidthScale);
-	float rw = -freqSampleRateRatio*harmFreqMultiplier/bwi, rdw = 1.0f/N/bwi;
-	if(-2 > rw)
+	float rw = -freqSampleRateRatio*harmFreqMultiplier/bwi;
+	const float rdw = 1.0f/(float(N)*bwi);
+	float range = 2;
+	if(rdw > 1) range = 3*rdw;
+	if(-range > rw)
 	{
-		wavetableAmplitudes.PopFirstN(size_t((-2 - rw) / rdw));
-		rw = -2;
+		float elementsToSkip = Math::Round((-range - rw) / rdw);
+		wavetableAmplitudes.PopFirstN(size_t(elementsToSkip));
+		rw += elementsToSkip*rdw;
 	}
+	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Math::Round((range - rw) / rdw)));
 	amplitude /= bwi;
-	if(rw < 2) wavetableAmplitudes = wavetableAmplitudes.Take(size_t((2 - rw) / rdw));
 	while(!wavetableAmplitudes.Empty())
 	{
 		wavetableAmplitudes.Next() += amplitude * Math::Exp(-Math::Sqr(rw));
@@ -37,7 +41,7 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> outImagAmplitudes)
 {
 	INTRA_DEBUG_ASSERT(inOutRealAmplitudes.Length() <= outImagAmplitudes.Length());
-	Random::FastUniform<ushort> rand(inOutRealAmplitudes.Length() ^ size_t(inOutRealAmplitudes.Begin));
+	Random::FastUniform<ushort> rand(uint(inOutRealAmplitudes.Length()^1633529523u));
 	enum: uint {TABLE_SIZE = 1024};
 	float sineTable[TABLE_SIZE];
 	Math::SineRange<float> oscillator(1, 0, float(2*Math::PI/TABLE_SIZE));

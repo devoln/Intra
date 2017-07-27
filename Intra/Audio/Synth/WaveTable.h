@@ -1,6 +1,9 @@
 #pragma once
 
+#include "Cpp/Warnings.h"
 #include "Container/Sequential/Array.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -41,7 +44,9 @@ struct WaveTable
 	size_t NearestLevelForRatio(float ratio) const noexcept {return NearestLevelForRate(ratio/BaseLevelRatio);}
 	Span<float> LevelSamplesForRatio(float ratio) noexcept {return LevelSamples(NearestLevelForRatio(ratio));}
 	CSpan<float> LevelSamplesForRatio(float ratio) const noexcept {return LevelSamples(NearestLevelForRatio(ratio));}
-	float LevelRatio(size_t level) const noexcept {return BaseLevelRatio*(1 << level);}
+	float LevelRatio(size_t level) const noexcept {return BaseLevelRatio*float(1 << level);}
 };
 
 }}}
+
+INTRA_WARNING_POP

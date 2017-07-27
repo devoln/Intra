@@ -38,18 +38,25 @@ MidiInstrumentSet GetMapping()
 	static const byte guitars[] = {6, 24, 26, 27, 28, 29, 30, 31, 46};
 	for(const byte code: guitars) instruments[code] = &lib.Guitar;
 
-	instruments[25] = &lib.GuitarSteel;
+	instruments[104] = instruments[25] = &lib.GuitarSteel;
 	instruments[32] = &lib.Bass1;
 	instruments[33] = &lib.ElectricBassFinger;
 	instruments[34] = &lib.ElectricBassPick;
 
-	static const byte basses2[] = {36, 37, 39};
+	static const byte basses2[] = {39};
 	for(const byte code: basses2) instruments[code] = &lib.Bass2;
+	instruments[36] = instruments[37] = &lib.SlapBass;
 
-	instruments[47] = &lib.GunShot;
+	instruments[47] = &lib.Timpani;
 
-	static const byte padSweeps[] = {43, 45, 49, 50, 51,  89, 90, 93, 94, 95, 102};
+	static const byte padSweeps[] = {43, 45, 49, 51,  89, 93, 94, 95, 102};
 	for(const byte code: padSweeps) instruments[code] = &lib.Pad8Sweep;
+	instruments[94] = &lib.Pad7Halo;
+	instruments[90] = &lib.PadPolysynth;
+	instruments[101] = &lib.FxGoblins;
+
+	instruments[44] = &lib.TremoloStrings;
+	instruments[50] = &lib.SynthStrings;
 
 	instruments[40] = instruments[41] = instruments[42] = &lib.Violin;
 	instruments[48] = &lib.StringEnsemble;
@@ -57,43 +64,50 @@ MidiInstrumentSet GetMapping()
 	static const byte panFlutes[] = {71, 75};
 	for(const byte code: panFlutes) instruments[code] = &lib.PanFlute;
 
-	static const byte flutes[] = {73, 60};
-	for(const byte code: flutes) instruments[code] = &lib.Flute;
+	instruments[60] = &lib.FrenchHorn;
+	instruments[73] = &lib.Flute;
 
-	static const byte whistles[] = {74, 76, 77,  78,  79};
+	static const byte whistles[] = {74, 76, 77,  78};
 	for(const byte code: whistles) instruments[code] = &lib.Whistle;
+	instruments[79] = &lib.Ocarina;
 
 	instruments[80] = &lib.LeadSquare;
-	instruments[81] = &lib.Sawtooth;
+	instruments[81] = &lib.LeadSawtooth;
 	instruments[87] = &lib.BassLead;
 	instruments[94] = &lib.Pad7Halo;
 	instruments[119] = &lib.ReverseCymbal;
 	instruments[99] = &lib.Atmosphere;
 
-	static const byte vibraphones[] = {8, 10, 11, 12, 88, 92, 108};
+	static const byte vibraphones[] = {8, 10, 11, 88, 108};
 	for(const byte code: vibraphones) instruments[code] = &lib.Vibraphone;
+	instruments[12] = &lib.Marimba;
+	instruments[92] = &lib.Pad5Bowed;
 
 	instruments[9] = &lib.Glockenspiel;
+	instruments[13] = &lib.Xylophone;
 
 	static const byte newAges[] = {88, 92};
 	for(const byte code: newAges) instruments[code] = &lib.NewAge;
 
 	instruments[98] = &lib.Crystal;
 
-	static const byte kalimbas[] = {13, 15, 108, 112};
+	static const byte kalimbas[] = {15, 108, 112};
 	for(const byte code: kalimbas) instruments[code] = &lib.Kalimba;
 
-	static const byte synthVoices[] = {18, 52, 53, 54, 83, 85, 100};
+	static const byte synthVoices[] = {18, 52, 54, 83, 85, 100};
 	for(const byte code: synthVoices) instruments[code] = &lib.SynthVoice;
 	instruments[52] = &lib.ChoirAahs;
+	instruments[53] = &lib.VoiceOohs;
 
+	instruments[17] = &lib.PercussiveOrgan;
 	instruments[18] = &lib.RockOrgan;
 
-	static const byte soundTrackFx[] = {44, 97};
+	static const byte soundTrackFx[] = {97};
 	for(const byte code: soundTrackFx) instruments[code] = &lib.SoundTrackFX2;
 
-	static const byte trumpets[] = {56, 57, 58, 68, 69, 70};
+	static const byte trumpets[] = {56, 57, 69, 70};
 	for(const byte code: trumpets) instruments[code] = &lib.Trumpet;
+	instruments[58] = &lib.Tuba;
 
 	instruments[72] = &lib.Piccolo;
 

@@ -25,13 +25,13 @@ struct ViolinPhysicalModel
 		float kDemp;
 		if(note<13)
 		{
-			mFrc = 0.375f*Math::Pow(4.0f, note/12);
+			mFrc = 0.375f*Math::Pow2(note/12*2);
 			mLen = 230;
 			kDemp = 0.005f;
 		}
 		else
 		{
-			float s = 230/Math::Pow(2.0f, (note-12)/12);
+			float s = 230/Math::Pow2((note-12)/12);
 			mLen = Math::Max(4u, uint(s));
 			mFrc = 1.5f*(float(mLen)/s)*(float(mLen)/s);
 			kDemp = 0.12f/(note+12);

@@ -159,12 +159,12 @@ void WriteWave(IAudioSource& source, OutputStream& stream, Data::ValueType sampl
 	header.SampleRate = source.SampleRate();
 	ushort bpp = sampleType.Size();
 	header.BitsPerSample =  ushort(bpp*8);
-	header.DataSize = source.SamplesLeft()*bpp*header.Channels;
+	header.DataSize = uint(source.SamplesLeft()*bpp*header.Channels);
 	header.BlockAlign = ushort(bpp*header.Channels);
-	header.BytesPerSec = bpp*header.Channels*header.SampleRate;
+	header.BytesPerSec = uint(bpp*header.Channels)*header.SampleRate;
 	header.FormatTag = ushort(sampleType != Data::ValueType::Float? 1: 3);
 	header.FormatChunkSize = 16;
-	header.WaveformChunkSize = sizeof(WaveHeader)-sizeof(header.RIFF)-sizeof(header.WaveformChunkSize) + header.DataSize;
+	header.WaveformChunkSize = uint(sizeof(WaveHeader) - sizeof(header.RIFF) - sizeof(header.WaveformChunkSize) + header.DataSize);
 
 	if(header.FormatTag != 1)
 	{

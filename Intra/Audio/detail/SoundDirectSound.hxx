@@ -83,14 +83,14 @@ private:
 
 	~SoundContext()
 	{
-		ReleaseAllSounds();
+		/*ReleaseAllSounds();
 		ReleaseAllStreamedSounds();
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			mPrimary->Stop();
 			mPrimary->Release();
 			mContext->Release();
-		}
+		}*/
 	}
 
 	SoundContext(const SoundContext&) = delete;
@@ -126,18 +126,18 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 		const DSBUFFERDESC dsbd = {sizeof(DSBUFFERDESC),
 			DSBCAPS_GLOBALFOCUS|DSBCAPS_CTRLFREQUENCY|DSBCAPS_CTRLPAN|
 			DSBCAPS_CTRLPOSITIONNOTIFY|DSBCAPS_CTRLVOLUME/*|DSBCAPS_CTRL3D*/,
-			Info.GetBufferSize(), 0, &wfx, {}};
+			DWORD(Info.GetBufferSize()), 0, &wfx, {}};
 		auto& context = SoundContext::Instance();
 		if(!context.Device()) return;
 		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
 
 		void* dstData;
 		DWORD lockedSize;
-		Buffer->Lock(0, Info.GetBufferSize(), &dstData, &lockedSize, null, null, 0);
+		Buffer->Lock(0, DWORD(Info.GetBufferSize()), &dstData, &lockedSize, null, null, 0);
 		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
 		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
 		src.GetInterleavedSamples(dst);
-		Buffer->Unlock(dstData, Info.GetBufferSize(), null, 0);
+		Buffer->Unlock(dstData, lockedSize, null, 0);
 
 		INTRA_SYNCHRONIZED(context.MyMutex)
 			context.AllSounds.AddLast(this);
@@ -153,10 +153,10 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 		if(data == null) return;
 		void* dstData;
 		DWORD lockedSize;
-		Buffer->Lock(0, Info.GetBufferSize(), &dstData, &lockedSize, null, null, 0);
+		Buffer->Lock(0, DWORD(Info.GetBufferSize()), &dstData, &lockedSize, null, null, 0);
 		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
 		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
-		INTRA_FINALLY(Buffer->Unlock(dstData, Info.GetBufferSize(), null, 0));
+		INTRA_FINALLY(Buffer->Unlock(dstData, DWORD(Info.GetBufferSize()), null, 0));
 		if(type == ValueType::SNorm16)
 		{
 			auto src = SpanOfRawElements<short>(data, dst.Length());
@@ -334,13 +334,13 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		};
 		const DSBUFFERDESC dsbd = {
 			sizeof(DSBUFFERDESC), DSBCAPS_GLOBALFOCUS|DSBCAPS_CTRLPOSITIONNOTIFY,
-			GetBufferSize()*2, 0, &wfx, {}
+			DWORD(GetBufferSize()*2), 0, &wfx, {}
 		};
 
 		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
 
 		DWORD lockedSize; void* lockedData;
-		Buffer->Lock(0, GetBufferSize()*2, &lockedData, &lockedSize, null, null, 0);
+		Buffer->Lock(0, DWORD(GetBufferSize()*2), &lockedData, &lockedSize, null, null, 0);
 		const auto dst = SpanOfRaw<short>(lockedData, lockedSize);
 		if(Source) Source->GetInterleavedSamples(dst);
 		else FillZeros(dst);
@@ -357,7 +357,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 		const DSBPOSITIONNOTIFY positionNotify[2] = {
 			{0, NotifyLoadEvents[0]},
-			{GetBufferSize(), NotifyLoadEvents[1]}
+			{DWORD(GetBufferSize()), NotifyLoadEvents[1]}
 		};
 		RegisterWaitForSingleObject(&NotifyLoadWaits[0], NotifyLoadEvents[0], WaitLoadCallback, this, INFINITE, 0);
 		RegisterWaitForSingleObject(&NotifyLoadWaits[1], NotifyLoadEvents[1], WaitLoadCallback, this, INFINITE, 0);
@@ -456,7 +456,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	{
 		const size_t lockSampleStart = no == 0? 0: BufferSampleCount;
 		const HRESULT lockResult = Buffer->Lock(uint(lockSampleStart*sizeof(short)*Source->ChannelCount()),
-			GetBufferSize(), &lockedBits, &lockedSize, &lockedBits2, &lockedSize2, 0);
+			DWORD(GetBufferSize()), &lockedBits, &lockedSize, &lockedBits2, &lockedSize2, 0);
 		INTRA_DEBUG_ASSERT(!FAILED(lockResult));
 		if(FAILED(lockResult)) return null;
 		return lockedBits;

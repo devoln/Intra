@@ -168,7 +168,7 @@ void WritableFileMapping::Flush()
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	FlushViewOfFile(mData.Data(), 0);
 #else
-	msync(mData, mData.Length(), MS_SYNC);
+	msync(mData.Data(), mData.Length(), MS_SYNC);
 #endif
 }
 

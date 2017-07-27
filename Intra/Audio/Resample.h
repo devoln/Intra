@@ -9,7 +9,7 @@ namespace Intra { namespace Audio {
 inline float LinearSample(CSpan<float> arr, float index)
 {
 	const uint i = uint(index);
-	return Math::LinearMix(arr[i], arr[i+1], index - i);
+	return Math::LinearMix(arr[i], arr[i+1], index - float(i));
 }
 
 void ResampleLinear(CSpan<float> src, Span<float> dst);

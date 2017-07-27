@@ -9,24 +9,36 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Synth {
 
-class AdsrAttenuator
+struct AdsrAttenuator
 {
-	size_t mAttackSamples;
-	size_t mDecaySamples;
-	float mSustainVolume;
-	size_t mReleaseSamples;
-	float mU, mDU;
-public:
+	size_t AttackSamples;
+	size_t DecaySamples;
+	float SustainVolume;
+	size_t ReleaseSamples;
+	float U, DU;
+
 	AdsrAttenuator(null_t=null);
 	AdsrAttenuator(float attackTime, float decayTime,
 		float sustainVolume, float releaseTime, uint sampleRate);
 
+	//! Применить огибающую к следующим семплам
 	void operator()(Span<float> inOutSamples);
 
+	//! Отпускание ноты означает немедленный переход к стадии release,
+	//! что приводит к отмене атаки и спада, если они ещё продолжаются.
 	void NoteRelease();
-	size_t SamplesLeft() const noexcept {return mSustainVolume == -1? mReleaseSamples: ~size_t();}
 
-	forceinline explicit operator bool() const noexcept {return mU > -1;}
+	//! Сколько семплов осталось обработать до полного затухания ноты до нуля.
+	size_t SamplesLeft() const noexcept {return SustainVolume == -1? (U == 0? 0: ReleaseSamples): ~size_t();}
+
+	//! Сколько семплов осталось обработать до перехода к следующему состоянию огибающей.
+	size_t CurrentStateSamplesLeft() const;
+
+	//! Указать объекту, что внешний код применил затухание к numSamples семплам и соответствующим образом обновил U.
+	//! Этот вызов необходим, чтобы восстановить инвариант объекта после внешнего изменения внутренних полей.
+	void SamplesProcessedExternally(size_t numSamples);
+
+	forceinline explicit operator bool() const noexcept {return U > -1;}
 	forceinline bool operator==(null_t) const noexcept {return !bool(*this);}
 	forceinline bool operator!=(null_t) const noexcept {return bool(*this);}
 
@@ -35,6 +47,7 @@ private:
 	void attack(Span<float>& inOutSamples);
 	void beginDecay();
 	void decay(Span<float>& inOutSamples);
+	void beginSustain();
 	void beginRelease();
 	void release(Span<float>& inOutSamples);
 };
