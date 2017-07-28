@@ -9,11 +9,14 @@
 #include "Data/ValueType.h"
 
 #include "SoundBasicData.hxx"
+#include "Utils/Shared.h"
 
 #include <emscripten.h>
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_IGNORE_WARNING(dollar-in-identifier-extension)
+
 
 namespace Intra { namespace Audio {
 
@@ -40,6 +43,10 @@ struct SoundContext: detail::SoundBasicContext
 		return context;
 	}
 
+	void ReleaseAllSounds();
+
+	void ReleaseAllStreamedSounds();
+
 	IndexAllocator<ushort> BufferIdalloc;
 	IndexAllocator<ushort> InstanceIdalloc;
 	IndexAllocator<ushort> StreamedSoundIdalloc;
@@ -47,45 +54,56 @@ struct SoundContext: detail::SoundBasicContext
 
 struct Sound::Data: detail::SoundBasicData
 {
-	Data(IAudioSource& src): SoundBasicData(src),
-		Id(SoundContext::Instance().BufferIdalloc.Allocate())
+	Data(IAudioSource& src): SoundBasicData(src)
 	{
+		auto& context = SoundContext::Instance();
+		Id = context.BufferIdalloc.Allocate();
 		const size_t totalSampleCount = src.SamplesLeft();
 		EM_ASM_({
-			var frameCount = $0;
-			var buffer = Module.gWebAudioContext.createBuffer($1, frameCount, $2);
+			var buffer = Module.gWebAudioContext.createBuffer($1, $0, $2);
 			Module.gWebAudioBufferArray[$3] = buffer;
-		}, totalSampleCount, src.ChannelCount(), src.SampleRate(), Id);
+		}, totalSampleCount, Info.Channels, Info.SampleRate, Id);
 
 		size_t totalSamplesRead = 0;
-		FixedArray<float> tempBuffer(16384 * src.ChannelCount());
+		static const size_t tempBufferSamplesPerChannel = 16384;
+		FixedArray<float> tempBuffer(tempBufferSamplesPerChannel * Info.Channels);
 		Span<float> tempSpans[16];
-		INTRA_DEBUG_ASSERT(Source->ChannelCount() <= 16);
-		for(size_t c = 0; c < Source->ChannelCount(); c++)
-			tempSpans[c] = Range::Drop(tempBuffer, BufferSampleCount*c).Take(BufferSampleCount);
-		auto tempSpanRange = Range::Take(tempSpans, Source->ChannelCount());
-		while(src.SamplesLeft() > 0)
+		INTRA_DEBUG_ASSERT(Info.Channels <= 16);
+		for(size_t c = 0; c < Info.Channels; c++)
+			tempSpans[c] = Range::Drop(tempBuffer, tempBufferSamplesPerChannel*c).Take(tempBufferSamplesPerChannel);
+		auto tempSpanRange = Range::Take(tempSpans, Info.Channels);
+		while(totalSamplesRead < totalSampleCount)
 		{
 			size_t samplesRead = src.GetUninterleavedSamples(tempSpanRange);
 			for(uint c = 0; c < Info.Channels; c++)
-				SetChannelSubData(tempSpans[c].Take(samplesRead), totalSamplesRead);
+				SetChannelFloatSubData(tempSpans[c].Take(samplesRead), c, totalSamplesRead);
 			totalSamplesRead += samplesRead;
 		}
+
+		context.AllSounds.AddLast(this);
+	}
+
+	~Data()
+	{
+		Release();
 	}
 
 	void SetDataInterleaved(const void* data, ValueType type)
 	{
 		if(Info.Channels == 1)
 		{
-			SetDataChannels(&data, type);
+			if(type == ValueType::Float) SetChannelsFloatSubData({CSpanOfRaw<float>(data, Info.GetBufferSize())});
+			else if(type == ValueType::Short || type == ValueType::SNorm16) SetChannelsShortSubData({CSpanOfRaw<short>(data, Info.GetBufferSize())});
 			return;
 		}
 
 		if(type == ValueType::Float)
 		{
 			EM_ASM_({
+				var snd = Module.gWebAudioBufferArray[$3];
+				if(snd == null) return;
 				var bufferData = [];
-				for(var c=0; c<$0; c++) bufferData[c] = Module.gWebAudioBufferArray[$3].getChannelData(c);
+				for(var c=0; c<$0; c++) bufferData[c] = snd.getChannelData(c);
 				var j=0;
 				for(var i=0; i<$2; i++)
 					for(var c=0; c<$0; c++)
@@ -95,8 +113,10 @@ struct Sound::Data: detail::SoundBasicData
 		else if(type == ValueType::SNorm16 || type == ValueType::Short)
 		{
 			EM_ASM_({
+				var snd = Module.gWebAudioBufferArray[$3];
+				if(snd == null) return;
 				var bufferData = [];
-				for(var c=0; c<$0; c++) bufferData[c] = Module.gWebAudioBufferArray[$3].getChannelData(c);
+				for(var c=0; c<$0; c++) bufferData[c] = snd.getChannelData(c);
 				var j=0;
 				for(var i=0; i<$2; i++)
 					for(var c=0; c<$0; c++)
@@ -109,6 +129,7 @@ struct Sound::Data: detail::SoundBasicData
 	{
 		EM_ASM_({
 			var buffer = Module.gWebAudioBufferArray[$3];
+			if(buffer == null) return;
 			if(buffer.copyToChannel === undefined)
 			{
 				var bufferData = buffer.getChannelData($0);
@@ -128,6 +149,7 @@ struct Sound::Data: detail::SoundBasicData
 	{
 		EM_ASM_({
 			var buffer = Module.gWebAudioBufferArray[$3];
+			if(buffer == null) return;
 			var bufferData = buffer.getChannelData($0);
 			for(var i = 0; i<$2; i++) bufferData[$4 + i] = (Module.HEAP16[$1 + i] + 0.5) / 32767.5;
 		}, channel, reinterpret_cast<size_t>(data.Data())/sizeof(short), data.Length(), Id, bufferOffset);
@@ -141,16 +163,20 @@ struct Sound::Data: detail::SoundBasicData
 
 	void Release()
 	{
-		SoundContext::Instance().BufferIdalloc.Deallocate(ushort(Id));
+		if(Id == ~size_t()) return;
+		auto& context = SoundContext::Instance();
+		context.AllSounds.FindAndRemoveUnordered(this);
+		context.BufferIdalloc.Deallocate(ushort(Id));
 		EM_ASM_({
 			Module.gWebAudioBufferArray[$0] = null;
 		}, Id);
+		Id = ~size_t();
 	}
 
 	size_t Id;
 };
 
-struct Sound::Instance::Data: detail::SoundInstanceBasicData
+struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
 {
 	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent))
 	{
@@ -160,24 +186,39 @@ struct Sound::Instance::Data: detail::SoundInstanceBasicData
 			source.buffer = Module.gWebAudioBufferArray[$0];
 			source.connect(Module.gWebAudioContext.destination);
 			source.__is_playing = false;
-			source.onended = function() { source.__is_playing = false; };
+			source.onended = function()
+			{
+				source.__is_playing = false;
+				Module._Emscripten_OnSoundStopCallback($2);
+			};
 			Module.gWebAudioInstanceArray[$1] = source;
-		}, Parent->Id, Id);
+		}, Parent->Id, Id, this);
+	}
+
+	~Data()
+	{
+		Release();
 	}
 
 	void Release()
 	{
-		Stop();
+		if(Id == ~size_t()) return;
+		auto& context = SoundContext::Instance();
+		auto ref = Cpp::Move(SelfRef);
+		stop();
 		EM_ASM_({
 			Module.gWebAudioInstanceArray[$0] = null;
 		}, Id);
-		SoundContext::Instance().InstanceIdalloc.Deallocate(ushort(Id));
+		context.InstanceIdalloc.Deallocate(ushort(Id));
+		Id = ~size_t();
 	}
 
 	void Play(bool loop)
 	{
+		SelfRef = SharedThis();
 		EM_ASM_({
 			var src = Module.gWebAudioInstanceArray[$0];
+			if(src == null) return;
 			src.loop = $1;
 			src.start();
 			src.__is_playing = true;
@@ -187,29 +228,43 @@ struct Sound::Instance::Data: detail::SoundInstanceBasicData
 	bool IsPlaying()
 	{
 		return bool(EM_ASM_INT({
-			return Module.gWebAudioInstanceArray[$0].__is_playing;
+			var src = Module.gWebAudioInstanceArray[$0];
+			if(src == null) return false;
+			return src.__is_playing;
 		}, Id));
 	}
 
 	void Stop()
 	{
+		auto ref = Cpp::Move(SelfRef);
+		if(Id == ~size_t()) return;
+		stop();
+	}
+
+private:
+	void stop()
+	{
 		EM_ASM_({
-			Module.gWebAudioInstanceArray[$0].stop();
+			var src = Module.gWebAudioInstanceArray[$0];
+			if(src == null) return;
+			src.stop();
 		}, Id);
 	}
 
+public:
 	size_t Id;
 };
 
-struct StreamedSound::Data: detail::StreamedSoundBasicData
+struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
 	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled=true):
 		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount > 16384? 16384: bufferSampleCount)
 	{
 		(void)autoStreamingEnabled;
-		SoundContext::Instance();
+		auto& context = SoundContext::Instance();
 
-		TempBuffer.SetCount(Source->SampleCount()*Source->ChannelCount());
+		Id = context.StreamedSoundIdalloc.Allocate();
+		TempBuffer.SetCount(BufferSampleCount*Source->ChannelCount());
 
 		EM_ASM_({
 			var result = Module.gWebAudioContext.createScriptProcessor($1, 0, $2);
@@ -229,14 +284,22 @@ struct StreamedSound::Data: detail::StreamedSoundBasicData
 					else outputBuffer.copyToChannel(Module.HEAPF32.subarray($4+ch*$1, $4+ch*$1+$1), ch);
 				}
 			}
-		}, Id, Source->SampleCount(), Source->ChannelCount(), this, reinterpret_cast<size_t>(TempBuffer.Data())/sizeof(float));
+		}, Id, BufferSampleCount, Source->ChannelCount(), this, reinterpret_cast<size_t>(TempBuffer.Data())/sizeof(float));
+		context.AllStreamedSounds.AddLast(this);
+	}
+
+	~Data()
+	{
+		Release();
 	}
 
 	void Play(bool loop)
 	{
+		SelfRef = SharedThis();
 		Looping = loop;
 		EM_ASM_({
 			var snd = Module.gWebAudioStreamArray[$0];
+			if(snd == null) return;
 			snd.__is_playing = true;
 			snd.__is_looping = $1;
 			snd.connect(Module.gWebAudioContext.destination);
@@ -246,14 +309,23 @@ struct StreamedSound::Data: detail::StreamedSoundBasicData
 	bool IsPlaying()
 	{
 		return bool(EM_ASM_INT({
-			return Module.gWebAudioStreamArray[$0].__is_playing;
+			var snd = Module.gWebAudioStreamArray[$0];
+			if(snd == null) return false;
+			return snd.__is_playing;
 		}, Id));
 	}
 
 	void Stop()
 	{
+		stop();
+		SelfRef = null;
+	}
+
+	void stop()
+	{
 		EM_ASM_({
 			var snd = Module.gWebAudioStreamArray[$0];
+			if(snd == null) return;
 			if(snd.__is_playing) snd.disconnect(Module.gWebAudioContext.destination);
 			snd.__is_playing = false;
 		}, Id);
@@ -261,11 +333,19 @@ struct StreamedSound::Data: detail::StreamedSoundBasicData
 
 	void Release()
 	{
-		Stop();
+		if(Id == ~size_t()) return;
+		auto& context = SoundContext::Instance();
+		context.AllStreamedSounds.FindAndRemoveUnordered(this);
 		EM_ASM_({
+			var snd = Module.gWebAudioStreamArray[$0];
+			if(snd == null) return;
+			if(snd.__is_playing) snd.disconnect(Module.gWebAudioContext.destination);
+			snd.__is_playing = false;
 			Module.gWebAudioStreamArray[$0] = null;
-		}, Id);
-		SoundContext::Instance().StreamedSoundIdalloc.Deallocate(ushort(Id));
+		}, Id, this);
+		context.StreamedSoundIdalloc.Deallocate(ushort(Id));
+		Id = ~size_t();
+		SelfRef = null;
 	}
 
 	size_t loadBuffer()
@@ -313,11 +393,25 @@ uint Sound::DefaultSampleRate()
 }
 
 
+void SoundContext::ReleaseAllSounds()
+{
+	auto sounds = Cpp::Move(AllSounds);
+	for(auto sound: sounds) sound->Release();
+}
+
+void SoundContext::ReleaseAllStreamedSounds()
+{
+	auto sounds = Cpp::Move(AllStreamedSounds);
+	for(auto sound: sounds) sound->Release();
+}
 
 
 
-extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(StreamedBufferHandle snd)
+extern "C" size_t EMSCRIPTEN_KEEPALIVE Emscripten_StreamedSoundLoadCallback(StreamedSound::Data* snd)
 {return snd->loadBuffer();}
+
+extern "C" void EMSCRIPTEN_KEEPALIVE Emscripten_OnSoundStopCallback(Sound::Instance::Data* snd)
+{snd->Stop();}
 
 }}
 

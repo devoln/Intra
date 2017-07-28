@@ -88,8 +88,6 @@ FormattedWriter& InitOutput()
 	);
 	logWriter.EndSpoiler();
 	logger.Attach(Cpp::Move(logWriter));
-#else
-	(void)argc; (void)argv;
 #endif
 	logger.Attach(ConsoleOutput());
 #endif

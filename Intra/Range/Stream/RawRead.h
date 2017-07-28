@@ -63,7 +63,7 @@ template<typename R, typename R1, typename U = Concepts::ValueTypeOf<R1>> Meta::
 size_t> RawReadWrite(R& src, R1& dst, size_t maxElementsToRead)
 {
 	Span<U> dst1 = dst;
-	size_t result = RawReadWrite(dst1, maxElementsToRead);
+	size_t result = RawReadWrite(src, dst1, maxElementsToRead);
 	PopFirstExactly(dst, result);
 	return result;
 }

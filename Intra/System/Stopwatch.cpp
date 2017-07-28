@@ -65,7 +65,7 @@ static ulong64 clock_gettime_nsecs(clockid_t clkId)
 {
 	struct timespec ts;
 	clock_gettime(clkId, &ts);
-	return ulong64(ts.tv_sec*1000000000 + ts.tv_nsec);
+	return ulong64(ts.tv_sec)*1000000000 + ulong64(ts.tv_nsec);
 }
 
 Stopwatch::Stopwatch(): mData(clock_gettime_nsecs(CLOCK_REALTIME)) {}
@@ -114,7 +114,7 @@ static ulong64 gettime_usecs()
 {
 	struct timeval tv;
 	gettimeofday(&tv, null);
-	return tv.tv_sec*1000000 + tv.tv_usec;
+	return ulong64(tv.tv_sec)*1000000 + ulong64(tv.tv_usec);
 }
 
 Stopwatch::Stopwatch(): mData(gettime_usecs()) {}

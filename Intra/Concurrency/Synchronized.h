@@ -6,6 +6,7 @@
 
 namespace Intra { namespace Concurrency {
 
+#if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
 template<typename T> class Synchronized: private Mutex
 {
 	template<typename U> friend class Lock;
@@ -104,6 +105,9 @@ template<typename OS, typename T> OS& operator<<(OS& stream, const Synchronized<
 	INTRA_SYNCHRONIZED(const_cast<Synchronized<T>&>(value)) stream << value.Value;
 	return stream;
 }
+#else
+template<typename T> class Synchronized;
+#endif
 
 }
 using Concurrency::Synchronized;

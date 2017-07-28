@@ -78,6 +78,8 @@ WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octav
 	Random::FastUniform<uint> rand(1436491347u ^ uint(mSampleFragment.Length()) ^ uint(freq*1000) ^ (octaves << 15));
 	mFragmentOffset = float(rand(uint(mSampleFragment.Length())));
 
+	mChannelDeltaSamples = float((sampleRate >> 7) % mSampleFragment.Length());
+
 	if(expCoeff <= 0.001f) return;
 
 	const float ek = Math::Exp(-expCoeff/float(sampleRate));
@@ -89,9 +91,9 @@ WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octav
 }
 
 WaveTableSampler::WaveTableSampler(CSpan<float> periodicWave, float rate,
-	float attenuationPerSample, float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr):
+	float attenuationPerSample, float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr, float channelDeltaSamples):
 	mSampleFragment(periodicWave), mRate(rate), mAttenuation(volume), mAttenuationStep(attenuationPerSample), mRightPanMultiplier(0.5f),
-	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mADSR(adsr)
+	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mADSR(adsr), mChannelDeltaSamples(channelDeltaSamples)
 {
 	Random::FastUniform<uint> rand(1436491347u ^ uint(periodicWave.Length()) ^ uint(rate*1537) ^ uint(volume * 349885300.0f));
 	mFragmentOffset = float(rand(uint(mSampleFragment.Length())));
@@ -253,7 +255,8 @@ size_t WaveTableSampler::operator()(Span<float> dstLeft, Span<float> dstRight, b
 	INTRA_DEBUG_ASSERT(dstLeft.Length() == dstRight.Length());
 	if(mSampleFragment.Empty()) return 0;
 	float attenuation = mAttenuation*(1 - mRightPanMultiplier);
-	float fragmentOffset = mFragmentOffset/* - float(mSampleFragment.Length()/2)*/;
+	
+	float fragmentOffset = mFragmentOffset - mChannelDeltaSamples;
 	if(fragmentOffset < 0)
 	{
 		fragmentOffset += float(mSampleFragment.Length());
@@ -306,7 +309,7 @@ size_t WaveTableSampler::operator()(Span<float> dstLeft, Span<float> dstRight, b
 		if(!add) FillZeros(dstRightCopy);
 		mADSR = adsr;
 		mAttenuation = attenuation;
-		mFragmentOffset = fragmentOffset;// +float(mSampleFragment.Length()/2);
+		mFragmentOffset = fragmentOffset + mChannelDeltaSamples;
 		if(mFragmentOffset >= float(mSampleFragment.Length()))
 		{
 			mFragmentOffset -= float(mSampleFragment.Length());
@@ -315,7 +318,7 @@ size_t WaveTableSampler::operator()(Span<float> dstLeft, Span<float> dstRight, b
 	}
 
 	if(samplesToProcess < dstLeft.Length()) return samplesToProcess;
-	return mAttenuation < 0.0001f? samplesToProcess-1: samplesToProcess;
+	return mAttenuation < 0.0001f? samplesToProcess - 1: samplesToProcess;
 }
 
 WaveTableSampler WaveTableSampler::Sine(uint octaves,
@@ -438,7 +441,8 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint 
 	const auto samples = table.LevelSamples(level);
 	return WaveTableSampler(samples, ratio/table.LevelRatio(level),
 		Math::Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
-		2*float(Math::PI)*VibratoFrequency/float(sampleRate), VibratoValue, ADSR(freq, volume, sampleRate));
+		2*float(Math::PI)*VibratoFrequency/float(sampleRate), VibratoValue,
+		ADSR(freq, volume, sampleRate), float((sampleRate >> 7) % samples.Length()));
 }
 
 

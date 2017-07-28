@@ -95,17 +95,23 @@ int main(int argc, const char* argv[])
 	if(TestGroup gr{&logger, output, "IO"})
 	{
 		TestGroup("File", TestFileSyncIO);
+#if !defined(INTRA_NO_CONCURRENCY) && !defined(INTRA_NO_NETWORKING) && INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None
 		TestGroup("Socket", TestSocketIO);
 		//TestGroup("HttpServer", TestHttpServer);
+#endif
 	}
 	TestGroup(&logger, output, "Text serialization", TestTextSerialization);
 	TestGroup(&logger, output, "Binary serialization", TestBinarySerialization);
 	TestGroup(&logger, output, "Sort algorithms", TestSort);
+#if !defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None
 	if(TestGroup gr{&logger, output, "Concurrency"})
 	{
+#if INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None
 		TestGroup("Atomics", TestAtomics);
+#endif
 		TestGroup("Thread interruption", TestInterruption);
 	}
+#endif
 
 	if(TestGroup::GetTotalTestsFailed() != 0)
 		loggerOut.PushFont({1, 0, 0}, 5, true, false, true);

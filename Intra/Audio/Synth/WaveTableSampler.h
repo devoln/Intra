@@ -40,6 +40,7 @@ class WaveTableSampler
 	float mRightPanMultiplier;
 	Math::SineRange<float> mFreqOscillator;
 	AdsrAttenuator mADSR;
+	float mChannelDeltaSamples;
 
 	WaveTableSampler(const void* params, WaveForm wave, uint octaves,
 		float attenuationPerSample, float volume,
@@ -49,7 +50,7 @@ public:
 	WaveTableSampler(null_t=null) {}
 
 	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff,
-		float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr = null);
+		float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr, float channelDeltaSamples);
 
 	template<typename F, typename = Meta::EnableIf<
 		Meta::IsCallable<F, Span<float>, float, float, uint>::_

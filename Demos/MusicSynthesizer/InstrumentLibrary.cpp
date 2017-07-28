@@ -115,7 +115,7 @@ InstrumentLibrary::InstrumentLibrary()
 		for(int i = 1; i<64; i++)
 		{
 			using namespace Math;
-			const float ifreq = (i)*freq;
+			const float ifreq = float(i)*freq;
 			const float formants =
 				Exp(-Sqr((ifreq - 500) / 200)) +
 				Exp(-Sqr((ifreq - 900) / 750)) +
@@ -124,7 +124,7 @@ InstrumentLibrary::InstrumentLibrary()
 				Exp(-Sqr((ifreq - 4700) / 4000))
 				/* +
 				Exp(-Sqr((ifreq) / 150))*/;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/(i), 40);
+			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i), 40);
 		}
 		ConvertAmplitudesToSamples(tbl);
 		return tbl;
@@ -168,10 +168,21 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Rain.WaveTables.EmplaceLast();
 		wt.Tables = &RainTables;
 		wt.ExpCoeff = 3;
-		wt.VolumeScale = 1;
+		wt.VolumeScale = 0.7f;
 		wt.VibratoFrequency = 7;
 		wt.VibratoValue = 0.005f;
 		wt.ADSR.AttackTime = 0.003f;
+		wt.ADSR.DecayTime = 0.3f;
+		wt.ADSR.SustainVolume = 0.7f;
+		wt.ADSR.ReleaseTime = 0.2f;
+	}
+
+	{ //TODO: это заглушка
+		auto& wt = SteelDrums.WaveTables.EmplaceLast();
+		wt.Tables = &RainTables;
+		//wt.ExpCoeff = 3;
+		wt.VolumeScale = 0.3f;
+		wt.ADSR.AttackTime = 0.005f;
 		wt.ADSR.DecayTime = 0.3f;
 		wt.ADSR.SustainVolume = 0.7f;
 		wt.ADSR.ReleaseTime = 0.2f;
@@ -229,7 +240,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = SynthStrings.WaveTables.EmplaceLast();
 		wt.Tables = &SynthStringTables;
-		wt.VolumeScale = 0.2f;
+		wt.VolumeScale = 0.15f;
 		wt.ADSR.AttackTime = 0.3f;
 		wt.ADSR.ReleaseTime = 0.2f;
 	}
@@ -237,7 +248,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = StringEnsemble.WaveTables.EmplaceLast();
 		wt.Tables = &SynthStringTables;
-		wt.VolumeScale = 0.15f;
+		wt.VolumeScale = 0.2f;
 		wt.ADSR.AttackTime = 0.05f;
 		wt.ADSR.ReleaseTime = 0.07f;
 	}
@@ -253,7 +264,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = PercussiveOrgan.WaveTables.EmplaceLast();
 		wt.Tables = &SynthVoiceTables;
-		wt.VolumeScale = 0.5f;
+		wt.VolumeScale = 0.6f;
 		wt.ADSR.AttackTime = 0.003f;
 		wt.ADSR.DecayTime = 0.3f;
 		wt.ADSR.SustainVolume = 0.6f;
@@ -447,7 +458,7 @@ InstrumentLibrary::InstrumentLibrary()
 		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 1, 2, 1.0f, 7);
 		for(int i = 4; i<64; i *= 2)
 		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, 1.0f/float(i), 7*(1+i*0.3f));
+			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, 1.0f/float(i), 7*(1+float(i)*0.3f));
 		}
 		ConvertAmplitudesToSamples(tbl);
 		return tbl;
@@ -901,8 +912,8 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Flute.WaveTables.EmplaceLast();
 		wt.Tables = &FluteTables;
 		wt.VolumeScale = 0.7f;
-		wt.VibratoValue = 0.003f;
-		wt.VibratoFrequency = 6;
+		wt.VibratoValue = 0.005f;
+		wt.VibratoFrequency = 7;
 		//auto& wave = Flute.Waves.EmplaceLast();
 		//wave.Type = WaveType::Sawtooth;
 		//wave.Scale = 0.5f;

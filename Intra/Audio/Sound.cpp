@@ -62,7 +62,7 @@ Sound::~Sound() {Release();}
 
 void Sound::Release() {mData = null;}
 
-Sound& Sound::operator=(Sound&& rhs) = default;
+Sound& Sound::operator=(Sound&&) = default;
 
 Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 {
@@ -126,7 +126,7 @@ StreamedSound::StreamedSound(Unique<IAudioSource> src, size_t bufferSizeInSample
 
 StreamedSound::~StreamedSound() {release();}
 
-StreamedSound& StreamedSound::operator=(StreamedSound&& rhs) = default;
+StreamedSound& StreamedSound::operator=(StreamedSound&&) = default;
 
 StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, ErrorStatus& status)
 {
@@ -178,11 +178,14 @@ void StreamedSound::Stop() const
 void StreamedSound::UpdateBuffer() const
 {
 	if(!mData) return;
+#if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_WebAudio)
 	mData->Update();
+#endif
 }
 
 void StreamedSound::UpdateAllExistingInstances()
 {
+#if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_WebAudio)
 	auto& context = SoundContext::Instance();
 	Array<Shared<StreamedSound::Data>> soundsToUpdate;
 
@@ -206,6 +209,7 @@ void StreamedSound::UpdateAllExistingInstances()
 		ptr->Update();
 		ptr = null;
 	}
+#endif
 }
 
 void StreamedSound::ReleaseAllSounds()

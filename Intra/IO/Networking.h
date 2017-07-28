@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Utils/StringView.h"
 #include "Container/ForwardDecls.h"
 
 

@@ -183,11 +183,15 @@ String TEnvironment::Get(StringView var, bool* oExists) const
 
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
+namespace Intra { namespace System {
+
 static CSpan<StringView> getAndParseCommandLine()
 {
 	static const StringView result[] = {"program"};
 	return result;
 }
+
+}}
 
 #elif(defined(INTRA_PLATFORM_IS_UNIX))
 

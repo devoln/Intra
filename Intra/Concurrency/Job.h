@@ -1,8 +1,8 @@
 ﻿#pragma once
 
+#include "Cpp/PlatformDetect.h"
 #include "Cpp/Warnings.h"
 #include "Cpp/Fundamental.h"
-#include "Cpp/PlatformDetect.h"
 
 #include "Atomic.h"
 #include "Utils/Span.h"

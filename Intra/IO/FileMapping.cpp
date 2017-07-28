@@ -59,8 +59,12 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 
 	if(startByte + bytes > size) return;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-	mData = Memory::GlobalHeap.Allocate(mSize, INTRA_SOURCE_INFO);
-	OS.FileOpen(fullFileName).ReadData(startByte, mData, mSize);
+	void* data = Memory::GlobalHeap.Allocate(bytes, INTRA_SOURCE_INFO);
+	INTRA_ASSERT(startByte == 0);
+	auto file = OS.FileOpen(fullFileName, status);
+	file.RawReadTo(data, bytes);
+	file = null;
+	(void)writeAccess;
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
 	const DWORD fileDesiredAccess = GENERIC_READ|(writeAccess? GENERIC_WRITE: 0);

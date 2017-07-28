@@ -4,10 +4,13 @@
 #include "Container/Sequential/String.h"
 #include "Utils/StringView.h"
 #include "Utils/Unique.h"
-#include "Concurrency/Atomic.h"
 #include "Formatter.h"
 #include "Container/Utility/SparseArray.h"
 #include "Range/Search/Single.h"
+
+#ifndef INTRA_NO_CONCURRENCY
+#include "Concurrency/Atomic.h"
+#endif
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -32,7 +35,7 @@ public:
 			FormattedStream(Cpp::Move(stream.Stream), Cpp::Move(formatter)) {}
 
 		forceinline FormattedStream(FormattedWriter* writerRef):
-			mStream(null), mWriter(writerRef) {mWriter->mRefCount.IncrementRelaxed();}
+			mStream(null), mWriter(writerRef) {mWriter->incRef();}
 
 		forceinline bool operator==(null_t) const {return mStream == null && mFormatter == null;}
 		forceinline bool operator!=(null_t) const {return !operator==(null);}
@@ -54,7 +57,7 @@ public:
 		{
 			if(!IsOwner())
 			{
-				if(mWriter) mWriter->mRefCount.DecrementRelaxed();
+				if(mWriter) mWriter->decRef();
 				return;
 			}
 			if(mFormatter)
@@ -96,7 +99,19 @@ public:
 
 private:
 	Array<FormattedStream> mFormattedStreams;
+
+
+#if(!defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None)
 	AtomicInt mRefCount;
+	forceinline uint incRef() {return uint(mRefCount.GetIncrementRelaxed());}
+	forceinline uint getRC() {return uint(mRefCount.GetRelaxed());}
+	forceinline bool decRef() {return mRefCount.DecrementRelaxed() == 0;}
+#else
+	forceinline uint incRef() {return mRefCount++;}
+	forceinline uint getRC() {return mRefCount;}
+	forceinline bool decRef() {return --mRefCount == 0;}
+	uint mRefCount;
+#endif
 
 public:
 	FormattedWriter(null_t=null) {}
@@ -119,20 +134,20 @@ public:
 	FormattedWriter(FormattedWriter&& rhs):
 		mFormattedStreams(Cpp::Move(rhs.mFormattedStreams))
 	{
-		INTRA_ASSERT(rhs.mRefCount.Get() == 0);
+		INTRA_ASSERT(rhs.getRC() == 0);
 	}
 
 	~FormattedWriter()
 	{
-		INTRA_ASSERT(mRefCount.Get() == 0);
+		INTRA_ASSERT(getRC() == 0);
 		operator=(null);
 	}
 
 	FormattedWriter& operator=(FormattedWriter&& rhs)
 	{
 		if(this == &rhs) return *this;
-		INTRA_ASSERT(mRefCount.Get() == 0);
-		INTRA_ASSERT(rhs.mRefCount.Get() == 0);
+		INTRA_ASSERT(getRC() == 0);
+		INTRA_ASSERT(rhs.getRC() == 0);
 		mFormattedStreams = Cpp::Move(rhs.mFormattedStreams);
 		return *this;
 	}

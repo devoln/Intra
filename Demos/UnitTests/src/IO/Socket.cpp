@@ -1,8 +1,12 @@
 #include "IO.h"
 
+#if(!defined(INTRA_NO_CONCURRENCY) && !defined(INTRA_NO_NETWORKING))
+
 #include "Concurrency/Thread.h"
 #include "Concurrency/Atomic.h"
 #include "Concurrency/Synchronized.h"
+
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 
 #include "IO/Socket.h"
 #include "IO/SocketReader.h"
@@ -108,3 +112,7 @@ void TestHttpServer(FormattedWriter& output)
 			.Print(str);
 	}
 }
+
+#endif
+
+#endif

@@ -113,7 +113,8 @@ public:
 	void ReleaseAllStreamedSounds();
 };
 
-struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
+struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
+{
 	Data(IAudioSource& src): SoundBasicData(src)
 	{
 		INTRA_DEBUG_ASSERT(src.SampleCount() > 0);
@@ -136,7 +137,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData{
 		Buffer->Lock(0, DWORD(Info.GetBufferSize()), &dstData, &lockedSize, null, null, 0);
 		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
 		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
-		src.GetInterleavedSamples(dst);
+		while(!dst.Empty()) src.GetInterleavedSamples(dst.TakeAdvance(32768));
 		Buffer->Unlock(dstData, lockedSize, null, 0);
 
 		INTRA_SYNCHRONIZED(context.MyMutex)
@@ -250,6 +251,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 	void Release()
 	{
+		auto ref = Cpp::Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!DupBuffer) return;
@@ -257,7 +259,6 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 			DupBuffer->Release();
 			DupBuffer = null;
 		}
-		SelfRef = null;
 	}
 
 	bool IsReleased()
@@ -301,6 +302,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 	void Stop()
 	{
+		auto ref = Cpp::Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!DupBuffer) return;
@@ -381,6 +383,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 	void Release()
 	{
+		auto ref = Cpp::Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!Buffer) return;
@@ -393,7 +396,6 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		{
 			context.AllStreamedSounds.FindAndRemoveUnordered(this);
 		}
-		SelfRef = null;
 	}
 
 	bool IsReleased()
@@ -438,6 +440,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 	void Stop()
 	{
+		auto ref = Cpp::Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!IsPlayingST()) return;

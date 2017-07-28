@@ -131,7 +131,7 @@ namespace Intra { namespace System {
 
 RamInfo RamInfo::Get()
 {
-	SystemMemoryInfo result;
+	RamInfo result;
 	return result;
 }
 

@@ -1,5 +1,7 @@
 ﻿#include "Concurrency.h"
 
+#if !defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None
+
 #include "Concurrency/Thread.h"
 #include "Concurrency/Atomic.h"
 #include "Concurrency/Mutex.h"
@@ -61,3 +63,5 @@ void TestAtomics(FormattedWriter& output)
 	output.PrintLine("Synchronized counter value: ", intCounter);
 	INTRA_ASSERT_EQUALS(intCounter, 2700000);
 }
+
+#endif

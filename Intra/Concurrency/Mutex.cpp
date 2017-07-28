@@ -4,6 +4,8 @@
 #include "Cpp/PlatformDetect.h"
 #include "Cpp/Runtime.h"
 
+#if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_Cpp11)
@@ -26,3 +28,5 @@ const int Mutex::ImplementationType = INTRA_LIBRARY_MUTEX;
 }}
 
 INTRA_WARNING_POP
+
+#endif

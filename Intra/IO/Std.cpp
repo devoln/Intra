@@ -83,18 +83,18 @@ inline OsFile::NativeHandle StdErrHandle()
 struct StdInOut::ConstructOnce {};
 StdInOut::StdInOut(ConstructOnce)
 {
-	if(StdOutIsConsole()) FormattedWriter::operator=(ConsoleOutput());
+	if(StdOutIsConsole()) *static_cast<FormattedWriter*>(this) = ConsoleOutput();
 	else
 	{
 		FileWriter writer(SharedMove(OsFile::FromNative(StdOutHandle(), false)));
-		FormattedWriter::operator=(FormattedWriter(Cpp::Move(writer)));
+		*static_cast<FormattedWriter*>(this) = FormattedWriter(Cpp::Move(writer));
 	}
 
-	if(StdInIsConsole()) InputStream::operator=(ConsoleInput());
+	if(StdInIsConsole()) *static_cast<InputStream*>(this) = ConsoleInput();
 	else
 	{
 		FileReader reader(SharedMove(OsFile::FromNative(StdInHandle(), false)));
-		InputStream::operator=(Cpp::Move(reader));
+		*static_cast<InputStream*>(this) = Cpp::Move(reader);
 	}
 }
 

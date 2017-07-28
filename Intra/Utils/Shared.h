@@ -3,10 +3,11 @@
 #include "Cpp/Fundamental.h"
 #include "Cpp/Features.h"
 #include "Cpp/Warnings.h"
+#include "Cpp/PlatformDetect.h"
 
 #include "Utils/Debug.h"
 
-#ifndef INTRA_UTILS_NO_CONCURRENCY
+#ifndef INTRA_NO_CONCURRENCY
 #include "Concurrency/Atomic.h"
 #endif
 
@@ -34,7 +35,7 @@ template<typename T> class Shared
 		}
 		
 		T Value;
-#ifndef INTRA_UTILS_NO_CONCURRENCY
+#if(!defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None)
 		AtomicInt RefCount;
 		forceinline uint IncRef() {return uint(RefCount.GetIncrementRelaxed());}
 		forceinline uint GetRC() {return uint(RefCount.GetRelaxed());}

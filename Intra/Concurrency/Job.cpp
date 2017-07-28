@@ -1,5 +1,4 @@
-﻿#include "Concurrency/Job.h"
-
+﻿
 #include "Cpp/PlatformDetect.h"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/Array.h"
@@ -8,6 +7,10 @@
 #include "Mutex.h"
 #include "Atomic.h"
 #include "Lock.h"
+
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
+
+#include "Concurrency/Job.h"
 
 #undef Yield
 
@@ -271,3 +274,5 @@ void Job::Wait() const
 }
 
 }}
+
+#endif

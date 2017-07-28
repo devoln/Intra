@@ -96,7 +96,7 @@ StreamedSound CreateStreamedSoundFromMidi(ForwardStream midiFileStream, float st
 	GetMapping().Preload(info, Sound::DefaultSampleRate());
 	if(printMessages) Std.PrintLine("Инициализация синтезатора...");
 	FatalErrorStatus status;
-	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFileStream), Cpp::Infinity, startingVolume, status), 4096);
+	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFileStream), Cpp::Infinity, startingVolume, status), 16384);
 	if(status.Handle())
 	{
 		Std.PrintLine(status.GetLog());

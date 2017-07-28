@@ -81,7 +81,8 @@ void MainLoop(bool enableStreaming)
 	ConsoleIn.GetChar();
 #else
 	(void)enableStreaming;
-	emscripten_set_main_loop([]() {}, 30, 1);
+	//emscripten_cancel_main_loop();
+	//emscripten_set_main_loop([]() {}, 30, 1);
 #endif
 }
 
@@ -175,7 +176,7 @@ int INTRA_CRTDECL main()
 	const bool enableStreaming = false;
 	PrintInfoAndPlayMidiFile(filePath, enableStreaming);
 
-#endif
 	CleanUpSoundSystem();
+#endif
 	return 0;
 }

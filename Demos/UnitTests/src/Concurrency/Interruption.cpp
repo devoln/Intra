@@ -1,11 +1,15 @@
 ﻿#include "Concurrency.h"
 
+#if !defined(INTRA_NO_CONCURRENCY)
+
 #include "Concurrency/Thread.h"
 #include "Concurrency/Atomic.h"
 #include "Concurrency/Mutex.h"
 #include "Concurrency/Lock.h"
 #include "Concurrency/Synchronized.h"
 #include "Concurrency/CondVar.h"
+
+#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 
 #include "Range/ForEach.h"
 
@@ -62,3 +66,6 @@ void TestInterruption(FormattedWriter& output)
 	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
 	INTRA_ASSERT1(elapsedUs >= 480000 || Utils::IsDebuggerAttached(), elapsedUs);
 }
+
+#endif
+#endif

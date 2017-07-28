@@ -157,6 +157,7 @@ private:
 };
 #else
 class Mutex;
+class RecursiveMutex;
 #endif
 
 }

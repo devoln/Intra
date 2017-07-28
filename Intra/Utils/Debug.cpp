@@ -99,7 +99,7 @@ bool IsDebuggerAttached()
 #endif
 }
 
-#if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Windows || defined(INTRA_DBGHELP))
+#if((INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Windows || defined(INTRA_DBGHELP)) && INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
 
 static bool IsSeparatorChar(char c)
 {

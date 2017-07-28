@@ -71,11 +71,11 @@ void TestGroup::consoleAskToEnableTest()
 
 TestGroup::TestGroup(StringView category):
 	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
-		currentTestGroup == null? IO::Std: currentTestGroup->Output, category) {}
+		currentTestGroup == null? static_cast<IO::FormattedWriter&>(IO::Std): currentTestGroup->Output, category) {}
 
 TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
 	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
-		currentTestGroup == null? IO::Std: currentTestGroup->Output, category, funcToTest) {}
+		currentTestGroup == null? static_cast<IO::FormattedWriter&>(IO::Std): currentTestGroup->Output, category, funcToTest) {}
 
 TestGroup::~TestGroup()
 {

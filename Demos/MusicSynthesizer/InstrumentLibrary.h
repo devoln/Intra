@@ -34,7 +34,9 @@ struct InstrumentLibrary
 	MusicalInstrument SynthBass1, SynthBass2;
 	MusicalInstrument SynthBrass, Lead5Charang;
 	MusicalInstrument Birds, SynthVoice, VoiceOohs, ChoirAahs, RockOrgan, SoundTrackFX2;
-	MusicalInstrument FxGoblins, PadPolysynth, Pad7Halo, Pad8Sweep, SynthStrings, PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble, TremoloStrings;
+	MusicalInstrument FxGoblins, PadPolysynth, Pad7Halo, Pad8Sweep, SynthStrings;
+	MusicalInstrument PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble, TremoloStrings;
+	MusicalInstrument SteelDrums;
 	MusicalInstrument Flute, PanFlute, Piccolo, FrenchHorn;
 	MusicalInstrument Guitar, GuitarSteel;
 	MusicalInstrument Guitar1, OverdrivenGuitar;
