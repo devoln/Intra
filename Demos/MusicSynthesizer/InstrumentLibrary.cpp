@@ -14,7 +14,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Audio/Synth/ADSR.h"
 #include "Audio/Synth/MusicalInstrument.h"
 #include "Audio/Synth/RecordedSampler.h"
-#include "Audio/Synth/TubeSampler.h"
 #include "Audio/Synth/Filter.h"
 
 #include "Audio/Synth/Generators.hh"
@@ -26,68 +25,40 @@ using namespace Intra;
 using namespace Audio;
 using namespace Synth;
 
+InstrumentLibrary::~InstrumentLibrary() {}
 
 InstrumentLibrary::InstrumentLibrary()
 {
-	ChoirATables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants = Exp(-Sqr((ifreq - 600) / 150)) +
-				Exp(-Sqr((ifreq - 900) / 250)) +
-				Exp(-Sqr((ifreq - 2200) / 200)) +
-				Exp(-Sqr((ifreq - 2600) / 250)) +
-				Exp(-Sqr(ifreq / 3000)) / 10;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i*i), 60);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+	auto& choirATables = Tables["ChoirA"] = CreateWaveTablesFromFormants({
+		{600, 0.007f, 1},
+		{900, 0.004f, 1},
+		{2200, 0.005f, 1},
+		{2600, 0.004f, 1},
+		{0, 0.00033f, 0.1f}
+	}, 64, 2, 60, 1, 32768);
 	
 	{
-		auto& wt = ChoirAahs.WaveTables.EmplaceLast();
-		wt.Tables = &ChoirATables;
-		wt.VolumeScale = 0.25f;
+		auto& wt = Instruments["ChoirAahs"].WaveTables.EmplaceLast();
+		wt.Tables = &choirATables;
+		wt.VolumeScale = 0.15f;
 		wt.ADSR.AttackTime = 0.02f;
 		wt.ADSR.DecayTime = 0.5f;
 		wt.ADSR.SustainVolume = 0.8f;
 		wt.ADSR.ReleaseTime = 0.05f;
 	}
-
-	ChoirOTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants =
-				Exp(-Sqr((ifreq - 275) / 100)) +
-				Exp(-Sqr((ifreq - 850) / 300)) +
-				Exp(-Sqr((ifreq - 2400) / 200)) +
-				Exp(-Sqr((ifreq - 2600) / 250)) +
-				Exp(-Sqr((ifreq) / 3000)) / 10;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.5f, formants/float(i*i), 100);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+	
+	auto& choirOTables = Tables["ChoirO"] = CreateWaveTablesFromFormants({
+		{275, 0.01f, 1},
+		{850, 0.0033f, 1},
+		{2400, 0.005f, 1},
+		{2600, 0.004f, 1},
+		{0, 0.00033f, 0.1f}
+	}, 64, 2, 100, 0.5f, 32768);
 
 	{
-		auto& wt = PadChoir.WaveTables.EmplaceLast();
-		wt.Tables = &ChoirOTables;
-		wt.VolumeScale = 0.6f;
+		auto& wt = Instruments["PadChoir"].WaveTables.EmplaceLast();
+		wt.Tables = &choirOTables;
+		wt.VolumeScale = 1;
 		wt.ADSR.AttackTime = 0.07f;
 		wt.ADSR.DecayTime = 0.5f;
 		wt.ADSR.SustainVolume = 0.5f;
@@ -95,8 +66,8 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wt = Pad7Halo.WaveTables.EmplaceLast();
-		wt.Tables = &ChoirOTables;
+		auto& wt = Instruments["Pad7Halo"].WaveTables.EmplaceLast();
+		wt.Tables = &choirOTables;
 		wt.VolumeScale = 0.6f;
 		wt.ADSR.AttackTime = 0.03f;
 		wt.ADSR.DecayTime = 0.5f;
@@ -105,34 +76,17 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 
-	SynthStringTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants =
-				Exp(-Sqr((ifreq - 500) / 200)) +
-				Exp(-Sqr((ifreq - 900) / 750)) +
-				Exp(-Sqr((ifreq - 2100) / 2000)) +
-				Exp(-Sqr((ifreq - 3700) / 3000)) +
-				Exp(-Sqr((ifreq - 4700) / 4000))
-				/* +
-				Exp(-Sqr((ifreq) / 150))*/;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i), 40);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+	auto& synthStringTables = Tables["SynthString"] = CreateWaveTablesFromFormants({
+		{500, 0.005f, 1},
+		{900, 0.0013f, 1},
+		{2100, 0.0005f, 1},
+		{3700, 0.00033f, 1},
+		{4700, 0.00025f, 1}
+	}, 64, 1, 40, 1, 32768);
 
 	{
-		auto& wt = RockOrgan.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["RockOrgan"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.4f;
 		wt.ADSR.AttackTime = 0.001f;
 		wt.ADSR.SustainVolume = 0.6f;
@@ -142,86 +96,28 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VibratoFrequency = 5;
 	}
 
-	RainTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants = Exp(-Sqr((ifreq - 600) / 150)) +
-				Exp(-Sqr((ifreq - 900) / 350)) +
-				Exp(-Sqr((ifreq - 2200) / 1200)) +
-				Exp(-Sqr((ifreq - 2600) / 2050)) +
-				Exp(-Sqr((ifreq) / 300)) / 10;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i*i), 40);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+	
+
+
+	auto& synthVoiceTables = Tables["SynthVoice"] = CreateWaveTablesFromFormants({
+		{600, 0.007f, 1},
+		{900, 0.003f, 1},
+		{2200, 0.00083f, 1},
+		{2600, 0.004f, 1},
+		{0, 0.00033f, 0.1f}
+	}, 64, 2, 40, 1, 32768);
 
 	{
-		auto& wt = Rain.WaveTables.EmplaceLast();
-		wt.Tables = &RainTables;
-		wt.ExpCoeff = 3;
-		wt.VolumeScale = 0.7f;
-		wt.VibratoFrequency = 7;
-		wt.VibratoValue = 0.005f;
-		wt.ADSR.AttackTime = 0.003f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.2f;
-	}
-
-	{ //TODO: это заглушка
-		auto& wt = SteelDrums.WaveTables.EmplaceLast();
-		wt.Tables = &RainTables;
-		//wt.ExpCoeff = 3;
-		wt.VolumeScale = 0.3f;
-		wt.ADSR.AttackTime = 0.005f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.2f;
-	}
-
-	SynthVoiceTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants =
-				Exp(-Sqr((ifreq - 600) / 150)) +
-				Exp(-Sqr((ifreq - 900) / 350)) +
-				Exp(-Sqr((ifreq - 2200) / 1200)) +
-				Exp(-Sqr((ifreq - 2600) / 250)) +
-				Exp(-Sqr((ifreq) / 3000)) / 10;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i*i), 40);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-
-	{
-		auto& wt = SynthVoice.WaveTables.EmplaceLast();
-		wt.Tables = &SynthVoiceTables;
+		auto& wt = Instruments["SynthVoice"].WaveTables.EmplaceLast();
+		wt.Tables = &synthVoiceTables;
 		wt.VolumeScale = 0.2f;
 		wt.ADSR.AttackTime = 0.04f;
 		wt.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wt = VoiceOohs.WaveTables.EmplaceLast();
-		wt.Tables = &ChoirOTables;
+		auto& wt = Instruments["VoiceOohs"].WaveTables.EmplaceLast();
+		wt.Tables = &choirOTables;
 		wt.VolumeScale = 0.25f;
 		wt.ADSR.AttackTime = 0.005f;
 		wt.ADSR.DecayTime = 0.3f;
@@ -230,40 +126,76 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	
 	{
-		auto& wt = Pad8Sweep.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["Pad8Sweep"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.15f;
 		wt.ADSR.AttackTime = 0.15f;
 		wt.ADSR.ReleaseTime = 0.25f;
 	}
 
 	{
-		auto& wt = SynthStrings.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["SynthStrings"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.15f;
 		wt.ADSR.AttackTime = 0.3f;
 		wt.ADSR.ReleaseTime = 0.2f;
 	}
 
 	{
-		auto& wt = StringEnsemble.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["StringEnsemble"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.2f;
-		wt.ADSR.AttackTime = 0.05f;
-		wt.ADSR.ReleaseTime = 0.07f;
+		wt.ADSR.AttackTime = 0.07f;
+		wt.ADSR.ReleaseTime = 0.3f;
 	}
 
 	{
-		auto& wt = TremoloStrings.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["TremoloStrings"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.25f;
 		wt.ADSR.AttackTime = 0.01f;
 		wt.ADSR.ReleaseTime = 0.07f;
 	}
 
+
+	auto& harmonicaTables = Tables["Harmonica"] = CreateWaveTablesFromFormants({
+		{500, 0.005f, 1},
+		{900, 0.0013f, 1},
+		{2100, 0.0005f, 1},
+		{3700, 0.00033f, 1},
+		{4700, 0.00025f, 1}
+	}, 64, 0.125f, 8, 1.1f, 16384);
+
 	{
-		auto& wt = PercussiveOrgan.WaveTables.EmplaceLast();
-		wt.Tables = &SynthVoiceTables;
+		auto& wave = Instruments["Harmonica"].WaveTables.EmplaceLast();
+		wave.Tables = &harmonicaTables;
+		wave.VolumeScale = 0.15f;
+
+		wave.ADSR.AttackTime = 0.03f;
+		wave.ADSR.ReleaseTime = 0.04f;
+	}
+
+
+	auto& pizzicatoStringsTables = Tables["PizzicatoStrings"] = CreateWaveTablesFromFormants({
+		{500, 0.014f, 1},
+		{800, 0.0022f, 1},
+		{2100, 0.0005f, 1},
+		{3700, 0.00033f, 1},
+		{0, 0.1f, 1}
+	}, 64, 2, 10, 1, 32768);
+
+	{
+		auto& wt = Instruments["PizzicatoStrings"].WaveTables.EmplaceLast();
+		wt.Tables = &pizzicatoStringsTables;
+		wt.VolumeScale = 0.25f;
+		wt.ExpCoeff = 6;
+		wt.ADSR.AttackTime = 0.02f;
+		wt.ADSR.ReleaseTime = 0.07f;
+	}
+
+	{
+		auto& wt = Instruments["PercussiveOrgan"].WaveTables.EmplaceLast();
+		wt.Tables = &synthVoiceTables;
 		wt.VolumeScale = 0.6f;
 		wt.ADSR.AttackTime = 0.003f;
 		wt.ADSR.DecayTime = 0.3f;
@@ -271,33 +203,19 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.05f;
 	}
 
-	ViolinTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 16384;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<32; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants =
-				Exp(-Sqr((ifreq - 500) / 70)) +
-				Exp(-Sqr((ifreq - 800) / 450)) +
-				Exp(-Sqr((ifreq - 2100) / 2000)) +
-				Exp(-Sqr((ifreq - 3700) / 3000)) +
-				Exp(-Sqr(ifreq / 10));
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, formants/float(i), 8);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+
+	auto& violinTables = Tables["Violin"] = CreateWaveTablesFromFormants({
+		{500, 0.014f, 1},
+		{800, 0.0022f, 1},
+		{2100, 0.0005f, 1},
+		{3700, 0.00033f, 1},
+		{0, 0.1f, 1}
+	}, 32, 1, 8, 1, 16384);
 
 	{
-		auto& wt = Violin.WaveTables.EmplaceLast();
-		wt.Tables = &ViolinTables;
-		wt.VolumeScale = 0.4f;
+		auto& wt = Instruments["Violin"].WaveTables.EmplaceLast();
+		wt.Tables = &violinTables;
+		wt.VolumeScale = 0.3f;
 		wt.VibratoFrequency = 5;
 		wt.VibratoValue = 0.001f;
 
@@ -306,40 +224,28 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.SustainVolume = 0.8f;
 		wt.ADSR.ReleaseTime = 0.1f;
 	}
-	/*SynthOrganTables.Generator = [](float freq, uint sampleRate)
+
+	Tables["SynthOrgan"].Generator = [](float freq, uint sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = 32768;
 		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
 		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
 		tbl.BaseLevelRatio = freq/sampleRate;
-		for(int i = 1; i<10; i++)
+		for(int i = 2; i<20; i++)
 		{
-			float ampl = 1.0f/(i);
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(1 << (i-1)), 1, ampl, 10);
+			float ampl = 1.0f/i;
+			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(1 << (i-2)), 1.25f, ampl, 10);
 		}
-		ConvertAmplitudesToSamples(tbl, 0.25f);
-		return tbl;
-	}*/
-
-	SynthBrassTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.85f, 1.0f/float(i), 15);
-		}
-		ConvertAmplitudesToSamples(tbl);
+		ConvertAmplitudesToSamples(tbl, 1);
 		return tbl;
 	};
 
+	auto& synthBrassTables = Tables["SynthBrass"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0, 1, 1, 64, false), 0.85f, 32768, false /*true*/);
+
 	{
-		auto& wt = SynthBrass.WaveTables.EmplaceLast();
-		wt.Tables = &SynthBrassTables;
+		auto& wt = Instruments["SynthBrass"].WaveTables.EmplaceLast();
+		wt.Tables = &synthBrassTables;
 		wt.VolumeScale = 0.3f;
 		wt.VibratoValue = 0.003f;
 		wt.VibratoFrequency = 5;
@@ -351,94 +257,84 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wt = PadPolysynth.WaveTables.EmplaceLast();
-		wt.Tables = &SynthBrassTables;
+		auto& wt = Instruments["PadPolysynth"].WaveTables.EmplaceLast();
+		wt.Tables = &synthBrassTables;
 		wt.VolumeScale = 0.1f;
 		wt.ADSR.AttackTime = 0.01f;
 		wt.ADSR.ReleaseTime = 0.15f;
 	}
 
+	auto& rainTables = Tables["Rain"] = CreateWaveTablesFromFormants({
+		{600, 0.007f, 1},
+		{900, 0.003f, 1},
+		{2200, 0.00083f, 1},
+		{2600, 0.0005f, 1},
+		{0, 0.0033f, 0.1f}
+	}, 64, 2, 40, 1, 8192);
+
 	{
-		auto& wt = FxGoblins.WaveTables.EmplaceLast();
-		wt.Tables = &RainTables;
+		auto& wt = Instruments["Rain"].WaveTables.EmplaceLast();
+		wt.Tables = &rainTables;
+		wt.ExpCoeff = 3;
+		wt.VolumeScale = 0.45f;
+		wt.VibratoFrequency = 15;
+		wt.VibratoValue = 0.01f;
+		wt.ADSR.AttackTime = 0.003f;
+		wt.ADSR.DecayTime = 0.3f;
+		wt.ADSR.SustainVolume = 0.7f;
+		wt.ADSR.ReleaseTime = 0.2f;
+	}
+
+	{ //TODO: это заглушка
+		auto& wt = Instruments["SteelDrums"].WaveTables.EmplaceLast();
+		wt.Tables = &rainTables;
+		//wt.ExpCoeff = 3;
+		wt.VolumeScale = 0.3f;
+		wt.ADSR.AttackTime = 0.005f;
+		wt.ADSR.DecayTime = 0.3f;
+		wt.ADSR.SustainVolume = 0.7f;
+		wt.ADSR.ReleaseTime = 0.2f;
+	}
+
+	{
+		auto& wt = Instruments["FxGoblins"].WaveTables.EmplaceLast();
+		wt.Tables = &rainTables;
 		wt.VolumeScale = 0.07f;
 		wt.ADSR.AttackTime = 0.05f;
 		wt.ADSR.ReleaseTime = 0.15f;
 	}
 
 
-	OrchestraHitTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.25f, 1.0f/float(i), 50);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	OrchestraHitTables.AllowMipmaps = true;
+	auto& orchestraHitTables = Tables["OrchestraHit"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 1, 1, 1, 64, false), 1, 16384, true);
 
 	{
-		auto& wt = OrchestraHit.WaveTables.EmplaceLast();
-		wt.Tables = &OrchestraHitTables;
+		auto& instr = Instruments["OrchestraHit"];
+		auto& wt = instr.WaveTables.EmplaceLast();
+		wt.Tables = &orchestraHitTables;
 		wt.VolumeScale = 0.3f;
 
-		OrchestraHit.WhiteNoise.FreqMultiplier = 10;
-		OrchestraHit.WhiteNoise.VolumeScale = 0.12f;
-		OrchestraHit.ExponentAttenuation.ExpCoeff = 10;
+		instr.WhiteNoise.FreqMultiplier = 10;
+		instr.WhiteNoise.VolumeScale = 0.12f;
+		instr.ExponentAttenuation.ExpCoeff = 10;
 
-		OrchestraHit.ADSR.AttackTime = 0.02f;
-		OrchestraHit.ADSR.ReleaseTime = 0.1f;
+		instr.ADSR.AttackTime = 0.02f;
+		instr.ADSR.ReleaseTime = 0.1f;
 	}
 
-	FluteTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 16384;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		float sign = 1;
-		for(int i = 1; i<64; i+=2)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, sign/float(i*i), 15*(1 + 0.1f*float(i)));
-			sign = -sign;
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
 
-	CalliopeTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			using namespace Math;
-			const float ifreq = float(i)*freq;
-			const float formants =
-				Exp(-Sqr((ifreq - 275) / 1000)) +
-				Exp(-Sqr((ifreq - 650) / 2000)) +
-				Exp(-Sqr((ifreq - 1100) / 1000)) +
-				Exp(-Sqr((ifreq - 2700) / 250)) +
-				Exp(-Sqr((ifreq) / 3000)) / 10;
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 2, formants/float(i), 8);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+	auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0.2f, 2, 2, 64, true), 1, 32768, false);
+
+	auto& calliopeTables = Tables["Calliope"] = CreateWaveTablesFromFormants({
+		{275, 0.001f, 1},
+		{650, 0.0005f, 1},
+		{1100, 0.001f, 1},
+		{2700, 0.004f, 1},
+		{0, 0.00033f, 0.1f}
+	}, 64, 1, 8, 2, 16384);
 
 	{
-		auto& wt = Calliope.WaveTables.EmplaceLast();
-		wt.Tables = &CalliopeTables;
+		auto& wt = Instruments["Calliope"].WaveTables.EmplaceLast();
+		wt.Tables = &calliopeTables;
 		wt.ExpCoeff = 4;
 		wt.VolumeScale = 0.5f;
 
@@ -448,84 +344,55 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.2f;
 	}
 
-	VibraphoneTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 16384;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 1, 2, 1.0f, 7);
-		for(int i = 4; i<64; i *= 2)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, 1.0f/float(i), 7*(1+float(i)*0.3f));
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	VibraphoneTables.AllowMipmaps = true;
+	auto& vibraphoneTables = Tables["Vibraphone"] = CreateWaveTablesFromHarmonics({
+		{1, 1, 7},
+		{0.25f, 4, 15.4f},
+		{0.125f, 8, 23.8f},
+		{0.0625f, 16, 40.6f},
+		{0.03125f, 32, 74.2f}
+	}, 1, 32768, true);
 
 	{
-		auto& wt = Vibraphone.WaveTables.EmplaceLast();
-		wt.Tables = &VibraphoneTables;
+		auto& wt = Instruments["Vibraphone"].WaveTables.EmplaceLast();
+		wt.Tables = &vibraphoneTables;
 		wt.VolumeScale = 0.15f;
 		wt.ExpCoeff = 4;
 		wt.ADSR.AttackTime = 0.01f;
 		wt.ADSR.ReleaseTime = 0.8f;
 	}
 
-	Crystal = Vibraphone;
+	Instruments["Crystal"] = Instruments["Vibraphone"];
 
-	MarimbaTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 1, 1.25f, 1.0f, 5);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 4, 1.25f, 1.0f/4, 5);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 9.2f, 1.25f, 1.0f/9.2f, 5);
-		for(int i = 12; i<64; i *= 2)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1.25f, 1.0f/float(i), 3);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	MarimbaTables.AllowMipmaps = true;
+
+	auto& marimbaTables = Tables["Marimba"] = CreateWaveTablesFromHarmonics({
+		{1, 1, 5},
+		{0.25f, 4, 5},
+		{1.0f/9.2f, 9.2f, 5},
+		{0.0835f, 12, 3},
+		{0.04175f, 24, 3},
+		{0.021f, 48, 3}
+	}, 1.25f, 32768, true);
 
 	{
-		auto& wt = Marimba.WaveTables.EmplaceLast();
-		wt.Tables = &MarimbaTables;
+		auto& wt = Instruments["Marimba"].WaveTables.EmplaceLast();
+		wt.Tables = &marimbaTables;
 		wt.VolumeScale = 0.25f;
 		wt.ExpCoeff = 8;
 		wt.ADSR.AttackTime = 0.003f;
 		wt.ADSR.ReleaseTime = 0.7f;
 	}
 
-	XylophoneTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 1, 1, 1.0f, 30);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 3, 1, 1.0f/3, 20);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 9.2f, 1, 1.0f/9.2f, 10);
-		for(float i = 13; i<64; i *= 2.3f)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, i, 1, 1.0f/float(i), 10);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	XylophoneTables.AllowMipmaps = true;
+	auto& xylophoneTables = Tables["Xylophone"] = CreateWaveTablesFromHarmonics({
+		{1, 1, 30},
+		{0.333f, 3, 20},
+		{1.0f/9.2f, 9.2f, 10},
+		{1/13.0f, 13, 10},
+		{0.033f, 30, 10}
+	}, 1, 32768, true);
 
 	{
-		auto& wt = Xylophone.WaveTables.EmplaceLast();
-		wt.Tables = &XylophoneTables;
+		auto& wt = Instruments["Xylophone"].WaveTables.EmplaceLast();
+		wt.Tables = &xylophoneTables;
 		wt.VolumeScale = 0.25f;
 		wt.ExpCoeff = 10;
 
@@ -533,27 +400,12 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.4f;
 	}
 
-
-	AtmosphereTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		for(int i = 1; i<64; i++)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.85f, 1.0f/float(i*i), 15);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	AtmosphereTables.AllowMipmaps = true;
+	auto& atmosphereTables = Tables["Atmosphere"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0, 2, 1, 64, false), 0.85f, 16384, true);
 
 	{
-		auto& wt = Atmosphere.WaveTables.EmplaceLast();
-		wt.Tables = &AtmosphereTables;
-		wt.VolumeScale = 0.2f;
+		auto& wt = Instruments["Atmosphere"].WaveTables.EmplaceLast();
+		wt.Tables = &atmosphereTables;
+		wt.VolumeScale = 0.5f;
 
 		wt.ADSR.AttackTime = 0.01f;
 		wt.ADSR.DecayTime = 0.4f;
@@ -561,29 +413,17 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.1f;
 	}
 
-	NewAgeTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 32768;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, 1, 2, 1.0f, 20);
-		for(int i = 4; i<64; i *= 2)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 1, 2.0f/float(i), 15);
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
-	NewAgeTables.AllowMipmaps = true;
+	auto& newAgeTables = Tables["NewAge"] = CreateWaveTablesFromHarmonics({
+		{1, 1, 20},
+		{0.5f, 4, 15},
+		{0.25f, 8, 15},
+		{0.125f, 16, 15},
+		{0.0625f, 32, 15}
+	}, 1, 16384, true);
 
 	{
-		//auto& wave = NewAge.Waves.EmplaceLast();
-		//wave.Scale = 0.07f;
-		//wave.Octaves = 5;
-		auto& wt = NewAge.WaveTables.EmplaceLast();
-		wt.Tables = &NewAgeTables;
+		auto& wt = Instruments["NewAge"].WaveTables.EmplaceLast();
+		wt.Tables = &newAgeTables;
 		wt.ExpCoeff = 1;
 		wt.VolumeScale = 0.2f;
 
@@ -593,9 +433,10 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.4f;
 	}
 
-	Pad5Bowed = NewAge;
+	Instruments["Pad5Bowed"] = Instruments["NewAge"];
 
-	LeadSquareTables.Generator = [](float freq, uint sampleRate)
+
+	/*LeadSquareTables.Generator = [](float freq, uint sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = 32768;
@@ -611,12 +452,12 @@ InstrumentLibrary::InstrumentLibrary()
 		}
 		ConvertAmplitudesToSamples(tbl);
 		return tbl;
-	};
+	};*/
 	//LeadSquareTables.AllowMipmaps = true;
 
 	{
 		//LeadSquare.WaveTables.AddLast({&LeadSquareTables, 0, 0.3f});
-		auto& wave = LeadSquare.Waves.EmplaceLast();
+		auto& wave = Instruments["LeadSquare"].Waves.EmplaceLast();
 		wave.Scale = 0.2f;
 		wave.VibratoFrequency = -2;
 		wave.VibratoValue = 0.9f;
@@ -627,32 +468,13 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
-	LeadSawtoothTables.Generator = [](float freq, uint sampleRate)
-	{
-		WaveTable tbl;
-		tbl.BaseLevelLength = 16384;
-		tbl.Data.Reserve(tbl.BaseLevelLength * 2);
-		tbl.Data.SetCount(tbl.BaseLevelLength / 2);
-		tbl.BaseLevelRatio = freq/float(sampleRate);
-		float sign = 1;
-		for(int i = 1; i<64; i++)
-		{
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.85f, sign/float(i), 15);
-			sign = -sign;
-		}
-		ConvertAmplitudesToSamples(tbl);
-		return tbl;
-	};
+
+	auto& leadSawtoothTables = Tables["LeadSawtooth"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0, 1, 1, 64, true), 0.85f, 16384, false);
 
 	{
-		/*auto& wave = LeadSawtooth.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
-		wave.Scale = 0.2f;
-		wave.UpdownRatio = 25;*/
-
-		auto& wt = LeadSawtooth.WaveTables.EmplaceLast();
+		auto& wt = Instruments["LeadSawtooth"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
-		wt.Tables = &LeadSawtoothTables;
+		wt.Tables = &leadSawtoothTables;
 
 		wt.ADSR.AttackTime = 0.02f;
 		wt.ADSR.DecayTime = 0.5f;
@@ -665,142 +487,146 @@ InstrumentLibrary::InstrumentLibrary()
 		const float volume = 0.1f;
 		const float  D = 0.75f, E = 0.93f, F = 0.5f, G = 0.8f, H = 0.7f;
 		float scaleSum = 0;
+		auto instr = Instruments["Glockenspiel"];
 		for(float k = 0; k < 10; k++)
 		{
-			auto& wave = Glockenspiel.Waves.EmplaceLast();
+			auto& wave = instr.Waves.EmplaceLast();
 			wave.ExpCoeff = Math::Exp(5*(H-0.5f)+1.25f*G*k)+3;
 			wave.Scale = Math::Exp(-0.625f*D*k)*Math::Sin((1+7*E)*k*k + 1);
 			wave.FreqMultiplier = Math::Exp(1.25f*F*k) * 4;
 			scaleSum += wave.Scale;
 		}
-		for(auto& wave: Glockenspiel.Waves)
+		for(auto& wave: instr.Waves)
 			wave.Scale *= volume/scaleSum;
-		Glockenspiel.ADSR.AttackTime = 0.003f;
-		Glockenspiel.ADSR.ReleaseTime = 0.1f;
+		instr.ADSR.AttackTime = 0.003f;
+		instr.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		const float volume = 0.33f;
-		auto& harm1 = Piano.Waves.EmplaceLast();
+		auto& instr = Instruments["Piano"];
+		const float volume = 0.25f;
+		auto& harm1 = instr.Waves.EmplaceLast();
 		harm1.Scale = 0.15f*volume;
 		harm1.ExpCoeff = 3;
 		harm1.FreqMultiplier = 1;
 
-		auto& harm2 = Piano.Waves.EmplaceLast();
+		auto& harm2 = instr.Waves.EmplaceLast();
 		harm2.Scale = -0.075f*volume;
 		harm2.ExpCoeff = 3;
 		harm2.FreqMultiplier = 3;
 
-		auto& harm3 = Piano.Waves.EmplaceLast();
+		auto& harm3 = instr.Waves.EmplaceLast();
 		harm3.Scale = -0.075f*volume;
 		harm3.ExpCoeff = 3;
 		harm3.FreqMultiplier = 5;
 
-		auto& harm4 = Piano.Waves.EmplaceLast();
+		auto& harm4 = instr.Waves.EmplaceLast();
 		harm4.Scale = 0.0375f*volume;
 		harm4.ExpCoeff = 3;
 		harm4.FreqMultiplier = 7;
 
-		auto& harm5 = Piano.Waves.EmplaceLast();
+		auto& harm5 = instr.Waves.EmplaceLast();
 		harm5.Scale = -0.0375f*volume;
 		harm5.ExpCoeff = 3;
 		harm5.FreqMultiplier = 9;
 
 
-		auto& harm6 = Piano.Waves.EmplaceLast();
+		auto& harm6 = instr.Waves.EmplaceLast();
 		harm6.Scale = 0.15f*volume;
 		harm6.ExpCoeff = 4;
 		harm6.FreqMultiplier = 2;
 
-		auto& harm7 = Piano.Waves.EmplaceLast();
+		auto& harm7 = instr.Waves.EmplaceLast();
 		harm7.Scale = -0.15f*volume;
 		harm7.ExpCoeff = 4;
 		harm7.FreqMultiplier = 4;
 
-		auto& harm8 = Piano.Waves.EmplaceLast();
+		auto& harm8 = instr.Waves.EmplaceLast();
 		harm8.Scale = 0.075f*volume;
 		harm8.ExpCoeff = 4;
 		harm8.FreqMultiplier = 5;
 
-		auto& harm9 = Piano.Waves.EmplaceLast();
+		auto& harm9 = instr.Waves.EmplaceLast();
 		harm9.Scale = -0.075f*volume;
 		harm9.ExpCoeff = 4;
 		harm9.FreqMultiplier = 7;
 
-		auto& harm10 = Piano.Waves.EmplaceLast();
+		auto& harm10 = instr.Waves.EmplaceLast();
 		harm10.Scale = 0.0375f*volume;
 		harm10.ExpCoeff = 4;
 		harm10.FreqMultiplier = 11;
 
-		auto& harm11 = Piano.Waves.EmplaceLast();
+		auto& harm11 = instr.Waves.EmplaceLast();
 		harm11.Scale = -0.0375f*volume;
 		harm11.ExpCoeff = 4;
 		harm11.FreqMultiplier = 13;
 
-		Piano.ADSR.AttackTime = 0.003f;
-		Piano.ADSR.ReleaseTime = 0.2f;
+		instr.ADSR.AttackTime = 0.003f;
+		instr.ADSR.ReleaseTime = 0.2f;
 	}
 
 	{
+		auto& instr = Instruments["ElectricPiano"];
 		const float volume = 0.27f;
-		auto& harm1 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm1 = instr.Waves.EmplaceLast();
 		harm1.Scale = 0.15f*volume;
 		harm1.ExpCoeff = 3;
 		harm1.FreqMultiplier =1;
 
-		auto& harm2 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm2 = instr.Waves.EmplaceLast();
 		harm2.Scale = 0.15f*volume;
 		harm2.ExpCoeff = 3.1f;
 		harm2.FreqMultiplier = 2;
 
-		auto& harm3 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm3 = instr.Waves.EmplaceLast();
 		harm3.Scale = -0.075f*volume;
 		harm3.ExpCoeff = 3.2f;
 		harm3.FreqMultiplier = 3;
 
-		auto& harm4 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm4 = instr.Waves.EmplaceLast();
 		harm4.Scale = -0.15f*volume;
 		harm4.ExpCoeff = 3.3f;
 		harm4.FreqMultiplier = 4;
 
-		auto& harm5 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm5 = instr.Waves.EmplaceLast();
 		harm5.Scale = -0.0375f*volume;
 		harm5.ExpCoeff = 3.6f;
 		harm5.FreqMultiplier = 7;
 
-		auto& harm6 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm6 = instr.Waves.EmplaceLast();
 		harm6.Scale = -0.0375f*volume;
 		harm6.ExpCoeff = 3.8f;
 		harm6.FreqMultiplier = 9;
 
-		auto& harm7 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm7 = instr.Waves.EmplaceLast();
 		harm7.Scale = 0.0375f*volume;
 		harm7.ExpCoeff = 4;
 		harm7.FreqMultiplier = 11;
 
-		auto& harm8 = ElectricPiano.Waves.EmplaceLast();
+		auto& harm8 = instr.Waves.EmplaceLast();
 		harm8.Scale = -0.0375f*volume;
 		harm8.ExpCoeff = 4.2f;
 		harm8.FreqMultiplier = 13;
 
-		ElectricPiano.ADSR.AttackTime = 0.003f;
-		ElectricPiano.ADSR.ReleaseTime = 0.2f;
+		instr.ADSR.AttackTime = 0.003f;
+		instr.ADSR.ReleaseTime = 0.2f;
+	
+		Instruments["ElectricPiano2"] = instr;
 	}
 
-	ElectricPiano2 = ElectricPiano;
 
 	{
-		auto& wave = Bass1.Waves.EmplaceLast();
+		auto& wave = Instruments["Bass1"].Waves.EmplaceLast();
 		wave.Scale = 0.3f;
 		wave.ExpCoeff = 5;
 		wave.FreqMultiplier = 2;
 
-		Bass1.ADSR.AttackTime = 0.02f;
-		Bass1.ADSR.ReleaseTime = 0.1f;
+		wave.ADSR.AttackTime = 0.02f;
+		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wave = ElectricBassFinger.Waves.EmplaceLast();
+		auto& wave = Instruments["ElectricBassFinger"].Waves.EmplaceLast();
 		wave.Scale = 0.4f;
 		wave.ExpCoeff = 4;
 		wave.FreqMultiplier = 2;
@@ -810,7 +636,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wave = Bass2.Waves.EmplaceLast();
+		auto& wave = Instruments["Bass2"].Waves.EmplaceLast();
 		wave.Scale = 0.3f;
 		wave.ExpCoeff = 4;
 		wave.Octaves = 2;
@@ -822,9 +648,8 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wave = SlapBass.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
-		wave.UpdownRatio = 0.25f;
+		auto& wave = Instruments["SlapBass"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{0.25f};
 		wave.Scale = 0.3f;
 		wave.ExpCoeff = 4;
 
@@ -833,44 +658,44 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wave = Bass3.Waves.EmplaceLast();
+		auto& wave = Instruments["Bass3"].Waves.EmplaceLast();
 		wave.Scale = 0.7f;
 		wave.ExpCoeff = 4;
-		//wave.RateAcceleration = -0.15f;
-		wave.FreqMultiplier = 2;
+		wave.VibratoFrequency = -1.5f;
+		wave.VibratoValue = 0.3f;
 
 		wave.ADSR.AttackTime = 0.01f;
 		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wave = SynthBass1.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["SynthBass1"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{20};
 		wave.Scale = 0.4f;
-		wave.ExpCoeff = 10;
-		wave.UpdownRatio = 20;
+		wave.ExpCoeff = 5;
+		wave.SmoothingFactor = 0.5f;
+		wave.VibratoFrequency = 7;
+		wave.VibratoValue = 0.002f;
 
 		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
+		wave.ADSR.DecayTime = 0.2f;
+		wave.ADSR.SustainVolume = 0.5f;
+		wave.ADSR.ReleaseTime = 0.7f;
 	}
 
 	{
-		auto& wave = SynthBass2.Waves.EmplaceLast();
-		wave.Scale = 0.5f;
+		auto& wave = Instruments["SynthBass2"].Waves.EmplaceLast();
+		wave.Scale = 0.3f;
 		wave.ExpCoeff = 7;
-		//wave.RateAcceleration = -0.12f;
-		wave.FreqMultiplier = 2;
 
 		wave.ADSR.AttackTime = 0.01f;
 		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wave = Lead5Charang.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Lead5Charang"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{20};
 		wave.Scale = 0.2f;
-		wave.UpdownRatio = 20;
-		wave.Octaves = 1;
 
 		wave.ADSR.AttackTime = 0.03f;
 		wave.ADSR.ReleaseTime = 0.05f;
@@ -878,46 +703,11 @@ InstrumentLibrary::InstrumentLibrary()
 
 
 	{
-		/*MusicalInstrument flute1;
-		TubeInstrument tube1;
-		tube1.Scale = 1;
-		tube1.DetuneValue = 0.999f;
-		tube1.DetuneFactor = 0.00001f;
-		tube1.RandomCoeff = 0.05f;
-		flute1.GenericInstruments.AddLast(tube1);
-
-		flute1.GenericModifiers.AddLast(DriveEffect(90));
-		flute1.GenericModifiers.AddLast(ResonanceFilterFactory(-1, 0.95f));
-		flute1.GenericModifiers.AddLast(ResonanceFilterFactory(-3, 0.95f));
-		flute1.GenericModifiers.AddLast(SoftHighPassFilterFactory(7000));
-		flute1.GenericModifiers.AddLast(NormalizeEffect(0.1f));
-
-		MusicalInstrument flute2;
-		TubeInstrument tube2;
-		tube2.Scale = 1;
-		tube2.DetuneValue = 1.001f;
-		tube2.DetuneFactor = 0.00001f;
-		tube2.RandomCoeff = 0.05f;
-		flute2.GenericInstruments.AddLast(tube2);
-
-		flute2.GenericModifiers.AddLast(DriveEffect(90));
-		flute2.GenericModifiers.AddLast(ResonanceFilterFactory(-1, 0.95f));
-		flute2.GenericModifiers.AddLast(ResonanceFilterFactory(-4, 0.95f));
-		flute2.GenericModifiers.AddLast(SoftHighPassFilterFactory(7000));
-		flute2.GenericModifiers.AddLast(NormalizeEffect(0.1f));
-
-		Flute.GenericInstruments.AddLast(Cpp::Move(flute1));
-		Flute.GenericInstruments.AddLast(Cpp::Move(flute2));*/
-
-		auto& wt = Flute.WaveTables.EmplaceLast();
-		wt.Tables = &FluteTables;
+		auto& wt = Instruments["Flute"].WaveTables.EmplaceLast();
+		wt.Tables = &fluteTables;
 		wt.VolumeScale = 0.7f;
 		wt.VibratoValue = 0.005f;
 		wt.VibratoFrequency = 7;
-		//auto& wave = Flute.Waves.EmplaceLast();
-		//wave.Type = WaveType::Sawtooth;
-		//wave.Scale = 0.5f;
-		//wave.UpdownRatio = 0.5f;
 
 		wt.ADSR.AttackTime = 0.04f;
 		wt.ADSR.DecayTime = 0.3f;
@@ -926,28 +716,8 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		//auto& wave = PanFlute.Waves.EmplaceLast();
-		//wave.Type = WaveType::Sawtooth;
-		//wave.Scale = 0.5f;
-		//wave.UpdownRatio = 0.4f;
-
-		//PanFlute.WaveTables.AddLast({&FluteTables, 0, 0.6f});
-
-		/*TubeInstrument tube;
-		tube.Scale = 1;
-		tube.DetuneValue = 0.9999f;
-		tube.DetuneFactor = 0.00001f;
-		tube.RandomCoeff = 0.05f;
-		PanFlute.GenericInstruments.AddLast(tube);
-
-		PanFlute.GenericModifiers.AddLast(DriveEffect(900));
-		PanFlute.GenericModifiers.AddLast(ResonanceFilterFactory(-1, 0.9f));
-		PanFlute.GenericModifiers.AddLast(ResonanceFilterFactory(-3, 0.9f));
-		PanFlute.GenericModifiers.AddLast(SoftHighPassFilterFactory(7500));
-		PanFlute.GenericModifiers.AddLast(NormalizeEffect(0.2f));*/
-
-		auto& wt = PanFlute.WaveTables.EmplaceLast();
-		wt.Tables = &FluteTables;
+		auto& wt = Instruments["PanFlute"].WaveTables.EmplaceLast();
+		wt.Tables = &fluteTables;
 		wt.VolumeScale = 0.7f;
 		wt.VibratoValue = 0.003f;
 		wt.VibratoFrequency = 6;
@@ -959,28 +729,8 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		/*TubeInstrument tube;
-		tube.Scale = 1;
-		tube.DetuneValue = 0.9999f;
-		tube.DetuneFactor = 0.00001f;
-		tube.RandomCoeff = 0.05f;
-		Piccolo.GenericInstruments.AddLast(tube);
-
-		Piccolo.GenericModifiers.AddLast(DriveEffect(900));
-		Piccolo.GenericModifiers.AddLast(ResonanceFilterFactory(-1, 0.9f));
-		Piccolo.GenericModifiers.AddLast(ResonanceFilterFactory(-3, 0.9f));
-		Piccolo.GenericModifiers.AddLast(SoftHighPassFilterFactory(7500));
-		Piccolo.GenericModifiers.AddLast(NormalizeEffect(0.2f));*/
-
-		//Piccolo = Flute;
-
-		//auto& wave = Piccolo.Waves.EmplaceLast();
-		//wave.Type = WaveType::Sawtooth;
-		//wave.Scale = 0.5f;
-		//wave.UpdownRatio = 0.5f;
-
-		auto& wt = Piccolo.WaveTables.EmplaceLast();
-		wt.Tables = &FluteTables;
+		auto& wt = Instruments["Piccolo"].WaveTables.EmplaceLast();
+		wt.Tables = &fluteTables;
 		wt.VolumeScale = 0.7f;
 		wt.VibratoValue = 0.003f;
 		wt.VibratoFrequency = 6;
@@ -991,18 +741,42 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.ReleaseTime = 0.1f;
 	}
 
+
+	auto& clarinetTables = Tables["Clarinet"] = CreateWaveTablesFromHarmonics({
+		{1, 1, 15},
+		{0.75f, 3, 13},
+		{0.5f, 5, 11},
+		{0.14f, 7, 9},
+		{0.5f, 9, 7},
+		{0.12f, 11, 5},
+		{0.17f, 13, 3}
+	}, 1.25f, 16384, false);
+
 	{
-		auto& wave = Birds.Waves.EmplaceLast();
+		auto& wt = Instruments["Clarinet"].WaveTables.EmplaceLast();
+		wt.Tables = &clarinetTables;
+		wt.VolumeScale = 0.5f;
+		wt.VibratoValue = 0.005f;
+		wt.VibratoFrequency = 5;
+
+		wt.ADSR.AttackTime = 0.1f;
+		wt.ADSR.DecayTime = 0.05f;
+		wt.ADSR.SustainVolume = 0.75f;
+		wt.ADSR.ReleaseTime = 0.1f;
+	}
+
+	{
+		auto& wave = Instruments["Birds"].Waves.EmplaceLast();
 		wave.Octaves = 2;
 
 		wave.ADSR.AttackTime = 0.1f;
 		wave.ADSR.ReleaseTime = 0.2f;
-		Birds.Chorus = ChorusFactory(0.3f, 3, 0.75, 0.25);
+		Instruments["Birds"].Chorus = ChorusFactory(0.3f, 3, 0.75, 0.25);
 	}
 
 	{
-		auto& wt = SoundTrackFX2.WaveTables.EmplaceLast();
-		wt.Tables = &SynthStringTables;
+		auto& wt = Instruments["SoundTrackFX2"].WaveTables.EmplaceLast();
+		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.1f;
 
 		wt.ADSR.AttackTime = 0.7f;
@@ -1012,17 +786,17 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		ReverseCymbal.WhiteNoise.FreqMultiplier = 5;
-		ReverseCymbal.WhiteNoise.VolumeScale = 0.2f;
-		ReverseCymbal.ADSR.AttackTime = 1;
-		ReverseCymbal.ADSR.ReleaseTime = 0.8f;
+		auto& instr = Instruments["ReverseCymbal"];
+		instr.WhiteNoise.FreqMultiplier = 5;
+		instr.WhiteNoise.VolumeScale = 0.2f;
+		instr.ADSR.AttackTime = 1;
+		instr.ADSR.ReleaseTime = 0.8f;
 	}
 
 	{
-		auto& wave = Accordion.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Accordion"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{5};
 		wave.Scale = 0.5f;
-		wave.UpdownRatio = 5;
 		//wave.Octaves = 3;
 
 		//Accordion.WaveTables.AddLast({&AccordionTables, 0, 0.35f});
@@ -1032,48 +806,57 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& sine = BassLead.Waves.EmplaceLast();
-		sine.Scale = 0.45f;
+		auto& sine = Instruments["BassLead"].Waves.EmplaceLast();
+		sine.Scale = 0.15f;
 		sine.ExpCoeff = 6.5f;
-		//sine.RateAcceleration = -0.1f;
 
-		auto& saw = BassLead.Waves.EmplaceLast();
-		saw.Type = WaveType::Sawtooth;
-		saw.Scale = 0.35f;
+		auto& saw = Instruments["BassLead"].Waves.EmplaceLast();
+		saw.Wave = SawtoothWaveForm{10};
+		saw.Scale = 0.1f;
 		saw.ExpCoeff = 8;
-		saw.UpdownRatio = 10;
 
-		BassLead.ADSR.AttackTime = 0.01f;
-		BassLead.ADSR.ReleaseTime = 0.1f;
+		Instruments["BassLead"].ADSR.AttackTime = 0.01f;
+		Instruments["BassLead"].ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& sine = ElectricBassPick.Waves.EmplaceLast();
+		auto& instr = Instruments["ElectricBassPick"];
+		auto& sine = instr.Waves.EmplaceLast();
 		sine.Scale = 0.45f;
 		sine.ExpCoeff = 6.5f;
-		//sine.RateAcceleration = -0.1f;
 
-		auto& saw = ElectricBassPick.Waves.EmplaceLast();
-		saw.Type = WaveType::Sawtooth;
+		auto& saw = instr.Waves.EmplaceLast();
+		saw.Wave = SawtoothWaveForm{3};
 		saw.Scale = 0.25f;
 		saw.ExpCoeff = 8;
-		saw.UpdownRatio = 3;
 
-		ElectricBassPick.ADSR.AttackTime = 0.01f;
-		ElectricBassPick.ADSR.ReleaseTime = 0.1f;
+		instr.ADSR.AttackTime = 0.01f;
+		instr.ADSR.ReleaseTime = 0.1f;
 	}
 
 	//Guitar = CreateGuitar(15, 128, 3.5f, 1.1f, 1, 1, 0.35f);
-	Guitar = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 1, 0.35f);
+	//Instruments["Guitar"] = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 1, 0.25f);
 	//GuitarSteel = CreateGuitar(15, 224, 3.5f, 1.7f, 1, 1, 0.3f);
-	GuitarSteel = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 1, 0.3f);
+	//Instruments["GuitarSteel"] = CreateGuitar(15, 5, 2.5f, 0.75f, 1.2f, 1, 0.25f);
 
 	{
-		auto& wave = OverdrivenGuitar.Waves.EmplaceLast();
-		wave.Type = WaveType::WhiteNoise;
+		auto& guitar = Instruments["Guitar"];
+		auto& wave = guitar.Waves.EmplaceLast();
+		wave.Wave = GuitarWaveForm{0.15f};
+		wave.SmoothingFactor = 0.7f;
+		wave.ExpCoeff = 1.5f;
+		wave.Scale = 3;
+		wave.ADSR.AttackTime = 0.01f;
+		wave.ADSR.ReleaseTime = 0.3f;
+
+		Instruments["GuitarSteel"] = guitar;
+	}
+
+	{
+		auto& wave = Instruments["OverdrivenGuitar"].Waves.EmplaceLast();
+		wave.Wave = WhiteNoiseWaveForm();
 		wave.Scale = 0.35f;
 		wave.ExpCoeff = 4;
-		//wave.RateAcceleration = -0.1f;
 		wave.FreqMultiplier = 2;
 
 		wave.ADSR.AttackTime = 0.01f;
@@ -1088,42 +871,36 @@ InstrumentLibrary::InstrumentLibrary()
 
 
 	{
-		auto& wave = Trumpet.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Trumpet"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{8};
 		wave.Scale = 0.15f;
-		wave.UpdownRatio = 8;
 
 		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.05f;
+		wave.ADSR.ReleaseTime = 0.02f;
 	}
 
 	{
-		auto& wave = Tuba.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Tuba"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{8};
 		wave.Scale = 0.2f;
-		wave.UpdownRatio = 8;
 
 		wave.ADSR.AttackTime = 0.01f;
 		wave.ADSR.ReleaseTime = 0.05f;
 	}
 
 	{
-		auto& wave = FrenchHorn.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["FrenchHorn"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{8};
 		wave.Scale = 0.15f;
-		wave.UpdownRatio = 8;
 
 		wave.ADSR.AttackTime = 0.05f;
 		wave.ADSR.ReleaseTime = 0.05f;
 	}
 
 	{
-		auto& wave = Oboe.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Oboe"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{0.6f};
 		wave.Scale = 0.45f;
-		wave.UpdownRatio = 0.6f;
-		wave.Octaves = 1;
-		wave.FreqMultiplier = 1;
 
 		//Oboe.WaveTables.AddLast({&FluteTables, 0, 0.5f});
 
@@ -1132,89 +909,61 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 	{
-		auto& wave = FretlessBass.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["FretlessBass"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{15};
 		wave.ExpCoeff = 5;
-		wave.Scale = 0.4f;
-		wave.UpdownRatio = 15;
+		wave.Scale = 0.2f;
 
 		wave.ADSR.AttackTime = 0.01f;
 		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wave = Sax.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		auto& wave = Instruments["Sax"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{0.2f};
 		wave.Scale = 0.15f;
-		wave.UpdownRatio = 0.2f;
 		wave.Octaves = 2;
 
 		wave.ADSR.AttackTime = 0.02f;
 		wave.ADSR.ReleaseTime = 0.05f;
 	}
 
-
-	/*static SynthesizedInstrument violinInstr1={
-		CreateSawtoothSynthPass(0.85f, 0.5f/2, 1, 1),
-		//CreateGeneratorSynthPass(Generators::Sawtooth(0.85f), 0.5f/3, 1),
-		null,
-		CreateAttackDecayPass(0.1, 0.1)
-	};
-	static SynthesizedInstrument violinInstr2={
-		CreateSawtoothSynthPass(1.21f, 0.5f/2, 1, 1.01f),
-		null,
-		CreateAttackDecayPass(0.1, 0.1)
-	};
-	
-	CombinedSynthesizedInstrument OldViolin={{violinInstr1, violinInstr2}};*/
-
-	//Violin.Synth = CreateGeneratorSynthPass(Generators::ViolinPhysicalModel(), 0.25f, 1, 0.375f);
-	//Violin.Attenuation = CreateAttackDecayPass(0.1, 0.1);
-
 	{
-		auto& wave = Organ.Waves.EmplaceLast();
-		wave.Type = WaveType::Sawtooth;
+		/*auto& wave = Instruments["Organ"].Waves.EmplaceLast();
+		wave.Wave = SawtoothWaveForm{0.1f};
 		wave.Scale = 0.03f;
-		wave.UpdownRatio = 0.1f;
-		wave.Octaves = 4;
-		wave.FreqMultiplier = 1;
+		wave.Octaves = 4;*/
+
+		auto& wave = Instruments["Organ"].WaveTables.EmplaceLast();
+		wave.Tables = &Tables["SynthOrgan"];
+		wave.VolumeScale = 0.1f;
 
 		wave.ADSR.AttackTime = 0.01f;
 		wave.ADSR.ReleaseTime = 0.01f;
 	}
 
 	{
-		auto& wave = Whistle.Waves.EmplaceLast();
-		wave.Scale = 0.3f;
+		auto& wave = Instruments["Whistle"].Waves.EmplaceLast();
+		wave.Scale = 0.2f;
 		wave.VibratoFrequency = 5;
 		wave.VibratoValue = 0.003f;
 		
 		wave.ADSR.AttackTime = 0.03f;
-		wave.ADSR.ReleaseTime = 0.25f;
-	
-		/*Whistle.Chorus.MaxDelay = 0.03f;
-		Whistle.Chorus.MainVolume = 0.75f;
-		Whistle.Chorus.SecondaryVolume = 0.25f;
-		Whistle.Chorus.DelayFrequency = 10;*/
+		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
 	{
-		auto& wave = Ocarina.Waves.EmplaceLast();
+		auto& wave = Instruments["Ocarina"].Waves.EmplaceLast();
 		wave.Scale = 0.3f;
 		wave.VibratoFrequency = 5;
 		wave.VibratoValue = 0.005f;
 
 		wave.ADSR.AttackTime = 0.003f;
 		wave.ADSR.ReleaseTime = 0.1f;
-
-		/*Whistle.Chorus.MaxDelay = 0.03f;
-		Whistle.Chorus.MainVolume = 0.75f;
-		Whistle.Chorus.SecondaryVolume = 0.25f;
-		Whistle.Chorus.DelayFrequency = 10;*/
 	}
 
 	{
-		auto& wave = Sine2Exp.Waves.EmplaceLast();
+		auto& wave = Instruments["Sine2Exp"].Waves.EmplaceLast();
 		wave.ExpCoeff = 9;
 		wave.Octaves = 2;
 		wave.FreqMultiplier = 1;
@@ -1223,66 +972,71 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.ADSR.ReleaseTime = 0.1f;
 	}
 
-
-	Applause.WhiteNoise.FreqMultiplier = 20;
-	Applause.WhiteNoise.VolumeScale = 0.15f;
-	Applause.Chorus.DelayFrequency = 10;
-	Applause.Chorus.MainVolume = 0.7f;
-	Applause.Chorus.SecondaryVolume = 0.3f;
-	Applause.Chorus.MaxDelay = 0.05f;
-	Applause.ADSR.AttackTime = 0.7f;
-	Applause.ADSR.ReleaseTime = 0.5f;
-
-	Helicopter.WhiteNoise.FreqMultiplier = 0.2f;
-	Helicopter.WhiteNoise.VolumeScale = 1;
-	Helicopter.Chorus.DelayFrequency = 3;
-	Helicopter.Chorus.MainVolume = 0.5f;
-	Helicopter.Chorus.SecondaryVolume = 0.5f;
-	Helicopter.Chorus.MaxDelay = 0.1f;
-	Helicopter.ADSR.AttackTime = 0.4f;
-	Helicopter.ADSR.ReleaseTime = 0.4f;
-
-	Seashore.WhiteNoise.FreqMultiplier = 40;
-	Seashore.WhiteNoise.VolumeScale = 0.04f;
-	Seashore.ADSR.AttackTime = 1;
-	Seashore.ADSR.ReleaseTime = 0.7f;
+	{
+		auto& instr = Instruments["Applause"];
+		instr.WhiteNoise.FreqMultiplier = 20;
+		instr.WhiteNoise.VolumeScale = 0.15f;
+		instr.Chorus.DelayFrequency = 10;
+		instr.Chorus.MainVolume = 0.7f;
+		instr.Chorus.SecondaryVolume = 0.3f;
+		instr.Chorus.MaxDelay = 0.05f;
+		instr.ADSR.AttackTime = 0.7f;
+		instr.ADSR.ReleaseTime = 0.5f;
+	}
 
 	{
-		auto& wave = PhoneRing.Waves.EmplaceLast();
+		auto& instr = Instruments["Helicopter"];
+		instr.WhiteNoise.FreqMultiplier = 1;
+		instr.WhiteNoise.VolumeScale = 1;
+		/*instr.Chorus.DelayFrequency = 3;
+		instr.Chorus.MainVolume = 0.5f;
+		instr.Chorus.SecondaryVolume = 0.5f;
+		instr.Chorus.MaxDelay = 0.1f;*/
+		instr.ADSR.AttackTime = 0.4f;
+		instr.ADSR.ReleaseTime = 0.4f;
+	}
+
+	{
+		auto& instr = Instruments["Seashore"];
+		instr.WhiteNoise.FreqMultiplier = 40;
+		instr.WhiteNoise.VolumeScale = 0.04f;
+		instr.ADSR.AttackTime = 1;
+		instr.ADSR.ReleaseTime = 0.7f;
+	}
+
+	{
+		auto& wave = Instruments["PhoneRing"].Waves.EmplaceLast();
 		wave.Scale = 0.5f;
 		wave.VibratoValue = 0.03f;
 		wave.VibratoFrequency = 5;
 
 		wave.ADSR.AttackTime = 0.2f;
 		wave.ADSR.ReleaseTime = 0.2f;
-		//PhoneRing.Modifiers.AddLast( CreateModifierPass(Modifiers::AbsPulsator(5)) );
 	}
 	
 
-	GunShot.WhiteNoise.FreqMultiplier = 40;
-	GunShot.WhiteNoise.VolumeScale = 0.15f;
-	GunShot.ExponentAttenuation.ExpCoeff = 4;
-	GunShot.ADSR.AttackTime = 0.005f;
-	GunShot.ADSR.ReleaseTime = 0.1f;
-
-	Timpani.WhiteNoise.FreqMultiplier = 20;
-	Timpani.WhiteNoise.VolumeScale = 0.15f;
-	Timpani.ExponentAttenuation.ExpCoeff = 8;
-	Timpani.ADSR.AttackTime = 0.005f;
-	Timpani.ADSR.ReleaseTime = 0.04f;
-
-
-	/*DrumSound2.Synth = CreateGeneratorSynthPass(
-		Generators::FunctionGenerator<float(*)(float, float)>(DrumSample), 0.3f, 1, 0.01f);
-	DrumSound2.MinNoteDuration = 0.3f;*/
-
-	/*SynthesizedInstrument kalimba;
-	kalimba.Synth = CreateSineSynthPass(0.1f, 3, 1);
-	kalimba.Attenuation = CreateExponentialAttenuationPass(11);
-	kalimba.MinNoteDuration = 0.3f;*/
+	{
+		auto& instr = Instruments["GunShot"];
+		instr.WhiteNoise.FreqMultiplier = 40;
+		instr.WhiteNoise.VolumeScale = 0.2f;
+		instr.ExponentAttenuation.ExpCoeff = 4;
+		instr.ADSR.AttackTime = 0.005f;
+		instr.ADSR.ReleaseTime = 0.1f;
+	}
 
 	{
-		auto& wave = Kalimba.Waves.EmplaceLast();
+		auto& instr = Instruments["Timpani"];
+		instr.WhiteNoise.FreqMultiplier = 20;
+		instr.WhiteNoise.VolumeScale = 0.25f;
+		instr.ExponentAttenuation.ExpCoeff = 7;
+		instr.ADSR.AttackTime = 0.005f;
+		instr.ADSR.DecayTime = 0.1f;
+		instr.ADSR.SustainVolume = 0.3f;
+		instr.ADSR.ReleaseTime = 0.1f;
+	}
+
+	{
+		auto& wave = Instruments["Kalimba"].Waves.EmplaceLast();
 		wave.Scale = 0.24f;
 		wave.ExpCoeff = 8;
 
@@ -1294,7 +1048,7 @@ InstrumentLibrary::InstrumentLibrary()
 
 	ClosedHiHat = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 44100, 0.02f);
 
-	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 44100, 0.02f);
+	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 88200, 0.02f);
 }
 
 

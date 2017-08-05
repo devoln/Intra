@@ -34,9 +34,7 @@ template<typename ...Args> struct TypeListIsEmpty<TypeList<Args...>>:
 	TypeListIsEmpty<typename TypeList<Args...>::Tail>::_> {};
 
 
-template<typename T, typename TL> struct TypeListContains: TypeFromValue<bool, false> {};
-
-template<typename... Args> struct TypeListContains<D::NoType, Args...>: TypeFromValue<bool, false> {};
+template<typename T, typename TL> struct TypeListContains: FalseType {};
 
 template<typename T, typename ...Args>
 struct TypeListContains<T, TypeList<Args...>>:

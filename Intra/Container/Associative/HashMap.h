@@ -71,6 +71,7 @@ private:
 	T element;
 
 private:
+	HashNode(const HashNode&) = delete;
 	HashNode& operator=(const HashNode&) = delete;
 };
 
@@ -227,12 +228,22 @@ public:
 
 	V& operator[](const K& key)
 	{
-		if(mBucketHeads==null)
+		if(mBucketHeads == null)
 			return insertNode(key, V(), false)->element.Value;
 		uint keyHash = ToHash(key);
 		Node* node = findNode(key, keyHash);
 		if(node!=null) return node->element.Value;
 		return insertNode(key, V(), false)->element.Value;
+	}
+
+	V& operator[](K&& key)
+	{
+		if(mBucketHeads == null)
+			return insertNode(Cpp::Move(key), V(), false)->element.Value;
+		uint keyHash = ToHash(key);
+		Node* node = findNode(key, keyHash);
+		if(node != null) return node->element.Value;
+		return insertNode(Cpp::Move(key), V(), false)->element.Value;
 	}
 
 	ElementRange Insert(const value_type& pair)
@@ -708,7 +719,10 @@ private:
 	}
 };
 
-}}
+}
+using Container::HashMap;
+
+}
 
 INTRA_WARNING_POP
 

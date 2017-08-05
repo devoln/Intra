@@ -5,6 +5,7 @@
 #include "Math/Math.h"
 
 #include "WaveTable.h"
+#include "WaveTableSampler.h"
 
 namespace Intra { namespace Audio { namespace Synth {
 
@@ -33,6 +34,31 @@ void ConvertAmplutudesToSamples(Span<float> inAmplitudesX2OutSamples, Span<float
 //! ѕринимает table, у которого Data содержит table.BaseLevelLength / 2 частот.
 //! ѕосле работы этой функции table содержит table.BaseLevelLength семплов, соответствующих этим частотам со случайными фазами.
 //!  роме того генерирует все уровни детализации дл€ полученного сигнала.
-void ConvertAmplitudesToSamples(WaveTable& table, float volume=1);
+void ConvertAmplitudesToSamples(WaveTable& table, float volume=1, bool genMipmaps=false);
+
+
+struct SineHarmonicWithBandwidthDesc
+{
+	float Amplitude;
+	float FreqMultiplier;
+	float Bandwidth;
+};
+
+WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc> harmonics,
+	float bandwidthScale, size_t tableSize, bool allowMipmaps);
+
+Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float bandwidthStep,
+	float harmonicAttenuationPower, float freqMultStep, size_t numHarmonics, bool alternatingSigns);
+
+struct FormantDesc
+{
+	float Frequency;
+	float Coeff;
+	float Scale;
+};
+
+WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, uint numHarmonics,
+	float harmonicAttenuationPower, float bandwidth, float bandwidthScale, size_t tableSize);
+
 
 }}}

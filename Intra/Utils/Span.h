@@ -56,7 +56,7 @@ template<typename T> struct Span
 	{return Begin <= subrange.Begin && End >= subrange.End;}
 
 	template<typename U> forceinline constexpr bool ContainsAddress(const U* address) const noexcept
-	{return size_t(reinterpret_cast<const T*>(address) - Begin) <= Length();}
+	{return size_t(reinterpret_cast<const T*>(address) - Begin) < Length();}
 
 	forceinline constexpr bool Overlaps(Span<const T> rhs) const noexcept
 	{

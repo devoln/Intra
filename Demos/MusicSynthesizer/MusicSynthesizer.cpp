@@ -1,5 +1,7 @@
 ﻿#include "Cpp/PlatformDetect.h"
 
+#if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
+
 #include "System/Stopwatch.h"
 #include "System/Environment.h"
 
@@ -27,8 +29,6 @@
 #include "MidiInstrumentMapping.h"
 
 #include "Math/SineRange.h"
-#include "Audio/Resample.h"
-#include "Audio/Synth/WaveTableGeneration.h"
 #include "Audio/Synth/InstrumentSet.h"
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
@@ -58,13 +58,10 @@ using namespace IO;
 using namespace Audio;
 
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-#include <emscripten.h>
-#endif
+
 
 void MainLoop(bool enableStreaming)
 {
-#if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
 	ConsoleOut.PrintLine("Нажмите любую клавишу, чтобы закрыть...");
 	Thread thr;
 	if(enableStreaming)
@@ -79,11 +76,6 @@ void MainLoop(bool enableStreaming)
 		});
 	}
 	ConsoleIn.GetChar();
-#else
-	(void)enableStreaming;
-	//emscripten_cancel_main_loop();
-	//emscripten_set_main_loop([]() {}, 30, 1);
-#endif
 }
 
 void PrintInfoAndPlayMidiStream(ForwardStream stream, bool enableStreaming)
@@ -136,28 +128,8 @@ void PrintInfoAndConvertMidiFileToWav(StringView filePath, StringView outputPath
 		OS.FileOpenOverwrite(outputPath, Error::Skip()));
 }
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-
-extern "C" EMSCRIPTEN_KEEPALIVE void PlayMidiFileInMemory(const byte* data, size_t size, bool enableStreaming)
-{
-	StreamedSound::ReleaseAllSounds();
-	Sound::ReleaseAllSounds();
-
-	PrintInfoAndPlayMidiStream(SpanOfRaw<const char>(data, size), enableStreaming);
-}
-
-extern "C" EMSCRIPTEN_KEEPALIVE void PlayUrl(const char* url, bool enableStreaming)
-{
-	Array<byte> bb = DownloadFile(StringView(url));
-	PlayMidiFileInMemory(bb.Data(), bb.Length(), enableStreaming);
-}
-
-#endif
-
 int INTRA_CRTDECL main()
 {
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
-#else
 	//System::InitSignals();
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
@@ -177,6 +149,7 @@ int INTRA_CRTDECL main()
 	PrintInfoAndPlayMidiFile(filePath, enableStreaming);
 
 	CleanUpSoundSystem();
-#endif
 	return 0;
 }
+
+#endif

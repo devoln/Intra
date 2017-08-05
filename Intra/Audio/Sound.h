@@ -14,13 +14,14 @@
 #include "Audio/SoundTypes.h"
 
 //! Используемая библиотека для вывода звука
-#define INTRA_LIBRARY_SOUND_Dummy 0
-#define INTRA_LIBRARY_SOUND_DirectSound 1
-#define INTRA_LIBRARY_SOUND_OpenAL 2
-#define INTRA_LIBRARY_SOUND_SDL 3
-#define INTRA_LIBRARY_SOUND_Qt 4
-#define INTRA_LIBRARY_SOUND_WebAudio 5
-#define INTRA_LIBRARY_SOUND_ALSA 6
+#define INTRA_LIBRARY_SOUND_None 0
+#define INTRA_LIBRARY_SOUND_Dummy 1
+#define INTRA_LIBRARY_SOUND_DirectSound 2
+#define INTRA_LIBRARY_SOUND_OpenAL 3
+#define INTRA_LIBRARY_SOUND_SDL 4
+#define INTRA_LIBRARY_SOUND_Qt 5
+#define INTRA_LIBRARY_SOUND_WebAudio 6
+#define INTRA_LIBRARY_SOUND_ALSA 7
 
 //Пытаемся автоматически определить библиотеку для вывода звука
 #ifndef INTRA_LIBRARY_SOUND
@@ -33,6 +34,10 @@
 #define INTRA_LIBRARY_SOUND INTRA_LIBRARY_SOUND_Dummy
 #endif
 
+#endif
+
+#if(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_None)
+#error Sound support is disabled, this file must not be included!
 #endif
 
 #if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_OpenAL)

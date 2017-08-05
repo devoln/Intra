@@ -4,6 +4,8 @@
 
 #include "Math/Math.h"
 
+//#include <stdio.h>
+
 #include "Range/Mutation/Fill.h"
 #include "Range/Reduction.h"
 #include "Range/Mutation/Transform.h"
@@ -109,6 +111,12 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 			if(mMaxSample < maxSample) mMaxSample = maxSample;
 			Multiply(dstLeftBeforeEvent, 1.0f/mMaxSample);
 			Multiply(dstRightBeforeEvent, 1.0f/mMaxSample);
+			/*if(mMaxSample > 10 && maxSample == mMaxSample)
+			{
+				printf("dstLeftBeforeEvent.Length() = %i, dstRightBeforeEvent.Length() = %i\n", dstLeftBeforeEvent.Length(), dstRightBeforeEvent.Length());
+				printf("minimax1 = [%f; %f], minimax2 = [%f; %f]\n", minimax1.first, minimax1.second, minimax2.first, minimax2.second);
+				printf("mTime = %f\n", mTime);
+			}*/
 		}
 		dstLeft.PopFirstExactly(dstLeftBeforeEvent.Length());
 		dstRight.PopFirstExactly(dstRightBeforeEvent.Length());

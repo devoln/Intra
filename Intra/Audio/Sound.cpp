@@ -73,11 +73,9 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 
 	Unique<IAudioSource> source;
 
-#ifndef INTRA_NO_WAVE_LOADER
 	if(fileSignature.StartsWith("RIFF"))
 		source = new Sources::Wave(null, fileMapping.AsRange());
 	else
-#endif
 #if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileSignature.StartsWith("OggS"))
 		source = new Sources::Vorbis(fileData);
@@ -185,7 +183,7 @@ void StreamedSound::UpdateBuffer() const
 
 void StreamedSound::UpdateAllExistingInstances()
 {
-#if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_WebAudio)
+#if(INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_WebAudio && INTRA_LIBRARY_SOUND != INTRA_LIBRARY_SOUND_Dummy)
 	auto& context = SoundContext::Instance();
 	Array<Shared<StreamedSound::Data>> soundsToUpdate;
 

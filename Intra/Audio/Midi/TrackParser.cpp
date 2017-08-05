@@ -5,12 +5,23 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 namespace Intra { namespace Audio { namespace Midi {
 
 TrackParser::TrackParser(InputRange<RawEvent> events, double time):
-	Events(Cpp::Move(events)), Time(time) {}
+	Events(Cpp::Move(events)), Time(time), DelayTicksPassed(0) {}
 
 void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 {
 	auto event = Events.Next();
-	Time += event.Delay() * state.TickDuration;
+	uint delay = event.Delay();
+	if(delay > DelayTicksPassed)
+	{
+		delay -= DelayTicksPassed;
+		DelayTicksPassed = 0;
+	}
+	else
+	{
+		DelayTicksPassed -= delay;
+		delay = 0;
+	}
+	Time +=  delay * state.TickDuration;
 
 	const auto type = event.MyType();
 

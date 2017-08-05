@@ -207,6 +207,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		auto ref = Cpp::Move(SelfRef);
 		stop();
 		EM_ASM_({
+			if(Module.gWebAudioInstanceArray[$0] != null) Module.gWebAudioInstanceArray[$0].disconnect(Module.gWebAudioContext.destination);
 			Module.gWebAudioInstanceArray[$0] = null;
 		}, Id);
 		context.InstanceIdalloc.Deallocate(ushort(Id));

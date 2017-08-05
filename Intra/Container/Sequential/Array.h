@@ -177,14 +177,16 @@ public:
 	}
 
 	//! Добавить новый элемент в конец массива перемещением value.
+	//! Вставляемый элемент не должен быть элементом этого массива.
 	forceinline T& AddLast(T&& value)
 	{
-		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));
+		INTRA_DEBUG_ASSERT(!buffer.ContainsAddress(Meta::AddressOf(value)));
 		if(NoRightSpace()) CheckSpace(1, 0);
 		return *new(range.End++) T(Cpp::Move(value));
 	}
 
 	//! Добавить новый элемент в конец массива копированием value.
+	//! Вставляемый элемент не должен быть элементом этого массива.
 	forceinline T& AddLast(const T& value)
 	{
 		INTRA_DEBUG_ASSERT(!range.ContainsAddress(Meta::AddressOf(value)));

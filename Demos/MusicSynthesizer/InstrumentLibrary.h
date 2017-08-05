@@ -7,6 +7,9 @@
 #include "Audio/Synth/RecordedSampler.h"
 #include "Audio/Synth/WaveTable.h"
 
+#include "Container/Sequential/String.h"
+#include "Container/Associative/HashMap.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 using Intra::Audio::Synth::MusicalInstrument;
@@ -14,45 +17,29 @@ using Intra::Audio::Synth::RecordedSampler;
 using Intra::Audio::Synth::GenericDrumInstrument;
 using Intra::Audio::Synth::WaveTable;
 using Intra::Audio::Synth::WaveTableCache;
+using Intra::HashMap;
+using Intra::String;
 
 struct InstrumentLibrary
 {
 	InstrumentLibrary();
+	~InstrumentLibrary();
 
 	InstrumentLibrary(const InstrumentLibrary&) = delete;
 	InstrumentLibrary& operator=(const InstrumentLibrary&) = delete;
 
-	WaveTableCache ChoirATables, ChoirOTables, SynthStringTables, SynthVoiceTables, SynthBrassTables, LeadSawtoothTables, OrchestraHitTables, LeadSquareTables, RainTables;
-	WaveTableCache ViolinTables, FluteTables, CalliopeTables;
-	WaveTableCache VibraphoneTables, GlockenspielTables, MarimbaTables, XylophoneTables, NewAgeTables, AtmosphereTables;
+	HashMap<String, WaveTableCache> Tables;
 
-	MusicalInstrument Piano, ElectricPiano, ElectricPiano2;
-	MusicalInstrument Vibraphone, Glockenspiel, NewAge, Crystal, Pad5Bowed, Marimba, Xylophone;
-	MusicalInstrument Kalimba;
-	MusicalInstrument Bass1, Bass2, Bass3, ElectricBassFinger, SlapBass;
-	MusicalInstrument ElectricBassPick;
-	MusicalInstrument SynthBass1, SynthBass2;
-	MusicalInstrument SynthBrass, Lead5Charang;
-	MusicalInstrument Birds, SynthVoice, VoiceOohs, ChoirAahs, RockOrgan, SoundTrackFX2;
-	MusicalInstrument FxGoblins, PadPolysynth, Pad7Halo, Pad8Sweep, SynthStrings;
-	MusicalInstrument PadChoir, ReverseCymbal, Atmosphere, Rain, StringEnsemble, TremoloStrings;
-	MusicalInstrument SteelDrums;
-	MusicalInstrument Flute, PanFlute, Piccolo, FrenchHorn;
-	MusicalInstrument Guitar, GuitarSteel;
-	MusicalInstrument Guitar1, OverdrivenGuitar;
-	MusicalInstrument Trumpet, Tuba, Oboe, FretlessBass, Sax, Calliope;
-	MusicalInstrument Violin;
-	MusicalInstrument Organ, PercussiveOrgan;
-	MusicalInstrument Whistle, Ocarina;
-	MusicalInstrument Sine2Exp;
-	MusicalInstrument LeadSawtooth;
-	MusicalInstrument Accordion;
-	MusicalInstrument BassLead;
-	MusicalInstrument OrchestraHit;
-	MusicalInstrument LeadSquare;
-	MusicalInstrument GunShot, Timpani, Applause, Seashore, Helicopter, PhoneRing;
+	HashMap<String, MusicalInstrument> Instruments;
 
-	MusicalInstrument DrumSound2;
+	MusicalInstrument* operator[](const String& str)
+	{
+		auto found = Instruments.Find(str);
+		if(found.Empty())
+			return nullptr;
+		return &found.First().Value;
+	}
+
 	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat;
 
 	static MusicalInstrument CreateGuitar(size_t n=15, float c=128, float d=1.5,

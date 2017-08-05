@@ -66,11 +66,11 @@ bool PrintMidiFileInfo(StringView filePath)
 	return true;
 }
 
-Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFiletream,
+Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFileStream,
 	double duration, float startingVolume, ErrorStatus& status, uint sampleRate)
 {
 	return new Sources::MidiSynth(
-		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(midiFiletream), status),
+		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(midiFileStream), status),
 		duration, GetMapping(), startingVolume, null, sampleRate == 0? Sound::DefaultSampleRate(): sampleRate, true);
 }
 
