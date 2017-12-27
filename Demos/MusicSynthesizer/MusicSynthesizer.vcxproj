@@ -70,7 +70,7 @@
     <ProjectGuid>{54A3C255-6110-48B7-AE17-28762B6631F5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>MusicSynthesizer</RootNamespace>
-    <WindowsTargetPlatformVersion>7.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

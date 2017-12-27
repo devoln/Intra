@@ -31,7 +31,7 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const Synth::Mi
 	mInstruments(instruments),
 	mMusic(Cpp::Move(music)),
 	mTime(0),
-	mSampleCount(duration == Cpp::Infinity? ~size_t(): size_t((duration+1)*sampleRate)),
+	mSampleCount(duration == Cpp::Infinity? ~size_t(): size_t((duration+2)*sampleRate)),
 	mMaxSample(maxVolume)
 {}
 
@@ -76,7 +76,11 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 			mMusic.ProcessEvent(*this);
 			continue;
 		}
-		const size_t samplesBeforeNextEvent = (nextTime == Cpp::Infinity)? ~size_t(): size_t(Math::Max((nextTime - mTime)*mSampleRate + 0.5, 1.0));
+		size_t samplesBeforeNextEvent = (nextTime == Cpp::Infinity)? ~size_t():
+			size_t(Math::Max((nextTime - mTime)*mSampleRate + 0.5, 1.0));
+		const size_t samplesLeft = SamplesLeft();
+		if(samplesLeft == 0) break;
+		samplesBeforeNextEvent = Funal::Min(samplesBeforeNextEvent, samplesLeft);
 		bool add = false;
 		const auto dstLeftBeforeEvent = dstLeft.Take(samplesBeforeNextEvent);
 		const auto dstRightBeforeEvent = dstRight.Take(samplesBeforeNextEvent);
@@ -122,9 +126,9 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 		dstRight.PopFirstExactly(dstRightBeforeEvent.Length());
 		totalSamplesProcessed += dstLeftBeforeEvent.Length();
 		mTime += double(dstLeftBeforeEvent.Length())/mSampleRate;
-		if(mPlayingNotes.Empty() && nextTime == Cpp::Infinity)
+		if(mPlayingNotes.Empty() && mOffPlayingNotes.Empty() && nextTime == Cpp::Infinity)
 		{
-			totalSamplesProcessed--;
+			if(dstLeft.Empty() && totalSamplesProcessed != 0) totalSamplesProcessed--;
 			break;
 		}
 	}

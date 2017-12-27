@@ -40,7 +40,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = Instruments["ChoirAahs"].WaveTables.EmplaceLast();
 		wt.Tables = &choirATables;
-		wt.VolumeScale = 0.15f;
+		wt.VolumeScale = 0.4f;
 		wt.ADSR.AttackTime = 0.02f;
 		wt.ADSR.DecayTime = 0.5f;
 		wt.ADSR.SustainVolume = 0.8f;
@@ -58,7 +58,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = Instruments["PadChoir"].WaveTables.EmplaceLast();
 		wt.Tables = &choirOTables;
-		wt.VolumeScale = 1;
+		wt.VolumeScale = 0.7f;
 		wt.ADSR.AttackTime = 0.07f;
 		wt.ADSR.DecayTime = 0.5f;
 		wt.ADSR.SustainVolume = 0.5f;
@@ -175,6 +175,23 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.ADSR.ReleaseTime = 0.04f;
 	}
 
+	auto& fiddleTables = Tables["Fiddle"] = CreateWaveTablesFromFormants({
+		{500, 0.005f, 1},
+		{900, 0.0013f, 1},
+		{2100, 0.0005f, 1},
+		{3700, 0.00033f, 1},
+		{4700, 0.00025f, 1}
+	}, 16, 0.5f, 4, 1.0f, 16384);
+
+	{
+		auto& wave = Instruments["Fiddle"].WaveTables.EmplaceLast();
+		wave.Tables = &fiddleTables;
+		wave.VolumeScale = 0.15f;
+
+		wave.ADSR.AttackTime = 0.03f;
+		wave.ADSR.ReleaseTime = 0.04f;
+	}
+
 
 	auto& pizzicatoStringsTables = Tables["PizzicatoStrings"] = CreateWaveTablesFromFormants({
 		{500, 0.014f, 1},
@@ -246,7 +263,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = Instruments["SynthBrass"].WaveTables.EmplaceLast();
 		wt.Tables = &synthBrassTables;
-		wt.VolumeScale = 0.3f;
+		wt.VolumeScale = 0.25f;
 		wt.VibratoValue = 0.003f;
 		wt.VibratoFrequency = 5;
 
@@ -322,7 +339,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 
-	auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0.2f, 2, 2, 64, true), 1, 32768, false);
+	auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(15, 0.8f, 2, 2, 64, true), 1, 32768, false);
 
 	auto& calliopeTables = Tables["Calliope"] = CreateWaveTablesFromFormants({
 		{275, 0.001f, 1},
@@ -377,9 +394,9 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Marimba"].WaveTables.EmplaceLast();
 		wt.Tables = &marimbaTables;
 		wt.VolumeScale = 0.25f;
-		wt.ExpCoeff = 8;
-		wt.ADSR.AttackTime = 0.003f;
-		wt.ADSR.ReleaseTime = 0.7f;
+		wt.ExpCoeff = 13;
+		wt.ADSR.AttackTime = 0.004f;
+		wt.ADSR.ReleaseTime = 0.2f;
 	}
 
 	auto& xylophoneTables = Tables["Xylophone"] = CreateWaveTablesFromHarmonics({
@@ -485,9 +502,9 @@ InstrumentLibrary::InstrumentLibrary()
 
 	{
 		const float volume = 0.1f;
-		const float  D = 0.75f, E = 0.93f, F = 0.5f, G = 0.8f, H = 0.7f;
+		const float D = 0.75f, E = 0.93f, F = 0.5f, G = 0.8f, H = 0.7f;
 		float scaleSum = 0;
-		auto instr = Instruments["Glockenspiel"];
+		auto& instr = Instruments["Glockenspiel"];
 		for(float k = 0; k < 10; k++)
 		{
 			auto& wave = instr.Waves.EmplaceLast();
@@ -834,6 +851,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.ADSR.ReleaseTime = 0.1f;
 	}
 
+	Instruments["Sitar"] = CreateGuitar(15, 6.5f, 0.2f, 0.5f, 1, 1, 0.3f, 0.01f, 0.4f);
 	//Guitar = CreateGuitar(15, 128, 3.5f, 1.1f, 1, 1, 0.35f);
 	//Instruments["Guitar"] = CreateGuitar(15, 3, 1.7f, 1.15f, 1, 1, 0.25f);
 	//GuitarSteel = CreateGuitar(15, 224, 3.5f, 1.7f, 1, 1, 0.3f);
@@ -869,6 +887,17 @@ InstrumentLibrary::InstrumentLibrary()
 	OverdrivenGuitar.Attenuation = CreateTableAttenuationPass(
 		{Norm8(0.1), 0.3, 0.7, 0.8, 0.75, 0.3, 0.25, 0.2, 0.16, 0.12, 0.09, 0.06, 0.03, 0.01, 0});*/
 
+
+	/*auto& trumpetTables = Tables["Trumpet"] = CreateWaveTablesFromHarmonics(CreateUpdownHarmonicArray(3, 0, 8, 64), 1.0f, 32768, false);
+
+	{
+		auto& wt = Instruments["Trumpet"].WaveTables.EmplaceLast();
+		wt.VolumeScale = 0.25f;
+		wt.Tables = &trumpetTables;
+
+		wt.ADSR.AttackTime = 0.01f;
+		wt.ADSR.ReleaseTime = 0.02f;
+	}*/
 
 	{
 		auto& wave = Instruments["Trumpet"].Waves.EmplaceLast();
@@ -1053,7 +1082,7 @@ InstrumentLibrary::InstrumentLibrary()
 
 
 MusicalInstrument InstrumentLibrary::CreateGuitar(size_t n, float c,
-	float d, float e, float f, float freqMult, float volume)
+	float d, float e, float f, float freqMult, float volume, float attackTime, float releaseTime)
 {
 	MusicalInstrument result;
 	for(size_t i = 1; i <= n; i++)
@@ -1066,8 +1095,8 @@ MusicalInstrument InstrumentLibrary::CreateGuitar(size_t n, float c,
 		sine.ExpCoeff = d + e*float(i-1);
 		sine.FreqMultiplier = freqMult*float(i);
 	}
-	result.ADSR.AttackTime = 0.005f;
-	result.ADSR.ReleaseTime = 0.2f;
+	result.ADSR.AttackTime = attackTime;
+	result.ADSR.ReleaseTime = releaseTime;
 	return result;
 }
 

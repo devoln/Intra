@@ -39,7 +39,8 @@ MidiInstrumentSet GetMapping()
 	static const byte guitars[] = {6, 24, 26, 27, 28, 29, 30, 31, 46};
 	for(const byte code: guitars) instruments[code] = lib["Guitar"];
 
-	instruments[104] = lib["SteelDrums"];
+	instruments[104] = lib["Sitar"];
+	instruments[114] = lib["SteelDrums"];
 	instruments[25] = lib["GuitarSteel"];
 	instruments[32] = lib["Bass1"];
 	instruments[33] = lib["ElectricBassFinger"];
@@ -131,6 +132,8 @@ MidiInstrumentSet GetMapping()
 	instruments[38] = lib["SynthBass1"];
 	instruments[91] = lib["PadChoir"];
 	instruments[96] = lib["Rain"];
+
+	instruments[110] = lib["Fiddle"];
 
 	instruments[122] = lib["Seashore"];
 	instruments[124] = lib["PhoneRing"];

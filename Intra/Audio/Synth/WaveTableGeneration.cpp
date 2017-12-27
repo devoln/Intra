@@ -20,15 +20,17 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 	const float bwi = (Math::Pow2(bandwidthCents/1200 - 1) - 0.5f)*freqSampleRateRatio*Math::Pow(harmFreqMultiplier, harmBandwidthScale);
 	float rw = -freqSampleRateRatio*harmFreqMultiplier/bwi;
 	const float rdw = 1.0f/(float(N)*bwi);
+	
 	float range = 2;
 	if(rdw > 1) range = 3*rdw;
 	if(-range > rw)
 	{
-		float elementsToSkip = Math::Round((-range - rw) / rdw);
+		const float elementsToSkip = Math::Floor((-range - rw) / rdw);
 		wavetableAmplitudes.PopFirstN(size_t(elementsToSkip));
 		rw += elementsToSkip*rdw;
 	}
-	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Math::Round((range - rw) / rdw)));
+	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Math::Ceil((range - rw) / rdw)));
+
 	amplitude /= bwi;
 	while(!wavetableAmplitudes.Empty())
 	{
@@ -42,7 +44,7 @@ static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> ou
 {
 	INTRA_DEBUG_ASSERT(inOutRealAmplitudes.Length() <= outImagAmplitudes.Length());
 	Random::FastUniform<ushort> rand(uint(inOutRealAmplitudes.Length()^1633529523u));
-	enum: uint {TABLE_SIZE = 1024};
+	enum: uint {TABLE_SIZE = 4096};
 	float sineTable[TABLE_SIZE];
 	Math::SineRange<float> oscillator(1, 0, float(2*Math::PI/TABLE_SIZE));
 	ReadTo(oscillator, sineTable);
@@ -95,6 +97,8 @@ void ConvertAmplutudesToSamples(Span<float> inAmplitudesX2OutSamples, Span<float
 	ReflectComplexAmplitudes(inAmplitudesX2OutSamples, tempBuffer.Take(inAmplitudesX2OutSamples.Length()));
 	InplaceInverseFFTNonNormalized(inAmplitudesX2OutSamples, tempBuffer.Take(inAmplitudesX2OutSamples.Length()));
 	NormalizeSamples(inAmplitudesX2OutSamples, volume);
+	//InplaceInverseFFT(inAmplitudesX2OutSamples, tempBuffer.Take(inAmplitudesX2OutSamples.Length()));
+	//Multiply(inAmplitudesX2OutSamples, volume);
 }
 
 void ConvertAmplitudesToSamples(WaveTable& table, float volume, bool genMipmaps)
@@ -150,6 +154,23 @@ Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float 
 		freqMult += freqMultStep;
 		bandwidth += bandwidthStep;
 		if(alternatingSigns) sign = -sign;
+	}
+	return harmonics;
+}
+
+Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep, float updownRatio, size_t numHarmonics)
+{
+	Array<SineHarmonicWithBandwidthDesc> harmonics;
+	harmonics.Reserve(numHarmonics);
+	const float a = float(Math::PI) / (1 + updownRatio);
+	const float c = 2 / (a*(float(Math::PI) - a));
+	for(size_t i = 1; i <= numHarmonics; i++)
+	{
+		auto& harm = harmonics.EmplaceLast();
+		harm.Amplitude = c*Math::Sin(i*a)/float(i*i);
+		harm.FreqMultiplier = float(i);
+		harm.Bandwidth = bandwidth;
+		bandwidth += bandwidthStep;
 	}
 	return harmonics;
 }

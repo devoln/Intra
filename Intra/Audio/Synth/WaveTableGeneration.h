@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include "Utils/Span.h"
 
@@ -26,14 +26,14 @@ inline void AddSineHarmonic(Span<float> wavetableAmplitudes, float freqSampleRat
 void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqSampleRateRatio,
 	float harmFreqMultiplier, float harmBandwidthScale, float amplitude, float bandwidthCents);
 
-//! Получает на вход массив inAmplitudesX2OutSamples, первая половина которого содержит амплитуды частот.
-//! Присваивает каждой из них случайные фазы и заполняет весь inAmplitudesX2OutSamples семплами.
-//! @param tempBuffer - временный буфер размера не меньше inAmplitudesX2OutSamples.Length(), в который будет производиться запись алгоримом.
+//! РџРѕР»СѓС‡Р°РµС‚ РЅР° РІС…РѕРґ РјР°СЃСЃРёРІ inAmplitudesX2OutSamples, РїРµСЂРІР°СЏ РїРѕР»РѕРІРёРЅР° РєРѕС‚РѕСЂРѕРіРѕ СЃРѕРґРµСЂР¶РёС‚ Р°РјРїР»РёС‚СѓРґС‹ С‡Р°СЃС‚РѕС‚.
+//! РџСЂРёСЃРІР°РёРІР°РµС‚ РєР°Р¶РґРѕР№ РёР· РЅРёС… СЃР»СѓС‡Р°Р№РЅС‹Рµ С„Р°Р·С‹ Рё Р·Р°РїРѕР»РЅСЏРµС‚ РІРµСЃСЊ inAmplitudesX2OutSamples СЃРµРјРїР»Р°РјРё.
+//! @param tempBuffer - РІСЂРµРјРµРЅРЅС‹Р№ Р±СѓС„РµСЂ СЂР°Р·РјРµСЂР° РЅРµ РјРµРЅСЊС€Рµ inAmplitudesX2OutSamples.Length(), РІ РєРѕС‚РѕСЂС‹Р№ Р±СѓРґРµС‚ РїСЂРѕРёР·РІРѕРґРёС‚СЊСЃСЏ Р·Р°РїРёСЃСЊ Р°Р»РіРѕСЂРёРјРѕРј.
 void ConvertAmplutudesToSamples(Span<float> inAmplitudesX2OutSamples, Span<float> tempBuffer, float volume=1);
 
-//! Принимает table, у которого Data содержит table.BaseLevelLength / 2 частот.
-//! После работы этой функции table содержит table.BaseLevelLength семплов, соответствующих этим частотам со случайными фазами.
-//! Кроме того генерирует все уровни детализации для полученного сигнала.
+//! РџСЂРёРЅРёРјР°РµС‚ table, Сѓ РєРѕС‚РѕСЂРѕРіРѕ Data СЃРѕРґРµСЂР¶РёС‚ table.BaseLevelLength / 2 С‡Р°СЃС‚РѕС‚.
+//! РџРѕСЃР»Рµ СЂР°Р±РѕС‚С‹ СЌС‚РѕР№ С„СѓРЅРєС†РёРё table СЃРѕРґРµСЂР¶РёС‚ table.BaseLevelLength СЃРµРјРїР»РѕРІ, СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёС… СЌС‚РёРј С‡Р°СЃС‚РѕС‚Р°Рј СЃРѕ СЃР»СѓС‡Р°Р№РЅС‹РјРё С„Р°Р·Р°РјРё.
+//! РљСЂРѕРјРµ С‚РѕРіРѕ РіРµРЅРµСЂРёСЂСѓРµС‚ РІСЃРµ СѓСЂРѕРІРЅРё РґРµС‚Р°Р»РёР·Р°С†РёРё РґР»СЏ РїРѕР»СѓС‡РµРЅРЅРѕРіРѕ СЃРёРіРЅР°Р»Р°.
 void ConvertAmplitudesToSamples(WaveTable& table, float volume=1, bool genMipmaps=false);
 
 
@@ -47,8 +47,12 @@ struct SineHarmonicWithBandwidthDesc
 WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc> harmonics,
 	float bandwidthScale, size_t tableSize, bool allowMipmaps);
 
+//РџРµСЂРІС‹Рµ numHarmonics СЃР»Р°РіР°РµРјС‹С… СЂСЏРґР° РіР°СЂРјРѕРЅРёРє СЃ РєРѕСЌС„С„РёС†РёРµРЅС‚Р°РјРё n^(-numHarmonics) Рё С‡Р°СЃС‚РѕС‚Р°РјРё (1+(n-1))*pi
 Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float bandwidthStep,
 	float harmonicAttenuationPower, float freqMultStep, size_t numHarmonics, bool alternatingSigns);
+
+//Р“Р°СЂРјРѕРЅРёРєРё РѕР±РѕР±С‰С‘РЅРЅРѕР№ РїРёР»РѕРѕР±СЂР°Р·РЅРѕР№ РІРѕР»РЅС‹ c СѓРєР°Р·Р°РЅРЅС‹Рј СЃРѕРѕС‚РЅРѕС€РµРЅРёРµРј РІСЂРµРјРµРЅРё РЅР°СЂР°СЃС‚Р°РЅРёСЏ Рє РІСЂРµРјРµРЅРё СЃРїР°РґР° updownRatio
+Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep, float updownRatio, size_t numHarmonics);
 
 struct FormantDesc
 {

@@ -43,7 +43,7 @@ struct InstrumentLibrary
 	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat;
 
 	static MusicalInstrument CreateGuitar(size_t n=15, float c=128, float d=1.5,
-		float e=0.75, float f=1, float freqMult=0.5f, float volume=0.6f);
+		float e=0.75, float f=1, float freqMult=0.5f, float volume=0.6f, float ttackTime=0.005f, float releaseTime=0.2f);
 };
 
 
