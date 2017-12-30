@@ -134,6 +134,8 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	(void)untilMain;
 	return null;
 #else
+#define INTRA_STACKTRACE_SUPPORTED
+
 	enum {MAX_STACK_FRAMES = 50};
 
 	SymSetOptions(SYMOPT_DEFERRED_LOADS|SYMOPT_INCLUDE_32BIT_MODULES|SYMOPT_UNDNAME);
@@ -211,6 +213,7 @@ namespace Intra { namespace Utils {
 
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
+#define INTRA_STACKTRACE_SUPPORTED
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
 	typedef size_t backtrace_size;
 #else
@@ -264,18 +267,27 @@ StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 	StringView func, StringView file, unsigned line, StringView info, size_t stackFramesToSkip)
 {
 	const StringView msg = dst;
-	dst << file << '(';
-	AppendUInt(dst, line);
-	dst << ") " << type << ' ';
+	dst << file;
+	if(line != 0)
+	{
+		dst << '(';
+		AppendUInt(dst, line);
+		dst << ") ";
+	}
+	dst << type << ' ';
 	if(func != null) dst << "in function\n" << func << ":\n";
 	dst << info << '\n';
-	if(stackFramesToSkip == ~size_t())
+#ifdef INTRA_STACKTRACE_SUPPORTED
+	if(stackFramesToSkip != ~size_t())
 	{
 		dst << "\nStack trace:\n";
 		const StringView stackTrace = GetStackTrace(dst, stackFramesToSkip + 1, 50);
 		if(stackTrace.Empty())
 			dst << "<Not supported on this platform>\n";
 	}
+#else
+	(void)stackFramesToSkip;
+#endif
 	return {msg.Data(), dst.Data()};
 }
 

@@ -27,6 +27,8 @@ namespace Intra { namespace Math {
 
 constexpr const double PI = 3.14159265358979323846;
 constexpr const double E = 2.71828182845904523536;
+constexpr const double SqrtPI = 1.77245385090551602729;
+constexpr const double SqrtE = 1.6487212707001;
 
 using Cpp::NaN;
 using Cpp::Infinity;
@@ -133,7 +135,7 @@ forceinline double Pow(double v, double power) {return ::pow(v, power);}
 forceinline float Mod(float x, float y) {return ::fmodf(x, y);}
 forceinline double Mod(double x, double y) {return ::fmod(x, y);}
 
-#elif defined(__clang__) || defined(__GNUC__)
+#elif (defined(__clang__) || defined(__GNUC__)) && !defined(_MSC_VER)
 
 forceinline float Floor(float x) {return __builtin_floorf(x);}
 forceinline double Floor(double x) {return __builtin_floor(x);}
@@ -473,13 +475,78 @@ template<typename T> T PowInt(T x, int y)
 
 template<typename T> forceinline T Pow2(T x) {return Exp(x*T(0.6931472));}
 
+template<typename T> T Erf1(T x)
+{
+	static const double P[] = {3.16112374387056560, 113.864154151050156, 377.485237685302021};
+	static const double Q[] = {23.6012909523441209, 244.024637934444173, 1282.61652607737228};
+	const T x2 = x*x;
+	T xnum = T(0.185777706184603153*x2);
+	T xden = x2;
+	for(int i = 0; i < 3; i++)
+	{
+		xnum = T((xnum + P[i]) * x2);
+		xden = T((xden + Q[i]) * x2);
+	}
+	return x * T(xnum + 3209.37758913846947) / T(xden + 2844.23683343917062);
+}
 
+template<typename T> T Erfc2(T x)
+{
+	static const double P[] = {0.564188496988670089, 8.88314979438837594, 66.1191906371416295,
+		298.635138197400131, 881.952221241769090, 1712.04761263407058, 2051.07837782607147};
+	static const double Q[] = {15.7449261107098347, 117.693950891312499, 537.181101862009858,
+		1621.38957456669019, 3290.79923573345963, 4362.61909014324716, 3439.36767414372164};
+	T xnum = T(2.15311535474403846e-8 * x);
+	T xden = x;
+	for(int i = 0; i < 7; i++)
+	{
+		xnum = T((xnum + P[i])*x);
+		xden = T((xden + Q[i])*x);
+	}
+	const T result = T((xnum + 1230.33935479799725) / (xden + 1230.33935480374942));
+	const T xfloor = Floor(x*16) / 16;
+	const T del = (x - xfloor) * (x + xfloor);
+	return Exp(-Sqr(xfloor) - del) * result;
+}
+
+template<typename T> T Erfc3(T x)
+{
+	static const double P[] = {3.05326634961232344e-1,
+		3.60344899949804439e-1, 1.25781726111229246e-1, 1.60837851487422766e-2};
+	static const double Q[] = {2.56852019228982242e00,
+		1.87295284992346047e00, 5.27905102951428412e-1, 6.05183413124413191e-2};
+	const T x2r = 1 / Sqr(x);
+	T xnum = T(0.0163153871373020978 * x2r);
+	T xden = x2r;
+	for(int i = 0; i < 4; i++)
+	{
+		xnum = T((xnum + P[i]) * x2r);
+		xden = T((xden + Q[i]) * x2r);
+	}
+	T result = T(x2r * (xnum + 6.58749161529837803e-4) / (xden + 2.33520497626869185e-3));
+	result = T((1/SqrtPI - result) / x);
+	const T xfloor = Floor(x * 16) / 16;
+	T del = (x - xfloor)*(x + xfloor);
+	return Exp(-Sqr(xfloor) - del) * result;
+}
+
+template<typename T> T Erf(T x)
+{
+	const T xAbs = Abs(x);
+	const T approx1Arg = sizeof(T) <= 4? 4: (sizeof(T) <= 8? 6: 10);
+	if(xAbs >= approx1Arg) return Sign(x);
+	if(xAbs <= 0.46875) return Erf1(x);
+	if(xAbs <= 4) return Sign(x)*(1 - Erfc2(xAbs));
+	return Sign(x)*(1 - Erfc3(xAbs));
+}
+
+template<typename T> forceinline T Erfc(T x) {return 1 - Erf(x);}
 
 inline float FastSqrt(float x)
 {
 	union {float f; uint i;};
 	f = x;
-	i = (0xbe6f0000-i) >> 1;
+	i = (0xbe6f0000 - i) >> 1;
 	x*=f;
 	return x*(1.5f - 0.5f*f*x);
 }

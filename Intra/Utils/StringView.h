@@ -27,6 +27,7 @@ template<typename Char> struct GenericStringView: Span<Char>
 	constexpr forceinline Char* Data() const noexcept {return Span<Char>::Data();}
 
 	constexpr forceinline GenericStringView(null_t=null) noexcept {}
+	constexpr forceinline GenericStringView(const Span<Char>& span) noexcept: Span<Char>(span) {}
 
 	template<size_t N> static forceinline constexpr
 	GenericStringView FromBuffer(Char(&buffer)[N]) noexcept {return {buffer, buffer+N};}

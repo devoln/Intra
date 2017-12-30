@@ -22,8 +22,9 @@ MidiInstrumentSet GetMapping()
 		instruments[i] = lib["Sine2Exp"];
 	instruments[117] = null; //Melodic Tom не реализован, а стандартное пищание плохо звучит. Поэтому просто отключим этот инструмент
 
-	static const byte pianos[] = {0,1,2,3,7, 105, 107};
+	static const byte pianos[] = {0,1,2,3, 105, 107};
 	for(const byte code: pianos) instruments[code] = lib["Piano"];
+	instruments[7] = lib["Clav"];
 
 	instruments[4] = lib["ElectricPiano"];
 	instruments[5] = lib["ElectricPiano2"];
@@ -73,7 +74,9 @@ MidiInstrumentSet GetMapping()
 
 	instruments[71] = lib["Clarinet"];
 
-	static const byte whistles[] = {74, 76, 77,  78};
+	instruments[74] = lib["Recorder"];
+
+	static const byte whistles[] = {76, 77,  78};
 	for(const byte code: whistles) instruments[code] = lib["Whistle"];
 	instruments[79] = lib["Ocarina"];
 
@@ -114,6 +117,7 @@ MidiInstrumentSet GetMapping()
 	static const byte trumpets[] = {56, 57, 69, 70};
 	for(const byte code: trumpets) instruments[code] = lib["Trumpet"];
 	instruments[58] = lib["Tuba"];
+	instruments[69] = lib["EnglishHorn"];
 
 	instruments[72] = lib["Piccolo"];
 
@@ -122,8 +126,9 @@ MidiInstrumentSet GetMapping()
 	static const byte sax[] = {64, 65, 66, 67};
 	for(const byte code: sax) instruments[code] = lib["Sax"];
 
-	static const byte synthBrasses[] = {61, 62, 63};
+	static const byte synthBrasses[] = {62, 63};
 	for(const byte code: synthBrasses) instruments[code] = lib["SynthBrass"];
+	instruments[61] = lib["BrassSection"];
 
 	instruments[84] = lib["Lead5Charang"];
 	instruments[82] = lib["Calliope"];

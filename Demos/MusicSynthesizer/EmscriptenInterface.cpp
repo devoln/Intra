@@ -38,7 +38,7 @@ extern "C"
 
 	uint EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)
 	{
-		return source->SamplesLeft();
+		return uint(source->SamplesLeft());
 	}
 
 	uint EMSCRIPTEN_KEEPALIVE SourceGetUninterleavedSamples(IAudioSource* source, float* dst, uint count, uint bufferSizeInSamples)
@@ -49,7 +49,7 @@ extern "C"
 			channel = Range::SpanOfPtr(dst, count);
 			dst += bufferSizeInSamples;
 		}
-		return source->GetUninterleavedSamples(Range::Take(channels, source->ChannelCount()));
+		return uint(source->GetUninterleavedSamples(Range::Take(channels, source->ChannelCount())));
 	}
 
 	char* EMSCRIPTEN_KEEPALIVE GetMidiInfoString(char* midiDataPtr, uint midiDataLength)

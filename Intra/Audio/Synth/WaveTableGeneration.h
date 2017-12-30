@@ -47,12 +47,13 @@ struct SineHarmonicWithBandwidthDesc
 WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc> harmonics,
 	float bandwidthScale, size_t tableSize, bool allowMipmaps);
 
-//Первые numHarmonics слагаемых ряда гармоник с коэффициентами n^(-numHarmonics) и частотами (1+(n-1))*pi
+//Первые numHarmonics слагаемых ряда гармоник с коэффициентами sin(alpha*n) / n^harmonicAttenuationPower и частотами freqMult+freqMultStep*(n-1)
 Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float bandwidthStep,
-	float harmonicAttenuationPower, float freqMultStep, size_t numHarmonics, bool alternatingSigns);
+	float harmonicAttenuationPower, float freqMult, float freqMultStep, size_t numHarmonics, float scale, float alpha=0, float omega=0);
 
 //Гармоники обобщённой пилообразной волны c указанным соотношением времени нарастания к времени спада updownRatio
-Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep, float updownRatio, size_t numHarmonics);
+Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep,
+	float updownRatio, size_t numHarmonics=16, float scale=1, float freqMult=1, float harmonicAttenuationPower=2);
 
 struct FormantDesc
 {

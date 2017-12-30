@@ -58,8 +58,8 @@ public:
 	explicit Sound(const AudioBuffer& data);
     Sound(const SoundInfo& bufferInfo, const void* initData=null);
 	Sound(Sound&& rhs);
-	Sound(IAudioSource& src);
-	Sound(Unique<IAudioSource> src): Sound(*src) {}
+	Sound(IAudioSource& src, ErrorStatus& status);
+	Sound(Unique<IAudioSource> src, ErrorStatus& status): Sound(*src, status) {}
 
 	~Sound();
 

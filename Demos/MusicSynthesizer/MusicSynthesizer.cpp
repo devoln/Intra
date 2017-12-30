@@ -90,8 +90,18 @@ void PrintInfoAndPlayMidiStream(ForwardStream stream, bool enableStreaming)
 	}
 
 	Std.PrintLine("Частота дискретизации: ", Sound::DefaultSampleRate(), " Гц");
-	if(enableStreaming) CreateStreamedSoundFromMidi(Cpp::Move(stream), 0.5f, true).Play();
-	else CreateSoundFromMidi(Cpp::Move(stream), info.Duration, 0.5f, true).CreateInstance().Play();
+	if(enableStreaming)
+	{
+		auto snd = CreateStreamedSoundFromMidi(Cpp::Move(stream), 0.5f, true);
+		snd.Play();
+		if(!snd.IsPlaying()) return;
+	}
+	else
+	{
+		auto snd = CreateSoundFromMidi(Cpp::Move(stream), info.Duration, 0.5f, true).CreateInstance();
+		snd.Play();
+		if(!snd.IsPlaying()) return;
+	}
 	Std.PrintLine("Воспроизведение...");
 	MainLoop(enableStreaming);
 }

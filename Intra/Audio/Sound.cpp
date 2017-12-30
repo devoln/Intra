@@ -56,7 +56,13 @@ Sound::Sound(const AudioBuffer& dataBuffer)
 
 Sound::Sound(Sound&& rhs): mData(Cpp::Move(rhs.mData)) {}
 
-Sound::Sound(IAudioSource& src): mData(Shared<Data>::New(src)) {}
+Sound::Sound(IAudioSource& src, ErrorStatus& status):
+	mData(Shared<Data>::New(src))
+{
+	if(mData->Info != null) return;
+	mData = null;
+	status.Error("Couldn't create sound buffer with size of " + StringOf(src.SamplesLeft()) + " samples!");
+}
 
 Sound::~Sound() {Release();}
 
@@ -86,7 +92,7 @@ Sound Sound::FromFile(StringView fileName, ErrorStatus& status)
 		return null;
 	}
 
-	return Sound(*source);
+	return Sound(*source, status);
 }
 
 void Sound::ReleaseAllSounds()
@@ -97,6 +103,7 @@ void Sound::ReleaseAllSounds()
 Sound::Instance Sound::CreateInstance()
 {
 	INTRA_DEBUG_ASSERT(mData != null);
+	if(mData == null) return null;
 	return Instance(*this);
 }
 

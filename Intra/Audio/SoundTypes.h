@@ -19,11 +19,16 @@ struct SoundInfo
 	ushort Channels;
 	Data::ValueType SampleType;
 
-	SoundInfo(size_t sampleCount=0, uint sampleRate=44100, ushort channels=1, Data::ValueType sampleType=Data::ValueType::Short):
+	SoundInfo(null_t): SoundInfo() {}
+
+	SoundInfo(size_t sampleCount=0, uint sampleRate=44100, ushort channels=1, Data::ValueType sampleType=Data::ValueType::Void):
 		SampleCount(sampleCount), SampleRate(sampleRate), Channels(channels), SampleType(sampleType) {}
 
 	size_t GetBufferSize() const {return SampleCount*Channels*SampleType.Size();}
-	double Duration() const {return double(SampleCount)/SampleRate;}
+	double Duration() const {return SampleRate == 0? 0: double(SampleCount)/SampleRate;}
+
+	bool operator==(null_t) const noexcept {return SampleType == Data::ValueType::Void;}
+	bool operator!=(null_t) const noexcept {return !operator==(null);}
 };
 
 INTRA_WARNING_POP

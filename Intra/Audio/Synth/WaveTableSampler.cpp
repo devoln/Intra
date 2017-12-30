@@ -459,9 +459,9 @@ void GuitarWaveForm::operator()(Span<float> dst, float freq, float volume, uint 
 		
 	for(size_t i = 0; i < samplesPerPeriod; i++)
 	{
-		float sample = float(i) * (float(samplesPerPeriod) - float(i)) / Math::Sqr(samplesPerPeriod/2);
-		sample = sample*(1 - sample)*sample*(float(samplesPerPeriod)/2 - float(i)) / (samplesPerPeriod/2);
-		sample += noise.SignedNext() / (samplesPerPeriod*4) / (1.0f / float(samplesPerPeriod*2) + Demp);
+		float sample = float(i) * (float(samplesPerPeriod) - float(i)) / float(Math::Sqr(samplesPerPeriod/2));
+		sample = sample*(1 - sample)*sample*(float(samplesPerPeriod)/2 - float(i)) / float(samplesPerPeriod/2);
+		sample += noise.SignedNext() / float(samplesPerPeriod*4) / (1.0f / float(samplesPerPeriod*2) + Demp);
 		sample *= volume;
 		dst.Put(sample);
 	}

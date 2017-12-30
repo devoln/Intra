@@ -79,7 +79,7 @@ Sound CreateSoundFromMidi(ForwardStream midiFilestream, double duration, float s
 	if(printMessages) Std.PrintLine("Синтез...");
 	FatalErrorStatus status;
 	Stopwatch sw;
-	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFilestream), duration, startingVolume, status));
+	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFilestream), duration, startingVolume, status), status);
 	if(printMessages) Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
 	if(status.Handle())
 	{

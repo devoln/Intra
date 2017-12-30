@@ -130,7 +130,12 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 			DWORD(Info.GetBufferSize()), 0, &wfx, {}};
 		auto& context = SoundContext::Instance();
 		if(!context.Device()) return;
-		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null))) return;
+		if(FAILED(context.Device()->CreateSoundBuffer(&dsbd, &Buffer, null)))
+		{
+			Buffer = null;
+			Info.SampleType = Intra::Data::ValueType::Void;
+			return;
+		}
 
 		void* dstData;
 		DWORD lockedSize;
