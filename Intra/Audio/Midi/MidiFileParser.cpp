@@ -108,7 +108,6 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 	{
 		size_t NoteCount = 0;
 		double Time = 0;
-		float CurrentVolume = 0, MaxVolume = 0;
 		size_t MaxSimultaneousNotes = 0;
 		HashMap<ushort, float> NoteVolumeMap;
 		bool ChannelIsUsed[16]{false};
@@ -118,18 +117,15 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 		void OnNoteOn(const NoteOn& noteOn) final
 		{
 			ChannelIsUsed[noteOn.Channel] = true;
-			auto& volume = NoteVolumeMap[noteOn.Id()];
-			if(volume != 0 && Math::Abs(Time - noteOn.Time) < 0.0001)
+			NoteVolumeMap[noteOn.Id()];
+			if(Math::Abs(Time - noteOn.Time) < 0.0001)
 				return;
 			if(noteOn.Channel == 9) UsedDrumInstrumentsFlags->Set(noteOn.NoteOctaveOrDrumId);
-			else UsedInstrumentsFlags->Set(noteOn.Instrument);
+			else UsedInstrumentsFlags->Set(noteOn.Program);
 			Time = noteOn.Time;
 			if(MaxSimultaneousNotes < NoteVolumeMap.Count())
 				MaxSimultaneousNotes = NoteVolumeMap.Count();
 			NoteCount++;
-			volume = noteOn.TotalVolume();
-			CurrentVolume += volume;
-			if(MaxVolume < CurrentVolume) MaxVolume = CurrentVolume;
 		}
 
 		void OnNoteOff(const NoteOff& noteOff) final
@@ -138,11 +134,8 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 			auto found = NoteVolumeMap.Find(noteOff.Id());
 			if(found.Empty())
 				return;
-			CurrentVolume -= found.First().Value;
 			NoteVolumeMap.Remove(found);
 		}
-
-		void OnPitchBend(const PitchBend&) final {}
 
 		void OnAllNotesOff(byte channel) final
 		{
@@ -150,7 +143,6 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 			for(auto it = NoteVolumeMap.begin(); it != NoteVolumeMap.end(); ++it)
 			{
 				if((it->Key >> 8) != channel) continue;
-				CurrentVolume -= it->Value;
 				notesToRemove.AddLast(it);
 			}
 			for(auto it: notesToRemove) NoteVolumeMap.Remove(it);
@@ -164,7 +156,6 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 	NoteCount = countingDevice.NoteCount;
 	Duration = countingDevice.Time;
 	MaxSimultaneousNotes = countingDevice.MaxSimultaneousNotes;
-	MaxVolume = countingDevice.MaxVolume;
 
 	ChannelsUsed = 0;
 	for(bool used: countingDevice.ChannelIsUsed) if(used) ChannelsUsed++;

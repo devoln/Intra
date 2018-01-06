@@ -1761,9 +1761,6 @@
     <Natvis Include="Range\RangeIteration.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="Utils\Utils.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
     <Natvis Include="Range\RangePolymorphic.natvis">
       <Filter>natvis</Filter>
     </Natvis>
@@ -1777,6 +1774,9 @@
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Range\Range.natvis">
+      <Filter>natvis</Filter>
+    </Natvis>
+    <Natvis Include="Utils\Utils.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

@@ -37,15 +37,30 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 	
 	if(type == RawEvent::Type::ControlModeChange)
 	{
-		if(data0 == 7) state.Volumes[channel] = data1;
-		if(data0 == 0x0A) state.Pans[channel] = data1;
-		if(data0 == 0x7B) device.OnAllNotesOff(channel);
+		if(data0 == 7)
+		{
+			state.Volumes[channel] = data1;
+			device.OnChannelVolumeChange({float(Time), channel, data1});
+		}
+		if(data0 == 10)
+		{
+			state.Pans[channel] = data1;
+			device.OnChannelPanChange({float(Time), channel, data1});
+		}
+		if(data0 == 91)
+		{
+			device.OnChannelReverbChange({float(Time), channel, data1});
+		}
+		if(data0 >= 123 && data0 <= 127) device.OnAllNotesOff(channel);
 		return;
 	}
 	if(type == RawEvent::Type::ProgramChange)
 	{
 		if(data0 < 128)
+		{
 			state.InstrumentIds[channel] = data0;
+			device.OnChannelProgramChange({float(Time), channel, data0});
+		}
 		return;
 	}
 
@@ -56,9 +71,7 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		noteOn.NoteOctaveOrDrumId = data0;
 		noteOn.Channel = channel;
 		noteOn.Velocity = data1;
-		noteOn.Instrument = channel == 9? byte(data0 + 128): state.InstrumentIds[channel];
-		noteOn.Volume = state.Volumes[channel];
-		noteOn.Pan = sbyte(state.Pans[channel] - 64);
+		noteOn.Program = channel == 9? byte(data0 + 128): state.InstrumentIds[channel];
 		device.OnNoteOn(noteOn);
 		return;
 	}

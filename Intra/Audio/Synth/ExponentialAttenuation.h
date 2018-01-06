@@ -14,19 +14,29 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 namespace Intra { namespace Audio { namespace Synth {
 
 //Копирует src в dst с затуханием, пока не кончится либо dst, либо src.
-void ExponentialAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek);
-void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek);
-void ExponentialLinearAttenuate(Span<float>& dst, CSpan<float> src, float& exp, float ek, float& u, float du);
-void ExponentialLinearAttenuateAdd(Span<float>& dst, CSpan<float> src, float& exp, float ek, float& u, float du);
+void ExponentialAttenuate(Span<float>& dst, CSpan<float>& src, float& exp, float ek);
+void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float>& src, float& exp, float ek);
+void ExponentialLinearAttenuate(Span<float>& dst, CSpan<float>& src, float& exp, float ek, float& u, float du);
+void ExponentialLinearAttenuateAdd(Span<float>& dst, CSpan<float>& src, float& exp, float ek, float& u, float du);
 
-class ExponentAttenuator
+inline void ExponentialAttenuate(Span<float>& inOutSamples, float& exp, float ek)
 {
-	float mFactor, mFactorStep;
-public:
+	CSpan<float> src = inOutSamples;
+	ExponentialAttenuate(inOutSamples, src, exp, ek);
+}
+
+struct ExponentAttenuator
+{
+	float Factor, FactorStep;
+
+	ExponentAttenuator(null_t=null): Factor(1), FactorStep(1) {}
 	ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
-		mFactor(startVolume), mFactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
+		Factor(startVolume), FactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
 
 	void operator()(Span<float> inOutSamples);
+	void operator()(Span<float> dstSamples, CSpan<float> srcSamples, bool add);
+
+	void SkipSamples(size_t count);
 };
 
 struct ExponentAttenuatorFactory

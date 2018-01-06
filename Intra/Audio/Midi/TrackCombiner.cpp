@@ -14,6 +14,7 @@ TrackCombiner::TrackCombiner(short headerTimeFormat):
 
 void TrackCombiner::AddTrack(TrackParser track)
 {
+	if(track.Empty()) return;
 	Range::HeapContainerPush(mTracks, Cpp::Move(track),
 		ObjectMethod(this, &TrackCombiner::trackTimeComparer));
 }

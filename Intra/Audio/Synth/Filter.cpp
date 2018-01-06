@@ -154,16 +154,26 @@ void Filter::operator()(Span<float> inOutSamples)
 	}
 }
 
-
 void ResonanceFilter::operator()(Span<float> inOutSamples)
 {
 	for(float& sample: inOutSamples)
 	{
 		sample += S*DeltaPhase + PrevSample;
 		PrevSample = sample;
-
 		S -= sample*DeltaPhase;
 		S *= QFactor;
+	}
+}
+
+void DynamicResonanceFilter::operator()(Span<float> inOutSamples)
+{
+	for(float& sample: inOutSamples)
+	{
+		sample += S*DeltaPhase + PrevSample;
+		PrevSample = sample;
+		S -= sample*DeltaPhase;
+		S *= 1 - 1/InvQFactor;
+		InvQFactor += InvQFactorStep;
 	}
 }
 

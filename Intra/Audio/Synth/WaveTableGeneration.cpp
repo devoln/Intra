@@ -178,30 +178,31 @@ WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc
 }
 
 Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float bandwidthStep,
-	float harmonicAttenuationPower, float freqMult, float freqMultStep, size_t numHarmonics, float scale, float alpha, float omega)
+	float harmonicAttenuationStep, float harmonicAttenuationPower, float freqMult, float freqMultStep, size_t numHarmonics, float scale, float alpha, float omega)
 {
 	Array<SineHarmonicWithBandwidthDesc> harmonics;
 	harmonics.Reserve(numHarmonics);
-	int i = 0;
+	float harmonicAttenuation = 1;
 	while(numHarmonics --> 0)
 	{
-		i++;
 		auto& harm = harmonics.EmplaceLast();
-		harm.Amplitude = scale*Math::Cos(alpha)*Math::Pow(float(i), -harmonicAttenuationPower);
+		harm.Amplitude = scale*Math::Cos(alpha)*Math::Pow(harmonicAttenuation, -harmonicAttenuationPower);
 		harm.FreqMultiplier = freqMult;
 		harm.Bandwidth = bandwidth;
 		freqMult += freqMultStep;
 		bandwidth += bandwidthStep;
 		alpha += omega;
+		harmonicAttenuation += harmonicAttenuationStep;
 	}
 	return harmonics;
 }
 
-Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep, float updownRatio, size_t numHarmonics, float scale, float freqMult, float harmonicAttenuationPower)
+Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep,
+	float updownRatio, size_t numHarmonics, float scale, float freqMult, float harmonicAttenuationPower)
 {
 	const float a = float(Math::PI) / (1 + updownRatio);
 	const float scaleNormalizeCoeff = scale * 2 / (a*(float(Math::PI) - a));
-	return CreateHarmonicArray(bandwidth, bandwidthStep, harmonicAttenuationPower, freqMult, freqMult, numHarmonics, scaleNormalizeCoeff, a - float(Math::PI/2), a);
+	return CreateHarmonicArray(bandwidth, bandwidthStep, 1, harmonicAttenuationPower, freqMult, freqMult, numHarmonics, scaleNormalizeCoeff, a - float(Math::PI/2), a);
 }
 
 

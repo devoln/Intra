@@ -129,6 +129,15 @@ struct ResonanceFilter
 	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
 	forceinline explicit operator bool() const noexcept {return !operator==(null);}
 
+	forceinline float operator()(float sample)
+	{
+		sample += S*DeltaPhase + PrevSample;
+		PrevSample = sample;
+		S -= sample*DeltaPhase;
+		S *= QFactor;
+		return sample;
+	}
+
 	void operator()(Span<float> inOutSamples);
 };
 
@@ -149,6 +158,56 @@ struct ResonanceFilterFactory
 	{
 		(void)volume;
 		return {(Frequency<0? -freq*Frequency: Frequency)*2*float(Math::PI)/float(sampleRate), QFactor};
+	}
+};
+
+struct DynamicResonanceFilter
+{
+	float DeltaPhase;
+	float InvQFactor;
+	float InvQFactorStep;
+	float PrevSample, S;
+
+	DynamicResonanceFilter(null_t=null): DeltaPhase(0), InvQFactor(2), InvQFactorStep(0), PrevSample(0), S(0) {}
+
+	DynamicResonanceFilter(float dphi, float invQFactor, float invQFactorStep):
+		DeltaPhase(dphi), InvQFactor(invQFactor), PrevSample(0), S(0), InvQFactorStep(invQFactorStep) {}
+
+	forceinline bool operator==(null_t) const noexcept {return DeltaPhase == 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+
+	float operator()(float sample)
+	{
+		sample += S*DeltaPhase + PrevSample;
+		PrevSample = sample;
+		S -= sample*DeltaPhase;
+		S *= 1 - 1/InvQFactor;
+		InvQFactor += InvQFactorStep;
+		return sample;
+	}
+
+	void operator()(Span<float> inOutSamples);
+};
+
+struct DynamicResonanceFilterFactory
+{
+	float Frequency;
+	float InvQFactor;
+	float InvQFactorSpeed;
+
+	forceinline DynamicResonanceFilterFactory(null_t = null): Frequency(0), InvQFactor(0), InvQFactorSpeed(0) {}
+	forceinline DynamicResonanceFilterFactory(float frequency, float invQFactor, float invQFactorSpeed):
+		Frequency(frequency), InvQFactor(invQFactor), InvQFactorSpeed(invQFactorSpeed) {}
+
+	forceinline bool operator==(null_t) const noexcept {return Frequency == 0;}
+	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+
+	DynamicResonanceFilter operator()(float freq, float volume, uint sampleRate) const
+	{
+		(void)volume;
+		return {(Frequency < 0? -freq*Frequency: Frequency)*2*float(Math::PI)/float(sampleRate), InvQFactor, InvQFactorSpeed/float(sampleRate)};
 	}
 };
 

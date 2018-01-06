@@ -102,9 +102,26 @@ size_t MultiplyAdvance(Span<float>& dest, CSpan<float>& op1, float multiplyer)
 	if(multiplyer == 1) return ReadWrite(op1, dest);
 
 	const size_t len = Funal::Min(dest.Length(), op1.Length());
+	if(multiplyer == 0)
+	{
+		FillZeros(dest.TakeExactly(len));
+		dest.PopFirstExactly(len);
+		op1.PopFirstExactly(len);
+		return len;
+	}
+
 	auto& dst = dest.Begin;
 	auto& src = op1.Begin;
 	auto dstend = dst + len;
+
+	if(dest.Begin == op1.Begin)
+	{
+		Multiply(dest.TakeExactly(len), multiplyer);
+		dest.PopFirstExactly(len);
+		op1.PopFirstExactly(len);
+		return len;
+	}
+
 #if(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	while(dst + 3 < dstend)
 	{
@@ -132,6 +149,13 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 	if(op2Multiplyer == 1) return AddAdvance(dstOp1, op2);
 
 	const size_t len = Funal::Min(dstOp1.Length(), op2.Length());
+	if(op2Multiplyer == 0)
+	{
+		dstOp1.PopFirstExactly(len);
+		op2.PopFirstExactly(len);
+		return len;
+	}
+
 	auto& dst = dstOp1.Begin;
 	auto& src = op2.Begin;
 	auto dstend = dst + len;
@@ -155,17 +179,21 @@ size_t AddMultipliedAdvance(Span<float>& dstOp1, CSpan<float>& op2, float op2Mul
 		src += 4;
 	}
 #endif
-	while(dst < dstend) *dst++ += *src++ * op2Multiplyer;
+	while(dst < dstend)
+		*dst++ += *src++ * op2Multiplyer;
 	return len;
 }
 
 
 size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 {
+	//if(mul == 1) return AddAdvance(dstOp1, add);
+	if(add == 0) return MultiplyAdvance(dstOp1, mul);
+
 	const size_t len = dstOp1.Length();
 	auto& dst = dstOp1.Begin;
 
-#if(INTRA_SIMD_SUPPORT==INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	while(dst + 3 < dstOp1.End)
 	{
 		*dst = *dst * mul + add; dst++;
@@ -188,12 +216,19 @@ size_t MulAddAdvance(Span<float>& dstOp1, float mul, float add)
 	}
 #endif
 
-	while(dst < dstOp1.End) *dst = *dst * mul + add, dst++;
+	while(dst < dstOp1.End)
+		*dst = *dst * mul + add, dst++;
 	return len;
 }
 
 void LinearMultiply(Span<float> dst, float& u, float du)
 {
+	if(du == 0)
+	{
+		Multiply(dst, u);
+		return;
+	}
+
 #if INTRA_MINEXE >= 3
 #elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	const float du4 = 4*du;
@@ -226,8 +261,19 @@ void LinearMultiply(Span<float> dst, float& u, float du)
 
 void LinearMultiply(Span<float> dst, CSpan<float> src, float& u, float du)
 {
+	if(du == 0)
+	{
+		Multiply(dst, src, u);
+		return;
+	}
+
 	dst = dst.Take(src.Length());
 	src = src.Take(dst.Length());
+	if(dst.Begin == src.Begin)
+	{
+		LinearMultiply(dst, u, du);
+		return;
+	}
 #if INTRA_MINEXE >= 3
 #elif(INTRA_SIMD_SUPPORT == INTRA_SIMD_NONE)
 	const float du4 = 4*du;
@@ -261,6 +307,12 @@ void LinearMultiply(Span<float> dst, CSpan<float> src, float& u, float du)
 
 void LinearMultiplyAdd(Span<float> dst, CSpan<float> src, float& u, float du)
 {
+	if(du == 0)
+	{
+		AddMultiplied(dst, src, u);
+		return;
+	}
+
 	dst = dst.Take(src.Length());
 	src = src.Take(dst.Length());
 #if INTRA_MINEXE >= 3

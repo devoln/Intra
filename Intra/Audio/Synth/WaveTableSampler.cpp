@@ -26,7 +26,6 @@
 
 #include "Random/FastUniform.h"
 
-
 namespace Intra { namespace Audio { namespace Synth {
 
 static uint GetGoodSignalPeriod(float samplesPerPeriod, uint maxPeriods, float eps)
@@ -51,7 +50,7 @@ static uint GetGoodSignalPeriod(float samplesPerPeriod, uint maxPeriods, float e
 WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octaves,
 	float expCoeff, float volume, float freq, uint sampleRate,
 	float vibratoFrequency, float vibratoValue, float smoothingFactor, const AdsrAttenuator& adsr):
-	mRate(1), mAttenuation(1), mAttenuationStep(1), mRightPanMultiplier(0.5f),
+	mRate(1), mLeftMultiplier(0.5f), mRightMultiplier(0.5f), mReverbMultiplier(0),
 	mFreqOscillator(vibratoValue, 0, 2*float(Math::PI)*vibratoFrequency/float(sampleRate)),
 	mADSR(adsr), mSmoothingFactor(smoothingFactor)
 {
@@ -79,173 +78,102 @@ WaveTableSampler::WaveTableSampler(const void* params, WaveForm wave, uint octav
 	Random::FastUniform<uint> rand(1436491347u ^ uint(mSampleFragment.Length()) ^ uint(freq*1000) ^ (octaves << 15));
 	mFragmentOffset = float(rand(uint(mSampleFragment.Length())));
 
-	mChannelDeltaSamples = (sampleRate >> 7) % mSampleFragment.Length();
+	mChannelDeltaSamples = 0;// (sampleRate >> 7) % mSampleFragment.Length();
 
-	if(expCoeff <= 0.001f) return;
+	if(expCoeff <= 0.001f || mSmoothingFactor != 0)
+	{
+		mExpAtten.FactorStep = Math::Exp(-expCoeff/float(sampleRate));
+		return;
+	}
 
 	const float ek = Math::Exp(-expCoeff/float(sampleRate));
 	Span<float> dst = mSampleFragmentData;
+	CSpan<float> src = mSampleFragmentData;
 	const float startAtten = Math::Exp(expCoeff*mFragmentOffset/float(sampleRate));
 	float atten = startAtten;
-	ExponentialAttenuate(dst, mSampleFragmentData, atten, ek);
-	mAttenuationStep = atten/startAtten;
+	ExponentialAttenuate(dst, src, atten, ek);
+	mExpAtten.FactorStep = atten/startAtten;
 }
 
 WaveTableSampler::WaveTableSampler(CSpan<float> periodicWave, float rate,
 	float attenuationPerSample, float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr, size_t channelDeltaSamples):
-	mSampleFragment(periodicWave), mRate(rate), mAttenuation(volume), mAttenuationStep(attenuationPerSample), mRightPanMultiplier(0.5f),
+	mSampleFragment(periodicWave), mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f), mReverbMultiplier(0),
 	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mADSR(adsr), mChannelDeltaSamples(channelDeltaSamples), mSmoothingFactor(0)
 {
+	mExpAtten.Factor = volume;
+	mExpAtten.FactorStep = attenuationPerSample;
 	Random::FastUniform<uint> rand(1436491347u ^ uint(periodicWave.Length()) ^ uint(rate*1537) ^ uint(volume * 349885300.0f));
-	mFragmentOffset = float(rand(uint(mSampleFragment.Length())));
+	mFragmentOffset = 0;// float(rand(uint(mSampleFragment.Length())));
 }
 
-void WaveTableSampler::generateWithDefaultRate(Span<float> dst, bool add,
-	float& fragmentOffset, float& attenuation, AdsrAttenuator& adsr)
+void WaveTableSampler::generateWithDefaultRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add)
 {
-	while(!dst.Empty())
+	if(dstRight == dstLeft) dstRight = null;
+	auto rightAttenuation = mExpAtten;
+	auto reverbAttenuation = mExpAtten;
+	auto rightAdsr = mADSR;
+	auto reverbAdsr = mADSR;
+#if 0
+	float rightFragmentOffset = mFragmentOffset - float(mChannelDeltaSamples);
+	if(rightFragmentOffset < 0)
 	{
-		auto fragment = mSampleFragment.Drop(size_t(fragmentOffset)).Take(dst.Length());
-		const size_t samplesProcessed = fragment.Length();
+		rightFragmentOffset += float(mSampleFragment.Length());
+		if(OwnExponentialAttenuatedDataArray()) rightAttenuation.Factor /= rightAttenuation.FactorStep;
+	}
+#endif
+	while(!dstLeft.Empty() || !dstRight.Empty() || !dstReverb.Empty())
+	{
+		const float rightFragmentOffset = mFragmentOffset;
+		auto leftFragment = mSampleFragment.Drop(size_t(mFragmentOffset)).Take(dstLeft.Length());
+		auto rightFragment = mSampleFragment.Drop(size_t(rightFragmentOffset)).Take(dstRight.Length());
+		auto reverbFragment = mSampleFragment.Drop(size_t(mFragmentOffset)).Take(dstReverb.Length());
+		const size_t leftSamplesToProcess = leftFragment.Length();
+		const size_t rightSamplesToProcess = rightFragment.Length();
 
 		// Нужно наложить экспоненциальное затухание и\или ADSR огибающую на генерируемый фрагмент,
 		// записав или добавив результат в dst, не модифицируя сам фрагмент.
 		// Здесь выбирается нужный алгоритм для нужной комбинации.
-		if(!OwnDataArray() && mAttenuationStep != 1)
+		if(!OwnDataArray() && mExpAtten.FactorStep != 1)
 		{
-			if(adsr.DU == 0)
-			{
-				if(adsr.U == 0)
-				{
-					auto dstFragmentToProcess = dst.TakeAdvance(fragment.Length());
-					if(!add) FillZeros(dstFragmentToProcess);
-				}
-				else
-				{
-					float totalAttenuation = attenuation;
-					if(adsr) totalAttenuation *= adsr.U;
-					if(!add) ExponentialAttenuate(dst, fragment, totalAttenuation, mAttenuationStep);
-					else ExponentialAttenuateAdd(dst, fragment, totalAttenuation, mAttenuationStep);
-					attenuation = totalAttenuation;
-					if(adsr) attenuation /= adsr.U;
-				}
-			}
-			else while(!fragment.Empty())
-			{
-				auto fragmentToProcess = fragment.TakeAdvance(adsr.CurrentStateSamplesLeft());
-				if(adsr.DU == 0)
-				{
-					if(attenuation == 0 || adsr.U == 0)
-					{
-						auto dstFragmentToProcess = dst.TakeAdvance(fragmentToProcess.Length());
-						if(!add) FillZeros(dstFragmentToProcess);
-					}
-					else
-					{
-						attenuation *= adsr.U;
-						if(!add) ExponentialAttenuate(dst, fragmentToProcess, attenuation, mAttenuationStep);
-						else ExponentialAttenuateAdd(dst, fragmentToProcess, attenuation, mAttenuationStep);
-						attenuation /= adsr.U;
-					}
-				}
-				else
-				{
-					if(!add) ExponentialLinearAttenuate(dst, fragmentToProcess, attenuation, mAttenuationStep, adsr.U, adsr.DU);
-					else ExponentialLinearAttenuateAdd(dst, fragmentToProcess, attenuation, mAttenuationStep, adsr.U, adsr.DU);
-				}
-				adsr.SamplesProcessedExternally(fragmentToProcess.Length());
-			}
+			//Требуется накладывать экспоненциальное затухание, причём используется сторонний периодический семпл.
+			//В этом случае невозможно применить трюк с предварительным наложением экспоненты на периодический семпл.
+			//Поэтому честно накладываем экспоненту и ADSR. Класс ADSR умеет делать это всё за один проход.
+			if(rightSamplesToProcess) rightAdsr(dstRight, rightFragment, add, mRightMultiplier, rightAttenuation);
+			if(reverbFragment != null) reverbAdsr(dstReverb, reverbFragment, add, mReverbMultiplier, reverbAttenuation);
+			mADSR(dstLeft, leftFragment, add, mLeftMultiplier, mExpAtten);
 		}
 		else
 		{
-			if(adsr.DU == 0)
-			{
-				const float totalAttenuation = adsr? attenuation*adsr.U: attenuation;
-				if(!add) Multiply(dst, fragment, totalAttenuation);
-				else AddMultiplied(dst, fragment, totalAttenuation);
-				dst.PopFirstExactly(samplesProcessed);
-			}
-			else for(;;)
-			{
-				auto fragmentToProcess = fragment.TakeAdvance(adsr.CurrentStateSamplesLeft());
-				if(fragmentToProcess.Empty()) break;
-				if(adsr.DU == 0)
-				{
-					if(!add) Multiply(dst, fragmentToProcess, attenuation*adsr.U);
-					else AddMultiplied(dst, fragmentToProcess, attenuation*adsr.U);
-				}
-				else
-				{
-					float u = adsr.U*attenuation;
-					const float du = adsr.DU*attenuation;
-					if(!add) LinearMultiply(dst, fragmentToProcess, u, du);
-					else LinearMultiplyAdd(dst, fragmentToProcess, u, du);
-					adsr.U = u/attenuation;
-					adsr.SamplesProcessedExternally(fragmentToProcess.Length());
-				}
-				dst.PopFirstN(fragmentToProcess.Length());
-			}
+			//Экспоненциальное затухание не требуется, либо имеется свой собственный периодический семпл, на который уже наложено экспоненциальное затухание.
+			//Теперь экспонента сводится к умножению на постоянное в пределах данного фрагмента число (1 - если экспоненциальное затухание не требуется).
+			//Остаётся только применить ADSR, указав эту константу в качестве громкости.
+			if(rightSamplesToProcess) rightAdsr(dstRight, rightFragment, add, mExpAtten.Factor*mRightMultiplier);
+			if(reverbFragment != null) reverbAdsr(dstReverb, reverbFragment, add, mExpAtten.Factor*mReverbMultiplier);
+			mADSR(dstLeft, leftFragment, add, mExpAtten.Factor*mLeftMultiplier);
 		}
-		fragmentOffset += float(samplesProcessed);
-		if(fragmentOffset >= mSampleFragment.Length())
+		dstLeft.PopFirstExactly(leftFragment.Length());
+		dstRight.PopFirstExactly(rightFragment.Length());
+		dstReverb.PopFirstExactly(reverbFragment.Length());
+		mFragmentOffset += float(leftSamplesToProcess);
+		if(mFragmentOffset >= mSampleFragment.Length())
 		{
 			// Если этот объект имеет собственный фрагмент семплов, то на него уже наложено экспоненциальное затухание.
 			// Достаточно уменьшить один общий множитель.
-			if(OwnDataArray()) attenuation *= mAttenuationStep;
-			fragmentOffset = 0;
+			if(OwnExponentialAttenuatedDataArray()) mExpAtten.Factor *= mExpAtten.FactorStep;
+			mFragmentOffset = 0;
 		}
-	}
-}
-
-void WaveTableSampler::generateWithVaryingRate(Span<float> dst, bool add,
-	float& ioFragmentOffset, float& ioAttenuation, Math::SineRange<float>& ioFreqOscillator, AdsrAttenuator& ioAdsr)
-{
-	float fragmentOffset = ioFragmentOffset;
-	float attenuation = ioAttenuation;
-	auto freqOscillator = ioFreqOscillator;
-
-	float adsrU = ioAdsr? ioAdsr.U: 1;
-	const float adsrDU = ioAdsr.DU;
-	const size_t len = mSampleFragment.Length();
-	const float att = OwnDataArray()? 1: mAttenuationStep;
-	while(dst.Begin != dst.End)
-	{
-		const int ii = int(fragmentOffset);
-		size_t i = size_t(ii);
-		const float totalAttenuation = attenuation*adsrU;
-		const float factor = fragmentOffset - float(ii);
-		size_t j = i + 1;
-		const float dt = mRate*(1 + freqOscillator.Next());
-		fragmentOffset += dt;
-		if(j >= len)
+#if 0
+		rightFragmentOffset += float(rightSamplesToProcess);
+		if(rightFragmentOffset >= mSampleFragment.Length())
 		{
-			if(i >= len)
-			{
-				fragmentOffset -= float(len);
-				if(OwnDataArray()) attenuation *= mAttenuationStep;
-				i -= len;
-			}
-			j -= len;
+			// Если этот объект имеет собственный фрагмент семплов, то на него уже наложено экспоненциальное затухание.
+			// Достаточно уменьшить один общий множитель.
+			if(OwnExponentialAttenuatedDataArray()) rightAttenuation.Factor *= rightAttenuation.FactorStep;
+			rightFragmentOffset = 0;
 		}
-		attenuation *= att;
-
-		const float a = mSampleFragment.Begin[i];
-		const float b = mSampleFragment.Begin[j];
-		const float sample = (a + (b-a)*factor)*totalAttenuation;
-
-		if(!add) *dst.Begin++ = sample;
-		else *dst.Begin++ += sample;
-
-		adsrU += adsrDU;
+#endif
 	}
-	
-	if(ioAdsr) ioAdsr.U = adsrU;
-
-	ioFragmentOffset = fragmentOffset;
-	ioAttenuation = attenuation;
-	ioFreqOscillator = freqOscillator;
 }
-
 
 static float smoothFilterBuffer(Span<float> buffer, float prevSample, float smoothFactor, float attenuation)
 {
@@ -260,157 +188,136 @@ static float smoothFilterBuffer(Span<float> buffer, float prevSample, float smoo
 	return prevSample;
 }
 
-void WaveTableSampler::generateKS(Span<float> dstLeft, Span<float> dstRight, bool add)
+template<bool Add, bool FreqOsc, bool Adsr>
+void WaveTableSampler::generateWithVaryingRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb)
 {
-	const float rightMult = dstRight == null? 0.5f: mRightPanMultiplier;
-	const float leftMult = 1 - rightMult;
-	if(dstRight == null) dstRight = dstLeft;
-	INTRA_DEBUG_ASSERT(dstLeft.Length() == dstRight.Length());
+	if(dstRight.Empty()) dstRight.Begin = dstRight.End = null;
+	if(dstReverb.Empty()) dstReverb.Begin = dstReverb.End = null;
+	const float rightMult = dstRight == null? 0.5f: mRightMultiplier;
+	const float leftMult = dstRight == null? 0.5f: mLeftMultiplier;
+	const float reverbMult = mReverbMultiplier;
 
-	float adsrU = (mADSR? mADSR.U: 1);
+	float adsrU = Adsr && mADSR? mADSR.U: 1;
 	const float adsrDU = mADSR.DU;
 	const size_t len = mSampleFragment.Length();
+	const bool preattenuated = OwnExponentialAttenuatedDataArray();
+	const float att = preattenuated? 1: mExpAtten.FactorStep;
 	while(dstLeft.Begin != dstLeft.End)
 	{
-		const intptr ii = intptr(mFragmentOffset);
-		const float factor = (mFragmentOffset - float(ii)) * adsrU;
-		const float dt = mRate*(1 + mFreqOscillator.Next());
+		const int ii = int(mFragmentOffset);
 		size_t i = size_t(ii);
+		const float totalAttenuation = mExpAtten.Factor * (Adsr? adsrU: 1);
+		const float factor = mFragmentOffset - float(ii);
 		size_t j = i + 1;
+		const float dt = FreqOsc? mRate*(1+mFreqOscillator.Next()): mRate;
 		mFragmentOffset += dt;
+		float a;
 		if(j >= len)
 		{
+			if(mSmoothingFactor != 0 && i < len) a = mLastFragmentSample = smoothFilterBuffer(mSampleFragmentData, mLastFragmentSample, mSmoothingFactor, 1);
+			else a = mSampleFragment.Begin[i < len? i: i-len];
 			if(i >= len)
 			{
 				mFragmentOffset -= float(len);
-				smoothFilterBuffer(mSampleFragmentData, mSampleFragmentData.Last(), mSmoothingFactor, mAttenuationStep);
+				if(preattenuated) mExpAtten.Factor *= mExpAtten.FactorStep;
 				i -= len;
 			}
 			j -= len;
 		}
-		const float a = mSampleFragmentData[i];
-		const float b = mSampleFragmentData[j];
-		const float sample = (a + (b-a)*factor)*adsrU;
-		if(!add)
+		else a = mSampleFragment.Begin[i];
+		mExpAtten.Factor *= att;
+
+		const float b = mSampleFragment.Begin[j];
+		float sample = (a + (b-a)*factor);
+		sample *= totalAttenuation;
+
+		if(!Add)
 		{
 			*dstLeft.Begin++ = sample*leftMult;
-			*dstRight.Begin++ = sample*rightMult;
+			if(dstRight.Begin) *dstRight.Begin++ = sample*rightMult;
+			if(dstReverb.Begin) *dstReverb.Begin++ = sample*reverbMult;
 		}
 		else
 		{
 			*dstLeft.Begin++ += sample*leftMult;
-			*dstRight.Begin++ += sample*rightMult;
+			if(dstRight.Begin) *dstRight.Begin++ += sample*rightMult;
+			if(dstReverb.Begin) *dstReverb.Begin++ += sample*reverbMult;
 		}
-		adsrU += adsrDU;
+
+		if(Adsr)
+		{
+			if(mADSR.Linear) adsrU += adsrDU;
+			else adsrU *= adsrDU;
+		}
 	}
-	if(mADSR) mADSR.U = adsrU;
+	
+	if(Adsr) if(mADSR) mADSR.U = adsrU;
 }
 
-
-Span<float> WaveTableSampler::operator()(Span<float> dst, bool add)
+void WaveTableSampler::generateWithVaryingRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add)
 {
-	if(mSampleFragment.Empty()) return dst;
-	auto dstCopy = dst.Take(mADSR.SamplesLeft());
-	auto notProcessedDstPart = dst.Drop(dstCopy.Length());
-	if(mRate == 1 && mFreqOscillator == null)
+	const bool noAdsr = mADSR.U == 1 && ((mADSR.Linear && mADSR.DU == 0) || mADSR.DU == 1);
+	if(!add)
 	{
-		generateWithDefaultRate(dstCopy, add, mFragmentOffset, mAttenuation, mADSR);
-		mADSR.SamplesProcessedExternally(dstCopy.Length());
+		if(mFreqOscillator == null)
+		{
+			if(noAdsr) generateWithVaryingRate<false, false, false>(dstLeft, dstRight, dstReverb);
+			else generateWithVaryingRate<false, false, true>(dstLeft, dstRight, dstReverb);
+		}
+		else
+		{
+			if(noAdsr) generateWithVaryingRate<false, true, false>(dstLeft, dstRight, dstReverb);
+			else generateWithVaryingRate<false, true, true>(dstLeft, dstRight, dstReverb);
+		}
+		return;
+	}
+	if(mFreqOscillator == null)
+	{
+		if(noAdsr) generateWithVaryingRate<true, false, false>(dstLeft, dstRight, dstReverb);
+		else generateWithVaryingRate<true, false, true>(dstLeft, dstRight, dstReverb);
 	}
 	else
 	{
-		while(!dstCopy.Full())
-		{
-			auto dstPartToProcess = dstCopy.TakeAdvance(mADSR.CurrentStateSamplesLeft());
-			if(mSmoothingFactor == 0) generateWithVaryingRate(dstPartToProcess, add,
-				mFragmentOffset, mAttenuation, mFreqOscillator, mADSR);
-			else generateKS(dst, add);
-			mADSR.SamplesProcessedExternally(dstPartToProcess.Length());
-		}
+		if(noAdsr) generateWithVaryingRate<true, true, false>(dstLeft, dstRight, dstReverb);
+		else generateWithVaryingRate<true, true, true>(dstLeft, dstRight, dstReverb);
 	}
-	if(!notProcessedDstPart.Empty()) return notProcessedDstPart;
-	return mAttenuation < 0.0001f? dst.Tail(1): dst.Tail(0);
+}
+
+Span<float> WaveTableSampler::operator()(Span<float> dst, bool add)
+{
+	return dst.Drop(operator()(dst, dst, add));
 }
 
 size_t WaveTableSampler::operator()(Span<float> dstLeft, Span<float> dstRight, bool add)
 {
-	INTRA_DEBUG_ASSERT(dstLeft.Length() == dstRight.Length());
+	return operator()(dstLeft, dstRight, null, add);
+}
+
+size_t WaveTableSampler::operator()(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add)
+{
+	INTRA_DEBUG_ASSERT(dstLeft.Length() == dstRight.Length() && (dstLeft.Length() == dstReverb.Length() || dstReverb.Empty()));
 	if(mSampleFragment.Empty()) return 0;
-	float attenuation = mAttenuation*(1 - mRightPanMultiplier);
 	
-	float fragmentOffset = mFragmentOffset - float(mChannelDeltaSamples);
-	if(fragmentOffset < 0)
-	{
-		fragmentOffset += float(mSampleFragment.Length());
-		attenuation /= mAttenuationStep;
-	}
-	auto adsr = mADSR;
 	auto dstLeftCopy = dstLeft.Take(mADSR.SamplesLeft());
 	auto dstRightCopy = dstRight.Take(mADSR.SamplesLeft());
+	auto dstReverbCopy = dstReverb.Take(mADSR.SamplesLeft());
 	const size_t samplesToProcess = dstLeftCopy.Length();
 
 	if(mRate == 1 && mFreqOscillator == null && mSmoothingFactor == 0)
 	{
-		if(mRightPanMultiplier != 1) generateWithDefaultRate(dstLeftCopy, add, fragmentOffset, attenuation, adsr);
-		if(mRightPanMultiplier != 0)
-		{
-			mAttenuation *= mRightPanMultiplier;
-			generateWithDefaultRate(dstRightCopy, add, mFragmentOffset, mAttenuation, mADSR);
-			mAttenuation /= mRightPanMultiplier;
-		}
+		generateWithDefaultRate(dstLeftCopy, dstRightCopy, dstReverbCopy, add);
 	}
-	else
+	else while(!dstLeftCopy.Full())
 	{
-		auto freqOscillator = mFreqOscillator;
-		while(!dstLeftCopy.Full())
-		{
-			auto dstLeftPartToProcess = dstLeftCopy.TakeAdvance(mADSR.CurrentStateSamplesLeft());
-			auto dstRightPartToProcess = dstRightCopy.TakeAdvance(dstLeftPartToProcess.Length());
-			if(mSmoothingFactor != 0)
-			{
-				if(mRightPanMultiplier == 1) generateKS(dstRightPartToProcess, add);
-				else generateKS(dstLeftPartToProcess, dstRightPartToProcess, add);
-				mADSR.SamplesProcessedExternally(dstRightPartToProcess.Length());
-				continue;
-			}
-			if(mRightPanMultiplier != 1)
-			{
-				generateWithVaryingRate(dstLeftPartToProcess, add, fragmentOffset, attenuation, freqOscillator, adsr);
-				adsr.SamplesProcessedExternally(dstLeftPartToProcess.Length());
-			}
-			if(mRightPanMultiplier != 0)
-			{
-				mAttenuation *= mRightPanMultiplier;
-				generateWithVaryingRate(dstRightPartToProcess, add, mFragmentOffset, mAttenuation, mFreqOscillator, mADSR);
-				mADSR.SamplesProcessedExternally(dstRightPartToProcess.Length());
-				mAttenuation /= mRightPanMultiplier;
-			}
-			else mFreqOscillator = freqOscillator;
-		}
-	}
-
-	if(mRightPanMultiplier == 1)
-	{
-		if(!add) FillZeros(dstLeftCopy);
-	}
-	if(mRightPanMultiplier == 0)
-	{
-		if(!add) FillZeros(dstRightCopy);
-		if(mSmoothingFactor == 0)
-		{
-			mADSR = adsr;
-			mAttenuation = attenuation;
-			mFragmentOffset = fragmentOffset + float(mChannelDeltaSamples);
-			if(mFragmentOffset >= float(mSampleFragment.Length()))
-			{
-				mFragmentOffset -= float(mSampleFragment.Length());
-				mAttenuation *= mAttenuationStep;
-			}
-		}
+		auto dstLeftPartToProcess = dstLeftCopy.TakeAdvance(mADSR.CurrentStateSamplesLeft());
+		auto dstRightPartToProcess = dstRightCopy.TakeAdvance(dstLeftPartToProcess.Length());
+		auto dstReverbPartToProcess = dstReverbCopy.TakeAdvance(dstLeftPartToProcess.Length());
+		generateWithVaryingRate(dstLeftPartToProcess, dstRightPartToProcess, dstReverbPartToProcess, add);
+		mADSR.SamplesProcessedExternally(dstLeftPartToProcess.Length());
 	}
 
 	if(samplesToProcess < dstLeft.Length()) return samplesToProcess;
-	return mAttenuation < 0.0001f? samplesToProcess - 1: samplesToProcess;
+	return mExpAtten.Factor < 0.00001f? samplesToProcess - 1: samplesToProcess;
 }
 
 void SineWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
@@ -452,8 +359,7 @@ void WhiteNoiseWaveForm::operator()(Span<float> dst, float freq, float volume, u
 
 void GuitarWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
 {
-	uint samplesPerPeriod = uint(Math::Round(float(sampleRate)/freq - 0.5f));
-	if(samplesPerPeriod == 0) samplesPerPeriod = 1;
+	uint samplesPerPeriod = dst.Length();
 	Random::FastUniform<float> noise;
 	auto samplePeriod = dst.Take(samplesPerPeriod);
 		
@@ -486,7 +392,7 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint 
 	return WaveTableSampler(samples, ratio/table.LevelRatio(level),
 		Math::Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
 		2*float(Math::PI)*VibratoFrequency/float(sampleRate), VibratoValue,
-		ADSR(freq, volume, sampleRate), (sampleRate >> 7) % samples.Length());
+		ADSR(freq, volume, sampleRate), /*(sampleRate >> 7) % samples.Length()*/0);
 }
 
 

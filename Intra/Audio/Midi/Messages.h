@@ -16,15 +16,12 @@ struct NoteOn
 	byte Channel;
 	byte NoteOctaveOrDrumId;
 	byte Velocity;
-	byte Instrument;
-	byte Volume;
-	sbyte Pan;
+	byte Program;
 
 	forceinline MusicNote::Type Note() const {return MusicNote::Type(NoteOctaveOrDrumId % 12);}
 	forceinline byte Octave() const {return byte(NoteOctaveOrDrumId / 12);}
 	forceinline ushort Id() const {return ushort((Channel << 8) | NoteOctaveOrDrumId);}
 	forceinline float Frequency() const {return MusicNote::BasicFrequencies[Note()]*0.5f*float(1 << Octave());}
-	forceinline float TotalVolume() const {return float(Volume*Velocity)/(127.0f*127.0f);}
 
 };
 
@@ -45,14 +42,46 @@ struct PitchBend
 	short Pitch;
 };
 
+struct ChannelPanChange
+{
+	double Time;
+	byte Channel;
+	byte Pan;
+};
+
+struct ChannelVolumeChange
+{
+	double Time;
+	byte Channel;
+	byte Volume;
+};
+
+struct ChannelReverbChange
+{
+	double Time;
+	byte Channel;
+	byte ReverbCoeff;
+};
+
+struct ChannelProgramChange
+{
+	double Time;
+	byte Channel;
+	byte Instrument;
+};
+
 class IDevice
 {
 public:
 	virtual ~IDevice() {}
-	virtual void OnNoteOn(const NoteOn& noteOn) = 0;
-	virtual void OnNoteOff(const NoteOff& noteOff) = 0;
-	virtual void OnPitchBend(const PitchBend& pitchBend) = 0;
-	virtual void OnAllNotesOff(byte channel) = 0;
+	virtual void OnNoteOn(const NoteOn& noteOn) {(void)noteOn;}
+	virtual void OnNoteOff(const NoteOff& noteOff) {(void)noteOff;}
+	virtual void OnPitchBend(const PitchBend& pitchBend) {(void)pitchBend;}
+	virtual void OnAllNotesOff(byte channel) {(void)channel;}
+	virtual void OnChannelPanChange(const ChannelPanChange& panChange) {(void)panChange;}
+	virtual void OnChannelVolumeChange(const ChannelVolumeChange& volumeChange) {(void)volumeChange;}
+	virtual void OnChannelReverbChange(const ChannelReverbChange& reverbChange) {(void)reverbChange;}
+	virtual void OnChannelProgramChange(const ChannelProgramChange& programChange) {(void)programChange;}
 };
 
 }}}

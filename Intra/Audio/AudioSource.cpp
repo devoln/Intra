@@ -32,7 +32,7 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 
 size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 {
-	float tempSamples[4096];
+	float tempSamples[16384];
 	const size_t samplesPerChannel = Math::Min(Concepts::LengthOf(tempSamples), outShorts.Length()) / mChannelCount;
 	Span<float> channels[16];
 	const auto channelCSpan = Range::Take(channels, mChannelCount).Reinterpret<CSpan<float>>();

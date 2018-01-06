@@ -75,7 +75,6 @@ struct MidiFileInfo
 	ushort ChannelsUsed;
 	size_t NoteCount, MaxSimultaneousNotes;
 	double Duration;
-	float MaxVolume;
 	StaticBitset<128> UsedInstrumentsFlags;
 	StaticBitset<128> UsedDrumInstrumentsFlags;
 };

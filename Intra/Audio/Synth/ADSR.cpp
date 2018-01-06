@@ -1,5 +1,8 @@
 #include "ADSR.h"
 #include "Math/Math.h"
+#include "Audio/Synth/ExponentialAttenuation.h"
+#include "Range/Mutation/Fill.h"
+#include "Utils/Finally.h"
 
 #include "Simd/Simd.h"
 
@@ -18,16 +21,17 @@ AdsrAttenuator::AdsrAttenuator(null_t):
 {}
 
 AdsrAttenuator::AdsrAttenuator(float attackTime, float decayTime,
-	float sustainVolume, float releaseTime, uint sampleRate):
+	float sustainVolume, float releaseTime, uint sampleRate, bool linear):
 	AttackSamples(size_t(attackTime*float(sampleRate))),
 	DecaySamples(size_t(decayTime*float(sampleRate))),
 	SustainVolume(sustainVolume),
-	ReleaseSamples(releaseTime == Cpp::Infinity? ~size_t(): size_t(releaseTime*float(sampleRate)))
+	ReleaseSamples(releaseTime == Cpp::Infinity? ~size_t(): size_t(releaseTime*float(sampleRate))),
+	Linear(linear)
 {
 	if(AttackSamples == 0 && DecaySamples == 0 && SustainVolume == 1 && ReleaseSamples == ~size_t())
 	{
 		U = -1;
-		DU = 0;
+		DU = Linear? 0.0f: 1.0f;
 		return;
 	}
 	if(AttackSamples != 0) beginAttack();
@@ -37,9 +41,28 @@ AdsrAttenuator::AdsrAttenuator(float attackTime, float decayTime,
 
 void AdsrAttenuator::operator()(Span<float> inOutSamples)
 {
+	auto dst = inOutSamples;
+	auto src = inOutSamples.AsConstRange();
+	operator()(dst, src, false);
+}
+
+void AdsrAttenuator::operator()(Span<float> dstSamples, CSpan<float> srcSamples, bool add, float coeff, ExponentAttenuator& exp)
+{
+	const float oldExp = exp.Factor;
+	const auto dstSamplesBefore = dstSamples.Length();
+	exp.Factor *= coeff;
+	INTRA_FINALLY(
+		if(coeff == 0)
+		{
+			exp.Factor = oldExp;
+			exp.SkipSamples(dstSamplesBefore - dstSamples.Length());
+		}
+		else exp.Factor /= coeff;
+	);
+
 	if(AttackSamples != 0)
 	{
-		attack(inOutSamples);
+		attack(dstSamples, srcSamples, add, exp);
 		if(AttackSamples == 0)
 		{
 			if(DecaySamples != 0) beginDecay();
@@ -50,19 +73,28 @@ void AdsrAttenuator::operator()(Span<float> inOutSamples)
 
 	if(DecaySamples != 0)
 	{
-		decay(inOutSamples);
+		decay(dstSamples, srcSamples, add, exp);
 		if(DecaySamples == 0) beginSustain();
 	}
 	if(DecaySamples != 0) return;
-	if(SustainVolume == -1) release(inOutSamples);
-	else Multiply(inOutSamples, U);
+	if(IsNoteReleased()) release(dstSamples, srcSamples, add, exp);
+	else sustain(dstSamples, srcSamples, add, exp);
 }
+
+void AdsrAttenuator::operator()(Span<float> dstSamples, CSpan<float> srcSamples, bool add, float coeff)
+{
+	ExponentAttenuator exp;
+	operator()(dstSamples, srcSamples, add, coeff, exp);
+}
+
+void AdsrAttenuator::operator()(Span<float> dstSamples, CSpan<float> srcSamples, bool add)
+{operator()(dstSamples, srcSamples, add, 1);}
 
 size_t AdsrAttenuator::CurrentStateSamplesLeft() const
 {
 	if(AttackSamples != 0) return AttackSamples;
 	if(DecaySamples != 0) return DecaySamples;
-	if(SustainVolume == -1) return ReleaseSamples;
+	if(IsNoteReleased()) return ReleaseSamples;
 	return ~size_t();
 }
 
@@ -89,7 +121,7 @@ void AdsrAttenuator::SamplesProcessedExternally(size_t numSamples)
 		if(DecaySamples == 0) beginSustain();
 	}
 	if(numSamples == 0) return;
-	if(SustainVolume == -1)
+	if(IsNoteReleased())
 	{
 		const size_t processed = Math::Min(numSamples, ReleaseSamples);
 		numSamples -= processed;
@@ -100,22 +132,31 @@ void AdsrAttenuator::SamplesProcessedExternally(size_t numSamples)
 void AdsrAttenuator::beginAttack()
 {
 	INTRA_ASSERT(SustainVolume != -1);
-	U = 0;
-	DU = 1.0f / float(AttackSamples);
+	if(Linear)
+	{
+		U = 0;
+		DU = 1.0f / float(AttackSamples);
+	}
+	else
+	{
+		U = 0.01f;
+		DU = Math::Pow(100.0f, 1.0f/float(AttackSamples));
+	}
 }
 
 void AdsrAttenuator::beginSustain()
 {
 	INTRA_ASSERT(SustainVolume != -1);
 	U = SustainVolume;
-	DU = 0;
+	DU = Linear? 0.0f: 1.0f;
 }
 
 void AdsrAttenuator::beginDecay()
 {
 	INTRA_ASSERT(SustainVolume != -1);
 	U = 1;
-	DU = (SustainVolume - U) / float(DecaySamples);
+	if(Linear) DU = (SustainVolume - U) / float(DecaySamples);
+	else DU = Math::Pow(SustainVolume, 1.0f / float(DecaySamples));
 }
 
 void AdsrAttenuator::NoteRelease()
@@ -129,32 +170,85 @@ void AdsrAttenuator::NoteRelease()
 
 void AdsrAttenuator::beginRelease()
 {
-	DU = -U / float(ReleaseSamples);
+	if(IsInfinite())
+	{
+		DU = Linear? 0.0f: 1.0f;
+		return;
+	}
+	if(Linear) DU = -U / float(ReleaseSamples);
+	else DU = Math::Pow(U*float(ReleaseSamples), -1.0f / float(ReleaseSamples));
 }
 
-void AdsrAttenuator::attack(Span<float>& inOutSamples)
+void AdsrAttenuator::attack(Span<float>& dstSamples, CSpan<float>& srcSamples, bool add, ExponentAttenuator& exp)
 {
-	auto dst = inOutSamples.Take(AttackSamples);
+	auto dst = dstSamples.Take(srcSamples.Length()).Take(AttackSamples);
 	AttackSamples -= dst.Length();
-	LinearMultiply(dst, U, DU);
-	inOutSamples.PopFirstExactly(dst.Length());
+	dstSamples.PopFirstExactly(dst.Length());
+	work(dst, srcSamples, add, exp);
 }
 
-void AdsrAttenuator::decay(Span<float>& inOutSamples)
+void AdsrAttenuator::decay(Span<float>& dstSamples, CSpan<float>& srcSamples, bool add, ExponentAttenuator& exp)
 {
-	auto dst = inOutSamples.Take(DecaySamples);
+	auto dst = dstSamples.Take(srcSamples.Length()).Take(DecaySamples);
 	DecaySamples -= dst.Length();
-	LinearMultiply(dst, U, DU);
-	inOutSamples.PopFirstExactly(dst.Length());
+	dstSamples.PopFirstExactly(dst.Length());
+	work(dst, srcSamples, add, exp);
 }
 
-void AdsrAttenuator::release(Span<float>& inOutSamples)
+void AdsrAttenuator::sustain(Span<float>& dstSamples, CSpan<float>& srcSamples, bool add, ExponentAttenuator& exp)
 {
-	if(ReleaseSamples == ~size_t()) return;
-	auto dst = inOutSamples.Take(ReleaseSamples);
-	ReleaseSamples -= dst.Length();
-	LinearMultiply(dst, U, DU);
-	inOutSamples.PopFirstExactly(dst.Length());
+	INTRA_ASSERT(!IsNoteReleased());
+	const auto dst = dstSamples.Take(srcSamples.Length());
+	dstSamples.PopFirstExactly(dst.Length());
+	if(U == 0)
+	{
+		if(!add) FillZeros(dst);
+		srcSamples.PopFirstExactly(dst.Length());
+		exp.SkipSamples(dst.Length());
+	}
+	else
+	{
+		exp.Factor *= U;
+		exp(dst, srcSamples, add);
+		exp.Factor /= U;
+	}
+}
+
+void AdsrAttenuator::release(Span<float>& dstSamples, CSpan<float>& srcSamples, bool add, ExponentAttenuator& exp)
+{
+	INTRA_ASSERT(IsNoteReleased());
+	auto dst = dstSamples.Take(srcSamples.Length()).Take(ReleaseSamples);
+	if(!IsInfinite()) ReleaseSamples -= dst.Length();
+	dstSamples.PopFirstExactly(dst.Length());
+	work(dst, srcSamples, add, exp);
+}
+
+void AdsrAttenuator::work(Span<float> dst, CSpan<float>& srcSamples, bool add, ExponentAttenuator& exp)
+{
+	if(exp.Factor == 0)
+	{
+		if(!add) FillZeros(dst);
+		srcSamples.PopFirstExactly(dst.Length());
+		if(Linear) U += DU*float(dst.Length());
+		else U *= Math::PowInt(DU, int(dst.Length()));
+		return;
+	}
+
+	if(Linear)
+	{
+		if(add) ExponentialLinearAttenuateAdd(dst, srcSamples, exp.Factor, exp.FactorStep, U, DU);
+		else ExponentialLinearAttenuate(dst, srcSamples, exp.Factor, exp.FactorStep, U, DU);
+	}
+	else
+	{
+		U *= exp.Factor;
+		const float atStep = DU*exp.FactorStep;
+		auto len = dst.Length();
+		if(add) ExponentialAttenuateAdd(dst, srcSamples, U, atStep);
+		else ExponentialAttenuate(dst, srcSamples, U, atStep);
+		exp.SkipSamples(len);
+		U /= exp.Factor;
+	}
 }
 
 }}}

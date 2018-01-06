@@ -49,7 +49,8 @@ WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc
 
 //Первые numHarmonics слагаемых ряда гармоник с коэффициентами sin(alpha*n) / n^harmonicAttenuationPower и частотами freqMult+freqMultStep*(n-1)
 Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float bandwidthStep,
-	float harmonicAttenuationPower, float freqMult, float freqMultStep, size_t numHarmonics, float scale, float alpha=0, float omega=0);
+	float harmonicAttenuationStep, float harmonicAttenuationPower,
+	float freqMult, float freqMultStep, size_t numHarmonics, float scale, float alpha=0, float omega=0);
 
 //Гармоники обобщённой пилообразной волны c указанным соотношением времени нарастания к времени спада updownRatio
 Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep,

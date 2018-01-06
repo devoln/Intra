@@ -25,12 +25,12 @@ Span<float> NoteSampler::operator()(Span<float> dst, bool add)
 	return notProcessedPart;
 }
 
-size_t NoteSampler::operator()(Span<float> dstLeft, Span<float> dstRight, bool add)
+size_t NoteSampler::operator()(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add)
 {
 	if(Modifiers.Empty() && !ADSR && GenericSamplers.Empty())
 	{
 		const size_t sampleCount = Math::Min(ADSR.SamplesLeft(), dstLeft.Length());
-		fillStereo(dstLeft.Take(sampleCount), dstRight.Take(sampleCount), add);
+		fillStereo(dstLeft.Take(sampleCount), dstRight.Take(sampleCount), dstReverb.Take(sampleCount), add);
 		return sampleCount;
 	}
 
@@ -48,11 +48,13 @@ size_t NoteSampler::operator()(Span<float> dstLeft, Span<float> dstRight, bool a
 		{
 			AddMultiplied(dstLeft.TakeAdvance(tempDst.Length()), tempDst, 0.5f - Pan*0.5f);
 			AddMultiplied(dstRight.TakeAdvance(tempDst.Length()), tempDst, 0.5f + Pan*0.5f);
+			AddMultiplied(dstReverb.TakeAdvance(tempDst.Length()), tempDst, ReverbCoeff);
 		}
 		else
 		{
 			Multiply(dstLeft.TakeAdvance(tempDst.Length()), tempDst, 0.5f - Pan*0.5f);
 			Multiply(dstRight.TakeAdvance(tempDst.Length()), tempDst, 0.5f + Pan*0.5f);
+			Multiply(dstReverb.TakeAdvance(tempDst.Length()), tempDst, ReverbCoeff);
 		}
 	}
 	return sampleCount;
@@ -86,24 +88,26 @@ void NoteSampler::fill(Span<float> dst, bool add)
 	if(!add) FillZeros(dst);
 }
 
-void NoteSampler::fillStereo(Span<float> dstLeft, Span<float> dstRight, bool add)
+void NoteSampler::fillStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add)
 {
 #ifdef INTRA_DEBUG
 	if(!add)
 	{
 		Fill(dstLeft, 1000000);
 		Fill(dstRight, 1000000);
+		Fill(dstReverb, 1000000);
 	}
 #endif
 	for(size_t i = 0; i < WaveTableSamplers.Length(); i++)
 	{
-		size_t samplesProcessed = WaveTableSamplers[i](dstLeft, dstRight, add);
+		size_t samplesProcessed = WaveTableSamplers[i](dstLeft, dstRight, dstReverb, add);
 		if(samplesProcessed != dstLeft.Length())
 		{
 			if(!add)
 			{
 				FillZeros(dstLeft.Drop(samplesProcessed));
 				FillZeros(dstRight.Drop(samplesProcessed));
+				FillZeros(dstReverb.Drop(samplesProcessed));
 			}
 			WaveTableSamplers.RemoveUnordered(i--);
 		}
@@ -113,6 +117,7 @@ void NoteSampler::fillStereo(Span<float> dstLeft, Span<float> dstRight, bool add
 	{
 		FillZeros(dstLeft);
 		FillZeros(dstRight);
+		FillZeros(dstReverb);
 	}
 }
 
@@ -147,7 +152,20 @@ void NoteSampler::NoteRelease()
 void NoteSampler::SetPan(float pan)
 {
 	for(auto& sampler: WaveTableSamplers) sampler.SetPan(pan);
+	//for(auto& sampler: GenericSamplers) sampler.SetPan(pan);
 	Pan = pan;
+}
+
+void NoteSampler::MultiplyVolume(float volumeMultiplier)
+{
+	for(auto& sampler: WaveTableSamplers) sampler.MultiplyVolume(volumeMultiplier);
+	//for(auto& sampler: GenericSamplers) sampler.MultiplyVolume(pan);
+}
+
+void NoteSampler::SetReverbCoeff(float reverbCoeff)
+{
+	for(auto& sampler: WaveTableSamplers) sampler.SetReverbCoeff(reverbCoeff);
+	ReverbCoeff = reverbCoeff;
 }
 
 }}}

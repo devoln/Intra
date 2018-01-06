@@ -13,6 +13,7 @@
 #include "Audio/Midi/MidiFileParser.h"
 #include "Audio/Synth/NoteSampler.h"
 #include "Audio/Synth/InstrumentSet.h"
+#include "Audio/Synth/PostEffects.hh"
 
 namespace Intra { namespace Audio { namespace Sources {
 
@@ -28,7 +29,11 @@ class MidiSynth: public SeparateFloatAudioSource, public Midi::IDevice
 	double mTime = 0, mPrevTime = 0;
 	size_t mSampleCount;
 	float mMaxSample;
-	short mCurrentPitchBend[16]{};
+	short mChannelPitchBend[16]{};
+	sbyte mChannelPans[16]{};
+	byte mChannelVolumes[16];
+	byte mChannelReverbs[16]{};
+	byte mChannelPrograms[16]{};
 	ushort mPitchBendRangeInSemitones = 2;
 
 	struct NoteEntry
@@ -42,10 +47,12 @@ class MidiSynth: public SeparateFloatAudioSource, public Midi::IDevice
 	typedef Container::HashMap<ushort, NoteEntry> NoteMap;
 	NoteMap mPlayingNotes;
 	Array<NoteEntry> mOffPlayingNotes;
+	Synth::PostEffects::HallReverb mReverberator;
+	Array<float> mReverbChannelBuffer;
 
 public:
 	MidiSynth(Midi::TrackCombiner music, double duration, const Synth::MidiInstrumentSet& instruments, float maxVolume=1,
-		OnCloseResourceCallback onClose=null, uint sampleRate=48000, bool stereo=true);
+		OnCloseResourceCallback onClose=null, uint sampleRate=48000, bool stereo=true, bool reverb=true);
 	~MidiSynth() {}
 
 	MidiSynth(const MidiSynth&) = delete;
@@ -62,10 +69,14 @@ public:
 	void OnNoteOn(const Midi::NoteOn& noteOn) final;
 	void OnNoteOff(const Midi::NoteOff& noteOff) final;
 	void OnPitchBend(const Midi::PitchBend& pitchBend) final;
+	void OnChannelPanChange(const Midi::ChannelPanChange& panChange) final;
+	void OnChannelVolumeChange(const Midi::ChannelVolumeChange& volumeChange) final;
+	void OnChannelReverbChange(const Midi::ChannelReverbChange& reverbChange) final;
 	void OnAllNotesOff(byte channel) final;
+	void OnChannelProgramChange(const Midi::ChannelProgramChange& programChange) final;
 
 private:
-	bool synthNote(Synth::NoteSampler& sampler, Span<float> dstLeft, Span<float> dstRight, bool add);
+	bool synthNote(Synth::NoteSampler& sampler, Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add);
 	float pitchBendToFreqMultiplier(short relativePitchBend) const;
 };
 

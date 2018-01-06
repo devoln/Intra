@@ -12,6 +12,7 @@
 #include "Filter.h"
 #include "WaveTable.h"
 #include "ADSR.h"
+#include "ExponentialAttenuation.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -26,14 +27,14 @@ class WaveTableSampler
 	{(*static_cast<const F*>(params))(dst, freq, volume, sampleRate);}
 
 	Array<float> mSampleFragmentData;
+	float mLastFragmentSample = 0;
 	CSpan<float> mSampleFragment;
 	float mFragmentOffset;
 	float mRate;
 
-	float mAttenuation;
-	
-	float mAttenuationStep;
-	float mRightPanMultiplier;
+	ExponentAttenuator mExpAtten;
+
+	float mLeftMultiplier, mRightMultiplier, mReverbMultiplier;
 	Math::SineRange<float> mFreqOscillator;
 	AdsrAttenuator mADSR;
 	size_t mChannelDeltaSamples;
@@ -41,7 +42,8 @@ class WaveTableSampler
 
 	WaveTableSampler(const void* params, WaveForm wave, uint octaves,
 		float attenuationPerSample, float volume,
-		float freq, uint sampleRate, float vibratoFrequency, float vibratoValue, float smoothingFactor, const AdsrAttenuator& adsr = null);
+		float freq, uint sampleRate, float vibratoFrequency, float vibratoValue,
+		float smoothingFactor, const AdsrAttenuator& adsr = null);
 
 public:
 	WaveTableSampler(null_t=null) {}
@@ -58,9 +60,11 @@ public:
 			expCoeff, volume, freq, sampleRate, vibratoFrequency, vibratoValue, smoothingFactor, adsr) {}
 
 	forceinline bool OwnDataArray() const noexcept {return !mSampleFragmentData.Empty();}
+	bool OwnExponentialAttenuatedDataArray() const noexcept {return OwnDataArray() && mSmoothingFactor == 0;}
 
 	Span<float> operator()(Span<float> dst, bool add);
 	size_t operator()(Span<float> dstLeft, Span<float> dstRight, bool add);
+	size_t operator()(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add);
 
 	void MultiplyPitch(float freqMultiplier)
 	{
@@ -68,9 +72,20 @@ public:
 		if(Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
 	}
 
+	void MultiplyVolume(float volumeMultiplier)
+	{
+		mExpAtten.Factor *= volumeMultiplier;
+	}
+
 	void SetPan(float newPan)
 	{
-		mRightPanMultiplier = (newPan + 1) * 0.5f;
+		mRightMultiplier = (newPan + 1) / 2;
+		mLeftMultiplier = 1 - mRightMultiplier;
+	}
+
+	void SetReverbCoeff(float newCoeff)
+	{
+		mReverbMultiplier = newCoeff;
 	}
 
 	void NoteRelease()
@@ -79,14 +94,12 @@ public:
 	}
 
 private:
-	void generateWithDefaultRate(Span<float> dst, bool add,
-		float& fragmentOffset, float& attenuation, AdsrAttenuator& adsr);
+	void generateWithDefaultRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add);
 
-	void generateWithVaryingRate(Span<float> dst, bool add,
-		float& fragmentOffset, float& attenuation, Math::SineRange<float>& freqOscillator, AdsrAttenuator& adsr);
+	void generateWithVaryingRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb, bool add);
 
-	void generateKS(Span<float> dstLeft, Span<float> dstRight, bool add);
-	void generateKS(Span<float> dst, bool add) {generateKS(dst, dst, add);}
+	template<bool Add, bool FreqOsc, bool Adsr>
+	void generateWithVaryingRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
 };
 
 typedef CopyableDelegate<void(Span<float> dst, float freq, float volume, uint sampleRate)> WaveForm;

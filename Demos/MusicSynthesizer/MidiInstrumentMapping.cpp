@@ -47,14 +47,14 @@ MidiInstrumentSet GetMapping()
 	instruments[33] = lib["ElectricBassFinger"];
 	instruments[34] = lib["ElectricBassPick"];
 
-	static const byte basses2[] = {39};
-	for(const byte code: basses2) instruments[code] = lib["Bass2"];
+	instruments[39] = lib["SynthBass2"];
 	instruments[36] = instruments[37] = lib["SlapBass"];
 
 	instruments[47] = lib["Timpani"];
 
-	static const byte padSweeps[] = {43, 49, 51,  89, 93, 94, 95, 102};
+	static const byte padSweeps[] = {43, 51,  89, 93, 94, 95, 102};
 	for(const byte code: padSweeps) instruments[code] = lib["Pad8Sweep"];
+	instruments[49] = lib["StringEnsemble2"];
 	instruments[94] = lib["Pad7Halo"];
 	instruments[90] = lib["PadPolysynth"];
 	instruments[101] = lib["FxGoblins"];
@@ -87,10 +87,12 @@ MidiInstrumentSet GetMapping()
 	instruments[119] = lib["ReverseCymbal"];
 	instruments[99] = lib["Atmosphere"];
 
-	static const byte vibraphones[] = {8, 10, 11, 88, 108};
+	static const byte vibraphones[] = {11, 88, 108};
 	for(const byte code: vibraphones) instruments[code] = lib["Vibraphone"];
 	instruments[12] = lib["Marimba"];
 	instruments[92] = lib["Pad5Bowed"];
+	instruments[8] = lib["Celesta"];
+	instruments[10] = lib["MusicBox"];
 
 	instruments[9] = lib["Glockenspiel"];
 	instruments[13] = lib["Xylophone"];

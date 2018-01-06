@@ -10,14 +10,14 @@ void DrumPhysicalModel::PopFirst()
 {
 	const float maxP = 0.3f;
 
-	const uint maxX = mDX-1u;
-	const uint maxY = mDY-1u;
+	const uint maxX = mDX - 1u;
+	const uint maxY = mDY - 1u;
 
-	for(uint i=0; i<mCnt; i++)
+	for(uint i = 0; i < mCnt; i++)
 	{
-		for(uint y=0; y<mDY; y++)
+		for(uint y = 0; y < mDY; y++)
 		{
-			for(uint x=0; x<mDX; x++)
+			for(uint x = 0; x < mDX; x++)
 			{
 				mS(x, y) += ((mP((x-1) & maxX, y) + mP((x+1) & maxX, y) +
 						mP(x, (y-1) & maxY) + mP(x, (y+1) & maxY))*0.25f - mP(x, y)
@@ -25,24 +25,24 @@ void DrumPhysicalModel::PopFirst()
 			}
 		}
 
-		for(uint y=0; y<mDY; y++)
+		for(uint y = 0; y < mDY; y++)
 		{
-			for(uint x=0; x<mDX; x++)
+			for(uint x = 0; x < mDX; x++)
 			{
 				mS(x, y) = mS(x, y)*mK1 +
-					(mS((x-1) & maxX, y) + mS((x+1) & maxX, y) +
-					mS(x, (y-1) & maxY) + mS(x, (y+1) & maxY))*mK2;
+					(mS((x - 1) & maxX, y) + mS((x + 1) & maxX, y) +
+					mS(x, (y - 1) & maxY) + mS(x, (y + 1) & maxY))*mK2;
 			}
 		}
 
-		for(uint y=0; y<mDY; y++)
-			for(uint x=0; x<mDX; x++)
+		for(uint y = 0; y < mDY; y++)
+			for(uint x = 0; x < mDX; x++)
 				mP(x, y) += mS(x, y);
 
-		for(uint x=0; x<mDX; x+=4)
+		for(uint x = 0; x < mDX; x += 4)
 		{
-			if((mP(x, 0)>maxP && mS(x, 0)>0) ||
-				(mP(x, 0)<maxP && mS(x, 0)<0))
+			if((mP(x, 0) > maxP && mS(x, 0) > 0) ||
+				(mP(x, 0) < maxP && mS(x, 0) < 0))
 				mS(x, 0) *= -0.5f;
 		}
 
@@ -64,13 +64,13 @@ DrumPhysicalModel::DrumPhysicalModel(byte count, byte dx, byte dy, float frc, fl
 	mFRandom(), mPrevRand(0)
 {
 	mK1 = 1.0f - kDemp*0.333f*frc;
-	mK2 = (1.0f-mK1)*0.25f;
+	mK2 = (1.0f - mK1)*0.25f;
 
-	for(uint y=0; y<dy; y++)
+	for(uint y = 0; y < dy; y++)
 	{
-		for(uint x=0; x<dx; x++)
+		for(uint x = 0; x < dx; x++)
 		{
-			float v = 1.0f+sRand()*kRand;
+			float v = 1.0f + sRand()*kRand;
 			mF(x, y) = mFrc*v;
 		}
 	}

@@ -1335,9 +1335,7 @@
     <Natvis Include="Range\RangeIteration.natvis" />
     <Natvis Include="Range\RangePolymorphic.natvis" />
     <Natvis Include="System\System.natvis" />
-    <Natvis Include="Utils\Utils.natvis">
-      <SubType>Designer</SubType>
-    </Natvis>
+    <Natvis Include="Utils\Utils.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
