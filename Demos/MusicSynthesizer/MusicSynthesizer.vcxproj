@@ -361,7 +361,7 @@
       </PrecompiledHeader>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>INTRA_USE_CRT_MATH;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;INTRA_USE_CRT_MATH;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -385,7 +385,7 @@
       </PrecompiledHeader>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -410,7 +410,7 @@
       </PrecompiledHeader>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnablePREfast>false</EnablePREfast>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -434,7 +434,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -459,7 +459,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -483,7 +483,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalOptions>/Zm200 %(AdditionalOptions)</AdditionalOptions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
@@ -509,7 +509,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -551,7 +551,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -592,7 +592,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_NO_WAVE_LOADER;INTRA_MINEXE=3;INTRA_QIFIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;INTRA_NO_WAVE_LOADER;INTRA_MINEXE=3;INTRA_QIFIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -634,7 +634,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>
@@ -680,7 +680,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_NO_WAVE_LOADER;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;INTRA_NO_WAVE_LOADER;INTRA_MINEXE=3;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -722,7 +722,7 @@
       <Optimization>Disabled</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>false</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;INTRA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;NDEBUG;_CONSOLE;INTRA_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
@@ -762,7 +762,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -803,7 +803,7 @@
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DROP_XP_SUPPORT;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;INTRA_DROP_XP_SUPPORT;INTRA_STL_INTERFACE;INTRA_NO_WAVE_LOADER;INTRA_MINIMIZE_CRT;INTRA_MINEXE=3;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
@@ -843,7 +843,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>
@@ -883,7 +883,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_NAMESPACE_OPTIONAL;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeaderFile>
       </PrecompiledHeaderFile>
       <ForcedIncludeFiles>
@@ -905,16 +905,54 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ADSR.cpp" />
+    <ClCompile Include="Chorus.cpp" />
+    <ClCompile Include="DrumPhysicalModel.cpp" />
     <ClCompile Include="EmscriptenInterface.cpp" />
+    <ClCompile Include="ExponentialAttenuation.cpp" />
+    <ClCompile Include="Filter.cpp" />
     <ClCompile Include="InstrumentLibrary.cpp" />
+    <ClCompile Include="InstrumentSet.cpp" />
     <ClCompile Include="MidiInstrumentMapping.cpp" />
+    <ClCompile Include="MidiSynth.cpp" />
+    <ClCompile Include="MusicalInstrument.cpp" />
     <ClCompile Include="MusicSynthesizer.cpp" />
     <ClCompile Include="MusicSynthesizerCommon.cpp" />
+    <ClCompile Include="NoteSampler.cpp" />
+    <ClCompile Include="NoteState.cpp" />
+    <ClCompile Include="Octaves.cpp" />
+    <ClCompile Include="PostEffects.cpp" />
+    <ClCompile Include="RecordedSampler.cpp" />
+    <ClCompile Include="WaveTable.cpp" />
+    <ClCompile Include="WaveTableGeneration.cpp" />
+    <ClCompile Include="WaveTableSampler.cpp" />
+    <ClCompile Include="WhiteNoiseSampler.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ADSR.h" />
+    <ClInclude Include="Chorus.h" />
+    <ClInclude Include="DrumPhysicalModel.h" />
+    <ClInclude Include="Envelope.h" />
+    <ClInclude Include="ExponentialAttenuation.h" />
+    <ClInclude Include="Filter.h" />
+    <ClInclude Include="Generators.hh" />
     <ClInclude Include="InstrumentLibrary.h" />
+    <ClInclude Include="InstrumentSet.h" />
     <ClInclude Include="MidiInstrumentMapping.h" />
+    <ClInclude Include="MidiSynth.h" />
+    <ClInclude Include="MusicalInstrument.h" />
     <ClInclude Include="MusicSynthesizerCommon.h" />
+    <ClInclude Include="NoteSampler.h" />
+    <ClInclude Include="NoteState.h" />
+    <ClInclude Include="Octaves.h" />
+    <ClInclude Include="PostEffects.hh" />
+    <ClInclude Include="RecordedSampler.h" />
+    <ClInclude Include="Types.h" />
+    <ClInclude Include="ViolinPhysicalModel.h" />
+    <ClInclude Include="WaveTable.h" />
+    <ClInclude Include="WaveTableGeneration.h" />
+    <ClInclude Include="WaveTableSampler.h" />
+    <ClInclude Include="WhiteNoiseSampler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

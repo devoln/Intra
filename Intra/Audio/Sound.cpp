@@ -3,7 +3,6 @@
 #include "AudioSource.h"
 #include "Sources/Wave.h"
 #include "Sources/Vorbis.h"
-#include "Sources/MidiSynth.h"
 #include "SoundTypes.h"
 
 #include "Funal/ValueRef.h"

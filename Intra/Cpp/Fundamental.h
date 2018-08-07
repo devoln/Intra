@@ -144,3 +144,7 @@ INTRA_WARNING_POP
 
 typedef Intra::intptr ptrdiff_t;
 typedef Intra::uintptr size_t;
+
+#ifdef INTRA_NAMESPACE_OPTIONAL
+using namespace Intra;
+#endif

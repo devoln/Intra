@@ -18,7 +18,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #define INTRA_SIMD_NEON 11
 
-#if(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86_64 || INTRA_PLATFORM_ARCH==INTRA_PLATFORM_Emscripten)
+#if(INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86_64 || INTRA_PLATFORM_ARCH == INTRA_PLATFORM_Emscripten)
 
 #ifndef INTRA_SIMD_SUPPORT
 //#define INTRA_SIMD_SUPPORT INTRA_SIMD_SSE2
@@ -41,23 +41,23 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 
 
-#if(INTRA_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
+#if(INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2)
 
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_NONE)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_NONE)
 #include <mmintrin.h>  //MMX
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_MMX)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_MMX)
 #include <xmmintrin.h> //SSE
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE)
 #include <emmintrin.h> //SSE2
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE2)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE2)
 #include <pmmintrin.h> //SSE3
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE3)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE3)
 #include <tmmintrin.h> //SSSE3
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSSE3)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSSE3)
 #include <smmintrin.h> //SSE4.1
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE4_1)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE4_1)
 #include <nmmintrin.h> //SSE4.2
-#if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE4_2)
+#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE4_2)
 #include <immintrin.h> //AVX
 #endif
 #endif
@@ -70,9 +70,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #endif
 
+#ifndef INTRA_USE_GCC_CLANG_SIMD
 
-
-#if(INTRA_SIMD_SUPPORT>=INTRA_SIMD_MMX && INTRA_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
+#if(INTRA_SIMD_SUPPORT >= INTRA_SIMD_MMX && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2)
 namespace Intra { namespace Simd {
 
 	typedef __m128i int4;
@@ -90,13 +90,13 @@ namespace Intra { namespace Simd {
 	forceinline int4 SetInt4(int s) {return _mm_set1_epi32(s);}
 	forceinline double2 SetDouble2(double s) {return _mm_set1_pd(s);}
 
-	forceinline int4 SetInt4(int x, int y, int z, int w) {return _mm_set_epi32(x, y, z, w);}
-	forceinline float4 SetFloat4(float x, float y, float z, float w) {return _mm_set_ps(x, y, z, w);}
-	forceinline double2 SetDouble2(double x, double y) {return _mm_set_pd(x,y);}
+	forceinline int4 SetInt4(int x, int y, int z, int w) {return _mm_set_epi32(w, z, y, x);}
+	forceinline float4 SetFloat4(float x, float y, float z, float w) {return _mm_set_ps(w, z, y, x);}
+	forceinline double2 SetDouble2(double x, double y) {return _mm_set_pd(y, x);}
 
 	forceinline float4 SetFloat4(const float xyzw[4]) {return _mm_load_ps(xyzw);}
 	forceinline float4 SetFloat4U(const float xyzw[4]) {return _mm_loadu_ps(xyzw);}
-	forceinline int4 SetInt4(const int xyzw[4]) {return _mm_set_epi32(xyzw[0], xyzw[1], xyzw[2], xyzw[3]);}
+	forceinline int4 SetInt4(const int xyzw[4]) {return _mm_set_epi32(xyzw[3], xyzw[2], xyzw[1], xyzw[0]);}
 	forceinline double2 SetDouble2(const double xy[2]) {return _mm_load_pd(xy);}
 	forceinline double2 SetDouble2U(const double xy[2]) {return _mm_loadu_pd(xy);}
 
@@ -217,7 +217,7 @@ namespace Intra { namespace Simd {
 
 }}
 
-#elif(INTRA_PLATFORM_ARCH==INTRA_PLATFORM_PowerPC && INTRA_SIMD_SUPPORT!=INTRA_SIMD_NONE)
+#elif(INTRA_PLATFORM_ARCH == INTRA_PLATFORM_PowerPC && INTRA_SIMD_SUPPORT != INTRA_SIMD_NONE)
 
 namespace Intra { namespace Simd {
 
@@ -474,5 +474,29 @@ namespace Intra { namespace Simd {
 	}
 	template<typename T> using simd4 = typename Impl::simd4<T>::Type;
 }}
+
+#else
+
+typedef sbyte sbyte16 __attribute__((__vector_size__(16)));
+typedef sbyte sbyte32 __attribute__((__vector_size__(32)));
+typedef sbyte sbyte64 __attribute__((__vector_size__(64)));
+
+typedef short short8 __attribute__((__vector_size__(16)));
+typedef short short16 __attribute__((__vector_size__(32)));
+typedef short short32 __attribute__((__vector_size__(64)));
+
+typedef int int4 __attribute__((__vector_size__(16)));
+typedef int int8 __attribute__((__vector_size__(32)));
+typedef int int16 __attribute__((__vector_size__(64)));
+
+typedef float float4 __attribute__((__vector_size__(16)));
+typedef float float8 __attribute__((__vector_size__(32)));
+typedef float float16 __attribute__((__vector_size__(64)));
+
+typedef float double2 __attribute__((__vector_size__(16)));
+typedef float double4 __attribute__((__vector_size__(32)));
+typedef float double8 __attribute__((__vector_size__(64)));
+
+#endif
 
 INTRA_WARNING_POP

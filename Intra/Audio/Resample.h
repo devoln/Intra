@@ -5,7 +5,6 @@
 
 namespace Intra { namespace Audio {
 
-
 inline float LinearSample(CSpan<float> arr, float index)
 {
 	const uint i = uint(index);

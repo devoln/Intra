@@ -147,7 +147,7 @@ template<typename T> using RemoveExtent = typename D::TRemoveExtent<T>::_;
 template<typename T> using AddPointer = RemoveReference<T>*;
 
 template<typename T> struct IsFunctionPointer: FalseType {};
-#if(defined(_MSC_VER) && INTRA_PLATFORM_ARCH==INTRA_PLATFORM_X86)
+#if(defined(_MSC_VER) && INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86)
 template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(__cdecl*)(Args...)>: TrueType {};
 template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(__stdcall*)(Args...)>: TrueType {};
 template<typename Ret, typename... Args> struct IsFunctionPointer<Ret(__fastcall*)(Args...)>: TrueType {};
@@ -265,7 +265,7 @@ template<typename T> using RemoveAllExtents = typename D::TRemoveAllExtents<T>::
 		template<typename T> static char func(...);\
 	};\
 	template<typename U> struct checker_name: D ## checker_name ## _base \
-	{enum {_ = sizeof(func<U>(nullptr))==sizeof(short)};}
+	{enum {_ = sizeof(func<U>(nullptr)) == sizeof(short)};}
 
 #define INTRA_DEFINE_EXPRESSION_CHECKER2_WITH_CONDITION(checker_name, expr, condition, default1, default2) \
 	template<typename U1 default1, typename U2 default2> struct checker_name \

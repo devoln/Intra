@@ -8,22 +8,20 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Container/Utility/Array2D.h"
 
 #include "InstrumentLibrary.h"
-#include "Audio/Synth/Generators/DrumPhysicalModel.h"
+#include "DrumPhysicalModel.h"
 
-#include "Audio/Synth/WaveTableSampler.h"
-#include "Audio/Synth/ADSR.h"
-#include "Audio/Synth/MusicalInstrument.h"
-#include "Audio/Synth/RecordedSampler.h"
-#include "Audio/Synth/Filter.h"
+#include "WaveTableSampler.h"
+#include "ADSR.h"
+#include "MusicalInstrument.h"
+#include "RecordedSampler.h"
+#include "Filter.h"
 
-#include "Audio/Synth/Generators.hh"
-#include "Audio/Synth/PostEffects.hh"
+#include "Generators.hh"
+#include "PostEffects.hh"
 
-#include "Audio/Synth/WaveTableGeneration.h"
+#include "WaveTableGeneration.h"
 
-using namespace Intra;
 using namespace Audio;
-using namespace Synth;
 
 InstrumentLibrary::~InstrumentLibrary() {}
 
@@ -32,7 +30,7 @@ InstrumentLibrary::InstrumentLibrary()
 	auto& choirATables = Tables["ChoirA"] = CreateWaveTablesFromFormants({
 		{600, 0.007f, 1},
 		{900, 0.004f, 1},
-		{2200, 0.005f, 1},
+		{2200, 0.005f, 1}, //TODO: Может стоит уменьшить?
 		{2600, 0.004f, 1},
 		{0, 0.00033f, 0.1f}
 	}, 64, 2, 70, 1, 16384);
@@ -104,19 +102,22 @@ InstrumentLibrary::InstrumentLibrary()
 
 	
 
-
+	//TODO: здесь и для инструментов выше можно поэкспериментировать и получить более интересные и разнообразные голоса
+	//Октавный голос, полный октавный голос, прооктавный голос
 	auto& synthVoiceTables = Tables["SynthVoice"] = CreateWaveTablesFromFormants({
-		{600, 0.007f, 1},
+		{600, 0.007f, 1}, //350—700 Гц
 		{900, 0.003f, 1},
 		{2200, 0.00083f, 1},
-		{2600, 0.004f, 1},
-		{0, 0.00033f, 0.1f}
+		{2600, 0.004f, 1}, //2400-3200 Гц (30-40% м, 15-30% ж)
+		{0, 0.00033f, 0.1f} //?
 	}, 64, 2, 40, 1, 32768);
 
 	{
 		auto& wt = Instruments["SynthVoice"].WaveTables.EmplaceLast();
 		wt.Tables = &synthVoiceTables;
 		wt.VolumeScale = 0.2f;
+		//wt.VibratoFrequency = 6; //5-6
+		//wt.VibratoValue = 0.005f;
 
 		wt.ADSR.AttackTime = 0.04f;
 		wt.ADSR.ReleaseTime = 0.1f;
@@ -288,7 +289,7 @@ InstrumentLibrary::InstrumentLibrary()
 		for(int i = 2; i<20; i++)
 		{
 			const float ampl = 1.0f/float(i);
-			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(1 << (i-2)), 1.25f, ampl, 10);
+			AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(1 << (i-2)), 1.25f, ampl, 10);
 		}
 		ConvertAmplitudesToSamples(tbl, 1);
 		return tbl;
@@ -398,7 +399,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& instr = Instruments["OrchestraHit"];
 		auto& wt = instr.WaveTables.EmplaceLast();
 		wt.Tables = &orchestraHitTables;
-		wt.VolumeScale = 0.4f;
+		wt.VolumeScale = 0.2f;
 
 		wt.ADSR.AttackTime = 0.015f;
 		wt.ADSR.DecayTime = 0.15f;
@@ -422,7 +423,7 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wt = Instruments["Calliope"].WaveTables.EmplaceLast();
 		wt.Tables = &calliopeTables;
-		wt.VolumeScale = 0.5f;
+		wt.VolumeScale = 0.25f;
 
 		wt.ADSR.AttackTime = 0.015f;
 		wt.ADSR.ReleaseTime = 0.03f;
@@ -812,7 +813,6 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wave = Instruments["Bass2"].Waves.EmplaceLast();
 		wave.Scale = 0.3f;
 		wave.ExpCoeff = 4;
-		wave.Octaves = 2;
 		//wave.RateAcceleration = -0.15f;
 		wave.FreqMultiplier = 2;
 
@@ -942,7 +942,6 @@ InstrumentLibrary::InstrumentLibrary()
 
 	{
 		auto& wave = Instruments["Birds"].Waves.EmplaceLast();
-		wave.Octaves = 2;
 
 		wave.ADSR.AttackTime = 0.1f;
 		wave.ADSR.ReleaseTime = 0.5f;
@@ -1151,7 +1150,6 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Accordion"].WaveTables.EmplaceLast();
 		wt.Tables = &accordionTables;
 		wt.VolumeScale = 0.5f;
-		//wave.Octaves = 3;
 
 		//Accordion.WaveTables.AddLast({&AccordionTables, 0, 0.35f});
 
@@ -1197,16 +1195,6 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ADSR.Linear = true;
 	}
 
-	/*{
-		auto& wave = Instruments["Sax"].Waves.EmplaceLast();
-		wave.Wave = SawtoothWaveForm{0.2f};
-		wave.Scale = 0.15f;
-		wave.Octaves = 2;
-
-		wave.ADSR.AttackTime = 0.02f;
-		wave.ADSR.ReleaseTime = 0.05f;
-	}*/
-
 	{
 		/*auto& wave = Instruments["Organ"].Waves.EmplaceLast();
 		wave.Wave = SawtoothWaveForm{0.1f};
@@ -1248,7 +1236,6 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& wave = Instruments["Sine2Exp"].Waves.EmplaceLast();
 		wave.ExpCoeff = 9;
-		wave.Octaves = 2;
 		wave.FreqMultiplier = 1;
 
 		wave.ADSR.AttackTime = 0.01f;

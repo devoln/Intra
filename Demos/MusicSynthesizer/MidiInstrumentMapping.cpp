@@ -1,15 +1,12 @@
 #include "MidiInstrumentMapping.h"
 
-#include "Range/Mutation/Fill.h"
+#include <Range/Mutation/Fill.h>
 
-#include "Audio/Synth/Types.h"
-
+#include "Types.h"
 #include "InstrumentLibrary.h"
-#include "Audio/Synth/InstrumentSet.h"
+#include "InstrumentSet.h"
 
-using namespace Intra;
 using namespace Audio;
-using namespace Synth;
 
 MidiInstrumentSet GetMapping()
 {

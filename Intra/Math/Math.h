@@ -25,10 +25,11 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Math {
 
-constexpr const double PI = 3.14159265358979323846;
-constexpr const double E = 2.71828182845904523536;
-constexpr const double SqrtPI = 1.77245385090551602729;
-constexpr const double SqrtE = 1.6487212707001;
+constexpr const double PI = 3.1415926535897932;
+constexpr const double E = 2.7182818284590452;
+constexpr const double SqrtPI = 1.772453850905516;
+constexpr const double SqrtE = 1.6487212707001281;
+constexpr const double Sqrt2 = 1.414213562373095;
 
 using Cpp::NaN;
 using Cpp::Infinity;

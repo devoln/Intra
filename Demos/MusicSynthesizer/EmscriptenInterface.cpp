@@ -4,9 +4,8 @@
 #include "MidiInstrumentMapping.h"
 
 #include "Audio/Midi/MidiFileParser.h"
-#include "Audio/Sources/MidiSynth.h"
+#include "MidiSynth.h"
 
-using namespace Intra;
 using namespace Audio;
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
@@ -26,7 +25,7 @@ extern "C"
 
 		auto mapping = GetMapping();
 		mapping.Preload(info, sampleRate);
-		return new Sources::MidiSynth(
+		return new MidiSynth(
 			Midi::MidiFileParser::CreateSingleOrderedMessageStream(stream, status),
 			info.Duration, mapping, 0.5f, null, sampleRate, numChannels >= 2);
 	}

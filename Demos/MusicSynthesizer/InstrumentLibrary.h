@@ -2,21 +2,16 @@
 
 #include "Cpp/Warnings.h"
 
-#include "Audio/Synth/MusicalInstrument.h"
-#include "Audio/Synth/Types.h"
-#include "Audio/Synth/RecordedSampler.h"
-#include "Audio/Synth/WaveTable.h"
+#include "MusicalInstrument.h"
+#include "Types.h"
+#include "RecordedSampler.h"
+#include "WaveTable.h"
 
 #include "Container/Sequential/String.h"
 #include "Container/Associative/HashMap.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-using Intra::Audio::Synth::MusicalInstrument;
-using Intra::Audio::Synth::RecordedSampler;
-using Intra::Audio::Synth::GenericDrumInstrument;
-using Intra::Audio::Synth::WaveTable;
-using Intra::Audio::Synth::WaveTableCache;
 using Intra::HashMap;
 using Intra::String;
 
