@@ -19,17 +19,17 @@ namespace Intra { namespace Audio { namespace Midi {
 struct TrackParser
 {
 	InputRange<RawEvent> Events;
-	double Time = 0;
+	MidiTime Time = 0;
 	uint DelayTicksPassed = 0;
 
-	TrackParser(InputRange<RawEvent> events, double time=0);
+	TrackParser(InputRange<RawEvent> events, MidiTime time=0);
 
 	TrackParser(const TrackParser&) = delete;
 	TrackParser& operator=(const TrackParser&) = delete;
 	TrackParser(TrackParser&&) = default;
 	TrackParser& operator=(TrackParser&&) = default;
 
-	double NextEventTime(const DeviceState& state) const
+	MidiTime NextEventTime(const DeviceState& state) const
 	{
 		INTRA_DEBUG_ASSERT(!Events.Empty());
 		uint delay = Events.First().Delay();
@@ -38,9 +38,9 @@ struct TrackParser
 		return Time + delay * state.TickDuration;
 	}
 
-	void OnTempoChange(double time, double prevTickDuration)
+	void OnTempoChange(MidiTime time, MidiTime prevTickDuration)
 	{
-		const uint ticksPassed = uint(Math::Round((time - Time) / prevTickDuration));
+		const uint ticksPassed = uint((time - Time) / prevTickDuration + MidiTime(0.5));
 		DelayTicksPassed += ticksPassed;
 		Time += ticksPassed * prevTickDuration;
 	}

@@ -4,7 +4,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 namespace Intra { namespace Audio { namespace Midi {
 
-TrackParser::TrackParser(InputRange<RawEvent> events, double time):
+TrackParser::TrackParser(InputRange<RawEvent> events, MidiTime time):
 	Events(Cpp::Move(events)), Time(time), DelayTicksPassed(0) {}
 
 void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
@@ -21,7 +21,7 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		DelayTicksPassed -= delay;
 		delay = 0;
 	}
-	Time +=  delay * state.TickDuration;
+	Time += delay * state.TickDuration;
 
 	const auto type = event.MyType();
 
@@ -40,16 +40,16 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		if(data0 == 7)
 		{
 			state.Volumes[channel] = data1;
-			device.OnChannelVolumeChange({float(Time), channel, data1});
+			device.OnChannelVolumeChange({Time, channel, data1});
 		}
 		if(data0 == 10)
 		{
 			state.Pans[channel] = data1;
-			device.OnChannelPanChange({float(Time), channel, data1});
+			device.OnChannelPanChange({Time, channel, data1});
 		}
 		if(data0 == 91)
 		{
-			device.OnChannelReverbChange({float(Time), channel, data1});
+			device.OnChannelReverbChange({Time, channel, data1});
 		}
 		if(data0 >= 123 && data0 <= 127) device.OnAllNotesOff(channel);
 		return;
@@ -59,7 +59,7 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		if(data0 < 128)
 		{
 			state.InstrumentIds[channel] = data0;
-			device.OnChannelProgramChange({float(Time), channel, data0});
+			device.OnChannelProgramChange({Time, channel, data0});
 		}
 		return;
 	}
@@ -67,7 +67,7 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 	if(type == RawEvent::Type::NoteOn && data1 != 0)
 	{
 		NoteOn noteOn;
-		noteOn.Time = float(Time);
+		noteOn.Time = Time;
 		noteOn.NoteOctaveOrDrumId = data0;
 		noteOn.Channel = channel;
 		noteOn.Velocity = data1;
@@ -109,7 +109,7 @@ void TrackParser::processSystemEvent(DeviceState& state, const RawEvent& event)
 				(byte(event.MetaData()[0]) << 16)|
 				(byte(event.MetaData()[1]) << 8)|
 				byte(event.MetaData()[2]);
-			state.TickDuration = float(value)/(1000000.0f*float(state.HeaderTimeFormat));
+			state.TickDuration = MidiTime(float(value)/(1000000.0f*float(state.HeaderTimeFormat)));
 		}
 		return;
 	}

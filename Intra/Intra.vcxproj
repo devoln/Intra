@@ -845,6 +845,7 @@
     <ClCompile Include="Concurrency\Job.cpp" />
     <ClCompile Include="Concurrency\Mutex.cpp" />
     <ClCompile Include="Concurrency\Thread.cpp" />
+    <ClCompile Include="Container\Utility\Blob.h" />
     <ClCompile Include="Cpp\Runtime.cpp" />
     <ClCompile Include="Font\FontLoading.cpp" />
     <ClCompile Include="Font\FontLoading_STB.cpp" />

@@ -5,7 +5,15 @@
 
 struct Envelope
 {
-	enum: unsigned {N = 8};
+	enum: unsigned
+	{
+		N = 5
+	};
+
+	enum: int
+	{
+		NoNextSegmentIndicator = N - 1
+	};
 
 	struct Segment
 	{
@@ -17,6 +25,9 @@ struct Envelope
 
 		//! Значение, которое прибавляется к (!Exponential) или умножается на (Exponential) Volume на каждом шаге
 		float DU;
+
+		forceinline bool IsConstant() const {return float(Exponential) == DU;}
+		forceinline bool IsNoOp() const {return IsConstant() && Volume == 1;}
 	};
 	Segment CurrentSegment;
 
@@ -37,6 +48,15 @@ struct Envelope
 			if(Length == 0) return Exponential? 1: 0;
 			if(Exponential) return Intra::Math::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
 			return (Volume / 255.0f - curVolume) / Length;
+		}
+
+		//! Упаковать значение громкости.
+		//! Вызывать эту функцию только после установки значения Exponential!
+		forceinline void SetVolume(float volume)
+		{
+			Volume = unsigned(Exponential?
+				Intra::Math::Max(volume * 256.0f - 1.0f, 0.0f):
+				volume*255.0f);
 		}
 	};
 	Point Points[N - 1];
@@ -64,7 +84,19 @@ struct Envelope
 	void MultiplyVolume(float volumeMultiplier)
 	{
 		CurrentSegment.Volume *= volumeMultiplier;
-		for(auto& pt: Points) pt.Volume = unsigned(pt.Volume * volumeMultiplier + 0.5f);
+		for(int i = NextSegmentStartPointIndex; i < N - 1; i++)
+		{
+			auto& pt = Points[i];
+			pt.Volume = unsigned(pt.Volume * volumeMultiplier + 0.5f);
+		}
+	}
+
+	static Envelope Constant(float volume = 1)
+	{
+		Envelope result;
+		result.CurrentSegment = {false, 0x7FFFFFFF, volume, 0};
+		result.NextSegmentStartPointIndex = N - 1;
+		return result;
 	}
 };
 
@@ -89,37 +121,49 @@ struct EnvelopeFactory
 
 	Segment Segments[N];
 
+	static EnvelopeFactory Constant(float volume)
+	{
+		EnvelopeFactory result;
+		for(int i = 0; i < N; i++) result.Segments[i] = {false, volume, 0};
+		result.Segments[N - 1].Duration = Intra::Math::Infinity;
+		return result;
+	}
+
 	static EnvelopeFactory ADSR(float attackTime, float decayTime, float sustainVolume, float releaseTime, bool exponential=false)
 	{
 		EnvelopeFactory result;
 		result.StartVolume = 0;
-		result.Segments[0] = {exponential, 1, attackTime};
-		result.Segments[1] = {exponential, sustainVolume, decayTime};
-		result.Segments[2] = {false, sustainVolume, Intra::Math::Infinity};
-		for(int i = 3; i < N - 1; i++) result.Segments[i] = result.Segments[2];
+		for(int i = 0; i < N - 4; i++) result.Segments[i] = {false, 0, 0};
+		result.Segments[N - 4] = {exponential, 1, attackTime};
+		result.Segments[N - 3] = {exponential, sustainVolume, decayTime};
+		result.Segments[N - 2] = {false, sustainVolume, Intra::Math::Infinity};
 		result.Segments[N - 1] = {exponential, 1, attackTime};
 		return result;
 	}
 
 	Envelope operator()(int sampleRate) const
 	{
+		int startIndex = 0;
+		while(Segments[startIndex].Duration == 0) startIndex++;
+		auto& startSeg = Segments[startIndex];
+
 		Envelope result;
-		result.NextSegmentStartPointIndex = 0;
+		result.NextSegmentStartPointIndex = startIndex;
+		auto& resSeg = result.CurrentSegment;
+		resSeg.Exponential = startSeg.Exponential;
+		resSeg.SamplesLeft = startSeg.LengthInSamples(sampleRate);
+		resSeg.Volume = StartVolume;
+		resSeg.DU = startSeg.Exponential?
+			Intra::Math::Pow(startSeg.EndVolume / StartVolume, 1.0f / resSeg.SamplesLeft):
+			(startSeg.EndVolume - StartVolume) / resSeg.SamplesLeft;
 
-		result.CurrentSegment.Exponential = Segments[0].Exponential;
-		result.CurrentSegment.SamplesLeft = Segments[0].LengthInSamples(sampleRate);
-		result.CurrentSegment.Volume = StartVolume;
-		result.CurrentSegment.DU = Segments[0].Exponential?
-			Intra::Math::Pow(Segments[0].EndVolume / StartVolume, 1.0f / result.CurrentSegment.SamplesLeft):
-			(Segments[0].EndVolume - StartVolume) / result.CurrentSegment.SamplesLeft;
-
-		for(int i = 1; i < N; i++)
+		for(int i = startIndex; i < N - 1; i++)
 		{
-			auto& pt = result.Points[i - 1];
-			auto& s = Segments[i];
+			auto& pt = result.Points[i];
+			auto& s = Segments[i + 1];
 			pt.Exponential = s.Exponential;
-			pt.Length = s.LengthInSamples(sampleRate),
-			pt.Volume = unsigned(s.Exponential? Intra::Math::Max(s.EndVolume * 256.0f - 1.0f, 0.0f): s.EndVolume*255.0f);
+			pt.Length = s.LengthInSamples(sampleRate);
+			pt.SetVolume(s.EndVolume);
 		}
 
 		return result;

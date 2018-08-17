@@ -29,7 +29,7 @@
 #include "MidiInstrumentMapping.h"
 
 #include "Math/SineRange.h"
-#include "Audio/Synth/InstrumentSet.h"
+#include "InstrumentSet.h"
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 #ifdef _MSC_VER

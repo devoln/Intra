@@ -14,37 +14,50 @@
 #include "NoteSampler.h"
 #include "InstrumentSet.h"
 #include "PostEffects.hh"
+#include "Sampler.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+struct MidiState
+{
+	short ChannelPitchBend[16]{};
+	sbyte ChannelPans[16]{};
+	byte ChannelVolumes[16];
+	byte ChannelReverbs[16]{};
+	byte ChannelPrograms[16]{};
+	ushort PitchBendRangeInSemitones = 2;
+
+	MidiState();
+};
 
 class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDevice
 {
 	MidiInstrumentSet mInstruments;
 	Audio::Midi::TrackCombiner mMusic;
-	double mTime = 0, mPrevTime = 0;
+	Audio::Midi::MidiTime mTime = 0, mPrevTime = 0;
 	size_t mSampleCount;
 	float mMaxSample;
-	short mChannelPitchBend[16]{};
-	sbyte mChannelPans[16]{};
-	byte mChannelVolumes[16];
-	byte mChannelReverbs[16]{};
-	byte mChannelPrograms[16]{};
-	ushort mPitchBendRangeInSemitones = 2;
 
-	struct NoteEntry
+	MidiState mMidiState;
+
+	SamplerContainer mNoteSamplers;
+
+	struct NoteInfo
 	{
-		double Time;
+		Audio::Midi::MidiTime Time;
 		byte Channel;
 		byte NoteOctaveOrDrumId;
-		NoteSampler Sampler;
+
+		forceinline ushort Key() const {return ushort((Channel << 8) | NoteOctaveOrDrumId);}
 	};
 
-	typedef Container::HashMap<ushort, NoteEntry> NoteMap;
-	NoteMap mPlayingNotes;
-	Array<NoteEntry> mOffPlayingNotes;
+	typedef Container::HashMap<ushort, ushort> NoteSamplerMap;
+	NoteSamplerMap mPlayingNoteMap;
 	PostEffects::HallReverb mReverberator;
 	Array<float> mReverbChannelBuffer;
+
+	forceinline MusicalInstrument* getInstrument(byte channel) const
+	{return mInstruments.Instruments[mMidiState.ChannelPrograms[channel]];}
 
 public:
 	MidiSynth(Audio::Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume=1,
@@ -73,7 +86,7 @@ public:
 	void OnChannelProgramChange(const Audio::Midi::ChannelProgramChange& programChange) final;
 
 private:
-	bool synthNote(NoteSampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb);
+	bool synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb);
 	float pitchBendToFreqMultiplier(short relativePitchBend) const;
 };
 

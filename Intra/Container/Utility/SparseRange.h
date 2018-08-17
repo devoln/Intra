@@ -10,7 +10,7 @@ namespace Intra { namespace Range {
 
 template<typename T, typename Index> struct SparseRange
 {
-	static_assert(sizeof(T)>=sizeof(Index), "Type T must not be shorter than index!");
+	static_assert(sizeof(T) >= sizeof(Index), "Type T must not be shorter than index!");
 
 	SparseRange(Span<T> sparseBuffer=null):
 		mData(sparseBuffer), mFirstFree(empty_index()) {}
@@ -34,18 +34,18 @@ template<typename T, typename Index> struct SparseRange
 	~SparseRange() {Clear();}
 
 	//! Переместить элемент в массив.
-	//! \param[in] val Перещаемый элемент.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] val Перещаемый элемент.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	T& Add(T&& val, Index* oIndex=null);
 
 	//! Добавить копию элемента в массив.
-	//! \param[in] val Копируемый элемент.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] val Копируемый элемент.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	T& Add(const T& val, Index* oIndex=null);
 
 	//! Сконструировать элемент в массиве.
-	//! \param[in] args Параметры конструктора.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] args Параметры конструктора.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	template<typename... Args> T& Emplace(Args&&... args, Index* oIndex=null);
 
 	//! Удалить из массива элемент с индексом index

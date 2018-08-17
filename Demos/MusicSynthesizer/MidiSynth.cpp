@@ -16,8 +16,17 @@
 #include "MusicalInstrument.h"
 
 using namespace Audio;
+using namespace Midi;
+
+using Concepts::begin;
+using Concepts::end;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+MidiState::MidiState()
+{
+	Range::Fill(ChannelVolumes, byte(127));
+}
 
 MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume,
 	OnCloseResourceCallback onClose, uint sampleRate, bool stereo, bool reverb):
@@ -29,10 +38,10 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 	mMaxSample(maxVolume),
 	mReverberator(size_t(reverb? 16384: 0), size_t(reverb? 32: 0), 1)
 {
-	Range::Fill(mChannelVolumes, byte(127));
+	
 }
 
-bool MidiSynth::synthNote(NoteSampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+bool MidiSynth::synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
 {
 	Span<float> dstLeftStart = ioDstLeft;
 	size_t samplesProcessed;
@@ -56,15 +65,15 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 	size_t totalSamplesProcessed = 0;
 	while(!dstLeft.Empty())
 	{
-		const double nextTime = mMusic.Empty()? Cpp::Infinity: mMusic.NextEventTime();
+		const auto nextTime = mMusic.Empty()? MidiTime::Max: mMusic.NextEventTime();
 		mPrevTime = nextTime;
-		if(nextTime - mTime <= 0.0001)
+		if(nextTime == mTime)
 		{
 			mMusic.ProcessEvent(*this);
 			continue;
 		}
-		size_t samplesBeforeNextEvent = (nextTime == Cpp::Infinity)? ~size_t():
-			size_t(Math::Max((nextTime - mTime)*mSampleRate + 0.5, 1.0));
+		size_t samplesBeforeNextEvent = (nextTime == MidiTime::Max)? ~size_t():
+			size_t(Math::Max((nextTime - mTime)*mSampleRate + MidiTime(0.5), MidiTime(1)));
 		const size_t samplesLeft = SamplesLeft();
 		if(samplesLeft == 0) break;
 		samplesBeforeNextEvent = Funal::Min(samplesBeforeNextEvent, samplesLeft);
@@ -75,24 +84,21 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 		if(mReverberator) mReverbChannelBuffer.SetCount(dstLeftBeforeEvent.Length());
 		else mReverbChannelBuffer.Clear();
 		Span<float> dstReverbBeforeEvent = null;
-		Array<NoteMap::iterator> notesToRemove;
-		for(size_t i=0; i<mOffPlayingNotes.Length(); i++)
+		
+		for(auto noteSamplers = mNoteSamplers.AsRange(); !noteSamplers.Empty();)
 		{
-			auto& sampler = mOffPlayingNotes[i].Sampler;
-			if(sampler.ReverbCoeff > 0.001f) dstReverbBeforeEvent = mReverbChannelBuffer;
+			const auto samplerIndex = noteSamplers.Index;
+			auto& sampler = noteSamplers.Next();
+			const auto& info = sampler.GetInfo<const NoteInfo&>();
+			const byte reverbCoeff = mMidiState.ChannelReverbs[info.Channel];
+			if(reverbCoeff != 0) dstReverbBeforeEvent = mReverbChannelBuffer;
 			const bool removeThisNote = synthNote(sampler, dstLeftBeforeEvent, dstRightBeforeEvent, dstReverbBeforeEvent);
-			if(removeThisNote) mOffPlayingNotes.RemoveUnordered(i--);
+			if(removeThisNote)
+			{
+				mNoteSamplers.Delete(samplerIndex);
+				mPlayingNoteMap.Remove(info.Key());
+			}
 		}
-		int i = 0;
-		for(auto it = mPlayingNotes.begin(); it != mPlayingNotes.end(); ++it)
-		{
-			auto& sampler = it->Value.Sampler;
-			if(sampler.ReverbCoeff > 0.001f) dstReverbBeforeEvent = mReverbChannelBuffer;
-			const bool removeThisNote = synthNote(sampler, dstLeftBeforeEvent, dstRightBeforeEvent, dstReverbBeforeEvent);
-			if(removeThisNote) notesToRemove.AddLast(it);
-			i++;
-		}
-		for(auto it: notesToRemove) mPlayingNotes.Remove(it);
 
 		//FillZeros(dstLeftBeforeEvent);
 		//FillZeros(dstRightBeforeEvent);
@@ -120,7 +126,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 		dstRight.PopFirstExactly(dstRightBeforeEvent.Length());
 		totalSamplesProcessed += dstLeftBeforeEvent.Length();
 		mTime += double(dstLeftBeforeEvent.Length())/mSampleRate;
-		if(mPlayingNotes.Empty() && mOffPlayingNotes.Empty() && nextTime == Cpp::Infinity)
+		if(mNoteSamplers.Empty() && nextTime == MidiTime::Max)
 		{
 			if(dstLeft.Empty() && totalSamplesProcessed != 0) totalSamplesProcessed--;
 			break;
@@ -138,21 +144,25 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 
 void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 {
-	const float totalStartVolume = float(noteOn.Velocity*mChannelVolumes[noteOn.Channel])/(127.0f*127.0f);
-	const ushort id = noteOn.Id();
-	NoteEntry* newNote = null;
-	auto found = mPlayingNotes.Find(id);
+	const float totalStartVolume = float(noteOn.Velocity*mMidiState.ChannelVolumes[noteOn.Channel])/(127.0f*127.0f);
+	const ushort key = noteOn.Id();
+	Sampler* newNote = null;
+	auto found = mPlayingNoteMap.Find(key);
 	if(!found.Empty())
 	{
-		if(Math::Abs(found.First().Value.Time - noteOn.Time) < 0.0001) return;
-		found.First().Value.Sampler.NoteRelease();
-		mOffPlayingNotes.AddLast(Cpp::Move(found.First().Value));
+		const auto samplerIndex = found.First().Value;
+		//TODO: что если sampler уже удалён? Обращение по невалидному индексу!
+		//Надо, чтобы SamplerContainer сообщал об удалении этому классу, чтобы он мог удалить невалидный индекс
+		auto& sampler = mNoteSamplers.Get(samplerIndex);
+		const auto& samplerInfo = sampler.GetInfo<NoteInfo>();
+		if(samplerInfo.Time == noteOn.Time) return;
+		sampler.NoteRelease();
 	}
 	if(noteOn.Channel != 9)
 	{
-		auto instr = mInstruments.Instruments[mChannelPrograms[noteOn.Channel]];
+		auto instr = getInstrument(noteOn.Channel);
 		if(instr == null) return;
-		newNote = &mPlayingNotes[id];
+		newNote = mNoteSamplers.Add(, &mPlayingNoteMap[key]);
 		newNote->Sampler = (*instr)(noteOn.Frequency(), totalStartVolume, mSampleRate);
 	}
 	else

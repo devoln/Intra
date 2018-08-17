@@ -14,10 +14,10 @@ DeviceState::DeviceState(short headerTimeFormat):
 	Range::Fill(Pans, byte(64));
 	if(headerTimeFormat < 0)
 	{
-		const float framesPerSecond = (headerTimeFormat >> 8) == 29? 29.97f: float(headerTimeFormat >> 8);
-		TickDuration = 1.0f/framesPerSecond/float(headerTimeFormat & 0xFF);
+		const uint framesPer100Seconds = (headerTimeFormat >> 8) == 29? 2997: 100*(headerTimeFormat >> 8);
+		TickDuration = MidiTime(100) / (framesPer100Seconds * (headerTimeFormat & 0xFF));
 	}
-	else TickDuration = 60.0f/120/float(headerTimeFormat);
+	else TickDuration = MidiTime(1) / MidiTime(2*headerTimeFormat);
 }
 
 }}}

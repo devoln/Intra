@@ -905,7 +905,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ADSR.cpp" />
     <ClCompile Include="Chorus.cpp" />
     <ClCompile Include="DrumPhysicalModel.cpp" />
     <ClCompile Include="EmscriptenInterface.cpp" />
@@ -919,7 +918,6 @@
     <ClCompile Include="MusicSynthesizer.cpp" />
     <ClCompile Include="MusicSynthesizerCommon.cpp" />
     <ClCompile Include="NoteSampler.cpp" />
-    <ClCompile Include="NoteState.cpp" />
     <ClCompile Include="Octaves.cpp" />
     <ClCompile Include="PostEffects.cpp" />
     <ClCompile Include="RecordedSampler.cpp" />
@@ -929,13 +927,13 @@
     <ClCompile Include="WhiteNoiseSampler.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ADSR.h" />
     <ClInclude Include="Chorus.h" />
     <ClInclude Include="DrumPhysicalModel.h" />
     <ClInclude Include="Envelope.h" />
     <ClInclude Include="ExponentialAttenuation.h" />
     <ClInclude Include="Filter.h" />
     <ClInclude Include="Generators.hh" />
+    <ClInclude Include="Instrument.h" />
     <ClInclude Include="InstrumentLibrary.h" />
     <ClInclude Include="InstrumentSet.h" />
     <ClInclude Include="MidiInstrumentMapping.h" />
@@ -943,10 +941,11 @@
     <ClInclude Include="MusicalInstrument.h" />
     <ClInclude Include="MusicSynthesizerCommon.h" />
     <ClInclude Include="NoteSampler.h" />
-    <ClInclude Include="NoteState.h" />
     <ClInclude Include="Octaves.h" />
     <ClInclude Include="PostEffects.hh" />
     <ClInclude Include="RecordedSampler.h" />
+    <ClInclude Include="Sampler.h" />
+    <ClInclude Include="SamplerTask.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="ViolinPhysicalModel.h" />
     <ClInclude Include="WaveTable.h" />

@@ -27,6 +27,14 @@ struct ExponentAttenuator
 	ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
 		Factor(startVolume), FactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
 
+	static forceinline ExponentAttenuator FromFactorAndStep(float factor, float factorStep)
+	{
+		ExponentAttenuator result;
+		result.Factor = factor;
+		result.FactorStep = factorStep;
+		return result;
+	}
+
 	void operator()(Span<float> inOutSamples);
 	void operator()(Span<float> dstSamples, CSpan<float> srcSamples);
 

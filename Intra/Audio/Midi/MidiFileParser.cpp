@@ -107,7 +107,7 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 	struct CountingDevice: IDevice
 	{
 		size_t NoteCount = 0;
-		double Time = 0;
+		MidiTime Time = 0;
 		size_t MaxSimultaneousNotes = 0;
 		HashMap<ushort, bool> NoteMap;
 		bool ChannelIsUsed[16]{false};
@@ -118,7 +118,7 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 		{
 			ChannelIsUsed[noteOn.Channel] = true;
 			const bool wasNote = NoteMap.Get(noteOn.Id(), false);
-			if(wasNote && Math::Abs(Time - noteOn.Time) < 0.0001)
+			if(wasNote && Time == noteOn.Time)
 				return;
 			NoteMap[noteOn.Id()] = true;
 			if(noteOn.Channel == 9) UsedDrumInstrumentsFlags->Set(noteOn.NoteOctaveOrDrumId);

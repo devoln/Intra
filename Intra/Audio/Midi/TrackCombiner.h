@@ -25,7 +25,7 @@ public:
 	void ProcessAllEvents(IDevice& device) {while(!mTracks.Empty()) ProcessEvent(device);}
 
 	forceinline bool Empty() const noexcept {return mTracks.Empty();}
-	double NextEventTime() const;
+	MidiTime NextEventTime() const;
 
 private:
 	bool trackTimeComparer(const TrackParser& a, const TrackParser& b);

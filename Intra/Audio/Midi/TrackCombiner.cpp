@@ -22,9 +22,9 @@ void TrackCombiner::AddTrack(TrackParser track)
 void TrackCombiner::ProcessEvent(IDevice& device)
 {
 	auto& trackWithNearestEvent = Range::HeapPop(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
-	const double prevTickDuration = mState.TickDuration;
+	const MidiTime prevTickDuration = mState.TickDuration;
 	trackWithNearestEvent.ProcessEvent(mState, device);
-	const double lastEventTime = trackWithNearestEvent.Time;
+	const MidiTime lastEventTime = trackWithNearestEvent.Time;
 	if(trackWithNearestEvent.Empty()) mTracks.RemoveLast();
 	else Range::HeapPush(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
 	if(mState.TickDuration != prevTickDuration)
@@ -34,7 +34,7 @@ void TrackCombiner::ProcessEvent(IDevice& device)
 	}
 }
 
-double TrackCombiner::NextEventTime() const
+MidiTime TrackCombiner::NextEventTime() const
 {return mTracks.First().NextEventTime(mState);}
 
 }}}

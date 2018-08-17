@@ -8,8 +8,6 @@
 #include "WaveTableSampler.h"
 #include "WhiteNoiseSampler.h"
 #include "ExponentialAttenuation.h"
-#include "ADSR.h"
-#include "NoteSampler.h"
 #include "Chorus.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -22,11 +20,11 @@ struct MusicalInstrument
 	Array<GenericInstrument> GenericInstruments;
 
 	ExponentAttenuatorFactory ExponentAttenuation;
-	AdsrAttenuatorFactory ADSR;
+	EnvelopeFactory Envelope;
 	ChorusFactory Chorus;
 	Array<GenericModifierFactory> GenericModifiers;
 
-	NoteSampler operator()(float freq, float volume, uint sampleRate) const;
+	Sampler& CreateSampler(void* addrToConstructSampler, float freq, float volume, uint sampleRate) const override;
 };
 
 INTRA_WARNING_POP

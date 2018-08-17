@@ -12,7 +12,7 @@ namespace Intra { namespace Audio { namespace Midi {
 
 struct NoteOn
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte NoteOctaveOrDrumId;
 	byte Velocity;
@@ -27,7 +27,7 @@ struct NoteOn
 
 struct NoteOff
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte NoteOctaveOrDrumId;
 	byte Velocity;
@@ -37,35 +37,35 @@ struct NoteOff
 
 struct PitchBend
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	short Pitch;
 };
 
 struct ChannelPanChange
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte Pan;
 };
 
 struct ChannelVolumeChange
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte Volume;
 };
 
 struct ChannelReverbChange
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte ReverbCoeff;
 };
 
 struct ChannelProgramChange
 {
-	double Time;
+	MidiTime Time;
 	byte Channel;
 	byte Instrument;
 };

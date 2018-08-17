@@ -11,47 +11,44 @@
 #include "Types.h"
 #include "Filter.h"
 #include "WaveTable.h"
-#include "ADSR.h"
+#include "Envelope.h"
 #include "ExponentialAttenuation.h"
+#include "Sampler.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 //! Класс, использующийся для синтеза большинства нот.
 //! В целях выжать максимальную производительность, он пытается выполнять синтез за один проход.
 //! В силу этого он берёт на себя довольно много ответственности и получился довольно сложным и громоздким.
-class WaveTableSampler
+//! Это базовый класс, который использует только внешние волновые таблицы, и,
+//! соответственно, не выделяет внешней памяти, и не поддерживает изменение спектра со временем
+class WaveTableSampler: public Sampler
 {
-	typedef void(*WaveForm)(const void* params, Span<float> dst, float freq, float volume, uint sampleRate);
-
-	template<typename F> static void WaveFormWrapper(const void* params,
-		Span<float> dst, float freq, float volume, uint sampleRate)
-	{(*static_cast<const F*>(params))(dst, freq, volume, sampleRate);}
-
-	//Используется тогда, когда не используются сторонние семплы.
-	//Если mSmoothingFactor != 0, он эволюционирует на каждом проходе, и хранит свою предыдущую копию в одной из двух половин.
-	FixedArray<float> mSampleFragmentData;
-
-	float mLastFragmentSample = 0;
-
+protected:
 	//Указывает на актуальные данные семплов
-	CSpan<float> mSampleFragment;
+	const float* mSampleFragmentStart;
+	uint mSampleFragmentLength;
 
-	//Указывает на данные семплов для отстающего по фазе правого канала. При mSmoothingFactor == 0 совпадает с mSampleFragment
-	CSpan<float> mRightSampleFragment;
+	forceinline CSpan<float> SampleFragment() const
+	{return {mSampleFragmentStart, mSampleFragmentLength};}
+	
+	forceinline CSpan<float> SampleFragment(size_t startIndex, size_t maxCount) const
+	{return SampleFragment().Drop(startIndex).Take(maxCount);}
 
 	//Смещение левого канала относительно начала периода mSampleFragment
 	float mFragmentOffset;
 
 	//Целая часть смещения правого канала относительно периода mRightSampleFragment
-	size_t mRightFragmentOffset;
+	uint mRightFragmentOffset;
 
 	//Скорость воспроизведения семпла mSampleFragment
 	float mRate;
 
-	//Объединяет в себе все факторы, влияющие на громкость ноты, кроме ADSR, панорамы и реверберации.
+	//Объединяет в себе все факторы, влияющие на громкость ноты, кроме Envelope, панорамы и реверберации.
 	//Factor - текущий множитель амплитуды для mSampleFragment.
-	//FactorStep - множитель, на который умножается амплитуда либо каждый семпл,
-	//либо при выполненном условии OwnExponentialAttenuatedDataArray каждый проход по фрагменту
+	//FactorStep - множитель, на который умножается амплитуда - либо каждый семпл,
+	//либо каждый проход по фрагменту - второй вариант встречается у наследника WaveFormSampler,
+	//который в некоторых случаях может заранее наложить экспоненциальное затухание на хранимые в нём семплы
 	ExponentAttenuator mExpAtten;
 
 	//Множители, на которые умножается каждый семпл при записи в соответствующий канал
@@ -60,64 +57,47 @@ class WaveTableSampler
 	//Осциллятор скорости воспроизведения, которая рассчитывается как mRate*(1 + mFreqOscillator.value)
 	Math::SineRange<float> mFreqOscillator;
 
-	//ADSR огибающая.
-	//TODO: заменить на что-то более гибкое для задания сложной функции из произвольного количества кусков.
-	AdsrAttenuator mADSR;
-
-	//Множитель, используемый для усреднения семплов на каждом проходе по массиву в алгоритме Карплюс-Стронга
-	float mSmoothingFactor;
-
-	WaveTableSampler(const void* params, WaveForm wave,
-		float attenuationPerSample, float volume,
-		float freq, uint sampleRate, float vibratoFrequency, float vibratoValue,
-		float smoothingFactor, const AdsrAttenuator& adsr = null);
+	//Огибающая ноты, например ADSR. Не включает в себя экспоненциальное затухание, оно накладывается после этого.
+	Envelope mEnvelope;
 
 public:
 	WaveTableSampler(null_t=null) {}
 
 	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff,
-		float volume, float vibratoDeltaPhase, float vibratoValue, const AdsrAttenuator& adsr, size_t channelDeltaSamples);
+		float volume, float vibratoDeltaPhase, float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples);
 
-	template<typename F, typename = Meta::EnableIf<
-		Meta::IsCallable<F, Span<float>, float, float, uint>::_
-	>> forceinline WaveTableSampler(const F& wave,
-		float expCoeff, float volume, float freq, uint sampleRate,
-		float vibratoFrequency, float vibratoValue, float smoothingFactor, const AdsrAttenuator& adsr = null):
-		WaveTableSampler(&wave, WaveFormWrapper<F>,
-			expCoeff, volume, freq, sampleRate, vibratoFrequency, vibratoValue, smoothingFactor, adsr) {}
+	//TODO: убрать
+	forceinline bool OwnDataArray() const noexcept {return false;}
 
-	forceinline bool OwnDataArray() const noexcept {return !mSampleFragmentData.Empty();}
-	bool OwnExponentialAttenuatedDataArray() const noexcept {return OwnDataArray() && mSmoothingFactor == 0;}
+	bool OwnExponentialAttenuatedDataArray() const noexcept {return false;}
 
-	Span<float> GenerateMono(Span<float> dst);
-	size_t GenerateStereo(Span<float> dstLeft, Span<float> dstRight);
-	size_t GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
+	bool Generate(SamplerTaskDispatcher& taskDispatcher) override;
 
-	void MultiplyPitch(float freqMultiplier)
+	void MultiplyPitch(float freqMultiplier) final
 	{
 		mRate *= freqMultiplier;
 		if(Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
 	}
 
-	void MultiplyVolume(float volumeMultiplier)
+	void MultiplyVolume(float volumeMultiplier) final
 	{
 		mExpAtten.Factor *= volumeMultiplier;
 	}
 
-	void SetPan(float newPan)
+	void SetPan(float newPan) final
 	{
 		mRightMultiplier = (newPan + 1) / 2;
 		mLeftMultiplier = 1 - mRightMultiplier;
 	}
 
-	void SetReverbCoeff(float newCoeff)
+	void SetReverbCoeff(float newCoeff) final
 	{
 		mReverbMultiplier = newCoeff;
 	}
 
-	void NoteRelease()
+	void NoteRelease() final
 	{
-		mADSR.NoteRelease();
+		mEnvelope.StartLastSegment();
 	}
 
 private:
@@ -127,6 +107,73 @@ private:
 
 	template<bool FreqOsc, bool Adsr>
 	void generateWithVaryingRate(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
+};
+
+struct WaveTableTask
+{
+
+};
+
+//! Семплер, который расширяет возможности базового класса,
+//! позволяя хранить волновую таблицу у себя, таким образом, она может изменяться и эволюционировать
+//! Недостаток - выделение памяти, копирование и удаление, что сильно снижает эффективность.
+//! TODO: выделение волновых таблиц из пула должны ускорить это, но время на копирование всё равно будет ограничивать размер волновой таблицы
+class WaveFormSampler: public WaveTableSampler
+{
+	//Множитель, используемый для усреднения семплов на каждом проходе по массиву в алгоритме Карплюс-Стронга
+	float mSmoothingFactor;
+	
+	float mLastFragmentSample = 0;
+
+	//Если mSmoothingFactor != 0, он эволюционирует на каждом проходе, и хранит свою предыдущую копию в одной из двух половин.
+	FixedArray<float> mSampleFragmentData;
+
+	//Указывает на начало данных семплов (размер тот же, что и mSampleFragment) для отстающего по фазе правого канала. При mSmoothingFactor == 0 совпадает с mSampleFragment
+	uint mRightSampleFragmentStartIndex;
+
+	//Если природа семплера такова, что он в процессе своей жизни меняет хранимые у себя семплы,
+	//что не позволяет применить оптимизацию предварительного наложения экспоненциального затухания
+	forceinline bool canDataMutate() const {return mSmoothingFactor != 0;}
+
+	//Аналогично предыдущему, но дополнительно содержит старую копию семплов для второго - отстающего канала
+	forceinline bool HasStereoMutatedData() const {return mSmoothingFactor != 0;}
+
+	typedef void(*WaveForm)(const void* params, Span<float> dst, float freq, float volume, uint sampleRate);
+
+	template<typename F> static void WaveFormWrapper(const void* params,
+		Span<float> dst, float freq, float volume, uint sampleRate)
+	{(*static_cast<const F*>(params))(dst, freq, volume, sampleRate);}
+
+
+	CSpan<float> prepareInternalData(const void* params, WaveForm wave,
+		float freq, float volume, uint sampleRate, bool goodPeriod, bool prepareToStereoDataMutation);
+
+	//Если данные семплов, хранимые в этом семплере не меняются в процессе жизни семплера и периодически повторяются,
+	//можно применить оптимизацию экспоненциального затухания, наложив его предварительно на эти данные.
+	//Тогда впоследствии надо будет только каждый проход умножать громкость на константу
+	void preattenuateExponential(float expCoeff, uint sampleRate);
+
+	forceinline bool isExponentialPreattenuated() const {return !canDataMutate();}
+
+	WaveFormSampler(const void* params, WaveForm wave,
+		float attenuationPerSample, float volume,
+		float freq, uint sampleRate, float vibratoFrequency, float vibratoValue,
+		float smoothingFactor, const Envelope& envelope);
+
+	//TODO: убрать
+	forceinline bool OwnDataArray() const noexcept {return true;}
+	forceinline bool IsAttenuatableDataArray() const noexcept {return mSmoothingFactor == 0;}
+
+public:
+	template<typename F, typename = Meta::EnableIf<
+		Meta::IsCallable<F, Span<float>, float, float, uint>::_
+		>> forceinline WaveFormSampler(const F& wave,
+			float expCoeff, float volume, float freq, uint sampleRate,
+			float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope = null):
+		WaveFormSampler(&wave, WaveFormWrapper<F>, expCoeff, volume,
+			freq, sampleRate, vibratoFrequency, vibratoValue, smoothingFactor, envelope) {}
+
+
 };
 
 typedef CopyableDelegate<void(Span<float> dst, float freq, float volume, uint sampleRate)> WaveForm;
@@ -169,9 +216,9 @@ struct WaveInstrument
 	float VibratoFrequency = 0;
 	float VibratoValue = 0;
 	float SmoothingFactor = 0;
-	AdsrAttenuatorFactory ADSR;
+	EnvelopeFactory Envelope = EnvelopeFactory::Constant(1);
 
-	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
+	WaveFormSampler operator()(float freq, float volume, uint sampleRate) const;
 };
 
 struct WaveTableCache
@@ -197,7 +244,7 @@ struct WaveTableInstrument
 	float VolumeScale = 0;
 	float VibratoFrequency = 0;
 	float VibratoValue = 0;
-	AdsrAttenuatorFactory ADSR;
+	EnvelopeFactory Envelope = EnvelopeFactory::Constant(1);
 
 	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
 };

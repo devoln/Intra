@@ -67,9 +67,10 @@
 #define INTRA_FINAL_SUPPORT
 #endif
 
-#if __GNUC__==4 && __GNUC_MINOR__>=8 || __GNUC__>=5
+#if __GNUC__ == 4 && __GNUC_MINOR__ >= 8 || __GNUC__ >= 5
 #define INTRA_THREAD_LOCAL_SUPPORT
 #define INTRA_RETURN_TYPE_DEDUCTION_SUPPORT
+#define INTRA_ALIGNMENT_SUPPORT
 #endif
 #define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT
 

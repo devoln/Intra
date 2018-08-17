@@ -95,7 +95,7 @@ template<typename T> Meta::EnableIf<
 //Побитовое копирование
 template<typename T> void CopyBits(Span<T> dst, CSpan<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() >= src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
 	//C::memcpy(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
@@ -107,7 +107,7 @@ template<typename T> void CopyBits(T* dst, const T* src, size_t count)
 
 template<typename T> void CopyBitsBackwards(Span<T> dst, CSpan<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()>=src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() >= src.Length());
 	C::memmove(dst.Begin, src.Begin, src.Length()*sizeof(T));
 }
 
@@ -146,7 +146,7 @@ template<typename OR, typename R> Meta::EnableIf<
 	Concepts::IsFiniteInputRangeOfExactly<R, Concepts::ElementTypeOfArray<OR>>::_
 > CopyAssign(const OR& dst, const R& src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	CopyBits(dst.Data(), src.Data(), dst.Length());
 }
 
@@ -177,7 +177,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyDestructible<T>::_
 > CopyRecreate(Span<T> dst, CSpan<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		dst.First().~T();
@@ -200,7 +200,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyDestructible<T>::_
 > CopyRecreateBackwards(Span<T> dst, CSpan<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last().~T();
@@ -221,7 +221,7 @@ template<typename T, typename U> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
 > CopyInit(Span<T> dst, CSpan<U> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!src.Empty())
 	{
 		new(&dst.First()) T(src.First());
@@ -284,7 +284,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyCopyable<T>::_
 > MoveInitBackwards(Span<T> dst, Span<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.Last()) T(Cpp::Move(src.Last()));
@@ -304,7 +304,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
 > MoveInitDelete(Span<T> dst, Span<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.First()) T(Cpp::Move(src.First()));
@@ -328,7 +328,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyRelocatable<T>::_
 > MoveInitDeleteBackwards(Span<T> dst, Span<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		new(&dst.Last()) T(Cpp::Move(src.Last()));
@@ -352,7 +352,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
 > MoveAssignDelete(Span<T> dst, Span<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		dst.First() = Cpp::Move(src.First());
@@ -375,7 +375,7 @@ template<typename T> Meta::EnableIf<
 	!Meta::IsTriviallyMovable<T>::_
 > MoveAssignDeleteBackwards(Span<T> dst, Span<T> src)
 {
-	INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+	INTRA_DEBUG_ASSERT(dst.Length() == src.Length());
 	while(!dst.Empty())
 	{
 		dst.Last() = Cpp::Move(src.Last());
@@ -417,7 +417,7 @@ template<typename T, typename Allocator> Span<T> AllocateRange(
 template<typename T, typename Allocator> void FreeRangeUninitialized(Allocator& allocator, Span<T> range)
 {
 	(void)allocator;
-	if(range==null) return;
+	if(range == null) return;
 	allocator.Free(range.Begin, range.Length()*sizeof(T));
 }
 

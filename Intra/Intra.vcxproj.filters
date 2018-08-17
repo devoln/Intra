@@ -495,6 +495,9 @@
     <ClCompile Include="Audio\MusicNote.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
+    <ClCompile Include="Container\Utility\Blob.h">
+      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IO\Networking.h">

@@ -26,8 +26,8 @@ public:
 	template<size_t N> SparseArray(const T(&values)[N]): SparseArray(SpanOf(values)) {}
 
 	//! Переместить элемент в массив.
-	//! \param[in] val Перемещаемый элемент.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] val Перемещаемый элемент.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	forceinline T& Add(T&& val, Index* oIndex=null)
 	{
 		check_space();
@@ -35,8 +35,8 @@ public:
 	}
 
 	//! Добавить копию элемента в массив.
-	//! \param[in] val Копируемый элемент.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] val Копируемый элемент.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	forceinline T& Add(const T& val, Index* oIndex = null)
 	{
 		check_space();
@@ -44,8 +44,8 @@ public:
 	}
 
 	//! Сконструировать элемент в массиве.
-	//! \param[in] args Параметры конструктора.
-	//! \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! @param[in] args Параметры конструктора.
+	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	template<typename... Args> forceinline T& Emplace(Args&&... args, Index* oIndex = null)
 	{
 		check_space();

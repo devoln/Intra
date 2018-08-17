@@ -64,7 +64,7 @@ public:
 
 	forceinline bool IsValidId(Id id) const
 	{
-		return id!=null && id.generation==generations[id.value];
+		return id != null && id.generation == generations[id.value];
 	}
 
 

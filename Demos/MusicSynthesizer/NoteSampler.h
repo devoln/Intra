@@ -33,7 +33,12 @@ public:
 	void MultiplyVolume(float volumeMultiplier);
 	void SetReverbCoeff(float reverbCoeff);
 
-	bool Empty() const noexcept {return (WaveTableSamplers.Empty() && GenericSamplers.Empty()) || ADSR.SamplesLeft() == 0;}
+	bool Empty() const noexcept
+	{
+		return (WaveTableSamplers.Empty() &&
+				GenericSamplers.Empty()) ||
+			ADSR.SamplesLeft() == 0;
+	}
 
 private:
 	void fill(Span<float> ioDst);

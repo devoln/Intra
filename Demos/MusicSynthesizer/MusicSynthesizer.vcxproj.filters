@@ -30,9 +30,6 @@
     <ClCompile Include="EmscriptenInterface.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="ADSR.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="InstrumentSet.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
@@ -43,9 +40,6 @@
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="NoteSampler.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="NoteState.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
     <ClCompile Include="WaveTable.cpp">
@@ -92,9 +86,6 @@
     <ClInclude Include="MidiInstrumentMapping.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="ADSR.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="DrumPhysicalModel.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
@@ -105,9 +96,6 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="NoteSampler.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="NoteState.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="RecordedSampler.h">
@@ -153,6 +141,15 @@
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="PostEffects.hh">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="SamplerTask.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Sampler.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Instrument.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>

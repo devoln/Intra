@@ -21,13 +21,13 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 
 	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo) const
 	{
-		INTRA_DEBUG_ASSERT(mAllocator!=null);
+		INTRA_DEBUG_ASSERT(mAllocator != null);
 		return mAllocator->Allocate(bytes, sourceInfo);
 	}
 
 	forceinline void Free(void* ptr, size_t size) const
 	{
-		INTRA_DEBUG_ASSERT(mAllocator!=null);
+		INTRA_DEBUG_ASSERT(mAllocator != null);
 		mAllocator->Free(ptr, size);
 	}
 
@@ -39,13 +39,19 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 		return mAllocator->GetAllocationSize(ptr);
 	}
 
-	A& GetRef() {return *mAllocator;}
+	forceinline A& GetRef() {return *mAllocator;}
 
-	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRangeUninitialized<T>(*mAllocator, count, sourceInfo);}
 
-	template<typename T> Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRange<T>(*mAllocator, count, sourceInfo);}
+
+	template<typename T> forceinline void FreeRangeUninitialized(Span<T> range)
+	{return Memory::FreeRangeUninitialized(*mAllocator, range);}
+
+	template<typename T> forceinline void FreeRange(Span<T> range)
+	{return Memory::FreeRange(*mAllocator, range);}
 
 protected:
 	A* mAllocator;
@@ -58,13 +64,19 @@ template<typename A> struct AllocatorRef<A, Meta::EmptyType, true>: A
 
 	AllocatorRef& operator=(const AllocatorRef&) {return *this;}
 
-	A& GetRef() const {return *const_cast<A*>(static_cast<const A*>(this));}
+	forceinline A& GetRef() const {return *const_cast<A*>(static_cast<const A*>(this));}
 
-	template<typename T> Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRangeUninitialized<T>(*this, count, sourceInfo);}
 
-	template<typename T> Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
 	{return Memory::AllocateRange<T>(*this, count, sourceInfo);}
+	
+	template<typename T> forceinline void FreeRangeUninitialized(Span<T> range)
+	{return Memory::FreeRangeUninitialized(*this, range);}
+
+	template<typename T> forceinline void FreeRange(Span<T> range)
+	{return Memory::FreeRange(*this, range);}
 };
 
 template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, true>:

@@ -68,6 +68,7 @@ template<typename T> struct Span
 	forceinline constexpr T* end() const noexcept {return End;}
 
 	forceinline size_t Length() const noexcept {return size_t(End - Begin);}
+	forceinline size_t SizeInBytes() const noexcept {return Length() * sizeof(T);}
 	forceinline constexpr bool Empty() const noexcept {return End <= Begin;}
 	forceinline constexpr bool Full() const noexcept {return End <= Begin;}
 	forceinline constexpr T* Data() const noexcept {return Begin;}
