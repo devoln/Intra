@@ -3,11 +3,12 @@
 #ifndef INTRA_NO_DDS_LOADER
 
 #include "Loader.h"
-#include "Cpp/Warnings.h"
-#include "Concepts/IInput.h"
-#include "Concepts/IOutput.h"
 
-namespace Intra {
+#include "Core/IInput.h"
+#include "Core/IOutput.h"
+
+INTRA_BEGIN
+
 
 namespace Image {
 

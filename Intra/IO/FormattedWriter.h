@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
+
 #include "Container/Sequential/String.h"
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 #include "Utils/Unique.h"
 #include "Formatter.h"
 #include "Container/Utility/SparseArray.h"
-#include "Range/Search/Single.h"
+#include "Core/Range/Search/Single.h"
 
 #ifndef INTRA_NO_CONCURRENCY
 #include "Concurrency/Atomic.h"
@@ -14,7 +14,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 class FormattedWriter
 {
@@ -32,7 +33,7 @@ public:
 		}
 
 		forceinline FormattedStream(OutputStream stream, Unique<IFormatter> formatter):
-			FormattedStream(Cpp::Move(stream.Stream), Cpp::Move(formatter)) {}
+			FormattedStream(Move(stream.Stream), Move(formatter)) {}
 
 		forceinline FormattedStream(FormattedWriter* writerRef):
 			mStream(null), mWriter(writerRef) {mWriter->incRef();}
@@ -118,7 +119,7 @@ public:
 
 	explicit FormattedWriter(OutputStream stream)
 	{
-		mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), new BasicFormatter);
+		mFormattedStreams.EmplaceLast(Move(stream.Stream), new BasicFormatter);
 	}
 
 	explicit FormattedWriter(FormattedWriter* writerRef)
@@ -128,11 +129,11 @@ public:
 
 	FormattedWriter(OutputStream stream, IFormatter* formatter)
 	{
-		mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), Cpp::Move(formatter));
+		mFormattedStreams.EmplaceLast(Move(stream.Stream), Move(formatter));
 	}
 
 	FormattedWriter(FormattedWriter&& rhs):
-		mFormattedStreams(Cpp::Move(rhs.mFormattedStreams))
+		mFormattedStreams(Move(rhs.mFormattedStreams))
 	{
 		INTRA_ASSERT(rhs.getRC() == 0);
 	}
@@ -148,7 +149,7 @@ public:
 		if(this == &rhs) return *this;
 		INTRA_ASSERT(getRC() == 0);
 		INTRA_ASSERT(rhs.getRC() == 0);
-		mFormattedStreams = Cpp::Move(rhs.mFormattedStreams);
+		mFormattedStreams = Move(rhs.mFormattedStreams);
 		return *this;
 	}
 
@@ -162,8 +163,8 @@ public:
 	{
 		const size_t index = Range::CountUntil(mFormattedStreams, null);
 		if(index == mFormattedStreams.Length())
-			mFormattedStreams.EmplaceLast(Cpp::Move(stream), new BasicFormatter);
-		else mFormattedStreams[index] = {Cpp::Move(stream.Stream), new BasicFormatter};
+			mFormattedStreams.EmplaceLast(Move(stream), new BasicFormatter);
+		else mFormattedStreams[index] = {Move(stream.Stream), new BasicFormatter};
 		return index;
 	}
 
@@ -182,7 +183,7 @@ public:
 		for(auto& fs: writer.mFormattedStreams)
 		{
 			if(fs == null) continue;
-			mFormattedStreams.AddLast(Cpp::Move(fs));
+			mFormattedStreams.AddLast(Move(fs));
 		}
 		return index;
 	}
@@ -191,8 +192,8 @@ public:
 	{
 		const size_t index = Range::CountUntil(mFormattedStreams, null);
 		if(index == mFormattedStreams.Length())
-			mFormattedStreams.EmplaceLast(Cpp::Move(stream.Stream), Cpp::Move(formatter));
-		else mFormattedStreams[index] = {Cpp::Move(stream.Stream), Cpp::Move(formatter)};
+			mFormattedStreams.EmplaceLast(Move(stream.Stream), Move(formatter));
+		else mFormattedStreams[index] = {Move(stream.Stream), Move(formatter)};
 		return index;
 	}
 
@@ -321,8 +322,8 @@ public:
 	{
 		for(auto& fs: mFormattedStreams)
 		{
-			if(fs.IsOwner()) fs.mFormatter->PrintPreformatted(*fs.mStream, String::Concat(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...));
-			else fs.mWriter->PrintPreformatted(String::Concat(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...));
+			if(fs.IsOwner()) fs.mFormatter->PrintPreformatted(*fs.mStream, String::Concat(Forward<Arg0>(arg0), Forward<Args>(args)...));
+			else fs.mWriter->PrintPreformatted(String::Concat(Forward<Arg0>(arg0), Forward<Args>(args)...));
 		}
 		return *this;
 	}
@@ -332,7 +333,7 @@ public:
 	template<typename Arg0, typename... Args>
 	FormattedWriter& PrintLine(Arg0&& arg0, Args&&... args)
 	{
-		Print(Cpp::Forward<Arg0>(arg0), Cpp::Forward<Args>(args)...);
+		Print(Forward<Arg0>(arg0), Forward<Args>(args)...);
 		LineBreak();
 		return *this;
 	}

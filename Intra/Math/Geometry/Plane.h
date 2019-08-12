@@ -4,7 +4,8 @@
 #include "Math/Vector4.h"
 #include "Sphere.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Plane
 {
@@ -48,7 +49,7 @@ template<typename T> INTRA_MATH_CONSTEXPR Plane<T> Normalize(const Plane<T>& p)
 template<typename T> constexpr Vector3<T> GetCollisionOffset(const Plane<T>& plane, T Radius, T distanceOfSphereCenter)
 {return plane.Normal*(Sign(distanceOfSphereCenter)*Radius - distanceOfSphereCenter);}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> GetIntersectionPointNormalized(const Plane<T>& plane, const Vector3<T>& lineA, const Vector3<T>& lineB)
+template<typename T> INTRA_MATH_CONSTEXPR2 Vector3<T> GetIntersectionPointNormalized(const Plane<T>& plane, const Vector3<T>& lineA, const Vector3<T>& lineB)
 {
 	const Vector3<T> dir = Normalize(lineB - lineA);
 	const T denominator = Dot(plane.Normal, dir); // осинус угла между пр€мой и плоскостью
@@ -56,7 +57,7 @@ template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> GetIntersectionPoi
 	return lineA + dir*((Distance(lineA, plane) + plane.D)/denominator);
 }
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR Vector3<T> GetIntersectionPoint(const Plane<T>& plane, const Vector3<T>& lineA, const Vector3<T>& lineB)
+template<typename T> INTRA_MATH_CONSTEXPR2 Vector3<T> GetIntersectionPoint(const Plane<T>& plane, const Vector3<T>& lineA, const Vector3<T>& lineB)
 {return GetIntersectionPointNormalized(Normalize(plane), lineA, lineB);}
 
 //! ќпределить, пересекаетс€ ли пр€ма€ с плоскостью

@@ -1,25 +1,33 @@
 ﻿#pragma once
 
 #include "Data/Reflection.h"
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-//! Структура, определяющая способ форматирования генерируемого при сериализации текста.
-//! Корректно заполненная структура не влияет на результат десериализации полученного текста.
+//! Parameters for text serialization formatting.
+//! This parameters doesn't affect deserialization.
 struct TextSerializerParams
 {
-	typedef flag8 TypeFlags;
-	enum: TypeFlags {TypeFlags_None=0, TypeFlags_Number=1, TypeFlags_Char=2,
-		TypeFlags_String=4, TypeFlags_Array=8, TypeFlags_Struct=16, TypeFlags_Tuple=32,
-		TypeFlags_StructArray=64, TypeFlags_CustomType=128, TypeFlags_All=255};
+	typedef byte TypeFlags;
+	enum: TypeFlags {
+		TypeFlags_None = 0,
+		TypeFlags_Number = 1,
+		TypeFlags_Char = 2,
+		TypeFlags_String = 4,
+		TypeFlags_Array = 8,
+		TypeFlags_Struct = 16,
+		TypeFlags_Tuple = 32,
+		TypeFlags_StructArray = 64,
+		TypeFlags_CustomType = 128,
+		
+		TypeFlags_All = 255
+	};
 
 	static const TextSerializerParams Verbose, VerboseNoSpaces, Compact, CompactSingleLine;
-
-	//! Перед открытием определения экземпляра структуры записывать название типа
-	bool UseStructInstanceTypeName;
 
 	//! В определении экземпляра структуры указывать имена присваиваемых полей, а не просто перечисление значений.
 	//! Если в LanguageParams выставлено RequireFieldAssignments, то это поле игнорируется и считается равным true
@@ -40,7 +48,7 @@ struct TextSerializerParams
 	//! Окончание строк. Обычно встречаются варианты: CR "\r", LF "\n" или CRLF "\r\n"
 	StringView LineEnding;
 
-	INTRA_ADD_REFLECTION(TextSerializerParams, UseStructInstanceTypeName, FieldAssignments,\
+	INTRA_ADD_REFLECTION(TextSerializerParams, FieldAssignments,\
 		UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding)
 };
 

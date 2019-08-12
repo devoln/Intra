@@ -1,6 +1,6 @@
 ﻿#include "PostEffects.hh"
 
-#include <Utils/Span.h>
+#include <Core/Span.h>
 #include <Math/SineRange.h>
 #include <Math/Math.h>
 #include <Random/FastUniform.h>

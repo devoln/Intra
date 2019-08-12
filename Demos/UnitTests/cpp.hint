@@ -1,0 +1,5 @@
+// Файлы указаний помогают среде IDE Visual Studio интерпретировать идентификаторы Visual C++
+// (например, имена функций и макросов).
+// Дополнительные сведения: https://go.microsoft.com/fwlink/?linkid=865984
+#define INTRA_ADD_REFLECTION(A, __VA_ARGS__) INTRA_IMPLEMENT_REFLECTION_FIELD_NAMES(A, __VA_ARGS__) INTRA_IMPLEMENT_FOR_EACH_FIELD(__VA_ARGS__) INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(__VA_ARGS__)
+#define INTRA_ADD_REFLECTION(A, __VA_ARGS__) INTRA_IMPLEMENT_REFLECTION_FIELD_NAMES(A, __VA_ARGS__) INTRA_IMPLEMENT_FOR_EACH_FIELD(__VA_ARGS__) INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(__VA_ARGS__)

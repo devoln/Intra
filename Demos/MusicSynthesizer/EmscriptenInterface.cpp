@@ -1,4 +1,4 @@
-﻿#include "Cpp/PlatformDetect.h"
+﻿
 
 #include "MusicSynthesizerCommon.h"
 #include "MidiInstrumentMapping.h"

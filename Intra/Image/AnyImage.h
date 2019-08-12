@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
 
 #include "Math/Vector3.h"
 
-#include "Range/Polymorphic/InputRange.h"
-#include "Range/Polymorphic/ForwardRange.h"
+#include "Core/Range/Polymorphic/InputRange.h"
+#include "Core/Range/Polymorphic/ForwardRange.h"
 
 #include "Utils/FixedArray.h"
 #include "Container/Sequential/Array.h"
@@ -14,7 +14,8 @@
 #include "ImageFormat.h"
 #include "ImageInfo.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 enum class FileFormat: byte;
 
@@ -29,7 +30,7 @@ public:
 	AnyImage(Math::USVec3 size, ImageFormat format, ushort mipmapCount=0, ImageType type=ImageType_2D):
 		Data(), Info(size, format, type, mipmapCount), SwapRB(false), LineAlignment(1) {}
 
-	bool operator==(null_t) const {return Data==null;}
+	bool operator==(null_t) const {return Data.Empty();}
 	bool operator!=(null_t) const {return !operator==(null);}
 
 	AnyImage ExtractChannel(char channelName, ImageFormat compatibleFormat, ushort newLineAlignment=0) const;

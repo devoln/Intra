@@ -4,7 +4,8 @@
 #include <chrono>
 #include <ctime>
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 SeparateCondVar::SeparateCondVar()
 {
@@ -22,12 +23,12 @@ bool SeparateCondVar::wait(Mutex& mutex)
 	return true;
 }
 
-static std::chrono::system_clock::time_point absTimeToTimePoint(ulong64 msecs)
+static std::chrono::system_clock::time_point absTimeToTimePoint(uint64 msecs)
 {
 	return std::chrono::system_clock::from_time_t(std::time_t(msecs / 1000)) + std::chrono::milliseconds(msecs % 1000);
 }
 
-bool SeparateCondVar::waitUntil(Mutex& mutex, ulong64 absTimeMs)
+bool SeparateCondVar::waitUntil(Mutex& mutex, uint64 absTimeMs)
 {
 	std::unique_lock<std::mutex> lck(*reinterpret_cast<std::mutex*>(mutex.mData), std::adopt_lock);
 	const bool result = reinterpret_cast<std::condition_variable*>(mData)->wait_until(lck, absTimeToTimePoint(absTimeMs)) == std::cv_status::no_timeout;

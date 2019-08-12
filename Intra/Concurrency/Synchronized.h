@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 #include "Mutex.h"
 #include "Lock.h"
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
 template<typename T> class Synchronized: private Mutex
@@ -26,10 +27,10 @@ public:
 	T Value;
 
 	Synchronized(): Value() {}
-	template<typename... Args> Synchronized(Args&&... args): Value(Cpp::Forward<Args>(args)...) {}
-	forceinline LockRef operator->() const {return {*const_cast<Synchronized*>(this)};}
+	template<typename... Args> Synchronized(Args&&... args): Value(Forward<Args>(args)...) {}
+	forceinline LockRef operator->() {return {*this};}
 
-	Synchronized(Synchronized&& rhs): Value(Cpp::Move(rhs.Value)) {}
+	Synchronized(Synchronized&& rhs): Value(Move(rhs.Value)) {}
 	Synchronized(const Synchronized& rhs): Value(rhs.Value) {}
 
 	Synchronized& operator++()
@@ -58,7 +59,7 @@ public:
 
 	Synchronized& operator=(Synchronized&& rhs)
 	{
-		Value = Cpp::Move(rhs.Value);
+		Value = Move(rhs.Value);
 		return *this;
 	}
 
@@ -71,18 +72,18 @@ public:
 	template<typename U> bool operator==(U&& rhs)
 	{
 		auto l = MakeLock(this);
-		return Value == Cpp::Forward<U>(rhs);
+		return Value == Forward<U>(rhs);
 	}
 
 	template<typename U> bool operator!=(U&& rhs)
 	{
 		auto l = MakeLock(this);
-		return Value != Cpp::Forward<U>(rhs);
+		return Value != Forward<U>(rhs);
 	}
 
 #define INTRA_SYNCHRONIZED_OP(op) template<typename U> Synchronized& operator op(U&& rhs)\
 	{\
-		INTRA_SYNCHRONIZED(this) Value op Cpp::Forward<U>(rhs);\
+		INTRA_SYNCHRONIZED(this) Value op Forward<U>(rhs);\
 		return *this;\
 	}
 

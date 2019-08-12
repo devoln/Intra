@@ -2,21 +2,22 @@
 
 #include "Socket.h"
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Utils/Span.h"
 
-#include "Range/Mutation/Copy.h"
-#include "Range/Stream/ToString.h"
-#include "Range/Stream/OutputStreamMixin.h"
+#include "Core/Range/Span.h"
+
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Stream/ToString.h"
+#include "Core/Range/Stream/OutputStreamMixin.h"
 
 #include "Container/Sequential/Array.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 //! Буферизованный поток вывода для записи в потоковый сокет.
 class SocketWriter: public Range::OutputStreamMixin<SocketWriter, char>
@@ -25,7 +26,7 @@ public:
 	forceinline SocketWriter(null_t=null) {}
 
 	forceinline SocketWriter(StreamSocket&& socket, size_t bufferSize=4096):
-		mSocket(Cpp::Move(socket))
+		mSocket(Move(socket))
 	{
 		if(mSocket == null) return;
 		mBuffer.SetCountUninitialized(bufferSize);
@@ -33,7 +34,7 @@ public:
 	}
 
 	SocketWriter(const SocketWriter&) = delete;
-	SocketWriter(SocketWriter&& rhs) {operator=(Cpp::Move(rhs));}
+	SocketWriter(SocketWriter&& rhs) {operator=(Move(rhs));}
 
 	forceinline bool operator==(null_t) {return mSocket == null;}
 	forceinline bool operator!=(null_t) {return !operator==(null);}
@@ -43,8 +44,8 @@ public:
 	SocketWriter& operator=(SocketWriter&& rhs)
 	{
 		Flush();
-		mSocket = Cpp::Move(rhs.mSocket);
-		mBuffer = Cpp::Move(rhs.mBuffer);
+		mSocket = Move(rhs.mSocket);
+		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
 		rhs.mBufferRest = null;
 		return *this;
@@ -86,9 +87,9 @@ public:
 		return totalBytesWritten;
 	}
 
-	template<typename AR> Meta::EnableIf<
-		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
-		!Meta::IsConst<AR>::_,
+	template<typename AR> Requires<
+		CArrayRangeOfExactly<AR, char>::_ &&
+		!CConst<AR>::_,
 	size_t> PutAllAdvance(AR& src)
 	{
 		CSpan<char> srcArr(src.Data(), src.Length());

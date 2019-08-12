@@ -1,27 +1,26 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Meta/Type.h"
+
+#include "Core/Type.h"
 
 #include "Murmur.h"
 
-namespace Intra { namespace Hash {
+INTRA_BEGIN
+namespace Hash {
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_DEFINE_CONCEPT_REQUIRES(HasToHashMethod, Core::Val<T>().ToHash());
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasToHashMethod, Meta::Val<T>().ToHash());
-
-template<typename T> constexpr inline Meta::EnableIf<
-	Meta::IsIntegralType<T>::_,
+template<typename T> constexpr inline Requires<
+	CIntegral<T>,
 uint> ToHash(T k) {return uint(k*2659435761u);}
 
-template<typename T> inline Meta::EnableIf<
-	Meta::IsFloatType<T>::_,
+template<typename T> inline Requires<
+	CFloatingPoint<T>,
 uint> ToHash(T k)
 {
-	union {T t; Meta::IntegralTypeFromMinSize<sizeof(T)> i;};
+	union {T t; Core::IntegralTypeFromMinSize<sizeof(T)> i;};
 	t = k;
 	return ToHash(i);
 }
@@ -32,21 +31,18 @@ template<typename T> inline uint ToHash(T* k)
 inline uint ToHash(StringView k)
 {return Murmur3_32(k, 0);}
 
-template<typename T> Meta::EnableIf<
-	HasToHashMethod<const T>::_,
+template<typename T> Requires<
+	HasToHashMethod<const T>,
 uint> ToHash(const T& value) {return value.ToHash();}
 
-template<typename T> Meta::EnableIf<
-	Meta::IsAlmostPod<T>::_ && !HasToHashMethod<T>::_ &&
-	!Meta::IsPointerType<T>::_ && !Meta::IsArithmeticType<T>::_,
+template<typename T> Requires<
+	CPod<T> && !HasToHashMethod<T> &&
+	!IsPointer<T> && !CArithmetic<T>,
 uint> ToHash(const T& value) {return ToHash(StringView(reinterpret_cast<char*>(&value), sizeof(T)));}
 
 struct HasherObject {
 	template<typename T> uint operator()(const T& k) const {return ToHash(k);}
 };
 
-INTRA_WARNING_POP
-
 }
-using Hash::ToHash;
-}
+INTRA_END

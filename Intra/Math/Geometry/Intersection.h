@@ -7,14 +7,15 @@
 #include "Frustum.h"
 #include "BoundingVolume.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 enum class IntersectionType: byte {Outside, Intersect, Inside};
 
-//! Проверка пересечения луча со сферой
-//! @param ray нормированный луч
-//! @return true, если произошло пересечение.
-template<typename T> INTRA_EXTENDED_CONSTEXPR IntersectionType CheckIntersection(const Ray<T>& ray, const Sphere<T>& sphere)
+//! Test intersection between ray and sphere.
+//! @param ray must be normalized.
+//! @return true, if there is an intersection.
+template<typename T> INTRA_CONSTEXPR2 IntersectionType CheckIntersection(const Ray<T>& ray, const Sphere<T>& sphere)
 {
 	const Vector3<T> l = sphere.Center - ray.Origin;
 	const T d = Dot(l, ray.Direction);
@@ -24,10 +25,10 @@ template<typename T> INTRA_EXTENDED_CONSTEXPR IntersectionType CheckIntersection
 	return (squaredLen - d*d <= squaredRadius)? IntersectionType::Intersect: IntersectionType::Outside;
 }
 
-//! Проверка пересечения луча со сферой с нахождением точки пересечения
-//! @param ray Нормированный луч.
-//! @return Параметр t для нахождения точки пересечения ray.origin + t*ray.dir. Если пересечения не было, то NaN для floating point типов или 0 для integer типов
-template<typename T> INTRA_EXTENDED_CONSTEXPR T GetRayIntersectionPoint(const Sphere<T>& sphere, const Ray<T>& ray)
+//! Test intersection between ray and sphere and find the intersection point.
+//! @param ray must be normalized.
+//! @return Parameter t for intersection point according to formula ray.origin + t*ray.dir. If there was no intersection, returns NaN for floating point types or 0 for integer
+template<typename T> INTRA_CONSTEXPR2 T GetRayIntersectionPoint(const Sphere<T>& sphere, const Ray<T>& ray)
 {
 	const Vector3<T> l = sphere.Center - ray.Origin;
 	const T d = Dot(l, ray.Direction);
@@ -42,7 +43,7 @@ template<typename T> INTRA_EXTENDED_CONSTEXPR T GetRayIntersectionPoint(const Sp
 }
 
 
-template<typename T> constexpr bool Contains(const Aabb<T>& aabb, const Sphere<T>& sph) const noexcept
+template<typename T> constexpr bool Contains(const Aabb<T>& aabb, const Sphere<T>& sph) noexcept
 {return Contains(aabb, BoundingAabb(sph));}
 
 
@@ -74,16 +75,16 @@ template<typename T> bool CheckRayIntersection(const Obb<T>& obb, const Ray<T>& 
 {return CheckRayIntersection(Aabb<T>(Vector3<T>(-0.5), Vector3<T>(0.5)), Inverse(obb.GetFullTransform())*ray);}
 
 
-//Проверка пересечения сферы с рёбрами треугольника
-template<typename T> bool EdgeSphereCollision(const Triangle<T>& tri, const Sphere<T>& sph) const
+// Test intersection between sph and tri edges.
+template<typename T> bool EdgeSphereCollision(const Triangle<T>& tri, const Sphere<T>& sph)
 {
 	return DistanceSqr(sph.Center, ClosestPointOnLine(sph.Center, tri.A, tri.B)) < Sqr(sph.Radius) ||
 		DistanceSqr(sph.Center, ClosestPointOnLine(sph.Center, tri.B, tri.C)) < Sqr(sph.Radius) ||
 		DistanceSqr(sph.Center, ClosestPointOnLine(sph.Center, tri.C, tri.A)) < Sqr(sph.Radius);
 }
 
-//! Проверяет, лежит ли точка внутри треугольника.
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR bool Contains(const Triangle<T>& tri, const Vector3<T>& v)
+//! Test if point belongs to triangle.
+template<typename T> INTRA_MATH_CONSTEXPR2 bool Contains(const Triangle<T>& tri, const Vector3<T>& v)
 {
 	const Vector3<T> v0 = Normalize(v - tri.A);
 	const Vector3<T> v1 = Normalize(v - tri.B);
@@ -91,11 +92,11 @@ template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR bool Contains(const Triangle<
 	return Acos(Dot(v0, v1)) + Acos(Dot(v1, v2)) + Acos(Dot(v2, v0)) >= 2*PI;
 }
 
-template<typename T> Vector3<T> CheckCollisionWithSphere(const Triangle<T>& tri, Sphere<T> sphere) const
+template<typename T> Vector3<T> CheckCollisionWithSphere(const Triangle<T>& tri, Sphere<T> sphere)
 {
 	const Plane<T> plane = tri.GetPlane();
 
-	//Если плоскость не пересекает сферу, то сфера не может пересекать треугольник
+	// If the plane doesn't intersect the sphere, then the sphere cannot intersect the triangle
 	if(plane.ClassifySphere(sphere) != 0) return {0,0,0};
 
 	const T distance = Dot(sphere.Center, plane.Normal)+plane.D;
@@ -105,7 +106,7 @@ template<typename T> Vector3<T> CheckCollisionWithSphere(const Triangle<T>& tri,
 	return {0,0,0};
 }
 
-//! Проверка пересечения прямой с треугольником
+//! Test intersection between line defined with two points and triangle.
 template<typename T> bool IsIntersectedByLine(const Triangle<T>& tri, Vector3<T> line[2])
 {
 	const Plane<T> plane = GetPlane();
@@ -113,9 +114,9 @@ template<typename T> bool IsIntersectedByLine(const Triangle<T>& tri, Vector3<T>
 		Contains(tri, GetIntersectionWithLine(plane, line)));
 }
 
-//! Проверить треугольник на пересечение с лучом
+//! Test ray triangle intersection
 // \param[out] oPlaneIntersectionPoint Точка пересечения с треугольником, если такое пересечение есть. Иначе точка пересечения с плоскостью треугольника. Если пересечения с плоскостью нет, то {0,0,0}
-template<typename T> bool CheckRayIntersection(const Ray<T>& ray, Vector3<T>* oPlaneIntersectionPoint=null)
+template<typename T> bool CheckRayIntersection(const Triangle<T>& tri, const Ray<T>& ray, Vector3<T>* oPlaneIntersectionPoint=null)
 {
 	const Vector3<T> u = Vertices[1]-Vertices[0];
 	const Vector3<T> v = Vertices[2]-Vertices[0];
@@ -289,7 +290,7 @@ template<typename T> bool TestIntersection(const Aabb<T>& aabb, const Sphere<T>&
 {return DistanceSqr(aabb, sph.Center) <= Sqr(sph.Radius);}
 
 
-template<typename T> INTRA_EXTENDED_CONSTEXPR CollisionSide CheckIntersection(const Frustum<T>& frust, const Sphere<T>& refSphere) noexcept
+template<typename T> INTRA_CONSTEXPR2 CollisionSide CheckIntersection(const Frustum<T>& frust, const Sphere<T>& refSphere) noexcept
 {
 	for(auto& p: frust.Planes())
 	{
@@ -320,7 +321,7 @@ template<typename T> constexpr bool Contains(const Frustum<T>& frust, const Sphe
 		Dot(sphere.Center, frust.Near().Normal) + frust.Near().D + sphere.Radius > 0;
 }
 
-template<typename T> INTRA_EXTENDED_CONSTEXPR bool Contains(const Frustum<T>& frust, const Aabb<T>& box) noexcept
+template<typename T> INTRA_CONSTEXPR2 bool Contains(const Frustum<T>& frust, const Aabb<T>& box) noexcept
 {
 	for(auto& p: frust.Planes())
 	{

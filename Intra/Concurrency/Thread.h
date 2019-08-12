@@ -1,14 +1,10 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
+#include "Core/Range/StringView.h"
 
-#include "Funal/Delegate.h"
-
+#include "Utils/Delegate.h"
 #include "Utils/Unique.h"
-#include "Utils/StringView.h"
 
 #undef Yield
 
@@ -39,7 +35,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 class Thread
@@ -50,8 +47,8 @@ public:
 private:
 	Unique<Data> mHandle;
 public:
-	//! В Windows HANDLE.
-	//! В остальных системах pthread_t*.
+	//! HANDLE in windows.
+	//! pthread_t* in other OSes.
 	typedef void* NativeHandle;
 
 	typedef Delegate<void()> Func;
@@ -60,42 +57,39 @@ public:
 	Thread(Thread&& rhs) noexcept;
 	explicit Thread(Func func);
 	explicit Thread(StringView name, Func func):
-		Thread(Cpp::Move(func)) {SetName(name);}
+		Thread(Move(func)) {SetName(name);}
 
-	//! Деструктор вызывает Interrupt и Join.
+	//! Destructor calls Interrupt and Join.
 	~Thread();
 	Thread& operator=(Thread&& rhs);
 
-	//! Блокировать выполнение текущего потока до тех пор,
-	//! пока указанный поток не завершится, не истечёт указанный таймаут, либо не будет вызван Interrupt на этом потоке.
-	//! @param timeout Таймаут в миллисекундах.
-	//! @return Возвращает true, если в результате поток завершил своё выполнение.
-	bool JoinMs(ulong64 timeout);
+	//! Block running of current thread until this thread finishes or timeout expires or Interrupt on current thread is called.
+	//! @param timeout measured in milliseconds.
+	//! @return true, if this thread finished its execution.
+	bool JoinMs(uint64 timeout);
 
-	//! Блокировать выполнение текущего потока до тех пор,
-	//! пока не завершится указанный поток.
-	//! @return Возвращает true, если в результате поток завершил своё выполнение.
+	//! Block running of current thread until this thread finishes or Interrupt on current thread is called.
+	//! @return true, if this thread finished its execution.
 	bool Join();
 
-	//! Отсоединить поток от объекта.
-	//! Текущий объект переходит в нулевое состояние,
-	//! поток продолжает выполняться независимо от него.
+	//! This thread object becomes null,
+	//! its thread continues running independently.
 	void Detach();
 
-	//! Установить флаг прерывания потока.
-	//! Если механизм прерывания потока не был отключён вызовом DisableInterruption(false)
-	//! или через #define INTRA_THREAD_NO_FULL_INTERRUPT, то
-	//! прерывает ожидание на Sleep, Join/JoinMs, CondVar::Wait/WaitMs и эти функции возвращают false.
+	//! Set the interruption flag for this thread.
+	//! If the interrption mechanism was not disabled via DisableInterruption()
+	//! or via #define INTRA_THREAD_NO_FULL_INTERRUPT, then
+	//! interrupts waiting on Sleep, Join/JoinMs and CondVar::Wait/WaitMs causing them to return false.
 	void Interrupt();
 
-	//! Возвращает флаг прерывания потока.
+	//! @return if interruption flag is set for this thread.
 	bool IsInterrupted() const;
 
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
-	//! Разрешить методу Interrupt прерывать ожидание данного потока.
+	//! Allow method Interrupt() to interrupt waiting for this thread.
 	forceinline void EnableInterruption() {allowInterruption(true);}
 #endif
-	//! Запретить методу Interrupt прерывать ожидание данного потока.
+	//! Disallow method Interrupt() to interrupt waiting for this thread.
 	forceinline void DisableInterruption()
 	{
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
@@ -103,22 +97,22 @@ public:
 #endif
 	}
 
-	//! Возвращает true, если для данного потока включена поддержка прерывания ожидания.
+	//! @return true, if this thread supports interruption.
 	bool IsInterruptionEnabled() const;
 
-	//! Возвращает, выполняется ли поток в данный момент.
+	//! @return true if this thread is running at the moment of calling.
 	bool IsRunning() const;
 
-	//! Установить имя потока. Оно может отображаться в отладчике.
+	//! Set thread name, useful for debugging.
 	void SetName(StringView name);
 
-	//! Получить имя потока, установленное через SetName.
+	//! @return thread name that have been set via SetName.
 	StringView Name() const;
 
-	//! @return Зависимый от платформы дескриптор потока:
-	//! Для Windows HANDLE (созданный через _beginthreadex\CreateThread)
-	//! Для остальных платформ pthread*.
-	//! Полученный дескриптор нельзя использовать после Detach или уничтожения потока.
+	//! @return Platform dependent API thread handle:
+	//! HANDLE for Windows (created with _beginthreadex\CreateThread)
+	//! pthread* for other platforms.
+	//! This handle becomes invalid after Detach or thread destruction.
 	NativeHandle GetNativeHandle() const;
 
 private:
@@ -139,28 +133,29 @@ struct TThisThread
 	TThisThread(const TThisThread&) = delete;
 	TThisThread& operator=(const TThisThread&) = delete;
 
-	//! Установить флаг потока, который говорит о том, что пора завершаться.
-	//! Работает только для потоков, созданных с помощью класса Thread.
+	//! Set interruption flag indicating that current thread should finish its execution.
+	//! Works only for threads created with Thread class with interruption enabled.
 	static void Interrupt();
 
 	static bool IsInterrupted();
 
-	//! Дескриптор ОС текущего потока.
+	//! OS handle of currently running thread.
 	static Thread::NativeHandle NativeHandle();
 
-
+	//! Name of currently running thread (set via SetName method of Thread class)
 	static StringView Name();
 
-	//! Отдаёт текущий квант времени ОС.
+	//! Provide a hint to the OS thread scheduler, allowing other threads to run.
 	static void Yield();
 
-	static bool Sleep(ulong64 milliseconds);
+	//! Wait until milliseconds expire or Interrupt is called on this thread.
+	static bool Sleep(uint64 milliseconds);
 
 	#ifndef INTRA_THREAD_NO_FULL_INTERRUPT
-	//! Разрешить методу Interrupt прерывать ожидание данного потока.
+	//! Allow Interrupt method to interrupt waiting of current thread.
 	static forceinline void EnableInterruption() {allowInterruption(true);}
 #endif
-	//! Запретить методу Interrupt прерывать ожидание данного потока.
+	//! Disallow Interrupt method to interrupt waiting of current thread.
 	static forceinline void DisableInterruption()
 	{
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
@@ -168,7 +163,7 @@ struct TThisThread
 #endif
 	}
 
-	//! Возвращает true, если для данного потока включена поддержка прерывания ожидания.
+	//! @return true if current thread supports interruption.
 	static bool IsInterruptionEnabled();
 
 private:

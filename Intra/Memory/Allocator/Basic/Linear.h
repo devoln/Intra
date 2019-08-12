@@ -1,13 +1,10 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Utils/Debug.h"
-#include "Utils/Span.h"
+#include "Core/Assert.h"
+#include "Core/Range/Span.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+inline namespace Memory {
 
 struct ALinear
 {
@@ -16,7 +13,7 @@ struct ALinear
 
 	size_t GetAlignment() const {return mAlignment;}
 
-	AnyPtr Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
+	AnyPtr Allocate(size_t bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		(void)sourceInfo;
 
@@ -37,6 +34,5 @@ private:
 	size_t mAlignment;
 };
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

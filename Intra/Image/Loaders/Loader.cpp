@@ -1,6 +1,7 @@
 ﻿#include "Image/Loaders/Loader.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 AImageLoader* AImageLoader::firstLoader = null;
 

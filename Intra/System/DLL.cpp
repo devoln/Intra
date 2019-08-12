@@ -1,7 +1,7 @@
 #include "DLL.h"
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+
+
 
 #include "detail/Common.h"
 
@@ -29,7 +29,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #endif
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 void DLL::Unload()

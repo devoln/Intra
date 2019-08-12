@@ -1,10 +1,10 @@
-﻿#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+﻿
+
 
 #include "Audio/Sound.h"
 
-#include "Range/Mutation/Fill.h"
-#include "Range/Mutation/Cast.h"
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Cast.h"
 
 #include "Data/ValueType.h"
 
@@ -12,7 +12,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using Data::ValueType;
 
@@ -51,7 +52,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 
 struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
 {
-	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent)) {}
+	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Move(parent)) {}
 
 	Data(const Data&) = delete;
 	Data& operator=(const Data&) = delete;
@@ -66,7 +67,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
 	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = false):
-		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount) {(void)autoStreamingEnabled;}
+		StreamedSoundBasicData(Move(source), bufferSampleCount) {(void)autoStreamingEnabled;}
 
 	Data(const Data&) = delete;
 	Data& operator=(const Data&) = delete;

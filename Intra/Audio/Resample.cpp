@@ -1,9 +1,8 @@
 #include "Resample.h"
 #include "Math/Math.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 void ResampleLinear(CSpan<float> src, Span<float> dst)
 {
@@ -49,6 +48,5 @@ Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src)
 	return dst;
 }
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

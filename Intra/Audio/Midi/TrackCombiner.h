@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
+
 
 #include "Container/Sequential/Array.h"
 
@@ -10,7 +10,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 class TrackCombiner
 {

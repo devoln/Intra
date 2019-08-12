@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 class DLL
 {

@@ -14,7 +14,7 @@
 #include "IO/HtmlWriter.h"
 #include "IO/Std.h"
 
-#include "Range/Output/Inserter.h"
+#include "Core/Range/Output/Inserter.h"
 
 using namespace Intra;
 using namespace IO;
@@ -51,7 +51,7 @@ void TestSocketIO(FormattedWriter& output)
 		}
 		else syncOutput->PrintLine("Error waiting!");
 
-		SocketReader reader(Cpp::Move(client));
+		SocketReader reader(Move(client));
 		StringView firstLine = reader.ReadLine(strBuf);
 		syncOutput->PrintLine("ReadLine: ", firstLine);
 		if(firstLine != "Writer: Hello, Reader!") error.Set(true);
@@ -71,7 +71,7 @@ void TestSocketIO(FormattedWriter& output)
 	connectedClient.Send("World", 5, status);
 	syncOutput->PrintLine("[Sent] World");
 
-	SocketWriter writer(Cpp::Move(connectedClient));
+	SocketWriter writer(Move(connectedClient));
 	writer.PrintLine("Writer: Hello, Reader!")
 		.PrintLine("Second line.")
 		.PrintLine("Third line.");
@@ -93,7 +93,7 @@ void TestHttpServer(FormattedWriter& output)
 		output.PrintLine("Processing request: ")
 			.PrintLine(request);
 
-		SocketWriter response(Cpp::Move(connectedClient));
+		SocketWriter response(Move(connectedClient));
 
 		String str;
 		HtmlWriter(LastAppender(str))

@@ -1,9 +1,7 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-
-#include "Funal/Delegate.h"
-#include "Utils/ErrorStatus.h"
+#include "Utils/Delegate.h"
+#include "System/Error.h"
 #include "Utils/Shared.h"
 
 #include "Container/Sequential/Array.h"
@@ -44,9 +42,8 @@
 #define INTRA_LIBRARY_SOUND_AUTO_STREAMING_SUPPORTED
 #endif
 
-namespace Intra { namespace Audio {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
+inline namespace Audio {
 
 class Sound
 {
@@ -154,6 +151,5 @@ private:
 
 void CleanUpSoundSystem();
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

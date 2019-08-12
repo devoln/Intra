@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "Container/Sequential/Array.h"
 #include "Audio/SoundTypes.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+inline namespace Audio {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -21,7 +21,7 @@ struct AudioBuffer
 	void ConvertToShorts(size_t first, Span<short> outSamples) const;
 	void CastToShorts(size_t first, Span<short> outSamples) const;
 	void ShiftSamples(intptr samplesToShift);
-	void Clear(size_t startSample=0, size_t sampleCount=Meta::NumericLimits<size_t>::Max());
+	void Clear(size_t startSample=0, size_t sampleCount = Core::MaxOf(size_t()));
 
 	template<typename T> void Fill(T callable, size_t startSample, size_t sampleCount, double t0=0.0)
 	{
@@ -79,19 +79,19 @@ struct AudioBuffer
 
 	void SetSample(uint i, float sample)
 	{
-		if(i>=Samples.Count())
+		if(i >= Samples.Count())
 			Samples.SetCount(i+1);
 		Samples[i] = sample;
 	}
 
-	Meta::Pair<float, float> GetMinMax(size_t startSample=0, size_t sampleCount = Meta::NumericLimits<size_t>::Max()) const;
+	Tuple<float, float> GetMinMax(size_t startSample=0, size_t sampleCount = LMaxOf(size_t())) const;
 	void SetMinMax(float newMin, float newMax, size_t startSample=0,
-		size_t samplesCount = Meta::NumericLimits<size_t>::Max(), Meta::Pair<float, float> oldMinMax={0,0});
+		size_t samplesCount = LMaxOf(size_t()), Tuple<float, float> oldMinMax={0,0});
 
 	bool operator==(null_t) const {return SampleRate==0;}
 	bool operator!=(null_t) const {return !operator==(null);}
 
-	AudioBuffer& operator=(null_t) {SampleRate=0; Samples=null; return *this;}
+	AudioBuffer& operator=(null_t) {SampleRate = 0; Samples = null; return *this;}
 
 	SoundInfo Info() const {return {Samples.Count(), SampleRate, 1, Data::ValueType::Float};}
 
@@ -99,6 +99,5 @@ struct AudioBuffer
 	Array<float> Samples;
 };
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

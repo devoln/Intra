@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 #include "Container/ForwardDecls.h"
 
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 Array<byte> DownloadFile(StringView path);
 

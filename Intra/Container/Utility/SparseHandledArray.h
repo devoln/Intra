@@ -4,7 +4,8 @@
 #include "Container/Sequential/Array.h"
 #include "IndexAllocator.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 //! Разреженный массив, который вместо индексов возвращает идентификаторы, корректность которых может быть проверена
 template<typename T, typename Index, typename Generation> class SparseHandledArray
@@ -21,7 +22,7 @@ public:
 	T& Add(T&& val, Id* oId=null)
 	{
 		Index index;
-		T& result = data.Add(Cpp::Move(val), &index);
+		T& result = data.Add(Move(val), &index);
 		if(oId==null) return result;
 		oId->value = index;
 		oId->generation = generations[index];
@@ -47,7 +48,7 @@ public:
 	template<typename... Args> T& Emplace(Args&&... args, Id* oId=null)
 	{
 		Index index;
-		T& result = data.Emplace(Cpp::Forward<Args>(args)..., &index);
+		T& result = data.Emplace(Forward<Args>(args)..., &index);
 		if(oId==null) return result;
 		oId->value = index;
 		oId->generation = generations[index];

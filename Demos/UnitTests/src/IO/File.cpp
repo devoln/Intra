@@ -5,14 +5,14 @@
 #include "IO/FormattedWriter.h"
 #include "IO/HtmlWriter.h"
 
-#include "Range/Generators/Recurrence.h"
-#include "Range/Decorators/TakeByLine.h"
-#include "Range/Decorators/Map.h"
-#include "Range/Polymorphic/OutputRange.h"
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Range/Generators/Recurrence.h"
+#include "Core/Range/TakeByLine.h"
+#include "Core/Range/Map.h"
+#include "Core/Range/Polymorphic/OutputRange.h"
+#include "Core/Range/Polymorphic/InputRange.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Endianess.h"
+
+#include "Core/Endianess.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

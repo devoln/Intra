@@ -14,7 +14,7 @@
 #include "Audio/Sources/MidiSynth.h"
 
 #include "System/Stopwatch.h"
-#include "Cpp/Warnings.h"
+
 
 #include "MidiInstrumentMapping.h"
 
@@ -40,7 +40,7 @@ String GetMidiPath(StringView fileName)
 
 Midi::MidiFileInfo PrintMidiInfo(InputStream stream, ErrorStatus& status)
 {
-	Midi::MidiFileInfo info(Cpp::Move(stream), status);
+	Midi::MidiFileInfo info(Move(stream), status);
 	Std.PrintLine("Длительность музыки: ", StringOf(info.Duration, 2), " с.");
 	Std.PrintLine("Число нот: ", info.NoteCount);
 	Std.PrintLine("Число дорожек: ", info.TrackCount);
@@ -54,7 +54,7 @@ bool PrintMidiFileInfo(StringView filePath)
 
 	FatalErrorStatus status;
 	auto file = OS.FileOpen(filePath, status);
-	if(file) PrintMidiInfo(Cpp::Move(file), status);
+	if(file) PrintMidiInfo(Move(file), status);
 
 	if(status.Handle())
 	{
@@ -70,7 +70,7 @@ Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFileStream,
 	double duration, float startingVolume, ErrorStatus& status, uint sampleRate)
 {
 	return new Sources::MidiSynth(
-		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(midiFileStream), status),
+		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Move(midiFileStream), status),
 		duration, GetMapping(), startingVolume, null, sampleRate == 0? Sound::DefaultSampleRate(): sampleRate, true);
 }
 
@@ -79,7 +79,7 @@ Sound CreateSoundFromMidi(ForwardStream midiFilestream, double duration, float s
 	if(printMessages) Std.PrintLine("Синтез...");
 	FatalErrorStatus status;
 	Stopwatch sw;
-	Sound sound = Sound(CreateMidiAudioSource(Cpp::Move(midiFilestream), duration, startingVolume, status), status);
+	Sound sound = Sound(CreateMidiAudioSource(Move(midiFilestream), duration, startingVolume, status), status);
 	if(printMessages) Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
 	if(status.Handle())
 	{
@@ -96,7 +96,7 @@ StreamedSound CreateStreamedSoundFromMidi(ForwardStream midiFileStream, float st
 	GetMapping().Preload(info, Sound::DefaultSampleRate());
 	if(printMessages) Std.PrintLine("Инициализация синтезатора...");
 	FatalErrorStatus status;
-	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Cpp::Move(midiFileStream), Cpp::Infinity, startingVolume, status), 16384);
+	StreamedSound sound = StreamedSound(CreateMidiAudioSource(Move(midiFileStream), Core::Infinity, startingVolume, status), 16384);
 	if(status.Handle())
 	{
 		Std.PrintLine(status.GetLog());

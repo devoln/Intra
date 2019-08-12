@@ -1,11 +1,11 @@
-﻿#include "Cpp/PlatformDetect.h"
+﻿
 #include "Font/FontLoading.h"
 
 #if(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_STB)
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 #include "Math/Vector.h"
 #include "Memory/Allocator/Global.h"
 #include "Container/Sequential/Array.h"
@@ -1339,7 +1339,8 @@ int stbtt_FindMatchingFont(const byte* font_collection, const char* name_utf8, i
 
 #include "IO/File.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 using namespace Math;
 using namespace IO;
 	

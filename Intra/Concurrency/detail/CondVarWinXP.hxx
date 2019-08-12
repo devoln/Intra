@@ -26,7 +26,8 @@
 #pragma warning(pop)
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 struct XPCondVar: BasicCondVarData
 {
@@ -70,7 +71,7 @@ struct XPCondVar: BasicCondVarData
 		return Wait(mutex, INFINITE);
 	}
 
-	bool Wait(Mutex& mutex, ulong64 timeoutMs) final
+	bool Wait(Mutex& mutex, uint64 timeoutMs) final
 	{
 		//base::ThreadRestrictions::AssertWaitAllowed();
 		Event* waitingEvent = null;

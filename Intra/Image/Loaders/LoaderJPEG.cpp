@@ -1,10 +1,11 @@
 ﻿#include "Image/Loaders/LoaderJPEG.h"
 #include "Image/Loaders/LoaderPlatform.h"
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Range/Polymorphic/InputRange.h"
 #include "Image/AnyImage.h"
-#include "Cpp/Endianess.h"
+#include "Core/Endianess.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

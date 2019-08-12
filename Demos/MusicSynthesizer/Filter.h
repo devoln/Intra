@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include <Cpp/Warnings.h>
+#include <Core/Warnings.h>
 
-#include <Utils/Span.h>
-#include <Utils/Debug.h>
+#include <Core/Span.h>
+#include <Core/Debug.h>
 
 #include <Math/Math.h>
 

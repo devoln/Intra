@@ -1,502 +1,456 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
+#include "Core/Type.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+// This module defines SIMD vector types that can be used on different platforms and compilers.
+// Its design is based on GCC vector extensions. When compiled with GCC or Clang it is defined as a thin free function wrapper around them.
+// When used with MSVC it defines classes with overloaded operators implemented via intrinsics.
 
-#define INTRA_SIMD_NONE 0
-#define INTRA_SIMD_MMX 1
-#define INTRA_SIMD_SSE 2
-#define INTRA_SIMD_SSE2 3
-#define INTRA_SIMD_SSE3 4
-#define INTRA_SIMD_SSSE3 5
-#define INTRA_SIMD_SSE4_1 6
-#define INTRA_SIMD_SSE4_2 7
-#define INTRA_SIMD_AVX 8
-#define INTRA_SIMD_AVX2 9
+// There is no emulation of float4/float8/int4/int8 operations on MSVC.
+// For example if code is compiled without /arch:AVX the types float8 and int8 will not be defined:
+// float4 and int4 require /arch:SSE2 on 32-bit x86
+// float8 requires /arch:AVX
+// int8 requires /arch:AVX2
 
-#define INTRA_SIMD_NEON 11
+// Warning for MSVC:
+// There is a performance problem that appears when:
+// 1) float4 or int4 is used in translation units with /arch flag below /arch:AVX, and
+// 2) a translation unit with /arch:AVX and above uses (1), and
+// 3) flags /GL (whole program optimization) and /LTCG (link time code generation) are used to compile program.
+// The problem is that forceinline doesn't work, and the function defined in (1)
+// becomes an order of magnitude (~10 times) slower, than the direct implementation written in intrinsics
+// You can see this problem by enabling /w34714
+// To avoid this problem, it is necessary to isolate AVX code in its own translation units compiled with /arch:AVX or above,
+// It must not call code compiled with an /arch flag below /arch:AVX.
+// In an opposite direction, calling AVX code from SSE code appears to be safe.
 
-#if(INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86_64 || INTRA_PLATFORM_ARCH == INTRA_PLATFORM_Emscripten)
+#if(defined(_M_AMD64) || defined(_M_X64) || defined(__amd64)) && !defined(__x86_64__)
+#define __x86_64__ 1
+#endif
 
-#ifndef INTRA_SIMD_SUPPORT
-//#define INTRA_SIMD_SUPPORT INTRA_SIMD_SSE2
+#define INTRA_SIMD_LEVEL_NONE 0
+#define INTRA_SIMD_LEVEL_SSE 1
+#define INTRA_SIMD_LEVEL_SSE2 2
+#define INTRA_SIMD_LEVEL_SSE3 3
+#define INTRA_SIMD_LEVEL_SSSE3 4
+#define INTRA_SIMD_LEVEL_SSE4_1 5
+#define INTRA_SIMD_LEVEL_SSE4_2 6
+#define INTRA_SIMD_LEVEL_AVX 7
+#define INTRA_SIMD_LEVEL_AVX2 8
+
+
+#if INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86 || INTRA_PLATFORM_ARCH == INTRA_PLATFORM_X86_64
+#if !defined(INTRA_SIMD_LEVEL)
+#ifdef __AVX2__
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_AVX2
+#elif defined(__AVX__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_AVX
+#elif defined(__SSE4_2__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE4_2
+#elif defined(__SSE4_1__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE4_1
+#elif defined(__SSSE3__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSSE3
+#elif defined(__SSE3__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE3
+#elif defined(__SSE2__) || defined(__x86_64__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE2
+#elif defined(__SSE__)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE
+#elif defined(_M_IX86_FP)
+
+#if(_M_IX86_FP >= 2)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE2
+#elif(_M_IX86_FP == 1)
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_SSE
+#else
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_NONE
 #endif
 
 #endif
-
-#if(defined(__ARM_NEON__) || defined(__ARM_NEON))
-
-#ifndef INTRA_SIMD_SUPPORT
-#define INTRA_SIMD_SUPPORT INTRA_SIMD_NEON
-#endif
-
-#endif
-
-#ifndef INTRA_SIMD_SUPPORT
-//#define INTRA_SIMD_SUPPORT INTRA_SIMD_SSE2
-#define INTRA_SIMD_SUPPORT INTRA_SIMD_NONE
-#endif
-
-
-
-#if(INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2)
-
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_NONE)
-#include <mmintrin.h>  //MMX
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_MMX)
-#include <xmmintrin.h> //SSE
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE)
-#include <emmintrin.h> //SSE2
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE2)
-#include <pmmintrin.h> //SSE3
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE3)
-#include <tmmintrin.h> //SSSE3
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSSE3)
-#include <smmintrin.h> //SSE4.1
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE4_1)
-#include <nmmintrin.h> //SSE4.2
-#if(INTRA_SIMD_SUPPORT > INTRA_SIMD_SSE4_2)
-#include <immintrin.h> //AVX
-#endif
-#endif
-#endif
-#endif
-#endif
-#endif
 #endif
 #endif
 
+#ifndef INTRA_SIMD_LEVEL
+#define INTRA_SIMD_LEVEL INTRA_SIMD_LEVEL_NONE
 #endif
 
-#ifndef INTRA_USE_GCC_CLANG_SIMD
+// runtime instruction support detection
+#ifdef _MSC_VER
+#include <intrin.h>
+#elif defined(__GNUC__)
+inline void __cpuid(int* cpuinfo, int info)
+{
+	__asm__ __volatile__(
+		"xchg %%ebx, %%edi;"
+		"cpuid;"
+		"xchg %%ebx, %%edi;"
+		:"=a" (cpuinfo[0]), "=D" (cpuinfo[1]), "=c" (cpuinfo[2]), "=d" (cpuinfo[3])
+		:"0" (info)
+	);
+}
 
-#if(INTRA_SIMD_SUPPORT >= INTRA_SIMD_MMX && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2)
-namespace Intra { namespace Simd {
+inline unsigned long long _xgetbv(unsigned int index)
+{
+	unsigned eax, edx;
+	__asm__ __volatile__(
+		"xgetbv;"
+		: "=a" (eax), "=d"(edx)
+		: "c" (index)
+	);
+	return (static_cast<unsigned long long>(edx) << 32) | eax;
+}
+#endif
 
-	typedef __m128i int4;
-	typedef int4 int4arg;
-	
-	typedef __m128 float4;
-	typedef float4 float4arg;
 
-	typedef __m128d double2;
-	typedef double2 double2arg;
-	//typedef __m256d double4;
-	//typedef double4 double4arg;
 
-	forceinline float4 SetFloat4(float s) {return _mm_set1_ps(s);}
-	forceinline int4 SetInt4(int s) {return _mm_set1_epi32(s);}
-	forceinline double2 SetDouble2(double s) {return _mm_set1_pd(s);}
+INTRA_BEGIN
+namespace Simd {
+template<class T> using TScalarOf = decltype(+Val<T>()[0]);
+template<class T> using TIntAnalogOf = decltype(Val<T>() < Val<T>());
 
-	forceinline int4 SetInt4(int x, int y, int z, int w) {return _mm_set_epi32(w, z, y, x);}
-	forceinline float4 SetFloat4(float x, float y, float z, float w) {return _mm_set_ps(w, z, y, x);}
-	forceinline double2 SetDouble2(double x, double y) {return _mm_set_pd(y, x);}
-
-	forceinline float4 SetFloat4(const float xyzw[4]) {return _mm_load_ps(xyzw);}
-	forceinline float4 SetFloat4U(const float xyzw[4]) {return _mm_loadu_ps(xyzw);}
-	forceinline int4 SetInt4(const int xyzw[4]) {return _mm_set_epi32(xyzw[3], xyzw[2], xyzw[1], xyzw[0]);}
-	forceinline double2 SetDouble2(const double xy[2]) {return _mm_load_pd(xy);}
-	forceinline double2 SetDouble2U(const double xy[2]) {return _mm_loadu_pd(xy);}
-
-	forceinline void Get(float* dst, float4arg v) {_mm_store_ps(dst, v);}
-	forceinline void GetU(float* dst, float4arg v) {_mm_storeu_ps(dst, v);}
-	forceinline float GetX(float4arg v) {float dst; _mm_store_ss(&dst, v); return dst;}
-	forceinline double GetX(double2arg v) {double dst; _mm_store_sd(&dst, v); return dst;}
-
-	forceinline float4 Abs(float4arg x)
+inline bool IsAvxSupported()
+{
+	int cpuinfo[4];
+	__cpuid(cpuinfo, 1);
+	bool supported = (cpuinfo[2] & (1 << 28)) != 0;
+	bool osxsaveSupported = (cpuinfo[2] & (1 << 27)) != 0;
+	if(osxsaveSupported && supported)
 	{
-		static const float4 sign_mask = _mm_set_ps1(-0.0f);
-		return _mm_andnot_ps(x, sign_mask);
+		// _XCR_XFEATURE_ENABLED_MASK = 0
+		unsigned long long xcrFeatureMask = _xgetbv(0);
+		supported = (xcrFeatureMask & 0x6) == 0x6;
 	}
+	return supported;
+}
 
-	forceinline double2 Abs(double2arg x)
-	{
-		static const double2 sign_mask = _mm_set1_pd(-0.0);
-		return _mm_andnot_pd(sign_mask, x);
-	}
+}
 
-	forceinline float4 Add(float4arg a, float4arg b) {return _mm_add_ps(a, b);}
-	forceinline double2 Add(double2arg a, double2arg b) {return _mm_add_pd(a, b);}
 
-	forceinline float4 Sub(float4arg a, float4arg b) {return _mm_sub_ps(a, b);}
-	forceinline double2 Sub(double2arg a, double2arg b) {return _mm_sub_pd(a, b);}
 
-	forceinline float4 Mul(float4arg a, float4arg b) {return _mm_mul_ps(a, b);}
-	forceinline double2 Mul(double2arg a, double2arg b) {return _mm_mul_pd(a, b);}
+#if defined(__GNUC__) || defined(__clang__)
+#include "detail/VectorExtImpl.h"
+#else
+#include "detail/IntelIntrinsicImpl.h"
+#endif
 
-	forceinline float4 Dot4(float4arg a, float4arg b)
-	{
-		float4 m = _mm_mul_ps(a, b);
-		float4 t = _mm_add_ps(m, _mm_shuffle_ps(m, m, _MM_SHUFFLE(2, 3, 0, 1)));
-		return _mm_add_ps(t, _mm_shuffle_ps(t, t, _MM_SHUFFLE(1, 0, 3, 2)));
-	}
+inline namespace Funal {
+// Specialize Min and Max functors to work with SIMD types
+#ifdef INTRA_SIMD_FLOAT4_SUPPORT
+template<> struct TMin::Typed<const float4&, const float4&>
+{
+	INTRA_NODISCARD forceinline float4 INTRA_VECTORCALL operator()(float4 a, float4 b) const {return Simd::Min(a, b);}
+};
+template<> struct TMax::Typed<const float4&, const float4&>
+{
+	INTRA_NODISCARD forceinline float4 INTRA_VECTORCALL operator()(float4 a, float4 b) const {return Simd::Max(a, b);}
+};
+#endif
+#ifdef INTRA_SIMD_INT4_SUPPORT
+template<> struct TMin::Typed<const int4&, const int4&>
+{
+	INTRA_NODISCARD forceinline float4 INTRA_VECTORCALL operator()(int4 a, int4 b) const {return Simd::Min(a, b);}
+};
+template<> struct TMax::Typed<const int4&, const int4&>
+{
+	INTRA_NODISCARD forceinline float4 INTRA_VECTORCALL operator()(int4 a, int4 b) const {return Simd::Max(a, b);}
+};
+#endif
+#ifdef INTRA_SIMD_FLOAT8_SUPPORT
+template<> struct TMin::Typed<const float8&, const float8&>
+{
+	INTRA_NODISCARD forceinline float8 INTRA_VECTORCALL operator()(float8 a, float8 b) const {return Simd::Min(a, b);}
+};
+template<> struct TMax::Typed<const float8&, const float8&>
+{
+	INTRA_NODISCARD forceinline float8 INTRA_VECTORCALL operator()(float8 a, float8 b) const {return Simd::Max(a, b);}
+};
+#endif
+#ifdef INTRA_SIMD_INT8_SUPPORT
+template<> struct TMin::Typed<const int8&, const int8&>
+{
+	INTRA_NODISCARD forceinline int8 INTRA_VECTORCALL operator()(int8 a, int8 b) const {return Simd::Min(a, b);}
+};
+template<> struct TMax::Typed<const int8&, const int8&>
+{
+	INTRA_NODISCARD forceinline int8 INTRA_VECTORCALL operator()(int8 a, int8 b) const {return Simd::Max(a, b);}
+};
+#endif
+}
 
-	forceinline double2 Dot2(double2arg a, double2arg b)
-	{
-		double2 m = _mm_mul_pd(a, b);
-		return _mm_add_pd(m, _mm_shuffle_pd(m, m, _MM_SHUFFLE2(1, 0)));
-	}
+namespace Simd {
 
-	forceinline float Dot(float4arg a, float4arg b)
-	{return GetX(Dot4(a, b));}
+#ifdef INTRA_SIMD_FLOAT4_SUPPORT
+INTRA_NODISCARD constexpr forceinline index_t LengthOf(Simd::float4) {return 4;}
+#endif
+#ifdef INTRA_SIMD_INT4_SUPPORT
+INTRA_NODISCARD constexpr forceinline index_t LengthOf(Simd::int4) {return 4;}
+#endif
+#ifdef INTRA_SIMD_FLOAT8_SUPPORT
+INTRA_NODISCARD constexpr forceinline index_t LengthOf(Simd::float8) {return 8;}
+#endif
+#ifdef INTRA_SIMD_INT8_SUPPORT
+INTRA_NODISCARD constexpr forceinline index_t LengthOf(Simd::int8) {return 8;}
+#endif
 
-	forceinline double Dot(double2arg a, double2arg b) {return GetX(Dot2(a, b));}
+template<typename T> T Load(const TScalarOf<T>* src);
+template<typename T> T LoadAligned(const TScalarOf<T>* src);
+#ifdef INTRA_SIMD_FLOAT4_SUPPORT
+template<> INTRA_NODISCARD forceinline float4 Load(const float* src) {return Load4(src);}
+template<> INTRA_NODISCARD forceinline float4 LoadAligned(const float* src) {return LoadAligned4(src);}
+#endif
+#ifdef INTRA_SIMD_INT4_SUPPORT
+template<> INTRA_NODISCARD forceinline int4 Load(const int* src) {return Load4(src);}
+template<> INTRA_NODISCARD forceinline int4 LoadAligned(const int* src) {return LoadAligned4(src);}
+#endif
+#ifdef INTRA_SIMD_FLOAT8_SUPPORT
+template<> INTRA_NODISCARD forceinline float8 Load(const float* src) {return Load8(src);}
+template<> INTRA_NODISCARD forceinline float8 LoadAligned(const float* src) {return LoadAligned8(src);}
+#endif
+#ifdef INTRA_SIMD_INT8_SUPPORT
+template<> INTRA_NODISCARD forceinline int8 Load(const int* src) {return Load8(src);}
+template<> INTRA_NODISCARD forceinline int8 LoadAligned(const int* src) {return LoadAligned8(src);}
+#endif
 
-	forceinline float4 Min(float4arg a, float4arg b) {return _mm_min_ps(a, b);}
-	forceinline double2 Min(double2arg a, double2arg b) {return _mm_min_pd(a, b);}
-	forceinline float4 Max(float4arg a, float4arg b) {return _mm_max_ps(a, b);}
-	forceinline double2 Max(double2arg a, double2arg b) {return _mm_max_pd(a, b);}
+template<typename T> forceinline Requires<
+	CFloatingPoint<TScalarOf<T>>,
+T> INTRA_VECTORCALL Truncate(T x) noexcept
+{return CastToFloat(TruncateToInt(x));}
 
-	forceinline float4 MinSingle(float4arg a, float4arg b) {return _mm_min_ss(a, b);}
-	forceinline double2 MinSingle(double2arg a, double2arg b) {return _mm_min_sd(a, b);}
-	forceinline float4 MaxSingle(float4arg a, float4arg b) {return _mm_max_ss(a, b);}
-	forceinline double2 MaxSingle(double2arg a, double2arg b) {return _mm_max_sd(a, b);}
+template<typename T> forceinline Requires<
+	CFloatingPoint<TScalarOf<T>>,
+T> INTRA_VECTORCALL Round(T a)
+{
+	return CastToFloat(RoundToInt(a));
+#if 0
+	const float4 vNearest2 = float4(Set<int4>(1073741823));
+	const float4 aTrunc = Truncate(a);
+	return aTrunc + Truncate((a - aTrunc) * vNearest2);
+#endif
+}
 
-	forceinline float4 Negate(float4arg a)
-	{
-		static const float4 sign_mask = _mm_set_ps1(-0.0);
-		return _mm_xor_ps(a, sign_mask);
-	}
 
-	forceinline double2 Negate(double2arg a)
-	{
-		static const double2 sign_mask = _mm_set1_pd(-0.0);
-		return _mm_xor_pd(a, sign_mask);
-	}
+#ifdef INTRA_SIMD_FLOAT4_SUPPORT
 
-	forceinline float4 Sqrt(float4arg a)
-	{return _mm_sqrt_ps(a);}
+#if INTRA_SIMD_LEVEL >= INTRA_SIMD_LEVEL_SSE4_1
+//TODO: intrinsic headers are included only in MSVC
+forceinline float4 INTRA_VECTORCALL Floor(float4 x) {return _mm_floor_ps(x);}
+forceinline float4 INTRA_VECTORCALL Ceil(float4 x) {return _mm_ceil_ps(x);}
+#endif
 
-	forceinline double2 Sqrt(double2arg a)
-	{return _mm_sqrt_pd(a);}
+#ifdef INTRA_SIMD_INT4_SUPPORT
 
-	// a,b,c,d -> b,c,d,a
-	forceinline float4 Rotate(float4arg ps)
-	{return _mm_shuffle_ps(ps,(ps), 0x39);}
+#if INTRA_SIMD_LEVEL >= INTRA_SIMD_LEVEL_SSE2
+forceinline int4 INTRA_VECTORCALL RoundToInt(float4 x) noexcept {return int4(_mm_cvtps_epi32(x));}
+#else
+forceinline int4 INTRA_VECTORCALL RoundToInt(float4 x) noexcept {return TruncateToInt(x + 0.5f) - ((x < 0) & 1);}
+#endif
 
-	forceinline float4 Z1W1Z2W2(float4arg a, float4arg b)
-	{return _mm_movehl_ps(a, b);}
+#if INTRA_SIMD_LEVEL < INTRA_SIMD_LEVEL_SSE4_1
+forceinline float4 INTRA_VECTORCALL Floor(float4 x)
+{
+	const float4 fi = Truncate(x);
+	const int4 igx = fi > x;
+	const float4 j = float4(igx & int4(Set<float4>(1)));
+	return fi - j;
+}
 
-	forceinline bool EqualX(float4arg a, float4arg b)
-	{return _mm_comieq_ss(a, b)!=0;}
+forceinline float4 INTRA_VECTORCALL Ceil(float4 x)
+{
+	const float4 fi = Truncate(x);
+	const int4 igx = fi < x;
+	const float4 j = float4(igx & int4(Set<float4>(1)));
+	return fi + j;
+}
+#endif
 
-	forceinline bool EqualX(double2arg a, double2arg b)
-	{return _mm_comieq_sd(a, b)!=0;}
+#endif
 
-	forceinline bool NotEqualX(float4arg a, float4arg b)
-	{return _mm_comineq_ss(a, b)!=0;}
+#endif
 
-	forceinline bool NotEqualX(double2arg a, double2arg b)
-	{return _mm_comineq_sd(a, b)!=0;}
+#ifdef INTRA_SIMD_FLOAT8_SUPPORT
 
-	forceinline bool LessX(float4arg a, float4arg b)
-	{return _mm_comilt_ss(a, b)!=0;}
+#if INTRA_SIMD_LEVEL >= INTRA_SIMD_LEVEL_AVX
 
-	forceinline bool LessX(double2arg a, double2arg b)
-	{return _mm_comilt_sd(a, b)!=0;}
+forceinline float8 INTRA_VECTORCALL Floor(float8 x) {return _mm256_floor_ps(x);}
+forceinline float8 INTRA_VECTORCALL Ceil(float8 x) {return _mm256_ceil_ps(x);}
 
-	forceinline bool LessEqualX(float4arg a, float4arg b)
-	{return _mm_comile_ss(a, b)!=0;}
+#endif
 
-	forceinline bool LessEqualX(double2arg a, double2arg b)
-	{return _mm_comile_sd(a, b)!=0;}
+#ifdef INTRA_SIMD_INT8_SUPPORT
 
-	forceinline bool GreaterX(float4arg a, float4arg b)
-	{return _mm_comigt_ss(a, b)!=0;}
+#if INTRA_SIMD_LEVEL >= INTRA_SIMD_LEVEL_AVX2
+forceinline int8 INTRA_VECTORCALL RoundToInt(float8 x) noexcept {return int8(_mm256_cvtps_epi32(x));}
+#else
+forceinline int8 INTRA_VECTORCALL RoundToInt(float8 x) noexcept
+{return TruncateToInt(x + Set<float8>(0.5f)) - ((x < Set<float8>(0)) & 1);}
+#endif
 
-	forceinline bool GreaterX(double2arg a, double2arg b)
-	{return _mm_comigt_sd(a, b)!=0;}
+#if INTRA_SIMD_LEVEL < INTRA_SIMD_LEVEL_AVX
 
-	forceinline bool GreaterEqualX(float4arg a, float4arg b)
-	{return _mm_comige_ss(a, b)!=0;}
+forceinline float8 INTRA_VECTORCALL Floor(float8 x)
+{
+	const float8 fi = Truncate(x);
+	const int8 igx = fi > x;
+	const float8 j = float8(igx & int8(Set<float8>(1)));
+	return fi - j;
+}
 
-	forceinline bool GreaterEqualX(double2arg a, double2arg b)
-	{return _mm_comige_sd(a, b)!=0;}
+forceinline float8 INTRA_VECTORCALL Ceil(float8 x)
+{
+	const float8 fi = Truncate(x);
+	const int8 igx = fi < x;
+	const float8 j = float8(igx & int8(Set<float8>(1)));
+	return fi + j;
+}
 
-}}
+#endif
 
-#elif(INTRA_PLATFORM_ARCH == INTRA_PLATFORM_PowerPC && INTRA_SIMD_SUPPORT != INTRA_SIMD_NONE)
+#endif
 
-namespace Intra { namespace Simd {
+#endif
 
-	typedef __vector4 float4;
-	typedef float4 float4arg;
 
-}}
+#if(defined(INTRA_SIMD_LEVEL) && defined(__FMA__))
 
-#elif(defined(__ARM_NEON) || defined(__ARM_NEON__))
-
-namespace Intra { namespace Simd {
-
-typedef uint32x2_t uint2;
-typedef uint16x4_t ushort4;
-typedef uint8x8_t byte8;
-typedef int32x2_t int2;
-typedef int16x4_t short4;
-typedef int8x8_t sbyte8;
-typedef uint64x1_t ullong1;
-typedef int64x1_t llong1;
-typedef float32x2_t float2;
-typedef uint32x4_t uint4;
-typedef uint16x8_t ushort8;
-typedef uint8x16_t byte16;
-typedef int32x4_t int4;
-typedef int16x8_t short8;
-typedef int8x16_t sbyte16;
-typedef uint64x2_t ullong2;
-typedef int64x2_t llong2;
-typedef float32x4_t float4;
-
-typedef uint32x2_t uint2arg;
-typedef uint16x4_t ushort4arg;
-typedef uint8x8_t byte8arg;
-typedef int32x2_t int2arg;
-typedef int16x4_t short4arg;
-typedef int8x8_t sbyte8arg;
-typedef uint64x1_t ullong1arg;
-typedef int64x1_t llong1arg;
-typedef float32x2_t float2arg;
-typedef uint32x4_t uint4arg;
-typedef uint16x8_t ushort8arg;
-typedef uint8x16_t byte16arg;
-typedef int32x4_t int4arg;
-typedef int16x8_t short8arg;
-typedef int8x16_t sbyte16arg;
-typedef uint64x2_t ullong2arg;
-typedef int64x2_t llong2arg;
-typedef float32x4_t float4arg;
-
-struct double2 {double v[2];};
-typedef const double2& double2arg;
-struct double4 {double v[4];};
-typedef const double4& double4arg;
-
-forceinline float2 SetFloat2(float s) {return vdup_n_f32(s);}
-forceinline float4 SetFloat4(float s) {return vdupq_n_f32(s);}
-forceinline int2 SetInt2(int s) {return vdup_n_s32(s);}
-forceinline int4 SetInt4(int s) {return vdupq_n_s32(s);}
-
-forceinline int2 SetInt2(const int xy[2]) {return vld1_s32(xy);}
-forceinline int4 SetInt4(const int xyzw[4]) {return vld1q_s32(xyzw);}
-forceinline float2 SetFloat2(const float xy[2]) {return vld1_f32(xy);}
-forceinline float4 SetFloat4(const float xyzw[4]) {return vld1q_f32(xyzw);}
-
-forceinline int2 SetInt2(int x, int y)
-{int xy[] = {x, y}; return SetInt2(xy);}
-
-forceinline int4 SetInt4(int x, int y, int z, int w)
-{int xyzw[] = {x, y, z, w}; return SetInt4(xyzw);}
-
-forceinline float2 SetFloat2(float x, float y)
-{float xy[] = {x, y}; return SetFloat2(xy);}
-
-forceinline float4 SetFloat4(float x, float y, float z, float w)
-{float xyzw[]={x, y, z, w}; return SetFloat4(xyzw);}
-
-forceinline void Get(float* dst, float2arg v) {vst1_f32(dst, v);}
-forceinline void Get(float* dst, float4arg v) {vst1q_f32(dst, v);}
-forceinline float GetX(float2arg v) {float dst[2]; Get(dst, v); return dst[0];}
-forceinline float GetX(float4arg v) {float dst[4]; Get(dst, v); return dst[0];}
-forceinline void Get(int* dst, int2arg v) {vst1_s32(dst, v);}
-forceinline void Get(int* dst, int4arg v) {vst1q_s32(dst, v);}
-forceinline int GetX(int2arg v) {int dst[2]; Get(dst, v); return dst[0];}
-forceinline int GetX(int4arg v) {int dst[4]; Get(dst, v); return dst[0];}
-
-forceinline int2 Add(int2arg a, int2arg b) {return vadd_s32(a, b);}
-forceinline int4 Add(int4arg a, int4arg b) {return vaddq_s32(a, b);}
-forceinline float2 Add(float2arg a, float2arg b) {return vadd_f32(a, b);}
-forceinline float4 Add(float4arg a, float4arg b) {return vaddq_f32(a, b);}
-
-forceinline int2 Mul(int2arg a, int2arg b) {return vmul_s32(a, b);}
-forceinline int4 Mul(int4arg a, int4arg b) {return vmulq_s32(a, b);}
-forceinline float2 Mul(float2arg a, float2arg b) {return vmul_f32(a, b);}
-forceinline float4 Mul(float4arg a, float4arg b) {return vmulq_f32(a, b);}
-
-forceinline int2 Sub(int2arg a, int2arg b) {return vsub_s32(a, b);}
-forceinline int4 Sub(int4arg a, int4arg b) {return vsubq_s32(a, b);}
-forceinline float2 Sub(float2arg a, float2arg b) {return vsub_f32(a, b);}
-forceinline float4 Sub(float4arg a, float4arg b) {return vsubq_f32(a, b);}
-
-}}
+//a + b*c
+forceinline float4 INTRA_VECTORCALL MultiplyAccumulate(float4 a, float4 b, float4 c) {return _mm_fmadd_ps(b, c, a);}
+forceinline float8 INTRA_VECTORCALL MultiplyAccumulate(float8 a, float8 b, float8 c) {return _mm256_fmadd_ps(b, c, a);}
+forceinline float4 INTRA_VECTORCALL MultiplyAccumulate(float a, float4 b, float4 c) {return MultiplyAccumulate(Set<float4>(a), b, c);}
+forceinline float8 INTRA_VECTORCALL MultiplyAccumulate(float a, float8 b, float8 c) {return MultiplyAccumulate(Set<float8>(a), b, c);}
+forceinline float4 INTRA_VECTORCALL MultiplyAccumulate(float4 a, float4 b, float c) {return MultiplyAccumulate(a, b, Set<float4>(c));}
+forceinline float8 INTRA_VECTORCALL MultiplyAccumulate(float8 a, float8 b, float c) {return MultiplyAccumulate(a, b, Set<float8>(c));}
+forceinline float4 INTRA_VECTORCALL MultiplyAccumulate(float a, float4 b, float c) {return MultiplyAccumulate(Set<float4>(a), b, Set<float4>(c));}
+forceinline float8 INTRA_VECTORCALL MultiplyAccumulate(float a, float8 b, float c) {return MultiplyAccumulate(Set<float8>(a), b, Set<float8>(c));}
 
 #else
 
-namespace Intra { namespace Simd {
-
-	struct int4 {int v[4];};
-	struct float4 {float v[4];};
-	typedef const int4& int4arg;
-	typedef const float4& float4arg;
-	struct double2 {double v[2];};
-	typedef const double2& double2arg;
-	struct double4 {double v[4];};
-	typedef const double4& double4arg;
-
-
-	forceinline float4 SetFloat4(float s) {return {{s,s,s,s}};}
-	forceinline int4 SetInt4(int s) {return {{s,s,s,s}};}
-
-	forceinline double2 SetDouble2(double s) {return {{s,s}};}
-	forceinline float4 SetFloat4(float x, float y, float z, float w) {return {{x,y,z,w}};}
-	forceinline double2 SetDouble2(double x, double y) {return {{x,y}};}
-
-	forceinline void Get(float* dst, float4arg v)
-	{dst[0]=v.v[0]; dst[1]=v.v[1]; dst[2]=v.v[2]; dst[3]=v.v[3];}
-	
-	forceinline float GetX(float4arg v) {return v.v[0];}
-	forceinline double GetX(double2arg v) {return v.v[0];}
-
-	forceinline float4 Abs(float4arg x)
-	{return {{x.v[0] < 0? -x.v[0]: x.v[0], x.v[1] < 0? -x.v[1]: x.v[1], x.v[2] < 0? -x.v[2]: x.v[2], x.v[3] < 0? -x.v[3]: x.v[3]}};}
-
-	forceinline double2 Abs(double2arg x)
-	{return {{x.v[0] < 0? -x.v[0]: x.v[0], x.v[1] < 0? -x.v[1]: x.v[1]}};}
-
-	forceinline float4 Add(float4arg a, float4arg b)
-	{return {{a.v[0]+b.v[0], a.v[1]+b.v[1], a.v[2]+b.v[2], a.v[3]+b.v[3]}};}
-
-	forceinline double2 Add(double2arg a, double2arg b)
-	{return {{a.v[0]+b.v[0], a.v[1]+b.v[1]}};}
-
-	forceinline float4 Sub(float4arg a, float4arg b)
-	{return {{a.v[0]-b.v[0], a.v[1]-b.v[1], a.v[2]-b.v[2], a.v[3]-b.v[3]}};}
-
-	forceinline double2 Sub(double2arg a, double2arg b)
-	{return {{a.v[0]-b.v[0], a.v[1]-b.v[1]}};}
-
-	forceinline float4 Mul(float4arg a, float4arg b)
-	{return {{a.v[0]*b.v[0], a.v[1]*b.v[1], a.v[2]*b.v[2], a.v[3]*b.v[3]}};}
-
-	forceinline double2 Mul(double2arg a, double2arg b)
-	{return {{a.v[0]*b.v[0], a.v[1]*b.v[1]}};}
-
-	forceinline float Dot(float4arg a, float4arg b)
-	{return a.v[0]*b.v[0] + a.v[1]*b.v[1] + a.v[2]*b.v[2] + a.v[3]*b.v[3];}
-
-	forceinline double Dot(double2arg a, double2arg b)
-	{return a.v[0]*b.v[0] + a.v[1]*b.v[1];}
-
-	forceinline float4 Dot4(float4arg a, float4arg b)
-	{return SetFloat4(Dot(a, b));}
-
-	forceinline double2 Dot2(double2arg a, double2arg b)
-	{return SetDouble2(Dot(a, b));}
-
-
-	forceinline float4 Min(float4arg a, float4arg b)
-	{return {{a.v[0] < b.v[0]? a.v[0]: b.v[0], a.v[1] < b.v[1]? a.v[1]: b.v[1], a.v[2] < b.v[2]? a.v[2]: b.v[2], a.v[3] < b.v[3]? a.v[3]: b.v[3]}};}
-
-	forceinline double2 Min(double2arg a, double2arg b)
-	{return {{a.v[0] < b.v[0]? a.v[0]: b.v[0], a.v[1] < b.v[1]? a.v[1]: b.v[1]}};}
-
-	forceinline float4 Max(float4arg a, float4arg b)
-	{return {{a.v[0] > b.v[0]? a.v[0]: b.v[0], a.v[1] > b.v[1]? a.v[1]: b.v[1], a.v[2] > b.v[2]? a.v[2]: b.v[2], a.v[3] > b.v[3]? a.v[3]: b.v[3]}};}
-
-	forceinline double2 Max(double2arg a, double2arg b)
-	{return {{a.v[0] > b.v[0]? a.v[0]: b.v[0], a.v[1] > b.v[1]? a.v[1]: b.v[1]}};}
-
-	forceinline float4 MinSingle(float4arg a, float4arg b)
-	{return {{a.v[0] < b.v[0]? a.v[0]: b.v[0], a.v[1], a.v[2], a.v[3]}};}
-
-	forceinline double2 MinSingle(double2arg a, double2arg b)
-	{return {{a.v[0] < b.v[0]? a.v[0]: b.v[0], a.v[1]}};}
-
-	forceinline float4 MaxSingle(float4arg a, float4arg b)
-	{return {{a.v[0] > b.v[0]? a.v[0]: b.v[0], a.v[1], a.v[2], a.v[3]}};}
-
-	forceinline double2 MaxSingle(double2arg a, double2arg b)
-	{return {{a.v[0] > b.v[0]? a.v[0]: b.v[0], a.v[1]}};}
-
-	forceinline float4 Negate(float4arg a)
-	{return {{-a.v[0], -a.v[1], -a.v[2], -a.v[3]}};}
-
-	forceinline double2 Negate(double2arg a)
-	{return {{-a.v[0], -a.v[1]}};}
-
-	// a,b,c,d -> b,c,d,a
-	forceinline float4 Rotate(float4arg a)
-	{return {{a.v[1], a.v[2], a.v[3], a.v[0]}};}
-
-	forceinline float4 Z1W1Z2W2(float4arg a, float4arg b)
-	{return {{a.v[2], a.v[3], b.v[2], b.v[3]}};}
-
-	forceinline bool EqualX(float4arg a, float4arg b)
-	{return a.v[0] == b.v[0];}
-
-	forceinline bool EqualX(double2arg a, double2arg b)
-	{return a.v[0] == b.v[0];}
-
-	forceinline bool NotEqualX(float4arg a, float4arg b)
-	{return a.v[0] != b.v[0];}
-
-	forceinline bool NotEqualX(double2arg a, double2arg b)
-	{return a.v[0] != b.v[0];}
-
-	forceinline bool LessX(float4arg a, float4arg b)
-	{return a.v[0] < b.v[0];}
-
-	forceinline bool LessX(double2arg a, double2arg b)
-	{return a.v[0] < b.v[0];}
-
-	forceinline bool LessEqualX(float4arg a, float4arg b)
-	{return a.v[0] <= b.v[0];}
-
-	forceinline bool LessEqualX(double2arg a, double2arg b)
-	{return a.v[0] <= b.v[0];}
-
-	forceinline bool GreaterX(float4arg a, float4arg b)
-	{return a.v[0] > b.v[0];}
-
-	forceinline bool GreaterX(double2arg a, double2arg b)
-	{return a.v[0] > b.v[0];}
-
-	forceinline bool GreaterEqualX(float4arg a, float4arg b)
-	{return a.v[0] >= b.v[0];}
-
-	forceinline bool GreaterEqualX(double2arg a, double2arg b)
-	{return a.v[0] >= b.v[0];}
-
-}}
+template<typename T1, typename T2, typename T3> forceinline auto INTRA_VECTORCALL MultiplyAccumulate(T1 a, T2 b, T3 c) {return a + b*c;}
 
 #endif
 
-namespace Intra { namespace Simd {
+template<typename T> forceinline Requires<
+	CFloatingPoint<TScalarOf<T>>,
+T> INTRA_VECTORCALL Fract(T x) {return x - Floor(x);}
 
-	namespace Impl
+template<typename T> forceinline Requires<
+	CFloatingPoint<TScalarOf<T>>,
+T> INTRA_VECTORCALL Mod(T a, T aDiv)
+{
+	return a - Floor(a / aDiv) * aDiv;
+}
+
+template<typename T> forceinline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL ModSigned(T a, T aDiv)
+{
+	return a - Truncate(a / aDiv) * aDiv;
+}
+
+template<typename T> forceinline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Abs(T v) noexcept
+{
+	return T(IntAnalogOf<T>(v) & 0x7FFFFFFF);
+}
+
+template<typename T> forceinline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Pow2(T x) noexcept
+{
+	const T fractional_part = Fract(x);
+
+	T factor = MultiplyAccumulate(float(-8.94283890931273951763e-03), fractional_part, float(-1.89646052380707734290e-03));
+	factor = MultiplyAccumulate(float(-5.58662282412822480682e-02), factor, fractional_part);
+	factor = MultiplyAccumulate(float(-2.40139721982230797126e-01), factor, fractional_part);
+	factor = MultiplyAccumulate(float(3.06845249656632845792e-01), factor, fractional_part);
+	factor = MultiplyAccumulate(float(1.06823753710239477000e-07), factor, fractional_part);
+	x -= factor;
+
+	x *= Set<T>(float(1 << 23));
+	x += Set<T>(float((1 << 23) * 127));
+
+	return T(RoundToInt(x));
+}
+
+template<typename T> forceinline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Exp(T x) noexcept
+{
+	return Pow2(x * float(1.442695040888963407359924681001892137426645954153));
+}
+
+namespace detail {
+
+// Minimax polynomial fit of log2(x)/(x - 1), for x in range [1, 2]
+template<typename T, int Order> struct Log2Polynomial;
+template<typename T> struct Log2Polynomial<T, 2>
+{
+	static forceinline T INTRA_VECTORCALL Calc(T m) noexcept
 	{
-		template<typename T> struct simd2;
-		template<typename T> struct simd4;
-		template<> struct simd4<float> {typedef float4 Type;};
-		template<> struct simd2<double> {typedef double2 Type;};
-		//template<> struct simd4<double> {typedef double4 Type;};
+		T p = MultiplyAccumulate(-1.04913055217340124191f, m, 0.204446009836232697516f);
+		return MultiplyAccumulate(2.28330284476918490682f, m, p);
 	}
-	template<typename T> using simd4 = typename Impl::simd4<T>::Type;
-}}
+};
+template<typename T> struct Log2Polynomial<T, 3>
+{
+	static forceinline T INTRA_VECTORCALL Calc(T m) noexcept
+	{
+		T p = MultiplyAccumulate(0.688243882994381274313f, m, -0.107254423828329604454f);
+		p = MultiplyAccumulate(-1.75647175389045657003f, m, p);
+		return MultiplyAccumulate(2.61761038894603480148f, m, p);
+	}
+};
+template<typename T> struct Log2Polynomial<T, 4>
+{
+	static forceinline T INTRA_VECTORCALL Calc(T m) noexcept
+	{
+		T p = MultiplyAccumulate(-0.465725644288844778798f, m, 0.0596515482674574969533f);
+		p = MultiplyAccumulate(1.48116647521213171641f, m, p);
+		p = MultiplyAccumulate(-2.52074962577807006663f, m, p);
+		return MultiplyAccumulate(2.8882704548164776201f, m, p);
+	}
+};
+template<typename T> struct Log2Polynomial<T, 5>
+{
+	static forceinline T INTRA_VECTORCALL Calc(T m) noexcept
+	{
+		T p = MultiplyAccumulate(3.1821337e-1f, m, -3.4436006e-2f);
+		p = MultiplyAccumulate(-1.2315303f, m, p);
+		p = MultiplyAccumulate(2.5988452f, m, p);
+		p = MultiplyAccumulate(-3.3241990f, m, p);
+		return MultiplyAccumulate(3.1157899f, m, p);
+	}
+};
 
-#else
+}
 
-typedef sbyte sbyte16 __attribute__((__vector_size__(16)));
-typedef sbyte sbyte32 __attribute__((__vector_size__(32)));
-typedef sbyte sbyte64 __attribute__((__vector_size__(64)));
+template<int Order, typename T> inline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Log2Order(T x)
+{
+	T one = Set<T>(1);
+	T e = CastToFloat(UnsignedRightBitShift(IntAnalogOf<T>(x) & 0x7F800000, 23) - 127);
+	T m = T((IntAnalogOf<T>(x) & 0x007FFFFF) | IntAnalogOf<T>(one));
+	T p = detail::Log2Polynomial<T, Order>::Calc(m);
+	p *= m - one; // This effectively increases the polynomial degree by one, but ensures that log2(1) == 0
+	return p + e;
+}
 
-typedef short short8 __attribute__((__vector_size__(16)));
-typedef short short16 __attribute__((__vector_size__(32)));
-typedef short short32 __attribute__((__vector_size__(64)));
+template<int Order, typename T> inline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL LogOrder(T x)
+{
+	return Log2Order<Order>(x) / float(1.442695040888963407359924681001892137426645954153);
+}
 
-typedef int int4 __attribute__((__vector_size__(16)));
-typedef int int8 __attribute__((__vector_size__(32)));
-typedef int int16 __attribute__((__vector_size__(64)));
+template<typename T> inline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Log2(T x) {return Log2Order<5>(x);}
 
-typedef float float4 __attribute__((__vector_size__(16)));
-typedef float float8 __attribute__((__vector_size__(32)));
-typedef float float16 __attribute__((__vector_size__(64)));
+template<typename T> inline Requires<
+	CSame<TScalarOf<T>, float>,
+T> INTRA_VECTORCALL Log(T x) {return LogOrder<5>(x);}
 
-typedef float double2 __attribute__((__vector_size__(16)));
-typedef float double4 __attribute__((__vector_size__(32)));
-typedef float double8 __attribute__((__vector_size__(64)));
-
-#endif
-
-INTRA_WARNING_POP
+}
+INTRA_END

@@ -2,11 +2,11 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Cpp/Warnings.h"
+
 
 #include "Map.h"
 
-#include "Cpp/Compatibility.h"
+#include "Core/Compatibility.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -27,6 +27,8 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <unordered_map>
 INTRA_WARNING_POP
 
+#define INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+
 #include "Container/Associative/LinearMap.h"
 #include "Container/Associative/HashMap.h"
 
@@ -45,7 +47,7 @@ template<typename MAP> double TestMapPopulation(uint times, uint size)
 }
 
 template<typename K, typename V> V& GetPairSecondValue(std::pair<K,V>& p) {return p.second;}
-template<typename K, typename V> V& GetPairSecondValue(Meta::Pair<K,V>& p) {return p.second;}
+template<typename K, typename V> V& GetPairSecondValue(Core::Pair<K,V>& p) {return p.second;}
 template<typename K, typename V> V& GetPairSecondValue(KeyValuePair<K,V>& p) {return p.Value;}
 
 template<typename MAP> double TestMapIterationSumValues(uint times, uint size)

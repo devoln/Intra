@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Cpp/Features.h"
+#include "Core/Core.h"
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 #include "Math/Matrix4.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Triangle
 {
@@ -15,7 +16,7 @@ template<typename T> struct Triangle
 
 	INTRA_MATH_CONSTEXPR Plane<T> GetPlane() const {return Plane<T>(A, B, C);}
 
-	INTRA_MATH_EXTENDED_CONSTEXPR T Area() const
+	INTRA_MATH_CONSTEXPR2 T Area() const
 	{
 		const T a = LengthAB();
 		const T b = LengthBC();

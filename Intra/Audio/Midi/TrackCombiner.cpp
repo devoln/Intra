@@ -1,8 +1,9 @@
 #include "TrackCombiner.h"
-#include "Range/Mutation/Heap.h"
+#include "Core/Range/Mutation/Heap.h"
 #include "Funal/ObjectMethod.h"
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 bool TrackCombiner::trackTimeComparer(const TrackParser& a, const TrackParser& b)
 {
@@ -15,7 +16,7 @@ TrackCombiner::TrackCombiner(short headerTimeFormat):
 void TrackCombiner::AddTrack(TrackParser track)
 {
 	if(track.Empty()) return;
-	Range::HeapContainerPush(mTracks, Cpp::Move(track),
+	Range::HeapContainerPush(mTracks, Move(track),
 		ObjectMethod(this, &TrackCombiner::trackTimeComparer));
 }
 
@@ -37,4 +38,5 @@ void TrackCombiner::ProcessEvent(IDevice& device)
 MidiTime TrackCombiner::NextEventTime() const
 {return mTracks.First().NextEventTime(mState);}
 
-}}}
+}}
+INTRA_END

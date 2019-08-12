@@ -1,200 +1,206 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-
-#include "Meta/Type.h"
+#include "Core/Core.h"
+#include "Core/Numeric.h"
+#include "Core/Type.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
 #include "Math/Vector4.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
 
 #ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wsign-conversion"
+//#pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
 
-namespace Intra { namespace Math {
+inline namespace Math {
 
-template<typename T, uint DIV> struct FixedPoint
+template<typename T, uint DIV, uint MUL=1> struct FixedPoint
 {
+	T Raw;
+
+#ifdef __cpp_constexpr
+	constexpr static auto Divisor = TSelect<uint, double, MUL == 1>(DIV)/MUL;
+#else
 	enum: uint {Divisor = DIV};
+#endif
+	static_assert(CPlainIntegral<T>, "Fixed point base must be integral.");
+	static_assert(sizeof(T) < 8, "64-bit FixedPoint not supported!");
 
-	static_assert(Meta::IsIntegralType<T>::_, "Fixed point base must be integral.");
-	static_assert(sizeof(T)<8, "64-bit FixedPoint not supported!");
+private:
+	typedef TLargerInt<T> LargerT;
 
+public:
 	FixedPoint() = default;
-	template<typename RHS> constexpr forceinline FixedPoint(RHS value): data(T(value*DIV)) {}
+	template<typename RHS> constexpr forceinline FixedPoint(RHS value): Raw(T(value*Divisor)) {}
 
-	template<typename T2> forceinline operator T2() const {return cast<T2>();}
+	template<typename T2> explicit constexpr forceinline operator T2() const {return cast<T2>();}
 
-	template<typename T2, uint DIV2> constexpr forceinline explicit FixedPoint(const FixedPoint<T2, DIV2>& rhs): data(T(long64(rhs.data)*DIV/DIV2)) {}
-	FixedPoint(const FixedPoint&) = default;
+	template<typename T2, uint DIV2> constexpr forceinline explicit FixedPoint(const FixedPoint<T2, DIV2>& rhs): Raw(T(LargerT(rhs.Raw)*Divisor/rhs.Divisor)) {}
+	constexpr FixedPoint(const FixedPoint&) = default;
 
-	constexpr forceinline FixedPoint operator+(FixedPoint rhs) const {return FixedPoint(data + rhs.data);}
-	constexpr forceinline FixedPoint operator-(FixedPoint rhs) const {return FixedPoint(data - rhs.data);}
-	constexpr forceinline FixedPoint operator*(FixedPoint rhs) const {return FixedPoint(data * rhs.data / DIV);}
-	constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(data * DIV / rhs.data);}
-	constexpr forceinline FixedPoint operator-() const {return CastFromInt(-data);}
+	INTRA_NODISCARD constexpr forceinline FixedPoint operator+(FixedPoint rhs) const {return FixedPoint(T(Raw + rhs.Raw), null);}
+	INTRA_NODISCARD constexpr forceinline FixedPoint operator-(FixedPoint rhs) const {return FixedPoint(T(Raw - rhs.Raw), null);}
+	INTRA_NODISCARD constexpr forceinline FixedPoint operator*(FixedPoint rhs) const {return FixedPoint(T(LargerT(Raw) * rhs.Raw / Divisor), null);}
+	INTRA_NODISCARD constexpr forceinline FixedPoint operator/(FixedPoint rhs) const {return FixedPoint(T(LargerT(Raw) * Divisor / rhs.Raw), null);}
+	INTRA_NODISCARD constexpr forceinline FixedPoint operator-() const {return CastFromInt(-Raw);}
 
-	forceinline FixedPoint& operator+=(FixedPoint rhs) {data = T(data+rhs.data); return *this;}
-	forceinline FixedPoint& operator-=(FixedPoint rhs) {data = T(data-rhs.data); return *this;}
-	forceinline FixedPoint& operator*=(FixedPoint rhs) {data = T(data*rhs.data/DIV); return *this;}
-	forceinline FixedPoint& operator/=(FixedPoint rhs) {data = (data*DIV/rhs.data); return *this;}
+	INTRA_CONSTEXPR2 forceinline FixedPoint& operator+=(FixedPoint rhs) {Raw = T(Raw + rhs.Raw); return *this;}
+	INTRA_CONSTEXPR2 forceinline FixedPoint& operator-=(FixedPoint rhs) {Raw = T(Raw - rhs.Raw); return *this;}
+	INTRA_CONSTEXPR2 forceinline FixedPoint& operator*=(FixedPoint rhs) {Raw = T(LargerT(Raw) * rhs.Raw / Divisor); return *this;}
+	INTRA_CONSTEXPR2 forceinline FixedPoint& operator/=(FixedPoint rhs) {Raw = T(LargerT(Raw) * Divisor / rhs.Raw); return *this;}
 
-	template<typename U> constexpr forceinline FixedPoint operator+(U rhs) const {return FixedPoint(data+T(rhs*DIV));}
-	template<typename U> constexpr forceinline FixedPoint operator-(U rhs) const {return FixedPoint(data-T(rhs*DIV));}
-	template<typename U> constexpr forceinline FixedPoint operator*(U rhs) const {return FixedPoint(data*T(rhs));}
-	template<typename U> constexpr forceinline FixedPoint operator/(U rhs) const {return FixedPoint(data/T(rhs));}
+	INTRA_NODISCARD template<typename U> constexpr forceinline FixedPoint operator+(U rhs) const {return FixedPoint(Raw+T(rhs*Divisor), null);}
+	INTRA_NODISCARD template<typename U> constexpr forceinline FixedPoint operator-(U rhs) const {return FixedPoint(Raw-T(rhs*Divisor), null);}
+	INTRA_NODISCARD template<typename U> constexpr forceinline FixedPoint operator*(U rhs) const {return FixedPoint(T(LargerT(Raw)*rhs), null);}
+	INTRA_NODISCARD template<typename U> constexpr forceinline FixedPoint operator/(U rhs) const {return FixedPoint(T(LargerT(Raw)/rhs), null);}
 
-	FixedPoint& operator=(const FixedPoint&) = default;
-	template<typename U> forceinline FixedPoint& operator=(U rhs) {data = T(rhs*DIV); return *this;}
-	template<typename U> forceinline FixedPoint& operator+=(U rhs) {data = T(data+T(rhs*DIV)); return *this;}
-	template<typename U> forceinline FixedPoint& operator-=(U rhs) {data = T(data-T(rhs*DIV)); return *this;}
-	template<typename U> forceinline FixedPoint& operator*=(U rhs) {data = T(data*T(rhs)); return *this;}
-	template<typename U> forceinline FixedPoint& operator/=(U rhs) {data = T(data/T(rhs)); return *this;}
+	INTRA_CONSTEXPR2 forceinline FixedPoint& operator=(const FixedPoint&) = default;
+	template<typename U> INTRA_CONSTEXPR2 forceinline FixedPoint& operator=(U rhs) {Raw = T(rhs*Divisor); return *this;}
+	template<typename U> INTRA_CONSTEXPR2 forceinline FixedPoint& operator+=(U rhs) {Raw = T(Raw+rhs*Divisor); return *this;}
+	template<typename U> INTRA_CONSTEXPR2 forceinline FixedPoint& operator-=(U rhs) {Raw = T(Raw-rhs*Divisor); return *this;}
+	template<typename U> INTRA_CONSTEXPR2 forceinline FixedPoint& operator*=(U rhs) {Raw = T(Raw*rhs); return *this;}
+	template<typename U> INTRA_CONSTEXPR2 forceinline FixedPoint& operator/=(U rhs) {Raw = T(Raw/rhs); return *this;}
 
 
-	constexpr forceinline bool operator==(FixedPoint rhs) const {return data == rhs.data;}
-	constexpr forceinline bool operator!=(FixedPoint rhs) const {return data != rhs.data;}
-	constexpr forceinline bool operator<(FixedPoint rhs) const {return data < rhs.data;}
-	constexpr forceinline bool operator>(FixedPoint rhs) const {return data > rhs.data;}
-	constexpr forceinline bool operator<=(FixedPoint rhs) const {return data <= rhs.data;}
-	constexpr forceinline bool operator>=(FixedPoint rhs) const {return data >= rhs.data;}
+	INTRA_NODISCARD constexpr forceinline bool operator==(FixedPoint rhs) const noexcept {return Raw == rhs.Raw;}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(FixedPoint rhs) const noexcept {return Raw != rhs.Raw;}
+	INTRA_NODISCARD constexpr forceinline bool operator<(FixedPoint rhs) const noexcept {return Raw < rhs.Raw;}
+	INTRA_NODISCARD constexpr forceinline bool operator>(FixedPoint rhs) const noexcept {return Raw > rhs.Raw;}
+	INTRA_NODISCARD constexpr forceinline bool operator<=(FixedPoint rhs) const noexcept {return Raw <= rhs.Raw;}
+	INTRA_NODISCARD constexpr forceinline bool operator>=(FixedPoint rhs) const noexcept {return Raw >= rhs.Raw;}
 
-	static constexpr forceinline FixedPoint CastFromInt(T v) {return FixedPoint(v, null);}
+	INTRA_NODISCARD static constexpr forceinline FixedPoint CastFromInt(T v) noexcept {return FixedPoint(v, null);}
 
 	static const FixedPoint Max;
 	static const FixedPoint Min;
 
 private:
-	T data;
-	enum: T {max_t = (1LL << (sizeof(T)*8-Meta::IsSignedIntegralType<T>::_))-1}; //Наибольшее значение, которое может принимать тип T
-	enum: T {min_t = T(Meta::IsUnsignedIntegralType<T>::_? 0: (-1LL-max_t))};
+	enum: T {max_t = LMaxOf(T()), min_t = LMinOf(T()), mask = CPlainSigned<T>? min_t: max_t};
 
-	constexpr forceinline FixedPoint(T v, null_t): data(v) {}
+	constexpr forceinline FixedPoint(T v, null_t): Raw(v) {}
 
-	template<typename T2> Meta::EnableIf<Meta::IsFloatType<T2>::_, T2> cast() const {return T2(data)/DIV;}
-	template<typename T2> Meta::EnableIf<Meta::IsIntegralType<T2>::_, T2> cast() const {return T2(long64(data)/DIV);}
+	template<typename T2> constexpr forceinline Requires<CFloatingPoint<T2>, T2> cast() const {return T2(Raw)/Divisor;}
+	template<typename T2> constexpr forceinline Requires<CIntegral<T2>, T2> cast() const {return T2(int64(Raw)/Divisor);}
 };
 
-template<typename T, uint DIV> const FixedPoint<T, DIV> FixedPoint<T, DIV>::Max = FixedPoint<T, DIV>::CastFromInt(max_t);
-template<typename T, uint DIV> const FixedPoint<T, DIV> FixedPoint<T, DIV>::Min = FixedPoint<T, DIV>::CastFromInt(min_t);
+template<typename T, uint DIV, uint MUL> constexpr const FixedPoint<T, DIV, MUL> FixedPoint<T, DIV, MUL>::Max = FixedPoint<T, DIV, MUL>::CastFromInt(max_t);
+template<typename T, uint DIV, uint MUL> constexpr const FixedPoint<T, DIV, MUL> FixedPoint<T, DIV, MUL>::Min = FixedPoint<T, DIV, MUL>::CastFromInt(min_t);
 
-//! Беззнаковое число размером 1 байт в интервале [0; 1) с точностью до 1/256 (~ 2 десятичных разряда после запятой).
-typedef FixedPoint<byte, 0x100> Norm8;
+//! Unsigned 1 byte fixed point number: range [0; 1), step 1/256 (~ 2 decimal digits).
+typedef FixedPoint<byte, 256> Norm8;
 
-//! Беззнаковое число размером 2 байта в интервале [0; 1) с точностью до 1/65536 (~ 4,5 десятичных разряда после запятой).
-typedef FixedPoint<ushort, 0x10000> Norm16;
-
-
-//! Беззнаковое число размером 1 байт в интервале [0; 1] с точностью до 1/255 (~ 2 десятичных разряда после запятой).
-//! Медленнее, чем Norm8.
-typedef FixedPoint<byte, 0xFF> Norm8s;
-
-//! Беззнаковое число размером 2 байта в интервале [0; 1] с точностью до 1/65535 (~ 4,5 десятичных разряда после запятой).
-//! Медленнее, чем Norm16.
-typedef FixedPoint<ushort, 0xFFFF> Norm16s;
-
-//! Беззнаковое число размером 4 байта в интервале [0; 1] с точностью до 1/(2^32 - 1) (~ 9,5 десятичных разряда после запятой).
-typedef FixedPoint<uint, 0xFFFFFFFF> Norm32s;
+//! Unsigned 2 byte fixed point number: range [0; 1), step 1/65536 (~ 4.5 decimal digits).
+typedef FixedPoint<ushort, 65536> Norm16;
 
 
-//! Знаковое число размером 1 байт в интервале [-1; 1) с точностью до 1/128 (~ 2 десятичных разряда после запятой).
+//! Unsigned 2 byte fixed point number: range [0; 1], step 1/255 (~ 2 decimal digits).
+//! Slower than Norm8 but its range includes 1.
+typedef FixedPoint<byte, 255> Norm8s;
+
+//! Unsigned 2 byte fixed point number: range [0; 1], step 1/65535 (~ 4.5 decimal digits).
+//! Slower than Norm16 but its range includes 1.
+typedef FixedPoint<ushort, 65535> Norm16s;
+
+//! Unsigned 4 byte fixed point number: range [0; 1], step 1/(2^32 - 1) (~ 9.5 decimal digits).
+typedef FixedPoint<uint, 4294967295> Norm32s;
+
+
+//! Signed 1 byte fixed point number: range [-1; 1), step 1/128 (~ 2 decimal digits).
 typedef FixedPoint<sbyte, 0x80> SNorm8;
 
-//! Знаковое число размером 2 байта в интервале [-1; 1) с точностью до 1/32768 (~ 4,5 десятичных разрядов после запятой).
+//! Signed 2 byte fixed point number: range [-1; 1), step 1/32768 (~ 4.5 decimal digits).
 typedef FixedPoint<short, 0x8000> SNorm16;
 
-//! Знаковое число размером 4 байта в интервале [-1; 1) с точностью до 2^-31 (~ 9 десятичных разрядов после запятой).
+//! Signed 4 byte fixed point number: range [-1; 1), step 2^-31 (~ 9 decimal digits).
 typedef FixedPoint<int, 0x80000000> SNorm32;
 
 
-//! Знаковое число размером 1 байт в интервале [-1; 1] с точностью до 1/127.5 (~ 2 десятичных разряда после запятой).
-//! Медленнее, чем SNorm8.
+//! Signed 1 byte fixed point number: range [-1; 1] step 1/127.5 (~ 2 decimal digits).
+//! Slower than SNorm8.
 typedef FixedPoint<sbyte, 0x7F> SNorm8s;
 
-//! Знаковое число размером 2 байта в интервале [-1; 1] с точностью до 1/32767.5 (~ 4,5 десятичных разряда после запятой).
-//! Медленнее, чем SNorm16.
+//! Signed 2 byte fixed point number: range [-1; 1], step 1/32767.5 (~ 4.5 decimal digits).
+//! Slower than SNorm16.
 typedef FixedPoint<short, 0x7FFF> SNorm16s;
 
-//! Знаковое число размером 4 байта в интервале [-1; 1] с точностью до 1/(2^31 - 1) (~ 9 десятичных разрядов после запятой).
-//! Медленнее, чем SNorm32.
+//! Signed 4 byte fixed point number: range [-1; 1], step 1/(2^31 - 1) (~ 9 decimal digits).
+//! Slower than SNorm32.
 typedef FixedPoint<int, 0x7FFFFFFF> SNorm32s;
 
-#ifdef INTRA_USER_DEFINED_LITERAL_SUPPORT
+#if defined(__cpp_user_defined_literals) && __cpp_user_defined_literals >= 200809
 namespace FixedLiterals {
-forceinline constexpr Norm8 operator"" _n8(real v) {return Norm8(v);}
-forceinline constexpr Norm16 operator"" _n16(real v) {return Norm16(v);}
-forceinline constexpr Norm16 operator"" _n(real v) {return Norm16(v);}
+INTRA_NODISCARD constexpr forceinline Norm8 operator"" _n8(long double v) {return Norm8(v);}
+INTRA_NODISCARD constexpr forceinline Norm16 operator"" _n16(long double v) {return Norm16(v);}
+INTRA_NODISCARD constexpr forceinline Norm16 operator"" _n(long double v) {return Norm16(v);}
 
-forceinline constexpr Norm8s operator"" _n8s(real v) {return Norm8s(v);}
-forceinline constexpr Norm16s operator"" _n16s(real v) {return Norm16s(v);}
-forceinline constexpr Norm16s operator"" _ns(real v) {return Norm16s(v);}
-forceinline constexpr Norm32s operator"" _n32s(real v) {return Norm32s(v);}
+INTRA_NODISCARD constexpr forceinline Norm8s operator"" _n8s(long double v) {return Norm8s(v);}
+INTRA_NODISCARD constexpr forceinline Norm16s operator"" _n16s(long double v) {return Norm16s(v);}
+INTRA_NODISCARD constexpr forceinline Norm16s operator"" _ns(long double v) {return Norm16s(v);}
+INTRA_NODISCARD constexpr forceinline Norm32s operator"" _n32s(long double v) {return Norm32s(v);}
 
-forceinline constexpr SNorm8 operator"" _s8(real v) {return SNorm8(v);}
-forceinline constexpr SNorm16 operator"" _s16(real v) {return SNorm16(v);}
-forceinline constexpr SNorm16 operator"" _s(real v) {return SNorm16(v);}
-forceinline constexpr SNorm32 operator"" _s32(real v) {return SNorm32(v);}
+INTRA_NODISCARD constexpr forceinline SNorm8 operator"" _s8(long double v) {return SNorm8(v);}
+INTRA_NODISCARD constexpr forceinline SNorm16 operator"" _s16(long double v) {return SNorm16(v);}
+INTRA_NODISCARD constexpr forceinline SNorm16 operator"" _s(long double v) {return SNorm16(v);}
+INTRA_NODISCARD constexpr forceinline SNorm32 operator"" _s32(long double v) {return SNorm32(v);}
 
-forceinline constexpr SNorm8s operator"" _s8s(real v) {return SNorm8s(v);}
-forceinline constexpr SNorm16s operator"" _s16s(real v) {return SNorm16s(v);}
-forceinline constexpr SNorm16s operator"" _ss(real v) {return SNorm16s(v);}
-forceinline constexpr SNorm32s operator"" _s32s(real v) {return SNorm32s(v);}
+INTRA_NODISCARD constexpr forceinline SNorm8s operator"" _s8s(long double v) {return SNorm8s(v);}
+INTRA_NODISCARD constexpr forceinline SNorm16s operator"" _s16s(long double v) {return SNorm16s(v);}
+INTRA_NODISCARD constexpr forceinline SNorm16s operator"" _ss(long double v) {return SNorm16s(v);}
+INTRA_NODISCARD constexpr forceinline SNorm32s operator"" _s32s(long double v) {return SNorm32s(v);}
 }
 #endif
 
 
-//! Беззнаковое число размером 1 байт в интервале [0; 16) с точностью до 1/16 (~ 1 десятичный разряд после запятой).
+//! Unsigned 1 byte fixed point number: range [0; 16), step 1/16 (~ 1 fractional decimal digit).
 typedef FixedPoint<byte, 0x10> Fixed8;
 
-//! Беззнаковое число размером 2 байта в интервале [0; 256) с точностью до 1/256 (~ 2 десятичных разряда после запятой).
+//! Unsigned 2 byte fixed point number: range [0; 256), step 1/256 (~ 2  fractionaldecimal digits).
 typedef FixedPoint<ushort, 0x100> Fixed16;
 
-//! Беззнаковое число размером 4 байта в интервале [0; 65536) с точностью до 1/65536 (~ 4,5 десятичных разряда после запятой).
-typedef FixedPoint<uint, 0x10000> Fixed32;
+//! Unsigned 4 byte fixed point number: range [0; 65536), step 1/65536 (~ 4.5 fractional decimal digits).
+typedef FixedPoint<uint32, 0x10000> Fixed32;
 
-//! Знаковое число размером 1 байт в интервале [-8; 8) с точностью до 1/16 (~ 1 десятичный разряд после запятой).
+//! Signed 1 byte fixed point number: range [-8; 8), step 1/16 (~ 1 fractionl decimal digit).
 typedef FixedPoint<sbyte, 0x10> SFixed8;
 
-//! Знаковое число размером 2 байта в интервале [-128; 128) с точностью до 1/256 (~ 2 десятичных разряда после запятой).
+//! Signed 2 byte fixed point number: range [-128; 128), step 1/256 (~ 2 fractional decimal digits).
 typedef FixedPoint<short, 0x100> SFixed16;
 
-//! Знаковое число размером 4 байта в интервале [-32768; 32768) с точностью до 1/65536 (~ 4,5 десятичных разряда после запятой).
+//! Signed 4 byte fixed point number: range [-32768; 32768), step 1/65536 (~ 4.5 fractional decimal digits).
 typedef FixedPoint<int, 0x10000> SFixed32;
 
-#ifdef INTRA_USER_DEFINED_LITERAL_SUPPORT
+#if defined(__cpp_user_defined_literals) && __cpp_user_defined_literals >= 200809
 namespace FixedLiterals {
-forceinline constexpr Fixed8 operator"" _x8(real v) {return Fixed8(v);}
-forceinline constexpr Fixed16 operator"" _x16(real v) {return Fixed16(v);}
-forceinline constexpr Fixed16 operator"" _x(real v) {return Fixed16(v);}
-forceinline constexpr Fixed32 operator"" _x32(real v) {return Fixed32(v);}
+INTRA_NODISCARD constexpr forceinline Fixed8 operator"" _x8(long double v) {return Fixed8(v);}
+INTRA_NODISCARD constexpr forceinline Fixed16 operator"" _x16(long double v) {return Fixed16(v);}
+INTRA_NODISCARD constexpr forceinline Fixed16 operator"" _x(long double v) {return Fixed16(v);}
+INTRA_NODISCARD constexpr forceinline Fixed32 operator"" _x32(long double v) {return Fixed32(v);}
 
-forceinline constexpr SFixed8 operator"" _sx8(real v) {return SFixed8(v);}
-forceinline constexpr SFixed16 operator"" _sx16(real v) {return SFixed16(v);}
-forceinline constexpr SFixed16 operator"" _sx(real v) {return SFixed16(v);}
-forceinline constexpr SFixed32 operator"" _sx32(real v) {return SFixed32(v);}
+INTRA_NODISCARD constexpr forceinline SFixed8 operator"" _sx8(long double v) {return SFixed8(v);}
+INTRA_NODISCARD constexpr forceinline SFixed16 operator"" _sx16(long double v) {return SFixed16(v);}
+INTRA_NODISCARD constexpr forceinline SFixed16 operator"" _sx(long double v) {return SFixed16(v);}
+INTRA_NODISCARD constexpr forceinline SFixed32 operator"" _sx32(long double v) {return SFixed32(v);}
 }
 #endif
 
 
-//! Беззнаковое число размером 2 байта в интервале [0; 655,35] с точностью до 0.01 (ровно 2 десятичных разряда после запятой).
+//! Unsigned 2 byte fixed point decimal number: range [0; 655.35], step 0.01 (exactly 2 fractional decimal digits).
 typedef FixedPoint<ushort, 100> Decimal16_2;
 
-//! Знаковое число размером 2 байта в интервале [-327,68; 327,67] с точностью до 0.01 (ровно 2 десятичных разряда после запятой).
+//! Signed 2 byte fixed point decimal number: range [-327.68; 327.67], step 0.01 (exactly 2 fractional decimal digits).
 typedef FixedPoint<short, 100> SDecimal16_2;
 
-//! Беззнаковое число размером 4 байта в интервале [0; 42949672,95] с точностью до 1/100 (ровно 2 десятичных разряда после запятой).
+//! Unsigned 4 byte fixed point decimal number: range [0; 42949672.95], step 0.01 (exactly 2 fractional decimal digits).
 typedef FixedPoint<uint, 100> Decimal32_2;
 
-//! Знаковое число размером 4 байта в интервале [-21474836,48; 21474836,47] с точностью до 0,01 (ровно 2 десятичных разряда после запятой).
+//! Signed 4 byte fixed point decimal number: range [-21474836.48; 21474836.47], step 0.01 (exactly 2 fractional decimal digits).
 typedef FixedPoint<int, 100> SDecimal32_2;
 
-//! Беззнаковое число размером 4 байта в интервале [0; 4294967,295] с точностью до 0,001 (ровно 3 десятичных разряда после запятой).
+//! Unsigned 4 byte fixed point decimal number: range [0; 4294967.295], step 0.001 (exactly 3 fractional decimal digits).
 typedef FixedPoint<uint, 1000> Decimal32_3;
 
-//! Знаковое число размером 4 байта в интервале [-2147483,648; 2147483,647] с точностью до 0,001 (ровно 3 десятичных разряда после запятой).
+//! Signed 4 byte fixed point decimal number: range [-2147483.648; 2147483.647], step 0.001 (exactly 3 fractional decimal digits).
 typedef FixedPoint<int, 1000> SDecimal32_3;
 
 
@@ -252,6 +258,14 @@ using Math::SDecimal32_2;
 using Math::Decimal32_3;
 using Math::SDecimal32_3;
 
-}
+#if INTRA_CONSTEXPR_TEST
+static_assert(Norm8(1.0/256) + Norm8(2.0/256) == Norm8(3.0/256), "TEST FAILED");
+static_assert(Norm8(178.0/256) + Norm8(122.0/256) == Norm8(44.0/256), "TEST FAILED");
+static_assert(SNorm8(-122.0/128) - SNorm8(118.0/128) == SNorm8(16.0/128), "TEST FAILED"); //TODO: is this UB (signed integer overflow)? If it is why does it compile in constexpr context?
+static_assert(Norm8(178.0/256) * Norm8(122.0/256) == Norm8(84.0/256), "TEST FAILED");
+static_assert(Norm8(178.0/256) * 3 == Norm8(22.0/256), "TEST FAILED");
+static_assert(SFixed32(37.662445068359375) * SFixed32(-122.5) == -4613.6495208740234375, "TEST FAILED");
+static_assert(SFixed32(-4613.6495208740234375) / SFixed32(-37.662445068359375) == SFixed32(122.5), "TEST FAILED");
+#endif
 
-INTRA_WARNING_POP
+INTRA_END

@@ -1,11 +1,9 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+inline namespace Audio {
 
 struct MusicNote
 {
@@ -33,6 +31,5 @@ struct MusicNote
 	byte NoteOctave;
 };
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

@@ -1,14 +1,11 @@
-﻿#include "Cpp/PlatformDetect.h"
-#include "Font/FontLoading.h"
-#include "Utils/StringView.h"
+﻿#include "Font/FontLoading.h"
+#include "Core/Range/StringView.h"
 #include "Container/Sequential/String.h"
 #include "Math/Vector2.h"
 
 
-#if INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Dummy
-namespace Intra {
-
-using namespace Math;
+#if INTRA_LIBRARY_FONT_LOADING == INTRA_LIBRARY_FONT_LOADING_Dummy
+INTRA_BEGIN
 
 namespace FontLoadingAPI {
 
@@ -55,8 +52,7 @@ short FontGetKerning(FontHandle font, int left, int right)
 }
 
 }
-
-}
+INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_STB)
 
@@ -71,9 +67,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 
 INTRA_WARNING_POP
 
-namespace Intra {
-
-using namespace Math;
+INTRA_BEGIN
 
 namespace FontLoadingAPI {
 
@@ -136,7 +130,8 @@ const byte* FontGetCharBitmap(FontHandle desc, uint code, SVec2* offset, USVec2*
 	return glyph->bitmap.buffer;
 }
 
-}}
+}
+INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Gdiplus)
 
@@ -156,10 +151,8 @@ INTRA_WARNING_POP
 using namespace Gdiplus;
 using namespace Gdiplus::DllExports;
 
-namespace Intra { namespace FontLoadingAPI {
-
-using namespace Math;
-
+INTRA_BEGIN
+namespace FontLoadingAPI {
 
 //static FT_Library ft=null;
 
@@ -201,7 +194,8 @@ const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2*
 	return &whitePixel;
 }
 
-}}
+}
+INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Qt)
 

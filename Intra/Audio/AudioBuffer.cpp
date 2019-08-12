@@ -1,11 +1,12 @@
 ﻿#include "Audio/AudioBuffer.h"
-#include "Range/Reduction.h"
-#include "Range/Mutation/Cast.h"
-#include "Utils/Span.h"
-#include "Range/Mutation/Fill.h"
-#include "Range/Mutation/Transform.h"
+#include "Core/Range/Reduction.h"
+#include "Core/Range/Mutation/Cast.h"
+#include "Core/Range/Span.h"
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Transform.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 AudioBuffer::AudioBuffer(size_t sampleCount,
 	uint sampleRate, CSpan<float> initData):
@@ -39,7 +40,7 @@ void AudioBuffer::CastToShorts(size_t first, Span<short> outSamples) const
 
 void AudioBuffer::ShiftSamples(intptr samplesToShift)
 {
-	if(samplesToShift==0 || Samples==null) return;
+	if(samplesToShift==0 || Samples.Empty()) return;
 	if(size_t(Math::Abs(samplesToShift))>=Samples.Count()) {Clear(); return;}
 	if(samplesToShift<0)
 	{
@@ -88,4 +89,6 @@ void AudioBuffer::SetMinMax(float newMin, float newMax,
 	MulAdd(range, multiplyer, add);
 }
 
-}}
+}
+
+INTRA_END

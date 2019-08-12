@@ -1,18 +1,19 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
 
-#include "Utils/Debug.h"
+#include "Core/Core.h"
+#include "Core/Core.h"
 
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Assert.h"
+
+#include "Core/Range/Polymorphic/InputRange.h"
 
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 struct RawEvent
 {
@@ -60,7 +61,7 @@ public:
 	forceinline RawEventStream(null_t=null) {}
 
 	forceinline RawEventStream(InputStream stream):
-		mStream(Cpp::Move(stream)) {PopFirst();}
+		mStream(Move(stream)) {PopFirst();}
 
 	RawEventStream(const RawEventStream&) = delete;
 	RawEventStream& operator=(const RawEventStream&) = delete;

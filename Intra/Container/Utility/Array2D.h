@@ -1,13 +1,9 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-
 #include "Utils/FixedArray.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra {
+INTRA_BEGIN
+inline namespace Container {
 
 template<typename T> class Array2D
 {
@@ -55,7 +51,7 @@ public:
 	forceinline FixedArray<T> MoveToLinearArray()
 	{
 		mWidth = 0;
-		return Cpp::Move(mData);
+		return Move(mData);
 	}
 
 	forceinline size_t Width() const {return mWidth;}
@@ -65,7 +61,5 @@ private:
 	FixedArray<T> mData;
 	size_t mWidth;
 };
-
 }
-
-INTRA_WARNING_POP
+INTRA_END

@@ -2,7 +2,8 @@
 
 #include "Math/Vector2.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Ellipse
 {
@@ -18,8 +19,8 @@ template<typename T> T Distance(Ellipse<T> ellipse, Vector2<T> pt)
 	const Vector2<T> ptAbs = Abs(pt);
 	if(ptAbs.x > ptAbs.y)
 	{
-		Cpp::Swap(pt.x, pt.y);
-		Cpp::Swap(ellipse.a, ellipse.b);
+		Core::Swap(pt.x, pt.y);
+		Core::Swap(ellipse.a, ellipse.b);
 		//swap ptAbs???
 	}
 	

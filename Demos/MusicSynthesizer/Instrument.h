@@ -1,24 +1,15 @@
 ﻿#pragma once
 
 #include "Sampler.h"
+#include "Container/Utility/Blob.h"
 
-//! Инструмент-наследник должен быть тривиально перемещаемым,
-//! то есть он и его члены не должны иметь указателей и ссылок на свои поля
-//! или иметь какую-то другую логику перемещения
 class Instrument
 {
 public:
 	virtual ~Instrument() {}
-
-	virtual Sampler& CreateSampler(SamplerContainer& dst,
-		float freq, float volume, uint sampleRate, ushort* oIndex = null) = 0;
+	virtual void MoveConstruct(void* dst) = 0;
+	virtual Sampler& CreateSampler(float freq, float volume, uint sampleRate,
+		SamplerContainer& dst, ushort* oIndex = null) const = 0;
 };
 
-class InstrumentContainer
-{
-	Array<byte> mInstrumentRawData;
-	Array<uint> mInstrumentOffsets;
-
-public:
-
-};
+typedef Intra::Container::DynamicBlob<Instrument, alignof(Instrument), ushort> InstrumentContainer;

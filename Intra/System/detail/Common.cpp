@@ -1,11 +1,11 @@
 #include "Common.h"
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
 
-#include "Utils/StringView.h"
-#include "Utils/Debug.h"
-#include "Utils/ErrorStatus.h"
+
+
+#include "Core/Range/StringView.h"
+#include "Core/Assert.h"
+#include "System/Error.h"
 
 #include "Container/Sequential/String.h"
 
@@ -35,7 +35,8 @@ struct IUnknown;
 
 #endif
 
-namespace Intra { namespace System { namespace detail {
+INTRA_BEGIN
+namespace System { namespace detail {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 

@@ -1,17 +1,18 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
 
-#include "Utils/Span.h"
+
+#include "Core/Range/Span.h"
 #include "Utils/FixedArray.h"
 
-#include "Meta/Pair.h"
+#include "Core/Pair.h"
 
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 struct TEnvironment
 {
@@ -20,24 +21,24 @@ struct TEnvironment
 	struct VarSet
 	{
 		VarSet(FixedArray<char>&& data, size_t count):
-			mData(Cpp::Move(data)), mCount(count) {}
+			mData(Move(data)), mCount(count) {}
 
 		VarSet(const VarSet&) = delete;
 
 		VarSet(VarSet&& rhs):
-			mData(Cpp::Move(rhs.mData)), mCount(rhs.mCount) {}
+			mData(Move(rhs.mData)), mCount(rhs.mCount) {}
 
 		VarSet& operator=(const VarSet&) = delete;
 
 		VarSet& operator=(VarSet&& rhs)
 		{
-			mData = Cpp::Move(rhs.mData);
+			mData = Move(rhs.mData);
 			mCount = rhs.mCount;
 			return *this;
 		}
 		
 		CSpan<KeyValuePair<StringView, StringView>> AsRange() const;
-		size_t Length() const {return mCount;}
+		index_t Length() const {return mCount;}
 	private:
 		FixedArray<char> mData;
 		size_t mCount;

@@ -1,11 +1,11 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestSort.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
-#include "Range/Sort.hh"
+#include "Core/Range/Sort.hh"
 #include "System/Stopwatch.h"
 #include "IO/FormattedWriter.h"
 
@@ -21,7 +21,7 @@ INTRA_WARNING_POP
 
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestInsertionSorting(size_t size, Comparer comparer = Funal::Less)
+double TestInsertionSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -32,7 +32,7 @@ double TestInsertionSorting(size_t size, Comparer comparer = Funal::Less)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestShellSorting(size_t size, Comparer comparer = Funal::Less)
+double TestShellSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -43,7 +43,7 @@ double TestShellSorting(size_t size, Comparer comparer = Funal::Less)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestQuickSorting(size_t size, Comparer comparer = Funal::Less)
+double TestQuickSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -64,7 +64,7 @@ template<typename T> double TestRadixSorting(size_t size)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestMergeSorting(size_t size, Comparer comparer = Funal::Less)
+double TestMergeSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -75,7 +75,7 @@ double TestMergeSorting(size_t size, Comparer comparer = Funal::Less)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestSelectionSorting(size_t size, Comparer comparer = Funal::Less)
+double TestSelectionSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -86,7 +86,7 @@ double TestSelectionSorting(size_t size, Comparer comparer = Funal::Less)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestHeapSorting(size_t size, Comparer comparer = Funal::Less)
+double TestHeapSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -97,7 +97,7 @@ double TestHeapSorting(size_t size, Comparer comparer = Funal::Less)
 }
 
 template<typename T, typename Comparer = Funal::TLess>
-double TestStdSorting(size_t size, Comparer comparer = Funal::Less)
+double TestStdSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
@@ -198,8 +198,8 @@ void RunSortPerfTests(FormattedWriter& output)
 	if(TestGroup gr{"Sorting of random generated arrays of uint"})
 		TestAndPrintIntegralTypeSorts<uint>(output, "uint");
 
-	if(TestGroup gr{"Sorting of random generated arrays of long64"})
-		TestAndPrintIntegralTypeSorts<long64>(output, "long64");
+	if(TestGroup gr{"Sorting of random generated arrays of int64"})
+		TestAndPrintIntegralTypeSorts<int64>(output, "int64");
 }
 
 INTRA_WARNING_POP

@@ -1,6 +1,6 @@
 ﻿
-#ifndef INTRA_STL_INTERFACE
-#define INTRA_STL_INTERFACE
+#ifndef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+#define INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
 #endif
 
 #if(defined(_MSC_VER) && !defined(__GNUC__) && !defined(_HAS_EXCEPTIONS))
@@ -8,18 +8,18 @@
 #define _CRT_SECURE_NO_DEPRECATE
 #endif
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Runtime.h"
+
+#include "Core/Runtime.h"
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "String.h"
 
-#include "Cpp/Compatibility.h"
+#include "Core/Compatibility.h"
 #include "Test.hh"
 #include "Container/Sequential/String.h"
 #include "System/Stopwatch.h"
-#include "Range/Output/OutputArrayRange.h"
-#include "Range/Output/Inserter.h"
+
+#include "Core/Range/Output/Inserter.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -68,38 +68,38 @@ template<typename String> bool cmpString(const String& str1, const String& str2)
 
 template<typename String> double TestStringComparing1(uint times, size_t strsize)
 {
-	bool(*func)(const String& str1, const String& str2)=cmpString<String>;
+	//bool(*func)(const String& str1, const String& str2)=cmpString<String>;
 	String str1 = GenerateRandomString<String>(strsize);
 	String str2 = str1;
 
 	Stopwatch timer;
 	for(uint i=0; i<times; i++)
-		func(str1, str2);
+		srand(unsigned(str1 == str2));
 	return timer.ElapsedSeconds();
 }
 
 template<typename String> double TestStringComparing2(uint times, size_t strsize)
 {
-	bool(*func)(const String& str1, const String& str2)=cmpString<String>;
+	//bool(*func)(const String& str1, const String& str2)=cmpString<String>;
 	String str1 = GenerateRandomString<String>(strsize+1);
 	String str2(str1.begin(), str1.end()-1);
 
 	Stopwatch timer;
 	for(uint i=0; i<times; i++)
-		func(str1, str2);
+		srand(unsigned(str1 == str2));
 	return timer.ElapsedSeconds();
 }
 
 template<typename String> double TestStringComparing3(uint times, size_t strsize)
 {
-	bool(*func)(const String& str1, const String& str2)=cmpString<String>;
+	//bool(*func)(const String& str1, const String& str2)=cmpString<String>;
 	String str1 = GenerateRandomString<String>(strsize);
 	String str2 = str1;
 	str2[0]='A';
 
 	Stopwatch timer;
 	for(uint i=0; i<times; i++)
-		func(str1, str2);
+		srand(unsigned(str1 == str2));
 	return timer.ElapsedSeconds();
 }
 

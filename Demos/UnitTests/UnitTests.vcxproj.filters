@@ -103,4 +103,7 @@
       <UniqueIdentifier>{37221297-1cfc-46f9-bcba-be22bcbe57f6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
 </Project>

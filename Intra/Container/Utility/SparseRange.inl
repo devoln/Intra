@@ -6,12 +6,13 @@
 
 #include "Utils/FixedArray.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Intrinsics.h"
+
+#include "Core/Intrinsics.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Range {
+INTRA_BEGIN
+namespace Range {
 
 template<typename T, typename Index> T& SparseRange<T, Index>::append_first_free(Index* oIndex)
 {
@@ -35,7 +36,7 @@ template<typename T, typename Index> T& SparseRange<T, Index>::Add(T&& val, Inde
 {
 	INTRA_DEBUG_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
-	new(&result) T(Cpp::Move(val));
+	new(&result) T(Move(val));
 	return result;
 }
 
@@ -51,7 +52,7 @@ template<typename T, typename Index> template<typename... Args> T& SparseRange<T
 {
 	INTRA_DEBUG_ASSERT(!IsFull());
 	T& result = append_first_free(oIndex);
-	new(&result) T(Cpp::Forward<Args>(args)...);
+	new(&result) T(Forward<Args>(args)...);
 	return result;
 }
 
@@ -64,11 +65,11 @@ template<typename T, typename Index> void SparseRange<T, Index>::Remove(Index in
 	mFirstFree = index;
 }
 
-template<typename T, typename Index> FixedArray<flag32> SparseRange<T, Index>::DeadBitfield() const
+template<typename T, typename Index> FixedArray<uint> SparseRange<T, Index>::DeadBitfield() const
 {
 	if(Empty()) return null;
-	enum {ValueBits = sizeof(flag32)*8};
-	FixedArray<flag32> result(mData.Length()/ValueBits); //Заполнит все биты нулями
+	enum {ValueBits = sizeof(uint)*8};
+	FixedArray<uint> result(mData.Length()/ValueBits); //Заполнит все биты нулями
 	Index ff = mFirstFree;
 	while(ff != end_index())
 	{
@@ -79,8 +80,8 @@ template<typename T, typename Index> FixedArray<flag32> SparseRange<T, Index>::D
 	return result;
 }
 
-template<typename T, typename Index> template<typename U> Meta::EnableIf<
-	!Meta::IsTriviallyDestructible<U>::_
+template<typename T, typename Index> template<typename U> Requires<
+	!CTriviallyDestructible<U>::_
 > SparseRange<T, Index>::Clear()
 {
 	if(Empty()) return;
@@ -92,7 +93,7 @@ template<typename T, typename Index> template<typename U> Meta::EnableIf<
 
 	//Уже удалённые объекты нельзя удалять, поэтому удалим только те, которые нужно.
 	//Для этого составим битовое поле, обозначающее, какие объекты живы, а какие уже нет
-	enum {ValueBits = sizeof(flag32)*8};
+	enum {ValueBits = sizeof(uint)*8};
 	const auto deadBitfield = DeadBitfield();
 	for(size_t i=0; i<mData.Length(); i++)
 	{
@@ -108,7 +109,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 {
 	if(Empty()) return;
 	INTRA_DEBUG_ASSERT(dst.mData.Length() >= mData.Length());
-	enum {ValueBits = sizeof(flag32)*8};
+	enum {ValueBits = sizeof(uint)*8};
 	const auto deadBitfield = DeadBitfield();
 	Index* prevEmpty = &dst.mFirstFree;
 	for(size_t i=0; i<mData.Length(); i++)
@@ -121,7 +122,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 			continue;
 		}
 		//Переносим элемент из одного разреженного массива в другой
-		new(&dst.mData[i]) T(Cpp::Move(mData[i]));
+		new(&dst.mData[i]) T(Move(mData[i]));
 		mData[i].~T();
 	}
 
@@ -174,10 +175,10 @@ template<typename Index> void SparseTypelessRange<Index>::Remove(Index index)
 	mFirstFree = index;
 }
 
-template<typename Index> FixedArray<flag32> SparseTypelessRange<Index>::DeadBitfield() const
+template<typename Index> FixedArray<uint> SparseTypelessRange<Index>::DeadBitfield() const
 {
-	enum {ValueBits = sizeof(flag32)*8};
-	FixedArray<flag32> result(mData.Length()/ValueBits); //Заполнит все биты нулями
+	enum {ValueBits = sizeof(uint)*8};
+	FixedArray<uint> result(mData.Length()/ValueBits); //Заполнит все биты нулями
 	size_t ff = mFirstFree;
 	while(ff != end_index())
 	{

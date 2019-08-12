@@ -1,7 +1,7 @@
 #include "IO/ConsoleInput.h"
-#include "Range/Special/Unicode.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+#include "Core/Range/Special/Unicode.h"
+
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -30,7 +30,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <unistd.h>
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 static byte gReadBufStart = 0;
@@ -96,11 +97,11 @@ size_t ConsoleInput::ReadWrite(Span<char>& dst)
 #endif
 }
 
-dchar ConsoleInput::GetChar()
+char32_t ConsoleInput::GetChar()
 {
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 	auto ch = _getwch();
-	return ch=='\r'? dchar('\n'): dchar(ch);
+	return ch=='\r'? char32_t('\n'): char32_t(ch);
 #else
 	termios oldt, newt;
 	tcgetattr(STDIN_FILENO, &oldt);
@@ -111,10 +112,10 @@ dchar ConsoleInput::GetChar()
 	const size_t charsRead = size_t(read(STDIN_FILENO, c, 1));
 	size_t clen = UTF8::SequenceBytes(c[0]);
 	clen = charsRead+size_t( read(STDIN_FILENO, c+1, clen-1) );
-	dchar ch = UTF8(StringView(c, clen)).First();
+	char32_t ch = UTF8(StringView(c, clen)).First();
 	if(ch=='\r') ch = '\n';
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-	return dchar(ch);
+	return char32_t(ch);
 #endif
 }
 

@@ -1,16 +1,17 @@
 ﻿#pragma once
 
-#include "Utils/StringView.h"
-#include "Utils/ErrorStatus.h"
+#include "Core/Range/StringView.h"
+#include "System/Error.h"
 #include "Utils/Unique.h"
 
 #include "Container/ForwardDecls.h"
 
-#include "Range/Polymorphic/ForwardRange.h"
+#include "Core/Range/Polymorphic/ForwardRange.h"
 
 #include "Audio/Midi/MidiFileParser.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 struct Music;
 class Sound;

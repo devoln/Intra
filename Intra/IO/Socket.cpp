@@ -1,7 +1,7 @@
 #include "Socket.h"
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+
+
 
 #include "Std.h"
 #include "Utils/Finally.h"
@@ -45,7 +45,8 @@ inline void closesocket(int socket) {close(socket);}
 
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 struct WsaContext
@@ -159,7 +160,7 @@ ServerSocket::ServerSocket(SocketType type, ushort port, size_t maxConnections, 
 		status.Error(StringView("getaddrinfo failed: ") + StringView(gai_strerror(gaiErr)), INTRA_SOURCE_INFO);
 		return;
 	}
-	INTRA_FINALLY_CALL(freeaddrinfo, addrInfo);
+	INTRA_FINALLY{freeaddrinfo(addrInfo);};
 
 	mHandle = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol);
 	if(mHandle == NullSocketHandle)

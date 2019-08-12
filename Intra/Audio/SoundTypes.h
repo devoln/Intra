@@ -1,11 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
 
 #include "Data/ValueType.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 struct AudioBuffer;
 class IAudioSource;

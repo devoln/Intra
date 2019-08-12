@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Cpp/Fundamental.h>
-#include <Cpp/Warnings.h>
+#include <Core/Fundamental.h>
+#include <Core/Warnings.h>
 
 #include <Container/Sequential/Array.h>
 

@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include "Container/Sequential/Array.h"
-#include "Range/Search/Single.h"
-#include "Range/Sort/Insertion.h"
+#include "Core/Range/Search/Single.h"
+#include "Core/Range/Sort/Insertion.h"
 
-namespace Intra {
+INTRA_BEGIN
 
 template<typename T> class IndexAllocator
 {
@@ -15,7 +15,7 @@ public:
 	//! Выделить любой свободный идентификатор
 	T Allocate()
 	{
-		if(mFreeList!=null)
+		if(mFreeList != null)
 		{
 			T result = mFreeList.Last();
 			mFreeList.RemoveLast();
@@ -75,13 +75,13 @@ public:
 	//! Освободить идентификатор
 	void Deallocate(T id)
 	{
-		INTRA_DEBUG_ASSERT(!Range::Contains(mFreeList, id) && id<mCount);
+		INTRA_DEBUG_ASSERT(!Contains(mFreeList, id) && id < mCount);
 		if(id+1==mCount)
 		{
 			mCount--;
 			for(;;)
 			{
-				size_t loc = Range::CountUntil(mFreeList, T(mCount-1));
+				size_t loc = CountUntil(mFreeList, T(mCount-1));
 				if(loc==mFreeList.Count()) return;
 				mCount--;
 				mFreeList.RemoveUnordered(loc);
@@ -99,8 +99,8 @@ public:
 		mMaxCount = maxCount;
 	}
 
-	forceinline bool IsFull() const {return mCount == mMaxCount && mFreeList == null;}
-	forceinline bool IsId(T id) const {return id < mCount && !Range::Contains(mFreeList, id);}
+	forceinline bool IsFull() const {return mCount == mMaxCount && mFreeList.Empty();}
+	forceinline bool IsId(T id) const {return id < mCount && !Contains(mFreeList, id);}
 
 private:
 	Array<T> mFreeList;
@@ -113,13 +113,13 @@ template<typename T, typename G, typename TYPE=void> struct CheckedId
 	forceinline operator T() const {return Value;}
 
 	forceinline CheckedId(null_t=null):
-		Value(Meta::NumericLimits<T>::Max()),
-		Generation(Meta::NumericLimits<G>::Max()) {}
+		Value(Core::NumericLimits<T>::Max()),
+		Generation(Core::NumericLimits<G>::Max()) {}
 
 	forceinline bool operator==(null_t) const
 	{
-		return Value==Meta::NumericLimits<T>::Max() &&
-			Generation==Meta::NumericLimits<G>::Max();
+		return Value==Core::NumericLimits<T>::Max() &&
+			Generation==Core::NumericLimits<G>::Max();
 	}
 
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
@@ -203,4 +203,3 @@ private:
 };
 
 }
-

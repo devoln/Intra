@@ -1,9 +1,9 @@
 ﻿#include "IO/FileSystem.h"
 
-#include "Cpp/PlatformDetect.h"
 
-#include "Range/Comparison/EndsWith.h"
-#include "Range/Mutation/Replace.h"
+
+#include "Core/Range/Comparison/EndsWith.h"
+#include "Core/Range/Mutation/Replace.h"
 
 #include "Container/Sequential/String.h"
 
@@ -52,7 +52,8 @@ struct IUnknown;
 
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 static String osGetCurrentDirectory()
 {
@@ -146,8 +147,8 @@ FileInfo OsFileSystem::FileGetInfo(StringView fileName, ErrorStatus& status) con
 		System::detail::ProcessLastError(status, "Cannot get attributes of file " + fileName + ": ", INTRA_SOURCE_INFO);
 		return {0, 0};
 	}
-	result.Size = (ulong64(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
-	result.LastModified = (ulong64(fad.ftLastWriteTime.dwHighDateTime) << 32) | fad.ftLastWriteTime.dwLowDateTime;
+	result.Size = (uint64(fad.nFileSizeHigh) << 32) | fad.nFileSizeLow;
+	result.LastModified = (uint64(fad.ftLastWriteTime.dwHighDateTime) << 32) | fad.ftLastWriteTime.dwLowDateTime;
 #else
 	struct stat attrib;
 	const bool success = stat(fullFileName.CStr(), &attrib) == 0;
@@ -156,22 +157,22 @@ FileInfo OsFileSystem::FileGetInfo(StringView fileName, ErrorStatus& status) con
 		System::detail::ProcessLastError(status, "Cannot get attributes of file " + fileName + ": ", INTRA_SOURCE_INFO);
 		return {0, 0};
 	}
-	result.LastModified = ulong64(attrib.st_mtime);
-	result.Size = ulong64(attrib.st_size);
+	result.LastModified = uint64(attrib.st_mtime);
+	result.Size = uint64(attrib.st_size);
 #endif
 	return result;
 }
 
-ulong64 OsFileSystem::FileGetTime(StringView fileName, ErrorStatus& status) const
+uint64 OsFileSystem::FileGetTime(StringView fileName, ErrorStatus& status) const
 {return FileGetInfo(fileName, status).LastModified;}
 
-ulong64 OsFileSystem::FileGetSize(StringView fileName, ErrorStatus& status) const
+uint64 OsFileSystem::FileGetSize(StringView fileName, ErrorStatus& status) const
 {return FileGetInfo(fileName, status).Size;}
 
 FileReader OsFileSystem::FileOpen(StringView fileName, ErrorStatus& status)
 {return FileReader(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Read, status));}
 
-FileWriter OsFileSystem::FileOpenWrite(StringView fileName, ulong64 offset, ErrorStatus& status)
+FileWriter OsFileSystem::FileOpenWrite(StringView fileName, uint64 offset, ErrorStatus& status)
 {return FileWriter(Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write, status), offset);}
 
 FileWriter OsFileSystem::FileOpenWrite(StringView fileName, ErrorStatus& status)
@@ -183,7 +184,7 @@ FileWriter OsFileSystem::FileOpenOverwrite(StringView fileName, ErrorStatus& sta
 FileWriter OsFileSystem::FileOpenAppend(StringView fileName, ErrorStatus& status)
 {
 	auto file = Shared<OsFile>::New(GetFullFileName(fileName), OsFile::Mode::Write, status);
-	return FileWriter::Append(Cpp::Move(file));
+	return FileWriter::Append(Move(file));
 }
 
 String OsFileSystem::FileToString(StringView fileName, ErrorStatus& status)

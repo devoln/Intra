@@ -20,7 +20,8 @@ INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
 #undef Yield
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 struct Thread::Data: detail::BasicThreadData
 {
@@ -57,7 +58,7 @@ struct Thread::Data: detail::BasicThreadData
 #endif
 	}
 
-	bool Join(ulong64 timeOutMs)
+	bool Join(uint64 timeOutMs)
 	{
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 		if(Current != null && !Current->ForceInterruptionDisabled.GetRelaxed())
@@ -104,7 +105,7 @@ struct Thread::Data: detail::BasicThreadData
 
 	Data(Func func)
 	{
-		Function = Cpp::Move(func);
+		Function = Move(func);
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 		InterruptEvent = CreateEventW(null, false, false, null);
 #endif
@@ -166,7 +167,7 @@ Thread::Data* Thread::Data::ThreadHashTable[HASH_LEN]{};
 
 void TThisThread::Yield() {YieldProcessor();}
 
-bool TThisThread::Sleep(ulong64 milliseconds)
+bool TThisThread::Sleep(uint64 milliseconds)
 {
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 	auto handle = Thread::Data::Current;

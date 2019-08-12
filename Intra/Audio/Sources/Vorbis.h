@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "Container/Sequential/Array.h"
 #include "Audio/AudioSource.h"
 
-namespace Intra { namespace Audio { namespace Sources {
+INTRA_BEGIN
+namespace Audio { namespace Sources {
 
 //! Используемый декодер ogg vorbis
 #define INTRA_LIBRARY_VORBIS_DECODER_None 0 
@@ -48,4 +48,5 @@ public:
 
 #endif
 
-}}}
+}}
+INTRA_END

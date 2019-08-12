@@ -1,7 +1,7 @@
-#include "Range/Stream.hh"
-#include "Range/Reduction.h"
+#include "Core/Range/Stream.hh"
+#include "Core/Range/Reduction.h"
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
 #include "Range.hh"
 

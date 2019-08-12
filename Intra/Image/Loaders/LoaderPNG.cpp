@@ -2,12 +2,13 @@
 #include "Image/Loaders/LoaderPlatform.h"
 #include "Math/Vector2.h"
 #include "Math/Vector3.h"
-#include "Range/Comparison/Equals.h"
+#include "Core/Range/Comparison/Equals.h"
 #include "Image/AnyImage.h"
-#include "Range/Polymorphic/InputRange.h"
-#include "Cpp/Endianess.h"
+#include "Core/Range/Polymorphic/InputRange.h"
+#include "Core/Endianess.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 {

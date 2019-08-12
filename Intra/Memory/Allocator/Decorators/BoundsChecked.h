@@ -1,15 +1,14 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
-#include "Meta/Type.h"
-#include "Memory/Allocator/Concepts.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
+#include "Core/Type.h"
 #include "Memory/Align.h"
+#include "Memory/Allocator/Concepts.h"
 
-namespace Intra { namespace Memory {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+namespace Memory {
 
 template<typename A> struct ABoundsChecked: A
 {
@@ -20,7 +19,7 @@ public:
 
 	size_t GetAlignment() const {return sizeof(uint);}
 
-	AnyPtr Allocate(size_t& bytes, Utils::SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		bytes = Aligned(bytes, 4);
 		size_t totalBytes = bytes + 2*sizeof(uint);
@@ -43,18 +42,18 @@ public:
 		byte* const plainMemory = reinterpret_cast<byte*>(ptr)-sizeof(uint);
 
 		const uint leftBoundValue = *reinterpret_cast<uint*>(plainMemory);
-		if(leftBoundValue!=BoundValue)
+		if(leftBoundValue != BoundValue)
 			INTRA_FATAL_ERROR("Allocator left bound check failed!");
 
 		const uint rightBoundValue = *reinterpret_cast<uint*>(plainMemory+size+sizeof(uint));
-		if(rightBoundValue!=BoundValue)
+		if(rightBoundValue != BoundValue)
 			INTRA_FATAL_ERROR("Allocator right bound check failed!");
 
 		A::Free(plainMemory, size+2*sizeof(uint));
 	}
 
-	template<typename U=A> Meta::EnableIf<
-		HasGetAllocationSize<U>::_,
+	template<typename U=A> Requires<
+		CHasGetAllocationSize<U>,
 	size_t> GetAllocationSize(void* ptr) const
 	{
 		byte* bptr = reinterpret_cast<byte*>(ptr);
@@ -62,6 +61,5 @@ public:
 	}
 };
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

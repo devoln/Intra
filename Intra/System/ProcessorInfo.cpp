@@ -1,11 +1,11 @@
 ﻿#include "System/ProcessorInfo.h"
-#include "Cpp/Warnings.h"
-#include "Range/Search/Trim.h"
+
+#include "Core/Range/Search/Trim.h"
 #include "IO/OsFile.h"
 
-#include "Range/Stream/Parse.h"
-#include "Range/Search/Single.h"
-#include "Range/Search/Subrange.h"
+#include "Core/Range/Stream/Parse.h"
+#include "Core/Range/Search/Single.h"
+#include "Core/Range/Search/Subrange.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -22,7 +22,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <Windows.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 ProcessorInfo ProcessorInfo::Get()
 {
@@ -66,7 +67,8 @@ ProcessorInfo ProcessorInfo::Get()
 #include <unistd.h>
 #include <sys/sysinfo.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 ProcessorInfo ProcessorInfo::Get()
 {
@@ -87,7 +89,7 @@ ProcessorInfo ProcessorInfo::Get()
 
 	const StringView cpuMHzLine = Range::Find(allCpuInfo, "\ncpu MHz");
 	const StringView cpuMHzStr = cpuMHzLine.Find(':').Drop(2).FindBefore('\n');
-	result.Frequency = ulong64(1000000 * Range::Parse<double>(cpuMHzStr));
+	result.Frequency = uint64(1000000 * Range::Parse<double>(cpuMHzStr));
 
 	return result;
 }
@@ -100,7 +102,8 @@ ProcessorInfo ProcessorInfo::Get()
 #include <sys/sysctl.h>
 #include <sys/limits.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 ProcessorInfo ProcessorInfo::Get()
 {
@@ -124,7 +127,7 @@ ProcessorInfo ProcessorInfo::Get()
 	result.BrandString = String(brandString, len-1);
 	result.LogicalProcessorNumber = ushort(numCPU);
 	result.CoreNumber = result.LogicalProcessorNumber; //TODO: разобраться, что из этого логические процессоры, а что - ядра, и исправить
-	result.Frequency = ulong64(freq)*1000000;
+	result.Frequency = uint64(freq)*1000000;
 	return result;
 }
 
@@ -132,7 +135,8 @@ ProcessorInfo ProcessorInfo::Get()
 
 #else
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 ProcessorInfo ProcessorInfo::Get()
 {

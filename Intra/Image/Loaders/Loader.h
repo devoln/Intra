@@ -1,11 +1,12 @@
 ﻿#pragma once
 
 #include "Image/ImageInfo.h"
-#include "Range/Generators/ListRange.h"
-#include "Cpp/Warnings.h"
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Range/Generators/ListRange.h"
 
-namespace Intra {
+#include "Core/Range/Polymorphic/InputRange.h"
+
+INTRA_BEGIN
+
 
 namespace Image {
 

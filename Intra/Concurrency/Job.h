@@ -1,15 +1,16 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+
+
+#include "Core/Core.h"
 
 #include "Atomic.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
-//Ещё не протестировано
+// The code in this file is not complete and not tested.
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

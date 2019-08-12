@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include <Cpp/Warnings.h>
-#include <Utils/Span.h>
+#include <Core/Warnings.h>
+#include <Core/Span.h>
 #include <Funal/Delegate.h>
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS

@@ -6,7 +6,8 @@
 #pragma comment(lib, "pthread.lib")
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 SeparateCondVar::SeparateCondVar()
 {
@@ -19,7 +20,7 @@ SeparateCondVar::~SeparateCondVar() {pthread_cond_destroy(reinterpret_cast<pthre
 bool SeparateCondVar::wait(Mutex& lock)
 {return pthread_cond_wait(reinterpret_cast<pthread_cond_t*>(mData), reinterpret_cast<pthread_mutex_t*>(lock.mData)) == 0;}
 
-bool SeparateCondVar::waitUntil(Mutex& mutex, ulong64 absTimeMs)
+bool SeparateCondVar::waitUntil(Mutex& mutex, uint64 absTimeMs)
 {
 	timespec absTime = {time_t(absTimeMs / 1000), long((absTimeMs % 1000) * 1000000)};
 	return pthread_cond_timedwait(reinterpret_cast<pthread_cond_t*>(mData), reinterpret_cast<pthread_mutex_t*>(mutex.mData), &absTime) == 0;

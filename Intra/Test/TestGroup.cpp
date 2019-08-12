@@ -1,19 +1,22 @@
 #include "Test/TestGroup.h"
 
-#include "Utils/Debug.h"
+#include "Core/Assert.h"
 #include "Utils/Logger.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
+
+#include "Core/Core.h"
 
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
 #include "IO/Std.h"
 
+#include <cstdlib>
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra {
+INTRA_BEGIN
+
 
 using namespace IO;
 
@@ -27,11 +30,11 @@ TestGroup::TestGroup(ILogger* logger, IO::FormattedWriter& output, StringView ca
 	mHadChildren(false),
 	mFailedChildren(0), mPassedChildren(0)
 {
-	if(YesForNestingLevel<=nestingLevel) Yes = true;
+	if(YesForNestingLevel <= nestingLevel) Yes = true;
 	else consoleAskToEnableTest();
 	if(Yes)
 	{
-		if(currentTestGroup!=null && !currentTestGroup->mHadChildren)
+		if(currentTestGroup != null && !currentTestGroup->mHadChildren)
 			currentTestGroup->mHadChildren = true;
 		Output.BeginSpoiler(Category);
 	}
@@ -47,7 +50,7 @@ void TestGroup::consoleAskToEnableTest()
 	ConsoleOut.PrintLine("Press space to run test [ ", Category, " ] or press enter to skip it...");
 	for(;;)
 	{
-		dchar c = ConsoleIn.GetChar();
+		char32_t c = ConsoleIn.GetChar();
 		if(c=='y')
 		{
 			YesForNestingLevel = nestingLevel + 1;
@@ -69,13 +72,19 @@ void TestGroup::consoleAskToEnableTest()
 	}
 }
 
+inline FormattedWriter& getOutput(TestGroup* currentTestGroup)
+{
+	if(currentTestGroup == null) return static_cast<IO::FormattedWriter&>(IO::Std);
+	return currentTestGroup->Output;
+}
+
 TestGroup::TestGroup(StringView category):
 	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
-		currentTestGroup == null? static_cast<IO::FormattedWriter&>(IO::Std): currentTestGroup->Output, category) {}
+		getOutput(currentTestGroup), category) {}
 
 TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
 	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
-		currentTestGroup == null? static_cast<IO::FormattedWriter&>(IO::Std): currentTestGroup->Output, category, funcToTest) {}
+		getOutput(currentTestGroup), category, funcToTest) {}
 
 TestGroup::~TestGroup()
 {
@@ -116,7 +125,7 @@ void TestGroup::PrintUnitTestResult()
 		Logger->Error("Test [ " + Category + " ] FAILED!");
 
 		if(mFailedChildren != 0)
-			Logger->Error(String::Concat(mFailedChildren, " of ", mFailedChildren + mPassedChildren, " subtests were FAILED!"));
+			Logger->Error(String::Concat(mFailedChildren, " of ", mFailedChildren + mPassedChildren, " subtests FAILED!"));
 	}
 }
 
@@ -136,8 +145,19 @@ void TestGroup::processError(const Utils::SourceInfo& srcInfo, StringView msg)
 		logger->Error(msg, srcInfo);
 		char stackTraceBuf[8192];
 		auto buf = SpanOfBuffer(stackTraceBuf);
-		logger->Error(Utils::GetStackTrace(buf, 3, 50), null);
+		logger->Error(Utils::GetStackTrace(buf, 3, 50), {});
 	}
+}
+
+void TestGroup::internalErrorTestFail(const Utils::SourceInfo& srcInfo, StringView msg)
+{
+	static bool alreadyCalled = false;
+	if(alreadyCalled) abort();
+	alreadyCalled = true;
+	INTRA_FINALLY{alreadyCalled = false;};
+	processError(srcInfo, msg);
+	testFailException();
+	exit(totalTestsFailed + 1);
 }
 
 }

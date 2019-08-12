@@ -1,4 +1,4 @@
-#include "Cpp/Warnings.h"
+
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/TestGroup.h"
@@ -17,7 +17,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "IO/FormattedLogger.h"
 
 #include "Sort.h"
-#include "Range/Range.h"
+#include "Core/Range/Range.h"
 #include "IO/IO.h"
 #include "Serialization.h"
 #include "Container/HashMap.h"
@@ -40,7 +40,7 @@ FormattedWriter& InitOutput()
 		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
 	}
 	if(!logExisted && logFile!=null) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
-	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
+	FormattedWriter logWriter = HtmlWriter(Move(logFile), !logExisted);
 
 	String datetime;
 	ToString(LastAppender(datetime), System::DateTime::Now());
@@ -50,7 +50,7 @@ FormattedWriter& InitOutput()
 
 	logWriter.Print("Command line arguments:");
 	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", " ", " "));
-	logger.Attach(Cpp::Move(logWriter));
+	logger.Attach(Move(logWriter));
 
 	return logger;
 }

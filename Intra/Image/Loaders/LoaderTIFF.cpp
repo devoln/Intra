@@ -2,7 +2,8 @@
 #include "Image/Loaders/LoaderPlatform.h"
 #include "Image/AnyImage.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 bool LoaderTIFF::IsValidHeader(const void* header, size_t headerSize) const
 {

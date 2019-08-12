@@ -9,7 +9,8 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 
-namespace Intra { namespace Concurrency { namespace detail {
+INTRA_BEGIN
+namespace Concurrency { namespace detail {
 
 struct BasicThreadData
 {

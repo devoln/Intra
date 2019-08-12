@@ -1,19 +1,16 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/InfNan.h"
-
+#include "Core/Core.h"
 #include "Math/Math.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#pragma warning(disable: 4201) //Do not complain about union { struct { ... }; ...};
 #endif
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+inline namespace Math {
 
 template<typename T> struct Vector2;
 template<typename T> struct Vector4;
@@ -92,8 +89,8 @@ template<typename T> struct Vector3
 
 	constexpr forceinline bool operator!=(const Vector3& rhs) const noexcept {return !operator==(rhs);}
 
-	forceinline bool operator==(Cpp::TNaN) const noexcept {return x + y + z == NaN;}
-	forceinline bool operator!=(Cpp::TNaN) const noexcept {return !operator==(NaN);}
+	forceinline bool operator==(TNaN) const noexcept {return x + y + z == NaN;}
+	forceinline bool operator!=(TNaN) const noexcept {return !operator==(NaN);}
 
 
 	constexpr forceinline Vector3 operator<<(uint rhs) const
@@ -121,9 +118,9 @@ template<typename T> struct Vector3
 	constexpr forceinline Vector3 operator^(const Vector3& rhs) const noexcept
 	{return {(x ^ rhs.x), (y ^ rhs.y), (z ^ rhs.z)};}
 
-	INTRA_EXTENDED_CONSTEXPR forceinline T* Data() noexcept {return &x;}
+	INTRA_CONSTEXPR2 forceinline T* Data() noexcept {return &x;}
 	constexpr forceinline const T* Data() const noexcept {return &x;}
-	constexpr forceinline size_t Length() const noexcept {return 3;}
+	constexpr forceinline index_t Length() const noexcept {return 3;}
 
 	forceinline T& operator[](size_t index) {return (&x)[index];}
 	constexpr forceinline T operator[](size_t index) const {return (&x)[index];}
@@ -149,8 +146,8 @@ INTRA_WARNING_POP
 	};
 };
 
-template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs==NaN;}
-template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector3<T>& rhs) noexcept {return rhs!=NaN;}
+template<typename T> forceinline bool operator==(TNaN, const Vector3<T>& rhs) noexcept {return rhs==NaN;}
+template<typename T> forceinline bool operator!=(TNaN, const Vector3<T>& rhs) noexcept {return rhs!=NaN;}
 
 template<typename T> Vector3<T> ClosestPointOnLine(
 	const Vector3<T>& pt, const Vector3<T>& lineA, const Vector3<T>& lineB)
@@ -237,7 +234,7 @@ template<typename T> constexpr Vector3<T> Step(const Vector3<T>& edge, const Vec
 	};
 }
 
-template<typename T> INTRA_EXTENDED_CONSTEXPR Vector3<T> SmoothStep(T edge0, T edge1, const Vector3<T>& value)
+template<typename T> INTRA_CONSTEXPR2 Vector3<T> SmoothStep(T edge0, T edge1, const Vector3<T>& value)
 {
 	const Vector2<T> t = Clamp((value-Vector3<T>(edge0)) / (edge1-edge0), 0, 1);
 	return t*t * T(3 - t*2);
@@ -252,18 +249,6 @@ template<typename T> constexpr Vector3<T> Sign(const Vector3<T>& v)
 template<typename T> constexpr Vector3<T> Abs(const Vector3<T>& v)
 {return {Abs(v.x), Abs(v.y), Abs(v.z)};}
 
-
-namespace GLSL {
-template<typename T> constexpr forceinline T dot(const Vector3<T>& l, const Vector3<T>& r) {return Dot(l, r);}
-template<typename T> forceinline T length(const Vector3<T>& v) {return Length(v);}
-template<typename T> forceinline T distance(const Vector3<T>& l, const Vector3<T>& r) {return Distance(l, r);}
-template<typename T> forceinline Vector3<T> normalize(const Vector3<T>& v) {return Normalize(v);}
-template<typename T> constexpr forceinline Vector3<T> reflect(const Vector3<T>& incident, const Vector3<T>& normal) {return Reflect(incident, normal);}
-template<typename T> forceinline Vector3<T> refract(const Vector3<T>& I, const Vector3<T>& N, float eta) {return Refract(I, N, eta);}
-template<typename T> constexpr forceinline Vector3<T> faceforward(const Vector3<T>& N, const Vector3<T>& I, const Vector3<T>& Nref) {return FaceForward(N, I, Nref);}
-template<typename T> constexpr forceinline Vector3<T> cross(const Vector3<T>& v1, const Vector3<T>& v2) {return Cross(v1, v2);}
-}
-
 typedef Vector3<float> Vec3;
 typedef Vector3<double> DVec3;
 typedef Vector3<int> IVec3;
@@ -274,14 +259,5 @@ typedef Vector3<ushort> USVec3;
 typedef Vector3<short> SVec3;
 typedef Vector3<bool> BVec3;
 
-namespace GLSL {
-typedef Vector3<float> vec3;
-typedef Vector3<double> dvec3;
-typedef Vector3<int> ivec3;
-typedef Vector3<uint> uvec3;
-typedef Vector3<bool> bvec3;
 }
-
-}}
-
-INTRA_WARNING_POP
+INTRA_END

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
+
 
 //! Используемая библиотека для загрузки TrueType шрифтов
 #define INTRA_LIBRARY_FONT_LOADING_Dummy 0
@@ -21,7 +21,8 @@
 
 #endif
 
-namespace Intra { namespace FontLoadingAPI {
+INTRA_BEGIN
+namespace FontLoadingAPI {
 
 struct Font;
 typedef Font* FontHandle;

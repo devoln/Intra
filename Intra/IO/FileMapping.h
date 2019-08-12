@@ -1,18 +1,19 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
 
-#include "Meta/Type.h"
 
-#include "Utils/Span.h"
-#include "Utils/StringView.h"
-#include "Utils/ErrorStatus.h"
+#include "Core/Type.h"
+
+#include "Core/Range/Span.h"
+#include "Core/Range/StringView.h"
+#include "System/Error.h"
 
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 class BasicFileMapping
 {
@@ -20,15 +21,15 @@ public:
 	BasicFileMapping(BasicFileMapping&& rhs):
 		mData(rhs.mData)
 #ifdef INTRA_DEBUG
-		, mFilePath(Cpp::Move(rhs.mFilePath))
+		, mFilePath(Move(rhs.mFilePath))
 #endif
 	{rhs.mData = null;}
 
 	BasicFileMapping& operator=(BasicFileMapping&& rhs)
 	{
-		Cpp::Swap(mData, rhs.mData);
+		Core::Swap(mData, rhs.mData);
 #ifdef INTRA_DEBUG
-		mFilePath = Cpp::Move(rhs.mFilePath);
+		mFilePath = Move(rhs.mFilePath);
 #endif
 		return *this;
 	}
@@ -36,7 +37,7 @@ public:
 	BasicFileMapping(const BasicFileMapping&) = delete;
 	BasicFileMapping& operator=(const BasicFileMapping&) = delete;
 
-	size_t Length() const {return mData.Length();}
+	index_t Length() const {return mData.Length();}
 
 	void Close();
 
@@ -48,14 +49,14 @@ protected:
 	String mFilePath;
 
 	BasicFileMapping() {}
-	BasicFileMapping(StringView fileName, ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status);
+	BasicFileMapping(StringView fileName, uint64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status);
 	~BasicFileMapping() {Close();}
 };
 
 class FileMapping: public BasicFileMapping
 {
 public:
-	FileMapping(StringView fileName, ulong64 startByte, size_t bytes, ErrorStatus& status):
+	FileMapping(StringView fileName, uint64 startByte, size_t bytes, ErrorStatus& status):
 		BasicFileMapping(fileName, startByte, bytes, false, status) {}
 
 	FileMapping(StringView fileName, ErrorStatus& status):
@@ -71,15 +72,15 @@ public:
 
 	CSpan<byte> AsRange() const {return mData;}
 
-	template<typename T> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename T> Requires<
+		CPod<T>::_,
 	CSpan<T>> AsRangeOf() const {return CSpanOfRaw<T>(mData.Data(), mData.Length());}
 };
 
 class WritableFileMapping: public BasicFileMapping
 {
 public:
-	WritableFileMapping(StringView fileName, ulong64 startByte, size_t bytes, ErrorStatus& status):
+	WritableFileMapping(StringView fileName, uint64 startByte, size_t bytes, ErrorStatus& status):
 		BasicFileMapping(fileName, startByte, bytes, true, status) {}
 
 	WritableFileMapping(StringView fileName, ErrorStatus& status):
@@ -97,8 +98,8 @@ public:
 
 	Span<byte> AsRange() const {return mData;}
 
-	template<typename T> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename T> Requires<
+		CPod<T>::_,
 	Span<T>> AsRangeOf() const {return SpanOfRaw<T>(mData.Data(), mData.Length());}
 };
 

@@ -1,68 +1,79 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Meta/Type.h"
+#include "Core/Core.h"
+#include "Core/Type.h"
 #include "Span.h"
-#include "Utils/Debug.h"
+#include "Core/Assert.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
+inline namespace Utils {
 
-namespace Intra { namespace Utils {
-
-//! Класс, содержащий множество символов из ASCII
+//! Set of ASCII chars useful for fast belonging checks in parsers.
+/*!
+  Implementation note: this class could be implemented via StaticBitset<128> but this version is
+  simpler, more C++-11-constexpr friendly and faster when compiler optimizations are disabled.
+*/
 class AsciiSet
 {
-	ulong64 v[2];
+	uint64 v[2];
 
 	friend struct TAsciiSets;
 
-	constexpr forceinline AsciiSet(ulong64 v1, ulong64 v2): v{v1, v2} {}
+	constexpr forceinline AsciiSet(uint64 v1, uint64 v2): v{v1, v2} {}
 public:
 	constexpr forceinline AsciiSet(null_t=null) noexcept: v{0,0} {}
 
-	template<uint N> forceinline AsciiSet(const char(&chars)[N]) noexcept: v{0,0} {Set(CSpan<char>(chars));}
+	template<uint N> INTRA_CONSTEXPR2 forceinline AsciiSet(const char(&chars)[N]) noexcept: v{0,0} {Set(CSpan<char>(chars));}
 
-	explicit forceinline AsciiSet(CSpan<char> chars): v{0,0} {Set(chars);}
+	explicit INTRA_CONSTEXPR2 forceinline AsciiSet(CSpan<char> chars): v{0,0} {Set(chars);}
 
-	forceinline AsciiSet& operator=(null_t) {v[0]=v[1]=0; return *this;}
-	constexpr forceinline bool operator==(null_t) const noexcept {return v[0]==0 && v[1]==0;}
-	constexpr forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	INTRA_CONSTEXPR2 forceinline AsciiSet& operator=(null_t) {v[0] = v[1] = 0; return *this;}
+	INTRA_NODISCARD constexpr forceinline bool operator==(null_t) const noexcept {return v[0] == 0 && v[1] == 0;}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
 
-	bool operator[](char c) const
+	INTRA_NODISCARD constexpr forceinline bool operator==(const AsciiSet& rhs) const noexcept {return v[0] == rhs.v[0] && v[1] == rhs.v[1];}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(const AsciiSet& rhs) const noexcept {return !operator==(rhs);}
+
+	//! Check if this set contains element c.
+	//! c must be ASCII, otherwise the behavior is undefined.
+	INTRA_NODISCARD constexpr bool operator[](char c) const
 	{
-		INTRA_DEBUG_ASSERT(byte(c)<128);
-		return (v[c/64] & (1ull << (size_t(c) & 63))) != 0;
+		return INTRA_DEBUG_ASSERT(byte(c)<128),
+			(v[byte(c)/64] & (1ull << (size_t(c) & 63))) != 0;
 	}
 
-	bool Contains(char c) const
-	{
-		if(byte(c)>=128) return false;
-		return operator[](c);
-	}
+	//! Check if the set contains element c. Returns false for all non-ASCII characters.
+	//! This allows AsciiSet to be used as a predicate.
+	template<typename Char> INTRA_NODISCARD constexpr forceinline Requires<
+		CChar<Char>,
+	bool> operator()(Char c) const {return byte(c) < 128 && operator[](c);}
 
-	template<typename Char> forceinline Meta::EnableIf<
-		Meta::IsCharType<Char>::_,
-	bool> operator()(Char c) const {return Contains(c);}
+	//! Check if this set contains subset.
+	//! This allows AsciiSet to be used as a predicate.
+	INTRA_NODISCARD constexpr forceinline bool operator()(AsciiSet subset) const {return subset == (*this & subset);}
 	
-	forceinline void Set(char c)
+	//! Add element from the set if it doesn't belong to it
+	INTRA_CONSTEXPR2 forceinline void Set(char c)
 	{
 		if(c & 0x80) return;
 		v[c/64] |= 1ull << (size_t(c) & 63);
 	}
 
-	forceinline void Reset(char c)
+	//! Remove element from the set if it belongs to it
+	INTRA_CONSTEXPR2 forceinline void Reset(char c)
 	{
 		if(c & 0x80) return;
 		v[c/64] &= ~(1ull << (size_t(c) & 63));
 	}
 
-	forceinline void Set(CSpan<char> chars)
+	//! Add elements to the set if they don't belong to it
+	INTRA_CONSTEXPR2 forceinline void Set(CSpan<char> chars)
 	{
 		for(char c: chars) Set(c);
 	}
 	
-	void Reset(CSpan<char> chars)
+	//! Remove elements from the set if they belong to it
+	INTRA_CONSTEXPR2 void Reset(CSpan<char> chars)
 	{
 		while(!chars.Empty())
 		{
@@ -71,36 +82,47 @@ public:
 		}
 	}
 
-	constexpr forceinline AsciiSet operator|(const AsciiSet& rhs) const
+	//! Set union
+	INTRA_NODISCARD constexpr forceinline AsciiSet operator|(const AsciiSet& rhs) const
 	{return {v[0] | rhs.v[0], v[1] | rhs.v[1]};}
 
-	constexpr forceinline AsciiSet operator~() const
+	//! Set negation
+	INTRA_NODISCARD constexpr forceinline AsciiSet operator~() const
 	{return {~v[0], ~v[1]};}
 
-	constexpr forceinline AsciiSet operator&(const AsciiSet& rhs) const
+	//! Set intersection
+	INTRA_NODISCARD constexpr forceinline AsciiSet operator&(const AsciiSet& rhs) const
 	{return {v[0] & rhs.v[0], v[1] & rhs.v[1]};}
 
-	AsciiSet operator|(char c) const
+	//! Add element to the set if it doesn't belong to it
+	INTRA_NODISCARD INTRA_CONSTEXPR2 AsciiSet operator|(char c) const
 	{
 		AsciiSet result = *this;
 		result.Set(c);
 		return result;
 	}
 
-	AsciiSet operator|(CSpan<char> chars) const
+	//! Add elements to the set if they don't belong to it
+	INTRA_NODISCARD INTRA_CONSTEXPR2 AsciiSet operator|(CSpan<char> chars) const
 	{
 		AsciiSet result = *this;
 		result.Set(chars);
 		return result;
 	}
 
-	template<size_t N> AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars));}
+	//! Add elements to the set if they don't belong to it
+	template<size_t N> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars));}
 };
 
+/** Some standard ASCII sets.
+
+  Prefer using similar functors from Core/Operations.h - they are about 3 times faster.
+  These sets may be useful with non-templated functions.
+*/
 struct TAsciiSets
 {
 	constexpr TAsciiSets() {}
-	AsciiSet None{0,0};
+	AsciiSet None;
 	AsciiSet Spaces{(1ull << ' ') | (1ull << '\t') | (1ull << '\r') | (1ull << '\n'), 0};
 	AsciiSet Slashes{1ULL << 47, 1ULL << 28};
 	AsciiSet Digits{0x03FF000000000000ULL, 0};
@@ -113,10 +135,33 @@ struct TAsciiSets
 };
 constexpr const TAsciiSets AsciiSets;
 
-}
-using Utils::AsciiSet;
-using Utils::AsciiSets;
+#if INTRA_CONSTEXPR_TEST
+static_assert(AsciiSets.Digits['5'], "TEST FAILED!");
+static_assert(!AsciiSets.Digits['g'], "TEST FAILED!");
+//static_assert(!AsciiSets.Digits['\x95'], "TEST FAILED!"); //non-ASCII characters with operator[] cause UB or a compile-time error in constexpr context
+static_assert(!AsciiSets.Digits('\x95'), "TEST FAILED!"); //operator() returns false for all non-ASCII characters
+#endif
+
+#if INTRA_CONSTEXPR_TEST >= 201304
+//Check string literal constructor and magic constants defined above
+static_assert(AsciiSets.None == "", "TEST FAILED!");
+static_assert(AsciiSets.Spaces == " \t\r\n", "TEST FAILED!");
+static_assert(AsciiSets.Slashes == "\\/", "TEST FAILED!");
+static_assert(AsciiSets.Digits == "0123456789", "TEST FAILED!");
+static_assert(AsciiSets.LatinLowercase == "abcdefghijklmnopqrstuvwxyz", "TEST FAILED!");
+static_assert(AsciiSets.LatinUppercase == "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "TEST FAILED!");
+static_assert(AsciiSets.Latin == "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "TEST FAILED!");
+static_assert(AsciiSets.LatinAndDigits == "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "TEST FAILED!");
+static_assert(AsciiSets.IdentifierChars == "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ$abcdefghijklmnopqrstuvwxyz_", "TEST FAILED!");
+static_assert(AsciiSets.NotIdentifierChars == ~AsciiSets.IdentifierChars, "TEST FAILED!");
+
+static_assert(AsciiSet("4562130987") == AsciiSets.Digits, "TEST FAILED!");
+static_assert(AsciiSet("456d2130987") != AsciiSets.Digits, "TEST FAILED!");
+static_assert(AsciiSet("452130987") != AsciiSets.Digits, "TEST FAILED!");
+static_assert((AsciiSet("452130987") | '6') == AsciiSets.Digits, "TEST FAILED!");
+
+static_assert(AsciiSets.IdentifierChars("_itI$AValidIdentifier"), "TEST FAILED!");
+#endif
 
 }
-
-INTRA_WARNING_POP
+INTRA_END

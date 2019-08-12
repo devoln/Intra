@@ -3,7 +3,10 @@
 #include "Container/Associative/HashMap.h"
 #include "Image/ImageInfo.h"
 
-namespace Intra { namespace Image {
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+INTRA_BEGIN
+namespace Image {
 
 ushort ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 {
@@ -299,3 +302,5 @@ ImageType GLTargetToImageType(ushort gl_Target)
 }
 
 }}
+
+INTRA_WARNING_POP

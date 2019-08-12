@@ -1,25 +1,19 @@
 #pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Concepts/Container.h"
-#include "Cpp/Intrinsics.h"
+#include "Core/Core.h"
+#include "Core/CContainer.h"
+#include "Core/Range/Inserter.h"
+#include "Core/Range/Operations.h"
+#include "Core/Range/Mutation/Copy.h"
 
-#include "Range/Output/Inserter.h"
-#include "Range/Operations.h"
-#include "Range/Mutation/Copy.h"
+INTRA_BEGIN
+namespace Container {
 
-namespace Intra { namespace Container {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-template<typename SC, typename R> inline Meta::EnableIf<
-	(Concepts::Has_resize<SC>::_ &&
-		Concepts::IsArrayClass<SC>::_) &&
-	Meta::TypeEquals<Concepts::ElementTypeOfArray<SC>, Concepts::ElementTypeOfArray<R>>::_,
+template<typename SC, typename R> inline Requires<
+	CHas_resize<SC> && CTrivCopyCompatibleArrayWith<SC, R>,
 SC&> operator+=(SC& lhs, R&& rhs)
 {
-	using namespace Concepts;
+	using namespace Core;
 	const size_t oldLen = LengthOf(lhs);
 	SetCountTryNotInit(lhs, oldLen+LengthOf(rhs));
 	C::memcpy(DataOf(lhs)+oldLen, DataOf(rhs), LengthOf(rhs));
@@ -27,33 +21,30 @@ SC&> operator+=(SC& lhs, R&& rhs)
 }
 
 template<typename SC, typename R,
-	typename AsR=Concepts::RangeOfType<R>
-> Meta::EnableIf<
-	Concepts::Has_resize<SC>::_ &&
-	Concepts::IsArrayClass<SC>::_ &&
-	!Meta::TypeEquals<Concepts::ElementTypeOfArray<SC>, Concepts::ElementTypeOfArray<R>>::_ &&
-	Concepts::IsConsumableRangeOf<AsR, Concepts::ValueTypeOf<SC>>::_,
+	typename AsR=TRangeOfType<R>
+> Requires<
+	CHas_resize<SC> && !CTrivCopyCompatibleArrayWith<SC, R> &&
+	CArrayClass<SC> &&
+	CConsumableRangeOf<AsR, TValueTypeOf<SC>>,
 SC&> operator+=(SC& lhs, R&& rhs)
 {
 	using namespace Range;
-	auto r = Range::Forward<R>(rhs);
-	const size_t oldLen = Concepts::LengthOf(lhs);
-	Concepts::SetCountTryNotInit(lhs, oldLen+Count(r));
+	auto r = ForwardAsRange<R>(rhs);
+	const size_t oldLen = LengthOf(lhs);
+	SetCountTryNotInit(lhs, oldLen+Count(r));
 	ReadTo(r, Drop(lhs, oldLen));
 	return lhs;
 }
 
-template<typename SC, typename R> inline Meta::EnableIf<
-	!(Concepts::Has_resize<SC>::_ && Concepts::IsArrayClass<SC>::_) &&
-	Concepts::Has_push_back<SC>::_ &&
-	Concepts::IsAsConsumableRangeOf<R, Concepts::ValueTypeOf<SC>>::_,
+template<typename SC, typename R> inline Requires<
+	!(CHas_resize<SC> && CTrivCopyCompatibleArrayWith<SC, R>) &&
+	CHas_push_back<SC> &&
+	CAsConsumableRangeOf<R, TValueTypeOf<SC>>,
 SC&> operator+=(SC& lhs, R&& rhs)
 {
-	Range::LastAppender(lhs) << rhs;
+	LastAppender(lhs) << rhs;
 	return lhs;
 }
 
-
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

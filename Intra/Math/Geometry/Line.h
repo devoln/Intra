@@ -4,7 +4,8 @@
 #include "Math/Vector3.h"
 #include "Math/Math.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Line
 {

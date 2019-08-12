@@ -4,7 +4,8 @@
 #include "Sphere.h"
 #include "Obb.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> constexpr Aabb<T> BoundingAabb(const Sphere<T>& sphere) noexcept
 {return {sphere.Center.minus(sphere.Radius), sphere.Center.plus(sphere.Radius)};}

@@ -1,6 +1,7 @@
 #include "Data/Serialization/LanguageParams.h"
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 const LanguageParams LanguageParams::CStructInitializer =
 {

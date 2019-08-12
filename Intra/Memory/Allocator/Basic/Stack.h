@@ -1,14 +1,10 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Utils/Debug.h"
-#include "Utils/Span.h"
-#include "Utils/AnyPtr.h"
+#include "Core/Assert.h"
+#include "Core/Range/Span.h"
 
-namespace Intra { namespace Memory {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
+namespace Memory {
 
 struct AStack
 {
@@ -16,8 +12,36 @@ struct AStack
 		mStart(buf.Begin), mRest(buf), mAlignment(allocatorAlignment) {}
 	
 	size_t GetAlignment() const {return mAlignment;}
-	AnyPtr Allocate(size_t size, const Utils::SourceInfo& sourceInfo);
-	void Free(void* ptr, size_t size);
+
+	AnyPtr Allocate(size_t bytes, SourceInfo sourceInfo)
+	{
+		(void)sourceInfo;
+
+		// store the allocation offset right in front of the allocation
+		bytes += sizeof(uint);
+		const uint allocationOffset = uint(mRest.Begin - mStart);
+
+		if(mRest.Length() < bytes) return null;
+
+		byte* bufferPtr = Aligned(mRest.Begin, mAlignment, sizeof(uint));
+
+		*reinterpret_cast<uint*>(bufferPtr) = allocationOffset;
+		bufferPtr += sizeof(uint);
+
+		mRest.Begin += bytes;
+		return bufferPtr;
+	}
+
+	void Free(void* ptr, size_t size)
+	{
+		(void)size;
+		INTRA_DEBUG_ASSERT(ptr != null);
+		INTRA_DEBUG_ASSERT(static_cast<byte*>(ptr) < mRest.Begin);
+
+		// grab the allocation offset from the 4 bytes right before the given pointer
+		const uint allocationOffset = *--reinterpret_cast<uint*&>(ptr);
+		mRest.Begin = mStart+allocationOffset;
+	}
 
 private:
 	byte* mStart;
@@ -25,7 +49,5 @@ private:
 	size_t mAlignment;
 };
 
-}}
-
-INTRA_WARNING_POP
-
+}
+INTRA_END

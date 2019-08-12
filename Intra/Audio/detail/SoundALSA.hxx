@@ -2,11 +2,11 @@
 
 #include "Sound.h"
 
-#include "Cpp/Warnings.h"
+
 
 #include "Memory/Allocator/Global.h"
 
-#include "Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Fill.h"
 
 #include "Data/ValueType.h"
 
@@ -14,7 +14,8 @@
 #include <alsa/asoundlib.h>
 
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using namespace Intra::Math;
 
@@ -387,7 +388,7 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 		alSourceUnqueueBuffers(snd->source, 1, snd->buffers);
 		load_buffer(snd, 0);
 		alSourceQueueBuffers(snd->source, 1, snd->buffers);
-		Cpp::Swap(snd->buffers[0], snd->buffers[1]);
+		Core::Swap(snd->buffers[0], snd->buffers[1]);
 	}
 }
 

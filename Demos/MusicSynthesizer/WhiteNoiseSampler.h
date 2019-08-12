@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
 
-#include "Utils/Span.h"
+
+#include "Core/Range/Span.h"
 
 #include "Random/FastUniformNoise.h"
 

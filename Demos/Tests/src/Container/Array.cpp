@@ -2,7 +2,11 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Cpp/Warnings.h"
+#ifndef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+#define INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+#endif
+
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Array.h"
@@ -88,7 +92,7 @@ template<typename T> void pop_front(std::vector<T>& c) {c.erase(c.begin());}
 template<typename ARR> double TestContainerFirstElementRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
@@ -101,7 +105,7 @@ template<typename ARR> double TestContainerFirstElementRemove(uint size)
 template<typename ARR> double TestContainerLastElementRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++) 
 		arr.push_back(i);
 
@@ -115,7 +119,7 @@ template<typename ARR> double TestContainerLastElementRemove(uint size)
 template<typename ARR> double TestContainerMiddleElementRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
@@ -128,7 +132,7 @@ template<typename ARR> double TestContainerMiddleElementRemove(uint size)
 template<typename ARR> double TestContainerRemoveRange(uint size, uint elementsToRemove)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
@@ -141,7 +145,7 @@ template<typename ARR> double TestContainerRemoveRange(uint size, uint elementsT
 template<typename ARR> double TestContainerCopying(uint times, uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(i);
 
@@ -212,7 +216,7 @@ template<typename ARR> double TestContainerStringAddFirst(uint times, uint eleme
 template<typename ARR> double TestContainerFirstStringRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
@@ -225,7 +229,7 @@ template<typename ARR> double TestContainerFirstStringRemove(uint size)
 template<typename ARR> double TestContainerLastStringRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
@@ -238,7 +242,7 @@ template<typename ARR> double TestContainerLastStringRemove(uint size)
 template<typename ARR> double TestContainerMiddleStringRemove(uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 
@@ -251,7 +255,7 @@ template<typename ARR> double TestContainerMiddleStringRemove(uint size)
 template<typename ARR> double TestContainerStringRemoveRange(size_t size, size_t elementsToRemove)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(size_t i=0; i<size; i++)
 		arr.push_back(g_str);
 
@@ -265,7 +269,7 @@ template<typename ARR> double TestContainerStringRemoveRange(size_t size, size_t
 template<typename ARR> double TestContainerStringCopying(uint times, uint size)
 {
 	ARR arr;
-	Concepts::Reserve(arr, size);
+	Core::Reserve(arr, size);
 	for(uint i=0; i<size; i++)
 		arr.push_back(g_str);
 

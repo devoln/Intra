@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Meta/Type.h"
+#include "Core/Type.h"
 #include "Random/FastUniform.h"
 #include "Hash/Murmur.h"
 #include "Container/ForwardDecls.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 template<size_t N> struct Big
 {
@@ -19,16 +20,16 @@ template<size_t N> struct Big
 };
 
 
-template<typename T> forceinline Meta::EnableIf<
-	Meta::IsIntegralType<T>::_
+template<typename T> forceinline Requires<
+	CIntegral<T>::_
 > GenerateRandomValue(T& dst)
 {
 	auto rand = Random::FastUniform<T>(uint(size_t(&dst)));
 	dst = rand();
 }
 
-template<typename T> Meta::EnableIf<
-	Meta::IsFloatType<T>::_
+template<typename T> Requires<
+	CFloatingPoint<T>::_
 > GenerateRandomValue(T& dst)
 {
 	auto rand = Random::FastUniform<T>(uint(&dst));

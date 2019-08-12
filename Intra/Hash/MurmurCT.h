@@ -12,7 +12,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #pragma warning(disable: 4307)
 #endif
 
-namespace Intra { namespace Range { namespace HashCT {
+INTRA_BEGIN
+namespace Range { namespace HashCT {
 
 namespace D {
 
@@ -105,29 +106,29 @@ constexpr inline uint murmur3_32_value(const char* key, size_t len, uint seed)
 
 
 //Murmur3 128-bit
-enum: ulong64 {_c1=0x87c37b91114253d5ULL, _c2=0x4cf5ad432745937fULL};
+enum: uint64 {_c1=0x87c37b91114253d5ULL, _c2=0x4cf5ad432745937fULL};
 
 constexpr inline byte getU8(const char* str, size_t n)
 {return byte(str[n]);}
 
-constexpr inline ulong64 getU64(const char* str, size_t n)
+constexpr inline uint64 getU64(const char* str, size_t n)
 {
-	return ulong64(byte(str[n*8]))         | ulong64(byte(str[n*8+1])) << 8 |
-		   ulong64(byte(str[n*8+2])) << 16 | ulong64(byte(str[n*8+3])) << 24 |
-		   ulong64(byte(str[n*8+4])) << 32 | ulong64(byte(str[n*8+5])) << 40 |
-		   ulong64(byte(str[n*8+6])) << 48 | ulong64(byte(str[n*8+7])) << 56;
+	return uint64(byte(str[n*8]))         | uint64(byte(str[n*8+1])) << 8 |
+		   uint64(byte(str[n*8+2])) << 16 | uint64(byte(str[n*8+3])) << 24 |
+		   uint64(byte(str[n*8+4])) << 32 | uint64(byte(str[n*8+5])) << 40 |
+		   uint64(byte(str[n*8+6])) << 48 | uint64(byte(str[n*8+7])) << 56;
 }
 
-constexpr inline ulong64 rotl64c(ulong64 x, sbyte r)
+constexpr inline uint64 rotl64c(uint64 x, sbyte r)
 {return (x << r) | (x >> (64 - r));}
 
-constexpr inline ulong64 _downshift_and_xor(ulong64 k)
+constexpr inline uint64 _downshift_and_xor(uint64 k)
 {return k ^ (k >> 33);}
 
-constexpr inline ulong64 _calcblock_h(hash128 value, ulong64 h1, ulong64 h2)
+constexpr inline uint64 _calcblock_h(hash128 value, uint64 h1, uint64 h2)
 {return (h2 + rotl64c(h1 ^ (_c2*rotl64c(value.h1*_c1, 31)), 27))*5 + 0x52dce729;}
 
-constexpr inline hash128 _calcblock(hash128 value, ulong64 h1, ulong64 h2)
+constexpr inline hash128 _calcblock(hash128 value, uint64 h1, uint64 h2)
 {
 	return hash128(_calcblock_h(value, h1, h2),
 		(_calcblock_h(value, h1, h2) + rotl64c(h2 ^ (_c1*rotl64c(value.h2*_c2, 33)), 31))*5 + 0x38495ab5);
@@ -144,7 +145,7 @@ constexpr inline hash128 _calcblocks(const char* str, size_t nblocks, size_t ind
 constexpr inline hash128 _add(hash128 value)
 {return hash128(value.h1+value.h2, value.h2*2+value.h1);}
 
-constexpr inline ulong64 _fmix_64(ulong64 k)
+constexpr inline uint64 _fmix_64(uint64 k)
 {
 	return _downshift_and_xor(_downshift_and_xor(
 		_downshift_and_xor(k)*0xff51afd7ed558ccdULL)*0xc4ceb9fe1a85ec53ULL);
@@ -153,10 +154,10 @@ constexpr inline ulong64 _fmix_64(ulong64 k)
 constexpr inline hash128 _fmix(hash128 value)
 {return hash128(_fmix_64(value.h1), _fmix_64(value.h2));}
 
-constexpr inline ulong64 _calcrest_xor(const char* str, size_t offset, size_t index, ulong64 k)
-{return k ^ (ulong64(str[offset + index]) << (index * 8));}
+constexpr inline uint64 _calcrest_xor(const char* str, size_t offset, size_t index, uint64 k)
+{return k ^ (uint64(str[offset + index]) << (index * 8));}
 
-constexpr inline ulong64 _calcrest_k(const char* str, size_t offset, size_t index, size_t len, ulong64 k)
+constexpr inline uint64 _calcrest_k(const char* str, size_t offset, size_t index, size_t len, uint64 k)
 {
 	return index == (len-1)? _calcrest_xor(str, offset, index, k):
 		_calcrest_xor(str, offset, index, _calcrest_k(str, offset, index+1, len, k));
@@ -177,7 +178,7 @@ constexpr inline hash128 _calcfinal(size_t len, hash128 value)
 
 }
 
-constexpr hash128 inline Murmur3_128_x64(const char* str, size_t length, ulong64 seed)
+constexpr hash128 inline Murmur3_128_x64(const char* str, size_t length, uint64 seed)
 {
 	using namespace D;
 	return _calcfinal(length,
@@ -187,13 +188,13 @@ constexpr hash128 inline Murmur3_128_x64(const char* str, size_t length, ulong64
 	);
 }
 
-template<uint N> constexpr inline hash128 Murmur3_128_x64(const char(&key)[N], ulong64 seed)
+template<uint N> constexpr inline hash128 Murmur3_128_x64(const char(&key)[N], uint64 seed)
 {return Murmur3_128_x64(key, N-1, seed);}
 
-constexpr inline ulong64 Murmur3_128_x64_low(const char* str, size_t length, ulong64 seed)
+constexpr inline uint64 Murmur3_128_x64_low(const char* str, size_t length, uint64 seed)
 {return Murmur3_128_x64(str, length, seed).h1;}
 
-template<uint N> constexpr inline ulong64 Murmur3_128_x64_low(const char(&key)[N], ulong64 seed)
+template<uint N> constexpr inline uint64 Murmur3_128_x64_low(const char(&key)[N], uint64 seed)
 {return Murmur3_128_x64(key, seed).h1;}
 
 template<uint N> constexpr inline uint Murmur3_32(const char(&key)[N], uint seed)
@@ -220,7 +221,7 @@ constexpr inline uint operator"" _m3h(const char* str, size_t len)
 {return D::murmur3_32_value(str, len, 0);}
 
 //! Младшие 64 бита 128-разрядной Murmur3 хеш-функции
-constexpr inline ulong64 operator"" _m3h64(const char* str, size_t len)
+constexpr inline uint64 operator"" _m3h64(const char* str, size_t len)
 {return Murmur3_128_x64_low(str, len, 0);}
 
 //! Murmur3 128-разрядная хеш-функция
@@ -233,12 +234,12 @@ constexpr inline hash128 operator"" _m3h128(const char* str, size_t len)
 //! чтобы назначить эту версию хеша основной для строковых литералов.
 namespace Murmur3 {
 
-#ifdef INTRA_CONSTEXPR_SUPPORT
+#if defined(__cpp_constexpr) && defined(__cpp_user_defined_literals)
 
 constexpr inline uint operator"" _h(const char* str, size_t len)
 {return D::murmur3_32_value(str, len, 0);}
 
-constexpr inline ulong64 operator"" _h64(const char* str, size_t len)
+constexpr inline uint64 operator"" _h64(const char* str, size_t len)
 {return Murmur3_128_x64_low(str, len, 0);}
 
 constexpr inline hash128 operator"" _h128(const char* str, size_t len)

@@ -1,4 +1,4 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 
 #include "Utils/Logger.h"
 
@@ -26,7 +26,7 @@
 #include "Container/Map.h"
 
 #include "PerfTestSerialization.h"
-#include "Range/Header.h"
+#include "Core/Range/Header.h"
 #include "PerfTestRandom.h"
 #include "PerfTestSort.h"
 
@@ -52,7 +52,7 @@ FormattedWriter& InitOutput()
 	const bool logExisted = OS.FileExists(logFileName);
 	FileWriter logFile = OS.FileOpenAppend(logFileName, Error::Skip());
 	logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
-	FormattedWriter logWriter = HtmlWriter(Cpp::Move(logFile), !logExisted);
+	FormattedWriter logWriter = HtmlWriter(Move(logFile), !logExisted);
 	String datetime;
 	ToString(LastAppender(datetime), System::DateTime::Now());
 	StringView appName = IO::Path::ExtractName(System::Environment.CommandLine.First());
@@ -87,7 +87,7 @@ FormattedWriter& InitOutput()
 		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);
 	logWriter.EndSpoiler();
-	logger.Attach(Cpp::Move(logWriter));
+	logger.Attach(Move(logWriter));
 #endif
 	logger.Attach(ConsoleOutput());
 #endif

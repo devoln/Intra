@@ -1,18 +1,19 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
+
 #include "Memory/Memory.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class IAllocator
 {
 public:
-	virtual AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo) = 0;
+	virtual AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO) = 0;
 	virtual void Free(void* ptr) = 0;
 	virtual ~IAllocator() {}
 };
@@ -25,7 +26,7 @@ public:
 
 template<typename Allocator> class PolymorphicUnsizedAllocator: public IAllocator, private Allocator
 {
-	AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo) final
+	AnyPtr Allocate(size_t bytes, const SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO) final
 	{
 		return Allocator::Allocate(bytes, sourceInfo);
 	}
@@ -51,7 +52,7 @@ template<typename Allocator> class PolymorphicSizedAllocator: public ISizedAlloc
 	size_t GetAllocationSize(void* ptr) const final { return Allocator::GetAllocationSize(ptr); }
 };
 
-template<typename Allocator> class PolymorphicAllocator: public Meta::SelectType<
+template<typename Allocator> class PolymorphicAllocator: public TSelect<
 	PolymorphicSizedAllocator<Allocator>,
 	PolymorphicUnsizedAllocator<Allocator>,
 	AllocatorHasGetAllocationSize<Allocator>::_>

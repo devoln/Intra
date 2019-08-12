@@ -5,7 +5,8 @@
 #include "Math/Matrix4.h"
 #include "Aabb.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Sphere
 {

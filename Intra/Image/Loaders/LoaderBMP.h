@@ -3,9 +3,10 @@
 #ifndef INTRA_NO_BMP_LOADER
 
 #include "Loader.h"
-#include "Cpp/Warnings.h"
 
-namespace Intra { namespace Image {
+
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

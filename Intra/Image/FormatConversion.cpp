@@ -1,9 +1,12 @@
 ﻿#include "Image/FormatConversion.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/Endianess.h"
-#include "Range/Stream/RawRead.h"
+#include "Core/Core.h"
+#include "Core/Endianess.h"
+#include "Core/Range/Stream/RawRead.h"
 
-namespace Intra {
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+INTRA_BEGIN
+
 
 using namespace Math;
 
@@ -28,7 +31,7 @@ template<typename T> static void SwapRedBlueTyped(size_t lineUnused,
 	{
 		for(int x = 0; x<sizes.x; x++)
 		{
-			Cpp::Swap(data[0], data[2]);
+			Core::Swap(data[0], data[2]);
 			data += componentCount;
 		}
 		data += lineUnused;
@@ -191,3 +194,5 @@ void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
 
 
 }}
+
+INTRA_WARNING_POP

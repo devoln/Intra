@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/PlatformDetect.h"
+
+#include "Core/Core.h"
+
 
 #define INTRA_LIBRARY_STOPWATCH_QPC 1
 #define INTRA_LIBRARY_STOPWATCH_clock_gettime 2
@@ -25,7 +25,8 @@
 
 #endif
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -46,7 +47,7 @@ public:
 	uint GetElapsedMsAndReset() {return uint(GetElapsedSecondsAndReset()*1000);}
 
 private:
-	ulong64 mData;
+	uint64 mData;
 };
 
 INTRA_WARNING_POP

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::Range::FListRange&lt;*&gt;">
+    <DisplayString Condition="FirstNode==nullptr || LastNode==nullptr">[]</DisplayString>
+    <DisplayString Condition="FirstNode==LastNode">[{FirstNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next==LastNode">[{FirstNode->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {FirstNode->Next->Next->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString>[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {FirstNode->Next->Next->Next->Value}, ..., {LastNode->Value}]"</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>FirstNode</HeadPointer>
+        <NextPointer>Next</NextPointer>
+        <ValueNode>Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::BListRange&lt;*&gt;">
+    <DisplayString Condition="FirstNode==nullptr || LastNode==nullptr">[]</DisplayString>
+    <DisplayString Condition="FirstNode==LastNode">[{FirstNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next==LastNode">[{FirstNode->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString Condition="FirstNode->Next->Next->Next->Next==LastNode">[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {FirstNode->Next->Next->Next->Value}, {LastNode->Value}]"</DisplayString>
+    <DisplayString>[{FirstNode->Value}, {FirstNode->Next->Value}, {FirstNode->Next->Next->Value}, {FirstNode->Next->Next->Next->Value}, ..., {LastNode->Value}]"</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>FirstNode</HeadPointer>
+        <NextPointer>Next</NextPointer>
+        <ValueNode>Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Container::HashTableRange&lt;*&gt;" Priority="MediumLow">
+    <DisplayString Condition="mFirstNode==null || mFirstNode->prev==mLastNode">[]</DisplayString>
+    <DisplayString Condition="mFirstNode==mLastNode">[{mFirstNode->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, {mFirstNode->next->next->next->element}]</DisplayString>
+    <DisplayString>[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, ..., {mLastNode->element}]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>mFirstNode</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode>element</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::HashTableRange&lt;*&gt;" Priority="Medium">
+    <DisplayString Condition="mFirstNode==nullptr || mFirstNode->prev==mLastNode">[]</DisplayString>
+    <DisplayString Condition="mFirstNode==mLastNode">[{mFirstNode->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}]</DisplayString>
+    <DisplayString Condition="mFirstNode->next->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, {mFirstNode->next->next->next->element}]</DisplayString>
+    <DisplayString>[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}, ..., {mLastNode->element}]</DisplayString>
+    <Expand>
+      <LinkedListItems>
+        <HeadPointer>mFirstNode</HeadPointer>
+        <NextPointer>next</NextPointer>
+        <ValueNode Name="[{element.Key}]">element.Value</ValueNode>
+      </LinkedListItems>
+    </Expand>
+  </Type>
+
+  
+  <Type Name="Intra::Range::InputRangeIterator&lt;*&gt;">
+    <DisplayString>InputIterator {OriginalRange}</DisplayString>
+    <Expand>
+      <Synthetic Name="[InputIterator]">
+        <DisplayString>Referenced range:</DisplayString>
+      </Synthetic>
+      <ExpandedItem>Range</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::ForwardRangeIterator&lt;*&gt;">
+    <DisplayString>Iterator {Range}</DisplayString>
+    <Expand>
+      <Synthetic Name="[Iterator]">
+        <DisplayString>Range:</DisplayString>
+      </Synthetic>
+      <ExpandedItem>Range</ExpandedItem>
+    </Expand>
+  </Type>
+  
+  
+  <Type Name="Intra::Range::SineRange&lt;*&gt;" Priority="Medium">
+    <DisplayString>Sine[{mS1}, {mS2}, {mK*mS2-mS1}, {mK*(mK*mS2-mS1)-mS2}, ...]</DisplayString>
+  </Type>
+
+</AutoVisualizer>

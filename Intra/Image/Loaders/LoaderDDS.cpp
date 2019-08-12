@@ -4,17 +4,18 @@
 #include "Image/AnyImage.h"
 #include "Image/Bindings/DXGI_Formats.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Endianess.h"
 
-#include "Range/Stream/RawRead.h"
-#include "Range/Stream/RawWrite.h"
+#include "Core/Endianess.h"
+
+#include "Core/Range/Stream/RawRead.h"
+#include "Core/Range/Stream/RawWrite.h"
 
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 using namespace Math;
 

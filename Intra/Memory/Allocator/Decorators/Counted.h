@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
-#include "Meta/Type.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
+#include "Core/Type.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
@@ -15,7 +16,7 @@ private:
 	size_t mCounter=0;
 public:
 	ACounted() = default;
-	ACounted(A&& allocator): A(Cpp::Move(allocator)) {}
+	ACounted(A&& allocator): A(Move(allocator)) {}
 
 	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
 	{

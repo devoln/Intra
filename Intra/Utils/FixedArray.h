@@ -1,42 +1,44 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/InitializerList.h"
+#include "Core/Assert.h"
+#include "Core/Range/Span.h"
 
-#include "Debug.h"
-#include "Span.h"
+INTRA_BEGIN
+inline namespace Utils {
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Utils {
-
-//! Динамический массив фиксированной длины.
-//! Не резервирует место и не содержит методов для вставки элементов.
+/** Dynamic-allocated array of fixed length.
+  It does not reserve space and can't add elements.
+*/
 template<typename T> struct FixedArray
 {
-	forceinline FixedArray(null_t = null) noexcept: mData(null) {}
+	forceinline FixedArray(null_t=null) noexcept: mData(null) {}
 	
-	//! Создаёт новый FixedArray, передавая ему во владение диапазон элементов.
-	//! Этот метод предполагает, что элементы диапазона выделены как new T[...].
-	//! Передавать элементы, выделенные другим способом, запрещено.
-	forceinline static FixedArray MakeOwnerOf(Span<T> arr) noexcept
+	/** Creates FixedArray by transferring it Span of preallocated and constructed elements.
+	  Warning:
+	  This method assumes that ``arr`` is allocated using new T[...] and points to the entire allocation.
+	  It is disallowed to pass memory allocated in a different way.
+	*/
+	forceinline static FixedArray MakeOwnerOf(Owner<Span<T>> arr) noexcept
 	{
 		FixedArray result;
 		result.mData = arr;
 		return result.mData;
 	}
 
-	//! Создаёт новый FixedArray, передавая ему во владение диапазон элементов.
-	//! Этот метод предполагает, что элементы диапазона выделены как new T[...].
-	//! Передавать элементы, выделенные другим способом, запрещено.
+	/*! @brief Creates FixedArray by transferring it pointer and size of range of preallocated and constructed elements.
+
+	  Warning:
+	  This method assumes that range [\p ptr and \p ptr+length) is allocated using new T[...] and points to the entire allocation.
+	  It is disallowed to pass memory allocated in a different way.
+	*/
 	forceinline static FixedArray MakeOwnerOf(T* ptr, size_t length) noexcept
 	{return MakeOwnerOf({ptr, length});}
 
-	//! Конструктор, самостоятельно выделяющий память для length элементов.
-	//! Все элементы value-initialized, то есть POD типы инициализируются нулями,
-	//! а для не-POD классов и структур вызываются конструкторы по умолчанию.
+	/*! @brief Construct array of length elements.
+
+	  All elements are value-initialized. POD-types are zeroed,
+	  and non-POD types are initialized using their default constructors.
+	*/
 	forceinline FixedArray(size_t length):
 		mData(length == 0? null: new T[length](), length) {}
 	
@@ -48,7 +50,7 @@ template<typename T> struct FixedArray
 
 	forceinline ~FixedArray() noexcept {delete[] mData.Data();}
 
-	FixedArray(const FixedArray& rhs):
+	forceinline FixedArray(const FixedArray& rhs):
 		mData(new T[rhs.Length()], rhs.Length()) {rhs.mData.CopyTo(mData);}
 
 	FixedArray& operator=(const FixedArray& rhs)
@@ -68,7 +70,7 @@ template<typename T> struct FixedArray
 	forceinline FixedArray(FixedArray&& rhs) noexcept:
 		mData(rhs.mData) {rhs.mData = null;}
 
-	FixedArray& operator=(FixedArray&& rhs) noexcept
+	forceinline FixedArray& operator=(FixedArray&& rhs) noexcept
 	{
 		if(this == &rhs) return *this;
 		delete[] mData.Data();
@@ -86,11 +88,14 @@ template<typename T> struct FixedArray
 	}
 
 	forceinline T* Data() const noexcept {return mData.Data();}
-	forceinline size_t Length() const noexcept {return mData.Length();}
+	forceinline index_t Length() const noexcept {return mData.Length();}
 	forceinline bool Empty() const noexcept {return mData.Empty();}
-	forceinline T& First() const {return mData.First();}
-	forceinline T& Last() const {return mData.Last();}
-	forceinline T& operator[](size_t index) const {return mData[index];}
+	forceinline T& First() {return mData.First();}
+	forceinline const T& First() const {return mData.First();}
+	forceinline T& Last() {return mData.Last();}
+	forceinline const T& Last() const {return mData.Last();}
+	forceinline T& operator[](size_t index) {return mData[index];}
+	forceinline const T& operator[](size_t index) const {return mData[index];}
 
 	//! Изменяет размер массива для хранения ровно count элементов.
 	//! Всегда приводит к перераспределению памяти, даже в случае уменьшения размера.
@@ -99,7 +104,7 @@ template<typename T> struct FixedArray
 		if(count == Length()) return;
 		FixedArray result(count);
 		mData.MoveTo(result);
-		operator=(Cpp::Move(result));
+		operator=(Move(result));
 	}
 
 	forceinline T* begin() const noexcept {return mData.begin();}
@@ -122,12 +127,8 @@ template<typename T> struct FixedArray
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
 
 private:
-	Span<T> mData;
+	Owner<Span<T>> mData;
 };
 
 }
-using Utils::FixedArray;
-
-}
-
-INTRA_WARNING_POP
+INTRA_END

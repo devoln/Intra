@@ -1,17 +1,11 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-
 #include "Utils/FixedArray.h"
-
+#include "Utils/Delegate.h"
 #include "Data/ValueType.h"
 
-#include "Funal/Delegate.h"
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+inline namespace Audio {
 
 class IAudioSource
 {
@@ -26,8 +20,8 @@ public:
 	//! Количество каналов, которое имеет поток.
 	virtual uint ChannelCount() const = 0;
 
-	//! Полное количество семплов в потоке. Возвращает ~size_t(), если оно неизвестно.
-	virtual size_t SampleCount() const {return ~size_t();}
+	//! Полное количество семплов в потоке. Возвращает LMaxOf(size_t()), если оно неизвестно.
+	virtual size_t SampleCount() const {return LMaxOf(size_t());}
 
 	//! Текущая позиция в потоке в семплах.
 	virtual size_t SamplePosition() const = 0;
@@ -74,10 +68,10 @@ public:
 class BasicAudioSource: public IAudioSource
 {
 public:
-	typedef Funal::Delegate<void()> OnCloseResourceCallback;
+	typedef Delegate<void()> OnCloseResourceCallback;
 protected:
-	BasicAudioSource(OnCloseResourceCallback onClose, uint sampleRate=0, ushort numChannels=0):
-		mOnCloseResource(Cpp::Move(onClose)), mSampleRate(sampleRate), mChannelCount(numChannels) {}
+	BasicAudioSource(OnCloseResourceCallback onClose, uint sampleRate = 0, ushort numChannels = 0):
+		mOnCloseResource(Move(onClose)), mSampleRate(sampleRate), mChannelCount(numChannels) {}
 public:
 	BasicAudioSource(BasicAudioSource&&) = default;
 	BasicAudioSource(const BasicAudioSource&) = delete;
@@ -109,7 +103,7 @@ class SeparateFloatAudioSource: public BasicAudioSource
 {
 protected:
 	SeparateFloatAudioSource(OnCloseResourceCallback onClose, uint sampleRate=0, ushort numChannels=0):
-		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels) {}
+		BasicAudioSource(Move(onClose), sampleRate, numChannels) {}
 public:
 	SeparateFloatAudioSource(SeparateFloatAudioSource&&) = default;
 	SeparateFloatAudioSource(const SeparateFloatAudioSource&) = delete;
@@ -120,6 +114,5 @@ public:
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
 };
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

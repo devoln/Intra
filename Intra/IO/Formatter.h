@@ -1,11 +1,12 @@
 #pragma once
 
-#include "Range/Polymorphic/OutputRange.h"
-#include "Utils/StringView.h"
+#include "Core/Range/Polymorphic/OutputRange.h"
+#include "Core/Range/StringView.h"
 #include "Container/Sequential/Array.h"
 #include "Math/Vector3.h"
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 struct FontDesc
 {

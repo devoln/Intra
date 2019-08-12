@@ -1,13 +1,16 @@
 ﻿#ifndef INTRA_NO_BMP_LOADER
 
-#include "Cpp/Endianess.h"
+#include "Core/Endianess.h"
 #include "Container/Sequential/Array.h"
 #include "Image/Loaders/LoaderBMP.h"
 #include "Image/FormatConversion.h"
 #include "Image/AnyImage.h"
 #include "Math/Vector2.h"
 
-namespace Intra {
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+INTRA_BEGIN
+
 
 using namespace Math;
 
@@ -203,3 +206,5 @@ const LoaderBMP LoaderBMP::Instance;
 }}
 
 #endif
+
+INTRA_WARNING_POP

@@ -1,8 +1,8 @@
 #include "IO/ConsoleOutput.h"
 
-#include "Cpp/Warnings.h"
 
-#include "Range/Special/Unicode.h"
+
+#include "Core/Range/Special/Unicode.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -29,7 +29,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <unistd.h>
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 struct ConsoleOutStream
 {
@@ -113,7 +114,7 @@ public:
 			ushort consoleCode = 0;
 			if(newFont.Color!=Math::Vec3(-1))
 			{
-				const float maxColorChannel = Funal::Max(Funal::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = FMax(FMax(newFont.Color.x, newFont.Color.y), newFont.Color.z);
 				if(maxColorChannel >= 0.25f)
 				{
 					if(newFont.Color.z >= maxColorChannel / 2) consoleCode |= FOREGROUND_BLUE;
@@ -134,7 +135,7 @@ public:
 			s << "\x1B[0m";
 			if(newFont.Color != Math::Vec3(-1))
 			{
-				const float maxColorChannel = Funal::Max(Funal::Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = FMax(FMax(newFont.Color.x, newFont.Color.y), newFont.Color.z);
 				int code = 0;
 				int colorCode = 30;
 				if(maxColorChannel >= 0.25f)

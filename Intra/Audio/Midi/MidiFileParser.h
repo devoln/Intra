@@ -1,13 +1,11 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
+#include "System/Error.h"
 
-#include "Utils/ErrorStatus.h"
+#include "Core/Range/Take.h"
+#include "Core/Range/Polymorphic/InputRange.h"
 
-#include "Range/Decorators/Take.h"
-#include "Range/Polymorphic/InputRange.h"
-
-#include "Container/Utility/StaticBitset.h"
+#include "Utils/SBitset.h"
 
 #include "RawEvent.h"
 #include "TrackParser.h"
@@ -15,7 +13,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 class MidiFileParser
 {
@@ -41,7 +40,7 @@ public:
 	//! Возвращает байтовый поток событий следующего трека.
 	//! Перед вызовом любого метода этого класса необходимо, чтобы поток,
 	//! возвращённый unsafe-методами был прочитан полностью или уничтожен.
-	Range::RTake<InputStream&> NextTrackByteStreamUnsafe();
+	RTake<InputStream&> NextTrackByteStreamUnsafe();
 
 	//! Возвращает поток событий следующего трека.
 	//! Перед вызовом любого метода этого класса необходимо, чтобы поток,
@@ -75,8 +74,8 @@ struct MidiFileInfo
 	ushort ChannelsUsed;
 	size_t NoteCount, MaxSimultaneousNotes;
 	double Duration;
-	StaticBitset<128> UsedInstrumentsFlags;
-	StaticBitset<128> UsedDrumInstrumentsFlags;
+	SBitset<128> UsedInstrumentsFlags;
+	SBitset<128> UsedDrumInstrumentsFlags;
 };
 
 }}}

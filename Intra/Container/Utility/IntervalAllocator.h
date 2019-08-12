@@ -2,7 +2,8 @@
 
 #include "Container/Sequential/Array.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 template<typename T> class IntervalAllocator
 {
@@ -50,7 +51,7 @@ public:
 
 	Array<Interval> Compactify()
 	{
-		Array<Interval> oldIntervals = Cpp::Move(ranges);
+		Array<Interval> oldIntervals = Move(ranges);
 		ranges.Reserve(oldIntervals.Count());
 		T len=0;
 		for(auto&& oldInterval: oldIntervals)

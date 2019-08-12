@@ -4,14 +4,14 @@
 #define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_MSVC
 #endif
 
-#include "Preprocessor/Operations.h"
-#include "Cpp/Features.h"
+#include "Core/Type.h"
+#include "Core/Preprocessor.h"
 #include "Concurrency/Atomic.h"
-#include "Utils/AnyPtr.h"
 
 #include <intrin.h>
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if defined(_M_ARM) || defined(_M_ARM64)
 //TODO: неизвестно, правильно ли это
@@ -34,10 +34,10 @@ namespace Intra { namespace Concurrency {
 #if defined(_M_IX86)
 
 #define INTERLOCKED_OP64(name, arg) \
-inline long64 _Interlocked ## name ## 64(volatile long64* dst, long64 val) noexcept \
+inline int64 _Interlocked ## name ## 64(volatile int64* dst, int64 val) noexcept \
 {\
 	_ReadWriteBarrier();\
-	long64 oldVal, newVal;\
+	int64 oldVal, newVal;\
 	do {\
 		oldVal = *dst;\
 		newVal = val arg;\
@@ -73,11 +73,11 @@ template<> forceinline void AtomicBase<bool>::SetRelaxed(bool val) noexcept {__i
 template<> forceinline void AtomicBase<int>::SetRelaxed(int val) noexcept {__iso_volatile_store32(&mValue, val);}
 
 #ifdef _M_ARM64
-template<> forceinline void AtomicBase<long64>::SetRelaxed(long64 val) noexcept {__iso_volatile_store64(&mValue, val);}
+template<> forceinline void AtomicBase<int64>::SetRelaxed(int64 val) noexcept {__iso_volatile_store64(&mValue, val);}
 #endif
 
 #ifdef _M_ARM64
-template<> forceinline void AtomicBase<long64>::SetRelease(long64 val) noexcept
+template<> forceinline void AtomicBase<int64>::SetRelease(int64 val) noexcept
 {
 	MEMORY_BARRIER();
 	__iso_volatile_store64(&mValue, val);
@@ -99,14 +99,14 @@ template<> forceinline void AtomicBase<int>::Set(int val) noexcept
 }
 
 #ifdef _M_ARM64
-template<> forceinline void AtomicBase<long64>::Set(long64 val) noexcept
+template<> forceinline void AtomicBase<int64>::Set(int64 val) noexcept
 {
 	MEMORY_BARRIER();
 	__iso_volatile_store64(&mValue, val);
 	MEMORY_BARRIER();
 }
 #else
-template<> forceinline void AtomicBase<long64>::Set(long64 val) noexcept {GetSet(val);}
+template<> forceinline void AtomicBase<int64>::Set(int64 val) noexcept {GetSet(val);}
 #endif
 
 
@@ -122,12 +122,12 @@ template<> forceinline void AtomicBase<bool>::SetRelaxed(bool val) noexcept {con
 template<> forceinline void AtomicBase<int>::SetRelaxed(int val) noexcept {const_cast<volatile int&>(mValue) = val;}
 
 #ifdef _M_X64
-template<> forceinline void AtomicBase<long64>::SetRelaxed(long64 val) noexcept {const_cast<volatile long64&>(mValue) = val;}
+template<> forceinline void AtomicBase<int64>::SetRelaxed(int64 val) noexcept {const_cast<volatile int64&>(mValue) = val;}
 
-template<> forceinline void AtomicBase<long64>::SetRelease(long64 val) noexcept
+template<> forceinline void AtomicBase<int64>::SetRelease(int64 val) noexcept
 {
 	MEMORY_BARRIER();
-	const_cast<volatile long64&>(mValue) = val;
+	const_cast<volatile int64&>(mValue) = val;
 }
 #endif
 
@@ -166,33 +166,33 @@ template<> forceinline int AtomicBase<int>::Get() const noexcept
 	return result;
 }
 
-template<> forceinline long64 AtomicBase<long64>::Get() const noexcept
+template<> forceinline int64 AtomicBase<int64>::Get() const noexcept
 {
 #if defined(_M_X64)
-	const long64 val = const_cast<volatile long64&>(mValue);
+	const int64 val = const_cast<volatile int64&>(mValue);
 	MEMORY_BARRIER();
 #elif defined(_M_ARM)
-	const long64 val = __ldrexd(&mValue);
+	const int64 val = __ldrexd(&mValue);
 	MEMORY_BARRIER();
 #elif defined(_M_ARM64)
-	const long64 val = __iso_volatile_load64(&mValue);
+	const int64 val = __iso_volatile_load64(&mValue);
 	MEMORY_BARRIER();
 #else
-	const long64 val = _InterlockedOr64(const_cast<volatile long64*>(&mValue), 0);
+	const int64 val = _InterlockedOr64(const_cast<volatile int64*>(&mValue), 0);
 #endif
 	return val;
 }
 
-template<> forceinline long64 AtomicBase<long64>::GetRelaxed() const noexcept
+template<> forceinline int64 AtomicBase<int64>::GetRelaxed() const noexcept
 {
 #if defined(_M_X64)
-	return const_cast<volatile long64&>(mValue);
+	return const_cast<volatile int64&>(mValue);
 #elif defined(_M_ARM)
 	return __ldrexd(&mValue);
 #elif defined(_M_ARM64)
 	return __iso_volatile_load64(&mValue);
 #else
-	return _InterlockedOr64(const_cast<volatile long64*>(&mValue), 0);
+	return _InterlockedOr64(const_cast<volatile int64*>(&mValue), 0);
 #endif
 }
 
@@ -209,19 +209,19 @@ template<> forceinline type AtomicBase<type>::GetSet ## mo(type val) noexcept \
 
 INTRA_ATOMIC_METHOD_GET_SET(bool, 8, , )
 INTRA_ATOMIC_METHOD_GET_SET(int, , , )
-INTRA_ATOMIC_METHOD_GET_SET(long64, 64, , )
+INTRA_ATOMIC_METHOD_GET_SET(int64, 64, , )
 
 INTRA_ATOMIC_METHOD_GET_SET(bool, 8, Relaxed, INTRIN_RELAXED_SUFFIX())
 INTRA_ATOMIC_METHOD_GET_SET(int, , Relaxed, INTRIN_RELAXED_SUFFIX())
-INTRA_ATOMIC_METHOD_GET_SET(long64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
+INTRA_ATOMIC_METHOD_GET_SET(int64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
 
 INTRA_ATOMIC_METHOD_GET_SET(bool, 8, Acquire, INTRIN_ACQUIRE_SUFFIX())
 INTRA_ATOMIC_METHOD_GET_SET(int, , Acquire, INTRIN_ACQUIRE_SUFFIX())
-INTRA_ATOMIC_METHOD_GET_SET(long64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
+INTRA_ATOMIC_METHOD_GET_SET(int64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
 
 INTRA_ATOMIC_METHOD_GET_SET(bool, 8, Release, INTRIN_RELEASE_SUFFIX())
 INTRA_ATOMIC_METHOD_GET_SET(int, , Release, INTRIN_RELEASE_SUFFIX())
-INTRA_ATOMIC_METHOD_GET_SET(long64, 64, Release, INTRIN_RELEASE_SUFFIX())
+INTRA_ATOMIC_METHOD_GET_SET(int64, 64, Release, INTRIN_RELEASE_SUFFIX())
 
 template<typename T> forceinline T AtomicBase<T>::GetSetConsume(T val) noexcept {return GetSetAcquire(val);}
 template<typename T> forceinline T AtomicBase<T>::GetSetAcquireRelease(T val) noexcept {return GetSet(val);}
@@ -229,8 +229,8 @@ template<typename T> forceinline T AtomicBase<T>::GetSetAcquireRelease(T val) no
 
 #if !defined(_M_ARM64) && !defined(_M_X64)
 
-template<> forceinline void AtomicBase<long64>::SetRelaxed(long64 val) noexcept {GetSetRelaxed(val);}
-template<> forceinline void AtomicBase<long64>::SetRelease(long64 val) noexcept {GetSetRelease(val);}
+template<> forceinline void AtomicBase<int64>::SetRelaxed(int64 val) noexcept {GetSetRelaxed(val);}
+template<> forceinline void AtomicBase<int64>::SetRelease(int64 val) noexcept {GetSetRelease(val);}
 
 
 #endif
@@ -269,36 +269,36 @@ template<> forceinline bool AtomicBase<type>::CompareGetSet ## mo(type& expected
 
 INTRA_ATOMIC_CAS(bool, 8, , )
 INTRA_ATOMIC_CAS(int, , , )
-INTRA_ATOMIC_CAS(long64, 64, , )
+INTRA_ATOMIC_CAS(int64, 64, , )
 
 INTRA_ATOMIC_CAS(bool, 8, Relaxed, INTRIN_RELAXED_SUFFIX())
 INTRA_ATOMIC_CAS(int, , Relaxed, INTRIN_RELAXED_SUFFIX())
-INTRA_ATOMIC_CAS(long64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
+INTRA_ATOMIC_CAS(int64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
 
 INTRA_ATOMIC_CAS(bool, 8, Acquire, INTRIN_ACQUIRE_SUFFIX())
 INTRA_ATOMIC_CAS(int, , Acquire, INTRIN_ACQUIRE_SUFFIX())
-INTRA_ATOMIC_CAS(long64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
+INTRA_ATOMIC_CAS(int64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
 
 INTRA_ATOMIC_CAS(bool, 8, Release, INTRIN_RELEASE_SUFFIX())
 INTRA_ATOMIC_CAS(int, , Release, INTRIN_RELEASE_SUFFIX())
-INTRA_ATOMIC_CAS(long64, 64, Release, INTRIN_RELEASE_SUFFIX())
+INTRA_ATOMIC_CAS(int64, 64, Release, INTRIN_RELEASE_SUFFIX())
 
 
 INTRA_ATOMIC_CAS2(bool, 8, , )
 INTRA_ATOMIC_CAS2(int, , , )
-INTRA_ATOMIC_CAS2(long64, 64, , )
+INTRA_ATOMIC_CAS2(int64, 64, , )
 
 INTRA_ATOMIC_CAS2(bool, 8, Relaxed, INTRIN_RELAXED_SUFFIX())
 INTRA_ATOMIC_CAS2(int, , Relaxed, INTRIN_RELAXED_SUFFIX())
-INTRA_ATOMIC_CAS2(long64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
+INTRA_ATOMIC_CAS2(int64, 64, Relaxed, INTRIN_RELAXED_SUFFIX())
 
 INTRA_ATOMIC_CAS2(bool, 8, Acquire, INTRIN_ACQUIRE_SUFFIX())
 INTRA_ATOMIC_CAS2(int, , Acquire, INTRIN_ACQUIRE_SUFFIX())
-INTRA_ATOMIC_CAS2(long64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
+INTRA_ATOMIC_CAS2(int64, 64, Acquire, INTRIN_ACQUIRE_SUFFIX())
 
 INTRA_ATOMIC_CAS2(bool, 8, Release, INTRIN_RELEASE_SUFFIX())
 INTRA_ATOMIC_CAS2(int, , Release, INTRIN_RELEASE_SUFFIX())
-INTRA_ATOMIC_CAS2(long64, 64, Release, INTRIN_RELEASE_SUFFIX())
+INTRA_ATOMIC_CAS2(int64, 64, Release, INTRIN_RELEASE_SUFFIX())
 
 template<typename T> forceinline bool AtomicBase<T>::CompareSetAcquireRelease(T expected, T desired) noexcept {return CompareSet(expected, desired);}
 template<typename T> forceinline bool AtomicBase<T>::CompareSetConsume(T expected, T desired) noexcept {return CompareSetAcquire(expected, desired);}
@@ -326,11 +326,11 @@ INTRA_ATOMIC_BINARY(int, Or, _InterlockedOr,)
 INTRA_ATOMIC_BINARY(int, Xor, _InterlockedXor,)
 
 
-INTRA_ATOMIC_BINARY(long64, Add, _InterlockedExchangeAdd64,)
-INTRA_ATOMIC_BINARY(long64, Sub, _InterlockedExchangeAdd64, -)
-INTRA_ATOMIC_BINARY(long64, And, _InterlockedAnd64,)
-INTRA_ATOMIC_BINARY(long64, Or, _InterlockedOr64,)
-INTRA_ATOMIC_BINARY(long64, Xor, _InterlockedXor64,)
+INTRA_ATOMIC_BINARY(int64, Add, _InterlockedExchangeAdd64,)
+INTRA_ATOMIC_BINARY(int64, Sub, _InterlockedExchangeAdd64, -)
+INTRA_ATOMIC_BINARY(int64, And, _InterlockedAnd64,)
+INTRA_ATOMIC_BINARY(int64, Or, _InterlockedOr64,)
+INTRA_ATOMIC_BINARY(int64, Xor, _InterlockedXor64,)
 
 
 
@@ -372,7 +372,7 @@ INTRA_ATOMIC_INC_DEC_ONE(type, size, AcquireRelease, )
 INTRA_ATOMIC_INC_DEC(int,)
 
 #if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_X64)
-INTRA_ATOMIC_INC_DEC(long64, 64)
+INTRA_ATOMIC_INC_DEC(int64, 64)
 #else
 
 #define INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(type, mo) \
@@ -381,12 +381,12 @@ template<> forceinline type AtomicInteger<type>::Decrement ## mo() noexcept {ret
 template<> forceinline type AtomicInteger<type>::GetIncrement ## mo() noexcept {return GetAdd ## mo(1);} \
 template<> forceinline type AtomicInteger<type>::GetDecrement ## mo() noexcept {return GetSub ## mo(1);}
 
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64,)
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64, Relaxed)
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64, Consume)
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64, Acquire)
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64, Release)
-INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(long64, AcquireRelease)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64,)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64, Relaxed)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64, Consume)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64, Acquire)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64, Release)
+INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE(int64, AcquireRelease)
 
 #undef INTRA_ATOMIC_INC_DEC_ADD_SUB_ONE
 

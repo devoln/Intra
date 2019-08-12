@@ -1,20 +1,21 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
 
-namespace Intra { namespace System {
+#include "Core/Core.h"
+
+INTRA_BEGIN
+namespace System {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct RamInfo
 {
-	ulong64 TotalPhysicalMemory = 0;
-	ulong64 FreePhysicalMemory = 0;
-	ulong64 TotalVirtualMemory = 0;
-	ulong64 FreeVirtualMemory = 0;
-	ulong64 TotalSwapMemory = 0;
-	ulong64 FreeSwapMemory = 0;
+	uint64 TotalPhysicalMemory = 0;
+	uint64 FreePhysicalMemory = 0;
+	uint64 TotalVirtualMemory = 0;
+	uint64 FreeVirtualMemory = 0;
+	uint64 TotalSwapMemory = 0;
+	uint64 FreeSwapMemory = 0;
 
 	static RamInfo Get();
 };

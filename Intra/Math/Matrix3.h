@@ -1,16 +1,13 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Intrinsics.h"
+#include "Core/Core.h"
 
 #include "Math/Math.h"
 #include "Vector2.h"
 #include "Vector3.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Math {
+INTRA_BEGIN
+inline namespace Math {
 
 template<typename T> struct Matrix4;
 
@@ -396,7 +393,7 @@ public:
 		};
 	}
 
-	INTRA_EXTENDED_CONSTEXPR Matrix3 Orthogonalize() const
+	INTRA_CONSTEXPR2 Matrix3 Orthogonalize() const
 	{
 		const T ll0 = LengthSqr(Rows[0]);
 		const auto r1 = Rows[1] - Rows[0]*(Dot(Rows[0], Rows[1])/ll0);
@@ -469,34 +466,6 @@ typedef Matrix3<byte> UBMat3;
 typedef Matrix3<sbyte> SBMat3;
 typedef Matrix3<bool> BMat3;
 
-namespace GLSL {
-typedef Matrix3<float> mat3;
-typedef Matrix3<double> dmat3;
-typedef Matrix3<uint> umat3;
-typedef Matrix3<int> imat3;
-typedef Matrix3<bool> bmat3;
-
-typedef Matrix3<float> mat3x3;
-typedef Matrix3<double> dmat3x3;
-typedef Matrix3<uint> umat3x3;
-typedef Matrix3<int> imat3x3;
-typedef Matrix3<bool> bmat3x3;
-
-template<typename T> constexpr Matrix3<T> transpose(const Matrix3<T>& m) {return Transpose(m);}
-template<typename T> Matrix3<T> inverse(const Matrix3<T>& m) {return Inverse(m);}
 }
 
-namespace HLSL {
-typedef Matrix3<float> float3x3;
-typedef Matrix3<double> double3x3;
-typedef Matrix3<uint> uint3x3;
-typedef Matrix3<int> int3x3;
-typedef Matrix3<bool> bool3x3;
-
-using GLSL::transpose;
-using GLSL::inverse;
-}
-
-}}
-
-INTRA_WARNING_POP
+INTRA_END

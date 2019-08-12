@@ -108,7 +108,7 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	serializer << origG;
 	output.PrintLine("Array<int> origG = ", origG);
 
-	Meta::Tuple<int, double> origH = {-8543211, 2.718281828};
+	Core::Tuple<int, double> origH = {-8543211, 2.718281828};
 	serializer << origH;
 	output.PrintLine("Tuple<int, double> origH = ", origH);
 
@@ -146,7 +146,7 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	output.PrintLine("Array<int> resG = ", resG);
 	INTRA_ASSERT_EQUALS(origG, resG);
 
-	Meta::Tuple<int, double> resH = deserializer.Deserialize<Meta::Tuple<int, double>>();
+	Core::Tuple<int, double> resH = deserializer.Deserialize<Core::Tuple<int, double>>();
 	output.PrintLine("Tuple<int, double> resH = ", resH);
 	INTRA_ASSERT_EQUALS(origH, resH);
 }

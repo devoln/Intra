@@ -1,43 +1,44 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Endianess.h"
 
-#include "Meta/Type.h"
-#include "Meta/EachField.h"
+#include "Core/Endianess.h"
+
+#include "Core/Type.h"
+#include "Core/EachField.h"
 
 #include "Data/Reflection.h"
 
-#include "Range/Operations.h"
-#include "Range/Stream/RawRead.h"
+#include "Core/Range/Operations.h"
+#include "Core/Range/Stream/RawRead.h"
 
 #include "Container/Operations/Append.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 template<typename I> class GenericBinaryDeserializer
 {
 public:
 	GenericBinaryDeserializer(const I& input): Input(input) {}
-	GenericBinaryDeserializer(I&& input): Input(Cpp::Move(input)) {}
+	GenericBinaryDeserializer(I&& input): Input(Move(input)) {}
 
 	//! Поэлементно десериализовать массив длиной count в OutputRange dst.
-	template<typename OR> Meta::EnableIf<
-		Concepts::IsOutputRange<OR>::_
+	template<typename OR> Requires<
+		COutputRange<OR>::_
 	> DeserializeToOutputRange(OR& dst, size_t count)
 	{
-		typedef Concepts::ValueTypeOf<OR> T;
+		typedef TValueTypeOf<OR> T;
 		while(count --> 0)
 			dst.Put(Deserialize<T>());
 	}
 
 
 	//! Десериализация для тривиально сериализуемых типов.
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_ &&
-		!Concepts::IsInputRange<T>::_,
+	template<typename T> forceinline Requires<
+		CPod<T>::_ &&
+		!CInputRange<T>::_,
 	GenericBinaryDeserializer&> operator>>(T& dst)
 	{
 		Range::RawRead(Input, dst);
@@ -55,10 +56,10 @@ public:
 
 	//! Десериализация контейнера, который является ДИНАМИЧЕСКИМ массивом тривиально сериализуемого типа.
 	template<typename C,
-		typename T = Concepts::ValueTypeOf<C>
-	> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_ &&
-		Concepts::IsDynamicArrayContainer<C>::_,
+		typename T = TValueTypeOf<C>
+	> Requires<
+		CPod<T>::_ &&
+		CDynamicArrayContainer<C>::_,
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
 		uint len = Deserialize<uintLE>();
@@ -69,24 +70,24 @@ public:
 	}
 
 	//! Десериализация контейнера, который НЕ является массивом тривиально сериализуемого типа.
-	template<typename C> Meta::EnableIf<
-		Concepts::Has_push_back<C>::_ && Concepts::Has_clear<C>::_ &&
-		!(Concepts::IsDynamicArrayContainer<C>::_ &&
-			Meta::IsTriviallySerializable<Concepts::ValueTypeOf<C>>::_),
+	template<typename C> Requires<
+		CHas_push_back<C>::_ && CHas_clear<C>::_ &&
+		!(CDynamicArrayContainer<C>::_ &&
+			CPod<TValueTypeOf<C>>::_),
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
 		uint count = Deserialize<uintLE>();
 		dst.clear();
-		Concepts::Reserve(dst, count);
+		Core::Reserve(dst, count);
 		auto appender = Range::LastAppender(dst);
 		DeserializeToOutputRange(appender, count);
 		return *this;
 	}
 
 	//! Десериализация контейнера, который является СТАТИЧЕСКИМ массивом тривиально сериализуемого типа.
-	template<typename C, typename T = Concepts::ValueTypeOf<C>> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_ &&
-		Concepts::IsStaticArrayContainer<C>::_,
+	template<typename C, typename T = TValueTypeOf<C>> Requires<
+		CPod<T>::_ &&
+		CStaticArrayContainer<C>::_,
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
 		Span<T> dstArr(dst.data(), dst.size());
@@ -96,10 +97,10 @@ public:
 
 	//! Десериализация контейнера, который является СТАТИЧЕСКИМ массивом НЕтривиально сериализуемого типа.
 	template<typename C,
-		typename T = Concepts::ValueTypeOf<C>
-	> Meta::EnableIf<
-		!Meta::IsTriviallySerializable<T>::_ &&
-		Concepts::IsStaticArrayContainer<C>::_,
+		typename T = TValueTypeOf<C>
+	> Requires<
+		!CPod<T>::_ &&
+		CStaticArrayContainer<C>::_,
 	GenericBinaryDeserializer&> operator>>(C& dst)
 	{
 		Span<T> dstArr(dst.data(), dst.size());
@@ -111,8 +112,8 @@ public:
 	//! Десериализовать массив в Span.
 	//! Это можно делать только для тривиально сериализуемых типов,
 	//! так как полученный dst ссылается на данные в сериализованной области.
-	template<typename T> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename T> Requires<
+		CPod<T>::_,
 	GenericBinaryDeserializer&> operator>>(CSpan<T>& dst)
 	{
 		uint count = Deserialize<uintLE>();
@@ -122,18 +123,18 @@ public:
 	}
 
 	//! Десериализовать нетривиально сериализуемую структуру или класс со статической рефлексией.
-	template<typename T> Meta::EnableIf<
-		Meta::HasForEachField<T&, GenericBinaryDeserializer&>::_ &&
-		!Meta::IsTriviallySerializable<T>::_,
+	template<typename T> Requires<
+		CHasForEachField<T&, GenericBinaryDeserializer&>::_ &&
+		!CPod<T>::_,
 	GenericBinaryDeserializer&> operator>>(T& dst)
 	{
-		Meta::ForEachField(dst, *this);
+		Core::ForEachField(dst, *this);
 		return *this;
 	}
 
 	//! Десериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
-	template<typename T, size_t N> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename T, size_t N> Requires<
+		CPod<T>::_,
 	GenericBinaryDeserializer&> operator>>(T(&dst)[N])
 	{
 		Range::RawReadTo(Input, Span<T>(dst));
@@ -141,8 +142,8 @@ public:
 	}
 
 	//! Поэлементно десериализовать массив фиксированной длины нетривально десериализуемого типа.
-	template<typename T, size_t N> Meta::EnableIf<
-		!Meta::IsTriviallySerializable<T>::_,
+	template<typename T, size_t N> Requires<
+		!CPod<T>::_,
 	GenericBinaryDeserializer&> operator>>(T(&dst)[N])
 	{
 		Range::ForEach(dst, *this);
@@ -152,10 +153,10 @@ public:
 
 	//! Десериализовать любое значение по ссылке на него.
 	//! Этот оператор нужен, чтобы использовать десериализатор как функтор и передавать в алгоритмы.
-	template<typename T> forceinline Meta::EnableIf<
-		!Meta::IsConst<T>::_,
+	template<typename T> forceinline Requires<
+		!CConst<T>::_,
 	GenericBinaryDeserializer&> operator()(T&& value)
-	{return *this >> Cpp::Forward<T>(value);}
+	{return *this >> Forward<T>(value);}
 
 	//! Десериализовать любое значение и вернуть его из метода.
 	template<typename T> forceinline T Deserialize()

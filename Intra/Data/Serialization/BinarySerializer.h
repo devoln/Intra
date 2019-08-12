@@ -1,27 +1,28 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Endianess.h"
+
+#include "Core/Endianess.h"
 
 #include "Data/Reflection.h"
 
-#include "Meta/Type.h"
-#include "Meta/EachField.h"
+#include "Core/Type.h"
+#include "Core/EachField.h"
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
-#include "Concepts/Container.h"
-#include "Concepts/Range.h"
+#include "Core/Container.h"
+#include "Core/Range/Concepts.h"
 
-#include "Range/Operations.h"
-#include "Range/ForEach.h"
-#include "Range/Output/OutputArrayRange.h"
-#include "Range/Stream/RawWrite.h"
-#include "Range/Generators/Count.h"
+#include "Core/Range/Operations.h"
+#include "Core/Range/ForEach.h"
+
+#include "Core/Range/Stream/RawWrite.h"
+#include "Core/Range/Generators/Count.h"
 
 #include "Container/Operations/Info.h"
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -29,11 +30,11 @@ template<typename O> class GenericBinarySerializer
 {
 public:
 	template<typename... Args> GenericBinarySerializer(Args&&... output):
-		Output(Cpp::Forward<Args>(output)...) {}
+		Output(Forward<Args>(output)...) {}
 
 	//! Сериализовать массив простым копированием байт.
-	template<typename T> Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_
+	template<typename T> Requires<
+		CPod<T>::_
 	> SerializeArray(CSpan<T> v)
 	{
 		Range::RawWrite<uintLE>(Output, uint(v.Length()));
@@ -41,22 +42,22 @@ public:
 	}
 
 	//! Сериализовать массив поэлементно.
-	template<typename T> forceinline Meta::EnableIf<
-		!Meta::IsTriviallySerializable<T>::_
+	template<typename T> forceinline Requires<
+		!CPod<T>::_
 	> SerializeArray(CSpan<T> v) {SerializeRange(v);}
 
 	//! Сериализовать диапазон поэлементно.
 	template<typename R> void SerializeRange(R&& v)
 	{
 		Range::RawWrite<uintLE>(Output, uint(Range::Count(v)));
-		Range::ForEach(Cpp::Forward<R>(v), *this);
+		Range::ForEach(Forward<R>(v), *this);
 	}
 
 
 	//! Сериализация для тривиально сериализуемых типов.
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_ &&
-		!Concepts::IsInputRange<T>::_,
+	template<typename T> forceinline Requires<
+		CPod<T>::_ &&
+		!CInputRange<T>::_,
 	GenericBinarySerializer&> operator<<(const T& v)
 	{
 		Range::RawWrite<T>(Output, v);
@@ -64,9 +65,9 @@ public:
 	}
 
 	//! Сериализация диапазонов, представленных непрерывно в памяти.
-	template<typename R> forceinline Meta::EnableIf<
-		Concepts::IsArrayClass<R>::_ &&
-		!Concepts::IsStaticArrayContainer<R>::_,
+	template<typename R> forceinline Requires<
+		CArrayClass<R>::_ &&
+		!CStaticArrayContainer<R>::_,
 	GenericBinarySerializer&> operator<<(R&& v)
 	{
 		SerializeArray(CSpanOf(v));
@@ -75,19 +76,19 @@ public:
 
 
 	//! Сериализовать нетривиально сериализуемую структуру или класс со статической рефлексией.
-	template<typename T> forceinline Meta::EnableIf<
-		!Concepts::IsAsInputRange<T>::_ &&
-		Meta::HasForEachField<const T&, GenericBinarySerializer&>::_ &&
-		!Meta::IsTriviallySerializable<T>::_,
+	template<typename T> forceinline Requires<
+		!CAsInputRange<T>::_ &&
+		CHasForEachField<const T&, GenericBinarySerializer&>::_ &&
+		!CPod<T>::_,
 	GenericBinarySerializer&> operator<<(const T& src)
 	{
-		Meta::ForEachField(src, *this);
+		Core::ForEachField(src, *this);
 		return *this;
 	}
 
 	//! Сериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
-	template<typename T, size_t N> forceinline Meta::EnableIf<
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename T, size_t N> forceinline Requires<
+		CPod<T>::_,
 	GenericBinarySerializer&> operator<<(T(&src)[N])
 	{
 		Range::RawWriteFrom(Output, src, sizeof(T)*N);
@@ -95,8 +96,8 @@ public:
 	}
 
 	//! Поэлементно сериализовать массив фиксированной длины нетривиально сериализуемого типа.
-	template<typename T, size_t N> forceinline Meta::EnableIf<
-		!Meta::IsTriviallySerializable<T>::_,
+	template<typename T, size_t N> forceinline Requires<
+		!CPod<T>::_,
 	GenericBinarySerializer&> operator<<(T(&src)[N])
 	{
 		Range::ForEach(src, *this);
@@ -104,9 +105,9 @@ public:
 	}
 
 	//! Сериализовать массив фиксированной длины тривиально сериализуемого типа побайтовым копированием.
-	template<typename C, typename T=Concepts::ElementTypeOfArray<C>> forceinline Meta::EnableIf<
-		Concepts::IsStaticArrayContainer<C>::_ &&
-		Meta::IsTriviallySerializable<T>::_,
+	template<typename C, typename T=TArrayElement<C>> forceinline Requires<
+		CStaticArrayContainer<C>::_ &&
+		CPod<T>::_,
 	GenericBinarySerializer&> operator<<(C&& src)
 	{
 		Range::RawWriteFrom(Output, SpanOf(src));
@@ -114,9 +115,9 @@ public:
 	}
 
 	//! Поэлементно сериализовать массив фиксированной длины нетривиально сериализуемого типа.
-	template<typename C, typename T=Concepts::ValueTypeOf<C>> forceinline Meta::EnableIf<
-		Concepts::IsStaticArrayContainer<C>::_ &&
-		!Meta::IsTriviallySerializable<T>::_,
+	template<typename C, typename T=TValueTypeOf<C>> forceinline Requires<
+		CStaticArrayContainer<C>::_ &&
+		!CPod<T>::_,
 	GenericBinarySerializer&> operator<<(C&& src)
 	{
 		Range::ForEach(src, *this);
@@ -126,18 +127,18 @@ public:
 
 	//! Сериализовать любое значение. Благодаря этому оператору класс может вести себя как функтор.
 	template<typename T> forceinline GenericBinarySerializer& operator()(T&& value)
-	{return *this << Cpp::Forward<T>(value);}
+	{return *this << Forward<T>(value);}
 
 	//! Сериализовать любое значение.
 	//! Рекомендуется использовать этот метод вместо операторов () или << и явно указывать тип.
 	template<typename T> forceinline GenericBinarySerializer& Serialize(T&& value)
-	{return *this << Cpp::Forward<T>(value);}
+	{return *this << Forward<T>(value);}
 
 	//! Получить размер в байтах, который займёт элемент value при сериализации без учёта выравнивания.
 	template<typename T> static size_t SerializedSizeOf(T&& value)
 	{
 		GenericBinarySerializer<CountRange<byte>> dummy({});
-		dummy << Cpp::Forward<T>(value);
+		dummy << Forward<T>(value);
 		return dummy.Output.Counter;
 	}
 

@@ -1,8 +1,9 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 struct ImageFormat;
 enum ImageType: byte;

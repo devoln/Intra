@@ -1,14 +1,15 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Utils/StringView.h"
+#include "Core/Core.h"
+#include "Core/Range/StringView.h"
 #include "Container/Sequential/Array.h"
 #include "Container/Sequential/String.h"
 #include "Container/Associative/LinearMap.h"
-#include "Range/Polymorphic/FiniteRandomAccessRange.h"
+#include "Core/Range/Polymorphic/FiniteRandomAccessRange.h"
 #include "Data/Serialization/TextSerializer.h"
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 struct Object
 {
@@ -46,8 +47,8 @@ struct Object
 
 	forceinline bool operator!=(null_t) const {return !operator==(null);}
 
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsFloatType<T>::_ || Meta::IsIntegralType<T>::_,
+	template<typename T> forceinline Requires<
+		CFloatingPoint<T>::_ || CIntegral<T>::_,
 	T> Get(StringView key, T defaultValue=T()) const
 	{return T(Numbers.Get(key, double(defaultValue)));}
 

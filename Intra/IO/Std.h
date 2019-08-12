@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Range/Polymorphic/InputRange.h"
 #include "IO/FormattedWriter.h"
-#include "Cpp/Warnings.h"
+
 #include "IO/OsFile.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 class StdInOut: public FormattedWriter, public InputStream
 {

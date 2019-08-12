@@ -1,12 +1,12 @@
-﻿#include "Cpp/PlatformDetect.h"
+﻿
 
 #if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
 
 #include "System/Stopwatch.h"
 #include "System/Environment.h"
 
-#include "Range/Polymorphic/InputRange.h"
-#include "Range/Polymorphic/ForwardRange.h"
+#include "Core/Range/Polymorphic/InputRange.h"
+#include "Core/Range/Polymorphic/ForwardRange.h"
 
 #include "IO/ConsoleOutput.h"
 #include "IO/ConsoleInput.h"
@@ -92,13 +92,13 @@ void PrintInfoAndPlayMidiStream(ForwardStream stream, bool enableStreaming)
 	Std.PrintLine("Частота дискретизации: ", Sound::DefaultSampleRate(), " Гц");
 	if(enableStreaming)
 	{
-		auto snd = CreateStreamedSoundFromMidi(Cpp::Move(stream), 0.5f, true);
+		auto snd = CreateStreamedSoundFromMidi(Move(stream), 0.5f, true);
 		snd.Play();
 		if(!snd.IsPlaying()) return;
 	}
 	else
 	{
-		auto snd = CreateSoundFromMidi(Cpp::Move(stream), info.Duration, 0.5f, true).CreateInstance();
+		auto snd = CreateSoundFromMidi(Move(stream), info.Duration, 0.5f, true).CreateInstance();
 		snd.Play();
 		if(!snd.IsPlaying()) return;
 	}
@@ -124,7 +124,7 @@ void PrintInfoAndConvertMidiStreamToWavStream(ForwardStream midiStream, uint sam
 	}
 	Std.PrintLine("Синтез...");
 	Stopwatch sw;
-	auto src = CreateMidiAudioSource(Cpp::Move(midiStream), info.Duration, 0.75f, status, sampleRate);
+	auto src = CreateMidiAudioSource(Move(midiStream), info.Duration, 0.75f, status, sampleRate);
 	Sources::WriteWave(*src, wavStream);
 	Std.PrintLine("Время синтеза: ", StringOf(sw.ElapsedSeconds()*1000, 2), " мс.");
 }

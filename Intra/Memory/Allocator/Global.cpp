@@ -1,6 +1,7 @@
 ﻿#include "Memory/Allocator/Global.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 GlobalHeapType GlobalHeap;
 SizedHeapType SizedHeap;

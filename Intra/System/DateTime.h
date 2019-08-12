@@ -1,26 +1,27 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/PlatformDetect.h"
+
+#include "Core/Core.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 struct DateTime
 {
 	static DateTime Now();
-	static ulong64 AbsTimeMs();
+	static uint64 AbsTimeMs();
 
-	ulong64 TimeBasedSeed() const;
+	uint64 TimeBasedSeed() const;
 
 	ushort Year;
 	byte Month, Day, Hour, Minute, Second;
 
 	//! Константа, монотонно зависящая от времени запуска программы.
 	//! Его можно использовать как seed в генераторах псевдослучайных чисел.
-	static ulong64 StartupTimeBasedSeed();
+	static uint64 StartupTimeBasedSeed();
 };
 
 template<class R> R& operator<<(R&& stream, const DateTime& dt)

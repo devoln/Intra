@@ -4,11 +4,11 @@
 
 #include "PerfTestSerialization.h"
 
-#include "Cpp/Compatibility.h"
+#include "Core/Compatibility.h"
 #include "Data/Serialization.hh"
 #include "Data/Reflection.h"
 #include "System/Stopwatch.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "IO/Std.h"
@@ -39,7 +39,7 @@ struct SuperTest
 	double dbl;
 	Test tests[3];
 	ushort bar;
-	Meta::Tuple<int, float, String> tuple;
+	Core::Tuple<int, float, String> tuple;
 
 	INTRA_ADD_REFLECTION(SuperTest, strArr, foo, str, vals, dbl, tests, bar, tuple)
 };
@@ -86,9 +86,9 @@ struct SuperTestRef
 		tests[1] = rhs.tests[1];
 		tests[2] = rhs.tests[2];
 		bar = rhs.bar;
-		Meta::Get<0>(tuple) = Meta::Get<0>(rhs.tuple);
-		Meta::Get<1>(tuple) = Meta::Get<1>(rhs.tuple);
-		Meta::Get<2>(tuple) = Meta::Get<2>(rhs.tuple);
+		Core::Get<0>(tuple) = Core::Get<0>(rhs.tuple);
+		Core::Get<1>(tuple) = Core::Get<1>(rhs.tuple);
+		Core::Get<2>(tuple) = Core::Get<2>(rhs.tuple);
 		return *this;
 	}
 
@@ -101,7 +101,7 @@ struct SuperTestRef
 	double dbl;
 	TestRef tests[3];
 	ushort bar;
-	Meta::Tuple<int, float, StringView> tuple;
+	Core::Tuple<int, float, StringView> tuple;
 
 	INTRA_ADD_REFLECTION(SuperTestRef, strArr, foo, str, vals, dbl, tests, bar, tuple)
 };

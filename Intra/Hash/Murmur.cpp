@@ -1,11 +1,14 @@
 ﻿#include "Murmur.h"
-#include "Cpp/Endianess.h"
+#include "Core/Endianess.h"
+
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_ENDIANESS != INTRA_PLATFORM_ENDIANESS_LittleEndian)
 #error "Murmur2 hash support only little endian!"
 #endif
 
-namespace Intra { namespace Hash {
+INTRA_BEGIN
+namespace Hash {
 #define ROTL32(x, y) ((x << y) | (x >> (32 - y)))
 #define ROTL64(x, y) ((x << y) | (x >> (64 - y)))
 
@@ -67,26 +70,26 @@ uint Murmur3_32(StringView key, uint seed)
 
 
 
-ulong64 Murmur2_64_x64(StringView key, uint seed)
+uint64 Murmur2_64_x64(StringView key, uint seed)
 {
-	enum: ulong64 {m = 0xc6a4a7935bd1e995};
+	enum: uint64 {m = 0xc6a4a7935bd1e995};
 	const int r = 47;
 
-	ulong64 h = seed ^ (key.Length() * m);
+	uint64 h = seed ^ (key.Length() * m);
 
 	union
 	{
 		const char* chars;
 		const byte* bytes;
-		const ulong64* data;
+		const uint64* data;
 	};
 
 	chars = key.Data();
-	const ulong64* const end = data + (key.Length()/8);
+	const uint64* const end = data + (key.Length()/8);
 
 	while(data != end)
 	{
-		ulong64 k = *data++;
+		uint64 k = *data++;
 
 		k *= m;
 		k ^= k >> r;
@@ -98,13 +101,13 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 
 	switch(key.Length() & 7)
 	{
-	case 7: h ^= ulong64(bytes[6]) << 48; //fallthrough
-	case 6: h ^= ulong64(bytes[5]) << 40; //...
-	case 5: h ^= ulong64(bytes[4]) << 32;
-	case 4: h ^= ulong64(bytes[3]) << 24;
-	case 3: h ^= ulong64(bytes[2]) << 16;
-	case 2: h ^= ulong64(bytes[1]) << 8;
-	case 1: h ^= ulong64(bytes[0]);
+	case 7: h ^= uint64(bytes[6]) << 48; //fallthrough
+	case 6: h ^= uint64(bytes[5]) << 40; //...
+	case 5: h ^= uint64(bytes[4]) << 32;
+	case 4: h ^= uint64(bytes[3]) << 24;
+	case 3: h ^= uint64(bytes[2]) << 16;
+	case 2: h ^= uint64(bytes[1]) << 8;
+	case 1: h ^= uint64(bytes[0]);
 		h *= m;
 
 	default:;
@@ -117,7 +120,7 @@ ulong64 Murmur2_64_x64(StringView key, uint seed)
 	return h;
 }
 
-ulong64 Murmur2_64_x32(StringView key, uint seed)
+uint64 Murmur2_64_x32(StringView key, uint seed)
 {
 	enum: uint {m = 0x5bd1e995};
 	enum: uint {r = 24};
@@ -179,7 +182,7 @@ ulong64 Murmur2_64_x32(StringView key, uint seed)
 	h2 ^= h1 >> 19;
 	h2 *= m;
 
-	return (ulong64(h1) << 32)|h2;
+	return (uint64(h1) << 32)|h2;
 }
 
 
@@ -189,7 +192,7 @@ forceinline uint getblock(const uint* p, intptr i)
 	return reinterpret_cast<const uintLE*>(p)[i];
 }
 
-forceinline ulong64 getblock(const ulong64* p, intptr i)
+forceinline uint64 getblock(const uint64* p, intptr i)
 {
 	return reinterpret_cast<const ulong64LE*>(p)[i];
 }
@@ -205,7 +208,7 @@ forceinline uint fmix(uint h)
 	return h;
 }
 
-forceinline ulong64 fmix(ulong64 k)
+forceinline uint64 fmix(uint64 k)
 {
 	k ^= k >> 33;
 	k *= 0xff51afd7ed558ccdULL;
@@ -364,20 +367,20 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 	{
 		const char* chars;
 		const byte* bytes;
-		const ulong64* blocks;
+		const uint64* blocks;
 	};
 	chars = key.Data();
 	const size_t nblocks = key.Length()/16;
 
-	ulong64 h1 = seed, h2 = seed;
+	uint64 h1 = seed, h2 = seed;
 
-	const ulong64 c1 = 0x87c37b91114253d5ULL;
-	const ulong64 c2 = 0x4cf5ad432745937fULL;
+	const uint64 c1 = 0x87c37b91114253d5ULL;
+	const uint64 c2 = 0x4cf5ad432745937fULL;
 
 	for(intptr i=0; i<intptr(nblocks); i++)
 	{
-		ulong64 k1 = getblock(blocks, i*2);
-		ulong64 k2 = getblock(blocks, i*2+1);
+		uint64 k1 = getblock(blocks, i*2);
+		uint64 k2 = getblock(blocks, i*2+1);
 
 		k1 *= c1;
 		k1 = ROTL64(k1, 31);
@@ -401,30 +404,30 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 
 	const byte* const tail = bytes + nblocks*16;
 
-	ulong64 k1=0, k2=0;
+	uint64 k1=0, k2=0;
 
 	switch(key.Length() & 15)
 	{
-	case 15: k2 ^= ulong64(tail[14]) << 48;
-	case 14: k2 ^= ulong64(tail[13]) << 40;
-	case 13: k2 ^= ulong64(tail[12]) << 32;
-	case 12: k2 ^= ulong64(tail[11]) << 24;
-	case 11: k2 ^= ulong64(tail[10]) << 16;
-	case 10: k2 ^= ulong64(tail[9]) << 8;
-	case  9: k2 ^= ulong64(tail[8]);
+	case 15: k2 ^= uint64(tail[14]) << 48;
+	case 14: k2 ^= uint64(tail[13]) << 40;
+	case 13: k2 ^= uint64(tail[12]) << 32;
+	case 12: k2 ^= uint64(tail[11]) << 24;
+	case 11: k2 ^= uint64(tail[10]) << 16;
+	case 10: k2 ^= uint64(tail[9]) << 8;
+	case  9: k2 ^= uint64(tail[8]);
 		k2 *= c2;
 		k2  = ROTL64(k2, 33);
 		k2 *= c1;
 		h2 ^= k2;
 
-	case  8: k1 ^= ulong64(tail[7]) << 56;
-	case  7: k1 ^= ulong64(tail[6]) << 48;
-	case  6: k1 ^= ulong64(tail[5]) << 40;
-	case  5: k1 ^= ulong64(tail[4]) << 32;
-	case  4: k1 ^= ulong64(tail[3]) << 24;
-	case  3: k1 ^= ulong64(tail[2]) << 16;
-	case  2: k1 ^= ulong64(tail[1]) << 8;
-	case  1: k1 ^= ulong64(tail[0]);
+	case  8: k1 ^= uint64(tail[7]) << 56;
+	case  7: k1 ^= uint64(tail[6]) << 48;
+	case  6: k1 ^= uint64(tail[5]) << 40;
+	case  5: k1 ^= uint64(tail[4]) << 32;
+	case  4: k1 ^= uint64(tail[3]) << 24;
+	case  3: k1 ^= uint64(tail[2]) << 16;
+	case  2: k1 ^= uint64(tail[1]) << 8;
+	case  1: k1 ^= uint64(tail[0]);
 		k1 *= c1;
 		k1  = ROTL64(k1, 31);
 		k1 *= c2;
@@ -453,3 +456,5 @@ hash128 Murmur3_128_x64(StringView key, uint seed)
 #undef ROTL32
 #undef ROTL64
 }}
+
+INTRA_WARNING_POP

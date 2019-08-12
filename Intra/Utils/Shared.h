@@ -1,32 +1,31 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-
-#include "Utils/Debug.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
 
 #ifndef INTRA_NO_CONCURRENCY
 #include "Concurrency/Atomic.h"
 #endif
 
-namespace Intra { namespace Utils {
+INTRA_BEGIN
+inline namespace Utils {
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+//TODO: make a policy-based generic pointer template.
 
-//! Более лёгкий аналог std::shared_ptr.
-//! Он не принимает сырые указатели, поэтому не подвержен ошибке наличия двух счётчиков для одного объекта.
-//! Выделяет и освобождает память сам через new и не хранит deleter.
-//! Не поддерживает слабые ссылки.
-//! Также он не может использоваться с incomplete типами.
+/** Lightweight shared pointer.
+It doesn't take raw pointers, so the error of multiple separate reference counters for one object is not possible.
+Uses new/delete for allocation and has no deleter.
+No support for weak references.
+Cannot be used with incomplete types.
+Thread safe.
+*/
 template<typename T> class Shared
 {
 	template<typename U> friend class SharedClass;
 	struct Data
 	{
 		template<typename... Args> forceinline Data(Args&&... args):
-			Value(Cpp::Forward<Args>(args)...), RefCount(1) {}
+			Value(Forward<Args>(args)...), RefCount(1) {}
 
 		forceinline void Release()
 		{
@@ -59,8 +58,8 @@ public:
 		if(mData != null) mData->IncRef();
 	}
 
-	template<typename U, typename = Meta::EnableIf<
-		Meta::IsInherited<U, T>::_// && Meta::HasVirtualDestructor<T>::_
+	template<typename U, typename = Requires<
+		CDerived<U, T> // && CHasVirtualDestructor<T>
 	>> forceinline Shared(const Shared<U>& rhs): mData(rhs.mData)
 	{
 		if(mData != null) mData->IncRef();
@@ -68,8 +67,8 @@ public:
 
 	forceinline Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = null;}
 	
-	template<typename U, typename = Meta::EnableIf<
-		Meta::IsInherited<U, T>::_// && Meta::HasVirtualDestructor<T>::_
+	template<typename U, typename = Requires<
+		CDerived<U, T> // && CHasVirtualDestructor<T>
 	>> forceinline Shared(Shared<U>&& rhs): mData(rhs.mData) {rhs.mData = null;}
 
 	forceinline ~Shared() {if(mData != null) mData->Release();}
@@ -78,13 +77,13 @@ public:
 	{
 		if(mData == rhs.mData) return *this;
 		Shared temp(rhs);
-		Cpp::Swap(mData, temp.mData);
+		Core::Swap(mData, temp.mData);
 		return *this;
 	}
 
 	forceinline Shared& operator=(Shared&& rhs)
 	{
-		Cpp::Swap(mData, rhs.mData);
+		Core::Swap(mData, rhs.mData);
 		return *this;
 	}
 
@@ -99,7 +98,7 @@ public:
 	constexpr forceinline T* get() const noexcept {return Ptr();}
 
 	template<typename... Args> forceinline static Shared New(Args&&... args)
-	{return new Data(Cpp::Forward<Args>(args)...);}
+	{return new Data(Forward<Args>(args)...);}
 
 	forceinline uint use_count() const
 	{
@@ -135,7 +134,7 @@ public:
 	//! Нельзя использовать с уже удалённым объектом.
 	forceinline Shared<T> SharedThis()
 	{
-		void* const address = reinterpret_cast<char*>(this) - Meta::MemberOffset(&DerivedData::Value);
+		void* const address = reinterpret_cast<char*>(this) - Core::MemberOffset(&DerivedData::Value);
 		const auto data = static_cast<DerivedData*>(address);
 		if(data->IncRef()) return data;
 
@@ -144,14 +143,8 @@ public:
 	}
 };
 
-template<typename T> forceinline Shared<Meta::RemoveReference<T>> SharedMove(T&& rhs)
-{return Shared<Meta::RemoveReference<T>>::New(Cpp::Move(rhs));}
-
-INTRA_WARNING_POP
+template<typename T> forceinline Shared<TRemoveReference<T>> SharedMove(T&& rhs)
+{return Shared<TRemoveReference<T>>::New(Move(rhs));}
 
 }
-using Utils::Shared;
-using Utils::SharedMove;
-using Utils::SharedClass;
-
-}
+INTRA_END

@@ -1,20 +1,21 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
-#include "Meta/Type.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
+#include "Core/Type.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 template<typename A, typename Sync> struct ASynchronized: A
 {
 	ASynchronized() = default;
-	ASynchronized(A&& allocator): A(Cpp::Move(allocator)) {}
+	ASynchronized(A&& allocator): A(Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		mSync.Lock();
 		auto result = A::Allocate(bytes, sourceInfo);

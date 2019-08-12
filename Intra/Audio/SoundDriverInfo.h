@@ -1,8 +1,11 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 
-namespace Intra { namespace Audio {
+//TODO: audio device enumeration and selection
+
+INTRA_BEGIN
+inline namespace Audio {
 
 struct SoundDeviceInfo
 {
@@ -13,4 +16,5 @@ struct SoundDeviceInfo
 	ushort BitDepth = 16;
 };
 
-}}
+}
+INTRA_END

@@ -1,21 +1,22 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
 
-#include "Utils/StringView.h"
-#include "Utils/Span.h"
-#include "Utils/Debug.h"
-#include "Utils/ErrorStatus.h"
 
-#include "Range/Search/Single.h"
-#include "Range/Stream/RawRead.h"
-#include "Range/Mutation/Fill.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Span.h"
+#include "Core/Assert.h"
+#include "System/Error.h"
+
+#include "Core/Range/Search/Single.h"
+#include "Core/Range/Stream/RawRead.h"
+#include "Core/Range/Mutation/Fill.h"
 
 #include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 class OsFile
 {
@@ -57,20 +58,20 @@ public:
 	//! @param data Указатель на начало считываемого из файла блока памяти.
 	//! @param bytes Размер считываемых данных в байтах.
 	//! @return Количество прочитанных байт.
-	size_t ReadData(ulong64 fileOffset, void* data, size_t bytes, ErrorStatus& status) const;
+	size_t ReadData(uint64 fileOffset, void* data, size_t bytes, ErrorStatus& status) const;
 	
 	//! Возвращает размер файла или 0, если это не файл.
-	ulong64 Size(ErrorStatus& status = Error::Skip()) const;
+	uint64 Size(ErrorStatus& status = Error::Skip()) const;
 
 	//! Записать данные в файл по указанному смещению.
 	//! @param fileOffset Смещение начала записываемых данных в файле.
 	//! @param data Указатель на начало записываемого в файл блока памяти.
 	//! @param bytes Размер записываемых данных в байтах.
 	//! @return Количество записанных байт.
-	size_t WriteData(ulong64 fileOffset, const void* data, size_t bytes, ErrorStatus& status) const;
+	size_t WriteData(uint64 fileOffset, const void* data, size_t bytes, ErrorStatus& status) const;
 
 	//! Установить размер файла равным size.
-	void SetSize(ulong64 size, ErrorStatus& status) const;
+	void SetSize(uint64 size, ErrorStatus& status) const;
 
 	//! Прочитать файл целиком в строку.
 	//! @param fileName Путь к файлу.

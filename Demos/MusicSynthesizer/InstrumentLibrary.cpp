@@ -1,4 +1,4 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -11,7 +11,6 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "DrumPhysicalModel.h"
 
 #include "WaveTableSampler.h"
-#include "ADSR.h"
 #include "MusicalInstrument.h"
 #include "RecordedSampler.h"
 #include "Filter.h"
@@ -21,7 +20,7 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "WaveTableGeneration.h"
 
-using namespace Audio;
+using namespace Intra;
 
 InstrumentLibrary::~InstrumentLibrary() {}
 
@@ -39,11 +38,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["ChoirAahs"].WaveTables.EmplaceLast();
 		wt.Tables = &choirATables;
 		wt.VolumeScale = 0.4f;
-		wt.ADSR.AttackTime = 0.05f;
-		wt.ADSR.DecayTime = 0.5f;
-		wt.ADSR.SustainVolume = 0.8f;
-		wt.ADSR.ReleaseTime = 0.05f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.05f, 0.5f, 0.8f, 0.05f);
 	}
 	
 	auto& choirOTables = Tables["ChoirO"] = CreateWaveTablesFromFormants({
@@ -58,24 +53,14 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["PadChoir"].WaveTables.EmplaceLast();
 		wt.Tables = &choirOTables;
 		wt.VolumeScale = 0.65f;
-
-		wt.ADSR.AttackTime = 0.1f;
-		wt.ADSR.DecayTime = 0.1f;
-		wt.ADSR.SustainVolume = 0.4f;
-		wt.ADSR.ReleaseTime = 0.4f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.1f, 0.1f, 0.4f, 0.4f);
 	}
 
 	{
 		auto& wt = Instruments["Pad7Halo"].WaveTables.EmplaceLast();
 		wt.Tables = &choirOTables;
 		wt.VolumeScale = 0.6f;
-
-		wt.ADSR.AttackTime = 0.03f;
-		wt.ADSR.DecayTime = 0.5f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.3f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.03f, 0.5f, 0.7f, 0.3f);
 	}
 
 
@@ -93,11 +78,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.4f;
 		wt.VibratoValue = 0.004f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.001f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.DecayTime = 0.1f;
-		wt.ADSR.ReleaseTime = 0.05f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.001f, 0.6f, 0.1f, 0.05f, true);
 	}
 
 	
@@ -118,49 +99,35 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.2f;
 		//wt.VibratoFrequency = 6; //5-6
 		//wt.VibratoValue = 0.005f;
-
-		wt.ADSR.AttackTime = 0.04f;
-		wt.ADSR.ReleaseTime = 0.1f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.04f, 0, 1, 0.1f, true);
 	}
 
 	{
 		auto& wt = Instruments["VoiceOohs"].WaveTables.EmplaceLast();
 		wt.Tables = &choirOTables;
 		wt.VolumeScale = 0.25f;
-
-		wt.ADSR.AttackTime = 0.005f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.ReleaseTime = 0.2f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.005f, 0.3f, 0.6f, 0.2f, true);
 	}
 	
 	{
 		auto& wt = Instruments["Pad8Sweep"].WaveTables.EmplaceLast();
 		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.15f;
-
-		wt.ADSR.AttackTime = 0.15f;
-		wt.ADSR.ReleaseTime = 0.25f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.15f, 0, 1, 0.25f);
 	}
 
 	{
 		auto& wt = Instruments["StringEnsemble2"].WaveTables.EmplaceLast();
 		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.08f;
-
-		wt.ADSR.AttackTime = 0.07f;
-		wt.ADSR.ReleaseTime = 0.15f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.07f, 0, 1, 0.15f);
 	}
 
 	{
 		auto& wt = Instruments["SynthStrings"].WaveTables.EmplaceLast();
 		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.07f;
-		wt.ADSR.AttackTime = 0.3f;
-		wt.ADSR.ReleaseTime = 0.2f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.3f, 0, 1, 0.2f);
 	}
 
 	auto& stringEnsembleTables = Tables["StringEnsemble"] = CreateWaveTablesFromFormants({
@@ -175,20 +142,14 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["StringEnsemble"].WaveTables.EmplaceLast();
 		wt.Tables = &stringEnsembleTables;
 		wt.VolumeScale = 0.12f;
-
-		wt.ADSR.AttackTime = 0.04f;
-		wt.ADSR.ReleaseTime = 0.2f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.04f, 0, 1, 0.2f);
 	}
 
 	{
 		auto& wt = Instruments["TremoloStrings"].WaveTables.EmplaceLast();
 		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.25f;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.ReleaseTime = 0.07f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.07f);
 	}
 
 
@@ -201,13 +162,10 @@ InstrumentLibrary::InstrumentLibrary()
 	}, 16, 1, 0.7f, 1, 16384);
 
 	{
-		auto& wave = Instruments["Harmonica"].WaveTables.EmplaceLast();
-		wave.Tables = &harmonicaTables;
-		wave.VolumeScale = 0.15f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.01f;
-		wave.ADSR.Linear = true;
+		auto& wt = Instruments["Harmonica"].WaveTables.EmplaceLast();
+		wt.Tables = &harmonicaTables;
+		wt.VolumeScale = 0.15f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.01f);
 	}
 
 	auto& fiddleTables = Tables["Fiddle"] = CreateWaveTablesFromFormants({
@@ -219,13 +177,10 @@ InstrumentLibrary::InstrumentLibrary()
 	}, 16, 0.5f, 4, 1.0f, 16384);
 
 	{
-		auto& wave = Instruments["Fiddle"].WaveTables.EmplaceLast();
-		wave.Tables = &fiddleTables;
-		wave.VolumeScale = 0.15f;
-
-		wave.ADSR.AttackTime = 0.03f;
-		wave.ADSR.ReleaseTime = 0.04f;
-		wave.ADSR.Linear = true;
+		auto& wt = Instruments["Fiddle"].WaveTables.EmplaceLast();
+		wt.Tables = &fiddleTables;
+		wt.VolumeScale = 0.15f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.03f, 0, 1, 0.04f);
 	}
 
 
@@ -242,18 +197,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &pizzicatoStringsTables;
 		wt.VolumeScale = 0.25f;
 		wt.ExpCoeff = 6;
-		wt.ADSR.AttackTime = 0.02f;
-		wt.ADSR.ReleaseTime = 0.07f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.02f, 0, 1, 0.07f, true);
 	}
 
 	{
 		auto& wt = Instruments["PercussiveOrgan"].WaveTables.EmplaceLast();
 		wt.Tables = &synthVoiceTables;
 		wt.VolumeScale = 0.25f;
-		wt.ADSR.AttackTime = 0.003f;
-		wt.ADSR.DecayTime = 0.2f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.ReleaseTime = 0.05f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.008f, 0.2f, 0.6f, 0.05f, true);
 	}
 
 
@@ -271,12 +222,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.2f;
 		wt.VibratoFrequency = 6;
 		wt.VibratoValue = 0.002f;
-
-		wt.ADSR.AttackTime = 0.05f;
-		wt.ADSR.DecayTime = 0.03f;
-		wt.ADSR.SustainVolume = 0.8f;
-		wt.ADSR.ReleaseTime = 0.05f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.05f, 0.03f, 0.8f, 0.05f);
 	}
 
 	Tables["SynthOrgan"].Generator = [](float freq, uint sampleRate)
@@ -303,12 +249,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.3f;
 		wt.VibratoValue = 0.0015f;
 		wt.VibratoFrequency = 12;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.DecayTime = 0.4f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0.4f, 0.3f, 0.1f);
 	}
 
 	{
@@ -317,17 +258,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.25f;
 		wt.VibratoValue = 0.003f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.02f;
-		wt.ADSR.ReleaseTime = 0.03f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.02f, 0, 1, 0.03f);
 	}
 
 	{
 		auto& wt = Instruments["PadPolysynth"].WaveTables.EmplaceLast();
 		wt.Tables = &synthBrassTables;
 		wt.VolumeScale = 0.1f;
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.ReleaseTime = 0.15f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.15f, true);
 	}
 
 	auto& rainTables = Tables["Rain"] = CreateWaveTablesFromFormants({
@@ -345,12 +283,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.45f;
 		wt.VibratoFrequency = 25;
 		wt.VibratoValue = 0.007f;
-
-		wt.ADSR.AttackTime = 0.003f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.ReleaseTime = 0.2f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.003f, 0.05f, 0.3f, 0.2f);
 	}
 
 	{ //TODO: это заглушка
@@ -358,18 +291,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &rainTables;
 		//wt.ExpCoeff = 3;
 		wt.VolumeScale = 0.3f;
-		wt.ADSR.AttackTime = 0.005f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.2f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.005f, 0.3f, 0.7f, 0.2f, true);
 	}
 
 	{
 		auto& wt = Instruments["FxGoblins"].WaveTables.EmplaceLast();
 		wt.Tables = &rainTables;
 		wt.VolumeScale = 0.07f;
-		wt.ADSR.AttackTime = 0.05f;
-		wt.ADSR.ReleaseTime = 0.15f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.05f, 0, 1, 0.15f);
 	}
 
 
@@ -379,9 +308,8 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Clav"].WaveTables.EmplaceLast();
 		wt.Tables = &clavTables;
 		wt.VolumeScale = 0.12f;
-		wt.ADSR.AttackTime = 0.008f;
-		wt.ADSR.ReleaseTime = 0.01f;
 		wt.ExpCoeff = 8;
+		wt.Envelope = EnvelopeFactory::ADSR(0.008f, 0, 1, 0.01f, true);
 	}
 
 
@@ -400,12 +328,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = instr.WaveTables.EmplaceLast();
 		wt.Tables = &orchestraHitTables;
 		wt.VolumeScale = 0.2f;
-
-		wt.ADSR.AttackTime = 0.015f;
-		wt.ADSR.DecayTime = 0.15f;
-		wt.ADSR.SustainVolume = 0.4f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.015f, 0.15f, 0.4f, 0.1f);
 	}
 
 
@@ -424,10 +347,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Calliope"].WaveTables.EmplaceLast();
 		wt.Tables = &calliopeTables;
 		wt.VolumeScale = 0.25f;
-
-		wt.ADSR.AttackTime = 0.015f;
-		wt.ADSR.ReleaseTime = 0.03f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.015f, 0, 1, 0.03f);
 	}
 
 	auto& vibraphoneTables = Tables["Vibraphone"] = CreateWaveTablesFromHarmonics({
@@ -445,12 +365,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ExpCoeff = 2;
 		wt.VibratoFrequency = 5;
 		wt.VibratoValue = 0.0015f;
-
-		wt.ADSR.AttackTime = 0.004f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.ReleaseTime = 0.25f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.004f, 0.05f, 0.3f, 0.25f);
 	}
 
 	{
@@ -458,12 +373,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &vibraphoneTables;
 		wt.VolumeScale = 0.15f;
 		wt.ExpCoeff = 4;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.DecayTime = 0.08f;
-		wt.ADSR.SustainVolume = 0.5f;
-		wt.ADSR.ReleaseTime = 0.4f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0.08f, 0.5f, 0.4f);
 	}
 
 	Instruments["Crystal"] = Instruments["Vibraphone"];
@@ -483,11 +393,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &marimbaTables;
 		wt.VolumeScale = 0.25f;
 		wt.ExpCoeff = 5;
-		wt.ADSR.AttackTime = 0.005f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.ReleaseTime = 0.3f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.005f, 0.05f, 0.3f, 0.3f);
 	}
 
 	{
@@ -495,9 +401,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &marimbaTables;
 		wt.VolumeScale = 0.15f;
 		wt.ExpCoeff = 5;
-		wt.ADSR.AttackTime = 0.005f;
-		wt.ADSR.ReleaseTime = 0.3f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.005f, 0, 1, 0.3f);
 	}
 
 	auto& xylophoneTables = Tables["Xylophone"] = CreateWaveTablesFromHarmonics({
@@ -513,12 +417,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &xylophoneTables;
 		wt.VolumeScale = 0.25f;
 		wt.ExpCoeff = 5;
-
-		wt.ADSR.AttackTime = 0.003f;
-		wt.ADSR.ReleaseTime = 0.2f;
-		wt.ADSR.DecayTime = 0.01f;
-		wt.ADSR.SustainVolume = 0.2f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.003f, 0.01f, 0.2f, 0.2f, true);
 	}
 
 	auto& atmosphereTables = Tables["Atmosphere"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(20, 0, 1, 2.5f, 1, 1, 64, 1, 0, 0), 0.7f, 16384, true);
@@ -527,13 +426,8 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Atmosphere"].WaveTables.EmplaceLast();
 		wt.Tables = &atmosphereTables;
 		wt.VolumeScale = 0.5f;
-
-		wt.ADSR.AttackTime = 0.015f;
-		wt.ADSR.DecayTime = 0.2f;
-		wt.ADSR.SustainVolume = 0.4f;
-		wt.ADSR.ReleaseTime = 0.2f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.015f, 0.2f, 0.4f, 0.2f);
 		wt.ExpCoeff = 3;
-		wt.ADSR.Linear = true;
 	}
 
 	auto& newAgeTables = Tables["NewAge"] = CreateWaveTablesFromHarmonics({
@@ -550,12 +444,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Tables = &newAgeTables;
 		wt.ExpCoeff = 3;
 		wt.VolumeScale = 0.17f;
-
-		wt.ADSR.AttackTime = 0.015f;
-		wt.ADSR.DecayTime = 0.04f;
-		wt.ADSR.SustainVolume = 0.5f;
-		wt.ADSR.ReleaseTime = 0.3f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.015f, 0.04f, 0.5f, 0.3f);
 	}
 
 	Instruments["Pad5Bowed"] = Instruments["NewAge"];
@@ -586,11 +475,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.2f;
 		wave.VibratoFrequency = -2;
 		wave.VibratoValue = 0.9f;
-
-		wave.ADSR.AttackTime = 0.02f;
-		wave.ADSR.DecayTime = 0.5f;
-		wave.ADSR.SustainVolume = 0.8f;
-		wave.ADSR.ReleaseTime = 0.1f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.02f, 0.5f, 0.8f, 0.1f, true);
 	}*/
 
 	auto leadSquareHarmonics = CreateHarmonicArray(1, 0.5f, 1, 1.3f, 1, 2, 64, float(4/Math::PI), 0, float(Math::PI));
@@ -600,12 +485,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["LeadSquare"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
 		wt.Tables = &leadSquareTables;
-
-		wt.ADSR.AttackTime = 0.007f;
-		wt.ADSR.DecayTime = 0.01f;
-		wt.ADSR.SustainVolume = 0.62f;
-		wt.ADSR.ReleaseTime = 0.05f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.007f, 0.01f, 0.62f, 0.05f, true);
 	}
 
 
@@ -617,12 +497,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["LeadSawtooth"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
 		wt.Tables = &leadSawtoothTables;
-
-		wt.ADSR.AttackTime = 0.0075f;
-		wt.ADSR.DecayTime = 0.01f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.45f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.0075f, 0.01f, 0.7f, 0.45f, true);
 	}
 
 
@@ -663,12 +538,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.ExpCoeff = 8;
 		wt.VibratoFrequency = 5;
 		wt.VibratoValue = 0.003f;
-
-		wt.ADSR.AttackTime = 0.011f;
-		wt.ADSR.DecayTime = 0.08f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.ReleaseTime = 0.7f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.011f, 0.08f, 0.6f, 0.7f);
 	}
 
 
@@ -731,9 +601,7 @@ InstrumentLibrary::InstrumentLibrary()
 		harm11.ExpCoeff = 4;
 		harm11.FreqMultiplier = 13;
 
-		instr.ADSR.AttackTime = 0.003f;
-		instr.ADSR.ReleaseTime = 0.2f;
-		instr.ADSR.Linear = true;
+		instr.Envelope = EnvelopeFactory::ADSR(0.003f, 0, 1, 0.2f);
 	}
 
 	{
@@ -779,10 +647,7 @@ InstrumentLibrary::InstrumentLibrary()
 		harm8.ExpCoeff = 4.2f;
 		harm8.FreqMultiplier = 13;
 
-		instr.ADSR.AttackTime = 0.003f;
-		instr.ADSR.ReleaseTime = 0.2f;
-	
-		instr.ADSR.Linear = true;
+		instr.Envelope = EnvelopeFactory::ADSR(0.003f, 0, 1, 0.2f);
 		Instruments["ElectricPiano2"] = instr;
 	}
 
@@ -792,10 +657,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.3f;
 		wave.ExpCoeff = 5;
 		wave.FreqMultiplier = 2;
-
-		wave.ADSR.AttackTime = 0.02f;
-		wave.ADSR.ReleaseTime = 0.1f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.02f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -803,10 +665,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.4f;
 		wave.ExpCoeff = 4;
 		wave.FreqMultiplier = 2;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -815,10 +674,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.ExpCoeff = 4;
 		//wave.RateAcceleration = -0.15f;
 		wave.FreqMultiplier = 2;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -827,10 +683,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.ExpCoeff = 4;
 		wave.VibratoFrequency = -1.5f;
 		wave.VibratoValue = 0.3f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -841,10 +694,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.SmoothingFactor = 0.5f;
 		wave.VibratoFrequency = 7;
 		wave.VibratoValue = 0.002f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.4f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.4f, true);
 	}
 
 
@@ -854,9 +704,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Lead5Charang"].WaveTables.EmplaceLast();
 		wt.Tables = &charangTables;
 		wt.VolumeScale = 0.2f;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.ReleaseTime = 0.05f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.05f, true);
 	}
 
 
@@ -866,12 +714,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.3f;
 		wt.VibratoValue = 0.005f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.07f;
-		wt.ADSR.DecayTime = 0.07f;
-		wt.ADSR.SustainVolume = 0.92f;
-		wt.ADSR.ReleaseTime = 0.02f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.07f, 0.07f, 0.92f, 0.02f);
 	}
 
 	{
@@ -880,12 +723,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.3f;
 		wt.VibratoValue = 0.004f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.07f;
-		wt.ADSR.DecayTime = 0.07f;
-		wt.ADSR.SustainVolume = 0.92f;
-		wt.ADSR.ReleaseTime = 0.02f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.07f, 0.07f, 0.92f, 0.02f);
 	}
 
 	{
@@ -894,12 +732,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.3f;
 		wt.VibratoValue = 0.004f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.07f;
-		wt.ADSR.DecayTime = 0.07f;
-		wt.ADSR.SustainVolume = 0.92f;
-		wt.ADSR.ReleaseTime = 0.02f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.07f, 0.07f, 0.92f, 0.02f);
 	}
 
 	//auto& recorderTables = Tables["Recorder"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(1, 1, 1, 2.5f, 1, 2, 16, 1, 0, float(Math::PI)), 1, 16384, false);
@@ -909,11 +742,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Recorder"].WaveTables.EmplaceLast();
 		wt.Tables = &recorderTables;
 		wt.VolumeScale = 0.25f;
-
-		wt.ADSR.AttackTime = 0.007f;
-		wt.ADSR.DecayTime = 0.07f;
-		wt.ADSR.SustainVolume = 0.92f;
-		wt.ADSR.ReleaseTime = 0.1f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.007f, 0.07f, 0.92f, 0.1f, true);
 	}
 
 
@@ -933,18 +762,12 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.5f;
 		wt.VibratoValue = 0.005f;
 		wt.VibratoFrequency = 5;
-
-		wt.ADSR.AttackTime = 0.03f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.SustainVolume = 0.75f;
-		wt.ADSR.ReleaseTime = 0.1f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.03f, 0.05f, 0.75f, 0.1f, true);
 	}
 
 	{
 		auto& wave = Instruments["Birds"].Waves.EmplaceLast();
-
-		wave.ADSR.AttackTime = 0.1f;
-		wave.ADSR.ReleaseTime = 0.5f;
+		wave.Envelope = EnvelopeFactory::ADSR(0.1f, 0, 1, 0.5f, true);
 		Instruments["Birds"].Chorus = ChorusFactory(0.3f, 3, 0.75, 0.25);
 	}
 
@@ -952,19 +775,14 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["SoundTrackFX2"].WaveTables.EmplaceLast();
 		wt.Tables = &synthStringTables;
 		wt.VolumeScale = 0.1f;
-
-		wt.ADSR.AttackTime = 0.7f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.SustainVolume = 0.5f;
-		wt.ADSR.ReleaseTime = 0.6f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.7f, 0.3f, 0.5f, 0.6f, true);
 	}
 
 	{
 		auto& instr = Instruments["ReverseCymbal"];
 		instr.WhiteNoise.FreqMultiplier = 5;
 		instr.WhiteNoise.VolumeScale = 0.2f;
-		instr.ADSR.AttackTime = 1;
-		instr.ADSR.ReleaseTime = 1.2f;
+		instr.Envelope = EnvelopeFactory::ADSR(1, 0, 1, 1.2f, true);
 	}
 
 	/*{
@@ -988,47 +806,28 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["BassLead"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
 		wt.Tables = &bassLeadTables;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0.1f, 0.6f, 0.3f, true);
 	}
 
 	{
 		auto& wt = Instruments["SynthBass2"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
 		wt.Tables = &bassLeadTables;
-
-		wt.ADSR.AttackTime = 0.01f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.DecayTime = 0.3f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0.3f, 0.6f, 0.1f, true);
 	}
 
 	{
 		auto& wt = Instruments["ElectricBassPick"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.25f;
 		wt.Tables = &bassLeadTables;
-
-		wt.ADSR.AttackTime = 0.008f;
-		wt.ADSR.ReleaseTime = 0.03f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.008f, 0.05f, 0.3f, 0.03f, true);
 	}
 
 	{
 		auto& wt = Instruments["SlapBass"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.15f;
 		wt.Tables = &bassLeadTables;
-
-		wt.ADSR.AttackTime = 0.006f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.SustainVolume = 0.6f;
-		wt.ADSR.DecayTime = 0.3f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.006f, 0.3f, 0.6f, 0.1f, true);
 	}
 
 	Instruments["Sitar"] = CreateGuitar(15, 6.5f, 0.2f, 0.5f, 1, 1, 0.3f, 0.01f, 0.4f, true);
@@ -1044,10 +843,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.SmoothingFactor = 0.5f;
 		wave.ExpCoeff = 1.2f;
 		wave.Scale = 2.2f;
-
-		wave.ADSR.AttackTime = 0.007f;
-		wave.ADSR.ReleaseTime = 0.25f;
-		wave.ADSR.Linear = true;
+		wave.Envelope = EnvelopeFactory::ADSR(0.007f, 0, 1, 0.25f);
 	}
 
 	{
@@ -1057,12 +853,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.SmoothingFactor = 0.5f;
 		wave.ExpCoeff = 0.9f;
 		wave.Scale = 1.3f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.DecayTime = 0.03f;
-		wave.ADSR.SustainVolume = 1.3f;
-		wave.ADSR.ReleaseTime = 0.25f;
-		wave.ADSR.Linear = true;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0.03f, 1.3f, 0.25f);
 	}
 
 	{
@@ -1071,10 +862,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.35f;
 		wave.ExpCoeff = 4;
 		wave.FreqMultiplier = 2;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.3f;
-		wave.ADSR.Linear = false;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.3f, true);
 	}
 
 	/*OverdrivenGuitar.Synth = CreateSawtoothSynthPass(9.5, 0.35f, 1, 1);
@@ -1090,12 +878,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Trumpet"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.35f;
 		wt.Tables = &trumpetTables;
-
-		wt.ADSR.AttackTime = 0.02f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.DecayTime = 0.02f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.02f, 0.02f, 0.7f, 0.1f);
 	}
 
 	{
@@ -1104,20 +887,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VibratoFrequency = 5;
 		wt.VibratoValue = 0.005f;
 		wt.Tables = &trumpetTables;
-
-		wt.ADSR.AttackTime = 0.1f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.1f, 0, 1, 0.1f, true);
 	}
 
 	{
 		auto& wt = Instruments["FrenchHorn"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.2f;
 		wt.Tables = &trumpetTables;
-
-		wt.ADSR.AttackTime = 0.05f;
-		wt.ADSR.ReleaseTime = 0.05f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.05f, 0, 1, 0.05f, true);
 	}
 
 
@@ -1129,10 +906,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.5f;
 
 		//Oboe.WaveTables.AddLast({&FluteTables, 0, 0.5f});
-
-		wt.ADSR.AttackTime = 0.015f;
-		wt.ADSR.ReleaseTime = 0.03f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.015f, 0, 1, 0.03f);
 	}
 
 	/*{
@@ -1152,22 +926,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.5f;
 
 		//Accordion.WaveTables.AddLast({&AccordionTables, 0, 0.35f});
-
-		wt.ADSR.AttackTime = 0.025f;
-		wt.ADSR.DecayTime = 0.02f;
-		wt.ADSR.SustainVolume = 0.7f;
-		wt.ADSR.ReleaseTime = 0.05f;
-		wt.ADSR.Linear = false;
+		wt.Envelope = EnvelopeFactory::ADSR(0.025f, 0.02f, 0.7f, 0.05f, true);
 	}
 
 	{
 		auto& wave = Instruments["Tuba"].Waves.EmplaceLast();
 		wave.Wave = SawtoothWaveForm{8};
 		wave.Scale = 0.2f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.05f;
-		wave.ADSR.Linear = true;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.05f);
 	}
 
 	{
@@ -1175,9 +941,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Wave = SawtoothWaveForm{15};
 		wave.ExpCoeff = 5;
 		wave.Scale = 0.2f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.1f, true);
 	}
 
 	//auto saxTablesHarmonics = CreateUpdownHarmonicArray(7, 4, 10, 64, 1, 1, 1.7f);
@@ -1189,10 +953,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& wt = Instruments["Sax"].WaveTables.EmplaceLast();
 		wt.VolumeScale = 0.3f;
 		wt.Tables = &saxTables;
-
-		wt.ADSR.AttackTime = 0.012f;
-		wt.ADSR.ReleaseTime = 0.02f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.012f, 0, 1, 0.02f);
 	}
 
 	{
@@ -1201,13 +962,10 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.03f;
 		wave.Octaves = 4;*/
 
-		auto& wave = Instruments["Organ"].WaveTables.EmplaceLast();
-		wave.Tables = &Tables["SynthOrgan"];
-		wave.VolumeScale = 0.1f;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.01f;
-		wave.ADSR.Linear = true;
+		auto& wt = Instruments["Organ"].WaveTables.EmplaceLast();
+		wt.Tables = &Tables["SynthOrgan"];
+		wt.VolumeScale = 0.1f;
+		wt.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.01f);
 	}
 
 	auto& whistleTables = Tables["Whistle"] = CreateWaveTablesFromHarmonics({{1, 1, 3}}, 1, 16384, false);
@@ -1217,10 +975,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.VolumeScale = 0.15f;
 		wave.VibratoFrequency = 5;
 		wave.VibratoValue = 0.003f;
-		
-		wave.ADSR.AttackTime = 0.03f;
-		wave.ADSR.ReleaseTime = 0.1f;
-		wave.ADSR.Linear = true;
+		wave.Envelope = EnvelopeFactory::ADSR(0.03f, 0, 1, 0.1f);
 	}
 
 	{
@@ -1228,18 +983,14 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.3f;
 		wave.VibratoFrequency = 5;
 		wave.VibratoValue = 0.005f;
-
-		wave.ADSR.AttackTime = 0.003f;
-		wave.ADSR.ReleaseTime = 0.1f;
+		wave.Envelope = EnvelopeFactory::ADSR(0.003f, 0, 1, 0.1f);
 	}
 
 	{
 		auto& wave = Instruments["Sine2Exp"].Waves.EmplaceLast();
 		wave.ExpCoeff = 9;
 		wave.FreqMultiplier = 1;
-
-		wave.ADSR.AttackTime = 0.01f;
-		wave.ADSR.ReleaseTime = 0.1f;
+		wave.Envelope = EnvelopeFactory::ADSR(0.01f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -1252,9 +1003,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.Chorus.SecondaryVolume = 0.3f;
 		instr.Chorus.MaxDelay = 0.05f;
 
-		instr.ADSR.AttackTime = 0.7f;
-		instr.ADSR.ReleaseTime = 0.5f;
-		instr.ADSR.Linear = true;
+		instr.Envelope = EnvelopeFactory::ADSR(0.7f, 0, 1, 0.5f);
 	}
 
 	{
@@ -1267,9 +1016,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.Chorus.SecondaryVolume = 0.5f;
 		instr.Chorus.MaxDelay = 0.1f;*/
 
-		instr.ADSR.AttackTime = 0.4f;
-		instr.ADSR.ReleaseTime = 0.4f;
-		instr.ADSR.Linear = true;
+		instr.Envelope = EnvelopeFactory::ADSR(0.4f, 0, 1, 0.4f);
 	}
 
 	{
@@ -1277,9 +1024,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.WhiteNoise.FreqMultiplier = 40;
 		instr.WhiteNoise.VolumeScale = 0.04f;
 		
-		instr.ADSR.AttackTime = 1;
-		instr.ADSR.ReleaseTime = 0.7f;
-		instr.ADSR.Linear = true;
+		instr.Envelope = EnvelopeFactory::ADSR(1, 0, 1, 0.7f);
 	}
 
 	{
@@ -1287,9 +1032,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wave.Scale = 0.5f;
 		wave.VibratoValue = 0.03f;
 		wave.VibratoFrequency = 5;
-
-		wave.ADSR.AttackTime = 0.2f;
-		wave.ADSR.ReleaseTime = 0.2f;
+		wave.Envelope = EnvelopeFactory::ADSR(0.2f, 0, 1, 0.2f);
 	}
 	
 
@@ -1298,8 +1041,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.WhiteNoise.FreqMultiplier = 40;
 		instr.WhiteNoise.VolumeScale = 0.2f;
 		instr.ExponentAttenuation.ExpCoeff = 4;
-		instr.ADSR.AttackTime = 0.005f;
-		instr.ADSR.ReleaseTime = 0.1f;
+		instr.Envelope = EnvelopeFactory::ADSR(0.005f, 0, 1, 0.1f, true);
 	}
 
 	{
@@ -1307,12 +1049,7 @@ InstrumentLibrary::InstrumentLibrary()
 		instr.WhiteNoise.FreqMultiplier = 0.5f;
 		instr.WhiteNoise.VolumeScale = 0.25f;
 		instr.ExponentAttenuation.ExpCoeff = 7;
-
-		instr.ADSR.AttackTime = 0.005f;
-		instr.ADSR.DecayTime = 0.03f;
-		instr.ADSR.SustainVolume = 0.3f;
-		instr.ADSR.ReleaseTime = 0.03f;
-		instr.ADSR.Linear = false;
+		instr.Envelope = EnvelopeFactory::ADSR(0.005f, 0.03f, 0.3f, 0.03f, true);
 	}
 
 
@@ -1329,12 +1066,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.VolumeScale = 0.2f;
 		wt.ExpCoeff = 5;
 		wt.Tables = &kalimbaTables;
-
-		wt.ADSR.AttackTime = 0.004f;
-		wt.ADSR.DecayTime = 0.05f;
-		wt.ADSR.SustainVolume = 0.3f;
-		wt.ADSR.ReleaseTime = 0.1f;
-		wt.ADSR.Linear = true;
+		wt.Envelope = EnvelopeFactory::ADSR(0.004f, 0.05f, 0.3f, 0.1f);
 	}
 	
 	UniDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 44100, 0.015f);
@@ -1359,9 +1091,7 @@ MusicalInstrument InstrumentLibrary::CreateGuitar(size_t n, float c,
 		sine.ExpCoeff = d + e*float(i-1);
 		sine.FreqMultiplier = freqMult*float(i);
 	}
-	result.ADSR.AttackTime = attackTime;
-	result.ADSR.ReleaseTime = releaseTime;
-	result.ADSR.Linear = linear;
+	result.Envelope = EnvelopeFactory::ADSR(attackTime, 0, 1, releaseTime, !linear);
 	return result;
 }
 

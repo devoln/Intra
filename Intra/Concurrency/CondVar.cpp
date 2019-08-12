@@ -1,8 +1,8 @@
 #include "CondVar.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Runtime.h"
+
+
+#include "Core/Runtime.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

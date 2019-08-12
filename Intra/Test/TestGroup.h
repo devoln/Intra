@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
+
+#include "Core/Core.h"
 
 #include "Utils/Logger.h"
-#include "Utils/Debug.h"
+#include "Core/Assert.h"
 #include "Utils/Finally.h"
 
 #include "Funal/Delegate.h"
@@ -14,7 +14,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra {
+INTRA_BEGIN
+
 
 typedef Delegate<void(IO::FormattedWriter&)> TestFunction;
 
@@ -26,7 +27,7 @@ public:
 	ILogger* Logger;
 	IO::FormattedWriter& Output;
 	StringView Category;
-	Utils::SourceInfo ErrorInfo;
+	Utils::SourceInfo ErrorInfo{};
 
 	operator bool() const {return Yes;}
 	TestGroup(ILogger* logger, IO::FormattedWriter& output, StringView category);
@@ -68,34 +69,28 @@ private:
 	struct TestException {};
 	void tryCallTest(const TestFunction& funcToTest)
 	{
-	#ifdef INTRA_EXCEPTIONS_ENABLED
+	#ifdef __cpp_exceptions
 		try { //Исключение как способ безопасного выхода из ошибочного теста вместо падения всего приложения
 	#endif
 			funcToTest(Output);
-	#ifdef INTRA_EXCEPTIONS_ENABLED
-	#ifdef _MSC_VER
-	#pragma warning(disable: 4571)
-	#endif
+	#ifdef __cpp_exceptions
+			INTRA_WARNING_DISABLE_CATCH_ALL
 		} catch(TestException) {}
 		catch(...) {if(Logger) Logger->Error("Unknown exception caught!", INTRA_SOURCE_INFO);}
 	#endif
 	}
 
-	static void internalErrorTestFail(const Utils::SourceInfo& srcInfo, StringView msg)
+	static void internalErrorTestFail(const Utils::SourceInfo& srcInfo, StringView msg);
+
+	static void testFailException()
 	{
-		static bool alreadyCalled = false;
-		if(alreadyCalled) abort();
-		alreadyCalled = true;
-		INTRA_FINALLY(alreadyCalled = false);
-		processError(srcInfo, msg);
-	#ifdef INTRA_EXCEPTIONS_ENABLED
+#ifdef __cpp_exceptions
 		if(GetCurrent() != null)
 		{
 			GetCurrent()->Logger->Error("Test stack unwinding...");
 			throw TestException();
 		}
-	#endif
-		exit(totalTestsFailed + 1);
+#endif
 	}
 
 	static void processError(const Utils::SourceInfo& srcInfo, StringView msg);

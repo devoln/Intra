@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Cpp/Warnings.h>
+#include <Core/Warnings.h>
 #include <Container/Sequential/Array.h>
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS

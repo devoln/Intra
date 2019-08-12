@@ -1,7 +1,7 @@
 ﻿#include "Stopwatch.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Compatibility.h"
+
+#include "Core/Compatibility.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -15,13 +15,14 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #endif
 #include <Windows.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
-static ulong64 queryTimerPerformanceFrequency()
+static uint64 queryTimerPerformanceFrequency()
 {
 	LARGE_INTEGER li;
 	QueryPerformanceFrequency(&li);
-	return ulong64(li.QuadPart);
+	return uint64(li.QuadPart);
 }
 static const double gStopwatchPerformanceFrequency = double(queryTimerPerformanceFrequency());
 
@@ -33,7 +34,7 @@ void Stopwatch::Reset()
 {
 	LARGE_INTEGER current;
 	QueryPerformanceCounter(&current);
-	mData = ulong64(current.QuadPart);
+	mData = uint64(current.QuadPart);
 }
 
 
@@ -41,15 +42,15 @@ double Stopwatch::ElapsedSeconds() const
 {
 	LARGE_INTEGER current;
 	QueryPerformanceCounter(&current);
-	return double(ulong64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
+	return double(uint64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
 }
 
 double Stopwatch::GetElapsedSecondsAndReset()
 {
 	LARGE_INTEGER current;
 	QueryPerformanceCounter(&current);
-	const double result = double(ulong64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
-	mData = ulong64(current.QuadPart);
+	const double result = double(uint64(current.QuadPart) - mData) / gStopwatchPerformanceFrequency;
+	mData = uint64(current.QuadPart);
 	return result;
 }
 
@@ -59,13 +60,14 @@ double Stopwatch::GetElapsedSecondsAndReset()
 
 #include <time.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
-static ulong64 clock_gettime_nsecs(clockid_t clkId)
+static uint64 clock_gettime_nsecs(clockid_t clkId)
 {
 	struct timespec ts;
 	clock_gettime(clkId, &ts);
-	return ulong64(ts.tv_sec)*1000000000 + ulong64(ts.tv_nsec);
+	return uint64(ts.tv_sec)*1000000000 + uint64(ts.tv_nsec);
 }
 
 Stopwatch::Stopwatch(): mData(clock_gettime_nsecs(CLOCK_REALTIME)) {}
@@ -108,13 +110,14 @@ double CpuStopwatch::GetElapsedSecondsAndReset()
 
 #include <sys/time.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
-static ulong64 gettime_usecs()
+static uint64 gettime_usecs()
 {
 	struct timeval tv;
 	gettimeofday(&tv, null);
-	return ulong64(tv.tv_sec)*1000000 + ulong64(tv.tv_usec);
+	return uint64(tv.tv_sec)*1000000 + uint64(tv.tv_usec);
 }
 
 Stopwatch::Stopwatch(): mData(gettime_usecs()) {}
@@ -136,7 +139,8 @@ double Stopwatch::GetElapsedSecondsAndReset()
 
 #elif(INTRA_LIBRARY_STOPWATCH == INTRA_LIBRARY_STOPWATCH_clock)
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 Stopwatch::Stopwatch(): mData(clock()) {}
 Stopwatch::~Stopwatch() = default;
@@ -163,7 +167,8 @@ double Stopwatch::GetElapsedSecondsAndReset()
 #include <chrono>
 #include <thread>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 Stopwatch::Stopwatch():
 	mData(size_t(new std::chrono::high_resolution_clock::time_point(std::chrono::high_resolution_clock::now()))) {}

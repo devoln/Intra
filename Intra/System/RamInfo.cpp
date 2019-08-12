@@ -1,6 +1,6 @@
 ﻿#include "System/RamInfo.h"
-#include "Cpp/Warnings.h"
-#include "Range/Search/Trim.h"
+
+#include "Core/Range/Search/Trim.h"
 #include "IO/OsFile.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -18,7 +18,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <Windows.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 RamInfo RamInfo::Get()
 {
@@ -41,15 +42,16 @@ RamInfo RamInfo::Get()
 
 #include <sys/sysinfo.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 RamInfo RamInfo::Get()
 {
 	RamInfo result;
 /*#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_FreeBSD)
-    result.TotalPhysicalMemory = ulong64(sysconf(_SC_PHYS_PAGES))*sysconf(_SC_PAGE_SIZE);
+    result.TotalPhysicalMemory = uint64(sysconf(_SC_PHYS_PAGES))*sysconf(_SC_PAGE_SIZE);
 #elif(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_MacOS)
-	ulong64 mem=0;
+	uint64 mem=0;
 	size_t len = sizeof(mem);
 	sysctlbyname("hw.memsize", &result.TotalPhysicalMemory, &len, null, 0);
 #endif*/
@@ -95,7 +97,8 @@ static unsigned long long getSysCtl(int top_level, int next_level)
 	return ctlvalue;
 }
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 RamInfo RamInfo::Get()
 {
@@ -114,9 +117,9 @@ RamInfo RamInfo::Get()
 	sysctlbyname("vm.stats.vm.v_free_count", &freePages, &len, null, 0);
 
 	result.TotalPhysicalMemory = getSysCtl(CTL_HW, HW_PHYSMEM);
-	result.FreePhysicalMemory = result.TotalPhysicalMemory-ulong64(activePages+wirePages)*pageSize;
-	result.TotalVirtualMemory = ulong64(vmsize.t_vm)*pageSize;
-	result.FreeVirtualMemory = ulong64(vmsize.t_free)*pageSize;
+	result.FreePhysicalMemory = result.TotalPhysicalMemory-uint64(activePages+wirePages)*pageSize;
+	result.TotalVirtualMemory = uint64(vmsize.t_vm)*pageSize;
+	result.FreeVirtualMemory = uint64(vmsize.t_free)*pageSize;
 	result.TotalSwapMemory = result.TotalVirtualMemory-result.TotalPhysicalMemory;
 	result.FreeSwapMemory = result.FreeVirtualMemory-result.FreePhysicalMemory;
 
@@ -127,7 +130,8 @@ RamInfo RamInfo::Get()
 
 #else
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 RamInfo RamInfo::Get()
 {

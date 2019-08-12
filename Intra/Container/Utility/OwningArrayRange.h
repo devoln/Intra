@@ -4,11 +4,12 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+namespace Container {
 
 template<typename T> struct OwningArrayRange
 {
-	forceinline OwningArrayRange(Array<T> elements): Elements(Cpp::Move(elements)) {}
+	forceinline OwningArrayRange(Array<T> elements): Elements(Move(elements)) {}
 
 	forceinline T& First() {return Elements.First();}
 	forceinline const T& First() const {return Elements.First();}
@@ -20,7 +21,7 @@ template<typename T> struct OwningArrayRange
 
 	forceinline bool Empty() const {return Elements.Empty();}
 
-	forceinline size_t Length() const {return Elements.Length();}
+	forceinline index_t Length() const {return Elements.Length();}
 	forceinline T& operator[](size_t index) {return Elements[index];}
 	forceinline const T& operator[](size_t index) const {return Elements[index];}
 

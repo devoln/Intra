@@ -1,24 +1,25 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
+
 #include "Utils/Logger.h"
 #include "IO/FormattedWriter.h"
 #include "Math/Vector3.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 class FormattedLogger: public ILogger
 {
 public:
-	forceinline explicit FormattedLogger(FormattedWriter writer=null) noexcept: Writer(Cpp::Move(writer)) {}
+	forceinline explicit FormattedLogger(FormattedWriter writer=null) noexcept: Writer(Move(writer)) {}
 	FormattedLogger(const FormattedLogger&) = delete;
 	FormattedLogger(FormattedLogger&&) = default;
 	FormattedLogger& operator=(const FormattedLogger&) = delete;
 	FormattedLogger& operator=(FormattedLogger&&) = default;
 
-	void Log(LogLevel level, StringView msg, const Utils::SourceInfo& srcInfo) override;
+	void Log(LogLevel level, StringView msg, const Utils::SourceInfo& srcInfo = INTRA_DEFAULT_SOURCE_INFO) override;
 
 	FormattedWriter Writer;
 	LogLevel Verbosity = LogLevel::All;

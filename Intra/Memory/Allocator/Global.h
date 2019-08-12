@@ -4,9 +4,10 @@
 #include "Decorators/BoundsChecked.h"
 #include "Decorators/CallOnFail.h"
 #include "System.h"
-#include "Utils/Debug.h"
+#include "Core/Assert.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 #ifdef INTRA_DEBUG_ALLOCATORS
 using SizedHeapType = ASized<ABoundsChecked<ACallOnFail<SystemHeapAllocator, NoMemoryAbort>>>;

@@ -1,7 +1,7 @@
 #include "IO/OsFile.h"
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+
+
 
 #include "Container/Sequential/String.h"
 
@@ -46,7 +46,8 @@ struct IUnknown;
 
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorStatus& status):
 	mMode(mode), mOwning(true)
@@ -112,7 +113,7 @@ void OsFile::Close()
 	mOwning = false;
 }
 
-size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus& status) const
+size_t OsFile::ReadData(uint64 fileOffset, void* dst, size_t bytes, ErrorStatus& status) const
 {
 	INTRA_DEBUG_ASSERT(mHandle != null);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Read || mMode == Mode::ReadWrite);
@@ -150,7 +151,7 @@ size_t OsFile::ReadData(ulong64 fileOffset, void* dst, size_t bytes, ErrorStatus
 #endif
 }
 
-ulong64 OsFile::Size(ErrorStatus& status) const
+uint64 OsFile::Size(ErrorStatus& status) const
 {
 	if(mHandle == null) return 0;
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
@@ -158,7 +159,7 @@ ulong64 OsFile::Size(ErrorStatus& status) const
 	result.QuadPart = 0;
 	if(GetFileSizeEx(HANDLE(mHandle), &result) == 0 && GetLastError() != 0)
 		System::detail::ProcessLastError(status, "Cannot get size of file " + FullPath() + ": ", INTRA_SOURCE_INFO);
-	return ulong64(result.QuadPart);
+	return uint64(result.QuadPart);
 #else
 	const off_t result = lseek(int(size_t(mHandle)), 0, SEEK_END);
 	if(result == off_t(-1))
@@ -170,7 +171,7 @@ ulong64 OsFile::Size(ErrorStatus& status) const
 #endif
 }
 
-size_t OsFile::WriteData(ulong64 fileOffset, const void* src, size_t bytes, ErrorStatus& status) const
+size_t OsFile::WriteData(uint64 fileOffset, const void* src, size_t bytes, ErrorStatus& status) const
 {
 	INTRA_DEBUG_ASSERT(mHandle != null);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
@@ -209,13 +210,13 @@ size_t OsFile::WriteData(ulong64 fileOffset, const void* src, size_t bytes, Erro
 	return size_t(bytesWritten);
 }
 
-void OsFile::SetSize(ulong64 size, ErrorStatus& status) const
+void OsFile::SetSize(uint64 size, ErrorStatus& status) const
 {
 	INTRA_DEBUG_ASSERT(mHandle != null);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	LARGE_INTEGER largeSize;
-	largeSize.QuadPart = long64(size);
+	largeSize.QuadPart = int64(size);
 	SetFilePointerEx(HANDLE(mHandle), largeSize, null, FILE_BEGIN);
 	if(!SetEndOfFile(HANDLE(mHandle)))
 		System::detail::ProcessLastError(status, String::Concat(

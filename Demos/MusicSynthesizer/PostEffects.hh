@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include <Cpp/Warnings.h>
-#include <Cpp/Features.h>
+#include <Core/Warnings.h>
+#include <Core/Features.h>
 
-#include <Utils/Span.h>
+#include <Core/Span.h>
 #include <Utils/FixedArray.h>
 
 #include <Math/SineRange.h>

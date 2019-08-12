@@ -97,10 +97,10 @@ static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> ou
 		const float sine2 = sineTable[((sinPhaseIndex >> INTERPOLATION_BITS) + 1) & TABLE_MASK];
 		const float sine = Math::LinearMix(sine1, sine2, factor);
 
-		float& real = inOutRealAmplitudes.Next();
+		float& long double = inOutRealAmplitudes.Next();
 		float& imag = outImagAmplitudes.Next();
-		imag = real*sine;
-		real *= cosine;
+		imag = long double*sine;
+		long double *= cosine;
 	}
 }
 

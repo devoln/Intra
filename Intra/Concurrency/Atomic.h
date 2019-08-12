@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
 #include "Thread.h"
 
@@ -35,7 +33,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <atomic>
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 //! Это перечисление описывает, как должен быть упорядочен обычный (неатомарный) доступ к памяти по отношению к атомарной операции.
 enum class MemoryOrder
@@ -323,7 +322,7 @@ public:
 
 typedef AtomicBase<bool> AtomicBool;
 typedef AtomicInteger<int> AtomicInt;
-typedef AtomicInteger<long64> AtomicLong;
+typedef AtomicInteger<int64> AtomicLong;
 
 }}
 
@@ -335,7 +334,8 @@ typedef AtomicInteger<long64> AtomicLong;
 #include "detail/AtomicGNU.h"
 #endif
 
-namespace Intra {
+INTRA_BEGIN
+
 using Concurrency::AtomicBool;
 using Concurrency::AtomicInt;
 using Concurrency::AtomicLong;

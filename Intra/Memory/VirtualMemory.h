@@ -1,10 +1,9 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Utils/AnyPtr.h"
+#include "Core/Type.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

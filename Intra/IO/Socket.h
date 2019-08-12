@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Utils/ErrorStatus.h"
+
+
+#include "System/Error.h"
 
 #include "Container/Sequential/String.h"
 
@@ -12,7 +12,8 @@
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 //enum class AddressFamily: byte {Local, IPv4, IPv6, Bluetooth, IrDA};
 //enum class SocketType: byte {Stream=1, Datagram, Raw, ReliableDatagram, SeqPacket};
@@ -82,12 +83,12 @@ class StreamSocket: public BasicSocket
 public:
 	StreamSocket(null_t=null) {}
 	StreamSocket(SocketType type, StringView host, ushort port, ErrorStatus& status);
-	StreamSocket(StreamSocket&& rhs): BasicSocket(Cpp::Move(rhs)) {}
+	StreamSocket(StreamSocket&& rhs): BasicSocket(Move(rhs)) {}
 	~StreamSocket() {Shutdown();}
 
 	StreamSocket& operator=(StreamSocket&& rhs)
 	{
-		BasicSocket::operator=(Cpp::Move(rhs));
+		BasicSocket::operator=(Move(rhs));
 		return *this;
 	}
 
@@ -120,11 +121,11 @@ public:
 	ServerSocket(null_t=null) {}
 	ServerSocket(SocketType type, ushort port, size_t maxConnections, ErrorStatus& status);
 
-	ServerSocket(ServerSocket&& rhs): BasicSocket(Cpp::Move(rhs)) {}
+	ServerSocket(ServerSocket&& rhs): BasicSocket(Move(rhs)) {}
 
 	ServerSocket& operator=(ServerSocket&& rhs)
 	{
-		BasicSocket::operator=(Cpp::Move(rhs));
+		BasicSocket::operator=(Move(rhs));
 		return *this;
 	}
 

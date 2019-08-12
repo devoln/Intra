@@ -3,15 +3,10 @@
 
 #include "Math/Math.h"
 
-#include "Cpp/Intrinsics.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Endianess.h"
+#include "Utils/Endianess.h"
 
-#include "Range/Mutation/Cast.h"
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Audio { namespace Sources {
+INTRA_BEGIN
+namespace Audio { namespace Sources {
 
 struct WaveHeader
 {
@@ -32,14 +27,15 @@ struct WaveHeader
 
 
 Wave::Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData):
-	BasicAudioSource(Cpp::Move(onClose))
+	BasicAudioSource(Move(onClose))
 {
 	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(srcFileData.Begin);
 
-	const bool isValidHeader = (C::memcmp(header.RIFF, "RIFF", sizeof(header.RIFF)) == 0 &&
-		C::memcmp(header.WAVE, "WAVE", sizeof(header.WAVE)) == 0 &&
-		C::memcmp(header.fmt, "fmt ", sizeof(header.fmt)) == 0 &&
-		C::memcmp(header.data, "data", sizeof(header.data)) == 0);
+	const bool isValidHeader =
+		StringView::FromBuffer(header.RIFF) == "RIFF" &&
+		StringView::FromBuffer(header.WAVE) == "WAVE" &&
+		StringView::FromBuffer(header.fmt) == "fmt " &&
+		StringView::FromBuffer(header.data) == "data";
 	
 	if(!isValidHeader) return;
 
@@ -67,7 +63,7 @@ Wave::Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData):
 
 size_t Wave::GetInterleavedSamples(Span<short> outShorts)
 {
-	INTRA_DEBUG_ASSERT(!outShorts.Empty());
+	INTRA_PRECONDITION(!outShorts.Empty());
 	size_t valuesRead = 0;
 	if(mDataType == Data::ValueType::SNorm16)
 	{
@@ -199,6 +195,5 @@ void WriteWave(IAudioSource& source, OutputStream& stream, Data::ValueType sampl
 	INTRA_DEBUG_ASSERT(false); //Not supported yet
 }
 
-}}}
-
-INTRA_WARNING_POP
+}}
+INTRA_END

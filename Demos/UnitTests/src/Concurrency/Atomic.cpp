@@ -8,7 +8,7 @@
 #include "Concurrency/Lock.h"
 #include "Concurrency/Synchronized.h"
 #include "Funal/Bind.h"
-#include "Range/ForEach.h"
+#include "Core/Range/ForEach.h"
 
 using namespace Intra;
 using namespace Range;

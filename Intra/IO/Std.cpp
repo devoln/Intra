@@ -3,8 +3,8 @@
 #include "IO/ConsoleOutput.h"
 #include "IO/FileReader.h"
 #include "IO/FileWriter.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -31,7 +31,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <unistd.h>
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 static bool StdInIsConsole()
 {
@@ -87,14 +88,14 @@ StdInOut::StdInOut(ConstructOnce)
 	else
 	{
 		FileWriter writer(SharedMove(OsFile::FromNative(StdOutHandle(), false)));
-		*static_cast<FormattedWriter*>(this) = FormattedWriter(Cpp::Move(writer));
+		*static_cast<FormattedWriter*>(this) = FormattedWriter(Move(writer));
 	}
 
 	if(StdInIsConsole()) *static_cast<InputStream*>(this) = ConsoleInput();
 	else
 	{
 		FileReader reader(SharedMove(OsFile::FromNative(StdInHandle(), false)));
-		*static_cast<InputStream*>(this) = Cpp::Move(reader);
+		*static_cast<InputStream*>(this) = Move(reader);
 	}
 }
 

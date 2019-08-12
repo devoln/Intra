@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Image/Loaders/LoaderPlatform.h"
-#include "Concepts/IInput.h"
+#include "Core/IInput.h"
 #include "Math/Math.h"
 
-#include "Cpp/Warnings.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -31,7 +31,8 @@ struct IUnknown;
 #pragma comment(lib, "gdiplus.lib")
 #endif
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 //Загрузить изображение из BMP, JPG или GIF файла
 AnyImage LoadWithPlatform(IInputStream& stream)

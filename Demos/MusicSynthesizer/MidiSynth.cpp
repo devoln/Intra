@@ -1,6 +1,6 @@
 ﻿#include "MidiSynth.h"
 
-#include <Cpp/Warnings.h>
+#include <Core/Warnings.h>
 
 #include <Math/Math.h>
 
@@ -18,8 +18,8 @@
 using namespace Audio;
 using namespace Midi;
 
-using Concepts::begin;
-using Concepts::end;
+using Core::begin;
+using Core::end;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -30,11 +30,11 @@ MidiState::MidiState()
 
 MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume,
 	OnCloseResourceCallback onClose, uint sampleRate, bool stereo, bool reverb):
-	SeparateFloatAudioSource(Cpp::Move(onClose), sampleRate, ushort(stereo? 2: 1)),
+	SeparateFloatAudioSource(Move(onClose), sampleRate, ushort(stereo? 2: 1)),
 	mInstruments(instruments),
-	mMusic(Cpp::Move(music)),
+	mMusic(Move(music)),
 	mTime(0),
-	mSampleCount(duration == Cpp::Infinity? ~size_t(): size_t((duration+2)*sampleRate)),
+	mSampleCount(duration == Core::Infinity? ~size_t(): size_t((duration+2)*sampleRate)),
 	mMaxSample(maxVolume),
 	mReverberator(size_t(reverb? 16384: 0), size_t(reverb? 32: 0), 1)
 {
@@ -76,7 +76,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 			size_t(Math::Max((nextTime - mTime)*mSampleRate + MidiTime(0.5), MidiTime(1)));
 		const size_t samplesLeft = SamplesLeft();
 		if(samplesLeft == 0) break;
-		samplesBeforeNextEvent = Funal::Min(samplesBeforeNextEvent, samplesLeft);
+		samplesBeforeNextEvent = FMin(samplesBeforeNextEvent, samplesLeft);
 		bool add = false;
 		const auto dstLeftBeforeEvent = dstLeft.Take(samplesBeforeNextEvent);
 		const auto dstRightBeforeEvent = dstRight.Take(samplesBeforeNextEvent);
@@ -195,7 +195,7 @@ void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
 	auto found = mPlayingNotes.Find(noteOff.Id());
 	if(!found.Empty())
 	{
-		auto& note = mOffPlayingNotes.AddLast(Cpp::Move(found.First().Value));
+		auto& note = mOffPlayingNotes.AddLast(Move(found.First().Value));
 		note.Sampler.NoteRelease();
 		mPlayingNotes.Remove(NoteMap::const_iterator(found));
 	}
@@ -254,7 +254,7 @@ void MidiSynth::OnAllNotesOff(byte channel)
 	{
 		if((it->Key >> 8) != channel) continue;
 		it->Value.Sampler.NoteRelease();
-		mOffPlayingNotes.AddLast(Cpp::Move(it->Value));
+		mOffPlayingNotes.AddLast(Move(it->Value));
 		notesToRemove.AddLast(it);
 	}
 	for(auto it: notesToRemove) mPlayingNotes.Remove(it);
@@ -270,7 +270,7 @@ Unique<MidiSynth> MidiSynth::FromFile(StringView path, double duration, const Mi
 {
 	auto file = IO::OS.FileOpen(path, status);
 	return new MidiSynth(
-		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Cpp::Move(file), status),
+		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Move(file), status),
 		duration, instruments, maxVolume, null, sampleRate, stereo);
 }
 

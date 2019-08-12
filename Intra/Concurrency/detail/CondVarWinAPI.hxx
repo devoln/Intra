@@ -21,7 +21,8 @@
 
 #include "Utils/AnyPtr.h"
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #ifndef INTRA_DROP_XP_SUPPORT
 static void(WINAPI *InitializeConditionVariable)(PCONDITION_VARIABLE cv) = null;
@@ -53,7 +54,7 @@ struct BasicCondVarData
 {
 	virtual ~BasicCondVarData() {}
 	virtual bool Wait(Mutex& mutex) = 0;
-	virtual bool Wait(Mutex& mutex, ulong64 timeOutMs) = 0;
+	virtual bool Wait(Mutex& mutex, uint64 timeOutMs) = 0;
 	virtual void Notify() = 0;
 	virtual void NotifyAll() = 0;
 };
@@ -65,7 +66,8 @@ struct BasicCondVarData
 #include "CondVarWinXP.hxx"
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #ifdef INTRA_DROP_XP_SUPPORT
 struct BasicCondVarData
@@ -88,7 +90,7 @@ struct VistaCondVar: BasicCondVarData
 		return SleepConditionVariableCS(&cv, cs, INFINITE) == 0;
 	}
 
-	bool Wait(Mutex& mutex, ulong64 timeOutMs)
+	bool Wait(Mutex& mutex, uint64 timeOutMs)
 	{
 		auto cs = PCRITICAL_SECTION(&mutex);
 		while(timeOutMs >= INFINITE - 1)
@@ -124,7 +126,7 @@ SeparateCondVar::SeparateCondVar()
 SeparateCondVar::~SeparateCondVar() {reinterpret_cast<BasicCondVarData*>(mData)->~BasicCondVarData();}
 
 bool SeparateCondVar::wait(Mutex& mutex) {return reinterpret_cast<BasicCondVarData*>(mData)->Wait(mutex);}
-bool SeparateCondVar::waitUntil(Mutex& mutex, ulong64 absTimeMs) {return reinterpret_cast<BasicCondVarData*>(mData)->Wait(mutex, absTimeMs - DateTime::AbsTimeMs());}
+bool SeparateCondVar::waitUntil(Mutex& mutex, uint64 absTimeMs) {return reinterpret_cast<BasicCondVarData*>(mData)->Wait(mutex, absTimeMs - DateTime::AbsTimeMs());}
 void SeparateCondVar::Notify() {reinterpret_cast<BasicCondVarData*>(mData)->Notify();}
 void SeparateCondVar::NotifyAll() {reinterpret_cast<BasicCondVarData*>(mData)->NotifyAll();}
 

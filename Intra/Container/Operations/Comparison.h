@@ -1,49 +1,45 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Meta/Type.h"
-#include "Concepts/Range.h"
-#include "Concepts/RangeOf.h"
-#include "Concepts/Container.h"
-#include "Range/Comparison/Equals.h"
+#include "Core/Type.h"
+#include "Core/Range/Concepts.h"
+#include "Core/CContainer.h"
+#include "Core/Range/Comparison.h"
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+namespace Container {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename L, typename R> forceinline Meta::EnableIf<
-	(Concepts::IsSequentialContainer<L>::_ &&
-		Concepts::IsAsConsumableRange<R>::_) ||
-	(Concepts::IsSequentialContainer<R>::_ &&
-		Concepts::IsAsConsumableRange<L>::_),
+template<typename L, typename R> forceinline Requires<
+	(CSequentialContainer<L> &&
+		CAsConsumableRange<R>) ||
+	(CSequentialContainer<R> &&
+		CAsConsumableRange<L>),
 bool> operator==(L&& lhs, R&& rhs)
 {
-	using Concepts::RangeOf;
+	using Core::RangeOf;
 	return Range::Equals(RangeOf(lhs), RangeOf(rhs));
 }
 
-template<typename L, typename R> forceinline Meta::EnableIf<
-	(Concepts::IsSequentialContainer<L>::_ &&
-		Concepts::IsAsConsumableRange<R>::_) ||
-	(Concepts::IsSequentialContainer<R>::_ &&
-		Concepts::IsAsConsumableRange<L>::_),
+template<typename L, typename R> forceinline Requires<
+	(CSequentialContainer<L> &&
+		CAsConsumableRange<R>) ||
+	(CSequentialContainer<R> &&
+		CAsConsumableRange<L>),
 bool> operator!=(L&& lhs, R&& rhs)
-{return !operator==(Cpp::Forward<L>(lhs), Cpp::Forward<R>(rhs));}
+{return !operator==(Forward<L>(lhs), Forward<R>(rhs));}
 
-template<typename L, typename T> forceinline Meta::EnableIf<
-	Concepts::IsSequentialContainer<L>::_,
+template<typename L, typename T> forceinline Requires<
+	CSequentialContainer<L>,
 bool> operator==(L&& lhs, InitializerList<T> rhs)
 {
-	using Concepts::RangeOf;
-	return Range::Equals(RangeOf(lhs), SpanOf(rhs));
+	return Equals(RangeOf(lhs), SpanOf(rhs));
 }
 
-template<typename L, typename T> forceinline Meta::EnableIf<
-	Concepts::IsSequentialContainer<L>::_,
+template<typename L, typename T> forceinline Requires<
+	CSequentialContainer<L>,
 bool> operator!=(L&& lhs, InitializerList<T> rhs)
-{return !operator==(Cpp::Forward<L>(lhs), rhs);}
+{return !operator==(Forward<L>(lhs), rhs);}
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

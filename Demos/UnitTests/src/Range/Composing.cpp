@@ -1,4 +1,4 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -7,9 +7,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #include "Range.h"
-#include "Range/Stream.hh"
-#include "Range/Reduction.h"
-#include "Utils/Span.h"
+#include "Core/Range/Stream.hh"
+#include "Core/Range/Reduction.h"
+#include "Core/Range/Span.h"
 #include "Range.hh"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
@@ -106,11 +106,13 @@ void TestComposedRange(FormattedWriter& output)
 
 	output.PrintLine("Зациклили первые два элемента массива и взяли 10 из них:");
 	output.PrintLine(Take(Cycle(Take(strs1, 2)), 10));
+#if INTRA_DISABLED
 	output.PrintLine("Между массивом строк и 5 числами Фибоначчи выбрали второе в рантайме: ");
 	output.PrintLine(Choose(
 		strs1,
 		Map(Take(fib, 5), StringOf<int>),
 		true) );
+#endif
 	output.LineBreak();
 	
 
@@ -132,11 +134,11 @@ void TestComposedRange(FormattedWriter& output)
 	output.PrintLine("Токены: ", StringOf(tokens, "\", \"", "[\"", "\"]"));
 
 	int arr[]={1, 4, 11, 6, 8};
-	output.PrintLine("max of ", arr, " = ", Reduce(arr, Funal::Max));
+	output.PrintLine("max of ", arr, " = ", Reduce(arr, FMax));
 
 	output.LineBreak();
 	output.PrintLine("Код в 4 строки, эквивалентный примеру из "
-		"http://ru.cppreference.com/w/cpp/algorithm/copy:");
+		"http://ru.cppreference.com/w/cpp/algorithm/copy"":");
 	Array<int> fromVector = Iota(10);
 	Array<int> toVector = Repeat(0, 10);
 	CopyTo(fromVector, toVector);

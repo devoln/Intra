@@ -1,18 +1,23 @@
 ﻿#pragma once
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "Utils/FixedArray.h"
-#include "Cpp/Warnings.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Range {
+INTRA_BEGIN
+namespace Range {
+
+//! TODO: this class must be renamed
+//!  It uses external memory from Span range but it owns its elements: it calls their constructors and destructors
+//!  Also it lacks range semantics.
 
 template<typename T, typename Index> struct SparseRange
 {
 	static_assert(sizeof(T) >= sizeof(Index), "Type T must not be shorter than index!");
 
-	SparseRange(Span<T> sparseBuffer=null):
+	SparseRange(Span<T> sparseBuffer = null):
 		mData(sparseBuffer), mFirstFree(empty_index()) {}
 
 	SparseRange(SparseRange&& rhs):
@@ -33,36 +38,40 @@ template<typename T, typename Index> struct SparseRange
 	}
 	~SparseRange() {Clear();}
 
-	//! Переместить элемент в массив.
-	//! @param[in] val Перещаемый элемент.
-	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	T& Add(T&& val, Index* oIndex=null);
+	//! Move \p val into the array returning new element's index via \p oIndex pointer.
+	/*!
+	  @returns The reference to the added element.
+	*/
+	T& Add(T&& val, Index* oIndex = null);
 
-	//! Добавить копию элемента в массив.
-	//! @param[in] val Копируемый элемент.
-	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
+	//! Add \p val returning a new element's index via \p oIndex pointer.
+	/*!
+	  @returns The reference to the added element.
+	*/
 	T& Add(const T& val, Index* oIndex=null);
 
-	//! Сконструировать элемент в массиве.
-	//! @param[in] args Параметры конструктора.
-	//! @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	template<typename... Args> T& Emplace(Args&&... args, Index* oIndex=null);
+	//! Construct an element inplace passing \p args to its constructor and returning new element's index via \p oIndex pointer.
+	/*!
+	  @returns The reference to the added element.
+	*/
+	template<typename... Args> T& Emplace(Args&&... args, Index* oIndex = null);
 
-	//! Удалить из массива элемент с индексом index
+	//! Remove the element at \p index.
 	void Remove(Index index);
 
 
-	//! Удалить все элементы массива
-	template<typename U=T> Meta::EnableIf<
-		!Meta::IsTriviallyDestructible<U>::_
+	//! Remove all the elements.
+	template<typename U=T> Requires<
+		!CTriviallyDestructible<U>::_
 	> Clear();
 
-	template<typename U=T> Meta::EnableIf<
-		Meta::IsTriviallyDestructible<U>::_
+	//! Remove all the elements.
+	template<typename U=T> Requires<
+		CTriviallyDestructible<U>::_
 	> Clear() {mFirstFree = empty_index();}
 
 
-	void MakeNull() {Clear(); mData=null;}
+	void MakeNull() {Clear(); mData = null;}
 
 	//! Доступ по индексу следует использовать только тогда, когда точно известно, что элемент с этим индексом не был удалён.
 	T& operator[](Index index) {return mData[size_t(index)];}
@@ -74,13 +83,15 @@ template<typename T, typename Index> struct SparseRange
 	bool IsFull() const {return mFirstFree == end_index() || mData.Empty();}
 
 	//! Возвращает, пуст ли этот разреженный массив.
-	bool Empty() const {return mFirstFree == empty_index();}
+	forceinline bool Empty() const {return mFirstFree == empty_index();}
 
 	Index Capacity() const {return Index(mData.Length());}
 
 
+	// TODO: implement bitset to replace FixedArray<uint>
+
 	//! Возвращает битовое поле, каждый бит которого обозначает, существует ли элемент по соответствующему индексу или нет.
-	FixedArray<flag32> DeadBitfield() const;
+	FixedArray<uint> DeadBitfield() const;
 
 	//! Переместить этот разреженный массив в другой разреженный массив не меньшего размера.
 	void MoveTo(SparseRange& rhs);
@@ -90,8 +101,8 @@ template<typename T, typename Index> struct SparseRange
 	//! В этом случае добавление нового элемента в разреженный массив перезапишет все данные в этом буфере.
 	Span<T> GetInternalDataBuffer() {return mData;}
 
-	bool operator==(null_t) const {return Empty();}
-	bool operator!=(null_t) const {return !Empty();}
+	forceinline bool operator==(null_t) const {return Empty();}
+	forceinline bool operator!=(null_t) const {return !Empty();}
 
 private:
 	Span<T> mData;
@@ -100,8 +111,8 @@ private:
 	T& append_first_free(Index* oIndex);
 	void init_free_list();
 
-	static Index end_index() {return Meta::NumericLimits<Index>::Max();}
-	static Index empty_index() {return Index(end_index()-1);}
+	static forceinline Index end_index() {return Core::MaxOf(Index());}
+	static forceinline Index empty_index() {return Index(end_index()-1);}
 
 	SparseRange& operator=(const SparseRange&) = delete;
 	SparseRange(const SparseRange&) = delete;
@@ -169,7 +180,7 @@ template<typename Index> struct SparseTypelessRange
 
 
 	//! Возвращает битовое поле, каждый бит которого обозначает, существует ли элемент по соответствующему индексу или нет.
-	FixedArray<flag32> DeadBitfield() const;
+	FixedArray<uint> DeadBitfield() const;
 
 	//! Переместить этот разреженный массив в другой разреженный массив не меньшего размера.
 	void MoveTo(SparseTypelessRange& rhs);
@@ -190,7 +201,7 @@ private:
 	byte* append_first_free(Index* oIndex);
 	void init_free_list();
 
-	static Index end_index() {return Meta::NumericLimits<Index>::Max();}
+	static Index end_index() {return Core::NumericLimits<Index>::Max();}
 	static Index empty_index() {return end_index()-1;}
 
 	SparseTypelessRange& operator=(const SparseTypelessRange&) = delete;

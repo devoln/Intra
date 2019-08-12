@@ -1,6 +1,6 @@
 ﻿#include "Audio/Sources/Vorbis.h"
-#include "Cpp/Endianess.h"
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Endianess.h"
+#include "Core/Range/Polymorphic/InputRange.h"
 
 #if(INTRA_LIBRARY_VORBIS_DECODER == INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
 
@@ -14,7 +14,8 @@
 
 #endif
 
-namespace Intra { namespace Audio { namespace Sources {
+INTRA_BEGIN
+namespace Audio { namespace Sources {
 
 using namespace Math;
 
@@ -25,7 +26,7 @@ struct OggStream
 {
 	ForwardStream StreamStart;
 	InputStream Stream;
-	ulong64 Pos, Size;
+	uint64 Pos, Size;
 
 	static size_t ReadCallback(void* ptr, size_t size, size_t nmemb, void* datasource)
 	{
@@ -44,7 +45,7 @@ struct OggStream
 		return 0;
 	}
 
-	void SeekAbs(ulong64 offset)
+	void SeekAbs(uint64 offset)
 	{
 		if(offset > Size) offset = Size;
 
@@ -71,9 +72,9 @@ struct OggStream
 		//Библиотека libvorbis требует всегда возвращать -1, реализовывать частные случаи смысла нет.
 		if(os.StreamStart == null) return -1;
 
-		if(whence==SEEK_SET) SeekAbs(ulong64(offset));
-		else if(whence==SEEK_CUR) SeekAbs(ulong64(long64(Pos)+offset));
-		else if(whence==SEEK_END) SeekAbs(ulong64(long64(Size)+offset));
+		if(whence==SEEK_SET) SeekAbs(uint64(offset));
+		else if(whence==SEEK_CUR) SeekAbs(uint64(int64(Pos)+offset));
+		else if(whence==SEEK_END) SeekAbs(uint64(int64(Size)+offset));
 		return 0;
 	}
 

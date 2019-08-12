@@ -1,51 +1,61 @@
 ﻿#pragma once
 
 #include "Utils/FixedArray.h"
+#include "Core/Range/Mutation/Copy.h"
 #include "Memory/Align.h"
 #include "Memory/Memory.h"
 #include "Memory/Allocator/System.h"
 #include "Memory/Allocator/AllocatorRef.h"
-#include "Range/Mutation/Copy.h"
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+inline namespace Container {
+
+//TODO: use <IndexListItems> in natvis to visualize this type
 
 template<typename T, typename OffsetType> class BlobTypedRange
 {
 	CSpan<byte> mData;
-	CSpan<OffsetType> mOffsets;
+	CSpan<OffsetType> mOffsetSizes;
 public:
 	forceinline BlobTypedRange(CSpan<byte> blobData)
 	{
 		CSpan<OffsetType> otdata = blobData.Reinterpret<const OffsetType>();
-		mOffsets = otdata.DropLast().Tail(otdata.Last());
-		mData = blobData.Take(*(otdata.End - (mOffsets.Length() + 2)));
+		mOffsetSizes = otdata.DropLast().Tail(2*otdata.Last());
+		mData = blobData.Take(mOffsetSizes[0]+mOffsetSizes[1]);
 	}
 
-	forceinline T& First() const {return *reinterpret_cast<T>(mData.Begin + mOffsets.Last());}
-	forceinline void PopFirst() {mOffsets.PopLast();}
-	forceinline void PopLast() {mOffsets.PopFirst();}
-	forceinline bool Empty() const {return mOffsets.Empty();}
+	forceinline T* First() const {return reinterpret_cast<T*>(mData.Begin + mOffsetSizes[mOffsetSizes.Length()-2]);}
+	forceinline T* Last() const {return reinterpret_cast<T*>(mData.Begin + mOffsetSizes[0]);}
+	forceinline void PopFirst() {mOffsetSizes.PopLastExactly(2);}
+	forceinline void PopLast() {mOffsetSizes.PopFirstExactly(2);}
+	forceinline bool Empty() const {return mOffsetSizes.Empty();}
+	forceinline index_t Length() const {return mOffsetSizes.Length()/2;}
 	
-	forceinline T& Next()
-	{T& result = First(); PopFirst(); return result;}
+	forceinline T* Next()
+	{T* const result = First(); PopFirst(); return result;}
 	
-	forceinline T& operator[](size_t index) const
-	{return *reinterpret_cast<T*>(mData.Begin + mOffsets[index]);}
+	forceinline T* operator[](size_t index) const
+	{return reinterpret_cast<T*>(mData.Begin + mOffsetSizes[mOffsetSizes.Length() - 2 - 2*index]);}
 
-	forceinline size_t PopFirstN(size_t count) {return mOffsets.PopLastN(count);}
-	forceinline size_t PopLastN(size_t count) {return mOffsets.PopFirstN(count);}
+	forceinline size_t PopFirstN(size_t count) {return mOffsetSizes.PopLastN(2*count);}
+	forceinline size_t PopLastN(size_t count) {return mOffsetSizes.PopFirstN(2*count);}
 };
 
 
 //! Класс, интерпретирующий массив байт как blob, который состоит из объектов переменной длины,
-//! размещающихся слева направо и заголовка, растущего справа налево
+//! размещающихся слева направо и заголовка, растущего справа налево.
 //! Все методы константные, так как сами данные не являются внутренним состоянием объекта и могут быть изменены извне прямой записью байт в RawData.
-template<typename OffsetType> struct BlobAdapter
+//! Формат хранения: [[0], [1], ..., [Count-1], OffsetOf(Count-1), SizeOf(Count-1), OffsetOf(1), SizeOf(1), OffsetOf(0), SizeOf(0), Count]
+//! Этот класс не является типобезопасным и требует соблюдения определённых правил, указанных в описании методов.
+//! Нарушение этих правил приводит к неопределённому поведению программы (отсутствие вызова деструктора, кратный вызов деструктора, изменение адреса объекта в памяти и т.п.).
+template<typename OffsetType> struct BlobAdapterUnsafe
 {
+	enum: size_t {PerElementOverheadBytes = 2 * sizeof(OffsetType)};
+
 	Span<byte> RawData;
 
 	forceinline OffsetType* HeaderEnd() const {return reinterpret_cast<OffsetType*>(RawData.End);}
-	forceinline OffsetType* HeaderBegin() const {return HeaderEnd() - (2 + Count());}
+	forceinline OffsetType* HeaderBegin() const {return HeaderEnd() - (1 + 2*Count());}
 
 	forceinline byte* DataBegin() const {return RawData.Begin;}
 	forceinline byte* DataEnd() const {return RawData.Begin + DataSizeInBytes();}
@@ -53,19 +63,18 @@ template<typename OffsetType> struct BlobAdapter
 	forceinline OffsetType& OffsetOf(size_t index) const
 	{
 		INTRA_DEBUG_ASSERT(index < Count());
-		return *(HeaderEnd() - (1 + index));
+		return *(HeaderEnd() - (3 + 2*index));
 	}
 
-	forceinline static bool CheckOffsetForOverflow(size_t offset) const
-	{return size_t(OffsetType(offset)) == offset;}
-
-	forceinline size_t Align(size_t requiredAlignmentBytes) const
+	//! Размер элемента с указанным индексом
+	forceinline OffsetType& SizeOf(size_t index) const
 	{
-		auto& dataSize = OffsetOf(Count());
-		auto oldDataSize = dataSize;
-		dataSize = Memory::Aligned(dataSize, requiredAlignmentBytes);
-		return dataSize - oldDataSize;
+		INTRA_DEBUG_ASSERT(index < Count());
+		return *(HeaderEnd() - 2 * (1 + index));
 	}
+
+	forceinline static bool CheckOffsetForOverflow(size_t offset)
+	{return size_t(OffsetType(offset)) == offset;}
 
 	//! Подготовить блоб к десериализации, создав в нём секции данных и заголовка нужного размера.
 	//! Все предыдущие данные становятся невалидны и должны быть перезаписаны.
@@ -84,47 +93,36 @@ template<typename OffsetType> struct BlobAdapter
 	forceinline bool Empty() const {return Count() != 0;}
 
 	//! Суммарный размер всех элементов, помещённых в контейнер без учёта заголовка
-	forceinline OffsetType& DataSizeInBytes() const {return OffsetOf(Count());}
+	forceinline size_t DataSizeInBytes() const {return size_t(OffsetOf(Count()-1))+size_t(SizeOf(Count()-1));}
 	
 	//! Суммарный размер заголовка
-	forceinline size_t HeaderSizeInBytes() const {return (Count() + 2) * sizeof(OffsetType);}
+	forceinline size_t HeaderSizeInBytes() const {return (1 + 2*Count()) * sizeof(OffsetType);}
 
 	//! Свободное место в текущем блоке памяти
 	forceinline size_t FreeSizeInBytes() const
 	{return RawData.Length() - UsedSizeInBytes();}
-
-	//! Размер элемента с указанным индексом
-	forceinline OffsetType SizeOf(size_t index) const
-	{return OffsetOf(index + 1) - OffsetOf(index);}
 
 	//! Размер данных и заголовка, содержащихся в блобе
 	forceinline size_t UsedSizeInBytes() const {return DataSizeInBytes() + HeaderSizeInBytes();}
 
 
 	forceinline bool CanFitElement(size_t bytes) const
-	{return FreeSizeInBytes() >= bytes + sizeof(OffsetType);}
+	{return FreeSizeInBytes() >= bytes + PerElementOverheadBytes;}
 
 	//! Вставить элемент указанного размера в блоб.
 	//! Метод лишь выдаёт сырую неинициализированную память.
 	//! Ответственность по её инициализации и последующему вызову деструкторов объектов лежит на пользователе.
-	void* AddElement(OffsetType bytes) const
-	{
-		const size_t newDataSizeInBytes = DataSizeInBytes() + bytes;
-		if(!CheckOffsetForOverflow(newDataSizeInBytes)) return null;
-		const bool needReallocateBlob = !CanFitElement(bytes);
-		if(needReallocateBlob) return null;
-		void* result = DataBegin();
-		OffsetOf(++Count()) = OffsetType(newDataSizeInBytes);
-		return result;
-	}
-
 	void* AddElement(OffsetType bytes, OffsetType alignment) const
 	{
-		const OffsetType oldDataEndOffset = DataSizeInBytes();
-		Align(alignment);
-		void* result = AddElement(bytes);
-		if(result == null) DataSizeInBytes() = oldDataEndOffset;
-		return result;
+		const auto prevDataSize = DataSizeInBytes();
+		const auto offset = Memory::Aligned(prevDataSize, alignment);
+		const size_t newDataSizeInBytes = offset + bytes;
+		const bool elementFitsInContainer = RawData.Begin+newDataSizeInBytes < reinterpret_cast<byte*>(HeaderBegin()-2);
+		if(!CheckOffsetForOverflow(offset) || !elementFitsInContainer) return null;
+		Count()++;
+		HeaderBegin()[0] = OffsetType(prevDataSize);
+		HeaderBegin()[1] = bytes;
+		return RawData.Begin + offset;
 	}
 
 
@@ -134,7 +132,7 @@ template<typename OffsetType> struct BlobAdapter
 	//! @returns Ссылка на сконструированный объект
 	template<typename T, typename... Args> forceinline T& Add(Args&&... args) const
 	{
-		T* const result = TryAdd<T>(Cpp::Forward<Args>(args)...);
+		T* const result = TryAdd<T>(Forward<Args>(args)...);
 		INTRA_DEBUG_ASSERT(result != null);
 		return *result;
 	}
@@ -146,28 +144,7 @@ template<typename OffsetType> struct BlobAdapter
 	{
 		void* const data = AddElement(sizeof(T), alignof(T));
 		if(data == null) return null;
-		return &new(data) T(Cpp::Forward<Args>(args)...);
-	}
-
-	template<typename T> forceinline Span<T> AddArray(CSpan<T> arr) const
-	{
-		OffsetType oldDataEndOffset = DataSizeInBytes();
-		void* const resultPtr = AddElement(sizeof(uint), sizeof(uint));
-		if(resultPtr == null) return null;
-		Align(alignof(T));
-		const bool successfullyExtended = ExtendLastElement(OffsetType(arr.SizeInBytes())) == arr.SizeInBytes();
-		if(!successfullyExtended)
-		{
-			RemoveLastElement();
-			DataSizeInBytes() = oldDataEndOffset;
-			return null;
-		}
-		uint* const lengthPtr = reinterpret_cast<uint*>(resultPtr);
-		*lengthPtr = uint(arr.Length());
-		void* const elementsStartPtr = DataBegin() + DataSizeInBytes();
-		const Span<T> result = SpanOfRaw<T>(elementsStartPtr, arr.SizeInBytes());
-		Memory::CopyInit(result, arr);
-		return result;
+		return &new(data) T(Forward<Args>(args)...);
 	}
 
 	forceinline void RemoveLastElement() const
@@ -181,12 +158,9 @@ template<typename OffsetType> struct BlobAdapter
 	//! @returns Новый размер элемента.
 	forceinline size_t ResizeLastElement(size_t newSizeInBytes) const
 	{
-		const size_t prevOffset = OffsetOf(Count() - 1);
-		const size_t maxFitNewOffset = RawData.Length() - HeaderSizeInBytes();
-		size_t newOffset = prevOffset + newSizeInBytes;
-		if(newOffset > maxFitNewOffset) newOffset = maxFitNewOffset;
-		OffsetOf(Count()) = OffsetType(newOffset);
-		newSizeInBytes = newOffset - prevOffset;
+		const size_t maxFitSizeInBytes = HeaderBegin()[1] + FreeSizeInBytes();
+		if(newSizeInBytes > maxFitSizeInBytes) newSizeInBytes = maxFitSizeInBytes;
+		HeaderBegin()[1] = OffsetType(newSizeInBytes);
 		return newSizeInBytes;
 	}
 
@@ -197,7 +171,7 @@ template<typename OffsetType> struct BlobAdapter
 	{
 		const size_t maxFitExtraBytes = FreeSizeInBytes();
 		if(extraBytes > maxFitExtraBytes) extraBytes = maxFitExtraBytes;
-		OffsetOf(Count()) += OffsetType(extraBytes);
+		HeaderBegin()[1] += OffsetType(extraBytes);
 		return extraBytes;
 	}
 
@@ -207,7 +181,7 @@ template<typename OffsetType> struct BlobAdapter
 	forceinline bool TryExtendLastElement(size_t extraBytes) const
 	{
 		if(extraBytes > FreeSizeInBytes()) return false;
-		OffsetOf(Count()) += OffsetType(extraBytes);
+		HeaderBegin()[1] += OffsetType(extraBytes);
 		return true;
 	}
 
@@ -238,43 +212,88 @@ template<typename OffsetType> struct BlobAdapter
 	}
 
 	//! Предполагая, что все элементы блоба имеют тип T, получить диапазон этих элементов.
-	//! Использовать с осторожностью, так как если это не так, будет UB
-	template<typename T> forceinline BlobTypedRange<T, OffsetType> AsRangeOf() const
+	//! Использовать с осторожностью, так как если это не так, будет UB.
+	template<typename T> forceinline auto AsRangeOf() const
 	{return BlobTypedRange<T, OffsetType>(RawData);}
 
-	bool CopyTo(BlobAdapter<OffsetType> dst) const
+	//! Копирует все данные блоба в новый блоб как есть - вместе со всеми его пустотами, стирая все старые данные целевого блоба.
+	//! При условии, что элементы являются тривиально копируемыми, dst по использованию становится эквивалентен исходному блобу.
+	//! @returns true, если копирование произведено успешно - все данные поместились в dst.
+	bool CopyTo(BlobAdapterUnsafe<OffsetType> dst) const
 	{
 		if(!dst.SetCounts(DataSizeInBytes(), Count())) return false;
-		CopyTo(DataBytes(), dst.DataBytes());
-		CopyTo(Header(), dst.Header());
+		Intra::Range::CopyTo(DataBytes(), dst.DataBytes());
+		Intra::Range::CopyTo(Header(), dst.Header());
 		return true;
 	}
 
-	forceinline bool MoveTo(BlobAdapter<OffsetType> dst) const
+	//! Переносит все данные блоба в новый блоб как есть - вместе со всеми его пустотами, стирая все старые данные целевого блоба и очищая текущий блоб.
+	//! При условии, что элементы являются тривиально перемещаемыми, dst по использованию становится эквивалентен исходному блобу до перемещения.
+	//! Если в dst недостаточно места, оба блоба остаются в исходном состоянии.
+	//! @returns true, если копирование произведено успешно - все данные поместились в dst.
+	forceinline bool MoveTo(BlobAdapterUnsafe<OffsetType> dst) const
 	{
 		if(!CopyTo(dst)) return false;
 		Clear();
 		return true;
 	}
+
+	//! Копирует элементы текущего блоба, добавляя их в новый блоб. При этом игнорирует все пустоты и не копирует элементы нулевого размера.
+	//! При ошибке нехватки места в dst, dst приводится в состояние, эквивалентное исходному - изменяются только данные между DataEnd() и HeaderBegin().
+	//! Все элементы должны быть тривиально копируемыми, иначе поведение не определено.
+	//! @returns true, если копирование произведено успешно - все данные поместились в dst.
+	bool AppendDefragmentTo(BlobAdapterUnsafe<OffsetType> dst, size_t alignment) const
+	{
+		const OffsetType prevDstCount = dst.Count();
+		for(size_t i = 0; i < Count(); i++)
+		{
+			const size_t size = SizeOf(i);
+			if(size == 0) continue;
+			void* const el = dst.AddElement(size, alignment);
+			if(el == null)
+			{
+				dst.Count() = prevDstCount;
+				return false;
+			}
+			memcpy(el, operator[](i), SizeOf(i));
+		}
+		return true;
+	}
+
+	//! Перемещает элементы текущего блоба, добавляя их в новый блоб. При этом игнорирует все пустоты и не копирует элементы нулевого размера.
+	//! При ошибке нехватки места в dst, dst приводится в состояние, эквивалентное исходному - изменяются только данные между DataEnd() и HeaderBegin().
+	//! Все элементы должны быть тривиально перемещаемыми, иначе поведение не определено.
+	//! @returns true, если копирование произведено успешно - все данные поместились в dst.
+	forceinline bool MoveAppendDefragmentTo(BlobAdapterUnsafe<OffsetType> dst, size_t alignment) const
+	{
+		if(!AppendDefragmentTo(dst, alignment)) return false;
+		Clear();
+		return true;
+	}
 };
 
+//TODO: использовать <IndexListItems> в natvis для визуализации этого типа
 
-//! Динамический массив для хранения полиморфных объектов типов, производных от T.
+INTRA_DEFINE_CONCEPT_REQUIRES(HasMoveConstruct, Val<T>().MoveConstruct(Val<void*>()));
+
+//! Динамический массив для хранения полиморфных объектов типов, производных от T, содержащего виртуальный метод CopyConstruct(void* dst) и виртуальный деструктор.
 //! Требуется, чтобы T был единственным базовым классом хранимых объектов - множественное наследование не поддерживается.
-template<typename T, typename OffsetType = uint,
+template<typename T, size_t Alignment = alignof(T), typename OffsetType = uint,
 	class AllocatorType = Memory::SystemHeapAllocator>
 class DynamicBlob: public Memory::AllocatorRef<AllocatorType>
 {
+	static_assert(HasMoveConstruct<T> && CHasVirtualDestructor<T>, "T must implement a virtual destructor and MoveConstruct(void* dst)!");
 	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
 
-	BlobAdapter<OffsetType> mData;
+	BlobAdapterUnsafe<OffsetType> mData;
+	OffsetType mFirstDeleted = OffsetType(-1);
 
-	forceinline BlobAdapter<OffsetType> allocate(size_t sizeInBytes)
+	forceinline BlobAdapterUnsafe<OffsetType> allocate(size_t sizeInBytes)
 	{
-		return {AllocatorRef::AllocateRangeUninitialized<byte>(sizeInBytes, INTRA_SOURCE_INFO)};
+		return {AllocatorRef::template AllocateRangeUninitialized<byte>(sizeInBytes, INTRA_SOURCE_INFO)};
 	}
 
-	forceinline void deallocate(BlobAdapter<OffsetType> data)
+	forceinline void deallocate(BlobAdapterUnsafe<OffsetType> data)
 	{
 		AllocatorRef::FreeRangeUninitialized(data.RawData);
 	}
@@ -282,7 +301,13 @@ class DynamicBlob: public Memory::AllocatorRef<AllocatorType>
 	bool reallocate(size_t sizeInBytes)
 	{
 		auto newData = allocate(sizeInBytes);
-		if(newData == null || !mData.MoveTo(newData)) return false;
+		if(newData == null) return false;
+		for(size_t i = 0; i < mData.Count(); i++)
+		{
+			const size_t size = mData.SizeOf(i);
+			auto el = newData.AddElement(size, Alignment);
+			if(size != 0) mData[i].MoveConstructTo(el);
+		}
 		deallocate(mData);
 		mData = newData;
 		return true;
@@ -291,23 +316,67 @@ public:
 	forceinline DynamicBlob(size_t initialSizeInBytes):
 		mData(allocate(initialSizeInBytes)) {}
 
-	//! Сконструировать новый объект в блобе, передав в конструктор указанные аргументы.
-	//! Тип создаваемого объекта должен быть тривиально перемещаемым.
-	//! @returns Ссылка на сконструированный объект
-	template<typename T1, typename... Args> forceinline Meta::EnableIf<
-		Meta::IsInherited<T1, T>::_,
-	T1&> Add(Args&&... args) const
+	forceinline ~DynamicBlob() {Clear();}
+
+	void Clear()
 	{
-		mData.Align(alignof(T));
-		T1* const result = mData.TryAdd<T1>(Cpp::Forward<Args>(args)...);
+		for(OffsetType i = 0; i < mData.Count(); i++)
+		{
+			if(mData.SizeOf(size_t(i)) == 0) continue;
+			mData.template Get<T>(size_t(i)).~T();
+		}
+		mData.Clear();
+	}
+
+	//! Сконструировать новый объект в блобе, передав в конструктор указанные аргументы.
+	//! @returns Ссылка на сконструированный объект
+	template<typename T1, typename... Args> Requires<
+		CDerived<T1, T>,
+	T1&> Add(Args&&... args)
+	{
+		T1* const result = mData.template TryAdd<T1>(Forward<Args>(args)...);
 		if(result == null)
 		{
 			const size_t minRequiredSize = mData.UsedSizeInBytes() + sizeof(T);
 			reallocate(minRequiredSize + minRequiredSize / 2);
-			return mData.Add<T1>(Cpp::Forward<Args>(args)...);
+			result = mData.template TryAdd<T1>(Forward<Args>(args)...);
+		}
+		if(mFirstDeleted != OffsetType(-1))
+		{
+			const OffsetType nextDeleted = mData.OffsetOf(mFirstDeleted);
+			mData.OffsetOf(mFirstDeleted) = mData.HeaderBegin()[0];
+			mData.SizeOf(mFirstDeleted) = mData.HeaderBegin()[1];
+			mData.Count()--;
+			mFirstDeleted = nextDeleted;
 		}
 		return *result;
 	}
+
+	//! Удаляет элемент в массиве
+	forceinline void Delete(size_t index)
+	{
+		if(T* const element = operator[](index))
+		{
+			element->~T();
+			mData.SizeOf(index) = 0;
+			mData.OffsetOf(index) = mFirstDeleted;
+			mFirstDeleted = OffsetType(index);
+		}
+	}
+
+	forceinline T* operator[](size_t index) const
+	{
+		if(mData.SizeOf(index) == 0) return null;
+		return mData[OffsetType(index)];
+	}
+
+	forceinline index_t Length() const {return size_t(mData.Count());}
+
+	forceinline T& Get(size_t index) const {return mData.Get(index);}
+
+	forceinline BlobTypedRange<T, OffsetType> AsRange() const
+	{return BlobTypedRange<T, OffsetType>(mData.RawData);}
 };
 
-}}
+}
+INTRA_END

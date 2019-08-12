@@ -20,7 +20,8 @@
 #endif
 
 #ifdef _MSC_VER
-namespace Intra { namespace Concurrency { namespace detail {
+INTRA_BEGIN
+namespace Concurrency { namespace detail {
 
 static DWORD GetThreadId(HANDLE thread)
 {

@@ -1,13 +1,14 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
 
 #include "ImageFormat.h"
 
 #include "Math/Vector3.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

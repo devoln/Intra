@@ -1,8 +1,8 @@
-﻿#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+﻿
 
-#include "Range/Mutation/Fill.h"
-#include "Range/Decorators/Take.h"
+
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Take.h"
 
 #include "Container/Utility/IndexAllocator.h"
 
@@ -18,7 +18,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_IGNORE_WARNING(dollar-in-identifier-extension)
 
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using Data::ValueType;
 
@@ -178,7 +179,7 @@ struct Sound::Data: detail::SoundBasicData
 
 struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
 {
-	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent))
+	forceinline Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Move(parent))
 	{
 		Id = SoundContext::Instance().InstanceIdalloc.Allocate();
 		EM_ASM_({
@@ -204,7 +205,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 	{
 		if(Id == ~size_t()) return;
 		auto& context = SoundContext::Instance();
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		stop();
 		EM_ASM_({
 			if(Module.gWebAudioInstanceArray[$0] != null) Module.gWebAudioInstanceArray[$0].disconnect(Module.gWebAudioContext.destination);
@@ -237,7 +238,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 	void Stop()
 	{
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		if(Id == ~size_t()) return;
 		stop();
 	}
@@ -259,7 +260,7 @@ public:
 struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
 	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled=true):
-		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount > 16384? 16384: bufferSampleCount)
+		StreamedSoundBasicData(Move(source), bufferSampleCount > 16384? 16384: bufferSampleCount)
 	{
 		(void)autoStreamingEnabled;
 		auto& context = SoundContext::Instance();
@@ -396,13 +397,13 @@ uint Sound::DefaultSampleRate()
 
 void SoundContext::ReleaseAllSounds()
 {
-	auto sounds = Cpp::Move(AllSounds);
+	auto sounds = Move(AllSounds);
 	for(auto sound: sounds) sound->Release();
 }
 
 void SoundContext::ReleaseAllStreamedSounds()
 {
-	auto sounds = Cpp::Move(AllStreamedSounds);
+	auto sounds = Move(AllStreamedSounds);
 	for(auto sound: sounds) sound->Release();
 }
 

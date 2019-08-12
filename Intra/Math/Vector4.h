@@ -1,19 +1,13 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/InfNan.h"
-
+#include "Core/Core.h"
 #include "Math/Math.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
+INTRA_BEGIN
 #ifdef _MSC_VER
 #pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
 #endif
-
-namespace Intra { namespace Math {
+inline namespace Math {
 
 template<typename T> struct Vector4
 {
@@ -102,8 +96,8 @@ public:
 
 	forceinline constexpr bool operator!=(const Vector4& rhs) const noexcept {return !operator==(rhs);}
 
-	forceinline bool operator==(Cpp::TNaN) const noexcept {return x + y + z + w == NaN;}
-	forceinline bool operator!=(Cpp::TNaN) const noexcept {return !operator==(NaN);}
+	forceinline bool operator==(TNaN) const noexcept {return x + y + z + w == NaN;}
+	forceinline bool operator!=(TNaN) const noexcept {return !operator==(NaN);}
 
 
 	forceinline constexpr Vector4 operator<<(uint rhs) const
@@ -132,7 +126,7 @@ public:
 
 	forceinline T* Data() noexcept {return &x;}
 	constexpr forceinline const T* Data() const noexcept {return &x;}
-	constexpr forceinline size_t Length() const noexcept {return 4;}
+	constexpr forceinline index_t Length() const noexcept {return 4;}
 
 	template<typename Index> forceinline T& operator[](Index index) {return (&x)[index];}
 	template<typename Index> constexpr forceinline const T& operator[](Index index) const {return (&x)[index];}
@@ -162,8 +156,8 @@ INTRA_WARNING_POP
 	};
 };
 
-template<typename T> forceinline bool operator==(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs == NaN;}
-template<typename T> forceinline bool operator!=(Cpp::TNaN, const Vector4<T>& rhs) noexcept {return rhs != NaN;}
+template<typename T> forceinline bool operator==(TNaN, const Vector4<T>& rhs) noexcept {return rhs == NaN;}
+template<typename T> forceinline bool operator!=(TNaN, const Vector4<T>& rhs) noexcept {return rhs != NaN;}
 
 template<typename T> Vector4<T> ClosestPointOnLine(const Vector4<T> pt, const Vector4<T>& lineA, const Vector4<T>& lineB)
 {
@@ -250,17 +244,6 @@ template<typename T> constexpr Vector4<T> Sign(const Vector4<T>& v)
 template<typename T> constexpr Vector4<T> Abs(const Vector4<T>& v)
 {return {Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w)};}
 
-
-namespace GLSL {
-template<typename T> constexpr forceinline T dot(const Vector4<T>& l, const Vector4<T>& r) {return Dot(l, r);}
-template<typename T> forceinline T length(const Vector4<T>& v) {return Length(v);}
-template<typename T> forceinline T distance(const Vector4<T>& l, const Vector4<T>& r) {return Distance(l, r);}
-template<typename T> forceinline Vector4<T> normalize(const Vector4<T>& v) {return Normalize(v);}
-template<typename T> constexpr forceinline Vector4<T> reflect(const Vector4<T>& incident, const Vector4<T>& normal) {return Reflect(incident, normal);}
-template<typename T> forceinline Vector4<T> refract(const Vector4<T>& I, const Vector4<T>& N, float eta) {return Refract(I, N, eta);}
-template<typename T> constexpr forceinline Vector4<T> faceforward(const Vector4<T>& N, const Vector4<T>& I, const Vector4<T>& Nref) {return FaceForward(N, I, Nref);}
-}
-
 typedef Vector4<float> Vec4;
 typedef Vector4<double> DVec4;
 typedef Vector4<int> IVec4;
@@ -271,15 +254,5 @@ typedef Vector4<ushort> USVec4;
 typedef Vector4<short> SVec4;
 typedef Vector4<bool> BVec4;
 
-
-namespace GLSL {
-typedef Vector4<float> vec4;
-typedef Vector4<double> dvec4;
-typedef Vector4<int> ivec4;
-typedef Vector4<uint> uvec4;
-typedef Vector4<bool> bvec4;
 }
-
-}}
-
-INTRA_WARNING_POP
+INTRA_END

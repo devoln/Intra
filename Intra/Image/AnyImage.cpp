@@ -1,11 +1,12 @@
 ﻿#include "Image/AnyImage.h"
 
 #include "Container/Sequential/Array.h"
-#include "Range/Mutation/Fill.h"
-#include "Range/Generators/ListRange.h"
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Generators/ListRange.h"
 #include "Image/Loaders/Loader.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -100,7 +101,7 @@ AnyImage AnyImage::FromStream(ForwardStream stream)
 	auto oldStream = stream;
 	byte header[12];
 	stream.RawReadTo(header, sizeof(header));
-	stream = Cpp::Move(oldStream);
+	stream = Move(oldStream);
 
 	for(auto& loader: AImageLoader::GetRegisteredLoaders())
 	{

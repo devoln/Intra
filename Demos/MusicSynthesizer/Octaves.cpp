@@ -1,7 +1,8 @@
 #include "Octaves.h"
 #include "Random/FastUniform.h"
 
-namespace Intra { namespace Audio { namespace Synth {
+INTRA_BEGIN
+namespace Audio { namespace Synth {
 
 void SelfOctaveMix(CSpan<float> src, Span<float> dst, float multiplier)
 {

@@ -1,23 +1,20 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 
-namespace Intra { namespace Container {
+// TODO: It is temporary until Core become required feature by this library
+#define INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+
+INTRA_BEGIN
+inline namespace Container {
 
 template<typename T> class Array;
 template<typename K, typename V> class LinearMap;
 template<typename Char> class GenericString;
 typedef GenericString<char> String;
-typedef GenericString<wchar> WString;
-typedef GenericString<dchar> DString;
+typedef GenericString<char16_t> WString;
+typedef GenericString<char32_t> DString;
 
 }
-
-using Container::Array;
-using Container::LinearMap;
-using Container::GenericString;
-using Container::String;
-using Container::WString;
-using Container::DString;
 
 }

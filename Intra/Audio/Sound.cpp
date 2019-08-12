@@ -7,10 +7,10 @@
 
 #include "Funal/ValueRef.h"
 
-#include "Range/Comparison/StartsWith.h"
-#include "Range/Search/Single.h"
+#include "Core/Range/Comparison/StartsWith.h"
+#include "Core/Range/Search/Single.h"
 
-#include "Cpp/Warnings.h"
+
 
 #include "IO/FileSystem.h"
 
@@ -33,7 +33,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using namespace Math;
 using namespace IO;
@@ -53,7 +54,7 @@ Sound::Sound(const AudioBuffer& dataBuffer)
 	mData = Shared<Data>::New(src);
 }
 
-Sound::Sound(Sound&& rhs): mData(Cpp::Move(rhs.mData)) {}
+Sound::Sound(Sound&& rhs): mData(Move(rhs.mData)) {}
 
 Sound::Sound(IAudioSource& src, ErrorStatus& status):
 	mData(Shared<Data>::New(src))
@@ -126,7 +127,7 @@ StreamedSound::StreamedSound(null_t) {}
 StreamedSound::StreamedSound(StreamedSound&&) = default;
 
 StreamedSound::StreamedSound(Unique<IAudioSource> src, size_t bufferSizeInSamples):
-	mData(Shared<Data>::New(Cpp::Move(src), bufferSizeInSamples)) {}
+	mData(Shared<Data>::New(Move(src), bufferSizeInSamples)) {}
 
 StreamedSound::~StreamedSound() {release();}
 
@@ -140,12 +141,12 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 #ifndef INTRA_NO_WAVE_LOADER
 	if(fileSignature.StartsWith("RIFF"))
-		source = new Sources::Wave(Funal::Value(Cpp::Move(fileMapping)), fileMapping);
+		source = new Sources::Wave(Funal::Value(Move(fileMapping)), fileMapping);
 	else
 #endif
 #if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileSignature.StartsWith("OggS"))
-		source = new Sources::Vorbis(Funal::Value(Cpp::Move(fileMapping)), fileMapping);
+		source = new Sources::Vorbis(Funal::Value(Move(fileMapping)), fileMapping);
 	else 
 #endif
 	{
@@ -153,7 +154,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, size_t bufSize, Error
 		return null;
 	}
 
-	return StreamedSound(Cpp::Move(source), bufSize);
+	return StreamedSound(Move(source), bufSize);
 }
 
 void StreamedSound::release()
@@ -203,7 +204,7 @@ void StreamedSound::UpdateAllExistingInstances()
 		{
 			auto ptr = snd->SharedThis();
 			if(!ptr || ptr->IsReleased()) continue; //Объект в процессе удаления, обновлять его не нужно.
-			soundsToUpdate.AddLast(Cpp::Move(ptr)); //Объект будет жить как минимум до завершения его обновления.
+			soundsToUpdate.AddLast(Move(ptr)); //Объект будет жить как минимум до завершения его обновления.
 		}
 	}
 

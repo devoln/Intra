@@ -1,18 +1,19 @@
-﻿#include "Cpp/PlatformDetect.h"
+﻿
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
-#include "Cpp/Warnings.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_IGNORE_WARNING(dollar-in-identifier-extension)
 
 #include <emscripten.h>
 
-#include "Cpp/Features.h"
+#include "Core/Core.h"
 #include "IO/Networking.h"
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 Array<byte> DownloadFile(StringView path)
 {

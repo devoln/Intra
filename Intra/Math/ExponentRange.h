@@ -1,13 +1,11 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-
-#include "Meta/Type.h"
-
+#include "Core/Core.h"
+#include "Core/Type.h"
 #include "Math/Math.h"
 
-namespace Intra { namespace Range {
+INTRA_BEGIN
+inline namespace Math {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -15,23 +13,16 @@ template<typename T> struct ExponentRange
 {
 	enum: bool {RangeIsInfinite = true};
 
-	ExponentRange(T scale=0, double step=0, T k=0):
+	constexpr ExponentRange(T scale=0, double step=0, T k=0):
 		mEkSr(T(Math::Exp(-k*step))), mExponent(scale/mEkSr) {}
 
-	forceinline bool Empty() const {return false;}
-	forceinline void PopFirst() {mExponent *= mEkSr;}
-	forceinline T First() const {return mExponent;}
+	INTRA_NODISCARD constexpr forceinline bool Empty() const {return false;}
+	INTRA_CONSTEXPR2 forceinline void PopFirst() {mExponent *= mEkSr;}
+	INTRA_NODISCARD constexpr forceinline T First() const {return mExponent;}
 
 private:
 	T mEkSr, mExponent;
 };
 
-INTRA_WARNING_POP
-
 }
-
-namespace Math {
-using Range::ExponentRange;
-}
-
-}
+INTRA_END

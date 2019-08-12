@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
+
 
 #include "Utils/Shared.h"
 
-#include "Range/Mutation/Copy.h"
-#include "Range/Stream/InputStreamMixin.h"
-#include "Range/Stream/Parse.h"
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Stream/InputStreamMixin.h"
+#include "Core/Range/Stream/Parse.h"
 
 #include "Container/Sequential/Array.h"
 
@@ -15,7 +15,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 using Range::operator>>;
 
@@ -27,14 +28,14 @@ public:
 	forceinline FileReader(null_t=null): mOffset(0), mSize(0) {}
 
 	forceinline FileReader(Shared<OsFile> file, size_t bufferSize = 4096):
-		mFile(Cpp::Move(file)), mOffset(0), mSize(mFile == null? 0: mFile->Size())
+		mFile(Move(file)), mOffset(0), mSize(mFile == null? 0: mFile->Size())
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
 		loadBuffer(Error::Skip());
 	}
 
 	forceinline FileReader(const FileReader& rhs) {operator=(rhs);}
-	forceinline FileReader(FileReader&& rhs) {operator=(Cpp::Move(rhs));}
+	forceinline FileReader(FileReader&& rhs) {operator=(Move(rhs));}
 
 	FileReader& operator=(const FileReader& rhs)
 	{
@@ -49,10 +50,10 @@ public:
 
 	FileReader& operator=(FileReader&& rhs)
 	{
-		mFile = Cpp::Move(rhs.mFile);
+		mFile = Move(rhs.mFile);
 		mOffset = rhs.mOffset;
 		mSize = rhs.mSize;
-		mBuffer = Cpp::Move(rhs.mBuffer);
+		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
 		rhs.mBufferRest = null;
 		return *this;
@@ -72,7 +73,7 @@ public:
 	
 	forceinline bool Empty() const noexcept {return mBufferRest.Empty();}
 
-	forceinline size_t Length() const {return size_t(mSize - PositionInFile());}
+	forceinline index_t Length() const {return size_t(mSize - PositionInFile());}
 
 	forceinline bool operator==(null_t) const noexcept {return Empty();}
 	forceinline bool operator!=(null_t) const noexcept {return !Empty();}
@@ -116,9 +117,9 @@ public:
 		return totalBytesRead;
 	}
 
-	template<typename AR> Meta::EnableIf<
-		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
-		!Meta::IsConst<AR>::_,
+	template<typename AR> Requires<
+		CArrayRangeOfExactly<AR, char>::_ &&
+		!CConst<AR>::_,
 	size_t> ReadWrite(AR& dst, ErrorStatus& status = Error::Skip())
 	{
 		Span<char> dstArr = {dst.Data(), dst.Length()};
@@ -127,7 +128,7 @@ public:
 		return result;
 	}
 
-	forceinline ulong64 PositionInFile() const {return mOffset - mBufferRest.Length();}
+	forceinline uint64 PositionInFile() const {return mOffset - mBufferRest.Length();}
 	forceinline CSpan<char> BufferedData() const {return mBufferRest;}
 
 	forceinline const Shared<OsFile>& File() const {return mFile;}
@@ -141,7 +142,7 @@ private:
 	}
 
 	Shared<OsFile> mFile;
-	ulong64 mOffset, mSize;
+	uint64 mOffset, mSize;
 	Array<char> mBuffer;
 	Span<char> mBufferRest;
 };

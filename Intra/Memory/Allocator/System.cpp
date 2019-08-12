@@ -1,9 +1,7 @@
 ﻿#include "Memory/Allocator/System.h"
 #include "Memory/VirtualMemory.h"
-#include "Cpp/Warnings.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
 #include <stdlib.h>
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
@@ -19,10 +17,12 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <Windows.h>
 
 #endif
+INTRA_WARNING_POP
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
-AnyPtr MallocAllocator::Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
+AnyPtr MallocAllocator::Allocate(size_t bytes, SourceInfo sourceInfo)
 {
 	(void)sourceInfo;
 	return malloc(bytes);
@@ -32,7 +32,7 @@ void MallocAllocator::Free(void* ptr) {free(ptr);}
 
 #if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
 
-AnyPtr SystemHeapAllocator::Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo)
+AnyPtr SystemHeapAllocator::Allocate(size_t bytes, SourceInfo sourceInfo)
 {
 	(void)sourceInfo;
 	return HeapAlloc(GetProcessHeap(), 0, bytes);
@@ -46,7 +46,7 @@ void SystemHeapAllocator::Free(void* ptr)
 #endif
 
 
-AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+AnyPtr AlignedSystemHeapAllocator::Allocate(size_t& bytes, SourceInfo sourceInfo)
 {
 	(void)sourceInfo;
 #if(defined(INTRA_PLATFORM_IS_UNIX) && INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Android)
@@ -70,7 +70,7 @@ void AlignedSystemHeapAllocator::Free(void* ptr, size_t size)
 #endif
 }
 
-AnyPtr PageAllocator::Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+AnyPtr PageAllocator::Allocate(size_t& bytes, SourceInfo sourceInfo)
 {
 	(void)sourceInfo;
 	size_t pageSize = VirtualMemoryPageSize();
@@ -86,6 +86,5 @@ void PageAllocator::Free(void* ptr, size_t size)
 
 size_t PageAllocator::GetAlignment() const {return VirtualMemoryPageSize();}
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

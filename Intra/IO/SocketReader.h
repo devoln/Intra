@@ -2,20 +2,21 @@
 
 #include "Socket.h"
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Utils/Span.h"
 
-#include "Range/Mutation/Copy.h"
-#include "Range/Stream/Parse.h"
-#include "Range/Stream/InputStreamMixin.h"
+#include "Core/Range/Span.h"
+
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Stream/Parse.h"
+#include "Core/Range/Stream/InputStreamMixin.h"
 
 #include "Container/Sequential/Array.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 //! Буферизованный потока ввода для чтения из сокета
 class SocketReader: public Range::InputStreamMixin<SocketReader, char>
@@ -24,7 +25,7 @@ public:
 	forceinline SocketReader(null_t=null) {}
 
 	forceinline SocketReader(StreamSocket&& socket, size_t bufferSize=4096):
-		mSocket(Cpp::Move(socket))
+		mSocket(Move(socket))
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
 		loadBuffer();
@@ -33,12 +34,12 @@ public:
 	SocketReader(const SocketReader& rhs) = delete;
 	SocketReader& operator=(const SocketReader& rhs) = delete;
 
-	forceinline SocketReader(SocketReader&& rhs) {operator=(Cpp::Move(rhs));}
+	forceinline SocketReader(SocketReader&& rhs) {operator=(Move(rhs));}
 
 	SocketReader& operator=(SocketReader&& rhs)
 	{
-		mSocket = Cpp::Move(rhs.mSocket);
-		mBuffer = Cpp::Move(rhs.mBuffer);
+		mSocket = Move(rhs.mSocket);
+		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
 		rhs.mBufferRest = null;
 		return *this;
@@ -95,9 +96,9 @@ public:
 		return totalBytesRead;
 	}
 
-	template<typename AR> Meta::EnableIf<
-		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
-		!Meta::IsConst<AR>::_,
+	template<typename AR> Requires<
+		CArrayRangeOfExactly<AR, char>::_ &&
+		!CConst<AR>::_,
 	size_t> ReadWrite(AR& dst)
 	{
 		Span<char> dstArr(dst.Data(), dst.Length());

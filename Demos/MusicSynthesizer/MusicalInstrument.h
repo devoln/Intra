@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Utils/Span.h"
+
+#include "Core/Range/Span.h"
 #include "Container/Sequential/Array.h"
 
 #include "Types.h"

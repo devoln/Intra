@@ -1,9 +1,10 @@
 #pragma once
 
 #include "Data/Reflection.h"
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

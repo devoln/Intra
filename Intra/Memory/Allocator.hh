@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/PlacementNew.h"
-#include "Utils/Span.h"
-#include "Utils/StringView.h"
-#include "Range/Mutation/Copy.h"
-#include "Range/Stream/ToString.h"
+
+#include "Core/Core.h"
+#include "Core/PlacementNew.h"
+#include "Core/Range/Span.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Stream/ToString.h"
 
 #include "Allocator/System.h"
 #include "Allocator/Global.h"
@@ -17,7 +17,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 struct Buffer
 {
@@ -64,13 +65,13 @@ struct BufferAllocator
 		return 32u*(category+1u);
 	}
 
-	Buffer* AllocateBuffer(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+	Buffer* AllocateBuffer(size_t& bytes, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		allocationCount++;
 		size_t totalBytes = bytes+sizeof(Buffer);
 		const ushort sizeCategory = GetBufferSizeCategory(totalBytes);
 		Buffer* result;
-		if(sizeCategory < Concepts::LengthOf(free_lists))
+		if(sizeCategory < Core::LengthOf(free_lists))
 		{
 			totalBytes = GetBufferSizeFromCategory(sizeCategory);
 			bytes = totalBytes-sizeof(Buffer);
@@ -93,7 +94,7 @@ struct BufferAllocator
 		if(buf==null) return;
 		allocationCount--;
 		const ushort sizeCategory = GetBufferSizeCategory(buf->size+sizeof(Buffer));
-		if(sizeCategory < Concepts::LengthOf(free_lists) && space_in_lists[sizeCategory]>0)
+		if(sizeCategory < Core::LengthOf(free_lists) && space_in_lists[sizeCategory]>0)
 		{
 			free_lists[sizeCategory].Free(buf);
 			space_in_lists[sizeCategory]--;
@@ -105,7 +106,7 @@ struct BufferAllocator
 		}
 	}
 
-	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		Buffer* result = AllocateBuffer(bytes, sourceInfo);
 		return result->Data();
@@ -146,7 +147,7 @@ struct BufferAllocator
 private:
 	void init_space_in_lists()
 	{
-		for(size_t i = 0; i < Concepts::LengthOf(space_in_lists); i++)
+		for(size_t i = 0; i < Core::LengthOf(space_in_lists); i++)
 			space_in_lists[i] = ushort(1024/(i+1));
 	}
 

@@ -1,27 +1,34 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
+#include "Core/Core.h"
 #include "Math/FixedPoint.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 typedef Fixed32 MidiTime;
 
 struct DeviceState
 {
-	DeviceState(short headerTimeFormat);
+	DeviceState(short headerTimeFormat):
+		TickDuration(headerTimeFormat < 0?
+			MidiTime(100) / (framesPer100Seconds(headerTimeFormat >> 8) * (headerTimeFormat & 0xFF)):
+			MidiTime(1) / MidiTime(2*headerTimeFormat)
+		),
+		HeaderTimeFormat(headerTimeFormat) {}
 
-	byte InstrumentIds[16];
-	byte Volumes[16];
-	byte Pans[16];
-	MidiTime TickDuration = 0;
+	byte InstrumentIds[16]{};
+	byte Volumes[16]{127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127};
+	byte Pans[16]{64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64};
+	MidiTime TickDuration{};
 	short HeaderTimeFormat = 0;
+
+private:
+	static int framesPer100Seconds(int headerTimeFormatMSB)
+	{
+		return headerTimeFormatMSB == 29? 2997: 100*headerTimeFormatMSB;
+	}
 };
 
-}}}
-
-INTRA_WARNING_POP
+}}
+INTRA_END

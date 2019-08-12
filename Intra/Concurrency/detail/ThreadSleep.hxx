@@ -24,11 +24,12 @@
 #include <unistd.h>
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
-static bool ThisThreadSleep(ulong64 milliseconds)
+static bool ThisThreadSleep(uint64 milliseconds)
 {
 	if(milliseconds == 0)
 	{
@@ -47,7 +48,7 @@ static bool ThisThreadSleep(ulong64 milliseconds)
 
 #else
 
-static bool ThisThreadSleep(ulong64 milliseconds)
+static bool ThisThreadSleep(uint64 milliseconds)
 {
 	while(milliseconds / 1000 >= 0xFFFFFFFF)
 	{

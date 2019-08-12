@@ -1,20 +1,20 @@
 ﻿#pragma once
 
-#include "Meta/Type.h"
-#include "Meta/Tuple.h"
-#include "Meta/Pair.h"
-#include "Meta/EachField.h"
+#include "Core/Type.h"
+#include "Core/Tuple.h"
+#include "Core/Pair.h"
+#include "Core/EachField.h"
 
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 #include "Utils/AsciiSet.h"
 
-#include "Concepts/Container.h"
+#include "Core/Container.h"
 
-#include "Range/Search/RecursiveBlock.h"
-#include "Range/Comparison/EndsWith.h"
-#include "Range/Decorators/TakeUntil.h"
-#include "Range/Decorators/TakeUntilAny.h"
-#include "Range/Stream/Parse.h"
+#include "Core/Range/Search/RecursiveBlock.h"
+#include "Core/Range/Comparison/EndsWith.h"
+#include "Core/Range/TakeUntil.h"
+#include "Core/Range/TakeUntilAny.h"
+#include "Core/Range/Stream/Parse.h"
 
 #include "Data/Reflection.h"
 #include "LanguageParams.h"
@@ -24,7 +24,8 @@
 
 
 
-namespace Intra { namespace Data {
+INTRA_BEGIN
+namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -80,7 +81,7 @@ template<typename I> struct GenericTextDeserializer
 		});
 		if(counter==0)
 		{
-			Input = Cpp::Move(inputCopy);
+			Input = Move(inputCopy);
 			Range::PopFirstExactly(Input, charsRead-Lang.ArrayClose.Length());
 			return true;
 		}
@@ -303,7 +304,7 @@ template<typename I> struct GenericTextDeserializer
 		GenericTextDeserializerStructVisitor<I> visitor{this, fieldNames, false, TextSerializerParams::TypeFlags_Struct};
 		if(fieldNames.Empty())
 		{
-			Meta::ForEachField(dst, visitor);
+			Core::ForEachField(dst, visitor);
 			StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
 			return;
 		}
@@ -358,7 +359,7 @@ template<typename I> struct GenericTextDeserializer
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
 		GenericTextDeserializerStructVisitor<I> visitor{this, null, false, TextSerializerParams::TypeFlags_Tuple};
-		Meta::ForEachField(dst, visitor);
+		Core::ForEachField(dst, visitor);
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 	}
 
@@ -407,7 +408,7 @@ template<typename I> struct GenericTextDeserializer
 	//! Десериализовать элементы в output-диапазон
 	template<typename R> void DeserializeRange(R& outputRange)
 	{
-		typedef Concepts::ValueTypeOf<R> T;
+		typedef TValueTypeOf<R> T;
 
 		ConsumeArrayOpen();
 
@@ -432,8 +433,8 @@ template<typename I> struct GenericTextDeserializer
 
 
 	//! Десериализация вещественных чисел
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsFloatType<T>::_,
+	template<typename T> forceinline Requires<
+		CFloatingPoint<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
 		v = Range::ParseAdvance<T>(Input, Lang.DecimalSeparator);
@@ -441,8 +442,8 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	//! Десериализация целых чисел
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::IsIntegralType<T>::_,
+	template<typename T> forceinline Requires<
+		CIntegral<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
 		Input >> v;
@@ -466,8 +467,8 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	//! Десериализация кортежей
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::HasForEachField<T>::_ &&
+	template<typename T> forceinline Requires<
+		CHasForEachField<T>::_ &&
 		!HasReflectionFieldNamesMethod<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
@@ -476,8 +477,8 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	//! Десериализация структур
-	template<typename T> forceinline Meta::EnableIf<
-		Meta::HasForEachField<T>::_ &&
+	template<typename T> forceinline Requires<
+		CHasForEachField<T>::_ &&
 		HasReflectionFieldNamesMethod<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
@@ -485,9 +486,9 @@ template<typename I> struct GenericTextDeserializer
 		return *this;
 	}
 
-	template<typename C> Meta::EnableIf<
-		Concepts::IsAsCharRange<C>::_ &&
-		Concepts::Has_resize<C>::_,
+	template<typename C> Requires<
+		CAsCharRange<C>::_ &&
+		CHas_resize<C>::_,
 	GenericTextDeserializer&> operator>>(C& dst)
 	{
 		if(!Expect(Lang.StringQuote)) return *this;
@@ -504,7 +505,7 @@ template<typename I> struct GenericTextDeserializer
 		const KeyValuePair<StringView, StringView> replacements[] = {{"\\n", "\n"}, {"\\r", "\r"}, {"\\t", "\t"}};
 		Range::CountRange<char> counter;
 		Range::MultiReplaceToAdvance(escapedResult, counter, replacements);
-		Concepts::SetCountTryNotInit(dst, counter.Counter);
+		Core::SetCountTryNotInit(dst, counter.Counter);
 		auto strData = RangeOf(dst);
 		Range::MultiReplaceToAdvance(escapedResult, strData, replacements);
 
@@ -512,10 +513,10 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	//! Десериализовать массив
-	template<typename C> Meta::EnableIf<
-		Concepts::Has_clear<C>::_ &&
-		Concepts::Has_push_back<C>::_ &&
-		!Meta::IsCharType<Concepts::ValueTypeOf<C>>::_,
+	template<typename C> Requires<
+		CHas_clear<C>::_ &&
+		CHas_push_back<C>::_ &&
+		!CChar<TValueTypeOf<C>>::_,
 	GenericTextDeserializer&> operator>>(C& container)
 	{
 		container.clear();
@@ -525,8 +526,8 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	//! Десериализовать диапазон
-	template<typename R> forceinline Meta::EnableIf<
-		Concepts::IsOutputRange<R>::_,
+	template<typename R> forceinline Requires<
+		COutputRange<R>::_,
 	GenericTextDeserializer&> operator>>(R&& range)
 	{
 		DeserializeRange(range);
@@ -543,8 +544,8 @@ template<typename I> struct GenericTextDeserializer
 
 
 	//! Десериализовать любое значение
-	template<typename T> forceinline Meta::EnableIf<
-		!Meta::IsConst<T>::_,
+	template<typename T> forceinline Requires<
+		!CConst<T>::_,
 	GenericTextDeserializer&> operator()(T&& value) {return *this >> value;}
 
 	//! Десериализовать любое значение
@@ -590,10 +591,10 @@ template<typename I> template<typename T> GenericTextDeserializerStructVisitor<I
 	return *this;
 }
 
-template<typename I> forceinline Meta::EnableIf<
-	Concepts::IsAsForwardRange<I>::_,
-GenericTextDeserializer<Meta::RemoveConstRef<I>>> TextDeserializer(const LanguageParams& language, I&& input)
-{return {language, Range::Forward<I>(input)};}
+template<typename I> forceinline Requires<
+	CAsForwardRange<I>::_,
+GenericTextDeserializer<TRemoveConstRef<I>>> TextDeserializer(const LanguageParams& language, I&& input)
+{return {language, ForwardAsRange<I>(input)};}
 
 INTRA_WARNING_POP
 

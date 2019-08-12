@@ -10,15 +10,17 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
+//! Synchronization primitive useful for waiting for some condition.
 class SeparateCondVar
 {
 private:
 public:
 #if(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_Cpp11)
-	enum {DATA_SIZE = 48}; //TODO: узнать точный размер std::condition_variable на разных платформах или хотя бы максимальный
+	enum {DATA_SIZE = 48}; //TODO: find exact size of std::condition_variable on different platforms, or at least maximum size
 #elif(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_WinAPI)
 #ifdef INTRA_DROP_XP_SUPPORT
 	enum {DATA_SIZE = sizeof(void*)};
@@ -28,11 +30,11 @@ public:
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
 	enum {DATA_SIZE = 48};
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS)
-	enum {DATA_SIZE = 48}; //TODO: не проверено
+	enum {DATA_SIZE = 48}; //TODO: not tested
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
-	enum {DATA_SIZE = 48}; //TODO: не проверено
+	enum {DATA_SIZE = 48}; //TODO: not tested
 #else
-	enum {DATA_SIZE = 48}; //TODO: не проверено
+	enum {DATA_SIZE = 48}; //TODO: not tested
 #endif
 
 	union
@@ -49,19 +51,19 @@ public:
 	SeparateCondVar();
 	~SeparateCondVar();
 
-	//! Указатель на реализацию.
-	//! CONDITION_VARIABLE* для WinAPI или Cpp11 реализации на Windows Vista+
-	//! null на Windows XP для WinAPI реализации
-	//! pthread_cond_t* на остальных платформах.
+	//! Pointer to the implementation.
+	//! CONDITION_VARIABLE* for WinAPI or Cpp11 implementations on Windows Vista+
+	//! null on Windows XP for WinAPI implementation
+	//! pthread_cond_t* for other platforms.
 	AnyPtr NativeHandle();
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! Before calling this method the mutex must be acquired.
+	//! The mutex is free while waiting.
+	//! When Wait returns the mutex becomes acquired again.
+	//! @return true, if pred became true.
 	template<typename P> bool Wait(Mutex& mutex, P pred)
 	{
 		bool waitCondition;
@@ -88,29 +90,29 @@ public:
 		return waitCondition;
 	}
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! Before calling this method the lock must be acquired.
+	//! The lock is free while waiting.
+	//! When Wait returns lock will become acquired again.
+	//! @return true, if pred became true.
 	template<typename L, typename P> bool Wait(Lock<L>& lock, P pred)
 	{
 		return Wait(lock.Primitive(), pred);
 	}
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! 3) Истечение таймаута (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
-	template<typename P> bool WaitMs(Mutex& mutex, ulong64 timeout, P pred)
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! 3) timeout expires (in this case returns false)
+	//! Before calling this method the mutex must be acquired.
+	//! The mutex is free while waiting.
+	//! When WaitMs returns mutex will become acquired again.
+	//! @return true, if pred became true.
+	template<typename P> bool WaitMs(Mutex& mutex, uint64 timeout, P pred)
 	{
-		const ulong64 absTimeMs = System::DateTime::AbsTimeMs() + timeout;
+		const uint64 absTimeMs = System::DateTime::AbsTimeMs() + timeout;
 		bool waitCondition;
 #if !defined(INTRA_THREAD_NO_FULL_INTERRUPT) || defined(INTRA_DEBUG)
 		ThisThread.onWait(this, &mutex);
@@ -133,48 +135,51 @@ public:
 		return waitCondition;
 	}
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! 3) Истечение таймаута (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
-	template<typename L, typename P> bool WaitMs(Lock<L>& lock, ulong64 timeout, P pred)
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! 3) timeout expires (in this case returns false)
+	//! Before calling this method the lock must be acquired.
+	//! The lock is free while waiting.
+	//! When Wait returns lock will become acquired again.
+	//! @return true, if pred became true.
+	template<typename L, typename P> bool WaitMs(Lock<L>& lock, uint64 timeout, P pred)
 	{
 		return WaitMs(lock.Primitive(), timeout, pred);
 	}
 
-	//! Разбудить один из потоков, ожидающих на этом экземпляре SeparateCondVar.
-	//! Способ выбора пробуждаемого потока не определён и зависит от реализации.
+	//! Wake up one of threads waiting on this SeparateCondVar to check pred.
+	//! The way of selecting a thread to be waked is undefined and depends on implementation.
 	void Notify();
 
-	//! Разбудить все потоки, ожидающие на текущем экземпляре SeparateCondVar.
+	//! Wake up all threads waiting on this SeparateCondVar to check pred.
 	void NotifyAll();
 
 private:
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток (вернёт true).
-	//! 2) Ложное пробуждение (вернёт true).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время выполнения этой функции мьютекс будет свободным.
-	//! После вызова мьютекс снова станет захвачен.
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread.
+	//! 2) Call to Interrupt.
+	//! 3) Spurious wake up.
+	//! Before calling this method the mutex must be acquired.
+	//! The mutex is free while waiting.
+	//! When wait returns mutex will become acquired again.
 	bool wait(Mutex& lock);
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток (вернёт true).
-	//! 2) Ложное пробуждение (вернёт true).
-	//! 3) Истечение таймаута (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время выполнения этой функции мьютекс будет свободным.
-	//! После вызова мьютекс снова станет захвачен.
-	bool waitUntil(Mutex& lock, ulong64 absTimeMs);
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread.
+	//! 2) Call to Interrupt.
+	//! 3) Spurious wake up.
+	//! 4) absTimeMs expires.
+	//! Before calling this method the mutex must be acquired.
+	//! The mutex is free while waiting.
+	//! When wait returns mutex will become acquired again.
+	bool waitUntil(Mutex& lock, uint64 absTimeMs);
 
 	SeparateCondVar(const SeparateCondVar&) = delete;
 	SeparateCondVar& operator=(const SeparateCondVar&) = delete;
 };
 
+//! Combines conditional variable and mutex into one class.
 class CondVar: private Mutex
 {
 	template<typename T> friend class Lock;
@@ -186,38 +191,33 @@ class CondVar: private Mutex
 public:
 	CondVar() {}
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! @return true, if pred became true.
 	template<typename P> bool Wait(P pred)
 	{
 		return mCondVar.Wait(*this, pred);
 	}
 
-	//! Ждёт, пока не произойдёт одно из следующих событий:
-	//! 1) NotifyAll или Notify, при котором будет выбран текущий поток, и при этом выполнится условие pred (вернёт true).
-	//! 2) Прерывание текущего потока через Interrupt (вернёт false).
-	//! 3) Истечение таймаута (вернёт false).
-	//! До вызова функции мьютекс должен быть захвачен.
-	//! Во время ожидания мьютекс свободен.
-	//! После вызова мьютекс снова станет захвачен.
-	//! @return Возвращает true, если условие pred в результате ожидания было выполнено.
-	template<typename P> bool WaitMs(ulong64 timeout, P pred)
+	//! Wait for one of the following events:
+	//! 1) Call to NotifyAll or Notify wakes up the current thread, and pred is true.
+	//! 2) Call to Interrupt (in this case returns false).
+	//! 3) timeout expires (in this case returns false).
+	//! @return true, if pred became true.
+	template<typename P> bool WaitMs(uint64 timeout, P pred)
 	{
 		return mCondVar.WaitMs(*this, timeout, pred);
 	}
 
-	//! Разбудить один из потоков, ожидающих на этом экземпляре CondVar.
-	//! Способ выбора пробуждаемого потока не определён и зависит от реализации.
+	//! Wake up one of threads waiting on this SeparateCondVar to check pred.
+	//! The way of selecting a thread to be waked is undefined and depends on implementation.
 	void Notify() {mCondVar.Notify();}
 
-	//! Разбудить все потоки, ожидающие на текущем экземпляре CondVar.
+	//! Wake up all threads waiting on this SeparateCondVar to check pred.
 	void NotifyAll() {mCondVar.NotifyAll();}
 
+	//! Get internal mutex
 	forceinline Mutex& GetMutex() {return *this;}
 	forceinline SeparateCondVar& GetSeparateCondVar() {return mCondVar;}
 };

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "Math/Math.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 inline float LinearSample(CSpan<float> arr, float index)
 {
@@ -25,4 +26,5 @@ Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src);
 //! @return Поддиапазон dst, в котором содержится результирующий сигнал.
 Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src);
 
-}}
+}
+INTRA_END

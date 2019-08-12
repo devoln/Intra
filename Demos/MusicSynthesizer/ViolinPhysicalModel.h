@@ -1,11 +1,12 @@
 ﻿#pragma once
 
-#include <Cpp/Warnings.h>
+#include <Core/Warnings.h>
 #include <Math/SineRange.h>
 #include <Utils/FixedArray.h>
 #include <Audio/MusicNote.h>
 
-namespace Intra { namespace Audio { namespace Synth { namespace Generators {
+INTRA_BEGIN
+namespace Audio { namespace Synth { namespace Generators {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

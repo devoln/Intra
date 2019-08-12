@@ -1,6 +1,6 @@
 ﻿#include "Memory/VirtualMemory.h"
-#include "Meta/Type.h"
-#include "Utils/Debug.h"
+#include "Core/Type.h"
+#include "Core/Assert.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -16,7 +16,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <Windows.h>
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 static uint translate_access(Access access)
 {
@@ -63,7 +64,8 @@ size_t VirtualMemoryPageSize()
 #include <unistd.h>
 #include <sys/mman.h>
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 static int translate_access(Access access)
 {
@@ -106,7 +108,8 @@ size_t VirtualMemoryPageSize()
 #else
 #include <stdlib.h>
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 //TODO: сделать большое выравнивание
 AnyPtr VirtualAlloc(size_t bytes, Access access)
 {(void)bytes; (void)commit; (void)access; return C::malloc(bytes);}

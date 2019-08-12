@@ -1,9 +1,10 @@
 ﻿#include "Test/PerfSummary.h"
 #include "IO/FormattedWriter.h"
-#include "Cpp/Warnings.h"
-#include "Utils/Debug.h"
 
-namespace Intra {
+#include "Core/Assert.h"
+
+INTRA_BEGIN
+
 
 using namespace Range;
 using namespace IO;

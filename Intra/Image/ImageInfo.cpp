@@ -1,15 +1,16 @@
 ﻿#include "Image/ImageInfo.h"
 
-#include "Cpp/Warnings.h"
 
-#include "Utils/StringView.h"
+
+#include "Core/Range/StringView.h"
 
 #include "Container/Sequential/String.h"
 
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

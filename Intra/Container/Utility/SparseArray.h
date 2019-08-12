@@ -2,11 +2,12 @@
 
 #include "SparseRange.h"
 #include "Memory/Allocator.hh"
-#include "Cpp/Warnings.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+namespace Container {
 
 //! Разреженный массив
 template<typename T, typename Index = size_t> class SparseArray
@@ -31,7 +32,7 @@ public:
 	forceinline T& Add(T&& val, Index* oIndex=null)
 	{
 		check_space();
-		return mData.Add(Cpp::Move(val), oIndex);
+		return mData.Add(Move(val), oIndex);
 	}
 
 	//! Добавить копию элемента в массив.
@@ -49,7 +50,7 @@ public:
 	template<typename... Args> forceinline T& Emplace(Args&&... args, Index* oIndex = null)
 	{
 		check_space();
-		mData.Emplace(Cpp::Forward<Args>(args)..., oIndex);
+		mData.Emplace(Forward<Args>(args)..., oIndex);
 	}
 
 	//! Удалить из массива элемент с индексом index
@@ -93,7 +94,7 @@ private:
 		Range::SparseRange<T, Index> newData(range);
 		mData.MoveTo(newData);
 		Memory::FreeRangeUninitialized(Memory::GlobalHeap, mData.GetInternalDataBuffer());
-		mData = Cpp::Move(newData);
+		mData = Move(newData);
 	}
 
 	SparseArray(const SparseArray&) = delete;

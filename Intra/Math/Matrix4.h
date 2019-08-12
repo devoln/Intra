@@ -1,18 +1,15 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Intrinsics.h"
+#include "Core/Core.h"
 
-#include "Meta/Type.h"
+#include "Core/Type.h"
 
 #include "Math/Math.h"
 #include "Vector3.h"
 #include "Vector4.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-namespace Intra { namespace Math {
+INTRA_BEGIN
+inline namespace Math {
 
 template<typename T> struct Matrix3;
 
@@ -412,7 +409,7 @@ template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
 	for(int i=3; i>0; i--)
 	{
 		if(Abs(r[i][0]) <= Abs(r[i-1][0])) continue;
-		Cpp::Swap(r[i], r[i-1]);
+		Core::Swap(r[i], r[i-1]);
 	}
 	if(r[0][0]==0) return m;
 
@@ -423,8 +420,8 @@ template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
 		for(int i=1; i<=3; i++)
 			r[i][j] -= mn[i]*r[0][j];
 
-	if(Abs(r[3][1]) > Abs(r[2][1])) Cpp::Swap(r[3], r[2]);
-	if(Abs(r[2][1]) > Abs(r[1][1])) Cpp::Swap(r[2], r[1]);
+	if(Abs(r[3][1]) > Abs(r[2][1])) Core::Swap(r[3], r[2]);
+	if(Abs(r[2][1]) > Abs(r[1][1])) Core::Swap(r[2], r[1]);
 
 	if(r[1][1] == 0) return m;
 
@@ -439,7 +436,7 @@ template<typename T> Matrix4<T> Inverse(const Matrix4<T>& m)
 		r[2][j] -= mn[2]*r[1][j];
 		r[3][j] -= mn[3]*r[1][j];
 	}
-	if(Abs(r[3][2]) > Abs(r[2][2])) Cpp::Swap(r[3], r[2]);
+	if(Abs(r[3][2]) > Abs(r[2][2])) Core::Swap(r[3], r[2]);
 
 	if(r[2][2] == 0) return m;
 
@@ -488,34 +485,5 @@ typedef Matrix4<byte> UBMat4;
 typedef Matrix4<sbyte> SBMat4;
 typedef Matrix4<bool> BMat4;
 
-namespace GLSL {
-typedef Matrix4<float> mat4;
-typedef Matrix4<double> dmat4;
-typedef Matrix4<uint> umat4;
-typedef Matrix4<int> imat4;
-typedef Matrix4<bool> bmat4;
-
-typedef Matrix4<float> mat4x4;
-typedef Matrix4<double> dmat4x4;
-typedef Matrix4<uint> umat4x4;
-typedef Matrix4<int> imat4x4;
-typedef Matrix4<bool> bmat4x4;
-
-template<typename T> constexpr forceinline Matrix4<T> transpose(const Matrix4<T>& m) {return Transpose(m);}
-template<typename T> forceinline Matrix4<T> inverse(const Matrix4<T>& m) {return Inverse(m);}
 }
-
-namespace HLSL {
-typedef Matrix4<float> float4x4;
-typedef Matrix4<double> double4x4;
-typedef Matrix4<uint> uint4x4;
-typedef Matrix4<int> int4x4;
-typedef Matrix4<bool> bool4x4;
-
-using GLSL::transpose;
-using GLSL::inverse;
-}
-
-INTRA_WARNING_POP
-
-}}
+INTRA_END

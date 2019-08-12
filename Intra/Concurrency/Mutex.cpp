@@ -1,8 +1,8 @@
 #include "Mutex.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Runtime.h"
+
+
+#include "Core/Runtime.h"
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
 
@@ -22,7 +22,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 const int Mutex::DataSize = Mutex::DATA_SIZE;
 const int Mutex::ImplementationType = INTRA_LIBRARY_MUTEX;
 }}

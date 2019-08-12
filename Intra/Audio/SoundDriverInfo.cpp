@@ -1,22 +1,23 @@
 #include "SoundDriverInfo.h"
-#include "Cpp/PlatformDetect.h"
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows && defined(INTRA_DROP_XP_SUPPORT))
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #ifdef _MSC_VER
-#pragma warning(disable: 4668)
+#pragma warning(disable: 4668) //'symbol' is not defined as a preprocessor macro, replacing with '0'
 #endif
 
 #include <initguid.h>
 #include <Mmdeviceapi.h>
+INTRA_WARNING_POP
+
 #endif
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+inline namespace Audio {
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows && defined(INTRA_DROP_XP_SUPPORT))
-static SoundDeviceInfo Get(bool* oSupported)
+SoundDeviceInfo SoundDeviceInfo::Get(bool* oSupported)
 {
 	SoundDeviceInfo result;
 
@@ -64,6 +65,5 @@ SoundDeviceInfo Get(bool* oSupported)
 
 #endif
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

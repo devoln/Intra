@@ -1,7 +1,7 @@
 #include "Concurrency/Mutex.h"
 #include "Concurrency/Thread.h"
 
-#include "Utils/Debug.h"
+#include "Core/Assert.h"
 #include "Container/Sequential/String.h"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -19,7 +19,8 @@
 #pragma warning(pop)
 #endif
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 Mutex::Mutex()
 {
@@ -45,17 +46,5 @@ void Mutex::Unlock()
 	INTRA_ASSERT1(PCRITICAL_SECTION(mData)->RecursionCount == 1, ThisThread.Name());
 	LeaveCriticalSection(PCRITICAL_SECTION(mData));
 }
-
-
-RecursiveMutex::RecursiveMutex()
-{
-	static_assert(sizeof(mData) >= sizeof(CRITICAL_SECTION), "Invalid DATA_SIZE in Mutex.h!");
-	(void)InitializeCriticalSectionAndSpinCount(new(mData) CRITICAL_SECTION, 20);
-}
-
-RecursiveMutex::~RecursiveMutex() {DeleteCriticalSection(PCRITICAL_SECTION(mData));}
-void RecursiveMutex::Lock() {EnterCriticalSection(PCRITICAL_SECTION(mData));}
-bool RecursiveMutex::TryLock() {return TryEnterCriticalSection(PCRITICAL_SECTION(mData)) != 0;}
-void RecursiveMutex::Unlock() {LeaveCriticalSection(PCRITICAL_SECTION(mData));}
 
 }}

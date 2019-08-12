@@ -11,7 +11,7 @@
 
 #if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 
-#include "Range/ForEach.h"
+#include "Core/Range/ForEach.h"
 
 #include "System/Stopwatch.h"
 

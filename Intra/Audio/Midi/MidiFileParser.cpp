@@ -1,23 +1,23 @@
 #include "MidiFileParser.h"
 
-#include "Cpp/Endianess.h"
-#include "Cpp/Warnings.h"
+#include "Utils/Endianess.h"
 
-#include "Range/Stream/RawRead.h"
+#include "Core/Range/Stream/RawRead.h"
 
 #include "Container/Utility/OwningArrayRange.h"
 #include "Container/Associative/HashMap.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
-Range::RTake<InputStream&> MidiFileParser::NextTrackByteStreamUnsafe()
+RTake<InputStream&> MidiFileParser::NextTrackByteStreamUnsafe()
 {
 	if(mTrack == mHeaderTracks || mMidiStream.Empty())
 	{
 		mHeaderTracks = mTrack;
-		return Range::RTake<InputStream&>(mMidiStream, 0);
+		return RTake<InputStream&>(mMidiStream, 0);
 	}
 
 	char chunkType[4];
@@ -29,7 +29,7 @@ Range::RTake<InputStream&> MidiFileParser::NextTrackByteStreamUnsafe()
 		mMidiStream.PopFirstN(size);
 		mMidiStream = null;
 		if(mErrStatus) mErrStatus->Error("Unexpected MIDI file block: expected MTrk.", INTRA_SOURCE_INFO);
-		return Range::RTake<InputStream&>(mMidiStream, 0);
+		return RTake<InputStream&>(mMidiStream, 0);
 	}
 	mTrack++;
 	return Range::RTake<InputStream&>(mMidiStream, size);
@@ -47,7 +47,7 @@ InputStream MidiFileParser::NextTrackByteStream()
 	Array<char> arr;
 	arr.SetCountUninitialized(range.LengthLimit());
 	Range::ReadTo(range, arr);
-	return OwningArrayRange<char>(Cpp::Move(arr));
+	return OwningArrayRange<char>(Move(arr));
 }
 
 RawEventStream MidiFileParser::NextTrackRawEventStream()
@@ -57,7 +57,7 @@ TrackParser MidiFileParser::NextTrackParser()
 {return TrackParser(NextTrackRawEventStream());}
 
 MidiFileParser::MidiFileParser(InputStream stream, ErrorStatus& errStatus):
-	mMidiStream(Cpp::Move(stream)), mErrStatus(&errStatus)
+	mMidiStream(Move(stream)), mErrStatus(&errStatus)
 {
 	if(!StartsAdvanceWith(mMidiStream, "MThd"))
 	{
@@ -87,7 +87,7 @@ MidiFileParser::MidiFileParser(InputStream stream, ErrorStatus& errStatus):
 TrackCombiner MidiFileParser::CreateSingleOrderedMessageStream(
 	InputStream stream, ErrorStatus& status)
 {
-	MidiFileParser parser(Cpp::Move(stream), status);
+	MidiFileParser parser(Move(stream), status);
 	TrackCombiner result(parser.HeaderTimeFormat());
 	while(parser.TracksLeft() > 0) result.AddTrack(parser.NextTrackParser());
 	return result;
@@ -96,7 +96,7 @@ TrackCombiner MidiFileParser::CreateSingleOrderedMessageStream(
 
 MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 {
-	MidiFileParser parser(Cpp::Move(stream), status);
+	MidiFileParser parser(Move(stream), status);
 	Format = byte(parser.Type());
 
 	TrackCombiner combiner(parser.HeaderTimeFormat());
@@ -111,8 +111,8 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 		size_t MaxSimultaneousNotes = 0;
 		HashMap<ushort, bool> NoteMap;
 		bool ChannelIsUsed[16]{false};
-		StaticBitset<128>* UsedInstrumentsFlags;
-		StaticBitset<128>* UsedDrumInstrumentsFlags;
+		SBitset<128>* UsedInstrumentsFlags;
+		SBitset<128>* UsedDrumInstrumentsFlags;
 
 		void OnNoteOn(const NoteOn& noteOn) final
 		{
@@ -152,7 +152,7 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 	combiner.ProcessAllEvents(countingDevice);
 
 	NoteCount = countingDevice.NoteCount;
-	Duration = countingDevice.Time;
+	Duration = double(countingDevice.Time);
 	MaxSimultaneousNotes = countingDevice.MaxSimultaneousNotes;
 
 	ChannelsUsed = 0;

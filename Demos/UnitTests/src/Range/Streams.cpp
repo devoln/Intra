@@ -1,4 +1,4 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -8,9 +8,9 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.h"
 #include "IO/FormattedWriter.h"
-#include "Range/Stream.hh"
-#include "Range/Reduction.h"
-#include "Utils/Span.h"
+#include "Core/Range/Stream.hh"
+#include "Core/Range/Reduction.h"
+#include "Core/Range/Span.h"
 #include "Range.hh"
 #include "Random/FastUniform.h"
 #include "Container/Sequential/List.h"
@@ -32,8 +32,8 @@ void TestArrayRangeStreams(FormattedWriter& output)
 		"Парсим pi и прибавляем к нему 1: " <<
 		1.0f+Range::Parse<float>("3.1415926") << "\r\n" <<
 		"Далее записан массив: " << arrToFormat <<
-		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, Math::Sqr<int>) <<
-		"\r\nКвадраты элементов другого массива: " << Map(rawArr, Math::Sqr<int>);
+		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, &Math::Sqr<int>) <<
+		"\r\nКвадраты элементов другого массива: " << Map(rawArr, &Math::Sqr<int>);
 	output.PrintLine("Результат:");
 	output.PrintLine(StringView(bufOnStack, buf.Begin));
 	output.LineBreak();

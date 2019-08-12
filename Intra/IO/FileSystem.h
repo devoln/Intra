@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
 
-#include "Utils/StringView.h"
-#include "Utils/ErrorStatus.h"
+#include "Core/Core.h"
+
+#include "Core/Range/StringView.h"
+#include "System/Error.h"
 
 #include "Container/Sequential/String.h"
 
@@ -12,14 +12,15 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 struct FileInfo
 {
 	bool Exist() const {return Size != 0 || LastModified != 0;}
 
-	ulong64 Size;
-	ulong64 LastModified;
+	uint64 Size;
+	uint64 LastModified;
 };
 
 class IFileSystem
@@ -31,8 +32,8 @@ public:
 	virtual bool FileDelete(StringView filename) = 0;
 	virtual bool FileMove(StringView oldFilename, StringView newFilename, bool overwriteExisting) = 0;
 	virtual FileInfo FileGetInfo(StringView fileName, ErrorStatus& status) const = 0;
-	virtual ulong64 FileGetTime(StringView filename, ErrorStatus& status) const = 0;
-	virtual ulong64 FileGetSize(StringView filename, ErrorStatus& status) const = 0;
+	virtual uint64 FileGetTime(StringView filename, ErrorStatus& status) const = 0;
+	virtual uint64 FileGetSize(StringView filename, ErrorStatus& status) const = 0;
 
 	virtual StringView CurrentDirectory() const = 0;
 	virtual void SetDirectory(StringView newDir) = 0;
@@ -64,10 +65,10 @@ public:
 	FileInfo FileGetInfo(StringView fileName, ErrorStatus& status) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetTime(StringView filename, ErrorStatus& status) const final;
+	uint64 FileGetTime(StringView filename, ErrorStatus& status) const final;
 
 	//! Вовзаращает время последней модификации файла fileName.
-	ulong64 FileGetSize(StringView filename, ErrorStatus& status) const final;
+	uint64 FileGetSize(StringView filename, ErrorStatus& status) const final;
 
 	//! Возвращает текущую директорию, относительно которой производятся все файловые операции при указании относительного пути.
 	StringView CurrentDirectory() const final {return mCurrentDirectory;}
@@ -81,7 +82,7 @@ public:
 	//! Отобразить область файла с именем fileName в память с доступом только для чтения.
 	//! @param offset Начало отображаемой области.
 	//! @param bytes Размер отображаемой области в байтах.
-	FileMapping MapFile(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
+	FileMapping MapFile(StringView fileName, uint64 offset, size_t bytes, ErrorStatus& status)
 	{return FileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
 	//! Отобразить целиком файл с именем fileName в память с доступом только для чтения.
@@ -91,7 +92,7 @@ public:
 	//! Отобразить область файла с именем fileName в память с доступом для чтения и записи.
 	//! @param offset Начало отображаемой области.
 	//! @param bytes Размер отображаемой области в байтах.
-	WritableFileMapping MapFileWrite(StringView fileName, ulong64 offset, size_t bytes, ErrorStatus& status)
+	WritableFileMapping MapFileWrite(StringView fileName, uint64 offset, size_t bytes, ErrorStatus& status)
 	{return WritableFileMapping(GetFullFileName(fileName), offset, bytes, status);}
 	
 	//! Отобразить целиком файл с именем fileName в память с доступом для чтения и записи.
@@ -104,7 +105,7 @@ public:
 
 	//! Открыть файл fileName для записи.
 	//! Если файл уже существует, запись происходит поверх данных, уже записанных в файл.
-	FileWriter FileOpenWrite(StringView fileName, ulong64 offset, ErrorStatus& status);
+	FileWriter FileOpenWrite(StringView fileName, uint64 offset, ErrorStatus& status);
 	FileWriter FileOpenWrite(StringView fileName, ErrorStatus& status);
 
 	//! Открыть файл fileName для записи. Если файл уже существует, всё его содержимое будет стёрто.

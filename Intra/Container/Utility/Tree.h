@@ -2,7 +2,8 @@
 
 #include "Container/Sequential/Array.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 template<typename T> struct Tree
 {

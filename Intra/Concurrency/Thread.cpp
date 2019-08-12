@@ -1,9 +1,9 @@
 ﻿#include "Thread.h"
 #include "Atomic.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Runtime.h"
+
+
+#include "Core/Runtime.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -34,10 +34,11 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 Thread::Thread(Func func):
-	mHandle(new Data(Cpp::Move(func)))
+	mHandle(new Data(Move(func)))
 {
 	if(mHandle->IsDetached)
 		mHandle = null;
@@ -59,7 +60,7 @@ Thread& Thread::operator=(Thread&&) = default;
 bool Thread::Join()
 {return mHandle == null || mHandle->Join();}
 
-bool Thread::JoinMs(ulong64 timeout)
+bool Thread::JoinMs(uint64 timeout)
 {return mHandle == null || mHandle->Join(timeout);}
 
 void Thread::Interrupt()

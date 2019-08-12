@@ -1,9 +1,8 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
 #include "Container/ForwardDecls.h"
 
@@ -16,19 +15,18 @@
 #include "Math/FixedPoint.h"
 #include "Math/HalfFloat.h"
 
-#include "Meta/TypeList.h"
+#include "Core/TList.h"
 
-namespace Intra { namespace Data {
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
+inline namespace Data {
 
 struct ValueType
 {
 	enum I: byte
 	{
-		Void=0,
+		Void = 0,
 
-		//Векторы\скаляры
+		//Vectors \ scalars
 		Float,  FVec2, FVec3, FVec4,
 		Vec2=FVec2, Vec3=FVec3, Vec4=FVec4,
 
@@ -58,71 +56,71 @@ struct ValueType
 		NVec233, NVec565, NVec1555, NVec4444, Vec10n10n10n2n, Vec10s10s10s2s,
 		NVec332, NVec5551, N10Vec3, N5Vec3,
 		
-		//Матрицы
+		//Matrices
 		FMat2, FMat2x3, FMat2x4, FMat3x2, FMat3, FMat3x4, FMat4x2, FMat4x3, FMat4,
-		Mat2=FMat2, Mat2x3=FMat2x3, Mat2x4=FMat2x4, Mat3x2=FMat3x2, Mat3=FMat3, Mat3x3=Mat3,
-		FMat3x3=Mat3, Mat3x4=FMat3x4, Mat4x2=FMat4x2, Mat4x3=FMat4x3, Mat4=FMat4, FMat4x4=Mat4, Mat4x4=Mat4,
+		Mat2 = FMat2, Mat2x3 = FMat2x3, Mat2x4 = FMat2x4, Mat3x2 = FMat3x2, Mat3 = FMat3, Mat3x3 = Mat3,
+		FMat3x3 = Mat3, Mat3x4 = FMat3x4, Mat4x2 = FMat4x2, Mat4x3 = FMat4x3, Mat4 = FMat4, FMat4x4 = Mat4, Mat4x4 = Mat4,
 
 		DMat2, DMat2x3, DMat2x4, DMat3x2, DMat3, DMat3x4, DMat4x2, DMat4x3, DMat4,
 
 		Char,
 		String, StringView, StructureInstance, StructureType,
 
-		First = Float, FirstOfVectors=Float, FirstOfFloat=FirstOfVectors, EndOfFloat=HVec4+1,
-		FirstOfPackedFloat=Vec11f11f10f, EndOfPackedFloat=Vec11f11f10f+1,
-		FirstOfInteger=Int, EndOfInteger=UBVec4+1,
-		FirstOfPackedInt=UVec4444, EndOfPackedInt=UVec9995+1,
-		FirstOfNormalized=Norm8, EndOfNormalized=S32Vec4+1,
-		FirstOfPackedNorm=NVec233, EndOfPackedNorm=N5Vec3+1, EndOfVectors=EndOfPackedNorm,
-		FirstOfMatrices=FMat2, EndOfMatrices=Char, EndOfPod=String, End=StructureType+1
+		First = Float, FirstOfVectors=Float, FirstOfFloat = FirstOfVectors, EndOfFloat=HVec4+1,
+		FirstOfPackedFloat = Vec11f11f10f, EndOfPackedFloat = Vec11f11f10f+1,
+		FirstOfInteger = Int, EndOfInteger = UBVec4+1,
+		FirstOfPackedInt = UVec4444, EndOfPackedInt = UVec9995+1,
+		FirstOfNormalized = Norm8, EndOfNormalized = S32Vec4+1,
+		FirstOfPackedNorm = NVec233, EndOfPackedNorm = N5Vec3+1, EndOfVectors = EndOfPackedNorm,
+		FirstOfMatrices = FMat2, EndOfMatrices = Char, EndOfPod = String, End = StructureType+1
 	};
 
 	I value;
 
-	explicit constexpr ValueType(uint vt): value(I(vt)) {}
-	constexpr ValueType(I vt): value(vt) {}
-	constexpr ValueType(null_t=null): value(Void) {}
-	constexpr ValueType(const ValueType& rhs): value(rhs.value) {}
+	explicit constexpr forceinline ValueType(uint vt): value(I(vt)) {}
+	constexpr forceinline ValueType(I vt): value(vt) {}
+	constexpr forceinline ValueType(null_t=null): value(Void) {}
+	constexpr forceinline ValueType(const ValueType& rhs): value(rhs.value) {}
 
-	ValueType& operator=(const ValueType& rhs) {value=rhs.value; return *this;}
-	ValueType& operator=(ValueType::I rhs) {value=rhs; return *this;}
-	ValueType& operator=(null_t) {value=Void; return *this;}
-	constexpr bool operator==(null_t) const {return value==Void;}
-	constexpr bool operator!=(null_t) const {return !operator==(null);}
-	constexpr bool operator==(byte rhs) const {return value==rhs;}
-	constexpr bool operator!=(byte rhs) const {return !operator==(rhs);}
-	constexpr bool operator==(const ValueType& rhs) const {return value==rhs.value;}
-	constexpr bool operator!=(const ValueType& rhs) const {return !operator==(rhs);}
+	forceinline ValueType& operator=(const ValueType& rhs) {value = rhs.value; return *this;}
+	forceinline ValueType& operator=(ValueType::I rhs) {value = rhs; return *this;}
+	forceinline ValueType& operator=(null_t) {value = Void; return *this;}
+	INTRA_NODISCARD constexpr forceinline bool operator==(null_t) const {return value == Void;}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(null_t) const {return !operator==(null);}
+	INTRA_NODISCARD constexpr forceinline bool operator==(byte rhs) const {return value == rhs;}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(byte rhs) const {return !operator==(rhs);}
+	INTRA_NODISCARD constexpr forceinline bool operator==(const ValueType& rhs) const {return value == rhs.value;}
+	INTRA_NODISCARD constexpr forceinline bool operator!=(const ValueType& rhs) const {return !operator==(rhs);}
 
 	ushort Size() const;
 
-	constexpr bool IsScalar() const
+	INTRA_NODISCARD constexpr bool IsScalar() const noexcept
 	{
 		return (value == Float || value == Double || value == Half) ||
 			(value >= FirstOfInteger && value < EndOfInteger && (value - FirstOfInteger) % 4 == 0) ||
 			(value >= FirstOfNormalized && value < EndOfNormalized && (value - FirstOfNormalized) % 4 == 0);
 	}
 
-	constexpr bool IsPod() const {return value < EndOfPod;}
+	INTRA_NODISCARD constexpr forceinline bool IsPod() const noexcept {return value < EndOfPod;}
 
-	constexpr bool IsValid() const {return value != Void && value < End;}
-	constexpr bool IsMatrix() const {return value >= FirstOfMatrices && value < EndOfMatrices;}
-	constexpr bool IsVector() const {return value >= FirstOfVectors && value < EndOfVectors && !IsScalar();}
+	INTRA_NODISCARD constexpr forceinline bool IsValid() const noexcept {return value != Void && value < End;}
+	INTRA_NODISCARD constexpr forceinline bool IsMatrix() const noexcept {return value >= FirstOfMatrices && value < EndOfMatrices;}
+	INTRA_NODISCARD constexpr forceinline bool IsVector() const noexcept {return value >= FirstOfVectors && value < EndOfVectors && !IsScalar();}
 
-	constexpr bool IsPacked() const
+	INTRA_NODISCARD constexpr bool IsPacked() const
 	{
 		return (value == Vec11f11f10f ||
 			(value >= FirstOfPackedInt && value < EndOfPackedInt) ||
 			(value >= FirstOfPackedNorm && value < EndOfPackedNorm));
 	}
 
-	constexpr bool IsNormalized() const
+	INTRA_NODISCARD constexpr bool IsNormalized() const
 	{
 		return (value >= FirstOfNormalized && value < EndOfNormalized) ||
 			(value >= FirstOfPackedNorm && value < EndOfPackedNorm);
 	}
 
-	constexpr bool IsInteger() const
+	INTRA_NODISCARD constexpr forceinline bool IsInteger() const
 	{
 		return (value >= FirstOfInteger && value < EndOfInteger) ||
 			(value >= FirstOfPackedInt && value < EndOfPackedInt);
@@ -137,14 +135,16 @@ struct ValueType
 	//Переводит все нормализованные типы в float, упакованные и меньшие типы в основные типы (float, double, int, uint, bool)
 	ValueType ToShaderType() const;
 
-	Range::StringView ToStringGLSL() const;
-	Range::StringView ToString() const;
+	Core::StringView ToStringGLSL() const;
+	Core::StringView ToString() const;
 	static ValueType FromString(Range::StringView str);
 	static ValueType FromStringGLSL(Range::StringView str);
 
-	typedef Meta::TypeList<void,
+	//TODO: Before type list redesign this header added ~22 ms to compilation (84 ms including headers, one of them - TypeList 5 ms)
+	//Measure again
+	typedef TList<void,
 
-		//Векторы\скаляры
+		//Vectors / scalars
 		float, Math::Vec2, Math::Vec3, Math::Vec4,
 
 		double, Math::DVec2, Math::DVec3, Math::DVec4,
@@ -174,21 +174,19 @@ struct ValueType
 		null_t, null_t, null_t, null_t, null_t, null_t,
 		null_t, null_t, null_t, null_t,
 
-		//Матрицы
+		//Matrices
 		/*Math::Mat2*/null_t, null_t, null_t, null_t, Math::Mat3, null_t, null_t, null_t, Math::Mat4,
 
 		/*Math::DMat2*/null_t, null_t, null_t, null_t, Math::DMat3, null_t, null_t, null_t, Math::DMat4,
 
 		char, Container::String, Range::StringView, null_t, null_t> ValueTypeList;
 
-	template<typename T> static constexpr ValueType Of()
+	template<typename T> INTRA_NODISCARD static forceinline constexpr ValueType Of()
 	{
-		return Meta::TypeListContains<T, ValueTypeList>::_?
-			ValueType(uint(Meta::TypeListFind<T, ValueTypeList>::_)):
-			ValueType(ValueType::End);
+		enum {FoundPos = TypeListFind<T, ValueTypeList>};
+		return FoundPos == ValueTypeList::Length? ValueType::End: FoundPos;
 	}
 };
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

@@ -1,17 +1,18 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
 
 #include "Utils/FixedArray.h"
-#include "Range/Polymorphic/OutputRange.h"
+#include "Core/Range/Polymorphic/OutputRange.h"
 
 #include "Data/ValueType.h"
 
 #include "Audio/SoundTypes.h"
 #include "Audio/AudioSource.h"
 
-namespace Intra { namespace Audio { namespace Sources {
+INTRA_BEGIN
+namespace Audio { namespace Sources {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -22,15 +23,15 @@ class Wave: public BasicAudioSource
 	Data::ValueType mDataType;
 public:
 	Wave(OnCloseResourceCallback onClose, const SoundInfo& info, const void* data):
-		BasicAudioSource(Cpp::Move(onClose), info.SampleRate, info.Channels),
+		BasicAudioSource(Move(onClose), info.SampleRate, info.Channels),
 		mData(SpanOfRaw(data, info.GetBufferSize())), mDataType(info.SampleType) {}
 
 	Wave(OnCloseResourceCallback onClose, uint sampleRate, ushort numChannels, CSpan<short> data):
-		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels),
+		BasicAudioSource(Move(onClose), sampleRate, numChannels),
 		mData(data.Reinterpret<byte>()), mSampleCount(data.Length()), mDataType(Data::ValueType::SNorm16) {}
 
 	Wave(OnCloseResourceCallback onClose, uint sampleRate, ushort numChannels, CSpan<float> data):
-		BasicAudioSource(Cpp::Move(onClose), sampleRate, numChannels),
+		BasicAudioSource(Move(onClose), sampleRate, numChannels),
 		mData(data.Reinterpret<byte>()), mSampleCount(data.Length()), mDataType(Data::ValueType::Float) {}
 
 	Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData);

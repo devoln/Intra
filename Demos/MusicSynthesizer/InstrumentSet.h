@@ -4,7 +4,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra {
+INTRA_BEGIN
+
 namespace Audio {
 
 namespace Midi {

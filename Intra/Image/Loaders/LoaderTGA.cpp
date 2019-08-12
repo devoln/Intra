@@ -6,7 +6,8 @@
 #include "Math/Vector3.h"
 #include "Image/FormatConversion.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 using namespace Math;
 

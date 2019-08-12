@@ -2,9 +2,10 @@
 
 #include "Font/FontLoadingDeclarations.h"
 #include "Math/Vector2.h"
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
-namespace Intra { namespace FontLoadingAPI {
+INTRA_BEGIN
+namespace FontLoadingAPI {
 
 	FontHandle FontCreate(StringView name, uint height, uint* yadvance);
 	FontHandle FontCreateFromMemory(const void* data, size_t length, uint height, uint* yadvance);

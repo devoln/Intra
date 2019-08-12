@@ -1,8 +1,8 @@
 ﻿#include "System/Environment.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Fundamental.h"
+
+
+#include "Core/Core.h"
 
 #include "Utils/AsciiSet.h"
 #include "Utils/FixedArray.h"
@@ -11,7 +11,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Android)
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 static CSpan<StringView> getAndParseCommandLine()
 {
@@ -19,7 +20,7 @@ static CSpan<StringView> getAndParseCommandLine()
 	return result;
 }
 
-}
+}}
 
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 
@@ -38,7 +39,8 @@ static CSpan<StringView> getAndParseCommandLine()
 #pragma warning(pop)
 #endif
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 static CSpan<StringView> getAndParseCommandLine()
 {
@@ -150,7 +152,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 		while(*wenvPtr++) {}
 		wenvPtr++;
 	}
-	return {Cpp::Move(buffer), num};
+	return {Move(buffer), num};
 }
 
 String TEnvironment::Get(StringView var, bool* oExists) const
@@ -183,7 +185,8 @@ String TEnvironment::Get(StringView var, bool* oExists) const
 
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 static CSpan<StringView> getAndParseCommandLine()
 {
@@ -200,7 +203,8 @@ static CSpan<StringView> getAndParseCommandLine()
 #include <fcntl.h>
 #include <unistd.h>
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 static CSpan<StringView> getAndParseCommandLine()
 {
@@ -242,7 +246,8 @@ static CSpan<StringView> getAndParseCommandLine()
 
 extern char** environ;
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 String TEnvironment::Get(StringView var, bool* oExists) const
 {
@@ -267,14 +272,15 @@ TEnvironment::VarSet TEnvironment::Variables() const
 		const StringView value = envStr.Drop(key.Length() + 1);
 		dstPairs.Put({key, value});
 	}
-	return {Cpp::Move(buffer), num};
+	return {Move(buffer), num};
 }
 
 }}
 
 #endif
 
-namespace Intra { namespace System {
+INTRA_BEGIN
+namespace System {
 
 CSpan<const KeyValuePair<StringView, StringView>> TEnvironment::VarSet::AsRange() const
 {

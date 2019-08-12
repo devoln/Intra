@@ -1,29 +1,23 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
+#include "Core/Assert.h"
+#include "Core/Type.h"
 
-#include "Utils/AnyPtr.h"
-#include "Utils/Debug.h"
-
-#include "Meta/Type.h"
-
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-
-namespace Intra { namespace Memory {
+inline namespace Memory {
 
 template<class A> struct ASized: A
 {
 	size_t GetAlignment() const {return sizeof(size_t);}
 
 	ASized() = default;
-	ASized(A&& allocator): A(Cpp::Move(allocator)) {}
+	ASized(A&& allocator): A(Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, Utils::SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
-		INTRA_DEBUG_ASSERT(bytes!=0);
+		INTRA_DEBUG_ASSERT(bytes != 0);
 		size_t totalBytes = bytes+sizeof(size_t);
 		size_t* data = A::Allocate(totalBytes, sourceInfo);
 		if(data!=null)
@@ -52,7 +46,5 @@ template<class A> struct ASized: A
 	{return *(reinterpret_cast<size_t*>(ptr)-1);}
 };
 
-}}
-
-INTRA_WARNING_POP
-
+}
+INTRA_END

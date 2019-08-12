@@ -1,0 +1,77 @@
+#pragma once
+
+#include "Core/Range/Concepts.h"
+
+INTRA_CORE_RANGE_BEGIN
+INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+template<typename RR> class RJoin
+{
+	typedef TReturnValueTypeOfAs<TValueTypeOf<RR>> ReturnValueType;
+	typedef TRangeOfType<TValueTypeOf<RR>> R;
+public:
+	constexpr forceinline RJoin(const RR& range): mOriginalRanges(range) {goToNearestNonEmptyElement();}
+	constexpr forceinline RJoin(RR&& range): mOriginalRanges(Move(range)) {goToNearestNonEmptyElement();}
+
+	INTRA_CONSTEXPR2 forceinline ReturnValueType First() const
+	{
+		INTRA_DEBUG_ASSERT(!Empty());
+		return mCurrentRange.First();
+	}
+
+	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mCurrentRange.Empty();}
+
+	INTRA_CONSTEXPR2 void PopFirst()
+	{
+		INTRA_DEBUG_ASSERT(!mCurrentRange.Empty());
+		mCurrentRange.PopFirst();
+		goToNearestNonEmptyElement();
+	}
+
+	template<typename U=RR> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+		CHasIndex<R> &&
+		CHasLength<R> &&
+		CCopyConstructible<U>,
+	ReturnValueType> operator[](size_t index) const
+	{
+		RR rr = mOriginalRanges;
+		while(!rr.Empty() && rr.First().Length()<=index)
+		{
+			index -= rr.First().Length();
+			rr.PopFirst();
+		}
+		return rr.First()[index];
+	}
+
+	template<typename U = RR> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+		CHasLength<R> &&
+		CCopyConstructible<U>,
+	index_t> Length() const
+	{
+		size_t result = 0;
+		for(RR rr=mOriginalRanges; !rr.Empty(); rr.PopFirst())
+			result += rr.First().Length();
+		return result;
+	}
+
+private:
+	RR mOriginalRanges;
+	R mCurrentRange;
+
+	INTRA_CONSTEXPR2 void goToNearestNonEmptyElement()
+	{
+		while(mCurrentRange.Empty() && !mOriginalRanges.Empty())
+		{
+			mCurrentRange = AsRange(mOriginalRanges.First());
+			mOriginalRanges.PopFirst();
+		}
+	}
+};
+
+template<typename RR,
+	typename AsRR = TRangeOfTypeNoCRef<RR>
+> INTRA_NODISCARD constexpr forceinline Requires<
+	CConsumableRange<AsRR> &&
+	CAsConsumableRange<TValueTypeOf<AsRR>>,
+RJoin<AsRR>> Join(RR&& range)
+{return {ForwardAsRange<RR>(range)};}
+INTRA_CORE_RANGE_END

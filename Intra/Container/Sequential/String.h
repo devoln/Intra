@@ -1,220 +1,192 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Intrinsics.h"
-
-#include "Utils/Debug.h"
-
-#include "Container/ForwardDecls.h"
-#include "Container/Operations.hh"
-#include "Concepts/Container.h"
-
-#include "Utils/Span.h"
-#include "Utils/StringView.h"
-#include "Utils/ArrayAlgo.h"
+#include "Core/Assert.h"
+#include "Core/CContainer.h"
+#include "Core/Range/Span.h"
+#include "Core/Range/StringView.h"
+#include "Core/Misc/RawMemory.h"
+#include "Core/Range/Special/Unicode.h"
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Mutation/ReplaceSubrange.h"
+#include "Core/Range/TakeUntil.h"
+#include "Core/Range/Zip.h"
+#include "Core/Range/Inserter.h"
 
 #include "Memory/Memory.h"
 #include "Memory/Allocator.hh"
 
-#include "Range/Special/Unicode.h"
-#include "Range/Mutation/Fill.h"
-#include "Range/Mutation/Copy.h"
-#include "Range/Mutation/ReplaceSubrange.h"
-#include "Range/Decorators/TakeUntil.h"
-#include "Range/Compositors/Zip.h"
+#include "Container/ForwardDecls.h"
+#include "Container/Operations.hh"
 
 #include "Data/Reflection.h"
 
 #include "StringFormatter.h"
-#include "Range/Output/Inserter.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
+inline namespace Container {
 
-
-
-namespace Intra { namespace Container {
-
-template<typename F, typename T> void Call(F&& f, T&& arg) {f(Cpp::Forward<T>(arg));}
-
+//! Class used to create, store and operate strings.
+/*!
+  It takes a template argument of code point type.
+  If Char = char then the string will be treated as UTF-8.
+  Be aware that elements of a GenericString are not characters because one non-ASCII character may be encoded with multiple code points.
+  If Char = char16_t then the string will be treated as UTF-16.
+  Be aware that elements of a GenericString are not characters because one non-ASCII character may be encoded with multiple code points.
+*/
 template<typename Char> class GenericString
 {
 public:
-	GenericString(const Char* str):
-		GenericString(str, (str == null)? 0: Utils::CStringLength(str)) {}
+	INTRA_CONSTEXPR2 forceinline GenericString(const Char* str):
+		GenericString(str, (str == null)? 0: CStringLength(str)) {}
 
-	forceinline GenericString(null_t=null) {m = {null, 0, SSO_CAPACITY_FIELD_FOR_EMPTY};}
+	INTRA_CONSTEXPR2 forceinline GenericString(null_t=null) noexcept {setShortLength(0);}
 
-	forceinline static GenericString CreateReserve(size_t reservedCapacity)
+	INTRA_CONSTEXPR2 forceinline static GenericString CreateReserve(size_t reservedCapacity)
 	{
 		GenericString result;
 		result.Reserve(reservedCapacity);
 		return result;
 	}
 
-	explicit GenericString(const Char* str, size_t strLength): GenericString(null)
+	INTRA_CONSTEXPR2 explicit GenericString(const Char* str, size_t strLength)
 	{
 		SetLengthUninitialized(strLength);
-		C::memcpy(Data(), str, strLength*sizeof(Char));
+		Memory::CopyBits(Data(), str, strLength);
 	}
 
-	explicit forceinline GenericString(const Char* startPtr, const Char* endPtr):
+	INTRA_CONSTEXPR2 explicit forceinline GenericString(const Char* startPtr, const Char* endPtr):
 		GenericString(startPtr, size_t(endPtr - startPtr)) {}
 	
-	explicit forceinline GenericString(size_t initialLength, Char filler): GenericString(null)
+	INTRA_CONSTEXPR2 explicit forceinline GenericString(size_t initialLength, Char filler): GenericString(null)
 	{SetLength(initialLength, filler);}
 
-	template<typename R = StringView, typename AsR = Concepts::RangeOfType<R>,
-	typename = Meta::EnableIf<
-		Concepts::IsConsumableRangeOf<AsR, Char>::_ &&
-		Meta::IsCharType<Concepts::ValueTypeOf<AsR>>::_
-	>> forceinline GenericString(R&& rhs): GenericString(null)
+	template<typename R = StringView, typename AsR = TRangeOfType<R>,
+	typename = Requires<
+		CConsumableRangeOf<AsR, Char> &&
+		CChar<TValueTypeOf<AsR>>
+	>> INTRA_CONSTEXPR2 forceinline GenericString(R&& rhs)
 	{
+		setShortLength(0); //avoid unnecessary copying of default zeros on allocation
 		SetLengthUninitialized(Range::Count(rhs));
-		Range::CopyTo(Range::Forward<R>(rhs), AsRange());
+		Range::CopyTo(ForwardAsRange<R>(rhs), AsRange());
 	}
 
-	forceinline GenericString(const GenericString& rhs):
-		GenericString(rhs.Data(), rhs.Length()) {}
+	INTRA_CONSTEXPR2 forceinline GenericString(const GenericString& rhs): u(rhs.u)
+	{
+		if(!IsHeapAllocated()) return;
+		u.m.Data = allocate(u.m.Len);
+		Memory::CopyBits(u.m.Data, rhs.u.m.Data, u.m.Len);
+	}
 	
-	forceinline GenericString(GenericString&& rhs):
-		m(rhs.m) {rhs.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
+	INTRA_CONSTEXPR2 forceinline GenericString(GenericString&& rhs):
+		u(rhs.u) {rhs.resetToEmptySsoWithoutFreeing();}
 	
+
 	forceinline ~GenericString()
 	{
+		//The destructor is the most serious obstacle to String being constexpr
 		if(IsHeapAllocated()) freeLongData();
 	}
 
-	//! Получить диапазон из UTF-32 кодов символов
+	//! Get UTF-32 character range
 	//UTF8 ByChar() const {return UTF8(Data(), Length());}
 
-	//! Получить подстроку, начиная с кодовой единицы с индексом start и заканчивая end.
-	forceinline GenericStringView<const Char> operator()(
+	//! @returns a slice of the string containing code points with indices [startIndex; endIndex).
+	constexpr forceinline GenericStringView<const Char> operator()(
 		size_t startIndex, size_t endIndex) const
 	{return View(startIndex, endIndex);}
 
-
-	//! Получить указатель на C-строку для передачи в различные C API.
-	/**
-	Полученный указатель временный и может стать некорректным при любой модификации или удалении этого экземпляра класса.
-	Эту функцию следует использовать осторожно с временными объектами:
-	const char* cstr = String("a").CStr(); //Ошибка: cstr - висячий указатель.
-	strcpy(dst, String("a").CStr()); //Ок: указатель до возврата strcpy корректен
-	**/
-	const Char* CStr()
-	{
-		size_t len = Length();
-		if(!IsHeapAllocated())
-		{
-			mBuffer[len] = '\0';
-			return mBuffer;
-		}
-		RequireSpace(1);
-		auto data = Data();
-		data[len] = '\0';
-		return data;
-	}
-
-	//! Возвращает диапазон символов строки.
-	//!@{
-	/**
-	Возвращаемый диапазон корректен только до тех пор, пока длина строки не изменится или экземпляр класса не будет удалён.
-	Эту функцию следует использовать осторожно с временными объектами:
-	auto range = String("a").AsRange(); //Ошибка: range содержит висячие указатели.
-	foo(String("a").AsRange()); //Ок: диапазон до возврата из foo корректен
-	**/
-	forceinline GenericStringView<Char> AsRange() {return {Data(), Length()};}
-	forceinline GenericStringView<const Char> AsRange() const {return {Data(), Length()};}
-	forceinline GenericStringView<const Char> AsConstRange() const {return {Data(), Length()};}
-	//!@}
-
-	//! Присваивание строк
-	//!@{
-	GenericString& operator=(GenericString&& rhs) noexcept
+	/*!
+	  @name String assignment
+	*/
+	///@{
+	INTRA_CONSTEXPR2 GenericString& operator=(GenericString&& rhs) noexcept
 	{
 		if(this == &rhs) return *this;
 		if(IsHeapAllocated()) freeLongData();
-		m = rhs.m;
-		rhs.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;
+		u = rhs.u;
+		rhs.resetToEmptySsoWithoutFreeing();
 		return *this;
 	}
 
-	GenericString& operator=(GenericStringView<const Char> rhs)
+	INTRA_CONSTEXPR2 GenericString& operator=(GenericStringView<const Char> rhs)
 	{
 		if(sameRange(rhs)) return *this;
 		INTRA_DEBUG_ASSERT(!containsView(rhs));
-		SetLengthUninitialized(0);
+		SetLengthUninitialized(0); //avoid unnecessary copying on reallocation
 		SetLengthUninitialized(rhs.Length());
-		C::memcpy(Data(), rhs.Data(), rhs.Length()*sizeof(Char));
+		Memory::CopyBits(Data(), rhs.Data(), rhs.Length());
 		return *this;
 	}
 
-	forceinline GenericString& operator=(const GenericString& rhs)
+	INTRA_CONSTEXPR2 forceinline GenericString& operator=(const GenericString& rhs)
 	{return operator=(rhs.AsConstRange());}
 
-	forceinline GenericString& operator=(const Char* rhs)
+	INTRA_CONSTEXPR2 forceinline GenericString& operator=(const Char* rhs)
 	{return operator=(GenericStringView<const Char>(rhs));}
 	
-	template<typename R> forceinline Meta::EnableIf<
-		Concepts::IsArrayClass<R>::_,
+	template<typename R> INTRA_CONSTEXPR2 forceinline Requires<
+		CArrayClass<R>,
 	GenericString&> operator=(R&& rhs)
 	{return operator=(GenericStringView<const Char>(rhs));}
 
-	template<typename R> forceinline Meta::EnableIf<
-		!Concepts::IsArrayClass<R>::_ &&
-		Concepts::IsAsConsumableRangeOf<R, Char>::_,
+	template<typename R> INTRA_CONSTEXPR2 forceinline Requires<
+		!CArrayClass<R> &&
+		CAsConsumableRangeOf<R, Char>,
 	GenericString&> operator=(R&& rhs)
 	{
-		SetLengthUninitialized(0);
+		SetLengthUninitialized(0); //avoid unnecessary copying on reallocation
 		SetLengthUninitialized(Range::Count(rhs));
-		Range::CopyTo(Range::Forward<R>(rhs), AsRange());
+		Range::CopyTo(ForwardAsRange<R>(rhs), AsRange());
 		return *this;
 	}
 
-	GenericString& operator=(null_t)
+	INTRA_CONSTEXPR2 GenericString& operator=(null_t)
 	{
 		if(IsHeapAllocated()) freeLongData();
 		resetToEmptySsoWithoutFreeing();
 		return *this;
 	}
-	//!@}
+	///@}
 
-	forceinline GenericString& operator+=(StringFormatter<GenericString>& rhs) {return operator+=(*rhs);}
-	forceinline GenericString& operator+=(Char rhs)
+	INTRA_CONSTEXPR2 forceinline GenericString& operator+=(StringFormatter<GenericString>& rhs) {return operator+=(*rhs);}
+	INTRA_CONSTEXPR2 forceinline GenericString& operator+=(Char rhs)
 	{
 		const size_t oldLen = Length();
 		const bool wasAllocated = IsHeapAllocated();
 		if(!wasAllocated && oldLen < SSO_BUFFER_CAPACITY_CHARS)
 		{
 			shortLenIncrement();
-			mBuffer[oldLen]=rhs;
+			u.buf[oldLen]=rhs;
 		}
 		else
 		{
 			if(!wasAllocated || getLongCapacity() == oldLen)
 				Reallocate(oldLen + 1 + oldLen/2);
-			m.Data[m.Len++] = rhs;
+			u.m.Data[u.m.Len++] = rhs;
 		}
 		return *this;
 	}
 
-	forceinline bool operator==(null_t) const {return Empty();}
+	constexpr forceinline bool operator==(null_t) const {return Empty();}
 
-	forceinline bool operator>(const GenericStringView<const Char>& rhs) const {return View()>rhs;}
-	forceinline bool operator<(const Char* rhs) const {return View()<rhs;}
-	forceinline bool operator<(const GenericStringView<const Char>& rhs) const {return View()<rhs;}
+	constexpr forceinline bool operator>(const GenericStringView<const Char>& rhs) const {return View() > rhs;}
+	constexpr forceinline bool operator<(const Char* rhs) const {return View() < rhs;}
+	constexpr forceinline bool operator<(const GenericStringView<const Char>& rhs) const {return View() < rhs;}
 
 
-	//! Убедиться, что буфер строки имеет достаточно свободного места для хранения minCapacity символов.
-	forceinline void Reserve(size_t minCapacity)
+	//! Make sure that Capacity() >= \p minCapacity. Otherwise reallocates to at least \p minCapacity.
+	INTRA_CONSTEXPR2 forceinline void Reserve(size_t minCapacity)
 	{
 		if(Capacity() < minCapacity)
 			Reallocate(minCapacity + Length()/2);
 	}
 
 
-	//! Изменить ёмкость строки, чтобы вместить newCapacity символов.
+	//! Reallocate String to hold \p newCapacity characters.
 	void Reallocate(size_t newCapacity)
 	{
 		const bool wasAllocated = IsHeapAllocated();
@@ -225,137 +197,190 @@ public:
 		if(newCapacity > SSO_BUFFER_CAPACITY_CHARS)
 		{
 			size_t newCapacityInBytes = newCapacity*sizeof(Char);
-			newData = Memory::GlobalHeap.Allocate(newCapacityInBytes, INTRA_SOURCE_INFO);
+			newData = allocate(newCapacityInBytes);
 			newCapacity = newCapacityInBytes/sizeof(Char);
 		}
 		else
 		{
-			newData = mBuffer;
+			newData = u.buf;
 			setShortLength(len);
 		}
-		Char* const oldData = m.Data;
+		Char* const oldData = u.m.Data;
 		const size_t oldLongCapacity = getLongCapacity();
-		C::memcpy(newData, Data(), len*sizeof(Char));
-		if(wasAllocated) Memory::GlobalHeap.Free(oldData, oldLongCapacity*sizeof(Char));
-		if(newData != mBuffer)
+		Memory::CopyBits(newData, Data(), len);
+		if(wasAllocated) deallocate(oldData, oldLongCapacity*sizeof(Char));
+		if(newData != u.buf)
 		{
-			m.Data = newData;
+			u.m.Data = newData;
 			setLongCapacity(newCapacity);
-			m.Len = len;
+			u.m.Len = len;
 		}
 	}
 
-	//! Если ёмкость буфера вмещает больше, чем длина строки более, чем на 20%, она уменьшается, чтобы совпадать с длиной.
-	forceinline void TrimExcessCapacity()
+	//! If there is more than 20% excess capacity of heap allocation, reallocate so that Length() == Capacity().
+	INTRA_CONSTEXPR2 forceinline void TrimExcessCapacity()
 	{if(Capacity() > Length() * 5/4) Reallocate(Length());}
 
-	//! Убедиться, что буфер строки имеет достаточно свободного места для добавления minSpace символов в конец.
-	forceinline void RequireSpace(size_t minSpace) {Reserve(Length() + minSpace);}
+	//! Make sure there is enough space to append minSpace chars.
+	INTRA_CONSTEXPR2 forceinline void RequireSpace(size_t minSpace) {Reserve(Length() + minSpace);}
 
-	//! Установить длину строки в newLen.
-	//! Если newLen<Length(), то лишние символы отбрасываются.
-	//! Если newLen>Length(), то новые символы заполняются с помощью filler.
-	void SetLength(size_t newLen, Char filler='\0')
+	//! Set string length to \p newLen.
+	/*!
+	  If newLen < Length(), discards last Length() - newLen code points.
+	  otherwise, adds newLen - Length() copies of \p filler.
+	*/
+	INTRA_CONSTEXPR2 forceinline void SetLength(size_t newLen, Char filler='\0')
 	{
 		const size_t oldLength = Length();
 		SetLengthUninitialized(newLen);
-		if(newLen>oldLength) Range::Fill(View(oldLength, newLen), filler);
+		if(newLen <= oldLength) return;
+		if(filler == '\0') BitwiseZero(View(oldLength, newLen));
+		else Fill(View(oldLength, newLen), filler);
 	}
 
-	forceinline void SetCount(size_t newLen, Char filler='\0') {SetLength(newLen, filler);}
+	INTRA_CONSTEXPR2 forceinline void SetCount(size_t newLen, Char filler='\0') {SetLength(newLen, filler);}
 
-	//! Установить длину строки в newLen.
-	//! Если newLen<Length(), то лишние символы отбрасываются.
-	//! Если newLen>Length(), то новые символы остаются неинициализированными.
-	forceinline void SetLengthUninitialized(size_t newLen)
+	/** Set string length to ``newLen``.
+	  If ``newLen`` < Length(), discards last Length() - newLen code points.
+	  otherwise, adds ``newLen`` - Length() uninitialized code points.
+	*/
+	INTRA_CONSTEXPR2 forceinline void SetLengthUninitialized(size_t newLen)
 	{
 		Reserve(newLen);
-		if(IsHeapAllocated()) m.Len = newLen;
+		if(IsHeapAllocated()) u.m.Len = newLen;
 		else setShortLength(newLen);
 	}
 
-	//! Установить длину строки в newLen.
-	//! Если newLen<Length(), то лишние символы отбрасываются.
-	//! Если newLen>Length(), то новые символы остаются неинициализированными.
-	forceinline void SetCountUninitialized(size_t newLen)
+	//! Same as SetLengthUnitialized, used by template detection code.
+	//! @see SetLengthUninitialized
+	INTRA_CONSTEXPR2 forceinline void SetCountUninitialized(size_t newLen)
 	{SetLengthUninitialized(newLen);}
 
-	//! Количество символов, которое может уместить текущий буфер строки без перераспределения памяти.
-	forceinline size_t Capacity() const
+	//! Number of code points this string can hold without memory reallocation.
+	constexpr forceinline size_t Capacity() const
 	{return IsHeapAllocated()? getLongCapacity(): SSO_BUFFER_CAPACITY_CHARS;}
 
-	forceinline Char* Data() {return IsHeapAllocated()? m.Data: mBuffer;}
-	forceinline const Char* Data() const {return IsHeapAllocated()? m.Data: mBuffer;}
-	forceinline Char* End() {return Data()+Length();}
-	forceinline const Char* End() const {return Data()+Length();}
-
-	forceinline Char& operator[](size_t index)
+	INTRA_CONSTEXPR2 forceinline Char& operator[](size_t index)
 	{
 		INTRA_DEBUG_ASSERT(index < Length());
 		return Data()[index];
 	}
 
-	forceinline const Char& operator[](size_t index) const
+	INTRA_CONSTEXPR2 forceinline const Char& operator[](size_t index) const
 	{
 		INTRA_DEBUG_ASSERT(index < Length());
 		return Data()[index];
 	}
 
-	forceinline char Get(size_t index, Char defaultChar='\0') const noexcept
+	INTRA_NODISCARD constexpr forceinline char Get(size_t index, Char defaultChar='\0') const noexcept
 	{return index < Length()? Data()[index]: defaultChar;}
 
-	forceinline bool Empty() const
-	{return IsHeapAllocated()? m.Len==0: emptyShort();}
+	INTRA_NODISCARD constexpr forceinline bool Empty() const
+	{return IsHeapAllocated()? u.m.Len == 0: emptyShort();}
 
-	forceinline Char& First() {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
-	forceinline const Char& First() const {INTRA_DEBUG_ASSERT(!Empty()); return *Data();}
-	forceinline Char& Last() {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
-	forceinline const Char& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return Data()[Length()-1];}
-
-	forceinline void PopLast()
+	INTRA_CONSTEXPR2 forceinline void PopLast()
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
-		if(IsHeapAllocated()) m.Len--;
+		if(IsHeapAllocated()) u.m.Len--;
 		else shortLenDecrement();
 	}
 
-	forceinline size_t Length() const
-	{return IsHeapAllocated()? m.Len: getShortLength();}
+	INTRA_NODISCARD constexpr forceinline index_t Length() const
+	{return IsHeapAllocated()? u.m.Len: getShortLength();}
 
-	forceinline GenericStringView<Char> TakeNone() noexcept {return {Data(), 0};}
-	forceinline GenericStringView<const Char> TakeNone() const noexcept {return {Data(), 0};}
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Char& First()
+	{
+		INTRA_DEBUG_ASSERT(!Empty());
+		return *Data();
+	}
 
-	forceinline GenericStringView<Char> Drop(size_t count=1) noexcept {return AsRange().Drop(count);}
-	forceinline GenericStringView<const Char> Drop(size_t count=1) const noexcept {return AsRange().Drop(count);}
+	INTRA_NODISCARD constexpr forceinline Char First() const
+	{
+		return INTRA_DEBUG_ASSERT(!Empty()),
+			*Data();
+	}
 
-	forceinline GenericStringView<Char> DropLast(size_t count=1) noexcept {return AsRange().DropLast(count);}
-	forceinline GenericStringView<const Char> DropLast(size_t count=1) const noexcept {return AsRange().DropLast(count);}
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Char& Last()
+	{
+		INTRA_DEBUG_ASSERT(!Empty());
+		return Data()[Length()-1];
+	}
+	
+	INTRA_NODISCARD constexpr forceinline Char Last() const
+	{
+		return INTRA_DEBUG_ASSERT(!Empty()),
+			Data()[Length()-1];
+	}
 
-	forceinline GenericStringView<Char> Take(size_t count) noexcept {return AsRange().Take(count);}
-	forceinline GenericStringView<const Char> Take(size_t count) const noexcept {return AsRange().Take(count);}
+	/**
+	  @name Views to internal data
+	  @return StringView containing all string characters.
+	  @warning
+	  The returned range becomes invalid after any modification to this string or its destruction.
+	  Use this method carefully with temporary objects:
+	  auto range = String("a").AsRange(); //Error: range is dangling.
+	  foo(String("a").AsRange()); //OK: the returned StringView is valid before foo returns.
+	**/
+	///@{
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline GenericStringView<Char> AsRange() {return {Data(), Length()};}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> AsRange() const {return {Data(), Length()};}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> AsConstRange() const {return {Data(), Length()};}
 
-	forceinline GenericStringView<Char> Tail(size_t count) noexcept {return AsRange().Tail(count);}
-	forceinline GenericStringView<const Char> Tail(size_t count) const noexcept {return AsRange().Tail(count);}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<Char> TakeNone() noexcept {return {Data(), 0};}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> TakeNone() const noexcept {return {Data(), 0};}
 
-	//! Заменить все вхождения subStr на newSubStr
-	static GenericString ReplaceAll(GenericStringView<const Char> str,
+	INTRA_NODISCARD constexpr forceinline GenericStringView<Char> Drop(size_t count=1) noexcept {return AsRange().Drop(count);}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> Drop(size_t count=1) const noexcept {return AsRange().Drop(count);}
+
+	INTRA_NODISCARD constexpr forceinline GenericStringView<Char> DropLast(size_t count=1) noexcept {return AsRange().DropLast(count);}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> DropLast(size_t count=1) const noexcept {return AsRange().DropLast(count);}
+
+	INTRA_NODISCARD constexpr forceinline GenericStringView<Char> Take(size_t count) noexcept {return AsRange().Take(count);}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> Take(size_t count) const noexcept {return AsRange().Take(count);}
+
+	INTRA_NODISCARD constexpr forceinline GenericStringView<Char> Tail(size_t count) noexcept {return AsRange().Tail(count);}
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> Tail(size_t count) const noexcept {return AsRange().Tail(count);}
+
+	
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Char* Data() {return IsHeapAllocated()? u.m.Data: u.buf;}
+	INTRA_NODISCARD constexpr forceinline const Char* Data() const {return IsHeapAllocated()? u.m.Data: u.buf;}
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Char* End() {return Data()+Length();}
+	INTRA_NODISCARD constexpr forceinline const Char* End() const {return Data()+Length();}
+
+	INTRA_NODISCARD const Char* CStr()
+	{
+		const size_t len = Length();
+		if(!IsHeapAllocated())
+		{
+			u.buf[len] = '\0';
+			return u.buf;
+		}
+		RequireSpace(1);
+		const auto data = Data();
+		data[len] = '\0';
+		return data;
+	}
+	///@}
+
+	//! Replace all occurences of \p subStr to \p newSubStr.
+	static INTRA_NODISCARD GenericString ReplaceAll(GenericStringView<const Char> str,
 		GenericStringView<const Char> subStr, GenericStringView<const Char> newSubStr)
 	{
 		GenericString result;
-		Range::CountRange<Char> counter;
-		Range::MultiReplaceToAdvance(str, counter, RangeOf({Meta::TupleL(subStr, newSubStr)}));
+		CountRange<Char> counter;
+		MultiReplaceToAdvance(str, counter, RangeOf({TupleL(subStr, newSubStr)}));
 		result.SetLengthUninitialized(counter.Counter);
-		Range::MultiReplaceToAdvance(str, result.AsRange(), RangeOf({Meta::TupleL(subStr, newSubStr)}));
+		MultiReplaceToAdvance(str, result.AsRange(), RangeOf({TupleL(subStr, newSubStr)}));
 		return result;
 	}
 
-	static GenericString ReplaceAll(GenericStringView<const Char> str, Char c, Char newc)
+	static INTRA_NODISCARD GenericString ReplaceAll(GenericStringView<const Char> str, Char c, Char newc)
 	{
 		if(c==newc) return str;
 		GenericString result;
 		result.SetLengthUninitialized(str.Length());
 		for(size_t i = 0; i<str.Length(); i++)
-			result[i] = str[i]==c? newc: str[i];
+			result[i] = str[i] == c? newc: str[i];
 		return result;
 	}
 
@@ -364,37 +389,39 @@ public:
 		CSpan<GenericStringView<const Char>> newSubStrs)
 	{
 		GenericString result;
-		Range::CountRange<Char> counter;
-		Range::MultiReplaceToAdvance(str, counter, Range::Zip(subStrs, newSubStrs));
+		CountRange<Char> counter;
+		MultiReplaceToAdvance(str, counter, Zip(subStrs, newSubStrs));
 		result.SetLengthUninitialized(counter.Counter);
-		Range::MultiReplaceTo(str, result, Range::Zip(subStrs, newSubStrs));
+		MultiReplaceTo(str, result, Zip(subStrs, newSubStrs));
 		return result;
 	}
 
-	//! Повторить строку n раз
+	//! Repeat ``str`` ``n`` times.
 	static GenericString Repeat(GenericStringView<const Char> str, size_t n)
 	{
 		if(str.Empty()) return null;
 		GenericString result;
 		result.SetLengthUninitialized(str.Length()*n);
-		Range::FillPattern(result, str);
+		FillPattern(result, str);
 		return result;
 	}
 
-	forceinline void AddLast(Char c) {operator+=(c);}
+	INTRA_CONSTEXPR2 forceinline void AddLast(Char c) {operator+=(c);}
 
-	//! @defgroup BList_STL_Interface STL-подобный интерфейс для BList
+
+	INTRA_NODISCARD constexpr forceinline Char* begin() {return Data();}
+	INTRA_NODISCARD constexpr forceinline Char* end() {return Data()+Length();}
+	INTRA_NODISCARD constexpr forceinline const Char* begin() const {return Data();}
+	INTRA_NODISCARD constexpr forceinline const Char* end() const {return Data()+Length();}
+
+#ifdef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+	//! @defgroup String_STL_Interface STL-подобный интерфейс для BList
 	//! Этот интерфейс предназначен для совместимости с обобщённым контейнеро-независимым кодом.
 	//! Использовать напрямую этот интерфейс не рекомендуется.
 	//!@{
 	typedef char* iterator;
 	typedef const char* const_iterator;
 	typedef Char value_type;
-
-	forceinline Char* begin() {return Data();}
-	forceinline Char* end() {return Data()+Length();}
-	forceinline const Char* begin() const {return Data();}
-	forceinline const Char* end() const {return Data()+Length();}
 
 	forceinline void push_back(Char c) {operator+=(c);}
 	forceinline void reserve(size_t capacity) {Reserve(capacity);}
@@ -431,50 +458,52 @@ public:
 
 	forceinline void clear() {SetLengthUninitialized(0);}
 	//!@}
+#endif
 
 
-	//! Форматирование строки
+	//! String formatting.
 	//! @param format Строка, содержащая метки <^>, в которые будут подставляться аргументы.
 	//! @param () Используйте скобки для передачи параметров и указания их форматирования
 	//! @return Прокси-объект для форматирования, неявно преобразующийся к String.
-	static forceinline StringFormatter<GenericString> Format(GenericStringView<const Char> format=null)
+	static forceinline INTRA_NODISCARD StringFormatter<GenericString> Format(GenericStringView<const Char> format=null)
 	{return StringFormatter<GenericString>(format);}
 
 	//! Формирование строки как конкатенация строковых представлений аргугментов функции.
-	template<typename... Args> static forceinline GenericString Concat(Args&&... args)
-	{return StringFormatter<GenericString>(null).Arg(Cpp::Forward<Args>(args)...);}
+	template<typename... Args> static INTRA_NODISCARD forceinline GenericString Concat(Args&&... args)
+	{return StringFormatter<GenericString>(null).Arg(Forward<Args>(args)...);}
 
 	template<typename Arg> GenericString& operator<<(Arg&& value)
 	{
-		const size_t maxLen = Range::MaxLengthOfToString(value);
+		// TODO: potential code bloat, can it be reduced?
+		const size_t maxLen = MaxLengthOfToString(value);
 		SetLengthUninitialized(Length() + maxLen);
 		auto bufferRest = Tail(maxLen);
-		ToString(bufferRest, Cpp::Forward<Arg>(value));
+		ToString(bufferRest, Forward<Arg>(value));
 		SetLengthUninitialized(Length() - bufferRest.Length());
 		return *this;
 	}
 
-	forceinline GenericStringView<Char> View()
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline GenericStringView<Char> View()
 	{return {Data(), Length()};}
 	
-	forceinline GenericStringView<Char> View(size_t startIndex, size_t endIndex)
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline GenericStringView<Char> View(size_t startIndex, size_t endIndex)
 	{
 		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
 		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
 	}
 
-	forceinline GenericStringView<const Char> View() const
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const Char> View() const
 	{return {Data(), Length()};}
 	
-	forceinline GenericStringView<const Char> View(size_t startIndex, size_t endIndex) const
+	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline GenericStringView<const Char> View(size_t startIndex, size_t endIndex) const
 	{
 		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
 		INTRA_DEBUG_ASSERT(endIndex <= Length());
 		return {Data()+startIndex, Data()+endIndex};
 	}
 
-	forceinline bool IsHeapAllocated() const {return (m.Capacity & SSO_LONG_BIT_MASK)!=0;}
+	INTRA_NODISCARD constexpr forceinline bool IsHeapAllocated() const {return (u.m.Capacity & SSO_LONG_BIT_MASK) != 0;}
 
 private:
 	struct M
@@ -484,235 +513,236 @@ private:
 		size_t Capacity;
 	};
 
+	// Before calling constructor object is a string consisting of sizeof(M)/sizeof(Char)-1 '\0' chars
 	union
 	{
 		M m;
-		Char mBuffer[sizeof(M)/sizeof(Char)];
-	};
+		Char buf[sizeof(M)/sizeof(Char)]{};
+	} u;
 
 	enum: size_t
 	{
-		SSO_LE = INTRA_PLATFORM_ENDIANESS==INTRA_PLATFORM_ENDIANESS_LittleEndian,
+		SSO_LE = INTRA_PLATFORM_ENDIANESS == INTRA_PLATFORM_ENDIANESS_LittleEndian,
 		SSO_LONG_BIT_MASK = SSO_LE? //Выбираем бит, который будет означать, выделена ли память в куче. Он должен находиться в последнем элементе mBuffer.
 			(size_t(1) << (sizeof(size_t)*8-1)): //В little-endian лучше всего подходит старший бит m.Capacity.
 			1, //В big-endian лучше всего подходит младший бит m.Capacity.
 		SSO_CAPACITY_MASK = ~SSO_LONG_BIT_MASK,
 		SSO_CAPACITY_RIGHT_SHIFT = 1-SSO_LE, //В little-endian сдвига нет, а в big-endian нужно убрать младший бит, не относящийся к ёмкости выделенного буфера
 		SSO_SHORT_SIZE_SHIFT = 1-SSO_LE, //Когда строка размещается в SSO, в последнем элементе mBuffer содержится обратная длина строки. Но в big-endian младший бит занят, поэтому нужен сдвиг
-		SSO_BUFFER_CAPACITY_CHARS = sizeof(M)/sizeof(Char)-1, //В режиме SSO используется все байты объекта кроме последнего, который может быть только терминирующим нулём
+		SSO_BUFFER_CAPACITY_CHARS = sizeof(M)/sizeof(Char)-1, //В режиме SSO используется все символы буфера объекта кроме последнего, который может быть только терминирующим нулём
 		SSO_CAPACITY_FIELD_FOR_EMPTY = SSO_LE? //Значение m.Capacity, соответствующее пустой строке. Нужно для конструктора по уиолчанию
 			SSO_BUFFER_CAPACITY_CHARS << (sizeof(size_t)-sizeof(Char))*8:
 			SSO_BUFFER_CAPACITY_CHARS << 1
 	};
 
-	forceinline void setShortLength(size_t len) noexcept
-	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char((SSO_BUFFER_CAPACITY_CHARS - len) << SSO_SHORT_SIZE_SHIFT);}
+	INTRA_CONSTEXPR2 forceinline void setShortLength(size_t len) noexcept
+	{u.buf[SSO_BUFFER_CAPACITY_CHARS] = Char((SSO_BUFFER_CAPACITY_CHARS - len) << SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline size_t getShortLength() const noexcept
-	{return SSO_BUFFER_CAPACITY_CHARS - (mBuffer[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT);}
+	constexpr forceinline size_t getShortLength() const noexcept
+	{return SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline void setLongCapacity(size_t newCapacity) noexcept
-	{m.Capacity = (newCapacity << SSO_CAPACITY_RIGHT_SHIFT)|SSO_LONG_BIT_MASK;}
+	INTRA_CONSTEXPR2 forceinline void setLongCapacity(size_t newCapacity) noexcept
+	{u.m.Capacity = (newCapacity << SSO_CAPACITY_RIGHT_SHIFT)|SSO_LONG_BIT_MASK;}
 
-	forceinline size_t getLongCapacity() const noexcept
-	{return (m.Capacity & SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT;}
+	constexpr forceinline size_t getLongCapacity() const noexcept
+	{return (u.m.Capacity & SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT;}
 
-	forceinline void shortLenDecrement()
-	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char(mBuffer[SSO_BUFFER_CAPACITY_CHARS] + (1 << SSO_SHORT_SIZE_SHIFT));}
+	INTRA_CONSTEXPR2 forceinline void shortLenDecrement()
+	{u.buf[SSO_BUFFER_CAPACITY_CHARS] = Char(mBuffer[SSO_BUFFER_CAPACITY_CHARS] + (1 << SSO_SHORT_SIZE_SHIFT));}
 
-	forceinline void shortLenIncrement()
-	{mBuffer[SSO_BUFFER_CAPACITY_CHARS] = Char(mBuffer[SSO_BUFFER_CAPACITY_CHARS] - (1 << SSO_SHORT_SIZE_SHIFT));}
+	INTRA_CONSTEXPR2 forceinline void shortLenIncrement()
+	{u.buf[SSO_BUFFER_CAPACITY_CHARS] = Char(u.buf[SSO_BUFFER_CAPACITY_CHARS] - (1 << SSO_SHORT_SIZE_SHIFT));}
 
-	forceinline bool emptyShort() const noexcept
-	{return mBuffer[SSO_BUFFER_CAPACITY_CHARS] == Char(SSO_BUFFER_CAPACITY_CHARS << SSO_SHORT_SIZE_SHIFT);}
+	constexpr forceinline bool emptyShort() const noexcept
+	{return u.buf[SSO_BUFFER_CAPACITY_CHARS] == Char(SSO_BUFFER_CAPACITY_CHARS << SSO_SHORT_SIZE_SHIFT);}
 
-	forceinline void resetToEmptySsoWithoutFreeing() noexcept
-	{m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
+	INTRA_CONSTEXPR2 forceinline void resetToEmptySsoWithoutFreeing() noexcept
+	{u.m.Capacity = SSO_CAPACITY_FIELD_FOR_EMPTY;}
 
 	forceinline void freeLongData() noexcept
-	{Memory::GlobalHeap.Free(m.Data, getLongCapacity()*sizeof(Char));}
+	{deallocate(u.m.Data, getLongCapacity()*sizeof(Char));}
 
-	forceinline bool containsView(StringView rhs) const noexcept
+	constexpr forceinline bool containsView(StringView rhs) const noexcept
 	{return Data() <= rhs.Data() && rhs.Data() < End();}
 
-	forceinline bool sameRange(StringView rhs) const noexcept
+	constexpr forceinline bool sameRange(StringView rhs) const noexcept
 	{return Data() == rhs.Data() && Length() == rhs.Length();}
+
+	static forceinline Char* allocate(size_t newCapacityInBytes)
+	{return Memory::GlobalHeap.Allocate(newCapacityInBytes, INTRA_SOURCE_INFO);}
+
+	static forceinline void deallocate(Char* data, size_t oldCapacityInBytes)
+	{Memory::GlobalHeap.Free(data, oldCapacityInBytes);}
 };
 
-template<typename Char> forceinline
+template<typename Char> INTRA_NODISCARD forceinline
 GenericString<Char> operator+(GenericString<Char>&& lhs, GenericStringView<const Char> rhs)
-{return Cpp::Move(lhs += rhs);}
+{return Move(lhs += rhs);}
 
 template<typename R,
-	typename Char = Concepts::ValueTypeOfAs<R>
-> forceinline Meta::EnableIf<
-	Concepts::IsArrayClass<R>::_ &&
-	!Meta::TypeEquals<R, GenericStringView<const Char>>::_,
+	typename Char = TValueTypeOfAs<R>
+> INTRA_NODISCARD forceinline Requires<
+	CArrayClass<R> &&
+	!CSame<R, GenericStringView<const Char>>,
 GenericString<Char>> operator+(GenericString<Char>&& lhs, R&& rhs)
-{return Cpp::Move(lhs+=GenericStringView<const Char>(rhs));}
+{return Move(lhs += GenericStringView<const Char>(rhs));}
 
 
-template<typename Char> forceinline
+template<typename Char> INTRA_NODISCARD forceinline
 GenericString<Char> operator+(GenericString<Char>&& lhs, Char rhs)
-{return Cpp::Move(lhs += rhs);}
+{return Move(lhs += rhs);}
 
 #ifdef INTRA_USER_DEFINED_LITERALS_SUPPORT
-forceinline String operator ""_s(const char* str, size_t len)
+INTRA_NODISCARD forceinline String operator ""_s(const char* str, size_t len)
 {return String(str, len);}
 
-forceinline WString operator ""_w(const wchar* str, size_t len)
+INTRA_NODISCARD forceinline WString operator ""_w(const char16_t* str, size_t len)
 {return WString(str, len);}
 
-forceinline DString operator ""_d(const dchar* str, size_t len)
+INTRA_NODISCARD forceinline DString operator ""_d(const char32_t* str, size_t len)
 {return DString(str, len);}
 #endif
 
-template<typename T, typename... Args> forceinline String StringOfConsume(T&& value, Args&&... args)
-{return String::Format()(Cpp::Forward<T>(value), Cpp::Forward<Args>(args)...);}
+template<typename T, typename... Args> INTRA_NODISCARD forceinline String StringOfConsume(T&& value, Args&&... args)
+{return String::Format()(Forward<T>(value), Forward<Args>(args)...);}
 
-template<typename T, typename... Args> forceinline String StringOf(const T& value, Args&&... args)
-{return String::Format()(value, Cpp::Forward<Args>(args)...);}
+template<typename T, typename... Args> INTRA_NODISCARD forceinline String StringOf(const T& value, Args&&... args)
+{return String::Format()(value, Forward<Args>(args)...);}
 
-template<typename T, size_t N, typename... Args> forceinline String StringOf(T(&value)[N], Args&&... args)
-{return String::Format()(value, Cpp::Forward<Args>(args)...);}
+template<typename T, size_t N, typename... Args> INTRA_NODISCARD forceinline String StringOf(T(&value)[N], Args&&... args)
+{return String::Format()(value, Forward<Args>(args)...);}
 
-forceinline const String& StringOf(const String& value) {return value;}
-forceinline StringView StringOf(const StringView& value) {return value;}
-forceinline StringView StringOf(const char* value) {return StringView(value);}
-template<size_t N> forceinline StringView StringOf(const char(&value)[N]) {return StringView(value);}
-
-
-template<typename T, typename... Args> forceinline WString WStringOfConsume(T&& value, Args&&... args)
-{return WString::Format()(Cpp::Forward<T>(value), Cpp::Forward<Args>(args)...);}
-
-template<typename T, typename... Args> forceinline WString WStringOf(const T& value, Args&&... args)
-{return WString::Format()(value, Cpp::Forward<Args>(args)...);}
-
-forceinline const WString& WStringOf(const WString& value) {return value;}
-forceinline WStringView WStringOf(const WStringView& value) {return value;}
-forceinline WStringView WStringOf(const wchar* value) {return WStringView(value);}
-template<size_t N> forceinline WStringView WStringOf(const wchar(&value)[N]) {return WStringView(value);}
+INTRA_NODISCARD forceinline const String& StringOf(const String& value) {return value;}
+INTRA_NODISCARD forceinline StringView StringOf(const StringView& value) {return value;}
+INTRA_NODISCARD forceinline StringView StringOf(const char* value) {return StringView(value);}
+template<size_t N> INTRA_NODISCARD forceinline StringView StringOf(const char(&value)[N]) {return StringView(value);}
 
 
-template<typename T, typename... Args> forceinline DString DStringOfConsume(T&& value, Args&&... args)
-{return DString::Format()(Cpp::Forward<T>(value), Cpp::Forward<Args>(args)...);}
+template<typename T, typename... Args> INTRA_NODISCARD forceinline WString WStringOfConsume(T&& value, Args&&... args)
+{return WString::Format()(Forward<T>(value), Forward<Args>(args)...);}
 
-template<typename T, typename... Args> forceinline DString DStringOf(const T& value, Args&&... args)
-{return DString::Format()(value, Cpp::Forward<Args>(args)...);}
+template<typename T, typename... Args> INTRA_NODISCARD forceinline WString WStringOf(const T& value, Args&&... args)
+{return WString::Format()(value, Forward<Args>(args)...);}
 
-forceinline const DString& DStringOf(const DString& value) {return value;}
-forceinline DStringView DStringOf(const DStringView& value) {return value;}
-forceinline DStringView DStringOf(const dchar* value) {return DStringView(value);}
-template<size_t N> forceinline DStringView DStringOf(const dchar(&value)[N]) {return DStringView(value);}
+INTRA_NODISCARD forceinline const WString& WStringOf(const WString& value) {return value;}
+INTRA_NODISCARD forceinline WStringView WStringOf(const WStringView& value) {return value;}
+INTRA_NODISCARD forceinline WStringView WStringOf(const char16_t* value) {return WStringView(value);}
+template<size_t N> INTRA_NODISCARD forceinline WStringView WStringOf(const char16_t(&value)[N]) {return WStringView(value);}
+
+
+template<typename T, typename... Args> INTRA_NODISCARD forceinline DString DStringOfConsume(T&& value, Args&&... args)
+{return DString::Format()(Forward<T>(value), Forward<Args>(args)...);}
+
+template<typename T, typename... Args> INTRA_NODISCARD forceinline DString DStringOf(const T& value, Args&&... args)
+{return DString::Format()(value, Forward<Args>(args)...);}
+
+INTRA_NODISCARD forceinline const DString& DStringOf(const DString& value) {return value;}
+INTRA_NODISCARD forceinline DStringView DStringOf(const DStringView& value) {return value;}
+INTRA_NODISCARD forceinline DStringView DStringOf(const char32_t* value) {return DStringView(value);}
+template<size_t N> INTRA_NODISCARD forceinline DStringView DStringOf(const char32_t(&value)[N]) {return DStringView(value);}
 
 }
-using Container::StringOf;
-using Container::StringOfConsume;
-using Container::WStringOf;
-using Container::WStringOfConsume;
-using Container::DStringOf;
-using Container::DStringOfConsume;
 
-namespace Meta {
+namespace Core {
 
 template<typename Char>
 struct IsTriviallyRelocatable<GenericString<Char>>: TrueType {};
 
 
 namespace D {
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&&, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&&, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&&, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<Char>&&, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
-
-
-
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
-
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
-
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
-
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<Char>&&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
 
 
 
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&&, GenericString<Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<const Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&&, GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<const Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&&, GenericString<Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<const Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericStringView<const Char>&&, const GenericString<Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericStringView<const Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, const GenericStringView<Char>&> { typedef GenericString<Char> _; };
 
 
 
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<const Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&&, GenericString<Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<const Char>&, GenericString<Char>> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&&, GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<const Char>&, GenericString<Char>&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<GenericString<Char>&&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&&, GenericString<Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<const Char>&, GenericString<Char>&&> { typedef GenericString<Char> _; };
 
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
-template<typename Char> struct CommonTypeRef<const GenericString<Char>&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericStringView<const Char>&&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericStringView<const Char>&, const GenericString<Char>&> { typedef GenericString<Char> _; };
+
+
+
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<const Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<GenericString<Char>&&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<const Char>> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<const Char>&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, GenericStringView<const Char>&&> { typedef GenericString<Char> _; };
+template<typename Char> struct TCommonRef_<const GenericString<Char>&, const GenericStringView<const Char>&> { typedef GenericString<Char> _; };
 
 }
 
 
-static_assert(TypeEquals<CommonTypeRef<String, StringView>, String>::_, "ERROR!");
-static_assert(Concepts::IsSequentialContainer<String>::_, "ERROR!");
-static_assert(Concepts::IsDynamicArrayContainer<String>::_, "ERROR!");
-static_assert(Meta::IsTriviallySerializable<Concepts::ValueTypeOf<String>>::_, "ERROR!");
+static_assert(CSame<TCommonRef<String, StringView>, String>, "ERROR!");
+static_assert(CSequentialContainer<String>, "ERROR!");
+static_assert(CDynamicArrayContainer<String>, "ERROR!");
+static_assert(CPod<TValueTypeOf<String>>, "ERROR!");
 
 }
 
@@ -744,90 +774,74 @@ template<typename Char> GenericString<Char> operator+(Char lhs, GenericStringVie
 }
 
 template<typename S1, typename S2,
-	typename Char=Concepts::ElementTypeOfArray<S1>
-> forceinline Meta::EnableIf<
-	Concepts::IsArrayClass<S1>::_ &&
-	Concepts::IsArrayClass<S2>::_ &&
-	(Concepts::HasData<S1>::_ ||
-		Concepts::HasData<S2>::_ ||
-		Concepts::IsInputRange<S1>::_ ||
-		Concepts::IsInputRange<S2>::_ ||
-		Meta::IsArrayType<Meta::RemoveReference<S1>>::_ ||
-		Meta::IsArrayType<Meta::RemoveReference<S2>>::_) && //Чтобы не конфликтовать с оператором из STL
-	Meta::TypeEquals<Char, Concepts::ElementTypeOfArray<S2>>::_,
+	typename Char=TArrayElement<S1>
+> forceinline Requires<
+	CArrayClass<S1> && CArrayClass<S2> &&
+	(CHasData<S1> ||
+		CHasData<S2> ||
+		CInputRange<S1> ||
+		CInputRange<S2> ||
+		CArrayType<TRemoveReference<S1>> ||
+		CArrayType<TRemoveReference<S2>>) && // To avoid conflicts with STL operator+
+	CSame<Char, TArrayElement<S2>>,
 GenericString<Char>> operator+(S1&& lhs, S2&& rhs)
 {return GenericStringView<const Char>(lhs)+GenericStringView<const Char>(rhs);}
 
 template<typename S1, typename S2,
-typename AsS1 = Concepts::RangeOfType<S1>,
-typename AsS2 = Concepts::RangeOfType<S2>,
-typename Char = Concepts::ValueTypeOf<AsS1>>
-Meta::EnableIf<
-	(Concepts::IsInputRange<AsS1>::_ ||
-		Concepts::IsInputRange<AsS2>::_) &&
-	Concepts::IsConsumableRange<AsS1>::_ &&
-	Concepts::IsConsumableRange<AsS2>::_ &&
-	(!Concepts::IsArrayClass<S1>::_ ||
-		!Concepts::IsArrayClass<S2>::_ ||
-	!Meta::TypeEquals<Char, Concepts::ElementTypeOfArray<AsS2>>::_),
+typename AsS1 = TRangeOfType<S1>,
+typename AsS2 = TRangeOfType<S2>,
+typename Char = TValueTypeOf<AsS1>>
+Requires<
+	(CInputRange<AsS1> || CInputRange<AsS2>) &&
+	CConsumableRange<AsS1> &&
+	CConsumableRange<AsS2> &&
+	(!CArrayClass<S1> || !CArrayClass<S2> || !CSame<Char, TArrayElement<AsS2>>),
 GenericString<Char>> operator+(S1&& lhs, S2&& rhs)
 {
 	GenericString<Char> result;
-	result.Reserve(Range::LengthOr0(lhs)+Range::LengthOr0(rhs));
-	Range::CopyTo(Range::Forward<S1>(lhs), LastAppender(result));
-	Range::CopyTo(Range::Forward<S2>(rhs), LastAppender(result));
+	result.Reserve(LengthOr0(lhs) + LengthOr0(rhs));
+	CopyTo(ForwardAsRange<S1>(lhs), LastAppender(result));
+	CopyTo(ForwardAsRange<S2>(rhs), LastAppender(result));
 	return result;
 }
 
 template<typename R,
-	typename AsR = Concepts::RangeOfType<R>,
-	typename Char = Concepts::ValueTypeOf<AsR>
-> Meta::EnableIf<
-	Concepts::IsConsumableRange<AsR>::_ &&
-	//Чтобы не конфликтовать с STL
-	(!Concepts::Has_data<R>::_ ||
-		Concepts::HasAsRangeMethod<R>::_ ||
-		Concepts::IsInputRange<R>::_) &&
-
-	Meta::IsCharType<Char>::_,
+	typename AsR = TRangeOfType<R>,
+	typename Char = TValueTypeOf<AsR>
+> Requires<
+	CConsumableRange<AsR> &&
+	(!CHas_data<R> || CHasAsRangeMethod<R> || CInputRange<R>) && //To avoid conflicts with STL
+	CChar<Char>,
 GenericString<Char>> operator+(R&& lhs, Char rhs)
 {
 	GenericString<Char> result;
-	result.Reserve(Range::LengthOr0(lhs)+1);
-	result += Range::Forward<R>(lhs);
+	result.Reserve(LengthOr0(lhs)+1);
+	result += ForwardAsRange<R>(lhs);
 	result += rhs;
 	return result;
 }
 
 template<typename R, typename Char,
-	typename Char2 = Concepts::ValueTypeOfAs<R>
-> Meta::EnableIf<
-	Concepts::IsAsConsumableRange<R>::_ &&
-	//Чтобы не конфликтовать с STL
-	(!Concepts::Has_data<R>::_ ||
-		Concepts::HasAsRangeMethod<R>::_ ||
-		Concepts::IsInputRange<R>::_) &&
-
-	Meta::IsCharType<Char2>::_ &&
-	(Meta::IsCharType<Char>::_ ||
-		Meta::IsIntegralType<Char>::_),
+	typename Char2 = TValueTypeOfAs<R>
+> Requires<
+	CAsConsumableRange<R> &&
+	(!CHas_data<R> || CHasAsRangeMethod<R> || CInputRange<R>) && //To avoid conflicts with STL
+	CChar<Char2> &&
+	CChar<Char>,
 GenericString<Char2>> operator+(Char lhs, R&& rhs)
 {
 	GenericString<Char2> result;
 	result.Reserve(1 + Range::LengthOr0(rhs));
 	result += lhs;
-	result += Range::Forward<R>(rhs);
+	result += ForwardAsRange<R>(rhs);
 	return result;
 }
 
-static_assert(Concepts::IsAsConsumableRange<String>::_, "ERROR!");
-static_assert(Concepts::IsAsConsumableRange<const String>::_, "ERROR!");
-static_assert(Concepts::IsSequentialContainer<String>::_, "ERROR!");
-static_assert(Concepts::IsSequentialContainer<const String>::_, "ERROR!");
+static_assert(CAsConsumableRange<String>, "ERROR!");
+static_assert(CAsConsumableRange<const String>, "ERROR!");
+static_assert(CSequentialContainer<String>, "ERROR!");
+static_assert(CSequentialContainer<const String>, "ERROR!");
 
-static_assert(Meta::TypeEquals<Concepts::RangeOfType<const String&>, StringView>::_, "ERROR!");
+static_assert(CSame<TRangeOfType<const String&>, StringView>, "ERROR!");
 
-}
-
-INTRA_WARNING_POP
-
+INTRA_END

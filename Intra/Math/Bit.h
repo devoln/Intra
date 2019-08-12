@@ -1,39 +1,39 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Meta/Type.h"
+#include "Core/Core.h"
+#include "Core/Type.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+inline namespace Math {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename T> constexpr forceinline Meta::EnableIf<
-	Meta::IsScalarType<T>::_,
-flag32> BitsOf(T value)
+template<typename T> constexpr forceinline Requires<
+	CScalar<T>,
+uint> BitsOf(T value)
 {
-	return flag32(value);
+	return uint(value);
 }
 
-template<typename T> constexpr forceinline Meta::EnableIf<
-	Meta::IsScalarType<T>::_,
-flag32> BitsOf(T value, uint offset)
+template<typename T> constexpr forceinline Requires<
+	CScalar<T>,
+uint> BitsOf(T value, uint offset)
 {
-	return BitsOf(value) << offset;
+	return uint(value) << offset;
 }
 
 
-template<typename T> Meta::EnableIf<
-	Meta::IsUnsignedIntegralType<T>::_,
+template<typename T> Requires<
+	CUnsignedIntegral<T>,
 uint> Count1Bits(T mask)
 {
 	uint bitCount = 0;
-	while(mask!=0) mask &= mask-1, bitCount++;
+	while(mask != 0) mask &= mask-1, bitCount++;
 	return bitCount;
 }
 
-template<typename T> forceinline Meta::EnableIf<
-	Meta::IsUnsignedIntegralType<T>::_,
+template<typename T> forceinline Requires<
+	CUnsignedIntegral<T>,
 uint> FindBitPosition(T mask)
 {
 	return Count1Bits((mask&(~mask+1))-1);
@@ -41,9 +41,8 @@ uint> FindBitPosition(T mask)
 
 forceinline uint BitCountToMask(uint bitCount)
 {
-	return (bitCount==32)? 0xFFFFFFFFu: (1u << bitCount)-1u;
+	return (bitCount == 32)? 0xFFFFFFFFu: (1u << bitCount)-1u;
 }
 
-INTRA_WARNING_POP
-
-}}
+}
+INTRA_END

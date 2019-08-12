@@ -6,7 +6,8 @@
 #include "Aabb.h"
 #include "Obb.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Frustum
 {

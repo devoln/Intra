@@ -1,19 +1,13 @@
 ﻿#pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Cpp/InfNan.h"
-
+#include "Core/Float.h"
 #include "Math/Math.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
+INTRA_BEGIN
 #ifdef _MSC_VER
-#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#pragma warning(disable: 4201) //Do not complain about union { struct { ... }; ...};
 #endif
-
-namespace Intra { namespace Math {
+inline namespace Math {
 
 template<typename T> struct Vector3;
 template<typename T> struct Vector4;
@@ -65,8 +59,8 @@ template<typename T> struct Vector2
 
 	constexpr forceinline bool operator==(const Vector2& rhs) const noexcept {return (x==rhs.x && y==rhs.y);}
 	constexpr forceinline bool operator!=(const Vector2& rhs) const noexcept {return !operator==(rhs);}
-	forceinline bool operator==(Cpp::TNaN) const noexcept {return x + y == NaN;}
-	forceinline bool operator!=(Cpp::TNaN) const noexcept {return !operator==(NaN);}
+	forceinline bool operator==(TNaN) const noexcept {return x + y == NaN;}
+	forceinline bool operator!=(TNaN) const noexcept {return !operator==(NaN);}
 
 	constexpr forceinline Vector2 operator<<(uint rhs) const {return {x << rhs, y << rhs};}
 	constexpr forceinline Vector2 operator>>(uint rhs) const {return {x >> rhs, y >> rhs};}
@@ -93,7 +87,7 @@ template<typename T> struct Vector2
 
 	forceinline T* Data() noexcept {return &x;}
 	constexpr forceinline const T* Data() const noexcept {return &x;}
-	constexpr forceinline size_t Length() const noexcept {return 2;}
+	constexpr forceinline index_t Length() const noexcept {return 2;}
 
 	forceinline T& operator[](size_t index) {return (&x)[index];}
 	forceinline const T& operator[](size_t index) const {return (&x)[index];}
@@ -194,17 +188,6 @@ template<typename T> Vector2<T> Abs(const Vector2<T>& v)
 {return Vector2<T>(Abs(v.x), Abs(v.y));}
 
 
-namespace GLSL {
-template<typename T> constexpr forceinline T dot(const Vector2<T>& l, const Vector2<T>& r) {return Dot(l, r);}
-template<typename T> forceinline T length(const Vector2<T>& v) {return Length(v);}
-template<typename T> forceinline T distance(const Vector2<T>& l, const Vector2<T>& r) {return Distance(l, r);}
-template<typename T> forceinline Vector2<T> normalize(const Vector2<T>& v) {return Normalize(v);}
-template<typename T> constexpr forceinline Vector2<T> reflect(const Vector2<T>& incident, const Vector2<T>& normal) {return Reflect(incident, normal);}
-template<typename T> forceinline Vector2<T> refract(const Vector2<T>& I, const Vector2<T>& N, float eta) {return Refract(I, N, eta);}
-template<typename T> constexpr forceinline Vector2<T> faceforward(const Vector2<T>& N, const Vector2<T>& I, const Vector2<T>& Nref) {return FaceForward(N, I, Nref);}
-}
-
-
 typedef Vector2<float> Vec2;
 typedef Vector2<double> DVec2;
 typedef Vector2<int> IVec2;
@@ -215,15 +198,5 @@ typedef Vector2<ushort> USVec2;
 typedef Vector2<short> SVec2;
 typedef Vector2<bool> BVec2;
 
-
-namespace GLSL {
-typedef Vector2<float> vec2;
-typedef Vector2<double> dvec2;
-typedef Vector2<int> ivec2;
-typedef Vector2<uint> uvec2;
-typedef Vector2<bool> bvec2;
 }
-
-}}
-
-INTRA_WARNING_POP
+INTRA_END

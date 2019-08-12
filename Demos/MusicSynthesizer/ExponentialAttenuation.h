@@ -1,30 +1,18 @@
 ﻿#pragma once
 
-#include <Cpp/Warnings.h>
-#include <Cpp/Features.h>
-#include <Utils/Span.h>
+#include <Core/Warnings.h>
+#include <Core/Features.h>
+#include <Core/Span.h>
 #include <Math/Math.h>
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-
-//Копирует src в dst с затуханием, пока не кончится либо dst, либо src.
-void ExponentialAttenuate(Span<float>& dst, CSpan<float>& src, float& exp, float ek);
-void ExponentialAttenuateAdd(Span<float>& dst, CSpan<float>& src, float& exp, float ek);
-void ExponentialLinearAttenuate(Span<float>& dst, CSpan<float>& src, float& exp, float ek, float& u, float du);
-void ExponentialLinearAttenuateAdd(Span<float>& dst, CSpan<float>& src, float& exp, float ek, float& u, float du);
-
-inline void ExponentialAttenuate(Span<float>& inOutSamples, float& exp, float ek)
-{
-	CSpan<float> src = inOutSamples;
-	ExponentialAttenuate(inOutSamples, src, exp, ek);
-}
 
 struct ExponentAttenuator
 {
 	float Factor, FactorStep;
 
-	ExponentAttenuator(null_t=null): Factor(1), FactorStep(1) {}
-	ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
+	forceinline ExponentAttenuator(null_t=null): Factor(1), FactorStep(1) {}
+	forceinline ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
 		Factor(startVolume), FactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
 
 	static forceinline ExponentAttenuator FromFactorAndStep(float factor, float factorStep)
@@ -35,10 +23,15 @@ struct ExponentAttenuator
 		return result;
 	}
 
-	void operator()(Span<float> inOutSamples);
-	void operator()(Span<float> dstSamples, CSpan<float> srcSamples);
+	forceinline void SkipSamples(size_t count)
+	{Factor *= Math::PowInt(FactorStep, int(count));}
 
-	void SkipSamples(size_t count);
+	forceinline ExponentAttenuator operator*=(const ExponentAttenuator& rhs)
+	{
+		Factor *= rhs.Factor;
+		FactorStep *= rhs.FactorStep;
+		return *this;
+	}
 };
 
 struct ExponentAttenuatorFactory

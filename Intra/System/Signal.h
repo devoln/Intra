@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Fundamental.h"
-#include "Utils/StringView.h"
 
-namespace Intra {
+#include "Core/Core.h"
+#include "Core/Range/StringView.h"
+
+INTRA_BEGIN
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

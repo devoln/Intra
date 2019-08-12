@@ -1,23 +1,20 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Utils/Debug.h"
-#include "Utils/StringView.h"
-#include "Range/Stream/ToString.h"
+#include "Core/Assert.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Stream/ToString.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+namespace Memory {
 
-namespace Intra { namespace Memory {
-
-inline void NoMemoryBreakpoint(size_t bytes, Utils::SourceInfo sourceInfo)
+inline void NoMemoryBreakpoint(size_t bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 {
 	(void)bytes; (void)sourceInfo;
 	INTRA_DEBUGGER_BREAKPOINT;
 }
 
-inline void NoMemoryAbort(size_t bytes, Utils::SourceInfo sourceInfo)
+inline void NoMemoryAbort(size_t bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 {
 	char errorMsg[512];
 	GenericStringView<char>(errorMsg) << StringView(sourceInfo.File).Tail(400) << '(' << sourceInfo.Line << "): " <<
@@ -25,19 +22,18 @@ inline void NoMemoryAbort(size_t bytes, Utils::SourceInfo sourceInfo)
 	INTRA_FATAL_ERROR(errorMsg);
 }
 
-template<typename A, void(*F)(size_t, Utils::SourceInfo) = NoMemoryBreakpoint> struct ACallOnFail: A
+template<typename A, void(*F)(size_t, SourceInfo) = NoMemoryBreakpoint> struct ACallOnFail: A
 {
 	ACallOnFail() = default;
-	ACallOnFail(A&& allocator): A(Cpp::Move(allocator)) {}
+	ACallOnFail(A&& allocator): A(Move(allocator)) {}
 
-	AnyPtr Allocate(size_t& bytes, Utils::SourceInfo sourceInfo)
+	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{
 		auto result = A::Allocate(bytes, sourceInfo);
-		if(result==null) F(bytes, sourceInfo);
+		if(result == null) F(bytes, sourceInfo);
 		return result;
 	}
 };
 
-}}
-
-INTRA_WARNING_POP
+}
+INTRA_END

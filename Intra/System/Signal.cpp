@@ -1,16 +1,17 @@
 ﻿#include "System/Signal.h"
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Compatibility.h"
 
-#include "Utils/StringView.h"
+#include "Core/Compatibility.h"
+
+#include "Core/Range/StringView.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include <signal.h>
 #include <stdlib.h>
 
-namespace Intra {
+INTRA_BEGIN
+
 
 static void INTRA_CRTDECL SignalHandler(int signum)
 {

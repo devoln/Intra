@@ -1,12 +1,12 @@
-﻿#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+﻿
+
 
 #include "Audio/Sound.h"
 
 #include "Memory/Allocator/Global.h"
 
-#include "Range/Mutation/Fill.h"
-#include "Range/Mutation/Cast.h"
+#include "Core/Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Cast.h"
 
 #include "Data/ValueType.h"
 
@@ -37,7 +37,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using Data::ValueType;
 
@@ -182,7 +183,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 
 struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundInstanceBasicData
 {
-	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent))
+	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Move(parent))
 	{
 		INTRA_DEBUG_ASSERT(Parent != null);
 		uint source = 0;
@@ -257,7 +258,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
 	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = false):
-		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount),
+		StreamedSoundBasicData(Move(source), bufferSampleCount),
 		TempBuffer(Source->ChannelCount() * BufferSampleCount)
 	{
 		(void)autoStreamingEnabled; //not supported
@@ -350,7 +351,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 			alSourceUnqueueBuffers(source, 1, AlBuffers);
 			loadBuffer(0);
 			alSourceQueueBuffers(source, 1, AlBuffers);
-			Cpp::Swap(AlBuffers[0], AlBuffers[1]);
+			Core::Swap(AlBuffers[0], AlBuffers[1]);
 		}
 	}
 
@@ -367,7 +368,7 @@ void SoundContext::ReleaseAllSounds()
 	Array<Sound::Data*> soundsToRelease;
 	INTRA_SYNCHRONIZED(MyMutex)
 	{
-		soundsToRelease = Cpp::Move(AllSounds);
+		soundsToRelease = Move(AllSounds);
 	}
 	for(auto snd: soundsToRelease) snd->Release();
 }
@@ -377,7 +378,7 @@ void SoundContext::ReleaseAllStreamedSounds()
 	Array<StreamedSound::Data*> soundsToRelease;
 	INTRA_SYNCHRONIZED(MyMutex)
 	{
-		soundsToRelease = Cpp::Move(AllStreamedSounds);
+		soundsToRelease = Move(AllStreamedSounds);
 	}
 	for(auto snd: soundsToRelease) snd->Release();
 }

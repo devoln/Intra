@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
+
+
+#include "Core/Core.h"
+#include "Core/Core.h"
 
 #include "Thread.h"
 
@@ -38,12 +38,12 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
 class Mutex
 {
-	friend class RecursiveMutex;
 	friend class SeparateCondVar;
 public:
 #if(INTRA_LIBRARY_MUTEX == INTRA_LIBRARY_MUTEX_Cpp11)
@@ -121,48 +121,12 @@ static Mutex::AbiChecker gMutexCheckPerTranslationUnit;
 }
 #endif
 
-class RecursiveMutex
-{
-	struct NativeData;
-	struct Data;
-	typedef Data* Handle;
-
-	union
-	{
-		void* mForceAlignment;
-		char mData[Mutex::DATA_SIZE];
-	};
-public:
-	typedef NativeData* NativeHandle;
-
-	RecursiveMutex();
-	~RecursiveMutex();
-
-	void Lock();
-	bool TryLock();
-	void Unlock();
-
-	//! @defgroup RecursiveMutex_CPP_Interface C++-11-подобный интерфейс для Mutex
-	//! Этот интерфейс предназначен для совместимости с обобщённым кодом и lock_guard из библиотеки потоков C++11\Boost.
-	//! Использовать напрямую этот интерфейс не рекомендуется.
-	//!@{
-	forceinline void lock() {Lock();}
-	forceinline bool try_lock() {return TryLock();}
-	forceinline void unlock() {return Unlock();}
-	//!@}
-
-private:
-	RecursiveMutex(const RecursiveMutex&) = delete;
-	RecursiveMutex& operator=(const RecursiveMutex&) = delete;
-};
 #else
 class Mutex;
-class RecursiveMutex;
 #endif
 
 }
 using Concurrency::Mutex;
-using Concurrency::RecursiveMutex;
 
 }
 

@@ -1,14 +1,15 @@
 ﻿#include "FilePath.h"
-#include "Range/Mutation/Replace.h"
-#include "Range/Decorators/Retro.h"
-#include "Range/Search/Trim.h"
-#include "Utils/StringView.h"
-#include "Utils/Span.h"
+#include "Core/Range/Mutation/Replace.h"
+#include "Core/Range/Retro.h"
+#include "Core/Range/Search/Trim.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Span.h"
 #include "Container/Sequential/String.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
 
-namespace Intra { namespace IO { namespace Path {
+
+
+INTRA_BEGIN
+namespace IO { namespace Path {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

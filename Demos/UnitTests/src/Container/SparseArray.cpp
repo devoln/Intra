@@ -35,10 +35,10 @@ void TestSparseRange(FormattedWriter& output)
 	INTRA_ASSERT(range.IsFull());
 	size_t count = 3;
 	range = Memory::AllocateRangeUninitialized<int>(Memory::GlobalHeap, count, INTRA_SOURCE_INFO);
-	auto cleanupRange = Finally([&range]() {
+	INTRA_FINALLY {
 		range.Clear();
 		Memory::FreeRangeUninitialized(Memory::GlobalHeap, range.GetInternalDataBuffer());
-	});
+	};
 	INTRA_ASSERT(!range.IsFull());
 	output.PrintLine("Appending 7, 5 and 2 to a range.");
 	range.Add(7);

@@ -1,10 +1,11 @@
-﻿#include "Cpp/Warnings.h"
+﻿
 #include "Memory/Memory.h"
 #include "Memory/Allocator/Global.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 AnyPtr Allocate(size_t bytes, size_t alignment)
 {

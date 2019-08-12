@@ -20,7 +20,8 @@ INTRA_WARNING_POP
 
 #undef Yield
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 struct Thread::Data: detail::BasicThreadData
 {
@@ -30,7 +31,7 @@ struct Thread::Data: detail::BasicThreadData
 
 	Data(Func func)
 	{
-		Function = Cpp::Move(func);
+		Function = Move(func);
 		Thread = std::thread(&BasicThreadData::ThreadFunc, this);
 	}
 
@@ -50,7 +51,7 @@ struct Thread::Data: detail::BasicThreadData
 		if(!Thread.joinable()) return !IsRunning.GetRelaxed();
 		auto lck = MakeLock(StateMutex);
 		NumWaiters++;
-		INTRA_FINALLY(NumWaiters--);
+		INTRA_FINALLY{NumWaiters--;};
 		if(CV.Wait(lck, [this](){return !IsRunning.GetRelaxed();}))
 		{
 			if(Thread.joinable()) Thread.detach();
@@ -59,12 +60,12 @@ struct Thread::Data: detail::BasicThreadData
 		return false;
 	}
 
-	bool Join(ulong64 timeOutMs)
+	bool Join(uint64 timeOutMs)
 	{
 		if(!Thread.joinable()) return !IsRunning.GetRelaxed();
 		auto lck = MakeLock(StateMutex);
 		NumWaiters++;
-		INTRA_FINALLY(NumWaiters--);
+		INTRA_FINALLY{NumWaiters--;};
 		if(CV.WaitMs(lck, timeOutMs, [this]() {return !IsRunning.GetRelaxed();}))
 		{
 			if(Thread.joinable()) Thread.detach();
@@ -106,7 +107,7 @@ struct Thread::Data: detail::BasicThreadData
 
 void TThisThread::Yield() {std::this_thread::yield();}
 
-bool TThisThread::Sleep(ulong64 milliseconds)
+bool TThisThread::Sleep(uint64 milliseconds)
 {
 	const auto hndl = Thread::Data::Current;
 	if(hndl == null)

@@ -1,11 +1,12 @@
 ﻿#pragma once
 
-#include "Utils/Span.h"
-#include "Utils/StringView.h"
+#include "Core/Range/Span.h"
+#include "Core/Range/StringView.h"
 #include "Container/ForwardDecls.h"
-#include "Cpp/Warnings.h"
 
-namespace Intra { namespace IO { namespace Path {
+
+INTRA_BEGIN
+namespace IO { namespace Path {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

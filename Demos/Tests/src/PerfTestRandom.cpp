@@ -2,14 +2,14 @@
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Cpp/Warnings.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestRandom.h"
 
 #include "System/Stopwatch.h"
 #include "Test/PerfSummary.h"
-#include "Cpp/Compatibility.h"
+#include "Core/Compatibility.h"
 #include "Random/FastUniform.h"
 
 

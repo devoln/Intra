@@ -1,8 +1,9 @@
 #pragma once
 
-#include "Range/Stream/InputStreamMixin.h"
+#include "Core/Range/Stream/InputStreamMixin.h"
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 //! Диапазон ввода с консоли.
 //! Может не работать, если stdin перенаправлен.
@@ -20,14 +21,13 @@ public:
 	forceinline bool Empty() const {return false;}
 	size_t ReadWrite(Span<char>& dst);
 
-	dchar GetChar();
+	char32_t GetChar();
 
-	//Несмотря на то, что копировать нечего, это не Forward Range
 	ConsoleInput(const ConsoleInput&) = delete;
 	ConsoleInput& operator=(const ConsoleInput&) = delete;
 
-	ConsoleInput(ConsoleInput&&) {}
-	ConsoleInput& operator=(ConsoleInput&&) {return *this;}
+	ConsoleInput(ConsoleInput&&) = default;
+	ConsoleInput& operator=(ConsoleInput&&) = default;
 };
 
 extern ConsoleInput ConsoleIn;

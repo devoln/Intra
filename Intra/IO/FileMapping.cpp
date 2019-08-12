@@ -1,8 +1,8 @@
 #include "FileMapping.h"
 #include "FileSystem.h"
 
-#include "Cpp/PlatformDetect.h"
-#include "Cpp/Warnings.h"
+
+
 
 #include "Utils/Finally.h"
 
@@ -44,10 +44,11 @@ struct IUnknown;
 
 #endif
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 BasicFileMapping::BasicFileMapping(StringView fileName,
-	ulong64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status)
+	uint64 startByte, size_t bytes, bool writeAccess, ErrorStatus& status)
 {
 	if(status.WasError()) return;
 	String fullFileName = OS.GetFullFileName(fileName);
@@ -92,18 +93,18 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 		System::detail::ProcessLastError(status, "Cannot open file " + fileName + " for mapping: ", INTRA_SOURCE_INFO);
 		return;
 	}
-	INTRA_FINALLY_CALL(CloseHandle, hFile);
+	INTRA_FINALLY{CloseHandle(hFile);};
 
 	const DWORD flProtect = DWORD(writeAccess? PAGE_READWRITE: PAGE_READONLY);
 
 #ifndef WINSTORE_APP
 	const DWORD lowSize = DWORD(bytes + startByte);
-	const DWORD highSize = DWORD(ulong64(bytes + startByte) >> 32);
+	const DWORD highSize = DWORD(uint64(bytes + startByte) >> 32);
 	const HANDLE fileMapping = CreateFileMappingW(hFile, null, flProtect, highSize, lowSize, null);
 #else
 	const HANDLE fileMapping = CreateFileMappingFromApp(hFile, null, flProtect, bytes, null);
 #endif
-	INTRA_FINALLY_CALL(CloseHandle, fileMapping);
+	INTRA_FINALLY{CloseHandle(fileMapping);};
 
 	if(fileMapping == null)
 	{
@@ -145,7 +146,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 #endif
 	mData = SpanOfRaw(data, bytes);
 #ifdef INTRA_DEBUG
-	mFilePath = Cpp::Move(fullFileName);
+	mFilePath = Move(fullFileName);
 #endif
 }
 

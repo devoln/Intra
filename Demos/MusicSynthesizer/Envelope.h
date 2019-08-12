@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <Utils/Debug.h>
+#include <Core/Debug.h>
 #include <Math/Math.h>
 
 struct Envelope
@@ -17,7 +17,7 @@ struct Envelope
 
 	struct Segment
 	{
-		bool Exponential: 1;
+		unsigned Exponential: 1;
 
 		unsigned SamplesLeft : 31;
 
@@ -28,13 +28,19 @@ struct Envelope
 
 		forceinline bool IsConstant() const {return float(Exponential) == DU;}
 		forceinline bool IsNoOp() const {return IsConstant() && Volume == 1;}
+		forceinline void Advance(size_t samples)
+		{
+			if(Exponential) Volume *= Math::PowInt(DU, int(samples));
+			else Volume += DU*float(samples);
+			SamplesLeft -= unsigned(samples);
+		}
 	};
 	Segment CurrentSegment;
 
 	struct Point
 	{
 		//! Является ли отрезок, начинающийся в данной точке, экспоненциальным или линейным
-		bool Exponential: 1;
+		unsigned Exponential: 1;
 
 		//! Длина отрезка, начинающегося в данной точке
 		unsigned Length: 23;
@@ -45,7 +51,7 @@ struct Envelope
 
 		forceinline float CalcDU(float curVolume) const
 		{
-			if(Length == 0) return Exponential? 1: 0;
+			if(Length == 0) return Exponential? 1.0f: 0.0f;
 			if(Exponential) return Intra::Math::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
 			return (Volume / 255.0f - curVolume) / Length;
 		}
@@ -100,6 +106,50 @@ struct Envelope
 	}
 };
 
+struct LinearAttenuator
+{
+	float Factor, FactorStep;
+	LinearAttenuator(null_t=null): Factor(1), FactorStep(0) {}
+	LinearAttenuator(float startVolume, float deltaPerSample): Factor(1), FactorStep(deltaPerSample) {}
+
+	forceinline void SkipSamples(size_t count) {Factor += FactorStep*count;}
+};
+
+struct EnvelopeSegment
+{
+	ExponentAttenuator Exp;
+	LinearAttenuator Linear;
+
+	forceinline EnvelopeSegment(null_t=null) {}
+
+	forceinline EnvelopeSegment(Envelope::Segment segment)
+	{
+		if(segment.Exponential)
+		{
+			Exp.Factor = segment.Volume;
+			Exp.FactorStep = segment.DU;
+			return;
+		}
+		Linear.Factor = segment.Volume;
+		Linear.FactorStep = segment.DU;
+	}
+
+	forceinline void operator()(Span<float> inOutSamples)
+	{
+		auto src = inOutSamples.AsConstRange();
+		ExponentialLinearAttenuate(inOutSamples, src, Exp.Factor, Exp.FactorStep, Linear.Factor, Linear.FactorStep);
+	}
+
+	forceinline void operator()(Span<float> dstSamples, CSpan<float> srcSamples)
+	{ExponentialLinearAttenuateAdd(dstSamples, srcSamples, Exp.Factor, Exp.FactorStep, Linear.Factor, Linear.FactorStep);}
+
+	forceinline void SkipSamples(size_t count)
+	{
+		Exp.SkipSamples(count);
+		Linear.SkipSamples(count);
+	}
+};
+
 struct EnvelopeFactory
 {
 	enum {N = Envelope::N};
@@ -112,10 +162,10 @@ struct EnvelopeFactory
 		float EndVolume;
 		float Duration;
 
-		forceinline int LengthInSamples(int sampleRate) const
+		forceinline uint LengthInSamples(int sampleRate) const
 		{
 			const float durationSamples = sampleRate * Duration + 0.5f;
-			return durationSamples <= float(Intra::int_MAX)? durationSamples: Intra::int_MAX;
+			return durationSamples <= float(Intra::uint_MAX)? uint(durationSamples): Intra::uint_MAX;
 		}
 	};
 
@@ -137,7 +187,7 @@ struct EnvelopeFactory
 		result.Segments[N - 4] = {exponential, 1, attackTime};
 		result.Segments[N - 3] = {exponential, sustainVolume, decayTime};
 		result.Segments[N - 2] = {false, sustainVolume, Intra::Math::Infinity};
-		result.Segments[N - 1] = {exponential, 1, attackTime};
+		result.Segments[N - 1] = {exponential, 1, releaseTime};
 		return result;
 	}
 
@@ -161,7 +211,7 @@ struct EnvelopeFactory
 		{
 			auto& pt = result.Points[i];
 			auto& s = Segments[i + 1];
-			pt.Exponential = s.Exponential;
+			pt.Exponential = unsigned(s.Exponential);
 			pt.Length = s.LengthInSamples(sampleRate);
 			pt.SetVolume(s.EndVolume);
 		}

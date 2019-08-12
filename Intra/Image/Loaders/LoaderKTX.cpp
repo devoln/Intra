@@ -2,12 +2,13 @@
 
 #include "Image/Loaders/LoaderKTX.h"
 
-#include "Cpp/Warnings.h"
+
 
 #include "Image/AnyImage.h"
 #include "Image/Bindings/GLenumFormats.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

@@ -1,12 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
+
 
 #include "Utils/AnyPtr.h"
 #include "Utils/Finally.h"
 
-#include "Range/Mutation/Cast.h"
-#include "Range/Mutation/Fill.h"
+#include "Core/Range/Mutation/Cast.h"
+#include "Core/Range/Mutation/Fill.h"
 
 #include "Concurrency/Atomic.h"
 #include "Concurrency/Mutex.h"
@@ -47,7 +47,8 @@ struct IUnknown;
 #endif
 
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 using Data::ValueType;
 
@@ -162,7 +163,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 		Buffer->Lock(0, DWORD(Info.GetBufferSize()), &dstData, &lockedSize, null, null, 0);
 		INTRA_DEBUG_ASSERT(lockedSize == Info.GetBufferSize());
 		auto dst = SpanOfRawElements<short>(dstData, Info.SampleCount*Info.Channels);
-		INTRA_FINALLY(Buffer->Unlock(dstData, DWORD(Info.GetBufferSize()), null, 0));
+		INTRA_FINALLY{Buffer->Unlock(dstData, DWORD(Info.GetBufferSize()), null, 0);};
 		if(type == ValueType::SNorm16)
 		{
 			auto src = SpanOfRawElements<short>(data, dst.Length());
@@ -210,7 +211,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		impl->SelfRef = null;
 	}
 
-	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Cpp::Move(parent))
+	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Move(parent))
 	{
 		if(FAILED(SoundContext::Device()->DuplicateSoundBuffer(Parent->Buffer, &DupBuffer)))
 		{
@@ -256,7 +257,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 	void Release()
 	{
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!DupBuffer) return;
@@ -307,7 +308,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 
 	void Stop()
 	{
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!DupBuffer) return;
@@ -315,7 +316,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		}
 	}
 
-	RecursiveMutex MyMutex;
+	Mutex MyMutex;
 
 	IDirectSoundBuffer* DupBuffer;
 
@@ -327,7 +328,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSoundBasicData
 {
 	Data(Unique<IAudioSource> source, size_t bufferSampleCount, bool autoStreamingEnabled = true):
-		StreamedSoundBasicData(Cpp::Move(source), bufferSampleCount),
+		StreamedSoundBasicData(Move(source), bufferSampleCount),
 		AutoStreamingEnabled(autoStreamingEnabled)
 	{
 		INTRA_DEBUG_ASSERT(Source != null);
@@ -388,7 +389,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 	void Release()
 	{
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!Buffer) return;
@@ -445,7 +446,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 
 	void Stop()
 	{
-		auto ref = Cpp::Move(SelfRef);
+		auto ref = Move(SelfRef);
 		INTRA_SYNCHRONIZED(MyMutex)
 		{
 			if(!IsPlayingST()) return;
@@ -547,7 +548,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	byte NextBufferToFill = 1;
 	bool AutoStreamingEnabled = true;
 
-	RecursiveMutex MyMutex;
+	Mutex MyMutex;
 };
 
 void SoundContext::ReleaseAllSounds()
@@ -555,7 +556,7 @@ void SoundContext::ReleaseAllSounds()
 	Array<Sound::Data*> soundsToRelease;
 	INTRA_SYNCHRONIZED(MyMutex)
 	{
-		soundsToRelease = Cpp::Move(AllSounds);
+		soundsToRelease = Move(AllSounds);
 	}
 	for(auto snd: soundsToRelease) snd->Release();
 }
@@ -565,7 +566,7 @@ void SoundContext::ReleaseAllStreamedSounds()
 	Array<StreamedSound::Data*> soundsToRelease;
 	INTRA_SYNCHRONIZED(MyMutex)
 	{
-		soundsToRelease = Cpp::Move(AllStreamedSounds);
+		soundsToRelease = Move(AllStreamedSounds);
 	}
 	for(auto snd: soundsToRelease) snd->Release();
 }

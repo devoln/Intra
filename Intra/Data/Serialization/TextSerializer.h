@@ -1,24 +1,25 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Meta/Type.h"
-#include "Meta/Tuple.h"
-#include "Meta/EachField.h"
-#include "Utils/StringView.h"
-#include "Range/Search.hh"
-#include "Range/Comparison/EndsWith.h"
-#include "Range/Stream/ToStringArithmetic.h"
+
+#include "Core/Core.h"
+#include "Core/Type.h"
+#include "Core/Tuple.h"
+#include "Core/EachField.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Search.hh"
+#include "Core/Range/Comparison/EndsWith.h"
+#include "Core/Range/Stream/ToStringArithmetic.h"
 #include "Data/Reflection.h"
 #include "TextSerializerParams.h"
 #include "LanguageParams.h"
-#include "Range/Decorators/TakeUntil.h"
-#include "Range/Decorators/TakeUntilAny.h"
-#include "Range/Output/OutputArrayRange.h"
-#include "Range/Compositors/ZipKV.h"
-#include "Range/Mutation/ReplaceSubrange.h"
+#include "Core/Range/TakeUntil.h"
+#include "Core/Range/TakeUntilAny.h"
 
-namespace Intra { namespace Data {
+#include "Core/Range/ZipKV.h"
+#include "Core/Range/Mutation/ReplaceSubrange.h"
+
+INTRA_BEGIN
+namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -130,8 +131,8 @@ public:
 	}
 
 	//! Сериализовать кортеж
-	template<typename Tuple> Meta::EnableIf<
-		Meta::HasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
+	template<typename Tuple> Requires<
+		CHasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
 		!HasReflectionFieldNamesMethod<Tuple>::_
 	> SerializeTuple(Tuple&& src, CSpan<StringView> fieldNames = null)
 	{
@@ -140,20 +141,20 @@ public:
 			fieldNames = null;
 		GenericTextSerializerStructVisitor<O> visitor = {this,
 			false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
-		Meta::ForEachField(src, visitor);
+		Core::ForEachField(src, visitor);
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 	}
 
 
 	//! Сериализатор как функтор
-	template<typename T> forceinline GenericTextSerializer& operator()(T&& v) {return *this << Cpp::Forward<T>(v);}
+	template<typename T> forceinline GenericTextSerializer& operator()(T&& v) {return *this << Forward<T>(v);}
 
 	//! Вычислить размер объекта в сериализованном виде в байтах
 	template<typename T> size_t SerializedSizeOf(T&& v) const
 	{
 		GenericTextSerializer<Range::CountRange<char>> dummy(Lang, Params, Range::CountRange<char>());
 		dummy.NestingLevel = NestingLevel;
-		dummy << Cpp::Forward<T>(v);
+		dummy << Forward<T>(v);
 		return dummy.Output.Counter;
 	}
 
@@ -181,7 +182,7 @@ template<typename O> template<typename T> GenericTextSerializerStructVisitor<O>&
 	if(!FieldNames.Empty())
 		Me->FieldAssignmentBeginning(FieldNames.First());
 
-	*Me << Cpp::Forward<T>(t);
+	*Me << Forward<T>(t);
 
 	if(!FieldNames.Empty() && Me->Lang.AddFieldNameAfterAssignment)
 		Me->FieldAssignmentEnding(FieldNames.First());
@@ -190,36 +191,36 @@ template<typename O> template<typename T> GenericTextSerializerStructVisitor<O>&
 }
 
 //! Сериализовать структуру или класс со статической рефлексией
-template<typename T, typename O> forceinline Meta::EnableIf<
-	Meta::HasForEachField<T>::_ &&
+template<typename T, typename O> forceinline Requires<
+	CHasForEachField<T>::_ &&
 	HasReflectionFieldNamesMethod<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T&& src)
 {
-	auto fieldNames = Meta::RemoveConstRef<T>::ReflectionFieldNames();
+	auto fieldNames = TRemoveConstRef<T>::ReflectionFieldNames();
 	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
 	if(!serializer.Params.FieldAssignments && !serializer.Lang.RequireFieldAssignments)
 		fieldNames = null;
 	GenericTextSerializerStructVisitor<O> visitor = {&serializer,
 		false, fieldNames, TextSerializerParams::TypeFlags_Struct};
-	Meta::ForEachField(Cpp::Forward<T>(src), visitor);
+	Core::ForEachField(Forward<T>(src), visitor);
 	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
 	return serializer;
 }
 
 //! Сериализовать кортеж
-template<typename O, typename Tuple> Meta::EnableIf<
-	Meta::HasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
+template<typename O, typename Tuple> Requires<
+	CHasForEachField<Tuple, GenericTextSerializerStructVisitor<O>>::_ &&
 	!HasReflectionFieldNamesMethod<Tuple>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, Tuple&& src)
 {
-	serializer.SerializeTuple(Cpp::Forward<Tuple>(src));
+	serializer.SerializeTuple(Forward<Tuple>(src));
 	return serializer;
 }
 
 
 //! Сериализация целых чисел
-template<typename T, typename O> Meta::EnableIf<
-	Meta::IsIntegralType<T>::_,
+template<typename T, typename O> Requires<
+	CIntegral<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
 	serializer.Output << v;
@@ -227,8 +228,8 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 }
 
 //! Сериализация чисел с плавающей запятой
-template<typename T, typename O> Meta::EnableIf<
-	Meta::IsFloatType<T>::_,
+template<typename T, typename O> Requires<
+	CFloatingPoint<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
 	Range::ToString(serializer.Output, v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
@@ -245,19 +246,19 @@ template<typename O> forceinline GenericTextSerializer<O>& operator<<(
 }
 
 //! Сериализовать диапазон
-template<typename R, typename O> forceinline Meta::EnableIf<
-	Concepts::IsAsConsumableRange<R>::_ &&
-	!Concepts::IsAsCharRange<R>::_,
+template<typename R, typename O> forceinline Requires<
+	CAsConsumableRange<R>::_ &&
+	!CAsCharRange<R>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& r)
 {
 	Range::CopyToAdvanceByOne(serializer.Lang.ArrayOpen, serializer.Output);
-	auto range = Range::Forward<R>(r);
+	auto range = ForwardAsRange<R>(r);
 	if(!range.Empty())
 	{
-		typedef Concepts::ValueTypeOfAs<R> T;
+		typedef TValueTypeOfAs<R> T;
 		
-		bool TypeIsSimpleArray = Meta::IsArithmeticType<T>::_ ||
-			Meta::IsPointerType<T>::_ || Concepts::IsAsCharRange<T>::_;
+		bool TypeIsSimpleArray = CArithmetic<T>::_ ||
+			CPointerType<T>::_ || CAsCharRange<T>::_;
 
 		const int nestLevelUp = int(!TypeIsSimpleArray &&
 			serializer.Lang.ArrayOpen!=null && serializer.Lang.ArrayClose!=null);

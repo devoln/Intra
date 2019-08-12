@@ -1,7 +1,8 @@
 #include "IO/HtmlWriter.h"
-#include "Range/Stream/ToString.h"
+#include "Core/Range/Stream/ToString.h"
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 //Это нужно вставить в начало html файла, если используются спойлеры
 static const StringView HtmlWriter_CssSpoilerCode =
@@ -85,7 +86,7 @@ public:
 	void beginSpoiler(IOutputStream& s, StringView label) override
 	{
 		const uint rndSeed = (uint(reinterpret_cast<size_t>(label.Data())) ^ ToHash(label)) + rndCounter;
-		const ulong64 id = Random::FastUniform<ulong64>(rndSeed)();
+		const uint64 id = Random::FastUniform<uint64>(rndSeed)();
 		s << *String::Format(HtmlWriter_SpoilerBeginCode)(id)(id)(label);
 	}
 
@@ -95,7 +96,7 @@ public:
 FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions)
 {
 	if(addDefinitions) stream.Print(HtmlWriter_CssSpoilerCode);
-	return FormattedWriter(Cpp::Move(stream), new HtmlFormatter);
+	return FormattedWriter(Move(stream), new HtmlFormatter);
 }
 
 }}

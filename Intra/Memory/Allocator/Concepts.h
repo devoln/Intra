@@ -1,11 +1,12 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Meta/Type.h"
+#include "Core/Type.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+inline namespace Memory {
 
-INTRA_DEFINE_EXPRESSION_CHECKER(HasGetAllocationSize,\
-	static_cast<size_t>(Meta::Val<T>().GetAllocationSize(static_cast<void*>(null))));
+INTRA_DEFINE_CONCEPT_REQUIRES(CHasGetAllocationSize,\
+	static_cast<size_t>(Val<T>().GetAllocationSize(static_cast<void*>(null))));
 
-}}
+}
+INTRA_END

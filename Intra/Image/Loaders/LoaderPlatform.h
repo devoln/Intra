@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Cpp/PlatformDetect.h"
+
 
 //! Используемая библиотека\API системы для загрузки изображений
 #define INTRA_LIBRARY_IMAGE_LOADING_None 0
@@ -29,7 +29,8 @@
 
 #include "Image/AnyImage.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 //! Загрузить изображение средствами библиотек операционной системы
 //! или сторонних библиотек, поддерживающих сразу множество форматов:

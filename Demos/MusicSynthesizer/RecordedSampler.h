@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Cpp/Warnings.h>
-#include <Utils/Span.h>
+#include <Core/Warnings.h>
+#include <Core/Span.h>
 #include <Container/Sequential/Array.h>
 
 #include "Types.h"
@@ -29,7 +29,7 @@ struct CachedDrumInstrument
 
 
 	CachedDrumInstrument(GenericSamplerRef sampler, size_t sampleCount = 44100, float volumeScale = 1):
-		DataSampler(Cpp::Move(sampler)), VolumeScale(volumeScale) {Data.SetCountUninitialized(sampleCount);}
+		DataSampler(Move(sampler)), VolumeScale(volumeScale) {Data.SetCountUninitialized(sampleCount);}
 
 	RecordedSampler operator()(float volume, uint sampleRate) const;
 

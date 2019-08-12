@@ -1,19 +1,18 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Cpp/PlatformDetect.h"
-#include "Utils/Debug.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
 #include "Memory/VirtualMemory.h"
 #include "Math/Math.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct NewAllocator
 {
-	static AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{(void)sourceInfo; return operator new(bytes);}
 	
 	static void Free(void* ptr, size_t size) {(void)size; operator delete(ptr);}
@@ -23,16 +22,16 @@ struct NewAllocator
 
 struct MallocAllocator
 {
-	static AnyPtr Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo);
+	static AnyPtr Allocate(size_t bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO);
 	static void Free(void* ptr, size_t size) {(void)size; Free(ptr);}
 	static void Free(void* ptr);
 	static size_t GetAlignment() {return sizeof(void*)*2;}
 };
 
-#if(INTRA_PLATFORM_OS==INTRA_PLATFORM_OS_Windows)
+#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 struct SystemHeapAllocator
 {
-	static AnyPtr Allocate(size_t bytes, const Utils::SourceInfo& sourceInfo);
+	static AnyPtr Allocate(size_t bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO);
 	static void Free(void* ptr, size_t size) {(void)size; Free(ptr);}
 	static void Free(void* ptr);
 	static size_t GetAlignment() {return sizeof(void*)*2;}
@@ -46,7 +45,7 @@ struct AlignedSystemHeapAllocator
 	AlignedSystemHeapAllocator(size_t allocatorAlignment=16):
 		alignment(Math::Max(allocatorAlignment, sizeof(void*)*2)) {}
 
-	AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo);
+	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO);
 	void Free(void* ptr, size_t size);
 	size_t GetAlignment() const {return alignment;}
 
@@ -56,11 +55,12 @@ private:
 
 struct PageAllocator
 {
-	static AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo);
+	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = INTRA_DEFAULT_SOURCE_INFO);
 	static void Free(void* ptr, size_t size);
 	size_t GetAlignment() const;
 };
 
 INTRA_WARNING_POP
 
-}}
+}
+INTRA_END

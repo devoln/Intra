@@ -1,14 +1,16 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
+#include "Core/Core.h"
 
 #include "Audio/MusicNote.h"
+#include "Audio/Midi/DeviceState.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 struct NoteOn
 {

@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
 
-#include "Utils/Debug.h"
+#include "Core/Core.h"
+#include "Core/Core.h"
 
-#include "Range/Polymorphic/InputRange.h"
+#include "Core/Assert.h"
+
+#include "Core/Range/Polymorphic/InputRange.h"
 
 #include "Messages.h"
 #include "RawEvent.h"
@@ -14,7 +14,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 struct TrackParser
 {
@@ -35,14 +36,14 @@ struct TrackParser
 		uint delay = Events.First().Delay();
 		if(delay > DelayTicksPassed) delay -= DelayTicksPassed;
 		else delay = 0;
-		return Time + delay * state.TickDuration;
+		return Time + MidiTime(delay) * state.TickDuration;
 	}
 
 	void OnTempoChange(MidiTime time, MidiTime prevTickDuration)
 	{
 		const uint ticksPassed = uint((time - Time) / prevTickDuration + MidiTime(0.5));
 		DelayTicksPassed += ticksPassed;
-		Time += ticksPassed * prevTickDuration;
+		Time += MidiTime(ticksPassed) * prevTickDuration;
 	}
 
 	void ProcessEvent(DeviceState& state, IDevice& device);

@@ -1,14 +1,16 @@
 #pragma once
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
+
 
 #include "Preprocessor/Operations.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
+// Lock scope guard
 template<typename T> class Lock
 {
 	T* mLockable;
@@ -28,6 +30,13 @@ private:
 template<typename T> static forceinline Lock<T> MakeLock(T& lockable) {return lockable;}
 template<typename T> static forceinline Lock<T> MakeLock(T* lockable) {return *lockable;}
 
+//! Useful to create synchronized code blocks:
+/*!
+INTRA_SYNCHRONIZED(mutex)
+{ //mutex acquired
+
+} //mutex releases
+*/
 #define INTRA_SYNCHRONIZED(lockable) \
 	if(auto INTRA_CONCATENATE_TOKENS(locker__, __LINE__) = ::Intra::Concurrency::MakeLock(lockable))
 

@@ -3,17 +3,18 @@
 #include "Container/ForwardDecls.h"
 #include "Container/Sequential/Array.h"
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
 
-#include "Meta/Pair.h"
 
-#include "Range/Search/Single.h"
-#include "Range/Compositors/ZipKV.h"
+#include "Core/Pair.h"
+
+#include "Core/Range/Search/Single.h"
+#include "Core/Range/ZipKV.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+namespace Container {
 
 template<typename K, typename V> class LinearMap
 {
@@ -34,7 +35,7 @@ public:
 		forceinline iterator(LinearMap<K,V>* mymap, size_t index):
 			mMymap(mymap), mIndex(index) {}
 
-		forceinline Meta::Pair<const K&, V&> operator*() const
+		forceinline Core::Pair<const K&, V&> operator*() const
 		{
 			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
@@ -82,7 +83,7 @@ public:
 
 	struct const_iterator
 	{
-		forceinline const Meta::Pair<const K&, V&> operator*() const
+		forceinline const Core::Pair<const K&, V&> operator*() const
 		{
 			INTRA_DEBUG_ASSERT(mIndex < mMymap->Count());
 			return {mMymap->mKeys[mIndex], mMymap->mValues[mIndex]};
@@ -171,7 +172,7 @@ public:
 	forceinline bool operator!=(null_t) const {return !Empty();}
 
 	//!@{
-	//! Вставка за линейное время O(n)
+	//! Linear time insertion O(n)
 	iterator Insert(const Pair& p)
 	{
 		size_t i = mKeys.FindIndex(p.first);
@@ -188,9 +189,9 @@ public:
 	iterator Insert(const K& key, V&& value)
 	{
 		size_t i = FindIndex(key);
-		if(i!=Count()) return mValues[i] = Cpp::Move(value);
+		if(i!=Count()) return mValues[i] = Move(value);
 		mKeys.AddLast(key);
-		mValues.AddLast(Cpp::Move(value));
+		mValues.AddLast(Move(value));
 		return iterator{this, Count()-1};
 	}
 
@@ -216,7 +217,7 @@ public:
 
 
 	//!@{
-	//! Вставка нового элемента за постоянное время O(1). Элемент с таким ключом не должен существовать!
+	//! New element insertion in constant time O(1). Element with p.Key must not exist!
 	void InsertNew(const Pair& p)
 	{
 		INTRA_DEBUG_ASSERT(!KeyExists(p.key));
@@ -228,7 +229,7 @@ public:
 	{
 		INTRA_DEBUG_ASSERT(!KeyExists(key));
 		mKeys.AddLast(key);
-		return mValues.AddLast(Cpp::Move(value));
+		return mValues.AddLast(Move(value));
 	}
 
 	V& InsertNew(const K& key)
@@ -252,6 +253,7 @@ public:
 	}
 	//!@}
 
+	//! Linear time O(n) lookup
 	V& operator[](const K& key)
 	{
 		auto i = FindIndex(key);
@@ -363,18 +365,15 @@ public:
 	forceinline const_iterator begin() const {return const_iterator(this, 0);}
 	forceinline const_iterator end() const {return const_iterator(this, Count());}
 
-	//! @defgroup LinearMap_STL_Interface STL-подобный интерфейс для LinearMap
-	//! Этот интерфейс предназначен для совместимости с обобщённым контейнеро-независимым кодом.
-	//! Использовать напрямую этот интерфейс не рекомендуется.
-	//!@{
-	forceinline iterator emplace(K&& key, V&& value) {return Insert(Cpp::Move(key), Cpp::Move(value));}
-	forceinline iterator insert(const Meta::Pair<K,V>& pair) {return Insert(pair.first, pair.second);}
+#ifdef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+	forceinline iterator emplace(K&& key, V&& value) {return Insert(Move(key), Move(value));}
+	forceinline iterator insert(const Core::Pair<K,V>& pair) {return Insert(pair.first, pair.second);}
 	forceinline bool empty() const {return Empty();}
 	forceinline size_t size() const {return Count();}
 	forceinline void clear() {Clear();}
 	forceinline iterator find(const K& key) {return Find(key);}
 	forceinline const_iterator find(const K& key) const {return Find(key);}
-	//!@}
+#endif
 
 private:
 	Array<K> mKeys;

@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Cpp/Features.h"
+#include "Core/Core.h"
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct LineSegment
 {

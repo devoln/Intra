@@ -3,7 +3,8 @@
 #include "Math/Math.h"
 #include "Math/Vector3.h"
 
-namespace Intra { namespace Math {
+INTRA_BEGIN
+namespace Math {
 
 template<typename T> struct Triangle;
 
@@ -206,7 +207,7 @@ template<typename T> constexpr T DistanceSqrUnoriented(const Aabb<T>& aabb, cons
 template<typename T> constexpr T DistanceSqr(const Aabb<T>& aabb, const Vector3<T>& pt) noexcept
 {return DistanceSqr(pt, aabb.ClosestPoint(pt));}
 
-template<typename T> INTRA_MATH_EXTENDED_CONSTEXPR T BoxSignedDistanceFromZero(const Vector3<T>& center, const Vector3<T>& extents)
+template<typename T> INTRA_MATH_CONSTEXPR2 T BoxSignedDistanceFromZero(const Vector3<T>& center, const Vector3<T>& extents)
 {
 	const auto d = Abs(center) - extents;
 	return Clamp(Max(d.y, d.z), d.x, T(0)) + Length(Max(d, T(0)));

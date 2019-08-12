@@ -2,22 +2,23 @@
 
 #include "OsFile.h"
 
-#include "Cpp/Features.h"
-#include "Cpp/Warnings.h"
+#include "Core/Core.h"
+
 
 #include "Container/Sequential/Array.h"
 
-#include "Range/Mutation/Copy.h"
-#include "Range/Stream/ToString.h"
-#include "Range/Stream/OutputStreamMixin.h"
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Stream/ToString.h"
+#include "Core/Range/Stream/OutputStreamMixin.h"
 
 #include "Utils/Shared.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 using Range::operator<<;
 
@@ -27,8 +28,8 @@ class FileWriter: public Range::OutputStreamMixin<FileWriter, char>
 public:
 	forceinline FileWriter(null_t=null): mOffset(0) {}
 
-	forceinline FileWriter(Shared<OsFile> file, ulong64 startOffset=0, size_t bufferSize=4096):
-		mFile(Cpp::Move(file)), mOffset(startOffset)
+	forceinline FileWriter(Shared<OsFile> file, uint64 startOffset=0, size_t bufferSize=4096):
+		mFile(Move(file)), mOffset(startOffset)
 	{
 		if(mFile == null) return;
 		mBuffer.SetCountUninitialized(bufferSize);
@@ -38,19 +39,19 @@ public:
 	forceinline static FileWriter Append(Shared<OsFile> file, size_t bufferSize=4096)
 	{
 		if(file == null) return null;
-		const ulong64 size = file->Size();
-		return FileWriter(Cpp::Move(file), size, bufferSize);
+		const uint64 size = file->Size();
+		return FileWriter(Move(file), size, bufferSize);
 	}
 
 	forceinline static FileWriter Overwrite(Shared<OsFile> file, size_t bufferSize=4096)
 	{
 		if(file == null) return null;
 		file->SetSize(0, Error::Skip());
-		return FileWriter(Cpp::Move(file), 0, bufferSize);
+		return FileWriter(Move(file), 0, bufferSize);
 	}
 
 	FileWriter(const FileWriter&) = delete;
-	forceinline FileWriter(FileWriter&& rhs) {operator=(Cpp::Move(rhs));}
+	forceinline FileWriter(FileWriter&& rhs) {operator=(Move(rhs));}
 
 	forceinline bool operator==(null_t) {return mFile == null;}
 	forceinline bool operator!=(null_t) {return mFile != null;}
@@ -60,9 +61,9 @@ public:
 	FileWriter& operator=(FileWriter&& rhs)
 	{
 		Flush(Error::Skip());
-		mFile = Cpp::Move(rhs.mFile);
+		mFile = Move(rhs.mFile);
 		mOffset = rhs.mOffset;
-		mBuffer = Cpp::Move(rhs.mBuffer);
+		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
 		rhs.mBufferRest = null;
 		return *this;
@@ -106,9 +107,9 @@ public:
 		return totalBytesWritten;
 	}
 
-	template<typename AR> Meta::EnableIf<
-		Concepts::IsArrayRangeOfExactly<AR, char>::_ &&
-		!Meta::IsConst<AR>::_,
+	template<typename AR> Requires<
+		CArrayRangeOfExactly<AR, char>::_ &&
+		!CConst<AR>::_,
 	size_t> PutAllAdvance(AR& src, ErrorStatus& status = Error::Skip())
 	{
 		CSpan<char> srcArr = {src.Data(), src.Length()};
@@ -128,14 +129,14 @@ public:
 		mBufferRest = mBuffer;
 	}
 
-	forceinline ulong64 PositionInFile() const {return mOffset + mBuffer.Length() - mBufferRest.Length();}
-	forceinline ulong64 FlushedPositionInFile() const {return mOffset;}
+	forceinline uint64 PositionInFile() const {return mOffset + mBuffer.Length() - mBufferRest.Length();}
+	forceinline uint64 FlushedPositionInFile() const {return mOffset;}
 
 	forceinline const Shared<OsFile>& File() const {return mFile;}
 
 private:
 	Shared<OsFile> mFile;
-	ulong64 mOffset;
+	uint64 mOffset;
 	Array<char> mBuffer;
 	Span<char> mBufferRest;
 };

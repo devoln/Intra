@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
 #include "Math/Math.h"
 

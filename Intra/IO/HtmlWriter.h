@@ -3,9 +3,10 @@
 #include "FormattedWriter.h"
 #include "Hash/ToHash.h"
 #include "Random/FastUniform.h"
-#include "Range/Polymorphic/OutputRange.h"
+#include "Core/Range/Polymorphic/OutputRange.h"
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions=false);
 

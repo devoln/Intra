@@ -1,9 +1,10 @@
 ﻿#include "Image/Bindings/DXGI_Formats.h"
 #include "Image/ImageFormat.h"
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 static const ImageFormat dxgiFormatConvertTable[]=
 {
@@ -50,7 +51,7 @@ ImageFormat DXGI_ToImageFormat(DXGI_FORMAT fmt, bool* oSwapRB)
 	if(oSwapRB!=null) *oSwapRB = (
 		(fmt >= DXGI_FORMAT_B5G6R5_UNORM && fmt <= DXGI_FORMAT_B8G8R8X8_UNORM_SRGB) ||
 		fmt == DXGI_FORMAT_B4G4R4A4_UNORM);
-	if(fmt >= Concepts::LengthOf(dxgiFormatConvertTable)) return null;
+	if(fmt >= Core::LengthOf(dxgiFormatConvertTable)) return null;
 	return dxgiFormatConvertTable[fmt];
 }
 

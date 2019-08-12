@@ -1,16 +1,15 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
+#include "Core/Core.h"
 #include "Math/Matrix3.h"
 
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+INTRA_BEGIN
 
 #ifdef _MSC_VER
-#pragma warning(disable: 4201) //Не ругаться на использование расширения компилятора: union { struct { ... }; ...};
+#pragma warning(disable: 4201) //Do not complain about compiler extension: union { struct { ... }; ...};
 #endif
 
-namespace Intra { namespace Math {
+inline namespace Math {
 
 template<typename T> struct Quaternion
 {
@@ -62,7 +61,7 @@ template<typename T> struct Quaternion
 	forceinline Quaternion& operator*=(const Quaternion& q) {return *this = *this*q;}
 
 	//! Поворот вектора v кватернионом.
-	INTRA_EXTENDED_CONSTEXPR Vector3<T> operator*(const Vector3<T>& v) const
+	INTRA_CONSTEXPR2 Vector3<T> operator*(const Vector3<T>& v) const
 	{
 #if INTRA_DISABLED
 		const Quaternion p = Conjugate(*this) * Quaternion<T>(v) * *this;
@@ -75,7 +74,7 @@ template<typename T> struct Quaternion
 	constexpr forceinline bool operator==(const Quaternion& rhs) const {return xyzw == rhs.xyzw;}
 	constexpr forceinline bool operator!=(const Quaternion& rhs) const {return !operator==(rhs);}
 
-	static INTRA_MATH_EXTENDED_CONSTEXPR Quaternion RotationEulerRad(T yaw, T pitch, T roll)
+	static INTRA_MATH_CONSTEXPR2 Quaternion RotationEulerRad(T yaw, T pitch, T roll)
 	{
 		const T cx = T(Cos(yaw/2));
 		const T cy = T(Cos(pitch/2));
@@ -297,6 +296,6 @@ struct QuatTransform
 inline QuatTransform Inverse(const QuatTransform& qt)
 {return {-qt.pos, Inverse(qt.orient)};}
 
-}}
+}
 
-INTRA_WARNING_POP
+INTRA_END

@@ -2,7 +2,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Audio { namespace Midi {
+INTRA_BEGIN
+namespace Audio { namespace Midi {
 
 RawEvent::RawEvent(uint delay, byte status, byte data0, byte data1, size_t metadataLength)
 {

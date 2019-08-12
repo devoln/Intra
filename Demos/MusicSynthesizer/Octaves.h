@@ -3,9 +3,10 @@
 #include "Container/Sequential/Array.h"
 #include "Audio/Resample.h"
 #include "Math/Math.h"
-#include "Range/Mutation/Transform.h"
+#include "Core/Range/Mutation/Transform.h"
 
-namespace Intra { namespace Audio { namespace Synth {
+INTRA_BEGIN
+namespace Audio { namespace Synth {
 
 //! Предполагая, что src содержит периодический сигнал,
 //! складывает его с копией самого себя с удвоенной частотой и множителем multiplier.

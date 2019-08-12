@@ -1,25 +1,26 @@
 ﻿#pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Cpp/Warnings.h"
-#include "Utils/AnyPtr.h"
-#include "Utils/Debug.h"
-#include "Meta/Type.h"
-#include "Memory/Memory.h"
-#include "Concepts.h"
+#include "Core/Core.h"
 
-namespace Intra { namespace Memory {
+#include "Utils/AnyPtr.h"
+#include "Core/Assert.h"
+#include "Core/Type.h"
+#include "Memory/Memory.h"
+#include "Core.h"
+
+INTRA_BEGIN
+namespace Memory {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-template<typename A, typename PARENT=Meta::EmptyType, bool Stateless=Meta::IsEmptyClass<A>::_> struct AllocatorRef;
+template<typename A, typename PARENT=Core::EmptyType, bool Stateless=CEmptyClass<A>::_> struct AllocatorRef;
 
 template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PARENT
 {
 	forceinline AllocatorRef(null_t=null): mAllocator() {}
 	forceinline AllocatorRef(A& allocatorRef): mAllocator(&allocatorRef) {}
 
-	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo) const
+	forceinline AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO) const
 	{
 		INTRA_DEBUG_ASSERT(mAllocator != null);
 		return mAllocator->Allocate(bytes, sourceInfo);
@@ -31,7 +32,7 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 		mAllocator->Free(ptr, size);
 	}
 
-	template<typename U=A> forceinline Meta::EnableIf<
+	template<typename U=A> forceinline Requires<
 		HasGetAllocationSize<U>::_,
 	size_t> GetAllocationSize(void* ptr) const
 	{
@@ -41,10 +42,10 @@ template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, false>: PAR
 
 	forceinline A& GetRef() {return *mAllocator;}
 
-	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{return Memory::AllocateRangeUninitialized<T>(*mAllocator, count, sourceInfo);}
 
-	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{return Memory::AllocateRange<T>(*mAllocator, count, sourceInfo);}
 
 	template<typename T> forceinline void FreeRangeUninitialized(Span<T> range)
@@ -57,7 +58,7 @@ protected:
 	A* mAllocator;
 };
 
-template<typename A> struct AllocatorRef<A, Meta::EmptyType, true>: A
+template<typename A> struct AllocatorRef<A, Core::EmptyType, true>: A
 {
 	forceinline AllocatorRef(null_t=null) {}
 	forceinline AllocatorRef(A& allocator) {(void)allocator;}
@@ -66,10 +67,10 @@ template<typename A> struct AllocatorRef<A, Meta::EmptyType, true>: A
 
 	forceinline A& GetRef() const {return *const_cast<A*>(static_cast<const A*>(this));}
 
-	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRangeUninitialized(size_t& count, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{return Memory::AllocateRangeUninitialized<T>(*this, count, sourceInfo);}
 
-	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo)
+	template<typename T> forceinline Span<T> AllocateRange(size_t& count, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
 	{return Memory::AllocateRange<T>(*this, count, sourceInfo);}
 	
 	template<typename T> forceinline void FreeRangeUninitialized(Span<T> range)
@@ -80,7 +81,7 @@ template<typename A> struct AllocatorRef<A, Meta::EmptyType, true>: A
 };
 
 template<typename A, typename PARENT> struct AllocatorRef<A, PARENT, true>:
-	PARENT, AllocatorRef<A, Meta::EmptyType, true>
+	PARENT, AllocatorRef<A, Core::EmptyType, true>
 {
 	forceinline AllocatorRef(null_t=null) {}
 	forceinline AllocatorRef(A& allocator) {(void)allocator;}

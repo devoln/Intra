@@ -1,15 +1,16 @@
 #pragma once
 
 #include "Image/Loaders/LoaderPlatform.h"
-#include "Concepts/IInput.h"
-#include "Cpp/Warnings.h"
+#include "Core/IInput.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include <IL/il.h>
 #pragma comment(lib, "DevIL.lib")
 
-namespace Intra { namespace Image {
+INTRA_BEGIN
+namespace Image {
 
 //Загрузить изображение из BMP, JPG или GIF файла
 AnyImage LoadWithPlatform(IInputStream& stream)

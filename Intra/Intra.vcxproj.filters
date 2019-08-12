@@ -49,33 +49,6 @@
     <Filter Include="Заголовочные файлы\Test">
       <UniqueIdentifier>{c6a63510-70e9-4aaf-ac8d-042e14571bb3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Range">
-      <UniqueIdentifier>{26d0aa94-237a-4b25-ac44-9b4b1e22507d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Range">
-      <UniqueIdentifier>{f51481c2-1691-435f-b8e3-a9fea9fb6649}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range">
-      <UniqueIdentifier>{862c24a5-bb8a-4515-ad74-0a2b6d250d7e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Mutation">
-      <UniqueIdentifier>{4866904a-40f3-446d-8129-6c5bb560ed42}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\String">
-      <UniqueIdentifier>{838b941e-85f7-4c77-833d-ad1b23bb9be5}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Sort">
-      <UniqueIdentifier>{b650e0ed-e509-49f2-ba77-ef07ff73ab2f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Range\Mutation">
-      <UniqueIdentifier>{78649ce1-1ac3-4020-ad0f-51725f9b0844}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Range\String">
-      <UniqueIdentifier>{3139bc43-e060-47ac-8127-da8a43e56c8a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Search">
-      <UniqueIdentifier>{e14a131c-3d2a-48fe-85a2-ee3e96f1122f}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Range">
       <UniqueIdentifier>{eddd2920-1bc1-4b76-9dfc-a327fc8221f1}</UniqueIdentifier>
     </Filter>
@@ -85,30 +58,6 @@
     <Filter Include="Файлы исходного кода\Hash">
       <UniqueIdentifier>{f2a29b41-89a0-45fb-bafc-ac425037efbf}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Range\Output">
-      <UniqueIdentifier>{cea0ca45-06b6-416d-9741-00a68f3e22b7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Generators">
-      <UniqueIdentifier>{320b004e-b8b9-45b2-ae1d-a2755ff9ace3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Decorators">
-      <UniqueIdentifier>{76bb0ac1-a878-4376-af22-513315b37001}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Compositors">
-      <UniqueIdentifier>{3e856218-df72-4b84-8045-3ffd29fe27f2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Polymorphic">
-      <UniqueIdentifier>{16703970-6f61-403a-82cf-34c3343267ee}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Iterator">
-      <UniqueIdentifier>{77a33983-42c6-4382-b913-cf56f4c5e0bb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Special">
-      <UniqueIdentifier>{1fc171a6-0995-40da-b806-90dea19b84a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Range\Special">
-      <UniqueIdentifier>{4f8cefa6-c55a-4909-83e6-9fb1242332d4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Memory\Allocator">
       <UniqueIdentifier>{9683daa2-fb7c-4168-b311-19a3ffe9f64a}</UniqueIdentifier>
     </Filter>
@@ -117,9 +66,6 @@
     </Filter>
     <Filter Include="Заголовочные файлы\Memory\Allocator\Decorators">
       <UniqueIdentifier>{dfa3e87c-a2ba-4a1e-b756-b0c34e90eb02}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Range\Comparison">
-      <UniqueIdentifier>{1cf82e5a-44b4-4bc9-b2a1-73b45ee2cf21}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Memory\Allocator">
       <UniqueIdentifier>{d7908f3a-5e08-4b9d-8d1c-a66a96af1172}</UniqueIdentifier>
@@ -154,17 +100,11 @@
     <Filter Include="Файлы исходного кода\Container">
       <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Range\Stream">
-      <UniqueIdentifier>{5f03e135-27ac-4500-96bd-78aec12c876a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Data\Format">
       <UniqueIdentifier>{d87fdfde-88b4-4bdb-8012-5df20e4fde34}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Concurrency">
       <UniqueIdentifier>{4c415524-0213-4e0a-bd75-f6ad480da969}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Cpp">
-      <UniqueIdentifier>{ec345873-4093-4147-93b5-08e936352f20}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Random">
       <UniqueIdentifier>{0257f859-72d5-4d5d-adb5-79190678b64c}</UniqueIdentifier>
@@ -174,9 +114,6 @@
     </Filter>
     <Filter Include="Заголовочные файлы\Simd">
       <UniqueIdentifier>{eced8191-6d36-4dfd-875c-811df2a27d66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Concepts">
-      <UniqueIdentifier>{0168aa47-e0a6-4b37-beb2-f38725cd634b}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Audio">
       <UniqueIdentifier>{80fa9c48-9b9b-4a07-8a48-c68aa9aa18f3}</UniqueIdentifier>
@@ -211,17 +148,11 @@
     <Filter Include="Заголовочные файлы\Math\Geometry">
       <UniqueIdentifier>{95157fb5-03be-4bc0-9777-60b5c53b76e1}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Meta">
-      <UniqueIdentifier>{09c8e239-18f6-4ba7-b611-47b9ee20d734}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\System">
       <UniqueIdentifier>{ab6c9195-b4b8-4cf3-838f-c3137b87f154}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\System">
       <UniqueIdentifier>{9b3a3a57-1c8d-4248-8db9-ca0c7aac71c2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Cpp">
-      <UniqueIdentifier>{c21dc6b6-7992-49da-9752-9d1df5d6c0d0}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Font">
       <UniqueIdentifier>{2c572eba-4b16-410f-b382-e6eb7d6b87ce}</UniqueIdentifier>
@@ -231,9 +162,6 @@
     </Filter>
     <Filter Include="Файлы исходного кода\Concurrency\detail">
       <UniqueIdentifier>{67ff2c07-643c-4d9f-ae28-50f6ef1b5bd8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Preprocessor">
-      <UniqueIdentifier>{c4072275-bfdb-4283-a7b2-d2f9cf84ffac}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\System\detail">
       <UniqueIdentifier>{760e68ea-d828-45d4-bee3-4d51954f8aed}</UniqueIdentifier>
@@ -250,14 +178,50 @@
     <Filter Include="Файлы исходного кода\Audio\detail">
       <UniqueIdentifier>{d3efa6a9-ef2f-4403-a984-67d16fb6f745}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Funal">
-      <UniqueIdentifier>{02aa42ee-f3c6-4562-96c8-5ac2ba3a7af2}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Audio\Midi">
       <UniqueIdentifier>{286a2136-9012-4f46-a25f-b7203d866cae}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Audio\Midi">
       <UniqueIdentifier>{f5c11979-b83d-44df-8c69-2aa710fce890}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Math\detail">
+      <UniqueIdentifier>{381faccc-1a23-47d9-aca7-cf5ed5a7a91b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Simd\detail">
+      <UniqueIdentifier>{5607a841-e4aa-4703-af4b-6266551adab2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core">
+      <UniqueIdentifier>{17f49a8b-6a49-4efa-a383-58bccd46860b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Core">
+      <UniqueIdentifier>{3bffbdf2-3597-42b9-9841-657121ac8408}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Файлы исходного кода\Math">
+      <UniqueIdentifier>{3d7e9dca-fcd1-40f3-a447-3c9443540edc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range">
+      <UniqueIdentifier>{957d6557-cf37-4791-99ad-2398c8c38623}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\Mutation">
+      <UniqueIdentifier>{b4093cf3-2bc2-4675-bc59-feb6500fc325}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\Sort">
+      <UniqueIdentifier>{df513740-18fa-42d8-a91b-4e1fa3b5ec15}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\Polymorphic">
+      <UniqueIdentifier>{58d8d2bf-de07-41df-9859-490a161945c4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\Stream">
+      <UniqueIdentifier>{087428cf-a43a-4875-9e05-94286e0503fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\Search">
+      <UniqueIdentifier>{ab10bedc-1104-4328-82dc-87c072ebf46f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Range\String">
+      <UniqueIdentifier>{47a28f56-ce75-463c-b384-55c81351b23b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Core\Misc">
+      <UniqueIdentifier>{d6e52faa-fd25-4a2a-b0b5-d1231a219892}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -273,32 +237,14 @@
     <ClCompile Include="Data\ValueType.cpp">
       <Filter>Файлы исходного кода\Data</Filter>
     </ClCompile>
-    <ClCompile Include="Data\Variable.cpp">
-      <Filter>Файлы исходного кода\Data</Filter>
-    </ClCompile>
     <ClCompile Include="Memory\VirtualMemory.cpp">
       <Filter>Файлы исходного кода\Memory</Filter>
     </ClCompile>
     <ClCompile Include="IO\Networking.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
-    <ClCompile Include="Range\Reduction.cpp">
-      <Filter>Файлы исходного кода\Range</Filter>
-    </ClCompile>
-    <ClCompile Include="Range\Mutation\Transform.cpp">
-      <Filter>Файлы исходного кода\Range\Mutation</Filter>
-    </ClCompile>
-    <ClCompile Include="Range\String\Ascii.cpp">
-      <Filter>Файлы исходного кода\Range\String</Filter>
-    </ClCompile>
-    <ClCompile Include="Range\Special\Unicode.cpp">
-      <Filter>Файлы исходного кода\Range\Special</Filter>
-    </ClCompile>
     <ClCompile Include="Memory\Allocator\System.cpp">
       <Filter>Файлы исходного кода\Memory\Allocator</Filter>
-    </ClCompile>
-    <ClCompile Include="Memory\Allocator\Basic\Pool.cpp">
-      <Filter>Файлы исходного кода\Memory\Allocator\Basic</Filter>
     </ClCompile>
     <ClCompile Include="Memory\Allocator\Basic\Stack.cpp">
       <Filter>Файлы исходного кода\Memory\Allocator\Basic</Filter>
@@ -354,16 +300,10 @@
     <ClCompile Include="Hash\Murmur.cpp">
       <Filter>Файлы исходного кода\Hash</Filter>
     </ClCompile>
-    <ClCompile Include="Range\Mutation\Cast.cpp">
-      <Filter>Файлы исходного кода\Range\Mutation</Filter>
-    </ClCompile>
     <ClCompile Include="IO\FilePath.cpp">
       <Filter>Файлы исходного кода\IO</Filter>
     </ClCompile>
     <ClCompile Include="Audio\AudioBuffer.cpp">
-      <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\AudioProcessing.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Audio\AudioSource.cpp">
@@ -371,9 +311,6 @@
     </ClCompile>
     <ClCompile Include="Audio\Sound.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils\Debug.cpp">
-      <Filter>Файлы исходного кода\Utils</Filter>
     </ClCompile>
     <ClCompile Include="Image\Bindings\DXGI_Formats.cpp">
       <Filter>Файлы исходного кода\Image\Bindings</Filter>
@@ -441,9 +378,6 @@
     <ClCompile Include="System\DateTime.cpp">
       <Filter>Файлы исходного кода\System</Filter>
     </ClCompile>
-    <ClCompile Include="Cpp\Runtime.cpp">
-      <Filter>Файлы исходного кода\Cpp</Filter>
-    </ClCompile>
     <ClCompile Include="Font\FontLoading.cpp">
       <Filter>Файлы исходного кода\Font</Filter>
     </ClCompile>
@@ -489,22 +423,43 @@
     <ClCompile Include="Audio\Midi\TrackParser.cpp">
       <Filter>Файлы исходного кода\Audio\Midi</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Midi\DeviceState.cpp">
-      <Filter>Файлы исходного кода\Audio\Midi</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\MusicNote.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
     <ClCompile Include="Container\Utility\Blob.h">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClCompile>
+    <ClCompile Include="Container\Sequential\Bitset.h">
+      <Filter>Заголовочные файлы\Container\Sequential</Filter>
+    </ClCompile>
+    <ClCompile Include="Test\TestRun.cpp">
+      <Filter>Файлы исходного кода\Test</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\FFT.cpp">
+      <Filter>Файлы исходного кода\Math</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\Special\Unicode.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\String\Ascii.cpp">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\Chain.test.cxx">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\Span.test.cxx">
+      <Filter>Файлы исходного кода</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Debug.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\Runtime.cpp">
+      <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IO\Networking.h">
       <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Optional.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Math\Quaternion.h">
       <Filter>Заголовочные файлы\Math</Filter>
@@ -515,227 +470,14 @@
     <ClInclude Include="Data\ValueType.h">
       <Filter>Заголовочные файлы\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Variable.h">
-      <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
     <ClInclude Include="Math\Bit.h">
       <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
     <ClInclude Include="Data\Object.h">
       <Filter>Заголовочные файлы\Data</Filter>
     </ClInclude>
-    <ClInclude Include="Range\TupleOperation.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\ForwardDecls.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Operations.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Reduction.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Heap.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Insertion.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\IsSorted.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Merge.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Quick.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Radix.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort\Selection.h">
-      <Filter>Заголовочные файлы\Range\Sort</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Copy.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Remove.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Transform.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\String\Ascii.h">
-      <Filter>Заголовочные файлы\Range\String</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\String\Escape.h">
-      <Filter>Заголовочные файлы\Range\String</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search\Binary.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search\Single.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search\Subrange.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search\Trim.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Replace.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Fill.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\ReplaceSubrange.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Output\Inserter.h">
-      <Filter>Заголовочные файлы\Range\Output</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Count.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Generate.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Iota.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\ListRange.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Null.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Recurrence.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Repeat.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\Sequence.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Cycle.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Filter.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Map.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Retro.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Split.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Stride.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Take.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\TakeUntil.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\TakeUntilAny.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Transversal.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\AssociativeRange.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\Chain.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\Choose.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\Indexed.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\RoundRobin.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Special\Unicode.h">
-      <Filter>Заголовочные файлы\Range\Special</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\AsciiSet.h">
       <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Data.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="IO.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Math.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Memory.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Range.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Test.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Sort.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\String.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\BidirectionalRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\ForwardRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\InputRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\RandomAccessRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Iterator.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Special.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
     </ClInclude>
     <ClInclude Include="Math\Math.h">
       <Filter>Заголовочные файлы\Math</Filter>
@@ -747,9 +489,6 @@
       <Filter>Заголовочные файлы\Memory</Filter>
     </ClInclude>
     <ClInclude Include="Memory\Memory.h">
-      <Filter>Заголовочные файлы\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Memory\PlacementNew.h">
       <Filter>Заголовочные файлы\Memory</Filter>
     </ClInclude>
     <ClInclude Include="Memory\VirtualMemory.h">
@@ -770,39 +509,6 @@
     <ClInclude Include="Memory\Allocator\Polymorphic.h">
       <Filter>Заголовочные файлы\Memory\Allocator</Filter>
     </ClInclude>
-    <ClInclude Include="Range\Search\Distance.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Comparison.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Comparison\EndsWith.h">
-      <Filter>Заголовочные файлы\Range\Comparison</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Comparison\Equals.h">
-      <Filter>Заголовочные файлы\Range\Comparison</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Comparison\LexCompare.h">
-      <Filter>Заголовочные файлы\Range\Comparison</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Comparison\StartsWith.h">
-      <Filter>Заголовочные файлы\Range\Comparison</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Cast.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Debug.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\FiniteForwardRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\FiniteInputRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\FiniteRandomAccessRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
     <ClInclude Include="Data\Serialization\BinarySerializer.h">
       <Filter>Заголовочные файлы\Data\Serialization</Filter>
     </ClInclude>
@@ -818,14 +524,8 @@
     <ClInclude Include="Data\Serialization\TextDeserializer.h">
       <Filter>Заголовочные файлы\Data\Serialization</Filter>
     </ClInclude>
-    <ClInclude Include="Range\ForEach.h">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
     <ClInclude Include="Data\Serialization.hh">
       <Filter>Заголовочные файлы\Data</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\Zip.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
     </ClInclude>
     <ClInclude Include="Memory\Allocator\Decorators\BoundsChecked.h">
       <Filter>Заголовочные файлы\Memory\Allocator\Decorators</Filter>
@@ -865,18 +565,6 @@
     </ClInclude>
     <ClInclude Include="Data\Serialization\LanguageParams.h">
       <Filter>Заголовочные файлы\Data\Serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Output\OutputArrayRange.h">
-      <Filter>Заголовочные файлы\Range\Output</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Join.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Chunks.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\Buffered.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
     </ClInclude>
     <ClInclude Include="Container\Associative.hh">
       <Filter>Заголовочные файлы\Container</Filter>
@@ -926,9 +614,6 @@
     <ClInclude Include="Container\Sequential\String.h">
       <Filter>Заголовочные файлы\Container\Sequential</Filter>
     </ClInclude>
-    <ClInclude Include="Container\Sequential\StructureOfArrays.h">
-      <Filter>Заголовочные файлы\Container\Sequential</Filter>
-    </ClInclude>
     <ClInclude Include="Container\Operations\Append.h">
       <Filter>Заголовочные файлы\Container\Operations</Filter>
     </ClInclude>
@@ -940,12 +625,6 @@
     </ClInclude>
     <ClInclude Include="Container\Operations\Info.h">
       <Filter>Заголовочные файлы\Container\Operations</Filter>
-    </ClInclude>
-    <ClInclude Include="Container.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Container\Sequential\ExtArray.h">
-      <Filter>Заголовочные файлы\Container\Sequential</Filter>
     </ClInclude>
     <ClInclude Include="Container\Sequential\StringFormatter.h">
       <Filter>Заголовочные файлы\Container\Sequential</Filter>
@@ -971,12 +650,6 @@
     <ClInclude Include="IO\HtmlWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Range\Compositors\ZipKV.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Compositors\Unzip.h">
-      <Filter>Заголовочные файлы\Range\Compositors</Filter>
-    </ClInclude>
     <ClInclude Include="IO\FileSystem.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
@@ -992,18 +665,6 @@
     <ClInclude Include="IO\FileWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Range\Stream\InputStreamMixin.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\OutputStreamMixin.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\CopyUntil.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Polymorphic\OutputRange.h">
-      <Filter>Заголовочные файлы\Range\Polymorphic</Filter>
-    </ClInclude>
     <ClInclude Include="IO\ConsoleOutput.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
@@ -1013,38 +674,14 @@
     <ClInclude Include="IO\Std.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Range\Output.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
     <ClInclude Include="IO\Socket.h">
       <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Finally.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\ByLineTo.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\TakeByLine.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Decorators\ByLine.h">
-      <Filter>Заголовочные файлы\Range\Decorators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Iterator\RangeForwardIterator.h">
-      <Filter>Заголовочные файлы\Range\Iterator</Filter>
     </ClInclude>
     <ClInclude Include="IO\SocketReader.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
     <ClInclude Include="IO\SocketWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\ZStringRange.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Generators\FlatArrayOfArraysRange.h">
-      <Filter>Заголовочные файлы\Range\Generators</Filter>
     </ClInclude>
     <ClInclude Include="Data\Format\BinaryRaw.h">
       <Filter>Заголовочные файлы\Data\Format</Filter>
@@ -1061,15 +698,6 @@
     <ClInclude Include="Container\Utility\SparseRange.h">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\AnyPtr.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\Span.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\StringView.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Shared.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
@@ -1077,9 +705,6 @@
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Utils\FixedArray.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ErrorStatus.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Utils\Logger.h">
@@ -1091,9 +716,6 @@
     <ClInclude Include="Concurrency\Atomic.h">
       <Filter>Заголовочные файлы\Concurrency</Filter>
     </ClInclude>
-    <ClInclude Include="Cpp\Endianess.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
     <ClInclude Include="Concurrency\Thread.h">
       <Filter>Заголовочные файлы\Concurrency</Filter>
     </ClInclude>
@@ -1102,36 +724,6 @@
     </ClInclude>
     <ClInclude Include="Concurrency\Job.h">
       <Filter>Заголовочные файлы\Concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Compatibility.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Features.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Fundamental.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\InitializerList.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Intrinsics.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\PlacementNew.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\PlatformDetect.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Runtime.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\SharedLib.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\Warnings.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
     </ClInclude>
     <ClInclude Include="IO\FilePath.h">
       <Filter>Заголовочные файлы\IO</Filter>
@@ -1157,70 +749,10 @@
     <ClInclude Include="Random\FastUniformNoise.h">
       <Filter>Заголовочные файлы\Random</Filter>
     </ClInclude>
-    <ClInclude Include="Simd\Simd.h">
-      <Filter>Заголовочные файлы\Simd</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\Array.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\Container.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\IInput.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\IOutput.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\Iterator.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\Range.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\ArrayAlgo.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\MaxLengthOfToString.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\Parse.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\RawRead.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\RawWrite.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\Spaces.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\ToString.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream\ToStringArithmetic.h">
-      <Filter>Заголовочные файлы\Range\Stream</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Stream.hh">
-      <Filter>Заголовочные файлы\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Search\RecursiveBlock.h">
-      <Filter>Заголовочные файлы\Range\Search</Filter>
-    </ClInclude>
-    <ClInclude Include="Cpp\InfNan.h">
-      <Filter>Заголовочные файлы\Cpp</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils\IteratorRange.h">
-      <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Promise.h">
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Audio\AudioBuffer.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\AudioProcessing.h">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Audio\AudioSource.h">
@@ -1355,30 +887,6 @@
     <ClInclude Include="Math\Geometry\Ellipse.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
     </ClInclude>
-    <ClInclude Include="Meta\EachField.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\GetField.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\Operators.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\Pair.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\Tuple.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\Type.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Meta\TypeList.h">
-      <Filter>Заголовочные файлы\Meta</Filter>
-    </ClInclude>
-    <ClInclude Include="Concepts\RangeOf.h">
-      <Filter>Заголовочные файлы\Concepts</Filter>
-    </ClInclude>
     <ClInclude Include="System\Environment.h">
       <Filter>Заголовочные файлы\System</Filter>
     </ClInclude>
@@ -1396,9 +904,6 @@
     </ClInclude>
     <ClInclude Include="System\DateTime.h">
       <Filter>Заголовочные файлы\System</Filter>
-    </ClInclude>
-    <ClInclude Include="System.hh">
-      <Filter>Заголовочные файлы</Filter>
     </ClInclude>
     <ClInclude Include="Font\FontLoading.h">
       <Filter>Заголовочные файлы\Font</Filter>
@@ -1439,21 +944,6 @@
     <ClInclude Include="Concurrency\Lock.h">
       <Filter>Заголовочные файлы\Concurrency</Filter>
     </ClInclude>
-    <ClInclude Include="Preprocessor\Macro2ForEach.h">
-      <Filter>Заголовочные файлы\Preprocessor</Filter>
-    </ClInclude>
-    <ClInclude Include="Preprocessor\Macro2ForEachIndex.h">
-      <Filter>Заголовочные файлы\Preprocessor</Filter>
-    </ClInclude>
-    <ClInclude Include="Preprocessor\VariadicCommon.h">
-      <Filter>Заголовочные файлы\Preprocessor</Filter>
-    </ClInclude>
-    <ClInclude Include="Preprocessor\Operations.h">
-      <Filter>Заголовочные файлы\Preprocessor</Filter>
-    </ClInclude>
-    <ClInclude Include="Preprocessor.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="System\detail\Common.h">
       <Filter>Заголовочные файлы\System\detail</Filter>
     </ClInclude>
@@ -1490,9 +980,6 @@
     <ClInclude Include="Concurrency\detail\ThreadSleep.hxx">
       <Filter>Файлы исходного кода\Concurrency\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Geometry.hh">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="Image\Loaders\detail\LoaderDevIL.hxx">
       <Filter>Файлы исходного кода\Image\Loaders\detail</Filter>
     </ClInclude>
@@ -1520,30 +1007,6 @@
     <ClInclude Include="Audio\detail\SoundBasicData.hxx">
       <Filter>Файлы исходного кода\Audio\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Funal\Bind.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\Delegate.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\Method.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\Op.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\Functor.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\ObjectMethod.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\FuncRef.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
-    <ClInclude Include="Funal\ValueRef.h">
-      <Filter>Заголовочные файлы\Funal</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\SoundDriverInfo.h">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
@@ -1555,12 +1018,6 @@
     </ClInclude>
     <ClInclude Include="Audio\SampleConversion.h">
       <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Union.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
-    </ClInclude>
-    <ClInclude Include="Range\Mutation\Heap.h">
-      <Filter>Заголовочные файлы\Range\Mutation</Filter>
     </ClInclude>
     <ClInclude Include="Math\Geometry\Line.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
@@ -1598,26 +1055,399 @@
     <ClInclude Include="Audio\Sources\MidiSynth.h">
       <Filter>Заголовочные файлы\Audio\Sources</Filter>
     </ClInclude>
-    <ClInclude Include="Container\Utility\StaticBitset.h">
-      <Filter>Заголовочные файлы\Container\Utility</Filter>
+    <ClInclude Include="Utils\SBitset.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Test\TestRun.h">
+      <Filter>Заголовочные файлы\Test</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\IInput.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\IOutput.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\detail\MathBuiltins.h">
+      <Filter>Заголовочные файлы\Math\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\detail\CRTHeaderMathFuntions.h">
+      <Filter>Заголовочные файлы\Math\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\ShaderMath.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Simd\detail\IntelIntrinsicImpl.h">
+      <Filter>Заголовочные файлы\Simd\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Simd\detail\VectorExtImpl.h">
+      <Filter>Заголовочные файлы\Simd\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Delegate.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CArray.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CContainer.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\CIterator.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Core.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\EachField.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Functional.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Numeric.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Operations.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Preprocessor.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\TList.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Tuple.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Type.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\FFT.h">
+      <Filter>Заголовочные файлы\Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Endianess.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ForwardDecls.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Buffered.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ByLine.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ByLineTo.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Chain.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Choose.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Chunks.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Count.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Cycle.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\EndsWith.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Filter.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ForEach.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Generate.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Inserter.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Iota.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Join.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ListRange.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Map.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Null.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Operations.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\RangeMethodsMixin.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Recurrence.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Repeat.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Retro.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\RoundRobin.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sequence.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\Spaces.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Span.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Split.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stride.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\StringView.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Take.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\TakeByLine.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\TakeUntil.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\TakeUntilAny.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Transversal.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\TupleOperation.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Zip.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ZStringRange.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\detail\OwnMathFunctions.h">
+      <Filter>Заголовочные файлы\Math\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\BidirectionalRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\FiniteForwardRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\FiniteInputRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\FiniteRandomAccessRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\FlatArrayOfArraysRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Copy.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\CopyUntil.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Fill.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Heap.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\InputRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\ForwardRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\InputStreamMixin.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\IsSorted.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Insertion.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Heap.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\MaxLengthOfToString.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Optional.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\RandomAccessRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Polymorphic\OutputRange.h">
+      <Filter>Заголовочные файлы\Core\Range\Polymorphic</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Merge.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\Parse.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Quick.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\Binary.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\Distance.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\String\Escape.h">
+      <Filter>Заголовочные файлы\Core\Range\String</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Radix.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\RawRead.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\RawWrite.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\OutputStreamMixin.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\RecursiveBlock.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Remove.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Replace.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\ReplaceSubrange.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\Single.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\Trim.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Sort\Selection.h">
+      <Filter>Заголовочные файлы\Core\Range\Sort</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\ToString.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Stream\ToStringArithmetic.h">
+      <Filter>Заголовочные файлы\Core\Range\Stream</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Special\Unicode.h">
+      <Filter>Заголовочные файлы\Core\Range\String</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Mutation\Union.h">
+      <Filter>Заголовочные файлы\Core\Range\Mutation</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Search\Subrange.h">
+      <Filter>Заголовочные файлы\Core\Range\Search</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Assert.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="System\detail\RuntimeMinMsvcCrtImpl.hxx">
+      <Filter>Заголовочные файлы\System\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="System\detail\RuntimeMsvcrtOldHelper.hxx">
+      <Filter>Заголовочные файлы\System\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="System\detail\RuntimeThreadLocalFix.hxx">
+      <Filter>Заголовочные файлы\System\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="System\detail\RuntimeUnifiedMain.hxx">
+      <Filter>Заголовочные файлы\System\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Debug.h">
+      <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\String\Ascii.h">
+      <Filter>Заголовочные файлы\Core\Range\String</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Comparison.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Concepts.h">
+      <Filter>Заголовочные файлы</Filter>
+    </ClInclude>
+    <ClInclude Include="Simd\Reduce.h">
+      <Filter>Заголовочные файлы\Simd</Filter>
+    </ClInclude>
+    <ClInclude Include="Simd\Simd.h">
+      <Filter>Заголовочные файлы\Simd</Filter>
+    </ClInclude>
+    <ClInclude Include="Simd\Transform.h">
+      <Filter>Заголовочные файлы\Simd</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Reduce.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Reflection.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Float.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Misc\FloatToDecimal.h">
+      <Filter>Заголовочные файлы\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Misc\RawMemory.h">
+      <Filter>Заголовочные файлы\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Misc\UintToString.h">
+      <Filter>Заголовочные файлы\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Misc\MathTricks.h">
+      <Filter>Заголовочные файлы\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Misc\DecimalToString.h">
+      <Filter>Заголовочные файлы\Core\Misc</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Polymorphic.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="System\Error.h">
+      <Filter>Заголовочные файлы\System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Container\Utility\SparseRange.inl">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </None>
-    <None Include="Cpp\Cpp.natstepfilter">
-      <Filter>natvis</Filter>
-    </None>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="Concurrency\Concurrency.natvis">
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Container\Container.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
-    <Natvis Include="Cpp\Cpp.natvis">
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Image\Image.natvis">
@@ -1629,31 +1459,16 @@
     <Natvis Include="Math\Math.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="Meta\Meta.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
-    <Natvis Include="Range\RangeConstruction.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
-    <Natvis Include="Range\RangeIteration.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
-    <Natvis Include="Range\RangePolymorphic.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
     <Natvis Include="System\System.natvis">
-      <Filter>natvis</Filter>
-    </Natvis>
-    <Natvis Include="Funal\Funal.natvis">
       <Filter>natvis</Filter>
     </Natvis>
     <Natvis Include="Audio\Midi\Midi.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="Range\Range.natvis">
+    <Natvis Include="Utils\Utils.natvis">
       <Filter>natvis</Filter>
     </Natvis>
-    <Natvis Include="Utils\Utils.natvis">
+    <Natvis Include="Core\Core.natvis">
       <Filter>natvis</Filter>
     </Natvis>
   </ItemGroup>

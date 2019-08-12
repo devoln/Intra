@@ -1,5 +1,5 @@
 ﻿
-#include "Cpp/PlatformDetect.h"
+
 #include "Random/FastUniform.h"
 #include "Container/Sequential/Array.h"
 
@@ -8,13 +8,16 @@
 #include "Atomic.h"
 #include "Lock.h"
 
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
 #if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
 
 #include "Concurrency/Job.h"
 
 #undef Yield
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 using namespace Math;
 
@@ -276,3 +279,5 @@ void Job::Wait() const
 }}
 
 #endif
+
+INTRA_WARNING_POP

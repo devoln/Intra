@@ -1,10 +1,11 @@
 ﻿#pragma once
 
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 #include "IO/FormattedWriter.h"
-#include "Utils/StringView.h"
+#include "Core/Range/StringView.h"
 
-namespace Intra {
+INTRA_BEGIN
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

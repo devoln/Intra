@@ -1,17 +1,17 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
 
-#include "Meta/Type.h"
-#include "Meta/Tuple.h"
+
+#include "Core/Type.h"
+#include "Core/Tuple.h"
 
 #include "Funal/Op.h"
 #include "Utils/FixedArray.h"
 
 #include "Hash/ToHash.h"
 
-#include "Range/Sort/Quick.h"
-#include "Range/Mutation/Fill.h"
+#include "Core/Range/Sort/Quick.h"
+#include "Core/Range/Mutation/Fill.h"
 
 #include "Container/AllForwardDecls.h"
 
@@ -21,7 +21,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace Container {
+INTRA_BEGIN
+namespace Container {
 
 template<typename T> struct HashTableRange;
 
@@ -29,41 +30,13 @@ namespace D {
 
 template<typename K> struct KeyWrapper {K Key;};
 
-template<typename T> struct HashNode:
-	private Meta::SelectType<
-		Meta::EmptyType, Meta::WrapperStruct<uint>,
-		Meta::IsScalarType<decltype(Meta::Val<T>().Key)>::_>
+template<typename T> struct HashNode
 {
 	template<typename T1> friend struct Intra::Container::HashTableRange;
 	template<typename K, typename V, class Allocator> friend class Intra::Container::HashMap;
 private:
-	template<typename... Args> HashNode(Args&&... args): element(Cpp::Forward<Args>(args)...) {}
+	template<typename... Args> HashNode(Args&&... args): element(Forward<Args>(args)...) {}
 	~HashNode() {}
-
-	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		Meta::IsScalarType<U>::_,
-	bool> compareKeys(const U& key, uint keyHash)
-	{
-		(void)keyHash;
-		return element.Key == key;
-	}
-
-	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		!Meta::IsScalarType<U>::_,
-	bool> compareKeys(const U& key, uint keyHash)
-	{
-		if(Meta::WrapperStruct<uint>::value == keyHash) return true;
-		return element.Key == key;
-	}
-		
-	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		Meta::IsScalarType<U>::_
-	> initKey(uint keyHash) {(void)keyHash;}
-
-	template<typename U=decltype(Meta::Val<T>().Key)> forceinline Meta::EnableIf<
-		!Meta::IsScalarType<U>::_
-	> initKey(uint keyHash) {Meta::WrapperStruct<uint>::value = keyHash;}
-
 
 	HashNode* down;
 	HashNode* prev;
@@ -80,7 +53,8 @@ private:
 
 template<typename T> struct HashTableRange
 {
-	HashTableRange(null_t=null): mFirstNode(null), mLastNode(null) {}
+	typedef Container::D::HashNode<TRemoveConst<T>> NodeType;
+	forceinline HashTableRange(null_t=null): mFirstNode(null), mLastNode(null) {}
 
 	forceinline bool operator==(const HashTableRange& rhs) const
 	{
@@ -98,17 +72,18 @@ template<typename T> struct HashTableRange
 	forceinline T& Last() const {INTRA_DEBUG_ASSERT(!Empty()); return mLastNode->element;}
 
 
-	const HashTableRange<const T>& AsConstRange() const
-	{return *reinterpret_cast<const HashTableRange<const T>*>(this);}
+	forceinline const HashTableRange<const T> AsConstRange() const
+	{return {mFirstNode, mLastNode};}
 	
-	operator HashTableRange<const T>() const {return AsConstRange();}
+	forceinline operator HashTableRange<const T>() const {return AsConstRange();}
 
 private:
-	forceinline HashTableRange(Container::D::HashNode<T>* startNode, Container::D::HashNode<T>* lastNode):
+	friend struct HashTableRange<TRemoveConst<T>>;
+	forceinline HashTableRange(NodeType* startNode, NodeType* lastNode):
 		mFirstNode(startNode), mLastNode(lastNode) {}
 
-	Container::D::HashNode<T>* mFirstNode;
-	Container::D::HashNode<T>* mLastNode;
+	NodeType* mFirstNode;
+	NodeType* mLastNode;
 
 	template<typename K, typename V, class Allocator> friend class HashMap;
 };
@@ -126,7 +101,7 @@ template<typename K, typename V, typename AllocatorType>
 class HashMap: Memory::AllocatorRef<AllocatorType>
 {
 	typedef Memory::AllocatorRef<AllocatorType> AllocatorRef;
-	typedef Container::D::HashNode<Meta::KeyValuePair<const K, V>> Node;
+	typedef Container::D::HashNode<Core::KeyValuePair<const K, V>> Node;
 public:
 	typedef AllocatorType Allocator;
 
@@ -144,7 +119,8 @@ public:
  
 		forceinline bool operator==(const iterator& rhs) const {return node==rhs.node;}
         forceinline bool operator!=(const iterator& rhs) const {return node!=rhs.node;}
-        forceinline void GotoNext() {
+        forceinline void GotoNext()
+		{
 			INTRA_DEBUG_ASSERT(node != null);
 			node = node->next;
 		}
@@ -208,7 +184,7 @@ public:
 
 	bool operator==(const HashMap& rhs) const
 	{
-		if(rhs.Count()!=Count()) return false;
+		if(rhs.Count() != Count()) return false;
 
 		ElementRange rangeCopy = mRange;
 		while(!rangeCopy.Empty())
@@ -222,9 +198,9 @@ public:
 
 	bool operator!=(const HashMap& rhs) const {return !operator==(rhs);}
 
-	bool Empty() const {return Count() == 0;}
-	bool operator==(null_t) const {return Empty();}
-	bool operator!=(null_t) const {return !Empty();}
+	forceinline bool Empty() const {return Count() == 0;}
+	forceinline bool operator==(null_t) const {return Empty();}
+	forceinline bool operator!=(null_t) const {return !Empty();}
 
 	V& operator[](const K& key)
 	{
@@ -239,18 +215,18 @@ public:
 	V& operator[](K&& key)
 	{
 		if(mBucketHeads == null)
-			return insertNode(Cpp::Move(key), V(), false)->element.Value;
+			return insertNode(Move(key), V(), false)->element.Value;
 		uint keyHash = ToHash(key);
 		Node* node = findNode(key, keyHash);
 		if(node != null) return node->element.Value;
-		return insertNode(Cpp::Move(key), V(), false)->element.Value;
+		return insertNode(Move(key), V(), false)->element.Value;
 	}
 
 	ElementRange Insert(const value_type& pair)
 	{return ElementRange(insertNode(pair.Key, pair.Value), mRange.mLastNode);}
 
 	ElementRange Insert(K&& key, V&& value)
-	{return ElementRange(insertNode(Cpp::Move(key), Cpp::Move(value)), mRange.mLastNode);}
+	{return ElementRange(insertNode(Move(key), Move(value)), mRange.mLastNode);}
 
 	ElementRange Insert(const K& key, const V& value)
 	{return ElementRange(insertNode(key, value), mRange.mLastNode);}
@@ -265,8 +241,8 @@ public:
 		}
 	}
 
-	//! Вставить пару только в случае если пары с указанным ключом не существует.
-	//! Диапазон, содержащий найденный или вставленный элемент с указанным ключом и все элементы, идущие после него в контейнере.
+	//! Insert the key-value pair only if provided key doesn't exist in the map.
+	//! @returns range containing existing or inserted element with corresponding key and all the elements after it.
 	ElementRange InsertNew(const K& key, const V& value)
 	{
 		const uint keyHash = ToHash(key);
@@ -278,6 +254,8 @@ public:
 		return ElementRange(insertNode(key, value, false), mRange.mLastNode);
 	}
 
+	//! Insert the key-value pair by moving key and value only if provided key doesn't exist in the map.
+	//! @returns range containing existing or inserted element with corresponding key and all the elements after it.
 	iterator InsertNew(K&& key, V&& value)
 	{
 		const uint keyHash = ToHash(key);
@@ -286,11 +264,11 @@ public:
 			auto node = findNode(key, keyHash);
 			if(node!=null) return ElementRange(node, mRange.mLastNode);
 		}
-		return ElementRange(insertNode(Cpp::Move(key), Cpp::Move(value), false), mRange.mLastNode);
+		return ElementRange(insertNode(Move(key), Move(value), false), mRange.mLastNode);
 	}
 
-	//! Удалить элемент по ключу.
-	//! @return Возвращает, существовал ли элемент с таким ключом.
+	//! Remove element by its key.
+	//! @returns true if key existed.
 	bool Remove(const K& key)
 	{
 		if(mBucketHeads == null) return false;
@@ -387,7 +365,7 @@ public:
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
 	//! \param pred Предикат сравнения ключей.
-	template<typename P = Funal::TLess> void SortByKey(P pred = Funal::Less)
+	template<typename P = Funal::TLess> void SortByKey(P pred = FLess)
 	{
 		SortByPair([&pred](const KeyValuePair<const K, V>& lhs, const KeyValuePair<const K, V>& rhs)
 		{
@@ -397,7 +375,7 @@ public:
 
 	//! Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
 	//! \param pred Предикат сравнения ключей.
-	template<typename P = Funal::TLess> void SortByValue(P pred = Funal::Less)
+	template<typename P = Funal::TLess> void SortByValue(P pred = FLess)
 	{
 		SortByPair([&pred](const KeyValuePair<const K, V>& lhs, const KeyValuePair<const K, V>& rhs)
 		{
@@ -503,13 +481,15 @@ public:
 	iterator rend() {return iterator(null);}
 	const_iterator rend() const {return const_iterator(null);}
 
-	forceinline iterator emplace(K&& key, V&& value) {return iterator(Insert(Cpp::Move(key), Cpp::Move(value)));}
+#ifdef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
+	forceinline iterator emplace(K&& key, V&& value) {return iterator(Insert(Move(key), Move(value)));}
 	forceinline iterator insert(const value_type& pair) {return iterator(Insert(pair.Key, pair.Value));}
 	forceinline bool empty() const {return Empty();}
 	forceinline size_t size() const {return Count();}
 	forceinline void clear() {Clear();}
 	forceinline iterator find(const K& key) {return iterator(Find(key));}
 	forceinline const_iterator find(const K& key) const {return const_iterator(Find(key));}
+#endif
 
     size_t Count() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[0]: 0;}
     size_t BucketCount() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[1]: 0;}
@@ -583,9 +563,9 @@ private:
 	Node* findNode(const K& key, uint keyHash) const
 	{
 		Node* node = get_bucket_head(keyHash);
-		while(node!=null)
+		while(node != null)
 		{
-			if(node->compareKeys(key, keyHash)) return node;
+			if(node->element.Key == key) return node;
 			node = node->down;
 		}
 		return null;
@@ -598,7 +578,7 @@ private:
 		Node* node = get_bucket_head(keyHash);
 		while(node != null)
 		{
-			if(node->compareKeys(key, keyHash)) return node;
+			if(node->element.Key == key) return node;
 			previous = node;
 			node = node->down;
 		}
@@ -615,15 +595,14 @@ private:
 
 		uint keyHash = ToHash(key);
 
-		if(oExisting!=null)
+		if(oExisting != null)
 		{
 			Node* existing = findNode(key, keyHash);
-			*oExisting = (existing!=null);
-			if(existing!=null) return existing;
+			*oExisting = existing != null;
+			if(existing != null) return existing;
 		}
 
 		Node* newNode = insertNodeAfter(mRange.mLastNode);
-		newNode->initKey(keyHash);
 		auto& bh = get_bucket_head(keyHash);
 		newNode->down = bh;
 		bh = newNode;
@@ -635,8 +614,8 @@ private:
 	{
 		bool existed = false;
 		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
-		if(!existed) new(&newNode->element) value_type(Cpp::Move(key), Cpp::Move(value));
-		else newNode->element.Value = Cpp::Move(value);
+		if(!existed) new(&newNode->element) value_type(Move(key), Move(value));
+		else newNode->element.Value = Move(value);
 		if(Count() > BucketCount())
 		{
 			allocate_buckets(Count(), BucketCount()*2);
@@ -651,7 +630,7 @@ private:
 		Node* node = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
 		if(!existed) new(&node->element) value_type(key, value);
 		else node->element.Value = value;
-		if(Count()>BucketCount())
+		if(Count() > BucketCount())
 		{
 			allocate_buckets(Count(), BucketCount()*2);
 			rehash();
@@ -662,13 +641,13 @@ private:
 	Node* insertNodeAfter(Node* dest)
 	{
 		Node* newNode = createNewNode();
-		newNode->next = dest==null? null: dest->next;
+		newNode->next = dest == null? null: dest->next;
 		newNode->prev = dest;
-		if(newNode->next!=null) newNode->next->prev = newNode;
-		if(dest!=null) dest->next = newNode;
+		if(newNode->next != null) newNode->next->prev = newNode;
+		if(dest != null) dest->next = newNode;
 
 		if(dest == mRange.mLastNode) mRange.mLastNode = newNode;
-		if(mRange.mFirstNode==null) mRange.mFirstNode = newNode;
+		if(mRange.mFirstNode == null) mRange.mFirstNode = newNode;
 
 		set_count(Count()+1);
 

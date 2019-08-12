@@ -1,9 +1,10 @@
 #include "IO/FormattedLogger.h"
-#include "Cpp/Warnings.h"
+
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-namespace Intra { namespace IO {
+INTRA_BEGIN
+namespace IO {
 
 void FormattedLogger::Log(LogLevel level, StringView msg, const Utils::SourceInfo& srcInfo)
 {

@@ -9,14 +9,15 @@
 #include "Concurrency/Mutex.h"
 #include "Concurrency/Synchronized.h"
 
-namespace Intra { namespace Audio {
+INTRA_BEGIN
+namespace Audio {
 
 namespace detail {
 
 struct SoundBasicContext
 {
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
-	RecursiveMutex MyMutex;
+	Mutex MyMutex;
 #endif
 	Array<Sound::Data*> AllSounds;
 	Array<StreamedSound::Data*> AllStreamedSounds;
@@ -32,7 +33,7 @@ struct SoundBasicData
 		Info(src.SamplesLeft(), src.SampleRate(), ushort(src.ChannelCount()), Data::ValueType::Void) {}
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
-	RecursiveMutex MyMutex;
+	Mutex MyMutex;
 #endif
 
 	SoundInfo Info;
@@ -43,10 +44,10 @@ struct SoundBasicData
 
 struct SoundInstanceBasicData
 {
-	SoundInstanceBasicData(Shared<Sound::Data> parent): Parent(Cpp::Move(parent)) {}
+	SoundInstanceBasicData(Shared<Sound::Data> parent): Parent(Move(parent)) {}
 
 #if(INTRA_LIBRARY_MUTEX != INTRA_LIBRARY_MUTEX_None)
-	RecursiveMutex MyMutex;
+	Mutex MyMutex;
 #endif
 	Shared<Sound::Data> Parent;
 	Shared<Sound::Instance::Data> SelfRef;
@@ -59,7 +60,7 @@ struct SoundInstanceBasicData
 struct StreamedSoundBasicData
 {
 	StreamedSoundBasicData(Unique<IAudioSource> source, size_t bufferSampleCount):
-		Source(Cpp::Move(source)), BufferSampleCount(bufferSampleCount) {}
+		Source(Move(source)), BufferSampleCount(bufferSampleCount) {}
 
 	size_t GetBufferSize() {return Source->ChannelCount() * BufferSampleCount * sizeof(short);}
 

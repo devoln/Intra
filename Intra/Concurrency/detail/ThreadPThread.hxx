@@ -29,7 +29,8 @@ INTRA_WARNING_POP
 
 #include "ThreadSleep.hxx"
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 struct Thread::Data: detail::BasicThreadData
 {
@@ -41,7 +42,7 @@ struct Thread::Data: detail::BasicThreadData
 
 	Data(Func func)
 	{
-		Function = Cpp::Move(func);
+		Function = Move(func);
 
 		pthread_attr_t attribute;
 		pthread_attr_init(&attribute);
@@ -70,15 +71,15 @@ struct Thread::Data: detail::BasicThreadData
 	{
 		auto lck = MakeLock(StateMutex);
 		NumWaiters++;
-		INTRA_FINALLY(NumWaiters--);
+		INTRA_FINALLY{NumWaiters--;};
 		return CV.Wait(lck, [this]() {return !IsRunning.GetRelaxed();});
 	}
 
-	bool Join(ulong64 timeOutMs)
+	bool Join(uint64 timeOutMs)
 	{
 		auto lck = MakeLock(StateMutex);
 		NumWaiters++;
-		INTRA_FINALLY(NumWaiters--);
+		INTRA_FINALLY{NumWaiters--;};
 		return CV.WaitMs(lck, timeOutMs, [this]() {return !IsRunning.GetRelaxed();});
 	}
 
@@ -133,7 +134,7 @@ void TThisThread::Yield()
 #endif
 }
 
-bool TThisThread::Sleep(ulong64 milliseconds)
+bool TThisThread::Sleep(uint64 milliseconds)
 {
 	const auto hndl = Thread::Data::Current;
 	if(hndl == null || !ThisThread.IsInterruptionEnabled())

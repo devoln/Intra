@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Cpp/Fundamental.h"
-#include "Utils/Debug.h"
+#include "Core/Core.h"
+#include "Core/Assert.h"
 #include "Memory/Allocator/Basic/Pool.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 template<typename A> struct AGrowingPool: A
 {

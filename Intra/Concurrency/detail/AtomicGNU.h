@@ -4,10 +4,11 @@
 #define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_GNU
 #endif
 
-#include "Cpp/Features.h"
+#include "Core/Core.h"
 #include "Concurrency/Atomic.h"
 
-namespace Intra { namespace Concurrency {
+INTRA_BEGIN
+namespace Concurrency {
 
 #define INTRA_ATOMIC_METHOD_GET(mo, MO) \
 template<typename T> forceinline T AtomicBase<T>::Get ## mo() const noexcept \

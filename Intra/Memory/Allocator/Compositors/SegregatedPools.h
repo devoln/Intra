@@ -2,9 +2,10 @@
 
 #include "Memory/Allocator/Basic/Pool.h"
 #include "Memory/Allocator/System.h"
-#include "Utils/Span.h"
+#include "Core/Range/Span.h"
 
-namespace Intra { namespace Memory {
+INTRA_BEGIN
+namespace Memory {
 
 template<size_t N> struct LogSizes
 {
@@ -23,7 +24,7 @@ template<size_t N> struct LogSizes
 template<typename FA, typename Traits = LogSizes<7>>
 struct ASegregatedPools: FA
 {
-	ASegregatedPools(FA&& fallback, Span<APool> pools): FA(Cpp::Move(fallback))
+	ASegregatedPools(FA&& fallback, Span<APool> pools): FA(Move(fallback))
 	{
 		mAlignment = FA::GetAlignment();
 		for(auto& allocator: mPools)
@@ -38,8 +39,8 @@ struct ASegregatedPools: FA
 	}
 
 	ASegregatedPools(ASegregatedPools&& rhs):
-		FA(Cpp::Move(rhs)),
-		mPools(Cpp::Move(rhs.mPools)),
+		FA(Move(rhs)),
+		mPools(Move(rhs.mPools)),
 		mAlignment(rhs.mAlignment) {}
 
 	size_t GetSizeClass(size_t size)
@@ -52,7 +53,7 @@ struct ASegregatedPools: FA
 
 	size_t GetAlignment() const {return mAlignment;}
 
-    AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo)
+    AnyPtr Allocate(size_t& bytes, const Utils::SourceInfo& sourceInfo = INTRA_DEFAULT_SOURCE_INFO)
     {
         size_t sizeClass = GetSizeClass(bytes);
  

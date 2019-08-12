@@ -1,12 +1,13 @@
 ﻿#pragma once
 
-#include "Cpp/Warnings.h"
-#include "Cpp/Features.h"
-#include "Cpp/Fundamental.h"
+
+#include "Core/Core.h"
+#include "Core/Core.h"
 #include "MurmurCT.h"
 #include "Murmur.h"
 
-namespace Intra { namespace Range {
+INTRA_BEGIN
+namespace Range {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
