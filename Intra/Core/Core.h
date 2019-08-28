@@ -833,6 +833,8 @@ template<typename T, typename U=T> constexpr forceinline T Exchange(T& dst, U&& 
 
 constexpr const struct {template<typename T> const auto& operator=(const T&) const {return *this;}} _;
 
+#define INTRA_DEFAULT_DECL
+
 /** Use Owner<T*> to explicitly show that the pointer owns its data.
 
   Only one pointer can own an object. It can be assigned to other Owner but the previous Owner must be reset.

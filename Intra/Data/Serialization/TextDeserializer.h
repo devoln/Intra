@@ -8,7 +8,7 @@
 #include "Core/Range/StringView.h"
 #include "Utils/AsciiSet.h"
 
-#include "Core/Container.h"
+#include "Core/CContainer.h"
 
 #include "Core/Range/Search/RecursiveBlock.h"
 #include "Core/Range/Comparison/EndsWith.h"

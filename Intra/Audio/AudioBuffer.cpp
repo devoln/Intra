@@ -1,9 +1,8 @@
 ﻿#include "Audio/AudioBuffer.h"
-#include "Core/Range/Reduction.h"
-#include "Core/Range/Mutation/Cast.h"
+#include "Core/Range/Reduce.h"
 #include "Core/Range/Span.h"
 #include "Core/Range/Mutation/Fill.h"
-#include "Core/Range/Mutation/Transform.h"
+#include "Core//Range/Mutation/Copy.h"
 
 INTRA_BEGIN
 namespace Audio {
@@ -19,8 +18,8 @@ AudioBuffer::AudioBuffer(size_t sampleCount,
 void AudioBuffer::CopyFrom(size_t startSample,
 	size_t sampleCount, AudioBuffer* src, size_t srcStartSample)
 {
-	INTRA_DEBUG_ASSERT(src != null);
-	INTRA_DEBUG_ASSERT(srcStartSample + sampleCount <= src->Samples.Count());
+	INTRA_PRECONDITION(src != null);
+	INTRA_PRECONDITION(srcStartSample + sampleCount <= src->Samples.Count());
 	if(startSample + sampleCount > Samples.Count())
 		Samples.SetCount(startSample + sampleCount);
 	CopyTo(src->Samples.Drop(srcStartSample), sampleCount, Samples.Drop(startSample));
