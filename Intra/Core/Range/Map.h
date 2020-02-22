@@ -3,7 +3,7 @@
 #include "Core/Functional.h"
 #include "Core/Range/Concepts.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
 template<typename R, typename F> struct RMap: private F
 {
@@ -19,7 +19,7 @@ template<typename R, typename F> struct RMap: private F
 	INTRA_NODISCARD constexpr forceinline decltype(auto) First() const
 	{return F::operator()(OriginalRange.First());}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{OriginalRange.PopFirst();}
 
 	constexpr forceinline bool Empty() const
@@ -28,7 +28,7 @@ template<typename R, typename F> struct RMap: private F
 	constexpr forceinline decltype(auto) Last() const
 	{return F::operator()(OriginalRange.Last());}
 
-	INTRA_CONSTEXPR2 forceinline void PopLast() {OriginalRange.PopLast();}
+	constexpr forceinline void PopLast() {OriginalRange.PopLast();}
 
 	constexpr forceinline decltype(auto) operator[](size_t index) const
 	{return F::operator()(OriginalRange[index]);}
@@ -51,7 +51,7 @@ template<typename R, typename F,
 	typename AsF = TFunctorOf<F>
 > INTRA_NODISCARD constexpr forceinline Requires<
 	CConsumableRange<AsR> &&
-	CCallable<F, T>,
+	CCallable<AsF, T>,
 RMap<TRemoveConstRef<AsR>, TRemoveReference<AsF>>> Map(R&& range, F&& func)
 {return {ForwardAsRange<R>(range), ForwardAsFunc<F>(func)};}
-INTRA_CORE_RANGE_END
+INTRA_END

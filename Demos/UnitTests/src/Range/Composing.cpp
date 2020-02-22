@@ -1,4 +1,4 @@
-﻿
+﻿#include "Core/Core.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -7,39 +7,46 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #include "Range.h"
-#include "Core/Range/Stream.hh"
-#include "Core/Range/Reduction.h"
+#include "Core/Range/Reduce.h"
 #include "Core/Range/Span.h"
-#include "Range.hh"
-#include "Random/FastUniform.h"
+#include "Core/Range/Chain.h"
+#include "Core/Range/Iota.h"
+#include "Core/Range/Cycle.h"
+#include "Core/Range/Stride.h"
+#include "Core/Range/Map.h"
+#include "Core/Range/Recurrence.h"
+#include "Core/Range/RoundRobin.h"
+#include "Core/Range/Split.h"
+#include "Core/Range/Mutation/Copy.h"
+#include "Core/Range/Comparison.h"
+#include "Core/Range/Stream/ToString.h"
+#include "Math/Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 #include "Utils/AsciiSet.h"
 
 #include <stdlib.h>
 
 using namespace Intra;
-using namespace IO;
-using namespace Range;
 
 
 void TestComposedRange(FormattedWriter& output)
 {
 	auto latinAlphabet = Iota('A', char('Z'+1), 1);
 	INTRA_ASSERT1(Equals(latinAlphabet, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"), latinAlphabet);
-	output.PrintLine("Выведем английский алфавит: ", latinAlphabet);
+	output.PrintLine("Printing English alphabet: ", latinAlphabet);
 	output.LineBreak();
 
-	//Бесконечная последовательность Фибоначчи вместе с диапазоном
-	auto fib = Recurrence(Funal::Add, 1, 1);
+	//Infinite Fibonacci sequence
+	auto fib = Recurrence(FAdd, 1, 1);
 	INTRA_ASSERT1(StartsWith(fib, CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21}), Take(fib, 8));
 
 	Array<int> fibArr;
 	fibArr.SetCountUninitialized(15);
 
-	//Копируем на их место 15 элементов из последовательности fib
-	CopyTo(fib, 15, fibArr);
+	//Replace 15 unitialized array elements with fib elements
+	CopyTo(fib, fibArr);
 	output.LineBreak();
-	output.PrintLine("Последовательность Фибоначчи в массиве: ");
+	output.PrintLine("Fibonacci numbers in the array: ");
 	INTRA_ASSERT_EQUALS(fibArr, Take(fib, 15));
 	output.PrintLine(fibArr);
 	output.LineBreak();
@@ -78,7 +85,7 @@ void TestComposedRange(FormattedWriter& output)
 		Retro(Stride(Take(chain, 40), 2)),
 		someRecurrence,
 		Stride(Take(Drop(Cycle(Take(fib, 19)), 5), 50), 3),
-		Take(Recurrence(Funal::Mul, 2ull, 3ull), 9)
+		Take(Recurrence(FMul, 2ull, 3ull), 9)
 	);
 
 	output.PrintLine(StringOf(megaZip, ",\n  ", "[\n  ", "\n]"));
@@ -117,10 +124,10 @@ void TestComposedRange(FormattedWriter& output)
 	
 
 	//Выводим чередующиеся элементы из четырёх разных диапазонов
-	static const size_t indices[] = {1,1,1,2,2,0,2,1,0};
+	static const index_t indices[] = {1,1,1,2,2,0,2,1,0};
 	output.PrintLine(
 		RoundRobin(
-			Indexed(strs1, indices),
+			Map(indices, Bind(FIndex, CSpanOf(strs1))),
 			Repeat("Test", 5),
 			SpanOf(strs1),
 			SpanOf(strs2)

@@ -4,8 +4,7 @@
 #include "Core/Type.h"
 #include "Core/Range/Concepts.h"
 
-
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename T> struct FListNode
 {
 	FListNode* Next;
@@ -25,13 +24,13 @@ template<typename T, typename NodeType> struct FListRange
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return FirstNode == null;}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		FirstNode = FirstNode->NextListNode();
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		CSame<U, Node>,
 	T&> First() const
 	{
@@ -39,7 +38,7 @@ template<typename T, typename NodeType> struct FListRange
 		return *FirstNode;
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		!CSame<U, Node>,
 	T&> First() const
 	{
@@ -81,25 +80,25 @@ template<typename T, typename NodeType> struct BListRange
 	constexpr forceinline BListRange(Node* first, Node* last):
 		FirstNode(first), LastNode(last) {}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline bool Empty() const
+	INTRA_NODISCARD constexpr forceinline bool Empty() const
 	{
 		INTRA_DEBUG_ASSERT((FirstNode == null) == (LastNode == null));
 		return FirstNode == null || LastNode == null;
 	}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		FirstNode = FirstNode->NextListNode();
 	}
 
-	INTRA_CONSTEXPR2 forceinline void PopLast()
+	constexpr forceinline void PopLast()
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		LastNode = LastNode->PrevListNode();
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		CSame<U, Node>,
 	T&> First() const
 	{
@@ -107,7 +106,7 @@ template<typename T, typename NodeType> struct BListRange
 		return *FirstNode;
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		!CSame<U, Node>,
 	T&> First() const
 	{
@@ -115,7 +114,7 @@ template<typename T, typename NodeType> struct BListRange
 		return FirstNode->Value;
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		CSame<U, Node>,
 	T&> Last() const
 	{
@@ -123,7 +122,7 @@ template<typename T, typename NodeType> struct BListRange
 		return *LastNode;
 	}
 
-	template<typename U=T> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U=T> INTRA_NODISCARD constexpr forceinline Requires<
 		!CSame<U, Node>,
 	T&> Last() const
 	{
@@ -150,4 +149,4 @@ template<typename T, typename NodeType> struct BListRange
 	HasPrevListNodeMethod<T>::_,
 BListRange<T, T>> RangeOf(T& objectWithIntrusiveList)
 {return BListRange<T, T>(&objectWithIntrusiveList);}*/
-INTRA_CORE_RANGE_END
+INTRA_END

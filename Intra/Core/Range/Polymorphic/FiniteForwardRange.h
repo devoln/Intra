@@ -6,7 +6,7 @@
 #include "Core/Range/Mutation/Copy.h"
 
 #include "Core/Range/Span.h"
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 #include "Core/Range/Concepts.h"
 
@@ -14,7 +14,7 @@
 #include "InputRange.h"
 #include "ForwardRange.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION

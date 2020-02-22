@@ -332,7 +332,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 
-	auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(5, 1, 1, 2.5f, 1, 2, 16, 1, 0, float(Math::PI)), 1, 16384, false);
+	auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(5, 1, 1, 2.5f, 1, 2, 16, 1, 0, float(PI)), 1, 16384, false);
 	//auto& fluteTables = Tables["Flute"] = CreateWaveTablesFromHarmonics(CreateUpdownHarmonicArray(3, 2, 1.2f, 64), 1, 16384, false);
 
 	auto& calliopeTables = Tables["Calliope"] = CreateWaveTablesFromFormants({
@@ -461,7 +461,7 @@ InstrumentLibrary::InstrumentLibrary()
 		for(int i = 1; i<64; i++)
 		{
 			if(d == 0.5f && (i & 1) == 0) continue;
-			const float ai = 2*Math::Sin(float(Math::PI)*d*float(i))/float(i);
+			const float ai = 2*Sin(float(PI)*d*float(i))/float(i);
 			Synth::AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio, float(i), 0.25f, ai, 50);
 		}
 		ConvertAmplitudesToSamples(tbl);
@@ -478,7 +478,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Envelope = EnvelopeFactory::ADSR(0.02f, 0.5f, 0.8f, 0.1f, true);
 	}*/
 
-	auto leadSquareHarmonics = CreateHarmonicArray(1, 0.5f, 1, 1.3f, 1, 2, 64, float(4/Math::PI), 0, float(Math::PI));
+	auto leadSquareHarmonics = CreateHarmonicArray(1, 0.5f, 1, 1.3f, 1, 2, 64, float(4/PI), 0, float(PI));
 	auto& leadSquareTables = Tables["LeadSquare"] = CreateWaveTablesFromHarmonics(leadSquareHarmonics, 1.2f, 16384, false);
 	//TODO: добавить overdrive фильтр
 	{
@@ -489,7 +489,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 
 
-	auto leadSawtoothHarmonics = CreateHarmonicArray(1, 0, 1, 1, 1, 1, 64, 1, 0, float(Math::PI));
+	auto leadSawtoothHarmonics = CreateHarmonicArray(1, 0, 1, 1, 1, 1, 64, 1, 0, float(PI));
 	auto& leadSawtoothTables = Tables["LeadSawtooth"] = CreateWaveTablesFromHarmonics(leadSawtoothHarmonics, 1.7f, 32768, false);
 
 	//TODO: добавить overdrive фильтр
@@ -510,9 +510,9 @@ InstrumentLibrary::InstrumentLibrary()
 		for(float k = 0; k < 10; k++)
 		{
 			auto& wave = instr.Waves.EmplaceLast();
-			wave.ExpCoeff = Math::Exp(5*(H-0.5f)+1.25f*G*k)+3;
-			wave.Scale = Math::Exp(-0.625f*D*k)*Math::Sin((1+7*E)*k*k + 1);
-			wave.FreqMultiplier = Math::Exp(1.25f*F*k) * 4;
+			wave.ExpCoeff = Exp(5*(H-0.5f)+1.25f*G*k)+3;
+			wave.Scale = Exp(-0.625f*D*k)*Sin((1+7*E)*k*k + 1);
+			wave.FreqMultiplier = Exp(1.25f*F*k) * 4;
 			scaleSum += wave.Scale;
 		}
 		for(auto& wave: instr.Waves)
@@ -735,7 +735,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Envelope = EnvelopeFactory::ADSR(0.07f, 0.07f, 0.92f, 0.02f);
 	}
 
-	//auto& recorderTables = Tables["Recorder"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(1, 1, 1, 2.5f, 1, 2, 16, 1, 0, float(Math::PI)), 1, 16384, false);
+	//auto& recorderTables = Tables["Recorder"] = CreateWaveTablesFromHarmonics(CreateHarmonicArray(1, 1, 1, 2.5f, 1, 2, 16, 1, 0, float(PI)), 1, 16384, false);
 	auto& recorderTables = Tables["Recorder"] = CreateWaveTablesFromHarmonics(CreateUpdownHarmonicArray(0.1f, 0.1f, 1.25f, 64, 1, 1, 2.3f), 1, 16384, false);
 
 	{
@@ -1083,9 +1083,9 @@ MusicalInstrument InstrumentLibrary::CreateGuitar(size_t n, float c,
 	MusicalInstrument result;
 	for(size_t i = 1; i <= n; i++)
 	{
-		float scale = Math::Mod(c*float(i*i) + 37.0f*float(i), 397.0f);
-		scale = Math::Abs(scale / 200 - 1);
-		scale *= Math::Pow(float(i), -f);
+		float scale = Mod(c*float(i*i) + 37.0f*float(i), 397.0f);
+		scale = Abs(scale / 200 - 1);
+		scale *= Pow(float(i), -f);
 		auto& sine = result.Waves.EmplaceLast();
 		sine.Scale = scale * 0.5f*volume;
 		sine.ExpCoeff = d + e*float(i-1);

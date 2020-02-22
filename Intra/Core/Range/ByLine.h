@@ -1,71 +1,93 @@
 #pragma once
 
 #include "Core/Functional.h"
-#include "Core/Range/StringView.h"
 #include "Core/Range/Concepts.h"
-#include "Core/Range/Inserter.h"
+#include "Core/Range/StringView.h"
 #include "Core/Range/Mutation/CopyUntil.h"
-#include "Core/Range/Operations.h"
-#include "Container/ForwardDecls.h"
 
-INTRA_CORE_RANGE_BEGIN
+//TODO: make this class more generic to work with even containers to avoid line splitting.
+
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-template<class R, class OB> struct RByLine
+template<class R> class RByLine: NonCopyableType
 {
-	static_assert(COutputBufferOf<OB, TValueTypeOf<R>>, "OB must be an output buffer of range element!");
+	using T = TValueTypeOf<R>;
+public:
 	enum: bool
 	{
 		RangeIsFinite = CFiniteRange<R>,
 		RangeIsInfinite = CInfiniteRange<R>
 	};
 
-	constexpr forceinline RByLine(null_t=null): mKeepTerminator(false) {}
+	constexpr forceinline RByLine() = default;
 
-	INTRA_CONSTEXPR2 forceinline RByLine(R range, bool keepTerminator=false):
-		mOriginalRange(Move(range)), mKeepTerminator(keepTerminator) {PopFirst();}
+	constexpr forceinline RByLine(R range, Span<T> buf, bool keepTerminator = false):
+		mOriginalRange(Move(range)), mOutputBuffer(buf), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mOriginalRange.Empty() && mOutputBuffer.WrittenRange().Empty();}
+	constexpr RByLine(RByLine&& rhs) = default;
+	constexpr RByLine& operator=(RByLine&& rhs) = default;
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	INTRA_NODISCARD constexpr forceinline bool Empty() const noexcept {return !mOutputBuffer.IsInitialized();}
+
+	constexpr void PopFirst()
 	{
 		mOutputBuffer.Reset();
-		auto mFirstResult = ReadToUntil(mOriginalRange, mOutputBuffer, IsLineSeparator);
-		if(mFirstResult.StopReason == StopReason::SourceEmpty) return;
+		mFirstResult = ReadWriteUntil(mOriginalRange, mOutputBuffer, IsLineSeparator);
+		if(mOriginalRange.Empty())
+		{
+			if(mOutputBuffer.Position() == 0) mOutputBuffer = null;
+			return;
+		}
+		if(mOutputBuffer.Full()) return; //This line is longer than buffer size, so it will be splitted
 
-		const auto nextChar = mOriginalRange.First();
-		if(mKeepTerminator) mOutputBuffer.Put(nextChar);
-		const bool CR = nextChar == '\r';
+		//Processing the line terminator: CR (\r), LF (\n) or CRLF(\r\n)
+		const T firstTerminatorChar = mOriginalRange.First();
+		INTRA_DEBUG_ASSERT(firstTerminatorChar == '\r' || firstTerminatorChar == '\n');
+		const bool CR = firstTerminatorChar == '\r';
+		if(mKeepTerminator) mOutputBuffer.Put(firstTerminatorChar);
 		mOriginalRange.PopFirst();
 
 		if(!CR || mOriginalRange.Empty() || mOriginalRange.First() != '\n') return;
 
-		if(mKeepTerminator) mOutputBuffer.Put('\n');
+		if(mKeepTerminator)
+		{
+			if(mOutputBuffer.Empty()) return; //Buffer is full, so the remaining "\n" will become the next range element
+			mOutputBuffer.Put('\n');
+		}
 		mOriginalRange.PopFirst();
 	}
 
-	INTRA_CONSTEXPR2 forceinline auto&& First() const
+	INTRA_NODISCARD constexpr forceinline GenericStringView<const T> First() const
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		INTRA_PRECONDITION(!Empty());
 		return mOutputBuffer.WrittenRange();
 	}
 
-	INTRA_NODISCARD constexpr FindResult GetFindResult() const {return mFindResult;}
+	INTRA_NODISCARD constexpr FindResult GetFindResult() const {return mFirstResult;}
 
 private:
 	R mOriginalRange;
-	OB mOutputBuffer;
+	SpanOutput<T> mOutputBuffer;
 	FindResult mFirstResult;
-	bool mKeepTerminator;
+	bool mKeepTerminator = false;
 };
 
 
-template<typename R, typename AsR = TRangeOfTypeNoCRef<R>> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
-	CForwardCharRange<AsR>,
-RByLine<AsR, String>> ByLine(R&& range, Tags::TKeepTerminator)
-{return {ForwardAsRange<R>(range), true};}
+template<typename R, typename OR,
+	typename AsR = TRangeOfTypeNoCRef<R>,
+	typename AsOR = TRangeOfTypeNoCRef<OR>
+> INTRA_NODISCARD constexpr forceinline Requires<
+	CForwardCharRange<AsR> &&
+	CArrayRange<AsOR>,
+RByLine<AsR>> ByLine(R&& range, OR&& buf, Tags::TKeepTerminator)
+{return {ForwardAsRange<R>(range), ForwardAsRange<OR>(buf), true};}
 
-template<typename R, typename AsR = TRangeOfTypeNoCRef<R>> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
-	CForwardCharRange<AsR>,
-RByLine<AsR, String>> ByLine(R&& range)
-{return {ForwardAsRange<R>(range), false};}
-INTRA_CORE_RANGE_END
+template<typename R, typename OR,
+	typename AsR = TRangeOfTypeNoCRef<R>,
+	typename AsOR = TRangeOfTypeNoCRef<OR>
+> INTRA_NODISCARD constexpr forceinline Requires<
+	CForwardCharRange<AsR> &&
+	CArrayRange<AsOR>,
+RByLine<AsR>> ByLine(R&& range, OR&& buf)
+{return {ForwardAsRange<R>(range), ForwardAsRange<OR>(buf), false};}
+INTRA_END

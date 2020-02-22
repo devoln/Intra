@@ -1,18 +1,14 @@
-﻿
-INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+﻿#include "Core/Core.h"
 
-#include "Core/Compatibility.h"
-#include "Core/Core.h"
+INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #if !defined(_HAS_EXCEPTIONS) && !defined(INTRA_EXCEPTIONS_ENABLED) && defined(_MSC_VER)
 #define _HAS_EXCEPTIONS 0
 #endif
 
-#include "Range.hh"
-#include "Utils/IteratorRange.h"
+#include "Core/Range/Concepts.h"
 #include "IO/FormattedWriter.h"
-
-
+#include "Container/Sequential/String.h"
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <vector>
@@ -24,8 +20,6 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 
 using namespace Intra;
-using namespace Range;
-using namespace IO;
 
 struct Point
 {
@@ -65,7 +59,7 @@ void TestRangeStlInterop(FormattedWriter& output)
 	};
 	output.PrintLine("Convert std::unordered_map<std::string, std::vector<int>> into a string on the stack and print it:");
 	char figuresTextBuf[200];
-	StringView figuresText = (OutputArrayRange<char>(figuresTextBuf) << figureMap).GetWrittenData();
+	StringView figuresText = (SpanOutput<char>(figuresTextBuf) << figureMap).WrittenRange();
 	INTRA_ASSERT_EQUALS(Count(figuresText, '['), Count(figuresText, ']'));
 	output.PrintLine(figuresText);
 	output.LineBreak();
@@ -76,7 +70,7 @@ void TestRangeStlInterop(FormattedWriter& output)
 		{"Point", {{65, 242}}}
 	};
 	output.PrintLine("Now d the same with std::map<std::string, std::vector<int>>:");
-	figuresText = (OutputArrayRange<char>(figuresTextBuf) << orderedFigureMap).GetWrittenData();
+	figuresText = (SpanOutput<char>(figuresTextBuf) << orderedFigureMap).WrittenRange();
 	INTRA_ASSERT_EQUALS(figuresText, "[[Line, [[1.1112, 5.234], [6.22, 5.45]]], [Point, [[65.0, 242.0]]], [Triangle, [[2.7, 1.21], [3.0, 2.718], [4.321, 3.212]]]]");
 	output.PrintLine(figuresText);
 	output.LineBreak();
@@ -110,7 +104,6 @@ void TestRangeStlInterop(FormattedWriter& output)
 	output.PrintLine("Print String built by concatenation std::list<char> + std::deque<char>: ", charListDequeConcat);
 
 	output.PrintLine("Use an universal operator+= working with all containers even STL:");
-	using Container::operator+=;
 	charList += charDeque;
 	charDeque += charList;
 	output.PrintLine("charList += charDeque; charDeque += charList;");

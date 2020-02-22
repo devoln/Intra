@@ -14,10 +14,9 @@
 #include "IO/HtmlWriter.h"
 #include "IO/Std.h"
 
-#include "Core/Range/Output/Inserter.h"
+#include "Core/Range/Inserter.h"
 
 using namespace Intra;
-using namespace IO;
 
 void TestSocketIO(FormattedWriter& output)
 {
@@ -55,9 +54,9 @@ void TestSocketIO(FormattedWriter& output)
 		StringView firstLine = reader.ReadLine(strBuf);
 		syncOutput->PrintLine("ReadLine: ", firstLine);
 		if(firstLine != "Writer: Hello, Reader!") error.Set(true);
-		OutputArrayRange<char> strOut = Range::Take(strBuf, 50);
-		ToString(strOut, reader.ByLine(Range::Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
-		StringView linesAsString = strOut.GetWrittenData();
+		SpanOutput<char> strOut = Take(strBuf, 50);
+		ToString(strOut, reader.ByLine(Drop(strBuf, 50)), "\", \"", "[\"", "\"]");
+		StringView linesAsString = strOut.WrittenRange();
 		syncOutput->PrintLine("Remaining line range: ", linesAsString);
 		if(linesAsString != "[\"Second line.\", \"Third line.\"]") error.Set(true);
 	});

@@ -40,7 +40,7 @@ struct FilterHP
 
 	static FilterHP FromCutoff(float cutoffFreqSampleRateRatio)
 	{
-		return {1.0f / (2*float(Math::PI)*cutoffFreqSampleRateRatio + 1)};
+		return {1.0f / (2*float(PI)*cutoffFreqSampleRateRatio + 1)};
 	}
 
 	static FilterHP FromCutoff(float cutoffFreq, uint sampleRate)
@@ -75,7 +75,7 @@ struct FilterQ
 struct FilterQFactory
 {
 	float ResFreq, K;
-	FilterQ operator()(uint sampleRate) {return FilterQ(float(ResFreq*2*Math::PI/float(sampleRate)), K);}
+	FilterQ operator()(uint sampleRate) {return FilterQ(float(ResFreq*2*PI/float(sampleRate)), K);}
 };
 
 struct Fade

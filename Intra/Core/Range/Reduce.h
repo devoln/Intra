@@ -4,11 +4,8 @@
 #include "Core/Range/Span.h"
 #include "Core/Range/Concepts.h"
 
-
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename R, typename F, typename S> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename F, typename S> constexpr Requires<
 	CConsumableRange<R>,
 S> ReduceAdvance(R& range, const F& func, const S& seed)
 {
@@ -23,7 +20,7 @@ S> ReduceAdvance(R& range, const F& func, const S& seed)
 
 template<typename R, typename F,
 	typename T = TValueTypeOf<R>
-> INTRA_CONSTEXPR2 Requires<
+> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R>,
 TResultOf<F, T, T>> ReduceAdvance(R& range, F func)
@@ -33,7 +30,7 @@ TResultOf<F, T, T>> ReduceAdvance(R& range, F func)
 	return ReduceAdvance(range, func, seed);
 }
 
-template<typename R, typename F, typename S> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename F, typename S> constexpr forceinline Requires<
 	CAsConsumableRange<R>,
 S> Reduce(R&& range, const F& func, const S& seed)
 {
@@ -46,11 +43,9 @@ template<typename R, typename F,
 	typename T = TValueTypeOf<AsR>,	
 typename = Requires<
 	CAsForwardRange<R>
->> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline auto Reduce(R&& range, F func)
+>> INTRA_NODISCARD constexpr forceinline auto Reduce(R&& range, F func)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return ReduceAdvance(rangeCopy, func);
-}
-
 }
 INTRA_END

@@ -1,4 +1,4 @@
-﻿
+﻿#include "Core/Core.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -7,22 +7,23 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #endif
 
 #include "Range.h"
-#include "Core/Range/Stream.hh"
-#include "Core/Range/Reduction.h"
-#include "Range.hh"
-
+#include "Core/Functional.h"
+#include "Core/Range/Polymorphic/InputRange.h"
+#include "Core/Range/Polymorphic/RandomAccessRange.h"
+#include "Core/Range/Reduce.h"
 #include "Core/Range/Span.h"
-#include "Funal/Bind.h"
+#include "Core/Range/Cycle.h"
+#include "Core/Range/Map.h"
+#include "Core/Range/Recurrence.h"
+#include "Core/Range/Generate.h"
+#include "Core/Range/Filter.h"
 
-#include "Random/FastUniform.h"
+#include "Math/Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 
 #include <stdlib.h>
 
 using namespace Intra;
-using namespace IO;
-using namespace Range;
-using namespace Funal;
 
 template<typename T> static void PrintPolymorphicRange(FormattedWriter& output, InputRange<T> range)
 {
@@ -87,9 +88,9 @@ void TestComposedPolymorphicRange(FormattedWriter& output)
 	output.PrintLine("Полиморфный диапазон seq содержит генератор 100 случайных чисел от 0 до 999 с отбором квадратов тех из них, которые делятся на 7: ");
 	InputRange<uint> seq = Map(
 		Filter(
-			Take(Generate(Bind(Random::FastUniform<uint>(), 1000)), 500),
+			Take(Generate(Bind(FastUniform<uint>(), 1000)), 500),
 			[](uint x) {return x % 7 == 0;}),
-		Math::Sqr<uint>);
+		Sqr<uint>);
 	PrintPolymorphicRange(output, Move(seq));
 
 	output.LineBreak();

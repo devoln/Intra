@@ -43,7 +43,7 @@ void RunRandomPerfTests(IO::FormattedWriter& logger)
 
 
 	PrintPerformanceResults(logger, "float in range [0.0; 1.0] 100000000 times",
-		{"rand()/32767.0f", "mt19937()/(float)mt19937.max()", "Math::Random<float>()"},
+		{"rand()/32767.0f", "mt19937()/(float)mt19937.max()", "Random<float>()"},
 		{time1, time2},
 		{time3});
 }

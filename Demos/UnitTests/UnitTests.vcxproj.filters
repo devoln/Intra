@@ -43,7 +43,6 @@
     <ClCompile Include="src\Concurrency\Interruption.cpp">
       <Filter>Source Files\Concurrency</Filter>
     </ClCompile>
-    <ClCompile Include="Delegate.cpp" />
     <ClCompile Include="src\Range\Heap.cpp">
       <Filter>Source Files\Range</Filter>
     </ClCompile>

@@ -6,7 +6,7 @@
 
 #include "Core/Range/Take.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
 template<typename R> struct RCycle
 {
@@ -18,7 +18,7 @@ template<typename R> struct RCycle
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mOriginalRange.Empty();}
 	INTRA_NODISCARD constexpr forceinline auto First() const {return mOffsetRange.First();}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		mOffsetRange.PopFirst();
 		mCounter++;
@@ -46,7 +46,7 @@ template<typename R> struct RCycleRandom
 #endif
 	INTRA_NODISCARD constexpr forceinline auto First() const {return mOriginalRange[mCounter];}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		mCounter++;
 		if(mCounter == mOriginalRange.Length()) mCounter=0;
@@ -57,7 +57,7 @@ template<typename R> struct RCycleRandom
 		return mOriginalRange[(index+mCounter) % mOriginalRange.Length()];
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RTake<RCycleRandom<R>> operator()(size_t startIndex, size_t endIndex) const
+	INTRA_NODISCARD constexpr forceinline RTake<RCycleRandom<R>> operator()(size_t startIndex, size_t endIndex) const
 	{
 		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
 		RCycleRandom<R> result(mOriginalRange);
@@ -84,4 +84,4 @@ template<typename R, typename AsR = TRangeOfTypeNoCRef<R>> INTRA_NODISCARD const
 	CNonInfiniteRandomAccessRange<AsR>,
 RCycleRandom<AsR>> Cycle(R&& range)
 {return ForwardAsRange<R>(range);}
-INTRA_CORE_RANGE_END
+INTRA_END

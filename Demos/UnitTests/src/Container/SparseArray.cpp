@@ -1,11 +1,8 @@
 #include "SparseArray.h"
 #include "Container/Utility/SparseRange.h"
 #include "Container/Utility/SparseArray.h"
-#include "Utils/Finally.h"
 
 using namespace Intra;
-using namespace IO;
-using namespace Range;
 
 void TestSparseArray(FormattedWriter& output)
 {
@@ -34,10 +31,10 @@ void TestSparseRange(FormattedWriter& output)
 	INTRA_ASSERT(range.Empty());
 	INTRA_ASSERT(range.IsFull());
 	size_t count = 3;
-	range = Memory::AllocateRangeUninitialized<int>(Memory::GlobalHeap, count, INTRA_SOURCE_INFO);
+	range = AllocateRangeUninitialized<int>(GlobalHeap, count, INTRA_SOURCE_INFO);
 	INTRA_FINALLY {
 		range.Clear();
-		Memory::FreeRangeUninitialized(Memory::GlobalHeap, range.GetInternalDataBuffer());
+		FreeRangeUninitialized(GlobalHeap, range.GetInternalDataBuffer());
 	};
 	INTRA_ASSERT(!range.IsFull());
 	output.PrintLine("Appending 7, 5 and 2 to a range.");

@@ -11,7 +11,7 @@
 #include "ToStringArithmetic.h"
 
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 /*template<typename R, typename Char, size_t N> forceinline Requires<
 	IsOutputCharRange<R>::_ &&
 	CChar<Char>::_,
@@ -21,7 +21,7 @@ R&&> operator<<(R&& dst, const Char(&str)[N])
 	return Forward<R>(dst);
 }*/
 
-template<typename R, typename Char> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename Char> constexpr forceinline Requires<
 	COutputCharRange<R> &&
 	CChar<Char>,
 R&&> operator<<(R&& dst, const Char* str)
@@ -30,7 +30,7 @@ R&&> operator<<(R&& dst, const Char* str)
 	return Forward<R>(dst);
 }
 
-template<typename R, typename X> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename X> constexpr forceinline Requires<
 	COutputCharRange<R> &&
 	!CChar<X> &&
 	CArithmetic<X>,
@@ -40,7 +40,7 @@ R&&> operator<<(R&& dst, X number)
 	return Forward<R>(dst);
 }
 
-template<typename R, typename Char> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename Char> constexpr forceinline Requires<
 	COutputCharRange<R> &&
 	CChar<Char>,
 R&&> operator<<(R&& dst, Char ch)
@@ -51,7 +51,7 @@ R&&> operator<<(R&& dst, Char ch)
 
 template<typename R, typename SRC,
 	typename AsSRC = TRangeOfType<SRC>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	COutputCharRange<R> &&
 	CConsumableRange<AsSRC> &&
 	CChar<TValueTypeOf<AsSRC>>,
@@ -80,7 +80,7 @@ template<typename Range, typename CR> struct TupleAppender
 
 }
 
-template<typename R, typename Tuple> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename Tuple> constexpr Requires<
 	COutputCharRange<R> &&
 	CHasForEachField<Tuple> &&
 	!CAsConsumableRange<Tuple>,
@@ -160,6 +160,6 @@ void TupleAppender<Range, CR>::operator()(const V& value)
 
 template<typename OR, typename T> forceinline Requires<
 	COutputCharRange<OR> &&
-	!CArithmetic<T>
+	!CArithmetic<TRemoveReference<T>>
 > ToString(OR&& dst, T&& v) {dst << Forward<T>(v);}
-INTRA_CORE_RANGE_END
+INTRA_END

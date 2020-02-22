@@ -2,5 +2,5 @@
 
 #include "IO/FormattedWriter.h"
 
-void TestSparseArray(Intra::IO::FormattedWriter& output);
-void TestSparseRange(Intra::IO::FormattedWriter& output);
+void TestSparseArray(Intra::FormattedWriter& output);
+void TestSparseRange(Intra::FormattedWriter& output);

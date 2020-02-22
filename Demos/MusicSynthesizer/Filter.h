@@ -155,7 +155,7 @@ struct ResonanceFilterFactory
 	ResonanceFilter operator()(float freq, float volume, uint sampleRate) const
 	{
 		(void)volume;
-		return {(Frequency<0? -freq*Frequency: Frequency)*2*float(Math::PI)/float(sampleRate), QFactor};
+		return {(Frequency<0? -freq*Frequency: Frequency)*2*float(PI)/float(sampleRate), QFactor};
 	}
 };
 
@@ -205,7 +205,7 @@ struct DynamicResonanceFilterFactory
 	DynamicResonanceFilter operator()(float freq, float volume, uint sampleRate) const
 	{
 		(void)volume;
-		return {(Frequency < 0? -freq*Frequency: Frequency)*2*float(Math::PI)/float(sampleRate), InvQFactor, InvQFactorSpeed/float(sampleRate)};
+		return {(Frequency < 0? -freq*Frequency: Frequency)*2*float(PI)/float(sampleRate), InvQFactor, InvQFactorSpeed/float(sampleRate)};
 	}
 };
 
@@ -234,7 +234,7 @@ struct SoftHighPassFilterFactory
 	{
 		(void)volume;
 		const float f = (CutoffFrequency < 0? -freq: 1)*CutoffFrequency;
-		const float w =  2*float(Math::PI)*f;
+		const float w =  2*float(PI)*f;
 		return {1 / (1 + w/float(sampleRate))};
 	}
 };

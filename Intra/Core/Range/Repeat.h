@@ -7,7 +7,7 @@
 
 #include "Core/Range/Span.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 template<typename T> struct RRepeat
 {
@@ -19,9 +19,9 @@ template<typename T> struct RRepeat
 	constexpr forceinline RRepeat(const T& val): mValue(val) {}
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mValue == null;}
-	constexpr forceinline const T& First() const {return *mValue;}
+	constexpr forceinline const T& First() const {return mValue.Unwrap();}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst() {}
+	constexpr forceinline void PopFirst() {}
 	INTRA_NODISCARD constexpr forceinline const T& operator[](size_t) const {return *mValue;}
 	
 private:
@@ -33,4 +33,4 @@ template<typename T> INTRA_NODISCARD constexpr forceinline RRepeat<T> Repeat(T&&
 template<typename T> INTRA_NODISCARD constexpr forceinline auto Repeat(T&& val, size_t n) noexcept {return Take(Repeat(Forward<T>(val)), n);}
 template<typename T, size_t N> INTRA_NODISCARD constexpr forceinline auto Repeat(T(&arr)[N]) noexcept {return Repeat(SpanOf(arr));}
 template<typename T, size_t N> INTRA_NODISCARD constexpr forceinline auto Repeat(T(&arr)[N], size_t n) noexcept {return Take(Repeat(SpanOf(arr)), n);}
-INTRA_CORE_RANGE_END
+INTRA_END

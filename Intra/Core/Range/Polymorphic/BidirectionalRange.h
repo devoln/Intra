@@ -11,7 +11,7 @@
 #include "InputRange.h"
 #include "FiniteForwardRange.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -69,10 +69,10 @@ public:
 
 	constexpr forceinline BidirectionalRange(null_t=null) {}
 
-	INTRA_CONSTEXPR2 forceinline BidirectionalRange(BidirectionalRange&& rhs):
+	constexpr forceinline BidirectionalRange(BidirectionalRange&& rhs):
 		FiniteForwardRange<T>(Move(static_cast<FiniteForwardRange<T>&&>(rhs))) {}
 
-	INTRA_CONSTEXPR2 forceinline BidirectionalRange& operator=(BidirectionalRange&& rhs)
+	constexpr forceinline BidirectionalRange& operator=(BidirectionalRange&& rhs)
 	{
 		FiniteForwardRange<T>::operator=(Move(static_cast<FiniteForwardRange<T>&&>(rhs)));
 		return *this;
@@ -122,4 +122,4 @@ protected:
 
 #undef TEMPLATE
 
-INTRA_CORE_RANGE_END
+INTRA_END

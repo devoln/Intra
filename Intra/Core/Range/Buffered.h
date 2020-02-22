@@ -6,7 +6,7 @@
 #include "Core/Range/Span.h"
 #include "Core/Range/RangeMethodsMixin.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 template<class R, class B> class INTRA_EMPTY_BASES RBuffered:
 	public RangeMethodsMixin<RBuffered<R, B>>,
@@ -40,14 +40,14 @@ public:
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mBufferRange.Empty();}
 	INTRA_NODISCARD constexpr forceinline auto First() const {return mBufferRange.First();}
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	constexpr void PopFirst()
 	{
 		mBufferRange.PopFirst();
 		if(!mBufferRange.Empty()) return;
 		loadBuffer();
 	}
 
-	INTRA_CONSTEXPR2 void PopFirstN(size_t n)
+	constexpr void PopFirstN(size_t n)
 	{
 		n -= mBufferRange.PopFirstN(n);
 		if(!mBufferRange.Empty()) return;
@@ -55,7 +55,7 @@ public:
 		loadBuffer();
 	}
 
-	INTRA_CONSTEXPR2 void ReadWrite(Span<T>& dst)
+	constexpr void ReadWrite(Span<T>& dst)
 	{
 		ReadWrite(mBufferRange, dst);
 		ReadWrite(mOriginalRange, dst);
@@ -63,7 +63,7 @@ public:
 		loadBuffer();
 	}
 
-	template<typename U=R> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+	template<typename U=R> INTRA_NODISCARD constexpr Requires<
 		CHasIndex<U>,
 	T> operator[](size_t index)
 	{
@@ -88,4 +88,4 @@ template<typename R> INTRA_NODISCARD forceinline Requires<
 	CAsAccessibleRange<R>,
 RBuffered<TRangeOfTypeNoCRef<R>, Array<TValueTypeOfAs<R>>>> Buffered(R&& range, size_t bufferSize)
 {return {ForwardAsRange<R>(range), Array<TValueTypeOfAs<R>>::CreateWithCount(bufferSize)};}
-INTRA_CORE_RANGE_END
+INTRA_END

@@ -16,7 +16,6 @@
 #include "IO/Std.h"
 
 using namespace Intra;
-using namespace IO;
 
 struct IRange
 {
@@ -36,7 +35,7 @@ public:
 	void PopFirst() final {mPtr++; if(mPtr>=mEnd) mPtr=mBegin;}
 };
 
-int TestPolymorphicRange(IRange* range, size_t totalCount)
+static int TestPolymorphicRange(IRange* range, size_t totalCount)
 {
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
@@ -47,7 +46,7 @@ int TestPolymorphicRange(IRange* range, size_t totalCount)
 	return sum;
 }
 
-int TestPolymorphicRange2(InputRange<int> range, size_t totalCount)
+static int TestPolymorphicRange2(InputRange<int> range, size_t totalCount)
 {
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
@@ -58,7 +57,7 @@ int TestPolymorphicRange2(InputRange<int> range, size_t totalCount)
 	return sum;
 }
 
-int TestPolymorphicRange3(InputRange<int> range, size_t totalCount)
+static int TestPolymorphicRange3(InputRange<int> range, size_t totalCount)
 {
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
@@ -66,7 +65,7 @@ int TestPolymorphicRange3(InputRange<int> range, size_t totalCount)
 	return sum;
 }
 
-int TestInlinedRange(int* arr, size_t count, size_t totalCount)
+static int TestInlinedRange(int* arr, size_t count, size_t totalCount)
 {
 	int* mBegin = arr;
 	int* mEnd = arr+count;
@@ -74,15 +73,15 @@ int TestInlinedRange(int* arr, size_t count, size_t totalCount)
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
 	{
-		if(mPtr>=mEnd) mPtr=mBegin;
+		if(mPtr >= mEnd) mPtr = mBegin;
 		sum += *mPtr++;
 	}
 	return sum;
 }
 
-int TestStaticRange(int* arr, size_t count, size_t totalCount)
+static int TestStaticRange(int* arr, size_t count, size_t totalCount)
 {
-	auto cycle = Range::Cycle(Span<int>(arr, count));
+	auto cycle = Cycle(Span<int>(arr, count));
 	int sum = 0;
 	for(size_t i=0; i<totalCount; i++)
 	{
@@ -102,10 +101,10 @@ void RunPolymorphicRangePerfTests(FormattedWriter& output)
 	int sum1 = TestPolymorphicRange(range, 100000000);
 	double time1 = tim.GetElapsedSecondsAndReset();
 
-	int sum2 = TestPolymorphicRange2(Range::Cycle(arr), 100000000);
+	int sum2 = TestPolymorphicRange2(Cycle(arr), 100000000);
 	double time2 = tim.GetElapsedSecondsAndReset();
 
-	int sum3 = TestPolymorphicRange3(Range::Cycle(arr), 100000000);
+	int sum3 = TestPolymorphicRange3(Cycle(arr), 100000000);
 	double time3 = tim.GetElapsedSecondsAndReset();
 
 	int sum4 = TestInlinedRange(arr.Data(), 1000, 100000000);

@@ -2,7 +2,6 @@
 #include "Container/Associative/HashMap.h"
 
 using namespace Intra;
-using namespace IO;
 
 void TestMaps(FormattedWriter& output)
 {

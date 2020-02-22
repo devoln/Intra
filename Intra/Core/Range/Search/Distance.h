@@ -4,8 +4,6 @@
 #include "Core/Range/Concepts.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
 ///@{
 /** Pops elements from ``from``, until it becomes equal to ``to`` or ``from`` becomes empty.
   As a result either from.Empty() or from == to.
@@ -47,7 +45,5 @@ size_t> DistanceTo(R&& from, R&& to)
 {
 	auto fromCopy = Forward<R>(from);
 	return DistanceAdvanceTo(fromCopy, to);
-}
-
 }
 INTRA_END

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   
-  <Type Name="Intra::Core::Span&lt;char&gt;">
+  <Type Name="Intra::Span&lt;char&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
     <DisplayString>{Begin,[End-Begin]s8}</DisplayString>
     <StringView>Begin,[End-Begin]s8b</StringView>
@@ -16,7 +16,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Span&lt;char16_t&gt;">
+  <Type Name="Intra::Span&lt;char16_t&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
     <DisplayString>{Begin,[End-Begin]s16}</DisplayString>
     <StringView>Begin,[End-Begin]s16b</StringView>
@@ -31,7 +31,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Span&lt;char32_t&gt;">
+  <Type Name="Intra::Span&lt;char32_t&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
     <DisplayString>{Begin,[End-Begin]s32}</DisplayString>
     <StringView>Begin,[End-Begin]s32b</StringView>
@@ -46,7 +46,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Span&lt;*&gt;">
+  <Type Name="Intra::Span&lt;*&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
     <DisplayString Condition="Begin == End">[]</DisplayString>
     <DisplayString Condition="Begin+1==End">[{Begin[0]}]</DisplayString>
@@ -66,7 +66,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::GenericStringView&lt;*&gt;">
+  <Type Name="Intra::GenericStringView&lt;*&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
     <DisplayString Condition="sizeof(*Begin)==1" Optional="true">{Begin,[End-Begin]s8}</DisplayString>
     <DisplayString Condition="sizeof(*Begin)==2" Optional="true">{Begin,[End-Begin]s16}</DisplayString>
@@ -83,7 +83,7 @@
     </Expand>
   </Type>
 	
-  <Type Name="Intra::Core::Optional&lt;*&gt;">
+  <Type Name="Intra::Optional&lt;*&gt;">
     <DisplayString Condition="!mNotNull">null</DisplayString>
     <DisplayString>{mVal.value}</DisplayString>
     <Expand>
@@ -91,21 +91,21 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::TValue&lt;*&gt;">
+  <Type Name="Intra::TValue&lt;*&gt;">
     <DisplayString>{Value}</DisplayString>
     <Expand>
       <ExpandedItem>Value</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::TRef&lt;*&gt;">
+  <Type Name="Intra::TRef&lt;*&gt;">
     <DisplayString>{&amp;Ref}</DisplayString>
     <Expand>
       <ExpandedItem>&amp;Ref</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::ObjectMethodWrapper&lt;*,*&gt;">
+  <Type Name="Intra::ObjectMethodWrapper&lt;*,*&gt;">
     <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
     <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
     <Expand>
@@ -114,7 +114,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::ObjectConstMethodWrapper&lt;*,*&gt;">
+  <Type Name="Intra::ObjectConstMethodWrapper&lt;*,*&gt;">
     <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
     <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
     <Expand>
@@ -123,268 +123,270 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::D::TFunctionPtrFunctor&lt;*&gt;">
+  <Type Name="Intra::D::TFunctionPtrFunctor&lt;*&gt;">
     <DisplayString>{Ptr}</DisplayString>
     <Expand>
       <Item Name="Function">Ptr</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::D::TMethodPtrFunctor&lt;*,*&gt;">
+  <Type Name="Intra::D::TMethodPtrFunctor&lt;*,*&gt;">
     <DisplayString>{Ptr}</DisplayString>
     <Expand>
       <Item Name="Method">Ptr</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::D::TConstMethodPtrFunctor&lt;*,*&gt;">
+  <Type Name="Intra::D::TConstMethodPtrFunctor&lt;*,*&gt;">
     <DisplayString>{Ptr}</DisplayString>
     <Expand>
       <Item Name="Method">Ptr</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::TFLess">
+  <Type Name="Intra::TFLess">
     <DisplayString>FLess</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFLEqual">
+  <Type Name="Intra::TFLEqual">
     <DisplayString>FLEqual</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFGreater">
+  <Type Name="Intra::TFGreater">
     <DisplayString>FGreater</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFGEqual">
+  <Type Name="Intra::TFGEqual">
     <DisplayString>FGEqual</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFEqual">
+  <Type Name="Intra::TFEqual">
     <DisplayString>FEqual</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFNotEqual">
+  <Type Name="Intra::TFNotEqual">
     <DisplayString>!FEqual</DisplayString>
   </Type>
 
-  <Type Name="Intra::Core::TNot1&lt;*&gt;">
+  <Type Name="Intra::TNot1&lt;*&gt;">
     <DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TNot2&lt;*&gt;">
+  <Type Name="Intra::TNot2&lt;*&gt;">
     <DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString>
   </Type>
 
-  <Type Name="Intra::Core::TAnd1&lt;*&gt;">
+  <Type Name="Intra::TAnd1&lt;*&gt;">
     <DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TAnd2&lt;*&gt;">
+  <Type Name="Intra::TAnd2&lt;*&gt;">
     <DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TOr1&lt;*&gt;">
+  <Type Name="Intra::TOr1&lt;*&gt;">
     <DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TOr2&lt;*&gt;">
+  <Type Name="Intra::TOr2&lt;*&gt;">
     <DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString>
   </Type>
 
-  <Type Name="Intra::Core::TIsEven">
+  <Type Name="Intra::TIsEven">
     <DisplayString>IsEven</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsOdd">
+  <Type Name="Intra::TIsOdd">
     <DisplayString>IsOdd</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsHorSpace">
+  <Type Name="Intra::TIsHorSpace">
     <DisplayString>IsHorSpace</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsLineSeparator">
+  <Type Name="Intra::TIsLineSeparator">
     <DisplayString>IsLineSeparator</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsSpace">
+  <Type Name="Intra::TIsSpace">
     <DisplayString>IsSpace</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsAnySlash">
+  <Type Name="Intra::TIsAnySlash">
     <DisplayString>IsAnySlash</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsDigit">
+  <Type Name="Intra::TIsDigit">
     <DisplayString>IsDigit</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsLowerLatin">
+  <Type Name="Intra::TIsLowerLatin">
     <DisplayString>IsLowerLatin</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsUpperLatin">
+  <Type Name="Intra::TIsUpperLatin">
     <DisplayString>IsUpperLatin</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsLatin">
+  <Type Name="Intra::TIsLatin">
     <DisplayString>IsLatin</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsAsciiChar">
+  <Type Name="Intra::TIsAsciiChar">
     <DisplayString>IsAsciiChar</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TIsControlChar">
+  <Type Name="Intra::TIsControlChar">
     <DisplayString>IsControlChar</DisplayString>
   </Type>
 
-  <Type Name="Intra::Core::TFTrue">
+  <Type Name="Intra::TFTrue">
     <DisplayString>FTrue</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TFFalse">
+  <Type Name="Intra::TFFalse">
     <DisplayString>FFalse</DisplayString>
   </Type>
 
-  <Type Name="Intra::Core::TToLowerAscii">
+  <Type Name="Intra::TToLowerAscii">
     <DisplayString>ToLowerAscii</DisplayString>
   </Type>
-  <Type Name="Intra::Core::TToUpperAscii">
+  <Type Name="Intra::TToUpperAscii">
     <DisplayString>ToUpperAscii</DisplayString>
   </Type>
-  
+
+  <Type Name="Intra::D::TupleLeaf&lt;*,*,false&gt;">
+    <DisplayString IncludeView="noparens">{value}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+  </Type>
+
+  <Type Name="Intra::D::TupleLeaf&lt;*,*,true&gt;">
+    <DisplayString IncludeView="noparens">{*(VT*)this}</DisplayString>
+    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
+  </Type>
 	
-  <Type Name="Intra::Core::Tuple&lt;*&gt;">
-    <DisplayString IncludeView="noparens">{first}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
       <Item Name="[0]">first</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_},{(Leaf&lt;2&gt;&amp;)impl_} {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_},{(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}, {(Leaf&lt;6&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
-      <Item Name="[6]">next.next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
+      <Item Name="[6]">{(Leaf&lt;6&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}, {(Leaf&lt;6&gt;&amp;)impl_}, {(Leaf&lt;7&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
-      <Item Name="[6]">next.next.next.next.next.next.first</Item>
-      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
+      <Item Name="[6]">{(Leaf&lt;6&gt;&amp;)impl_}</Item>
+      <Item Name="[7]">{(Leaf&lt;7&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}, {(Leaf&lt;6&gt;&amp;)impl_}, {(Leaf&lt;7&gt;&amp;)impl_}, {(Leaf&lt;8&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
-      <Item Name="[6]">next.next.next.next.next.next.first</Item>
-      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
-      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
+      <Item Name="[6]">{(Leaf&lt;6&gt;&amp;)impl_}</Item>
+      <Item Name="[7]">{(Leaf&lt;7&gt;&amp;)impl_}</Item>
+      <Item Name="[8]">{(Leaf&lt;8&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}, {(Leaf&lt;6&gt;&amp;)impl_}, {(Leaf&lt;7&gt;&amp;)impl_}, {(Leaf&lt;8&gt;&amp;)impl_}, {(Leaf&lt;9&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
-      <Item Name="[6]">next.next.next.next.next.next.first</Item>
-      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
-      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
-      <Item Name="[9]">next.next.next.next.next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
+      <Item Name="[6]">{(Leaf&lt;6&gt;&amp;)impl_}</Item>
+      <Item Name="[7]">{(Leaf&lt;7&gt;&amp;)impl_}</Item>
+      <Item Name="[8]">{(Leaf&lt;8&gt;&amp;)impl_}</Item>
+      <Item Name="[9]">{(Leaf&lt;9&gt;&amp;)impl_}</Item>
     </Expand>
   </Type>
 
-  <Type Name="Intra::Core::Tuple&lt;*,*,*,*,*,*,*,*,*,*,*&gt;">
-    <DisplayString IncludeView="noparens">{first}, {next,view(noparens)}</DisplayString>
+  <Type Name="Intra::Tuple&lt;*,*,*,*,*,*,*,*,*,*,*&gt;">
+    <DisplayString IncludeView="noparens">{(Leaf&lt;0&gt;&amp;)impl_}, {(Leaf&lt;1&gt;&amp;)impl_}, {(Leaf&lt;2&gt;&amp;)impl_}, {(Leaf&lt;3&gt;&amp;)impl_}, {(Leaf&lt;4&gt;&amp;)impl_}, {(Leaf&lt;5&gt;&amp;)impl_}, {(Leaf&lt;6&gt;&amp;)impl_}, {(Leaf&lt;7&gt;&amp;)impl_}, {(Leaf&lt;8&gt;&amp;)impl_}, {(Leaf&lt;9&gt;&amp;)impl_}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
     <Expand>
-      <Item Name="[0]">first</Item>
-      <Item Name="[1]">next.first</Item>
-      <Item Name="[2]">next.next.first</Item>
-      <Item Name="[3]">next.next.next.first</Item>
-      <Item Name="[4]">next.next.next.next.first</Item>
-      <Item Name="[5]">next.next.next.next.next.first</Item>
-      <Item Name="[6]">next.next.next.next.next.next.first</Item>
-      <Item Name="[7]">next.next.next.next.next.next.next.first</Item>
-      <Item Name="[8]">next.next.next.next.next.next.next.next.first</Item>
-      <Item Name="[9]">next.next.next.next.next.next.next.next.next.first</Item>
+      <Item Name="[0]">{(Leaf&lt;0&gt;&amp;)impl_}</Item>
+      <Item Name="[1]">{(Leaf&lt;1&gt;&amp;)impl_}</Item>
+      <Item Name="[2]">{(Leaf&lt;2&gt;&amp;)impl_}</Item>
+      <Item Name="[3]">{(Leaf&lt;3&gt;&amp;)impl_}</Item>
+      <Item Name="[4]">{(Leaf&lt;4&gt;&amp;)impl_}</Item>
+      <Item Name="[5]">{(Leaf&lt;5&gt;&amp;)impl_}</Item>
+      <Item Name="[6]">{(Leaf&lt;6&gt;&amp;)impl_}</Item>
+      <Item Name="[7]">{(Leaf&lt;7&gt;&amp;)impl_}</Item>
+      <Item Name="[8]">{(Leaf&lt;8&gt;&amp;)impl_}</Item>
+      <Item Name="[9]">{(Leaf&lt;9&gt;&amp;)impl_}</Item>
       <Synthetic Name="[...]">
-        <DisplayString>Next 10 elements:</DisplayString>
+        <DisplayString>...</DisplayString>
       </Synthetic>
-      <ExpandedItem>next.next.next.next.next.next.next.next.next.next</ExpandedItem>
     </Expand>
-  </Type>
-
-
-
-  <Type Name="Intra::Core::KeyValuePair&lt;*,*&gt;">
-    <DisplayString>{Key} : {Value}</DisplayString>
   </Type>
 
 </AutoVisualizer>

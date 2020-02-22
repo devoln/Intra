@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	
+    <Type Name="Intra::GenericString&lt;char&gt;">
+        <DisplayString Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">{u.m.Data,[u.m.Len]s8}</DisplayString>
+        <DisplayString Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">{u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s8}</DisplayString>
+        <DisplayString>&lt;ERROR&gt;</DisplayString>  
+        <StringView Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">u.m.Data,[u.m.Len]s8b</StringView>
+        <StringView Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s8b</StringView>
+        <Expand> 
+            <Item Name="Length">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Len: SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)</Item>
+            <Item Name="Capacity">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? (u.m.Capacity &amp; SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT: SSO_BUFFER_CAPACITY_CHARS</Item>
+            <Item Name="Begin">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data: u.buf</Item>
+            <Item Name="End">((u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data+u.m.Len: u.buf+(SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)))</Item>
+            <Item Name="Is heap allocated?">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)!=0</Item>
+        </Expand> 
+    </Type>
+
+  <Type Name="Intra::GenericString&lt;char16_t&gt;">
+    <DisplayString Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">{u.m.Data,[u.m.Len]su}</DisplayString>
+    <DisplayString Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">{u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]su}</DisplayString>
+    <DisplayString>&lt;ERROR&gt;</DisplayString>
+    <StringView Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">u.m.Data,[u.m.Len]sub</StringView>
+    <StringView Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]sub</StringView>
+    <Expand>
+      <Item Name="Length">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Len: SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)</Item>
+      <Item Name="Capacity">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? (u.m.Capacity &amp; SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT: SSO_BUFFER_CAPACITY_CHARS</Item>
+      <Item Name="Begin">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data: u.buf</Item>
+      <Item Name="End">((u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data+u.m.Len: u.buf+(SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)))</Item>
+      <Item Name="Is heap allocated?">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)!=0</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;wchar_t&gt;">
+    <DisplayString Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">{u.m.Data,[u.m.Len]su}</DisplayString>
+    <DisplayString Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">{u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]su}</DisplayString>
+    <DisplayString>&lt;ERROR&gt;</DisplayString>
+    <StringView Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">u.m.Data,[u.m.Len]sub</StringView>
+    <StringView Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]sub</StringView>
+    <Expand>
+      <Item Name="Length">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Len: SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)</Item>
+      <Item Name="Capacity">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? (u.m.Capacity &amp; SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT: SSO_BUFFER_CAPACITY_CHARS</Item>
+      <Item Name="Begin">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data: u.buf</Item>
+      <Item Name="End">((u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data+u.m.Len: u.buf+(SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)))</Item>
+      <Item Name="Is heap allocated?">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)!=0</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::GenericString&lt;char32_t&gt;">
+    <DisplayString Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">{u.m.Data,[u.m.Len]s32}</DisplayString>
+    <DisplayString Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">{u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s32}</DisplayString>
+    <StringView Condition="u.m.Capacity &amp; SSO_LONG_BIT_MASK">u.m.Data,[u.m.Len]s32b</StringView>
+    <StringView Condition="!(u.m.Capacity &amp; SSO_LONG_BIT_MASK)">u.buf,[SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)]s32b</StringView>
+    <Expand>
+      <Item Name="Length">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Len: SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)</Item>
+      <Item Name="Capacity">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? (u.m.Capacity &amp; SSO_CAPACITY_MASK) >> SSO_CAPACITY_RIGHT_SHIFT: SSO_BUFFER_CAPACITY_CHARS</Item>
+      <Item Name="Begin">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data: u.buf</Item>
+      <Item Name="End">((u.m.Capacity &amp; SSO_LONG_BIT_MASK)? u.m.Data+u.m.Len: u.buf+(SSO_BUFFER_CAPACITY_CHARS - (u.buf[SSO_BUFFER_CAPACITY_CHARS] >> SSO_SHORT_SIZE_SHIFT)))</Item>
+      <Item Name="Is heap allocated?">(u.m.Capacity &amp; SSO_LONG_BIT_MASK)!=0</Item>
+    </Expand>
+  </Type>
+
+  
+	
+    <Type Name="Intra::Array&lt;*&gt;">
+        <DisplayString IncludeView="Length">{range,view(Length)}</DisplayString>
+        <DisplayString>{range}</DisplayString>
+        <Expand>
+            <Item Name="Capacity" ExcludeView="simple">buffer.End - range.Begin</Item>
+            <Item Name="Left Capacity" ExcludeView="simple">range.Begin - buffer.Begin</Item>
+            <Item Name="Total Capacity" ExcludeView="simple">buffer.End - buffer.Begin</Item>
+            <Item Name="Length" ExcludeView="simple">range.End - range.Begin</Item>
+            <ExpandedItem>range,view(simple)</ExpandedItem>
+        </Expand>
+    </Type>
+
+  <Type Name="Intra::OwningArrayRange&lt;*&gt;">
+    <DisplayString>{Elements}</DisplayString>
+    <Expand>
+      <ExpandedItem>Elements</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::LinearSet&lt;*&gt;">
+    <DisplayString>{mData}</DisplayString>
+    <Expand>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+	
+	  <Type Name="Intra::BList&lt;*&gt;">
+      <DisplayString Condition="mCount==0">[]</DisplayString>
+	    <DisplayString Condition="(mRange.FirstNode==null || mRange.LastNode==null) &amp;&amp; mCount!=0 || mCount==0 &amp;&amp; (mRange.FirstNode!=null || mRange.LastNode!=null)">&lt;INVALID&gt;</DisplayString>
+      <DisplayString>BList({mCount}){mRange}</DisplayString>
+      <Expand>
+          <Item Name="Count" ExcludeView="simple">mCount</Item>
+          <LinkedListItems>
+                <Size>mCount</Size>
+                <HeadPointer>mRange.FirstNode</HeadPointer>
+                <NextPointer>Next</NextPointer>
+                <ValueNode>Value</ValueNode>
+            </LinkedListItems>
+      </Expand>
+    </Type>
+
+  <Type Name="Intra::HashMap&lt;*&gt;">
+    <DisplayString Condition="mBucketHeads == nullptr">Map(0) []</DisplayString>
+    <DisplayString>Map({((size_t*)(mBucketHeads))[0]}) {mRange}</DisplayString>
+    <Expand>
+      <Item Name="Count">mBucketHeads != nullptr? ((size_t*)(mBucketHeads))[0]: 0</Item>
+      <ExpandedItem>mRange</ExpandedItem>
+    </Expand>
+  </Type>
+	  
+	
+</AutoVisualizer>
+

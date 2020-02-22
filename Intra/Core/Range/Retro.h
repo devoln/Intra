@@ -3,16 +3,16 @@
 #include "Core/Range/Concepts.h"
 
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename R> struct RRetro
 {
 	R OriginalRange;
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return OriginalRange.Empty();}
 	INTRA_NODISCARD constexpr forceinline decltype(auto) First() const {return OriginalRange.Last();}
-	INTRA_CONSTEXPR2 forceinline void PopFirst() {OriginalRange.PopLast();}
+	constexpr forceinline void PopFirst() {OriginalRange.PopLast();}
 	INTRA_NODISCARD constexpr forceinline decltype(auto) Last() const {return OriginalRange.First();}
-	INTRA_CONSTEXPR2 forceinline void PopLast() {OriginalRange.PopFirst();}
+	constexpr forceinline void PopLast() {OriginalRange.PopFirst();}
 	
 	INTRA_NODISCARD constexpr decltype(auto) operator[](size_t index) const {return OriginalRange[Length()-1-index];}
 
@@ -34,4 +34,4 @@ template<typename R,
 	CBidirectionalRange<AsR>,
 RRetro<TRemoveConstRef<AsR>>> Retro(R&& range)
 {return {ForwardAsRange<R>(range)};}
-INTRA_CORE_RANGE_END
+INTRA_END

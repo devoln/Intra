@@ -5,9 +5,7 @@
 #include "Container/ForwardDecls.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename T> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename T> constexpr forceinline Requires<
 	CSignedIntegral<T>,
 TMakeUnsigned<T>> ExtractKey(T t)
 {
@@ -25,12 +23,12 @@ template<typename T, typename ExtractKeyFunc = TMakeUnsigned<T>(*)(T), size_t Ra
 void RadixSort(Span<T> arr, ExtractKeyFunc extractKey = &ExtractKey<T>);
 
 template<typename T, typename ExtractKeyFunc = size_t(*)(T*), size_t RadixLog=8>
-INTRA_CONSTEXPR2 forceinline void RadixSort(Span<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
+constexpr forceinline void RadixSort(Span<T*> arr, ExtractKeyFunc extractKey = &ExtractKey<T>)
 {RadixSort(arr.template Reinterpret<size_t>(), extractKey);}
 
 namespace D
 {
-	template<typename T, typename ExtractKeyFunc, size_t RadixLog> INTRA_CONSTEXPR2 void radixSortPass(
+	template<typename T, typename ExtractKeyFunc, size_t RadixLog> constexpr void radixSortPass(
 		Span<T> arr, Span<T> temp, size_t radixOffset, ExtractKeyFunc extractKey)
 	{
 		enum: size_t {Radix = 1 << RadixLog, RadixMask = Radix-1};
@@ -44,7 +42,7 @@ namespace D
 			c[keyRadix]++;
 		}
 		for(size_t j = 1; j < Radix; j++) c[j] += c[j-1];
-		for(size_t j = count-1; j != Core::MaxOf(size_t()); j--)
+		for(size_t j = count-1; j != LMaxOf(size_t()); j--)
 		{
 			const auto key = extractKey(arr[j]);
 			const size_t keyRadix = size_t(key >> radixOffset) & RadixMask;
@@ -57,7 +55,7 @@ namespace D
 template<typename T, typename ExtractKeyFunc, size_t RadixLog>
 void RadixSort(Span<T> arr, ExtractKeyFunc extractKey)
 {
-	enum: size_t {KeyBits = sizeof(extractKey(Core::Val<T>()))*8};
+	enum: size_t {KeyBits = sizeof(extractKey(Val<T>()))*8};
 
 	Array<T> tempBuffer;
 	tempBuffer.SetCountUninitialized(arr.Length());
@@ -76,7 +74,5 @@ void RadixSort(Span<T> arr, ExtractKeyFunc extractKey)
 	}
 	if(arr==dst) return;
 	CopyTo(temp, arr);
-}
-
 }
 INTRA_END

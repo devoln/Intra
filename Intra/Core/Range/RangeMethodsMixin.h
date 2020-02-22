@@ -2,7 +2,7 @@
 #include "Core/Type.h"
 #include "Core/Functional.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 
 namespace ADL {
 void Map();
@@ -40,4 +40,4 @@ template<typename T> struct RangeMethodsMixin
 
 #undef INTRA_FORWARD_FUNC
 
-INTRA_CORE_RANGE_END
+INTRA_END

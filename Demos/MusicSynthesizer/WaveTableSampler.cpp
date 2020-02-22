@@ -252,8 +252,8 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint 
 	const size_t level = table.NearestLevelForRatio(ratio);
 	const auto samples = table.LevelSamples(level);
 	return WaveTableSampler(samples, ratio/table.LevelRatio(level),
-		Math::Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
-		2*float(Math::PI)*VibratoFrequency/float(sampleRate), VibratoValue,
+		Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
+		2*float(PI)*VibratoFrequency/float(sampleRate), VibratoValue,
 		Envelope(sampleRate), (sampleRate >> 7) % samples.Length());
 }
 

@@ -2,13 +2,10 @@
 
 #include "Core/Functional.h"
 #include "Core/Range/Concepts.h"
-
-
-
 #include "Core/Range/Take.h"
 #include "Core/Range/Search/Single.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 template<typename R> struct RTakeByLine
 {
@@ -20,18 +17,18 @@ template<typename R> struct RTakeByLine
 
 	forceinline RTakeByLine() = default;
 
-	INTRA_CONSTEXPR2 forceinline RTakeByLine(R&& range, bool keepTerminator=false):
+	constexpr forceinline RTakeByLine(R&& range, bool keepTerminator = false):
 		mOriginalRange(Move(range)), mKeepTerminator(keepTerminator) {PopFirst();}
 
-	INTRA_CONSTEXPR2 forceinline RTakeByLine(const R& range, bool keepTerminator=false):
+	constexpr forceinline RTakeByLine(const R& range, bool keepTerminator = false):
 		mOriginalRange(range), mKeepTerminator(keepTerminator) {PopFirst();}
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const noexcept {return mFirst.Empty();}
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	constexpr void PopFirst()
 	{
 		const auto rangeCopy = mOriginalRange;
-		size_t lineLength = CountUntilAdvance(mOriginalRange, Funal::IsLineSeparator);
+		size_t lineLength = CountUntilAdvance(mOriginalRange, IsLineSeparator);
 		if(!mOriginalRange.Empty())
 		{
 			const bool CR = mOriginalRange.First() == '\r';
@@ -46,9 +43,9 @@ template<typename R> struct RTakeByLine
 		mFirst = Take(rangeCopy, lineLength);
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline TTakeResult<R> First() const
+	INTRA_NODISCARD constexpr forceinline TTakeResult<R> First() const
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		INTRA_PRECONDITION(!Empty());
 		return mFirst;
 	}
 
@@ -61,8 +58,8 @@ private:
 
 template<typename R,
 	typename AsR = TRangeOfTypeNoCRef<R>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+> INTRA_NODISCARD constexpr forceinline Requires<
 	CForwardCharRange<AsR>,
-RTakeByLine<AsR>> TakeByLine(R&& range, bool keepTerminator=false)
+RTakeByLine<AsR>> TakeByLine(R&& range, bool keepTerminator = false)
 {return {ForwardAsRange<R>(range), keepTerminator};}
-INTRA_CORE_RANGE_END
+INTRA_END

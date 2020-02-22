@@ -1,16 +1,12 @@
 ﻿#pragma once
 
-#include "Funal/Op.h"
-
+#include "Core/Functional.h"
 #include "Core/Range/Concepts.h"
 
-
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename R, typename P = TLess> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+template<typename R, typename P = TFLess> INTRA_NODISCARD constexpr Requires<
 	CConsumableRange<R>,
-bool> IsSorted(R&& range, P comparer = Less)
+bool> IsSorted(R&& range, P comparer = FLess)
 {
 	if(range.Empty()) return true;
 	R rangeCopy = Forward<R>(range);
@@ -27,13 +23,11 @@ bool> IsSorted(R&& range, P comparer = Less)
 	return true;
 }
 
-template<typename R, typename P = TLess,
+template<typename R, typename P = TFLess,
 	typename AsR = TRangeOfType<R>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+> INTRA_NODISCARD constexpr forceinline Requires<
 	!CInputRange<R> &&
 	CNonInfiniteForwardRange<AsR>,
-bool> IsSorted(R&& range, P comparer = Less)
+bool> IsSorted(R&& range, P comparer = FLess)
 {return IsSorted(ForwardAsRange<R>(range), comparer);}
-
-}
 INTRA_END

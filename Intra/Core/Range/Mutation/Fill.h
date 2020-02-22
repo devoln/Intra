@@ -4,10 +4,10 @@
 #include "Core/Misc/RawMemory.h"
 #include "Core/Range/Cycle.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_LOSING_CONVERSION
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
-template<typename T, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename T, typename R> constexpr Requires<
 	CAssignableRange<R> &&
 	!CInfiniteRange<R> &&
 	!CConst<R> &&
@@ -23,7 +23,7 @@ template<typename T, typename R> INTRA_CONSTEXPR2 Requires<
 
 template<typename R, typename PR,
 	typename AsPR = TRangeOfType<PR>
-> INTRA_CONSTEXPR2 Requires<
+> constexpr Requires<
 	CAssignableRange<R> &&
 	!CInfiniteRange<R> &&
 	!CConst<R> &&
@@ -42,7 +42,7 @@ template<typename R, typename PR,
 
 template<typename T, typename R,
 	typename AsR = TRangeOfType<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CConsumableRange<AsR> &&
 	CAssignableRange<AsR> &&
 	CConvertible<T, TValueTypeOf<AsR>>
@@ -53,20 +53,20 @@ template<typename T, typename R,
 }
 
 
-template<typename R, typename AsR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename AsR> constexpr forceinline Requires<
 	CConsumableRange<AsR> &&
 	CAssignableRange<AsR> &&
 	!(CArrayClass<R> && CPod<TArrayElement<R>>)
 > FillZeros(R&& range)
 {Fill(ForwardAsRange<R>(range), TValueTypeOf<AsR>(0));}
 
-template<typename R> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R> constexpr forceinline Requires<
 	CArrayClass<R> &&
 	CPod<TArrayElement<R>>
 > FillZeros(R&& dst)
-{BitwiseZero(DataOf(dst), LengthOf(dst));}
+{Misc::BitwiseZero(DataOf(dst), LengthOf(dst));}
 
-template<typename R, typename PR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename PR> constexpr forceinline Requires<
 	CAsConsumableRange<R> &&
 	CAsAccessibleRange<PR>
 > FillPattern(R&& range, PR&& pattern)
@@ -74,4 +74,4 @@ template<typename R, typename PR> INTRA_CONSTEXPR2 forceinline Requires<
 	auto dst = ForwardAsRange<R>(range);
 	FillPatternAdvance(dst, ForwardAsRange<PR>(pattern));
 }
-INTRA_CORE_RANGE_END
+INTRA_END

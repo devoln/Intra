@@ -9,12 +9,12 @@
 #include "Core/Range/Stream/InputStreamMixin.h"
 #include "Utils/IInput.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
 #if defined(_MSC_VER) && !defined(__clang__)
-#define TEMPLATE //VS doesn't compile construction typename ...<...>::template ...<...>, но без template компилирует
+#define TEMPLATE //VS doesn't compile construction typename ...<...>::template ...<...>, but it does without template
 #else
 #define TEMPLATE template //clang required template keyword in typename ...<...>::template ...<...>
 #endif
@@ -52,7 +52,7 @@ template<typename T, typename R, typename PARENT, bool =
 		return result;
 	}
 
-	size_t PopFirstN(size_t count) final {return Range::PopFirstN(OriginalRange, count);}
+	size_t PopFirstN(size_t count) final {return Intra::PopFirstN(OriginalRange, count);}
 };
 
 template<typename T, typename R, typename PARENT>
@@ -64,7 +64,7 @@ struct InputRangeImplFiller<T, R, PARENT, true>:
 		base(Forward<A>(range)) {}
 
 	size_t ReadWrite(Span<TRemoveConstRef<T>>& dst) final
-	{return Range::ReadWrite(base::OriginalRange, dst);}
+	{return Intra::ReadWrite(base::OriginalRange, dst);}
 };
 
 }
@@ -106,7 +106,7 @@ public:
 	constexpr forceinline InputRange(InputRange&& rhs):
 		mInterface(Move(rhs.mInterface)) {}
 
-	INTRA_CONSTEXPR2 forceinline InputRange& operator=(InputRange&& rhs)
+	constexpr forceinline InputRange& operator=(InputRange&& rhs)
 	{
 		mInterface = Move(rhs.mInterface);
 		return *this;
@@ -176,6 +176,4 @@ typedef InputRange<char> InputStream;
 
 
 #undef TEMPLATE
-
-}
 INTRA_END

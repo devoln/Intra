@@ -2,5 +2,5 @@
 
 #include "IO/FormattedWriter.h"
 
-void TestMaps(Intra::IO::FormattedWriter& output);
+void TestMaps(Intra::FormattedWriter& output);
 

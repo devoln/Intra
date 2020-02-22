@@ -3,8 +3,6 @@
 #include "Core/Assert.h"
 
 using namespace Intra;
-using namespace Range;
-using namespace IO;
 
 void TestUnicodeConversion(FormattedWriter& output)
 {

@@ -4,9 +4,7 @@
 #include "Core/Range/Mutation/Copy.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename OR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename OR> constexpr forceinline Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>,
 size_t> RawWriteFrom(OR& dst, const char* src, size_t n)
@@ -14,7 +12,7 @@ size_t> RawWriteFrom(OR& dst, const char* src, size_t n)
 	return WriteTo(CSpan<char>(src, n), dst);
 }
 
-template<typename OR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename OR> constexpr forceinline Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>,
 size_t> RawWriteFrom(OR& dst, const byte* src, size_t n)
@@ -27,10 +25,10 @@ template<typename OR> forceinline Requires<
 	COutputRangeOf<OR, byte>,
 	size_t> RawWriteFrom(OR& dst, const void* src, size_t n)
 {
-	return WriteTo(CSpan<char>(src, n), dst);
+	return WriteTo(CSpanOfRaw<char>(src, n), dst);
 }
 
-template<typename OR, typename T> INTRA_CONSTEXPR2 Requires<
+template<typename OR, typename T> constexpr Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>,
 size_t> RawWriteFrom(OR& dst, CSpan<T> src)
@@ -39,7 +37,7 @@ size_t> RawWriteFrom(OR& dst, CSpan<T> src)
 	return RawWriteFrom(dst, src.Data(), srcLen);
 }
 
-template<typename OR, typename T> INTRA_CONSTEXPR2 Requires<
+template<typename OR, typename T> constexpr Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>,
 size_t> RawWriteFrom(OR& dst, Span<T> src, size_t n)
@@ -49,7 +47,7 @@ size_t> RawWriteFrom(OR& dst, Span<T> src, size_t n)
 	return RawWriteFrom(dst, src.Data(), n);
 }
 
-template<typename OR, typename T> INTRA_CONSTEXPR2 Requires<
+template<typename OR, typename T> constexpr Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>,
 size_t> RawWriteFrom(OR& dst, const T& src)
@@ -59,13 +57,11 @@ size_t> RawWriteFrom(OR& dst, const T& src)
 }
 
 
-template<typename T, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename T, typename OR> constexpr Requires<
 	COutputRangeOf<OR, char> ||
 	COutputRangeOf<OR, byte>
 > RawWrite(OR& dst, const T& value)
 {
 	RawWriteFrom(dst, &value, sizeof(T));
-}
-
 }
 INTRA_END

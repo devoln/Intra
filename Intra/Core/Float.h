@@ -11,7 +11,7 @@
 #include "Core/Misc/RawMemory.h"
 #include "Core/Numeric.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 
 #if defined(_MSC_VER) && !defined(__clang__)
 #pragma warning(disable: 4056)
@@ -42,18 +42,18 @@ struct TNaN
 	forceinline bool operator!=(double rhs) const noexcept {return !operator==(rhs);}
 	forceinline bool operator!=(long double rhs) const noexcept {return !operator==(double(rhs));}
 
+	friend forceinline bool operator==(float l, TNaN) noexcept {return TNaN{} == l;}
+	friend forceinline bool operator!=(float l, TNaN) noexcept {return TNaN{} != l;}
+	friend forceinline bool operator==(double l, TNaN) noexcept {return TNaN{} == l;}
+	friend forceinline bool operator!=(double l, TNaN) noexcept {return TNaN{} != l;}
+	friend forceinline bool operator==(long double l, TNaN) noexcept {return TNaN{} == l;}
+	friend forceinline bool operator!=(long double l, TNaN) noexcept {return TNaN{} != l;}
+
 	forceinline operator float() const noexcept {return float(Infinity/Infinity);}
 	forceinline operator double() const noexcept {return double(Infinity/Infinity);}
 	forceinline operator long double() const noexcept {return static_cast<long double>(Infinity/Infinity);}
 };
 static constexpr TNaN NaN{};
-
-forceinline bool operator==(float l, TNaN) noexcept {return NaN == l;}
-forceinline bool operator!=(float l, TNaN) noexcept {return NaN != l;}
-forceinline bool operator==(double l, TNaN) noexcept {return NaN == l;}
-forceinline bool operator!=(double l, TNaN) noexcept {return NaN != l;}
-forceinline bool operator==(long double l, TNaN) noexcept {return NaN == l;}
-forceinline bool operator!=(long double l, TNaN) noexcept {return NaN != l;}
 
 #ifdef INTRA_CONSTEXPR_BITCAST_SUPPORT
 #define INTRA_BITCAST_CONSTEXPR constexpr
@@ -89,12 +89,12 @@ constexpr uint64 ExtractMantissa(double x) noexcept
 constexpr forceinline uint64 ExtractMantissa(long double x) noexcept {return Mantissa(double(x));}
 #else
 namespace D {
-template<typename Float> INTRA_CONSTEXPR2 int GetExponentPositive(Float x) noexcept
+template<typename Float> constexpr int GetExponentPositive(Float x) noexcept
 {
 	return x >= 2? GetExponentPositive(x*0.5f)+1:
 		x < 1? GetExponentPositive(x*2)-1: 0;
 }
-template<typename T> INTRA_NODISCARD INTRA_CONSTEXPR2 T Pow2Int(int y) noexcept
+template<typename T> INTRA_NODISCARD constexpr T Pow2Int(int y) noexcept
 {
 	enum {BitsPerStep = sizeof(size_t)*8-1};
 	T res = 1;
@@ -103,12 +103,12 @@ template<typename T> INTRA_NODISCARD INTRA_CONSTEXPR2 T Pow2Int(int y) noexcept
 	if(p) res *= size_t(1) << p;
 	return y >= 0? res: 1/res;
 }
-template<typename Float> INTRA_CONSTEXPR2 Float Scalbn(Float value, int exponent) noexcept
+template<typename Float> constexpr Float Scalbn(Float value, int exponent) noexcept
 {return value*Pow2Int<Float>(exponent);}
 }
-INTRA_CONSTEXPR2 int ExtractBiasedExponent(float x) noexcept {return 127+D::GetExponentPositive(x < 0? -x: x);}
-INTRA_CONSTEXPR2 int ExtractBiasedExponent(double x) noexcept {return 1023+D::GetExponentPositive(x < 0? -x: x);}
-INTRA_CONSTEXPR2 int ExtractBiasedExponent(long double x) noexcept {return ExtractBiasedExponent(double(x < 0? -x: x));}
+constexpr int ExtractBiasedExponent(float x) noexcept {return 127+D::GetExponentPositive(x < 0? -x: x);}
+constexpr int ExtractBiasedExponent(double x) noexcept {return 1023+D::GetExponentPositive(x < 0? -x: x);}
+constexpr int ExtractBiasedExponent(long double x) noexcept {return ExtractBiasedExponent(double(x < 0? -x: x));}
 constexpr uint32 ExtractMantissa(float x) noexcept
 {
 	return x != Infinity && x != -Infinity?
@@ -134,4 +134,4 @@ template<typename MantissaT> struct DecimalFloat
 	int Exponent;
 };
 
-INTRA_CORE_END
+INTRA_END

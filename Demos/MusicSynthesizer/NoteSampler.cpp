@@ -13,7 +13,7 @@ size_t NoteSampler::GenerateMono(Span<float> ioDst)
 		float tempArr[1024] = {0};
 		while(!ioDst.Full() && !Empty())
 		{
-			auto tempDst = Range::Take(tempArr, ioDst.Length());
+			auto tempDst = Take(tempArr, ioDst.Length());
 			fill(tempDst);
 			applyModifiers(tempDst);
 			AddAdvance(ioDst, tempDst);
@@ -29,7 +29,7 @@ size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Sp
 {
 	if(Modifiers.Empty() && !ADSR && GenericSamplers.Empty())
 	{
-		const size_t sampleCount = Math::Min(ADSR.SamplesLeft(), dstLeft.Length());
+		const size_t sampleCount = Min(ADSR.SamplesLeft(), dstLeft.Length());
 		fillStereo(dstLeft.Take(sampleCount), dstRight.Take(sampleCount), dstReverb.Take(sampleCount));
 		return sampleCount;
 	}
@@ -41,7 +41,7 @@ size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Sp
 	float tempArr[1024] = {0};
 	while(!dstLeft.Full() && !Empty())
 	{
-		auto tempDst = Range::Take(tempArr, dstLeft.Length());
+		auto tempDst = Take(tempArr, dstLeft.Length());
 		fill(tempDst);
 		sampleCount += tempDst.Length();
 		applyModifiers(tempDst);

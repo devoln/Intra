@@ -2,7 +2,7 @@
 
 #include "Core/Type.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 INTRA_DEFINE_CONCEPT_REQUIRES(CHas_size, static_cast<size_t>(Val<T>().size()));
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasLength, static_cast<size_t>(Val<T>().Length()));
 INTRA_DEFINE_CONCEPT_REQUIRES(CHas_data, static_cast<const void*>(Val<T>().data()));
@@ -150,4 +150,4 @@ template<typename T1, typename T2> concept CArrayClassOfExactly =
 #if INTRA_CONSTEXPR_TEST
 static_assert(CArrayClass<const char(&)[5]>, "CArrayClass error.");
 #endif
-INTRA_CORE_END
+INTRA_END

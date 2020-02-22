@@ -4,7 +4,7 @@
 #include "Core/Range/Concepts.h"
 #include "Core/Range/Operations.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
 template<typename R> struct RStride
 {
@@ -16,24 +16,28 @@ template<typename R> struct RStride
 
 	forceinline RStride() = default;
 
-	INTRA_CONSTEXPR2 forceinline RStride(R range, size_t strideStep):
+	constexpr forceinline RStride(R range, index_t strideStep):
 		mOriginalRange(Move(range)), mStep(strideStep)
 	{
-		INTRA_DEBUG_ASSERT(strideStep != 0);
+		INTRA_PRECONDITION(strideStep > 0);
 		skip_back_odd();
 	}
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mOriginalRange.Empty();}
 	INTRA_NODISCARD constexpr forceinline decltype(auto) First() const {return mOriginalRange.First();}
-	INTRA_CONSTEXPR2 forceinline void PopFirst() {PopFirstN(mOriginalRange, mStep);}
+	constexpr forceinline void PopFirst() {PopFirstN(mOriginalRange, mStep);}
 
-	INTRA_NODISCARD constexpr forceinline decltype(auto) Last() const {return mOriginalRange.Last();}
+	template<typename U = R, Requires<
+		CHasLast<U>
+	>* = null> INTRA_NODISCARD constexpr forceinline decltype(auto) Last() const {return mOriginalRange.Last();}
 
-	INTRA_CONSTEXPR2 forceinline void PopLast() {PopLastN(mOriginalRange, mStep);}
+	template<typename U = R> constexpr forceinline Requires<
+		CHasPopLast<U>
+	> PopLast() {PopLastN(mOriginalRange, mStep);}
 
 	INTRA_NODISCARD constexpr forceinline decltype(auto) operator[](size_t index) const {return mOriginalRange[index*mStep];}
 
-	template<typename U=R> INTRA_NODISCARD forceinline TSliceTypeOf<U> operator()(size_t start, size_t end) const
+	template<typename U = R> INTRA_NODISCARD forceinline TSliceTypeOf<U> operator()(index_t start, index_t end) const
 	{return mOriginalRange(start*mStep, end*mStep);}
 
 	INTRA_NODISCARD forceinline index_t Length() const {return (mOriginalRange.Length() + mStep - 1) / mStep;}
@@ -42,16 +46,17 @@ template<typename R> struct RStride
 	{return RStride(mOriginalRange, mStep*strideStep);}
 
 private:
-	template<typename U=R, typename = Requires<
-		CHasPopLast<U> && CHasLength<U>
-	>> INTRA_CONSTEXPR2 forceinline void skip_back_odd()
+	template<typename U = R, Requires<
+		CHasPopLast<U> &&
+		CHasLength<U>
+	>* = null> constexpr forceinline void skip_back_odd()
 	{
 		const size_t len = mOriginalRange.Length();
 		if(len == 0) return;
 		PopLastExactly(mOriginalRange, (len-1) % mStep);
 	}
 
-	template<typename U=R> INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U = R> constexpr forceinline Requires<
 		!(CHasPopLast<U> && CHasLength<U>)
 	> skip_back_odd() {}
 
@@ -63,4 +68,4 @@ template<typename R, typename AsR = TRangeOfTypeNoCRef<R>> INTRA_NODISCARD const
 	CAccessibleRange<AsR>,
 RStride<AsR>> Stride(R&& range, size_t step)
 {return {ForwardAsRange<R>(range), step};}
-INTRA_CORE_RANGE_END
+INTRA_END

@@ -5,7 +5,7 @@
 #include "CArray.h"
 #include "Range/Concepts.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasPreIncrement, ++Val<T>());
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasPostIncrement, Val<T>()++);
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasPreDecrement, --Val<T>());
@@ -29,7 +29,7 @@ template<typename T> concept CInputIterator=
 	CCopyAssignable<T>;
 
 
-namespace RD {
+namespace D {
 
 template<typename R,
 	bool = CHasDereference<TRemoveConstRef<R>>
@@ -54,9 +54,9 @@ template<typename R> struct TIteratorOf<R, false> {typedef void _;};
 
 }
 
-template<typename R> using TIteratorReturnValueTypeOf = typename RD::TIteratorReturnValueTypeOf<R>::_;
-template<typename R> using TIteratorValueTypeOf = typename RD::TIteratorValueTypeOf<R>::_;
-template<typename R> using TIteratorOf = typename RD::TIteratorOf<R>::_;
+template<typename R> using TIteratorReturnValueTypeOf = typename D::TIteratorReturnValueTypeOf<R>::_;
+template<typename R> using TIteratorValueTypeOf = typename D::TIteratorValueTypeOf<R>::_;
+template<typename R> using TIteratorOf = typename D::TIteratorOf<R>::_;
 
 
 template<typename T> concept CMinimalBidirectionalIterator =
@@ -64,4 +64,4 @@ template<typename T> concept CMinimalBidirectionalIterator =
 	CHasPreDecrement<T> &&
 	CCopyConstructible<T> &&
 	CCopyAssignable<T>;
-INTRA_CORE_END
+INTRA_END

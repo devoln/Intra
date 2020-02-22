@@ -9,17 +9,17 @@
 #endif
 
 
-#include "Core/Runtime.h"
+#include "Core/Core.h"
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "String.h"
 
-#include "Core/Compatibility.h"
 #include "Test.hh"
 #include "Container/Sequential/String.h"
 #include "System/Stopwatch.h"
 
-#include "Core/Range/Output/Inserter.h"
+#include "Core/Range/Inserter.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -31,8 +31,6 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 
 using namespace Intra;
-using namespace IO;
-using namespace Range;
 
 template<typename String> double TestStringReading(uint times, size_t strsize)
 {
@@ -290,9 +288,9 @@ double TestStackStreamFormatting(uint times)
 	Stopwatch timer;
 	for(uint i=0; i<times; i++)
 	{
-		OutputArrayRange<char> strStream = stackBuffer;
+		SpanOutput<char> strStream = stackBuffer;
 		strStream << "int=" << i << ", double=" << 234.0963 << "!";
-		auto str = strStream.GetWrittenData();
+		auto str = strStream.WrittenRange();
 		(void)str;
 	}
 	return timer.ElapsedSeconds();

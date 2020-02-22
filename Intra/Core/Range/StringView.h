@@ -6,7 +6,7 @@
 #include "Core/Misc/RawMemory.h"
 #include "Core/CArray.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 
 //! Not-owning reference to string.
 template<typename Char> struct GenericStringView: Span<Char>
@@ -21,15 +21,16 @@ template<typename Char> struct GenericStringView: Span<Char>
 	//constexpr forceinline GenericStringView(const Span<Char>& span) noexcept: Span<Char>(span) {}
 
 	constexpr forceinline GenericStringView() = default;
+	constexpr forceinline GenericStringView(const GenericStringView&) = default;
+	constexpr forceinline GenericStringView(const Span<Char>& rhs): Span<Char>(rhs) {}
 	template<size_t N> INTRA_NODISCARD static constexpr forceinline GenericStringView FromBuffer(Char(&buffer)[N]) noexcept {return GenericStringView(buffer, N);}
 
 	//! Construct from null-terminated C-string.
 	//! Null terminator itself will not be a part of constructed view.
-	forceinline INTRA_MEM_CONSTEXPR GenericStringView(Char* cstr):
-		Span<Char>(cstr, cstr == null? 0: CStringLength(cstr)) {}
+	forceinline constexpr GenericStringView(Char* cstr):
+		Span<Char>(cstr, cstr == null? 0: Misc::CStringLength(cstr)) {}
 
-	//forceinline GenericStringView(Char* startPtr, Char* endPtr):
-		//Span<Char>(startPtr, endPtr) {}
+	static INTRA_NODISCARD constexpr forceinline GenericStringView FromPointerRange(Char* startPtr, Char* endPtr) {return Span<Char>::FromPointerRange(startPtr, endPtr);}
 
 	///@{
 	//! String comparison
@@ -38,15 +39,14 @@ template<typename Char> struct GenericStringView: Span<Char>
 		return (Empty() &&
 				(rhs == null || *rhs=='\0')) ||
 			(rhs != null &&
-				BitsEqual(Data(), rhs, Length()) &&
+				Misc::BitsEqual(Data(), rhs, Length()) &&
 				rhs[Length()] == '\0');
 	}
 
 	INTRA_NODISCARD constexpr forceinline bool operator==(const GenericStringView& rhs) const noexcept
 	{
 		return Length() == rhs.Length() &&
-			(Data() == rhs.Data() ||
-				Misc::BitsEqual(Data(), rhs.Data(), Length()));
+			Misc::BitsEqual(Data(), rhs.Data(), Length());
 	}
 
 	INTRA_NODISCARD constexpr forceinline bool operator!=(const GenericStringView& rhs) const noexcept {return !operator==(rhs);}
@@ -80,9 +80,9 @@ template<typename Char> struct GenericStringView: Span<Char>
 	INTRA_NODISCARD constexpr forceinline GenericStringView Take(size_t count) const noexcept {return Span<Char>::Take(count);}
 	INTRA_NODISCARD constexpr forceinline GenericStringView Tail(size_t count) const noexcept {return Span<Char>::Tail(count);}
 
-	INTRA_CONSTEXPR2 forceinline GenericStringView Find(Char c) const {return Span<Char>::Find(c);}
+	constexpr forceinline GenericStringView Find(Char c) const {return Span<Char>::Find(c);}
 
-	INTRA_CONSTEXPR2 forceinline GenericStringView Find(CSpan<Char> str) const {return Span<Char>::Find(str);}
+	constexpr forceinline GenericStringView Find(CSpan<Char> str) const {return Span<Char>::Find(str);}
 };
 
 typedef GenericStringView<const char> StringView;
@@ -100,10 +100,13 @@ static_assert(CNonInfiniteForwardRange<StringView>, "IsNonInfiniteForwardRange e
 static_assert(CAsNonInfiniteForwardRange<StringView>, "IsAsNonInfiniteForwardRange error!");
 static_assert(CAsFiniteForwardRange<CSpan<Tuple<StringView, StringView>>>, "IsAsFiniteForwardRange error!");
 static_assert(StringView::FromBuffer("IsNonInfiniteForwardRange") != StringView::FromBuffer("IsAsNonInfiniteForwardRange"), "TEST FAILED");
+
+constexpr auto ptr1 = "IsAsFiniteForwardRange";
+constexpr auto ptr2 = ptr1;
+static_assert(ptr1 == ptr2, "FAIL");
+
 static_assert(StringView::FromBuffer("IsAsFiniteForwardRange") == StringView::FromBuffer("IsAsFiniteForwardRange"), "TEST FAILED");
-#if !defined(_MSC_VER) || defined(INTRA_AGRESSIVE_CONSTEXPR) && INTRA_CONSTEXPR_TEST >= 201304
 static_assert(StringView::FromBuffer("IsAsFiniteForwardRange")(0, 10) == "IsAsFinite", "TEST FAILED");
 #endif
-#endif
 
-INTRA_CORE_RANGE_END
+INTRA_END

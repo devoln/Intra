@@ -13,8 +13,7 @@
 #include "Utils/IOutput.h"
 
 
-INTRA_CORE_BEGIN
-namespace Range {
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 
@@ -24,21 +23,21 @@ public:
 	template<typename A> forceinline OutputRangePolymorphicWrapper(A&& range):
 		OriginalRange(Forward<A>(range)) {}
 
-	bool Full() const final {return Range::EmptyOrFalse(OriginalRange);}
+	bool Full() const final {return EmptyOr(OriginalRange);}
 	void Put(const T& value) final {OriginalRange.Put(value);}
 
 	void Put(T&& value) final {OriginalRange.Put(Move(value));}
 
 	bool TryPut(const T& value) final
 	{
-		if(Range::EmptyOrFalse(OriginalRange)) return false;
+		if(EmptyOr(OriginalRange)) return false;
 		OriginalRange.Put(value);
 		return true;
 	}
 
 	bool TryPut(T&& value) final
 	{
-		if(Range::EmptyOrFalse(OriginalRange)) return false;
+		if(EmptyOr(OriginalRange)) return false;
 		OriginalRange.Put(Move(value));
 		return true;
 	}
@@ -56,7 +55,7 @@ template<typename T, typename R> forceinline IOutputEx<T>* WrapOutputRange(R&& r
 
 template<typename T> class OutputRange: public TSelect<
 	OutputStreamMixin<OutputRange<T>, TRemoveConst<T>>,
-	Core::EmptyType, CPod<T>>
+	EmptyType, CPod<T>>
 {
 	template<typename R> using EnableCondition = Requires<
 		CAsOutputRangeOf<R, T> &&
@@ -66,12 +65,12 @@ template<typename T> class OutputRange: public TSelect<
 public:
 	constexpr forceinline OutputRange(null_t=null) {}
 
-	INTRA_CONSTEXPR2 forceinline OutputRange(Unique<IOutputEx<T>> stream): Stream(Move(stream)) {}
+	constexpr forceinline OutputRange(Unique<IOutputEx<T>> stream): Stream(Move(stream)) {}
 
-	INTRA_CONSTEXPR2 forceinline OutputRange(OutputRange&& rhs):
+	constexpr forceinline OutputRange(OutputRange&& rhs):
 		Stream(Move(rhs.Stream)) {}
 
-	INTRA_CONSTEXPR2 forceinline OutputRange& operator=(OutputRange&& rhs)
+	constexpr forceinline OutputRange& operator=(OutputRange&& rhs)
 	{
 		Stream = Move(rhs.Stream);
 		return *this;
@@ -131,6 +130,4 @@ public:
 };
 
 typedef OutputRange<char> OutputStream;
-
-}
-INTRA_CORE_END
+INTRA_END

@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "Core/Numeric.h"
 #include "Core/Type.h"
 #include "Core/EachField.h"
 
@@ -12,7 +13,7 @@
 #include "Core/Range/Repeat.h"
 #include "Core/Range/Mutation/Copy.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 template<typename R, typename Char> Requires<
 	COutputCharRange<R> &&
@@ -41,12 +42,12 @@ template<typename R, typename X> Requires<
 	if(minus) minWidth--;
 	for(int i=0, s=int(minWidth - (rev - reversed)); i<s; i++)
 	{
-		if(FullOrFalse(dst)) return;
+		if(FullOr(dst)) return;
 		dst.Put(filler);
 	}
-	if(FullOrFalse(dst)) return;
+	if(FullOr(dst)) return;
 	if(minus) dst.Put(minus);
-	while(rev != reversed && !FullOrFalse(dst)) dst.Put(*--rev);
+	while(rev != reversed && !FullOr(dst)) dst.Put(*--rev);
 }
 
 template<typename R, typename X> Requires<
@@ -59,7 +60,7 @@ template<typename R, typename X> Requires<
 	char* rev = reversed;
 	do *rev++ = char(number % 10 + '0'), number /= 10;
 	while(number != 0);
-	while(rev != reversed && !FullOrFalse(dst)) dst.Put(*--rev);
+	while(rev != reversed && !FullOr(dst)) dst.Put(*--rev);
 }
 
 template<typename R, typename X> Requires<
@@ -82,12 +83,13 @@ template<typename R, typename X> forceinline Requires<
 
 template<typename R, typename X> Requires<
 	COutputCharRange<R> &&
-	CSignedIntegral<X>
+	CSignedIntegral<X> &&
+	!CChar<X>
 > ToString(R&& dst, X number)
 {
 	if(number < 0)
 	{
-		if(FullOrFalse(dst)) return;
+		if(FullOr(dst)) return;
 		dst.Put('-');
 		number = X(-number);
 	}
@@ -100,7 +102,7 @@ template<typename R, typename X, typename=Requires<
 >> void ToStringHexInt(R&& dst, X number)
 {
 	intptr digitPos = intptr(sizeof(X) * 2);
-	while(digitPos --> 0 && !FullOrFalse(dst))
+	while(digitPos --> 0 && !FullOr(dst))
 	{
 		int value = int(number >> (digitPos*4)) & 15;
 		if(value > 9) value += 'A'-10;
@@ -144,7 +146,7 @@ template<typename R> Requires<
 
 	if(number < 0)
 	{
-		if(FullOrFalse(dst)) return;
+		if(FullOr(dst)) return;
 		dst.Put('-');
 		number = -number;
 	}
@@ -160,11 +162,11 @@ template<typename R> Requires<
 
 	if(preciseness == 0) return;
 
-	if(FullOrFalse(dst)) return;
+	if(FullOr(dst)) return;
 	dst.Put(dot);
 	do
 	{
-		if(FullOrFalse(dst)) return;
+		if(FullOr(dst)) return;
 		fractional *= 10;
 		int digit = int(fractional);
 		fractional -= digit;
@@ -195,6 +197,6 @@ template<typename R> Requires<
 {
 	INTRA_DEBUG_ASSERT(byte(value) <= 1);
 	const char* str = value? "false": "true";
-	while(*str != '\0' && !FullOrFalse(dst)) dst.Put(*str++);
+	while(*str != '\0' && !FullOr(dst)) dst.Put(*str++);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

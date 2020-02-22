@@ -4,8 +4,9 @@
 #include "Core/Range/Concepts.h"
 #include "Core/Range/Operations.h"
 #include "Core/Range/Take.h"
+#include "Core/Misc/RawMemory.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 INTRA_WARNING_DISABLE_LOSING_CONVERSION
 
@@ -39,7 +40,7 @@ All function return ``n`` - number of copied elements that is the minimum Length
 /** Same as ReadWrite but without optimization for trivial types.
   May be faster for short arrays of trivial types where their length is not known at compile time.
 */
-template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -57,7 +58,7 @@ index_t> ReadWriteByOne(R& src, OR& dst)
 	return minLen;
 }
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR> constexpr Requires<
 	CInputRange<R> && !CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
 	(!CHasFull<OR> || CInfiniteRange<OR>),
@@ -74,18 +75,18 @@ index_t> ReadWriteByOne(R& src, OR& dst)
 }
 
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR> constexpr Requires<
 	CTrivCopyCompatibleArrayWith<R, OR>,
 index_t> ReadWrite(R& src, OR& dst)
 {
-	const index_t minLen = Min(src.Length(), dst.Length());
-	CopyBits(dst, src, minLen);
-	PopFirstExactly(src, minLen);
+	const auto minLen = FMin(LengthOf(src), LengthOf(dst));
+	Misc::CopyBits(DataOf(dst), DataOf(src), minLen);
 	PopFirstExactly(dst, minLen);
+	PopFirstExactly(src, minLen);
 	return minLen;
 }
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR> constexpr Requires<
 	!CTrivCopyCompatibleArrayWith<R, OR> &&
 	CInputRange<R> && !CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -95,7 +96,7 @@ template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
 index_t> ReadWrite(R& src, OR& dst)
 {return ReadWriteByOne(src, dst);}
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR> constexpr Requires<
 	!CTrivCopyCompatibleArrayWith<R, OR> &&
 	CNonInfiniteInputRange<R> &&
 	!CConst<R> &&
@@ -115,7 +116,7 @@ index_t> ReadWrite(R& src, OR& dst)
 	return minLen;
 }
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR> constexpr forceinline Requires<
 	CInputRange<R> && !CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
 	(!CInfiniteRange<R> || CHasFull<OR>) &&
@@ -124,7 +125,7 @@ template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
 index_t> ReadWrite(R& src, OR& dst)
 {return src.ReadWrite(dst);}
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR> constexpr forceinline Requires<
 	CInputRange<R> && !CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
 	(!CInfiniteRange<R> || CHasFull<OR>) &&
@@ -133,7 +134,7 @@ template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
 index_t> ReadWrite(R& src, OR& dst)
 {return dst.PutAllAdvance(src);}
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR> constexpr forceinline Requires<
 	CInputRange<R> && !CConst<R> &&
 	CAsOutputRangeOf<TRemoveConstRef<OR>, TValueTypeOf<R>> &&
 	(!CInfiniteRange<R> || CHasEmpty<TRangeOfType<OR>>),
@@ -146,7 +147,7 @@ index_t> ReadTo(R& src, OR&& dst)
 
 template<typename R, typename OR,
 	typename AsR = TRangeOfType<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CAccessibleRange<AsR> &&
 	COutputRangeOf<OR, TValueTypeOf<AsR>>,
 index_t> CopyToAdvanceByOne(R&& src, OR& dst)
@@ -157,7 +158,7 @@ index_t> CopyToAdvanceByOne(R&& src, OR& dst)
 
 template<typename R, typename OR,
 	typename AsR = TRangeOfType<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CAccessibleRange<AsR> &&
 	CHasPut<OR, TValueTypeOf<AsR>>,
 index_t> WriteTo(R&& src, OR& dst)
@@ -166,12 +167,12 @@ index_t> WriteTo(R&& src, OR& dst)
 	return ReadWrite(range, dst);
 }
 
-template<typename R, typename OR> INTRA_CONSTEXPR2 forceinline Requires<
-	CAsConsumableRange<R> &&
-	CAsOutputRange<TRemoveConst<OR>>,
+template<typename R, typename OR, typename AsR = TRangeOfType<R>, typename AsOR = TRangeOfType<OR>> constexpr forceinline Requires<
+	COutputRange<TRemoveConst<AsOR>> &&
+	(CConsumableRange<AsR> || CAccessibleRange<AsR> && CHasFull<AsOR>),
 index_t> CopyTo(R&& src, OR&& dst)
 {
 	auto dstCopy = ForwardAsRange<OR>(dst);
 	return WriteTo(ForwardAsRange<R>(src), dstCopy);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

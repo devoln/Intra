@@ -7,24 +7,22 @@
 #include "Core/Range/Search/Single.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
 //! Найти первое вхождение диапазона what в этот диапазон.
 //! Начало диапазона устанавливается на начало первого вхождения what или совпадает с концом, если диапазон не содержит what.
 //! \param what Искомый диапазон.
 //! \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
 //! \returns Возвращает ссылку на себя.
-template<typename R, typename RW> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename RW> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CNonInfiniteForwardRange<RW> &&
 	CEqualityComparable<TValueTypeOf<RW>, TValueTypeOf<R>>,
-R&> FindAdvance(R& range, const RW& what, size_t* ioIndex=null)
+R&> FindAdvance(R& range, const RW& what, Optional<index_t&> ioIndex = null)
 {
 	while(!range.Empty() && !StartsWith(range, what))
 	{
 		range.PopFirst();
-		if(ioIndex!=null) ++*ioIndex;
+		if(ioIndex) ioIndex.Unwrap()++;
 		FindAdvance(range, what.First(), ioIndex);
 	}
 	return range;
@@ -39,11 +37,11 @@ R&> FindAdvance(R& range, const RW& what, size_t* ioIndex=null)
 template<typename R, typename RW,
 	typename AsR = TRangeOfTypeNoCRef<R>,
 	typename AsRW = TRangeOfType<RW>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CConsumableRange<AsR> &&
 	CNonInfiniteForwardRange<AsRW> &&
 	CEqualityComparable<TValueTypeOf<AsRW>, TValueTypeOf<AsR>>,
-AsR> Find(R&& range, RW&& what, size_t* ioIndex=null)
+AsR> Find(R&& range, RW&& what, Optional<index_t&> ioIndex = null)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvance(rangeCopy, ForwardAsRange<RW>(what), ioIndex);
@@ -61,20 +59,20 @@ AsR> Find(R&& range, RW&& what, size_t* ioIndex=null)
 //! \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс найденного
 //! элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 //! \return Возвращает ссылку на себя.
-template<typename R, typename RWs> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	!CConst<R> &&
 	CNonInfiniteForwardRange<RWs> &&
 	!CConst<RWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<RWs>>,
-R&> FindAdvanceAnyAdvance(R& range, RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
+R&> FindAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
 {
 	auto subrangesCopy = subranges;
 	while(!range.Empty() && !StartsWithAnyAdvance(range, subranges, oSubrangeIndex))
 	{
 		subranges = subrangesCopy;
 		range.PopFirst();
-		if(ioIndex!=null) ++*ioIndex;
+		if(ioIndex) ioIndex.Unwrap()++;
 		FindAdvanceAny(range, FirstTransversal(subranges), ioIndex);
 	}
 	return range;
@@ -90,14 +88,14 @@ R&> FindAdvanceAnyAdvance(R& range, RWs& subranges, size_t* ioIndex=null, size_t
 //! \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс найденного
 //! элемента в диапазоне subranges. Если элемент не был найден, будет записано значение subranges.Count().
 //! \return Возвращает количество пройденных элементов.
-template<typename R, typename RWs> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<RWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<RWs>>,
-size_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, size_t* oSubrangeIndex=null)
+index_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
-	size_t index = 0;
-	FindAdvanceAnyAdvance(range, subranges, &index, oSubrangeIndex);
+	index_t index = 0;
+	FindAdvanceAnyAdvance(range, subranges, OptRef(index), oSubrangeIndex);
 	return index;
 }
 
@@ -112,11 +110,11 @@ size_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, size_t* oSubrangeI
 //! \return Возвращает ссылку на себя.
 template<typename R, typename RWs,
 	typename AsRWs = TRangeOfType<RWs>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<AsRWs>>,
-R&> FindAdvanceAny(R& range, RWs&& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
+R&> FindAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);
 	return FindAdvanceAnyAdvance(range, subrangesCopy, ioIndex, oSubrangeIndex);
@@ -131,14 +129,14 @@ R&> FindAdvanceAny(R& range, RWs&& subranges, size_t* ioIndex=null, size_t* oSub
 //! \return Возвращает количество пройденных элементов.
 template<typename R, typename RWs,
 	typename AsRWs = TRangeOfType<RWs>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<AsRWs>>,
-size_t> CountUntilAdvanceAny(R& range, RWs&& subranges, size_t* oSubrangeIndex=null)
+index_t> CountUntilAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
-	size_t index = 0;
-	FindAdvanceAny(range, ForwardAsRange<RWs>(subranges), &index, oSubrangeIndex);
+	index_t index = 0;
+	FindAdvanceAny(range, ForwardAsRange<RWs>(subranges), OptRef(index), oSubrangeIndex);
 	return index;
 }
 
@@ -159,8 +157,8 @@ template<typename R, typename RWs,
 	CNonInfiniteForwardRange<RWs> &&
 	!CConst<RWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<RWs>>,
-AsR> FindAnyAdvance(R&& range,
-	RWs& subranges, size_t* ioIndex=null, size_t* oSubrangeIndex=null)
+AsR> FindAnyAdvance(R&& range, RWs& subranges,
+	Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvanceAnyAdvance(rangeCopy, subranges, ioIndex, oSubrangeIndex);
@@ -174,14 +172,14 @@ AsR> FindAnyAdvance(R&& range,
 //! \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс
 //! найденного элемента в диапазоне subranges. Если элемент не был найден, будет записано значение subranges.Count().
 //! \return Возвращает количество пройденных элементов.
-template<typename R, typename RWs> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RWs> constexpr forceinline Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<RWs> &&
 	!CConst<RWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<RWs>>,
-size_t> CountUntilAnyAdvance(R&& range, RWs& subranges, size_t* oSubrangeIndex=null)
+index_t> CountUntilAnyAdvance(R&& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
-	size_t index = 0;
+	index_t index = 0;
 	FindAnyAdvance(ForwardAsRange<R>(range), subranges, &index, oSubrangeIndex);
 	return index;
 }
@@ -196,12 +194,12 @@ size_t> CountUntilAnyAdvance(R&& range, RWs& subranges, size_t* oSubrangeIndex=n
 template<typename R, typename RWs,
 	typename AsR = TRangeOfTypeNoCRef<R>,
 	typename AsRWs = TRangeOfType<RWs>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+> INTRA_NODISCARD constexpr forceinline Requires<
 	CNonInfiniteForwardRange<AsR> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<AsRWs>>,
 AsR> FindAny(R&& range, RWs&& subranges,
-	size_t* ioIndex=null, size_t* oWhatIndex=null)
+	Optional<index_t&> ioIndex = null, Optional<index_t&> oWhatIndex = null)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvanceAny(rangeCopy, ForwardAsRange<RWs>(subranges), ioIndex, oWhatIndex);
@@ -218,13 +216,13 @@ AsR> FindAny(R&& range, RWs&& subranges,
 template<typename R, typename RWs,
 	typename AsR = TRangeOfType<R>,
 	typename AsRWs = TRangeOfType<RWs>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CNonInfiniteForwardRange<AsR> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOf<AsRWs>>,
-size_t> CountUntilAny(R&& range, RWs&& subranges, size_t* oSubrangeIndex=null)
+index_t> CountUntilAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
-	size_t index = 0;
+	index_t index = 0;
 	FindAny(ForwardAsRange<R>(range), ForwardAsRange<RWs>(subranges), &index, oSubrangeIndex);
 	return index;
 }
@@ -238,15 +236,15 @@ size_t> CountUntilAny(R&& range, RWs&& subranges, size_t* oSubrangeIndex=null)
 //! \returns Возвращает количество пройденных элементов.
 template<typename R, typename RW,
 	typename AsRW = TRangeOfType<RW>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CNonInfiniteForwardRange<R> &&
 	!CConst<R> &&
 	CAsNonInfiniteForwardRange<RW> &&
 	CEqualityComparable<TValueTypeOf<AsRW>, TValueTypeOf<R>>,
-size_t> CountUntilAdvance(R& range, RW&& what)
+index_t> CountUntilAdvance(R& range, RW&& what)
 {
-	size_t index = 0;
-	FindAdvance(range, ForwardAsRange<RW>(what), &index);
+	index_t index = 0;
+	FindAdvance(range, ForwardAsRange<RW>(what), OptRef(index));
 	return index;
 }
 
@@ -256,7 +254,7 @@ size_t> CountUntilAdvance(R& range, RW&& what)
 template<typename R, typename RW,
 	typename AsR = TRangeOfType<R>,
 	typename AsRW = TRangeOfType<RW>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+> INTRA_NODISCARD constexpr forceinline Requires<
 	CNonInfiniteForwardRange<AsR> &&
 	CNonInfiniteForwardRange<AsRW> &&
 	CEqualityComparable<TValueTypeOf<AsRW>, TValueTypeOf<AsR>>,
@@ -267,7 +265,7 @@ size_t> CountUntil(R&& range, RW&& what)
 }
 	
 
-template<typename R, typename RW> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> INTRA_NODISCARD constexpr forceinline Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	CAsNonInfiniteForwardRange<RW>,
 bool> Contains(R&& range, RW&& what)
@@ -277,10 +275,10 @@ template<typename R, typename RW> Requires<
 	CNonInfiniteForwardRange<R> &&
 	!CConst<R> &&
 	CNonInfiniteForwardRange<RW>,
-size_t> CountAdvance(R& range, const RW& what)
+index_t> CountAdvance(R& range, const RW& what)
 {
-	size_t result = 0;
-	const size_t whatCount = Count(what);
+	index_t result = 0;
+	const index_t whatCount = Count(what);
 	while(FindAdvance(range, what), !range.Empty())
 	{
 		PopFirstExactly(range, whatCount);
@@ -292,11 +290,9 @@ size_t> CountAdvance(R& range, const RW& what)
 template<typename R, typename RW> forceinline Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	CAsNonInfiniteForwardRange<RW>,
-size_t> Count(R&& range, RW&& what)
+index_t> Count(R&& range, RW&& what)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return CountAdvance(rangeCopy, ForwardAsRange<RW>(what));
-}
-
 }
 INTRA_END

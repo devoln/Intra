@@ -1,16 +1,12 @@
 ﻿#pragma once
 
 #include "Core/Range/Concepts.h"
-
-
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
 namespace D {
 
-template<typename T, typename C> INTRA_CONSTEXPR2 void heap_shift_down(T arr[], size_t i, size_t j, C comparer)
+template<typename T, typename C> constexpr void heap_shift_down(T arr[], size_t i, size_t j, C comparer)
 {
 	while(i*2+1 < j)
 	{
@@ -32,9 +28,9 @@ template<typename T, typename C> INTRA_CONSTEXPR2 void heap_shift_down(T arr[], 
   3) Almost sorted ranges are sorted as slow as randomly ordered ranges;
   4) For Count(range) < few thousands ShellSort is faster.
 */
-template<typename R, typename C = TLess> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename C = TFLess> constexpr Requires<
 	CAssignableArrayClass<R>
-> HeapSort(R&& range, C comparer = Less)
+> HeapSort(R&& range, C comparer = FLess)
 {
 	// TODO: support any random access range
 	const size_t count = LengthOf(range);
@@ -50,7 +46,5 @@ template<typename R, typename C = TLess> INTRA_CONSTEXPR2 Requires<
 		Swap(range[0], range[i]);
 		D::heap_shift_down(DataOf(range), 0, i, comparer);
 	}
-}
-
 }
 INTRA_END

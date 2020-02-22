@@ -9,8 +9,6 @@
 */
 
 INTRA_BEGIN
-inline namespace Core {
-
 #ifdef __clang__
 #if __has_builtin(__type_pack_element) //Clang 3.9+
 #define INTRA_FAST_TUPLE_PACK_ELEMENT_SUPPORT
@@ -151,23 +149,22 @@ constexpr size_t TListFind<TList<Args...>, T, IndexFrom> = IndexFrom +
 (CSame<TFirst<Args...>, T>? 0: 1 + TListFind<TTail<Args...>, T, IndexFrom>);
 
 
-namespace D
-{
+namespace D {
 template<typename TL, size_t Begin, size_t Last> struct TListSlice_ {};
 template<size_t Begin, size_t Last> struct TListSlice_<TList<>, Begin, Last> {typedef TList<> _;};
-template<size_t Begin, typename... Args> struct TListSlice_<TList<Args...>, Begin, Begin>
-{typedef TList<TAtIndex<Begin, Args...>> _;};
+template<size_t BeginEqualsEnd, typename... Args> struct TListSlice_<TList<Args...>, BeginEqualsEnd, BeginEqualsEnd>
+{typedef TList<> _;};
 
-template<uint Begin, uint Last, typename... Args> struct TListSlice_<TList<Args...>, Begin, Last>
+template<uint Begin, uint End, typename... Args> struct TListSlice_<TList<Args...>, Begin, End>
 {
-	static_assert(Last >= Begin, "Invalid range!");
+	static_assert(End >= Begin, "Invalid range!");
 	typedef TListConcat<
-		typename TListSlice_<TList<Args...>, Begin, Last - 1>::_,
-		TList<TAtIndex<Last, Args...>>
+		typename TListSlice_<TList<Args...>, Begin, End - 1>::_,
+		TList<TAtIndex<End-1, Args...>>
 	> _;
 };
 }
-template<typename TL, size_t Begin, size_t End = TL::Length> using TListSlice = typename D::TListSlice_<TL, Begin, End-1>::_;
+template<typename TL, size_t Begin, size_t End = TL::Length> using TListSlice = typename D::TListSlice_<TL, Begin, End>::_;
 
 
 #if defined(__cpp_fold_expressions) && __cpp_fold_expressions >= 201603
@@ -223,7 +220,6 @@ template<template<typename...> class C, typename... Ts> struct TListUnpackTo_<TL
 template<class TL, template<typename> class Transform> using TListTransform = typename D::TListTransform_<TL, Transform>::_;
 template<class TL, template<typename, typename> class Transform, typename Arg> using TListTransform1 = typename D::TListTransform1_<TL, Transform, Arg>::_;
 template<class TL, template<typename...> class C> using TListUnpackTo = typename D::TListUnpackTo_<TL, C>::_;
-}
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(TListFind<TList<int, float, double>, int> == 0, "TEST FAILED!");
@@ -232,6 +228,7 @@ static_assert(TListFind<TList<int, float, double>, void> == 3, "TEST FAILED!");
 static_assert(CSame<TFirst<int, float, double>, int>, "TEST FAILED!");
 static_assert(CSame<TTail<int, float, double>, TList<float, double>>, "TEST FAILED!");
 static_assert(CSame<TListRemove<TList<int, float, double>, float>, TList<int, double>>, "TEST FAILED!");
+static_assert(CSame<TListSlice<TList<int, float, double, void>, 4, 4>, TList<>>, "TEST FAILED!");
 static_assert(CSame<TListSlice<TList<int, float, double, void>, 1, 3>, TList<float, double>>, "TEST FAILED!");
 static_assert(CSame<TListTransform<TList<int, const float, const double, void>, TRemoveConst>, TList<int, float, double, void>>, "TEST FAILED!");
 #endif

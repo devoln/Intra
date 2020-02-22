@@ -30,21 +30,14 @@ static_assert(Take(arr, 2).Get(2, 123) == 123, "TEST FAILED!");
 static_assert(!span.Drop().Empty(), "TEST FAILED!");
 static_assert(SpanOfPtr(&arr[0], 3)[0] == 54, "TEST FAILED!");
 static_assert(span.Drop(100) == null, "TEST FAILED!");
-
-#if !defined(_MSC_VER) || _MSC_VER >= 1920
 static_assert(span.Get(2, 123) == 83, "TEST FAILED!");
-#endif
-#if !defined(_MSC_VER) || _MSC_VER >= 1910
 static_assert(Take(arr, 3).Drop(2) == SpanOf(arr).Drop(2).Take(1), "TEST FAILED!");
 static_assert(span.Drop(1) == span.Tail(3), "TEST FAILED!");
 static_assert(span(1, 3) == span.Drop().Take(2), "TEST FAILED!");
-#endif
-
-#if INTRA_CONSTEXPR_TEST >= 201304
 static_assert(span.Find(83) == span.Drop(2), "TEST FAILED!");
 static_assert(span.Find(12) == null, "TEST FAILED!");
 static_assert(span.FindBefore(83) == span.Take(2), "TEST FAILED!");
-#endif
 }
 #endif
-}
+
+INTRA_END

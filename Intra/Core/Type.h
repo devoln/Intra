@@ -8,7 +8,7 @@
   3. Tools for working with metafunction classes
 */
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_LOSING_CONVERSION
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -28,10 +28,6 @@ struct UniFunctor {template<typename... Args> void operator()(Args&&...);};
   (void(f(args)), ...)
 */
 using TExpand = char[];
-
-using Core::TypeFromValue;
-using Core::FalseType;
-using Core::TrueType;
 
 template<typename T> struct AddReference
 {
@@ -66,6 +62,14 @@ struct NonCopyableType
 };
 
 template<typename T> struct WrapperStruct {T value;};
+template<typename T, index_t N = 0> struct TWrapper: T
+{
+	using T::T;
+	constexpr forceinline TWrapper(const T& base): T(base) {}
+	constexpr forceinline TWrapper(T&& base): T(Move(base)) {}
+	TWrapper(const TWrapper&) = default;
+	TWrapper(TWrapper&&) = default;
+};
 
 template<typename T> using AddLValueReference = typename AddReference<T>::LValue;
 template<typename T> using AddRValueReference = typename AddReference<T>::RValue;
@@ -192,21 +196,21 @@ template<typename T> EmptyType IsFunction__source(...);
 
 
 namespace D {
-template <class T, bool = CClass<T> ||
-                          CUnion<T> ||
-                          CSame<T, void> ||
-                          CReference<T> ||
-	                      CSame<TUnqual<T>, null_t>>
-constexpr bool CFunction = sizeof(D::IsFunction__test<T>(D::IsFunction__source<T>(0))) == 1;
-template <class T> constexpr bool CFunction<T, true> = false;
+template<class T, bool = CClass<T> ||
+	CUnion<T> ||
+	CSame<T, void> ||
+	CReference<T> ||
+	CSame<TUnqual<T>, null_t>>
+struct CFunctionT: TBool<sizeof(D::IsFunction__test<T>(D::IsFunction__source<T>(0))) == 1> {};
+template<class T> struct CFunctionT<T, true>: FalseType {};
 }
-template <class T> concept CFunction = D::CFunction<T>;
+template<class T> concept CFunction = D::CFunctionT<T>::_;
 
-template<class T, size_t N=0> constexpr size_t ArrayExtent = 0;
-template<class T> constexpr size_t ArrayExtent<T[], 0> = 0;
-template<class T, size_t N> constexpr size_t ArrayExtent<T[], N> = ArrayExtent<T, N-1>;
-template<class T, size_t N> constexpr size_t ArrayExtent<T[N], 0> = N;
-template<class T, size_t I, size_t N> constexpr size_t ArrayExtent<T[I], N> = ArrayExtent<T, N-1>;
+template<class T, index_t N = 0> constexpr index_t ArrayExtent = 0;
+template<class T> constexpr index_t ArrayExtent<T[], 0> = 0;
+template<class T, index_t N> constexpr index_t ArrayExtent<T[], N> = ArrayExtent<T, N-1>;
+template<class T, index_t N> constexpr index_t ArrayExtent<T[N], 0> = N;
+template<class T, index_t I, index_t N> constexpr index_t ArrayExtent<T[I], N> = ArrayExtent<T, N-1>;
 
 namespace D {
 template<typename T> struct TDecay_
@@ -278,6 +282,9 @@ template<typename T> constexpr bool CPlainPointer<T*> = true;
 template<typename T> constexpr bool CPlainMemberPointer = false;
 template<typename T, class U> constexpr bool CPlainMemberPointer<T U::*> = true;
 
+template<typename T> constexpr bool CPlainMethodPointer = false;
+template<typename T, typename U> constexpr bool CPlainMethodPointer<T U::*> = CFunction<T>;
+
 template<typename T> concept CSigned = CPlainSigned<TUnqual<T>>;
 template<typename T> concept CIntegral = CPlainIntegral<TUnqual<T>>;
 template<typename T> concept CSignedIntegral = CPlainSignedIntegral<TUnqual<T>>;
@@ -289,6 +296,7 @@ template<typename T> concept CArithmetic = CPlainArithmetic<TUnqual<T>>;
 
 template<typename T> concept CPointer = CPlainPointer<TUnqual<T>>;
 template<typename T> concept CMemberPointer = CPlainMemberPointer<TUnqual<T>>;
+template<typename T> concept CMethodPointer = CPlainMethodPointer<TUnqual<T>>;
 
 
 namespace D {
@@ -487,13 +495,11 @@ template<typename T> concept CTriviallyCopyConstructible = CTriviallyConstructib
 template<typename T> concept CTriviallyDefaultConstructible = CTriviallyConstructible<T>;
 template<typename T> concept CTriviallyMoveConstructible = CTriviallyConstructible<T, AddRValueReference<T>>;
 
-namespace D {
-struct is_callable_base {
-	template<typename T, typename... Args> static decltype((Val<TRemoveReference<T>>()(Val<Args>()...)), short()) func(::Intra::TRemoveReference<T>*);
+struct D_impl_CCallable {
+	template<typename T, typename... Args> static decltype((Val<TRemoveReference<T>>()(Val<Args>()...)), short()) func(TRemoveReference<T>*);
 	template<typename T, typename... Args> static char func(...);
 };
-}
-template<typename T, typename... Args> concept CCallable = sizeof(D::is_callable_base::func<T, Args...>(null)) == sizeof(short);
+template<typename T, typename... Args> concept CCallable = sizeof(D_impl_CCallable::func<T, Args...>(null)) == sizeof(short);
 
 
 template<typename T, typename... Args> using TResultOf = decltype(Val<TRemoveReference<T>>()(Val<Args>()...));
@@ -506,7 +512,7 @@ template<typename T, typename... Args> using TResultOfOrVoid = typename D::TResu
 
 
 #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER) && _MSC_VER < 1900
-INTRA_DEFINE_CONCEPT_REQUIRES(CAssignable, Val<T1>() = Val<T2>());
+INTRA_DEFINE_CONCEPT_REQUIRES2(CAssignable, Val<T1>() = Val<T2>(),,);
 #else
 template<typename To, typename From> concept CAssignable = __is_assignable(To, From);
 #endif
@@ -539,7 +545,7 @@ template<typename T> concept CTriviallyMovable =
   It is true for most containers. You can make a bitwise copy of a container object without calling the move constructor and the destructor of source.
   Specialize IsTriviallyRelocatable for such types after their definition.
 */
-template<typename T> constexpr bool IsTriviallyRelocatable = IsTriviallyMovable<T>;
+template<typename T> constexpr bool IsTriviallyRelocatable = CTriviallyMovable<T>;
 template<typename T> concept CTriviallyRelocatable = IsTriviallyRelocatable<T>;
 
 /** CAlmostPod is useful to check if a type can be trivially binary serialized and deserialized. It includes:
@@ -561,8 +567,8 @@ template<class T> struct TRequires<true, T> {typedef T _;};
 template<bool COND, typename T = void> using Requires = typename D::TRequires<COND, T>::_;
 
 template<typename T1, typename T2> concept CSameUnqual = CSame<TUnqual<T1>, TUnqual<T2>>;
-template<typename T1, typename T2> concept CSameIgnoreCVRef = CSameUnqual<TRemoveReference<T1>, TRemoveReference<T2>> {};
-template<typename T1, typename T2> concept CSameIgnoreRef = CSame<TRemoveReference<T1>, TRemoveReference<T2>> {};
+template<typename T1, typename T2> concept CSameIgnoreCVRef = CSameUnqual<TRemoveReference<T1>, TRemoveReference<T2>>;
+template<typename T1, typename T2> concept CSameIgnoreRef = CSame<TRemoveReference<T1>, TRemoveReference<T2>>;
 
 
 #ifdef _MSC_VER
@@ -641,10 +647,10 @@ template<typename T, typename U, typename... V> struct TCommonRef_<T, U, V...>
 }
 
 //! Common type without const\volatile and references.
-template<typename... Types> using TCommon = typename Core::D::TCommon_<Types...>::_;
+template<typename... Types> using TCommon = typename D::TCommon_<Types...>::_;
 
 //! Common type preserving references and const.
-template<typename... Types> using TCommonRef = typename Core::D::TCommonRef_<Types...>::_;
+template<typename... Types> using TCommonRef = typename D::TCommonRef_<Types...>::_;
 
 /** Core function classes.
   @see http://ericniebler.com/2014/11/13/tiny-metaprogramming-library/ for more information.
@@ -677,7 +683,7 @@ template<typename T> struct TMetaAlways {template<typename...> using Apply = T;}
 		template<typename C> static short& test(C*);\
 	public: enum: bool {_ = sizeof(test<Derived>(null)) == sizeof(short)}; \
 	};\
-	template<typename T> class checker_name<T, ::Intra::Core::Requires<!CClass<T>>>\
+	template<typename T> class checker_name<T, ::Intra::Requires<!CClass<T>>>\
 	{\
 		public: enum: bool {_ = false}; \
 	};
@@ -734,7 +740,7 @@ struct TFinallyMaker
 /** Execute a statement block after leaving the current scope for any reason: normal or exception.
   usage: INTRA_FINALLY{<code block>};
 */
-#define INTRA_FINALLY auto INTRA_CONCATENATE_TOKENS(finally__, INTRA_UNIQUE_NUMBER) = ::Intra::Utils::D::TFinallyMaker() = [&]()->void
+#define INTRA_FINALLY auto INTRA_CONCATENATE_TOKENS(finally__, INTRA_UNIQUE_NUMBER) = ::Intra::D::TFinallyMaker() = [&]()->void
 
 class AnyPtr
 {
@@ -771,4 +777,4 @@ template<class T> forceinline T* AddressOf(T& arg) noexcept
 static_assert(CArrayType<TRemoveReference<const char(&)[9]>>, "TEST FAILED!");
 // TODO: add more tests
 #endif
-INTRA_CORE_END
+INTRA_END

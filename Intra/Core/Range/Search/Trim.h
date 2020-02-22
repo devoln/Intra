@@ -1,14 +1,10 @@
 ﻿#pragma once
 
-
 #include "Core/Range/Concepts.h"
 
-
 INTRA_BEGIN
-inline namespace Range {
-
 //! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, равных x.
-template<typename R, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename X> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CConvertible<X, TValueTypeOf<R>>,
@@ -21,7 +17,7 @@ R&> TrimLeftAdvance(R& range, const X& x)
 	
 //! Последовательно удаляет элементы из начала диапазона, пока выполняется предикат pred.
 //! Останавливается на первом элементе, для которого это условие не выполнено.
-template<typename R, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename P> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CCallable<P, TValueTypeOf<R>>,
@@ -35,7 +31,7 @@ R&> TrimLeftAdvance(R& range, P pred)
 //! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов:
 //! 1) которые равны valOrPred.
 //! 2) для которых выполнен предикат valOrPred.
-template<typename R, typename X> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename X> constexpr forceinline Requires<
 	CAsAccessibleRange<R> &&
 	(CConvertible<X, TValueTypeOfAs<R>> ||
 		CCallable<X, TValueTypeOfAs<R>>),
@@ -47,7 +43,7 @@ TRangeOfTypeNoCRef<R&&>> TrimLeft(R&& range, const X& valOrPred)
 }
 
 //! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, равных x.
-template<typename R, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename X> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
 	CConvertible<X, TValueTypeOf<R>>,
@@ -59,7 +55,7 @@ R&> TrimRightAdvance(R& range, X x)
 }
 
 //! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, для которых выполнен предикат pred.
-template<typename R, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename P> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
 	CCallable<P, TValueTypeOf<R>>,
@@ -72,7 +68,7 @@ R&> TrimRightAdvance(R& range, P pred)
 
 //! Возвращает диапазон, полученный из этого диапазона удалением всех первых последних символов,
 //! для которых выполнен предикат valOrPred, если это предикат, или который равен valOrPred, если это не предикат.
-template<typename R, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename X> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
 	(CConvertible<X, TValueTypeOf<R>> ||
@@ -88,7 +84,7 @@ R&> TrimAdvance(R& range, X valOrPred)
 template<typename R, typename X,
 	typename AsR = TRangeOfTypeNoCRef<R>,
 	typename T = TValueTypeOf<AsR>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+> INTRA_NODISCARD constexpr Requires<
 	CBidirectionalRange<AsR> &&
 	(CConvertible<X, T> ||
 		CCallable<X, T>),
@@ -112,6 +108,4 @@ template<typename R, typename X,
 		CCallable<X, T>),
 AsR> Trim(R&& range, X x)
 {return TrimRight(TrimLeft(ForwardAsRange<R>(range), x), x);}
-
-}
 INTRA_END

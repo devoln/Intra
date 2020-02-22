@@ -30,7 +30,7 @@ struct Envelope
 		forceinline bool IsNoOp() const {return IsConstant() && Volume == 1;}
 		forceinline void Advance(size_t samples)
 		{
-			if(Exponential) Volume *= Math::PowInt(DU, int(samples));
+			if(Exponential) Volume *= PowInt(DU, int(samples));
 			else Volume += DU*float(samples);
 			SamplesLeft -= unsigned(samples);
 		}
@@ -52,7 +52,7 @@ struct Envelope
 		forceinline float CalcDU(float curVolume) const
 		{
 			if(Length == 0) return Exponential? 1.0f: 0.0f;
-			if(Exponential) return Intra::Math::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
+			if(Exponential) return Intra::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
 			return (Volume / 255.0f - curVolume) / Length;
 		}
 
@@ -61,7 +61,7 @@ struct Envelope
 		forceinline void SetVolume(float volume)
 		{
 			Volume = unsigned(Exponential?
-				Intra::Math::Max(volume * 256.0f - 1.0f, 0.0f):
+				Intra::Max(volume * 256.0f - 1.0f, 0.0f):
 				volume*255.0f);
 		}
 	};
@@ -175,7 +175,7 @@ struct EnvelopeFactory
 	{
 		EnvelopeFactory result;
 		for(int i = 0; i < N; i++) result.Segments[i] = {false, volume, 0};
-		result.Segments[N - 1].Duration = Intra::Math::Infinity;
+		result.Segments[N - 1].Duration = Intra::Infinity;
 		return result;
 	}
 
@@ -186,7 +186,7 @@ struct EnvelopeFactory
 		for(int i = 0; i < N - 4; i++) result.Segments[i] = {false, 0, 0};
 		result.Segments[N - 4] = {exponential, 1, attackTime};
 		result.Segments[N - 3] = {exponential, sustainVolume, decayTime};
-		result.Segments[N - 2] = {false, sustainVolume, Intra::Math::Infinity};
+		result.Segments[N - 2] = {false, sustainVolume, Intra::Infinity};
 		result.Segments[N - 1] = {exponential, 1, releaseTime};
 		return result;
 	}
@@ -204,7 +204,7 @@ struct EnvelopeFactory
 		resSeg.SamplesLeft = startSeg.LengthInSamples(sampleRate);
 		resSeg.Volume = StartVolume;
 		resSeg.DU = startSeg.Exponential?
-			Intra::Math::Pow(startSeg.EndVolume / StartVolume, 1.0f / resSeg.SamplesLeft):
+			Intra::Pow(startSeg.EndVolume / StartVolume, 1.0f / resSeg.SamplesLeft):
 			(startSeg.EndVolume - StartVolume) / resSeg.SamplesLeft;
 
 		for(int i = startIndex; i < N - 1; i++)

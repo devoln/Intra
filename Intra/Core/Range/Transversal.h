@@ -3,7 +3,7 @@
 
 
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 template<typename Rs> struct RFirstTransversal
 {
@@ -13,7 +13,7 @@ template<typename Rs> struct RFirstTransversal
 
 	forceinline RFirstTransversal() = default;
 
-	INTRA_CONSTEXPR2 forceinline RFirstTransversal(Rs rangeOfRanges):
+	constexpr forceinline RFirstTransversal(Rs rangeOfRanges):
 		mRanges(Move(rangeOfRanges)) {skip_empty();}
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return mRanges.Empty();}
@@ -21,19 +21,19 @@ template<typename Rs> struct RFirstTransversal
 	INTRA_NODISCARD constexpr forceinline decltype(auto) First() const {return mRanges.First().First();}
 	INTRA_NODISCARD constexpr forceinline decltype(auto) FirstRange() const {return mRanges.First();}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		mRanges.PopFirst();
 		skip_empty();
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 auto Last() const
+	INTRA_NODISCARD constexpr auto Last() const
 	{
 		while(mRanges.Last().Empty()) mRanges.PopLast();
 		return mRanges.Last().First();
 	}
 
-	INTRA_CONSTEXPR2 void PopLast()
+	constexpr void PopLast()
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		while(mRanges.Last().Empty()) mRanges.PopLast();
@@ -43,7 +43,7 @@ template<typename Rs> struct RFirstTransversal
 private:
 	mutable Rs mRanges;
 
-	INTRA_CONSTEXPR2 void skip_empty() {while(!Empty() && mRanges.First().Empty()) mRanges.PopFirst();}
+	constexpr void skip_empty() {while(!Empty() && mRanges.First().Empty()) mRanges.PopFirst();}
 };
 
 template<typename R,
@@ -53,4 +53,4 @@ template<typename R,
 	CAsInputRange<TValueTypeOf<AsR>>,
 RFirstTransversal<TRemoveConstRef<AsR>>> FirstTransversal(R&& range)
 {return ForwardAsRange<R>(range);}
-INTRA_CORE_RANGE_END
+INTRA_END

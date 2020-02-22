@@ -11,8 +11,8 @@
      placement new (with slightly different syntax), initializer lists.
 */
 
-#if __cplusplus < 201305 && (!defined(_MSC_VER) || _MSC_VER < 1900)
-#error Intra library requires C++14 or above! Supported compilers are: GCC 5.3+ (-std=c++14), Clang 3.5+ (-std=c++14), MSVC 2015+
+#if __cplusplus < 201305 && (!defined(_MSC_VER) || _MSC_VER < 1910)
+#error Intra library requires C++14 or above! Please, use GCC 5.3 (-std=c++14), Clang 3.5 (-std=c++14), MSVC 2017 or higher
 //TODO: and ICC 17+.
 #endif
 
@@ -44,13 +44,11 @@
 
 #if defined(__GNUC__) && !defined(__clang__)
 
-#define INTRA_COMPILER_IS_GCC
-
 // GCC supports constexpr math functions as a non-standard extension: both <cmath> and __builtin_*
 #define INTRA_MATH_CONSTEXPR_SUPPORT
-#define INTRA_CONSTEXPR_BUILTIN_MEM_SUPPORT
+#define INTRA_CONSTEXPR_BUILTIN_MEMCMP_SUPPORT
+#define INTRA_CONSTEXPR_BUILTIN_STRLEN_SUPPORT
 #define INTRA_ASSUME_ALIGNED(ptr, alignmentBytes) static_cast<decltype(+ptr)>(__builtin_assume_aligned(ptr, alignmentBytes))
-#define INTRA_THREAD_LOCAL_SUPPORT
 #define INTRA_SOURCE_LOCATION_SUPPORT
 
 #if __GNUC__ >= 9
@@ -78,11 +76,10 @@
 
 #elif defined(__clang__)
 
-#define INTRA_THREAD_LOCAL_SUPPORT
-#define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT
+#define INTRA_CONSTEXPR_BUILTIN_STRLEN_SUPPORT
 
 #if __has_feature(cxx_constexpr_string_builtins) //Supported since Clang 4.0
-#define INTRA_CONSTEXPR_BUILTIN_MEM_SUPPORT
+#define INTRA_CONSTEXPR_BUILTIN_MEMCMP_SUPPORT
 #endif
 
 #if __has_builtin(__builtin_is_constant_evaluated)
@@ -107,66 +104,53 @@
 
 #elif defined(_MSC_VER) && !defined(__GNUC__)
 
-//No need to define feature test macros for features introduces after VS 2017 15.8
+//No need to define feature test macros for features introduced after VS 2017 15.8
 #if INTRA_EMULATE_FEATURE_TEST_MACROS
 
-#if _MSC_VER >= 1914 //Visual Studio 2017 15.7
+#if _MSC_VER >= 1914 && _MSVC_LANG >= 201703 //Visual Studio 2017 15.7
 #define __cpp_inheriting_constructors 201511
 #define __cpp_variadic_using 201611
 #define __cpp_deduction_guides 201703
+#define INTRA_CONSTEXPR_BUILTIN_MEMCMP_SUPPORT
+#define INTRA_CONSTEXPR_BUILTIN_STRLEN_SUPPORT
+#else
+#define __cpp_inheriting_constructors 200802
 #endif
 
-#if _MSC_VER >= 1911 //Visual Studio 2017 15.3
-#if _MSVC_LANG > 201402
+#if _MSC_VER >= 1911 && _MSVC_LANG >= 201703 //Visual Studio 2017 15.3
 #define INTRA_NODISCARD [[nodiscard]]
 #define INTRA_MAYBE_UNUSED [[maybe_unused]]
 #endif
-#endif
 
-#if _MSC_VER >= 1910 //Visual Studio 2017
+#if _MSVC_LANG >= 201703
 #define __cpp_range_based_for 201603
-#define __cpp_constexpr 201304
 #define __cpp_static_assert 201411
+#else
+#define __cpp_range_based_for 200907
+#define __cpp_static_assert 200410
 #endif
 
+#define __cpp_constexpr 201304
 #define __cpp_variable_templates 201304
 #define __cpp_unicode_characters 200704
 #define __cpp_user_defined_literals 200809
 #define __cpp_return_type_deduction 201304
 #define __cpp_unicode_literals 200710
 #define __cpp_attributes 200809
-
-#ifndef __cpp_constexpr
-#define __cpp_constexpr 200704
-#endif
-
-#ifndef __cpp_inheriting_constructors
-#define __cpp_inheriting_constructors 200802
-#endif
-
 #define __cpp_nsdmi 200809
 #define __cpp_initializer_lists 200806
 #define __cpp_raw_strings 200710
 #define __cpp_alias_templates 200704
 #define __cpp_variadic_templates 200704
 #define __cpp_explicit_conversion 200710
-#define __cpp_range_based_for 200907
-#define __cpp_static_assert 200410
 #endif
-
-#if _MSC_VER >= 1914
-#define INTRA_EXPRESSION_SFINAE_SUPPORT
-#endif
-
-#define INTRA_THREAD_LOCAL_SUPPORT
-#define INTRA_PARTIAL_THREAD_LOCAL_SUPPORT
 
 #ifndef forceinline
 #define forceinline __forceinline
 #endif
 
 #ifndef INTRA_OPTIMIZE_FUNCTION
-#define INTRA_OPTIMIZE_FUNCTION(...) __pragma(optimize("gty", on)) __VA_ARGS__
+#define INTRA_OPTIMIZE_FUNCTION(...) __pragma(optimize("gt", on)) __VA_ARGS__ //gty
 #define INTRA_OPTIMIZE_FUNCTION_END __pragma(optimize("", on))
 #endif
 
@@ -204,20 +188,11 @@
 #define forceinline inline
 #endif
 
-//constexpr only if relaxed constexpr is supported
-#if defined(__cpp_constexpr) && __cpp_constexpr >= 201304
-#define INTRA_CONSTEXPR2 constexpr
-#else
-#define INTRA_CONSTEXPR2
-#endif
-
 // The folowing definitions are used by this library to define functions that can be constexpr depending on standard math functions' constexprness
 #ifdef INTRA_MATH_CONSTEXPR_SUPPORT
 #define INTRA_MATH_CONSTEXPR constexpr
-#define INTRA_MATH_CONSTEXPR2 INTRA_CONSTEXPR2
 #else
 #define INTRA_MATH_CONSTEXPR
-#define INTRA_MATH_CONSTEXPR2
 #endif
 
 //constexpr only if constexpr lambdas are supported
@@ -225,12 +200,6 @@
 #define INTRA_CONSTEXPR3 constexpr
 #else
 #define INTRA_CONSTEXPR3
-#endif
-
-#ifndef INTRA_THREAD_LOCAL_SUPPORT
-#define INTRA_OPTIONAL_THREAD_LOCAL
-#else
-#define INTRA_OPTIONAL_THREAD_LOCAL thread_local
 #endif
 
 #ifndef __cpp_exceptions
@@ -243,7 +212,7 @@
 //partially emulate concepts
 #define concept constexpr bool
 #elif defined(__GNUC__) && !defined(__clang__) && __GNUC__ <= 8
-//older GCC concepts does not support modern syntax without bool, emulate modern syntax
+//older GCC concepts do not support modern syntax without bool, emulate modern syntax
 #define concept concept bool
 #endif
 
@@ -266,19 +235,19 @@
 #endif
 
 #ifdef _MSC_VER
+#define INTRA_EMPTY_BASES __declspec(empty_bases)
 #define INTRA_NOVTABLE  __declspec(novtable)
+#define INTRA_CRTDECL __cdecl //Used to import functions from CRT without including its headers
 #if(defined(INTRA_SIMD_LEVEL) && INTRA_SIMD_LEVEL != 0)
 #define INTRA_VECTORCALL __vectorcall
 #else
 #define INTRA_VECTORCALL
 #endif
 #else
+#define INTRA_EMPTY_BASES
 #define INTRA_NOVTABLE
 #define INTRA_VECTORCALL
-#endif
-
-#if defined(_MSC_VER) && _MSC_VER >= 1900
-#define INTRA_EMPTY_BASES __declspec(empty_bases)
+#define INTRA_CRTDECL
 #endif
 
 #ifdef _MSC_VER
@@ -309,9 +278,8 @@
   @brief If constexpr tests are enabled it is defined to compiler supported constexpr version value.
 
   If constexpr is supported tests are enabled by default. Possible values:
-  1) 200704 for C++11
-  2) 201304 for C++14
-  3) 201603 for C++17
+  1) 201304 for C++14
+  2) 201603 for C++17
   To disable constexpr tests use #define INTRA_CONSTEXPR_TEST 0
 */
 #define INTRA_CONSTEXPR_TEST __cpp_constexpr
@@ -320,7 +288,7 @@
 #define INTRA_CHECK_TABLE_SIZE(table, expectedSize) static_assert(\
 	sizeof(table)/sizeof(table[0]) == size_t(expectedSize), "Table is outdated!")
 
-#if defined _WIN32 || defined __CYGWIN__
+#if defined(_WIN32) || defined(__CYGWIN__)
 #define INTRA_DLL_IMPORT __declspec(dllimport)
 #define INTRA_DLL_EXPORT __declspec(dllexport)
 #define INTRA_DLL_LOCAL
@@ -511,110 +479,40 @@
 #endif
 #endif
 
+#define INTRA_PREPROCESSOR_QUOTE(x) #x
+#define INTRA_DETAIL_CONCATENATE_TOKENS(x, y) x ## y
+#define INTRA_CONCATENATE_TOKENS(x, y) INTRA_DETAIL_CONCATENATE_TOKENS(x, y)
+
 #if defined(_MSC_VER) && !defined(__clang__) && !defined(__GNUC__)
-#if _MSC_VER >= 1920 //Visual Studio 2019 has no XP toolkit version
+#if _MSC_VER >= 1920 //Visual Studio 2019 has no Windows XP toolkit version
 #define INTRA_DROP_XP_SUPPORT
 #endif
 #endif
 
+#ifdef __clang__
+#define INTRAZ_D_COMPILER_DIAGNOSTIC_NAME clang
+#elif defined(__GNUC__)
+#define INTRAZ_D_COMPILER_DIAGNOSTIC_NAME GCC
+#endif
 
-
-#ifdef _MSC_VER
-#define INTRA_WARNING_DISABLE_CATCH_ALL __pragma(warning(disable: 4571))
-
-#define INTRA_WARNING_PUSH __pragma(warning(push))
-#define INTRA_WARNING_POP __pragma(warning(pop))
-
-#if _MSC_VER >= 1900
-#define INTRA_REDUNDANT_WARNINGS_MSVC1900 4577 4868
-//4577 - noexcept when compiling with exceptions disabled
-//4868 - compiler may not enforce left-to-right evaluation order in braced initializer list
-
-#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED \
-	__pragma(warning(disable: 5026 5027))
+#if defined(__clang__) || defined(__GNUC__)
+#define INTRA_WARNING_PUSH _Pragma(INTRA_PREPROCESSOR_QUOTE(INTRA_COMPILER_DIAGNOSTIC_NAME) " diagnostic push")
+#define INTRA_WARNING_POP _Pragma(INTRA_PREPROCESSOR_QUOTE(INTRA_COMPILER_DIAGNOSTIC_NAME) " diagnostic pop")
+#ifdef INTRA_WARNINGS_AS_ERRORS
+#define INTRAZ_D_DIAGNOSTIC_MODE error
 #else
-#define INTRA_REDUNDANT_WARNINGS_MSVC1900
-#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
+#define INTRAZ_D_DIAGNOSTIC_MODE enable
 #endif
+#define INTRAZ_D_WARNING_HELPER(mode, x) INTRA_PREPROCESSOR_QUOTE(INTRAZ_D_COMPILER_DIAGNOSTIC_NAME diagnostic mode x)
+#define INTRAZ_D_IGNORE_WARNING_HELPER(y) INTRA_DETAIL_WARNING_HELPER(ignored, #y)
+#define INTRA_IGNORE_WARNING(x) _Pragma(INTRA_DETAIL_IGNORE_WARNING_HELPER(-W ## x))
+#define INTRAZ_D_ENABLE_WARNING_HELPER(mode, y) INTRA_DETAIL_WARNING_HELPER(mode, #y)
+#define INTRA_ENABLE_WARNING(x) _Pragma(INTRAZ_D_ENABLE_WARNING_HELPER, (-W ## x))
+#define INTRA_ENABLE_WARNING_NO_ERROR(x) _Pragma(INTRAZ_D_ENABLE_WARNING_HELPER(enable, -W ## x))
 
-#if _MSC_VER >= 1914
-#define INTRA_REDUNDANT_WARNINGS_MSVC1914 5045
-//5045 - Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#else
-#define INTRA_REDUNDANT_WARNINGS_MSVC1914
-#endif
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC_CLANG INTRA_IGNORE_WARNING(ctor-dtor-privacy)
 
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR __pragma(warning(disable : 4265))
-
-//TODO: find a way to remove this
-#pragma warning(disable: 4514 4710 4714) //these warnings cannot be removed locally
-
-#define INTRA_DISABLE_REDUNDANT_WARNINGS \
-	__pragma(warning(disable: 4514 4710 4714 4820 4711 INTRA_REDUNDANT_WARNINGS_MSVC1900 INTRA_REDUNDANT_WARNINGS_MSVC1914))
-//4514 - unused inline function
-//4710 - function not inlined
-//4714 - cannot inline forceinline function
-//4820 - bytes padding added after construct
-//4711 - function selected for inline expansion
-
-#define INTRA_WARNING_DISABLE_UNHANDLED_ENUM_CASES __pragma(warning(disable: 4061))
-
-#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED __pragma(warning(disable: 4625 4626 4512))
-
-#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED __pragma(warning(disable: 4510 4610 4623))
-
-#define INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED __pragma(warning(disable: 4626 5027))
-
-#define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
-#define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
-#define INTRA_WARNING_DISABLE_UNREACHABLE_CODE __pragma(warning(disable: 4702))
-#define INTRA_WARNING_DISABLE_CONSTANT_CONDITION __pragma(warning(disable: 4127))
-#define INTRA_DISABLE_WARNING_STD_DECLARATION __pragma(warning(disable: 4643))
-
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) \
-	__pragma(warning(disable: 4548 4987 4774 4702 4355 4738 4571)) \
-	INTRA_WARNING_DISABLE_LOSING_CONVERSION \
-	INTRA_WARNING_DISABLE_SIGN_CONVERSION \
-	INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
-
-#ifndef __clang__
-
-#ifndef INTRA_CONCATENATE_TOKENS
-#define INTRA_DETAIL_CONCATENATE_TOKENS(x, y) x ## y
-#define INTRA_CONCATENATE_TOKENS(x, y) INTRA_DETAIL_CONCATENATE_TOKENS(x, y)
-#endif
-
-#define INTRA_DISABLE_LNK4221 namespace {char INTRA_CONCATENATE_TOKENS($DisableLNK4221__, __LINE__);}
-
-#endif
-
-#elif defined(__GNUC__) && !defined(__clang__)
-#define INTRA_WARNING_PUSH _Pragma("GCC diagnostic push")
-#define INTRA_WARNING_POP _Pragma("GCC diagnostic pop")
-
-#define INTRA_IGNORE_WARNING_HELPER0(x) #x
-#define INTRA_IGNORE_WARNING_HELPER1(x) INTRA_IGNORE_WARNING_HELPER0(GCC diagnostic ignored x)
-#define INTRA_IGNORE_WARNING_HELPER2(y) INTRA_IGNORE_WARNING_HELPER1(#y)
-#define INTRA_IGNORE_WARNING(x) _Pragma(INTRA_IGNORE_WARNING_HELPER2(-W ## x))
-
-#elif defined(__clang__)
-
-#define INTRA_WARNING_PUSH \
-	_Pragma("clang diagnostic push")
-
-#define INTRA_WARNING_POP \
-	_Pragma("clang diagnostic pop")
-
-#define INTRA_IGNORE_WARNING_HELPER0(x) #x
-#define INTRA_IGNORE_WARNING_HELPER1(x) INTRA_IGNORE_WARNING_HELPER0(clang diagnostic ignored x)
-#define INTRA_IGNORE_WARNING_HELPER2(y) INTRA_IGNORE_WARNING_HELPER1(#y)
-#define INTRA_IGNORE_WARNING(x) _Pragma(INTRA_IGNORE_WARNING_HELPER2(-W ## x))
-
-#endif
-
-#if (defined(__GNUC__) || defined(__clang__)) && !defined(_MSC_VER)
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS \
-	INTRA_WARNING_PUSH \
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC_CLANG \
 	INTRA_IGNORE_WARNING(all) \
 	INTRA_IGNORE_WARNING(extra) \
 	INTRA_IGNORE_WARNING(old-style-cast) \
@@ -625,91 +523,198 @@
 	INTRA_IGNORE_WARNING(pointer-arith) \
 	INTRA_IGNORE_WARNING(pedantic)
 
-#define INTRA_DISABLE_REDUNDANT_WARNINGS INTRA_IGNORE_WARNING(ctor-dtor-privacy)
-
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR INTRA_IGNORE_WARNING(non-virtual-dtor)
-#define INTRA_WARNING_DISABLE_PEDANTIC INTRA_IGNORE_WARNING(pedantic)
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC_CLANG \
+	INTRA_ENABLE_WARNING(all) \
+	INTRA_ENABLE_WARNING(extra) \
+	INTRA_ENABLE_WARNING(old-style-cast) \
+	INTRA_ENABLE_WARNING(conversion) \
+	INTRA_ENABLE_WARNING(sign-conversion) \
+	INTRA_ENABLE_WARNING(init-self) \
+	INTRA_ENABLE_WARNING(unreachable-code) \
+	INTRA_ENABLE_WARNING(pointer-arith) \
+	INTRA_ENABLE_WARNING(pedantic) \
+	INTRA_ENABLE_WARNING(non-virtual-dtor) \
+	INTRA_ENABLE_WARNING(effc++) \
+	INTRA_ENABLE_WARNING(shadow) \
+	INTRA_ENABLE_WARNING_NO_ERROR(unused-variable)
+//-Wshadow=local?
 
 #define INTRA_WARNING_DISABLE_LOSING_CONVERSION INTRA_IGNORE_WARNING(conversion)
 #define INTRA_WARNING_DISABLE_SIGN_CONVERSION INTRA_IGNORE_WARNING(sign-conversion)
 #define INTRA_WARNING_DISABLE_UNREACHABLE_CODE INTRA_IGNORE_WARNING(unreachable-code)
+#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR INTRA_IGNORE_WARNING(non-virtual-dtor)
+#else
+#define INTRA_IGNORE_WARNING(x)
+#define INTRA_ENABLE_WARNING_NO_ERROR(x)
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC_CLANG
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC_CLANG
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC_CLANG
+#ifdef _MSC_VER
+#define INTRA_WARNING_PUSH __pragma(warning(push))
+#define INTRA_WARNING_POP __pragma(warning(pop))
+#else
+#define INTRA_WARNING_PUSH
+#define INTRA_WARNING_POP
+#endif
+#endif
+
 #define INTRA_WARNING_DISABLE_UNUSED_FUNCTION INTRA_IGNORE_WARNING(unused-function)
+
+#ifdef __clang__
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_CLANG \
+	INTRA_IGNORE_WARNING(c++98-compat) \
+	INTRA_IGNORE_WARNING(c++98-compat-pedantic) \
+	INTRA_IGNORE_WARNING(documentation-unknown-command) \
+	INTRA_IGNORE_WARNING(comma) \
+	INTRA_IGNORE_WARNING(duplicate-enum) \
+	INTRA_IGNORE_WARNING(implicit-fallthrough) \
+	INTRA_IGNORE_WARNING(float-equal) \
+	INTRA_IGNORE_WARNING(reserved-id-macro)
+#define INTRA_WARNING_DISABLE_GLOBAL_CONSTRUCTION INTRA_IGNORE_WARNING(exit-time-destructors) INTRA_IGNORE_WARNING(global-constructors)
+#define INTRA_WARNING_DISABLE_UNDEFINED_REINTERPRET_CAST INTRA_IGNORE_WARNING(undefined-reinterpret-cast)
+#define INTRA_WARNING_DISABLE_LANGUAGE_EXTENSION INTRA_IGNORE_WARNING(language-extension-token)
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_CLANG \
+	INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_CLANG \
+	INTRA_WARNING_DISABLE_GLOBAL_CONSTRUCTION \
+	INTRA_WARNING_DISABLE_UNDEFINED_REINTERPRET_CAST \
+	INTRA_WARNING_DISABLE_LANGUAGE_EXTENSION
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_CLANG //there is no currently known useful clang-only warnings
+#else
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_CLANG
+#define INTRA_WARNING_DISABLE_GLOBAL_CONSTRUCTION
+#define INTRA_WARNING_DISABLE_UNDEFINED_REINTERPRET_CAST
+#define INTRA_WARNING_DISABLE_LANGUAGE_EXTENSION
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_CLANG
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_CLANG
 #endif
 
-#ifndef INTRA_WARNING_DISABLE_PEDANTIC
-#define INTRA_WARNING_DISABLE_PEDANTIC
+#if defined(__GNUC__) && !defined(__clang__)
+#if __GNUC__ >= 7
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC7 INTRA_IGNORE_WARNING(duplicated-branches) INTRA_IGNORE_WARNING(restrict)
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC7 INTRA_ENABLE_WARNING(duplicated-branches) INTRA_ENABLE_WARNING(restrict)
+#else
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC7
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC7
+#endif
+#if __GNUC__ >= 6
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC6 INTRA_IGNORE_WARNING(duplicated-cond) INTRA_IGNORE_WARNING(null-dereference)
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC6 INTRA_ENABLE_WARNING(duplicated-cond) INTRA_ENABLE_WARNING(null-dereference)
+#else
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC6
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC6
+#endif
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC6 \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC7 \
+	INTRA_IGNORE_WARNING(logical-op) \
+	INTRA_IGNORE_WARNING(useless-cast)
+
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC6 \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC7 \
+	INTRA_ENABLE_WARNING(logical-op) \
+	INTRA_ENABLE_WARNING(useless-cast)
+
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC //no redundant gcc-specific warnings
+#else
+#define INTRAZ_D_DISABLE_ALL_WARNINGS_GCC
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC
 #endif
 
-#ifndef INTRA_WARNING_DISABLE_UNUSED_FUNCTION
-#define INTRA_WARNING_DISABLE_UNUSED_FUNCTION
+#ifdef _MSC_VER
+//TODO: find a way to get rid of this
+#pragma warning(disable: 4514 4710 4714) //these warnings cannot be removed locally
+//4514 - unused inline function
+//4710 - function not inlined
+//4714 - cannot inline forceinline function
+#define INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_MSVC __pragma(warning(disable: 4514 4710 4714  4820 4711 4577 4868 5045))
+//4820 - bytes padding added after construct
+//4711 - function selected for inline expansion
+//4577 - noexcept when compiling with exceptions disabled
+//4868 - compiler may not enforce left-to-right evaluation order in braced initializer list
+//5045 - compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+
+#if !defined(__clang__)
+#define INTRA_DISABLE_LNK4221 namespace {char INTRA_CONCATENATE_TOKENS($DisableLNK4221__, __LINE__);}
+#define INTRA_WARNING_DISABLE_SIGN_CONVERSION __pragma(warning(disable: 4365))
+#define INTRA_WARNING_DISABLE_LOSING_CONVERSION __pragma(warning(disable: 4244))
+#define INTRA_WARNING_DISABLE_UNREACHABLE_CODE __pragma(warning(disable: 4702))
+#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR __pragma(warning(disable: 4265))
 #endif
+#define INTRA_WARNING_DISABLE_UNHANDLED_ENUM_CASES __pragma(warning(disable: 4061))
+#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED __pragma(warning(disable: 4625 4626 4512))
+#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED __pragma(warning(disable: 5026 5027))
+#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED __pragma(warning(disable: 4510 4610 4623))
+#define INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED __pragma(warning(disable: 4626 5027))
+#define INTRA_WARNING_DISABLE_CONSTANT_CONDITION __pragma(warning(disable: 4127))
+#define INTRA_WARNING_DISABLE_CATCH_ALL __pragma(warning(disable: 4571))
+#if _MSC_VER >= 1916
+#define INTRA_WARNING_DISABLE_STD_DECLARATION __pragma(warning(disable: 4643))
+#endif
+
+#define INTRA_PUSH_DISABLE_ALL_WARNINGS __pragma(warning(push, 0)) \
+	__pragma(warning(disable: 4548 4987 4774 4702 4355 4738 4571)) \
+	INTRA_WARNING_DISABLE_LOSING_CONVERSION \
+	INTRA_WARNING_DISABLE_SIGN_CONVERSION \
+	INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC_CLANG \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_CLANG
+
+#define INTRAZ_D_ENABLE_USEFUL_WARNINGS_MSVC __pragma(warning(default: 4365 4244 4702 4265 4061 4625 4626 4512 5026 5027 4510 4610 4623 4626 5027 4127 4571  4548 4987 4774 4702 4355 4738))
+#define INTRA_PUSH_ENABLE_USEFUL_WARNINGS __pragma(warning(push, 4)) INTRA_ENABLE_USEFUL_WARNINGS
+#else
+#define INTRA_PUSH_DISABLE_ALL_WARNINGS \
+	INTRA_WARNING_PUSH \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC_CLANG \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_GCC \
+	INTRAZ_D_DISABLE_ALL_WARNINGS_CLANG
+
+#define INTRA_PUSH_ENABLE_USEFUL_WARNINGS INTRA_WARNING_PUSH INTRA_ENABLE_USEFUL_WARNINGS
+
+#define INTRA_WARNING_DISABLE_UNHANDLED_ENUM_CASES
+#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
+#define INTRA_WARNING_DISABLE_CONSTANT_CONDITION
+#endif
+
+#define INTRA_DISABLE_REDUNDANT_WARNINGS \
+	INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC_CLANG \
+	INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_GCC \
+	INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_CLANG \
+	INTRAZ_D_DISABLE_REDUNDANT_WARNINGS_MSVC
+
+#define INTRA_ENABLE_USEFUL_WARNINGS \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC_CLANG \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_CLANG \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_GCC \
+	INTRAZ_D_ENABLE_USEFUL_WARNINGS_MSVC
 
 #ifndef INTRA_WARNING_DISABLE_CATCH_ALL
 #define INTRA_WARNING_DISABLE_CATCH_ALL
 #endif
 
-#ifndef INTRA_WARNING_PUSH
-#define INTRA_WARNING_PUSH
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_SIGN_CONVERSION
-#define INTRA_WARNING_DISABLE_SIGN_CONVERSION
-#endif
-
-#ifndef INTRA_DISABLE_REDUNDANT_WARNINGS
-#define INTRA_DISABLE_REDUNDANT_WARNINGS
-#endif
-
-#ifndef INTRA_PUSH_DISABLE_ALL_WARNINGS
-#define INTRA_PUSH_DISABLE_ALL_WARNINGS
-#endif
-
-#ifndef INTRA_WARNING_POP
-#define INTRA_WARNING_POP
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_LOSING_CONVERSION
-#define INTRA_WARNING_DISABLE_LOSING_CONVERSION
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR
-#define INTRA_WARNING_DISABLE_NO_VIRTUAL_DESTRUCTOR
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_UNUSED_FUNCTION
-#define INTRA_WARNING_DISABLE_UNUSED_FUNCTION
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_UNHANDLED_ENUM_CASES
-#define INTRA_WARNING_DISABLE_UNHANDLED_ENUM_CASES
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_MOVE_IMPLICITLY_DELETED
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#define INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-#endif
-
-#ifndef INTRA_DISABLE_WARNING_STD_DECLARATION
-#define INTRA_DISABLE_WARNING_STD_DECLARATION
-#endif
-
-#ifndef INTRA_WARNING_DISABLE_CONSTANT_CONDITION
-#define INTRA_WARNING_DISABLE_CONSTANT_CONDITION
+#ifndef INTRA_WARNING_DISABLE_STD_DECLARATION
+#define INTRA_WARNING_DISABLE_STD_DECLARATION
 #endif
 
 #ifndef INTRA_DISABLE_LNK4221
 #define INTRA_DISABLE_LNK4221
+#endif
+
+#ifndef INTRA_WARNING_DISABLE_GLOBAL_CONSTRUCTION
+#define INTRA_WARNING_DISABLE_GLOBAL_CONSTRUCTION
+#endif
+
+#ifndef INTRA_WARNING_DISABLE_UNDEFINED_REINTERPRET_CAST
+#define INTRA_WARNING_DISABLE_UNDEFINED_REINTERPRET_CAST
+#endif
+
+#ifndef INTRA_WARNING_DISABLE_LANGUAGE_EXTENSION
+#define INTRA_WARNING_DISABLE_LANGUAGE_EXTENSION
 #endif
 
 #define INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS \
@@ -723,16 +728,10 @@
 	INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED \
 	INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 
-#define INTRA_BEGIN namespace Intra { INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+#define INTRA_BEGIN namespace Intra { INTRA_PUSH_ENABLE_USEFUL_WARNINGS INTRA_DISABLE_REDUNDANT_WARNINGS
 #define INTRA_END INTRA_WARNING_POP }
 
-#define INTRA_CORE_BEGIN INTRA_BEGIN inline namespace Core {
-#define INTRA_CORE_END } INTRA_END
-
-#define INTRA_CORE_RANGE_BEGIN INTRA_CORE_BEGIN inline namespace Range {
-#define INTRA_CORE_RANGE_END } INTRA_CORE_END
-
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 
 #ifndef INTRA_NO_BASIC_TYPE_SIZE_CHECK
 // This library relies on certain sizes of the base types.
@@ -741,12 +740,12 @@ INTRA_CORE_BEGIN
 static_assert(
 	sizeof(char) == 1 &&
 	sizeof(short) == 2 &&
-	(sizeof(int) == 2 || //TODO: some Intra code may assume sizeof(int) == 4. Check and fix it.
+	(sizeof(int) == 2 || //TODO: there might be some Intra code assuming sizeof(int) == 4. Check and fix it.
 		sizeof(int) == 4) &&
 	sizeof(long long) == 8 &&
 	sizeof(float) == 4 &&
 	sizeof(double) == 8,
-	"Some of fundamental types have unexpected size!");
+	"Some of fundamental types have unexpected sizes!");
 #endif
 
 typedef unsigned char byte;
@@ -775,7 +774,7 @@ typedef decltype(reinterpret_cast<char*>(1)-reinterpret_cast<char*>(0)) intptr;
 typedef decltype(sizeof(int)) uintptr;
 
 //! Integral type with size dependent on pointer size that is used for indices and sizes.
-typedef uintptr index_t; //TODO: currently unsigned, but will be made signed soon
+typedef intptr index_t;
 
 //null is used for null pointers. In Intra it has additional meaning: empty object, equivalent to default constructed one.
 typedef decltype(nullptr) null_t;
@@ -783,8 +782,8 @@ constexpr const null_t null = nullptr;
 
 #ifdef __SIZEOF_INT128__
 #define INTRA_INT128_SUPPORT
-typedef int128 __int128;
-typedef uint128 unsigned __int128;
+using int128 = __int128;
+using uint128 = unsigned __int128;
 #endif
 
 template<typename T, T value> struct TypeFromValue
@@ -816,7 +815,7 @@ template<typename T> constexpr forceinline T&& Forward(TRemoveReference<T>&& t) 
 	return static_cast<T&&>(t);
 }
 
-template<typename T> INTRA_CONSTEXPR2 forceinline void Swap(T&& a, T&& b)
+template<typename T> constexpr forceinline void Swap(T&& a, T&& b)
 {
 	if(&a == &b) return;
 	auto temp = Move(a);
@@ -864,12 +863,12 @@ private:
 };
 #endif
 
-INTRA_CORE_END
+INTRA_END
 
 typedef Intra::intptr ptrdiff_t;
 typedef Intra::uintptr size_t;
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 #ifdef _MSC_VER
 __pragma(warning(disable: 4100 4577))
 #endif
@@ -878,8 +877,6 @@ constexpr forceinline bool IsConstantEvaluated() noexcept
 {
 #ifdef INTRA_IS_CONSTANT_EVALUATED_SUPPORT
 	return __builtin_is_constant_evaluated();
-#elif !defined(__cpp_constexpr) || __cpp_constexpr < 200704
-	return false;
 #elif defined(INTRA_AGRESSIVE_CONSTEXPR)
 	//If detection is not supported but constexpr is supported then assume constant evaluation by default. This may decrease runtime performance
 	return true;
@@ -893,15 +890,13 @@ template<typename Arg0, typename... Args> constexpr forceinline bool IsConstantE
 {
 #ifdef INTRA_IS_CONSTANT_EVALUATED_SUPPORT
 	return __builtin_is_constant_evaluated();
-#elif !defined(__cpp_constexpr) || __cpp_constexpr < 200704
-	return false;
 #elif defined(INTRA_BUILTIN_CONSTANT_P_SUPPORT)
 	return __builtin_constant_p(arg0) && IsConstantEvaluated(args...);
 #elif defined(INTRA_AGRESSIVE_CONSTEXPR)
-	//If detection is not supported but constexpr is supported then assume constant evaluation by default. This may decrease runtime performance
+	//If detection is not supported then assume constant evaluation by default. This may decrease runtime performance
 	return true;
 #else
-	//If detection is not supported but constexpr is supported then assume runtime evaluation by default. Constexpr function call may fail to compile
+	//If detection is not supported then assume runtime evaluation by default. Constexpr function call may fail to compile
 	return false;
 #endif
 }
@@ -925,15 +920,18 @@ template<typename Arg0, typename... Args> constexpr forceinline bool IsConstantE
 #define INTRA_DEBUG_ABI
 #endif
 
+#define INTRA_DEBUG_ALLOCATORS
+
 #endif
 
 static constexpr const struct TConstruct {} Construct{};
 template<typename T> struct TConstructT {};
 template<typename T> static constexpr const TConstructT<T> ConstructT{};
 
-INTRA_CORE_END
+INTRA_END
 
-forceinline void* operator new(size_t, Intra::Core::TConstruct, void* dst) {return dst;}
+forceinline void* operator new(size_t, Intra::TConstruct, void* dst) {return dst;}
+forceinline void operator delete(void*, Intra::TConstruct, void*) noexcept {}
 
 #ifndef INTRA_INCLUDE_INITIALIZER_LIST_HEADER
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -961,7 +959,7 @@ public:
 	using const_iterator = const T*;
 
 	constexpr forceinline initializer_list() noexcept = default;
-	constexpr forceinline initializer_list(const T* begin, const T* end) noexcept: mBegin(begin), mLength(end-begin) {}
+	constexpr forceinline initializer_list(const T* begin, const T* end) noexcept: mBegin(begin), mLength(size_t(end-begin)) {}
 
 	INTRA_NODISCARD constexpr forceinline const T* begin() const noexcept {return mBegin;}
 	INTRA_NODISCARD constexpr forceinline const T* end() const noexcept {return mBegin + mLength;}
@@ -985,9 +983,9 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 #endif
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 template<typename T> using InitializerList = std::initializer_list<T>;
-INTRA_CORE_END
+INTRA_END
 
 #ifndef INTRA_MINEXE
 //! Define INTRA_MINEXE to:

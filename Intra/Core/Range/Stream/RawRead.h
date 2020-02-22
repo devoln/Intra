@@ -6,9 +6,7 @@
 #include "Core/Range/Mutation/Copy.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename R> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R> constexpr forceinline Requires<
 	CInputRange<R>,
 size_t> RawReadTo(R& src, void* dst, size_t n)
 {
@@ -17,7 +15,7 @@ size_t> RawReadTo(R& src, void* dst, size_t n)
 
 template<typename R,
 	typename AsR = TRangeOfType<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CInputRange<AsR>,
 size_t> RawCopyTo(R&& src, void* dst, size_t n)
 {
@@ -25,7 +23,7 @@ size_t> RawCopyTo(R&& src, void* dst, size_t n)
 	return RawReadTo(srcCopy, dst, n);
 }
 
-template<typename R, typename T> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename T> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<T>,
 size_t> RawReadTo(R& src, Span<T> dst)
@@ -34,7 +32,7 @@ size_t> RawReadTo(R& src, Span<T> dst)
 	return RawReadTo(src, dst.Data(), dstLen);
 }
 
-template<typename R, typename T> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename T> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<T>,
 size_t> RawReadTo(R& src, Span<T> dst, size_t n)
@@ -45,7 +43,7 @@ size_t> RawReadTo(R& src, Span<T> dst, size_t n)
 }
 
 
-template<typename R, typename U> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename U> constexpr Requires<
 	CInputRange<R> &&
 	CPod<U>,
 size_t> RawReadWrite(R& src, Span<U>& dst, size_t maxElementsToRead)
@@ -57,7 +55,7 @@ size_t> RawReadWrite(R& src, Span<U>& dst, size_t maxElementsToRead)
 	return elementsRead;
 }
 
-template<typename R, typename R1, typename U = TValueTypeOf<R1>> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename R1, typename U = TValueTypeOf<R1>> constexpr Requires<
 	CInputRange<R> &&
 	COutputRange<R1> &&
 	CArrayClass<R1> &&
@@ -72,7 +70,7 @@ size_t> RawReadWrite(R& src, R1& dst, size_t maxElementsToRead)
 
 template<typename R, typename R1,
 	typename U = TArrayElement<R1>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CInputRange<R> &&
 	COutputRange<R1> &&
 	CPod<U>,
@@ -80,7 +78,7 @@ size_t> RawReadWrite(R& src, R1& dst)
 {return RawReadWrite(src, dst, dst.Length());}
 
 
-template<typename T, typename R> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename T, typename R> constexpr forceinline Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	!CConst<T>
@@ -91,7 +89,7 @@ template<typename T, typename R> INTRA_CONSTEXPR2 forceinline Requires<
 }
 
 
-template<typename T, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename T, typename R> constexpr Requires<
 	CInputRange<R>,
 T> RawRead(R& src)
 {
@@ -100,7 +98,7 @@ T> RawRead(R& src)
 	return result;
 }
 
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	CInputRange<R>,
 byte> RawReadByte(R& src)
 {
@@ -110,7 +108,7 @@ byte> RawReadByte(R& src)
 	return reinterpret_cast<const byte&>(result);
 }
 
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	sizeof(TValueTypeOf<R>) == 1 && !CConst<R>,
 uint64> ParseVarUInt(R& src)
 {
@@ -126,7 +124,7 @@ uint64> ParseVarUInt(R& src)
 	return result;
 }
 
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	sizeof(TValueTypeOf<R>) == 1 && !CConst<R>,
 uint64> ParseVarUInt(R& src, size_t& ioBytesRead)
 {
@@ -141,7 +139,5 @@ uint64> ParseVarUInt(R& src, size_t& ioBytesRead)
 		result = (result << 7) | (l & 0x7F);
 	} while(l & 0x80);
 	return result;
-}
-
 }
 INTRA_END

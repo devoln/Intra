@@ -4,7 +4,7 @@
 #include "CArray.h"
 #include "Core/Range/Concepts.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 
 INTRA_DEFINE_CONCEPT_REQUIRES2(CHas_push_back, Val<T1>().push_back(Val<T2>()),, = TValueTypeOf<U1>);
 INTRA_DEFINE_CONCEPT_REQUIRES2(CHas_push_front, Val<T1>().push_front(Val<T2>()),, = TValueTypeOf<U1>);
@@ -50,4 +50,4 @@ template<typename C> Requires<
 	!CHasSetCountUninitialized<C> &&
 	CHas_resize<C>
 > SetCountTryNotInit(C& container, size_t newCount) {container.resize(newCount);}
-INTRA_CORE_END
+INTRA_END

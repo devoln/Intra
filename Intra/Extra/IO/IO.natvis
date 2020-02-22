@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::FileMapping">
+    <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Optional="true">Map({mFilePath}){mData}</DisplayString>
+    <DisplayString>Map{mData}</DisplayString>
+    <Expand>
+      <Item Name="File Path" Optional="true">mFilePath</Item>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::WritableFileMapping">
+    <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Optional="true">MapWrite({mFilePath}){mData}</DisplayString>
+    <DisplayString>WritableFileMapping{mData}</DisplayString>
+    <Expand>
+      <Item Name="File Path" Optional="true">mFilePath</Item>
+      <ExpandedItem>mData</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::BasicFormatter">
+    <DisplayString>BasicFormatter</DisplayString>
+    <Expand>
+      <Item Name="FontStack">mFontStack,view(simple)</Item>
+      <Item Name="SpoilerNesting">mSpoilerNesting</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::FormattedWriter::FormattedStream">
+    <DisplayString Condition="mStream != nullptr">({*mFormatter} => {*mStream})</DisplayString>
+    <DisplayString>Ref{*mWriter}</DisplayString>
+    <Expand>
+      <Synthetic Name="[Formatter]" Condition="mStream != nullptr">
+        <DisplayString>{*mFormatter}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream != nullptr">*mFormatter</ExpandedItem>
+      <Synthetic Name="[OutputStream]" Condition="mStream != nullptr">
+        <DisplayString>{*mStream}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream != nullptr">*mStream</ExpandedItem>
+
+      <Synthetic Name="[FormattedWriter Reference]" Condition="mStream == nullptr">
+        <DisplayString>{mWriter}</DisplayString>
+      </Synthetic>
+      <ExpandedItem Condition="mStream == nullptr">*mWriter</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::FormattedWriter">
+    <DisplayString Condition="mFormattedStreams.range.Begin+1 == mFormattedStreams.range.End">{*mFormattedStreams.range.Begin}</DisplayString>
+    <DisplayString>{mFormattedStreams}</DisplayString>
+    <Expand>
+      <Synthetic Name="Referenced" Condition="mRefCount.mValue != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <Synthetic Name="Referenced" Condition="mRefCount.mValue._My_val != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <Synthetic Name="Referenced" Condition="mRefCount != 0" Optional="true"><DisplayString>{mRefCount} times</DisplayString></Synthetic>
+      <ExpandedItem Condition="mFormattedStreams.range.Begin + 1 &lt; mFormattedStreams.range.End">mFormattedStreams,view(simple)</ExpandedItem>
+      <ExpandedItem Condition="mFormattedStreams.range.Begin + 1 == mFormattedStreams.range.End">*mFormattedStreams.range.Begin</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::OsFile">
+    <DisplayString Condition="mHandle==nullptr">null</DisplayString>
+    <DisplayString Condition="!mOwning" IncludeView="noparens">Ref, {mFullPath}, {mMode,en}, &lt;{size_t(mHandle)}&gt;</DisplayString>
+    <DisplayString IncludeView="noparens">{mFullPath}, {mMode,en}, &lt;{size_t(mHandle)}&gt;</DisplayString>
+    <DisplayString ExcludeView="noparens">OsFile({*this,view(noparens)})</DisplayString>
+    <Expand>
+      <Item Name="Full Path">mFullPath</Item>
+      <Item Name="Mode">mMode,en</Item>
+      <Synthetic Name="Handle (ref)" Condition="!mOwning"><DisplayString>&lt;{size_t(mHandle)}&gt;</DisplayString></Synthetic>
+      <Synthetic Name="Handle" Condition="mOwning"><DisplayString>&lt;{size_t(mHandle)}&gt;</DisplayString></Synthetic>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::FileReader">
+    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
+    <DisplayString>FileReader({mOffset-(mBufferRest.End-mBufferRest.Begin)}/{mSize}, {mFile.mData->Value,view(noparens)})</DisplayString>
+    <StringView>mBufferRest.Begin,[mBufferRest.End-mBufferRest.Begin]s8b</StringView>
+    <Expand>
+      <ExpandedItem Condition="mFile.mData!=nullptr">mFile.mData->Value</ExpandedItem>
+      <Item Name="Offset">mOffset-(mBufferRest.End-mBufferRest.Begin)</Item>
+      <Item Name="Next Read Offset">mOffset</Item>
+      <Item Name="Size">mSize</Item>
+      <Item Name="Buffer">mBufferRest</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::FileWriter">
+    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
+    <DisplayString>FileWriter({mOffset+(mBufferRest.Begin-mBuffer.range.Begin)}, {mFile.mData->Value,view(noparens)})</DisplayString>
+    <StringView>mBuffer.range.Begin,[mBufferRest.Begin-mBuffer.range.Begin]s8b</StringView>
+    <Expand>
+      <ExpandedItem Condition="mFile.mData!=nullptr">mFile.mData->Value</ExpandedItem>
+      <Item Name="Offset">mOffset+(mBufferRest.Begin-mBuffer.range.Begin)</Item>
+      <Item Name="Next Flush Write Offset">mOffset</Item>
+      <Item Name="Buffer">mBuffer.range.Begin,[mBufferRest.Begin-mBuffer.range.Begin]s8</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::ConsoleOutStream">
+    <DisplayString>ConsoleOut</DisplayString>
+    <Expand>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::ConsoleFormatter">
+    <DisplayString>ConsoleFormatter</DisplayString>
+    <Expand>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::HtmlFormatter">
+    <DisplayString>Html</DisplayString>
+    <Expand>
+      <Item Name="FontStack">mFontStack,view(simple)</Item>
+      <Item Name="SpoilerNesting">mSpoilerNesting</Item>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>

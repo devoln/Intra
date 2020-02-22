@@ -5,7 +5,7 @@
 #include "Core/Range/StringView.h"
 #include "Core/Range/Stream/RawRead.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename T> class FlatArrayOfArraysRange
 {
 	static_assert(CPod<T>, "T must be trivial.");
@@ -40,4 +40,4 @@ private:
 
 typedef FlatArrayOfArraysRange<char> FlatStringRange;
 typedef FlatArrayOfArraysRange<const char> FlatConstStringRange;
-INTRA_CORE_RANGE_END
+INTRA_END

@@ -4,7 +4,7 @@
 #include "Core/Float.h"
 #include "Core/Misc/MathTricks.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 namespace Misc {
 
 // This code was adapted from Ryu implementation https://github.com/ulfjack/ryu
@@ -12,7 +12,7 @@ namespace Misc {
 namespace D {
 enum {FLOAT_POW5_INV_BITCOUNT = 59, FLOAT_POW5_BITCOUNT = 61};
 
-INTRA_CONSTEXPR2 inline uint32 MulPow5InvDivPow2(uint32 m, uint32 q, int32 j)
+constexpr inline uint32 MulPow5InvDivPow2(uint32 m, uint32 q, int32 j)
 {
 	constexpr uint64 FLOAT_POW5_INV_SPLIT[31] =
 	{
@@ -28,7 +28,7 @@ INTRA_CONSTEXPR2 inline uint32 MulPow5InvDivPow2(uint32 m, uint32 q, int32 j)
 	return MulShift(m, FLOAT_POW5_INV_SPLIT[q], j);
 }
 
-INTRA_CONSTEXPR2 inline uint32 MulPow5divPow2(uint32 m, uint32 i, int32 j)
+constexpr inline uint32 MulPow5divPow2(uint32 m, uint32 i, int32 j)
 {
 	constexpr uint64 FLOAT_POW5_SPLIT[47] =
 	{
@@ -49,7 +49,7 @@ INTRA_CONSTEXPR2 inline uint32 MulPow5divPow2(uint32 m, uint32 i, int32 j)
 }
 }
 
-INTRA_CONSTEXPR2 DecimalFloat<uint32> f2d(uint32 ieeeMantissa, uint32 ieeeExponent)
+constexpr DecimalFloat<uint32> f2d(uint32 ieeeMantissa, uint32 ieeeExponent)
 {
 	// We subtract 2 so that the bounds computation has 2 additional bits.
 	int32 e2 = int32(ieeeExponent) - LExponentBiasOf(float()) - LMantissaLenOf(float()) - 2;
@@ -192,4 +192,4 @@ INTRA_CONSTEXPR2 DecimalFloat<uint32> f2d(uint32 ieeeMantissa, uint32 ieeeExpone
 
 
 }
-INTRA_CORE_END
+INTRA_END

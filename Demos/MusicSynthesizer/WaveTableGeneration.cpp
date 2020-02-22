@@ -16,7 +16,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 void AddSineHarmonic(Span<float> wavetableAmplitudes, float freqSampleRateRatio, float harmFreqMultiplier, float amplitude)
 {
-	const size_t index = size_t(Math::Round(freqSampleRateRatio*harmFreqMultiplier*float(2*wavetableAmplitudes.Length())));
+	const size_t index = size_t(Round(freqSampleRateRatio*harmFreqMultiplier*float(2*wavetableAmplitudes.Length())));
 	if(index >= wavetableAmplitudes.Length()) return;
 	wavetableAmplitudes[index] += amplitude;
 }
@@ -26,12 +26,12 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 {
 	const size_t N = wavetableAmplitudes.Length()*2;
 
-	//Эта переменная играет роль обратного нормирующего коэффициента sigma*sqrt(2*pi) в формуле нормального распределения.
+	//Это обратный нормирующий коэффициент sigma*sqrt(2*pi) в формуле нормального распределения.
 	//Пропорционален ширине гармоники - корня дисперсии sigma нормального распределения.
-	double bwi = (Math::Pow2(bandwidthCents/1200 - 1) - 0.5)*freqSampleRateRatio;
+	double bwi = (Pow2(bandwidthCents/1200 - 1) - 0.5)*freqSampleRateRatio;
 
 	//Ширина гармоники растёт с её номером в ряду
-	bwi *= Math::Pow(double(harmFreqMultiplier), double(harmBandwidthScale));
+	bwi *= Pow(double(harmFreqMultiplier), double(harmBandwidthScale));
 
 	//Избегаем проблем с точностью при делении на очень маленькое число
 	if(bwi < 0.0000000001)
@@ -50,21 +50,21 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 	if(rdw > 1) range = 3*rdw;
 	if(-range > rw)
 	{
-		const double elementsToSkip = Math::Floor((-range - rw) / rdw);
+		const double elementsToSkip = Floor((-range - rw) / rdw);
 		wavetableAmplitudes.PopFirstN(size_t(elementsToSkip));
 		rw += elementsToSkip*rdw;
 	}
-	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Math::Ceil((range - rw) / rdw)));
+	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Ceil((range - rw) / rdw)));
 
 	//TODO: Для широких гауссиан можно использовать приближение exp(-x^2) сплайном
 	//{1 - 1.5*(x*0.859741)^2 + 0.75*|x*0.859741|^3, |x*0.859741|<=1}
 	//{0.5 - 0.25*|x*0.859741|^3, 1<|x*0.859741|<=2}
-	const double A = amplitude*(Math::SqrtPI/2);
-	double erf = Math::Erf(rw);
+	const double A = amplitude/bwi*(SqrtPI/2);
+	double erf = Erf(rw);
 	while(!wavetableAmplitudes.Empty())
 	{
 		rw += rdw;
-		const double erfNext = Math::Erf(rw);
+		const double erfNext = Erf(rw);
 		wavetableAmplitudes.Next() += float(A * (erfNext - erf));
 		erf = erfNext;
 	}
@@ -79,7 +79,7 @@ static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> ou
 	enum: uint {TABLE_SIZE = 64, TABLE_MASK = TABLE_SIZE-1,
 		INTERPOLATION_BITS = 25, INTERPOLATION_DIVISOR = 1 << INTERPOLATION_BITS, INTERPOLATION_MASK = INTERPOLATION_DIVISOR-1};
 	float sineTable[TABLE_SIZE];
-	Math::SineRange<float> oscillator(1, 0, float(2*Math::PI/TABLE_SIZE));
+	SineRange<float> oscillator(1, 0, float(2*PI/TABLE_SIZE));
 	ReadTo(oscillator, sineTable);
 	inOutRealAmplitudes.PopFirst();
 	outImagAmplitudes.PopFirst();
@@ -91,11 +91,11 @@ static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> ou
 		
 		const float cosine1 = sineTable[(cosPhaseIndex >> INTERPOLATION_BITS) & TABLE_MASK];
 		const float cosine2 = sineTable[((cosPhaseIndex >> INTERPOLATION_BITS) + 1) & TABLE_MASK];
-		const float cosine = Math::LinearMix(cosine1, cosine2, factor);
+		const float cosine = LinearMix(cosine1, cosine2, factor);
 
 		const float sine1 = sineTable[(sinPhaseIndex >> INTERPOLATION_BITS) & TABLE_MASK];
 		const float sine2 = sineTable[((sinPhaseIndex >> INTERPOLATION_BITS) + 1) & TABLE_MASK];
-		const float sine = Math::LinearMix(sine1, sine2, factor);
+		const float sine = LinearMix(sine1, sine2, factor);
 
 		float& long double = inOutRealAmplitudes.Next();
 		float& imag = outImagAmplitudes.Next();
@@ -190,7 +190,7 @@ Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float 
 	while(numHarmonics --> 0)
 	{
 		auto& harm = harmonics.EmplaceLast();
-		harm.Amplitude = scale*Math::Cos(alpha)*Math::Pow(harmonicAttenuation, -harmonicAttenuationPower);
+		harm.Amplitude = scale*Cos(alpha)*Pow(harmonicAttenuation, -harmonicAttenuationPower);
 		harm.FreqMultiplier = freqMult;
 		harm.Bandwidth = bandwidth;
 		freqMult += freqMultStep;
@@ -204,9 +204,9 @@ Array<SineHarmonicWithBandwidthDesc> CreateHarmonicArray(float bandwidth, float 
 Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, float bandwidthStep,
 	float updownRatio, size_t numHarmonics, float scale, float freqMult, float harmonicAttenuationPower)
 {
-	const float a = float(Math::PI) / (1 + updownRatio);
-	const float scaleNormalizeCoeff = scale * 2 / (a*(float(Math::PI) - a));
-	return CreateHarmonicArray(bandwidth, bandwidthStep, 1, harmonicAttenuationPower, freqMult, freqMult, numHarmonics, scaleNormalizeCoeff, a - float(Math::PI/2), a);
+	const float a = float(PI) / (1 + updownRatio);
+	const float scaleNormalizeCoeff = scale * 2 / (a*(float(PI) - a));
+	return CreateHarmonicArray(bandwidth, bandwidthStep, 1, harmonicAttenuationPower, freqMult, freqMult, numHarmonics, scaleNormalizeCoeff, a - float(PI/2), a);
 }
 
 
@@ -226,8 +226,8 @@ WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, uint nu
 		{
 			const float ifreq = float(i)*freq;
 			float amplitude = 0;
-			for(auto& formant: formantsArr) amplitude += formant.Scale*Math::Exp(-Math::Sqr((ifreq - formant.Frequency) * formant.Coeff));
-			amplitude /= Math::Pow(float(i), harmonicAttenuationPower);
+			for(auto& formant: formantsArr) amplitude += formant.Scale*Exp(-Sqr((ifreq - formant.Frequency) * formant.Coeff));
+			amplitude /= Pow(float(i), harmonicAttenuationPower);
 			
 			//AddSineHarmonic(tbl.Data, tbl.BaseLevelRatio, float(i), amplitude);
 			AddSineHarmonicGaussianProfile(tbl.Data, tbl.BaseLevelRatio,

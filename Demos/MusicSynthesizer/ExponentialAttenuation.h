@@ -13,7 +13,7 @@ struct ExponentAttenuator
 
 	forceinline ExponentAttenuator(null_t=null): Factor(1), FactorStep(1) {}
 	forceinline ExponentAttenuator(float startVolume, float expCoeff, uint sampleRate):
-		Factor(startVolume), FactorStep(Math::Exp(-expCoeff/float(sampleRate))) {}
+		Factor(startVolume), FactorStep(Exp(-expCoeff/float(sampleRate))) {}
 
 	static forceinline ExponentAttenuator FromFactorAndStep(float factor, float factorStep)
 	{
@@ -24,7 +24,7 @@ struct ExponentAttenuator
 	}
 
 	forceinline void SkipSamples(size_t count)
-	{Factor *= Math::PowInt(FactorStep, int(count));}
+	{Factor *= PowInt(FactorStep, int(count));}
 
 	forceinline ExponentAttenuator operator*=(const ExponentAttenuator& rhs)
 	{

@@ -8,8 +8,8 @@
 #include "Core/Range/Operations.h"
 #include "Core/Tuple.h"
 
-INTRA_CORE_RANGE_BEGIN
-template<typename R, typename OB, typename CB, typename ST, typename CBP, typename RCBP> INTRA_CONSTEXPR2 Requires<
+INTRA_BEGIN
+template<typename R, typename OB, typename CB, typename ST, typename CBP, typename RCBP> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	CAsNonInfiniteForwardRange<OB> &&
 	CAsNonInfiniteForwardRange<CB> &&
@@ -55,8 +55,8 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 		bool commentFound = false;
 		for(auto cblocks = RangeOf(commentBlocks); !cblocks.Empty(); cblocks.PopFirst())
 		{
-			auto commentBlockBegin = GetField<0>(cblocks.First());
-			auto commentBlockEnd = GetField<1>(cblocks.First());
+			auto commentBlockBegin = get<0>(cblocks.First());
+			auto commentBlockEnd = get<1>(cblocks.First());
 			commentFound = StartsWith(range, commentBlockBegin);
 			if(!commentFound) continue;
 
@@ -64,7 +64,7 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 			const size_t commentBlockClosingLen = Count(commentBlockEnd);
 			PopFirstN(range, commentBlockOpeningLen);
 			index += commentBlockOpeningLen;
-			FindAdvance(range, commentBlockEnd, &index);
+			FindAdvance(range, commentBlockEnd, OptRef(index));
 			PopFirstN(range, commentBlockClosingLen);
 			index += commentBlockClosingLen;
 			break;
@@ -73,8 +73,8 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 
 		for(auto reccblocks = RangeOf(recursiveCommentBlocks); !reccblocks.Empty(); reccblocks.PopFirst())
 		{
-			auto commentBlockBegin = GetField<0>(reccblocks.First());
-			auto commentBlockEnd = GetField<1>(reccblocks.First());
+			auto commentBlockBegin = get<0>(reccblocks.First());
+			auto commentBlockEnd = get<1>(reccblocks.First());
 			commentFound = StartsWith(range, commentBlockBegin);
 			if(!commentFound) continue;
 
@@ -93,7 +93,7 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 	return Take(start, index);
 }
 
-template<typename R, typename OB, typename CB, typename ST> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OB, typename CB, typename ST> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	CAsNonInfiniteForwardRange<OB> &&
 	CAsNonInfiniteForwardRange<CB> &&
@@ -107,4 +107,4 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 		NullRange<Tuple<NullRange<T>, NullRange<T>>>(),
 		NullRange<Tuple<NullRange<T>, NullRange<T>>>());
 }
-INTRA_CORE_RANGE_END
+INTRA_END

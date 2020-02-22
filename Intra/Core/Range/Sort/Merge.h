@@ -1,7 +1,6 @@
 ﻿#pragma once
 
-#include "Funal/Op.h"
-
+#include "Core/Functional.h"
 #include "Core/CArray.h"
 #include "Core/Range/Concepts.h"
 
@@ -10,8 +9,6 @@
 #include "Core/Range/Mutation/Copy.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
 namespace D {
 
 /*
@@ -23,7 +20,7 @@ namespace D {
  возвращает: указатель на отсортированный массив. Из-за особенностей работы данной реализации
  отсортированная версия массива может оказаться либо в 'up', либо в 'down'
 */
-template<typename T, typename C> INTRA_CONSTEXPR2 T* merge_sort_pass(T* up, T* down, size_t left, size_t right, C comparer)
+template<typename T, typename C> constexpr T* merge_sort_pass(T* up, T* down, size_t left, size_t right, C comparer)
 {
 	if(left == right)
 	{
@@ -72,16 +69,14 @@ template<typename T, typename C> INTRA_CONSTEXPR2 T* merge_sort_pass(T* up, T* d
   2) On almost sorted range it is as slow as on randomly ordered range;
   3) Allocates dynamic memory. Size of allocation equals ``range`` length.
 */
-template<typename R, typename C = Funal::TLess> Requires<
-	!CConst<TRefArrayElementRequire<R>>
-> MergeSort(R&& range, C comparer = Less)
+template<typename R, typename C = TFLess> Requires<
+	!CConst<TArrayElementRefRequired<R>>
+> MergeSort(R&& range, C comparer = FLess)
 {
 	Array<TValueTypeOf<R>> temp;
 	temp.SetCountUninitialized(LengthOf(range));
 	auto resultPtr = D::merge_sort_pass(DataOf(range), DataOf(temp), 0, LengthOf(range)-1, comparer);
 	if(resultPtr == DataOf(range)) return;
 	CopyTo(temp.AsConstRange(), range);
-}
-
 }
 INTRA_END

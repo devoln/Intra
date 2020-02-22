@@ -6,8 +6,8 @@
 #include "Core/Range/Operations.h"
 #include "Core/Range/Sort/IsSorted.h"
 
-INTRA_CORE_RANGE_BEGIN
-template<typename R, typename IndexRange> INTRA_CONSTEXPR2 Requires<
+INTRA_BEGIN
+template<typename R, typename IndexRange> constexpr Requires<
 	CBidirectionalRange<R>,
 R> Remove(const R& rhs, const IndexRange& indices)
 {
@@ -36,7 +36,7 @@ R> Remove(const R& rhs, const IndexRange& indices)
 	return range;
 }
 
-template<typename R, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename P> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
 	CCallable<P, TValueTypeOf<R>>,
@@ -63,7 +63,7 @@ R&> RemoveRightAdvance(R& range, P pred)
 
 template<typename R, typename P,
 	typename AsR = TRangeOfType<R> 
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CBidirectionalRange<AsR> &&
 	CCallable<P, TValueTypeOf<AsR>>,
 AsR> Remove(R&& range, P pred)
@@ -71,4 +71,4 @@ AsR> Remove(R&& range, P pred)
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return RemoveRightAdvance(rangeCopy, pred);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

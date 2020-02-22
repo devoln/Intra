@@ -3,9 +3,9 @@
 #include "Core/Float.h"
 #include "Core/Misc/UintToString.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 namespace Misc {
-template<typename T> INTRA_CONSTEXPR2 index_t DecimalToStringScientific(DecimalFloat<T> x, char decimalSep, char e, char* dst)
+template<typename T> constexpr index_t DecimalToStringScientific(DecimalFloat<T> x, char decimalSep, char e, char* dst)
 {
 	index_t len = UintToString(x.Mantissa, dst+1);
 	dst[0] = dst[1];
@@ -27,7 +27,7 @@ template<typename T> INTRA_CONSTEXPR2 index_t DecimalToStringScientific(DecimalF
 	return len;
 }
 
-template<typename T> INTRA_CONSTEXPR2 index_t DecimalToString(DecimalFloat<T> x, char decimalSep, char e, char* dst)
+template<typename T> constexpr index_t DecimalToString(DecimalFloat<T> x, char decimalSep, char e, char* dst)
 {
 	enum {
 		MantissaDigits = int(sizeof(T)*5+1)/2,
@@ -62,4 +62,4 @@ template<typename T> INTRA_CONSTEXPR2 index_t DecimalToString(DecimalFloat<T> x,
 	return len;
 }
 }
-INTRA_CORE_END
+INTRA_END

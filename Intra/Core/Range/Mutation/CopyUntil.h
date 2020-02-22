@@ -22,7 +22,7 @@
 @sa Copy
 **/
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
 INTRA_WARNING_DISABLE_LOSING_CONVERSION
 enum class StopReason {SourceEmpty, DestFull, Found};
@@ -33,7 +33,7 @@ struct FindResult
 
 };
 
-template<typename R, typename OR, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR, typename P> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -63,7 +63,7 @@ FindResult> ReadWriteUntil(R& src, OR& dst, P&& pred)
 	return res;
 }
 
-template<typename R, typename OR, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR, typename P> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -88,7 +88,7 @@ FindResult> ReadWriteUntil(R& src, OR& dst, P&& pred)
 	return res;
 }
 
-template<typename R, typename OR, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR, typename X> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -118,7 +118,7 @@ FindResult> ReadWriteUntil(R& src, OR& dst, const X& stopValue)
 	return res;
 }
 
-template<typename R, typename OR, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename OR, typename X> constexpr Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	COutputRangeOf<OR, TValueTypeOf<R>> &&
@@ -143,7 +143,7 @@ FindResult> ReadWriteUntil(R& src, OR& dst, const X& stopValue)
 	return res;
 }
 
-template<typename R, typename OR, typename X> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR, typename X> constexpr forceinline Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CAsOutputRangeOf<TRemoveConstRef<OR>, TValueTypeOf<R>>,
@@ -153,7 +153,7 @@ FindResult> ReadToUntil(R& src, OR&& dst, const X& x)
 	return ReadWriteUntil(src, dstRange, x);
 }
 
-template<typename R, typename OR, typename X> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR, typename X> constexpr forceinline Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CAsOutputRangeOf<TRemoveConstRef<OR>, TValueTypeOf<R>>,
@@ -163,7 +163,7 @@ FindResult> WriteToUntil(R&& src, OR& dst, const X& x)
 	return ReadWriteUntil(srcRange, dst, x);
 }
 
-template<typename R, typename OR, typename X> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename OR, typename X> constexpr forceinline Requires<
 	CInputRange<R> &&
 	!CConst<R> &&
 	CAsOutputRangeOf<TRemoveConstRef<OR>, TValueTypeOf<R>>,
@@ -172,4 +172,4 @@ FindResult> CopyToUntil(R&& src, OR& dst, const X& x)
 	auto srcRange = ForwardAsRange<R>(src);
 	return ReadToUntil(srcRange, dst, x);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

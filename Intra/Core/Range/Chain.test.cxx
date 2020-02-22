@@ -1,11 +1,11 @@
 #include "Core/Range/Chain.h"
-#include "Core/Range/Comparison/Equals.h"
-#include "Core/Range/Generators/Iota.h"
+#include "Core/Range/Comparison.h"
+#include "Core/Range/Iota.h"
 #include "Core/Range/Cycle.h"
 #include "Core/Assert.h"
+#include "System/Debug.h"
 
 INTRA_BEGIN
-
 
 INTRA_MODULE_UNITTEST
 {
@@ -40,10 +40,10 @@ INTRA_MODULE_UNITTEST
 
 	// Make sure bug 3311 is fixed.  ChainImpl should compile even if not all
 	// elements are mutable.
-	INTRA_ASSERT(Equals(Chain(Iota(0, 3), Iota(0, 3)),SpanOf({0, 1, 2, 0, 1, 2})));
+	INTRA_ASSERT(Equals(Chain(Iota(0, 3), Iota(0, 3)), CSpan<int>{0, 1, 2, 0, 1, 2}));
 
 	// Test the case where infinite ranges are present.
-	auto inf = Chain(CSpanOf({0,1,2}), Cycle(CSpanOf({4, 5, 6})), CSpanOf({7, 8, 9})); // infinite range
+	auto inf = Chain(CSpan<int>{0,1,2}, CSpan<int>{7, 8, 9}, Cycle(CSpan<int>{4, 5, 6})); // infinite range
 	INTRA_ASSERT(inf[0] == 0);
 	INTRA_ASSERT(inf[3] == 4);
 	INTRA_ASSERT(inf[6] == 4);
@@ -54,5 +54,4 @@ INTRA_MODULE_UNITTEST
 	const float immf[] = {1, 2, 3};
 	Chain(immi, immf);
 }
-
-}
+INTRA_END

@@ -2,7 +2,7 @@
 
 #include "Core/Type.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 constexpr forceinline float LMaxOf(float) noexcept {
 #ifdef __FLT_MAX__ //clang, gcc, icc, ...
 	return __FLT_MAX__;
@@ -216,4 +216,4 @@ DECLARE_UNSIGNED_TYPE(int64, uint64);
 }
 template<typename T> using TMakeUnsigned = typename D::TMakeUnsignedT<T>::_;
 
-INTRA_CORE_END
+INTRA_END

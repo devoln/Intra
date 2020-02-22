@@ -3,8 +3,8 @@
 #include "Core/Range/Concepts.h"
 #include "Core/Range/Search/Single.h"
 
-INTRA_CORE_RANGE_BEGIN
-template<typename R> INTRA_CONSTEXPR2 Requires<
+INTRA_BEGIN
+template<typename R> constexpr Requires<
 	CAssignableRange<R> &&
 	!CConst<R>
 > ReplaceOneAdvance(R& range, const TValueTypeOf<R>& from, const TValueTypeOf<R>& to)
@@ -25,7 +25,7 @@ template<typename R> INTRA_CONSTEXPR2 Requires<
 template<typename R,
 	typename AsR = TRangeOfType<R>,
 	typename T = TValueTypeOf<AsR>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CAsAssignableRange<R>
 > ReplaceOne(R&& range, const T& from, const T& to)
 {
@@ -59,4 +59,4 @@ template<typename R,
 	auto rangeCopy = ForwardAsRange<R>(range);
 	ReplaceAdvance(rangeCopy, from, to);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

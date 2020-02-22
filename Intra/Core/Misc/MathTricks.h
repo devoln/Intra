@@ -2,9 +2,9 @@
 
 #include "Core/Assert.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 namespace Misc {
-INTRA_CONSTEXPR2 inline uint64 MulHighPart(uint64 x, uint64 y)
+constexpr inline uint64 MulHighPart(uint64 x, uint64 y)
 {
 #ifdef INTRA_INT128_SUPPORT
 	return uint64((uint128(x) * y) >> 64);
@@ -21,7 +21,7 @@ INTRA_CONSTEXPR2 inline uint64 MulHighPart(uint64 x, uint64 y)
 }
 
 INTRA_OPTIMIZE_FUNCTION()
-INTRA_CONSTEXPR2 forceinline uint64 Div100M(uint64 x)
+constexpr forceinline uint64 Div100M(uint64 x)
 {
 #ifdef INTRA_PLATFORM_IS_64
 	// Most compilers replace this with efficient 64-bit multiply trick on 64-bit platforms
@@ -35,7 +35,7 @@ INTRA_CONSTEXPR2 forceinline uint64 Div100M(uint64 x)
 }
 INTRA_OPTIMIZE_FUNCTION_END
 
-INTRA_CONSTEXPR2 inline uint32 Pow5Factor(uint32 x)
+constexpr inline uint32 Pow5Factor(uint32 x)
 {
 	INTRA_DEBUG_ASSERT(x != 0);
 	for(uint32 i = 0; ; i++)
@@ -45,18 +45,18 @@ INTRA_CONSTEXPR2 inline uint32 Pow5Factor(uint32 x)
 	}
 }
 
-INTRA_CONSTEXPR2 inline bool IsMultipleOfPowerOf5(uint32 x, uint32 powerOf5)
+constexpr inline bool IsMultipleOfPowerOf5(uint32 x, uint32 powerOf5)
 {
 	return Pow5Factor(x) >= powerOf5;
 }
 
-INTRA_CONSTEXPR2 inline bool IsMultipleOfPowerOf2(uint32 x, uint32 powerOf2)
+constexpr inline bool IsMultipleOfPowerOf2(uint32 x, uint32 powerOf2)
 {
 	// return __builtin_ctz(x) >= powerOf2; //TODO: check if it is faster
 	return (x & ((1u << powerOf2) - 1)) == 0;
 }
 
-INTRA_CONSTEXPR2 inline uint32 MulShift(uint32 m, uint64 factor, int32 shift)
+constexpr inline uint32 MulShift(uint32 m, uint64 factor, int32 shift)
 {
   INTRA_DEBUG_ASSERT(shift > 32);
   const uint32 factorLo = uint32(factor & 0xFFFFFFFF);
@@ -92,7 +92,7 @@ inline int32 Pow5bits(int32 e)
 }
 
 // Returns floor(log_10(2^e)).
-INTRA_CONSTEXPR2 uint32 Log10Pow2(int32 e)
+constexpr uint32 Log10Pow2(int32 e)
 {
 	// The first value this approximation fails for is 2^1651 which is just greater than 10^297.
 	INTRA_DEBUG_ASSERT(0 <= e && e <= 1650);
@@ -100,7 +100,7 @@ INTRA_CONSTEXPR2 uint32 Log10Pow2(int32 e)
 }
 
 // Returns floor(log_10(5^e)).
-INTRA_CONSTEXPR2 uint32 Log10Pow5(int32 e)
+constexpr uint32 Log10Pow5(int32 e)
 {
 	// The first value this approximation fails for is 5^2621 which is just greater than 10^1832.
 	INTRA_DEBUG_ASSERT(0 <= e && e <= 2620);
@@ -108,4 +108,4 @@ INTRA_CONSTEXPR2 uint32 Log10Pow5(int32 e)
 }
 
 }
-INTRA_CORE_END
+INTRA_END

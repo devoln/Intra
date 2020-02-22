@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Core/Range/Operations.h"
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 #include "Core/Range/Mutation/Copy.h"
 #include "Core/Range/Concepts.h"
 #include "Core/Range/Span.h"
@@ -11,7 +11,6 @@
 #include "InputRange.h"
 
 INTRA_BEGIN
-namespace Range {
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -61,7 +60,7 @@ public:
 	constexpr forceinline ForwardRange(ForwardRange&& rhs):
 		InputRange<T>(Move(static_cast<InputRange<T>&&>(rhs))) {}
 
-	INTRA_CONSTEXPR2 forceinline ForwardRange& operator=(ForwardRange&& rhs)
+	constexpr forceinline ForwardRange& operator=(ForwardRange&& rhs)
 	{
 		InputRange<T>::operator=(Move(static_cast<InputRange<T>&&>(rhs)));
 		return *this;
@@ -105,5 +104,4 @@ protected:
 typedef ForwardRange<char> ForwardStream;
 
 #undef TEMPLATE
-}
 INTRA_END

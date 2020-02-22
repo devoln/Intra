@@ -56,7 +56,7 @@ protected:
 	float mLeftMultiplier, mRightMultiplier, mReverbMultiplier;
 
 	//Осциллятор скорости воспроизведения, которая рассчитывается как mRate*(1 + mFreqOscillator.value)
-	Intra::Math::SineRange<float> mFreqOscillator;
+	Intra::SineRange<float> mFreqOscillator;
 
 	//Огибающая ноты, например ADSR. Не включает в себя экспоненциальное затухание, оно накладывается после этого.
 	Envelope mEnvelope;
@@ -76,7 +76,7 @@ public:
 	void MultiplyPitch(float freqMultiplier) final
 	{
 		mRate *= freqMultiplier;
-		if(Math::Abs(mRate - 1) < 0.0001f) mRate = 1;
+		if(Abs(mRate - 1) < 0.0001f) mRate = 1;
 	}
 
 	void MultiplyVolume(float volumeMultiplier) final {mExpAtten.Factor *= volumeMultiplier;}

@@ -38,7 +38,7 @@ struct WaveTable
 	Span<float> LevelSamples(size_t level) noexcept {return Data.Drop(LevelStartIndex(level)).Take(LevelSize(level));}
 	CSpan<float> LevelSamples(size_t level) const noexcept {return Data.Drop(LevelStartIndex(level)).Take(LevelSize(level));}
 
-	size_t NearestLevelForRate(float rate) const noexcept {return rate < 1? 0: Math::Min(size_t(Math::Log2i(uint(rate*Math::Sqrt2))), LevelCount-1);}
+	size_t NearestLevelForRate(float rate) const noexcept {return rate < 1? 0: Min(size_t(Log2i(uint(rate*Sqrt2))), LevelCount-1);}
 	size_t NearestLevelForRatio(float ratio) const noexcept {return NearestLevelForRate(ratio/BaseLevelRatio);}
 	Span<float> LevelSamplesForRatio(float ratio) noexcept {return LevelSamples(NearestLevelForRatio(ratio));}
 	CSpan<float> LevelSamplesForRatio(float ratio) const noexcept {return LevelSamples(NearestLevelForRatio(ratio));}

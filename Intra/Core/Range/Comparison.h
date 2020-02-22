@@ -6,13 +6,13 @@
 #include "Core/Misc/RawMemory.h"
 #include "Core/Range/Operations.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename R1, typename R2> INTRA_NODISCARD constexpr forceinline Requires<
 	(CFiniteRange<R1> && CInfiniteRange<R2>) ||
 		(CInfiniteRange<R1> && CFiniteRange<R2>),
 bool> Equals(R1&&, R2&&) {return false;}
 
-template<typename R1, typename R2> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R1, typename R2> constexpr forceinline Requires<
 	CTrivCopyCompatibleArrayWith<R1, R2>,
 bool> Equals(const R1& r1, const R2& r2)
 {
@@ -22,7 +22,7 @@ bool> Equals(const R1& r1, const R2& r2)
 
 namespace z__R {
 
-template<typename R1, typename R2, typename P> INTRA_CONSTEXPR2 bool EqualsAdvance(R1&& r1, R2&& r2, P pred)
+template<typename R1, typename R2, typename P> constexpr bool EqualsAdvance(R1&& r1, R2&& r2, P pred)
 {
 	while(!r1.Empty() && !r2.Empty())
 	{
@@ -39,7 +39,7 @@ template<typename R1, typename R2, typename P> INTRA_CONSTEXPR2 bool EqualsAdvan
 
 }
 
-template<typename R1, typename R2, typename P> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+template<typename R1, typename R2, typename P> INTRA_NODISCARD constexpr Requires<
 	!(CHasLength<R1> && CHasLength<R2>) &&
 	CNonInfiniteForwardRange<R1> && CNonInfiniteInputRange<R2> &&
 	CElementPredicate<P, R1, R2>,
@@ -50,7 +50,7 @@ bool> Equals(R1&& lhs, R2&& rhs, P pred)
 	return z__R::EqualsAdvance(lhsCopy, rhsCopy, pred);
 }
 
-template<typename R1, typename R2, typename P> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+template<typename R1, typename R2, typename P> INTRA_NODISCARD constexpr Requires<
 	CAsForwardRangeWithLength<R1> &&
 	CAsForwardRangeWithLength<R2> &&
 	CAsElementAsPredicate<P, R1, R2>,
@@ -62,7 +62,7 @@ bool> Equals(R1&& lhs, R2&& rhs, P pred)
 	return z__R::EqualsAdvance(lhsCopy, rhsCopy, pred);
 }
 
-template<typename R1, typename R2> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R1, typename R2> INTRA_NODISCARD constexpr forceinline Requires<
 	!CTrivCopyCompatibleArrayWith<R1, R2> &&
 	CForwardRange<R1> &&
 	CForwardRange<R2>,
@@ -86,7 +86,7 @@ bool> Equals(R1&& lhs, R2&& rhs, P pred)
 
 namespace z__R {
 
-template<class R, class RW, class F> INTRA_CONSTEXPR2 bool StartsAdvanceWithAdvance(R& range, RW& what, const F& equivPred)
+template<class R, class RW, class F = TFEqual> constexpr bool StartsAdvanceWithAdvance(R& range, RW& what, const F& equivPred = FEqual)
 {
 	while(!what.Empty())
 	{
@@ -100,19 +100,19 @@ template<class R, class RW, class F> INTRA_CONSTEXPR2 bool StartsAdvanceWithAdva
 
 }
 
-template<typename R, typename RW, typename F> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW, typename F = const TFEqual&> constexpr forceinline Requires<
 	CAccessibleRange<R> &&
 	CConsumableRange<RW> &&
 	CCallable<F, TValueTypeOf<RW>, TValueTypeOf<R>> &&
 	!(CHasLength<R> && CHasLength<RW>),
-bool> StartsWith(R&& range, RW&& what, F&& equivPred)
+bool> StartsWith(R&& range, RW&& what, F&& equivPred = FEqual)
 {
 	auto rangeCopy = Forward<R>(range);
 	auto whatCopy = Forward<RW>(what);
 	return z__R::StartsAdvanceWithAdvance(rangeCopy, whatCopy, ForwardAsFunc<F>(equivPred));
 }
 
-template<typename R, typename RW> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> constexpr forceinline Requires<
 	CAccessibleRangeWithLength<R> &&
 	CAccessibleRangeWithLength<RW> &&
 	CConvertible<TValueTypeOf<RW>, TValueTypeOf<R>> &&
@@ -127,7 +127,7 @@ bool> StartsWith(R&& range, RW&& what)
 	return z__R::StartsAdvanceWithAdvance(rangeCopy, whatCopy);
 }
 
-template<typename R, typename RW> INTRA_MEM_CONSTEXPR forceinline Requires<
+template<typename R, typename RW> constexpr forceinline Requires<
 	CArrayClass<R> &&
 	CArrayClass<RW> &&
 	CSame<TArrayElement<RW>, TArrayElement<R>> &&
@@ -135,7 +135,7 @@ template<typename R, typename RW> INTRA_MEM_CONSTEXPR forceinline Requires<
 bool> StartsWith(const R& range, const RW& what)
 {
 	return range.Length() >= what.Length() &&
-		BitsEqual(range.Data(), what.Data(), what.Length())==0;
+		Misc::BitsEqual(range.Data(), what.Data(), what.Length());
 }
 
 template<typename R, typename RW> constexpr forceinline Requires<
@@ -176,12 +176,12 @@ bool> StartsWith(R&& range, const W& what)
   Otherwise ``range`` remains unchanged.
   @returns true if prefix was consumed.
 */
-template<typename R, typename RW> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> constexpr forceinline Requires<
 	CForwardRange<R> &&
 	CAsConsumableRange<RW>,
 bool> ConsumePrefix(R& range, RW&& prefix)
 {
-	auto whatCopy = ForwardAsRange<RW>(prefix);
+	auto prefixCopy = ForwardAsRange<RW>(prefix);
 	bool result = StartsWith(range, prefixCopy);
 	if(result) PopFirstExactly(range, Count(prefixCopy));
 	return result;
@@ -193,7 +193,7 @@ bool> ConsumePrefix(R& range, RW&& prefix)
   Otherwise ``range`` remains unchanged.
   @returns true if whole ``prefix`` was consumed.
 */
-template<typename R, typename RW> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> constexpr forceinline Requires<
 	CInputRange<R> &&
 	CAsConsumableRange<RW>,
 bool> StartsAdvanceWith(R& range, RW&& prefix)
@@ -202,7 +202,7 @@ bool> StartsAdvanceWith(R& range, RW&& prefix)
 	return z__R::StartsAdvanceWithAdvance(range, prefixCopy);
 }
 
-template<typename R, typename RWs> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename RWs> constexpr Requires<
 	CForwardRange<R> &&
 	CNonInfiniteInputRange<RWs> &&
 	CNonInfiniteForwardRange<TValueTypeOf<RWs>> &&
@@ -219,7 +219,7 @@ bool> StartsWithAnyAdvance(const R& range, RWs& subranges, Optional<size_t&> oSu
 	return false;
 }
 
-template<typename R, typename RWs> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RWs> INTRA_NODISCARD constexpr forceinline Requires<
 	CAsForwardRange<R> &&
 	CAsConsumableRange<RWs> &&
 	CAsNonInfiniteForwardRange<TValueTypeOfAs<RWs>> &&
@@ -232,7 +232,7 @@ bool> StartsWithAny(R&& range, RWs&& subranges, Optional<size_t&> oSubrangeIndex
 
 template<typename R, typename RWs,
 	typename W = TValueTypeOfAs<RWs>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+> INTRA_NODISCARD constexpr forceinline Requires<
 	CForwardRange<R> &&
 	CAsConsumableRange<RWs> &&
 	CAsNonInfiniteForwardRange<W> &&
@@ -248,7 +248,7 @@ bool> StartsAdvanceWithAny(R& range, RWs&& subranges, Optional<size_t&> oSubrang
 
 namespace z__R {
 
-template<typename R, typename RW> INTRA_CONSTEXPR2 bool EndsAdvanceWithAdvance(R& range, RW& what)
+template<typename R, typename RW> constexpr bool EndsAdvanceWithAdvance(R& range, RW& what)
 {
 	while(!what.Empty())
 	{
@@ -262,20 +262,20 @@ template<typename R, typename RW> INTRA_CONSTEXPR2 bool EndsAdvanceWithAdvance(R
 
 }
 
-template<typename R, typename RW> INTRA_NODISCARD INTRA_MEM_CONSTEXPR forceinline Requires<
+template<typename R, typename RW> INTRA_NODISCARD constexpr forceinline Requires<
 	CArrayClass<R> &&
 	CArrayClass<RW> &&
 	CSame<TArrayElement<R>, TArrayElement<RW>>,
 bool> EndsWith(const R& range, const RW& what)
 {
 	return range.Length() <= what.Length() &&
-		BitsEqual(
+		Misc::BitsEqual(
 			range.Data()+range.Length()-what.Length(),
 			what.Data(), what.Length()
 		);
 }
 
-template<typename R, typename RW> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> INTRA_NODISCARD constexpr forceinline Requires<
 	CBidirectionalRange<R> &&
 	CBidirectionalRange<RW> &&
 	!(CHasLength<R> && CHasLength<RW>),
@@ -286,7 +286,7 @@ bool> EndsWith(R&& range, RW&& what)
 	return z__R::EndsAdvanceWithAdvance(range, what);
 }
 
-template<typename R, typename RW> INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R, typename RW> constexpr forceinline Requires<
 	CBidirectionalRangeWithLength<R> &&
 	CBidirectionalRangeWithLength<RW> &&
 	!(CHasData<R> && CHasData<RW>),
@@ -298,7 +298,7 @@ bool> EndsWith(R&& range, RW&& what)
 	return z__R::EndsAdvanceWithAdvance(rangeCopy, whatCopy);
 }
 
-template<typename R, typename RW> INTRA_NODISCARD INTRA_MEM_CONSTEXPR forceinline Requires<
+template<typename R, typename RW> INTRA_NODISCARD constexpr forceinline Requires<
 	(!CInputRange<R> || !CInputRange<RW>) &&
 	CAsBidirectionalRange<R> &&
 	CAsBidirectionalRange<RW>,
@@ -319,7 +319,7 @@ bool> EndsWith(R&& range, const W& what)
 {return EndsWith(ForwardAsRange<R>(range), what);}
 
 
-template<typename R1, typename R2, typename P> INTRA_CONSTEXPR2 Requires<
+template<typename R1, typename R2, typename P> constexpr Requires<
 	CAsForwardRange<R1> &&
 	CAsForwardRange<R2> &&
 	CAsElementAsPredicate<P, const TValueTypeOfAs<R1>, const TValueTypeOfAs<R2>>,
@@ -346,7 +346,7 @@ int> LexCompare(R1&& r1, R2&& r2, P&& cmdPred)
 template<typename R1, typename R2,
 	typename T1 = TArrayElement<R1>,
 	typename T2 = TArrayElement<R2>>
-INTRA_CONSTEXPR2 Requires<
+constexpr Requires<
 	CIntegral<T1> &&
 	CSame<T1, T2> &&
 	CArrayClass<R1> &&
@@ -355,11 +355,11 @@ INTRA_CONSTEXPR2 Requires<
 int> LexCompare(const R1& r1, const R2& r2)
 {
 	const size_t l1 = LengthOf(r1), l2 = LengthOf(r2);
-	const int result = BitsEqual(DataOf(r1), DataOf(r2), FMin(l1, l2));
+	const int result = Misc::BitsEqual(DataOf(r1), DataOf(r2), FMin(l1, l2));
 	return result == 0? FCmp(l1, l2): result;
 }
 
-template<typename R1, typename R2> INTRA_CONSTEXPR2 Requires<
+template<typename R1, typename R2> constexpr Requires<
 	CForwardRange<R1> &&
 	CForwardRange<R2> &&
 	!(
@@ -372,4 +372,4 @@ template<typename R1, typename R2> INTRA_CONSTEXPR2 Requires<
 	),
 int> LexCompare(const R1& r1, const R2& r2)
 {return LexCompare(r1, r2, FLess);}
-INTRA_CORE_RANGE_END
+INTRA_END

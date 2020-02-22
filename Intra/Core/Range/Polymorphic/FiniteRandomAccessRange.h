@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Core/Range/Span.h"
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 #include "Core/Range/Operations.h"
 #include "Core/Range/Mutation/Copy.h"
@@ -13,7 +13,6 @@
 #include "BidirectionalRange.h"
 
 INTRA_BEGIN
-namespace Range {
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -46,7 +45,7 @@ protected:
 		Interface* OpSlice(size_t start, size_t end) const override
 		{return new WrapperImpl(FullImplFiller<R, Interface>::OriginalRange(start, end));}
 
-		size_t Count() const override {return Range::Count(FullImplFiller<R, Interface>::OriginalRange);}
+		size_t Count() const override {return Count(FullImplFiller<R, Interface>::OriginalRange);}
 	};
 
 private:
@@ -67,7 +66,7 @@ public:
 	constexpr forceinline FiniteRandomAccessRange(FiniteRandomAccessRange&& rhs):
 		BidirectionalRange<T>(Move(static_cast<BidirectionalRange<T>&&>(rhs))) {}
 
-	INTRA_CONSTEXPR2 forceinline FiniteRandomAccessRange& operator=(FiniteRandomAccessRange&& rhs)
+	constexpr forceinline FiniteRandomAccessRange& operator=(FiniteRandomAccessRange&& rhs)
 	{
 		BidirectionalRange<T>::operator=(Move(static_cast<BidirectionalRange<T>&&>(rhs)));
 		return *this;
@@ -114,5 +113,4 @@ protected:
 };
 
 #undef TEMPLATE
-}
 INTRA_END

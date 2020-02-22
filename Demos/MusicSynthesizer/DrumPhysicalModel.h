@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <Core/PlatformDetect.h>
+#include <Core/Core.h>
 
 #ifndef INTRA_NO_AUDIO_SYNTH
 

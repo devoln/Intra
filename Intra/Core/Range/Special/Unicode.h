@@ -1,10 +1,11 @@
 ﻿#pragma once
 
+#include "Core/Optional.h"
 #include "Core/Range/Span.h"
 #include "Core/Range/StringView.h"
-#include "Container/ForwardDecls.h"
+#include "Extra/Container/ForwardDecls.h" //TODO: Get rid of the Extra dependency
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 // TODO: turn UTF8, UTF16 and UTF32 into template classes RUtf8ToUtf16<R>, RUtf8ToUtf32<R>, ..., taking underlying range as a parameter
 
 struct UTF8
@@ -13,7 +14,7 @@ private:
 	enum: ushort {SurrogateHighStart = 0xD800, SurrogateLowEnd = 0xDFFF};
 	enum: uint32 {ReplacementCharCode = 0xFFFD, MaxLegalCharCode = 0x10FFFF};
 
-	static INTRA_CONSTEXPR2 bool isLegalUTF8(const char* source, index_t length, index_t& oBytesRead)
+	static constexpr bool isLegalUTF8(const char* source, index_t length, index_t& oBytesRead)
 	{
 		oBytesRead = length;
 		byte a = 0;
@@ -42,15 +43,20 @@ private:
 public:
 	StringView Text;
 
-	UTF8() = default;
-	constexpr forceinline UTF8(StringView str): Text(str) {}
+	constexpr UTF8() = default;
+	constexpr forceinline UTF8(StringView str): Text(str)
+	{
+		//MSVC 2017 constexpr bug workaround
+		//Text = str;
+	}
 
+	//TODO: get rid of containers from Extra package
 	DString ToUTF32(bool addNullTerminator) const;
 	WString ToUTF16(bool addNullTerminator) const;
 
 	static INTRA_NODISCARD constexpr forceinline index_t SequenceBytes(char i) {return sequenceBytes(byte(i));}
 
-	static INTRA_NODISCARD INTRA_CONSTEXPR2 bool SequenceIsLegal(const char* start, const char* end)
+	static INTRA_NODISCARD constexpr bool SequenceIsLegal(const char* start, const char* end)
 	{
 		const index_t length = UTF8::SequenceBytes(*start);
 		index_t unused = 0;
@@ -58,7 +64,7 @@ public:
 			isLegalUTF8(start, length, unused);
 	}
 
-	INTRA_CONSTEXPR2 char32_t ReadChar()
+	constexpr char32_t ReadChar()
 	{
 		index_t read = 0;
 		auto res = NextChar(OptRef(read));
@@ -66,7 +72,7 @@ public:
 		return res;
 	}
 
-	INTRA_CONSTEXPR2 char32_t NextChar(Optional<index_t&> oBytesRead = null) const
+	constexpr char32_t NextChar(Optional<index_t&> oBytesRead = null) const
 	{
 		auto src = Text;
 		uint32 ch = 0;
@@ -98,9 +104,9 @@ public:
 		return ch;
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline char32_t First() const {return NextChar();}
+	INTRA_NODISCARD constexpr forceinline char32_t First() const {return NextChar();}
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	constexpr void PopFirst()
 	{
 		const index_t bytesToRead = UTF8::SequenceBytes(Text.First());
 		index_t bytesRead = 0;
@@ -114,30 +120,30 @@ public:
 		Text.PopFirstExactly(bytesToRead);
 	}
 
-	INTRA_CONSTEXPR2 char32_t ReadPrevChar()
+	INTRA_NODISCARD constexpr forceinline bool Empty() const {return Text.Empty();}
+
+	constexpr char32_t ReadPrevChar()
 	{
 		const auto oldText = Text;
 		if(!popBackChar()) return char32_t(ReplacementCharCode);
 		return UTF8(oldText.Tail(oldText.Length() - Text.Length())).NextChar();
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 char32_t Last() const
+	INTRA_NODISCARD constexpr char32_t Last() const
 	{
 		auto temp = *this;
 		if(!temp.popBackChar()) return char32_t(ReplacementCharCode);
-		return UTF8({temp.Text.end(), Text.end()}).NextChar();
+		return UTF8(StringView::FromPointerRange(temp.Text.end(), Text.end())).NextChar();
 	}
 
-	INTRA_CONSTEXPR2 void PopLast() {popBackChar();}
-
-	INTRA_NODISCARD constexpr forceinline bool Empty() const {return Text.Empty();}
+	constexpr void PopLast() {popBackChar();}
 
 	INTRA_NODISCARD constexpr forceinline bool operator==(const UTF8& rhs) const {return Text == rhs.Text;}
 
 	static constexpr const char BOM[] = "\xef\xbb\xbf";
 
 private:
-	INTRA_CONSTEXPR2 bool popBackChar()
+	constexpr bool popBackChar()
 	{
 		INTRA_PRECONDITION(!Empty());
 		while(((Text.Last() & 0xFF) >> 6) == 0x2)
@@ -158,13 +164,17 @@ private:
 public:
 	GenericStringView<const char16_t> Text;
 
-	UTF16() = default;
-	constexpr forceinline UTF16(GenericStringView<const char16_t> str): Text(str) {}
+	constexpr UTF16() = default;
+	constexpr forceinline UTF16(GenericStringView<const char16_t> str)
+	{
+		//MSVC 2017 constexpr bug workaround
+		Text = str;
+	}
 
 	DString ToUTF32() const;
 	String ToUTF8() const;
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 char32_t ReadChar()
+	INTRA_NODISCARD constexpr char32_t ReadChar()
 	{
 		index_t read = 0;
 		auto res = NextChar(OptRef(read));
@@ -172,7 +182,7 @@ public:
 		return res;
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 char32_t NextChar(Optional<index_t&> oWcharsRead = null) const
+	INTRA_NODISCARD constexpr char32_t NextChar(Optional<index_t&> oWcharsRead = null) const
 	{
 		INTRA_PRECONDITION(!Empty());
 		auto src = Text;
@@ -188,37 +198,37 @@ public:
 		return (uint(ch - SurrogateHighStart) << HalfShift) + uint(src.First() - SurrogateLowStart) + HalfBase;
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline char32_t First() const {return NextChar();}
+	INTRA_NODISCARD constexpr forceinline char32_t First() const {return NextChar();}
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	constexpr void PopFirst()
 	{
 		INTRA_PRECONDITION(!Empty());
-		bool twoElements = (Text.First() >= SurrogateHighStart && Text.First() <= SurrogateHighEnd);
+		const bool twoElements = (Text.First() >= SurrogateHighStart && Text.First() <= SurrogateHighEnd);
 		Text.PopFirst();
 		if(twoElements && !Text.Empty()) Text.PopFirst();
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 char32_t ReadPrevChar()
+	INTRA_NODISCARD constexpr char32_t ReadPrevChar()
 	{
 		if(!popBackChar()) return char32_t(ReplacementCharCode);
 		return NextChar();
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 char32_t Last() const
+	INTRA_NODISCARD constexpr char32_t Last() const
 	{
 		auto temp = *this;
 		if(!temp.popBackChar()) return char32_t(ReplacementCharCode);
-		return UTF16({temp.Text.end(), Text.end()}).ReadChar();
+		return UTF16(GenericStringView<const char16_t>::FromPointerRange(temp.Text.end(), Text.end())).ReadChar();
 	}
 
-	INTRA_CONSTEXPR2 void PopLast() {popBackChar();}
+	constexpr void PopLast() {popBackChar();}
 
 	constexpr forceinline bool Empty() const {return Text.Empty();}
 
 	constexpr forceinline bool operator==(const UTF16& rhs) const {return Text == rhs.Text;}
 
 private:
-	INTRA_CONSTEXPR2 bool popBackChar()
+	constexpr bool popBackChar()
 	{
 		INTRA_PRECONDITION(!Empty());
 		const bool twoElements = (Text.Last() >= SurrogateHighStart && Text.Last() <= SurrogateHighEnd);
@@ -241,13 +251,17 @@ private:
 	enum: ushort {SurrogateHighStart = 0xD800, SurrogateLowStart = 0xDC00, SurrogateLowEnd = 0xDFFF};
 public:
 	UTF32() = default;
-	constexpr forceinline UTF32(GenericStringView<const char32_t> range): GenericStringView<const char32_t>(range) {}
+	constexpr forceinline UTF32(GenericStringView<const char32_t> range)
+	{
+		// MSVC 2017 constexpr bug workaround
+		GenericStringView<const char32_t>::operator=(range);
+	}
 
 	WString ToUTF16(bool addNullTerminator) const;
 	String ToUTF8() const;
 
 	enum: uint32 {ReplacementCharCode = 0xFFFD, MaxLegalCharCode = 0x10FFFF};
-	static INTRA_CONSTEXPR2 bool CharToUTF16Pair(char32_t code, char16_t* first, char16_t* second)
+	static constexpr bool CharToUTF16Pair(char32_t code, char16_t* first, char16_t* second)
 	{
 		if(code <= 0xFFFF)
 		{
@@ -271,7 +285,7 @@ public:
 		return true;
 	}
 
-	static INTRA_CONSTEXPR2 index_t CharToUTF8Sequence(char32_t code, char dst[5])
+	static constexpr index_t CharToUTF8Sequence(char32_t code, char dst[5])
 	{
 		index_t bytesToWrite = 0;
 		if(code < 0x80) bytesToWrite = 1;
@@ -293,4 +307,4 @@ public:
 		return bytesToWrite;
 	}
 };
-INTRA_CORE_RANGE_END
+INTRA_END

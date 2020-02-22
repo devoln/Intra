@@ -1,16 +1,13 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
 #include "Core/Type.h"
 #include "Core/Range/Concepts.h"
-#include "Core/Range/Generators/Count.h"
+#include "Core/Range/Count.h"
 
 #include "ToString.h"
 #include "Core/Misc/RawMemory.h"
 
 INTRA_BEGIN
-namespace Range {
-
 template<typename Char, size_t N> Requires<
 	CChar<Char>,
 size_t> MaxLengthOfToString(const Char(&str)[N]) {(void)str; return N;}
@@ -18,7 +15,7 @@ size_t> MaxLengthOfToString(const Char(&str)[N]) {(void)str; return N;}
 
 template<typename Char, size_t N> Requires<
 	CChar<Char>,
-size_t> MaxLengthOfToString(const Char* str) {return Utils::CStringLength(str);}
+size_t> MaxLengthOfToString(const Char* str) {return Misc::CStringLength(str);}
 
 template<typename T=char, typename X> Requires<
 	CUnsignedIntegral<X>,
@@ -45,12 +42,12 @@ template<typename T = char, typename X> forceinline Requires<
 	CSignedIntegral<X>,
 size_t> MaxLengthOfToString(X number, int minWidth, T filler = ' ', uint base = 10)
 {
-	return 1+MaxLengthOfToString(Core::MakeUnsignedType<X>(number<0? -number: number),
+	return 1+MaxLengthOfToString(TMakeUnsigned<X>(number<0? -number: number),
 		minWidth, filler, base, number<0? '-': '\0');
 }
 
 template<typename X> forceinline Requires<
-	CSignedIntegral<X>,
+	CSignedIntegral<X> && !CChar<X>,
 size_t> MaxLengthOfToString(X number)
 {
 	(void)number;
@@ -90,7 +87,7 @@ forceinline size_t MAxLengthOfToString(null_t) {return 4;}
 
 
 template<typename T> static forceinline Requires<
-	!CArithmetic<T> &&
+	!CArithmetic<TRemoveReference<T>> &&
 	!CSameIgnoreCVRef<T, null_t> &&
 	!CAsNonInfiniteForwardRange<T>,
 size_t> MaxLengthOfToString(T&& v)
@@ -100,7 +97,7 @@ size_t> MaxLengthOfToString(T&& v)
 	return counter.Counter;
 }
 
-namespace D {
+namespace z__D {
 template<typename VR> static forceinline
 size_t MaxLengthOfImpl(VR&& r, size_t separatorLen);
 }
@@ -111,9 +108,9 @@ template<typename VR,
 	CNonInfiniteForwardRange<AsVR> &&
 	!CChar<TValueTypeOf<AsVR>>,
 size_t> MaxLengthOfToString(VR&& r)
-{return D::MaxLengthOfImpl(ForwardAsRange<VR>(r), 2)+2;}
+{return z__D::MaxLengthOfImpl(ForwardAsRange<VR>(r), 2)+2;}
 
-namespace D {
+namespace z__D {
 
 template<typename VR> static forceinline
 size_t MaxLengthOfImpl(VR&& r, size_t separatorLen)
@@ -141,7 +138,7 @@ size_t> MaxLengthOfToString(VR&& r, SR&& separator, LR&& lBracket, RR&& rBracket
 {
 	size_t result = Count(ForwardAsRange<LR>(lBracket));
 	result += Count(ForwardAsRange<RR>(rBracket));
-	result += D::MaxLengthOfImpl(ForwardAsRange<VR>(r), Count(ForwardAsRange<SR>(separator)));
+	result += z__D::MaxLengthOfImpl(ForwardAsRange<VR>(r), Count(ForwardAsRange<SR>(separator)));
 	return result;
 }
 
@@ -152,7 +149,5 @@ template<typename VR, typename SR,
 	CArithmetic<TValueTypeOf<AsVR>> &&
 	CAsCharRange<SR>,
 size_t> MaxLengthOfToString(VR&& r, SR&& separator)
-{return D::MaxLengthOfImpl(Forward<VR>(r), Count(ForwardAsRange<SR>(separator)))+2;}
-
-}
+{return z__D::MaxLengthOfImpl(Forward<VR>(r), Count(ForwardAsRange<SR>(separator)))+2;}
 INTRA_END

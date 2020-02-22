@@ -4,16 +4,15 @@
 #include "Core/Tuple.h"
 #include "Core/Preprocessor.h"
 #include "Core/Range/Span.h"
-#include "Core/Range/StringView.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasReflectionFieldNamesMethod, TRemoveReference<T>::ReflectionFieldNames());
 
 #define INTRA_REFLECTION_FIELD(class, field) {&class::field}
-#define INTRA_REFLECTION_TUPLE_FIELD_POINTER(class, field) {&class::field}
+#define INTRA_REFLECTION_FIELD_POINTER(class, field) {&class::field}
 #define INTRA_REFLECTION_VISIT(unused, field) visitor(field)
 #define INTRA_REFLECTION_VISIT_INDEX(index, field) case index: visitor(field); break
-#define INTRA_REFLECTION_TUPLE_FIELD(class, expr) ::Intra::Core::GetMemberFieldType<decltype(&class::expr)>
+#define INTRA_REFLECTION_FIELD_TYPE(class, expr) ::Intra::TMemberFieldType<decltype(&class::expr)>
 #define INTRA_REFLECTION_TUPLE_FIELD_POINTER_TYPE(class, expr) decltype(&class::expr)
 #define INTRA_REFLECTION_FIELD_NAME(class, field) #field
 //#define INTRA_REFLECTION_TUPLE_FIELD_TEST(class, field) static_assert(offsetof(class, field) == TupleOf::OffsetOf<>);
@@ -39,9 +38,9 @@ INTRA_DEFINE_CONCEPT_REQUIRES(CHasReflectionFieldNamesMethod, TRemoveReference<T
     }
 	
 #define INTRA_IMPLEMENT_REFLECTION_FIELD_NAMES(A, ...) \
-	static ::Intra::CSpan< ::Intra::StringView> ReflectionFieldNames()\
+	static ::Intra::CSpan<const char*> ReflectionFieldNames()\
 	{\
-		static const ::Intra::StringView fieldNames[] = {\
+		static const char* const fieldNames[] = {\
 			INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_NAME, A, __VA_ARGS__)\
 		};\
 		return ::Intra::CSpanOf(fieldNames);\
@@ -51,8 +50,9 @@ INTRA_DEFINE_CONCEPT_REQUIRES(CHasReflectionFieldNamesMethod, TRemoveReference<T
   The first argument is the class/struct name, next are the fields in the order of their declaration.
 */
 #define INTRA_ADD_FIELD_REFLECTION(A, ...) \
+	using Reflection_FieldTypes = ::Intra::TList<INTRA_MACRO2_FOR_EACH((,), INTRA_REFLECTION_FIELD_TYPE, A, __VA_ARGS__)>; \
 	INTRA_IMPLEMENT_REFLECTION_FIELD_NAMES(A, __VA_ARGS__) \
     INTRA_IMPLEMENT_FOR_EACH_FIELD(__VA_ARGS__) \
     INTRA_IMPLEMENT_VISIT_FIELD_BY_ID(__VA_ARGS__)
 
-INTRA_CORE_END
+INTRA_END

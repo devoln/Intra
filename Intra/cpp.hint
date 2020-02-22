@@ -8,7 +8,7 @@
 #define INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 #define INTRA_FINALLY auto INTRA_CONCATENATE_TOKENS(finally__, __LINE__) = ::Intra::Utils::TFinallyMaker() = [&]()
 #define INTRA_PUSH_DISABLE_ALL_WARNINGS
-#define INTRA_CONSTEXPR2
+#define constexpr
 #define INTRA_DEFAULT_SOURCE_INFO ::Intra::Utils::SourceInfo{INTRA_CURRENT_FUNCTION, __builtin_FILE(), unsigned(__builtin_LINE())}
 #define INTRA_DEFAULT_SOURCE_INFO ::Intra::Utils::SourceInfo{}
 #define concept

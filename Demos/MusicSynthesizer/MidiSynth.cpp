@@ -18,14 +18,14 @@
 using namespace Audio;
 using namespace Midi;
 
-using Core::begin;
-using Core::end;
+using begin;
+using end;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 MidiState::MidiState()
 {
-	Range::Fill(ChannelVolumes, byte(127));
+	Fill(ChannelVolumes, byte(127));
 }
 
 MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume,
@@ -34,7 +34,7 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 	mInstruments(instruments),
 	mMusic(Move(music)),
 	mTime(0),
-	mSampleCount(duration == Core::Infinity? ~size_t(): size_t((duration+2)*sampleRate)),
+	mSampleCount(duration == Infinity? ~size_t(): size_t((duration+2)*sampleRate)),
 	mMaxSample(maxVolume),
 	mReverberator(size_t(reverb? 16384: 0), size_t(reverb? 32: 0), 1)
 {
@@ -73,7 +73,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 			continue;
 		}
 		size_t samplesBeforeNextEvent = (nextTime == MidiTime::Max)? ~size_t():
-			size_t(Math::Max((nextTime - mTime)*mSampleRate + MidiTime(0.5), MidiTime(1)));
+			size_t(Max((nextTime - mTime)*mSampleRate + MidiTime(0.5), MidiTime(1)));
 		const size_t samplesLeft = SamplesLeft();
 		if(samplesLeft == 0) break;
 		samplesBeforeNextEvent = FMin(samplesBeforeNextEvent, samplesLeft);
@@ -109,9 +109,9 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 		//Этот код нормирует не только музыку сгенерированную этим классом, но и вместе с прежним состоянием буфера.
 		auto minimax1 = MiniMax(dstLeftBeforeEvent.AsConstRange());
 		auto minimax2 = MiniMax(dstRightBeforeEvent.AsConstRange());
-		auto maxSample = Math::Max(
-			Math::Max(Math::Abs(minimax1.first), Math::Abs(minimax1.second)),
-			Math::Max(Math::Abs(minimax2.first), Math::Abs(minimax2.second)));
+		auto maxSample = Max(
+			Max(Abs(minimax1.first), Abs(minimax1.second)),
+			Max(Abs(minimax2.first), Abs(minimax2.second)));
 		if(mMaxSample < maxSample) mMaxSample = maxSample;
 		Multiply(dstLeftBeforeEvent, 1.0f/mMaxSample);
 		Multiply(dstRightBeforeEvent, 1.0f/mMaxSample);
@@ -187,7 +187,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 
 float MidiSynth::pitchBendToFreqMultiplier(short relativePitchBend) const
 {
-	return Math::Pow2(relativePitchBend / 8192.0f * mPitchBendRangeInSemitones / 12);
+	return Pow2(relativePitchBend / 8192.0f * mPitchBendRangeInSemitones / 12);
 }
 
 void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
@@ -226,7 +226,7 @@ void MidiSynth::OnChannelPanChange(const Midi::ChannelPanChange& panChange)
 
 void MidiSynth::OnChannelVolumeChange(const Midi::ChannelVolumeChange& volumeChange)
 {
-	const float volumeMult = Math::Max(float(volumeChange.Volume), 0.001f) / Math::Max(float(mChannelVolumes[volumeChange.Channel]), 0.001f);
+	const float volumeMult = Max(float(volumeChange.Volume), 0.001f) / Max(float(mChannelVolumes[volumeChange.Channel]), 0.001f);
 	/*for(auto& note: mPlayingNotes)
 	{
 		if((note.Key >> 8) == volumeChange.Channel)

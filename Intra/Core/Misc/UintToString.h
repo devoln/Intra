@@ -9,9 +9,9 @@
   These functions have unsafe interface so prefer using Core/Range package which uses this header under the hood.
 */
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 namespace Misc {
-INTRA_CONSTEXPR2 inline index_t UintToString100(uint x, char* dst)
+constexpr inline index_t UintToString100(uint x, char* dst)
 {
 	if(x <= 9)
 	{
@@ -31,7 +31,7 @@ INTRA_CONSTEXPR2 inline index_t UintToString100(uint x, char* dst)
 	return 0;
 }
 
-INTRA_CONSTEXPR2 inline index_t UintToString10000(uint x, char* dst)
+constexpr inline index_t UintToString10000(uint x, char* dst)
 {
 	if(x <= 99) return UintToString100(x, dst);
 
@@ -62,7 +62,7 @@ INTRA_CONSTEXPR2 inline index_t UintToString10000(uint x, char* dst)
 	return digits;
 }
 
-INTRA_CONSTEXPR2 inline index_t UintToString100m(uint32 x, char* dst, index_t digits)
+constexpr inline index_t UintToString100m(uint32 x, char* dst, index_t digits)
 {
 	const uint32 ll0 = uint32((uint64(x) * 109951163) >> 40); //divide by 10000 (compilers don't always do this optimization themselves)
 	uint64 low = (x - ll0 * 10000) | (uint64(ll0) << 32);
@@ -107,7 +107,7 @@ INTRA_CONSTEXPR2 inline index_t UintToString100m(uint32 x, char* dst, index_t di
 	if(d > 0) *dst = char(byte(ll & 0xFF));
 }
 
-INTRA_CONSTEXPR2 inline index_t UintDecimalLength9(uint32 x)
+constexpr inline index_t UintDecimalLength9(uint32 x)
 {
 	INTRA_DEBUG_ASSERT(x < 1000000000);
 	if(x >= 100000000) return 9;
@@ -121,12 +121,12 @@ INTRA_CONSTEXPR2 inline index_t UintDecimalLength9(uint32 x)
 	return 1;
 }
 
-INTRA_CONSTEXPR2 inline index_t UintDecimalLength(uint32 x)
+constexpr inline index_t UintDecimalLength(uint32 x)
 {
 	return x >= 1000000000? 10: UintDecimalLength9(x);
 }
 
-INTRA_CONSTEXPR2 inline index_t UintToString(uint32 x, char* dst)
+constexpr inline index_t UintToString(uint32 x, char* dst)
 {
 	if(x <= 9999) return UintToString10000(x, dst);
 	index_t digits = 0;
@@ -151,7 +151,7 @@ INTRA_CONSTEXPR2 inline index_t UintToString(uint32 x, char* dst)
 	return digits;
 }
 
-INTRA_CONSTEXPR2 inline index_t UintToString(uint64 x, char* dst)
+constexpr inline index_t UintToString(uint64 x, char* dst)
 {
 	if(x <= 0xFFFFFFFF) return UintToString(uint32(x), dst); //boil down to 32-bit version without 64-bit divisions that are slow on 32-bit platforms
 	const uint64 xdiv100m = Div100M(x);
@@ -160,7 +160,7 @@ INTRA_CONSTEXPR2 inline index_t UintToString(uint64 x, char* dst)
 	return d + UintToString100m(xmod100m, dst + d, 8); //this function allows fixed number width = 8
 }
 
-INTRA_CONSTEXPR2 inline void UIntToHexString(uint32 num, char* dst, bool lowerAlpha)
+constexpr inline void UIntToHexString(uint32 num, char* dst, bool lowerAlpha)
 {
 	uint64 x = num;
 
@@ -198,10 +198,10 @@ INTRA_CONSTEXPR2 inline void UIntToHexString(uint32 num, char* dst, bool lowerAl
 	Misc::BinarySerializeLE(x, dst);
 }
 
-INTRA_CONSTEXPR2 inline void UIntToHexString(uint64 num, char* dst, bool lowerAlpha)
+constexpr inline void UIntToHexString(uint64 num, char* dst, bool lowerAlpha)
 {
 	UIntToHexString(uint32(num >> 32), dst, lowerAlpha);
 	UIntToHexString(uint32(num & 0xFFFFFFFF), dst+8, lowerAlpha);
 }
 }
-INTRA_CORE_END
+INTRA_END

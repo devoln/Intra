@@ -3,7 +3,7 @@
 #include "Core/Range/Concepts.h"
 
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 
 //TODO: reimplement with Variant
@@ -81,4 +81,4 @@ template<typename R1, typename R2> forceinline Requires<
 TRangeOfType<R1&&>> Choose(R1&& ifFalseRange, R2&& ifTrueRange, bool condition)
 {return condition? ForwardAsRange<R2>(ifTrueRange): ForwardAsRange<R1>(ifFalseRange);}
 #endif
-INTRA_CORE_RANGE_END
+INTRA_END

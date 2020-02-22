@@ -49,9 +49,6 @@
     <Filter Include="Заголовочные файлы\Test">
       <UniqueIdentifier>{c6a63510-70e9-4aaf-ac8d-042e14571bb3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\Range">
-      <UniqueIdentifier>{eddd2920-1bc1-4b76-9dfc-a327fc8221f1}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Hash">
       <UniqueIdentifier>{c159780f-ea80-4148-8ca2-9b74fdd4d440}</UniqueIdentifier>
     </Filter>
@@ -76,12 +73,6 @@
     <Filter Include="Заголовочные файлы\Memory\Allocator\Basic">
       <UniqueIdentifier>{bd127a97-2372-4249-b593-872854c36b75}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Файлы исходного кода\Memory\Allocator\Basic">
-      <UniqueIdentifier>{91a6d889-e4f3-4487-9cb5-8a416a423cac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Файлы исходного кода\Data\Serialization">
-      <UniqueIdentifier>{8ce6fd71-5f3f-4a1d-aaea-088a709eca04}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Container">
       <UniqueIdentifier>{67a2aac7-835a-46b7-9ca1-1e07b7b2dcc4}</UniqueIdentifier>
     </Filter>
@@ -100,26 +91,14 @@
     <Filter Include="Файлы исходного кода\Container">
       <UniqueIdentifier>{8ac3372f-53e6-4f3f-ad54-85015b4abc4a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Data\Format">
-      <UniqueIdentifier>{d87fdfde-88b4-4bdb-8012-5df20e4fde34}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Заголовочные файлы\Concurrency">
       <UniqueIdentifier>{4c415524-0213-4e0a-bd75-f6ad480da969}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Random">
-      <UniqueIdentifier>{0257f859-72d5-4d5d-adb5-79190678b64c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Concurrency">
       <UniqueIdentifier>{021a2731-1773-4955-b5b4-7d950a870772}</UniqueIdentifier>
     </Filter>
     <Filter Include="Заголовочные файлы\Simd">
       <UniqueIdentifier>{eced8191-6d36-4dfd-875c-811df2a27d66}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Audio">
-      <UniqueIdentifier>{80fa9c48-9b9b-4a07-8a48-c68aa9aa18f3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Заголовочные файлы\Audio\Sources">
-      <UniqueIdentifier>{55900450-7d0c-47a8-b6e9-012ee929843e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Файлы исходного кода\Audio">
       <UniqueIdentifier>{efd71faf-4a58-45cd-b959-365646ffdc3e}</UniqueIdentifier>
@@ -178,9 +157,6 @@
     <Filter Include="Файлы исходного кода\Audio\detail">
       <UniqueIdentifier>{d3efa6a9-ef2f-4403-a984-67d16fb6f745}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Заголовочные файлы\Audio\Midi">
-      <UniqueIdentifier>{286a2136-9012-4f46-a25f-b7203d866cae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Файлы исходного кода\Audio\Midi">
       <UniqueIdentifier>{f5c11979-b83d-44df-8c69-2aa710fce890}</UniqueIdentifier>
     </Filter>
@@ -223,17 +199,17 @@
     <Filter Include="Заголовочные файлы\Core\Misc">
       <UniqueIdentifier>{d6e52faa-fd25-4a2a-b0b5-d1231a219892}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Файлы исходного кода\Core\Range">
+      <UniqueIdentifier>{95fe47f4-f31a-46c5-8f8d-e8cc14cc6c42}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Math\Random">
+      <UniqueIdentifier>{41975aea-8b8f-444b-90d5-51ca9853ddd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Заголовочные файлы\Unstable">
+      <UniqueIdentifier>{54932b33-3950-4ff3-8010-a8d70fdac579}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Memory\Memory.cpp">
-      <Filter>Файлы исходного кода\Memory</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\BinarySerialization.cpp">
-      <Filter>Файлы исходного кода\Data</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\Reflection.cpp">
-      <Filter>Файлы исходного кода\Data</Filter>
-    </ClCompile>
     <ClCompile Include="Data\ValueType.cpp">
       <Filter>Файлы исходного кода\Data</Filter>
     </ClCompile>
@@ -245,15 +221,6 @@
     </ClCompile>
     <ClCompile Include="Memory\Allocator\System.cpp">
       <Filter>Файлы исходного кода\Memory\Allocator</Filter>
-    </ClCompile>
-    <ClCompile Include="Memory\Allocator\Basic\Stack.cpp">
-      <Filter>Файлы исходного кода\Memory\Allocator\Basic</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\Serialization\LanguageParams.cpp">
-      <Filter>Файлы исходного кода\Data\Serialization</Filter>
-    </ClCompile>
-    <ClCompile Include="Data\Serialization\TextSerializerParams.cpp">
-      <Filter>Файлы исходного кода\Data\Serialization</Filter>
     </ClCompile>
     <ClCompile Include="Test\PerfSummary.cpp">
       <Filter>Файлы исходного кода\Test</Filter>
@@ -317,9 +284,6 @@
     </ClCompile>
     <ClCompile Include="Image\Bindings\GLenumFormats.cpp">
       <Filter>Файлы исходного кода\Image\Bindings</Filter>
-    </ClCompile>
-    <ClCompile Include="Image\Loaders\Loader.cpp">
-      <Filter>Файлы исходного кода\Image\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="Image\Loaders\LoaderBMP.cpp">
       <Filter>Файлы исходного кода\Image\Loaders</Filter>
@@ -411,16 +375,7 @@
     <ClCompile Include="Audio\Resample.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Midi\RawEvent.cpp">
-      <Filter>Файлы исходного кода\Audio\Midi</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\Midi\MidiFileParser.cpp">
-      <Filter>Файлы исходного кода\Audio\Midi</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Midi\TrackCombiner.cpp">
-      <Filter>Файлы исходного кода\Audio\Midi</Filter>
-    </ClCompile>
-    <ClCompile Include="Audio\Midi\TrackParser.cpp">
       <Filter>Файлы исходного кода\Audio\Midi</Filter>
     </ClCompile>
     <ClCompile Include="Audio\MusicNote.cpp">
@@ -444,17 +399,26 @@
     <ClCompile Include="Core\Range\String\Ascii.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="Core\Range\Chain.test.cxx">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
-    <ClCompile Include="Core\Range\Span.test.cxx">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
     <ClCompile Include="System\Debug.cpp">
       <Filter>Файлы исходного кода\System</Filter>
     </ClCompile>
     <ClCompile Include="System\Runtime.cpp">
       <Filter>Файлы исходного кода\System</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\MidiRawEvent.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\MidiTrackCombiner.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Audio\Midi\MidiTrackParser.cpp">
+      <Filter>Файлы исходного кода\Audio\Midi</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\Chain.test.cxx">
+      <Filter>Файлы исходного кода\Core\Range</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\Range\Span.test.cxx">
+      <Filter>Файлы исходного кода\Core\Range</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -463,9 +427,6 @@
     </ClInclude>
     <ClInclude Include="Math\Quaternion.h">
       <Filter>Заголовочные файлы\Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Reflection.h">
-      <Filter>Заголовочные файлы\Data</Filter>
     </ClInclude>
     <ClInclude Include="Data\ValueType.h">
       <Filter>Заголовочные файлы\Data</Filter>
@@ -587,9 +548,6 @@
     <ClInclude Include="Container\Associative\LinearSet.h">
       <Filter>Заголовочные файлы\Container\Associative</Filter>
     </ClInclude>
-    <ClInclude Include="Container\Utility\Array2D.h">
-      <Filter>Заголовочные файлы\Container\Utility</Filter>
-    </ClInclude>
     <ClInclude Include="Container\Utility\IndexAllocator.h">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClInclude>
@@ -600,9 +558,6 @@
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Container\Utility\SparseHandledArray.h">
-      <Filter>Заголовочные файлы\Container\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Container\Utility\Tree.h">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
     </ClInclude>
     <ClInclude Include="Container\Sequential\Array.h">
@@ -683,15 +638,6 @@
     <ClInclude Include="IO\SocketWriter.h">
       <Filter>Заголовочные файлы\IO</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Format\BinaryRaw.h">
-      <Filter>Заголовочные файлы\Data\Format</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Format\BinaryParser.h">
-      <Filter>Заголовочные файлы\Data\Format</Filter>
-    </ClInclude>
-    <ClInclude Include="Data\Format\TextParser.h">
-      <Filter>Заголовочные файлы\Data\Format</Filter>
-    </ClInclude>
     <ClInclude Include="Memory\Allocator\Compositors\SegregatedPools.h">
       <Filter>Заголовочные файлы\Memory\Allocator\Compositors</Filter>
     </ClInclude>
@@ -743,35 +689,8 @@
     <ClInclude Include="Hash\Types.h">
       <Filter>Заголовочные файлы\Hash</Filter>
     </ClInclude>
-    <ClInclude Include="Random\FastUniform.h">
-      <Filter>Заголовочные файлы\Random</Filter>
-    </ClInclude>
-    <ClInclude Include="Random\FastUniformNoise.h">
-      <Filter>Заголовочные файлы\Random</Filter>
-    </ClInclude>
     <ClInclude Include="Utils\Promise.h">
       <Filter>Заголовочные файлы\Utils</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\AudioBuffer.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\AudioSource.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\MusicNote.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sound.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\SoundTypes.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources.hh">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth.hh">
-      <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
     <ClInclude Include="Image\AnyImage.h">
       <Filter>Заголовочные файлы\Image</Filter>
@@ -1007,18 +926,6 @@
     <ClInclude Include="Audio\detail\SoundBasicData.hxx">
       <Filter>Файлы исходного кода\Audio\detail</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\SoundDriverInfo.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\Vorbis.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\Wave.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\SampleConversion.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
     <ClInclude Include="Math\Geometry\Line.h">
       <Filter>Заголовочные файлы\Math\Geometry</Filter>
     </ClInclude>
@@ -1028,32 +935,8 @@
     <ClInclude Include="Math\FixedPoint.h">
       <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Resample.h">
-      <Filter>Заголовочные файлы\Audio</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\RawEvent.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\Messages.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\DeviceState.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\MidiFileParser.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\TrackCombiner.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Midi\TrackParser.h">
-      <Filter>Заголовочные файлы\Audio\Midi</Filter>
-    </ClInclude>
     <ClInclude Include="Container\Utility\OwningArrayRange.h">
       <Filter>Заголовочные файлы\Container\Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Sources\MidiSynth.h">
-      <Filter>Заголовочные файлы\Audio\Sources</Filter>
     </ClInclude>
     <ClInclude Include="Utils\SBitset.h">
       <Filter>Заголовочные файлы\Utils</Filter>
@@ -1068,9 +951,6 @@
       <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
     <ClInclude Include="Math\detail\MathBuiltins.h">
-      <Filter>Заголовочные файлы\Math\detail</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\detail\CRTHeaderMathFuntions.h">
       <Filter>Заголовочные файлы\Math\detail</Filter>
     </ClInclude>
     <ClInclude Include="Math\ShaderMath.h">
@@ -1124,19 +1004,7 @@
     <ClInclude Include="Math\FFT.h">
       <Filter>Заголовочные файлы\Math</Filter>
     </ClInclude>
-    <ClInclude Include="Utils\Endianess.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Range\ForwardDecls.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="Core\Range\Buffered.h">
-      <Filter>Заголовочные файлы\Core\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Range\ByLine.h">
-      <Filter>Заголовочные файлы\Core\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Range\ByLineTo.h">
       <Filter>Заголовочные файлы\Core\Range</Filter>
     </ClInclude>
     <ClInclude Include="Core\Range\Chain.h">
@@ -1152,9 +1020,6 @@
       <Filter>Заголовочные файлы\Core\Range</Filter>
     </ClInclude>
     <ClInclude Include="Core\Range\Cycle.h">
-      <Filter>Заголовочные файлы\Core\Range</Filter>
-    </ClInclude>
-    <ClInclude Include="Core\Range\EndsWith.h">
       <Filter>Заголовочные файлы\Core\Range</Filter>
     </ClInclude>
     <ClInclude Include="Core\Range\Filter.h">
@@ -1394,9 +1259,6 @@
     <ClInclude Include="Core\Range\Comparison.h">
       <Filter>Заголовочные файлы\Core\Range</Filter>
     </ClInclude>
-    <ClInclude Include="Core\Range\Concepts.h">
-      <Filter>Заголовочные файлы</Filter>
-    </ClInclude>
     <ClInclude Include="Simd\Reduce.h">
       <Filter>Заголовочные файлы\Simd</Filter>
     </ClInclude>
@@ -1435,6 +1297,30 @@
     </ClInclude>
     <ClInclude Include="System\Error.h">
       <Filter>Заголовочные файлы\System</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\GloballyRegistered.h">
+      <Filter>Заголовочные файлы\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\Concepts.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Concurrency\detail\CondVarWinXP.hxx">
+      <Filter>Заголовочные файлы\Concurrency\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Random\FastUniform.h">
+      <Filter>Заголовочные файлы\Math\Random</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Random\FastUniformNoise.h">
+      <Filter>Заголовочные файлы\Math\Random</Filter>
+    </ClInclude>
+    <ClInclude Include="Core\Range\ByLine.h">
+      <Filter>Заголовочные файлы\Core\Range</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\detail\CRTHeaderMathFunctions.h">
+      <Filter>Заголовочные файлы\Math\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils\Endianess.h">
+      <Filter>Заголовочные файлы\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

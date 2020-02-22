@@ -19,18 +19,18 @@ struct ViolinPhysicalModel
 
 	void SetParams(float frequency, float ampl, double step)
 	{
-		float note = float(Math::Log(frequency/MusicNote::BasicFrequencies[0]*44100.0*step)*12/0.6931471805599453)-14;
+		float note = float(Log(frequency/MusicNote::BasicFrequencies[0]*44100.0*step)*12/0.6931471805599453)-14;
 		float kDemp;
 		if(note<13)
 		{
-			mFrc = 0.375f*Math::Pow2(note/12*2);
+			mFrc = 0.375f*Pow2(note/12*2);
 			mLen = 230;
 			kDemp = 0.005f;
 		}
 		else
 		{
-			float s = 230/Math::Pow2((note-12)/12);
-			mLen = Math::Max(4u, uint(s));
+			float s = 230/Pow2((note-12)/12);
+			mLen = Max(4u, uint(s));
 			mFrc = 1.5f*(float(mLen)/s)*(float(mLen)/s);
 			kDemp = 0.12f/(note+12);
 		}
@@ -39,7 +39,7 @@ struct ViolinPhysicalModel
 		mBowIndex = mLen*9/10-3;
 		mSoundIndex = mLen/100+1;
 			
-		mOscillator = Math::SineRange<float>(0.9f, 0, float(2*Math::PI*7*mDT)); //Частота вибратто 7 Гц
+		mOscillator = SineRange<float>(0.9f, 0, float(2*PI*7*mDT)); //Частота вибратто 7 Гц
 
 		mP.SetCount(mLen+1u);
 		mS.SetCount(mLen+1u);
@@ -83,7 +83,7 @@ private:
 	float mAmplitude;
 	float mDT;
 
-	Math::SineRange<float> mOscillator;
+	SineRange<float> mOscillator;
 
 	uint mLen;   //Длина струны
 	float mFrc; //Натяжение струны

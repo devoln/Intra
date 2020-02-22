@@ -4,12 +4,12 @@
 #include "Core/Range/Span.h"
 #include "Core/Range/Operations.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 /** Sort ``range`` using selection sort algorithm using ``comparer`` predicate.
   1) The worst, average and the best times are O(n^2);
   2) Unstable.
 */
-template<typename R, typename C = TFLess> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename C = TFLess> constexpr Requires<
 	CRandomAccessRangeWithLength<R> &&
 	CAssignableRange<R>
 > SelectionSort(const R& range, C comparer = FLess)
@@ -29,10 +29,10 @@ template<typename R, typename C = TFLess> INTRA_CONSTEXPR2 Requires<
 
 template<typename R, typename C = TFLess,
 	typename AsR = TRangeOfType<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	!CInputRange<R> &&
 	CRandomAccessRangeWithLength<AsR> &&
 	CAssignableRange<AsR>
 > SelectionSort(R&& range, C comparer = FLess)
 {SelectionSort(ForwardAsRange<R>(range), comparer);}
-INTRA_CORE_RANGE_END
+INTRA_END

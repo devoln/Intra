@@ -11,7 +11,7 @@
 inline void AddSineHarmonic(Span<float> wavetableAmplitudes, float freqSampleRateRatio, float amplitude, float bandwidthCents)
 {
 	const size_t N = wavetableAmplitudes.Length()*2;
-	float bwi = (Math::Pow2(bandwidthCents/1200 - 1) - 0.5f)*freqSampleRateRatio;
+	float bwi = (Pow2(bandwidthCents/1200 - 1) - 0.5f)*freqSampleRateRatio;
 	float rw = -freqSampleRateRatio, rdw = 1.0f/N;
 	while(!wavetableAmplitudes.Empty())
 	{

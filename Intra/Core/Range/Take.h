@@ -4,8 +4,8 @@
 #include "Core/Assert.h"
 #include "Core/Range/Operations.h"
 
-INTRA_CORE_RANGE_BEGIN
-INTRA_WARNING_DISABLE_COPY_MOVE_IMPLICITLY_DELETED
+INTRA_BEGIN
+INTRA_WARNING_DISABLE_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasTakeMethod, Val<T>().Take(size_t()));
 
@@ -13,11 +13,15 @@ template<typename R> struct RTake: CopyableIf<!CReference<R>>
 {
 	enum: bool {RangeIsFinite = true};
 
-	template<typename R2> INTRA_CONSTEXPR2 forceinline RTake(R2&& range, size_t count):
+	constexpr RTake() = default;
+
+	template<typename R2> constexpr forceinline RTake(R2&& range, index_t count):
 		mOriginalRange(Forward<R2>(range)) {set_len(count);}
 
-	RTake(RTake&&) = default;
+	/*RTake(RTake&&) = default;
 	RTake(const RTake&) = default;
+	RTake& operator=(RTake&&) = default;
+	RTake& operator=(const RTake&) = default;*/
 
 	template<typename U = TRemoveConstRef<R>> INTRA_NODISCARD constexpr forceinline Requires<
 		CHasLength<U> ||
@@ -30,28 +34,35 @@ template<typename R> struct RTake: CopyableIf<!CReference<R>>
 	bool> Empty() const {return mLen == 0 || mOriginalRange.Empty();}
 
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline TReturnValueTypeOf<R> First() const
+	INTRA_NODISCARD constexpr forceinline TReturnValueTypeOf<R> First() const
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		INTRA_PRECONDITION(!Empty());
 		return mOriginalRange.First();
 	}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
-	{mOriginalRange.PopFirst(); mLen--;}
-	
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline auto Last() const
+	constexpr forceinline void PopFirst()
 	{
-		INTRA_DEBUG_ASSERT(!Empty());
+		mOriginalRange.PopFirst();
+		mLen--;
+	}
+	
+	template<typename U = R> INTRA_NODISCARD constexpr forceinline Requires<
+		CHasIndex<U>,
+	TReturnValueTypeOf<U>> Last() const
+	{
+		INTRA_PRECONDITION(!Empty());
 		return mOriginalRange[mLen-1];
 	}
 
-	INTRA_CONSTEXPR2 forceinline void PopLast() {mLen--;}
+	template<typename U = R> constexpr forceinline Requires<
+		CHasIndex<U>
+	> PopLast() {mLen--;}
 
-	template<typename U = R> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U = R> INTRA_NODISCARD constexpr forceinline Requires<
 		CHasIndex<U>,
-	TReturnValueTypeOf<U>> operator[](size_t index) const
+	TReturnValueTypeOf<U>> operator[](index_t index) const
 	{
-		INTRA_DEBUG_ASSERT(index < mLen);
+		INTRA_PRECONDITION(index < mLen);
 		return mOriginalRange[index];
 	}
 
@@ -62,17 +73,17 @@ template<typename R> struct RTake: CopyableIf<!CReference<R>>
 
 	INTRA_NODISCARD constexpr forceinline size_t LengthLimit() const noexcept {return mLen;}
 
-	template<typename U = R> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U = R> INTRA_NODISCARD constexpr forceinline Requires<
 		CSliceable<U>,
-	TSliceTypeOf<U>> operator()(size_t startIndex, size_t endIndex) const
+	TSliceTypeOf<U>> operator()(index_t startIndex, index_t endIndex) const
 	{
-		INTRA_DEBUG_ASSERT(startIndex <= endIndex);
-		INTRA_DEBUG_ASSERT(endIndex <= mLen);
+		INTRA_PRECONDITION(startIndex <= endIndex);
+		INTRA_PRECONDITION(endIndex <= mLen);
 		return mOriginalRange(startIndex, endIndex);
 	}
 
 	
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RTake Take(size_t count) const
+	INTRA_NODISCARD constexpr forceinline RTake Take(index_t count) const
 	{
 		if(count > mLen) count = mLen;
 		return Take(mOriginalRange, count);
@@ -80,19 +91,19 @@ template<typename R> struct RTake: CopyableIf<!CReference<R>>
 
 private:
 	R mOriginalRange;
-	size_t mLen;
+	index_t mLen = 0;
 
-	template<typename U = R> INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U = R> constexpr forceinline Requires<
 		CHasLength<U>
-	> set_len(size_t maxLen)
+	> set_len(index_t maxLen)
 	{
 		mLen = mOriginalRange.Length();
 		if(mLen > maxLen) mLen = maxLen;
 	}
 
-	template<typename U = R> INTRA_CONSTEXPR2 forceinline Requires<
+	template<typename U = R> constexpr forceinline Requires<
 		!CHasLength<U>
-	> set_len(size_t maxLen) {mLen = maxLen;}
+	> set_len(index_t maxLen) {mLen = maxLen;}
 };
 
 
@@ -120,7 +131,7 @@ namespace z__R {
 
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasTake, Take(Val<T>(), size_t()));
 
-template<typename R, bool= CHasTake<R>> struct TTakeResult_
+template<typename R, bool = CHasTake<R>> struct TTakeResult_
 {typedef decltype(Take(Val<R>(), size_t())) _;};
 
 template<typename R> struct TTakeResult_<R, false>
@@ -130,8 +141,8 @@ template<typename R> struct TTakeResult_<R, false>
 
 template<typename R> using TTakeResult = typename z__R::TTakeResult_<R>::_;
 
-template<typename R> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R> INTRA_NODISCARD constexpr forceinline Requires<
 	!CInputRange<R> && CAsInputRange<R>,
 TTakeResult<TRangeOfType<R>>> Take(R&& range, size_t count)
 {return Take(ForwardAsRange<R>(range), count);}
-INTRA_CORE_RANGE_END
+INTRA_END

@@ -1,4 +1,4 @@
-﻿
+﻿#include "Core/Core.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -8,17 +8,15 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Range.h"
 #include "IO/FormattedWriter.h"
-#include "Core/Range/Stream.hh"
-#include "Core/Range/Reduction.h"
+#include "Core/Range/Stream/Parse.h"
+#include "Core/Range/Reduce.h"
 #include "Core/Range/Span.h"
-#include "Range.hh"
-#include "Random/FastUniform.h"
+#include "Core/Range/StringView.h"
+#include "Core/Range/Map.h"
+#include "Math/Random/FastUniform.h"
 #include "Container/Sequential/List.h"
 
 using namespace Intra;
-using namespace IO;
-using namespace Range;
-
 
 void TestArrayRangeStreams(FormattedWriter& output)
 {
@@ -30,12 +28,12 @@ void TestArrayRangeStreams(FormattedWriter& output)
 	Span<char> buf = bufOnStack;
 	buf << "Мы пишем в сишный массив, как в поток." << '\r' << '\n' <<
 		"Парсим pi и прибавляем к нему 1: " <<
-		1.0f+Range::Parse<float>("3.1415926") << "\r\n" <<
+		1.0f+Parse<float>("3.1415926") << "\r\n" <<
 		"Далее записан массив: " << arrToFormat <<
-		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, &Math::Sqr<int>) <<
-		"\r\nКвадраты элементов другого массива: " << Map(rawArr, &Math::Sqr<int>);
+		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, &Sqr<int>) <<
+		"\r\nКвадраты элементов другого массива: " << Map(rawArr, &Sqr<int>);
 	output.PrintLine("Результат:");
-	output.PrintLine(StringView(bufOnStack, buf.Begin));
+	output.PrintLine(StringView::FromPointerRange(bufOnStack, buf.Begin));
 	output.LineBreak();
 
 	StringView strPiE = "3.1415926, 2.178281828, 1, 2";

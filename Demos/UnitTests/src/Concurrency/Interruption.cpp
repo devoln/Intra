@@ -14,6 +14,7 @@
 #include "Core/Range/ForEach.h"
 
 #include "System/Stopwatch.h"
+#include "System/Debug.h"
 
 using namespace Intra;
 
@@ -26,13 +27,13 @@ void TestInterruption(FormattedWriter& output)
 	Stopwatch clock;
 	ThisThread.Sleep(1);
 	auto elapsedUs = clock.ElapsedUs();
-	output.PrintLine("ThisThread.Sleep(1) time: ", elapsedUs, u8" μs.");
+	output.PrintLine("ThisThread.Sleep(1) time: ", elapsedUs, " μs.");
 	thr.Interrupt();
 
 	clock.Reset();
 	thr.Join();
 	elapsedUs = clock.ElapsedUs();
-	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
+	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, " μs.");
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
 	INTRA_ASSERT(!flag.Get());
 #endif
@@ -48,9 +49,9 @@ void TestInterruption(FormattedWriter& output)
 	clock.Reset();
 	thr.Join();
 	elapsedUs = clock.ElapsedUs();
-	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
+	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, " μs.");
 #ifndef INTRA_THREAD_NO_FULL_INTERRUPT
-	INTRA_ASSERT1(elapsedUs < 50000 || Utils::IsDebuggerAttached(), elapsedUs);
+	INTRA_ASSERT1(elapsedUs < 50100 || IsDebuggerAttached(), elapsedUs);
 #endif
 
 	thr = Thread("NonInterruptibleSleeper", [&]() {
@@ -63,8 +64,8 @@ void TestInterruption(FormattedWriter& output)
 	clock.Reset();
 	thr.Join();
 	elapsedUs = clock.ElapsedUs();
-	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, u8" μs.");
-	INTRA_ASSERT1(elapsedUs >= 480000 || Utils::IsDebuggerAttached(), elapsedUs);
+	output.PrintLine(thr.Name(), " joining time: ", elapsedUs, " μs.");
+	INTRA_ASSERT1(elapsedUs >= 480000 || IsDebuggerAttached(), elapsedUs);
 }
 
 #endif

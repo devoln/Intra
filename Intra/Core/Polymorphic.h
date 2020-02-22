@@ -2,7 +2,7 @@
 
 #include "Core/Type.h"
 
-INTRA_CORE_BEGIN
+INTRA_BEGIN
 template<class Base, size_t SizeLimit = sizeof(Base), size_t AlignmentLimit = alignof(Base)> class Polymorphic
 {
 	static_assert(CHasVirtualDestructor<Base> && CHasPolymorphicCloneMethod<T>, "Bad Base type for Polymorphic<Base>!");
@@ -24,7 +24,7 @@ public:
 		new(&mVal) Derived(Forward<Args>(args)...);
 	}
 
-	INTRA_CONSTEXPR2 forceinline operator Base&() {return mVal;}
+	constexpr forceinline operator Base&() {return mVal;}
 	constexpr forceinline operator const Base&() const {return mVal;}
 };
-INTRA_CORE_END
+INTRA_END

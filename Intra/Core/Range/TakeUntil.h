@@ -7,7 +7,7 @@
 #include "Core/Range/Search/Subrange.h"
 #include "Take.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 //TODO: Implement class RTakeUntilResult for InputRange
 
 
@@ -23,7 +23,7 @@ INTRA_CORE_RANGE_BEGIN
 */
 template<typename R, typename X,
 	typename T = TValueTypeOf<R>
-> INTRA_CONSTEXPR2 forceinline Requires<
+> constexpr forceinline Requires<
 	CNonInfiniteForwardRange<R> &&
 	!CConst<R> &&
 	((CConvertible<X, T> ||
@@ -61,4 +61,4 @@ template<typename R, typename X,
 		CConvertible<TValueTypeOf<X>, T>)),
 TTakeResult<R>> TakeUntil(const R& range, const X& valueOrPredOrSubrange, size_t* ioIndex=null)
 {return TakeUntilAdvance(R(range), valueOrPredOrSubrange, ioIndex);}
-INTRA_CORE_RANGE_END
+INTRA_END

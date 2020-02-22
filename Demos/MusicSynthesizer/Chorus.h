@@ -17,12 +17,12 @@ struct Chorus
 	Array<float> DelayCircularBuffer;
 	size_t CircularBufferOffset;
 	float MainVolume, SecondaryVolume;
-	Math::SineRange<float> Oscillator;
+	SineRange<float> Oscillator;
 
 	Chorus(size_t maxDelaySamples, float delayFreqPerSample, float mainVolume=0.5f, float secondaryVolume=0.5f):
 		DelayCircularBuffer(maxDelaySamples), CircularBufferOffset(0),
 		MainVolume(mainVolume), SecondaryVolume(secondaryVolume),
-		Oscillator(float(maxDelaySamples)*0.5f, float(-Math::PI/2), float(2*Math::PI*delayFreqPerSample)) {}
+		Oscillator(float(maxDelaySamples)*0.5f, float(-PI/2), float(2*PI*delayFreqPerSample)) {}
 
 	void operator()(Span<float> inOutSamples);
 };

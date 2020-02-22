@@ -1,9 +1,16 @@
-#include "Data/Serialization.hh"
+#include "Data/Serialization/BinarySerializer.h"
+#include "Data/Serialization/BinaryDeserializer.h"
+#include "Data/Serialization/TextSerializer.h"
+#include "Data/Serialization/TextDeserializer.h"
+#include "Data/Serialization/TextSerializerParams.h"
+
 #include "IO/FormattedWriter.h"
-#include "Data/Reflection.h"
+#include "Core/Reflection.h"
+
+#include "Container/Sequential/String.h"
+#include "Container/Sequential/Array.h"
 
 using namespace Intra;
-using namespace IO;
 
 struct StructTest
 {
@@ -12,7 +19,7 @@ struct StructTest
 	String z[2];
 	Array<int> arr;
 
-	INTRA_ADD_REFLECTION(StructTest, x, y, z, arr)
+	INTRA_ADD_FIELD_REFLECTION(StructTest, x, y, z, arr)
 };
 
 void TestTextSerialization(FormattedWriter& output)
@@ -22,7 +29,7 @@ void TestTextSerialization(FormattedWriter& output)
 	output.PrintLine("In custom format: ");
 	output.PrintLine(strToDeserialize);
 	output.LineBreak();
-	auto deserializer = Data::TextDeserializer(Data::LanguageParams::JsonLikeNoQuotes, strToDeserialize);
+	auto deserializer = TextDeserializer(LanguageParamsBuiltin::JsonLikeNoQuotes, strToDeserialize);
 	StructTest t2 = deserializer.Deserialize<StructTest>();
 	INTRA_ASSERT_EQUALS(deserializer.Log, null);
 	if(!deserializer.Log.Empty())
@@ -32,10 +39,10 @@ void TestTextSerialization(FormattedWriter& output)
 	}
 
 	char serializedBuf[300];
-	Data::TextSerializer serializer(Data::LanguageParams::Json,
-		Data::TextSerializerParams::Verbose, serializedBuf);
+	TextSerializer serializer(LanguageParamsBuiltin::Json,
+		TextSerializerParamsBuiltin::Verbose, serializedBuf);
 	serializer << t2;
-	const StringView resultJson = serializer.Output.GetWrittenData();
+	const StringView resultJson = serializer.Output.WrittenRange();
 	const StringView expectedResultJson =
 	"{\r\n"
 		"\t\"x\" : -5434,\r\n"
@@ -49,18 +56,18 @@ void TestTextSerialization(FormattedWriter& output)
 	output.PrintLine(resultJson);
 	output.LineBreak();
 
-	serializer = Data::TextSerializer(Data::LanguageParams::Xml,
-		Data::TextSerializerParams::VerboseNoSpaces, serializedBuf);
+	serializer = TextSerializer(LanguageParamsBuiltin::Xml,
+		TextSerializerParamsBuiltin::VerboseNoSpaces, serializedBuf);
 	serializer << t2;
-	const StringView resultXml = serializer.Output.GetWrittenData();
+	const StringView resultXml = serializer.Output.WrittenRange();
 	output.PrintLine("XML:");
 	output.PrintLine(resultXml);
 	output.LineBreak();
 
-	serializer = Data::TextSerializer(Data::LanguageParams::JsonLikeNoQuotes,
-		Data::TextSerializerParams::Verbose, serializedBuf);
+	serializer = TextSerializer(LanguageParamsBuiltin::JsonLikeNoQuotes,
+		TextSerializerParamsBuiltin::Verbose, serializedBuf);
 	serializer << t2;
-	const StringView resultJsonLikeNoQuotes = serializer.Output.GetWrittenData();
+	const StringView resultJsonLikeNoQuotes = serializer.Output.WrittenRange();
 	const StringView expectedResultJsonLikeNoQuotes =
 	"{\r\n"
 		"\tx = -5434,\r\n"
@@ -74,10 +81,10 @@ void TestTextSerialization(FormattedWriter& output)
 	(void)expectedResultJsonLikeNoQuotes;
 }
 
-void TestBinarySerialization(IO::FormattedWriter& output)
+void TestBinarySerialization(FormattedWriter& output)
 {
 	byte data[1000];
-	Data::BinarySerializer serializer(data);
+	BinarySerializer serializer(data);
 	output.PrintLine("Binary serialization to array byte data[1000]:");
 	
 	int origA = 12345;
@@ -108,14 +115,14 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	serializer << origG;
 	output.PrintLine("Array<int> origG = ", origG);
 
-	Core::Tuple<int, double> origH = {-8543211, 2.718281828};
+	Tuple<int, double> origH = {-8543211, 2.718281828};
 	serializer << origH;
 	output.PrintLine("Tuple<int, double> origH = ", origH);
 
 
 	output.PrintLine("Deserializing from binary serializer output in data byte array:");
 
-	Data::BinaryDeserializer deserializer(serializer.Output.GetWrittenData());
+	BinaryDeserializer deserializer(serializer.Output.WrittenRange());
 	int resA;
 	deserializer >> resA;
 	output.PrintLine("int resA = ", resA);
@@ -136,7 +143,7 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	int resE[5];
 	deserializer >> resE;
 	output.PrintLine("int resE[5] = ", resE);
-	INTRA_ASSERT2(Range::Equals(origE, resE), origE, resE);
+	INTRA_ASSERT2(Equals(origE, resE), origE, resE);
 
 	CSpan<int> resF = deserializer.Deserialize<CSpan<int>>();
 	output.PrintLine("CSpan<int> resF = ", resF);
@@ -146,7 +153,7 @@ void TestBinarySerialization(IO::FormattedWriter& output)
 	output.PrintLine("Array<int> resG = ", resG);
 	INTRA_ASSERT_EQUALS(origG, resG);
 
-	Core::Tuple<int, double> resH = deserializer.Deserialize<Core::Tuple<int, double>>();
+	Tuple<int, double> resH = deserializer.Deserialize<Tuple<int, double>>();
 	output.PrintLine("Tuple<int, double> resH = ", resH);
 	INTRA_ASSERT_EQUALS(origH, resH);
 }

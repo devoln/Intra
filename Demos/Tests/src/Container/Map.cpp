@@ -47,7 +47,7 @@ template<typename MAP> double TestMapPopulation(uint times, uint size)
 }
 
 template<typename K, typename V> V& GetPairSecondValue(std::pair<K,V>& p) {return p.second;}
-template<typename K, typename V> V& GetPairSecondValue(Core::Pair<K,V>& p) {return p.second;}
+template<typename K, typename V> V& GetPairSecondValue(Pair<K,V>& p) {return p.second;}
 template<typename K, typename V> V& GetPairSecondValue(KeyValuePair<K,V>& p) {return p.Value;}
 
 template<typename MAP> double TestMapIterationSumValues(uint times, uint size)
@@ -117,7 +117,7 @@ double TestHashMapSuccessfulSearching(uint times, uint size)
 	Std.PrintLine("free bucket count: ", stats.FreeBucketCount);
 	Std.PrintLine("max bucket load: ", stats.MaxBucketLoad);
 	Std.PrintLine("average bucket load: ", stats.AverageBucketLoad);
-	Std.PrintLine(Range::Take(bucketLoads, stats.MaxBucketLoad+1));
+	Std.PrintLine(Take(bucketLoads, stats.MaxBucketLoad+1));
 
 	return time;
 }

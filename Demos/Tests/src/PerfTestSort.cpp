@@ -25,9 +25,9 @@ double TestInsertionSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::InsertionSort(arr, comparer);
+	InsertionSort(arr, comparer);
 	const double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -36,9 +36,9 @@ double TestShellSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::ShellSort(arr, comparer);
+	ShellSort(arr, comparer);
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -47,9 +47,9 @@ double TestQuickSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::QuickSort(arr, comparer);
+	QuickSort(arr, comparer);
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -57,9 +57,9 @@ template<typename T> double TestRadixSorting(size_t size)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::RadixSort(arr.AsRange());
+	RadixSort(arr.AsRange());
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -68,9 +68,9 @@ double TestMergeSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::MergeSort(arr, comparer);
+	MergeSort(arr, comparer);
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -79,9 +79,9 @@ double TestSelectionSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::SelectionSort(arr, comparer);
+	SelectionSort(arr, comparer);
 	const double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -90,9 +90,9 @@ double TestHeapSorting(size_t size, Comparer comparer = FLess)
 {
 	Array<T> arr = GetRandomValueArray<T>(size);
 	Stopwatch tim;
-	Range::HeapSort(arr, comparer);
+	HeapSort(arr, comparer);
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 
@@ -103,7 +103,7 @@ double TestStdSorting(size_t size, Comparer comparer = FLess)
 	Stopwatch tim;
 	std::sort(arr.begin(), arr.end(), comparer);
 	double result = tim.ElapsedSeconds();
-	INTRA_DEBUG_ASSERT(Range::IsSorted(arr));
+	INTRA_DEBUG_ASSERT(IsSorted(arr));
 	return result;
 }
 

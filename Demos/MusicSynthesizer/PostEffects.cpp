@@ -36,7 +36,7 @@ void FilterDrive::operator()(Span<float> inOutSamples, uint sampleRate) const
 {
 	(void)sampleRate;
 	for(float& sample: inOutSamples)
-		sample = Math::Atan(sample*K);
+		sample = Atan(sample*K);
 }
 
 void FilterHP::operator()(Span<float> inOutSamples, uint sampleRate) const
@@ -58,14 +58,14 @@ void Fade::operator()(Span<float> inOutSamples, uint sampleRate) const
 	{
 		const float k = 1.0f/float(FadeIn*FadeIn);
 		for(size_t i = 0; i < inOutSamples.Length(); i++)
-			inOutSamples[i] *= float(Math::Sqr(i+1))*k;
+			inOutSamples[i] *= float(Sqr(i+1))*k;
 	}
 	if(FadeOut > 0)
 	{
 		const size_t a = inOutSamples.Length() > FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
-		const float k = 1.0f/float(Math::Sqr(FadeOut));
+		const float k = 1.0f/float(Sqr(FadeOut));
 		for(uint i = 1; i < FadeOut; i++)
-			inOutSamples[a+i] *= float(Math::Sqr(FadeOut-i))*k;
+			inOutSamples[a+i] *= float(Sqr(FadeOut-i))*k;
 	}
 }
 
@@ -73,7 +73,7 @@ HallReverb::HallReverb(size_t delayLength, size_t numDelays, float reverbVolume,
 	mD(numDelays), mAccum(delayLength*3), mK(k)
 {
 	if(delayLength == 0 || numDelays == 0) return;
-	INTRA_ASSERT(delayLength >= 4 && Math::IsPow2(delayLength));
+	INTRA_ASSERT(delayLength >= 4 && IsPow2(delayLength));
 	INTRA_ASSERT(0 <= k && k <= 1);
 	Random::FastUniform<float> rand((delayLength | (numDelays << 16)) + size_t(k*234389432) + 5498439);
 	const float revK = 1 - k;
@@ -135,7 +135,7 @@ void HallReverb::operator()(Span<float> dstLeft, Span<float> dstRight, CSpan<flo
 		ProcessSample(dstLeft.Begin++, dstRight.Begin++, 0);
 		mBufferedReverbSamples--;
 	}
-	while(!dstLeft.Empty() && (Math::Abs(mS) > 0.01f || Math::Abs(mRF) > 0.01f))
+	while(!dstLeft.Empty() && (Abs(mS) > 0.01f || Abs(mRF) > 0.01f))
 		ProcessSample(dstLeft.Begin++, dstRight.Begin++, 0);
 }
 

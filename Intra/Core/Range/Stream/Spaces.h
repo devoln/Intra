@@ -1,13 +1,10 @@
 ﻿#pragma once
 
 #include "Core/Range/Concepts.h"
-
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 INTRA_BEGIN
-inline namespace Range {
-
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R>,
 size_t> SkipSpacesCountLinesAdvance(R& src)
@@ -25,7 +22,7 @@ size_t> SkipSpacesCountLinesAdvance(R& src)
 	return lines;
 }
 
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R>,
 size_t> CountLinesAdvance(R& src)
@@ -43,13 +40,11 @@ size_t> CountLinesAdvance(R& src)
 	return lines;
 }
 
-template<typename R> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline Requires<
+template<typename R> INTRA_NODISCARD constexpr forceinline Requires<
 	CAsCharRange<R>,
 size_t> CountLines(R&& range)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return CountLinesAdvance(rangeCopy);
-}
-
 }
 INTRA_END

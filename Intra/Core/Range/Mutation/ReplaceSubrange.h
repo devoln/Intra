@@ -12,29 +12,29 @@
 #include "Core/Range/Search/RecursiveBlock.h"
 #include "Core/Range/Mutation/Copy.h"
 
-INTRA_CORE_RANGE_BEGIN
-template<class R, class OR, class RR> INTRA_CONSTEXPR2 Requires<
+INTRA_BEGIN
+template<class R, class OR, class RR> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	COutputRange<OR> &&
 	CNonInfiniteForwardRange<RR>,
 TTakeResult<OR>> MultiReplaceAdvanceToAdvance(R& src, OR& dstBuffer, const RR& replacementSubranges)
 {
-	size_t index = 0;
+	index_t index = 0;
 	auto resultStart = Forward<OR>(dstBuffer);
-	size_t substrIndex = 0;
+	index_t substrIndex = 0;
 	while(WriteTo(
-		TakeUntilAdvanceAny(src, Unzip<0>(replacementSubranges), &index, &substrIndex),
+		TakeUntilAdvanceAny(src, Unzip<0>(replacementSubranges), OptRef(index), OptRef(substrIndex)),
 			dstBuffer), !src.Empty())
 	{
 		auto&& replacement = AtIndex(replacementSubranges, substrIndex);
-		WriteTo(GetField<1>(replacement), dstBuffer);
-		PopFirstExactly(src, Count(GetField<0>(replacement)));
-		index += Count(GetField<1>(replacement));
+		WriteTo(get<1>(replacement), dstBuffer);
+		PopFirstExactly(src, Count(get<0>(replacement)));
+		index += Count(get<1>(replacement));
 	}
 	return Take(resultStart, index);
 }
 
-template<class R, class OR, class RR> INTRA_CONSTEXPR2 Requires<
+template<class R, class OR, class RR> constexpr Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	COutputRange<OR> &&
 	CAsNonInfiniteForwardRange<RR>,
@@ -46,7 +46,7 @@ TTakeResult<OR>> MultiReplaceToAdvance(R&& range,
 		dstBuffer, ForwardAsRange<RR>(replacementSubranges));
 }
 
-template<class R, class OR, class RR> INTRA_CONSTEXPR2 inline Requires<
+template<class R, class OR, class RR> constexpr inline Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	CAsOutputRange<OR> &&
 	CAsNonInfiniteForwardRange<RR>,
@@ -60,7 +60,7 @@ TTakeResult<TRangeOfType<OR&&>>> MultiReplaceTo(R&& range,
 
 template<typename R, typename OR, typename LR, typename RR,
 	typename SubstitutionRangeOfTupleOfRanges, typename UnknownSubstitutionRange>
-INTRA_CONSTEXPR2 Requires<
+constexpr Requires<
 	CAsNonInfiniteForwardRange<R> &&
 	COutputRange<OR> &&
 	CCopyConstructible<OR> &&
@@ -104,4 +104,4 @@ TTakeResult<TRangeOfType<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 	}
 	return Take(resultBufferStart, index);
 }
-INTRA_CORE_RANGE_END
+INTRA_END

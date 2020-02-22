@@ -45,10 +45,10 @@ extern "C"
 		Span<float> channels[2];
 		for(auto& channel: channels)
 		{
-			channel = Range::SpanOfPtr(dst, count);
+			channel = SpanOfPtr(dst, count);
 			dst += bufferSizeInSamples;
 		}
-		return uint(source->GetUninterleavedSamples(Range::Take(channels, source->ChannelCount())));
+		return uint(source->GetUninterleavedSamples(Take(channels, source->ChannelCount())));
 	}
 
 	char* EMSCRIPTEN_KEEPALIVE GetMidiInfoString(char* midiDataPtr, uint midiDataLength)

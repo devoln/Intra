@@ -4,7 +4,7 @@
 #include "Core/Range/Mutation/Copy.h"
 
 #include "Core/Range/Span.h"
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 #include "Core/Range/Concepts.h"
 
@@ -13,7 +13,6 @@
 #include "ForwardRange.h"
 
 INTRA_BEGIN
-namespace Range {
 INTRA_WARNING_DISABLE_COPY_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
@@ -62,10 +61,10 @@ public:
 
 	constexpr forceinline RandomAccessRange(null_t=null) {}
 
-	INTRA_CONSTEXPR2 forceinline RandomAccessRange(RandomAccessRange&& rhs):
+	constexpr forceinline RandomAccessRange(RandomAccessRange&& rhs):
 		ForwardRange<T>(Move(static_cast<ForwardRange<T>&&>(rhs))) {}
 
-	INTRA_CONSTEXPR2 forceinline RandomAccessRange& operator=(RandomAccessRange&& rhs)
+	constexpr forceinline RandomAccessRange& operator=(RandomAccessRange&& rhs)
 	{
 		InputRange<T>::mInterface = Move(rhs.mInterface);
 		return *this;
@@ -113,15 +112,13 @@ public:
 
 	INTRA_NODISCARD RTake<RandomAccessRange> operator()(size_t start, size_t end) const
 	{
-		INTRA_DEBUG_ASSERT(end >= start);
+		INTRA_PRECONDITION(end >= start);
 		return Take(Drop(start), end-start);
 	}
 
 protected:
-	constexpr forcienline RandomAccessRange(typename ForwardRange<T>::Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
+	constexpr forceinline RandomAccessRange(typename ForwardRange<T>::Interface* interfacePtr): ForwardRange<T>(interfacePtr) {}
 };
 
-
 #undef TEMPLATE
-}
 INTRA_END

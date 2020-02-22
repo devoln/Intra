@@ -1,3 +1,4 @@
+#include "Core/Core.h"
 
 INTRA_DISABLE_REDUNDANT_WARNINGS
 
@@ -16,16 +17,17 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 #include "Container/SparseArray.h"
 #include "IO/FormattedLogger.h"
 
+#include "Container/HashMap.h"
+#include "Concurrency/Thread.h"
+
 #include "Sort.h"
-#include "Core/Range/Range.h"
+#include "Range/Range.h"
 #include "IO/IO.h"
 #include "Serialization.h"
-#include "Container/HashMap.h"
 
 #include "Concurrency/Concurrency.h"
 
 using namespace Intra;
-using namespace IO;
 
 FormattedWriter& InitOutput()
 {
@@ -34,7 +36,7 @@ FormattedWriter& InitOutput()
 	//Инициализация лога
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
-	FileWriter logFile = OS.FileOpenAppend(logFileName, Error::Skip());
+	FileWriter logFile = OS.FileOpenAppend(logFileName, IgnoreErrors);
 	if(logFile==null)
 	{
 		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
@@ -43,13 +45,13 @@ FormattedWriter& InitOutput()
 	FormattedWriter logWriter = HtmlWriter(Move(logFile), !logExisted);
 
 	String datetime;
-	ToString(LastAppender(datetime), System::DateTime::Now());
-	StringView appName = IO::Path::ExtractName(System::Environment.CommandLine.First());
+	ToString(LastAppender(datetime), DateTime::Now());
+	StringView appName = ExtractName(Environment.CommandLine.First());
 
-	logWriter.BeginSpoiler(appName + StringOf(System::Environment.CommandLine.Drop(), " ", " ", " ") + datetime);
+	logWriter.BeginSpoiler(appName + StringOf(Environment.CommandLine.Drop(), " ", " ", " ") + datetime);
 
 	logWriter.Print("Command line arguments:");
-	logWriter.PrintCode(StringOf(System::Environment.CommandLine, "\n", " ", " "));
+	logWriter.PrintCode(StringOf(Environment.CommandLine, "\n", " ", " "));
 	logger.Attach(Move(logWriter));
 
 	return logger;
@@ -57,7 +59,7 @@ FormattedWriter& InitOutput()
 
 int main(int argc, const char* argv[])
 {
-	System::InitSignals();
+	InitSignals();
 	auto& loggerOut = InitOutput();
 
 	FormattedWriter output(&Std);

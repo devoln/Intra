@@ -4,8 +4,10 @@
 #include "Core/Range/TupleOperation.h"
 #include "Core/Numeric.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 INTRA_WARNING_DISABLE_ASSIGN_IMPLICITLY_DELETED
+
+//TODO: optimize
 
 template<typename R0, typename... RANGES> struct RRoundRobin
 {
@@ -27,7 +29,7 @@ public:
 			mRange0.First(): mNext.First();
 	}
 
-	INTRA_CONSTEXPR2 void PopFirst()
+	constexpr void PopFirst()
 	{
 		if(!mNext.before_(mCounter))
 		{
@@ -46,10 +48,9 @@ public:
 		CAll<CHasLengthT, R0, RANGES...>
 	>> INTRA_NODISCARD constexpr forceinline index_t Length() const {return mRange0.Length() + mNext.Length();}
 
-private:
 	constexpr forceinline bool before_(size_t prevCounter) const
 	{return mCounter < prevCounter || mNext.before_(prevCounter);}
-
+private:
 	R0 mRange0;
 	RRoundRobin<RANGES...> mNext;
 	size_t mCounter;
@@ -68,13 +69,13 @@ public:
 		mRange0(Forward<R0>(r0)), mCounter(r0.Empty()? EmptyCounterValue: 0) {}
 
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline TReturnValueTypeOf<R0> First() const
+	INTRA_NODISCARD constexpr forceinline TReturnValueTypeOf<R0> First() const
 	{
 		INTRA_DEBUG_ASSERT(!Empty());
 		return mRange0.First();
 	}
 
-	INTRA_CONSTEXPR2 forceinline void PopFirst()
+	constexpr forceinline void PopFirst()
 	{
 		INTRA_DEBUG_ASSERT(!mRange0.Empty());
 		mCounter++;
@@ -85,8 +86,8 @@ public:
 	constexpr forceinline bool Empty() const {return mRange0.Empty();}
 	INTRA_NODISCARD constexpr forceinline index_t Length() const {return mRange0.Length();}
 
+	constexpr forceinline bool before_(size_t prevCounter) const {return mCounter < prevCounter;}
 private:
-	INTRA_NODISCARD constexpr forceinline bool before_(size_t prevCounter) const {return mCounter < prevCounter;}
 
 	R0 mRange0;
 	size_t mCounter;
@@ -95,4 +96,4 @@ private:
 template<typename R0, typename... RANGES> INTRA_NODISCARD constexpr forceinline
 RRoundRobin<TRangeOfTypeNoCRef<R0>, TRangeOfTypeNoCRef<RANGES>...> RoundRobin(R0&& range0, RANGES&&... ranges)
 {return {ForwardAsRange<R0>(range0), ForwardAsRange<RANGES>(ranges)...};}
-INTRA_CORE_RANGE_END
+INTRA_END

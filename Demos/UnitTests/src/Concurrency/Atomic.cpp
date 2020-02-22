@@ -7,25 +7,24 @@
 #include "Concurrency/Mutex.h"
 #include "Concurrency/Lock.h"
 #include "Concurrency/Synchronized.h"
-#include "Funal/Bind.h"
+#include "Core/Functional.h"
 #include "Core/Range/ForEach.h"
 
 using namespace Intra;
-using namespace Range;
 
-void TestAtomicIncrementThread(AtomicInt* counter, int count)
+static void TestAtomicIncrementThread(AtomicInt* counter, int count)
 {
 	while(count --> 0)
 		counter->IncrementRelaxed();
 }
 
-void TestAtomicSubThread(AtomicInt* counter, int count)
+static void TestAtomicSubThread(AtomicInt* counter, int count)
 {
 	while(count --> 0)
 		counter->SubRelaxed(3);
 }
 
-void TestSynchronizedAddThread(Synchronized<int>* counter, volatile int count)
+static void TestSynchronizedAddThread(Synchronized<int>* counter, volatile int count)
 {
 	while(count --> 0)
 		*counter += 2;
@@ -38,7 +37,7 @@ void TestAtomics(FormattedWriter& output)
 
 	for(size_t i = 0; i < 10; i++)
 		atomicThreads << Thread("AtomicIncrementer " + StringOf(i),
-			Funal::Bind(TestAtomicIncrementThread, &counter, 100000));
+			Bind(Bind(TestAtomicIncrementThread, &counter), 100000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Atomic counter value GetRelaxed: ", counter.GetRelaxed());
@@ -47,7 +46,7 @@ void TestAtomics(FormattedWriter& output)
 
 	for(size_t i = 0; i < atomicThreads.Length(); i++)
 		atomicThreads[i] = Thread("AtomicSubtracter " + StringOf(i),
-			Funal::Bind(TestAtomicSubThread, &counter, 10000));
+			Bind(Bind(TestAtomicSubThread, &counter), 10000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Atomic counter value GetRelaxed: ", counter.GetRelaxed());
@@ -57,7 +56,7 @@ void TestAtomics(FormattedWriter& output)
 	Synchronized<int> intCounter = counter.GetRelaxed();
 	for(size_t i = 0; i < atomicThreads.Length(); i++)
 		atomicThreads[i] = Thread("TestSynchronizedAdder " + StringOf(i),
-			Funal::Bind(TestSynchronizedAddThread, &intCounter, 100000));
+			Bind(Bind(TestSynchronizedAddThread, &intCounter), 100000));
 	ForEach(atomicThreads, &Thread::Join);
 
 	output.PrintLine("Synchronized counter value: ", intCounter);

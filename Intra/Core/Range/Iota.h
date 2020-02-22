@@ -3,7 +3,7 @@
 #include "Core/Range/Concepts.h"
 #include "Core/Range/Take.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename T, typename S> struct RIota
 {
 	enum: bool {RangeIsInfinite = true};
@@ -16,17 +16,17 @@ template<typename T, typename S> struct RIota
 	constexpr forceinline RIota(T begin, S step): Begin(begin), Step(step) {}
 
 	INTRA_NODISCARD constexpr forceinline T First() const {return Begin;}
-	INTRA_CONSTEXPR2 forceinline void PopFirst() {Begin = T(Begin+Step);}
+	constexpr forceinline void PopFirst() {Begin = T(Begin+Step);}
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return Step == 0;}
 	INTRA_NODISCARD constexpr forceinline auto operator[](size_t index) const {return Begin + Step*index;}
 
 	INTRA_NODISCARD constexpr forceinline bool operator==(const RIota<T, S>& rhs) const
 	{return (Begin == rhs.Begin || Step == 0) && Step == rhs.Step;}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline auto operator()(size_t start, size_t end) const
+	INTRA_NODISCARD constexpr forceinline auto operator()(size_t start, size_t end) const
 	{
-		INTRA_DEBUG_ASSERT(start <= end);
-		return RTake<RIota>(RIota(operator[](start), Step), end - start);
+		INTRA_PRECONDITION(start <= end);
+		return RTake<RIota>(RIota(T(operator[](start)), Step), end - start);
 	}
 };
 
@@ -50,4 +50,4 @@ static_assert(!CBidirectionalRange<RIota<int, int>>, "TEST FAILED!");
 static_assert(CRandomAccessRange<RIota<int, int>>, "TEST FAILED!");
 static_assert(!CFiniteRandomAccessRange<RIota<int, int>>, "TEST FAILED!");
 #endif
-INTRA_CORE_RANGE_END
+INTRA_END

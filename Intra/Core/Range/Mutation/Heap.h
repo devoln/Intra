@@ -17,10 +17,10 @@ You must consistently use the same predicate with the heap after it is built.
 If you want to change the predicate, first call HeapBuild to reorder its elements.
 */
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 //! Add a new value into the heap built on a random access container.
 template<typename C, typename T, typename P = const TFLess&,
-	typename VT = TValueTypeOfAs<C>> INTRA_CONSTEXPR2 Requires<
+	typename VT = TValueTypeOfAs<C>> constexpr Requires<
 	CSequentialContainer<C> &&
 	CHasIndex<C> &&
 	!CConst<C> &&
@@ -35,7 +35,7 @@ template<typename C, typename T, typename P = const TFLess&,
 //! The algorithm assumes the heap to be built on the first range.Length() - 1 range elements.
 //! This range reorders elements so that the result will be a valid heap built on all elements of the range, containing the value of range.Last().
 template<typename R, typename P = const TFLess&,
-	typename AsR = TRangeOfType<R>, typename VT = TValueTypeOf<AsR>> INTRA_CONSTEXPR2 Requires<
+	typename AsR = TRangeOfType<R>, typename VT = TValueTypeOf<AsR>> constexpr Requires<
 	CFiniteRandomAccessRange<AsR> &&
 	CAssignableRange<AsR> &&
 	CCallable<P, VT, VT>
@@ -54,7 +54,7 @@ template<typename R, typename P = const TFLess&,
 
 //! Order the subtree of the element in position index.
 template<typename R, typename P = const TFLess&,
-	typename AsR = TRangeOfType<R>, typename VT = TValueTypeOf<AsR>> INTRA_CONSTEXPR2 Requires<
+	typename AsR = TRangeOfType<R>, typename VT = TValueTypeOf<AsR>> constexpr Requires<
 	CFiniteRandomAccessRange<AsR> &&
 	CAssignableRange<AsR> &&
 	CCallable<P, VT, VT>
@@ -86,7 +86,7 @@ template<typename R, typename P = const TFLess&,
 template<typename R, typename P = const TFLess&,
 	typename AsR = TRangeOfType<R>,
 	typename VT = TValueTypeOf<AsR>
-> INTRA_CONSTEXPR2 Requires<
+> constexpr Requires<
 	CFiniteRandomAccessRange<AsR> &&
 	CAssignableRange<AsR> &&
 	CCallable<P, VT, VT>
@@ -104,13 +104,13 @@ template<typename R, typename P = const TFLess&,
 template<typename R, typename P = const TFLess&,
 	typename AsR = TRangeOfType<R>,
 	typename T = TValueTypeOf<AsR>
-> INTRA_CONSTEXPR2 Requires<
+> constexpr Requires<
 	CFiniteRandomAccessRange<AsR> &&
 	CAssignableRange<AsR> &&
 	CCallable<P, T, T>,
 T&> HeapPop(R&& range, P&& comparer = FLess)
 {
-	Core::Swap(range.First(), range.Last());
+	Swap(range.First(), range.Last());
 	HeapOrder(DropLast(range), 0, Forward<P>(comparer));
 	return range.Last();
 }
@@ -121,7 +121,7 @@ T&> HeapPop(R&& range, P&& comparer = FLess)
 template<typename C, typename P = const TFLess&,
 	typename AsR = TRangeOfType<C>,
 	typename T = TValueTypeOf<AsR>
-> INTRA_CONSTEXPR2 Requires<
+> constexpr Requires<
 	CSequentialContainer<C> &&
 	CHasIndex<C> &&
 	!CConst<C> &&
@@ -132,4 +132,4 @@ T> HeapContainerPop(C& container, P&& comparer = FLess)
 	container.pop_back();
 	return result;
 }
-INTRA_CORE_RANGE_END
+INTRA_END

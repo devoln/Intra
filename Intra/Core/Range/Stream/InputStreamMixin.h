@@ -1,25 +1,17 @@
 #pragma once
 
+#include "Core/CArray.h"
 #include "Core/Range/Span.h"
 #include "Core/Range/StringView.h"
-
-#include "Core/CArray.h"
 #include "Core/Range/Concepts.h"
-
-
-#include "Core/Type.h"
-
 #include "Core/Range/Mutation/Fill.h"
 #include "Core/Range/Mutation/Copy.h"
 #include "Core/Range/Mutation/CopyUntil.h"
 #include "Core/Range/Operations.h"
 #include "Core/Range/ByLine.h"
-#include "Core/Range/ByLineTo.h"
 #include "Core/Range/Stream/RawRead.h"
 
 INTRA_BEGIN
-namespace Range {
-
 template<typename R, typename T> struct InputStreamMixin
 {
 	typedef TRemoveConstRef<T> ElementType;
@@ -83,14 +75,14 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	template<typename X> INTRA_CONSTEXPR2 GenericStringView<const ElementType> ReadUntilAdvance(const X& x, Span<ElementType>& buf)
+	template<typename X> constexpr GenericStringView<const ElementType> ReadUntilAdvance(const X& x, Span<ElementType>& buf)
 	{
 		const auto oldBuf = buf;
-		const size_t len = ReadWriteUntil(*static_cast<R*>(this), buf, x);
+		const index_t len = ReadWriteUntil(*static_cast<R*>(this), buf, x).ElementsRead;
 		return {oldBuf.Data(), len};
 	}
 
-	template<typename X> INTRA_NODISCARD INTRA_CONSTEXPR2 GenericStringView<const ElementType> ReadUntil(const X& x, Span<ElementType> dstBuf)
+	template<typename X> INTRA_NODISCARD constexpr GenericStringView<const ElementType> ReadUntil(const X& x, Span<ElementType> dstBuf)
 	{return ReadUntilAdvance(x, dstBuf);}
 
 	template<typename STR, typename X> Requires<
@@ -103,7 +95,7 @@ template<typename R, typename T> struct InputStreamMixin
 		{
 			ElementType buf[64];
 			auto bufR = SpanBuffer(buf);
-			const size_t len = ReadWriteUntil(me, bufR, x);
+			const index_t len = ReadWriteUntil(me, bufR, x).ElementsRead;
 			result += GenericStringView<const ElementType>(buf, len);
 		}
 		return result;
@@ -119,7 +111,7 @@ template<typename R, typename T> struct InputStreamMixin
 		{
 			ElementType buf[64];
 			auto bufR = SpanBuffer(buf);
-			const size_t len = ReadWriteUntil(me, bufR, pred);
+			const index_t len = ReadWriteUntil(me, bufR, pred).ElementsRead;
 			result += GenericStringView<const ElementType>(buf, len);
 		}
 		return result;
@@ -140,7 +132,7 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	INTRA_NODISCARD INTRA_CONSTEXPR2 GenericStringView<const ElementType> ReadLine(Span<ElementType> dstBuf)
+	INTRA_NODISCARD constexpr GenericStringView<const ElementType> ReadLine(Span<ElementType> dstBuf)
 	{
 		auto result = ReadUntil('\r', dstBuf);
 		auto& me = *static_cast<R*>(this);
@@ -149,24 +141,16 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	template<typename STR> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RByLine<R, STR> ByLine()
-	{return {Move(*static_cast<R*>(this)), false};}
-
-	template<typename STR> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RByLine<R, STR> ByLine(Tags::TKeepTerminator)
-	{return {Move(*static_cast<R*>(this)), true};}
-
-	INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RByLineTo<R> ByLine(GenericStringView<char> buf)
+	INTRA_NODISCARD constexpr forceinline RByLine<R> ByLine(Span<char> buf)
 	{return {Move(*static_cast<R*>(this)), buf, false};}
 
-	forceinline RByLineTo<R> ByLine(GenericStringView<char> buf, Tags::TKeepTerminator)
+	forceinline RByLine<R> ByLine(Span<char> buf, Tags::TKeepTerminator)
 	{return {Move(*static_cast<R*>(this)), buf, true};}
 
-	template<size_t N> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RByLineTo<R> ByLine(char(&buf)[N])
-	{return ByLine(GenericStringView<char>::FromBuffer(buf));}
+	template<size_t N> INTRA_NODISCARD constexpr forceinline RByLine<R> ByLine(char(&buf)[N])
+	{return ByLine(SpanOfBuffer(buf));}
 
-	template<size_t N> INTRA_NODISCARD INTRA_CONSTEXPR2 forceinline RByLineTo<R> ByLine(char(&buf)[N], Tags::TKeepTerminator)
-	{return ByLine(GenericStringView<char>::FromBuffer(buf), Tags::KeepTerminator);}
+	template<size_t N> INTRA_NODISCARD constexpr forceinline RByLine<R> ByLine(char(&buf)[N], Tags::TKeepTerminator)
+	{return ByLine(SpanOfBuffer(buf), Tags::KeepTerminator);}
 };
-
-}
 INTRA_END

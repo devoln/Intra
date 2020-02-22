@@ -1,12 +1,9 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
 #include "Core/Type.h"
 #include "Core/Tuple.h"
 
 INTRA_BEGIN
-inline namespace Core {
-
 namespace D {
 INTRA_DEFINE_CONCEPT_REQUIRES2(CHasForEachFieldMethod, Val<T1>().ForEachField(Val<T2>()), , = UniFunctor);
 }
@@ -23,6 +20,4 @@ INTRA_DEFINE_CONCEPT_REQUIRES2(CHasForEachField, ForEachField(Val<T1>(), Val<T2>
 }
 template<typename T, typename F=UniFunctor> concept CHasForEachField =
 	D::CHasForEachField<TRemoveReference<T>, TRemoveReference<F>>;
-
-}
 INTRA_END

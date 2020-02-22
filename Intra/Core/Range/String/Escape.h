@@ -7,7 +7,7 @@
 #include "Core/Range/Transversal.h"
 #include "Utils/AsciiSet.h"
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 template<typename R, typename ES, typename CTE> Requires<
 	CAsCharRange<R> &&
 	CFiniteInputRange<ES> &&
@@ -52,4 +52,4 @@ TTakeResult<OR>> StringEscapeToAdvance(const R& src, OR&& dstBuffer,
 	}
 	return Take(dstBegin, DistanceTo(dstBegin, dstBuffer));
 }
-INTRA_CORE_RANGE_END
+INTRA_END

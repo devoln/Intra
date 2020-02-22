@@ -3,7 +3,6 @@
 #include "Core/Type.h"
 #include "Core/Functional.h"
 #include "Core/CArray.h"
-#include "Core/CContainer.h"
 #include "Core/CIterator.h"
 #include "Core/Assert.h"
 
@@ -11,12 +10,12 @@
   This header file defines concepts for different range categories and method availability checkers.
   It makes range-based for available for all range types defined in namespace Range.
   To make range-based for available for ranges defined in different namespace use:
-  using Range::begin;
-  using Range::end;
+  using begin;
+  using end;
   in their namespace or in the global namespace.
 */
 
-INTRA_CORE_RANGE_BEGIN
+INTRA_BEGIN
 
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasPopFirst, Val<T>().PopFirst());
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasFirst, Val<T>().First());
@@ -66,7 +65,8 @@ template<typename R> struct TValueTypeOf_<R, false, true>
 template<typename R> using TReturnValueTypeOf = typename z__R::TReturnValueTypeOf_<R>::_;
 
 template<typename R> using TValueTypeOf = typename z__R::TValueTypeOf_<R>::_;
-template<typename R> using TSliceTypeOf = TResultOfOrVoid<R, size_t, size_t>;
+template<typename R> using TSliceTypeOf = TResultOf<R, size_t, size_t>;
+template<typename R> using TSliceTypeOfOrVoid = TResultOfOrVoid<R, size_t, size_t>;
 
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasLast, Val<T>().Last());
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasPopLast, Val<T>().PopLast());
@@ -160,6 +160,7 @@ constexpr bool CInfiniteRange_ = Range::RangeIsInfinite;
 template<typename R> constexpr bool CInfiniteRange_<R, false> = false;
 }
 template<typename R> concept CInfiniteRange = z__R::CInfiniteRange_<R>;
+template<typename R> using CInfiniteRangeT = TBool<z__R::CInfiniteRange_<R>>;
 
 template<typename T> concept CCharRange =
 	CInputRange<T> &&
@@ -244,11 +245,11 @@ template<typename R> struct RangeForIterLike
 	constexpr forceinline RangeForIterLike(null_t=null): mRange() {}
 	constexpr forceinline RangeForIterLike(R&& range): mRange(Move(range)) {}
 
-	INTRA_CONSTEXPR2 forceinline RangeForIterLike& operator++() {mRange.PopFirst(); return *this;}
+	constexpr forceinline RangeForIterLike& operator++() {mRange.PopFirst(); return *this;}
 	constexpr forceinline TReturnValueTypeOf<R> operator*() const {return mRange.First();}
 
 #if !defined(__cpp_range_based_for) || __cpp_range_based_for < 201603
-	INTRA_CONSTEXPR2 forceinline bool operator!=(const RangeForIterLike& rhs) const
+	constexpr forceinline bool operator!=(const RangeForIterLike& rhs) const
 	{
 		INTRA_DEBUG_ASSERT(rhs.mRange.Empty());
 		(void)rhs;
@@ -314,7 +315,7 @@ template<typename I1, typename I2> struct IteratorRange
 	I2 End;
 
 	INTRA_NODISCARD constexpr forceinline bool Empty() const {return Begin == End;}
-	INTRA_CONSTEXPR2 forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); ++Begin;}
+	constexpr forceinline void PopFirst() {INTRA_DEBUG_ASSERT(!Empty()); ++Begin;}
 	INTRA_NODISCARD constexpr forceinline decltype(auto) First() const {return INTRA_DEBUG_ASSERT(!Empty()), *Begin;}
 
 	template<typename U=I2> forceinline Requires<
@@ -349,9 +350,14 @@ FListRange<T, T>> RangeOf(T& objectWithIntrusiveList);
 
 template<typename R> forceinline Requires<
 	CInputRange<R> ||
-	COutputRange<TRemoveConst<R>> ||
-	COutputCharRange<TRemoveConst<R>>,
+	COutputRange<R>,
 R&&> RangeOf(R&& r) {return Forward<R>(r);}
+
+template<typename R, typename NCRR = TRemoveConstRef<R>> forceinline Requires<
+	!(CInputRange<R> || COutputRange<R>) &&
+	(CInputRange<NCRR> || COutputRange<NCRR>) &&
+	CCopyConstructible<NCRR>,
+NCRR> RangeOf(R&& r) {return r;}
 
 INTRA_DEFINE_CONCEPT_REQUIRES(CHasAsRangeMethod, Val<T>().AsRange());
 
@@ -369,9 +375,9 @@ template<typename C, typename D = C, typename = Requires<
 {return {begin(v), end(v)};}
 
 template<typename R> constexpr forceinline Requires<
-	!CInputRange<R> &&
-	!CHasAsRangeMethod<R>,
-Span<TRemovePointer<TArrayElementPtrRequired<R>>>> RangeOf(R&& r) noexcept;
+	!CInputRange<TRemoveConstRef<R>> &&
+	!CHasAsRangeMethod<TRemoveConstRef<R>>,
+Span<TRemovePointer<TArrayElementPtrRequired<R>>>> RangeOf(R&& r) noexcept; //defined in Span.h
 
 template<typename T, size_t N> INTRA_NODISCARD constexpr forceinline Span<T> RangeOf(T(&arr)[N]) noexcept;
 
@@ -446,7 +452,7 @@ template<typename P, typename... Rs> concept CAsElementAsPredicate = CElementAsP
 template<typename R,
 	typename AsR = TRangeOfType<R&&>
 > forceinline Requires<
-	CInputRange<AsR> ||
+	CInputRange<TRemoveConstRef<AsR>> ||
 	COutputRange<TRemoveConst<AsR>> ||
 	COutputCharRange<TRemoveConst<AsR>>,
 AsR> ForwardAsRange(TRemoveReference<R>& t)
@@ -455,10 +461,10 @@ AsR> ForwardAsRange(TRemoveReference<R>& t)
 template<typename R,
 	typename AsR = TRangeOfType<R&&>
 > forceinline Requires<
-	CInputRange<AsR> ||
+	CInputRange<TRemoveConstRef<AsR>> ||
 	COutputRange<TRemoveConst<AsR>> ||
 	COutputCharRange<TRemoveConst<AsR>>,
-TRangeOfType<R&&>> ForwardAsRange(TRemoveReference<R>&& t)
+AsR> ForwardAsRange(TRemoveReference<R>&& t)
 {
 	static_assert(!CLValueReference<R>, "Bad ForwardAsRange call!");
 	return RangeOf(static_cast<R&&>(t));
@@ -482,4 +488,4 @@ namespace Tags {
 enum TKeepTerminator: bool {KeepTerminator = true};
 }
 
-INTRA_CORE_RANGE_END
+INTRA_END

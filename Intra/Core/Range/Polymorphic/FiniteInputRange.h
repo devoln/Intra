@@ -4,7 +4,7 @@
 #include "Core/Range/Mutation/Copy.h"
 
 #include "Core/Range/Span.h"
-#include "Funal/Op.h"
+#include "Core/Functional.h"
 
 #include "Core/Range/Concepts.h"
 
@@ -54,7 +54,7 @@ public:
 
 	FiniteInputRange(const FiniteInputRange& rhs) = delete;
 
-	INTRA_CONSTEXPR2 forceinline FiniteInputRange& operator=(FiniteInputRange&& rhs)
+	constexpr forceinline FiniteInputRange& operator=(FiniteInputRange&& rhs)
 	{
 		InputRange<T>::operator=(Move(rhs));
 		return *this;

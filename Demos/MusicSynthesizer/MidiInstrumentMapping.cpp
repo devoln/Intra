@@ -49,7 +49,7 @@ MidiInstrumentSet GetMapping()
 
 	instruments[47] = lib["Timpani"];
 
-	static const byte padSweeps[] = {43, 51,  89, 93, 94, 95, 102};
+	static const byte padSweeps[] = {43, 51,  89, 93, 95, 102};
 	for(const byte code: padSweeps) instruments[code] = lib["Pad8Sweep"];
 	instruments[49] = lib["StringEnsemble2"];
 	instruments[94] = lib["Pad7Halo"];
@@ -145,7 +145,7 @@ MidiInstrumentSet GetMapping()
 	instruments[126] = lib["Applause"];
 	instruments[127] = lib["GunShot"];
 	
-	Range::Fill(result.DrumInstruments, &lib.UniDrum);
+	Fill(result.DrumInstruments, &lib.UniDrum);
 	result.DrumInstruments[41] = &lib.ClosedHiHat;
 	result.DrumInstruments[34] = &lib.AcousticBassDrum;
 	result.DrumInstruments[35] = &lib.AcousticBassDrum;

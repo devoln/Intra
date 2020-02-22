@@ -1,10 +1,7 @@
 ﻿#pragma once
 
+#include "Core/Functional.h"
 #include "Core/Range/Concepts.h"
-
-
-#include "Funal/Op.h"
-
 #include "Core/Range/Take.h"
 #include "Core/Range/TakeUntil.h"
 #include "Core/Range/Search/Trim.h"
@@ -13,9 +10,7 @@
 
 INTRA_BEGIN
 INTRA_WARNING_DISABLE_SIGN_CONVERSION
-inline namespace Range {
-
-template<typename R> INTRA_CONSTEXPR2 Requires<
+template<typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R>,
 bool> ParseSignAdvance(R& src)
@@ -30,7 +25,7 @@ bool> ParseSignAdvance(R& src)
 	return minus;
 }
 
-template<typename X, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename X, typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CUnsignedIntegral<X>,
@@ -48,7 +43,7 @@ X> ParseAdvance(R& src)
 	return result;
 }
 
-template<typename X, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename X, typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CSignedIntegral<X>,
@@ -59,7 +54,7 @@ X> ParseAdvance(R& src)
 	return minus? X(-result): result;
 }
 
-template<typename X, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename X, typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CFloatingPoint<X>,
@@ -87,7 +82,7 @@ X> ParseAdvance(R& src, TValueTypeOf<R> decimalSeparator='.')
 	return minus? -result: result;
 }
 
-template<typename X, typename R> INTRA_CONSTEXPR2 Requires<
+template<typename X, typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CChar<X>,
@@ -102,15 +97,15 @@ X> ParseAdvance(R& src)
 //! В случае совпадения сдвигает начало src в конец вхождения stringToExpect, а stringToExpect сдвигает в конец, делая его пустым.
 //! В случае несовпадения удаляет только пробелы из начала обоих потоков.
 //! @return Возвращает true в случае совпадения src и stringToExpect.
-template<typename R, typename CR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename CR> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CCharRange<CR> &&
 	!CConst<CR>,
 bool> ExpectAdvance(R& src, CR& stringToExpect)
 {
-	TrimLeftAdvance(src, Funal::IsSpace);
-	TrimLeftAdvance(stringToExpect, Funal::IsSpace);
+	TrimLeftAdvance(src, IsSpace);
+	TrimLeftAdvance(stringToExpect, IsSpace);
 	auto srcCopy = src;
 	if(StartsAdvanceWith(srcCopy, stringToExpect))
 	{
@@ -122,7 +117,7 @@ bool> ExpectAdvance(R& src, CR& stringToExpect)
 
 template<typename X, typename R,
 	typename AsR = TRangeOfType<R>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+> INTRA_NODISCARD constexpr Requires<
 	CConsumableRange<AsR> &&
 	CCharRange<AsR> &&
 	CIntegral<X>,
@@ -134,7 +129,7 @@ X> Parse(R&& src)
 
 template<typename X, typename R,
 	typename AsR = TRangeOfType<R>
-> INTRA_NODISCARD INTRA_CONSTEXPR2 Requires<
+> INTRA_NODISCARD constexpr Requires<
 	CConsumableRange<AsR> &&
 	CCharRange<AsR> &&
 	CFloatingPoint<X>,
@@ -144,7 +139,7 @@ X> Parse(R&& src, TValueTypeOf<AsR> decimalSeparator = '.')
 	return ParseAdvance<X>(range, decimalSeparator);
 }
 
-template<typename R, typename P1, typename P2> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename P1, typename P2> constexpr Requires<
 	CCharRange<R> &&
 	CCallable<P1, TValueTypeOf<R>> &&
 	CCallable<P2, TValueTypeOf<R>>,
@@ -158,18 +153,18 @@ TTakeResult<R>> ParseIdentifierAdvance(R& src, P1 isNotIdentifierFirstChar, P2 i
 	return Take(result, DistanceTo(result, src));
 }
 
-template<typename R, typename X> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename X> constexpr Requires<
 	CCharRange<R> &&
-	!CConst<R> &&
-	CArithmetic<X> &&
-	!CConst<X>,
+	!CConst<TRemoveReference<X>> &&
+	CArithmetic<TRemoveReference<X>> &&
+	!CConst<TRemoveReference<X>>,
 R&&> operator>>(R&& stream, X&& dst)
 {
 	dst = ParseAdvance<TRemoveReference<X>>(stream);
 	return Forward<R>(stream);
 }
 
-template<typename R, typename CR> INTRA_CONSTEXPR2 Requires<
+template<typename R, typename CR> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CAsCharRange<CR>,
@@ -179,7 +174,5 @@ R&&> operator>>(R&& stream, CR&& stringToExpect)
 	auto stringToExpectCopy = ForwardAsRange<CR>(stringToExpect);
 	ExpectAdvance(stream, stringToExpectCopy);
 	return Forward<R>(stream);
-}
-
 }
 INTRA_END
