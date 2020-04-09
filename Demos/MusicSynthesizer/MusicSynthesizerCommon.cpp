@@ -1,19 +1,19 @@
 ﻿#include "MusicSynthesizerCommon.h"
 
-#include "IO/ConsoleInput.h"
-#include "IO/Std.h"
-#include "IO/FileSystem.h"
-#include "IO/FileReader.h"
+#include "Extra/IO/ConsoleInput.h"
+#include "Extra/IO/Std.h"
+#include "Extra/IO/FileSystem.h"
+#include "Extra/IO/FileReader.h"
 
-#include "Container/Sequential/String.h"
+#include "Extra/Container/Sequential/String.h"
 
-#include "Audio/Midi/MidiFileParser.h"
-#include "Audio/AudioBuffer.h"
-#include "Audio/Sound.h"
-#include "Audio/AudioSource.h"
-#include "Audio/Sources/MidiSynth.h"
+#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
+#include "Extra/Unstable/Audio/AudioBuffer.h"
+#include "Extra/Unstable/Audio/Sound.h"
+#include "Extra/Unstable/Audio/AudioSource.h"
+#include "Extra/Unstable/Audio/Sources/MidiSynth.h"
 
-#include "System/Stopwatch.h"
+#include "Extra/System/Stopwatch.h"
 
 
 #include "MidiInstrumentMapping.h"
@@ -67,7 +67,7 @@ bool PrintMidiFileInfo(StringView filePath)
 }
 
 Unique<IAudioSource> CreateMidiAudioSource(InputStream midiFileStream,
-	double duration, float startingVolume, ErrorStatus& status, uint sampleRate)
+	double duration, float startingVolume, ErrorStatus& status, unsigned sampleRate)
 {
 	return new Sources::MidiSynth(
 		Midi::MidiFileParser::CreateSingleOrderedMessageStream(Move(midiFileStream), status),

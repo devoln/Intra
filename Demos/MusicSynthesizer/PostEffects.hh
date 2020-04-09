@@ -22,7 +22,7 @@ struct Echo
 	Echo(float delay=0.03f, float mainVolume=0.5f, float secondaryVolume=0.5f):
 		Delay(delay), MainVolume(mainVolume), SecondaryVolume(secondaryVolume) {}
 
-	void operator()(Span<float> inOutSamples, uint sampleRate) const;
+	void operator()(Span<float> inOutSamples, unsigned sampleRate) const;
 };
 
 struct FilterDrive
@@ -30,7 +30,7 @@ struct FilterDrive
 	float K;
 	FilterDrive(float k): K(k) {}
 
-	void operator()(Span<float> inOutSamples, uint sampleRate) const;
+	void operator()(Span<float> inOutSamples, unsigned sampleRate) const;
 };
 
 struct FilterHP
@@ -43,12 +43,12 @@ struct FilterHP
 		return {1.0f / (2*float(PI)*cutoffFreqSampleRateRatio + 1)};
 	}
 
-	static FilterHP FromCutoff(float cutoffFreq, uint sampleRate)
+	static FilterHP FromCutoff(float cutoffFreq, unsigned sampleRate)
 	{
 		return FromCutoff(cutoffFreq / float(sampleRate));
 	}
 
-	void operator()(Span<float> inOutSamples, uint sampleRate) const;
+	void operator()(Span<float> inOutSamples, unsigned sampleRate) const;
 };
 
 
@@ -58,7 +58,7 @@ struct FilterQ
 	float P, S;
 	FilterQ(float f, float k): F(f), K(k), P(0), S(0) {}
 
-	forceinline float operator()(float sample)
+	INTRA_FORCEINLINE float operator()(float sample)
 	{
 		P += S*F + sample;
 		S = (S - P*F)*K;
@@ -75,17 +75,17 @@ struct FilterQ
 struct FilterQFactory
 {
 	float ResFreq, K;
-	FilterQ operator()(uint sampleRate) {return FilterQ(float(ResFreq*2*PI/float(sampleRate)), K);}
+	FilterQ operator()(unsigned sampleRate) {return FilterQ(float(ResFreq*2*PI/float(sampleRate)), K);}
 };
 
 struct Fade
 {
-	uint FadeIn, FadeOut;
+	unsigned FadeIn, FadeOut;
 
-	Fade(uint fadeIn=0, uint fadeOut=0):
+	Fade(unsigned fadeIn=0, unsigned fadeOut=0):
 		FadeIn(fadeIn), FadeOut(fadeOut) {}
 
-	void operator()(Span<float> inOutSamples, uint sampleRate) const;
+	void operator()(Span<float> inOutSamples, unsigned sampleRate) const;
 };
 
 class HallReverb
@@ -104,13 +104,13 @@ class HallReverb
 	size_t mMaxDelay = 0;
 	size_t mBufferedReverbSamples = 0;
 public:
-	HallReverb(null_t=null) {}
+	HallReverb(decltype(null)=null) {}
 	HallReverb(size_t delayLength, size_t numDelays, float reverbVolume=1, float k=0.5f);
 	void ProcessSample(float* ioL, float* ioR, float reverbSample);
 	void operator()(Span<float> dstLeft, Span<float> dstRight, CSpan<float> reverbBuffer);
-	forceinline bool operator==(null_t) const noexcept {return mAccum.Empty();}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline operator bool() const noexcept {return operator!=(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return mAccum.Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE operator bool() const noexcept {return operator!=(null);}
 
 };
 

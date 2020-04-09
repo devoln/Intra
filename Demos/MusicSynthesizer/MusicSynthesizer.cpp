@@ -1,37 +1,35 @@
-﻿
+﻿#ifndef __EMSCRIPTEN__
 
-#if(INTRA_PLATFORM_OS != INTRA_PLATFORM_OS_Emscripten)
+#include "Extra/System/Stopwatch.h"
+#include "Extra/System/Environment.h"
 
-#include "System/Stopwatch.h"
-#include "System/Environment.h"
+#include "Intra/Range/Polymorphic/InputRange.h"
+#include "Intra/Range/Polymorphic/ForwardRange.h"
 
-#include "Core/Range/Polymorphic/InputRange.h"
-#include "Core/Range/Polymorphic/ForwardRange.h"
+#include "Extra/IO/ConsoleOutput.h"
+#include "Extra/IO/ConsoleInput.h"
+#include "Extra/IO/FileSystem.h"
+#include "Extra/IO/FileReader.h"
+#include "Extra/IO/FileWriter.h"
+#include "Extra/IO/Networking.h"
+#include "Extra/IO/Std.h"
 
-#include "IO/ConsoleOutput.h"
-#include "IO/ConsoleInput.h"
-#include "IO/FileSystem.h"
-#include "IO/FileReader.h"
-#include "IO/FileWriter.h"
-#include "IO/Networking.h"
-#include "IO/Std.h"
+#include "Extra/Concurrency/Thread.h"
 
-#include "Concurrency/Thread.h"
+#include "Extra/Unstable/Audio/AudioBuffer.h"
+#include "Extra/Unstable/Audio/Sound.h"
+#include "Extra/Unstable/Audio/AudioSource.h"
 
-#include "Audio/AudioBuffer.h"
-#include "Audio/Sound.h"
-#include "Audio/AudioSource.h"
-
-#include "Audio/Sources/Wave.h"
+#include "Extra/Unstable/Audio/Sources/Wave.h"
 
 
 #include "MusicSynthesizerCommon.h"
 #include "MidiInstrumentMapping.h"
 
-#include "Math/SineRange.h"
+#include "Intra/Math/SineRange.h"
 #include "InstrumentSet.h"
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+#ifdef _WIN32
 #ifdef _MSC_VER
 #pragma warning(disable: 4668)
 #endif
@@ -112,7 +110,7 @@ void PrintInfoAndPlayMidiFile(StringView filePath, bool enableStreaming)
 	PrintInfoAndPlayMidiStream(OS.FileOpen(filePath, Error::Skip()), enableStreaming);
 }
 
-void PrintInfoAndConvertMidiStreamToWavStream(ForwardStream midiStream, uint sampleRate, OutputStream wavStream)
+void PrintInfoAndConvertMidiStreamToWavStream(ForwardStream midiStream, unsigned sampleRate, OutputStream wavStream)
 {
 	FatalErrorStatus status;
 	auto info = PrintMidiInfo(midiStream, status);
@@ -142,7 +140,7 @@ int INTRA_CRTDECL main()
 {
 	//System::InitSignals();
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
+#ifdef _WIN32
 	SetConsoleCtrlHandler(ConsoleCloseHandler, true);
 #endif
 

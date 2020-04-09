@@ -10,12 +10,12 @@ namespace Generators {
 
 struct Square
 {
-	Square(float frequency, uint sampleRate):
+	Square(float frequency, unsigned sampleRate):
 		mPhase(0), mDeltaPhase(frequency*2 / float(sampleRate)) {}
 
-	forceinline void PopFirst() {mPhase += mDeltaPhase;}
-	forceinline float First() const {return float(int(mPhase) & 1)*2.0f - 1.0f;}
-	forceinline bool Empty() const {return false;}
+	INTRA_FORCEINLINE void PopFirst() {mPhase += mDeltaPhase;}
+	INTRA_FORCEINLINE float First() const {return float(int(mPhase) & 1)*2.0f - 1.0f;}
+	INTRA_FORCEINLINE bool Empty() const {return false;}
 
 private:
 	float mPhase, mDeltaPhase;

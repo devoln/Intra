@@ -1,9 +1,9 @@
 #include "InstrumentSet.h"
-#include "Audio/Midi/MidiFileParser.h"
+#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-void MidiInstrumentSet::Preload(const Audio::Midi::MidiFileInfo& info, uint sampleRate)
+void MidiInstrumentSet::Preload(const Audio::Midi::MidiFileInfo& info, unsigned sampleRate)
 {
 	for(size_t i = 0; i < 128; i++)
 	{

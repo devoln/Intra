@@ -21,7 +21,7 @@ struct CachedDrumInstrument
 {
 	mutable Array<float> Data;
 	mutable GenericSamplerRef DataSampler;
-	mutable uint SampleRate = 0;
+	mutable unsigned SampleRate = 0;
 	float VolumeScale;
 
 	CachedDrumInstrument(const CachedDrumInstrument&) = delete;
@@ -31,9 +31,9 @@ struct CachedDrumInstrument
 	CachedDrumInstrument(GenericSamplerRef sampler, size_t sampleCount = 44100, float volumeScale = 1):
 		DataSampler(Move(sampler)), VolumeScale(volumeScale) {Data.SetCountUninitialized(sampleCount);}
 
-	RecordedSampler operator()(float volume, uint sampleRate) const;
+	RecordedSampler operator()(float volume, unsigned sampleRate) const;
 
-	void Preload(uint sampleRate = 44100) const {operator()(1, sampleRate);}
+	void Preload(unsigned sampleRate = 44100) const {operator()(1, sampleRate);}
 };
 
 INTRA_WARNING_POP

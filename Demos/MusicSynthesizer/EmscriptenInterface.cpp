@@ -3,12 +3,12 @@
 #include "MusicSynthesizerCommon.h"
 #include "MidiInstrumentMapping.h"
 
-#include "Audio/Midi/MidiFileParser.h"
+#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
 #include "MidiSynth.h"
 
 using namespace Audio;
 
-#if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Emscripten)
+#ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #else
 #define EMSCRIPTEN_KEEPALIVE
@@ -16,7 +16,7 @@ using namespace Audio;
 
 extern "C"
 {
-	IAudioSource* EMSCRIPTEN_KEEPALIVE SourceCreateFromMidiFileData(char* midiDataPtr, uint midiDataLength, uint sampleRate, uint numChannels)
+	IAudioSource* EMSCRIPTEN_KEEPALIVE SourceCreateFromMidiFileData(char* midiDataPtr, unsigned midiDataLength, unsigned sampleRate, unsigned numChannels)
 	{
 		ErrorStatus status;
 		auto stream = SpanOfRaw(midiDataPtr, midiDataLength);
@@ -35,12 +35,12 @@ extern "C"
 		delete sourcePtr;
 	}
 
-	uint EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)
+	unsigned EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)
 	{
-		return uint(source->SamplesLeft());
+		return unsigned(source->SamplesLeft());
 	}
 
-	uint EMSCRIPTEN_KEEPALIVE SourceGetUninterleavedSamples(IAudioSource* source, float* dst, uint count, uint bufferSizeInSamples)
+	unsigned EMSCRIPTEN_KEEPALIVE SourceGetUninterleavedSamples(IAudioSource* source, float* dst, unsigned count, unsigned bufferSizeInSamples)
 	{
 		Span<float> channels[2];
 		for(auto& channel: channels)
@@ -48,10 +48,10 @@ extern "C"
 			channel = SpanOfPtr(dst, count);
 			dst += bufferSizeInSamples;
 		}
-		return uint(source->GetUninterleavedSamples(Take(channels, source->ChannelCount())));
+		return unsigned(source->GetUninterleavedSamples(Take(channels, source->ChannelCount())));
 	}
 
-	char* EMSCRIPTEN_KEEPALIVE GetMidiInfoString(char* midiDataPtr, uint midiDataLength)
+	char* EMSCRIPTEN_KEEPALIVE GetMidiInfoString(char* midiDataPtr, unsigned midiDataLength)
 	{
 		auto stream = SpanOfRaw(midiDataPtr, midiDataLength);
 		ErrorStatus status;

@@ -2,15 +2,15 @@
 
 
 
-#include "Utils/FixedArray.h"
-#include "System/Error.h"
+#include "Extra/Utils/FixedArray.h"
+#include "Extra/System/Error.h"
 
-#include "Container/Associative/HashMap.h"
+#include "Extra/Container/Associative/HashMap.h"
 
-#include "Audio/AudioSource.h"
+#include "Extra/Unstable/Audio/AudioSource.h"
 #include "Types.h"
-#include "Audio/Midi/Messages.h"
-#include "Audio/Midi/MidiFileParser.h"
+#include "Extra/Unstable/Audio/Midi/Messages.h"
+#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
 #include "NoteSampler.h"
 #include "InstrumentSet.h"
 #include "PostEffects.hh"
@@ -21,11 +21,11 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 struct MidiState
 {
 	short ChannelPitchBend[16]{};
-	sbyte ChannelPans[16]{};
+	int8 ChannelPans[16]{};
 	byte ChannelVolumes[16];
 	byte ChannelReverbs[16]{};
 	byte ChannelPrograms[16]{};
-	ushort PitchBendRangeInSemitones = 2;
+	uint16 PitchBendRangeInSemitones = 2;
 
 	MidiState();
 };
@@ -48,27 +48,27 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 		byte Channel;
 		byte NoteOctaveOrDrumId;
 
-		forceinline ushort Key() const {return ushort((Channel << 8) | NoteOctaveOrDrumId);}
+		INTRA_FORCEINLINE uint16 Key() const {return uint16((Channel << 8) | NoteOctaveOrDrumId);}
 	};
 
-	typedef Container::HashMap<ushort, ushort> NoteSamplerMap;
+	typedef Container::HashMap<uint16, uint16> NoteSamplerMap;
 	NoteSamplerMap mPlayingNoteMap;
 	PostEffects::HallReverb mReverberator;
 	Array<float> mReverbChannelBuffer;
 
-	forceinline MusicalInstrument* getInstrument(byte channel) const
+	INTRA_FORCEINLINE MusicalInstrument* getInstrument(byte channel) const
 	{return mInstruments.Instruments[mMidiState.ChannelPrograms[channel]];}
 
 public:
 	MidiSynth(Audio::Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume=1,
-		OnCloseResourceCallback onClose=null, uint sampleRate=48000, bool stereo=true, bool reverb=true);
+		OnCloseResourceCallback onClose=null, unsigned sampleRate=48000, bool stereo=true, bool reverb=true);
 	~MidiSynth() {}
 
 	MidiSynth(const MidiSynth&) = delete;
 	MidiSynth& operator=(const MidiSynth&) = delete;
 
 	static Unique<MidiSynth> FromFile(StringView path, double duration, const MidiInstrumentSet& instruments,
-		float maxVolume=1, uint sampleRate=48000, bool stereo=true, ErrorStatus& status=Error::Skip());
+		float maxVolume=1, unsigned sampleRate=48000, bool stereo=true, ErrorStatus& status=Error::Skip());
 
 	size_t SampleCount() const final {return mSampleCount;}
 	size_t SamplePosition() const final {return size_t(mTime*mSampleRate);}

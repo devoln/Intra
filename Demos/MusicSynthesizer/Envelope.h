@@ -26,9 +26,9 @@ struct Envelope
 		//! Значение, которое прибавляется к (!Exponential) или умножается на (Exponential) Volume на каждом шаге
 		float DU;
 
-		forceinline bool IsConstant() const {return float(Exponential) == DU;}
-		forceinline bool IsNoOp() const {return IsConstant() && Volume == 1;}
-		forceinline void Advance(size_t samples)
+		INTRA_FORCEINLINE bool IsConstant() const {return float(Exponential) == DU;}
+		INTRA_FORCEINLINE bool IsNoOp() const {return IsConstant() && Volume == 1;}
+		INTRA_FORCEINLINE void Advance(size_t samples)
 		{
 			if(Exponential) Volume *= PowInt(DU, int(samples));
 			else Volume += DU*float(samples);
@@ -49,7 +49,7 @@ struct Envelope
 		//! Число с фиксированной запятой, считается как Exponential? (Volume + 1) / 256.0f: Volume / 255.0f
 		unsigned Volume: 8;
 
-		forceinline float CalcDU(float curVolume) const
+		INTRA_FORCEINLINE float CalcDU(float curVolume) const
 		{
 			if(Length == 0) return Exponential? 1.0f: 0.0f;
 			if(Exponential) return Intra::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
@@ -58,7 +58,7 @@ struct Envelope
 
 		//! Упаковать значение громкости.
 		//! Вызывать эту функцию только после установки значения Exponential!
-		forceinline void SetVolume(float volume)
+		INTRA_FORCEINLINE void SetVolume(float volume)
 		{
 			Volume = unsigned(Exponential?
 				Intra::Max(volume * 256.0f - 1.0f, 0.0f):
@@ -75,7 +75,7 @@ struct Envelope
 			NextSegmentStartPointIndex++;
 	}
 
-	forceinline void StartLastSegment() {StartSegment(N - 2);}
+	INTRA_FORCEINLINE void StartLastSegment() {StartSegment(N - 2);}
 
 	void StartSegment(int index)
 	{
@@ -109,10 +109,10 @@ struct Envelope
 struct LinearAttenuator
 {
 	float Factor, FactorStep;
-	LinearAttenuator(null_t=null): Factor(1), FactorStep(0) {}
+	LinearAttenuator(decltype(null)=null): Factor(1), FactorStep(0) {}
 	LinearAttenuator(float startVolume, float deltaPerSample): Factor(1), FactorStep(deltaPerSample) {}
 
-	forceinline void SkipSamples(size_t count) {Factor += FactorStep*count;}
+	INTRA_FORCEINLINE void SkipSamples(size_t count) {Factor += FactorStep*count;}
 };
 
 struct EnvelopeSegment
@@ -120,9 +120,9 @@ struct EnvelopeSegment
 	ExponentAttenuator Exp;
 	LinearAttenuator Linear;
 
-	forceinline EnvelopeSegment(null_t=null) {}
+	INTRA_FORCEINLINE EnvelopeSegment(decltype(null)=null) {}
 
-	forceinline EnvelopeSegment(Envelope::Segment segment)
+	INTRA_FORCEINLINE EnvelopeSegment(Envelope::Segment segment)
 	{
 		if(segment.Exponential)
 		{
@@ -134,16 +134,16 @@ struct EnvelopeSegment
 		Linear.FactorStep = segment.DU;
 	}
 
-	forceinline void operator()(Span<float> inOutSamples)
+	INTRA_FORCEINLINE void operator()(Span<float> inOutSamples)
 	{
 		auto src = inOutSamples.AsConstRange();
 		ExponentialLinearAttenuate(inOutSamples, src, Exp.Factor, Exp.FactorStep, Linear.Factor, Linear.FactorStep);
 	}
 
-	forceinline void operator()(Span<float> dstSamples, CSpan<float> srcSamples)
+	INTRA_FORCEINLINE void operator()(Span<float> dstSamples, CSpan<float> srcSamples)
 	{ExponentialLinearAttenuateAdd(dstSamples, srcSamples, Exp.Factor, Exp.FactorStep, Linear.Factor, Linear.FactorStep);}
 
-	forceinline void SkipSamples(size_t count)
+	INTRA_FORCEINLINE void SkipSamples(size_t count)
 	{
 		Exp.SkipSamples(count);
 		Linear.SkipSamples(count);
@@ -162,10 +162,10 @@ struct EnvelopeFactory
 		float EndVolume;
 		float Duration;
 
-		forceinline uint LengthInSamples(int sampleRate) const
+		INTRA_FORCEINLINE unsigned LengthInSamples(int sampleRate) const
 		{
 			const float durationSamples = sampleRate * Duration + 0.5f;
-			return durationSamples <= float(Intra::uint_MAX)? uint(durationSamples): Intra::uint_MAX;
+			return durationSamples <= float(Intra::uint_MAX)? unsigned(durationSamples): Intra::uint_MAX;
 		}
 	};
 

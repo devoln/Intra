@@ -30,7 +30,7 @@ struct ViolinPhysicalModel
 		else
 		{
 			float s = 230/Pow2((note-12)/12);
-			mLen = Max(4u, uint(s));
+			mLen = Max(4u, unsigned(s));
 			mFrc = 1.5f*(float(mLen)/s)*(float(mLen)/s);
 			kDemp = 0.12f/(note+12);
 		}
@@ -85,15 +85,15 @@ private:
 
 	SineRange<float> mOscillator;
 
-	uint mLen;   //Длина струны
+	unsigned mLen;   //Длина струны
 	float mFrc; //Натяжение струны
 	float mK1, mK2; //Коэффициенты, определяющие затухание звука в струне
 
 	FixedArray<float> mP; //Позиция участка струны
 	FixedArray<float> mS; //Скорость участка струны
 
-	uint mBowIndex;   //Участок струны, где работает смычок
-	uint mSoundIndex; //Участок струны, где снимается звук
+	unsigned mBowIndex;   //Участок струны, где работает смычок
+	unsigned mSoundIndex; //Участок струны, где снимается звук
 };
 
 INTRA_WARNING_POP

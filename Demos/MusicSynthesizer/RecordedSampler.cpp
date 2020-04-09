@@ -12,7 +12,7 @@ size_t RecordedSampler::operator()(Span<float> dst)
 	return len - dst.Length();
 }
 
-RecordedSampler CachedDrumInstrument::operator()(float volume, uint sampleRate) const
+RecordedSampler CachedDrumInstrument::operator()(float volume, unsigned sampleRate) const
 {
 	if(SampleRate == 0)
 	{

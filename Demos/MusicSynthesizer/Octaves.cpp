@@ -23,7 +23,7 @@ void SelfOctaveMix(CSpan<float> src, Span<float> dst, float multiplier)
 	}
 }
 
-void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount, uint maxSampleDelay)
+void GenOctaves(Span<float>& srcResult, Span<float> buffer, unsigned octavesCount, unsigned maxSampleDelay)
 {
 	if(octavesCount == 1) return;
 	if(octavesCount == 2)
@@ -33,14 +33,14 @@ void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount, u
 		return;
 	}
 
-	Random::FastUniform<uint> rand(3453411347u ^ uint(srcResult.Length()) ^ uint(buffer.Length() << 10) ^ (octavesCount << 20));
+	Random::FastUniform<unsigned> rand(3453411347u ^ unsigned(srcResult.Length()) ^ unsigned(buffer.Length() << 10) ^ (octavesCount << 20));
 	buffer = DecimateX2Linear(buffer, srcResult);
 	float volume = 0.5f;
 	while(octavesCount --> 1)
 	{
 		auto result = srcResult;
-		result.PopFirstN(AddMultiplied(result, buffer.Drop(rand(maxSampleDelay)), volume));
-		while(!result.Empty()) result.PopFirstN(AddMultiplied(result, buffer, volume));
+		result.PopFirstCount(AddMultiplied(result, buffer.Drop(rand(maxSampleDelay)), volume));
+		while(!result.Empty()) result.PopFirstCount(AddMultiplied(result, buffer, volume));
 		buffer = DecimateX2LinearInPlace(buffer);
 		volume /= 2;
 	}

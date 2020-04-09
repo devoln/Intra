@@ -51,7 +51,7 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 	if(-range > rw)
 	{
 		const double elementsToSkip = Floor((-range - rw) / rdw);
-		wavetableAmplitudes.PopFirstN(size_t(elementsToSkip));
+		wavetableAmplitudes.PopFirstCount(size_t(elementsToSkip));
 		rw += elementsToSkip*rdw;
 	}
 	if(rw < range) wavetableAmplitudes = wavetableAmplitudes.Take(size_t(Ceil((range - rw) / rdw)));
@@ -74,9 +74,9 @@ void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqS
 static void GenerateRandomPhases(Span<float> inOutRealAmplitudes, Span<float> outImagAmplitudes)
 {
 	INTRA_DEBUG_ASSERT(inOutRealAmplitudes.Length() <= outImagAmplitudes.Length());
-	Random::FastUniform<uint> rand(uint(inOutRealAmplitudes.Length()^1633529523u));
+	Random::FastUniform<unsigned> rand(unsigned(inOutRealAmplitudes.Length()^1633529523u));
 
-	enum: uint {TABLE_SIZE = 64, TABLE_MASK = TABLE_SIZE-1,
+	enum: unsigned {TABLE_SIZE = 64, TABLE_MASK = TABLE_SIZE-1,
 		INTERPOLATION_BITS = 25, INTERPOLATION_DIVISOR = 1 << INTERPOLATION_BITS, INTERPOLATION_MASK = INTERPOLATION_DIVISOR-1};
 	float sineTable[TABLE_SIZE];
 	SineRange<float> oscillator(1, 0, float(2*PI/TABLE_SIZE));
@@ -161,7 +161,7 @@ WaveTableCache CreateWaveTablesFromHarmonics(CSpan<SineHarmonicWithBandwidthDesc
 {
 	WaveTableCache result;
 	Array<SineHarmonicWithBandwidthDesc> harmonicsArr = harmonics;
-	result.Generator = [harmonicsArr, bandwidthScale, tableSize, allowMipmaps](float freq, uint sampleRate)
+	result.Generator = [harmonicsArr, bandwidthScale, tableSize, allowMipmaps](float freq, unsigned sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = tableSize;
@@ -210,12 +210,12 @@ Array<SineHarmonicWithBandwidthDesc> CreateUpdownHarmonicArray(float bandwidth, 
 }
 
 
-WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, uint numHarmonics,
+WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, unsigned numHarmonics,
 	float harmonicAttenuationPower, float bandwidth, float bandwidthScale, size_t tableSize)
 {
 	WaveTableCache result;
 	Array<FormantDesc> formantsArr = formants;
-	result.Generator = [=](float freq, uint sampleRate)
+	result.Generator = [=](float freq, unsigned sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = tableSize;

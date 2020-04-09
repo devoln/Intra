@@ -23,7 +23,7 @@ class DrumPhysicalModel
 	float mPrevRand;
 
 public:
-	enum: bool {RangeIsInfinite = true};
+	constexpr bool IsAnyInstanceInfinite = true};
 
 	void PopFirst();
 
@@ -31,7 +31,7 @@ public:
 
 	bool Empty() const {return mP.Width() == 0;}
 
-	DrumPhysicalModel(null_t=null);
+	DrumPhysicalModel(decltype(null)=null);
 
 	DrumPhysicalModel(byte count, byte dx, byte dy, float frc, float kDemp, float kRand);
 	float sRand();

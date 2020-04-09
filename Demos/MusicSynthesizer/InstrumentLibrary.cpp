@@ -4,8 +4,8 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Random/FastUniformNoise.h"
 
-#include "Container/Sequential/Array.h"
-#include "Container/Utility/Array2D.h"
+#include "Extra/Container/Sequential/Array.h"
+#include "Extra/Container/Utility/Array2D.h"
 
 #include "InstrumentLibrary.h"
 #include "DrumPhysicalModel.h"
@@ -225,7 +225,7 @@ InstrumentLibrary::InstrumentLibrary()
 		wt.Envelope = EnvelopeFactory::ADSR(0.05f, 0.03f, 0.8f, 0.05f);
 	}
 
-	Tables["SynthOrgan"].Generator = [](float freq, uint sampleRate)
+	Tables["SynthOrgan"].Generator = [](float freq, unsigned sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = 32768;
@@ -450,7 +450,7 @@ InstrumentLibrary::InstrumentLibrary()
 	Instruments["Pad5Bowed"] = Instruments["NewAge"];
 
 
-	/*LeadSquareTables.Generator = [](float freq, uint sampleRate)
+	/*LeadSquareTables.Generator = [](float freq, unsigned sampleRate)
 	{
 		WaveTable tbl;
 		tbl.BaseLevelLength = 32768;

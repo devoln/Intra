@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Container/Sequential/Array.h"
-#include "Audio/Resample.h"
-#include "Math/Math.h"
-#include "Core/Range/Mutation/Transform.h"
+#include "Extra/Container/Sequential/Array.h"
+#include "Extra/Unstable/Audio/Resample.h"
+#include "Intra/Math/Math.h"
+#include "Intra/Range/Mutation/Transform.h"
 
 INTRA_BEGIN
 namespace Audio { namespace Synth {
@@ -16,6 +16,6 @@ void SelfOctaveMix(CSpan<float> src, Span<float> dst, float multiplier);
 //! Предполагая, что srcResult содержит периодический сигнал,
 //! складывает его с octavesCount-1 копиями самого себя с частотами x2, x4, ... и амплитудами x0.5, x0.25, ....
 //! Результат записывается в один из двух предоставленных буферов, srcResult станет указывать на буфер с результатом.
-void GenOctaves(Span<float>& srcResult, Span<float> buffer, uint octavesCount, uint maxSampleDelay);
+void GenOctaves(Span<float>& srcResult, Span<float> buffer, unsigned octavesCount, unsigned maxSampleDelay);
 
 }}}

@@ -17,21 +17,21 @@ template<typename T> class FunctionGenerator
 		Freq(frequency), Amplitude(amplitude),
 		Time(0), DT(dt), Generator(generator) {}
 
-	forceinline float First() const {return operator()(Time);}
-	forceinline void PopFirst() {Time += DT;}
+	INTRA_FORCEINLINE float First() const {return operator()(Time);}
+	INTRA_FORCEINLINE void PopFirst() {Time += DT;}
 
-	forceinline float Next()
+	INTRA_FORCEINLINE float Next()
 	{
 		const float result = First();
 		PopFirst();
 		return result;
 	}
 
-	forceinline float operator()(float t)
+	INTRA_FORCEINLINE float operator()(float t)
 	{return Generator(Freq, t)*Amplitude;}
 };
 
-template<typename T> forceinline FunctionGenerator<T> CreateFunctionGenerator(T generator)
+template<typename T> INTRA_FORCEINLINE FunctionGenerator<T> CreateFunctionGenerator(T generator)
 {return FunctionGenerator<T>(generator);}
 
 INTRA_WARNING_POP

@@ -2,7 +2,7 @@
 
 
 
-#include "Core/Range/Span.h"
+#include "Intra/Range/Span.h"
 
 #include "Random/FastUniformNoise.h"
 
@@ -24,16 +24,16 @@ struct WhiteNoiseInstrument
 	float VolumeScale;
 	float FreqMultiplier;
 
-	forceinline WhiteNoiseInstrument(null_t=null): VolumeScale(0), FreqMultiplier(1) {}
-	forceinline WhiteNoiseInstrument(float volumeScale, float freqMult = 1):
+	INTRA_FORCEINLINE WhiteNoiseInstrument(decltype(null)=null): VolumeScale(0), FreqMultiplier(1) {}
+	INTRA_FORCEINLINE WhiteNoiseInstrument(float volumeScale, float freqMult = 1):
 		VolumeScale(volumeScale), FreqMultiplier(freqMult) {}
 
-	WhiteNoiseSampler operator()(float freq, float volume, uint sampleRate) const
+	WhiteNoiseSampler operator()(float freq, float volume, unsigned sampleRate) const
 	{return WhiteNoiseSampler(freq*FreqMultiplier/float(sampleRate), volume*VolumeScale);}
 
-	forceinline explicit operator bool() const noexcept {return VolumeScale > 0;}
-	forceinline bool operator==(null_t) const noexcept {return VolumeScale <= 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return VolumeScale > 0;}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return VolumeScale <= 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
 };
 
 INTRA_WARNING_POP

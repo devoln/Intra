@@ -12,15 +12,15 @@ namespace Generators {
 
 struct Sawtooth
 {
-	enum: bool {RangeIsInfinite = true};
+	enum: bool {IsAnyInstanceInfinite = true};
 
-	Sawtooth(float updownRatio, float freq, float amplitude, uint sampleRate):
-		mUpdownValue(updownRatio / (updownRatio + 1)), mFreq(freq),
+	Sawtooth(float updownRatio, float freq, float amplitude, unsigned sampleRate):
+	constexpr bool e(updownRatio / (updownRatio + 1)), mFreq(freq),
 		mP(mUpdownValue/2), mDP(mFreq / float(sampleRate)),
 		mC1(2*amplitude/mUpdownValue), mC2(2*amplitude / (1 - mUpdownValue)), mAmplitude(amplitude)
 	{}
 
-	forceinline void PopFirst() {mP += mDP;}
+	INTRA_FORCEINLINE void PopFirst() {mP += mDP;}
 
 	float First() const
 	{
@@ -30,7 +30,7 @@ struct Sawtooth
 			mAmplitude - (sawPos - mUpdownValue)*mC2;
 	}
 
-	forceinline bool Empty() const {return false;}
+	INTRA_FORCEINLINE bool Empty() const {return false;}
 
 private:
 	float mUpdownValue, mFreq;

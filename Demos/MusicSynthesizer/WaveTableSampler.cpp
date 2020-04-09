@@ -7,40 +7,40 @@
 #include "Generators/Pulse.h"
 #include "Generators/WhiteNoise.h"
 
-#include "Audio/AudioBuffer.h"
+#include "Extra/Unstable/Audio/AudioBuffer.h"
 
-#include "Core/Range/Span.h"
+#include "Intra/Range/Span.h"
 
 #include "Funal/Bind.h"
 
-#include "Math/Math.h"
+#include "Intra/Math/Math.h"
 
 #include "Simd/Simd.h"
 
-#include "Core/Range/Mutation/Copy.h"
-#include "Core/Range/Mutation/Fill.h"
-#include "Core/Range/Mutation/Transform.h"
+#include "Intra/Range/Mutation/Copy.h"
+#include "Intra/Range/Mutation/Fill.h"
+#include "Intra/Range/Mutation/Transform.h"
 
-#include "Container/Sequential/Array.h"
+#include "Extra/Container/Sequential/Array.h"
 
 #include "Random/FastUniform.h"
 
 static inline auto randGen(CSpan<float> periodicWave, float rate, float volume)
 {
-	return Random::FastUniform<uint>(
-		1436491347u ^ uint(periodicWave.Length()) ^ uint(rate*1537) ^ uint(volume * 349885300.0f)
+	return Random::FastUniform<unsigned>(
+		1436491347u ^ unsigned(periodicWave.Length()) ^ unsigned(rate*1537) ^ unsigned(volume * 349885300.0f)
 	);
 }
 
 WaveTableSampler::WaveTableSampler(CSpan<float> periodicWave, float rate,
 	float attenuationPerSample, float volume, float vibratoDeltaPhase,
 	float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples):
-	mSampleFragmentStart(periodicWave.Data()), mSampleFragmentLength(uint(periodicWave.Length())),
+	mSampleFragmentStart(periodicWave.Data()), mSampleFragmentLength(unsigned(periodicWave.Length())),
 	mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f), mReverbMultiplier(0),
 	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mEnvelope(envelope),
 	mExpAtten(ExponentAttenuator::FromFactorAndStep(volume, attenuationPerSample)),
 	mFragmentOffset(randGen(periodicWave, rate, volume)(mSampleFragmentLength)),
-	mRightFragmentOffset((uint(mFragmentOffset) + channelDeltaSamples) % mSampleFragmentLength)
+	mRightFragmentOffset((unsigned(mFragmentOffset) + channelDeltaSamples) % mSampleFragmentLength)
 {}
 
 void WaveTableSampler::generateWithDefaultRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples)
@@ -236,8 +236,8 @@ bool WaveTableSampler::Generate(SamplerTaskContainer& dstTasks, size_t offsetInS
 	return mExpAtten.Factor < 0.00001f? samplesToProcess - 1: samplesToProcess;
 }
 
-Sampler& CreateSampler(float freq, float volume, uint sampleRate,
-	SamplerContainer& dst, ushort* oIndex = null)
+Sampler& CreateSampler(float freq, float volume, unsigned sampleRate,
+	SamplerContainer& dst, uint16* oIndex = null)
 {
 	const float vibratoFreq = (VibratoFrequency < 0? -freq: 1)*VibratoFrequency;
 	return WaveFormSampler(Wave, ExpCoeff,
@@ -245,7 +245,7 @@ Sampler& CreateSampler(float freq, float volume, uint sampleRate,
 		vibratoFreq, VibratoValue, SmoothingFactor, Envelope(sampleRate));
 }
 
-WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint sampleRate) const
+WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, unsigned sampleRate) const
 {
 	auto& table = Tables->Get(freq, sampleRate);
 	const float ratio = freq / float(sampleRate);
@@ -258,7 +258,7 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, uint 
 }
 
 
-WaveTable& WaveTableCache::Get(float freq, uint sampleRate) const
+WaveTable& WaveTableCache::Get(float freq, unsigned sampleRate) const
 {
 	float freqSampleRateRatio = freq/float(sampleRate);
 	for(size_t i = 0; i < Tables.Length(); i++)

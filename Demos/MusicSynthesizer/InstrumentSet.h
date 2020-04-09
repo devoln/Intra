@@ -21,7 +21,7 @@ struct MidiInstrumentSet
 	MusicalInstrument* Instruments[128]{null};
 	GenericDrumInstrument* DrumInstruments[128]{null};
 
-	void Preload(const Audio::Midi::MidiFileInfo& info, uint sampleRate);
+	void Preload(const Audio::Midi::MidiFileInfo& info, unsigned sampleRate);
 };
 
 INTRA_WARNING_POP

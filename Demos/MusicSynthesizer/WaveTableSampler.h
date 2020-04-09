@@ -2,11 +2,11 @@
 
 
 
-#include "Math/SineRange.h"
+#include "Intra/Math/SineRange.h"
 
-#include "Core/Range/Span.h"
+#include "Intra/Range/Span.h"
 
-#include "Utils/FixedArray.h"
+#include "Extra/Utils/FixedArray.h"
 
 #include "Types.h"
 #include "Filter.h"
@@ -28,19 +28,19 @@ class WaveTableSampler: public Sampler
 protected:
 	//Указывает на актуальные данные семплов
 	const float* mSampleFragmentStart;
-	uint mSampleFragmentLength;
+	unsigned mSampleFragmentLength;
 
-	forceinline CSpan<float> SampleFragment() const
+	INTRA_FORCEINLINE CSpan<float> SampleFragment() const
 	{return {mSampleFragmentStart, mSampleFragmentLength};}
 	
-	forceinline CSpan<float> SampleFragment(size_t startIndex, size_t maxCount) const
+	INTRA_FORCEINLINE CSpan<float> SampleFragment(size_t startIndex, size_t maxCount) const
 	{return SampleFragment().Drop(startIndex).Take(maxCount);}
 
 	//Смещение левого канала относительно начала периода mSampleFragment
 	float mFragmentOffset;
 
 	//Целая часть смещения правого канала относительно периода mRightSampleFragment
-	uint mRightFragmentOffset;
+	unsigned mRightFragmentOffset;
 
 	//Скорость воспроизведения семпла mSampleFragment
 	float mRate;
@@ -62,7 +62,7 @@ protected:
 	Envelope mEnvelope;
 
 public:
-	WaveTableSampler(null_t=null) {}
+	WaveTableSampler(decltype(null)=null) {}
 
 	WaveTableSampler(CSpan<float> periodicWave, float rate, float expCoeff,
 		float volume, float vibratoDeltaPhase, float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples);
@@ -101,12 +101,12 @@ private:
 
 struct WaveTableCache
 {
-	typedef Delegate<WaveTable(float freq, uint sampleRate)> GeneratorType;
+	typedef Delegate<WaveTable(float freq, unsigned sampleRate)> GeneratorType;
 	mutable Array<WaveTable> Tables;
 	GeneratorType Generator;
 	bool AllowMipmaps = false;
 
-	WaveTable& Get(float freq, uint sampleRate) const;
+	WaveTable& Get(float freq, unsigned sampleRate) const;
 
 	WaveTableCache() {}
 	WaveTableCache(const WaveTableCache&) = delete;
@@ -124,7 +124,7 @@ struct WaveTableInstrument
 	float VibratoValue = 0;
 	EnvelopeFactory Envelope = EnvelopeFactory::Constant(1);
 
-	WaveTableSampler operator()(float freq, float volume, uint sampleRate) const;
+	WaveTableSampler operator()(float freq, float volume, unsigned sampleRate) const;
 };
 
 //! Задача по генерации семплов, которая прибавляет суммирует сгенерированные значения в буфер указанного контекста.
@@ -137,10 +137,10 @@ public:
 		ChannelMask = LeftChannel|RightChannel|ReverbChannel
 	};
 
-	ushort OffsetInSamples, NumSamples;
+	uint16 OffsetInSamples, NumSamples;
 
 	SamplerTask(size_t offsetInSamples, size_t numSamples):
-		OffsetInSamples(ushort(offsetInSamples)), NumSamples(ushort(numSamples))
+		OffsetInSamples(uint16(offsetInSamples)), NumSamples(uint16(numSamples))
 	{}
 
 	virtual ~SamplerTask() {}

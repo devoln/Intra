@@ -12,12 +12,12 @@ namespace Generators {
 
 struct Pulse
 {
-	Pulse(float updownRatio, float frequency, uint sampleRate):
+	Pulse(float updownRatio, float frequency, unsigned sampleRate):
 		mUpdownPercent(updownRatio / (updownRatio + 1)), mPhase(0), mDeltaPhase(frequency*2 / float(sampleRate)) {}
 
-	forceinline void PopFirst() {mPhase += mDeltaPhase;}
-	forceinline float First() const {return Math::Fract(mPhase) > mUpdownPercent? 1.0f: - 1.0f;}
-	forceinline bool Empty() const {return false;}
+	INTRA_FORCEINLINE void PopFirst() {mPhase += mDeltaPhase;}
+	INTRA_FORCEINLINE float First() const {return Math::Fract(mPhase) > mUpdownPercent? 1.0f: - 1.0f;}
+	INTRA_FORCEINLINE bool Empty() const {return false;}
 
 private:
 	float mUpdownPercent, mPhase, mDeltaPhase;

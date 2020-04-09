@@ -11,14 +11,14 @@ void DrumPhysicalModel::PopFirst()
 {
 	const float maxP = 0.3f;
 
-	const uint maxX = mDX - 1u;
-	const uint maxY = mDY - 1u;
+	const unsigned maxX = mDX - 1u;
+	const unsigned maxY = mDY - 1u;
 
-	for(uint i = 0; i < mCnt; i++)
+	for(unsigned i = 0; i < mCnt; i++)
 	{
-		for(uint y = 0; y < mDY; y++)
+		for(unsigned y = 0; y < mDY; y++)
 		{
-			for(uint x = 0; x < mDX; x++)
+			for(unsigned x = 0; x < mDX; x++)
 			{
 				mS(x, y) += ((mP((x-1) & maxX, y) + mP((x+1) & maxX, y) +
 						mP(x, (y-1) & maxY) + mP(x, (y+1) & maxY))*0.25f - mP(x, y)
@@ -26,9 +26,9 @@ void DrumPhysicalModel::PopFirst()
 			}
 		}
 
-		for(uint y = 0; y < mDY; y++)
+		for(unsigned y = 0; y < mDY; y++)
 		{
-			for(uint x = 0; x < mDX; x++)
+			for(unsigned x = 0; x < mDX; x++)
 			{
 				mS(x, y) = mS(x, y)*mK1 +
 					(mS((x - 1) & maxX, y) + mS((x + 1) & maxX, y) +
@@ -36,11 +36,11 @@ void DrumPhysicalModel::PopFirst()
 			}
 		}
 
-		for(uint y = 0; y < mDY; y++)
-			for(uint x = 0; x < mDX; x++)
+		for(unsigned y = 0; y < mDY; y++)
+			for(unsigned x = 0; x < mDX; x++)
 				mP(x, y) += mS(x, y);
 
-		for(uint x = 0; x < mDX; x += 4)
+		for(unsigned x = 0; x < mDX; x += 4)
 		{
 			if((mP(x, 0) > maxP && mS(x, 0) > 0) ||
 				(mP(x, 0) < maxP && mS(x, 0) < 0))
@@ -52,7 +52,7 @@ void DrumPhysicalModel::PopFirst()
 	}
 }
 
-DrumPhysicalModel::DrumPhysicalModel(null_t):
+DrumPhysicalModel::DrumPhysicalModel(decltype(null)):
 	mCnt(0), mDX(0), mDY(0),
 	mFrc(0), mK1(0), mK2(0),
 	mP(), mS(), mF(),
@@ -67,9 +67,9 @@ DrumPhysicalModel::DrumPhysicalModel(byte count, byte dx, byte dy, float frc, fl
 	mK1 = 1.0f - kDemp*0.333f*frc;
 	mK2 = (1.0f - mK1)*0.25f;
 
-	for(uint y = 0; y < dy; y++)
+	for(unsigned y = 0; y < dy; y++)
 	{
-		for(uint x = 0; x < dx; x++)
+		for(unsigned x = 0; x < dx; x++)
 		{
 			float v = 1.0f + sRand()*kRand;
 			mF(x, y) = mFrc*v;

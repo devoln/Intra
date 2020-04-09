@@ -1,12 +1,12 @@
 #include "WaveFormSampler.h"
 
-static uint GetGoodSignalPeriod(float samplesPerPeriod, uint maxPeriods, float eps)
+static unsigned GetGoodSignalPeriod(float samplesPerPeriod, unsigned maxPeriods, float eps)
 {
 	const float fract = Math::Fract(samplesPerPeriod);
 	if(fract <= eps/2) return 1;
 	float minDeltaCnt = 1;
-	uint minDeltaN = 0;
-	for(uint n = 1; fract*float(n) < float(maxPeriods) || minDeltaCnt > eps; n++)
+	unsigned minDeltaN = 0;
+	for(unsigned n = 1; fract*float(n) < float(maxPeriods) || minDeltaCnt > eps; n++)
 	{
 		float delta = Math::Fract(fract*float(n));
 		if(delta > 0.5f) delta = 1 - delta;
@@ -20,12 +20,12 @@ static uint GetGoodSignalPeriod(float samplesPerPeriod, uint maxPeriods, float e
 }
 
 CSpan<float> WaveFormSampler::prepareInternalData(const void* params, WaveForm wave,
-	float freq, float volume, uint sampleRate, bool goodPeriod, bool prepareToStereoDataMutation)
+	float freq, float volume, unsigned sampleRate, bool goodPeriod, bool prepareToStereoDataMutation)
 {
 	const float samplesPerPeriod = float(sampleRate)/freq;
 	if(samplesPerPeriod < 1) return;
-	const uint goodPeriod = !goodPeriod? 1: GetGoodSignalPeriod(samplesPerPeriod, uint(Math::Round(1000/samplesPerPeriod)) + 1, 0.2f);
-	const uint goodSignalPeriodSamples = uint(Math::Round(samplesPerPeriod*float(goodPeriod)));
+	const unsigned goodPeriod = !goodPeriod? 1: GetGoodSignalPeriod(samplesPerPeriod, unsigned(Math::Round(1000/samplesPerPeriod)) + 1, 0.2f);
+	const unsigned goodSignalPeriodSamples = unsigned(Math::Round(samplesPerPeriod*float(goodPeriod)));
 	if(goodPeriod) freq = float(sampleRate*goodPeriod) / float(goodSignalPeriodSamples);
 	else mRate = float(goodSignalPeriodSamples)/samplesPerPeriod;
 	mSampleFragmentData.SetCount(prepareToStereoDataMutation? goodSignalPeriodSamples*2: goodSignalPeriodSamples);
@@ -34,7 +34,7 @@ CSpan<float> WaveFormSampler::prepareInternalData(const void* params, WaveForm w
 	wave(params, mSampleFragmentData, freq, volume, sampleRate);
 }
 
-void WaveFormSampler::preattenuateExponential(float expCoeff, uint sampleRate)
+void WaveFormSampler::preattenuateExponential(float expCoeff, unsigned sampleRate)
 {
 	const float ek = Math::Exp(-expCoeff/float(sampleRate));
 	Span<float> dst = mSampleFragmentData;
@@ -46,7 +46,7 @@ void WaveFormSampler::preattenuateExponential(float expCoeff, uint sampleRate)
 }
 
 WaveFormSampler::WaveFormSampler(const void* params, WaveForm wave,
-	float expCoeff, float volume, float freq, uint sampleRate,
+	float expCoeff, float volume, float freq, unsigned sampleRate,
 	float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope):
 	WaveTableSampler(
 		prepareInternalData(params, wave, freq, volume, sampleRate, smoothingFactor == 0, smoothingFactor != 0),
@@ -79,19 +79,19 @@ static float smoothFilterBuffer(Span<float> dst, CSpan<float> src, float prevSam
 
 
 
-void SineWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
+void SineWaveForm::operator()(Span<float> dst, float freq, float volume, unsigned sampleRate) const
 {
 	Math::SineRange<float> sine(volume, 0, float(2*Math::PI*freq/float(sampleRate)));
 	ReadTo(sine, dst);
 }
 
-void SawtoothWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
+void SawtoothWaveForm::operator()(Span<float> dst, float freq, float volume, unsigned sampleRate) const
 {
 	Generators::Sawtooth saw(UpdownRatio, freq, volume, sampleRate);
 	ReadTo(saw, dst);
 }
 
-void PulseWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
+void PulseWaveForm::operator()(Span<float> dst, float freq, float volume, unsigned sampleRate) const
 {
 	if(UpdownRatio == 1)
 	{
@@ -106,9 +106,9 @@ void PulseWaveForm::operator()(Span<float> dst, float freq, float volume, uint s
 	Multiply(dst, volume);
 }
 
-void WhiteNoiseWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
+void WhiteNoiseWaveForm::operator()(Span<float> dst, float freq, float volume, unsigned sampleRate) const
 {
-	uint samplesPerPeriod = uint(Math::Round(float(sampleRate)/freq));
+	unsigned samplesPerPeriod = unsigned(Math::Round(float(sampleRate)/freq));
 	if(samplesPerPeriod == 0) samplesPerPeriod = 1;
 	Random::FastUniform<float> noise;
 	auto samplePeriod = dst.Take(samplesPerPeriod);
@@ -116,10 +116,10 @@ void WhiteNoiseWaveForm::operator()(Span<float> dst, float freq, float volume, u
 	while(!dst.Full()) WriteTo(samplePeriod, dst);
 }
 
-void GuitarWaveForm::operator()(Span<float> dst, float freq, float volume, uint sampleRate) const
+void GuitarWaveForm::operator()(Span<float> dst, float freq, float volume, unsigned sampleRate) const
 {
 	(void)freq; (void)sampleRate;
-	uint samplesPerPeriod = dst.Length();
+	unsigned samplesPerPeriod = dst.Length();
 	Random::FastUniform<float> noise;
 	auto samplePeriod = dst.Take(samplesPerPeriod);
 

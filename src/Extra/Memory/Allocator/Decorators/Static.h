@@ -1,0 +1,29 @@
+#pragma once
+
+#include "Intra/Type.h"
+
+INTRA_BEGIN
+INTRA_IGNORE_WARNING_COPY_IMPLICITLY_DELETED
+
+template<typename A> struct AStatic
+{
+	size_t GetAlignment() const {return Get().GetAlignment();}
+
+	static A& Get()
+	{
+		static A allocator;
+		return allocator;
+	}
+
+	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = SourceInfo())
+	{return Get().Allocate(bytes, sourceInfo);}
+
+	static void Free(void* ptr, size_t size)
+	{Get().Free(ptr, size);}
+
+	template<typename U=A> static INTRA_FORCEINLINE Requires<
+		CHasGetAllocationSize<U>,
+	size_t> GetAllocationSize(void* ptr)
+	{return Get().GetAllocationSize(ptr);}
+};
+INTRA_END

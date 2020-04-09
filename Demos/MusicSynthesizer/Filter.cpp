@@ -1,9 +1,9 @@
 ﻿#include "Filter.h"
 
-#include "Container/Sequential/Array.h"
+#include "Extra/Container/Sequential/Array.h"
 #include "Types.h"
-#include "Core/Range/Mutation/Transform.h"
-#include "Core/Range/Reduction.h"
+#include "Intra/Range/Mutation/Transform.h"
+#include "Intra/Range/Reduction.h"
 
 #include <stdio.h>
 

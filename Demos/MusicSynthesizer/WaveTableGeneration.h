@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Core/Range/Span.h"
+#include "Intra/Range/Span.h"
 
-#include "Math/Math.h"
+#include "Intra/Math/Math.h"
 
 #include "WaveTable.h"
 #include "WaveTableSampler.h"
@@ -61,6 +61,6 @@ struct FormantDesc
 	float Scale;
 };
 
-WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, uint numHarmonics,
+WaveTableCache CreateWaveTablesFromFormants(CSpan<FormantDesc> formants, unsigned numHarmonics,
 	float harmonicAttenuationPower, float bandwidth, float bandwidthScale, size_t tableSize);
 

@@ -1,8 +1,8 @@
 ﻿#pragma once
 
 
-#include "Core/Range/Span.h"
-#include "Container/Sequential/Array.h"
+#include "Intra/Range/Span.h"
+#include "Extra/Container/Sequential/Array.h"
 
 #include "Types.h"
 #include "WaveTableSampler.h"
@@ -24,7 +24,7 @@ struct MusicalInstrument
 	ChorusFactory Chorus;
 	Array<GenericModifierFactory> GenericModifiers;
 
-	Sampler& CreateSampler(void* addrToConstructSampler, float freq, float volume, uint sampleRate) const override;
+	Sampler& CreateSampler(void* addrToConstructSampler, float freq, float volume, unsigned sampleRate) const override;
 };
 
 INTRA_WARNING_POP

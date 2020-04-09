@@ -34,17 +34,17 @@ typedef Funal::CopyableMutableDelegate<void(
 
 //! Инструмент - источник семплеров нот.
 typedef Funal::CopyableDelegate<GenericSamplerRef(
-	float freq, float volume, uint sampleRate
+	float freq, float volume, unsigned sampleRate
 )> GenericInstrument;
 
 //! Ударный инструмент - источник семплеров нот.
 typedef Funal::CopyableDelegate<GenericSamplerRef(
-	float volume, uint sampleRate
+	float volume, unsigned sampleRate
 )> GenericDrumInstrument;
 
 //! Фабрика модификаторов - источник модификаторов семплов.
 typedef Funal::CopyableDelegate<GenericModifier(
-	float freq, float volume, uint sampleRate
+	float freq, float volume, unsigned sampleRate
 )> GenericModifierFactory;
 
 INTRA_WARNING_POP

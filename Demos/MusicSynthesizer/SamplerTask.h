@@ -1,13 +1,13 @@
 ﻿#pragma once
 
-#include "Core/Type.h"
-#include "Core/Assert.h"
-#include "Utils/Unique.h"
-#include "Utils/FixedArray.h"
-#include "Core/Range/Mutation/Fill.h"
-#include "Core/Range/Mutation/Transform.h"
-#include "Container/Utility/Blob.h"
-#include "Concurrency/Atomic.h"
+#include "Intra/Type.h"
+#include "Intra/Assert.h"
+#include "Extra/Utils/Unique.h"
+#include "Extra/Utils/FixedArray.h"
+#include "Intra/Range/Mutation/Fill.h"
+#include "Intra/Range/Mutation/Transform.h"
+#include "Extra/Container/Utility/Blob.h"
+#include "Intra/Concurrency/Atomic.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -23,17 +23,17 @@ public:
 		ChannelMask = LeftChannel|RightChannel|ReverbChannel
 	};
 
-	ushort OffsetInSamples, NumSamples;
+	uint16 OffsetInSamples, NumSamples;
 
 	SamplerTask(size_t offsetInSamples, size_t numSamples):
-		OffsetInSamples(ushort(offsetInSamples)), NumSamples(ushort(numSamples)) {}
+		OffsetInSamples(uint16(offsetInSamples)), NumSamples(uint16(numSamples)) {}
 	
 	virtual ~SamplerTask() {}
 	virtual void MoveConstruct(void* dst) = 0;
 	virtual void operator()(SamplerTaskContext& stc) = 0;
 };
 
-typedef Intra::Container::DynamicBlob<SamplerTask, alignof(SamplerTask), ushort> SamplerTaskContainer;
+typedef Intra::Container::DynamicBlob<SamplerTask, alignof(SamplerTask), uint16> SamplerTaskContainer;
 
 //! Предварительно заполненная потокобезопасная очередь только для чтения
 class SamplerTaskConsumeQueue
@@ -60,7 +60,7 @@ class SamplerTaskContext
 {
 	FixedArray<float> allSamples;
 public:
-	ushort UsedChannels;
+	uint16 UsedChannels;
 	const Span<float> Channels[3];
 
 	SamplerTaskContext& operator=(const SamplerTaskContext&) = delete;

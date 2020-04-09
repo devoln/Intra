@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::Range::InputRange&lt;*&gt;">
+    <DisplayString Condition="mInterface.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*mInterface.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*mInterface.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::z_D::InputRangeImplFiller&lt;*,*,*&gt;">
+    <DisplayString>{OriginalRange}</DisplayString>
+    <Expand>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::OutputRange&lt;*&gt;">
+    <DisplayString Condition="Stream.mPtr == nullptr">null</DisplayString>
+    <DisplayString>{*Stream.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*Stream.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Range::OutputRangePolymorphicWrapper&lt;*,*&gt;">
+    <DisplayString>{OriginalRange}</DisplayString>
+    <Expand>
+      <ExpandedItem>OriginalRange</ExpandedItem>
+    </Expand>
+  </Type>
+  
+</AutoVisualizer>

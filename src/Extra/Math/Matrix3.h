@@ -1,0 +1,463 @@
+﻿#pragma once
+
+#include "Intra/Math/Math.h"
+#include "Vector2.h"
+#include "Vector3.h"
+
+INTRA_BEGIN
+template<typename T> struct Matrix4;
+
+template<typename T> struct Matrix3
+{
+public:
+	Matrix3() = default;
+	
+	constexpr Matrix3(T rX, T rY, T rZ, T uX, T uY, T uZ, T oX, T oY, T oZ) noexcept:
+		Rows {
+			{rX, rY, rZ},
+			{uX, uY, uZ},
+			{oX, oY, oZ}
+		} {}
+
+	constexpr Matrix3(const Vector3<T>& right,
+		const Vector3<T>& up, const Vector3<T>& forward) noexcept:
+	Rows{right, up, forward} {}
+	
+	//! Создать матрицу, задаюющую однородную систему координат.
+	//! @param right Правый вектор базиса
+	//! @param up Верхний вектор базиса
+	//! @param translation Вектор переноса
+	constexpr static INTRA_FORCEINLINE Matrix3 FromAxesAndTranslation(
+		const Vector2<T>& right, const Vector2<T>& up, const Vector2<T>& translation) noexcept
+	{
+		return {
+			{right, translation.x},
+			{up, translation.y},
+			{0, 0, 1}
+		};
+	}
+
+	constexpr explicit Matrix3(const Matrix4<T>& m) noexcept:
+		Rows {
+			m.Rows[0].xyz,
+			m.Rows[1].xyz,
+			m.Rows[2].xyz
+		} {}
+
+	constexpr bool operator==(const Matrix3& rhs) const noexcept
+	{
+		return Rows[0] == rhs.Rows[0] &&
+			Rows[1] == rhs.Rows[1] &&
+			Rows[2] == rhs.Rows[2];
+	}
+	
+	constexpr bool operator!=(const Matrix3& rhs) const noexcept {return !operator==(rhs);}
+
+	constexpr Matrix3 operator*(const Matrix3& rhs) const noexcept
+	{
+		return {
+			{
+				Rows[0].x*rhs.Rows[0].x + Rows[0].y*rhs.Rows[1].x + Rows[0].z*rhs.Rows[2].x,
+				Rows[0].x*rhs.Rows[0].y + Rows[0].y*rhs.Rows[1].y + Rows[0].z*rhs.Rows[2].y,
+				Rows[0].x*rhs.Rows[0].z + Rows[0].y*rhs.Rows[1].z + Rows[0].z*rhs.Rows[2].z
+			},
+			{
+				Rows[1].x*rhs.Rows[0].x + Rows[1].y*rhs.Rows[1].x + Rows[1].z*rhs.Rows[2].x,
+				Rows[1].x*rhs.Rows[0].y + Rows[1].y*rhs.Rows[1].y + Rows[1].z*rhs.Rows[2].y,
+				Rows[1].x*rhs.Rows[0].z + Rows[1].y*rhs.Rows[1].z + Rows[1].z*rhs.Rows[2].z
+			},
+			{
+				Rows[2].x*rhs.Rows[0].x + Rows[2].y*rhs.Rows[1].x + Rows[2].z*rhs.Rows[2].x,
+				Rows[2].x*rhs.Rows[0].y + Rows[2].y*rhs.Rows[1].y + Rows[2].z*rhs.Rows[2].y,
+				Rows[2].x*rhs.Rows[0].z + Rows[2].y*rhs.Rows[1].z + Rows[2].z*rhs.Rows[2].z
+			}
+		};
+	}
+
+	constexpr Matrix3 TransposeMultiply(const Matrix3& rhs) const noexcept
+	{
+		return {
+			{
+				Rows[0].x*rhs.Rows[0].x + Rows[1].x*rhs.Rows[1].x + Rows[2].x*rhs.Rows[2].x,
+				Rows[0].x*rhs.Rows[0].y + Rows[1].x*rhs.Rows[1].y + Rows[2].x*rhs.Rows[2].y,
+				Rows[0].x*rhs.Rows[0].z + Rows[1].x*rhs.Rows[1].z + Rows[2].x*rhs.Rows[2].z
+			},
+			{
+				Rows[0].y*rhs.Rows[0].x + Rows[1].y*rhs.Rows[1].x + Rows[2].y*rhs.Rows[2].x,
+				Rows[0].y*rhs.Rows[0].y + Rows[1].y*rhs.Rows[1].y + Rows[2].y*rhs.Rows[2].y,
+				Rows[0].y*rhs.Rows[0].z + Rows[1].y*rhs.Rows[1].z + Rows[2].y*rhs.Rows[2].z
+			},
+			{
+				Rows[0].z*rhs.Rows[0].x + Rows[1].z*rhs.Rows[1].x + Rows[2].z*rhs.Rows[2].x,
+				Rows[0].z*rhs.Rows[0].y + Rows[1].z*rhs.Rows[1].y + Rows[2].z*rhs.Rows[2].y,
+				Rows[0].z*rhs.Rows[0].z + Rows[1].z*rhs.Rows[1].z + Rows[2].z*rhs.Rows[2].z
+			}
+		};
+	}
+
+	constexpr Matrix3 MultiplyTranspose(const Matrix3& rhs) const noexcept
+	{
+		return {
+			{
+				Rows[0].x*rhs.Rows[0].x + Rows[0].y*rhs.Rows[0].y + Rows[0].z*rhs.Rows[0].z,
+				Rows[0].x*rhs.Rows[1].x + Rows[0].y*rhs.Rows[1].y + Rows[0].z*rhs.Rows[1].z,
+				Rows[0].x*rhs.Rows[2].x + Rows[0].y*rhs.Rows[2].y + Rows[0].z*rhs.Rows[2].z
+			},
+			{
+				Rows[1].x*rhs.Rows[0].x + Rows[1].y*rhs.Rows[0].y + Rows[1].z*rhs.Rows[0].z,
+				Rows[1].x*rhs.Rows[1].x + Rows[1].y*rhs.Rows[1].y + Rows[1].z*rhs.Rows[1].z,
+				Rows[1].x*rhs.Rows[2].x + Rows[1].y*rhs.Rows[2].y + Rows[1].z*rhs.Rows[2].z
+			},
+			{
+				Rows[2].x*rhs.Rows[0].x + Rows[2].y*rhs.Rows[0].y + Rows[2].z*rhs.Rows[0].z,
+				Rows[2].x*rhs.Rows[1].x + Rows[2].y*rhs.Rows[1].y + Rows[2].z*rhs.Rows[1].z,
+				Rows[2].x*rhs.Rows[2].x + Rows[2].y*rhs.Rows[2].y + Rows[2].z*rhs.Rows[2].z
+			}
+		};
+	}
+
+	INTRA_FORCEINLINE Matrix3& operator*=(const Matrix3& m) noexcept {return *this = *this*m;}
+
+	constexpr Matrix3 operator*(T n) const noexcept
+	{
+		return {
+			Rows[0]*n,
+			Rows[1]*n,
+			Rows[2]*n
+		};
+	}
+
+	constexpr Matrix3 operator/(T n) const
+	{
+		return {
+			Rows[0]/n,
+			Rows[1]/n,
+			Rows[2]/n
+		};
+	}
+	
+	Matrix3& operator*=(T n) noexcept
+	{
+		Rows[0] *= n;
+		Rows[1] *= n;
+		Rows[2] *= n;
+		return *this;
+	}
+
+	Matrix3& operator/=(T n)
+	{
+		Rows[0] /= n;
+		Rows[1] /= n;
+		Rows[2] /= n;
+		return *this;
+	}
+	
+	constexpr Matrix3 operator+(const Matrix3& m) const noexcept
+	{
+		return {
+			Rows[0] + m.Rows[0],
+			Rows[1] + m.Rows[1],
+			Rows[2] + m.Rows[2]
+		};
+	}
+
+	constexpr Matrix3 operator-(const Matrix3& m) const noexcept
+	{
+		return {
+			Rows[0] - m.Rows[0],
+			Rows[1] - m.Rows[1],
+			Rows[2] - m.Rows[2]
+		};
+	}
+	
+	Matrix3& operator+=(const Matrix3& m) noexcept
+	{
+		Rows[0] += m[0];
+		Rows[1] += m[1];
+		Rows[2] += m[2];
+		return *this;
+	}
+	Matrix3& operator-=(const Matrix3& m) noexcept
+	{
+		Rows[0] -= m[0];
+		Rows[1] -= m[1];
+		Rows[2] -= m[2];
+		return *this;
+	}
+
+	Vector3<T> ExtractScaleVector() const noexcept
+	{
+		return {
+			Length(Rows[0]),
+			Length(Rows[1]),
+			Length(Rows[2])
+		};
+	}
+	
+	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
+	Matrix3 ExtractRotation() const
+	{
+		return {
+			Normalize(Rows[0]),
+			Normalize(Rows[1]),
+			Normalize(Rows[2])
+		};
+	}
+
+	void DecomposeTransform(Matrix3* oRotation, Vector3<T>* oScaling) const
+	{
+		const Vector3<T> s = ExtractScaleVector();
+		if(oScaling) *oScaling = s;
+		if(oRotation) *oRotation = {Rows[0].xy/s.x, Rows[1].xy/s.y};
+	}
+
+	//! Извлекает вращение из текущей матрицы, предполагая, что она ортогональна.
+	//Matrix2 ExtractRotation2() const {return {Normalize(Rows[0].xy), Normalize(Rows[1].xy)}}
+
+	Vector2<T> ExtractScaleVector2() const noexcept {return {Length(Rows[0].xy), Length(Rows[1].xy)};}
+	
+	//! Извлекает перенос, предполагая, что матрица задаёт однородную систему координат
+	constexpr Vector2<T> ExtractTranslation2() const {return {Rows[0].z, Rows[1].z};}
+	/*
+	void DecomposeTransform2(Matrix2* rotation, Vector2<T>* scaling, Vector2<T>* translation) const
+	{
+		const Vector2<T> s = GetScaling2();
+		if(oScaling) *oScaling = s;
+		if(oRotation) *oRotation = Matrix2(Vector2<T>(Rows[0])/s[0], Vector2<T>(Rows[1])/s[1]);
+		if(oTranslation) *oTranslation = GetTranslation2();
+	}*/
+
+	constexpr Vector3<T> Column(size_t i) const noexcept
+	{
+		return {
+			Rows[0][i],
+			Rows[1][i],
+			Rows[2][i]
+		};
+	}
+	
+	INTRA_FORCEINLINE void SetColumn(size_t i, const Vector3<T>& value) noexcept
+	{
+		Rows[0][i] = value.x;
+		Rows[1][i] = value.y;
+		Rows[2][i] = value.z;
+	}
+
+	//! Единичная матрица
+	static constexpr const Matrix3 Identity() noexcept
+	{
+		return {
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1
+		};
+	}
+
+	//! Матрица переноса на вектор translation в однородных координатах.
+	static constexpr Matrix3 CreateTranslation(const Vector2<T>& translation)
+	{
+		return {
+			1, 0, translation.x,
+			0, 1, translation.y,
+			0, 0, 1
+		};
+	}
+
+	//! Возвращает матрицу поворота вокруг оси normalizedAxis на угол angleRadians, измеряемый в радианах.
+	//! Предполагает, что вектор normalizedAxis нормирован. Иначе получится некорректный результат.
+	static Matrix3 CreateRotationNormalized(T angleInRadians, const Vector3<T>& normalizedAxis)
+	{
+		const T s = T(Sin(angleInRadians));
+		const T c = T(Cos(angleInRadians));
+
+		const T oc = T(1-c);
+
+		const T oxx = oc*normalizedAxis.x*normalizedAxis.x;
+		const T oyy = oc*normalizedAxis.y*normalizedAxis.y;
+		const T ozz = oc*normalizedAxis.z*normalizedAxis.z;
+		const T oxy = oc*normalizedAxis.z*normalizedAxis.y;
+		const T oyz = oc*normalizedAxis.y*normalizedAxis.z;
+		const T ozx = oc*normalizedAxis.z*normalizedAxis.x;
+
+		const T xs = normalizedAxis.x*s;
+		const T ys = normalizedAxis.y*s;
+		const T zs = normalizedAxis.z*s;
+
+		return {
+			oxx + c, oxy + zs, ozx - ys,
+			oxy - zs, oyy + c, oyz + xs,
+			ozx + ys, oyz - xs, ozz + c
+		};
+	}
+
+	//! Возвращает матрицу поворота вокруг оси axis на угол angleRadians, измеряемый в радианах.
+	static Matrix3 CreateRotation(T angleInRadians, const Vector3<T>& axis)
+	{return CreateRotationNormalized(angleInRadians, Normalize(axis));}
+
+	static constexpr Matrix3 CreateScaling(const Vector3<T>& scale) noexcept
+	{
+		return {
+			scale.x, 0, 0,
+			0, scale.y, 0,
+			0, 0, scale.z
+		};
+	}
+
+	static constexpr Matrix3 CreateScaling(const Vector2<T>& scale) noexcept
+	{
+		return {
+			scale.x, 0, 0,
+			0, scale.y, 0,
+			0, 0, 1
+		};
+	}
+
+	static constexpr Matrix3 CreateScaling(T x, T y, T z) noexcept
+	{
+		return {
+			x, 0, 0,
+			0, y, 0,
+			0, 0, z
+		};
+	}
+
+	static constexpr Matrix3 CreateScaling(T factor) noexcept
+	{
+		return {
+			factor, 0, 0,
+			0, factor, 0,
+			0, 0, factor
+		};
+	}
+
+	//! Возвращает матрицу вращения на углы Эйлера.
+	//TODO: rotX, rotY, rotZ вроде некорректные названия.
+	static Matrix3 CreateRotationEuler(T rotX, T rotY, T rotZ)
+	{
+		const T cos_rx = T(Cos(rotX));
+		const T cos_ry = T(Cos(rotY));
+		const T cos_rz = T(Cos(rotZ));
+		const T sin_rx = T(-Sin(rotX));
+		const T sin_ry = T(-Sin(rotY));
+		const T sin_rz = T(-Sin(rotZ));
+		return {
+			{
+				cos_ry*cos_rz,
+				-sin_rz*cos_rx + cos_rz*sin_ry*sin_rx,
+				sin_rx*sin_rz + cos_rz*sin_ry*cos_rx
+			},
+			{
+				cos_ry*sin_rz,
+				cos_rz*cos_rx + sin_ry*sin_rz*sin_rx,
+				-sin_rx*cos_rz + sin_rx*sin_rz*cos_rx
+			},
+			{
+				-sin_ry,
+				cos_ry*sin_rx,
+				cos_ry*cos_rx
+			}
+		};
+	}
+
+	//! Задаёт вращательную часть видовой матрицы, используя следующие параметры:
+	//! @param eye Положение наблюдателя.
+	//! @param center Точка, в которую смотрит наблюдатель.
+	//! @param up Направление вектора "вверх".
+	static Matrix3 CreateLookAt(const Vector3<T>& eye, const Vector3<T>& center, const Vector3<T>& up)
+	{
+		const Vector3<T> f = Normalize(center - eye);
+		Vector3<T> u = Normalize(up);
+		const Vector3<T> s = Normalize(Cross(f, u));
+		u = Cross(s, f);
+
+		return {
+			{s.x, u.x, -f.x},
+			{s.y, u.y, -f.y},
+			{s.z, u.z, -f.z}
+		};
+	}
+
+	Matrix3 Orthonormalize() const
+	{
+		const auto r0 = Normalize(Rows[0]);
+		const auto r1 = Normalize(Rows[1] - r0*Dot(r0, Rows[1]));
+		return {
+			r0, r1,
+			Normalize(Rows[2] - (r0*Dot(r0, Rows[2]) + r1*Dot(r1, Rows[2])))
+		};
+	}
+
+	constexpr Matrix3 Orthogonalize() const
+	{
+		const T ll0 = LengthSqr(Rows[0]);
+		const auto r1 = Rows[1] - Rows[0]*(Dot(Rows[0], Rows[1])/ll0);
+		return {
+			Rows[0], r1,
+			Rows[2] - (Rows[0]*Dot(Rows[0], Rows[2])/ll0 + r1*Dot(r1, Rows[2])/LengthSqr(r1))
+		};
+	}
+
+	Vector3<T> Rows[3];
+};
+
+template<typename T> constexpr Vector3<T> operator*(const Vector3<T>& v, const Matrix3<T>& m) noexcept
+{
+	return m.Rows[0] * v.x +
+		m.Rows[1] * v.y +
+		m.Rows[2] * v.z;
+}
+
+template<typename T> constexpr Vector3<T> operator*(const Matrix3<T>& m, const Vector3<T>& v) noexcept
+{
+	return {
+		Dot(m.Rows[0], v),
+		Dot(m.Rows[1], v),
+		Dot(m.Rows[2], v)
+	};
+}
+
+template<typename T> constexpr Matrix3<T> Transpose(const Matrix3<T>& m) noexcept
+{
+	return {
+		{m.Rows[0].x, m.Rows[1].x, m.Rows[2].x},
+		{m.Rows[0].y, m.Rows[1].y, m.Rows[2].y},
+		{m.Rows[0].z, m.Rows[1].z, m.Rows[2].z}
+	};
+}
+
+template<typename T> Matrix3<T> Inverse(const Matrix3<T>& m)
+{
+	const T det = m.Rows[0].x*(m.Rows[1].y*m.Rows[2].z - m.Rows[2].y*m.Rows[1].z) -
+	              m.Rows[0].y*(m.Rows[1].x*m.Rows[2].z - m.Rows[1].z*m.Rows[2].x) +
+	              m.Rows[0].z*(m.Rows[1].x*m.Rows[2].y - m.Rows[1].y*m.Rows[2].x);
+
+	return {
+		{
+			(m.Rows[1].y*m.Rows[2].z - m.Rows[2].y*m.Rows[1].z) / det,
+			(m.Rows[0].z*m.Rows[2].y - m.Rows[0].y*m.Rows[2].z) / det,
+			(m.Rows[0].y*m.Rows[1].z - m.Rows[0].z*m.Rows[1].y) / det
+		},
+		{
+			(m.Rows[1].z*m.Rows[2].x - m.Rows[1].x*m.Rows[2].z) / det,
+			(m.Rows[0].x*m.Rows[2].z - m.Rows[0].z*m.Rows[2].x) / det,
+			(m.Rows[1].x*m.Rows[0].z - m.Rows[0].x*m.Rows[1].z) / det
+		},
+		{
+			(m.Rows[1].x*m.Rows[2].y - m.Rows[2].x*m.Rows[1].y) / det,
+			(m.Rows[2].x*m.Rows[0].y - m.Rows[0].x*m.Rows[2].y) / det,
+			(m.Rows[0].x*m.Rows[1].y - m.Rows[1].x*m.Rows[0].y) / det
+		}
+	};
+}
+
+typedef Matrix3<float> Mat3;
+typedef Matrix3<double> DMat3;
+typedef Matrix3<unsigned> UMat3;
+typedef Matrix3<int> IMat3;
+typedef Matrix3<uint16> USMat3;
+typedef Matrix3<short> SMat3;
+typedef Matrix3<byte> UBMat3;
+typedef Matrix3<int8> SBMat3;
+typedef Matrix3<bool> BMat3;
+
+INTRA_END

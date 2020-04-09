@@ -13,7 +13,7 @@
 
 namespace PostEffects {
 
-void Echo::operator()(Span<float> inOutSamples, uint sampleRate) const
+void Echo::operator()(Span<float> inOutSamples, unsigned sampleRate) const
 {
 	Array<float> copy(inOutSamples);
 	const double duration = double(inOutSamples.Length())/sampleRate;
@@ -25,21 +25,21 @@ void Echo::operator()(Span<float> inOutSamples, uint sampleRate) const
 		if(st>=0 && st<duration)
 		{
 			inOutSamples.First() *= MainVolume;
-			inOutSamples.First() += copy[uint(st*float(sampleRate))]*SecondaryVolume;
+			inOutSamples.First() += copy[unsigned(st*float(sampleRate))]*SecondaryVolume;
 		}
 		t += dt;
 		inOutSamples.PopFirst();
 	}
 }
 
-void FilterDrive::operator()(Span<float> inOutSamples, uint sampleRate) const
+void FilterDrive::operator()(Span<float> inOutSamples, unsigned sampleRate) const
 {
 	(void)sampleRate;
 	for(float& sample: inOutSamples)
 		sample = Atan(sample*K);
 }
 
-void FilterHP::operator()(Span<float> inOutSamples, uint sampleRate) const
+void FilterHP::operator()(Span<float> inOutSamples, unsigned sampleRate) const
 {
 	(void)sampleRate;
 	float S = 0;
@@ -51,7 +51,7 @@ void FilterHP::operator()(Span<float> inOutSamples, uint sampleRate) const
 	}
 }
 
-void Fade::operator()(Span<float> inOutSamples, uint sampleRate) const
+void Fade::operator()(Span<float> inOutSamples, unsigned sampleRate) const
 {
 	(void)sampleRate;
 	if(FadeIn > 0)
@@ -64,7 +64,7 @@ void Fade::operator()(Span<float> inOutSamples, uint sampleRate) const
 	{
 		const size_t a = inOutSamples.Length() > FadeIn? inOutSamples.Length()-FadeOut: FadeIn;
 		const float k = 1.0f/float(Sqr(FadeOut));
-		for(uint i = 1; i < FadeOut; i++)
+		for(unsigned i = 1; i < FadeOut; i++)
 			inOutSamples[a+i] *= float(Sqr(FadeOut-i))*k;
 	}
 }

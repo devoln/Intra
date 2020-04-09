@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Container/Utility/SparseArray.h"
-#include "Container/Sequential/Array.h"
+#include "Extra/Container/Utility/SparseArray.h"
+#include "Extra/Container/Sequential/Array.h"
 #include "SamplerTask.h"
 
 class Sampler
@@ -38,7 +38,7 @@ public:
 	virtual void NoteRelease() {}
 	
 	//! Получить ссылку на метаинформацию о семплере, которую в него записывает синтезатор.
-	template<typename T> forceinline Requires<
+	template<typename T> INTRA_FORCEINLINE Requires<
 		sizeof(T) <= 8,
 	T&> GetInfo() {return *reinterpret_cast<T*>(mInfo);}
 };

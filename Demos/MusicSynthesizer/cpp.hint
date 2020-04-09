@@ -1,6 +1,6 @@
 // Файлы указаний помогают среде IDE Visual Studio интерпретировать идентификаторы Visual C++
 // (например, имена функций и макросов).
 // Дополнительные сведения: https://go.microsoft.com/fwlink/?linkid=865984
-#define forceinline __inline__ __attribute__((always_inline))
-#define forceinline
+#define INTRA_FORCEINLINE __inline__ __attribute__((always_inline))
+#define INTRA_FORCEINLINE
 #define INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS

@@ -1,9 +1,9 @@
 #include "MusicalInstrument.h"
-#include "Core/Range/ForEach.h"
+#include "Intra/Range/ForEach.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-NoteSampler MusicalInstrument::operator()(float freq, float volume, uint sampleRate) const
+NoteSampler MusicalInstrument::operator()(float freq, float volume, unsigned sampleRate) const
 {
 	NoteSampler result;
 

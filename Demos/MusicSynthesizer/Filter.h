@@ -26,8 +26,8 @@ struct FilterCoeffs
 
 	static FilterCoeffs Calculate(float rezAmount, float cutoffRatio, FilterType type);
 
-	bool operator==(null_t) const {return A1 == 0 && A2 == 0 && B1 == 0 && B2 == 0 && C == 1;}
-	forceinline bool operator!=(null_t) const {return !operator==(null);}
+	bool operator==(decltype(null)) const {return A1 == 0 && A2 == 0 && B1 == 0 && B2 == 0 && C == 1;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
 };
 
 struct Filter: FilterCoeffs
@@ -38,11 +38,11 @@ struct Filter: FilterCoeffs
 	//! Предыдущие два выхода фильтра.
 	float PrevSample = 0, PrevSample2 = 0;
 
-	Filter(null_t=null): FilterCoeffs{0, 0, 0, 0, 1} {}
+	Filter(decltype(null)=null): FilterCoeffs{0, 0, 0, 0, 1} {}
 
 	Filter(const FilterCoeffs& coeffs): FilterCoeffs(coeffs) {}
 
-	Filter(float rezAmount, float cutoffFreq, uint sampleRate, FilterType type):
+	Filter(float rezAmount, float cutoffFreq, unsigned sampleRate, FilterType type):
 		Filter(rezAmount, cutoffFreq/float(sampleRate), type) {}
 
 	Filter(float rezAmount, float cutoffRatio, FilterType type):
@@ -68,7 +68,7 @@ struct FilterFactory
 
 	FilterType Type;
 
-	FilterFactory(null_t=null): Coeffs({0,0,0,0,1}),
+	FilterFactory(decltype(null)=null): Coeffs({0,0,0,0,1}),
 		RezAmount(0), CutoffFrequency(0), Type(FilterType::End) {}
 
 	FilterFactory(const FilterCoeffs& coeffs): Coeffs(coeffs),
@@ -88,10 +88,10 @@ struct FilterFactory
 	FilterFactory(float rezAmount, float cutoffFrequency, FilterType type):
 		RezAmount(rezAmount), CutoffFrequency(cutoffFrequency), Type(type) {}
 
-	forceinline bool operator==(null_t) const {return Coeffs == null && Type == FilterType::End;}
-	forceinline bool operator!=(null_t) const {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Coeffs == null && Type == FilterType::End;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
 
-	Filter operator()(float freq, float volume, uint sampleRate) const
+	Filter operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)freq; (void)volume;
 		if(CutoffFrequency <= 0) return Filter(Coeffs);
@@ -106,7 +106,7 @@ struct DriveEffect
 	DriveEffect(float k=0): K(k) {}
 
 	void operator()(Span<float> inOutSamples);
-	forceinline DriveEffect operator()(float freq, float volume, uint sampleRate) const
+	INTRA_FORCEINLINE DriveEffect operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)freq; (void)volume; (void)sampleRate;
 		return *this;
@@ -118,16 +118,16 @@ struct ResonanceFilter
 	float DeltaPhase, QFactor;
 	float PrevSample, S;
 
-	ResonanceFilter(null_t=null): DeltaPhase(0), QFactor(0), PrevSample(0), S(0) {}
+	ResonanceFilter(decltype(null)=null): DeltaPhase(0), QFactor(0), PrevSample(0), S(0) {}
 
 	ResonanceFilter(float dphi, float qfactor):
 		DeltaPhase(dphi), QFactor(qfactor), PrevSample(0), S(0) {}
 
-	forceinline bool operator==(null_t) const noexcept {return DeltaPhase == 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return DeltaPhase == 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !operator==(null);}
 
-	forceinline float operator()(float sample)
+	INTRA_FORCEINLINE float operator()(float sample)
 	{
 		sample += S*DeltaPhase + PrevSample;
 		PrevSample = sample;
@@ -144,15 +144,15 @@ struct ResonanceFilterFactory
 	float Frequency;
 	float QFactor;
 
-	forceinline ResonanceFilterFactory(null_t = null): Frequency(0), QFactor(0) {}
-	forceinline ResonanceFilterFactory(float frequency, float qfactor):
+	INTRA_FORCEINLINE ResonanceFilterFactory(decltype(null) = null): Frequency(0), QFactor(0) {}
+	INTRA_FORCEINLINE ResonanceFilterFactory(float frequency, float qfactor):
 		Frequency(frequency), QFactor(qfactor) {}
 
-	forceinline bool operator==(null_t) const noexcept {return Frequency == 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return Frequency == 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !operator==(null);}
 
-	ResonanceFilter operator()(float freq, float volume, uint sampleRate) const
+	ResonanceFilter operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)volume;
 		return {(Frequency<0? -freq*Frequency: Frequency)*2*float(PI)/float(sampleRate), QFactor};
@@ -166,14 +166,14 @@ struct DynamicResonanceFilter
 	float InvQFactorStep;
 	float PrevSample, S;
 
-	DynamicResonanceFilter(null_t=null): DeltaPhase(0), InvQFactor(2), InvQFactorStep(0), PrevSample(0), S(0) {}
+	DynamicResonanceFilter(decltype(null)=null): DeltaPhase(0), InvQFactor(2), InvQFactorStep(0), PrevSample(0), S(0) {}
 
 	DynamicResonanceFilter(float dphi, float invQFactor, float invQFactorStep):
 		DeltaPhase(dphi), InvQFactor(invQFactor), PrevSample(0), S(0), InvQFactorStep(invQFactorStep) {}
 
-	forceinline bool operator==(null_t) const noexcept {return DeltaPhase == 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return DeltaPhase == 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !operator==(null);}
 
 	float operator()(float sample)
 	{
@@ -194,15 +194,15 @@ struct DynamicResonanceFilterFactory
 	float InvQFactor;
 	float InvQFactorSpeed;
 
-	forceinline DynamicResonanceFilterFactory(null_t = null): Frequency(0), InvQFactor(0), InvQFactorSpeed(0) {}
-	forceinline DynamicResonanceFilterFactory(float frequency, float invQFactor, float invQFactorSpeed):
+	INTRA_FORCEINLINE DynamicResonanceFilterFactory(decltype(null) = null): Frequency(0), InvQFactor(0), InvQFactorSpeed(0) {}
+	INTRA_FORCEINLINE DynamicResonanceFilterFactory(float frequency, float invQFactor, float invQFactorSpeed):
 		Frequency(frequency), InvQFactor(invQFactor), InvQFactorSpeed(invQFactorSpeed) {}
 
-	forceinline bool operator==(null_t) const noexcept {return Frequency == 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return Frequency == 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !operator==(null);}
 
-	DynamicResonanceFilter operator()(float freq, float volume, uint sampleRate) const
+	DynamicResonanceFilter operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)volume;
 		return {(Frequency < 0? -freq*Frequency: Frequency)*2*float(PI)/float(sampleRate), InvQFactor, InvQFactorSpeed/float(sampleRate)};
@@ -222,15 +222,15 @@ struct SoftHighPassFilterFactory
 {
 	float CutoffFrequency;
 
-	forceinline SoftHighPassFilterFactory(null_t=null): CutoffFrequency(0) {}
-	forceinline SoftHighPassFilterFactory(float frequency):
+	INTRA_FORCEINLINE SoftHighPassFilterFactory(decltype(null)=null): CutoffFrequency(0) {}
+	INTRA_FORCEINLINE SoftHighPassFilterFactory(float frequency):
 		CutoffFrequency(frequency) {}
 
-	forceinline bool operator==(null_t) const noexcept {return CutoffFrequency == 0;}
-	forceinline bool operator!=(null_t) const noexcept {return !operator==(null);}
-	forceinline explicit operator bool() const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return CutoffFrequency == 0;}
+	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !operator==(null);}
 
-	SoftHighPassFilter operator()(float freq, float volume, uint sampleRate) const
+	SoftHighPassFilter operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)volume;
 		const float f = (CutoffFrequency < 0? -freq: 1)*CutoffFrequency;
@@ -246,7 +246,7 @@ struct NormalizeEffect
 
 	NormalizeEffect(float volume = 1): Volume(volume), AbsMax(0) {}
 
-	forceinline NormalizeEffect operator()(float freq, float volume, uint sampleRate) const
+	INTRA_FORCEINLINE NormalizeEffect operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		(void)freq; (void)volume; (void)sampleRate;
 		return *this;

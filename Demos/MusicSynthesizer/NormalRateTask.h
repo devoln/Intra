@@ -10,7 +10,7 @@ public:
 	EnvelopeSegment Attenuator;
 	size_t ChannelIndex;
 
-	forceinline NormalRateTask(size_t channelIndex, size_t offset, CSpan<float> source, EnvelopeSegment attenuator):
+	INTRA_FORCEINLINE NormalRateTask(size_t channelIndex, size_t offset, CSpan<float> source, EnvelopeSegment attenuator):
 		SamplerTask(offset, source.Length()), ChannelIndex(channelIndex), Source(source), Attenuator(attenuator) {}
 
 	void MoveConstruct(void* dst) override {new(dst) NormalRateTask(Move(*this));}

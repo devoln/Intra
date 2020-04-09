@@ -29,8 +29,8 @@ MidiState::MidiState()
 }
 
 MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume,
-	OnCloseResourceCallback onClose, uint sampleRate, bool stereo, bool reverb):
-	SeparateFloatAudioSource(Move(onClose), sampleRate, ushort(stereo? 2: 1)),
+	OnCloseResourceCallback onClose, unsigned sampleRate, bool stereo, bool reverb):
+	SeparateFloatAudioSource(Move(onClose), sampleRate, uint16(stereo? 2: 1)),
 	mInstruments(instruments),
 	mMusic(Move(music)),
 	mTime(0),
@@ -145,7 +145,7 @@ size_t MidiSynth::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
 void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 {
 	const float totalStartVolume = float(noteOn.Velocity*mMidiState.ChannelVolumes[noteOn.Channel])/(127.0f*127.0f);
-	const ushort key = noteOn.Id();
+	const uint16 key = noteOn.Id();
 	Sampler* newNote = null;
 	auto found = mPlayingNoteMap.Find(key);
 	if(!found.Empty())
@@ -221,7 +221,7 @@ void MidiSynth::OnChannelPanChange(const Midi::ChannelPanChange& panChange)
 		if((note.Key >> 8) == panChange.Channel)
 			note.Value.Sampler.SetPan(pan);
 	}*/
-	mChannelPans[panChange.Channel] = sbyte(panChange.Pan - 64);
+	mChannelPans[panChange.Channel] = int8(panChange.Pan - 64);
 }
 
 void MidiSynth::OnChannelVolumeChange(const Midi::ChannelVolumeChange& volumeChange)
@@ -266,7 +266,7 @@ void MidiSynth::OnChannelProgramChange(const Midi::ChannelProgramChange& program
 }
 
 Unique<MidiSynth> MidiSynth::FromFile(StringView path, double duration, const MidiInstrumentSet& instruments,
-	float maxVolume, uint sampleRate, bool stereo, ErrorStatus& status)
+	float maxVolume, unsigned sampleRate, bool stereo, ErrorStatus& status)
 {
 	auto file = IO::OS.FileOpen(path, status);
 	return new MidiSynth(
