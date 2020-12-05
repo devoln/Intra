@@ -3,15 +3,15 @@
 #include "Intra/Functional.h"
 #include "Intra/Range/Concepts.h"
 #include "Intra/Range/StringView.h"
-#include "Intra/Range/Mutation/CopyUntil.h"
+#include "Intra/Range/Decorators.h"
 
 //TODO: make this class more generic to work with even containers to avoid line splitting.
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 template<class R> class RByLine: NonCopyableType
 {
-	using T = TValueTypeOf<R>;
+	using T = TRangeValue<R>;
 public:
 	enum: bool
 	{
@@ -78,7 +78,7 @@ template<typename R, typename OR,
 	typename AsOR = TRangeOf<OR>
 > [[nodiscard]] constexpr Requires<
 	CForwardCharRange<AsR> &&
-	CArrayRange<AsOR>,
+	CArrayList<AsOR>,
 RByLine<AsR>> ByLine(R&& range, OR&& buf, Tags::TKeepTerminator)
 {return {ForwardAsRange<R>(range), ForwardAsRange<OR>(buf), true};}
 
@@ -87,7 +87,7 @@ template<typename R, typename OR,
 	typename AsOR = TRangeOf<OR>
 > [[nodiscard]] constexpr Requires<
 	CForwardCharRange<AsR> &&
-	CArrayRange<AsOR>,
+	CArrayList<AsOR>,
 RByLine<AsR>> ByLine(R&& range, OR&& buf)
 {return {ForwardAsRange<R>(range), ForwardAsRange<OR>(buf), false};}
 INTRA_END

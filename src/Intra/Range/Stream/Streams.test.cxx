@@ -3,9 +3,9 @@
 #include "Intra/Range/Span.h"
 #include "Intra/Range/Stream/Parse.h"
 #include "Intra/Range/StringView.h"
-#include "Extra/Container/Sequential/List.h"
-#include "Extra/IO/FormattedWriter.h"
-#include "Extra/Unstable/Random/FastUniform.h"
+#include "IntraX/Container/Sequential/List.h"
+#include "IntraX/IO/FormattedWriter.h"
+#include "IntraX/Unstable/Random/FastUniform.h"
 
 INTRA_BEGIN
 
@@ -50,7 +50,7 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT_EQUALS(i1, 1);
 	INTRA_ASSERT1(i2, 2);
 
-	INTRA_IGNORE_WARNING_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+	INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 	struct OutputCaesarCipher
 	{
 		void Put(char ch)

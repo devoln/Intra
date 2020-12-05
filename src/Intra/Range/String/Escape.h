@@ -5,16 +5,16 @@
 #include "Intra/Range/Take.h"
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Transversal.h"
-#include "Extra/Utils/AsciiSet.h"
+#include "IntraX/Utils/AsciiSet.h"
 
 INTRA_BEGIN
 template<typename R, typename ES, typename CTE> Requires<
-	CAsCharRange<R> &&
-	CFiniteInputRange<ES> &&
-	CFiniteForwardRange<TValueTypeOf<ES>> &&
-	CConvertibleTo<TValueTypeOf<TValueTypeOf<ES>>, TValueTypeOf<R>> &&
+	CCharList<R> &&
+	CFiniteRange<ES> &&
+	CFiniteForwardRange<TRangeValue<ES>> &&
+	CConvertibleTo<TRangeValue<TRangeValue<ES>>, TRangeValue<R>> &&
 	CFiniteForwardRange<CTE> &&
-	CConvertibleTo<TValueTypeOf<CTE>, TValueTypeOf<R>>,
+	CConvertibleTo<TRangeValue<CTE>, TRangeValue<R>>,
 size_t> StringEscapeLength(R&& src, const ES& escapeSequences, const CTE& charsToEscape)
 {
 	auto range = ForwardAsRange<R>(src);
@@ -32,13 +32,13 @@ size_t> StringEscapeLength(R&& src, const ES& escapeSequences, const CTE& charsT
 template<typename OR, typename R, typename ES, typename CTE> Requires<
 	CCharRange<R> &&
 	COutputCharRange<OR> &&
-	CNonInfiniteInputRange<ES> &&
-	CNonInfiniteForwardRange<TValueTypeOf<ES>> &&
-	CConvertibleTo<TValueTypeOf<TValueTypeOf<ES>>, TValueTypeOf<OR>> &&
+	CNonInfiniteRange<ES> &&
+	CNonInfiniteForwardRange<TRangeValue<ES>> &&
+	CConvertibleTo<TRangeValue<TRangeValue<ES>>, TRangeValue<OR>> &&
 	CNonInfiniteForwardRange<CTE> &&
-	CConvertibleTo<TValueTypeOf<CTE>, TValueTypeOf<OR>>,
+	CConvertibleTo<TRangeValue<CTE>, TRangeValue<OR>>,
 TTakeResult<OR>> StringEscapeToAdvance(const R& src, OR&& dstBuffer,
-	TValueTypeOf<OR> escapeChar, const ES& escapeSequences, const CTE& charsToEscape)
+	TRangeValue<OR> escapeChar, const ES& escapeSequences, const CTE& charsToEscape)
 {
 	auto range = src;
 	auto dstBegin = dstBuffer;

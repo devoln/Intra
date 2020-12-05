@@ -4,13 +4,13 @@
 #include "Intra/Range/Concepts.h"
 
 INTRA_BEGIN
-template<typename R, typename P = TFLess> [[nodiscard]] constexpr Requires<
+template<typename R, typename P = decltype(Less)> [[nodiscard]] constexpr Requires<
 	CConsumableRange<R>,
 bool> IsSorted(R&& range, P comparer = FLess)
 {
 	if(range.Empty()) return true;
 	R rangeCopy = Forward<R>(range);
-	TValueTypeOf<R> prev;
+	TRangeValue<R> prev;
 	auto cur = rangeCopy.First();
 	rangeCopy.PopFirst();
 	while(!rangeCopy.Empty())
@@ -23,10 +23,10 @@ bool> IsSorted(R&& range, P comparer = FLess)
 	return true;
 }
 
-template<typename R, typename P = TFLess,
+template<typename R, typename P = decltype(Less),
 	typename AsR = TRangeOfRef<R>
 > [[nodiscard]] constexpr Requires<
-	!CInputRange<R> &&
+	!CRange<R> &&
 	CNonInfiniteForwardRange<AsR>,
 bool> IsSorted(R&& range, P comparer = FLess)
 {return IsSorted(ForwardAsRange<R>(range), comparer);}

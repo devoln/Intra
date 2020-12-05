@@ -14,7 +14,7 @@ INTRA_BEGIN
   5) Efficient if source ``range`` is already almost sorted;
   6) Stable - keeps source element order for equal elements.
 */
-template<typename R, typename C = TFLess> constexpr Requires<
+template<typename R, typename C = decltype(Less)> constexpr Requires<
 	CRandomAccessRangeWithLength<R> &&
 	CAssignableRange<R>
 > InsertionSort(const R& range, C comparer = FLess)
@@ -27,17 +27,17 @@ template<typename R, typename C = TFLess> constexpr Requires<
 	}
 }
 
-template<typename R, typename C = TFLess,
+template<typename R, typename C = decltype(Less),
 	typename AsR = TRangeOfRef<R>
 > constexpr Requires<
-	!CInputRange<R> &&
+	!CRange<R> &&
 	CRandomAccessRangeWithLength<AsR> &&
 	CAssignableRange<AsR>
 > InsertionSort(R&& range, C comparer = FLess)
 {InsertionSort(ForwardAsRange<R>(range), comparer);}
 
-//! Sort ``range`` using Shell sort algorithm and using comparison predicate ``comparer``.
-template<typename R, typename C = TFLess>
+/// Sort ``range`` using Shell sort algorithm and using comparison predicate ``comparer``.
+template<typename R, typename C = decltype(Less)>
 constexpr Requires<
 	CRandomAccessRangeWithLength<R> &&
 	CAssignableRange<R>
@@ -50,10 +50,10 @@ constexpr Requires<
 				Swap(range[j], range[j-d]);
 }
 
-template<typename R, typename C = TFLess,
+template<typename R, typename C = decltype(Less),
 	typename AsR=TRangeOfRef<R>
 > constexpr Requires<
-	!CInputRange<R> &&
+	!CRange<R> &&
 	CRandomAccessRangeWithLength<AsR> &&
 	CAssignableRange<AsR>
 > ShellSort(R&& range, C comparer = FLess)

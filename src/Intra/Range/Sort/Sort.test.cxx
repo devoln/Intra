@@ -6,9 +6,9 @@
 #include "Intra/Range/Sort/Heap.h"
 #include "Intra/Range/Sort/Radix.h"
 #include "Intra/Assert.h"
-#include "Extra/Container/Sequential/Array.h"
-#include "Extra/IO/FormattedWriter.h"
-#include "Extra/System/Debug.h"
+#include "IntraX/Container/Sequential/Array.h"
+#include "IntraX/IO/FormattedWriter.h"
+#include "IntraX/System/Debug.h"
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS

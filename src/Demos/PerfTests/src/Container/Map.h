@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Extra/IO/FormattedWriter.h"
+#include "IntraX/IO/FormattedWriter.h"
 
 void RunMapPerfTests(Intra::IO::FormattedWriter& output);
 

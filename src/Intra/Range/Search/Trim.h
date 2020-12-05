@@ -3,11 +3,11 @@
 #include "Intra/Range/Concepts.h"
 
 INTRA_BEGIN
-//! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, равных x.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов, равных x.
 template<typename R, typename X> constexpr Requires<
-	CInputRange<R> &&
+	CRange<R> &&
 	!CConst<R> &&
-	CConvertibleTo<X, TValueTypeOf<R>>,
+	CConvertibleTo<X, TRangeValue<R>>,
 R&> TrimLeftAdvance(R& range, const X& x)
 {
 	while(!range.Empty() && range.First()==x)
@@ -15,12 +15,12 @@ R&> TrimLeftAdvance(R& range, const X& x)
 	return range;
 }
 	
-//! Последовательно удаляет элементы из начала диапазона, пока выполняется предикат pred.
-//! Останавливается на первом элементе, для которого это условие не выполнено.
+/// Последовательно удаляет элементы из начала диапазона, пока выполняется предикат pred.
+/// Останавливается на первом элементе, для которого это условие не выполнено.
 template<typename R, typename P> constexpr Requires<
-	CInputRange<R> &&
+	CRange<R> &&
 	!CConst<R> &&
-	CCallable<P, TValueTypeOf<R>>,
+	CCallable<P, TRangeValue<R>>,
 R&> TrimLeftAdvance(R& range, P pred)
 {
 	while(!range.Empty() && pred(range.First()))
@@ -28,13 +28,13 @@ R&> TrimLeftAdvance(R& range, P pred)
 	return range;
 }
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов:
-//! 1) которые равны valOrPred.
-//! 2) для которых выполнен предикат valOrPred.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех первых элементов:
+/// 1) которые равны valOrPred.
+/// 2) для которых выполнен предикат valOrPred.
 template<typename R, typename X> constexpr Requires<
-	CAsAccessibleRange<R> &&
-	(CConvertibleTo<X, TValueTypeOfAs<R>> ||
-		CCallable<X, TValueTypeOfAs<R>>),
+	CAccessibleList<R> &&
+	(CConvertibleTo<X, TListValue<R>> ||
+		CCallable<X, TListValue<R>>),
 TRangeOf<R&&>> TrimLeft(R&& range, const X& valOrPred)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
@@ -42,11 +42,11 @@ TRangeOf<R&&>> TrimLeft(R&& range, const X& valOrPred)
 	return rangeCopy;
 }
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, равных x.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, равных x.
 template<typename R, typename X> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
-	CConvertibleTo<X, TValueTypeOf<R>>,
+	CConvertibleTo<X, TRangeValue<R>>,
 R&> TrimRightAdvance(R& range, X x)
 {
 	while(!range.Empty() && range.Last()==x)
@@ -54,11 +54,11 @@ R&> TrimRightAdvance(R& range, X x)
 	return range;
 }
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, для которых выполнен предикат pred.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех последних символов, для которых выполнен предикат pred.
 template<typename R, typename P> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
-	CCallable<P, TValueTypeOf<R>>,
+	CCallable<P, TRangeValue<R>>,
 R&> TrimRightAdvance(R& range, P pred)
 {
 	while(!range.Empty() && pred(range.Last()))
@@ -66,24 +66,24 @@ R&> TrimRightAdvance(R& range, P pred)
 	return range;
 }
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех первых последних символов,
-//! для которых выполнен предикат valOrPred, если это предикат, или который равен valOrPred, если это не предикат.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех первых последних символов,
+/// для которых выполнен предикат valOrPred, если это предикат, или который равен valOrPred, если это не предикат.
 template<typename R, typename X> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
-	(CConvertibleTo<X, TValueTypeOf<R>> ||
-		CCallable<X, TValueTypeOf<R>>),
+	(CConvertibleTo<X, TRangeValue<R>> ||
+		CCallable<X, TRangeValue<R>>),
 R&> TrimAdvance(R& range, X valOrPred)
 {return TrimRightAdvance(TrimLeftAdvance(range, valOrPred), valOrPred);}
 
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов:
-//! 1) которые равны значению valOrPred;
-//! 2) для которых выполнен предикат pred.
-//! @param valOrPred Значение, с которым сравнивается каждый элемент диапазона или предикат, принимающий элементы диапазона.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех последних символов:
+/// 1) которые равны значению valOrPred;
+/// 2) для которых выполнен предикат pred.
+/// @param valOrPred Значение, с которым сравнивается каждый элемент диапазона или предикат, принимающий элементы диапазона.
 template<typename R, typename X,
 	typename AsR = TRangeOf<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
 	CBidirectionalRange<AsR> &&
 	(CConvertibleTo<X, T> ||
@@ -95,13 +95,13 @@ AsR> TrimRight(R&& range, X valOrPred)
 	return rangeCopy;
 }
 
-//! Возвращает диапазон, полученный из этого диапазона удалением всех последних символов:
-//! 1) которые равны значению valOrPred;
-//! 2) для которых выполнен предикат pred.
-//! @param valOrPred Значение, с которым сравнивается каждый элемент диапазона или предикат, принимающий элементы диапазона.
+/// Возвращает диапазон, полученный из этого диапазона удалением всех последних символов:
+/// 1) которые равны значению valOrPred;
+/// 2) для которых выполнен предикат pred.
+/// @param valOrPred Значение, с которым сравнивается каждый элемент диапазона или предикат, принимающий элементы диапазона.
 template<typename R, typename X,
 	typename AsR = TRangeOf<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
 	CBidirectionalRange<AsR> &&
 	(CConvertibleTo<X, T> ||

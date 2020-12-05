@@ -1,56 +1,57 @@
 ﻿#pragma once
 
-#include "Intra/Operations.h"
 #include "Intra/Functional.h"
-#include "Intra/Container/Tuple.h"
-
-#include "Intra/Range/Concepts.h"
-#include "Intra/Range/Take.h"
-#include "Intra/Range/TakeUntil.h"
+#include "Intra/Concepts.h"
+#include "Intra/Range/Decorators.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_IMPLICITLY_DELETED
-template<typename R, typename IsSkippedDelimiter, typename IsElementDelimiter> class RSplit:
-	private TWrapper<IsSkippedDelimiter>, TWrapper<IsElementDelimiter, 1>
+INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
+template<typename R, class F1, class P2> class RSplit
 {
 	R mOriginalRange;
 	TTakeResult<R> mFirst;
+	[[no_unique_address]] F1 mSkipDelimiter;
+	[[no_unique_address]] P2 mIsElementDelimiter;
 public:
-	enum: bool
-	{
-		IsAnyInstanceFinite = CFiniteRange<R>,
-		IsAnyInstanceInfinite = CInfiniteRange<R>
-	};
+	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
+	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
 	RSplit() = default;
 
-	constexpr RSplit(R range, IsSkippedDelimiter isSkippedDelimiter, IsElementDelimiter isElementDelimiter):
-		TWrapper<IsSkippedDelimiter>(Move(isSkippedDelimiter)),
-		TWrapper<IsElementDelimiter, 1>(Move(isElementDelimiter)),
+	constexpr RSplit(R range, F1 SkipDelimiter, P2 isElementDelimiter):
+		mSkipDelimiter(Move(isSkippedDelimiter)),
+		mIsElementDelimiter(Move(isElementDelimiter)),
 		mOriginalRange(Move(range)) {PopFirst();}
 
 	[[nodiscard]] constexpr bool Empty() const {return mFirst.Empty();}
 
 	constexpr void PopFirst()
 	{
-		while(!mOriginalRange.Empty() &&
-			TWrapper<IsSkippedDelimiter>::operator()(mOriginalRange.First()))
+		while(!mOriginalRange.Empty())
+		{
+			if constexpr(CCallable<decltype(mSkipDelimiter), Advance<R>>)
+			{
+				if(!mSkipDelimiter(Advance(mOriginalRange))) break;
+			}
+			else
+			{
+				if(!mSkipDelimiter(mOriginalRange.First())) break;
 				mOriginalRange.PopFirst();
+			}
+		}
 		if(mOriginalRange.Empty())
 		{
-			mFirst = Take(mOriginalRange, 0);
+			mFirst = mOriginalRange|Take(0);
 			return;
 		}
-		if(TWrapper<IsElementDelimiter, 1>::operator()(mOriginalRange.First()))
+		if(mIsElementDelimiter(mOriginalRange.First()))
 		{
-			mFirst = Take(mOriginalRange, 1);
+			mFirst = mOriginalRange|Take(1);
 			mOriginalRange.PopFirst();
 			return;
 		}
-		mFirst = TakeUntilAdvance(mOriginalRange, [this](const TValueTypeOf<R>& v)
-		{
-			return TWrapper<IsSkippedDelimiter>::operator()(v) ||
-				TWrapper<IsElementDelimiter, 1>::operator()(v);
+		mFirst = Advance(mOriginalRange)|TakeUntilEagerly([this](const auto& v) {
+			return mSkipDelimiter(v) || mIsElementDelimiter(v);
 		});
 	}
 
@@ -61,23 +62,32 @@ public:
 	}
 };
 
+constexpr auto Split = []<typename F>(F&& skipDelimiter) {
+	return [skipDelimiter = ForwardAsFunc<F>(skipDelimiter)]<CForwardList L>(L&& list) requires
+		CCallable<F, TListValue<L>> || //skipDelimiter acts as a predicate on single L's element
+		CCallable<F, TRangeOf<L>> && //skipDelimiter acts as a predicate on unconsumed range part.
+		CCallable<F, Advance<TRangeOf<L>>> //If skipDelimiter finds a delimiter, it is expected to advance the range to skip it and return true.
+	{
+		return RSplit(ForwardAsRange<L>(list), skipDelimiter);
+	};
+};
 
-template<typename R, typename P1, typename P2 = TAlwaysFalse,
+template<typename R, typename P1, typename P2 = decltype(Never),
 	typename AsR = TRangeOfRef<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
 	CForwardRange<AsR> &&
 	CCallable<P1, T> &&
 	CCallable<P2, T>,
 RSplit<TRemoveConstRef<AsR>, TRemoveConstRef<P1>, TRemoveConstRef<P2>>> Split(
-	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter = AlwaysFalse)
+	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter = Never)
 {return {ForwardAsRange<R>(range), ForwardAsFunc<P1>(isSkippedDelimiter), ForwardAsFunc<P2>(isElementDelimiter)};}
 
 template<typename R,
 	typename AsR = TRangeOfRef<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
 	CForwardRange<AsR>,
-RSplit<TRemoveConstRef<AsR>, TIsLineSeparator, TAlwaysFalse>> SplitLines(R&& range)
-{return Split(Forward<R>(range), IsLineSeparator, AlwaysFalse);}
+RSplit<TRemoveConstRef<AsR>, TIsLineSeparator, decltype(Never)>> SplitLines(R&& range)
+{return Split(INTRA_FWD(range), IsLineSeparator, Never);}
 INTRA_END

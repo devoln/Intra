@@ -12,9 +12,9 @@
 #include "FiniteForwardRange.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_IMPLICITLY_DELETED
-INTRA_IGNORE_WARNING_DEFAULT_CONSTRUCTOR_IMPLICITLY_DELETED
-INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_SIGN_CONVERSION
 
 template<typename T> struct BidirectionalRange: FiniteForwardRange<T>
 {
@@ -50,8 +50,8 @@ protected:
 
 private:
 	template<typename R> using EnableCondition = Requires<
-		CConvertibleTo<TReturnValueTypeOfAs<R>, T> &&
-		CAsBidirectionalRange<R> &&
+		CConvertibleTo<TListValueRef<R>, T> &&
+		CBidirectionalList<R> &&
 		!CSameIgnoreCVRef<R, BidirectionalRange>
 	>;
 

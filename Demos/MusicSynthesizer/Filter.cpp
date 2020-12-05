@@ -1,6 +1,6 @@
 ﻿#include "Filter.h"
 
-#include "Extra/Container/Sequential/Array.h"
+#include "IntraX/Container/Sequential/Array.h"
 #include "Types.h"
 #include "Intra/Range/Mutation/Transform.h"
 #include "Intra/Range/Reduction.h"

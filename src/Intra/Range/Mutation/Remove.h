@@ -39,7 +39,7 @@ R> Remove(const R& rhs, const IndexRange& indices)
 template<typename R, typename P> constexpr Requires<
 	CBidirectionalRange<R> &&
 	!CConst<R> &&
-	CCallable<P, TValueTypeOf<R>>,
+	CCallable<P, TRangeValue<R>>,
 R&> RemoveRightAdvance(R& range, P pred)
 {
 	auto dst = range;
@@ -65,7 +65,7 @@ template<typename R, typename P,
 	typename AsR = TRangeOfRef<R>
 > constexpr Requires<
 	CBidirectionalRange<AsR> &&
-	CCallable<P, TValueTypeOf<AsR>>,
+	CCallable<P, TRangeValue<AsR>>,
 AsR> Remove(R&& range, P pred)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);

@@ -7,7 +7,7 @@
 #include "Generators/Pulse.h"
 #include "Generators/WhiteNoise.h"
 
-#include "Extra/Unstable/Audio/AudioBuffer.h"
+#include "IntraX/Unstable/Audio/AudioBuffer.h"
 
 #include "Intra/Range/Span.h"
 
@@ -21,7 +21,7 @@
 #include "Intra/Range/Mutation/Fill.h"
 #include "Intra/Range/Mutation/Transform.h"
 
-#include "Extra/Container/Sequential/Array.h"
+#include "IntraX/Container/Sequential/Array.h"
 
 #include "Random/FastUniform.h"
 

@@ -7,8 +7,8 @@
 #include "RecordedSampler.h"
 #include "WaveTable.h"
 
-#include "Extra/Container/Sequential/String.h"
-#include "Extra/Container/Associative/HashMap.h"
+#include "IntraX/Container/Sequential/String.h"
+#include "IntraX/Container/Associative/HashMap.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 

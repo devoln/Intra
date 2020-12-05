@@ -52,10 +52,10 @@ constexpr inline uint32 MulPow5divPow2(uint32 m, uint32 i, int32 j)
 constexpr DecimalFloat<uint32> f2d(uint32 ieeeMantissa, uint32 ieeeExponent)
 {
 	// We subtract 2 so that the bounds computation has 2 additional bits.
-	int32 e2 = int32(ieeeExponent) - LExponentBiasOf(float()) - LMantissaLenOf(float()) - 2;
+	int32 e2 = int32(ieeeExponent) - ExponentBiasOf(float()) - NumMantissaBitsOf(float()) - 2;
 	uint32 m2 = ieeeMantissa;
 	if(ieeeExponent == 0) e2++;
-	else m2 |= 1u << LMantissaLenOf(float());
+	else m2 |= 1u << NumMantissaBitsOf(float());
 	const bool even = (m2 & 1) == 0;
 	const bool acceptBounds = even;
 

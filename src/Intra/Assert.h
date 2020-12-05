@@ -8,9 +8,14 @@ struct SourceInfo
 	const char* Function;
 	const char* File;
 	unsigned Line;
-	constexpr explicit operator bool() const {return Function != null || File != null || Line != 0;}
+
+	constexpr explicit operator bool() const
+	{
+		return Function != null || File != null || Line != 0;
+	}
+
 	constexpr SourceInfo(
-#ifdef INTRA_SOURCE_LOCATION_SUPPORT
+#ifndef __INTEL_COMPILER
 		const char* function = __builtin_FUNCTION(),
 		const char* file = __builtin_FILE(),
 		unsigned line = __builtin_LINE()):
@@ -38,9 +43,9 @@ struct DebugStringView
 
 using FatalErrorCallbackType = void(*)(DebugStringView msg, SourceInfo);
 
-//! @returns reference to a function pointer to be called on any fatal error including assertion failures.
-//! It becomes initialized automatically if System module is used.
-//! Otherwise it should be assigned manually unless the access violations on errors are acceptable.
+/// @returns reference to a function pointer to be called on any fatal error including assertion failures.
+/// It becomes initialized automatically if System module is used.
+/// Otherwise it should be assigned manually unless the access violations on errors are acceptable.
 inline FatalErrorCallbackType& FatalErrorCallback()
 {
 	static FatalErrorCallbackType callback = null;
@@ -71,24 +76,30 @@ INTRA_END
 
 #define INTRA_SOURCE_INFO ::Intra::SourceInfo(INTRA_CURRENT_FUNCTION, __FILE__, unsigned(__LINE__))
 
-#define INTRA_DEBUGGER_BREAKPOINT ((!::Intra::IsConstantEvaluated() && ::Intra::IsDebuggerAttached())? (__builtin_trap(), true): true)
+#define INTRA_DEBUGGER_BREAKPOINT (( \
+		!::Intra::Config::DisableTroubleshooting && \
+		!::Intra::IsConstantEvaluated() && \
+		::Intra::IsDebuggerAttached() \
+	)? (__builtin_trap(), (void)0): (void)0)
 
 
-#define INTRA_FATAL_ERROR(msg) (INTRA_DEBUGGER_BREAKPOINT, \
-	::Intra::FatalErrorCallback()(msg, INTRA_SOURCE_INFO))
+#define INTRA_FATAL_ERROR(msg) (( \
+		!::Intra::Config::DisableTroubleshooting || \
+		::Intra::IsConstantEvaluated())? (INTRA_DEBUGGER_BREAKPOINT, \
+	::Intra::FatalErrorCallback()(msg, INTRA_SOURCE_INFO)): (void)0)
 
 #define INTRA_ASSERT(expr) INTRA_LIKELY(expr)? (void)0: (void)(\
     (INTRA_FATAL_ERROR("Assertion " # expr " failed!"), true))
 
-#ifdef INTRA_DEBUG
+#define INTRA_DEBUG_FATAL_ERROR(msg) (( \
+	::Intra::Config::DebugCheckLevel > 0 || \
+	::Intra::IsConstantEvaluated())? \
+		INTRA_FATAL_ERROR(msg): (void)0)
 
-#define INTRA_DEBUG_FATAL_ERROR(msg) INTRA_FATAL_ERROR(msg)
-
-#define INTRA_DEBUG_ASSERT(expr) INTRA_ASSERT(expr)
-#else
-#define INTRA_DEBUG_FATAL_ERROR(msg)
-#define INTRA_DEBUG_ASSERT(expr) (void)0
-#endif
+#define INTRA_DEBUG_ASSERT(expr) (( \
+	::Intra::Config::DebugCheckLevel > 0 || \
+	::Intra::IsConstantEvaluated())? \
+		INTRA_ASSERT(expr): (void)0)
 
 #define INTRA_PRECONDITION INTRA_DEBUG_ASSERT
 #define INTRA_POSTCONDITION INTRA_DEBUG_ASSERT

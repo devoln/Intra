@@ -1,0 +1,213 @@
+{
+	"artifacts" : 
+	[
+		{
+			"path" : "src/Intra/IntraTest.exe"
+		},
+		{
+			"path" : "src/Intra/IntraTest.pdb"
+		}
+	],
+	"backtrace" : 1,
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"add_executable",
+			"include_directories"
+		],
+		"files" : 
+		[
+			"src/Intra/CMakeLists.txt",
+			"src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 10,
+				"parent" : 0
+			},
+			{
+				"file" : 1
+			},
+			{
+				"command" : 1,
+				"file" : 1,
+				"line" : 3,
+				"parent" : 2
+			}
+		]
+	},
+	"compileGroups" : 
+	[
+		{
+			"compileCommandFragments" : 
+			[
+				{
+					"fragment" : "/MP /permissive-  /arch:IA32  /MP /permissive-  /arch:IA32  /Od /MDd /Zi /D_DEBUG /RTC1 /fp:fast"
+				},
+				{
+					"fragment" : "-std:c++17"
+				}
+			],
+			"includes" : 
+			[
+				{
+					"backtrace" : 3,
+					"path" : "D:/Dev/Intra/src/."
+				}
+			],
+			"language" : "CXX",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				2,
+				3,
+				4,
+				5,
+				6,
+				7,
+				8
+			]
+		}
+	],
+	"id" : "IntraTest::@e5f9d830eaa57cdc77b5",
+	"link" : 
+	{
+		"commandFragments" : 
+		[
+			{
+				"fragment" : "/MP /permissive-  /arch:IA32  /MP /permissive-  /arch:IA32  /Od /MDd /Zi /D_DEBUG /RTC1 /fp:fast",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "/machine:X86 /debug /INCREMENTAL /subsystem:console",
+				"role" : "flags"
+			},
+			{
+				"fragment" : "kernel32.lib user32.lib gdi32.lib winspool.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib",
+				"role" : "libraries"
+			}
+		],
+		"language" : "CXX"
+	},
+	"name" : "IntraTest",
+	"nameOnDisk" : "IntraTest.exe",
+	"paths" : 
+	{
+		"build" : "src/Intra",
+		"source" : "src/Intra"
+	},
+	"sourceGroups" : 
+	[
+		{
+			"name" : "Range",
+			"sourceIndexes" : 
+			[
+				0,
+				1,
+				5,
+				7
+			]
+		},
+		{
+			"name" : "Range\\Mutation",
+			"sourceIndexes" : 
+			[
+				2
+			]
+		},
+		{
+			"name" : "Range\\Polymorphic",
+			"sourceIndexes" : 
+			[
+				3
+			]
+		},
+		{
+			"name" : "Range\\Sort",
+			"sourceIndexes" : 
+			[
+				4
+			]
+		},
+		{
+			"name" : "Range\\Special",
+			"sourceIndexes" : 
+			[
+				6
+			]
+		},
+		{
+			"name" : "Range\\Stream",
+			"sourceIndexes" : 
+			[
+				8
+			]
+		}
+	],
+	"sources" : 
+	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Chain.test.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Composing.test.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Mutation/Heap.test.cxx",
+			"sourceGroupIndex" : 1
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Polymorphic/Polymorphic.test.cxx",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Sort/Sort.test.cxx",
+			"sourceGroupIndex" : 3
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Span.test.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Special/Unicode.test.cxx",
+			"sourceGroupIndex" : 4
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/StlInterop.test.cxx",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/Intra/Range/Stream/Streams.test.cxx",
+			"sourceGroupIndex" : 5
+		}
+	],
+	"type" : "EXECUTABLE"
+}

@@ -20,29 +20,29 @@ public:
 
 typedef Unique<IGenericSampler> GenericSamplerRef;
 
-//! Генератор семплов.
-//! @param[in,out] inOutSamples Массив, содержащий обрабатываемые семплы.
+/// Генератор семплов.
+/// @param[in,out] inOutSamples Массив, содержащий обрабатываемые семплы.
 typedef Funal::CopyableMutableDelegate<void(
 	Span<float> inOutSamples
 )> GenericGenerator;
 
-//! Модификатор семплов.
-//! @param[in,out] inOutSamples Массив, содержащий обрабатываемые семплы.
+/// Модификатор семплов.
+/// @param[in,out] inOutSamples Массив, содержащий обрабатываемые семплы.
 typedef Funal::CopyableMutableDelegate<void(
 	Span<float> inOutSamples
 )> GenericModifier;
 
-//! Инструмент - источник семплеров нот.
+/// Инструмент - источник семплеров нот.
 typedef Funal::CopyableDelegate<GenericSamplerRef(
 	float freq, float volume, unsigned sampleRate
 )> GenericInstrument;
 
-//! Ударный инструмент - источник семплеров нот.
+/// Ударный инструмент - источник семплеров нот.
 typedef Funal::CopyableDelegate<GenericSamplerRef(
 	float volume, unsigned sampleRate
 )> GenericDrumInstrument;
 
-//! Фабрика модификаторов - источник модификаторов семплов.
+/// Фабрика модификаторов - источник модификаторов семплов.
 typedef Funal::CopyableDelegate<GenericModifier(
 	float freq, float volume, unsigned sampleRate
 )> GenericModifierFactory;

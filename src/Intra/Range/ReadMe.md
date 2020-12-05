@@ -24,7 +24,7 @@ Any char range is a stream and may be used with << (output stream) and >> (input
 There are type-erased polymorphic ranges that may be passed as function arguments without templates. These ranges have optimized copy operation so you don't need to pay virtual call overhead per each element being copied. This optimization is especially necessary for streams.
 
 Ranges can be constructed from iterators, so they are partially compatible with STL containers. [Example](../../Demos/UnitTests/src/Range/StlInterop.cpp)
-It is very easy to create class satisfying CInputRange concept. You only need to define three methods required by it. Once your class has necessary methods, it automatically becomes compatible with most algorithms defined in this module, with other modules that use concept of range and even with range-based for.
+It is very easy to create class satisfying CRange concept. You only need to define three methods required by it. Once your class has necessary methods, it automatically becomes compatible with most algorithms defined in this module, with other modules that use concept of range and even with range-based for.
 Unlike STL iterators you don't need to write boilerplate code - there is no need to declare special types with both variants of increment\decrement operation or to derive your class from special base class. But you can derive from RangeMixin to enable left-to-right syntax to use in your code.
 
 See examples [here](../../Demos/UnitTests/src/Range).

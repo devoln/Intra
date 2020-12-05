@@ -6,7 +6,7 @@
 #include "Intra/Range/Search/Single.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 template<typename R> struct RTakeByLine
 {
 	enum: bool

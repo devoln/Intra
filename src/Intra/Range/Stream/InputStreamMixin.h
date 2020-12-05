@@ -16,9 +16,7 @@ template<typename R, typename T> struct InputStreamMixin
 {
 	typedef TRemoveConstRef<T> ElementType;
 
-	template<typename U> Requires<
-		CTriviallyCopyable<U>,
-	index_t> RawReadWrite(Span<U>& dst, ClampedSize maxElementsToRead)
+	template<CTriviallyCopyable U> index_t RawReadWrite(Span<U>& dst, ClampedSize maxElementsToRead)
 	{
 		auto dst1 = dst.Take(maxElementsToRead).template ReinterpretUnsafe<T>();
 		const auto elementsRead = index_t(size_t(ReadWrite(*static_cast<R*>(this), dst1))*sizeof(T)/sizeof(U));
@@ -26,11 +24,8 @@ template<typename R, typename T> struct InputStreamMixin
 		return elementsRead;
 	}
 
-	template<typename R1, typename U = TValueTypeOf<R1>> Requires<
-		COutputRange<R1> &&
-		CArrayClass<R1> &&
-		CTriviallyCopyable<U>,
-	index_t> RawReadWrite(R1& dst, ClampedSize maxElementsToRead)
+	template<COutput R1, CTriviallyCopyable U = TRangeValue<R1>> requires CArrayList<R1>
+	index_t RawReadWrite(R1& dst, ClampedSize maxElementsToRead)
 	{
 		Span<U> dst1 = dst;
 		const auto result = RawReadWrite(dst1, maxElementsToRead);
@@ -38,12 +33,8 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	template<typename R1,
-		typename U = TArrayElement<R1>
-	> Requires<
-		COutputRange<R1> &&
-		CTriviallyCopyable<U>,
-	index_t> RawReadWrite(R1& dst)
+	template<COutput R1, CTriviallyCopyable U = TArrayElement<R1>
+	index_t RawReadWrite(R1& dst)
 	{return RawReadWrite(dst, dst.Length());}
 
 	index_t RawReadTo(void* dst, Size bytes)
@@ -52,10 +43,10 @@ template<typename R, typename T> struct InputStreamMixin
 
 	template<typename R1,
 		typename AsR1 = TRangeOfRef<R1>,
-		typename U = TValueTypeOf<AsR1>
+		typename U = TRangeValue<AsR1>
 	> Requires<
-		COutputRange<AsR1> &&
-		CArrayClass<AsR1> &&
+		COutput<AsR1> &&
+		CArrayList<AsR1> &&
 		CTriviallyCopyable<U>,
 	index_t> RawReadTo(R1&& dst)
 	{

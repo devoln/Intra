@@ -7,13 +7,13 @@
 
 #include "Random/FastUniform.h"
 
-#include "Extra/Container/Sequential/List.h"
+#include "IntraX/Container/Sequential/List.h"
 
-#include "Extra/System/Stopwatch.h"
+#include "IntraX/System/Stopwatch.h"
 
 #include "Test/PerfSummary.h"
 
-#include "Extra/IO/Std.h"
+#include "IntraX/IO/Std.h"
 
 using namespace Intra;
 

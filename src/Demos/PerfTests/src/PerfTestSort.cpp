@@ -6,8 +6,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
 #include "Intra/Range/Sort.hh"
-#include "Extra/System/Stopwatch.h"
-#include "Extra/IO/FormattedWriter.h"
+#include "IntraX/System/Stopwatch.h"
+#include "IntraX/IO/FormattedWriter.h"
 
 using namespace Intra;
 

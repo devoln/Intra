@@ -4,8 +4,8 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Random/FastUniformNoise.h"
 
-#include "Extra/Container/Sequential/Array.h"
-#include "Extra/Container/Utility/Array2D.h"
+#include "IntraX/Container/Sequential/Array.h"
+#include "IntraX/Container/Utility/Array2D.h"
 
 #include "InstrumentLibrary.h"
 #include "DrumPhysicalModel.h"

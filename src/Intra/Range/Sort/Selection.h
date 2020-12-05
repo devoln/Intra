@@ -9,7 +9,7 @@ INTRA_BEGIN
   1) The worst, average and the best times are O(n^2);
   2) Unstable.
 */
-template<typename R, typename C = TFLess> constexpr Requires<
+template<typename R, typename C = decltype(Less)> constexpr Requires<
 	CRandomAccessRangeWithLength<R> &&
 	CAssignableRange<R>
 > SelectionSort(const R& range, C comparer = FLess)
@@ -27,10 +27,10 @@ template<typename R, typename C = TFLess> constexpr Requires<
 	}
 }
 
-template<typename R, typename C = TFLess,
+template<typename R, typename C = decltype(Less),
 	typename AsR = TRangeOfRef<R>
 > constexpr Requires<
-	!CInputRange<R> &&
+	!CRange<R> &&
 	CRandomAccessRangeWithLength<AsR> &&
 	CAssignableRange<AsR>
 > SelectionSort(R&& range, C comparer = FLess)

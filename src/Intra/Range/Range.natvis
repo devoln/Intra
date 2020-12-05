@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
-  <Type Name="Intra::Range::FListRange&lt;*&gt;">
+  <Type Name="Intra::FListRange&lt;*&gt;">
     <DisplayString Condition="FirstNode==nullptr || LastNode==nullptr">[]</DisplayString>
     <DisplayString Condition="FirstNode==LastNode">[{FirstNode->Value}]"</DisplayString>
     <DisplayString Condition="FirstNode->Next==LastNode">[{FirstNode->Value}, {LastNode->Value}]"</DisplayString>
@@ -18,7 +18,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::BListRange&lt;*&gt;">
+  <Type Name="Intra::BListRange&lt;*&gt;">
     <DisplayString Condition="FirstNode==nullptr || LastNode==nullptr">[]</DisplayString>
     <DisplayString Condition="FirstNode==LastNode">[{FirstNode->Value}]"</DisplayString>
     <DisplayString Condition="FirstNode->Next==LastNode">[{FirstNode->Value}, {LastNode->Value}]"</DisplayString>
@@ -68,7 +68,7 @@
   </Type>
 
   
-  <Type Name="Intra::Range::InputRangeIterator&lt;*&gt;">
+  <Type Name="Intra::InputRangeIterator&lt;*&gt;">
     <DisplayString>InputIterator {OriginalRange}</DisplayString>
     <Expand>
       <Synthetic Name="[InputIterator]">
@@ -78,7 +78,7 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::Range::ForwardRangeIterator&lt;*&gt;">
+  <Type Name="Intra::ForwardRangeIterator&lt;*&gt;">
     <DisplayString>Iterator {Range}</DisplayString>
     <Expand>
       <Synthetic Name="[Iterator]">
@@ -89,7 +89,7 @@
   </Type>
   
   
-  <Type Name="Intra::Range::SineRange&lt;*&gt;" Priority="Medium">
+  <Type Name="Intra::SineRange&lt;*&gt;" Priority="Medium">
     <DisplayString>Sine[{mS1}, {mS2}, {mK*mS2-mS1}, {mK*(mK*mS2-mS1)-mS2}, ...]</DisplayString>
   </Type>
 

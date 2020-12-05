@@ -4,15 +4,15 @@
 #include "Type.h"
 
 /** This header file contains the definitions of the folowing types:
-  // TODO: list all types
+  // TODO: list all the types
   1) I[Copyable][Mutable]Functor - interfaces for functors: (non-copyable / copyable) x (const / mutable).
   2) [Copyable][Mutable]Functor - templated implementations of these interfaces as wrappers of non-polymorphic functors or function pointers.
 */
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
-INTRA_IGNORE_WARNING_LOSING_CONVERSION
-INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_LOSING_CONVERSION
+INTRA_IGNORE_WARN_SIGN_CONVERSION
 template<class T, typename R, typename... Args> struct ObjectMethodWrapper
 {
 	T* ObjectRef;
@@ -53,29 +53,6 @@ constexpr auto ObjectMethod(T* object, R (T::*method)(Args...) const)
 }
 ///@}
 
-//! Wrap by moving or copying ``val`` into a functor returning it by reference.
-template<typename T> struct Value
-{
-	T Val;
-	template<typename U, typename = Requires<CConstructible<T, U&&>>>
-	explicit constexpr Value(U&& val) noexcept: Val(Forward<U>(val)) {}
-	constexpr const T& operator()() const noexcept {return Val;}
-	constexpr T& operator()() noexcept {return Val;}
-};
-template<typename T> Value(T) -> Value<T>;
-
-#if INTRA_CONSTEXPR_TEST
-static_assert(Value(5)() == 5);
-#endif
-
-//! Wrap reference ``val`` into a functor returning it.
-template<typename T> struct Ref
-{
-	T& Ref;
-	constexpr Ref(T& ref) noexcept: Ref(ref) {}
-	constexpr T& operator()() const noexcept {return Ref;}
-};
-
 
 /** Combine multiple functors into a single overloaded functor.
 	May be used to create compile time visitors.
@@ -97,8 +74,8 @@ template<typename T> struct TFunctionPtrFunctor;
 // Forward all classes, structs and lambdas and references to them as there are
 // Ideally, type should be undefined if operator() doesn't exist.
 // However it is not possible to do in common case in C++ without knowing signature
-template<typename F, typename = Requires<CClass<TRemoveReference<F>>>>
-[[nodiscard]] constexpr decltype(auto) FunctorOf(F&& f) {return Forward<F>(f);}
+template<typename F> requires CClass<TRemoveReference<F>>
+[[nodiscard]] constexpr decltype(auto) FunctorOf(F&& f) {return INTRA_FWD(f);}
 
 #define INTRA_FUNC_WRAPPER0(callType, NOEXCEPT) template<typename R, typename... Args> \
 	struct TFunctionPtrFunctor<R(callType*)(Args...) NOEXCEPT>\
@@ -192,11 +169,13 @@ static_assert(CSame<TRemoveReference<decltype(forwardTest(&func))>, z_D::TFuncti
 
 template<typename F, typename A1> struct TBind1: F
 {
-	template<typename... Args, typename = Requires<CCallable<F, A1, Args...>>> constexpr decltype(auto) operator()(Args&&... args)
-	{return F::operator()(Arg1, Forward<Args>(args)...);}
+	template<typename... Args> requires CCallable<F, A1, Args...>
+	constexpr decltype(auto) operator()(Args&&... args)
+	{return F::operator()(Arg1, INTRA_FWD(args)...);}
 
-	template<typename... Args, typename = Requires<CCallable<const F, A1, Args...>>> constexpr decltype(auto) operator()(Args&&... args) const
-	{return F::operator()(Arg1, Forward<Args>(args)...);}
+	template<typename... Args> requires CCallable<const F, A1, Args...>
+	constexpr decltype(auto) operator()(Args&&... args) const
+	{return F::operator()(Arg1, INTRA_FWD(args)...);}
 
 	A1 Arg1;
 };
@@ -204,192 +183,231 @@ template<typename F, typename A1> struct TBind1: F
 template<typename F, typename Arg1> [[nodiscard]] constexpr
 TBind1<TRemoveConstRef<TFunctorOf<F>>, TRemoveConstRef<Arg1>>
 Bind(F&& f, Arg1&& arg1)
-{return {ForwardAsFunc<F>(f), Forward<Arg1>(arg1)};}
+{return {ForwardAsFunc<F>(f), INTRA_FWD(arg1)};}
 
-//! Arithmetic operations
-///@{
-
-namespace Tags {
-struct TArith {};
-struct TPred1 {};
-struct TPred2 {};
-struct TUnary {};
-struct TBinary {};
-}
-
-#define INTRA_DEFINE_ARITH_OP(name, op) struct T ## name: Tags::TArith {\
-	template<typename T1, typename T2> struct Typed {[[nodiscard]] constexpr auto operator()(T1 a, T2 b) const {return op;}};\
-	template<typename T1, typename T2> [[nodiscard]] constexpr auto operator()(const T1& a, const T2& b) const {return Typed<const T1&, const T2&>()(a, b);}\
-}; constexpr T ## name name{}
-
-INTRA_DEFINE_ARITH_OP(FAdd, a + b);
-INTRA_DEFINE_ARITH_OP(FSub, a - b);
-INTRA_DEFINE_ARITH_OP(FRSub, b - a);
-INTRA_DEFINE_ARITH_OP(FMul, a * b);
-INTRA_DEFINE_ARITH_OP(FDiv, a / b);
-INTRA_DEFINE_ARITH_OP(FRDiv, b / a);
-INTRA_DEFINE_ARITH_OP(FMod, a % b);
-INTRA_DEFINE_ARITH_OP(FRMod, b % a);
-
-INTRA_DEFINE_ARITH_OP(FMin, a < b? a: b);
-INTRA_DEFINE_ARITH_OP(FMax, b < a? a: b);
-
-INTRA_DEFINE_ARITH_OP(FBitAnd, a & b);
-INTRA_DEFINE_ARITH_OP(FBitOr, a | b);
-INTRA_DEFINE_ARITH_OP(FBitXor, a ^ b);
-INTRA_DEFINE_ARITH_OP(FAnd, a && b);
-INTRA_DEFINE_ARITH_OP(FOr, a || b);
-
-INTRA_DEFINE_ARITH_OP(FLShift, a << b);
-INTRA_DEFINE_ARITH_OP(FRShift, a >> b);
-
-INTRA_DEFINE_ARITH_OP(FCmp, (a > b) - (a < b));
-
-#undef INTRA_DEFINE_ARITH_OP
-///@}
-
-//! Comparison operations
-
-#define INTRA_DEFINE_PREDICATE2(name, op) struct T ## name: Tags::TPred2 {\
-	template<typename T1, typename T2 = T1> constexpr bool operator()(const T1& a, const T2& b) const {return op;}\
-}; constexpr T ## name name{}
-
-INTRA_DEFINE_PREDICATE2(FLess, a < b);
-INTRA_DEFINE_PREDICATE2(FLEqual, a <= b);
-INTRA_DEFINE_PREDICATE2(FGreater, a > b);
-INTRA_DEFINE_PREDICATE2(FGEqual, a >= b);
-INTRA_DEFINE_PREDICATE2(FEqual, a == b);
-INTRA_DEFINE_PREDICATE2(FNotEqual, a != b);
-
-template<typename P> struct TNot: P
+template<class P> class FCount: P
 {
-private:
-	typedef P WrappedPredicate;
-public:
-	constexpr TNot(P pred): P(Move(pred)) {}
-	template<typename... Args, typename = Requires<CCallable<P, Args&&...>>>
-	[[nodiscard]] constexpr bool operator()(Args&&... args) const {return !P::operator()(Forward<Args>(args)...);}
-};
-
-template<typename P> constexpr P operator!(TNot<P> p) {return p;}
-
-template<typename P> constexpr Requires<
-	CDerived<P, Tags::TPred1>,
-TNot<TRemoveConstRef<P>>> operator!(P&& p) {return Forward<P>(p);}
-
-template<typename P> constexpr Requires<
-	CDerived<P, Tags::TPred2>,
-TNot<TRemoveConstRef<P>>> operator!(P&& p) {return Forward<P>(p);}
-
-template<typename Reduce, typename Map, typename T> struct Accum: Reduce, Map
-{
-	T Result;
-	constexpr Accum(Reduce reduce, Map map, T initialValue):
-		Reduce(Move(reduce)), Map(Move(map)), Result(Move(initialValue)) {}
-	template<typename... Args> constexpr T operator()(Args&&... args)
+	index_t InvocationCounter = 0;
+	constexpr FCount(P pred) noexcept: P(Move(pred)) {}
+	template<typename... Args> requires CCallable<P, Args&&...>
+	constexpr bool operator()(Args&&... args)
 	{
-		return Result = Reduce::operator()(Result, Map::operator()(Forward<Args>(args)...));
+		InvocationCounter++;
+		return P::operator()(INTRA_FWD(args)...);
 	}
 };
-template<typename Reduce, typename Map, typename T>
-Accum(Reduce&& reduce, Map&& map, T initialValue) ->
-	Accum<TRemoveConstRef<TFunctorOf<Reduce>>, TRemoveConstRef<TFunctorOf<Map>>, T>;
-
-template<typename P> constexpr auto AccumAll(P&& pred) {return Accum(FAnd, Forward<P>(pred), true);}
-template<typename P> constexpr auto AccumAny(P&& pred) {return Accum(FOr, Forward<P>(pred), false);}
-
-
-//! Various unary predicates
-#define INTRA_DEFINE_PREDICATE1(name, op) struct T ## name: Tags::TPred1 {\
-	constexpr T ## name() noexcept {}\
-	template<typename T> constexpr bool operator()(const T& a) const {return op;}\
-}; constexpr T ## name name{}
-
-INTRA_DEFINE_PREDICATE1(IsEven, (a & 1) == 0);
-INTRA_DEFINE_PREDICATE1(IsOdd, (a & 1) != 0);
-
-INTRA_DEFINE_PREDICATE1(IsHorSpace, a == ' ' || a == '\t');
-INTRA_DEFINE_PREDICATE1(IsLineSeparator, a == '\r' || a == '\n');
-INTRA_DEFINE_PREDICATE1(IsSpace, a == ' ' || a == '\t' || a == '\r' || a == '\n');
-INTRA_DEFINE_PREDICATE1(IsAnySlash, a == '\\' || a == '/');
-INTRA_DEFINE_PREDICATE1(IsDigit, '0' <= a && a <= '9');
-INTRA_DEFINE_PREDICATE1(IsUpperLatin, 'A' <= a && a <= 'Z');
-INTRA_DEFINE_PREDICATE1(IsLowerLatin, 'a' <= a && a <= 'z');
-INTRA_DEFINE_PREDICATE1(IsLatin, ('A' <= a && a <= 'Z') || ('a' <= a && a <= 'z'));
-INTRA_DEFINE_PREDICATE1(IsAsciiChar, unsigned(a) <= 127);
-INTRA_DEFINE_PREDICATE1(IsAsciiControlChar, unsigned(a) <= 31 || a == 127);
-
-#undef INTRA_DEFINE_PREDICATE1
-
-struct INTRA_EMPTY_BASES TAlways: Tags::TPred1, Tags::TPred2
-{
-	template<typename... Args> constexpr bool operator()(Args&&...) const noexcept {return true;}
-};
-constexpr TAlways Always{};
-using TNever = TNot<TAlways>;
-constexpr TNever Never{Always};
 
 template<class P> class CountPred: P
 {
 	index_t FalseInvocations = 0;
 	index_t TrueInvocations = 0;
 	constexpr CountPred(P pred) noexcept: P(Move(pred)) {}
-	template<typename... Args, typename = Requires<CCallable<P, Args&&...>>>
+	template<typename... Args> requires CCallable<P, Args&&...>
 	constexpr bool operator()(Args&&... args)
 	{
-		const bool res = P::operator()(Forward<Args>(args)...);
+		const bool res = P::operator()(INTRA_FWD(args)...);
 		FalseInvocations += index_t(!res);
 		TrueInvocations += index_t(!!res);
 		return res;
 	}
 };
 
-constexpr struct {template<typename... Ts> bool operator()(Ts... ts) {return (ts && ...);}} All;
-constexpr struct {template<typename... Ts> bool operator()(Ts... ts) {return (ts || ...);}} Any;
-
-
-#define INTRA_DEFINE_UNARY_OP(name, op) struct T ## name: Tags::TUnary {\
-	constexpr T ## name() noexcept {}\
-	template<typename T> constexpr T operator()(const T& a) const {return op;}\
-}; constexpr T ## name name{}
-
-INTRA_DEFINE_UNARY_OP(FAbs, a < 0? -a: a);
-INTRA_DEFINE_UNARY_OP(ToLowerAscii, T(IsUpperLatin(a)? a + ('a' - 'A'): a));
-INTRA_DEFINE_UNARY_OP(ToUpperAscii, T(IsLowerLatin(a)? a - ('a' - 'A'): a));
-
-#define INTRA_DEFINE_BINARY_OP(name, op) struct T ## name: Tags::TBinary {\
-	constexpr T ## name() noexcept {}\
-	template<typename T1, typename T2> constexpr decltype(auto) operator()(const T1& a, const T2& b) const {return op;}\
-}; constexpr T ## name name{}
-
-// Useful with ranges, for example:
-// Map(indexRange, Bind(FIndex, valueRange))
-INTRA_DEFINE_BINARY_OP(FIndex, a[b]);
-
-
-template<typename T> struct TCastTo
-{
-	template<typename U> constexpr T operator()(U&& value) const {return T(Forward<U>(value));}
+constexpr auto FNot = []<typename P>(P&& f) {
+	return [f = ForwardAsFunc<P>(f)]<typename... Args>(Args&&... args) requires(CCallable<P, Args&&...>) {
+		return !f(INTRA_FWD(args)...);
+	};
 };
-template<typename T> constexpr TCastTo<T> CastTo;
 
-constexpr auto Identity = [](auto&& x) -> decltype(auto) {return Forward<decltype(x)>(x);};
+/// Wrap by moving or copying ``val`` into a functor returning it by reference.
+template<typename T> struct Value
+{
+	T Val;
+	template<typename U> requires CConstructible<T, U&&>
+	explicit constexpr Value(U&& val) noexcept: Val(INTRA_FWD(val)) {}
+	constexpr const T& operator()() const noexcept {return Val;}
+	constexpr T& operator()() noexcept {return Val;}
+};
+template<typename T> Value(T) -> Value<T>;
 
+template<typename T> struct FRef
+{
+	T& FunctorReference;
+	constexpr FRef(T& functorReference) noexcept: FunctorReference(functorReference) {}
+	template<typename... Args> requires CCallable<const T&, Args&&>
+	constexpr decltype(auto) operator()(Args&&... args) const {return FunctorReference(INTRA_FWD(args)...);}
+	template<typename... Args> requires CCallable<T&, Args&&>
+	constexpr decltype(auto) operator()(Args&&... args) {return FunctorReference(INTRA_FWD(args)...);}
+};
+
+template<auto Value> constexpr auto StaticConst = [](auto&&...) {return Value;};
+constexpr auto Always = StaticConst<true>;
+constexpr auto Never = StaticConst<false>;
+
+#if INTRA_CONSTEXPR_TEST
+static_assert(Value(5)() == 5);
+static_assert(Always(7, 5, "qwerty", 1));
+static_assert(!Never(43, null, 65));
+#endif
+
+/// Comparison operations
+constexpr auto Less = [](const auto& a, const auto& b) {return a < b;};
+constexpr auto LEqual = [](const auto& a, const auto& b) {return a <= b;};
+constexpr auto Greater = [](const auto& a, const auto& b) {return a > b;};
+constexpr auto GEqual = [](const auto& a, const auto& b) {return a >= b;};
+constexpr auto Equal = [](const auto& a, const auto& b) {return a == b;};
+constexpr auto NotEqual = [](const auto& a, const auto& b) {return a != b;};
+
+constexpr auto EqualsTo = [](auto&& x) {
+	return Bind(Equal, INTRA_FWD(x));
+};
+
+/// Various unary predicates
+constexpr auto IsEven = [](auto&& a) {return (a & 1) == 0;};
+constexpr auto IsOdd = FNot(IsEven);
+
+constexpr auto IsHorSpace = [](auto&& a) {return a == ' ' || a == '\t';};
+constexpr auto IsLineSeparator = [](auto&& a) {return a == '\r' || a == '\n';};
+constexpr auto IsSpace = [](auto&& a) {return IsHorSpace(a) || IsLineSeparator(a);};
+constexpr auto IsAnySlash = [](auto&& a) {return a == '\\' || a == '/';};
+constexpr auto IsDigit = [](auto&& a) {return '0' <= a && a <= '9';};
+constexpr auto IsUpperLatin = [](auto&& a) {return 'A' <= a && a <= 'Z';};
+constexpr auto IsLowerLatin = [](auto&& a) {return 'a' <= a && a <= 'z';};
+constexpr auto IsLatin = [](auto&& a) {return IsUpperLatin(a) || IsLowerLatin(a);};
+constexpr auto IsAsciiChar = [](auto&& a) {return unsigned(a) <= 127;};
+constexpr auto IsAsciiControlChar = [](auto& a) {return unsigned(a) <= 31 || a == 127;};
+
+constexpr auto Add = [](const auto& a, const auto& b) {return a + b;};
+constexpr auto Sub = [](const auto& a, const auto& b) {return a - b;};
+constexpr auto RSub = [](const auto& a, const auto& b) {return b - a;};
+constexpr auto Mul = [](const auto& a, const auto& b) {return a * b;};
+constexpr auto Div = [](const auto& a, const auto& b) {return a / b;};
+constexpr auto RDiv = [](const auto& a, const auto& b) {return b / a;};
+constexpr auto Mod = [](const auto& a, const auto& b) {return a % b;};
+constexpr auto RMod = [](const auto& a, const auto& b) {return b % a;};
+
+namespace z_D {
+template<typename T1, typename T2> requires(requires(T1 a, T2 b) {a < b? a: b;})
+constexpr auto Min_(T1 a, T2 b)
+{
+	using T = TCommon<T1, T2>;
+#if defined(__clang__) || defined(__GNUC__) //better codegen without -ffast-math
+	if constexpr(CUnqualedFloatingPoint<T>) if(!IsConstantEvaluated(a, b))
+	{
+		if constexpr(CSame<T, float>) return __builtin_fminf(x, y);
+		else if constexpr(CSame<T, double>) return __builtin_fmin(x, y);
+		else return __builtin_fminl(x, y);
+	}
+#endif
+	return a < b? a: b;
+}
+
+template<typename T1, typename T2> requires(requires(T1 a, T2 b) {a > b? a: b;})
+constexpr auto Max_(T1 a, T2 b)
+{
+	using T = TCommon<T1, T2>;
+#if defined(__clang__) || defined(__GNUC__) //better codegen without -ffast-math
+	if constexpr(CUnqualedFloatingPoint<T>) if(!IsConstantEvaluated(a, b))
+	{
+		if constexpr(CSame<T, float>) return __builtin_fmaxf(x, y);
+		else if constexpr(CSame<T, double>) return __builtin_fmax(x, y);
+		else return __builtin_fmaxl(x, y);
+	}
+#endif
+	return a > b? a: b;
+}
+}
+
+constexpr auto Min = [](const auto& a, const auto&... args)
+{
+	if constexpr(sizeof...(args) == 0) return INTRA_FWD(a);
+	else if constexpr(sizeof...(args) == 1) return z_D::Min_(a, args...);
+	else return operator()(a, operator()(args...));
+};
+constexpr auto Max = [](const auto& a, const auto&... args)
+{
+	if constexpr(sizeof...(args) == 0) return a;
+	else if constexpr(sizeof...(args) == 1) return z_D::Max_(a, args...);
+	else return operator()(a, operator()(args...));
+};
+
+constexpr auto Cmp = [](const auto& a, const auto& b) {return (a > b) - (a < b);};
+constexpr auto ISign = [](const auto& a) {return (a > 0) - (a < 0);};
+constexpr auto Sign = [](const auto& a) {return TRemoveConstRef<decltype(a)>(ISign(a));};
+
+constexpr auto BitAnd = [](const auto& a, const auto& b) {return a & b;};
+constexpr auto BitOr = [](const auto& a, const auto& b) {return a | b;};
+constexpr auto BitXor = [](const auto& a, const auto& b) {return a ^ b;};
+constexpr auto LShift = [](const auto& a, const auto& b) {return a << b;};
+constexpr auto RShift = [](const auto& a, const auto& b) {return a >> b;};
+
+constexpr auto And = [](const auto& a, const auto& b) {return a && b;};
+constexpr auto Or = [](const auto& a, const auto& b) {return a || b;};
+
+constexpr auto Swap = []<typename T>(T&& a, T&& b) {
+	if(&a == &b) return;
+	auto temp = INTRA_MOVE(a);
+	a = INTRA_MOVE(b);
+	b = INTRA_MOVE(temp);
+};
+
+constexpr auto Exchange = [](auto& dst, auto&& newValue) {
+	auto oldValue = INTRA_MOVE(dst);
+	dst = INTRA_FWD(newValue);
+	return oldValue;
+};
+
+constexpr auto Move = [](auto&& x) noexcept -> decltype(auto) {return INTRA_MOVE(x);};
+
+constexpr auto Dup = []<typename T>(T&& x) noexcept {
+	if constexpr(CLValueReference<T>) return x;
+	else return INTRA_MOVE(x);
+};
+
+template<typename Reduce, typename Map, typename T> struct Accum: Reduce, Map
+{
+	T Result;
+	constexpr Accum(Reduce reduce, Map map, T initialValue):
+		Reduce(INTRA_MOVE(reduce)), Map(INTRA_MOVE(map)), Result(INTRA_MOVE(initialValue)) {}
+	template<typename... Args> constexpr T operator()(Args&&... args)
+	{
+		return Result = Reduce::operator()(Result, Map::operator()(INTRA_FWD(args)...));
+	}
+};
+template<typename Reduce, typename Map, typename T>
+Accum(Reduce&& reduce, Map&& map, T initialValue) ->
+	Accum<TRemoveConstRef<TFunctorOf<Reduce>>, TRemoveConstRef<TFunctorOf<Map>>, T>;
+
+template<typename P> constexpr auto AccumAll(P&& pred) {return Accum(And, INTRA_FWD(pred), true);}
+template<typename P> constexpr auto AccumAny(P&& pred) {return Accum(Or, INTRA_FWD(pred), false);}
+
+constexpr auto All = [](auto&&... ts) {return (ts && ...);};
+constexpr auto Any = [](auto&&... ts) {return (ts || ...);};
+
+constexpr auto ToLowerAscii = [](auto a) {return decltype(a)(IsUpperLatin(a)? a + ('a' - 'A'): a);};
+constexpr auto ToUpperAscii = [](auto a) {return decltype(a)(IsLowerLatin(a)? a - ('a' - 'A'): a);};
+
+/// Useful with ranges, for example:
+/// Map(indexRange, Bind(IndexOp, valueRange))
+constexpr auto IndexOp = [](auto&& from, auto&& index) {return from[index];};
+
+
+template<typename T> constexpr auto CastTo = [](auto&& value) {return T(INTRA_FWD(value));};
+constexpr auto Identity = [](auto&& x) -> decltype(auto) {return INTRA_FWD(x);};
 
 ///@{
-//! Interface for polymorhic functor implementation.
+/// Interface for polymorhic functor implementation.
 template<typename FuncSignature> class IFunctor;
 template<typename R, typename... Args> class IFunctor<R(Args...)>
 {
 public:
-	virtual ~IFunctor() {}
-	virtual R operator()(Args... args) const = 0;
+	INTRA_CONSTEXPR_DESTRUCTOR virtual ~IFunctor() {}
+	constexpr virtual R operator()(Args... args) const = 0;
 };
 
 template<typename FuncSignature> class ICopyableFunctor: public IFunctor<FuncSignature>
 {
 public:
-	virtual ICopyableFunctor* Clone() const = 0;
+	constexpr virtual ICopyableFunctor* Clone() const = 0;
 };
 
 
@@ -397,19 +415,19 @@ template<typename FuncSignature> class IMutableFunctor;
 template<typename R, typename... Args> class IMutableFunctor<R(Args...)>
 {
 public:
-	virtual ~IMutableFunctor() {}
-	virtual R operator()(Args... args) = 0;
+	INTRA_CONSTEXPR_DESTRUCTOR virtual ~IMutableFunctor() {}
+	constexpr virtual R operator()(Args... args) = 0;
 };
 
 template<typename FuncSignature> class ICopyableMutableFunctor: public IMutableFunctor<FuncSignature>
 {
 public:
-	virtual ICopyableMutableFunctor* Clone() const = 0;
+	constexpr virtual ICopyableMutableFunctor* Clone() const = 0;
 };
 ///@}
 
 ///@{
-//! Polymorphic functor
+/// Polymorphic functor
 template<typename FuncSignature, typename T = FuncSignature*> class Functor;
 template<typename T, typename R, typename... Args>
 class Functor<R(Args...), T>: public IFunctor<R(Args...)>
@@ -417,7 +435,7 @@ class Functor<R(Args...), T>: public IFunctor<R(Args...)>
 public:
 	constexpr Functor(T&& obj): Obj(Move(obj)) {}
 	constexpr Functor(const T& obj): Obj(obj) {}
-	R operator()(Args... args) const final {return static_cast<R>(Obj(Forward<Args>(args)...));}
+	constexpr R operator()(Args... args) const final {return static_cast<R>(Obj(INTRA_FWD(args)...));}
 	T Obj;
 };
 
@@ -428,8 +446,8 @@ class CopyableFunctor<R(Args...), T>: public ICopyableFunctor<R(Args...)>
 public:
 	constexpr CopyableFunctor(T&& obj): Obj(Move(obj)) {}
 	constexpr CopyableFunctor(const T& obj): Obj(obj) {}
-	ICopyableFunctor<R(Args...)>* Clone() const final {return new CopyableFunctor(Obj);}
-	R operator()(Args... args) const final {return static_cast<R>(Obj(Forward<Args>(args)...));}
+	constexpr ICopyableFunctor<R(Args...)>* Clone() const final {return new CopyableFunctor(Obj);}
+	constexpr R operator()(Args... args) const final {return static_cast<R>(Obj(INTRA_FWD(args)...));}
 	T Obj;
 };
 
@@ -441,7 +459,7 @@ class MutableFunctor<R(Args...), T>: public IMutableFunctor<R(Args...)>
 public:
 	constexpr MutableFunctor(T&& obj): Obj(Move(obj)) {}
 	constexpr MutableFunctor(const T& obj): Obj(obj) {}
-	R operator()(Args... args) final {return static_cast<R>(Obj(Forward<Args>(args)...));}
+	constexpr R operator()(Args... args) final {return static_cast<R>(Obj(INTRA_FWD(args)...));}
 	T Obj;
 };
 
@@ -452,8 +470,8 @@ class CopyableMutableFunctor<R(Args...), T>: public ICopyableMutableFunctor<R(Ar
 public:
 	constexpr CopyableMutableFunctor(T&& obj): Obj(Move(obj)) {}
 	constexpr CopyableMutableFunctor(const T& obj): Obj(obj) {}
-	ICopyableMutableFunctor<R(Args...)>* Clone() const final {return new CopyableMutableFunctor(Obj);}
-	R operator()(Args... args) final {return static_cast<R>(Obj(Forward<Args>(args)...));}
+	constexpr ICopyableMutableFunctor<R(Args...)>* Clone() const final {return new CopyableMutableFunctor(Obj);}
+	constexpr R operator()(Args... args) final {return static_cast<R>(Obj(INTRA_FWD(args)...));}
 	T Obj;
 };
 ///@}

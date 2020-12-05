@@ -100,7 +100,7 @@ extern "C"
 	{
 		using namespace Intra;
 		double x2 = x < 0? -x: x;
-		if(x2 <= LMaxOf<int>) return int(x);
+		if(x2 <= MaxValueOf<int>) return int(x);
 		uint64 res = unsigned(x2);
 		x2 /= double(1ull << 32);
 		res |= uint64(unsigned(x2)) << 32;
@@ -111,7 +111,7 @@ extern "C"
 	auto _dtoul3(double x)
 	{
 		using namespace Intra;
-		if(x <= LMaxOf<uint32>) return uint32(x);
+		if(x <= MaxValueOf<uint32>) return uint32(x);
 		return uint32(x) | (uint64(uint32(x / double(1ull << 32))) << 32);
 	}
 
@@ -147,7 +147,7 @@ extern "C"
 
 #ifdef _M_IX86
 // Implementation for 64-bit operations on 32 bit x86 platform
-#include "Extra/System/detail/RuntimeMinMsvcCrtInt64Impl.hxx"
+#include "IntraX/System/detail/RuntimeMinMsvcCrtInt64Impl.hxx"
 #endif
 
 #if INTRA_DISABLED

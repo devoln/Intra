@@ -3,7 +3,7 @@
 #include "Intra/Range/Iota.h"
 #include "Intra/Range/Cycle.h"
 #include "Intra/Assert.h"
-#include "Extra/System/Debug.h"
+#include "IntraX/System/Debug.h"
 
 INTRA_BEGIN
 

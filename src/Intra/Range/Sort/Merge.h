@@ -4,7 +4,7 @@
 #include "Intra/Concepts.h"
 #include "Intra/Range/Concepts.h"
 
-#include "Extra/Container/ForwardDecls.h"
+#include "IntraX/Container/ForwardDecls.h"
 
 #include "Intra/Range/Mutation/Copy.h"
 
@@ -69,11 +69,11 @@ template<typename T, typename C> constexpr T* merge_sort_pass(T* up, T* down, si
   2) On almost sorted range it is as slow as on randomly ordered range;
   3) Allocates dynamic memory. Size of allocation equals ``range`` length.
 */
-template<typename R, typename C = TFLess> Requires<
+template<typename R, typename C = decltype(Less)> Requires<
 	!CConst<TArrayElementRefRequired<R>>
 > MergeSort(R&& range, C comparer = FLess)
 {
-	Array<TValueTypeOf<R>> temp;
+	Array<TRangeValue<R>> temp;
 	temp.SetCountUninitialized(LengthOf(range));
 	auto resultPtr = z_D::merge_sort_pass(DataOf(range), DataOf(temp), 0, LengthOf(range)-1, comparer);
 	if(resultPtr == DataOf(range)) return;

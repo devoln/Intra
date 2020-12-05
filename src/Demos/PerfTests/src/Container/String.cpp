@@ -16,8 +16,8 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "String.h"
 
 #include "Test.hh"
-#include "Extra/Container/Sequential/String.h"
-#include "Extra/System/Stopwatch.h"
+#include "IntraX/Container/Sequential/String.h"
+#include "IntraX/System/Stopwatch.h"
 
 #include "Intra/Range/Inserter.h"
 

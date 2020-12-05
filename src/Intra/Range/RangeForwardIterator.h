@@ -5,8 +5,8 @@
 INTRA_CORE_RANGE_BEGIN
 template<typename R> struct RangeForwardIterator
 {
-	typedef TValueTypeOf<R> value_type;
-	typedef TReturnValueTypeOf<R> return_value_type;
+	typedef TRangeValue<R> value_type;
+	typedef TRangeValueRef<R> return_value_type;
 	typedef return_value_type& reference;
 	typedef value_type* pointer;
 	typedef index_t difference_type;

@@ -10,9 +10,9 @@
 #include "Intra/Range/Polymorphic/InputRange.h"
 #include "Intra/Range/Polymorphic/RandomAccessRange.h"
 
-#include "Extra/System/Debug.h"
-#include "Extra/Container/Sequential/List.h"
-#include "Extra/Unstable/Random/FastUniform.h"
+#include "IntraX/System/Debug.h"
+#include "IntraX/Container/Sequential/List.h"
+#include "IntraX/Unstable/Random/FastUniform.h"
 
 INTRA_BEGIN
 

@@ -31,45 +31,43 @@ public:
 	[[nodiscard]] constexpr bool operator==(const AsciiSet& rhs) const noexcept {return v[0] == rhs.v[0] && v[1] == rhs.v[1];}
 	[[nodiscard]] constexpr bool operator!=(const AsciiSet& rhs) const noexcept {return !operator==(rhs);}
 
-	//! Check if this set contains element c.
-	//! c must be ASCII, otherwise the behavior is undefined.
+	/// Check if this set contains element c.
+	/// c must be ASCII, otherwise the behavior is undefined.
 	[[nodiscard]] constexpr bool operator[](char c) const
 	{
-		return INTRA_DEBUG_ASSERT(byte(c)<128),
-			(v[byte(c)/64] & (1ull << (size_t(c) & 63))) != 0;
+		INTRA_PRECONDITION(unsigned(c) < 128);
+		return (v[uint8(c)/64] & (1ull << (size_t(c) & 63))) != 0;
 	}
 
-	//! Check if the set contains element c. Returns false for all non-ASCII characters.
-	//! This allows AsciiSet to be used as a predicate.
-	template<typename Char> [[nodiscard]] constexpr Requires<
-		CChar<Char>,
-	bool> operator()(Char c) const {return byte(c) < 128 && operator[](c);}
+	/// Check if the set contains element c. Returns false for all non-ASCII characters.
+	/// This allows AsciiSet to be used as a predicate.
+	template<CChar Char> [[nodiscard]] constexpr bool operator()(Char c) const {return byte(c) < 128 && operator[](c);}
 
-	//! Check if this set contains subset.
-	//! This allows AsciiSet to be used as a predicate.
+	/// Check if this set contains subset.
+	/// This allows AsciiSet to be used as a predicate.
 	[[nodiscard]] constexpr bool operator()(AsciiSet subset) const {return subset == (*this & subset);}
 	
-	//! Add element from the set if it doesn't belong to it
+	/// Add element from the set if it doesn't belong to it
 	constexpr void Set(char c)
 	{
 		if(c & 0x80) return;
 		v[c/64] |= 1ull << (size_t(c) & 63);
 	}
 
-	//! Remove element from the set if it belongs to it
+	/// Remove element from the set if it belongs to it
 	constexpr void Reset(char c)
 	{
 		if(c & 0x80) return;
 		v[c/64] &= ~(1ull << (size_t(c) & 63));
 	}
 
-	//! Add elements to the set if they don't belong to it
+	/// Add elements to the set if they don't belong to it
 	constexpr void Set(CSpan<char> chars)
 	{
 		for(char c: chars) Set(c);
 	}
 	
-	//! Remove elements from the set if they belong to it
+	/// Remove elements from the set if they belong to it
 	constexpr void Reset(CSpan<char> chars)
 	{
 		while(!chars.Empty())
@@ -79,19 +77,19 @@ public:
 		}
 	}
 
-	//! Set union
+	/// Set union
 	[[nodiscard]] constexpr AsciiSet operator|(const AsciiSet& rhs) const
 	{return {v[0] | rhs.v[0], v[1] | rhs.v[1]};}
 
-	//! Set negation
+	/// Set negation
 	[[nodiscard]] constexpr AsciiSet operator~() const
 	{return {~v[0], ~v[1]};}
 
-	//! Set intersection
+	/// Set intersection
 	[[nodiscard]] constexpr AsciiSet operator&(const AsciiSet& rhs) const
 	{return {v[0] & rhs.v[0], v[1] & rhs.v[1]};}
 
-	//! Add element to the set if it doesn't belong to it
+	/// Add element to the set if it doesn't belong to it
 	[[nodiscard]] constexpr AsciiSet operator|(char c) const
 	{
 		AsciiSet result = *this;
@@ -99,7 +97,7 @@ public:
 		return result;
 	}
 
-	//! Add elements to the set if they don't belong to it
+	/// Add elements to the set if they don't belong to it
 	[[nodiscard]] constexpr AsciiSet operator|(CSpan<char> chars) const
 	{
 		AsciiSet result = *this;
@@ -107,28 +105,28 @@ public:
 		return result;
 	}
 
-	//! Add elements to the set if they don't belong to it
+	/// Add elements to the set if they don't belong to it
 	template<size_t N> [[nodiscard]] constexpr AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars));}
 };
 
 /** Some standard ASCII sets.
 
-  Prefer using similar functors from Core/Operations.h - they are about 3 times faster.
-  These sets may be useful with non-templated functions.
+  Prefer using similar functors from Core/Functional.h - they are about 3 times faster.
+  These sets may be useful with non-templated functions or for reusing executable code.
 */
 struct TAsciiSets
 {
 	constexpr TAsciiSets() {}
 	AsciiSet None;
-	AsciiSet Spaces{(1ull << ' ') | (1ull << '\t') | (1ull << '\r') | (1ull << '\n'), 0};
-	AsciiSet Slashes{1ULL << 47, 1ULL << 28};
-	AsciiSet Digits{0x03FF000000000000ULL, 0};
-	AsciiSet LatinLowercase{0, 0x7FFFFFE00000000ULL};
-	AsciiSet LatinUppercase{0, 0x7FFFFFE};
-	AsciiSet Latin{0, 0x7FFFFFE07FFFFFEULL};
-	AsciiSet LatinAndDigits{0x03FF000000000000ULL, 0x7FFFFFE07FFFFFEULL};
-	AsciiSet IdentifierChars{0x03FF000000000000ULL | (1ULL << '$'), 0x7FFFFFE07FFFFFEULL | (1ULL << ('_' - 64u))};
-	AsciiSet NotIdentifierChars{~(0x03FF000000000000ULL | (1ULL << '$')), ~(0x7FFFFFE07FFFFFEULL | (1ULL << ('_' - 64u)))};
+	AsciiSet Spaces = " \t\r\n"; // { (1ull << ' ') | (1ull << '\t') | (1ull << '\r') | (1ull << '\n'), 0 };
+	AsciiSet Slashes = "/\\";// { 1ULL << 47, 1ULL << 28 };
+	AsciiSet Digits = "0123456789";// { 0x03FF000000000000ULL, 0 };
+	AsciiSet LatinLowercase = "abcdefghijklmnopqrstuvwxyz";// { 0, 0x7FFFFFE00000000ULL };
+	AsciiSet LatinUppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //{0, 0x7FFFFFE};
+	AsciiSet Latin = LatinLowercase|LatinUppercase;// { 0, 0x7FFFFFE07FFFFFEULL };
+	AsciiSet LatinAndDigits = Latin|Digits;// { 0x03FF000000000000ULL, 0x7FFFFFE07FFFFFEULL };
+	AsciiSet IdentifierChars = LatinAndDigits|"$_";// { 0x03FF000000000000ULL | (1ULL << '$'), 0x7FFFFFE07FFFFFEULL | (1ULL << ('_' - 64u)) };
+	AsciiSet NotIdentifierChars = ~IdentifierChars;
 };
 constexpr const TAsciiSets AsciiSets;
 

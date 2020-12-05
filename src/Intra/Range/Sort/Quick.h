@@ -139,7 +139,7 @@ template<typename T, typename C> void sort_pass(Span<T> range,
 
 
 template<typename C, typename R> Requires<
-	CAssignableArrayClass<R>
+	CAssignableArrayList<R>
 > QuickSort(R&& range, C comparer)
 {
 	auto arr = SpanOf(range);
@@ -147,9 +147,9 @@ template<typename C, typename R> Requires<
 }
 
 template<typename R> Requires<
-	CAssignableArrayClass<R>
+	CAssignableArrayList<R>
 > QuickSort(R&& range)
 {
-	return QuickSort<TFLess>(ForwardAsRange<R>(range), FLess);
+	return QuickSort<decltype(Less)>(ForwardAsRange<R>(range), FLess);
 }
 INTRA_END

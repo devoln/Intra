@@ -2,7 +2,7 @@
 
 #include "Intra/Numeric.h"
 #include "Intra/Range/Span.h"
-#include "Extra/Container/ForwardDecls.h"
+#include "IntraX/Container/ForwardDecls.h"
 
 INTRA_BEGIN
 template<typename T> constexpr Requires<
@@ -42,7 +42,7 @@ namespace z_D
 			c[keyRadix]++;
 		}
 		for(size_t j = 1; j < Radix; j++) c[j] += c[j-1];
-		for(size_t j = count-1; j != LMaxOf<size_t>; j--)
+		for(size_t j = count-1; j != MaxValueOf<size_t>; j--)
 		{
 			const auto key = extractKey(arr[j]);
 			const size_t keyRadix = size_t(key >> radixOffset) & RadixMask;

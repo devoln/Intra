@@ -21,6 +21,6 @@ Specifically it includes:
 4. Functional programming tools
 5. Basic ranges: Span, StringView, FListRange, BListRange, ...
 6. Generic range decorators, composition and algorithms
-7. Static containers: Tuple, Variant, Optional, Polymorphic, SBitset, SArray
+7. Static containers: Tuple, Variant, Optional, Polymorphic, SBitset, Array
 8. Math functions
 

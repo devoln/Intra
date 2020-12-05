@@ -4,28 +4,28 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/TestGroup.h"
 
-#include "Extra/IO/FileSystem.h"
-#include "Extra/IO/HtmlWriter.h"
-#include "Extra/IO/FileWriter.h"
-#include "Extra/IO/Std.h"
-#include "Extra/IO/FilePath.h"
+#include "IntraX/IO/FileSystem.h"
+#include "IntraX/IO/HtmlWriter.h"
+#include "IntraX/IO/FileWriter.h"
+#include "IntraX/IO/Std.h"
+#include "IntraX/IO/FilePath.h"
 
-#include "Extra/System/DateTime.h"
-#include "Extra/System/Signal.h"
-#include "Extra/System/Environment.h"
+#include "IntraX/System/DateTime.h"
+#include "IntraX/System/Signal.h"
+#include "IntraX/System/Environment.h"
 
-#include "Extra/Container/SparseArray.h"
-#include "Extra/IO/FormattedLogger.h"
+#include "IntraX/Container/SparseArray.h"
+#include "IntraX/IO/FormattedLogger.h"
 
-#include "Extra/Container/HashMap.h"
-#include "Extra/Concurrency/Thread.h"
+#include "IntraX/Container/HashMap.h"
+#include "IntraX/Concurrency/Thread.h"
 
 #include "Sort.h"
 #include "Range/Range.h"
-#include "Extra/IO/IO.h"
+#include "IntraX/IO/IO.h"
 #include "Serialization.h"
 
-#include "Extra/Concurrency/Concurrency.h"
+#include "IntraX/Concurrency/Concurrency.h"
 
 using namespace Intra;
 

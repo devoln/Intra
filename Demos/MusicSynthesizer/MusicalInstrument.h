@@ -2,7 +2,7 @@
 
 
 #include "Intra/Range/Span.h"
-#include "Extra/Container/Sequential/Array.h"
+#include "IntraX/Container/Sequential/Array.h"
 
 #include "Types.h"
 #include "WaveTableSampler.h"

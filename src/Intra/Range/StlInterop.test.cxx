@@ -1,7 +1,7 @@
 ﻿#include "Intra/Range/Concepts.h"
-#include "Extra/IO/FormattedWriter.h"
-#include "Extra/Container/Sequential/String.h"
-#include "Extra/System/Debug.h"
+#include "IntraX/IO/FormattedWriter.h"
+#include "IntraX/Container/Sequential/String.h"
+#include "IntraX/System/Debug.h"
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #if !defined(_HAS_EXCEPTIONS) && !defined(INTRA_EXCEPTIONS_ENABLED) && defined(_MSC_VER)
@@ -32,7 +32,7 @@ INTRA_MODULE_UNITTEST
 		{"Line", {{1, 5}, {6, 5}}}
 	};
 	char figuresTextBuf[200];
-	StringView figuresText = (SpanOutput<char>(figuresTextBuf) << figureMap).WrittenRange();
+	auto figuresText = (SpanOutput<char>(figuresTextBuf) << figureMap).WrittenRange();
 	INTRA_ASSERT(figuresText == "[[Line, [[1, 5], [6, 5]]], [Triangle, [[3, 1], [3, 2], [4, 3]]]]" ||
 		figuresText == "[[Triangle, [[3, 1], [3, 2], [4, 3]]], [Line, [[1, 5], [6, 5]]]]");
 	

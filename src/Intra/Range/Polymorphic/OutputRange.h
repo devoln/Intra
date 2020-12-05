@@ -7,13 +7,13 @@
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Stream/OutputStreamMixin.h"
 
-#include "Extra/Utils/Unique.h"
+#include "IntraX/Utils/Unique.h"
 #include "Intra/Range/Polymorphic/IOutput.h"
 
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
-INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_SIGN_CONVERSION
 
 template<typename T, typename R> class OutputRangePolymorphicWrapper: public IOutputEx<T>
 {

@@ -19,23 +19,21 @@ If you want to change the predicate, first call HeapBuild to reorder its element
 */
 
 INTRA_BEGIN
-//! Add a new value into the heap built on a random access container.
-template<typename C, typename T, typename P = const TFLess&,
-    typename = Requires<CSequentialContainer<C> && CHasIndex<C> &&
-        !CConst<C> && CCallable<P, TValueTypeOfAs<C>, TValueTypeOfAs<C>>>>
-constexpr void HeapContainerPush(C& container, T&& value, P&& comparer = FLess)
+/// Add a new value into the heap built on a random access container.
+template<CSequentialContainer C, typename T, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
+requires CHasIndex<C> && (!CConst<C>)
+constexpr void HeapContainerPush(C& container, T&& value, P&& comparer = Less)
 {
 	container.push_back(Forward<T>(value));
 	HeapPush(RangeOf(container), Forward<P>(comparer));
 }
 
-//! Add a new value into the heap built on a random access range.
-//! The algorithm assumes the heap to be built on the first range.Length() - 1 range elements.
-//! This range reorders elements so that the result will be a valid heap built on all elements of the range, containing the value of range.Last().
-template<typename R, typename P = const TFLess&,
-    typename = Requires<CAsFiniteRandomAccessRange<R> && CAsAssignableRange<R> &&
-        CCallable<P, TValueTypeOfAs<R>, TValueTypeOfAs<R>>>>
-constexpr void HeapPush(R&& range, P&& comparer = FLess)
+/// Add a new value into the heap built on a random access range.
+/// The algorithm assumes the heap to be built on the first range.Length() - 1 range elements.
+/// This range reorders elements so that the result will be a valid heap built on all elements of the range, containing the value of range.Last().
+template<CFiniteRandomAccessList R, CCallable<TListValue<R>, TListValue<R>> P = const decltype(Less)&>
+requires CAssignableList<R>
+constexpr void HeapPush(R&& range, P&& comparer = Less)
 {
 	auto r = ForwardAsRange<R>(range);
 	INTRA_PRECONDITION(r.Length() >= 1);
@@ -49,10 +47,9 @@ constexpr void HeapPush(R&& range, P&& comparer = FLess)
 	}
 }
 
-//! Order the subtree of the element in position index.
-template<typename R, typename P = const TFLess&,
-    typename = Requires<CAsFiniteRandomAccessRange<R> && CAsAssignableRange<R> &&
-        CCallable<P, TValueTypeOfAs<R>, TValueTypeOfAs<R>>>>
+/// Order the subtree of the element in position index.
+template<CFiniteRandomAccessList R, CCallable<TListValue<R>, TListValue<R>> P = const decltype(Less)&>
+requires CAssignableList<R>
 constexpr void HeapOrder(R&& range, Index index, P&& comparer = FLess)
 {
 	auto r = ForwardAsRange<R>(range);
@@ -78,40 +75,34 @@ constexpr void HeapOrder(R&& range, Index index, P&& comparer = FLess)
 	}
 }
 
-//! Build a binary heap on the provided random access range by reordering its elements.
-template<typename R, typename P = const TFLess&,
-	typename = Requires<CAsFiniteRandomAccessRange<R> && CAsAssignableRange<R> &&
-	    CCallable<P, TValueTypeOfAs<R>, TValueTypeOfAs<R>>>>
-constexpr void HeapBuild(R&& range, P&& comparer = FLess)
+/// Build a binary heap on the provided random access range by reordering its elements.
+template<CFiniteRandomAccessList R, CCallable<TListValue<R>, TListValue<R>> P = const decltype(Less)&>
+constexpr void HeapBuild(R&& range, P&& comparer = Less) requires CAssignableList<R>
 {
 	auto r = ForwardAsRange<R>(range);
 	auto i = size_t(r.Length()) / 2;
-	while(i--) HeapOrder(r, i, Forward<P>(comparer));
+	while(i--) HeapOrder(r, i, INTRA_FWD(comparer));
 }
 
-//! Extract the first element from the heap.
-//! The result of calling this algorithm is a heap, built on the first range.Length() - 1 elements.
-//! The range.Last() will be equal to the removed element, it will not be a part of the heap.
-//! @returns a reference to range.Last() - removed element.
-template<typename R, typename P = const TFLess&,
-	typename = Requires<CAsFiniteRandomAccessRange<R> && CAsAssignableRange<R> &&
-        CCallable<P, TValueTypeOfAs<R>, TValueTypeOfAs<R>>>>
-constexpr decltype(auto) HeapPop(R&& range, P&& comparer = FLess)
+/// Extract the first element from the heap.
+/// The result of calling this algorithm is a heap, built on the first range.Length() - 1 elements.
+/// The range.Last() will be equal to the removed element, it will not be a part of the heap.
+/// @returns a reference to range.Last() - removed element.
+template<CFiniteRandomAccessList R, CCallable<TListValue<R>, TListValue<R>> P = const decltype(Less)&>
+constexpr decltype(auto) HeapPop(R&& range, P&& comparer = Less) requires CAssignableList<R>
 {
 	Swap(range.First(), range.Last());
 	HeapOrder(DropLast(range), 0, Forward<P>(comparer));
 	return range.Last();
 }
 
-//! Extract a maximum priority element from the heap.
-//! The result of calling this algorithm is a heap, built on the first container.Length() - 1 elements,
-//! and the resulting heap will be properly ordered. The removed element will be removed from it.
-template<typename C, typename P = const TFLess&,
-	typename = Requires<CSequentialContainer<C> && CHasIndex<C> &&
-        !CConst<C> && CCallable<P, TValueTypeOfAs<C>, TValueTypeOfAs<C>>>>
-constexpr auto HeapContainerPop(C& container, P&& comparer = FLess)
+/// Extract a maximum priority element from the heap.
+/// The result of calling this algorithm is a heap, built on the first container.Length() - 1 elements,
+/// and the resulting heap will be properly ordered. The removed element will be removed from it.
+template<CSequentialContainer C, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
+constexpr auto HeapContainerPop(C& container, P&& comparer = Less) requires CHasIndex<C> && !CConst<C>
 {
-	auto result = HeapPop(RangeOf(container), Forward<P>(comparer));
+	auto result = HeapPop(RangeOf(container), INTRA_FWD(comparer));
 	container.pop_back();
 	return result;
 }

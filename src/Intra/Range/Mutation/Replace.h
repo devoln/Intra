@@ -7,7 +7,7 @@ INTRA_BEGIN
 template<typename R> constexpr Requires<
 	CAssignableRange<R> &&
 	!CConst<R>
-> ReplaceOneAdvance(R& range, const TValueTypeOf<R>& from, const TValueTypeOf<R>& to)
+> ReplaceOneAdvance(R& range, const TRangeValue<R>& from, const TRangeValue<R>& to)
 {
 	while(!range.Empty())
 	{
@@ -24,16 +24,16 @@ template<typename R> constexpr Requires<
 
 template<typename R,
 	typename AsR = TRangeOfRef<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > constexpr Requires<
-	CAsAssignableRange<R>
+	CAssignableList<R>
 > ReplaceOne(R&& range, const T& from, const T& to)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	ReplaceOneAdvance(rangeCopy, from, to);
 }
 
-template<typename R, typename T = TValueTypeOf<R>
+template<typename R, typename T = TRangeValue<R>
 > constexpr Requires<
 	CAssignableRange<R> &&
 	!CConst<R>
@@ -49,7 +49,7 @@ template<typename R, typename T = TValueTypeOf<R>
 
 template<typename R,
 	typename AsR = TRangeOfRef<R>,
-	typename T = TValueTypeOf<AsR>
+	typename T = TRangeValue<AsR>
 > constexpr Requires<
 	CAssignableRange<AsR> &&
 	!CConst<R>

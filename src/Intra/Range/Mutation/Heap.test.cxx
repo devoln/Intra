@@ -1,6 +1,6 @@
 #include "Intra/Range/Mutation/Heap.h"
-#include "Intra/Container/SArray.h"
-#include "Extra/System/Debug.h"
+#include "Intra/Container/Array.h"
+#include "IntraX/System/Debug.h"
 
 INTRA_BEGIN
 INTRA_MODULE_UNITTEST
@@ -19,7 +19,7 @@ INTRA_MODULE_UNITTEST
 	}
 	INTRA_ASSERT(Equals(
 		minsOut.WrittenRange(),
-		SArray{2, 2, 4, 6, 7, 9}
+		Array{2, 2, 4, 6, 7, 9}
 	));
 }
 INTRA_WARNING_POP

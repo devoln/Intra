@@ -1,22 +1,22 @@
 #pragma once
 
-#include "Core/Functional.h"
-#include "Core/Range/Concepts.h"
-#include "Core/Range/Take.h"
+#include "Intra/Functional.h"
+#include "Range/Concepts.h"
+#include "Range/Take.h"
 
 INTRA_BEGIN
 
-template<class R, typename P = TFEqual> class TIsOneOf: P
+template<class R, typename P = decltype(Equal)> class IsOneOf: P
 {
 	static_assert(CNonInfiniteForwardRange<R>);
 	R mSet;
 	R mFound;
 public:
-	constexpr TIsOneOf(R set): mSet(Move(set)) {}
-	constexpr TIsOneOf(R set, P pred): P(Move(pred)), mSet(Move(set)) {}
-	template<typename T> [[nodiscard]] constexpr Requires<
-		CCallable<P, T&&>,
-	bool> operator()(T&& arg)
+	constexpr IsOneOf(R set): mSet(Move(set)) {}
+	constexpr IsOneOf(R set, P pred): P(Move(pred)), mSet(Move(set)) {}
+
+	template<typename T> requires CCallable<P, T&&>
+	[[nodiscard]] constexpr bool operator()(T&& arg)
 	{
 		mFound = mSet;
 		while(!mFound.Empty() && !P::operator()(mFound.First())) mFound.PopFirst();
@@ -25,7 +25,7 @@ public:
 
 	auto Which() const {return mFound.First();}
 };
-template<class R> TIsOneOf(R) -> TIsOneOf<TRangeOfRef<R>>;
-template<class R, class P> TIsOneOf(R, P) -> TIsOneOf<TRangeOfRef<R>, TFunctorOf<P>>;
+template<class R> IsOneOf(R) -> IsOneOf<TRangeOfRef<R>>;
+template<class R, class P> IsOneOf(R, P) -> IsOneOf<TRangeOfRef<R>, TFunctorOf<P>>;
 
 INTRA_END

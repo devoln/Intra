@@ -23,7 +23,7 @@ struct Envelope
 
 		float Volume;
 
-		//! Значение, которое прибавляется к (!Exponential) или умножается на (Exponential) Volume на каждом шаге
+		/// Значение, которое прибавляется к (!Exponential) или умножается на (Exponential) Volume на каждом шаге
 		float DU;
 
 		INTRA_FORCEINLINE bool IsConstant() const {return float(Exponential) == DU;}
@@ -39,14 +39,14 @@ struct Envelope
 
 	struct Point
 	{
-		//! Является ли отрезок, начинающийся в данной точке, экспоненциальным или линейным
+		/// Является ли отрезок, начинающийся в данной точке, экспоненциальным или линейным
 		unsigned Exponential: 1;
 
-		//! Длина отрезка, начинающегося в данной точке
+		/// Длина отрезка, начинающегося в данной точке
 		unsigned Length: 23;
 
-		//! Громкость на конце отрезка, начинающегося в данной точке
-		//! Число с фиксированной запятой, считается как Exponential? (Volume + 1) / 256.0f: Volume / 255.0f
+		/// Громкость на конце отрезка, начинающегося в данной точке
+		/// Число с фиксированной запятой, считается как Exponential? (Volume + 1) / 256.0f: Volume / 255.0f
 		unsigned Volume: 8;
 
 		INTRA_FORCEINLINE float CalcDU(float curVolume) const
@@ -56,8 +56,8 @@ struct Envelope
 			return (Volume / 255.0f - curVolume) / Length;
 		}
 
-		//! Упаковать значение громкости.
-		//! Вызывать эту функцию только после установки значения Exponential!
+		/// Упаковать значение громкости.
+		/// Вызывать эту функцию только после установки значения Exponential!
 		INTRA_FORCEINLINE void SetVolume(float volume)
 		{
 			Volume = unsigned(Exponential?

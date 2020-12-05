@@ -76,7 +76,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(CSpan<Span<float>> outFloatChannels
 			size_t(Max((nextTime - mTime)*mSampleRate + MidiTime(0.5), MidiTime(1)));
 		const size_t samplesLeft = SamplesLeft();
 		if(samplesLeft == 0) break;
-		samplesBeforeNextEvent = FMin(samplesBeforeNextEvent, samplesLeft);
+		samplesBeforeNextEvent = Min(samplesBeforeNextEvent, samplesLeft);
 		bool add = false;
 		const auto dstLeftBeforeEvent = dstLeft.Take(samplesBeforeNextEvent);
 		const auto dstRightBeforeEvent = dstRight.Take(samplesBeforeNextEvent);

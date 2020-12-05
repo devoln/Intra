@@ -32,7 +32,7 @@ private:
 
 template<typename RR, typename P,
 	typename AsRR = TRangeOfRef<RR>,
-	typename T = TValueTypeOf<AsRR>
+	typename T = TRangeValue<AsRR>
 > [[nodiscard]] constexpr Requires<
 	CRandomAccessRange<AsRR> &&
 	CCallable<P, T, T>,

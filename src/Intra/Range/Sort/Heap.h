@@ -28,8 +28,8 @@ template<typename T, typename C> constexpr void heap_shift_down(T arr[], size_t 
   3) Almost sorted ranges are sorted as slow as randomly ordered ranges;
   4) For Count(range) < few thousands ShellSort is faster.
 */
-template<typename R, typename C = TFLess> constexpr Requires<
-	CAssignableArrayClass<R>
+template<typename R, typename C = decltype(Less)> constexpr Requires<
+	CAssignableArrayList<R>
 > HeapSort(R&& range, C comparer = FLess)
 {
 	// TODO: support any random access range

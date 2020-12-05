@@ -2,18 +2,18 @@
 
 #include "Intra/Type.h"
 #include "Intra/Assert.h"
-#include "Extra/Utils/Unique.h"
-#include "Extra/Utils/FixedArray.h"
+#include "IntraX/Utils/Unique.h"
+#include "IntraX/Utils/FixedArray.h"
 #include "Intra/Range/Mutation/Fill.h"
 #include "Intra/Range/Mutation/Transform.h"
-#include "Extra/Container/Utility/Blob.h"
+#include "IntraX/Container/Utility/Blob.h"
 #include "Intra/Concurrency/Atomic.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 class SamplerTaskContext;
 
-//! Задача по генерации семплов, которая прибавляет суммирует сгенерированные значения в буфер указанного контекста.
+/// Задача по генерации семплов, которая прибавляет суммирует сгенерированные значения в буфер указанного контекста.
 class SamplerTask
 {
 public:
@@ -35,7 +35,7 @@ public:
 
 typedef Intra::Container::DynamicBlob<SamplerTask, alignof(SamplerTask), uint16> SamplerTaskContainer;
 
-//! Предварительно заполненная потокобезопасная очередь только для чтения
+/// Предварительно заполненная потокобезопасная очередь только для чтения
 class SamplerTaskConsumeQueue
 {
 	const SamplerTaskContainer& tasks;

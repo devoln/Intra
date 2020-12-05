@@ -12,8 +12,8 @@
 #include "Intra/Range/Split.h"
 #include "Intra/Range/Stream/ToString.h"
 #include "Intra/Range/Stride.h"
-#include "Extra/Container/Sequential/List.h"
-#include "Extra/Unstable/Random/FastUniform.h"
+#include "IntraX/Container/Sequential/List.h"
+#include "IntraX/Unstable/Random/FastUniform.h"
 
 
 INTRA_BEGIN
@@ -146,7 +146,7 @@ INTRA_MODULE_UNITTEST
 	));
 
 	int arr[] = {1, 4, 11, 6, 8};
-	INTRA_ASSERT(Reduce(arr, FMax) == 11);
+	INTRA_ASSERT(Reduce(arr, Max) == 11);
 
 	//An example equivalent to an example of STL: http://en.cppreference.com/w/cpp/algorithm/copy
 	Array<int> fromVector = Iota(10);

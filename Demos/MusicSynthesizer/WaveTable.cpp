@@ -1,5 +1,5 @@
 #include "WaveTable.h"
-#include "Extra/Unstable/Audio/Resample.h"
+#include "IntraX/Unstable/Audio/Resample.h"
 using namespace Audio;
 
 void WaveTable::GenerateNextLevel()

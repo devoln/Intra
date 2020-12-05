@@ -10,7 +10,7 @@ public:
 	GenericZStringRange() = default;
 	constexpr GenericZStringRange(decltype(null)) {}
 
-	//! @param zstrings String of the form "string1\0string2\0string3"
+	/// @param zstrings String of the form "string1\0string2\0string3"
 	constexpr GenericZStringRange(GenericStringView<T> zstrings):
 		mData(zstrings), mFirstLen(CountUntilAdvance(mData, '\0')) {}
 
@@ -21,11 +21,11 @@ public:
 	//TODO: implement Last and PopLast to make it bidirectional range
 	
 private:
-	//! If there is next element, ``mData``.First() points to '\0'.
-	//! If there are no more elements, then mData.Empty()
+	/// If there is next element, ``mData``.First() points to '\0'.
+	/// If there are no more elements, then mData.Empty()
 	GenericStringView<T> mData;
 
-	//! Current string length
+	/// Current string length
 	size_t mFirstLen = 0;
 };
 

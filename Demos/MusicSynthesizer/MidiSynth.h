@@ -2,15 +2,15 @@
 
 
 
-#include "Extra/Utils/FixedArray.h"
-#include "Extra/System/Error.h"
+#include "IntraX/Utils/FixedArray.h"
+#include "IntraX/System/Error.h"
 
-#include "Extra/Container/Associative/HashMap.h"
+#include "IntraX/Container/Associative/HashMap.h"
 
-#include "Extra/Unstable/Audio/AudioSource.h"
+#include "IntraX/Unstable/Audio/AudioSource.h"
 #include "Types.h"
-#include "Extra/Unstable/Audio/Midi/Messages.h"
-#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
+#include "IntraX/Unstable/Audio/Midi/Messages.h"
+#include "IntraX/Unstable/Audio/Midi/MidiFileParser.h"
 #include "NoteSampler.h"
 #include "InstrumentSet.h"
 #include "PostEffects.hh"

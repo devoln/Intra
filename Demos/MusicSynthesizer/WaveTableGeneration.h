@@ -24,14 +24,14 @@ inline void AddSineHarmonic(Span<float> wavetableAmplitudes, float freqSampleRat
 void AddSineHarmonicGaussianProfile(Span<float> wavetableAmplitudes, float freqSampleRateRatio,
 	float harmFreqMultiplier, float harmBandwidthScale, float amplitude, float bandwidthCents);
 
-//! Получает на вход массив inAmplitudesX2OutSamples, первая половина которого содержит амплитуды частот.
-//! Присваивает каждой из них случайные фазы и заполняет весь inAmplitudesX2OutSamples семплами.
-//! @param tempBuffer - временный буфер размера не меньше inAmplitudesX2OutSamples.Length(), в который будет производиться запись алгоримом.
+/// Получает на вход массив inAmplitudesX2OutSamples, первая половина которого содержит амплитуды частот.
+/// Присваивает каждой из них случайные фазы и заполняет весь inAmplitudesX2OutSamples семплами.
+/// @param tempBuffer - временный буфер размера не меньше inAmplitudesX2OutSamples.Length(), в который будет производиться запись алгоримом.
 void ConvertAmplutudesToSamples(Span<float> inAmplitudesX2OutSamples, Span<float> tempBuffer, float volume=1);
 
-//! Принимает table, у которого Data содержит table.BaseLevelLength / 2 частот.
-//! После работы этой функции table содержит table.BaseLevelLength семплов, соответствующих этим частотам со случайными фазами.
-//! Кроме того генерирует все уровни детализации для полученного сигнала.
+/// Принимает table, у которого Data содержит table.BaseLevelLength / 2 частот.
+/// После работы этой функции table содержит table.BaseLevelLength семплов, соответствующих этим частотам со случайными фазами.
+/// Кроме того генерирует все уровни детализации для полученного сигнала.
 void ConvertAmplitudesToSamples(WaveTable& table, float volume=1, bool genMipmaps=false);
 
 

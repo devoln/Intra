@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>  
+<StepFilter xmlns="http://schemas.microsoft.com/vstudio/debugger/natstepfilter/2010">  
+	<Function><Name>IntraX::Unique&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>IntraX::Shared&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>IntraX::UniqueMove&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+	<Function><Name>IntraX::SharedMove&lt;.*&gt;::.*</Name><Action>NoStepInto</Action></Function>
+</StepFilter>

@@ -41,7 +41,7 @@ size_t> CountLinesAdvance(R& src)
 }
 
 template<typename R> [[nodiscard]] constexpr Requires<
-	CAsCharRange<R>,
+	CCharList<R>,
 size_t> CountLines(R&& range)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);

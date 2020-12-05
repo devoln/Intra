@@ -15,7 +15,7 @@
 INTRA_BEGIN
 template<class R, class OR, class RR> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
-	COutputRange<OR> &&
+	COutput<OR> &&
 	CNonInfiniteForwardRange<RR>,
 TTakeResult<OR>> MultiReplaceAdvanceToAdvance(R& src, OR& dstBuffer, const RR& replacementSubranges)
 {
@@ -35,9 +35,9 @@ TTakeResult<OR>> MultiReplaceAdvanceToAdvance(R& src, OR& dstBuffer, const RR& r
 }
 
 template<class R, class OR, class RR> constexpr Requires<
-	CAsNonInfiniteForwardRange<R> &&
-	COutputRange<OR> &&
-	CAsNonInfiniteForwardRange<RR>,
+	CNonInfiniteForwardList<R> &&
+	COutput<OR> &&
+	CNonInfiniteForwardList<RR>,
 TTakeResult<OR>> MultiReplaceToAdvance(R&& range,
 	OR& dstBuffer, RR&& replacementSubranges)
 {
@@ -47,9 +47,9 @@ TTakeResult<OR>> MultiReplaceToAdvance(R&& range,
 }
 
 template<class R, class OR, class RR> constexpr inline Requires<
-	CAsNonInfiniteForwardRange<R> &&
+	CNonInfiniteForwardList<R> &&
 	CAsOutputRange<OR> &&
-	CAsNonInfiniteForwardRange<RR>,
+	CNonInfiniteForwardList<RR>,
 TTakeResult<TRangeOfRef<OR&&>>> MultiReplaceTo(R&& range,
 	OR&& dstBuffer, RR&& replacementSubranges)
 {
@@ -61,8 +61,8 @@ TTakeResult<TRangeOfRef<OR&&>>> MultiReplaceTo(R&& range,
 template<typename R, typename OR, typename LR, typename RR,
 	typename SubstitutionRangeOfTupleOfRanges, typename UnknownSubstitutionRange>
 constexpr Requires<
-	CAsNonInfiniteForwardRange<R> &&
-	COutputRange<OR> &&
+	CNonInfiniteForwardList<R> &&
+	COutput<OR> &&
 	CCopyConstructible<OR> &&
 	CNonInfiniteForwardRange<LR> &&
 	CNonInfiniteForwardRange<RR> &&
@@ -88,9 +88,9 @@ TTakeResult<TRangeOfRef<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 			index += Count(entryStr);
 			break;
 		}
-		PopLastExactly(entryStr, Count(entryEnd));
+		entryStr|PopLastExactly(Count(entryEnd));
 		auto substituionsCopy = substitutions;
-		FindAdvance(substituionsCopy, TupleElementEquals<0>(entryStr));
+		FindAdvance(substituionsCopy, [&](auto&& t) {return AtField<0>(t) == entryStr;});
 		if(substituionsCopy.Empty())
 		{
 			WriteTo(unknownSubstitution, dstBuffer);

@@ -33,8 +33,8 @@ template<typename R, typename T> struct OutputStreamMixin
 	{return RawWriteFrom(Span<U>(src, n));}
 
 	template<typename R1> constexpr Requires<
-		!CInputRange<R1> &&
-		CArrayClass<R1> &&
+		!CRange<R1> &&
+		CArrayList<R1> &&
 		CTriviallyCopyable<TArrayElement<R1>>,
 	index_t> RawWriteFrom(R1&& src)
 	{return RawWriteFrom(CSpanOf(src));}

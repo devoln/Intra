@@ -16,7 +16,7 @@ INTRA_BEGIN
 */
 template<typename R, typename RW> constexpr Requires<
 	CForwardRange<R> &&
-	CAsConsumableRange<RW>,
+	CConsumableList<RW>,
 bool> ConsumePrefix(R& range, RW&& prefix)
 {
 	bool result = range|StartsWith(prefix);
@@ -26,9 +26,9 @@ bool> ConsumePrefix(R& range, RW&& prefix)
 
 template<typename R, typename RWs> constexpr Requires<
 	CForwardRange<R> &&
-	CNonInfiniteInputRange<RWs> &&
-	CNonInfiniteForwardRange<TValueTypeOf<RWs>> &&
-	CConvertibleTo<TValueTypeOf<TValueTypeOf<RWs>>, TValueTypeOf<R>>,
+	CNonInfiniteRange<RWs> &&
+	CNonInfiniteForwardRange<TRangeValue<RWs>> &&
+	CConvertibleTo<TRangeValue<TRangeValue<RWs>>, TRangeValue<R>>,
 bool> StartsWithAnyAdvance(const R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
 	if(oSubrangeIndex) oSubrangeIndex.Unwrap() = 0;
@@ -42,10 +42,10 @@ bool> StartsWithAnyAdvance(const R& range, RWs& subranges, Optional<index_t&> oS
 }
 
 template<typename R, typename RWs> [[nodiscard]] constexpr Requires<
-	CAsForwardRange<R> &&
-	CAsConsumableRange<RWs> &&
-	CAsNonInfiniteForwardRange<TValueTypeOfAs<RWs>> &&
-	CConvertibleTo<TValueTypeOfAs<TValueTypeOfAs<RWs>>, TValueTypeOfAs<R>>,
+	CForwardList<R> &&
+	CConsumableList<RWs> &&
+	CNonInfiniteForwardList<TListValue<RWs>> &&
+	CConvertibleTo<TListValue<TListValue<RWs>>, TListValue<R>>,
 bool> StartsWithAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);
@@ -53,12 +53,12 @@ bool> StartsWithAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeInde
 }
 
 template<typename R, typename RWs,
-	typename W = TValueTypeOfAs<RWs>
+	typename W = TListValue<RWs>
 > [[nodiscard]] constexpr Requires<
 	CForwardRange<R> &&
-	CAsConsumableRange<RWs> &&
-	CAsNonInfiniteForwardRange<W> &&
-	CConvertibleTo<TValueTypeOfAs<W>, TValueTypeOf<R>>,
+	CConsumableList<RWs> &&
+	CNonInfiniteForwardList<W> &&
+	CConvertibleTo<TListValue<W>, TRangeValue<R>>,
 bool> StartsAdvanceWithAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);

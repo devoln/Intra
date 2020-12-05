@@ -9,7 +9,7 @@ INTRA_BEGIN
   @return The number of popped elements.
 */
 template<typename R> Requires<
-	CInputRange<R> &&
+	CRange<R> &&
 	!CConst<R>,
 size_t> DistanceAdvanceTo(R& from, const R& to)
 {
@@ -29,8 +29,8 @@ size_t> DistanceAdvanceTo(R& from, const R& to)
 	return result;
 }
 
-//! How much elements must be popped from ``from``, to get range ``to`` or an empty range.
-//! @return The number of popped elements.
+/// How much elements must be popped from ``from``, to get range ``to`` or an empty range.
+/// @return The number of popped elements.
 template<typename R> Requires<
 	CAccessibleRange<R>,
 size_t> DistanceTo(R&& from, R&& to)

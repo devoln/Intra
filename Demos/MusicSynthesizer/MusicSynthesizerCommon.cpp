@@ -1,19 +1,19 @@
 ﻿#include "MusicSynthesizerCommon.h"
 
-#include "Extra/IO/ConsoleInput.h"
-#include "Extra/IO/Std.h"
-#include "Extra/IO/FileSystem.h"
-#include "Extra/IO/FileReader.h"
+#include "IntraX/IO/ConsoleInput.h"
+#include "IntraX/IO/Std.h"
+#include "IntraX/IO/FileSystem.h"
+#include "IntraX/IO/FileReader.h"
 
-#include "Extra/Container/Sequential/String.h"
+#include "IntraX/Container/Sequential/String.h"
 
-#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
-#include "Extra/Unstable/Audio/AudioBuffer.h"
-#include "Extra/Unstable/Audio/Sound.h"
-#include "Extra/Unstable/Audio/AudioSource.h"
-#include "Extra/Unstable/Audio/Sources/MidiSynth.h"
+#include "IntraX/Unstable/Audio/Midi/MidiFileParser.h"
+#include "IntraX/Unstable/Audio/AudioBuffer.h"
+#include "IntraX/Unstable/Audio/Sound.h"
+#include "IntraX/Unstable/Audio/AudioSource.h"
+#include "IntraX/Unstable/Audio/Sources/MidiSynth.h"
 
-#include "Extra/System/Stopwatch.h"
+#include "IntraX/System/Stopwatch.h"
 
 
 #include "MidiInstrumentMapping.h"

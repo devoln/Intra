@@ -3,7 +3,7 @@
 #include "MusicSynthesizerCommon.h"
 #include "MidiInstrumentMapping.h"
 
-#include "Extra/Unstable/Audio/Midi/MidiFileParser.h"
+#include "IntraX/Unstable/Audio/Midi/MidiFileParser.h"
 #include "MidiSynth.h"
 
 using namespace Audio;

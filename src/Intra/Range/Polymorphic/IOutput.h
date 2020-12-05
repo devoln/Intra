@@ -14,7 +14,7 @@ public:
 	virtual void Put(const T& value) = 0;
 	virtual void Put(T&& value) = 0;
 
-	//! It is not necessary to override this method but it reduces the virtual call number in 2 times.
+	/// It is not necessary to override this method but it reduces the virtual call number in 2 times.
 	virtual bool TryPut(const T& value)
 	{
 		if(Full()) return false;
@@ -22,7 +22,7 @@ public:
 		return true;
 	}
 
-	//! It is not necessary to override this method but it reduces the virtual call number in 2 times.
+	/// It is not necessary to override this method but it reduces the virtual call number in 2 times.
 	virtual bool TryPut(T&& value)
 	{
 		if(Full()) return false;

@@ -5,7 +5,7 @@
 INTRA_BEGIN
 namespace Misc {
 
-namespace CImp {
+namespace z_D {
 #if defined(_MSC_VER) && defined(__amd64__)
 extern "C" uint64 _umul128(uint64 x, uint64 y, uint64* highProduct);
 #endif
@@ -52,7 +52,7 @@ constexpr uint64 Div100M(uint64 x)
 }
 INTRA_OPTIMIZE_FUNCTION_END
 
-constexpr inline uint32 Pow5Factor(uint32 x)
+constexpr uint32 Pow5Factor(uint32 x)
 {
 	INTRA_PRECONDITION(x != 0);
 	for(uint32 i = 0; ; i++)
@@ -62,18 +62,21 @@ constexpr inline uint32 Pow5Factor(uint32 x)
 	}
 }
 
-constexpr inline bool IsMultipleOfPowerOf5(uint32 x, uint32 powerOf5)
+constexpr bool IsMultipleOfPowerOf5(uint32 x, uint32 powerOf5)
 {
 	return Pow5Factor(x) >= powerOf5;
 }
 
-constexpr inline bool IsMultipleOfPowerOf2(uint32 x, uint32 powerOf2)
+constexpr bool IsMultipleOfPowerOf2(uint32 x, uint32 powerOf2)
 {
-	// return __builtin_ctz(x) >= powerOf2; //TODO: check if it is faster
+#if defined(__i386__) || defined(__amd64__) || defined(__aarch64__) || defined(__wasm__)
+	return __builtin_ctz(x) >= powerOf2;
+#else
 	return (x & ((1u << powerOf2) - 1)) == 0;
+#endif
 }
 
-constexpr inline uint32 MulShift(uint32 m, uint64 factor, int32 shift)
+constexpr uint32 MulShift(uint32 m, uint64 factor, int32 shift)
 {
 	INTRA_PRECONDITION(shift > 32);
 	const uint32 factorLo = uint32(factor & 0xFFFFFFFF);
@@ -84,7 +87,7 @@ constexpr inline uint32 MulShift(uint32 m, uint64 factor, int32 shift)
 	{
 		const uint64 sum = (bits0 >> 32) + bits1;
 		const uint64 shiftedSum = sum >> (shift - 32);
-		INTRA_DEBUG_ASSERT(shiftedSum <= LMaxOf<uint32>);
+		INTRA_POSTCONDITION(shiftedSum <= MaxValueOf<uint32>);
 		return uint32(shiftedSum);
 	}
 	else
@@ -101,8 +104,8 @@ constexpr inline uint32 MulShift(uint32 m, uint64 factor, int32 shift)
 	}
 }
 
-// Returns e == 0 ? 1 : ceil(log_2(5^e)).
-inline int32 Pow5bits(int32 e)
+// Returns e == 0? 1: ceil(log_2(5^e)).
+constexpr int32 Pow5bits(int32 e)
 {
 	// This approximation works up to the point that the multiplication overflows at e = 3529.
 	// If the multiplication were done in 64 bits, it would fail at 5^4004 which is just greater
@@ -116,7 +119,7 @@ constexpr uint32 Log10Pow2(int32 e)
 {
 	// The first value this approximation fails for is 2^1651 which is just greater than 10^297.
 	INTRA_PRECONDITION(0 <= e && e <= 1650);
-	return ((uint32(e)) * 78913) >> 18;
+	return (uint32(e) * 78913) >> 18;
 }
 
 // Returns floor(log_10(5^e)).
@@ -124,7 +127,7 @@ constexpr uint32 Log10Pow5(int32 e)
 {
 	// The first value this approximation fails for is 5^2621 which is just greater than 10^1832.
 	INTRA_PRECONDITION(0 <= e && e <= 2620);
-	return ((uint32(e)) * 732923) >> 20;
+	return (uint32(e) * 732923) >> 20;
 }
 
 }

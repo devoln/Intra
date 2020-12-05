@@ -5,13 +5,13 @@
 #include "Intra/Range/Cycle.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_LOSING_CONVERSION
-INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_LOSING_CONVERSION
+INTRA_IGNORE_WARN_SIGN_CONVERSION
 template<typename T, typename R> constexpr Requires<
 	CAssignableRange<R> &&
-	!CInfiniteInputRange<R> &&
+	!CInfiniteRange<R> &&
 	!CConst<R> &&
-	CConvertibleTo<T, TValueTypeOf<R>>
+	CConvertibleTo<T, TRangeValue<R>>
 > FillAdvance(R& range, const T& value)
 {
 	while(!range.Empty())
@@ -45,7 +45,7 @@ template<typename T, typename R,
 > constexpr Requires<
 	CConsumableRange<AsR> &&
 	CAssignableRange<AsR> &&
-	CConvertibleTo<T, TValueTypeOf<AsR>>
+	CConvertibleTo<T, TRangeValue<AsR>>
 > Fill(R&& range, const T& value)
 {
 	auto dst = ForwardAsRange<R>(range);
@@ -56,19 +56,19 @@ template<typename T, typename R,
 template<typename R, typename AsR> constexpr Requires<
 	CConsumableRange<AsR> &&
 	CAssignableRange<AsR> &&
-	!(CArrayClass<R> && CTriviallyCopyable<TArrayElement<R>>)
+	!(CArrayList<R> && CTriviallyCopyable<TArrayElement<R>>)
 > FillZeros(R&& range)
-{Fill(ForwardAsRange<R>(range), TValueTypeOf<AsR>(0));}
+{Fill(ForwardAsRange<R>(range), TRangeValue<AsR>(0));}
 
 template<typename R> constexpr Requires<
-	CArrayClass<R> &&
+	CArrayList<R> &&
 	CTriviallyCopyable<TArrayElement<R>>
 > FillZeros(R&& dst)
 {Misc::BitwiseZero(DataOf(dst), LengthOf(dst));}
 
 template<typename R, typename PR> constexpr Requires<
-	CAsConsumableRange<R> &&
-	CAsAccessibleRange<PR>
+	CConsumableList<R> &&
+	CAccessibleList<PR>
 > FillPattern(R&& range, PR&& pattern)
 {
 	auto dst = ForwardAsRange<R>(range);

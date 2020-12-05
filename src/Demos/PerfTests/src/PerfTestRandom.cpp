@@ -7,7 +7,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "PerfTestRandom.h"
 
-#include "Extra/System/Stopwatch.h"
+#include "IntraX/System/Stopwatch.h"
 #include "Test/PerfSummary.h"
 #include "Intra/Compatibility.h"
 #include "Random/FastUniform.h"

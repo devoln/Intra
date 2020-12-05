@@ -18,9 +18,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
 #include "Test/TestData.h"
-#include "Extra/System/Stopwatch.h"
-#include "Extra/IO/FormattedWriter.h"
-#include "Extra/IO/Std.h"
+#include "IntraX/System/Stopwatch.h"
+#include "IntraX/IO/FormattedWriter.h"
+#include "IntraX/IO/Std.h"
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <map>
@@ -29,8 +29,8 @@ INTRA_WARNING_POP
 
 #define INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
 
-#include "Extra/Container/Associative/LinearMap.h"
-#include "Extra/Container/Associative/HashMap.h"
+#include "IntraX/Container/Associative/LinearMap.h"
+#include "IntraX/Container/Associative/HashMap.h"
 
 using namespace Intra;
 using namespace IO;

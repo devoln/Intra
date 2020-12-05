@@ -3,8 +3,38 @@
   
   <Type Name="Intra::Span&lt;char&gt;">
     <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
-    <DisplayString>{Begin,[End-Begin]s8}</DisplayString>
-    <StringView>Begin,[End-Begin]s8b</StringView>
+    <DisplayString>{Begin,[End - Begin]s8}</DisplayString>
+    <StringView>Begin,[End - Begin]s8b</StringView>
+    <Expand>
+      <Item Name="Length" ExcludeView="simple">End - Begin</Item>
+      <Item Name="Begin" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End - Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Span&lt;char8_t&gt;">
+    <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
+    <DisplayString>{Begin,[End - Begin]s8}</DisplayString>
+    <StringView>Begin,[End - Begin]s8b</StringView>
+    <Expand>
+      <Item Name="Length" ExcludeView="simple">End - Begin</Item>
+      <Item Name="Begin" ExcludeView="simple">Begin</Item>
+      <Item Name="End" ExcludeView="simple">End</Item>
+      <ArrayItems>
+        <Size>End - Begin</Size>
+        <ValuePointer>Begin</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Span&lt;wchar_t&gt;">
+    <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
+    <DisplayString>{Begin,[End-Begin]s16}</DisplayString>
+    <StringView>Begin,[End-Begin]s16b</StringView>
     <Expand>
       <Item Name="Length" ExcludeView="simple">End - Begin</Item>
       <Item Name="Begin" ExcludeView="simple">Begin</Item>
@@ -21,7 +51,7 @@
     <DisplayString>{Begin,[End-Begin]s16}</DisplayString>
     <StringView>Begin,[End-Begin]s16b</StringView>
     <Expand>
-      <Item Name="Length" ExcludeView="simple">End-Begin</Item>
+      <Item Name="Length" ExcludeView="simple">End - Begin</Item>
       <Item Name="Begin" ExcludeView="simple">Begin</Item>
       <Item Name="End" ExcludeView="simple">End</Item>
       <ArrayItems>
@@ -67,19 +97,12 @@
   </Type>
 
   <Type Name="Intra::GenericStringView&lt;*&gt;">
-    <DisplayString IncludeView="Length">{End - Begin}</DisplayString>
-    <DisplayString Condition="sizeof(*Begin)==1" Optional="true">{Begin,[End-Begin]s8}</DisplayString>
-    <DisplayString Condition="sizeof(*Begin)==2" Optional="true">{Begin,[End-Begin]s16}</DisplayString>
-    <DisplayString Condition="sizeof(*Begin)==4" Optional="true">{Begin,[End-Begin]s32}</DisplayString>
-    <StringView Condition="sizeof(*Begin)==1" Optional="true">Begin,[End-Begin]s8b</StringView>
-    <StringView Condition="sizeof(*Begin)==2" Optional="true">Begin,[End-Begin]s16b</StringView>
-    <StringView Condition="sizeof(*Begin)==4" Optional="true">Begin,[End-Begin]s32b</StringView>
+    <DisplayString>{mRawUnicodeUnits}</DisplayString>
+    <StringView Condition="sizeof(*mRawUnicodeUnits.Begin)==1" Optional="true">*mRawUnicodeUnits.Begin,[mRawUnicodeUnits.End-mRawUnicodeUnits.Begin]s8b</StringView>
+    <StringView Condition="sizeof(*mRawUnicodeUnits.Begin)==2" Optional="true">*mRawUnicodeUnits.Begin,[mRawUnicodeUnits.End-mRawUnicodeUnits.Begin]s16b</StringView>
+    <StringView Condition="sizeof(*mRawUnicodeUnits.Begin)==4" Optional="true">*mRawUnicodeUnits.Begin,[mRawUnicodeUnits.End-mRawUnicodeUnits.Begin]s32b</StringView>
     <Expand>
-      <Item Name="Length">End - Begin</Item>
-      <ArrayItems>
-        <Size>End - Begin</Size>
-        <ValuePointer>Begin</ValuePointer>
-      </ArrayItems>
+      <Item Name="Raw Unicode Units">mRawUnicodeUnits</Item>
     </Expand>
   </Type>
 	
@@ -91,17 +114,17 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::TValue&lt;*&gt;">
-    <DisplayString>{Value}</DisplayString>
+  <Type Name="Intra::Value&lt;*&gt;">
+    <DisplayString>{Val}</DisplayString>
     <Expand>
-      <ExpandedItem>Value</ExpandedItem>
+      <ExpandedItem>Val</ExpandedItem>
     </Expand>
   </Type>
 
-  <Type Name="Intra::TRef&lt;*&gt;">
-    <DisplayString>{&amp;Ref}</DisplayString>
+  <Type Name="Intra::FRef&lt;*&gt;">
+    <DisplayString>{&amp;FRef}</DisplayString>
     <Expand>
-      <ExpandedItem>&amp;Ref</ExpandedItem>
+      <ExpandedItem>&amp;FRef</ExpandedItem>
     </Expand>
   </Type>
 
@@ -144,103 +167,8 @@
     </Expand>
   </Type>
 
-  <Type Name="Intra::TFLess">
-    <DisplayString>FLess</DisplayString>
-  </Type>
-  <Type Name="Intra::TFLEqual">
-    <DisplayString>FLEqual</DisplayString>
-  </Type>
-  <Type Name="Intra::TFGreater">
-    <DisplayString>FGreater</DisplayString>
-  </Type>
-  <Type Name="Intra::TFGEqual">
-    <DisplayString>FGEqual</DisplayString>
-  </Type>
-  <Type Name="Intra::TFEqual">
-    <DisplayString>FEqual</DisplayString>
-  </Type>
-  <Type Name="Intra::TFNotEqual">
-    <DisplayString>!FEqual</DisplayString>
-  </Type>
-
-  <Type Name="Intra::TNot1&lt;*&gt;">
-    <DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString>
-  </Type>
-  <Type Name="Intra::TNot2&lt;*&gt;">
-    <DisplayString>!{*(WrappedPredicate*)this,nd}</DisplayString>
-  </Type>
-
-  <Type Name="Intra::TAnd1&lt;*&gt;">
-    <DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString>
-  </Type>
-  <Type Name="Intra::TAnd2&lt;*&gt;">
-    <DisplayString>{*(WrappedPredicate1*)this,nd} &amp;&amp; {*(WrappedPredicate2*)this,nd}</DisplayString>
-  </Type>
-  <Type Name="Intra::TOr1&lt;*&gt;">
-    <DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString>
-  </Type>
-  <Type Name="Intra::TOr2&lt;*&gt;">
-    <DisplayString>{*(WrappedPredicate1*)this,nd} || {*(WrappedPredicate2*)this,nd}</DisplayString>
-  </Type>
-
-  <Type Name="Intra::TIsEven">
-    <DisplayString>IsEven</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsOdd">
-    <DisplayString>IsOdd</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsHorSpace">
-    <DisplayString>IsHorSpace</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsLineSeparator">
-    <DisplayString>IsLineSeparator</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsSpace">
-    <DisplayString>IsSpace</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsAnySlash">
-    <DisplayString>IsAnySlash</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsDigit">
-    <DisplayString>IsDigit</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsLowerLatin">
-    <DisplayString>IsLowerLatin</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsUpperLatin">
-    <DisplayString>IsUpperLatin</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsLatin">
-    <DisplayString>IsLatin</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsAsciiChar">
-    <DisplayString>IsAsciiChar</DisplayString>
-  </Type>
-  <Type Name="Intra::TIsControlChar">
-    <DisplayString>IsControlChar</DisplayString>
-  </Type>
-
-  <Type Name="Intra::TAlwaysTrue">
-    <DisplayString>AlwaysTrue</DisplayString>
-  </Type>
-  <Type Name="Intra::TAlwaysFalse">
-    <DisplayString>AlwaysFalse</DisplayString>
-  </Type>
-
-  <Type Name="Intra::TToLowerAscii">
-    <DisplayString>ToLowerAscii</DisplayString>
-  </Type>
-  <Type Name="Intra::TToUpperAscii">
-    <DisplayString>ToUpperAscii</DisplayString>
-  </Type>
-
-  <Type Name="Intra::z_D::TupleLeaf&lt;*,*,false&gt;">
-    <DisplayString IncludeView="noparens">{value}</DisplayString>
-    <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
-  </Type>
-
-  <Type Name="Intra::z_D::TupleLeaf&lt;*,*,true&gt;">
-    <DisplayString IncludeView="noparens">{*(VT*)this}</DisplayString>
+  <Type Name="Intra::z_D::TupleLeaf&lt;*,*&gt;">
+    <DisplayString IncludeView="noparens">{Value}</DisplayString>
     <DisplayString ExcludeView="noparens">{{{*this,view(noparens)}}}</DisplayString>
   </Type>
 	

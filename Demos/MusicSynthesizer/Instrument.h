@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Sampler.h"
-#include "Extra/Container/Utility/Blob.h"
+#include "IntraX/Container/Utility/Blob.h"
 
 class Instrument
 {

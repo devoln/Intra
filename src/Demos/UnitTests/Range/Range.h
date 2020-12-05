@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Extra/IO/FormattedWriter.h"
+#include "IntraX/IO/FormattedWriter.h"
 
 void TestComposedRange(Intra::FormattedWriter& output);
 void TestPolymorphicRange(Intra::FormattedWriter& output);

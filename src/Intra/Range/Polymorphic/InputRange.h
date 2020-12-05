@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Extra/Utils/Unique.h"
+#include "IntraX/Utils/Unique.h"
 #include "Intra/Range/Span.h"
 #include "Intra/Range/Operations.h"
 #include "Intra/Range/Mutation/Copy.h"
@@ -10,8 +10,8 @@
 #include "Intra/Range/Polymorphic/IInput.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
-//INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
+//INTRA_IGNORE_WARN_SIGN_CONVERSION
 
 namespace z_D {
 
@@ -81,8 +81,8 @@ protected:
 
 private:
 	template<typename R> using EnableCondition = Requires<
-		CConvertibleTo<TReturnValueTypeOfAs<R>, T> &&
-		CAsInputRange<R> &&
+		CConvertibleTo<TListValueRef<R>, T> &&
+		CList<R> &&
 		!CSameIgnoreCVRef<R, InputRange>
 	>;
 

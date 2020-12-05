@@ -7,10 +7,10 @@
 #include "Intra/Range/Operations.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_ASSIGN_IMPLICITLY_DELETED
+INTRA_IGNORE_WARN_ASSIGN_IMPLICITLY_DELETED
 template<typename... Ranges> struct RoundRobin
 {
-	static_assert(VAll(CInputRange<Ranges>...));
+	static_assert(VAll(CRange<Ranges>...));
 	static constexpr bool IsAnyInstanceFinite = VAll(CFiniteRange<Ranges>...);
 
 	RoundRobin() = default;

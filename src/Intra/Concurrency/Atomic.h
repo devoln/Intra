@@ -1,323 +1,618 @@
 ﻿#pragma once
 
-#include "Intra/Core.h"
-
-#define INTRA_LIBRARY_ATOMIC_None 0
-#define INTRA_LIBRARY_ATOMIC_MSVC 1
-#define INTRA_LIBRARY_ATOMIC_GNU 2
-#define INTRA_LIBRARY_ATOMIC_Cpp11 3
-
-//#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_GNU
-
-#ifndef INTRA_LIBRARY_ATOMIC
-
-#if defined(_MSC_VER) && (!defined(__clang__) || defined(__c2__))
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_MSVC
-#elif defined(__Emscripten__) && !defined(__EMSCRIPTEN_PTHREADS__)
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_None
-#else
-#define INTRA_LIBRARY_ATOMIC INTRA_LIBRARY_ATOMIC_GNU
-#endif
-
-#endif
-
-#if(INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None)
+#include "Intra/Type.h"
 
 INTRA_BEGIN
-//! Это перечисление описывает, как должен быть упорядочен обычный (неатомарный) доступ к памяти по отношению к атомарной операции.
+
 enum class MemoryOrder
 {
-	//! Никаких ограничений на порядок к доступу памяти не накладывается.
-	//! Гарантируется только атомарность операции.
-	//! Чаще всего применяется, когда нужна атомарность самой переменной,
-	//! и эта переменная не используется для синхронизации других общих данных.
+	/// There are no synchronization or ordering constraints imposed on other reads or writes,
+	/// only this operation's atomicity is guaranteed.
 	Relaxed,
 
+	/// No reads or writes in the current thread dependent on the value currently loaded can be reordered before this load.
+	/// Writes to data-dependent variables in other threads that release the same atomic variable are visible in the current thread.
 	Consume,
 
+	/// No reads or writes in the current thread can be reordered before this load.
+	/// All writes in other threads that release the same atomic variable are visible in the current thread.
 	Acquire,
 
+	/// no reads or writes in the current thread can be reordered after this store.
+	/// All writes in the current thread are visible in other threads that acquire the same atomic variable
+	/// and writes that carry a dependency into the atomic variable become visible in other threads that consume the same atomic.
 	Release,
 
-	//! Комбинация Acquire и Release.
+	/// No memory reads or writes in the current thread can be reordered before or after this store.
+	/// All writes in other threads that release the same atomic variable are visible before the modification
+	/// and the modification is visible in other threads that acquire the same atomic variable.
 	AcquireRelease,
 
-	//! Все ограничения AcquireRelease, а также
-	//! существует единый общий порядок, при котором все потоки видят все изменения.
-	//! Является наиболее интуитивно понятным, но препятствует оптимизации.
+	/// Imposes all the constraints of the modes above, plus there is a single total order in which all threads observe all modifications.
 	SequentiallyConsistent
 };
 
-template<typename T> class AtomicBase
-{
-	AtomicBase(const AtomicBase&) = delete;
-	AtomicBase& operator=(const AtomicBase&) = delete;
-public:
-	AtomicBase() noexcept: mValue{} {}
-	AtomicBase(T val) noexcept: mValue{val} {}
-
-	//! @defgroup AtomicBase_Get
-	//! Возвращает текущее значение.
-	//!@{
-	INTRA_FORCEINLINE T Get() const noexcept;
-	INTRA_FORCEINLINE T GetRelaxed() const noexcept;
-	INTRA_FORCEINLINE T GetConsume() const noexcept;
-	INTRA_FORCEINLINE T GetAcquire() const noexcept;
-	//!@}
-
-
-	
-	//! @defgroup AtomicBase_GetSet
-	//! Атомарно устанавливает новое значение и возвращает предыдущее.
-	//!@{
-	INTRA_FORCEINLINE T GetSet(T val) noexcept;
-	INTRA_FORCEINLINE T GetSetRelaxed(T val) noexcept;
-	INTRA_FORCEINLINE T GetSetConsume(T val) noexcept;
-	INTRA_FORCEINLINE T GetSetAcquire(T val) noexcept;
-	INTRA_FORCEINLINE T GetSetRelease(T val) noexcept;
-	INTRA_FORCEINLINE T GetSetAcquireRelease(T val) noexcept;
-	//!@}
-
-	
-	//! @defgroup AtomicBase_Set
-	//! Устанавливает новое значение.
-	//!@{
-	INTRA_FORCEINLINE void Set(T val) noexcept;
-	INTRA_FORCEINLINE void SetRelaxed(T val) noexcept;
-	INTRA_FORCEINLINE void SetRelease(T val) noexcept;
-	//!@}
-
-
-	//! @defgroup AtomicBase_WeakCompareSet
-	//! Атомарно устанавливает значение desired, если текущее значение равно expected (*), иначе записывает в expected текущее значение.
-	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать CompareSet.
-	//!@{
-	INTRA_FORCEINLINE bool WeakCompareSet(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareSetRelaxed(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareSetConsume(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareSetAcquire(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareSetRelease(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareSetAcquireRelease(T expected, T desired) noexcept;
-	//!@}
-
-	//! @defgroup AtomicBase_WeakCompareSet
-	//! Атомарно устанавливает значение desired, если текущее значение равно expected (*), иначе записывает в expected текущее значение.
-	//! * С некоторой вероятностью может не сработать, поэтому нужно вызывать её в цикле или использовать CompareGetSet.
-	//!@{
-	INTRA_FORCEINLINE bool WeakCompareGetSet(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareGetSetRelaxed(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareGetSetConsume(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareGetSetAcquire(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareGetSetRelease(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool WeakCompareGetSetAcquireRelease(T& expected, T desired) noexcept;
-	//!@}
-
-	//! @defgroup AtomicBase_CompareSet
-	//! Атомарно устанавливает значение desired, если текущее значение равно expected, иначе записывает в expected текущее значение.
-	//! На некоторых платформах может быть медленнее, чем WeakCompareSet.
-	//!@{
-	INTRA_FORCEINLINE bool CompareSet(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareSetRelaxed(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareSetConsume(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareSetAcquire(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareSetRelease(T expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareSetAcquireRelease(T expected, T desired) noexcept;
-	//!@}
-
-	//! @defgroup AtomicBase_CompareSet
-	//! Атомарно устанавливает значение desired, если текущее значение равно expected.
-	//! На некоторых платформах может быть медленнее, чем WeakCompareGetSet.
-	//!@{
-	INTRA_FORCEINLINE bool CompareGetSet(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareGetSetRelaxed(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareGetSetConsume(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareGetSetAcquire(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareGetSetRelease(T& expected, T desired) noexcept;
-	INTRA_FORCEINLINE bool CompareGetSetAcquireRelease(T& expected, T desired) noexcept;
-	//!@}
-
-protected:
-#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_Cpp11)
-	std::atomic<T> mValue;
+#if !(defined(__GNUC__) || defined(__clang__))
+//MSVC intrinsic declaration
+namespace z_D { extern "C" {
+void _ReadWriteBarrier();
+#if defined(__arm__) || defined(__aarch64__)
+int16 __iso_volatile_load16(const volatile int16*);
+int32 __iso_volatile_load32(const volatile int32*);
+int64 __iso_volatile_load64(const volatile int64*);
+int8 __iso_volatile_load8(const volatile int8*);
+void __iso_volatile_store16(volatile int16*, int16);
+void __iso_volatile_store32(volatile int32*, int32);
+void __iso_volatile_store64(volatile int64*, int64);
+void __iso_volatile_store8(volatile int8*, int8);
+#define INTRAZ_D_ARM_ONLY_CODE(...) __VA_ARGS__
 #else
-	T mValue;
+#define INTRAZ_D_ARM_ONLY_CODE(...)
 #endif
-};
 
-template<typename T> class AtomicInteger: public AtomicBase<T>
+#define INTRAZ_D_MEMORDER_REPLICATE(macro, ...) macro(__VA_ARGS__,) \
+	INTRAZ_D_ARM_ONLY_CODE(macro(__VA_ARGS__, _acq) macro(__VA_ARGS__, _nf) macro(__VA_ARGS__, _rel))
+#define INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE(macro, ...) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, int64, 64, __VA_ARGS__) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, long, , __VA_ARGS__) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, int16, 16, __VA_ARGS__) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, char, 8, __VA_ARGS__)
+
+#define INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE(T, bits, suffix) \
+	T _InterlockedExchange##bits##suffix(volatile T* target, T value); \
+	T _InterlockedCompareExchange##bits##suffix(volatile T* dst, T exchange, T comparand); \
+	T _InterlockedAnd##bits##suffix(volatile T* val, T mask); \
+	T _InterlockedOr##bits##suffix(volatile T* val, T mask); \
+	T _InterlockedXor##bits##suffix(volatile T* val, T mask); \
+	T _InterlockedExchangeAdd##bits##suffix(volatile T* addend, T value);
+INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE(INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE)
+#undef INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE
+#undef INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE
+#undef INTRAZ_D_MEMORDER_REPLICATE
+
+#ifdef __i386__
+#define INTRAZ_D_INTERLOCKED_OP64(name, arg) \
+inline int64 _Interlocked ## name ## 64(volatile int64* dst, int64 val) noexcept \
+{ \
+	_ReadWriteBarrier(); \
+	int64 oldVal, newVal; \
+	do { \
+		oldVal = *dst; \
+		newVal = val arg; \
+	} while(oldVal != _InterlockedCompareExchange64(dst, newVal, oldVal)); \
+	_ReadWriteBarrier(); \
+	return oldVal; \
+}
+INTRAZ_D_INTERLOCKED_OP64(Exchange,)
+INTRAZ_D_INTERLOCKED_OP64(ExchangeAdd, + oldVal)
+INTRAZ_D_INTERLOCKED_OP64(And, & oldVal)
+INTRAZ_D_INTERLOCKED_OP64(Or, | oldVal)
+INTRAZ_D_INTERLOCKED_OP64(Xor, ^ oldVal)
+#undef INTRAZ_D_INTERLOCKED_OP64
+#endif
+}}
+#endif
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicLoad(const T* ptr) noexcept
 {
-	AtomicInteger(const AtomicInteger&) = delete;
-	AtomicInteger& operator=(const AtomicInteger&) = delete;
+	static_assert(memoryOrder != MemoryOrder::Release &&
+		memoryOrder != MemoryOrder::AcquireRelease);
+	if(!IsConstantEvaluated(*ptr))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_load_n(ptr, int(memoryOrder));
+	#elif defined(_MSC_VER)
+		static_assert(sizeof(T) <= 8, "AtomicLoad is not implemented for this type yet.");
+		TSignedIntMin<sizeof(T)> res;
+		if constexpr(sizeof(T) == 8)
+		{
+		#if defined(__amd64__)
+			res = *(const volatile int64*)ptr;
+		#elif defined(__aarch64__)
+			res = __iso_volatile_load64((const volatile int64*)ptr);
+		#elif defined(__arm__)
+			res = __ldrexd((const volatile int64*)ptr);
+		#else
+			res = _InterlockedOr64((const volatile int64*)ptr, 0);
+			return reinterpret_cast<T&>(res); //return immediately since _InterlockedOr64 already has barriers in its implementation
+		#endif
+		}
+		else
+		{
+		#if defined(__arm__) || defined(__aarch64__)
+			if constexpr(sizeof(T) == 1) res = z_D::__iso_volatile_load8((const volatile int8*)ptr);
+			else if constexpr(sizeof(T) == 2) res = z_D::__iso_volatile_load16((const volatile int16*)ptr);
+			else if constexpr(sizeof(T) == 4) res = z_D::__iso_volatile_load32((const volatile int32*)ptr);
+		#else
+			res = *(const volatile decltype(res)*)ptr;
+		#endif
+		}
+		if constexpr(memoryOrder != MemoryOrder::Relaxed) z_D::_ReadWriteBarrier();
+		return reinterpret_cast<T&>(res);
+	#else
+		static_assert(false);
+	#endif
+	}
+	return *ptr;
+}
+
+#define INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES(templateMacro, suffix) \
+	if constexpr(sizeof(T) == 1) templateMacro(8, suffix, char); \
+	if constexpr(sizeof(T) == 2) templateMacro(16, suffix, short); \
+	if constexpr(sizeof(T) == 4) templateMacro(, suffix, long); \
+	if constexpr(sizeof(T) == 8) templateMacro(64, suffix, int64);
+
+#define INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(templateMacro) \
+	INTRAZ_D_ARM_ONLY_CODE( \
+		if constexpr(memoryOrder == MemoryOrder::Relaxed) {INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES(templateMacro, _nf)} \
+		else if constexpr(memoryOrder <= MemoryOrder::Acquire) {INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES(templateMacro, _acq)} \
+		else if constexpr(memoryOrder == MemoryOrder::Release) {INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES(templateMacro, _rel)} \
+		else ) \
+	{INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES(templateMacro,)}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicExchange(T* ptr, T val) noexcept
+{
+	static_assert(memoryOrder == MemoryOrder::Relaxed ||
+		memoryOrder == MemoryOrder::SequentiallyConsistent ||
+		memoryOrder == MemoryOrder::Acquire ||
+		memoryOrder == MemoryOrder::Release ||
+		memoryOrder == MemoryOrder::AcquireRelease);
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_exchange_n(ptr, val, int(memoryOrder));
+	#else
+		static_assert(sizeof(T) <= 8, "AtomicExchange is not implemented for this type yet.");
+		TSignedIntMin<sizeof(T)> res;
+	#define INTRAZ_D_MSVC_IMPL_EXCHANGE(typeSize, suffix, T) res = _InterlockedExchange##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_EXCHANGE)
+	#undef INTRAZ_D_MSVC_IMPL_EXCHANGE
+	}
+	const T prev = *ptr;
+	*ptr = val;
+	return prev;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr void AtomicStore(T* dst, T val) noexcept
+{
+	static_assert(memoryOrder == MemoryOrder::Relaxed ||
+		memoryOrder == MemoryOrder::SequentiallyConsistent ||
+		memoryOrder == MemoryOrder::Release);
+	if(!IsConstantEvaluated(dst, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		__atomic_store_n(dst, val, int(memoryOrder));
+	#else
+		static_assert(sizeof(T) <= 8, "AtomicStore is not implemented for this type yet.");
+		if constexpr(memoryOrder >= MemoryOrder::Release) z_D::_ReadWriteBarrier();
+		if constexpr(sizeof(T) == 8)
+		{
+		#if defined(__amd64__)
+			*(const volatile int64*)ptr = reinterpret_cast<int64&>(val);
+		#elif defined(__aarch64__)
+			z_D::__iso_volatile_store64((volatile int64*)dst, reinterpret_cast<int64&>(val));
+		#else
+			AtomicExchange(dst, val);
+			return;
+		#endif
+		}
+		else
+		{
+		#if defined(__arm__) || defined(__aarch64__)
+			if constexpr(sizeof(T) == 1) z_D::__iso_volatile_store8((volatile int8*)dst, reinterpret_cast<int8&>(val));
+			else if constexpr(sizeof(T) == 2) z_D::__iso_volatile_store16((volatile int16*)dst, reinterpret_cast<int16&>(val));
+			else if constexpr(sizeof(T) == 4) z_D::__iso_volatile_store32((volatile int32*)dst, reinterpret_cast<int32&>(val));
+		#else
+			*dst = val;
+		#endif
+		}
+		if constexpr(memoryOrder == MemoryOrder::SequentiallyConsistent) z_D::_ReadWriteBarrier();
+	#endif
+		return;
+	}
+	*dst = val;
+}
+
+template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent,
+	MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent,
+	bool allowSpuriousFailure = false,
+	typename T>
+constexpr bool AtomicCompareExchange(T* ptr, T* expected, T desired) noexcept
+{
+	static_assert(successMemoryOrder <= failureMemoryOrder);
+	static_assert(failureMemoryOrder != MemoryOrder::Release && failureMemoryOrder != MemoryOrder::AcquireRelease);
+	if(!IsConstantEvaluated(ptr, *ptr, expected, desired))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_compare_exchange_n(ptr, expected, desired, weak, int(successMemoryOrder), int(failureMemoryOrder));
+	#else
+		using TypeForICE = TSelect<long,
+			TSelect<char, T, sizeof(T) == 1>,
+			sizeof(T) == 4>;
+		TypeForICE prev;
+	#define INTRAZ_D_MSVC_IMPL_COMPARE_EXCHANGE(typeSize, suffix, T) prev = _InterlockedCompareExchange##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(desired), *reinterpret_cast<T*>(expected));
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_COMPARE_EXCHANGE)
+	#undef
+		if(reinterpret_cast<T&>(prev) == expected) return true;
+		*expected = reinterpret_cast<T&>(prev);
+		return false;
+	#endif
+	}
+	if(*ptr == *expected)
+	{
+		*ptr = desired; // read-modify-write using successMemoryOrder
+		return true;
+	}
+	// When allowSpuriousFailure is true we may sometimes get here even if *ptr == *expected
+	*expected = *ptr; // read using failureMemoryOrder
+	return false;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T, typename T2>
+constexpr T AtomicFetchAdd(T* ptr, T2 val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_fetch_add(ptr, val, int(memoryOrder));
+	#else
+	#define INTRAZ_D_MSVC_IMPL_ADD(typeSize, suffix, type) return _InterlockedExchangeAdd##typeSize##suffix(reinterpret_cast<type*>(ptr), type(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_ADD)
+	#undef INTRAZ_D_MSVC_IMPL_ADD
+	#endif
+	}
+	if constexpr(CPointer<T>)
+	{
+		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
+		val /= sizeof(**ptr);
+	}
+	const T prev = *ptr;
+	*ptr += val;
+	return prev;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T, typename T2>
+constexpr T AtomicFetchSub(T* ptr, T2 val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_fetch_sub(ptr, val, int(memoryOrder));
+	#else
+	#define INTRAZ_D_MSVC_IMPL_SUB(typeSize, suffix, T) return _InterlockedExchangeAdd##typeSize##suffix(reinterpret_cast<T*>(ptr), -reinterpret_cast<T&>(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_SUB)
+	#undef INTRAZ_D_MSVC_IMPL_SUB
+	#endif
+	}
+	if constexpr(CPointer<T>)
+	{
+		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
+		val /= sizeof(*ptr);
+	}
+	const T prev = *ptr;
+	*ptr -= val;
+	return prev;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicFetchAnd(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_fetch_and(ptr, val, int(memoryOrder));
+	#else
+	#define INTRAZ_D_MSVC_IMPL_AND(typeSize, suffix, T) return _InterlockedAnd##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_AND)
+	#undef INTRAZ_D_MSVC_IMPL_AND
+	#endif
+	}
+	if constexpr(CIntegral<T>)
+	{
+		const T prev = *ptr;
+		*ptr &= val;
+		return prev;
+	}
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicFetchOr(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_fetch_or(ptr, val, int(memoryOrder));
+	#else
+	#define INTRAZ_D_MSVC_IMPL_OR(typeSize, suffix, T) return _InterlockedOr##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_OR)
+	#undef INTRAZ_D_MSVC_IMPL_OR
+	#endif
+	}
+	if constexpr(CIntegral<T>)
+	{
+		const T prev = *ptr;
+		*ptr |= val;
+		return prev;
+	}
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicFetchXor(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_fetch_xor(ptr, val, int(memoryOrder));
+	#else
+	#define INTRAZ_D_MSVC_IMPL_XOR(typeSize, suffix, T) return _InterlockedXor##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(val))
+		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_XOR)
+	#undef INTRAZ_D_MSVC_IMPL_XOR
+	#endif
+	}
+	
+	if constexpr(CIntegral<T>)
+	{
+		const T prev = *ptr;
+		*ptr ^= val;
+		return prev;
+	}
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+#undef INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS
+#undef INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES
+#undef INTRAZ_D_ARM_ONLY_CODE
+
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T, typename T2>
+constexpr T AtomicAddFetch(T* ptr, T2 val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_add_fetch(ptr, val, int(memoryOrder));
+	#else
+		return AtomicFetchAdd<memoryOrder>(ptr, val) + val;
+	#endif
+	}
+	if constexpr(CPointer<T>)
+	{
+		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
+		val /= sizeof(*ptr);
+	}
+	return *ptr += val;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T, typename T2>
+constexpr T AtomicSubFetch(T* ptr, T2 val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_sub_fetch(ptr, val, int(memoryOrder));
+	#else
+		return AtomicFetchSub<memoryOrder>(ptr, val) - val;
+	#endif
+	}
+	if constexpr(CPointer<T>)
+	{
+		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
+		val /= sizeof(*ptr);
+	}
+	return *ptr -= val;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicAndFetch(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_and_fetch(ptr, val, int(memoryOrder));
+	#else
+		return AtomicFetchAnd<memoryOrder>(ptr, val) & val;
+	#endif
+	}
+	if constexpr(CIntegral<T>) return *ptr &= val;
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicOrFetch(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_or_fetch(ptr, val, int(memoryOrder));
+	#else
+		return AtomicFetchOr<memoryOrder>(ptr, val) | val;
+	#endif
+	}
+	if constexpr(CIntegral<T>) return *ptr |= val;
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr T AtomicXorFetch(T* ptr, T val)
+{
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_xor_fetch(ptr, val, int(memoryOrder));
+	#else
+		return AtomicFetchXor<memoryOrder>(ptr, val) ^ val;
+	#endif
+	}
+	if constexpr(CIntegral<T>) return *ptr ^= val;
+	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr bool AtomicFlagGetSet(T* ptr)
+{
+	static_assert(CAnyOf<T, bool, char, sbyte, byte>);
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_test_and_set(ptr, int(memoryOrder));
+	#else
+		return !!AtomicExchange<memoryOrder>(ptr, true);
+	#endif
+	}
+	const bool res = !!*ptr;
+	*ptr = true;
+	return res;
+}
+
+template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
+constexpr void AtomicFlagReset(T* ptr)
+{
+	static_assert(CAnyOf<T, bool, char, sbyte, byte>);
+	static_assert(memoryOrder != MemoryOrder::Consume &&
+		memoryOrder != MemoryOrder::Acquire &&
+		memoryOrder != MemoryOrder::AcquireRelease);
+	if(!IsConstantEvaluated(ptr, *ptr, val))
+	{
+	#if defined(__GNUC__) || defined(__clang__)
+		return __atomic_clear(ptr, int(memoryOrder));
+	#else
+		return AtomicStore<memoryOrder>(ptr, false);
+	#endif
+	}
+	*ptr = false;
+}
+
+template<typename T> class Atomic
+{
+	Atomic(const Atomic&) = delete;
+	Atomic& operator=(const Atomic&) = delete;
 public:
-	AtomicInteger(T value = T()): AtomicBase<T>(value) {}
+	constexpr Atomic() noexcept: mValue{} {}
+	constexpr Atomic(T val) noexcept: mValue{val} {}
 
-	//! @defgroup AtomicInteger_GetAdd
-	//! Прибавляет число к теущему значению и возвращает предыдущее значение.
-	//!@{
-	INTRA_FORCEINLINE T GetAdd(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAddRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAddConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAddAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAddRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAddAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// @return current value read atomically with corresponding memory ordering.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Get() const noexcept {return AtomicLoad<mo>(&mValue);}
+	
+	/// Atomically set a new value with corresponding memory ordering.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetSet(T val) noexcept {return AtomicExchange<mo>(&mValue, val);}
 
-	//! @defgroup AtomicInteger_GetSub
-	//! Вычитает число из теущего значения и возвращает предыдущее значение.
-	//!@{
-	INTRA_FORCEINLINE T GetSub(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetSubRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetSubConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetSubAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetSubRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetSubAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically change the flag state to true with corresponding memory ordering.
+	/// This operation is always lock-free on any target architecture.
+	/// @return the previous value of the flag.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr bool GetSet() noexcept requires CSame<T, bool> {return AtomicTestAndSet<mo>(&mValue);}
+	
+	/// Set a new value with corresponding memory ordering.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr void Set(T val) noexcept {return AtomicStore<mo>(&mValue, val);}
 
-	//! @defgroup AtomicInteger_GetAnd
-	//! Применяет побитовое И к теущему значению и возвращает предыдущее значение.
-	//!@{
-	INTRA_FORCEINLINE T GetAnd(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAndRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAndConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAndAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAndRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetAndAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Resets the flag atomically with corresponding memory ordering.
+	/// This operation is always lock-free on any target architecture.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr void Reset() noexcept requires CSame<T, bool> {return AtomicFlagReset<mo>(&mValue);}
 
-	//! @defgroup AtomicInteger_GetOr
-	//! Применяет побитовое ИЛИ к теущему значению и возвращает предыдущее значение.
-	//!@{
-	INTRA_FORCEINLINE T GetOr(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetOrRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetOrConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetOrAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetOrRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetOrAcquireRelease(T rhs) noexcept;
-	//!@}
+	constexpr operator bool() requires CSame<T, bool> {return Get();}
 
-	//! @defgroup AtomicInteger_GetXor
-	//! Применяет побитовое ИСКЛ. ИЛИ к теущему значению и возвращает предыдущее значение.
-	//!@{
-	INTRA_FORCEINLINE T GetXor(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetXorRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetXorConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetXorAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetXorRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T GetXorAcquireRelease(T rhs) noexcept;
-	//!@}
+	constexpr bool IsAlwaysLockFree =
+	#if defined(__GNUC__) || defined(__clang__)
+		__atomic_always_lock_free(sizeof(T), nullptr);
+	#elif defined(__amd64__)
+		sizeof(T) <= 8;
+	#else
+		sizeof(T) <= sizeof(void*);
+	#endif
 
+	/// Atomically set value desired if the current value equals to expected.
+	/// It may spuriously fail by acting as if *this != expected so it should be used in a loop.
+	/// Memory ordering of the operation corresponds to the memory suffix. No suffix means sequentially consistent memory access.
+	template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent, MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent>
+	constexpr bool WeakCompareSet(T expected, T desired) noexcept {return AtomicCompareExchange<successMemoryOrder, failureMemoryOrder, true>(&mValue, &expected, desired);}
 
-	//! @defgroup AtomicInteger_Add
-	//! Прибавляет число к теущему значению и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Add(T rhs) noexcept;
-	INTRA_FORCEINLINE T AddRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T AddConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T AddAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T AddRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T AddAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically set value desired if the current value equals to expected, otherwise set expected to the current value.
+	/// It may spuriously fail by acting as if *this != expected so it should be used in a loop.
+	/// Memory ordering of the operation corresponds to the memory suffix. No suffix means sequentially consistent memory access.
+	template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent, MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent>
+	constexpr bool WeakCompareGetSet(T& expected, T desired) noexcept {return AtomicCompareExchange<successMemoryOrder, failureMemoryOrder, true>(&mValue, &expected, desired);}
 
-	//! @defgroup AtomicInteger_Sub
-	//! Вычитает число из теущего значения и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Sub(T rhs) noexcept;
-	INTRA_FORCEINLINE T SubRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T SubConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T SubAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T SubRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T SubAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically set value desired if the current value equals to expected.
+	/// Memory ordering of the operation corresponds to the memory suffix. No suffix means sequentially consistent memory access.
+	/// On some platforms it may be slower than WeakCompareSet.
+	template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent, MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent>
+	constexpr bool CompareSet(T expected, T desired) noexcept {return AtomicCompareExchange<successMemoryOrder, failureMemoryOrder, false>(&mValue, &expected, desired);}
 
-	//! @defgroup AtomicInteger_And
-	//! Применяет побитовое И к теущему значению и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T And(T rhs) noexcept;
-	INTRA_FORCEINLINE T AndRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T AndConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T AndAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T AndRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T AndAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically set value `desired` if the current value equals to `expected`, otherwise set `expected` to the current value.
+	/// Memory ordering of the operation corresponds to the memory suffix. No suffix means sequentially consistent memory access.
+	template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent, MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent>
+	constexpr bool CompareGetSet(T& expected, T desired) noexcept {return AtomicCompareExchange<successMemoryOrder, failureMemoryOrder, false>(&mValue, &expected, desired);}
 
-	//! @defgroup AtomicInteger_Or
-	//! Применяет побитовое ИЛИ к теущему значению и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Or(T rhs) noexcept;
-	INTRA_FORCEINLINE T OrRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T OrConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T OrAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T OrRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T OrAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically add the argument to the previous value.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetAdd(T rhs) noexcept requires CReal<T> {return AtomicFetchAdd<mo>(&mValue, rhs);}
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetAdd(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchAdd<mo>(&mValue, rhs*sizeof(*mValue));}
 
-	//! @defgroup AtomicInteger_Xor
-	//! Применяет побитовое ИСКЛ. ИЛИ к теущему значению и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Xor(T rhs) noexcept;
-	INTRA_FORCEINLINE T XorRelaxed(T rhs) noexcept;
-	INTRA_FORCEINLINE T XorConsume(T rhs) noexcept;
-	INTRA_FORCEINLINE T XorAcquire(T rhs) noexcept;
-	INTRA_FORCEINLINE T XorRelease(T rhs) noexcept;
-	INTRA_FORCEINLINE T XorAcquireRelease(T rhs) noexcept;
-	//!@}
+	/// Atomically subtract the argument from the previous value.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetSub(T rhs) noexcept requires CReal<T> {return AtomicFetchSub<mo>(&mValue, rhs);}
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetSub(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchSub<mo>(&mValue, rhs*sizeof(*mValue));}
 
+	/// Atomically perform bitwise AND between the argument and the previous value.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetAnd(T rhs) noexcept requires CIntegral<T> {return AtomicFetchAnd<mo>(&mValue, rhs);}
 
-	//! @defgroup AtomicInteger_Increment
-	//! Увеличивает текущее значение на 1 и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Increment() noexcept;
-	INTRA_FORCEINLINE T IncrementRelaxed() noexcept;
-	INTRA_FORCEINLINE T IncrementConsume() noexcept;
-	INTRA_FORCEINLINE T IncrementAcquire() noexcept;
-	INTRA_FORCEINLINE T IncrementRelease() noexcept;
-	INTRA_FORCEINLINE T IncrementAcquireRelease() noexcept;
-	//!@}
+	/// Atomically perform bitwise OR between the argument and the previous value.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetOr(T rhs) noexcept requires CIntegral<T> {return AtomicFetchOr<mo>(&mValue, rhs);}
 
-	//! @defgroup AtomicInteger_Decrement
-	//! Уменьшает текущее значение на 1 и возвращает новое значение.
-	//!@{
-	INTRA_FORCEINLINE T Decrement() noexcept;
-	INTRA_FORCEINLINE T DecrementRelaxed() noexcept;
-	INTRA_FORCEINLINE T DecrementConsume() noexcept;
-	INTRA_FORCEINLINE T DecrementAcquire() noexcept;
-	INTRA_FORCEINLINE T DecrementRelease() noexcept;
-	INTRA_FORCEINLINE T DecrementAcquireRelease() noexcept;
-	//!@}
+	/// Atomically perform bitwise XOR between the argument and the previous value.
+	/// @return the previous value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T GetXor(T rhs) noexcept requires CIntegral<T> {return AtomicFetchXor<mo>(&mValue, rhs);}
 
-	//! @defgroup AtomicInteger_GetIncrement
-	//! Увеличивает текущее значение на 1 и возвращает старое значение.
-	//!@{
-	INTRA_FORCEINLINE T GetIncrement() noexcept;
-	INTRA_FORCEINLINE T GetIncrementRelaxed() noexcept;
-	INTRA_FORCEINLINE T GetIncrementConsume() noexcept;
-	INTRA_FORCEINLINE T GetIncrementAcquire() noexcept;
-	INTRA_FORCEINLINE T GetIncrementRelease() noexcept;
-	INTRA_FORCEINLINE T GetIncrementAcquireRelease() noexcept;
-	//!@}
+	/// Atomically add the argument to the previous value.
+	/// @return the resulting value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Add(T rhs) noexcept requires CReal<T> {return AtomicAddFetch<mo>(&mValue, rhs);}
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Add(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicAddFetch<mo>(&mValue, rhs*sizeof(*mValue));}
 
-	//! @defgroup AtomicInteger_GetDecrement
-	//! Уменьшает текущее значение на 1 и возвращает старое значение.
-	//!@{
-	INTRA_FORCEINLINE T GetDecrement() noexcept;
-	INTRA_FORCEINLINE T GetDecrementRelaxed() noexcept;
-	INTRA_FORCEINLINE T GetDecrementConsume() noexcept;
-	INTRA_FORCEINLINE T GetDecrementAcquire() noexcept;
-	INTRA_FORCEINLINE T GetDecrementRelease() noexcept;
-	INTRA_FORCEINLINE T GetDecrementAcquireRelease() noexcept;
-	//!@}
+	/// Atomically subtract the argument from the previous value.
+	/// @return the resulting value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Sub(T rhs) noexcept requires CReal<T> {return AtomicSubFetch<mo>(&mValue, rhs);}
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Sub(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicSubFetch<mo>(&mValue, rhs*sizeof(*mValue));}
+
+	/// Atomically perform bitwise AND between the argument and the previous value.
+	/// @return the resulting value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T And(T rhs) noexcept requires CIntegral<T> {return AtomicAndFetch<mo>(&mValue, rhs);}
+
+	/// Atomically perform bitwise OR between the argument and the previous value.
+	/// @return the resulting value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Or(T rhs) noexcept requires CIntegral<T> {return AtomicOrFetch<mo>(&mValue, rhs);}
+
+	/// Atomically perform bitwise XOR between the argument and the previous value.
+	/// @return the resulting value.
+	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
+	constexpr T Xor(T rhs) noexcept requires CIntegral<T> {return AtomicXorFetch<mo>(&mValue, rhs);}
+
+private:
+	T mValue;
 };
-
-typedef AtomicBase<bool> AtomicBool;
-typedef AtomicInteger<int> AtomicInt;
-typedef AtomicInteger<int64> AtomicLong;
 
 INTRA_END
-
-#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_MSVC)
-#include "detail/AtomicMSVC.h"
-#elif(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_GNU)
-#include "detail/AtomicGNU.h"
-#endif
-
-#endif

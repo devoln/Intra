@@ -1,5 +1,5 @@
 #if defined(__FreeBSD__)
-#include "Extra/Concurrency/Thread.h"
+#include "IntraX/Concurrency/Thread.h"
 
 #if(INTRA_LIBRARY_THREAD == INTRA_LIBRARY_THREAD_PThread)
 #include <pthread.h>

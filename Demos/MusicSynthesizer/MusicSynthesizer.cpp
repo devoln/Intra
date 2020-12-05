@@ -1,26 +1,26 @@
 ﻿#ifndef __EMSCRIPTEN__
 
-#include "Extra/System/Stopwatch.h"
-#include "Extra/System/Environment.h"
+#include "IntraX/System/Stopwatch.h"
+#include "IntraX/System/Environment.h"
 
 #include "Intra/Range/Polymorphic/InputRange.h"
 #include "Intra/Range/Polymorphic/ForwardRange.h"
 
-#include "Extra/IO/ConsoleOutput.h"
-#include "Extra/IO/ConsoleInput.h"
-#include "Extra/IO/FileSystem.h"
-#include "Extra/IO/FileReader.h"
-#include "Extra/IO/FileWriter.h"
-#include "Extra/IO/Networking.h"
-#include "Extra/IO/Std.h"
+#include "IntraX/IO/ConsoleOutput.h"
+#include "IntraX/IO/ConsoleInput.h"
+#include "IntraX/IO/FileSystem.h"
+#include "IntraX/IO/FileReader.h"
+#include "IntraX/IO/FileWriter.h"
+#include "IntraX/IO/Networking.h"
+#include "IntraX/IO/Std.h"
 
-#include "Extra/Concurrency/Thread.h"
+#include "IntraX/Concurrency/Thread.h"
 
-#include "Extra/Unstable/Audio/AudioBuffer.h"
-#include "Extra/Unstable/Audio/Sound.h"
-#include "Extra/Unstable/Audio/AudioSource.h"
+#include "IntraX/Unstable/Audio/AudioBuffer.h"
+#include "IntraX/Unstable/Audio/Sound.h"
+#include "IntraX/Unstable/Audio/AudioSource.h"
 
-#include "Extra/Unstable/Audio/Sources/Wave.h"
+#include "IntraX/Unstable/Audio/Sources/Wave.h"
 
 
 #include "MusicSynthesizerCommon.h"

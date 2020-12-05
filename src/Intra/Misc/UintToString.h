@@ -11,7 +11,7 @@
 
 INTRA_BEGIN
 namespace Misc {
-constexpr inline index_t UintToString100(unsigned x, char* dst)
+constexpr index_t UintToString100(unsigned x, char* dst)
 {
 	if(x <= 9)
 	{
@@ -31,7 +31,7 @@ constexpr inline index_t UintToString100(unsigned x, char* dst)
 	return 0;
 }
 
-constexpr inline index_t UintToString10000(unsigned x, char* dst)
+constexpr index_t UintToString10000(unsigned x, char* dst)
 {
 	if(x <= 99) return UintToString100(x, dst);
 
@@ -62,7 +62,7 @@ constexpr inline index_t UintToString10000(unsigned x, char* dst)
 	return digits;
 }
 
-constexpr inline index_t UintToString100m(uint32 x, char* dst, index_t digits)
+constexpr index_t UintToString100m(uint32 x, char* dst, index_t digits)
 {
 	const uint32 ll0 = uint32((uint64(x) * 109951163) >> 40); //divide by 10000 (compilers don't always do this optimization themselves)
 	uint64 low = (x - ll0 * 10000) | (uint64(ll0) << 32);
@@ -107,9 +107,9 @@ constexpr inline index_t UintToString100m(uint32 x, char* dst, index_t digits)
 	if(d > 0) *dst = char(byte(ll & 0xFF));
 }
 
-constexpr inline index_t UintDecimalLength9(uint32 x)
+constexpr index_t UintDecimalLength9(uint32 x)
 {
-	INTRA_DEBUG_ASSERT(x < 1000000000);
+	INTRA_PRECONDITION(x < 1000000000);
 	if(x >= 100000000) return 9;
 	if(x >= 10000000) return 8;
 	if(x >= 1000000) return 7;
@@ -121,12 +121,12 @@ constexpr inline index_t UintDecimalLength9(uint32 x)
 	return 1;
 }
 
-constexpr inline index_t UintDecimalLength(uint32 x)
+constexpr index_t UintDecimalLength(uint32 x)
 {
 	return x >= 1000000000? 10: UintDecimalLength9(x);
 }
 
-constexpr inline index_t UintToString(uint32 x, char* dst)
+constexpr index_t UintToString(uint32 x, char* dst)
 {
 	if(x <= 9999) return UintToString10000(x, dst);
 	index_t digits = 0;
@@ -151,7 +151,7 @@ constexpr inline index_t UintToString(uint32 x, char* dst)
 	return digits;
 }
 
-constexpr inline index_t UintToString(uint64 x, char* dst)
+constexpr index_t UintToString(uint64 x, char* dst)
 {
 	if(x <= 0xFFFFFFFF) return UintToString(uint32(x), dst); //boil down to 32-bit version without 64-bit divisions that are slow on 32-bit platforms
 	const uint64 xdiv100m = Div100M(x);
@@ -160,7 +160,7 @@ constexpr inline index_t UintToString(uint64 x, char* dst)
 	return d + UintToString100m(xmod100m, dst + d, 8); //this function allows fixed number width = 8
 }
 
-constexpr inline void UIntToHexString(uint32 num, char* dst, bool lowerAlpha)
+constexpr void UIntToHexString(uint32 num, char* dst, bool lowerAlpha)
 {
 	uint64 x = num;
 
@@ -198,7 +198,7 @@ constexpr inline void UIntToHexString(uint32 num, char* dst, bool lowerAlpha)
 	Misc::BinarySerializeLE(x, dst);
 }
 
-constexpr inline void UIntToHexString(uint64 num, char* dst, bool lowerAlpha)
+constexpr void UIntToHexString(uint64 num, char* dst, bool lowerAlpha)
 {
 	UIntToHexString(uint32(num >> 32), dst, lowerAlpha);
 	UIntToHexString(uint32(num & 0xFFFFFFFF), dst+8, lowerAlpha);

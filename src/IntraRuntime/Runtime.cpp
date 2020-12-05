@@ -1,24 +1,24 @@
 ﻿#include "Intra/Core.h"
-#include "Extra/System/Runtime.h"
+#include "IntraX/System/Runtime.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
-INTRA_IGNORE_WARNING("pedantic")
+INTRA_IGNORE_WARN("pedantic")
 
 #ifndef INTRA_NO_THREAD_LOCAL_FIX
 // It was necessary on FreeBSD 10, haven't checked newer versions.
 // If it causes multiple definition error for __cxa_thread_atexit, disable this using #define INTRA_NO_THREAD_LOCAL_FIX
-#include "Extra/System/detail/RuntimeThreadLocalFix.hxx"
+#include "IntraX/System/detail/RuntimeThreadLocalFix.hxx"
 #endif
 
 #ifndef INTRA_NO_UNIFIED_MAIN
 // Wrapper that provides the ability to define main function on any platform (defines WinMain or android_main wrapper).
-#include "Extra/System/detail/RuntimeUnifiedMain.hxx"
+#include "IntraX/System/detail/RuntimeUnifiedMain.hxx"
 #endif
 
 
 #if defined(_MSC_VER) && defined(INTRA_MINIMIZE_CRT)
 #define INTRA_NO_FULL_CRT
-#include "Extra/System/detail/RuntimeMsvcrtOldHelper.hxx"
+#include "IntraX/System/detail/RuntimeMsvcrtOldHelper.hxx"
 #endif
 
 #ifdef INTRA_NO_CRT
@@ -34,7 +34,7 @@ INTRA_IGNORE_WARNING("pedantic")
 #endif
 
 #ifdef _MSC_VER
-#include "Extra/System/detail/RuntimeMinMsvcCrtImpl.hxx"
+#include "IntraX/System/detail/RuntimeMinMsvcCrtImpl.hxx"
 #endif
 
 #ifdef _WIN32

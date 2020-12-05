@@ -9,7 +9,7 @@
 #include "Intra/Range/Stream/Spaces.h"
 
 INTRA_BEGIN
-INTRA_IGNORE_WARNING_SIGN_CONVERSION
+INTRA_IGNORE_WARN_SIGN_CONVERSION
 template<typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R>,
@@ -58,7 +58,7 @@ template<typename X, typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
 	CFloatingPoint<X>,
-X> ParseAdvance(R& src, TValueTypeOf<R> decimalSeparator='.')
+X> ParseAdvance(R& src, TRangeValue<R> decimalSeparator='.')
 {
 	X result = 0, pos = 1;
 	bool waspoint = false;
@@ -67,7 +67,7 @@ X> ParseAdvance(R& src, TValueTypeOf<R> decimalSeparator='.')
 
 	for(; !src.Empty(); src.PopFirst())
 	{
-		TValueTypeOf<R> c = src.First();
+		TRangeValue<R> c = src.First();
 		if(c==decimalSeparator && !waspoint)
 		{
 			waspoint=true;
@@ -93,10 +93,10 @@ X> ParseAdvance(R& src)
 	return result;
 }
 
-//! Сопоставляет начало исходного потока src со stringToExpect, игнорируя пробелы в начале src и stringToExpect.
-//! В случае совпадения сдвигает начало src в конец вхождения stringToExpect, а stringToExpect сдвигает в конец, делая его пустым.
-//! В случае несовпадения удаляет только пробелы из начала обоих потоков.
-//! @return Возвращает true в случае совпадения src и stringToExpect.
+/// Сопоставляет начало исходного потока src со stringToExpect, игнорируя пробелы в начале src и stringToExpect.
+/// В случае совпадения сдвигает начало src в конец вхождения stringToExpect, а stringToExpect сдвигает в конец, делая его пустым.
+/// В случае несовпадения удаляет только пробелы из начала обоих потоков.
+/// @return Возвращает true в случае совпадения src и stringToExpect.
 template<typename R, typename CR> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
@@ -133,7 +133,7 @@ template<typename X, typename R,
 	CConsumableRange<AsR> &&
 	CCharRange<AsR> &&
 	CFloatingPoint<X>,
-X> Parse(R&& src, TValueTypeOf<AsR> decimalSeparator = '.')
+X> Parse(R&& src, TRangeValue<AsR> decimalSeparator = '.')
 {
 	auto range = ForwardAsRange<R>(src);
 	return ParseAdvance<X>(range, decimalSeparator);
@@ -141,8 +141,8 @@ X> Parse(R&& src, TValueTypeOf<AsR> decimalSeparator = '.')
 
 template<typename R, typename P1, typename P2> constexpr Requires<
 	CCharRange<R> &&
-	CCallable<P1, TValueTypeOf<R>> &&
-	CCallable<P2, TValueTypeOf<R>>,
+	CCallable<P1, TRangeValue<R>> &&
+	CCallable<P2, TRangeValue<R>>,
 TTakeResult<R>> ParseIdentifierAdvance(R& src, P1 isNotIdentifierFirstChar, P2 isNotIdentifierChar)
 {
 	TrimLeftAdvance(src, IsHorSpace);
@@ -167,8 +167,8 @@ R&&> operator>>(R&& stream, X&& dst)
 template<typename R, typename CR> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R> &&
-	CAsCharRange<CR>,
-	// && CConst<TValueTypeOfAs<CR>>,
+	CCharList<CR>,
+	// && CConst<TListValue<CR>>,
 R&&> operator>>(R&& stream, CR&& stringToExpect)
 {
 	auto stringToExpectCopy = ForwardAsRange<CR>(stringToExpect);

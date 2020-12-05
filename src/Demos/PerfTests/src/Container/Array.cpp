@@ -14,10 +14,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 #include "Test/PerfSummary.h"
 #include "Test/TestGroup.h"
-#include "Extra/System/Stopwatch.h"
-#include "Extra/Container/Sequential/Array.h"
-#include "Extra/Container/Sequential/String.h"
-#include "Extra/Container/Sequential/List.h"
+#include "IntraX/System/Stopwatch.h"
+#include "IntraX/Container/Sequential/Array.h"
+#include "IntraX/Container/Sequential/String.h"
+#include "IntraX/Container/Sequential/List.h"
 
 
 

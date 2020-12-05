@@ -227,7 +227,7 @@ static_assert(false, "Not implemented!");
 	return N;
 }*/
 
-//! Logarithm for unsigned numbers < 65535
+/// Logarithm for unsigned numbers < 65535
 [[nodiscard]] constexpr inline float Log(float x) {return float(FixedPointLog(unsigned(x * 65536)))/65536.0f;}
 [[nodiscard]] constexpr inline double Log(double x) {return double(FixedPointLog(unsigned(x * 65536)))/65536.0;}
 [[nodiscard]] constexpr inline long double Log(long double x) {return static_cast<long double>(FixedPointLog(unsigned(x * 65536)))/65536.0;}

@@ -11,16 +11,16 @@
 INTRA_BEGIN
 template<typename R, typename OB, typename CB, typename ST, typename CBP, typename RCBP> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
-	CAsNonInfiniteForwardRange<OB> &&
-	CAsNonInfiniteForwardRange<CB> &&
-	CAsNonInfiniteForwardRange<ST> &&
-	CAsFiniteForwardRange<CBP> &&
-	CAsFiniteForwardRange<RCBP>,
+	CNonInfiniteForwardList<OB> &&
+	CNonInfiniteForwardList<CB> &&
+	CNonInfiniteForwardList<ST> &&
+	CFiniteForwardList<CBP> &&
+	CFiniteForwardList<RCBP>,
 TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioIndex,
 	const OB& openingBracket, const CB& closingBracket, const ST& stopToken,
 	const CBP& commentBlocks, const RCBP& recursiveCommentBlocks)
 {
-	typedef TValueTypeOf<R> T;
+	typedef TRangeValue<R> T;
 
 	auto start = range;
 	size_t index = 0;
@@ -95,13 +95,13 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 
 template<typename R, typename OB, typename CB, typename ST> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
-	CAsNonInfiniteForwardRange<OB> &&
-	CAsNonInfiniteForwardRange<CB> &&
-	CAsNonInfiniteForwardRange<ST>,
+	CNonInfiniteForwardList<OB> &&
+	CNonInfiniteForwardList<CB> &&
+	CNonInfiniteForwardList<ST>,
 TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioIndex,
 	const OB& openingBracket, const CB& closingBracket, const ST& stopToken)
 {
-	typedef TValueTypeOf<R> T;
+	typedef TRangeValue<R> T;
 	return TakeRecursiveBlockAdvance(range, counter, ioIndex,
 		openingBracket, closingBracket, stopToken,
 		NullRange<Tuple<NullRange<T>, NullRange<T>>>(),
