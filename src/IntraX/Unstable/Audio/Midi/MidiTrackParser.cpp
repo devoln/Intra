@@ -1,6 +1,6 @@
 #include "MidiTrackParser.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 MidiTrackParser::MidiTrackParser(InputRange<MidiRawEvent> events, MidiTime time):
 	Events(Move(events)), Time(time), DelayTicksPassed(0) {}
 
@@ -112,4 +112,4 @@ void MidiTrackParser::processSystemEvent(MidiDeviceState& state, const MidiRawEv
 	}
 }
 
-INTRA_END
+} INTRA_END

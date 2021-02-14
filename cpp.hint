@@ -1,5 +1,14 @@
 // Hint files help the Visual Studio IDE interpret Visual C++ identifiers
 // such as names of functions and macros.
 // For more information see https://go.microsoft.com/fwlink/?linkid=865984
-#define INTRA_BEGIN namespace IntraX { INTRA_PUSH_ENABLE_USEFUL_WARNINGS INTRA_DISABLE_REDUNDANT_WARNINGS
-#define INTRA_END INTRA_WARNING_POP }
+#define INTRA_BEGIN
+#define INTRA_END
+#define INTRA_DEFINE_SAFE_DECLTYPE
+#define INTRA_DEFINE_SAFE_DECLTYPE_T_ARGS
+#define INTRA_DEFINE_CONCEPT_EXPR
+
+#define INTRA_OPTIMIZE_FUNCTION_END
+#define INTRA_FORCEINLINE_LAMBDA __attribute__((always_inline))
+#define INTRA_FORCEINLINE_LAMBDA
+#define INTRA_FORCEINLINE inline __attribute__((always_inline))
+#define INTRA_FORCEINLINE

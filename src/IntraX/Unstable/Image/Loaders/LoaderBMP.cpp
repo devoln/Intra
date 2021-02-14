@@ -7,7 +7,7 @@
 #include "IntraX/Unstable/Image/AnyImage.h"
 #include "IntraX/Math/Vector2.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 ImageInfo LoaderBMP::GetInfo(IInputStream& stream) const
 {
@@ -31,8 +31,8 @@ ImageInfo LoaderBMP::GetInfo(IInputStream& stream) const
 		hdrPart.bitsPerPixel==4 ||
 		hdrPart.bitsPerPixel==1)
 			fmt = ImageFormat::RGBA8;
-	else fmt = null;
-	return {USVec3(hdrPart.size, 1), fmt, ImageType_2D, 0};
+	else fmt = nullptr;
+	return {U16Vec3(hdrPart.size, 1), fmt, ImageType_2D, 0};
 }
 
 AnyImage LoaderBMP::Load(IInputStream& stream) const
@@ -68,11 +68,11 @@ AnyImage LoaderBMP::Load(IInputStream& stream) const
 
 	//RLE4, RLE8 и встроенный jpeg\png не поддерживаются!
 	if(bmpHdr.Compression!=0 && bmpHdr.Compression!=3)
-		return null;
+		return nullptr;
 
 	//const unsigned colorTableSize=(bmpHdr.bitCount>8 || bmpHdr.bitCount==0)? 0: (1 << bmpHdr.bitCount);
 
-	UBVec4 colorTable[256];
+	U8Vec4 colorTable[256];
 	if(bmpHdr.clrUsed!=0)
 	{
 		RawReadTo(stream, Take(colorTable, index_t(bmpHdr.clrUsed)));
@@ -85,13 +85,13 @@ AnyImage LoaderBMP::Load(IInputStream& stream) const
 		//Если палитра отсутствует, то сделаем её сами из оттенков серого.
 		//Такие случаи вроде бы не были описаны, но paint создаёт такие bmp.
 		for(int i = 0; i < (1 << bmpHdr.bitCount); i++)
-			colorTable[i] = UBVec4(UBVec3(byte(255*i >> bmpHdr.bitCount)), 255);
+			colorTable[i] = U8Vec4(U8Vec3(byte(255*i >> bmpHdr.bitCount)), 255);
 	}
 
 	AnyImage result;
 	result.LineAlignment = 1;
 	result.Info.Type = ImageType_2D;
-	result.Info.Size = USVec3(bmpHdr.sizes, 1);
+	result.Info.Size = U16Vec3(bmpHdr.sizes, 1);
 	if(bmpHdr.Compression == 0)
 	{
 		if(bmpHdr.bitCount == 1 || bmpHdr.bitCount == 4 ||
@@ -103,14 +103,14 @@ AnyImage LoaderBMP::Load(IInputStream& stream) const
 	else result.Info.Format = ImageFormat::RGBA8;
 	result.Data.SetCountUninitialized(index_t(result.Info.CalculateMipmapDataSize(0, result.LineAlignment)));
 
-	if(bytesRead > dataPos) return null;
+	if(bytesRead > dataPos) return nullptr;
 	stream.PopFirstCount(index_t(dataPos - bytesRead));
 	bytesRead = dataPos;
 
 	if(bmpHdr.Compression == 0)
 	{
 		result.SwapRB = (bmpHdr.bitCount == 24 || bmpHdr.bitCount == 32);
-		const USVec2 size = {result.Info.Size.x, result.Info.Size.y};
+		const U16Vec2 size = {result.Info.Size.x, result.Info.Size.y};
 
 		if(bmpHdr.bitCount == 16)
 		{
@@ -136,7 +136,7 @@ AnyImage LoaderBMP::Load(IInputStream& stream) const
 			return result;
 		}
 
-		CSpan<byte> paletteBytes = SpanOfPtr(reinterpret_cast<byte*>(colorTable), sizeof(colorTable));
+		Span<const byte> paletteBytes = SpanOfPtr(reinterpret_cast<byte*>(colorTable), sizeof(colorTable));
 		ReadPalettedPixelDataBlock(stream, paletteBytes, bmpHdr.bitCount,
 			size, result.Info.Format, true, 4, result.LineAlignment, result.Data);
 		return result;
@@ -153,7 +153,7 @@ AnyImage LoaderBMP::Load(IInputStream& stream) const
 		bitCount[k] = Count1Bits(bmpHdr.RgbaMasks[k]);
 		bitPositions[k] = FindBitPosition(bmpHdr.RgbaMasks[k]);
 	}
-	UBVec4* pixels = reinterpret_cast<UBVec4*>(result.Data.End());
+	U8Vec4* pixels = reinterpret_cast<U8Vec4*>(result.Data.End());
 
 	for(unsigned i = 0; i < result.Info.Size.y; i++)
 	{
@@ -195,6 +195,6 @@ bool LoaderBMP::IsValidHeader(const void* header, size_t headerSize) const
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderBMP LoaderBMP::Instance;
 
-INTRA_END
+} INTRA_END
 
 #endif

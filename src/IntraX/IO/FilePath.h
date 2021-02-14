@@ -4,7 +4,7 @@
 #include "Intra/Range/StringView.h"
 #include "IntraX/Container/ForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 void NormalizeSlashesAndSpaces(Span<char>& path);
 String AddTrailingSlash(StringView path);
 StringView RemoveTrailingSlash(StringView path);
@@ -18,4 +18,4 @@ StringView ExtractName(StringView fullPath);
 StringView ExtractExtension(StringView fullPath);
 StringView GetParentPath(StringView path);
 bool IsAbsolutePath(StringView path);
-INTRA_END
+} INTRA_END

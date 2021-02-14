@@ -7,7 +7,7 @@
 
 #include "FastUniform.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Random {
 	
 struct FastUniformNoise

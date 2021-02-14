@@ -65,7 +65,7 @@ FormattedWriter& InitOutput()
 		logger.PushFont({1, 0, 0}, 5, true);
 		logger.Print(System::CrashSignalDesc(signum));
 		logger.PopFont();
-		logger = null;
+		logger = nullptr;
 	};
 
 	logWriter << "Command line arguments:";
@@ -100,21 +100,21 @@ int main()
 	System::InitSignals();
 	auto& output = InitOutput();
 
-	if(System::Environment.CommandLine.Get(1, null) == "-a")
+	if(System::Environment.CommandLine.Get(1, nullptr) == "-a")
 		TestGroup::YesForNestingLevel=0;
 	
-	TestGroup(null, output, "Random number generation", RunRandomPerfTests);
-	if(TestGroup gr{null, output, "Ranges"})
+	TestGroup(nullptr, output, "Random number generation", RunRandomPerfTests);
+	if(TestGroup gr{nullptr, output, "Ranges"})
 	{
 		TestGroup("Polymorphic range performance", RunPolymorphicRangePerfTests);
 	}
-	TestGroup(null, output, "std::string vs String", RunStringPerfTests);
-	TestGroup(null, output, "std::vector и std::deque vs Array", RunContainerPerfTests);
-	TestGroup(null, output, "Associative containers", RunMapPerfTests);
-	TestGroup(null, output, "Serialization and deserialization", RunSerializationPerfTests);
-	TestGroup(null, output, "Sort algorithms", RunSortPerfTests);
+	TestGroup(nullptr, output, "std::string vs String", RunStringPerfTests);
+	TestGroup(nullptr, output, "std::vector и std::deque vs Array", RunContainerPerfTests);
+	TestGroup(nullptr, output, "Associative containers", RunMapPerfTests);
+	TestGroup(nullptr, output, "Serialization and deserialization", RunSerializationPerfTests);
+	TestGroup(nullptr, output, "Sort algorithms", RunSortPerfTests);
 
-	if(System::Environment.CommandLine.Get(1, null) != "-a")
+	if(System::Environment.CommandLine.Get(1, nullptr) != "-a")
 	{
 		ConsoleOut.PrintLine("Press any key to exit...");
 		ConsoleIn.GetChar();

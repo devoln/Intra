@@ -6,7 +6,7 @@
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Map.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #if(INTRA_DISABLED)
 
 static void rearrangeData(Span<cfloat> data)
@@ -151,4 +151,4 @@ void InplaceInverseFFT(Span<float> real, Span<float> imag)
 	CopyTo(Map(imag, normalize), imag);
 	CopyTo(Map(real, normalize), real);
 }
-INTRA_END
+} INTRA_END

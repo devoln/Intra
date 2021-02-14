@@ -6,10 +6,10 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #include <stdlib.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static void INTRA_CRTDECL SignalHandler(int signum)
 {
-	if(CrashHandler != null)
+	if(CrashHandler != nullptr)
 		CrashHandler(signum);
 	if(signum == SIGTERM) exit(1);
 	INTRA_FATAL_ERROR(CrashSignalDesc(signum));
@@ -50,5 +50,5 @@ StringView CrashSignalDesc(int signum)
 	}
 }
 
-void(*CrashHandler)(int signum) = null;
-INTRA_END
+void(*CrashHandler)(int signum) = nullptr;
+} INTRA_END

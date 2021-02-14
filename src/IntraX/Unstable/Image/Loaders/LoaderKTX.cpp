@@ -5,7 +5,7 @@
 #include "IntraX/Unstable/Image/AnyImage.h"
 #include "IntraX/Unstable/Image/Bindings/GLenumFormats.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct KtxHeader
 {
 	unsigned glType, glTypeSize;
@@ -17,11 +17,11 @@ struct KtxHeader
 
 static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 {
-	ImageInfo result = {{0,0,0}, null, ImageType_End, 0};
+	ImageInfo result = {{0,0,0}, nullptr, ImageType_End, 0};
 	if(header.sizes.y == 0 && header.sizes.z == 0) return result; //1D текстуры не поддерживаются
 	if(header.numberOfFaces != 1 && header.numberOfFaces != 6) return result; //Текстуры либо кубические и содержат 6 граней, либо некубические
 	result.Format = GLenumToImageFormat(uint16(header.glInternalFormat));
-	if(result.Format == null) return result;
+	if(result.Format == nullptr) return result;
 	result.MipmapCount = short(header.numberOfMipmapLevels);
 	if(header.sizes.z == 0)
 	{
@@ -33,10 +33,10 @@ static ImageInfo GetImageInfoFromHeader(const KtxHeader& header)
 			if(header.numberOfArrayElements == 0)
 				result.Type = ImageType_Cube;
 			else result.Type = ImageType_CubeArray;
-		else return {{0,0,0}, null, ImageType_End, 0};
+		else return {{0,0,0}, nullptr, ImageType_End, 0};
 	}
 	else result.Type = ImageType_3D;
-	result.Size = Max(USVec3(header.sizes), USVec3(1));
+	result.Size = Max(U16Vec3(header.sizes), U16Vec3(1));
 	return result;
 }
 
@@ -64,12 +64,12 @@ AnyImage LoaderKTX::Load(IInputStream& stream) const
 	stream.PopFirstCount(12); //Пропускаем идентификатор, предполагая, что он уже был проверен
 
 	if(RawRead<unsigned>(stream) != 0x04030201) //Поддерживается только порядок байт файла, совпадающий с порядком байт для платформы
-		return null;
+		return nullptr;
 
 	auto header = RawRead<KtxHeader>(stream);
 	auto info = GetImageInfoFromHeader(header);
 	if(info.Type == ImageType_End)
-		return null;
+		return nullptr;
 
 	AnyImage result;
 	result.LineAlignment = 4;
@@ -104,6 +104,6 @@ AnyImage LoaderKTX::Load(IInputStream& stream) const
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderKTX LoaderKTX::Instance;
-INTRA_END
+} INTRA_END
 
 #endif

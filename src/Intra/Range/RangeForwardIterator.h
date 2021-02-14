@@ -12,7 +12,7 @@ template<typename R> struct RangeForwardIterator
 	typedef index_t difference_type;
 
 	RangeForwardIterator() = default;
-	constexpr RangeForwardIterator(decltype(null)) {}
+	constexpr RangeForwardIterator(decltype(nullptr)) {}
 	constexpr RangeForwardIterator(const R& range): Range(range) {}
 	INTRA_FORCEINLINE INTRA_CONSTEXPR2 RangeForwardIterator& operator++() {Range.PopFirst(); return *this;}
 	[[nodiscard]] INTRA_CONSTEXPR2 INTRA_FORCEINLINE RangeForwardIterator operator++(int) {auto copy = Range; Range.PopFirst(); return copy;}
@@ -21,7 +21,7 @@ template<typename R> struct RangeForwardIterator
 
 	[[nodiscard]] constexpr bool operator==(const RangeForwardIterator& rhs) const {return Range == rhs.Range;}
 	[[nodiscard]] constexpr bool operator!=(const RangeForwardIterator& rhs) const {return !operator==(rhs);}
-	[[nodiscard]] constexpr bool operator==(decltype(null)) const {return Range.Empty();}
+	[[nodiscard]] constexpr bool operator==(decltype(nullptr)) const {return Range.Empty();}
 
 	R Range;
 };

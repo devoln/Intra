@@ -3,7 +3,7 @@
 #include "Intra/Math/Math.h"
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Math {
 
 template<typename T> struct Triangle;
@@ -60,13 +60,13 @@ template<typename T> struct Aabb
 	constexpr T DiagonalSqr() const noexcept {return LengthSqr(OrientedSize());}
 	INTRA_MATH_CONSTEXPR T Diagonal() const noexcept {return Length(OrientedSize());}
 
-	T SqrDistance(const Vector3<T>& pt, Vector3<T>* nearestPoint=null) const;
+	T SqrDistance(const Vector3<T>& pt, Vector3<T>* nearestPoint=nullptr) const;
 
-	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=null) const
+	T Distance(const Vec3& pt, Vector3<T>* nearestPoint=nullptr) const
 	{return T(Sqrt(SqrDistance(pt, nearestPoint)));}
 
 	/// Диаметр вписанной сферы.
-	T MinSizeAxis(int* oAxis=null) const
+	T MinSizeAxis(int* oAxis=nullptr) const
 	{
 		const auto size = Size();
 		T minSize = size.x;
@@ -85,11 +85,11 @@ template<typename T> struct Aabb
 	}
 
 	/// Радиус вписанной сферы.
-	INTRA_FORCEINLINE T MinExtentAxis(int* oAxis=null)
+	INTRA_FORCEINLINE T MinExtentAxis(int* oAxis=nullptr)
 	{return MinSizeAxis(oAxis)/T(2);}
 
 	/// Диаметр описанной сферы.
-	T MaxSizeAxis(size_t* oAxis=null) const
+	T MaxSizeAxis(size_t* oAxis=nullptr) const
 	{
 		const auto size = Size();
 		T maxSize = size.x;
@@ -108,7 +108,7 @@ template<typename T> struct Aabb
 	}
 
 	/// Радиус описанной сферы
-	INTRA_FORCEINLINE T MaxExtentAxis(int* oAxis=null)
+	INTRA_FORCEINLINE T MaxExtentAxis(int* oAxis=nullptr)
 	{return MaxSizeAxis(oAxis)/T(2);}
 
 	/// Возвращает расширенный AABB так, чтобы он включал в себя точку pt.

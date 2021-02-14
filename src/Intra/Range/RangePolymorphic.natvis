@@ -2,7 +2,7 @@
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
   <Type Name="Intra::Range::InputRange&lt;*&gt;">
-    <DisplayString Condition="mInterface.mPtr == nullptr">null</DisplayString>
+    <DisplayString Condition="mInterface.mPtr == nullptr">nullptr</DisplayString>
     <DisplayString>{*mInterface.mPtr}</DisplayString>
     <Expand>
       <ExpandedItem>*mInterface.mPtr</ExpandedItem>
@@ -17,7 +17,7 @@
   </Type>
 
   <Type Name="Intra::Range::OutputRange&lt;*&gt;">
-    <DisplayString Condition="Stream.mPtr == nullptr">null</DisplayString>
+    <DisplayString Condition="Stream.mPtr == nullptr">nullptr</DisplayString>
     <DisplayString>{*Stream.mPtr}</DisplayString>
     <Expand>
       <ExpandedItem>*Stream.mPtr</ExpandedItem>

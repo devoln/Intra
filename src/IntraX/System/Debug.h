@@ -1,11 +1,10 @@
 ﻿#pragma once
 
-#include "Intra/Assert.h"
 #include "Intra/GloballyRegistered.h"
 #include "Intra/Range/StringView.h"
 #include "IntraX/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Print stack trace to the provided buffer.
 /// This function may be not implemented on some platforms and returns empty string.
 /// @param[out] buf Buffer used to hold the result.
@@ -87,7 +86,7 @@ public:
 		Func(func), Info(info) {}
 };
 }
-INTRA_END
+} INTRA_END
 
 
 #ifdef _MSC_VER

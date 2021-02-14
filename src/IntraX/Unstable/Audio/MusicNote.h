@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct MusicNote
 {
 	enum Type: byte {C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B};
@@ -11,7 +11,7 @@ struct MusicNote
 	static const float BasicFrequencies[12];
 
 	INTRA_FORCEINLINE MusicNote(byte octave, Type note): NoteOctave(byte((octave << 4) | byte(note))) {}
-	INTRA_FORCEINLINE MusicNote(decltype(null)=null): NoteOctave(255) {}
+	INTRA_FORCEINLINE MusicNote(decltype(nullptr)=nullptr): NoteOctave(255) {}
 
 	INTRA_FORCEINLINE Type Note() const {return Type(NoteOctave & 15);}
 	INTRA_FORCEINLINE byte Octave() const {return byte(NoteOctave >> 4);}
@@ -19,8 +19,8 @@ struct MusicNote
 	INTRA_FORCEINLINE bool operator==(const MusicNote& rhs) const {return NoteOctave == rhs.NoteOctave;}
 	INTRA_FORCEINLINE bool operator!=(const MusicNote& rhs) const {return !operator==(rhs);}
 	
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return NoteOctave == 255;}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const noexcept {return NoteOctave == 255;}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const noexcept {return !operator==(nullptr);}
 
 	INTRA_FORCEINLINE float Frequency() const {return BasicFrequencies[byte(Note())]*float(1 << Octave());}
 
@@ -28,4 +28,4 @@ struct MusicNote
 	/// Младшие 4 бита - нота, старшие биты - октава, начиная с субконтроктавы.
 	byte NoteOctave;
 };
-INTRA_END
+} INTRA_END

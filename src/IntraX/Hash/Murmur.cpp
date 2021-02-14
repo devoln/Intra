@@ -2,7 +2,7 @@
 #include "IntraX/Utils/Endianess.h"
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static_assert(TargetByteOrder == ByteOrder::LittleEndian, "Murmur hash supports only little endian!");
 
 namespace Hash {
@@ -450,4 +450,4 @@ hash128 Murmur3_128_x64(StringView key, uint32 seed)
 #undef ROTL64
 }
 
-INTRA_END
+} INTRA_END

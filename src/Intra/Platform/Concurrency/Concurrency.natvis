@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <Type Name="Intra::AtomicBase&lt;*&gt;">
+    <DisplayString>{mValue}</DisplayString>
+    <Expand>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::AtomicInteger&lt;*&gt;">
+    <DisplayString>{mValue}</DisplayString>
+    <Expand>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Synchronized&lt;*&gt;">
+    <DisplayString>Synchronized({Value})</DisplayString>
+    <Expand>
+      <Item Name="Value">Value</Item>
+      <Synthetic Name="[Mutex]"><DisplayString></DisplayString></Synthetic>
+      <ExpandedItem>*(Mutex*)this</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::detail::BasicThreadData">
+    <DisplayString Condition="!IsRunning.mValue" Optional="true">Thread(Finished, [{Thread::Handle(this)->Id}] {Name})</DisplayString>
+    <DisplayString Condition="IsInterrupted.mValue" Optional="true">Thread(Interrupted, [{Thread::Handle(this)->Id}] {Name})</DisplayString>
+    <DisplayString Condition="WaitedCondVar != nullptr" Optional="true">Thread(Waiting, [{Thread::Handle(this)->Id}] {Name})</DisplayString>
+    <DisplayString Optional="true">Thread(Running, [{Thread::Handle(this)->Id}] {Name})</DisplayString>
+    
+    <DisplayString Condition="!IsRunning.mValue" Optional="true">Thread({Name}, Finished)</DisplayString>
+    <DisplayString Condition="!IsRunning.mValue._My_val" Optional="true">Thread({Name}, Finished)</DisplayString>
+    <DisplayString Condition="IsInterrupted.mValue" Optional="true">Thread({Name}, Interrupted)</DisplayString>
+    <DisplayString Condition="IsInterrupted.mValue._My_val" Optional="true">Thread({Name}, Interrupted)</DisplayString>
+    <DisplayString Condition="WaitedCondVar != nullptr" Optional="true">Thread({Name}, Waiting)</DisplayString>
+    <DisplayString Condition="IsRunning.mValue" Optional="true">Thread({Name}, Running)</DisplayString>
+    <DisplayString Condition="IsRunning.mValue._My_val" Optional="true">Thread({Name}, Running)</DisplayString>
+    <DisplayString>Thread({Name})</DisplayString>
+    
+    <Expand>
+      <Item Name="Name">Name</Item>
+      <Item Name="Id" Optional="true">((Intra::Thread::Data*)this)->Id</Item>
+      <Item Name="Is Running">IsRunning.mValue</Item>
+      <Item Name="Is Interrupted">IsInterrupted.mValue</Item>
+      <Item Name="Is Force Interruption Disabled" Optional="true">ForceInterruptionDisabled.mValue</Item>
+      <Item Name="Waiting On" Condition="WaitedCondVar != nullptr" Optional="true">*WaitedCondVar</Item>
+      <Item Name="Is Current Thread">(Intra::detail::BasicThreadData*)Current == this</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Thread">
+    <DisplayString Condition="mHandle.mPtr == nullptr">nullptr</DisplayString>
+    <DisplayString>{*(Intra::detail::BasicThreadData*)mHandle.mPtr}</DisplayString>
+    <Expand>
+      <ExpandedItem>*(Intra::detail::BasicThreadData*)mHandle.mPtr</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::TThisThread">
+    <DisplayString Condition="detail::BasicThreadData::Current != nullptr">{*detail::BasicThreadData::Current}</DisplayString>
+    <DisplayString>&lt;Not Intra Thread&gt;</DisplayString>
+    <Expand>
+      <ExpandedItem Condition="detail::BasicThreadData::Current != nullptr">*detail::BasicThreadData::Current</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::Mutex">
+    <DisplayString IncludeView="NumWaiters" Condition="ImplementationType==1" Optional="true">
+      {((-1 - ((RTL_CRITICAL_SECTION*)mData)->LockCount) >> 2) - (((RTL_CRITICAL_SECTION*)mData)->RecursionCount - 1)}
+    </DisplayString>
+    <DisplayString IncludeView="CommaWaiters" Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1" Optional="true">, {*this,view(NumWaiters)} Waiters</DisplayString>
+    <DisplayString IncludeView="CommaWaiters"></DisplayString>
+    <DisplayString Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1 &amp;&amp;
+      detail::BasicThreadData::Current != nullptr &amp;&amp;
+      DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread) == detail::BasicThreadData::Current->Id" Optional="true">
+        Mutex(Locked By ThisThread{*this,view(CommaWaiters)})
+    </DisplayString>
+    <DisplayString Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1" Optional="true">
+      Mutex(Locked{*this,view(CommaWaiters)})
+    </DisplayString>
+    <DisplayString Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount == -1" Optional="true">Mutex(Unlocked)</DisplayString>
+    <DisplayString Condition="mIsLocked" Optional="true">Mutex(Locked)</DisplayString>
+    <DisplayString Condition="!mIsLocked" Optional="true">Mutex(Unlocked)</DisplayString>
+    <DisplayString>Mutex</DisplayString>
+    <Expand>
+      <Item Name="Is Locked" Condition="ImplementationType==1" Optional="true">((RTL_CRITICAL_SECTION*)mData)->LockCount != -1</Item>
+      <Item Name="Owner" Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1 &amp;&amp;
+        (detail::BasicThreadData::Current != nullptr &amp;&amp;
+          DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread) == detail::BasicThreadData::Current->Id ||
+            Thread::ThreadHashTable[DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread) % Thread::HASH_LEN]->Id == DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread))"
+            Optional="true">
+        (Intra::detail::BasicThreadData::Current != nullptr &amp;&amp; DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread) == detail::BasicThreadData::Current->Id)?
+        *Intra::detail::BasicThreadData::Current:
+        *Thread::ThreadHashTable[DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread) % Thread::HASH_LEN]
+      </Item>
+      <Item Name="Owner Id" Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1" Optional="true">
+        DWORD(((RTL_CRITICAL_SECTION*)mData)->OwningThread)
+      </Item>
+      <Synthetic Name="Number Of Waiters" Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mData)->LockCount != -1" Optional="true">
+        <DisplayString>{*this,view(NumWaiters)}</DisplayString>
+      </Synthetic>
+    </Expand>
+  </Type>
+  
+  <Type Name="Intra::RecursiveMutex">
+    <DisplayString>Recursive{*(Mutex*)this}</DisplayString>
+    <Expand>
+      <ExpandedItem>*(Mutex*)this</ExpandedItem>
+      <Item Name="Recursion Depth" Condition="ImplementationType==1 &amp;&amp; ((RTL_CRITICAL_SECTION*)mHandle)->LockCount != -1" Optional="true">
+        ((RTL_CRITICAL_SECTION*)mHandle)->RecursionCount
+      </Item>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::SeparateCondVar">
+    <DisplayString IncludeView="noparens">{mWaiters.Value,view(Length)} Waiters</DisplayString>
+    <DisplayString>SeparateCondVar({*this,view(noparens)})</DisplayString>
+    <Expand>
+      <Synthetic Name="[SeparateCondVar]">
+        <DisplayString Condition="mWaiters.Value.range.End == mWaiters.Value.range.Begin">No threads waiting on this condition variable.</DisplayString>
+        <DisplayString>Waiting Threads:</DisplayString>
+      </Synthetic>
+      <ExpandedItem>mWaiters.Value,view(simple)</ExpandedItem>
+    </Expand>
+  </Type>
+
+  <Type Name="Intra::CondVar">
+    <DisplayString>CondVar({mCondVar,view(noparens)})</DisplayString>
+    <Expand>
+      <ExpandedItem>mCondVar</ExpandedItem>
+      <Synthetic Name="[Mutex]"><DisplayString></DisplayString></Synthetic>
+      <ExpandedItem>*(Mutex*)this</ExpandedItem>
+    </Expand>
+  </Type>
+
+</AutoVisualizer>

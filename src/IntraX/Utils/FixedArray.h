@@ -4,14 +4,14 @@
 #include "Intra/Assert.h"
 #include "Intra/Range/Span.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /** Dynamic-allocated array of fixed length.
   It does not reserve space and can't add elements.
 */
 template<typename T> struct FixedArray
 {
 	FixedArray() = default;
-	FixedArray(decltype(null)) noexcept {}
+	FixedArray(decltype(nullptr)) noexcept {}
 	
 	/** Creates FixedArray by transferring it Span of preallocated and constructed elements.
 	  Warning:
@@ -40,9 +40,9 @@ template<typename T> struct FixedArray
 	  and non-POD types are initialized using their default constructors.
 	*/
 	FixedArray(Index length):
-		mData(SpanOfPtr(size_t(length) == 0? null: new T[size_t(length)](), length)) {}
+		mData(SpanOfPtr(size_t(length) == 0? nullptr: new T[size_t(length)](), length)) {}
 	
-	FixedArray(CSpan<T> values):
+	FixedArray(Span<const T> values):
 		FixedArray(values.Length()) {values.CopyTo(mData);}
 	
 	FixedArray(InitializerList<T> values):
@@ -68,22 +68,22 @@ template<typename T> struct FixedArray
 	}
 
 	FixedArray(FixedArray&& rhs) noexcept:
-		mData(rhs.mData) {rhs.mData = null;}
+		mData(rhs.mData) {rhs.mData = nullptr;}
 
 	FixedArray& operator=(FixedArray&& rhs) noexcept
 	{
 		if(this == &rhs) return *this;
 		delete[] mData.Data();
 		mData = rhs.mData;
-		rhs.mData = null;
+		rhs.mData = nullptr;
 		return *this;
 	}
 
 
-	FixedArray& operator=(decltype(null)) noexcept
+	FixedArray& operator=(decltype(nullptr)) noexcept
 	{
 		delete[] mData.Data();
-		mData = null;
+		mData = nullptr;
 		return *this;
 	}
 
@@ -115,14 +115,14 @@ template<typename T> struct FixedArray
 	Owner<Span<T>> ReleaseOwnership()
 	{
 		Span<T> result = mData;
-		mData = null;
+		mData = nullptr;
 		return result;
 	}
 
-	bool operator==(decltype(null)) const {return mData.Empty();}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator==(decltype(nullptr)) const {return mData.Empty();}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 private:
 	Owner<Span<T>> mData;
 };
-INTRA_END
+} INTRA_END

@@ -5,7 +5,7 @@
 #include "IntraX/Container/Sequential/Array.h"
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct FontDesc
 {
 	/// Font color. Negative value means the default color.
@@ -154,6 +154,6 @@ public:
 	}
 
 	size_t mSpoilerNesting = 0;
-	Array<FontDesc> mFontStack;
+	ArrayList<FontDesc> mFontStack;
 };
-INTRA_END
+} INTRA_END

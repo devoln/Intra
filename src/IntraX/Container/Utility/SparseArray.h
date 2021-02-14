@@ -3,17 +3,17 @@
 #include "SparseRange.h"
 #include "IntraX/Memory/Allocator.hh"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T, typename Index = size_t> class SparseArray
 {
 public:
-	INTRA_FORCEINLINE SparseArray(decltype(null)=null) {}
+	INTRA_FORCEINLINE SparseArray(decltype(nullptr)=nullptr) {}
 	explicit SparseArray(Index size): mData(AllocateRangeUninitialized(size)) {}
 
 	SparseArray(InitializerList<T> values):
-		SparseArray(CSpan<T>(values)) {}
+		SparseArray(Span<const T>(values)) {}
 	
-	SparseArray(CSpan<T> values): mData(values.Length())
+	SparseArray(Span<const T> values): mData(values.Length())
 	{
 		for(auto& v: values) Add(v);
 	}
@@ -23,7 +23,7 @@ public:
 	/// Переместить элемент в массив.
 	/// @param[in] val Перемещаемый элемент.
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	INTRA_FORCEINLINE T& Add(T&& val, Index* oIndex=null)
+	INTRA_FORCEINLINE T& Add(T&& val, Index* oIndex=nullptr)
 	{
 		check_space();
 		return mData.Add(Move(val), oIndex);
@@ -32,7 +32,7 @@ public:
 	/// Добавить копию элемента в массив.
 	/// @param[in] val Копируемый элемент.
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	INTRA_FORCEINLINE T& Add(const T& val, Index* oIndex = null)
+	INTRA_FORCEINLINE T& Add(const T& val, Index* oIndex = nullptr)
 	{
 		check_space();
 		return mData.Add(val, oIndex);
@@ -41,7 +41,7 @@ public:
 	/// Сконструировать элемент в массиве.
 	/// @param[in] args Параметры конструктора.
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	template<typename... Args> INTRA_FORCEINLINE T& Emplace(Args&&... args, Index* oIndex = null)
+	template<typename... Args> INTRA_FORCEINLINE T& Emplace(Args&&... args, Index* oIndex = nullptr)
 	{
 		check_space();
 		mData.Emplace(Forward<Args>(args)..., oIndex);
@@ -73,8 +73,8 @@ public:
 
 	INTRA_FORCEINLINE size_t Capacity() const {return size_t(mData.Capacity());}
 
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !Empty();}
 
 private:
 	SparseRange<T, Index> mData;
@@ -94,4 +94,4 @@ private:
 	SparseArray(const SparseArray&) = delete;
 	SparseArray& operator=(const SparseArray&) = delete;
 };
-INTRA_END
+} INTRA_END

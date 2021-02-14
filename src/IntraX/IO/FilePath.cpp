@@ -7,7 +7,7 @@
 #include "Intra/Range/Span.h"
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 void NormalizeSlashesAndSpaces(Span<char>& path)
 {
 	TrimAdvance(path, IsSpace);
@@ -28,7 +28,7 @@ void SplitPath(StringView fullPath, StringView* oDirectoryPath,
 	if(oExtension)
 	{
 		if(extLength<fullPath.Length()) *oExtension = fullPath.Tail(extLength);
-		else *oExtension = null;
+		else *oExtension = nullptr;
 	}
 	index_t nameLength = 0;
 	StringView directoryWithSlash = Retro(Find(Retro(pathWithoutExt), IsPathSeparator, OptRef(nameLength)));
@@ -40,28 +40,28 @@ void SplitPath(StringView fullPath, StringView* oDirectoryPath,
 StringView ExtractDirectoryPath(StringView fullPath)
 {
 	StringView result;
-	SplitPath(fullPath, &result, null, null, null);
+	SplitPath(fullPath, &result, nullptr, nullptr, nullptr);
 	return result;
 }
 
 StringView ExtractNameWithoutExtension(StringView fullPath)
 {
 	StringView result;
-	SplitPath(fullPath, null, &result, null, null);
+	SplitPath(fullPath, nullptr, &result, nullptr, nullptr);
 	return result;
 }
 
 StringView ExtractName(StringView fullPath)
 {
 	StringView result;
-	SplitPath(fullPath, null, null, null, &result);
+	SplitPath(fullPath, nullptr, nullptr, nullptr, &result);
 	return result;
 }
 
 StringView ExtractExtension(StringView fullPath)
 {
 	StringView result;
-	SplitPath(fullPath, null, null, &result, null);
+	SplitPath(fullPath, nullptr, nullptr, &result, nullptr);
 	return result;
 }
 
@@ -69,7 +69,7 @@ StringView ExtractExtension(StringView fullPath)
 String ReplaceExtension(StringView fullPath, StringView newExtension)
 {
 	StringView path, file;
-	SplitPath(fullPath, &path, &file, null, null);
+	SplitPath(fullPath, &path, &file, nullptr, nullptr);
 	return path + file + newExtension;
 }
 */
@@ -91,4 +91,4 @@ bool IsAbsolutePath(StringView path)
 
 	return false;
 }
-INTRA_END
+} INTRA_END

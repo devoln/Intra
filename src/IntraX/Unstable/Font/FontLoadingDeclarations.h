@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-/// Используемая библиотека для загрузки TValue<true> шрифтов
+/// Используемая библиотека для загрузки TrueType шрифтов
 #define INTRA_LIBRARY_FONT_LOADING_Dummy 0
 #define INTRA_LIBRARY_FONT_LOADING_STB 1
 #define INTRA_LIBRARY_FONT_LOADING_FreeType 2
@@ -21,11 +21,11 @@
 
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace FontLoadingAPI {
 
 struct Font;
 typedef Font* FontHandle;
 
 }
-INTRA_END
+} INTRA_END

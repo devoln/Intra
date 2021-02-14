@@ -2,7 +2,7 @@
 
 #include "Intra/Range/StringView.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class DLL
 {
 	struct Data;
@@ -10,19 +10,19 @@ class DLL
 public:
 	typedef Data* NativeHandle;
 
-	DLL(decltype(null) = null): mHandle(null) {}
-	DLL(DLL&& rhs): mHandle(rhs.mHandle) {rhs.mHandle = null;}
+	DLL(decltype(nullptr) = nullptr): mHandle(nullptr) {}
+	DLL(DLL&& rhs): mHandle(rhs.mHandle) {rhs.mHandle = nullptr;}
 
 	DLL& operator=(DLL&& rhs)
 	{
 		if(this == &rhs) return *this;
 		Unload();
 		mHandle = rhs.mHandle;
-		rhs.mHandle = null;
+		rhs.mHandle = nullptr;
 		return *this;
 	}
 
-	INTRA_FORCEINLINE DLL& operator=(decltype(null)) {Unload(); return *this;}
+	INTRA_FORCEINLINE DLL& operator=(decltype(nullptr)) {Unload(); return *this;}
 	
 	~DLL() {Unload();}
 
@@ -41,4 +41,4 @@ public:
 
 	INTRA_FORCEINLINE NativeHandle GetNativeHandle() const {return mHandle;}
 };
-INTRA_END
+} INTRA_END

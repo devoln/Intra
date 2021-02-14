@@ -2,7 +2,7 @@
 #include "Intra/Range/StringView.h"
 #include "IntraX/Container/Associative/HashMap.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #pragma pack(push, 1)
 struct FormatInfo
 {
@@ -127,7 +127,7 @@ static const FormatInfo uncompressedFormatsInfoTable[] =
 	//Packed
 	{2,0,1,0,0,0,0,0,0,2,0,0,32,ValueType::Vec11f11f10f, ImageFormat::RGBf, "R11G11B10f"},
 	{2,0,1,0,0,0,0,0,0,3,1,0,32,ValueType::UVec9995, ImageFormat::RGBf, "RGB9E5"},
-	{2,0,0,0,0,0,0,0,0,3,1,0,32,ValueType::UBVec4, ImageFormat::RGBf, "RGBE8"},
+	{2,0,0,0,0,0,0,0,0,3,1,0,32,ValueType::U8Vec4, ImageFormat::RGBf, "RGBE8"},
 
 
 
@@ -136,15 +136,15 @@ static const FormatInfo uncompressedFormatsInfoTable[] =
 
 	//8 bit
 	{3,0,0,0,0,0,0,0,0,0,0,0,8,  ValueType::Byte, ImageFormat::Ru, "Red8u"},
-	{3,0,0,0,0,0,0,0,0,1,0,0,16, ValueType::UBVec2, ImageFormat::RGu, "RG8u"},
-	{3,0,0,0,0,0,0,0,0,2,0,0,24, ValueType::UBVec3, ImageFormat::RGBu, "RGB8u"},
-	{3,0,0,0,0,0,1,0,0,3,0,0,32, ValueType::UBVec4, ImageFormat::RGBAu, "RGBA8u"},
+	{3,0,0,0,0,0,0,0,0,1,0,0,16, ValueType::U8Vec2, ImageFormat::RGu, "RG8u"},
+	{3,0,0,0,0,0,0,0,0,2,0,0,24, ValueType::U8Vec3, ImageFormat::RGBu, "RGB8u"},
+	{3,0,0,0,0,0,1,0,0,3,0,0,32, ValueType::U8Vec4, ImageFormat::RGBAu, "RGBA8u"},
 
 	//16 bit
 	{3,0,0,0,0,0,0,0,0,0,0,0,16,ValueType::UShort, ImageFormat::Ru, "Red16u"},
-	{3,0,0,0,0,0,0,0,0,1,0,0,32,ValueType::USVec2, ImageFormat::RGu, "RG16u"},
-	{3,0,0,0,0,0,0,0,0,2,0,0,48,ValueType::USVec3, ImageFormat::RGBu, "RGB16u"},
-	{3,0,0,0,0,0,1,0,0,3,0,0,64,ValueType::USVec4, ImageFormat::RGBAu, "RGBA16u"},
+	{3,0,0,0,0,0,0,0,0,1,0,0,32,ValueType::U16Vec2, ImageFormat::RGu, "RG16u"},
+	{3,0,0,0,0,0,0,0,0,2,0,0,48,ValueType::U16Vec3, ImageFormat::RGBu, "RGB16u"},
+	{3,0,0,0,0,0,1,0,0,3,0,0,64,ValueType::U16Vec4, ImageFormat::RGBAu, "RGBA16u"},
 
 
 	//32 bit
@@ -160,15 +160,15 @@ static const FormatInfo uncompressedFormatsInfoTable[] =
 
 	//8 bit
 	{3,1,0,0,0,0,0,0,0,0,0,0,8, ValueType::SByte, ImageFormat::Ri, "Red8i"},
-	{3,1,0,0,0,0,0,0,0,1,0,0,16, ValueType::SBVec2, ImageFormat::RGi, "RG8i"},
-	{3,1,0,0,0,0,0,0,0,2,0,0,24, ValueType::SBVec3, ImageFormat::RGBi, "RGB8i"},
-	{3,1,0,0,0,0,1,0,0,3,0,0,32, ValueType::SBVec4, ImageFormat::RGBAi, "RGBA8i"},
+	{3,1,0,0,0,0,0,0,0,1,0,0,16, ValueType::I8Vec2, ImageFormat::RGi, "RG8i"},
+	{3,1,0,0,0,0,0,0,0,2,0,0,24, ValueType::I8Vec3, ImageFormat::RGBi, "RGB8i"},
+	{3,1,0,0,0,0,1,0,0,3,0,0,32, ValueType::I8Vec4, ImageFormat::RGBAi, "RGBA8i"},
 
 	//16 bit
 	{3,1,0,0,0,0,0,0,0,0,0,0,16,ValueType::Short, ImageFormat::Ri, "Red16i"},
-	{3,1,0,0,0,0,0,0,0,1,0,0,32,ValueType::SVec2, ImageFormat::RGi, "RG16i"},
-	{3,1,0,0,0,0,0,0,0,2,0,0,48,ValueType::SVec3, ImageFormat::RGBi, "RGB16i"},
-	{3,1,0,0,0,0,1,0,0,3,0,0,64,ValueType::SVec4, ImageFormat::RGBAi, "RGBA16i"},
+	{3,1,0,0,0,0,0,0,0,1,0,0,32,ValueType::I16Vec2, ImageFormat::RGi, "RG16i"},
+	{3,1,0,0,0,0,0,0,0,2,0,0,48,ValueType::I16Vec3, ImageFormat::RGBi, "RGB16i"},
+	{3,1,0,0,0,0,1,0,0,3,0,0,64,ValueType::I16Vec4, ImageFormat::RGBAi, "RGBA16i"},
 
 	//32 bit
 	{3,1,0,0,0,0,0,0,0,0,0,0,32,ValueType::Int, ImageFormat::Ri, "Red32i"},
@@ -381,7 +381,7 @@ ImageFormat ImageFormat::FromString(StringView str)
 {
 	INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 	static HashMap<StringView, ImageFormat> formatTable;
-	if(formatTable == null)
+	if(formatTable == nullptr)
 	{
 		for(uint16 i = 0; i < ImageFormat::FirstOfCompressed; i++)
 			formatTable[ImageFormat(i).ToString()] = ImageFormat(i);
@@ -470,4 +470,4 @@ ImageFormat ImageFormat::ToNonSRGB() const
 	return *this;
 }
 
-INTRA_END
+} INTRA_END

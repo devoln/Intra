@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Container/Tuple.h"
 #include "Intra/EachField.h"
 #include "Intra/Range/StringView.h"
@@ -17,7 +17,7 @@
 #include "Intra/Range/Zip.h"
 #include "Intra/Range/Mutation/ReplaceSubrange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 template<typename O> class GenericTextSerializer;
 
@@ -25,7 +25,7 @@ template<typename O> struct GenericTextSerializerStructVisitor
 {
 	GenericTextSerializer<O>* Me;
 	bool Began;
-	CSpan<const char*> FieldNames;
+	Span<const const char*> FieldNames;
 	TextSerializerParams::TypeFlags Type;
 
 	template<typename T> GenericTextSerializerStructVisitor<O>& operator()(T&& t);
@@ -89,20 +89,20 @@ public:
 
 		CopyToAdvanceByOne(Lang.LeftAssignmentOperator, Output);
 
-		if(Params.UseAssignmentSpaces && Lang.LeftAssignmentOperator!=null)
+		if(Params.UseAssignmentSpaces && Lang.LeftAssignmentOperator!=nullptr)
 			Output.Put(' ');
 	}
 
 	void FieldAssignmentEnding(StringView name)
 	{
-		INTRA_PRECONDITION(name != null);
+		INTRA_PRECONDITION(name != nullptr);
 
 		if(Params.UseAssignmentSpaces)
 			Output.Put(' ');
 
 		CopyToAdvanceByOne(Lang.RightAssignmentOperator, Output);
 
-		if(Params.UseAssignmentSpaces && Lang.RightAssignmentOperator!=null)
+		if(Params.UseAssignmentSpaces && Lang.RightAssignmentOperator!=nullptr)
 			Output.Put(' ');
 
 		CopyToAdvanceByOne(Lang.RightFieldNameBeginQuote, Output);
@@ -130,11 +130,11 @@ public:
 	template<typename Tuple> Requires<
 		CHasForEachField<Tuple, GenericTextSerializerStructVisitor<O>> &&
 		!CHasReflectionFieldNamesMethod<Tuple>
-	> SerializeTuple(Tuple&& src, CSpan<StringView> fieldNames = null)
+	> SerializeTuple(Tuple&& src, Span<const StringView> fieldNames = nullptr)
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
 		if((Params.ValuePerLine & TextSerializerParams::TypeFlags_Tuple) == 0)
-			fieldNames = null;
+			fieldNames = nullptr;
 		GenericTextSerializerStructVisitor<O> visitor = {this,
 			false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
 		ForEachField(src, visitor);
@@ -195,7 +195,7 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T&& 
 	auto fieldNames = TRemoveConstRef<T>::ReflectionFieldNames();
 	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
 	if(!serializer.Params.FieldAssignments && !serializer.Lang.RequireFieldAssignments)
-		fieldNames = null;
+		fieldNames = nullptr;
 	GenericTextSerializerStructVisitor<O> visitor = {&serializer,
 		false, fieldNames, TextSerializerParams::TypeFlags_Struct};
 	ForEachField(Forward<T>(src), visitor);
@@ -216,7 +216,7 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, Tupl
 
 /// Сериализация целых чисел
 template<typename T, typename O> Requires<
-	CIntegral<T>,
+	CBasicIntegral<T>,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
 	serializer.Output << v;
@@ -225,7 +225,7 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 
 /// Сериализация чисел с плавающей запятой
 template<typename T, typename O> Requires<
-	CFloatingPoint<T>,
+	CBasicFloatingPoint<T>,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
 	ToString(serializer.Output, v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
@@ -253,11 +253,11 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& 
 	{
 		typedef TListValue<R> T;
 		
-		bool TypeIsSimpleArray = CArithmetic<T> ||
-			CPointer<T> || CCharList<T>;
+		bool TypeIsSimpleArray = CBasicArithmetic<T> ||
+			CBasicPointer<T> || CCharList<T>;
 
 		const int nestLevelUp = int(!TypeIsSimpleArray &&
-			serializer.Lang.ArrayOpen!=null && serializer.Lang.ArrayClose!=null);
+			serializer.Lang.ArrayOpen!=nullptr && serializer.Lang.ArrayClose!=nullptr);
 		serializer.NestingLevel += nestLevelUp;
 		if(!TypeIsSimpleArray && !serializer.Lang.StructInstanceOpen.Empty())
 			serializer.EndField(TextSerializerParams::TypeFlags_StructArray);
@@ -285,8 +285,8 @@ template<typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<
 {
 	CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
 	MultiReplaceToAdvance(v, serializer.Output, Zip(
-		CSpan<StringView>{"\n", "\r", "\t"},
-		CSpan<StringView>{"\\n", "\\r", "\\t"}));
+		Span<const StringView>{"\n", "\r", "\t"},
+		Span<const StringView>{"\\n", "\\r", "\\t"}));
 	CopyToAdvanceByOne(serializer.Lang.StringQuote, serializer.Output);
 	return serializer;
 }
@@ -296,4 +296,4 @@ template<typename T, size_t N, typename O> INTRA_FORCEINLINE GenericTextSerializ
 	GenericTextSerializer<O>& serializer, const T(&src)[N])
 {return serializer << SpanOf(src);}
 
-INTRA_END
+} INTRA_END

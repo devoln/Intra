@@ -1,8 +1,8 @@
 #pragma once
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Functional.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 //TODO
 
@@ -42,4 +42,4 @@ template<typename T> struct RangeMethodsMixin
 
 #undef INTRA_FORWARD_FUNC
 
-INTRA_END
+} INTRA_END

@@ -9,7 +9,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <Windows.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static uint64 queryTimerPerformanceFrequency()
 {
 	LARGE_INTEGER li;
@@ -44,14 +44,14 @@ double Stopwatch::GetElapsedSecondsAndReset()
 	mData = uint64(current.QuadPart);
 	return result;
 }
-INTRA_END
+} INTRA_END
 #elif defined(__APPLE__)
 #include <sys/time.h>
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static uint64 gettime_usecs()
 {
 	struct timeval tv;
-	gettimeofday(&tv, null);
+	gettimeofday(&tv, nullptr);
 	return uint64(tv.tv_sec)*1000000 + uint64(tv.tv_usec);
 }
 
@@ -68,10 +68,10 @@ double Stopwatch::GetElapsedSecondsAndReset()
 	mData = newData;
 	return result;
 }
-INTRA_END
+} INTRA_END
 #else
 #include <time.h>
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static uint64 clock_gettime_nsecs(clockid_t clkId)
 {
 	struct timespec ts;
@@ -112,5 +112,5 @@ double CpuStopwatch::GetElapsedSecondsAndReset()
 
 #endif
 
-INTRA_END
+} INTRA_END
 #endif

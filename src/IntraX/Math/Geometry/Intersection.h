@@ -7,7 +7,7 @@
 #include "Frustum.h"
 #include "BoundingVolume.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Math {
 
 enum class IntersectionType: byte {Outside, Intersect, Inside};
@@ -48,7 +48,7 @@ template<typename T> constexpr bool Contains(const Aabb<T>& aabb, const Sphere<T
 
 
 template<typename T> bool CheckInvRayIntersection(const Aabb<T>& aabb,
-	const Vector3<T>& rayOrigin, const Vector3<T>& invDirection, T rayLength=T(Infinity), T* oNear=null, T* oFar=null)
+	const Vector3<T>& rayOrigin, const Vector3<T>& invDirection, T rayLength=T(Infinity), T* oNear=nullptr, T* oFar=nullptr)
 {
 	const Vector3<T> t1 = (aabb.A - rayOrigin)*invDirection;
 	const Vector3<T> t2 = (aabb.B - rayOrigin)*invDirection;
@@ -67,7 +67,7 @@ template<typename T> bool CheckInvRayIntersection(const Aabb<T>& aabb,
 }
 
 template<typename T> bool CheckRayIntersection(const Aabb<T>& aabb,
-	const Ray<T>& ray, T rayLength=T(Infinity), T* oNear=null, T* oFar=null)
+	const Ray<T>& ray, T rayLength=T(Infinity), T* oNear=nullptr, T* oFar=nullptr)
 {return CheckInvRayIntersection({ray.Origin, Vector3<T>(1)/ray.Direction}, rayLength, oNear, oFar);}
 
 
@@ -116,7 +116,7 @@ template<typename T> bool IsIntersectedByLine(const Triangle<T>& tri, Vector3<T>
 
 /// Test ray triangle intersection
 // \param[out] oPlaneIntersectionPoint Точка пересечения с треугольником, если такое пересечение есть. Иначе точка пересечения с плоскостью треугольника. Если пересечения с плоскостью нет, то {0,0,0}
-template<typename T> bool CheckRayIntersection(const Triangle<T>& tri, const Ray<T>& ray, Vector3<T>* oPlaneIntersectionPoint=null)
+template<typename T> bool CheckRayIntersection(const Triangle<T>& tri, const Ray<T>& ray, Vector3<T>* oPlaneIntersectionPoint=nullptr)
 {
 	const Vector3<T> u = Vertices[1]-Vertices[0];
 	const Vector3<T> v = Vertices[2]-Vertices[0];

@@ -2,11 +2,10 @@
 
 #include "Intra/Functional.h"
 #include "Intra/Concepts.h"
-#include "Intra/Range/Concepts.h"
 #include "Intra/Misc/RawMemory.h"
 #include "Intra/Range/Operations.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 /** Checks whether ``range`` starts with ``what`` prefix and consume it if it does.
 
@@ -29,7 +28,7 @@ template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteRange<RWs> &&
 	CNonInfiniteForwardRange<TRangeValue<RWs>> &&
 	CConvertibleTo<TRangeValue<TRangeValue<RWs>>, TRangeValue<R>>,
-bool> StartsWithAnyAdvance(const R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
+bool> StartsWithAnyAdvance(const R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	if(oSubrangeIndex) oSubrangeIndex.Unwrap() = 0;
 	while(!subranges.Empty())
@@ -46,7 +45,7 @@ template<typename R, typename RWs> [[nodiscard]] constexpr Requires<
 	CConsumableList<RWs> &&
 	CNonInfiniteForwardList<TListValue<RWs>> &&
 	CConvertibleTo<TListValue<TListValue<RWs>>, TListValue<R>>,
-bool> StartsWithAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
+bool> StartsWithAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);
 	return StartsWithAnyAdvance(ForwardAsRange<R>(range), subrangesCopy, oSubrangeIndex);
@@ -59,11 +58,11 @@ template<typename R, typename RWs,
 	CConsumableList<RWs> &&
 	CNonInfiniteForwardList<W> &&
 	CConvertibleTo<TListValue<W>, TRangeValue<R>>,
-bool> StartsAdvanceWithAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
+bool> StartsAdvanceWithAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);
 	bool result = StartsWithAnyAdvance(range, subrangesCopy, oSubrangeIndex);
 	if(result) range|PopFirstExactly(Count(subrangesCopy.First()));
 	return result;
 }
-INTRA_END
+} INTRA_END

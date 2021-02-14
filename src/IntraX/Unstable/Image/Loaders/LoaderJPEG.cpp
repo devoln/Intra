@@ -4,7 +4,7 @@
 #include "IntraX/Unstable/Image/AnyImage.h"
 #include "IntraX/Utils/Endianess.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 bool LoaderJPEG::IsValidHeader(const void* header, size_t headerSize) const
 {
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
@@ -13,7 +13,7 @@ bool LoaderJPEG::IsValidHeader(const void* header, size_t headerSize) const
 
 ImageInfo LoaderJPEG::GetInfo(IInputStream& stream) const
 {
-	ImageInfo result = {{0, 0, 1}, null, ImageType_2D, 0};
+	ImageInfo result = {{0, 0, 1}, nullptr, ImageType_2D, 0};
 	byte SOI[2];
 	RawReadTo(stream, SpanOfBuffer(SOI));
 	if(!IsValidHeader(SOI, 2)) return result;
@@ -47,11 +47,11 @@ AnyImage LoaderJPEG::Load(IInputStream& stream) const
 	return LoadWithPlatform(stream);
 #else
 	(void)stream;
-	return null;
+	return nullptr;
 #endif
 }
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderJPEG LoaderJPEG::Instance;
 
-INTRA_END
+} INTRA_END

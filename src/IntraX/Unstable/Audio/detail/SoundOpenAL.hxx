@@ -34,7 +34,7 @@ static_assert(false);
 #endif
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 using ValueType;
 
 unsigned Sound::DefaultSampleRate() {return 44100;}
@@ -43,9 +43,9 @@ struct SoundContext: detail::SoundBasicContext
 {
 	SoundContext()
 	{
-		const ALCchar* defaultDevice = reinterpret_cast<const ALCchar*>(alcGetString(null, ALC_DEFAULT_DEVICE_SPECIFIER));
+		const ALCchar* defaultDevice = reinterpret_cast<const ALCchar*>(alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER));
 		ald = alcOpenDevice(defaultDevice);
-		alc = alcCreateContext(ald, null);
+		alc = alcCreateContext(ald, nullptr);
 		alcMakeContextCurrent(alc);
 		alcProcessContext(alc);
 		//alListenerfv(AL_POSITION, Vec3(0,0,0));
@@ -60,13 +60,13 @@ struct SoundContext: detail::SoundBasicContext
 
 	void Clean()
 	{
-		if(alc == null) return;
+		if(alc == nullptr) return;
 		ReleaseAllSounds();
 		ReleaseAllStreamedSounds();
-		alcMakeContextCurrent(null);
+		alcMakeContextCurrent(nullptr);
 		alcDestroyContext(alc);
-		alc = null;
-		if(ald == null) return;
+		alc = nullptr;
+		if(ald == nullptr) return;
 		alcCloseDevice(ald);
 	}
 
@@ -105,8 +105,8 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 
 		ValueType srcType;
 		bool srcInterleaved;
-		auto srcRawData = src.GetRawSamplesData(0, &srcType, &srcInterleaved, null);
-		if(srcRawData != null && srcType == ValueType::SNorm16 && (srcInterleaved || src.ChannelCount() == 1))
+		auto srcRawData = src.GetRawSamplesData(0, &srcType, &srcInterleaved, nullptr);
+		if(srcRawData != nullptr && srcType == ValueType::SNorm16 && (srcInterleaved || src.ChannelCount() == 1))
 		{
 			SetDataInterleaved(srcRawData.First(), ValueType::SNorm16);
 		}
@@ -132,7 +132,7 @@ struct Sound::Data: SharedClass<Sound::Data>, detail::SoundBasicData
 	void SetDataInterleaved(const void* data, ValueType type)
 	{
 		(void)type;
-		INTRA_DEBUG_ASSERT(data != null);
+		INTRA_DEBUG_ASSERT(data != nullptr);
 		if(type == ValueType::SNorm16)
 		{
 			alBufferData(unsigned(Buffer.Get()), AlFormat, data, int(Info.GetBufferSize()), int(Info.SampleRate));
@@ -179,7 +179,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 {
 	Data(Shared<Sound::Data> parent): SoundInstanceBasicData(Move(parent))
 	{
-		INTRA_DEBUG_ASSERT(Parent != null);
+		INTRA_DEBUG_ASSERT(Parent != nullptr);
 		unsigned source = 0;
 		SoundContext::Instance().GC();
 		alGenSources(1, &source);
@@ -204,7 +204,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		if(!source) return;
 		Parent->PlayingSources->FindAndRemoveUnordered(this);
 		alDeleteSources(1, &source);
-		SelfRef = null;
+		SelfRef = nullptr;
 	}
 
 	static void checkError()
@@ -241,7 +241,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		if(!source) return;
 		Parent->PlayingSources->FindAndRemoveUnordered(this);
 		alSourceStop(source);
-		SelfRef = null;
+		SelfRef = nullptr;
 	}
 
 	Shared<Data> SelfRef;
@@ -257,7 +257,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	{
 		(void)autoStreamingEnabled; //not supported
 
-		INTRA_DEBUG_ASSERT(Source != null);
+		INTRA_DEBUG_ASSERT(Source != nullptr);
 		INTRA_DEBUG_ASSERT(Source->ChannelCount() <= 2);
 		auto& context = SoundContext::Instance();
 		alGenBuffers(2, AlBuffers);
@@ -282,7 +282,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		if(!source) return;
 		alDeleteSources(1, &source);
 		alDeleteBuffers(2, AlBuffers);
-		TempBuffer = null;
+		TempBuffer = nullptr;
 		auto& context = SoundContext::Instance();
 		INTRA_SYNCHRONIZED(context.MyMutex)
 		{
@@ -327,7 +327,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		const unsigned source = unsigned(AlSource.Get());
 		alSourceStop(source);
 		alSourceUnqueueBuffers(source, 2, AlBuffers);
-		SelfRef = null;
+		SelfRef = nullptr;
 	}
 
 	void Update()
@@ -395,7 +395,7 @@ void Sound::GC()
 			auto src = PlayingSources.Value[i];
 			if(src->IsPlaying()) continue;
 			stoppedSources.AddLast(src->SharedThis());
-			src->SelfRef = null;
+			src->SelfRef = nullptr;
 			PlayingSources.Value.RemoveUnordered(i--);
 		}
 	}
@@ -408,10 +408,10 @@ void Sound::ReleaseAllInstances()
 	{
 		playingSources.Reserve(PlayingSources.Value.Length());
 		for(auto src: PlayingSources.Value) playingSources.AddLast(src->SharedThis());
-		PlayingSources.Value = null;
+		PlayingSources.Value = nullptr;
 	}
 	for(auto& src: playingSources) src->Release();
 }
-INTRA_END
+} INTRA_END
 
 INTRA_WARNING_POP

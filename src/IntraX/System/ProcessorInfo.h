@@ -2,7 +2,7 @@
 
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct ProcessorInfo
 {
 	String BrandString;
@@ -12,4 +12,4 @@ struct ProcessorInfo
 
 	static ProcessorInfo Get();
 };
-INTRA_END
+} INTRA_END

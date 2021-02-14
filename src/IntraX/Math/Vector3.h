@@ -8,7 +8,7 @@
 #pragma warning(disable: 4201) //Do not complain about union { struct { ... }; ...};
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct Vector2;
 template<typename T> struct Vector4;
 
@@ -244,13 +244,13 @@ template<typename T> constexpr Vector3<T> Sign(const Vector3<T>& v)
 template<typename T> constexpr Vector3<T> Abs(const Vector3<T>& v)
 {return {Abs(v.x), Abs(v.y), Abs(v.z)};}
 
-typedef Vector3<float> Vec3;
-typedef Vector3<double> DVec3;
-typedef Vector3<int> IVec3;
-typedef Vector3<unsigned> UVec3;
-typedef Vector3<byte> UBVec3;
-typedef Vector3<int8> SBVec3;
-typedef Vector3<uint16> USVec3;
-typedef Vector3<short> SVec3;
-typedef Vector3<bool> BVec3;
-INTRA_END
+using Vec3 = Vector3<float>;
+using DVec3 = Vector3<double>;
+using IVec3 = Vector3<int32>;
+using UVec3 = Vector3<uint32>;
+using U8Vec3 = Vector3<byte>;
+using I8Vec3 = Vector3<int8>;
+using U16Vec3 = Vector3<uint16>;
+using I16Vec3 = Vector3<short>;
+using BVec3 = Vector3<bool>;
+} INTRA_END

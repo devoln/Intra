@@ -37,11 +37,11 @@ FormattedWriter& InitOutput()
 	const StringView logFileName = "logs.html";
 	const bool logExisted = OS.FileExists(logFileName);
 	FileWriter logFile = OS.FileOpenAppend(logFileName, IgnoreErrors);
-	if(logFile==null)
+	if(logFile==nullptr)
 	{
 		Std.PrintLine("Cannot open file ", logFileName, " for writing!");
 	}
-	if(!logExisted && logFile!=null) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
+	if(!logExisted && logFile!=nullptr) logFile.Print("<meta charset='utf-8'>\n<title>Logs</title>\n");
 	FormattedWriter logWriter = HtmlWriter(Move(logFile), !logExisted);
 
 	String datetime;
@@ -64,13 +64,13 @@ int main(int argc, const char* argv[])
 
 	FormattedWriter output(&Std);
 
-	StringView arg1 = argc>1? StringView(argv[1]): null;
+	StringView arg1 = argc>1? StringView(argv[1]): nullptr;
 	if(arg1.StartsWith("-"))
 	{
 		if(arg1.Contains('a'))
 			TestGroup::YesForNestingLevel = 0;
 		if(arg1.Contains('u'))
-			output = null;
+			output = nullptr;
 		if(arg1.Contains('s'))
 			loggerOut.Attach(&Std);
 	}

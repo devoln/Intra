@@ -7,7 +7,7 @@ INTRA_IGNORE_WARN(dollar-in-identifier-extension)
 #include <emscripten.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 Array<byte> DownloadFile(StringView path)
 {
 	size_t dataSize;
@@ -69,5 +69,5 @@ Array<byte> DownloadFile(StringView path)
 
 	return Array<byte>::CreateAsOwnerOf({reinterpret_cast<byte*>(dataInt), dataSize});
 }
-INTRA_END
+} INTRA_END
 #endif

@@ -10,30 +10,28 @@
 #include "ImageFormat.h"
 #include "ImageInfo.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 enum class FileFormat: byte;
 
 class AnyImage
 {
 public:
-	AnyImage(decltype(null)=null):
-		Data(), Info(), SwapRB(false), LineAlignment(1) {}
+	AnyImage() = default;
 
-	AnyImage(USVec3 size, ImageFormat format, NonNegative<short> mipmapCount = 0, ImageType type = ImageType_2D):
+	AnyImage(U16Vec3 size, ImageFormat format, NonNegative<short> mipmapCount = 0, ImageType type = ImageType_2D):
 		Data(), Info(size, format, type, mipmapCount), SwapRB(false), LineAlignment(1) {}
 
-	bool operator==(decltype(null)) const {return Data.Empty();}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool Empty() const {return Data.Empty();}
 
 	AnyImage ExtractChannel(char channelName, ImageFormat compatibleFormat, uint16 newLineAlignment=0) const;
 
-	static AnyImage FromData(USVec3 size, ImageFormat format, ImageType type, const void* data,
+	static AnyImage FromData(U16Vec3 size, ImageFormat format, ImageType type, const void* data,
 		uint16 borderLeft, uint16 borderTop, uint16 borderRight, uint16 borderBottom);
 
-	Array<byte> Data;
+	ArrayList<byte> Data;
 	ImageInfo Info;
-	bool SwapRB;
-	byte LineAlignment;
+	bool SwapRB = false;
+	byte LineAlignment = 1;
 
 	const void* GetMipmapDataPtr(index_t mip) const;
 
@@ -46,10 +44,10 @@ public:
 
 #ifndef INTRA_NO_IMAGE_LOADING
 	static FileFormat DetectFileFormatByHeader(byte header[12]);
-	static ImageInfo GetImageInfo(ForwardStream stream, Optional<FileFormat&> oFormat = null);
+	static ImageInfo GetImageInfo(ForwardStream stream, Optional<FileFormat&> oFormat = {});
 
 	static AnyImage FromStream(ForwardStream stream);
 
 #endif
 };
-INTRA_END
+} INTRA_END

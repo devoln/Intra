@@ -4,9 +4,9 @@
 #include "IntraX/IO/FormattedWriter.h"
 #include "Intra/Range/StringView.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 void PrintPerformanceResults(FormattedWriter& logger, StringView testName,
-	CSpan<StringView> comparedTypes,
-	CSpan<double> stdTimes,
-	CSpan<double> times);
-INTRA_END
+	Span<const StringView> comparedTypes,
+	Span<const double> stdTimes,
+	Span<const double> times);
+} INTRA_END

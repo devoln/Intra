@@ -11,7 +11,7 @@
 
 #include "InputRange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_SIGN_CONVERSION
@@ -27,7 +27,7 @@ private:
 	template<typename R> using EnableCondition = Requires<
 		CConvertibleTo<TListValueRef<R>, T> &&
 		CFiniteList<R> &&
-		!CSameIgnoreCVRef<R, FiniteInputRange>
+		!CSameUnqualRef<R, FiniteInputRange>
 	>;
 
 	template<typename R> static Interface* wrap(R&& range)
@@ -39,7 +39,7 @@ private:
 public:
 	using value_type = TRemoveConstRef<T>;
 	
-	constexpr FiniteInputRange(decltype(null)=null) {}
+	constexpr FiniteInputRange(decltype(nullptr)=nullptr) {}
 
 	constexpr FiniteInputRange(FiniteInputRange&& rhs):
 		InputRange<T>(Move(static_cast<InputRange<T>&&>(rhs))) {}
@@ -79,4 +79,4 @@ protected:
 };
 
 using FiniteInputStream = FiniteInputRange<char>;
-INTRA_END
+} INTRA_END

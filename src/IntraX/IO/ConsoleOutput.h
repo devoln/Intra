@@ -4,7 +4,7 @@
 #include "Intra/Range/Stream/Parse.h"
 #include "IntraX/IO/FormattedWriter.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 extern FormattedWriter ConsoleOut;
 FormattedWriter ConsoleOutput();
-INTRA_END
+} INTRA_END

@@ -6,7 +6,7 @@
 
 #include "IntraX/System/Debug.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
 /** Contains error code, which value depends on a platform.
   Implementation guarantees that:
@@ -143,7 +143,7 @@ public:
 	[[nodiscard]] constexpr bool WasUnhandledError() const noexcept {return mState == State::Error;}
 
 	/**
-	  @return ErrorCode for the very first unhandled error or null if there was no error.
+	  @return ErrorCode for the very first unhandled error or nullptr if there was no error.
 	  Marks the error as handled.
 	*/
 	[[nodiscard]] constexpr ErrorCode Handle() noexcept
@@ -171,12 +171,12 @@ constexpr struct {} IgnoreErrors;
 */
 class ErrorReporter
 {
-	ErrorStatus* mStatus = null;
+	ErrorStatus* mStatus = nullptr;
 public:
-	IFunctor<void(ErrorCode, StringView, SourceInfo)>* Logger = null;
+	IFunctor<void(ErrorCode, StringView, SourceInfo)>* Logger = nullptr;
 
-	constexpr ErrorReporter(decltype(IgnoreErrors), IFunctor<void(ErrorCode, StringView, SourceInfo)>* logger = null) noexcept: Logger(logger) {}
-	constexpr ErrorReporter(ErrorStatus& status, IFunctor<void(ErrorCode, StringView, SourceInfo)>* logger = null) noexcept: mStatus(&status), Logger(logger) {}
+	constexpr ErrorReporter(decltype(IgnoreErrors), IFunctor<void(ErrorCode, StringView, SourceInfo)>* logger = nullptr) noexcept: Logger(logger) {}
+	constexpr ErrorReporter(ErrorStatus& status, IFunctor<void(ErrorCode, StringView, SourceInfo)>* logger = nullptr) noexcept: mStatus(&status), Logger(logger) {}
 
 	constexpr void Error(ErrorCode errorCode, StringView desc, SourceInfo srcInfo = SourceInfo()) noexcept
 	{
@@ -204,4 +204,4 @@ struct FatalErrorStatus: ErrorStatus
 		FatalErrorCallback()(msg, mSourceInfo);
 	}
 };
-INTRA_END
+} INTRA_END

@@ -36,7 +36,7 @@
   </Type>
 
   <Type Name="Intra::Container::HashTableRange&lt;*&gt;" Priority="MediumLow">
-    <DisplayString Condition="mFirstNode==null || mFirstNode->prev==mLastNode">[]</DisplayString>
+    <DisplayString Condition="mFirstNode==nullptr || mFirstNode->prev==mLastNode">[]</DisplayString>
     <DisplayString Condition="mFirstNode==mLastNode">[{mFirstNode->element}]</DisplayString>
     <DisplayString Condition="mFirstNode->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}]</DisplayString>
     <DisplayString Condition="mFirstNode->next->next==mLastNode">[{mFirstNode->element}, {mFirstNode->next->element}, {mFirstNode->next->next->element}]</DisplayString>
@@ -86,11 +86,6 @@
       </Synthetic>
       <ExpandedItem>Range</ExpandedItem>
     </Expand>
-  </Type>
-  
-  
-  <Type Name="Intra::SineRange&lt;*&gt;" Priority="Medium">
-    <DisplayString>Sine[{mS1}, {mS2}, {mK*mS2-mS1}, {mK*(mK*mS2-mS1)-mS2}, ...]</DisplayString>
   </Type>
 
 </AutoVisualizer>

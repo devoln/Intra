@@ -6,7 +6,7 @@
 #include "Intra/Range/Operations.h"
 #include "Intra/Range/Sort/IsSorted.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename IndexRange> constexpr Requires<
 	CBidirectionalRange<R>,
 R> Remove(const R& rhs, const IndexRange& indices)
@@ -71,4 +71,4 @@ AsR> Remove(R&& range, P pred)
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return RemoveRightAdvance(rangeCopy, pred);
 }
-INTRA_END
+} INTRA_END

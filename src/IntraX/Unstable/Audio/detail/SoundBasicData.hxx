@@ -9,7 +9,7 @@
 #include "IntraX/Concurrency/Mutex.h"
 #include "IntraX/Concurrency/Synchronized.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace detail {
 
 struct SoundBasicContext
@@ -73,4 +73,4 @@ struct StreamedSoundBasicData
 
 }
 
-INTRA_END
+} INTRA_END

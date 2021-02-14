@@ -2,7 +2,7 @@
 
 #include "IntraX/Container/Sequential/Array.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> class IntervalAllocator
 {
 public:
@@ -45,7 +45,7 @@ public:
 	size_t Count() const {return ranges.Count();}
 	T UsedLength() const {return used_length;}
 	T CompactLength() const {return compact_length;}
-	CSpan<Interval> GetRanges() const {return ranges;}
+	Span<const Interval> GetRanges() const {return ranges;}
 
 	Array<Interval> Compactify()
 	{
@@ -67,4 +67,4 @@ private:
 	T compact_length, used_length;
 	bool has_holes;
 };
-INTRA_END
+} INTRA_END

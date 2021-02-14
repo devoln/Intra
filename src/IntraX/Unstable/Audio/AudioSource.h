@@ -5,7 +5,7 @@
 #include "IntraX/Utils/Delegate.h"
 #include "IntraX/Unstable/Data/ValueType.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class IAudioSource
 {
 protected:
@@ -19,8 +19,8 @@ public:
 	/// Количество каналов, которое имеет поток.
 	virtual int ChannelCount() const = 0;
 
-	/// Total sample count in a stream if is known or null.
-	virtual Optional<index_t> SampleCount() const {return null;}
+	/// Total sample count in a stream if is known or nullptr.
+	virtual Optional<index_t> SampleCount() const {return nullptr;}
 
 	/// Текущая позиция в потоке в семплах.
 	virtual index_t SamplePosition() const = 0;
@@ -29,11 +29,11 @@ public:
 	/// Если не удалось выполнить эту операцию или поток её не поддерживает, возвращает false.
 	virtual bool SetSamplePosition(Index position) {(void)position; return false;}
 
-	/// @return the number of remaining samples in the stream or null if stream length is unknown.
+	/// @return the number of remaining samples in the stream or nullptr if stream length is unknown.
 	Optional<index_t> SamplesLeft() const
 	{
 		const auto totalSamples = SampleCount();
-		if(!totalSamples) return null;
+		if(!totalSamples) return nullptr;
 		return totalSamples.Unwrap() - SamplePosition();
 	}
 
@@ -54,11 +54,11 @@ public:
 	/// Для всех i outFloats[i].Length() должно быть одинаковым.
 	/// outFloats.Length() должно быть равно ChannelCount.
 	/// @return Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
-	virtual index_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) = 0;
+	virtual index_t GetUninterleavedSamples(Span<const Span<float>> outFloats) = 0;
 
 	/// Получить данные следующих семплов в том формате, в котором они получаются перед конверсией.
 	/// @return Указатели, указывающие на корректные данные соответствующих каналов до тех пор, пока не будет вызыван какой-либо из Get* методов.
-	/// null, если не поддерживается потоком, либо существует несколько возможных вариантов выбора типа.
+	/// nullptr, если не поддерживается потоком, либо существует несколько возможных вариантов выбора типа.
 	virtual FixedArray<const void*> GetRawSamplesData(Index maxSamplesToRead,
 		Optional<ValueType&> oType, Optional<bool&> oInterleaved, Optional<index_t&> oSamplesRead) = 0;
 };
@@ -85,7 +85,7 @@ public:
 		if(oType) oType.Unwrap() = ValueType::Void;
 		if(oInterleaved) oInterleaved.Unwrap() = false;
 		if(oSamplesRead) oSamplesRead.Unwrap() = 0;
-		return null;
+		return nullptr;
 	}
 	
 	int SampleRate() const final {return mSampleRate;}
@@ -111,4 +111,4 @@ public:
 	index_t GetInterleavedSamples(Span<short> outShorts) override;
 	index_t GetInterleavedSamples(Span<float> outFloats) override;
 };
-INTRA_END
+} INTRA_END

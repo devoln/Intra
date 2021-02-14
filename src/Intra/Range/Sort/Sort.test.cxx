@@ -15,7 +15,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <algorithm>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 static const short arrayForSortTesting[] = {
 	2, 4234, -9788, 23, 5, 245, 2, 24, 5, -9890,
@@ -29,7 +29,7 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT1(IsSorted(arrStdSort), arrStdSort);
 	INTRA_ASSERT1(Equals(
 		arrStdSort,
-		CSpan<short>{-9890, -9788, -932, -234, 2, 2, 2, 3, 5, 5, 5, 23, 24, 54, 123, 245, 342, 4234, 4552, 24321}
+		Span<const short>{-9890, -9788, -932, -234, 2, 2, 2, 3, 5, 5, 5, 23, 24, 54, 123, 245, 342, 4234, 4552, 24321}
 	), arrStdSort);
 
 	Array<short> arrInsertion = arrayForSortTesting;
@@ -61,4 +61,4 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT_EQUALS(arrSelection, arrStdSort);
 }
 
-INTRA_END
+} INTRA_END

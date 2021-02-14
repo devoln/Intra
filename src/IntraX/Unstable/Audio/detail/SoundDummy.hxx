@@ -12,7 +12,7 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Audio {
 
 using ValueType;

@@ -11,7 +11,7 @@
 #include "Intra/Range/ByLine.h"
 #include "Intra/Range/Stream/RawRead.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename T> struct InputStreamMixin
 {
 	typedef TRemoveConstRef<T> ElementType;
@@ -33,7 +33,7 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	template<COutput R1, CTriviallyCopyable U = TArrayElement<R1>
+	template<COutput R1, CTriviallyCopyable U = TArrayListValue<R1>
 	index_t RawReadWrite(R1& dst)
 	{return RawReadWrite(dst, dst.Length());}
 
@@ -144,4 +144,4 @@ template<typename R, typename T> struct InputStreamMixin
 	template<index_t N> [[nodiscard]] constexpr RByLine<R> ByLine(char(&buf)[N], Tags::TKeepTerminator)
 	{return ByLine(SpanOfBuffer(buf), Tags::KeepTerminator);}
 };
-INTRA_END
+} INTRA_END

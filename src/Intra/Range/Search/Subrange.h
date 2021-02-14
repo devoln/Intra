@@ -6,18 +6,18 @@
 #include "Intra/Range/Comparison.h"
 #include "Intra/Range/Search/Single.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Найти первое вхождение диапазона what в этот диапазон.
 /// Начало диапазона устанавливается на начало первого вхождения what или совпадает с концом, если диапазон не содержит what.
 /// \param what Искомый диапазон.
-/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
+/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \returns Возвращает ссылку на себя.
 template<typename R, typename RW> constexpr Requires<
 	CRange<R> &&
 	!CConst<R> &&
 	CNonInfiniteForwardRange<RW> &&
 	CEqualityComparable<TRangeValue<RW>, TRangeValue<R>>,
-R&> FindAdvance(R& range, const RW& what, Optional<index_t&> ioIndex = null)
+R&> FindAdvance(R& range, const RW& what, Optional<index_t&> ioIndex = nullptr)
 {
 	while(!range.Empty() && !StartsWith(range, what))
 	{
@@ -32,8 +32,8 @@ R&> FindAdvance(R& range, const RW& what, Optional<index_t&> ioIndex = null)
 /// Найти первое вхождение диапазона what в этот диапазон.
 /// \param what Искомый диапазон.
 /// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество
-/// элементов, предшествующих найденной позиции. Может быть null.
-/// \returns null, если значение не найдено. Часть этого диапазона, начиная с позиции, на которой начинается первое вхождение what.
+/// элементов, предшествующих найденной позиции. Может быть nullptr.
+/// \returns nullptr, если значение не найдено. Часть этого диапазона, начиная с позиции, на которой начинается первое вхождение what.
 template<typename R, typename RW,
 	typename AsR = TRangeOf<R>,
 	typename AsRW = TRangeOfRef<RW>
@@ -41,7 +41,7 @@ template<typename R, typename RW,
 	CConsumableRange<AsR> &&
 	CNonInfiniteForwardRange<AsRW> &&
 	CEqualityComparable<TRangeValue<AsRW>, TRangeValue<AsR>>,
-AsR> Find(R&& range, RW&& what, Optional<index_t&> ioIndex = null)
+AsR> Find(R&& range, RW&& what, Optional<index_t&> ioIndex = nullptr)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvance(rangeCopy, ForwardAsRange<RW>(what), ioIndex);
@@ -55,7 +55,7 @@ AsR> Find(R&& range, RW&& what, Optional<index_t&> ioIndex = null)
 /// После вызова этой функции начало subranges смещается к первому совпавшему элементу.
 /// Если совпадений не найдено, subranges окажется в исходном состоянии.
 /// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество
-/// элементов, предшествующих найденной позиции. Может быть null.
+/// элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс найденного
 /// элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 /// \return Возвращает ссылку на себя.
@@ -65,7 +65,7 @@ template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteForwardRange<RWs> &&
 	!CConst<RWs> &&
 	CNonInfiniteForwardList<TRangeValue<RWs>>,
-R&> FindAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+R&> FindAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto subrangesCopy = subranges;
 	while(!range.Empty() && !StartsWithAnyAdvance(range, subranges, oSubrangeIndex))
@@ -92,7 +92,7 @@ template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<RWs> &&
 	CNonInfiniteForwardList<TRangeValue<RWs>>,
-index_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
+index_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	index_t index = 0;
 	FindAdvanceAnyAdvance(range, subranges, OptRef(index), oSubrangeIndex);
@@ -104,7 +104,7 @@ index_t> CountUntilAdvanceAnyAdvance(R& range, RWs& subranges, Optional<index_t&
 /// Начало этого диапазона смещается к найденному элементу или совмещается с концом в случае, когда элемент не найден.
 /// \param subranges Диапазон искомых поддиапазонов.
 /// \param ioIndex[inout] Указатель на счётчик, который увеличивается на
-/// количество элементов, предшествующих найденной позиции. Может быть null.
+/// количество элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс найденного
 /// элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 /// \return Возвращает ссылку на себя.
@@ -114,7 +114,7 @@ template<typename R, typename RWs,
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
-R&> FindAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+R&> FindAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto subrangesCopy = ForwardAsRange<RWs>(subranges);
 	return FindAdvanceAnyAdvance(range, subrangesCopy, ioIndex, oSubrangeIndex);
@@ -133,7 +133,7 @@ template<typename R, typename RWs,
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
-index_t> CountUntilAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
+index_t> CountUntilAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	index_t index = 0;
 	FindAdvanceAny(range, ForwardAsRange<RWs>(subranges), OptRef(index), oSubrangeIndex);
@@ -147,7 +147,7 @@ index_t> CountUntilAdvanceAny(R& range, RWs&& subranges, Optional<index_t&> oSub
 /// После вызова этой функции начало subranges смещается к первому совпавшему элементу.
 /// Если совпадений не найдено, subranges окажется в исходном состоянии.
 /// \param ioIndex[inout] Указатель на счётчик, который увеличивается
-/// на количество элементов, предшествующих найденной позиции. Может быть null.
+/// на количество элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \param oSubrangeIndex[out] Указатель на переменную, в которую будет записан индекс найденного элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 /// \return Возвращает диапазон, полученный из этого удалением всех элементов до первого вхождения любого из искомых диапазонов.
 template<typename R, typename RWs,
@@ -158,7 +158,7 @@ template<typename R, typename RWs,
 	!CConst<RWs> &&
 	CNonInfiniteForwardList<TRangeValue<RWs>>,
 AsR> FindAnyAdvance(R&& range, RWs& subranges,
-	Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+	Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvanceAnyAdvance(rangeCopy, subranges, ioIndex, oSubrangeIndex);
@@ -177,7 +177,7 @@ template<typename R, typename RWs> constexpr Requires<
 	CNonInfiniteForwardRange<RWs> &&
 	!CConst<RWs> &&
 	CNonInfiniteForwardList<TRangeValue<RWs>>,
-index_t> CountUntilAnyAdvance(R&& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = null)
+index_t> CountUntilAnyAdvance(R&& range, RWs& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	index_t index = 0;
 	FindAnyAdvance(ForwardAsRange<R>(range), subranges, &index, oSubrangeIndex);
@@ -188,7 +188,7 @@ index_t> CountUntilAnyAdvance(R&& range, RWs& subranges, Optional<index_t&> oSub
 
 /// Найти первое вхождение любого поддиапазона из диапазона subranges в этот диапазон.
 /// \param subranges Искомые поддиапазоны.
-/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
+/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \param oWhatIndex[out] Указатель на переменную, в которую будет записан индекс найденного поддиапазона
 /// в диапазоне subranges. Если элемент не был найден, будет записано значение whats.Count().
 template<typename R, typename RWs,
@@ -199,7 +199,7 @@ template<typename R, typename RWs,
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
 AsR> FindAny(R&& range, RWs&& subranges,
-	Optional<index_t&> ioIndex = null, Optional<index_t&> oWhatIndex = null)
+	Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oWhatIndex = nullptr)
 {
 	auto rangeCopy = ForwardAsRange<R>(range);
 	FindAdvanceAny(rangeCopy, ForwardAsRange<RWs>(subranges), ioIndex, oWhatIndex);
@@ -220,7 +220,7 @@ template<typename R, typename RWs,
 	CNonInfiniteForwardRange<AsR> &&
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
-index_t> CountUntilAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = null)
+index_t> CountUntilAny(R&& range, RWs&& subranges, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	index_t index = 0;
 	FindAny(ForwardAsRange<R>(range), ForwardAsRange<RWs>(subranges), &index, oSubrangeIndex);
@@ -295,4 +295,4 @@ index_t> Count(R&& range, RW&& what)
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return CountAdvance(rangeCopy, ForwardAsRange<RW>(what));
 }
-INTRA_END
+} INTRA_END

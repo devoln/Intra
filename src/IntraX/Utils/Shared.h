@@ -1,12 +1,9 @@
 ﻿#pragma once
 
 #include "Intra/Assert.h"
-
-#ifndef INTRA_NO_CONCURRENCY
 #include "Intra/Concurrency/Atomic.h"
-#endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //TODO: make a policy-based generic pointer template.
 
 /** Lightweight shared pointer.
@@ -21,8 +18,7 @@ template<typename T> class Shared
 	template<typename U> friend class SharedClass;
 	struct Data
 	{
-		template<typename... Args> Data(Args&&... args):
-			Value(Forward<Args>(args)...), RefCount(1) {}
+		template<typename... Args> Data(Args&&... args): Value(INTRA_FWD(args)...), RefCount(1) {}
 
 		void Release()
 		{
@@ -31,44 +27,31 @@ template<typename T> class Shared
 		}
 		
 		T Value;
-#if(!defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_ATOMIC != INTRA_LIBRARY_ATOMIC_None)
-		AtomicInt RefCount;
-		unsigned IncRef() {return unsigned(RefCount.GetIncrementRelaxed());}
-		unsigned GetRC() {return unsigned(RefCount.GetRelaxed());}
-		bool DecRef() {return RefCount.DecrementAcquireRelease() == 0;}
-#else
-		unsigned IncRef() {return RefCount++;}
-		unsigned GetRC() {return RefCount;}
-		bool DecRef() {return --RefCount == 0;}
-		unsigned RefCount;
-#endif
+
+		Atomic<int> RefCount;
+		unsigned IncRef() {return unsigned(RefCount.GetAdd<MemoryOrder::Relaxed>(1));}
+		unsigned GetRC() {return unsigned(RefCount.Get<MemoryOrder::Relaxed>());}
+		bool DecRef() {return RefCount.Sub<MemoryOrder::AcquireRelease>(1) == 0;}
 
 		Data(const Data&) = delete;
 		Data& operator=(const Data&) = delete;
 	};
 	constexpr Shared(Data* data): mData(data) {}
 public:
-	constexpr Shared(decltype(null)=null): mData(null) {}
+	Shared() = default;
+	constexpr Shared(decltype(nullptr)) {}
 
-	Shared(const Shared& rhs): mData(rhs.mData)
-	{
-		if(mData != null) mData->IncRef();
-	}
+	Shared(const Shared& rhs): mData(rhs.mData) {if(mData != nullptr) mData->IncRef();}
 
-	template<typename U, typename = Requires<
-		CDerived<U, T> // && CHasVirtualDestructor<T>
-	>> Shared(const Shared<U>& rhs): mData(rhs.mData)
-	{
-		if(mData != null) mData->IncRef();
-	}
+	template<CDerived<T> U> //requires CHasVirtualDestructor<T>
+	Shared(const Shared<U>& rhs): mData(rhs.mData) {if(mData != nullptr) mData->IncRef();}
 
-	Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = null;}
+	Shared(Shared&& rhs): mData(rhs.mData) {rhs.mData = nullptr;}
 	
-	template<typename U, typename = Requires<
-		CDerived<U, T> // && CHasVirtualDestructor<T>
-	>> Shared(Shared<U>&& rhs): mData(rhs.mData) {rhs.mData = null;}
+	template<CDerived<T> U> //requires CHasVirtualDestructor<T>
+	Shared(Shared<U>&& rhs): mData(rhs.mData) {rhs.mData = nullptr;}
 
-	~Shared() {if(mData != null) mData->Release();}
+	~Shared() {if(mData != nullptr) mData->Release();}
 
 	Shared& operator=(const Shared& rhs)
 	{
@@ -84,46 +67,44 @@ public:
 		return *this;
 	}
 
-	Shared& operator=(decltype(null))
+	Shared& operator=(decltype(nullptr))
 	{
-		Shared temp(mData);
-		mData = null;
+		Swap(*this, Shared());
 		return *this;
 	}
 
-	constexpr T* Ptr() const noexcept {return mData? &mData->Value: null;}
+	constexpr T* Ptr() const noexcept {return mData? &mData->Value: nullptr;}
 	constexpr T* get() const noexcept {return Ptr();}
 
 	template<typename... Args> static Shared New(Args&&... args)
-	{return new Data(Forward<Args>(args)...);}
+	{return new Data(INTRA_FWD(args)...);}
 
 	unsigned use_count() const
 	{
-		if(mData == null) return 0;
+		if(mData == nullptr) return 0;
 		return mData->GetRC();
 	}
 
 	T& operator*() const
 	{
-		INTRA_PRECONDITION(mData != null);
+		INTRA_PRECONDITION(*this != nullptr);
 		return mData->Value;
 	}
 
 	T* operator->() const
 	{
-		INTRA_PRECONDITION(mData != null);
+		INTRA_PRECONDITION(*this != nullptr);
 		return &mData->Value;
 	}
 
-	constexpr bool operator==(decltype(null)) const {return mData == null;}
-	constexpr bool operator!=(decltype(null)) const {return !operator==(null);}
-	constexpr bool operator==(const Shared& rhs) const {return mData == rhs.mData;}
-	constexpr bool operator!=(const Shared& rhs) const {return !operator==(rhs);}
+	constexpr bool operator==(decltype(nullptr)) const {return mData == nullptr;}
+	constexpr bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
+	bool operator==(const Shared& rhs) const = default;
 
-	constexpr explicit operator bool() const {return mData != null;}
+	constexpr explicit operator bool() const {return mData != nullptr;}
 
 private:
-	Data* mData;
+	Data* mData = nullptr;
 };
 
 template<typename T> class SharedClass
@@ -131,24 +112,24 @@ template<typename T> class SharedClass
 	void* operator new(size_t bytes) = delete;
 	void operator delete(void* ptr, size_t bytes) = delete;
 
-	typedef typename Shared<T>::Data DerivedData;
+	using DerivedData = typename Shared<T>::Data;
 
 public:
 	/// Получить умный указатель Shared из этого экземпляра класса.
-	/// Если уже запущено удаление экземпляра класса вследствие обнуления счётчика ссылок, вернёт null.
+	/// Если уже запущено удаление экземпляра класса вследствие обнуления счётчика ссылок, вернёт nullptr.
 	/// Этот факт может использоваться в случае, когда деструктор объекта ждёт, пока текущий поток освободит ресурс.
 	/// Нельзя использовать с уже удалённым объектом.
 	Shared<T> SharedThis()
 	{
-		void* const address = reinterpret_cast<char*>(this) - MemberOffset(&DerivedData::Value);
+		void* const address = reinterpret_cast<char*>(this) - __builtin_offsetof(DerivedData, Value);
 		const auto data = static_cast<DerivedData*>(address);
 		if(data->IncRef()) return data;
 
 		//Счётчик ссылок уже нулевой, объект находится в процессе удаления.
-		return null;
+		return nullptr;
 	}
 };
 
 template<typename T> Shared<TRemoveReference<T>> SharedMove(T&& rhs)
 {return Shared<TRemoveReference<T>>::New(Move(rhs));}
-INTRA_END
+} INTRA_END

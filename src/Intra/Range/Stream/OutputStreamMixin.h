@@ -4,7 +4,7 @@
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Span.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename T> struct OutputStreamMixin
 {
 	template<typename U> constexpr Requires<
@@ -35,7 +35,7 @@ template<typename R, typename T> struct OutputStreamMixin
 	template<typename R1> constexpr Requires<
 		!CRange<R1> &&
 		CArrayList<R1> &&
-		CTriviallyCopyable<TArrayElement<R1>>,
+		CTriviallyCopyable<TArrayListValue<R1>>,
 	index_t> RawWriteFrom(R1&& src)
 	{return RawWriteFrom(CSpanOf(src));}
 
@@ -54,4 +54,4 @@ template<typename R, typename T> struct OutputStreamMixin
 	template<typename... Args> constexpr R& PrintLine(Args&&... args)
 	{return Print(Forward<Args>(args)..., "\r\n");}
 };
-INTRA_END
+} INTRA_END

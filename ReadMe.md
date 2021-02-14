@@ -16,7 +16,7 @@ It doesn't require C++ standard library or other libraries, but may optionally u
 This library contains the following functionality:
 - Containers: Array, BList, HashMap, LinearMap, String and others. Array is different from existing implementations of dynamic arrays by fast O(1) appending to the beginning of array.
 - Automatic recursive structure serialization: binary and text. See examples [here](Demos/Tests/src/PerfTestSerialization.cpp).
-- Math functions and classes: FixedPoint, vectors, matrices, quaternions, geometric primitives.
+- Math functions and classes: Fixed, vectors, matrices, quaternions, geometric primitives.
 - Multiple image format loading.
 - Sound system and music instrument synthesis.
 - etc: timer, IO streams, basic classes for multithreading.

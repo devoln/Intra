@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Container/Tuple.h"
 #include "Intra/EachField.h"
 
@@ -23,14 +23,14 @@
 #include "IntraX/Container/Operations.hh"
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 template<typename I> struct GenericTextDeserializer;
 
 template<typename I> struct GenericTextDeserializerStructVisitor
 {
 	GenericTextDeserializer<I>* Me;
-	CSpan<const char*> FieldNames;
+	Span<const const char*> FieldNames;
 	bool Began;
 	TextSerializerParams::TypeFlags Type;
 
@@ -46,15 +46,15 @@ template<typename I> struct GenericTextDeserializer
 	bool IgnoreField()
 	{
 		int counter = 1;
-		TakeRecursiveBlockAdvance(Input, counter, null,
+		TakeRecursiveBlockAdvance(Input, counter, nullptr,
 			Lang.StructInstanceOpen, Lang.StructInstanceClose, Lang.FieldSeparator,
-		CSpan<Tuple<StringView, StringView>>{
+		Span<const Tuple<StringView, StringView>>{
 			{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 			{Lang.OneLineCommentBegin, "\n"},
 			{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 			{Lang.ArrayOpen, Lang.ArrayClose}
 		},
-		CSpan<Tuple<StringView, StringView>>{});
+		Span<const Tuple<StringView, StringView>>{});
 		INTRA_POSTCONDITION(counter == 0 || counter == 1);
 		return counter == 0;
 	}
@@ -66,12 +66,12 @@ template<typename I> struct GenericTextDeserializer
 		size_t charsRead = 0;
 		TakeRecursiveBlockAdvance(Input, counter, &charsRead,
 			StringView(), Lang.ArrayClose, Lang.ArrayElementSeparator,
-		CSpan<Tuple<StringView, StringView>>{
+		Span<const Tuple<StringView, StringView>>{
 			{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 			{Lang.OneLineCommentBegin, StringView("\n")},
 			{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd}
 		},
-		CSpan<Tuple<StringView, StringView>>{
+		Span<const Tuple<StringView, StringView>>{
 			{Lang.StructInstanceOpen, Lang.StructInstanceClose},
 			{Lang.ArrayOpen, Lang.ArrayClose}
 		});
@@ -129,7 +129,7 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	/// Прочитать имя поля и пропустить оператор присваивания, перейдя к правой части присваивания.
-	/// Если в процессе обнаруживается ошибка, функция возвращает на исходную позицию и возвращает null.
+	/// Если в процессе обнаруживается ошибка, функция возвращает на исходную позицию и возвращает nullptr.
 	/// Иначе возвращает прочитанное имя поля.
 	StringView FieldAssignmentBeginning()
 	{
@@ -152,7 +152,7 @@ template<typename I> struct GenericTextDeserializer
 	error:
 		Input = oldPos;
 		Line = oldLine;
-		return null;
+		return nullptr;
 	}
 
 	StringView FieldAssignmentEnding()
@@ -176,7 +176,7 @@ template<typename I> struct GenericTextDeserializer
 	error:
 		Input = oldPos;
 		Line = oldLine;
-		return null;
+		return nullptr;
 	}
 
 	void StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type)
@@ -190,15 +190,15 @@ template<typename I> struct GenericTextDeserializer
 
 		if(Input.Empty()) return;
 		int counter = -1;
-		TakeRecursiveBlockAdvance(Input, counter, null,
+		TakeRecursiveBlockAdvance(Input, counter, nullptr,
 			Lang.StructInstanceOpen, StringView(), StringView(),
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.ArrayOpen, Lang.ArrayClose}
 			}
 		);
@@ -211,15 +211,15 @@ template<typename I> struct GenericTextDeserializer
 		const StringView closeStr = (type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceClose: Lang.TupleClose;
 		if(Expect(closeStr)) return;
 		int counter = 1;
-		TakeRecursiveBlockAdvance(Input, counter, null,
+		TakeRecursiveBlockAdvance(Input, counter, nullptr,
 			Lang.StructInstanceOpen, Lang.StructInstanceClose, StringView(),
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.ArrayOpen, Lang.ArrayClose}
 			}
 		);
@@ -236,7 +236,7 @@ template<typename I> struct GenericTextDeserializer
 			if(!Lang.OneLineCommentBegin.Empty() && ExpectAdvance(Input, Lang.OneLineCommentBegin))
 			{
 				int counter = 1;
-				StringView commentBlock = TakeRecursiveBlockAdvance(Input, counter, null,
+				StringView commentBlock = TakeRecursiveBlockAdvance(Input, counter, nullptr,
 					Lang.OneLineCommentBegin, "\n", StringView());
 				Line += CountLinesAdvance(commentBlock);
 				continue;
@@ -244,7 +244,7 @@ template<typename I> struct GenericTextDeserializer
 			if(!Lang.MultiLineCommentBegin.Empty() && ExpectAdvance(Input, Lang.MultiLineCommentBegin))
 			{
 				int counter = 1;
-				StringView commentBlock = TakeRecursiveBlockAdvance(Input, counter, null,
+				StringView commentBlock = TakeRecursiveBlockAdvance(Input, counter, nullptr,
 					Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd, StringView());
 				Line += CountLinesAdvance(commentBlock);
 				continue;
@@ -267,7 +267,7 @@ template<typename I> struct GenericTextDeserializer
 		return false;
 	}
 
-	index_t ExpectOneOf(CSpan<StringView> stringsToExpect)
+	index_t ExpectOneOf(Span<const StringView> stringsToExpect)
 	{
 		SkipAllSpaces();
 		size_t maxStrLength=0;
@@ -281,7 +281,7 @@ template<typename I> struct GenericTextDeserializer
 		return -1;
 	}
 
-	void LogExpectError(StringView token, CSpan<StringView> expected)
+	void LogExpectError(StringView token, Span<const StringView> expected)
 	{
 		char buf[1024];
 		SpanOutput<char> dst = buf;
@@ -294,7 +294,7 @@ template<typename I> struct GenericTextDeserializer
 
 
 	/// Десериализовать структуру со статической информацией о полях
-	template<typename T> void DeserializeStruct(T& dst, CSpan<const char*> fieldNames)
+	template<typename T> void DeserializeStruct(T& dst, Span<const const char*> fieldNames)
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
 		GenericTextDeserializerStructVisitor<I> visitor{this, fieldNames, false, TextSerializerParams::TypeFlags_Struct};
@@ -323,7 +323,7 @@ template<typename I> struct GenericTextDeserializer
 			size_t index = 0;
 			if(name.Empty()) index = fieldNames.Length();
 			else index = CountUntil(Map(fieldNames, FCastTo<StringView>), name);
-			if(index == fieldNames.Length() && name != null) //Если такого поля в структуре нет, пропускаем его
+			if(index == fieldNames.Length() && name != nullptr) //Если такого поля в структуре нет, пропускаем его
 			{
 				const bool finished = IgnoreField();
 				if(!finished)
@@ -334,13 +334,13 @@ template<typename I> struct GenericTextDeserializer
 				NestingLevel--;
 				return;
 			}
-			if(index != fieldNames.Length() || name == null)
-				dst.VisitFieldById(name != null? index: i, *this);
+			if(index != fieldNames.Length() || name == nullptr)
+				dst.VisitFieldById(name != nullptr? index: i, *this);
 
 			if(Lang.AddFieldNameAfterAssignment)
 			{
 				StringView name2 = FieldAssignmentEnding();
-				if(name != null && name2 != null && name != name2) LogExpectError(name2, {name});
+				if(name != nullptr && name2 != nullptr && name != name2) LogExpectError(name2, {name});
 			}
 		}
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
@@ -354,7 +354,7 @@ template<typename I> struct GenericTextDeserializer
 	template<typename T> void DeserializeTuple(T& dst)
 	{
 		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
-		GenericTextDeserializerStructVisitor<I> visitor{this, null, false, TextSerializerParams::TypeFlags_Tuple};
+		GenericTextDeserializerStructVisitor<I> visitor{this, nullptr, false, TextSerializerParams::TypeFlags_Tuple};
 		ForEachField(dst, visitor);
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
 	}
@@ -366,15 +366,15 @@ template<typename I> struct GenericTextDeserializer
 		//Произошла ошибка, о которой мы уже сообщили в лог.
 		//Пытаемся восстановиться. Для этого ищем начало массива на текущем уровне вложенности.
 		int counter = -1;
-		TakeRecursiveBlockAdvance(Input, counter, null,
+		TakeRecursiveBlockAdvance(Input, counter, nullptr,
 			Lang.ArrayOpen, StringView(), StringView(),
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.StructInstanceOpen, Lang.StructInstanceClose}
 			}
 		);
@@ -387,15 +387,15 @@ template<typename I> struct GenericTextDeserializer
 		//Произошла ошибка, о которой мы уже сообщили в лог.
 		//Пытаемся восстановиться. Для этого ищем конец массива соответствующий текущему уровню вложенности.
 		int counter = 1;
-		TakeRecursiveBlockAdvance(Input, counter, null,
+		TakeRecursiveBlockAdvance(Input, counter, nullptr,
 			Lang.ArrayOpen, Lang.ArrayClose, StringView(),
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
 				{Lang.OneLineCommentBegin, "\n"},
 				{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
 				{Lang.StringQuote, Lang.StringQuote}
 			},
-			CSpan<Tuple<StringView, StringView>>{
+			Span<const Tuple<StringView, StringView>>{
 				{Lang.StructInstanceOpen, Lang.StructInstanceClose}
 			}
 		);
@@ -430,7 +430,7 @@ template<typename I> struct GenericTextDeserializer
 
 	/// Десериализация вещественных чисел
 	template<typename T> INTRA_FORCEINLINE Requires<
-		CFloatingPoint<T>,
+		CBasicFloatingPoint<T>,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
 		v = ParseAdvance<T>(Input, Lang.DecimalSeparator);
@@ -439,7 +439,7 @@ template<typename I> struct GenericTextDeserializer
 
 	/// Десериализация целых чисел
 	template<typename T> INTRA_FORCEINLINE Requires<
-		CIntegral<T>,
+		CBasicIntegral<T>,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
 		Input >> v;
@@ -592,4 +592,4 @@ template<typename I> INTRA_FORCEINLINE Requires<
 GenericTextDeserializer<TRemoveConstRef<I>>> TextDeserializer(const LanguageParams& language, I&& input)
 {return {language, ForwardAsRange<I>(input)};}
 
-INTRA_END
+} INTRA_END

@@ -14,7 +14,7 @@
 
 #include "IntraX/Container/Operations.hh"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_SIGN_CONVERSION
 //TODO: replace this with complete formatting solution with positional and named argument support and argument formatting specification in a format string.
 
@@ -22,8 +22,8 @@ template<typename S> class StringFormatter
 {
 	static_assert(CHas_data<S>, "S must contain data method!");
 	static_assert(CHas_size<S>, "S must contain size method!");
-	static_assert(CSequentialContainer<S>, "S must be a sequential container!");
-	typedef TArrayElement<S> Char;
+	static_assert(CGrowingList<S>, "S must be a sequential container!");
+	typedef TArrayListValue<S> Char;
 public:
 	operator S()
 	{
@@ -58,7 +58,7 @@ private:
 	void DiscardBuffer()
 	{
 		SetCountTryNotInit(mResult, CurrentLength());
-		mBufferRest = null;
+		mBufferRest = nullptr;
 	}
 
 	GenericStringView<const Char> mFormatRest;
@@ -71,15 +71,15 @@ private:
 public:
 	StringFormatter(GenericStringView<const Char> formatStr):
 		mFormatRest(formatStr),
-		mResult(), mBufferRest(null)
+		mResult(), mBufferRest(nullptr)
 	{
-		if(mFormatRest != null)
+		if(mFormatRest != nullptr)
 			WriteNextPart();
 	}
 
 	StringFormatter(StringFormatter&& rhs):
 		mFormatRest(rhs.mFormatRest), mResult(Move(rhs.mResult)),
-		mBufferRest(rhs.mBufferRest) {rhs.mBufferRest = null;}
+		mBufferRest(rhs.mBufferRest) {rhs.mBufferRest = nullptr;}
 
 	~StringFormatter() {INTRA_PRECONDITION(mFormatRest.Empty());}
 
@@ -91,7 +91,7 @@ public:
 		const size_t maxLen = MaxLengthOfToString(value, args...);
 		RequireSpace(maxLen);
 		ToString(mBufferRest, Forward<T>(value), Forward<Args>(args)...);
-		if(mFormatRest != null) WriteNextPart();
+		if(mFormatRest != nullptr) WriteNextPart();
 		return *this;
 	}
 
@@ -103,7 +103,7 @@ public:
 	{
 		DiscardBuffer();
 		ToString(LastAppender(mResult), Forward<T>(value), Forward<Args>(args)...);
-		if(mFormatRest != null) WriteNextPart();
+		if(mFormatRest != nullptr) WriteNextPart();
 		return *this;
 	}
 
@@ -125,4 +125,4 @@ public:
 		return *this;
 	}
 };
-INTRA_END
+} INTRA_END

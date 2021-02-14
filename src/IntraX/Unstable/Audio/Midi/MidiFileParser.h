@@ -11,7 +11,7 @@
 #include "MidiTrackParser.h"
 #include "MidiTrackCombiner.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class MidiFileParser
 {
 public:
@@ -73,4 +73,4 @@ struct MidiFileInfo
 	SBitset<128> UsedInstrumentsFlags;
 	SBitset<128> UsedDrumInstrumentsFlags;
 };
-INTRA_END
+} INTRA_END

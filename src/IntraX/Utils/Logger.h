@@ -4,7 +4,7 @@
 #include "Intra/Assert.h"
 #include "IntraX/Utils/Delegate.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 enum class LogLevel: byte {All, Info, Success, PerfWarning, Warning, Error, CriticalError, None};
 
 class ILogger
@@ -36,8 +36,8 @@ public:
 	void Log(LogLevel level, StringView msg, SourceInfo srcInfo = SourceInfo()) override
 	{
 		if(level < Verbosity) return;
-		if(Filter != null && !Filter(level, msg, srcInfo)) return;
-		if(Formatter != null) Output << Formatter(level, msg, srcInfo);
+		if(Filter != nullptr && !Filter(level, msg, srcInfo)) return;
+		if(Formatter != nullptr) Output << Formatter(level, msg, srcInfo);
 		else Output << msg << '\n';
 	}
 
@@ -46,4 +46,4 @@ public:
 	Delegate<bool(LogLevel, StringView, SourceInfo)> Filter;
 	O Output;
 };
-INTRA_END
+} INTRA_END

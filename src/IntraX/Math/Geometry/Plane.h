@@ -4,7 +4,7 @@
 #include "IntraX/Math/Vector4.h"
 #include "Sphere.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Math {
 
 template<typename T> struct Plane

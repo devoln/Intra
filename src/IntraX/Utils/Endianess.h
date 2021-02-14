@@ -1,10 +1,10 @@
 ﻿#pragma once
 
 #include "IntraX/Core.h"
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Misc/RawMemory.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct ReverseByteOrder
 {
 	constexpr ReverseByteOrder() = default;
@@ -43,4 +43,4 @@ using int32LE = LittleEndian<int32>;
 using uint32LE = LittleEndian<uint32>;
 using int64LE = LittleEndian<int64>;
 using uint64LE = LittleEndian<uint64>;
-INTRA_END
+} INTRA_END

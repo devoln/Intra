@@ -1,9 +1,8 @@
 ﻿#pragma once
 
-#include "Intra/Float.h"
-#include "Intra/Math/Math.h"
+#include <Intra/Math.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #ifdef _MSC_VER
 #pragma warning(disable: 4201) //Do not complain about union { struct { ... }; ...};
 #endif
@@ -186,13 +185,13 @@ template<typename T> Vector2<T> Abs(const Vector2<T>& v)
 {return Vector2<T>(Abs(v.x), Abs(v.y));}
 
 
-typedef Vector2<float> Vec2;
-typedef Vector2<double> DVec2;
-typedef Vector2<int> IVec2;
-typedef Vector2<unsigned> UVec2;
-typedef Vector2<byte> UBVec2;
-typedef Vector2<int8> SBVec2;
-typedef Vector2<uint16> USVec2;
-typedef Vector2<short> SVec2;
-typedef Vector2<bool> BVec2;
-INTRA_END
+using Vec2 = Vector2<float>;
+using DVec2 = Vector2<double>;
+using IVec2 = Vector2<int32>;
+using UVec2 = Vector2<uint32>;
+using U8Vec2 = Vector2<byte>;
+using I8Vec2 = Vector2<int8>;
+using U16Vec2 = Vector2<uint16>;
+using I16Vec2 = Vector2<int16>;
+using BVec2 = Vector2<bool>;
+} INTRA_END

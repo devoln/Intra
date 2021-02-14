@@ -4,7 +4,7 @@
 
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 enum ImageType: byte {
 	ImageType_1D, ImageType_1DArray, ImageType_2D,
 	ImageType_2DArray, ImageType_3D, ImageType_Cube, ImageType_CubeArray, ImageType_End
@@ -13,12 +13,12 @@ enum ImageType: byte {
 enum class CubeFace: byte {PositiveX, NegativeX, PositiveY, NegativeY, PositiveZ, NegativeZ};
 
 
-USVec3 CalculateMipmapSize(USVec3 size, ImageType type, index_t mip);
-USVec3 CalculateMipmapOffset(USVec3 offset, ImageType type, index_t mip);
+U16Vec3 CalculateMipmapSize(U16Vec3 size, ImageType type, index_t mip);
+U16Vec3 CalculateMipmapOffset(U16Vec3 offset, ImageType type, index_t mip);
 
 struct ImageInfo
 {
-	ImageInfo(USVec3 size = {0, 0, 0}, ImageFormat format = null, ImageType type = ImageType_End, NonNegative<short> mipmaps = 0):
+	ImageInfo(U16Vec3 size = {0, 0, 0}, ImageFormat format = nullptr, ImageType type = ImageType_End, NonNegative<short> mipmaps = 0):
 		Size(size), MipmapCount(mipmaps), Format(format), Type(type) {}
 
 	bool operator==(const ImageInfo& rhs) const
@@ -28,18 +28,18 @@ struct ImageInfo
 	}
 	bool operator!=(const ImageInfo& rhs) const {return !operator==(rhs);}
 
-	bool operator==(decltype(null)) const {return Size.x*Size.y*Size.z == 0 || Format == null || Type >= ImageType_End;}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator==(decltype(nullptr)) const {return Size.x*Size.y*Size.z == 0 || Format == nullptr || Type >= ImageType_End;}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
-	USVec3 Size;
+	U16Vec3 Size;
 	short MipmapCount; //=0, если требуется автоматическая генерация всех мип-уровней
 	ImageFormat Format;
 	ImageType Type;
 
 	short CalculateMaxMipmapCount() const;
-	USVec3 CalculateMipmapSize(index_t mip) const;
+	U16Vec3 CalculateMipmapSize(index_t mip) const;
 	size_t CalculateMipmapDataSize(index_t mip, size_t lineAlignment) const;
 	size_t CalculateFullDataSize(size_t lineAlignment) const;
 };
 StringView ToString(ImageType t);
-INTRA_END
+} INTRA_END

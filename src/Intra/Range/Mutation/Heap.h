@@ -18,9 +18,9 @@ You must consistently use the same predicate with the heap after it is built.
 If you want to change the predicate, first call HeapBuild to reorder its elements.
 */
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Add a new value into the heap built on a random access container.
-template<CSequentialContainer C, typename T, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
+template<CGrowingList C, typename T, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
 requires CHasIndex<C> && (!CConst<C>)
 constexpr void HeapContainerPush(C& container, T&& value, P&& comparer = Less)
 {
@@ -99,11 +99,11 @@ constexpr decltype(auto) HeapPop(R&& range, P&& comparer = Less) requires CAssig
 /// Extract a maximum priority element from the heap.
 /// The result of calling this algorithm is a heap, built on the first container.Length() - 1 elements,
 /// and the resulting heap will be properly ordered. The removed element will be removed from it.
-template<CSequentialContainer C, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
+template<CGrowingList C, CCallable<TListValue<C>, TListValue<C>> P = const decltype(Less)&>
 constexpr auto HeapContainerPop(C& container, P&& comparer = Less) requires CHasIndex<C> && !CConst<C>
 {
 	auto result = HeapPop(RangeOf(container), INTRA_FWD(comparer));
 	container.pop_back();
 	return result;
 }
-INTRA_END
+} INTRA_END

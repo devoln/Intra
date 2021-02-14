@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Hash {
 
 struct hash128
@@ -16,4 +16,4 @@ struct hash128
 };
 
 }
-INTRA_END
+} INTRA_END

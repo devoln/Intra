@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct ImageFormat;
 enum ImageType: byte;
 enum class CubeFace: byte;
@@ -135,4 +135,4 @@ enum: uint16
 using namespace TextureTargets;
 
 }
-INTRA_END
+} INTRA_END

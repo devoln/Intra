@@ -13,7 +13,7 @@
 
 #undef Yield
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 
 class WorkStealingQueue;
@@ -48,7 +48,7 @@ public:
 		if(jobCount <= 0)
 		{
 			// no job left in the queue
-			return null;
+			return nullptr;
 		}
 		return jobs[--mBottom % NUMBER_OF_JOBS];
 	}
@@ -57,7 +57,7 @@ public:
 	{
 		auto locker = MakeLock(mMutex);
 		const int jobCount = int(mBottom) - int(mTop);
-		if(jobCount <= 0) return null;
+		if(jobCount <= 0) return nullptr;
 		return mJobs[mTop++ % NUMBER_OF_JOBS];
 	}
 
@@ -108,7 +108,7 @@ public:
 			if(mTop.CompareSet(t, t + 1))
 			{
 				// failed race against steal operation
-				job = null;
+				job = nullptr;
 			}
 
 			mBottom.SetRelaxed(t + 1);
@@ -118,7 +118,7 @@ public:
 		{
 			// deque was already empty
 			mBottom.SetRelaxed(t);
-			return null;
+			return nullptr;
 		}
 	}
 
@@ -136,7 +136,7 @@ public:
 			if(mTop.CompareSet(t, t + 1))
 			{
 				// a concurrent steal or pop operation removed an element from the deque in the meantime.
-				return null;
+				return nullptr;
 			}
 
 			return job;
@@ -144,7 +144,7 @@ public:
 		else
 		{
 			// empty queue
-			return null;
+			return nullptr;
 		}
 	}
 
@@ -170,7 +170,7 @@ void WorkerMain()
 	while(workerThreadActive)
 	{
 		Job* job = Job::Get();
-		if(job != null) job->Execute();
+		if(job != nullptr) job->Execute();
 	}
 }
 
@@ -202,7 +202,7 @@ Job* Job::Get()
 		{
 			// don't try to steal from ourselves
 			ThisThread.Yield();
-			return null;
+			return nullptr;
 		}
 
 		Job* stolenJob = stealQueue->Steal();
@@ -210,7 +210,7 @@ Job* Job::Get()
 		{
 			// we couldn't steal a job from the other queue either, so we just yield our time slice for now
 			ThisThread.Yield();
-			return null;
+			return nullptr;
 		}
 
 		return stolenJob;
@@ -222,7 +222,7 @@ Job* Job::Get()
 void Job::Finish()
 {
 	const int unfinishedJobs = mUnfinishedJobCount.Increment();
-	if(unfinishedJobs == 0 && mParent != null) mParent->Finish();
+	if(unfinishedJobs == 0 && mParent != nullptr) mParent->Finish();
 }
 
 void Job::Execute()
@@ -237,7 +237,7 @@ Job* Job::CreateJob(Job::Function function)
 
 	Job* result = Job::Allocate();
 	result->mFunction = function;
-	result->mParent = null;
+	result->mParent = nullptr;
 	result->mUnfinishedJobCount.Set(1);
 
 	return result;
@@ -267,10 +267,10 @@ void Job::Wait() const
 	while(mUnfinishedJobCount.Get() != 0)
 	{
 		Job* nextJob = Job::Get();
-		if(nextJob != null) nextJob->Execute();
+		if(nextJob != nullptr) nextJob->Execute();
 	}
 }
-INTRA_END
+} INTRA_END
 
 #endif
 

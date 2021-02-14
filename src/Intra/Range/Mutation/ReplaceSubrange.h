@@ -12,7 +12,7 @@
 #include "Intra/Range/Search/RecursiveBlock.h"
 #include "Intra/Range/Mutation/Copy.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<class R, class OR, class RR> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	COutput<OR> &&
@@ -80,7 +80,7 @@ TTakeResult<TRangeOfRef<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 	{
 		PopFirstExactly(src, Count(entryStart));
 		int counter = 1;
-		auto entryStr = TakeRecursiveBlockAdvance(src, counter, &index, entryStart, entryEnd, null, null, null);
+		auto entryStr = TakeRecursiveBlockAdvance(src, counter, &index, entryStart, entryEnd, nullptr, nullptr, nullptr);
 		if(counter>0)
 		{
 			INTRA_DEBUG_ASSERT(src.Empty());
@@ -104,4 +104,4 @@ TTakeResult<TRangeOfRef<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 	}
 	return Take(resultBufferStart, index);
 }
-INTRA_END
+} INTRA_END

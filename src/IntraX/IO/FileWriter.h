@@ -11,31 +11,30 @@
 #include "IntraX/Utils/Shared.h"
 #include "Intra/Range/Span.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class FileWriter: public OutputStreamMixin<FileWriter, char>
 {
 public:
 	FileWriter() = default;
-	FileWriter(decltype(null)) {}
 
 	FileWriter(Shared<OsFile> file, uint64 startOffset = 0, Index bufferSize = 4096):
 		mFile(Move(file)), mOffset(startOffset)
 	{
-		if(mFile == null) return;
+		if(mFile == nullptr) return;
 		mBuffer.SetCountUninitialized(bufferSize);
 		mBufferRest = mBuffer;
 	}
 
 	static FileWriter Append(Shared<OsFile> file, Index bufferSize = 4096)
 	{
-		if(file == null) return null;
+		if(file == nullptr) return FileWriter();
 		const uint64 size = file->Size();
 		return FileWriter(Move(file), size, bufferSize);
 	}
 
 	static FileWriter Overwrite(Shared<OsFile> file, Index bufferSize = 4096)
 	{
-		if(file == null) return null;
+		if(file == nullptr) return FileWriter();
 		file->SetSize(0, IgnoreErrors);
 		return FileWriter(Move(file), 0, bufferSize);
 	}
@@ -43,8 +42,7 @@ public:
 	FileWriter(const FileWriter&) = delete;
 	FileWriter(FileWriter&& rhs) {operator=(Move(rhs));}
 
-	bool operator==(decltype(null)) {return mFile == null;}
-	bool operator!=(decltype(null)) {return mFile != null;}
+	bool IsOk() const {return mFile != nullptr;}
 
 	FileWriter& operator=(const FileWriter& rhs) = delete;
 
@@ -55,17 +53,7 @@ public:
 		mOffset = rhs.mOffset;
 		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
-		rhs.mBufferRest = null;
-		return *this;
-	}
-
-	FileWriter& operator=(decltype(null))
-	{
-		Flush(IgnoreErrors);
-		mFile = null;
-		mBuffer = null;
-		mBufferRest = null;
-		mOffset = 0;
+		rhs.mBufferRest = Span<char>();
 		return *this;
 	}
 
@@ -80,7 +68,7 @@ public:
 		if(mBufferRest.Empty()) Flush(err);
 	}
 
-	index_t PutAllAdvance(CSpan<char>& src, ErrorReporter err = IgnoreErrors)
+	index_t PutAllAdvance(Span<const char>& src, ErrorReporter err = IgnoreErrors)
 	{
 		auto totalBytesWritten = ReadWrite(src, mBufferRest);
 		if(!mBufferRest.Empty()) return totalBytesWritten;
@@ -97,18 +85,15 @@ public:
 		return totalBytesWritten;
 	}
 
-	template<typename AR> requires
-		CSame<TArrayElement<AR>, char> &&
-		(!CConst<AR>)
+	template<typename AR> requires CSame<TArrayListValue<AR>, char> && (!CConst<AR>)
 	size_t PutAllAdvance(AR& src, ErrorReporter err = IgnoreErrors)
 	{
-		CSpan<char> srcArr = {src.Data(), src.Length()};
+		Span<const char> srcArr = {src.Data(), src.Length()};
 		size_t result = PutAllAdvance(srcArr, err);
 		PopFirstExactly(src, result);
 		return result;
 	}
 
-	/// �������� ����� � ����.
 	void Flush(ErrorReporter err = IgnoreErrors)
 	{
 		if(mBuffer.Empty()) return;
@@ -130,4 +115,4 @@ private:
 	Array<char> mBuffer;
 	Span<char> mBufferRest;
 };
-INTRA_END
+} INTRA_END

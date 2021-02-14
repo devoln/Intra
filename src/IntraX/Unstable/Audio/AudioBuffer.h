@@ -4,21 +4,21 @@
 #include "IntraX/Container/Sequential/Array.h"
 #include "IntraX/Unstable/Audio/SoundTypes.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct AudioBuffer
 {
 	AudioBuffer() = default;
-	AudioBuffer(decltype(null)) {}
-	AudioBuffer(Index sampleCount, NonNegative<int> sampleRate = 44100, CSpan<float> initData = null);
+	AudioBuffer(decltype(nullptr)) {}
+	AudioBuffer(Index sampleCount, NonNegative<int> sampleRate = 44100, Span<const float> initData = nullptr);
 
 	double Duration() const {return SampleRate == 0? 0: double(NumFrames())/double(SampleRate);}
 
 	void ShiftSamples(index_t samplesToShift);
 
-	bool operator==(decltype(null)) const {return SampleRate == 0;}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator==(decltype(nullptr)) const {return SampleRate == 0;}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
-	AudioBuffer& operator=(decltype(null)) {return *this = AudioBuffer{};}
+	AudioBuffer& operator=(decltype(nullptr)) {return *this = AudioBuffer{};}
 
 	SoundInfo Info() const {return {Samples.Count(), SampleRate, NumChannels, ValueType::Float};}
 
@@ -28,4 +28,4 @@ struct AudioBuffer
 	short NumChannels = 1;
 	Array<float> Samples; //Channels are stored in the interleaved order
 };
-INTRA_END
+} INTRA_END

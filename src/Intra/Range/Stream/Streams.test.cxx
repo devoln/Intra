@@ -7,7 +7,7 @@
 #include "IntraX/IO/FormattedWriter.h"
 #include "IntraX/Unstable/Random/FastUniform.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 INTRA_MODULE_UNITTEST
 {
@@ -76,4 +76,4 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT_EQUALS(dst, "TODO");
 }
 
-INTRA_END
+} INTRA_END

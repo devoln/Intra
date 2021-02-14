@@ -3,7 +3,7 @@
 #include "Intra/Range/StringView.h"
 #include "Intra/Reflection.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Структура, определяющая язык, в который и из которого производится текстовая сериализация и десериализация.
 /// Для возможности корректной десериализации требуется внимательно следить за возможностью однозначного распознавания определений и разделителей.
 struct LanguageParams
@@ -179,4 +179,4 @@ struct LanguageParamsBuiltin
 	};
 };
 
-INTRA_END
+} INTRA_END

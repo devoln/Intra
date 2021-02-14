@@ -1,13 +1,13 @@
 ﻿#include "IntraX/Memory/VirtualMemory.h"
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Assert.h"
 
 #ifdef _WIN32
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace z_D { extern "C" {
-__declspec(dllimport) void* __stdcall VirtualAlloc(void* lpAddress, size_t dwSize, uint32 flAllocationType, uint32 flProtect);
-__declspec(dllimport) int __stdcall VirtualFree(void* lpAddress, size_t dwSize, uint32 dwFreeType);
+INTRA_DLL_IMPORT void* INTRA_WINAPI VirtualAlloc(void* lpAddress, size_t dwSize, uint32 flAllocationType, uint32 flProtect);
+INTRA_DLL_IMPORT int INTRA_WINAPI VirtualFree(void* lpAddress, size_t dwSize, uint32 dwFreeType);
 struct SYSTEM_INFO
 {
 	uint16 wProcessorArchitecture, wReserved;
@@ -18,7 +18,7 @@ struct SYSTEM_INFO
 	uint32 dwNumberOfProcessors, dwProcessorType, dwAllocationGranularity;
 	uint16 wProcessorLevel, wProcessorRevision;
 }
-__declspec(dllimport) void __stdcall GetSystemInfo(SYSTEM_INFO* lpSystemInfo);
+INTRA_DLL_IMPORT void INTRA_WINAPI GetSystemInfo(SYSTEM_INFO* lpSystemInfo);
 }
 
 enum: uint8 {WPAGE_NOACCESS = 1, WPAGE_READONLY = 2, WPAGE_READWRITE = 4, WPAGE_WRITECOPY = 8,
@@ -30,12 +30,11 @@ constexpr uint8 accessTable[] =
 	z_D::WPAGE_EXECUTE, z_D::WPAGE_EXECUTE_READ, z_D::WPAGE_EXECUTE_WRITECOPY, z_D::WPAGE_EXECUTE_READWRITE
 };
 static_assert(LengthOf(accessTable) == index_t(Access::End));
-
 }
 
 AnyPtr VirtualAlloc(size_t bytes, Access access)
 {
-	return z_D::VirtualAlloc(null, bytes, uint32(access == Access::None? z_D::WMEM_RESERVE: z_D::WMEM_COMMIT), z_D::accessTable[uint8(access)];
+	return z_D::VirtualAlloc(nullptr, bytes, uint32(access == Access::None? z_D::WMEM_RESERVE: z_D::WMEM_COMMIT), z_D::accessTable[uint8(access)];
 }
 
 void VirtualFree(void* ptr, size_t size)
@@ -46,7 +45,7 @@ void VirtualFree(void* ptr, size_t size)
 
 void VirtualCommit(void* ptr, size_t bytes, Access access)
 {
-	INTRA_PRECONDITION(ptr != null);
+	INTRA_PRECONDITION(ptr != nullptr);
 	if(access != Access::None) z_D::VirtualAlloc(ptr, bytes, z_D::WMEM_COMMIT, z_D::accessTable[uint8(access)]);
 	else z_D::VirtualFree(ptr, bytes, z_D::WMEM_DECOMMIT);
 }
@@ -61,13 +60,13 @@ size_t VirtualMemoryPageSize()
 	return pageSize;
 }
 
-INTRA_END
+} INTRA_END
 
 #elif defined(__unix__)
 #include <unistd.h>
 #include <sys/mman.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace z_D {
 extern "C"
 {
@@ -83,7 +82,7 @@ static_assert(LengthOf(accessTable) == index_t(Access::End));
 
 AnyPtr VirtualAlloc(size_t bytes, Access access)
 {
-    void* ptr = mmap(null, bytes, z_D::accessTable[uint8(access)], MAP_ANON|(access == Access::None? MAP_PRIVATE: MAP_SHARED), -1, 0);
+    void* ptr = mmap(nullptr, bytes, z_D::accessTable[uint8(access)], MAP_ANON|(access == Access::None? MAP_PRIVATE: MAP_SHARED), -1, 0);
     msync(ptr, bytes, MS_SYNC|MS_INVALIDATE);
     return ptr;
 }
@@ -105,11 +104,11 @@ size_t VirtualMemoryPageSize()
 	static const long pageSize = sysconf(_SC_PAGESIZE);
 	return size_t(pageSize);
 }
-INTRA_END
+} INTRA_END
 #else
 #include <stdlib.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //TODO: align allocated memory
 AnyPtr VirtualAlloc(size_t bytes, Access access)
 {(void)bytes; (void)commit; (void)access; return z_D::malloc(bytes);}
@@ -120,6 +119,6 @@ void VirtualCommit(void* ptr, size_t bytes, Access access)
 {(void)ptr; (void)bytes; (void)access;}
 
 size_t VirtualMemoryPageSize() {return sizeof(void*)*2;}
-INTRA_END
+} INTRA_END
 
 #endif

@@ -7,7 +7,7 @@
 #include "Intra/Math/Math.h"
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 StringView ToString(ImageType t)
 {
 	INTRA_PRECONDITION(t < ImageType_End);
@@ -25,9 +25,9 @@ short ImageInfo::CalculateMaxMipmapCount() const
 	return Max(numLevels, short(0));
 }
 
-USVec3 CalculateMipmapSize(USVec3 size, ImageType type, index_t mip)
+U16Vec3 CalculateMipmapSize(U16Vec3 size, ImageType type, index_t mip)
 {
-	USVec3 result;
+	U16Vec3 result;
 	result.z = size.z;
 	const uint16 dims = uint16(2+(type == ImageType_3D));
 	for(uint16 i = 0; i<dims; i++)
@@ -35,13 +35,13 @@ USVec3 CalculateMipmapSize(USVec3 size, ImageType type, index_t mip)
 	return result;
 }
 
-USVec3 CalculateMipmapOffset(USVec3 offset, ImageType type, index_t mip)
+U16Vec3 CalculateMipmapOffset(U16Vec3 offset, ImageType type, index_t mip)
 {
-	USVec3 result = CalculateMipmapSize(offset, type, mip);
-	return Min(result, USVec3(offset));
+	U16Vec3 result = CalculateMipmapSize(offset, type, mip);
+	return Min(result, U16Vec3(offset));
 }
 
-USVec3 ImageInfo::CalculateMipmapSize(index_t mip) const
+U16Vec3 ImageInfo::CalculateMipmapSize(index_t mip) const
 {
 	if(mip>=MipmapCount && mip!=0) return {0, 0, 0};
 	return Intra::CalculateMipmapSize(Size, Type, mip);
@@ -49,7 +49,7 @@ USVec3 ImageInfo::CalculateMipmapSize(index_t mip) const
 
 size_t ImageInfo::CalculateMipmapDataSize(index_t mip, size_t lineAlignment) const
 {
-	USVec3 sz = CalculateMipmapSize(mip);
+	U16Vec3 sz = CalculateMipmapSize(mip);
 	const uint16 dims = uint16(2 + (Type == ImageType_3D));
 	size_t alignmentBytes = 0;
 	const unsigned bpp = Format.BitsPerPixel();
@@ -67,4 +67,4 @@ size_t ImageInfo::CalculateFullDataSize(size_t lineAlignment) const
 		size += CalculateMipmapDataSize(i, lineAlignment);
 	return size;
 }
-INTRA_END
+} INTRA_END

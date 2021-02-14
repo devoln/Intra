@@ -15,7 +15,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #ifdef _WIN32
 static byte gReadBufStart = 0;
 static byte gReadBufCount = 0;
@@ -37,14 +37,14 @@ void ConsoleInput::PopFirst()
 	}
 	DWORD read;
 	wchar_t u16[2];
-	ReadConsoleW(gInputHandle, u16, 1, &read, null);
+	ReadConsoleW(gInputHandle, u16, 1, &read, nullptr);
 	const bool isSurrogate = (u16[0] >= 0xD800 && u16[0] <= 0xDBFF);
 	if(isSurrogate)
 	{
-		ReadConsoleW(gInputHandle, u16+1, 1, &read, null);
+		ReadConsoleW(gInputHandle, u16+1, 1, &read, nullptr);
 		read = 2;
 	}
-	int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, u16, int(read), gReadBuf, sizeof(gReadBuf), null, null);
+	int bytesPerChar = WideCharToMultiByte(CP_UTF8, 0, u16, int(read), gReadBuf, sizeof(gReadBuf), nullptr, nullptr);
 	gReadBufStart = 0;
 	gReadBufCount = byte(bytesPerChar);
 #else
@@ -104,4 +104,4 @@ char32_t ConsoleInput::GetChar()
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 ConsoleInput ConsoleIn;
-INTRA_END
+} INTRA_END

@@ -5,18 +5,18 @@
 #include "Intra/Range/ListRange.h"
 #include "IntraX/Unstable/Image/Loaders/Loader.h"
 
-INTRA_BEGIN
-AnyImage AnyImage::FromData(USVec3 size, ImageFormat format, ImageType type,
+namespace Intra { INTRA_BEGIN
+AnyImage AnyImage::FromData(U16Vec3 size, ImageFormat format, ImageType type,
 	const void* data, uint16 borderLeft, uint16 borderTop, uint16 borderRight, uint16 borderBottom)
 {
-	INTRA_PRECONDITION(data != null);
+	INTRA_PRECONDITION(data != nullptr);
 	INTRA_PRECONDITION(size.x * size.y * size.z != 0);
 	INTRA_PRECONDITION(format != ImageFormat::End);
 	INTRA_PRECONDITION(type < ImageType_End);
 
 	AnyImage result({size.x + borderLeft + borderRight, size.y + borderTop + borderBottom, 1}, format, 0, type);
 	result.Data.SetCountUninitialized(index_t(result.Info.CalculateFullDataSize(1)));
-	if(data == null || borderLeft + borderRight + borderTop + borderBottom != 0)
+	if(data == nullptr || borderLeft + borderRight + borderTop + borderBottom != 0)
 		FillZeros(result.Data);
 
 	result.LineAlignment = 1;
@@ -51,7 +51,7 @@ AnyImage AnyImage::ExtractChannel(char channelName, ImageFormat compatibleFormat
 	else if(channelName=='g' || channelName=='y') channelIndex = 1;
 	else if(channelName=='b' || channelName=='z') channelIndex = 2;
 	else if(channelName=='a' || channelName=='w') channelIndex = 3;
-	else return null;
+	else return nullptr;
 
 	const size_t usefulSrcLineBytes = size_t(Info.Size.x*Info.Format.BytesPerPixel());
 	const size_t usefulDstLineBytes = size_t(Info.Size.x*compatibleFormat.BytesPerPixel());
@@ -101,7 +101,7 @@ AnyImage AnyImage::FromStream(ForwardStream stream)
 		if(!loader.IsValidHeader(header, 12)) continue;
 		return loader.Load(stream);
 	}
-	return null;
+	return nullptr;
 }
 
 FileFormat AnyImage::DetectFileFormatByHeader(byte header[12])
@@ -118,7 +118,7 @@ ImageInfo AnyImage::GetImageInfo(ForwardStream stream, Optional<FileFormat&> oFo
 	for(auto& loader: AImageLoader::Instances())
 	{
 		result = loader.GetInfo(stream);
-		if(result == null) continue;
+		if(result == nullptr) continue;
 		if(oFormat) oFormat.Unwrap() = loader.FileFormatOfLoader();
 		break;
 	}
@@ -127,4 +127,4 @@ ImageInfo AnyImage::GetImageInfo(ForwardStream stream, Optional<FileFormat&> oFo
 
 #endif
 
-INTRA_END
+} INTRA_END

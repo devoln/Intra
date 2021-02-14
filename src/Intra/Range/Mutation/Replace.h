@@ -3,7 +3,7 @@
 #include "Intra/Range/Concepts.h"
 #include "Intra/Range/Search/Single.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R> constexpr Requires<
 	CAssignableRange<R> &&
 	!CConst<R>
@@ -58,4 +58,4 @@ template<typename R,
 	auto rangeCopy = ForwardAsRange<R>(range);
 	ReplaceAdvance(rangeCopy, from, to);
 }
-INTRA_END
+} INTRA_END

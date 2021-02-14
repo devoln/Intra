@@ -3,7 +3,7 @@
 #include "Intra/Core.h"
 #include "IntraX/Math/Matrix3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4201) //Do not complain about compiler extension: union { struct { ... }; ...};
@@ -294,4 +294,4 @@ struct QuatTransform
 inline QuatTransform Inverse(const QuatTransform& qt)
 {return {-qt.pos, Inverse(qt.orient)};}
 
-INTRA_END
+} INTRA_END

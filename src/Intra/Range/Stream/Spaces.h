@@ -3,7 +3,7 @@
 #include "Intra/Range/Concepts.h"
 #include "Intra/Functional.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R> constexpr Requires<
 	CCharRange<R> &&
 	!CConst<R>,
@@ -47,4 +47,4 @@ size_t> CountLines(R&& range)
 	auto rangeCopy = ForwardAsRange<R>(range);
 	return CountLinesAdvance(rangeCopy);
 }
-INTRA_END
+} INTRA_END

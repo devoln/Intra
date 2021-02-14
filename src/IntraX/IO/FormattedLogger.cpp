@@ -1,6 +1,6 @@
 #include "IntraX/IO/FormattedLogger.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 void FormattedLogger::Log(LogLevel level, StringView msg, SourceInfo srcInfo)
 {
 	if(level < Verbosity) return;
@@ -22,4 +22,4 @@ void FormattedLogger::Log(LogLevel level, StringView msg, SourceInfo srcInfo)
 	Writer.PrintLine(msg);
 	Writer.PopFont();
 }
-INTRA_END
+} INTRA_END

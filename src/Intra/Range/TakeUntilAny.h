@@ -6,7 +6,7 @@
 #include "Intra/Range/Search/Subrange.h"
 #include "Take.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //TODO: Implement a class RTakeUntilAny for InputRange
 
 /// Прочитать количество символов, предшествующих первому вхождению любого диапазона
@@ -25,11 +25,11 @@ template<typename R, typename RWs> constexpr Requires<
 	CFiniteForwardRange<TRangeValue<RWs>> &&
 	!CConst<RWs>,
 TTakeResult<R>> TakeUntilAdvanceAnyAdvance(R&& range,
-	RWs&& subranges, size_t* ioIndex, size_t* oSubrangeIndex=null)
+	RWs&& subranges, size_t* ioIndex, size_t* oSubrangeIndex=nullptr)
 {
 	auto rangeCopy = range;
 	size_t index = CountUntilAdvanceAnyAdvance(range, subranges, oSubrangeIndex);
-	if(ioIndex != null) *ioIndex += index;
+	if(ioIndex != nullptr) *ioIndex += index;
 	return Take(rangeCopy, index);
 }
 
@@ -44,11 +44,11 @@ template<class R, class Ws,
 	!CConst<R> &&
 	CNonInfiniteForwardRange<AsWs> &&
 	CConvertibleTo<TRangeValue<AsWs>, TRangeValue<R>>,
-TTakeResult<R>> TakeUntilAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=null, size_t* oWhatIndex = null)
+TTakeResult<R>> TakeUntilAdvanceAny(R& range, Ws&& whats, size_t* ioIndex=nullptr, size_t* oWhatIndex = nullptr)
 {
 	auto rangeCopy = range;
 	size_t index = CountUntilAdvanceAny(range, ForwardAsRange<Ws>(whats), oWhatIndex);
-	if(ioIndex != null) *ioIndex += index;
+	if(ioIndex != nullptr) *ioIndex += index;
 	return Take(rangeCopy, index);
 }
 
@@ -64,10 +64,10 @@ template<class R, class Ws,
 	CNonInfiniteForwardRange<AsWs> &&
 	CConvertibleTo<TRangeValue<AsWs>, TRangeValue<AsR>>,
 TTakeResult<R>> TakeUntilAny(R&& range, Ws&& whats,
-	size_t* ioIndex=null, size_t* oWhatIndex = null)
+	size_t* ioIndex=nullptr, size_t* oWhatIndex = nullptr)
 {
 	const size_t index = CountUntilAny(ForwardAsRange<R>(range), ForwardAsRange<Ws>(whats), oWhatIndex);
-	if(ioIndex != null) *ioIndex += index;
+	if(ioIndex != nullptr) *ioIndex += index;
 	return Take(range, index);
 }
 
@@ -89,7 +89,7 @@ template<class R, class RWs,
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
 TTakeResult<R>> TakeUntilAdvanceAny(R& range,
-	RWs&& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+	RWs&& subranges, Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	auto rangeCopy = range;
 	const index_t index = CountUntilAdvanceAny(range, ForwardAsRange<RWs>(subranges), oSubrangeIndex);
@@ -112,7 +112,7 @@ template<class R, class RWs,
 	!CConst<RWs> &&
 	CNonInfiniteForwardRange<TRangeValue<RWs>>,
 TTakeResult<AsR>> TakeUntilAnyAdvance(R&& range,
-	RWs& subranges, Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+	RWs& subranges, Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	const index_t index = CountUntilAnyAdvance(RangeOf(range), subranges, oSubrangeIndex);
 	if(ioIndex) ioIndex.Unwrap() += index;
@@ -134,10 +134,10 @@ template<class R, class RWs,
 	CNonInfiniteForwardRange<AsRWs> &&
 	CNonInfiniteForwardList<TRangeValue<AsRWs>>,
 TTakeResult<R>> TakeUntilAny(R&& range, RWs&& subranges,
-	Optional<index_t&> ioIndex = null, Optional<index_t&> oSubrangeIndex = null)
+	Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oSubrangeIndex = nullptr)
 {
 	const size_t index = CountUntilAny(RangeOf(range), ForwardAsRange<RWs>(subranges), oSubrangeIndex);
 	if(ioIndex) ioIndex.Unwrap() += index;
 	return Take(range, index);
 }
-INTRA_END
+} INTRA_END

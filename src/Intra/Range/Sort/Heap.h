@@ -3,7 +3,7 @@
 #include "Intra/Range/Concepts.h"
 #include "Intra/Functional.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace z_D {
 
 template<typename T, typename C> constexpr void heap_shift_down(T arr[], size_t i, size_t j, C comparer)
@@ -47,4 +47,4 @@ template<typename R, typename C = decltype(Less)> constexpr Requires<
 		z_D::heap_shift_down(DataOf(range), 0, i, comparer);
 	}
 }
-INTRA_END
+} INTRA_END

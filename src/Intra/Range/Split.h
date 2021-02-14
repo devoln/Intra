@@ -4,7 +4,7 @@
 #include "Intra/Concepts.h"
 #include "Intra/Range/Decorators.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 template<typename R, class F1, class P2> class RSplit
 {
@@ -27,6 +27,7 @@ public:
 
 	constexpr void PopFirst()
 	{
+		//TODO: unfinished change
 		while(!mOriginalRange.Empty())
 		{
 			if constexpr(CCallable<decltype(mSkipDelimiter), Advance<R>>)
@@ -68,11 +69,11 @@ constexpr auto Split = []<typename F>(F&& skipDelimiter) {
 		CCallable<F, TRangeOf<L>> && //skipDelimiter acts as a predicate on unconsumed range part.
 		CCallable<F, Advance<TRangeOf<L>>> //If skipDelimiter finds a delimiter, it is expected to advance the range to skip it and return true.
 	{
-		return RSplit(ForwardAsRange<L>(list), skipDelimiter);
+		return RSplit(RangeOf(INTRA_FWD(list)), skipDelimiter);
 	};
 };
 
-template<typename R, typename P1, typename P2 = decltype(Never),
+template<typename L, typename P1, typename P2 = decltype(Never),
 	typename AsR = TRangeOfRef<R>,
 	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
@@ -80,8 +81,8 @@ template<typename R, typename P1, typename P2 = decltype(Never),
 	CCallable<P1, T> &&
 	CCallable<P2, T>,
 RSplit<TRemoveConstRef<AsR>, TRemoveConstRef<P1>, TRemoveConstRef<P2>>> Split(
-	R&& range, P1&& isSkippedDelimiter, P2&& isElementDelimiter = Never)
-{return {ForwardAsRange<R>(range), ForwardAsFunc<P1>(isSkippedDelimiter), ForwardAsFunc<P2>(isElementDelimiter)};}
+	L&& list, P1&& isSkippedDelimiter, P2&& isElementDelimiter = Never)
+{return {RangeOf(INTRA_FWD(list)), ForwardAsFunc<P1>(isSkippedDelimiter), ForwardAsFunc<P2>(isElementDelimiter)};}
 
 template<typename R,
 	typename AsR = TRangeOfRef<R>,
@@ -90,4 +91,4 @@ template<typename R,
 	CForwardRange<AsR>,
 RSplit<TRemoveConstRef<AsR>, TIsLineSeparator, decltype(Never)>> SplitLines(R&& range)
 {return Split(INTRA_FWD(range), IsLineSeparator, Never);}
-INTRA_END
+} INTRA_END

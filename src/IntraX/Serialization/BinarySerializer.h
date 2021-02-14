@@ -2,7 +2,7 @@
 
 #include "Intra/Reflection.h"
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/EachField.h"
 
 #include "Intra/Range/Span.h"
@@ -19,7 +19,7 @@
 #include "IntraX/Utils/Endianess.h"
 #include "IntraX/Container/Operations/Info.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename O> class GenericBinarySerializer
 {
 public:
@@ -29,14 +29,14 @@ public:
 	/// Serialize array.
 	template<typename T> Requires<
 		CTriviallySerializable<T>
-	> SerializeArray(CSpan<T> v)
+	> SerializeArray(Span<const T> v)
 	{
 		RawWrite<uint32LE>(Output, unsigned(v.Length()));
 		RawWriteFrom(Output, v);
 	}
 	template<typename T> Requires<
 		!CTriviallySerializable<T>
-	> SerializeArray(CSpan<T> v) {SerializeRange(v);}
+	> SerializeArray(Span<const T> v) {SerializeRange(v);}
 
 	/// Serialize range.
 	template<typename R> void SerializeRange(R&& v)
@@ -90,7 +90,7 @@ public:
 	}
 #endif
 
-	template<typename C, typename T=TArrayElement<C>> Requires<
+	template<typename C, typename T=TArrayListValue<C>> Requires<
 		CStaticArrayContainer<C> &&
 		CTriviallySerializable<T>,
 	GenericBinarySerializer&> operator<<(C&& src)
@@ -129,4 +129,4 @@ public:
 };
 using BinarySerializer = GenericBinarySerializer<SpanOutput<byte>>;
 using DummyBinarySerializer = GenericBinarySerializer<CountRange<byte>>;
-INTRA_END
+} INTRA_END

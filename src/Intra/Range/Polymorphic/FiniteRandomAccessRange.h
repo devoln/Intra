@@ -9,7 +9,7 @@
 #include "InputRange.h"
 #include "BidirectionalRange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_SIGN_CONVERSION
@@ -47,7 +47,7 @@ private:
 	template<typename R> using EnableCondition = Requires<
 		CConvertibleTo<TListValueRef<R>, T> &&
 		CFiniteRandomAccessList<R> &&
-		!CSameIgnoreCVRef<R, FiniteRandomAccessRange>
+		!CSameUnqualRef<R, FiniteRandomAccessRange>
 	>;
 
 	template<typename R> static Interface* wrap(R&& range)
@@ -56,7 +56,7 @@ private:
 public:
 	using value_type = TRemoveConstRef<T>;
 
-	constexpr FiniteRandomAccessRange(decltype(null)=null) {}
+	constexpr FiniteRandomAccessRange(decltype(nullptr)=nullptr) {}
 
 	constexpr FiniteRandomAccessRange(FiniteRandomAccessRange&& rhs):
 		BidirectionalRange<T>(Move(static_cast<BidirectionalRange<T>&&>(rhs))) {}
@@ -109,4 +109,4 @@ protected:
 	constexpr FiniteRandomAccessRange(typename ForwardRange<T>::Interface* interfacePtr):
 		BidirectionalRange<T>(interfacePtr) {}
 };
-INTRA_END
+} INTRA_END

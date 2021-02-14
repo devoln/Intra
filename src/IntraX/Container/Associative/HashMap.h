@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Container/Tuple.h"
 #include "Intra/Functional.h"
 #include "IntraX/Utils/FixedArray.h"
@@ -15,7 +15,7 @@
 #include "IntraX/Memory/Allocator/AllocatorRef.h"
 #include "IntraX/Memory/Memory.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct HashTableRange;
 
 namespace z_D {
@@ -47,7 +47,7 @@ template<typename T> struct HashTableRange
 {
 	typedef z_D::HashNode<TRemoveConst<T>> NodeType;
 	INTRA_FORCEINLINE HashTableRange() = default;
-	INTRA_FORCEINLINE HashTableRange(decltype(null)) {}
+	INTRA_FORCEINLINE HashTableRange(decltype(nullptr)) {}
 
 	INTRA_FORCEINLINE bool operator==(const HashTableRange& rhs) const
 	{
@@ -55,12 +55,12 @@ template<typename T> struct HashTableRange
 			(mFirstNode == rhs.mFirstNode && mLastNode == rhs.mLastNode);
 	}
 	INTRA_FORCEINLINE bool operator!=(const HashTableRange& rhs) const {return !operator==(rhs);}
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !Empty();}
 
 	INTRA_FORCEINLINE void PopFirst() {INTRA_PRECONDITION(!Empty()); mFirstNode = mFirstNode->next;}
 	INTRA_FORCEINLINE void PopLast() {INTRA_PRECONDITION(!Empty()); mLastNode = mLastNode->prev;}
-	INTRA_FORCEINLINE bool Empty() const {return mFirstNode == null || mFirstNode->prev == mLastNode;}
+	INTRA_FORCEINLINE bool Empty() const {return mFirstNode == nullptr || mFirstNode->prev == mLastNode;}
 	INTRA_FORCEINLINE T& First() const {INTRA_PRECONDITION(!Empty()); return mFirstNode->element;}
 	INTRA_FORCEINLINE T& Last() const {INTRA_PRECONDITION(!Empty()); return mLastNode->element;}
 
@@ -75,8 +75,8 @@ private:
 	INTRA_FORCEINLINE HashTableRange(NodeType* startNode, NodeType* lastNode):
 		mFirstNode(startNode), mLastNode(lastNode) {}
 
-	NodeType* mFirstNode = null;
-	NodeType* mLastNode = null;
+	NodeType* mFirstNode = nullptr;
+	NodeType* mLastNode = nullptr;
 
 	template<typename K, typename V, class Allocator> friend class HashMap;
 };
@@ -107,17 +107,17 @@ public:
 
 	struct iterator
     {
-        INTRA_FORCEINLINE iterator(Node* nodePtr=null): node(nodePtr) {}
+        INTRA_FORCEINLINE iterator(Node* nodePtr=nullptr): node(nodePtr) {}
 		INTRA_FORCEINLINE iterator(const ElementRange& r): node(r.mFirstNode) {}
  
 		INTRA_FORCEINLINE bool operator==(const iterator& rhs) const {return node==rhs.node;}
         INTRA_FORCEINLINE bool operator!=(const iterator& rhs) const {return node!=rhs.node;}
         INTRA_FORCEINLINE void GotoNext()
 		{
-			INTRA_DEBUG_ASSERT(node != null);
+			INTRA_DEBUG_ASSERT(node != nullptr);
 			node = node->next;
 		}
-        INTRA_FORCEINLINE void GotoPrev() {INTRA_PRECONDITION(node != null); node = node->prev;}
+        INTRA_FORCEINLINE void GotoPrev() {INTRA_PRECONDITION(node != nullptr); node = node->prev;}
  
         INTRA_FORCEINLINE iterator& operator++() {GotoNext(); return *this;}
         INTRA_FORCEINLINE iterator operator++(int) {iterator it = *this; GotoNext(); return it;}
@@ -132,15 +132,15 @@ public:
  
     struct const_iterator
     {
-        INTRA_FORCEINLINE const_iterator(Node* nodePtr=null): node(nodePtr) {}
+        INTRA_FORCEINLINE const_iterator(Node* nodePtr=nullptr): node(nodePtr) {}
 		INTRA_FORCEINLINE const_iterator(const ElementRange& r): node(r.mFirstNode) {}
 		INTRA_FORCEINLINE const_iterator(const ElementConstRange& r): node(r.mFirstNode) {}
         INTRA_FORCEINLINE const_iterator(const iterator& rhs): node(rhs.node) {}
  
         INTRA_FORCEINLINE bool operator==(const const_iterator& rhs) const {return node==rhs.node;}
         INTRA_FORCEINLINE bool operator!=(const const_iterator& rhs) const {return node!=rhs.node;}
-        INTRA_FORCEINLINE void GotoNext() {INTRA_PRECONDITION(node != null); node = node->next;}
-        INTRA_FORCEINLINE void GotoPrev() {INTRA_PRECONDITION(node != null); node = node->prev;}
+        INTRA_FORCEINLINE void GotoNext() {INTRA_PRECONDITION(node != nullptr); node = node->next;}
+        INTRA_FORCEINLINE void GotoPrev() {INTRA_PRECONDITION(node != nullptr); node = node->prev;}
  
         INTRA_FORCEINLINE const_iterator& operator++() {GotoNext(); return *this;}
         INTRA_FORCEINLINE const_iterator operator++(int) {const_iterator it = *this; GotoNext(); return it;}
@@ -155,7 +155,7 @@ public:
  
 
 	HashMap() = default;
-	HashMap(decltype(null)) {}
+	HashMap(decltype(nullptr)) {}
 
 	HashMap(const HashMap& rhs): AllocatorRef(rhs) {operator=(rhs);}
 
@@ -168,7 +168,7 @@ public:
 		return *this;
 	}
 
-	HashMap& operator=(decltype(null))
+	HashMap& operator=(decltype(nullptr))
 	{
 		Clear();
 		return *this;
@@ -191,26 +191,26 @@ public:
 	bool operator!=(const HashMap& rhs) const {return !operator==(rhs);}
 
 	[[nodiscard]] INTRA_FORCEINLINE bool Empty() const {return Count() == 0;}
-	[[nodiscard]] INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	[[nodiscard]] INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !Empty();}
 
 	V& operator[](const K& key)
 	{
-		if(mBucketHeads == null)
+		if(mBucketHeads == nullptr)
 			return get<1>(insertNode(key, V(), false)->element);
 		unsigned keyHash = ToHash(key);
 		Node* node = findNode(key, keyHash);
-		if(node!=null) return get<1>(node->element);
+		if(node!=nullptr) return get<1>(node->element);
 		return get<1>(insertNode(key, V(), false)->element);
 	}
 
 	V& operator[](K&& key)
 	{
-		if(mBucketHeads == null)
+		if(mBucketHeads == nullptr)
 			return get<1>(insertNode(Move(key), V(), false)->element);
 		unsigned keyHash = ToHash(key);
 		Node* node = findNode(key, keyHash);
-		if(node != null) return get<1>(node->element);
+		if(node != nullptr) return get<1>(node->element);
 		return get<1>(insertNode(Move(key), V(), false)->element);
 	}
 
@@ -238,10 +238,10 @@ public:
 	ElementRange InsertNew(const K& key, const V& value)
 	{
 		const unsigned keyHash = ToHash(key);
-		if(mBucketHeads != null)
+		if(mBucketHeads != nullptr)
 		{
 			auto node = findNode(key, keyHash);
-			if(node != null) return ElementRange(node, mRange.mLastNode);
+			if(node != nullptr) return ElementRange(node, mRange.mLastNode);
 		}
 		return ElementRange(insertNode(key, value, false), mRange.mLastNode);
 	}
@@ -251,10 +251,10 @@ public:
 	iterator InsertNew(K&& key, V&& value)
 	{
 		const unsigned keyHash = ToHash(key);
-		if(mBucketHeads != null)
+		if(mBucketHeads != nullptr)
 		{
 			auto node = findNode(key, keyHash);
-			if(node!=null) return ElementRange(node, mRange.mLastNode);
+			if(node!=nullptr) return ElementRange(node, mRange.mLastNode);
 		}
 		return ElementRange(insertNode(Move(key), Move(value), false), mRange.mLastNode);
 	}
@@ -263,13 +263,13 @@ public:
 	/// @returns true if key existed.
 	bool Remove(const K& key)
 	{
-		if(mBucketHeads == null) return false;
+		if(mBucketHeads == nullptr) return false;
 		const unsigned keyHash = ToHash(key);
 		Node* previous;
 		auto node = findNode(key, keyHash, previous);
-		if(node == null) return false;
+		if(node == nullptr) return false;
 
-		if(previous != null) previous->down = node->down;
+		if(previous != nullptr) previous->down = node->down;
 		else get_bucket_head(keyHash) = node->down;
 
 		eraseNode(node);
@@ -280,17 +280,17 @@ public:
 	/// @return Возвращает диапазон, содержащий все элементы, идущие после удаляемого элемента.
 	ElementRange Remove(const_iterator it)
 	{
-		if(mBucketHeads == null || it == null) return null;
+		if(mBucketHeads == nullptr || it == nullptr) return nullptr;
 
 		auto node = it.node;
 		auto next = node->next;
 
 		unsigned keyHash = ToHash(get<0>(node->element));
 
-		Node* previous = null;
+		Node* previous = nullptr;
 		auto& bh = get_bucket_head(keyHash);
 		auto current = bh;
-		while(current != null && current != node)
+		while(current != nullptr && current != node)
 		{
 			previous = current;
 			current = current->down;
@@ -298,7 +298,7 @@ public:
 
 		INTRA_DEBUG_ASSERT(current == node);
 
-		if(previous != null) previous->down = node->down;
+		if(previous != nullptr) previous->down = node->down;
 		else bh = node->down;
 
 		eraseNode(node);
@@ -315,9 +315,9 @@ public:
 				auto node = mRange.mFirstNode;
 				mRange.PopFirst();
 				freeNode(node);
-				if(mRange.mFirstNode != null) mRange.mFirstNode->prev = null;
+				if(mRange.mFirstNode != nullptr) mRange.mFirstNode->prev = nullptr;
 			}
-			mRange.mLastNode = null;
+			mRange.mLastNode = nullptr;
 			set_count(0);
 		}
 		reset_bucket_heads();
@@ -345,14 +345,14 @@ public:
 		});
 
 		mRange.mFirstNode = ptrs[0];
-		ptrs[0]->prev = null;
+		ptrs[0]->prev = nullptr;
 		for(unsigned i=1; i<numKeys; i++)
 		{
 			ptrs[i-1]->next = ptrs[i];
 			ptrs[i]->prev = ptrs[i-1];
 		}
 		mRange.mLastNode = ptrs.Last();
-		mRange.mLastNode->next = null;
+		mRange.mLastNode->next = nullptr;
 	}
 
 	/// Сортирует все элементы контейнера. После сортировки итерация по контейнеру выполняется в порядке, задаваемым pred, пока не будут добавлены новые элементы.
@@ -392,10 +392,10 @@ public:
 	/// \return Диапазон, содержащий все элементы контейнера начиная с элемента с ключом key.
 	ElementRange Find(const K& key)
 	{
-		if(mBucketHeads == null) return {};
+		if(mBucketHeads == nullptr) return {};
 		unsigned keyHash = ToHash(key);
 		Node* node = findNode(key, keyHash);
-		if(node == null) return {};
+		if(node == nullptr) return {};
 		return ElementRange(node, mRange.mLastNode);
 	}
 
@@ -434,9 +434,9 @@ public:
 
 	bool Contains(const K& key) const
 	{
-		if(mBucketHeads == null) return false;
+		if(mBucketHeads == nullptr) return false;
 		unsigned keyHash = ToHash(key);
-		return findNode(key, keyHash) != null;
+		return findNode(key, keyHash) != nullptr;
 	}
 
 	/*Array<K> Keys() const
@@ -465,13 +465,13 @@ public:
 
 	iterator begin() {return iterator(mRange);}
 	const_iterator begin() const {return const_iterator(mRange);}
-	iterator end() {return iterator(null);}
-	const_iterator end() const {return const_iterator(null);}
+	iterator end() {return iterator(nullptr);}
+	const_iterator end() const {return const_iterator(nullptr);}
 
 	iterator rbegin() {return iterator(mRange.mLastNode);}
 	const_iterator rbegin() const {return const_iterator(mRange.mLastNode);}
-	iterator rend() {return iterator(null);}
-	const_iterator rend() const {return const_iterator(null);}
+	iterator rend() {return iterator(nullptr);}
+	const_iterator rend() const {return const_iterator(nullptr);}
 
 #ifdef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
 	INTRA_FORCEINLINE iterator emplace(K&& key, V&& value) {return iterator(Insert(Move(key), Move(value)));}
@@ -483,8 +483,8 @@ public:
 	INTRA_FORCEINLINE const_iterator find(const K& key) const {return const_iterator(Find(key));}
 #endif
 
-    size_t Count() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[0]: 0;}
-    size_t BucketCount() const {return mBucketHeads!=null? (reinterpret_cast<size_t*>(mBucketHeads))[1]: 0;}
+    size_t Count() const {return mBucketHeads!=nullptr? (reinterpret_cast<size_t*>(mBucketHeads))[0]: 0;}
+    size_t BucketCount() const {return mBucketHeads!=nullptr? (reinterpret_cast<size_t*>(mBucketHeads))[1]: 0;}
 
 	HashMapStatistics GetStats(Span<size_t> oBucketLoads)
 	{
@@ -497,7 +497,7 @@ public:
 		for(size_t i=0; i<BucketCount(); i++)
 		{
 			Node* node = get_bucket_head(i);
-			if(node==null)
+			if(node==nullptr)
 			{
 				++result.FreeBucketCount;
 				continue;
@@ -509,7 +509,7 @@ public:
 				bucketLoad++;
 				node = node->down;
 			}
-			while(node != null);
+			while(node != nullptr);
 			loadSum += bucketLoad;
 			if(bucketLoad<oBucketLoads.Length()) oBucketLoads[bucketLoad]++;
 			if(result.MaxBucketLoad<bucketLoad) result.MaxBucketLoad = bucketLoad;
@@ -534,52 +534,52 @@ private:
 
 	void reset_bucket_heads()
 	{
-		if(mBucketHeads == null) return;
+		if(mBucketHeads == nullptr) return;
 		size_t numBuckets = BucketCount();
 		Node** ptrs = get_bucket_heads();
-		for(unsigned i = 0; i < numBuckets; i++) ptrs[i] = null;
+		for(unsigned i = 0; i < numBuckets; i++) ptrs[i] = nullptr;
 	}
 
     void set_count(size_t newCount)
-	{if(mBucketHeads!=null) reinterpret_cast<size_t*>(mBucketHeads)[0] = newCount;}
+	{if(mBucketHeads!=nullptr) reinterpret_cast<size_t*>(mBucketHeads)[0] = newCount;}
 
 	INTRA_FORCEINLINE Node** get_bucket_heads() const
-	{return mBucketHeads!=null? mBucketHeads+2: null;}
+	{return mBucketHeads!=nullptr? mBucketHeads+2: nullptr;}
 
 	INTRA_FORCEINLINE Node*& get_bucket_head(size_t index) const
 	{return get_bucket_heads()[index & (BucketCount()-1)];}
 
 	ElementRange mRange;
-	Node** mBucketHeads = null;
+	Node** mBucketHeads = nullptr;
 
 	Node* findNode(const K& key, unsigned keyHash) const
 	{
 		Node* node = get_bucket_head(keyHash);
-		while(node != null)
+		while(node != nullptr)
 		{
 			if(get<0>(node->element) == key) return node;
 			node = node->down;
 		}
-		return null;
+		return nullptr;
 	}
 
 	Node* findNode(const K& key, unsigned keyHash, Node*& previous) const
 	{
-		previous = null;
+		previous = nullptr;
 
 		Node* node = get_bucket_head(keyHash);
-		while(node != null)
+		while(node != nullptr)
 		{
 			if(get<0>(node->element) == key) return node;
 			previous = node;
 			node = node->down;
 		}
-		return null;
+		return nullptr;
 	}
 
-	Node* insert_node_no_construct_or_assign(const K& key, bool* oExisting = null)
+	Node* insert_node_no_construct_or_assign(const K& key, bool* oExisting = nullptr)
 	{
-		if(mBucketHeads == null)
+		if(mBucketHeads == nullptr)
 		{
 			allocate_buckets(Count(), 8);
 			rehash();
@@ -587,11 +587,11 @@ private:
 
 		unsigned keyHash = ToHash(key);
 
-		if(oExisting != null)
+		if(oExisting != nullptr)
 		{
 			Node* existing = findNode(key, keyHash);
-			*oExisting = existing != null;
-			if(existing != null) return existing;
+			*oExisting = existing != nullptr;
+			if(existing != nullptr) return existing;
 		}
 
 		Node* newNode = insertNodeAfter(mRange.mLastNode);
@@ -605,7 +605,7 @@ private:
 	Node* insertNode(K&& key, V&& value, bool findExisting=true)
 	{
 		bool existed = false;
-		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
+		Node* newNode = insert_node_no_construct_or_assign(key, findExisting? &existed: nullptr);
 		if(!existed) new(Construct, &newNode->element) value_type(Move(key), Move(value));
 		else get<1>(newNode->element) = Move(value);
 		if(Count() > BucketCount())
@@ -619,7 +619,7 @@ private:
 	Node* insertNode(const K& key, const V& value, bool findExisting=true)
 	{
 		bool existed = false;
-		Node* node = insert_node_no_construct_or_assign(key, findExisting? &existed: null);
+		Node* node = insert_node_no_construct_or_assign(key, findExisting? &existed: nullptr);
 		if(!existed) new(Construct, &node->element) value_type(key, value);
 		else get<1>(node->element) = value;
 		if(Count() > BucketCount())
@@ -633,13 +633,13 @@ private:
 	Node* insertNodeAfter(Node* dest)
 	{
 		Node* newNode = createNewNode();
-		newNode->next = dest == null? null: dest->next;
+		newNode->next = dest == nullptr? nullptr: dest->next;
 		newNode->prev = dest;
-		if(newNode->next != null) newNode->next->prev = newNode;
-		if(dest != null) dest->next = newNode;
+		if(newNode->next != nullptr) newNode->next->prev = newNode;
+		if(dest != nullptr) dest->next = newNode;
 
 		if(dest == mRange.mLastNode) mRange.mLastNode = newNode;
-		if(mRange.mFirstNode == null) mRange.mFirstNode = newNode;
+		if(mRange.mFirstNode == nullptr) mRange.mFirstNode = newNode;
 
 		set_count(Count()+1);
 
@@ -648,10 +648,10 @@ private:
 
 	Node* eraseNode(Node* node)
 	{
-		if(node == null) return null;
+		if(node == nullptr) return nullptr;
 
-		if(node->prev != null) node->prev->next = node->next;
-		if(node->next != null) node->next->prev = node->prev;
+		if(node->prev != nullptr) node->prev->next = node->next;
+		if(node->next != nullptr) node->next->prev = node->prev;
 
 		if(node == mRange.mFirstNode) mRange.mFirstNode = node->next;
 		if(node == mRange.mLastNode) mRange.mLastNode = node->prev;
@@ -689,4 +689,4 @@ private:
 		}
 	}
 };
-INTRA_END
+} INTRA_END

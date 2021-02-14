@@ -2,7 +2,7 @@
 #include "Intra/Container/Array.h"
 #include "IntraX/System/Debug.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_MODULE_UNITTEST
 {
 	int arr[] = {4, 7, 2, 6, 9, 2};

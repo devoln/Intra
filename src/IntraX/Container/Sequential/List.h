@@ -7,7 +7,7 @@
 #include "IntraX/Memory/Allocator/AllocatorRef.h"
 #include "IntraX/Container/AllForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_SIGN_CONVERSION
 template<typename T, class AllocatorType> class BList:
 	public AllocatorRef<AllocatorType>
@@ -23,11 +23,11 @@ public:
 
 	struct iterator
 	{
-		iterator(decltype(null)=null): mNode(null) {}
+		iterator(decltype(nullptr)=nullptr): mNode(nullptr) {}
 		T& operator*() const {return mNode->Value;}
 		T* operator->() const {return &mNode->Value;}
-		iterator& operator++() {INTRA_PRECONDITION(mNode != null); mNode = mNode->Next;}
-		iterator& operator--() {INTRA_PRECONDITION(mNode != null); mNode = mNode->Prev;}
+		iterator& operator++() {INTRA_PRECONDITION(mNode != nullptr); mNode = mNode->Next;}
+		iterator& operator--() {INTRA_PRECONDITION(mNode != nullptr); mNode = mNode->Prev;}
 	private:
 		iterator(Node* node): mNode(node) {}
 		Node* mNode;
@@ -35,38 +35,38 @@ public:
 
 	struct const_iterator
 	{
-		const_iterator(decltype(null)=null): mNode(null) {}
+		const_iterator(decltype(nullptr)=nullptr): mNode(nullptr) {}
 		const_iterator(iterator it): mNode(reinterpret_cast<ConstNode*>(it.mNode)) {}
 		const T& operator*() const {return mNode->Value;}
 		const T* operator->() const {return &mNode->Value;}
-		const_iterator& operator++() {INTRA_PRECONDITION(mNode != null); mNode = mNode->Next;}
-		const_iterator& operator--() {INTRA_PRECONDITION(mNode != null); mNode = mNode->Prev;}
+		const_iterator& operator++() {INTRA_PRECONDITION(mNode != nullptr); mNode = mNode->Next;}
+		const_iterator& operator--() {INTRA_PRECONDITION(mNode != nullptr); mNode = mNode->Prev;}
 	private:
 		const_iterator(ConstNode* node): mNode(node) {}
 		ConstNode* mNode;
 	};
 
 
-	INTRA_FORCEINLINE BList(decltype(null)=null): mRange(null), mCount(0) {}
+	INTRA_FORCEINLINE BList(decltype(nullptr)=nullptr): mRange(nullptr), mCount(0) {}
 
 	INTRA_FORCEINLINE BList(Allocator& allocator):
-		AllocatorRef(allocator), mRange(null), mCount(0) {}
+		AllocatorRef(allocator), mRange(nullptr), mCount(0) {}
 
 	INTRA_FORCEINLINE BList(BList&& rhs):
 		AllocatorRef(rhs), mRange(rhs.mRange), mCount(rhs.mCount)
-	{rhs.mRange = null; rhs.mCount = 0;}
+	{rhs.mRange = nullptr; rhs.mCount = 0;}
 
 	template<typename R, typename = Requires<
 		CConsumableRangeOf<R, T> &&
-		!CSameIgnoreCVRef<R, BList>
+		!CSameUnqualRef<R, BList>
 	>> INTRA_FORCEINLINE BList(R&& values):
-		mRange(null), mCount(0)
+		mRange(nullptr), mCount(0)
 	{AddLastRange(ForwardAsRange<R>(values));}
 
 	template<size_t N> BList(T(&arr)[N]) {operator=(RangeOf(arr));}
 
 	BList(const BList& rhs):
-		AllocatorRef(rhs), mRange(null), mCount(0)
+		AllocatorRef(rhs), mRange(nullptr), mCount(0)
 	{operator=(rhs.AsRange());}
 	
 	~BList() {Clear();}
@@ -113,7 +113,7 @@ public:
 	*/
 	template<typename... Args> iterator Emplace(const_iterator pos, Args&&... args)
 	{
-		if(pos.mNode == null)
+		if(pos.mNode == nullptr)
 		{
 			AddLast(Forward<Args>(args)...);
 			return mRange;
@@ -136,7 +136,7 @@ public:
 	*/
 	iterator Remove(const_iterator pos)
 	{
-		INTRA_DEBUG_ASSERT(pos.mNode != null);
+		INTRA_DEBUG_ASSERT(pos.mNode != nullptr);
 		pos.mNode->Value.~T();
 		Node* const next = pos.mNode->Next;
 		remove_node(pos.mNode);
@@ -149,8 +149,8 @@ public:
 		mRange.FirstNode->Value.~T();
 		auto deletedNode = mRange.FirstNode;
 		mRange.FirstNode = mRange.FirstNode->Next;
-		if(mRange.FirstNode!=null) mRange.FirstNode->Prev = null;
-		else mRange.LastNode=null;
+		if(mRange.FirstNode!=nullptr) mRange.FirstNode->Prev = nullptr;
+		else mRange.LastNode=nullptr;
 		AllocatorRef::Free(deletedNode, sizeof(Node));
 	}
 
@@ -160,8 +160,8 @@ public:
 		mRange.LastNode->Value.~T();
 		auto deletedNode = mRange.LastNode;
 		mRange.LastNode = mRange.LastNode->Prev;
-		if(mRange.LastNode!=null) mRange.LastNode->Next = null;
-		else mRange.FirstNode = null;
+		if(mRange.LastNode!=nullptr) mRange.LastNode->Next = nullptr;
+		else mRange.FirstNode = nullptr;
 		AllocatorRef::Free(deletedNode, sizeof(Node));
 	}
 
@@ -169,14 +169,14 @@ public:
 	void Clear()
 	{
 		Node* current = mRange.FirstNode;
-		while(current!=null)
+		while(current!=nullptr)
 		{
 			current->Value.~T();
 			Node* next = current->Next;
 			AllocatorRef::Free(current, sizeof(Node));
 			current = next;
 		}
-		mRange = null;
+		mRange = nullptr;
 		mCount = 0;
 	}
 
@@ -219,7 +219,7 @@ public:
 
 	template<typename R> Requires<
 		CConsumableListOf<R, T> &&
-		!CSameIgnoreCVRef<R, BList>
+		!CSameUnqualRef<R, BList>
 	> AddLastRange(R&& values)
 	{
 		auto valuesRange = ForwardAsRange<R>(values);
@@ -229,7 +229,7 @@ public:
 
 	template<typename R> Requires<
 		CConsumableListOf<R, T> &&
-		!CSameIgnoreCVRef<R, BList>,
+		!CSameUnqualRef<R, BList>,
 	BList&> operator=(R&& values)
 	{
 		Clear();
@@ -252,12 +252,12 @@ public:
 		Clear();
 		mRange = rhs.mRange;
 		mCount = rhs.mCount;
-		rhs.mRange = null;
+		rhs.mRange = nullptr;
 		rhs.mCount = 0;
 		return *this;
 	}
 
-	INTRA_FORCEINLINE BList& operator=(decltype(null)) {Clear(); return *this;}
+	INTRA_FORCEINLINE BList& operator=(decltype(nullptr)) {Clear(); return *this;}
 
 	INTRA_FORCEINLINE T& First() {return mRange.First();}
 	INTRA_FORCEINLINE T& Last() {return mRange.Last();}
@@ -270,8 +270,8 @@ public:
 	INTRA_FORCEINLINE const_iterator LastIterator() const {return LastConstIterator();}
 
 	INTRA_FORCEINLINE bool Empty() const {return mRange.Empty();}
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return mRange.Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !mRange.Empty();}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return mRange.Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !mRange.Empty();}
 	INTRA_FORCEINLINE bool operator==(const BList& rhs) const {return mCount==rhs.mCount && Equals(mRange, rhs.mRange);}
 	INTRA_FORCEINLINE bool operator!=(const BList& rhs) const {return !operator==(rhs);}
 
@@ -283,11 +283,11 @@ public:
 
 
 	INTRA_FORCEINLINE iterator begin() {return {mRange.FirstNode};}
-	INTRA_FORCEINLINE iterator end() {return null;}
+	INTRA_FORCEINLINE iterator end() {return nullptr;}
 	INTRA_FORCEINLINE const_iterator begin() const {return {mRange.AsConstRange().FirstNode};}
-	INTRA_FORCEINLINE const_iterator end() const {return null;}
+	INTRA_FORCEINLINE const_iterator end() const {return nullptr;}
 	INTRA_FORCEINLINE const_iterator cbegin() const {return begin();}
-	INTRA_FORCEINLINE const_iterator cend() const {return null;}
+	INTRA_FORCEINLINE const_iterator cend() const {return nullptr;}
 
 #ifdef INTRA_CONTAINER_STL_FORWARD_COMPATIBILITY
 	/*! @name STL compatible interface
@@ -295,11 +295,11 @@ public:
 	*/
 	///@{
 	//INTRA_FORCEINLINE reverse_iterator rbegin() {return {Retro(mRange)};}
-	//INTRA_FORCEINLINE reverse_iterator rend() {return null;}
+	//INTRA_FORCEINLINE reverse_iterator rend() {return nullptr;}
 	//INTRA_FORCEINLINE const_reverse_iterator rbegin() const {return {Retro(mRange.AsConstRange())};}
-	//INTRA_FORCEINLINE const_reverse_iterator rend() const {return null;}
+	//INTRA_FORCEINLINE const_reverse_iterator rend() const {return nullptr;}
 	//INTRA_FORCEINLINE const_reverse_iterator crbegin() const {return rbegin();}
-	//INTRA_FORCEINLINE const_reverse_iterator crend() const {return null;}
+	//INTRA_FORCEINLINE const_reverse_iterator crend() const {return nullptr;}
 
 	INTRA_FORCEINLINE iterator insert(const_iterator pos, const T& value) {return {Insert(pos, value)};}
 	INTRA_FORCEINLINE iterator insert(const_iterator pos, T&& value) {return {Insert(pos, Move(value))};}
@@ -334,11 +334,11 @@ private:
 		size_t nodeSize = sizeof(Node);
 		Node* node = AllocatorRef::Allocate(nodeSize, INTRA_SOURCE_INFO);
 		INTRA_DEBUG_ASSERT(nodeSize == sizeof(Node));
-		node->Prev = null;
+		node->Prev = nullptr;
 		node->Next = mRange.FirstNode;
-		if(mRange.FirstNode!=null) mRange.FirstNode->Prev = node;
+		if(mRange.FirstNode!=nullptr) mRange.FirstNode->Prev = node;
 		mRange.FirstNode = node;
-		if(mRange.LastNode==null) mRange.LastNode = node;
+		if(mRange.LastNode==nullptr) mRange.LastNode = node;
 		mCount++;
 		return node;
 	}
@@ -348,10 +348,10 @@ private:
 		size_t nodeSize = sizeof(Node);
 		Node* node = AllocatorRef::Allocate(nodeSize, INTRA_SOURCE_INFO);
 		node->Prev = mRange.LastNode;
-		node->Next = null;
-		if(mRange.LastNode != null) mRange.LastNode->Next = node;
+		node->Next = nullptr;
+		if(mRange.LastNode != nullptr) mRange.LastNode->Next = node;
 		mRange.LastNode = node;
-		if(mRange.FirstNode==null) mRange.FirstNode = node;
+		if(mRange.FirstNode==nullptr) mRange.FirstNode = node;
 		mCount++;
 		return node;
 	}
@@ -372,8 +372,8 @@ private:
 
 	void remove_node(Node* itnode)
 	{
-		if(itnode->Prev != null) itnode->Prev->Next = itnode->Next;
-		if(itnode->Next != null) itnode->Next->Prev = itnode->Prev;
+		if(itnode->Prev != nullptr) itnode->Prev->Next = itnode->Next;
+		if(itnode->Next != nullptr) itnode->Next->Prev = itnode->Prev;
 		if(mRange.FirstNode==itnode) mRange.FirstNode = mRange.FirstNode->Next;
 		if(mRange.LastNode==itnode) mRange.LastNode = mRange.LastNode->Prev;
 		AllocatorRef::Free(itnode, sizeof(Node));
@@ -383,4 +383,4 @@ private:
 	BListRange<T> mRange;
 	size_t mCount;
 };
-INTRA_END
+} INTRA_END

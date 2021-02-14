@@ -18,7 +18,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 INTRA_IGNORE_WARN(dollar-in-identifier-extension)
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Audio {
 
 using ValueType;
@@ -102,7 +102,7 @@ struct Sound::Data: detail::SoundBasicData
 		{
 			EM_ASM_({
 				var snd = Module.gWebAudioBufferArray[$3];
-				if(snd == null) return;
+				if(snd == nullptr) return;
 				var bufferData = [];
 				for(var c=0; c<$0; c++) bufferData[c] = snd.getChannelData(c);
 				var j=0;
@@ -115,7 +115,7 @@ struct Sound::Data: detail::SoundBasicData
 		{
 			EM_ASM_({
 				var snd = Module.gWebAudioBufferArray[$3];
-				if(snd == null) return;
+				if(snd == nullptr) return;
 				var bufferData = [];
 				for(var c=0; c<$0; c++) bufferData[c] = snd.getChannelData(c);
 				var j=0;
@@ -126,11 +126,11 @@ struct Sound::Data: detail::SoundBasicData
 		}
 	}
 
-	void SetChannelFloatSubData(CSpan<float> data, unsigned channel, size_t bufferOffset=0)
+	void SetChannelFloatSubData(Span<const float> data, unsigned channel, size_t bufferOffset=0)
 	{
 		EM_ASM_({
 			var buffer = Module.gWebAudioBufferArray[$3];
-			if(buffer == null) return;
+			if(buffer == nullptr) return;
 			if(buffer.copyToChannel === undefined)
 			{
 				var bufferData = buffer.getChannelData($0);
@@ -140,23 +140,23 @@ struct Sound::Data: detail::SoundBasicData
 		}, channel, reinterpret_cast<size_t>(data.Data())/sizeof(float), data.Length(), Id, bufferOffset);
 	}
 
-	void SetChannelsFloatSubData(CSpan<CSpan<float>> data, size_t bufferOffset=0)
+	void SetChannelsFloatSubData(Span<const Span<const float>> data, size_t bufferOffset=0)
 	{
 		for(unsigned c = 0; c < Info.Channels; c++)
 			SetChannelFloatSubData(data[c], bufferOffset);
 	}
 
-	void SetChannelShortSubData(CSpan<short> data, unsigned channel, size_t bufferOffset=0)
+	void SetChannelShortSubData(Span<const short> data, unsigned channel, size_t bufferOffset=0)
 	{
 		EM_ASM_({
 			var buffer = Module.gWebAudioBufferArray[$3];
-			if(buffer == null) return;
+			if(buffer == nullptr) return;
 			var bufferData = buffer.getChannelData($0);
 			for(var i = 0; i<$2; i++) bufferData[$4 + i] = (Module.HEAP16[$1 + i] + 0.5) / 32767.5;
 		}, channel, reinterpret_cast<size_t>(data.Data())/sizeof(short), data.Length(), Id, bufferOffset);
 	}
 
-	void SetChannelsShortSubData(CSpan<CSpan<short>> data, size_t bufferOffset=0)
+	void SetChannelsShortSubData(Span<const Span<const short>> data, size_t bufferOffset=0)
 	{
 		for(unsigned c = 0; c < Info.Channels; c++)
 			SetChannelShortSubData(data[c], bufferOffset);
@@ -169,7 +169,7 @@ struct Sound::Data: detail::SoundBasicData
 		context.AllSounds.FindAndRemoveUnordered(this);
 		context.BufferIdalloc.Deallocate(uint16(Id));
 		EM_ASM_({
-			Module.gWebAudioBufferArray[$0] = null;
+			Module.gWebAudioBufferArray[$0] = nullptr;
 		}, Id);
 		Id = ~size_t();
 	}
@@ -208,8 +208,8 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		auto ref = Move(SelfRef);
 		stop();
 		EM_ASM_({
-			if(Module.gWebAudioInstanceArray[$0] != null) Module.gWebAudioInstanceArray[$0].disconnect(Module.gWebAudioContext.destination);
-			Module.gWebAudioInstanceArray[$0] = null;
+			if(Module.gWebAudioInstanceArray[$0] != nullptr) Module.gWebAudioInstanceArray[$0].disconnect(Module.gWebAudioContext.destination);
+			Module.gWebAudioInstanceArray[$0] = nullptr;
 		}, Id);
 		context.InstanceIdalloc.Deallocate(uint16(Id));
 		Id = ~size_t();
@@ -220,7 +220,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 		SelfRef = SharedThis();
 		EM_ASM_({
 			var src = Module.gWebAudioInstanceArray[$0];
-			if(src == null) return;
+			if(src == nullptr) return;
 			src.loop = $1;
 			src.start();
 			src.__is_playing = true;
@@ -231,7 +231,7 @@ struct Sound::Instance::Data: SharedClass<Sound::Instance::Data>, detail::SoundI
 	{
 		return bool(EM_ASM_INT({
 			var src = Module.gWebAudioInstanceArray[$0];
-			if(src == null) return false;
+			if(src == nullptr) return false;
 			return src.__is_playing;
 		}, Id));
 	}
@@ -248,7 +248,7 @@ private:
 	{
 		EM_ASM_({
 			var src = Module.gWebAudioInstanceArray[$0];
-			if(src == null) return;
+			if(src == nullptr) return;
 			src.stop();
 		}, Id);
 	}
@@ -301,7 +301,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		Looping = loop;
 		EM_ASM_({
 			var snd = Module.gWebAudioStreamArray[$0];
-			if(snd == null) return;
+			if(snd == nullptr) return;
 			snd.__is_playing = true;
 			snd.__is_looping = $1;
 			snd.connect(Module.gWebAudioContext.destination);
@@ -312,7 +312,7 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	{
 		return bool(EM_ASM_INT({
 			var snd = Module.gWebAudioStreamArray[$0];
-			if(snd == null) return false;
+			if(snd == nullptr) return false;
 			return snd.__is_playing;
 		}, Id));
 	}
@@ -320,14 +320,14 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 	void Stop()
 	{
 		stop();
-		SelfRef = null;
+		SelfRef = nullptr;
 	}
 
 	void stop()
 	{
 		EM_ASM_({
 			var snd = Module.gWebAudioStreamArray[$0];
-			if(snd == null) return;
+			if(snd == nullptr) return;
 			if(snd.__is_playing) snd.disconnect(Module.gWebAudioContext.destination);
 			snd.__is_playing = false;
 		}, Id);
@@ -340,14 +340,14 @@ struct StreamedSound::Data: SharedClass<StreamedSound::Data>, detail::StreamedSo
 		context.AllStreamedSounds.FindAndRemoveUnordered(this);
 		EM_ASM_({
 			var snd = Module.gWebAudioStreamArray[$0];
-			if(snd == null) return;
+			if(snd == nullptr) return;
 			if(snd.__is_playing) snd.disconnect(Module.gWebAudioContext.destination);
 			snd.__is_playing = false;
-			Module.gWebAudioStreamArray[$0] = null;
+			Module.gWebAudioStreamArray[$0] = nullptr;
 		}, Id, this);
 		context.StreamedSoundIdalloc.Deallocate(uint16(Id));
 		Id = ~size_t();
-		SelfRef = null;
+		SelfRef = nullptr;
 	}
 
 	size_t loadBuffer()

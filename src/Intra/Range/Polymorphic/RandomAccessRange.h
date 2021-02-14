@@ -11,7 +11,7 @@
 #include "InputRange.h"
 #include "ForwardRange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_SIGN_CONVERSION
@@ -46,7 +46,7 @@ private:
 	template<typename R> using EnableCondition = Requires<
 		CConvertibleTo<TListValueRef<R>, T> &&
 		CRandomAccessList<R> &&
-		!CSameIgnoreCVRef<R, RandomAccessRange>
+		!CSameUnqualRef<R, RandomAccessRange>
 	>;
 
 	template<typename R> INTRA_FORCEINLINE static Interface* wrap(R&& range)
@@ -55,7 +55,7 @@ private:
 public:
 	typedef TRemoveConstRef<T> value_type;
 
-	constexpr RandomAccessRange(decltype(null)=null) {}
+	constexpr RandomAccessRange(decltype(nullptr)=nullptr) {}
 
 	constexpr RandomAccessRange(RandomAccessRange&& rhs):
 		ForwardRange<T>(Move(static_cast<ForwardRange<T>&&>(rhs))) {}
@@ -107,4 +107,4 @@ protected:
 };
 
 #undef TEMPLATE
-INTRA_END
+} INTRA_END

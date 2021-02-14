@@ -4,7 +4,7 @@
 #include "Intra/Range/Polymorphic/InputRange.h"
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct MidiRawEvent
 {
 	enum class Type: byte {
@@ -12,14 +12,14 @@ struct MidiRawEvent
 		ProgramChange, ChannelAftertouch, PitchWheelRange, System
 	};
 
-	MidiRawEvent(decltype(null)=null): mData(7, '\0') {}
+	MidiRawEvent(decltype(nullptr)=nullptr): mData(7, '\0') {}
 
 	MidiRawEvent(unsigned delay, byte status, byte data0, byte data1, size_t metadataLength);
 
-	MidiRawEvent& operator=(decltype(null)) {mData[4] = '\0'; return *this;}
+	MidiRawEvent& operator=(decltype(nullptr)) {mData[4] = '\0'; return *this;}
 
-	[[nodiscard]] bool operator==(decltype(null)) const noexcept {return mData.View().Get(4) == '\0';}
-	[[nodiscard]] bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	[[nodiscard]] bool operator==(decltype(nullptr)) const noexcept {return mData.View().Get(4) == '\0';}
+	[[nodiscard]] bool operator!=(decltype(nullptr)) const noexcept {return !operator==(nullptr);}
 
 	[[nodiscard]] unsigned Delay() const noexcept
 	{
@@ -33,7 +33,7 @@ struct MidiRawEvent
 	[[nodiscard]] byte Data0() const {return byte(mData[5]);}
 	[[nodiscard]] byte Data1() const {return byte(mData[6]);}
 	[[nodiscard]] Span<byte> MetaData() noexcept {return mData.View().Drop(7).ReinterpretUnsafe<byte>();}
-	[[nodiscard]] CSpan<byte> MetaData() const noexcept {return mData.View().Drop(7).ReinterpretUnsafe<const byte>();}
+	[[nodiscard]] Span<const byte> MetaData() const noexcept {return mData.View().Drop(7).ReinterpretUnsafe<const byte>();}
 
 private:
 	//��������� Short String Optimization ��� �������, �� ������� ���������� ������� ����� 4/16 ����,
@@ -47,7 +47,7 @@ class MidiRawEventStream
 	byte mStatus = 0;
 	InputStream mStream;
 public:
-	MidiRawEventStream(decltype(null)=null) {}
+	MidiRawEventStream(decltype(nullptr)=nullptr) {}
 
 	MidiRawEventStream(InputStream stream):
 		mStream(Move(stream)) {PopFirst();}
@@ -67,4 +67,4 @@ public:
 
 	[[nodiscard]] bool Empty() const {return mStream.Empty();}
 };
-INTRA_END
+} INTRA_END

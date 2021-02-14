@@ -1,10 +1,8 @@
 ﻿#pragma once
 
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Concepts.h"
-#include "Intra/Assert.h"
+#include "Intra/Range.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /** Set of ASCII chars useful for fast belonging checks in parsers.
 
   Implementation note: this class could be implemented via SBitset<128> but this version is
@@ -12,24 +10,19 @@ INTRA_BEGIN
 */
 class AsciiSet
 {
-	uint64 v[2];
+	uint64 v[2]{};
 
 	friend struct TAsciiSets;
 
 	constexpr AsciiSet(uint64 v1, uint64 v2): v{v1, v2} {}
 public:
-	constexpr AsciiSet(decltype(null)=null) noexcept: v{0,0} {}
+	AsciiSet() = default;
 
-	template<unsigned N> constexpr AsciiSet(const char(&chars)[N]) noexcept: v{0,0} {Set(CSpan<char>(chars));}
+	template<unsigned N> constexpr AsciiSet(const char(&chars)[N]) noexcept: v{0,0} {Set(Span<const char>(chars));}
 
-	explicit constexpr AsciiSet(CSpan<char> chars): v{0,0} {Set(chars);}
+	explicit constexpr AsciiSet(Span<const char> chars): v{0,0} {Set(chars);}
 
-	constexpr AsciiSet& operator=(decltype(null)) {v[0] = v[1] = 0; return *this;}
-	[[nodiscard]] constexpr bool operator==(decltype(null)) const noexcept {return v[0] == 0 && v[1] == 0;}
-	[[nodiscard]] constexpr bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
-
-	[[nodiscard]] constexpr bool operator==(const AsciiSet& rhs) const noexcept {return v[0] == rhs.v[0] && v[1] == rhs.v[1];}
-	[[nodiscard]] constexpr bool operator!=(const AsciiSet& rhs) const noexcept {return !operator==(rhs);}
+	[[nodiscard]] constexpr bool operator==(const AsciiSet& rhs) const noexcept {return ((v[0]^rhs.v[0])|(v[1]^rhs.v[1])) == 0;}
 
 	/// Check if this set contains element c.
 	/// c must be ASCII, otherwise the behavior is undefined.
@@ -62,13 +55,13 @@ public:
 	}
 
 	/// Add elements to the set if they don't belong to it
-	constexpr void Set(CSpan<char> chars)
+	constexpr void Set(Span<const char> chars)
 	{
 		for(char c: chars) Set(c);
 	}
 	
 	/// Remove elements from the set if they belong to it
-	constexpr void Reset(CSpan<char> chars)
+	constexpr void Reset(Span<const char> chars)
 	{
 		while(!chars.Empty())
 		{
@@ -98,7 +91,7 @@ public:
 	}
 
 	/// Add elements to the set if they don't belong to it
-	[[nodiscard]] constexpr AsciiSet operator|(CSpan<char> chars) const
+	[[nodiscard]] constexpr AsciiSet operator|(Span<const char> chars) const
 	{
 		AsciiSet result = *this;
 		result.Set(chars);
@@ -106,7 +99,7 @@ public:
 	}
 
 	/// Add elements to the set if they don't belong to it
-	template<size_t N> [[nodiscard]] constexpr AsciiSet operator|(const char(&chars)[N]) const {return operator|(CSpan<char>(chars));}
+	template<size_t N> [[nodiscard]] constexpr AsciiSet operator|(const char(&chars)[N]) const {return operator|(Span(chars));}
 };
 
 /** Some standard ASCII sets.
@@ -156,4 +149,4 @@ static_assert((AsciiSet("452130987") | '6') == AsciiSets.Digits);
 static_assert(AsciiSets.IdentifierChars("_itI$AValidIdentifier"));
 #endif
 
-INTRA_END
+} INTRA_END

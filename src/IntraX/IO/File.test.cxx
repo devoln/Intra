@@ -26,7 +26,7 @@ void TestFileSyncIO(FormattedWriter& output)
 	auto file111 = OS.FileOpenOverwrite("TestFileSyncIO.txt", IgnoreErrors);
 		file111.PrintLine("Fibonacci sequence: ", Take(Recurrence([](int a, int b) {return a + b;}, 1, 1), 10))
 		.PrintLine("Closing file.");
-	file111 = null;
+	file111 = nullptr;
 
 	const String fileContents = OS.FileOpen("TestFileSyncIO.txt", IgnoreErrors);
 	output.PrintLine("Written file contents:")
@@ -65,7 +65,7 @@ void TestFileSyncIO(FormattedWriter& output)
 	writer.PushFont({0, 0.5f, 0}, 4, true);
 	writer.PrintLine("Зелёный текст");
 	writer.PopFont();
-	writer = null;
+	writer = nullptr;
 
 	String newFileContents = OS.FileOpen("TestFileSyncIO.txt", IgnoreErrors);
 

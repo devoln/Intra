@@ -5,7 +5,7 @@
 
 #include "IntraX/IO/OsFile.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class StdInOut: public FormattedWriter, public InputStream
 {
 public:
@@ -18,8 +18,8 @@ public:
 private:
 	bool mIsConsoleOutput;
 	bool mIsConsoleInput;
-	OsFile mOutputFile; //A non-owning file handle bound to stdout or null, if it's not a file.
-	OsFile mInputFile; //A non-owning file handle bound to stdin or null, if it's not a file.
+	OsFile mOutputFile; //A non-owning file handle bound to stdout or nullptr, if it's not a file.
+	OsFile mInputFile; //A non-owning file handle bound to stdin or nullptr, if it's not a file.
 
 	StdInOut(const StdInOut&) = delete;
 	StdInOut& operator=(const StdInOut&) = delete;
@@ -27,4 +27,4 @@ private:
 
 extern StdInOut Std;
 extern FormattedWriter StdErr;
-INTRA_END
+} INTRA_END

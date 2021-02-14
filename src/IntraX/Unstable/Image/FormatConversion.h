@@ -9,18 +9,18 @@
 
 #include "IntraX/Unstable/Image/ImageFormat.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 inline unsigned ComponentByMask(unsigned color, unsigned mask)
 {return (color&mask) >> FindBitPosition(mask);}
 
 unsigned ConvertColorBits(unsigned color, unsigned fromBitCount, unsigned toBitCount);
-void SwapRedBlueChannels(ImageFormat format, uint16 lineAlignment, USVec2 sizes, Span<byte> data);
+void SwapRedBlueChannels(ImageFormat format, uint16 lineAlignment, U16Vec2 sizes, Span<byte> data);
 
-void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
+void ReadPixelDataBlock(IInputStream& stream, U16Vec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, uint16 srcAlignment, uint16 dstAlignment, Span<byte> dstBuf);
 
-void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
-	uint16 bpp, USVec2 sizes, ImageFormat format, bool flipVert,
+void ReadPalettedPixelDataBlock(IInputStream& stream, Span<const byte> palette,
+	uint16 bpp, U16Vec2 sizes, ImageFormat format, bool flipVert,
 	uint16 srcAlignment, uint16 dstAlignment, Span<byte> dstBuf);
-INTRA_END
+} INTRA_END

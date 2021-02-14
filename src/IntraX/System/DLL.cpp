@@ -17,11 +17,11 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #ifdef _WIN32
 void DLL::Unload()
 {
-	if(mHandle == null) return;
+	if(mHandle == nullptr) return;
 	FreeLibrary(HMODULE(mHandle));
 }
 
@@ -59,7 +59,7 @@ void* DLL::FunctionAddress(StringView name) const
 #else
 void DLL::Unload()
 {
-	if(mHandle == null) return;
+	if(mHandle == nullptr) return;
 	dlclose(mHandle);
 }
 
@@ -81,4 +81,4 @@ void* DLL::FunctionAddress(StringView name) const
 	return dlsym(mHandle, zname.Data());
 }
 #endif
-INTRA_END
+} INTRA_END

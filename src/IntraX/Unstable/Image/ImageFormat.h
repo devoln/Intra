@@ -6,7 +6,7 @@
 #include "IntraX/Math/Vector4.h"
 #include "IntraX/Unstable/Data/ValueType.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //All components in formats are specified in the order of increasing of bit significance of value
 struct ImageFormat
 {
@@ -86,12 +86,12 @@ struct ImageFormat
 
 	explicit constexpr ImageFormat(uint16 val): value(I(val)) {}
 	constexpr ImageFormat(I vt): value(vt) {}
-	constexpr ImageFormat(decltype(null)=null): value(None) {}
+	constexpr ImageFormat(decltype(nullptr)=nullptr): value(None) {}
 
-	ImageFormat& operator=(decltype(null)) {value = None; return *this;}
+	ImageFormat& operator=(decltype(nullptr)) {value = None; return *this;}
 
-	bool operator==(decltype(null)) const { return value == None; }
-	bool operator!=(decltype(null)) const { return !operator==(null); }
+	bool operator==(decltype(nullptr)) const { return value == None; }
+	bool operator!=(decltype(nullptr)) const { return !operator==(nullptr); }
 	bool operator==(byte rhs) const { return value == rhs; }
 	bool operator!=(byte rhs) const { return !operator==(rhs); }
 	bool operator==(ImageFormat rhs) const { return value == rhs.value; }
@@ -136,4 +136,4 @@ struct ImageFormat
 	StringView ToString() const;
 	static ImageFormat FromString(StringView str);
 };
-INTRA_END
+} INTRA_END

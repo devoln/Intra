@@ -4,7 +4,7 @@
 #include "IntraX/Container/Sequential/Array.h"
 #include "IntraX/Unstable/Audio/AudioSource.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Sources {
 /// Используемый декодер ogg vorbis
 #define INTRA_LIBRARY_VORBIS_DECODER_None 0 
@@ -27,10 +27,10 @@ class Vorbis: public AAudioSource
 {
 	struct Decoder;
 	typedef Decoder* DecoderHandle;
-	CSpan<byte> data;
+	Span<const byte> data;
 	DecoderHandle decoder;
 public:
-	Vorbis(CSpan<byte> srcFileData);
+	Vorbis(Span<const byte> srcFileData);
 	~Vorbis();
 
 	Vorbis& operator=(const Vorbis&) = delete;
@@ -40,11 +40,11 @@ public:
 
 	size_t GetInterleavedSamples(Span<short> outShorts) override;
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
-	size_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
+	size_t GetUninterleavedSamples(Span<const Span<float>> outFloats) override;
 	FixedArray<const void*> GetRawSamplesData(size_t maxSamplesToRead,
 		ValueType* outType, bool* outInterleaved, size_t* outSamplesRead) override;
 };
 
 #endif
 }
-INTRA_END
+} INTRA_END

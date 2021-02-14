@@ -11,8 +11,8 @@
 
 // TODO: make this a particular case of existing generic algorithms
 
-INTRA_BEGIN
-void StringFindAscii(StringView& str, CSpan<StringView> stopSubStrSet, size_t* oWhichIndex)
+namespace Intra { INTRA_BEGIN
+void StringFindAscii(StringView& str, Span<const StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	if(stopSubStrSet.Empty())
 	{
@@ -48,7 +48,7 @@ void StringFindAscii(StringView& str, CSpan<StringView> stopSubStrSet, size_t* o
 	}
 }
 
-INTRA_FORCEINLINE StringView StringReadUntilAscii(StringView& str, CSpan<StringView> stopSubStrSet, size_t* oWhichIndex)
+INTRA_FORCEINLINE StringView StringReadUntilAscii(StringView& str, Span<const StringView> stopSubStrSet, size_t* oWhichIndex)
 {
 	const char* begin = str.Data();
 	StringFindAscii(str, stopSubStrSet, oWhichIndex);
@@ -56,7 +56,7 @@ INTRA_FORCEINLINE StringView StringReadUntilAscii(StringView& str, CSpan<StringV
 }
 
 size_t StringMultiReplaceAsciiLength(StringView src,
-	CSpan<StringView> fromSubStrs, CSpan<StringView> toSubStrs)
+	Span<const StringView> fromSubStrs, Span<const StringView> toSubStrs)
 {
 	INTRA_PRECONDITION(fromSubStrs.Length() == toSubStrs.Length());
 	size_t substrIndex = 0;
@@ -70,7 +70,7 @@ size_t StringMultiReplaceAsciiLength(StringView src,
 }
 
 StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstBuffer,
-	CSpan<StringView> fromSubStrs, CSpan<StringView> toSubStrs)
+	Span<const StringView> fromSubStrs, Span<const StringView> toSubStrs)
 {
 	INTRA_PRECONDITION(fromSubStrs.Length() == toSubStrs.Length());
 	char* begin = dstBuffer.Data();
@@ -82,4 +82,4 @@ StringView StringMultiReplaceAscii(StringView src, GenericStringView<char>& dstB
 	}
 	return StringView::FromPointerRange(begin, dstBuffer.Data());
 }
-INTRA_END
+} INTRA_END

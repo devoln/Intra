@@ -11,7 +11,7 @@
 
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct DDS_PIXELFORMAT
 {
 	uint32LE size;
@@ -154,7 +154,7 @@ static const FormatDescriptor D3d9Formats[] =
 
 static ImageFormat GetFormat(const DDS_HEADER& header, const DDS_HEADER_DXT10& dx10header, bool* swapRB)
 {
-	if(swapRB != null) *swapRB = false;
+	if(swapRB != nullptr) *swapRB = false;
 
 	if( (header.ddspf.flags & DDPF_FOURCC) &&
 		dx10header.resourceDimension != D3D10_RESOURCE_DIMENSION_UNKNOWN)
@@ -169,10 +169,10 @@ static ImageFormat GetFormat(const DDS_HEADER& header, const DDS_HEADER_DXT10& d
 	for(auto& fd: D3d9Formats)
 	{
 		if(fd.masks!=header.ddspf.rgbaBitMasks) continue;
-		if(swapRB!=null) *swapRB=fd.swapRB;
+		if(swapRB!=nullptr) *swapRB=fd.swapRB;
 		return fd.format;
 	}
-	return null;
+	return nullptr;
 }
 
 static void SetFormat(ImageFormat format, DDS_PIXELFORMAT& pf, DDS_HEADER_DXT10& dx10header, bool swapRB)
@@ -308,7 +308,7 @@ bool LoaderDDS::IsValidHeader(const void* header, size_t headerSize) const
 
 ImageInfo LoaderDDS::GetInfo(IInputStream& stream) const
 {
-	ImageInfo errResult = {{0,0,0}, null, ImageType_End, 0};
+	ImageInfo errResult = {{0,0,0}, nullptr, ImageType_End, 0};
 
 	byte headerSignature[4];
 	RawReadTo(stream, headerSignature, 4);
@@ -326,13 +326,13 @@ ImageInfo LoaderDDS::GetInfo(IInputStream& stream) const
 
 	ImageInfo result;
 	result.Size = {hdr.width, hdr.height, Max(uint16(1), uint16(hdr.depth))};
-	result.Format = GetFormat(hdr, dx10header, null);
+	result.Format = GetFormat(hdr, dx10header, nullptr);
 	result.Type = GetImageTypeFromHeaders(hdr, dx10header);
 	if(result.Type == ImageType_2DArray) result.Size.z = uint16(dx10header.arraySize);
 	result.MipmapCount = 0;
 	if(hdr.flags & DDSD_MIPMAPCOUNT)
 		result.MipmapCount = Max(short(1), short(hdr.mipMapCount));
-	if(result.Format == null ||
+	if(result.Format == nullptr ||
 		result.Type == ImageType_End ||
 		result.Size.x*result.Size.y*result.Size.z == 0)
 		return errResult;
@@ -346,7 +346,7 @@ AnyImage LoaderDDS::Load(IInputStream& stream) const
 
 	const DDS_HEADER header = RawRead<DDS_HEADER>(stream);
 	if(header.size != 124)
-		return null;
+		return nullptr;
 
 	DDS_HEADER_DXT10 dx10header;
 
@@ -362,8 +362,8 @@ AnyImage LoaderDDS::Load(IInputStream& stream) const
 	if(iInfo.Type == ImageType_2DArray) iInfo.Size.z = uint16(dx10header.arraySize);
 	iInfo.MipmapCount = 0;
 	if(header.flags & DDSD_MIPMAPCOUNT) iInfo.MipmapCount = Max(short(1), short(header.mipMapCount));
-	if(iInfo.Format == null || iInfo.Type == ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z == 0)
-		return null;
+	if(iInfo.Format == nullptr || iInfo.Type == ImageType_End || iInfo.Size.x*iInfo.Size.y*iInfo.Size.z == 0)
+		return nullptr;
 
 	/*if(!iInfo.format.IsCompressed())
 	{
@@ -448,6 +448,6 @@ void LoaderDDS::Save(const AnyImage& img, IOutputStream& stream) const
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderDDS LoaderDDS::Instance;
-INTRA_END
+} INTRA_END
 
 #endif

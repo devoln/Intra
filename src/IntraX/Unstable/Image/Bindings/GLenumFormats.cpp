@@ -3,7 +3,7 @@
 #include "IntraX/Container/Associative/HashMap.h"
 #include "IntraX/Unstable/Image/ImageInfo.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 uint16 ImageFormatToGLInternal(ImageFormat format, bool useSwizzling)
 {
 	if(!format.IsValid()) return 0;
@@ -267,14 +267,14 @@ ImageFormat GLenumToImageFormat(uint16 internalFormat)
 	if(internalFormat == GL::ETC1_RGB8_OES) return ImageFormat::ETC1_RGB;
 	INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 	static HashMap<uint16, ImageFormat> imageFormatFromGLInternal;
-	if(imageFormatFromGLInternal == null)
+	if(imageFormatFromGLInternal == nullptr)
 		for(uint16 i = 1; i < ImageFormat::End; i++)
 		{
 			const auto t = ImageFormatToGLInternal(ImageFormat(i), false);
 			if(t != 0) imageFormatFromGLInternal[t] = ImageFormat(i);
 		}
 	auto found = imageFormatFromGLInternal.Find(internalFormat);
-	if(found.Empty()) return null;
+	if(found.Empty()) return nullptr;
 	return found.First().Field<1>();
 }
 
@@ -296,4 +296,4 @@ ImageType GLTargetToImageType(uint16 gl_Target)
 		if(ImageTypeToGLTarget(ImageType(i)) == gl_Target) return ImageType(i);
 	return ImageType_End;
 }
-INTRA_END
+} INTRA_END

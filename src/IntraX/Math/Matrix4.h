@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Math/Math.h"
 #include "Vector3.h"
 #include "Vector4.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct Matrix3;
 
 template<typename T> struct Matrix4
@@ -475,4 +475,4 @@ typedef Matrix4<short> SMat4;
 typedef Matrix4<byte> UBMat4;
 typedef Matrix4<int8> SBMat4;
 typedef Matrix4<bool> BMat4;
-INTRA_END
+} INTRA_END

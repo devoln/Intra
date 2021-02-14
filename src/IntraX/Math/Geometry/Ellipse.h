@@ -2,7 +2,7 @@
 
 #include "IntraX/Math/Vector2.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Math {
 
 template<typename T> struct Ellipse

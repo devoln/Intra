@@ -1,27 +1,24 @@
 ﻿#pragma once
 
-#include "Intra/Container/Tuple.h"
+#include "Intra/CompoundTypes.h"
 #include "Intra/Functional.h"
-#include "Intra/Range/Span.h"
 #include "Intra/Concepts.h"
-#include "Intra/Range/Concepts.h"
+#include "Intra/Range.h"
 #include "Intra/Range/Sort/Insertion.h"
 #include "Intra/Range/Sort/Heap.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace z_D {
 
 template<typename T, typename C> void med3(T* first, T* mid, T* last, C comparer)
 {
 	// sort median of three elements to middle
-	if(comparer(*mid, *first))
-		Swap(*mid, *first);
+	if(comparer(*mid, *first)) Swap(*mid, *first);
 	if(!comparer(*last, *mid)) return;
 		
 	// swap middle and last, then test first again
 	Swap(*last, *mid);
-	if(comparer(*mid, *first))
-		Swap(*mid, *first);
+	if(comparer(*mid, *first)) Swap(*mid, *first);
 }
 
 template<typename T, typename C> void median(T* first, T* mid, T* last, C comparer)
@@ -41,7 +38,7 @@ template<typename T, typename C> void median(T* first, T* mid, T* last, C compar
 	med3(first + step, mid, last - step, comparer);
 }
 
-template<typename T, typename C> Tuple<T*, T*> unguarded_partition(Span<T> range, C comparer)
+template<typename R, typename C> Tuple<T*, T*> unguarded_partition(R range, C comparer)
 {
 	// partition [_First, _Last), using _Pred
 	T* const mid = range.Data() + range.Length()/2;
@@ -92,8 +89,7 @@ template<typename T, typename C> Tuple<T*, T*> unguarded_partition(Span<T> range
 		if(gfirst == range.End)
 		{
 			// no room at top, rotate pivot downward
-			if(--gend != --pfirst)
-				Swap(*gend, *pfirst);
+			if(--gend != --pfirst) Swap(*gend, *pfirst);
 			Swap(*pfirst, *--pend);
 			continue;
 		}
@@ -116,14 +112,14 @@ template<typename T, typename C> void sort_pass(Span<T> range,
 		if(get<0>(mid) - range.Begin < range.End - get<1>(mid))
 		{
 			// loop on second Half
-			sort_pass(Span<T>::FromPointerRange(range.Begin, get<0>(mid)), ideal, comparer);
+			sort_pass(Span(Unsafe, range.Begin, get<0>(mid)), ideal, comparer);
 			range.Begin = get<1>(mid);
 			continue;
 		}
 
 		// loop on first Half
-		sort_pass(Span<T>::FromPointerRange(get<1>(mid), range.End), ideal, comparer);
-		range.End = get<0>(mid);
+		sort_pass(Span<T>(Unsafe, At<1>(mid), range.End), ideal, comparer);
+		range.End = At<0>(mid);
 	}
 	count = range.Length();
 
@@ -138,18 +134,10 @@ template<typename T, typename C> void sort_pass(Span<T> range,
 }
 
 
-template<typename C, typename R> Requires<
-	CAssignableArrayList<R>
-> QuickSort(R&& range, C comparer)
+template<CAssignableList L, CCallable<TListValue<L>, TListValue<L>> C = decltype(Less)> requires CFiniteRandomAccessList<L>
+void QuickSort(L&& list, C comparer = Less)
 {
-	auto arr = SpanOf(range);
-	z_D::sort_pass(arr, index_t(arr.Length()), comparer);
+	static_assert(CArrayList<L>, "TODO: implement for any random access list");
+	z_D::sort_pass(RangeOf(INTRA_FWD(list)), index_t(arr.Length()), comparer);
 }
-
-template<typename R> Requires<
-	CAssignableArrayList<R>
-> QuickSort(R&& range)
-{
-	return QuickSort<decltype(Less)>(ForwardAsRange<R>(range), FLess);
-}
-INTRA_END
+} INTRA_END

@@ -11,12 +11,12 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include "IntraX/Container/Sequential/Array.h"
 #include "Algo/Sort/Insertion.h"
 
-using Intra::null;
+using Intra::nullptr;
 using Intra::int8;
 using Intra::byte;
 using Intra::uint16;
 using Intra::unsigned;
-using Intra::SVec2;
+using Intra::I16Vec2;
 using Intra::Vec2;
 
 using Intra::Sqrt;
@@ -61,7 +61,7 @@ struct stbtt_fontinfo
 #define stbtt_vertex_type short // can't use short because that's not visible in the header file
 	struct stbtt_vertex
 	{
-		SVec2 pos, cpos;
+		I16Vec2 pos, cpos;
 		byte type;
 		byte _padding;
 	};
@@ -71,7 +71,7 @@ struct stbtt_fontinfo
 // @TODO: don't expose this structure
 struct stbtt__bitmap
 {
-	SVec2 size;
+	I16Vec2 size;
 	int stride;
 	byte* pixels;
 };
@@ -345,7 +345,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 }
 
 
-static int stbtt__close_shape(stbtt_vertex* vertices, int num_vertices, int was_off, int start_off, SVec2 spos, SVec2 scpos, SVec2 cpos)
+static int stbtt__close_shape(stbtt_vertex* vertices, int num_vertices, int was_off, int start_off, I16Vec2 spos, I16Vec2 scpos, I16Vec2 cpos)
 {
 	if(start_off)
 	{
@@ -384,11 +384,11 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 	short numberOfContours;
 	byte* endPtsOfContours;
 	byte* data=info->data;
-	stbtt_vertex* vertices=null;
+	stbtt_vertex* vertices=nullptr;
 	int num_vertices=0;
 	int g=stbtt__GetGlyfOffset(info, glyph_index);
 
-	*pvertices=null;
+	*pvertices=nullptr;
 
 	if(g<0) return 0;
 
@@ -398,7 +398,7 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 	{
 		byte flags=0, flagcount;
 		int ins, j=0, m, n, next_move, was_off=0, off, start_off=0;
-		SVec2 pos, cpos, spos, scpos;
+		I16Vec2 pos, cpos, spos, scpos;
 		byte* points;
 		endPtsOfContours=data+g+10;
 		ins=ttUSHORT(data+g+10+numberOfContours*2);
@@ -534,8 +534,8 @@ int stbtt_GetGlyphShape(const stbtt_fontinfo* info, int glyph_index, stbtt_verte
 		{
 			uint16 flags, gidx;
 			int comp_num_verts=0;
-			stbtt_vertex* comp_verts=null;
-			stbtt_vertex* tmp=null;
+			stbtt_vertex* comp_verts=nullptr;
+			stbtt_vertex* tmp=nullptr;
 			float mtx[6]={1,0,0,1,0,0}; float m, n;
          
 			flags=ttSHORT(comp); comp+=2;
@@ -627,17 +627,17 @@ int stbtt_GetCodepointShape(const stbtt_fontinfo* info, int unicode_codepoint, s
 
 
 
-int stbtt_GetGlyphBox(const stbtt_fontinfo *info, int glyph_index, SVec2* pos0, SVec2* pos1)
+int stbtt_GetGlyphBox(const stbtt_fontinfo *info, int glyph_index, I16Vec2* pos0, I16Vec2* pos1)
 {
    int g=stbtt__GetGlyfOffset(info, glyph_index);
    if(g<0) return 0;
 
-   if(pos0!=null) *pos0=SVec2(ttSHORT(info->data+g+2), ttSHORT(info->data+g+4));
-   if(pos1!=null) *pos1=SVec2(ttSHORT(info->data+g+6), ttSHORT(info->data+g+8));
+   if(pos0!=nullptr) *pos0=I16Vec2(ttSHORT(info->data+g+2), ttSHORT(info->data+g+4));
+   if(pos1!=nullptr) *pos1=I16Vec2(ttSHORT(info->data+g+6), ttSHORT(info->data+g+8));
    return 1;
 }
 
-int stbtt_GetCodepointBox(const stbtt_fontinfo* info, int codepoint, SVec2* pos0, SVec2* pos1)
+int stbtt_GetCodepointBox(const stbtt_fontinfo* info, int codepoint, I16Vec2* pos0, I16Vec2* pos1)
 {
    return stbtt_GetGlyphBox(info, stbtt_FindGlyphIndex(info,codepoint), pos0, pos1);
 }
@@ -659,8 +659,8 @@ void stbtt_GetGlyphHMetrics(const stbtt_fontinfo* info, int glyph_index, short* 
    int awindex, lsbindex;
    if(glyph_index<numOfLongHorMetrics) awindex=4*glyph_index, lsbindex=4*glyph_index+2;
    else awindex=4*(numOfLongHorMetrics-1), lsbindex=4*numOfLongHorMetrics+2*(glyph_index-numOfLongHorMetrics);
-   if(advanceWidth!=null) *advanceWidth=ttSHORT(info->data+info->hmtx+awindex);
-   if(leftSideBearing!=null) *leftSideBearing=ttSHORT(info->data+info->hmtx+lsbindex);
+   if(advanceWidth!=nullptr) *advanceWidth=ttSHORT(info->data+info->hmtx+awindex);
+   if(leftSideBearing!=nullptr) *leftSideBearing=ttSHORT(info->data+info->hmtx+lsbindex);
 }
 
 int stbtt_GetGlyphKernAdvance(const stbtt_fontinfo* info, int glyph1, int glyph2)
@@ -698,15 +698,15 @@ void stbtt_GetCodepointHMetrics(const stbtt_fontinfo* info, int codepoint, short
 
 void stbtt_GetFontVMetrics(const stbtt_fontinfo* info, short* ascent, short* descent, short* lineGap)
 {
-   if(ascent!=null) *ascent=ttSHORT(info->data+info->hhea+4);
-   if(descent!=null) *descent=ttSHORT(info->data+info->hhea+6);
-   if(lineGap!=null) *lineGap=ttSHORT(info->data+info->hhea+8);
+   if(ascent!=nullptr) *ascent=ttSHORT(info->data+info->hhea+4);
+   if(descent!=nullptr) *descent=ttSHORT(info->data+info->hhea+6);
+   if(lineGap!=nullptr) *lineGap=ttSHORT(info->data+info->hhea+8);
 }
 
-void stbtt_GetFontBoundingBox(const stbtt_fontinfo* info, SVec2* pos0, SVec2* pos1)
+void stbtt_GetFontBoundingBox(const stbtt_fontinfo* info, I16Vec2* pos0, I16Vec2* pos1)
 {
-   *pos0 = SVec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
-   *pos1 = SVec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
+   *pos0 = I16Vec2(ttSHORT(info->data+info->head+36), ttSHORT(info->data+info->head+38));
+   *pos1 = I16Vec2(ttSHORT(info->data+info->head+40), ttSHORT(info->data+info->head+42));
 }
 
 float stbtt_ScaleForPixelHeight(const stbtt_fontinfo* info, float height)
@@ -732,25 +732,25 @@ void stbtt_FreeShape(const stbtt_fontinfo* info, stbtt_vertex* v)
 // antialiasing software rasterizer
 //
 
-void stbtt_GetGlyphBitmapBoxSubpixel(const stbtt_fontinfo* font, int glyph, Vec2 scale, Vec2 shift, SVec2* ipos0, SVec2* ipos1)
+void stbtt_GetGlyphBitmapBoxSubpixel(const stbtt_fontinfo* font, int glyph, Vec2 scale, Vec2 shift, I16Vec2* ipos0, I16Vec2* ipos1)
 {
-   SVec2 pos0, pos1;
+   I16Vec2 pos0, pos1;
    if(!stbtt_GetGlyphBox(font, glyph, &pos0, &pos1)) pos0=pos1={0,0}; // e.g. space character
    // now move to integral bboxes (treating pixels as little squares, what pixels get touched)?
-   if(ipos0!=null) *ipos0=SVec2(short(pos0.x*scale.x+shift.x), -(short)Ceil(pos1.y*scale.y+shift.y));
-   if(ipos1!=null) *ipos1=SVec2(short(Ceil(pos1.x*scale.x+shift.x)), -short(pos0.y*scale.y+shift.y));
+   if(ipos0!=nullptr) *ipos0=I16Vec2(short(pos0.x*scale.x+shift.x), -(short)Ceil(pos1.y*scale.y+shift.y));
+   if(ipos1!=nullptr) *ipos1=I16Vec2(short(Ceil(pos1.x*scale.x+shift.x)), -short(pos0.y*scale.y+shift.y));
 }
-void stbtt_GetGlyphBitmapBox(const stbtt_fontinfo* font, int glyph, Vec2 scale, SVec2* ipos0, SVec2* ipos1)
+void stbtt_GetGlyphBitmapBox(const stbtt_fontinfo* font, int glyph, Vec2 scale, I16Vec2* ipos0, I16Vec2* ipos1)
 {
 	stbtt_GetGlyphBitmapBoxSubpixel(font, glyph, scale, {0,0}, ipos0, ipos1);
 }
 
-void stbtt_GetCodepointBitmapBoxSubpixel(const stbtt_fontinfo* font, int codepoint, Vec2 scale, Vec2 shift, SVec2* ipos0, SVec2* ipos1)
+void stbtt_GetCodepointBitmapBoxSubpixel(const stbtt_fontinfo* font, int codepoint, Vec2 scale, Vec2 shift, I16Vec2* ipos0, I16Vec2* ipos1)
 {
    stbtt_GetGlyphBitmapBoxSubpixel(font, stbtt_FindGlyphIndex(font, codepoint), scale, shift, ipos0, ipos1);
 }
 
-void stbtt_GetCodepointBitmapBox(const stbtt_fontinfo* font, int codepoint, Vec2 scale, SVec2* ipos0, SVec2* ipos1)
+void stbtt_GetCodepointBitmapBox(const stbtt_fontinfo* font, int codepoint, Vec2 scale, I16Vec2* ipos0, I16Vec2* ipos1)
 {
 	stbtt_GetCodepointBitmapBoxSubpixel(font, codepoint, scale, {0,0}, ipos0, ipos1);
 }
@@ -831,9 +831,9 @@ static void stbtt__fill_active_edges(byte* scanline, int len, stbtt__active_edge
 	}
 }
 
-static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, SVec2 off, void* userdata)
+static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e, int n, int vsubsample, I16Vec2 off, void* userdata)
 {
-   stbtt__active_edge* active=null;
+   stbtt__active_edge* active=nullptr;
    int y, j=0;
    int max_weight=255/vsubsample;  // weight per vertical scanline
    byte scanline_data[512];
@@ -906,7 +906,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
             {
                stbtt__active_edge* z=new_active(e, off.x, scan_y, userdata);
                // find insertion point
-               if(active==null) active=z;
+               if(active==nullptr) active=z;
                else if(z->x < active->x)
                {
                   // insert at front
@@ -946,7 +946,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
 }
 
 
-static void stbtt__rasterize(stbtt__bitmap* result, Vec2* pts, int* wcount, int windings, Vec2 scale, Vec2 shift, SVec2 off, int invert, void* userdata)
+static void stbtt__rasterize(stbtt__bitmap* result, Vec2* pts, int* wcount, int windings, Vec2 scale, Vec2 shift, I16Vec2 off, int invert, void* userdata)
 {
    float y_scale_inv=invert? -scale.y: scale.y;
    int vsubsample=result->size.y<8? 15: 5;
@@ -992,7 +992,7 @@ static void stbtt__rasterize(stbtt__bitmap* result, Vec2* pts, int* wcount, int 
 
 static void stbtt__add_point(Vec2* points, int n, Vec2 pos)
 {
-   if(points==null) return; // during first pass, it's unallocated
+   if(points==nullptr) return; // during first pass, it's unallocated
    points[n]=pos;
 }
 
@@ -1023,7 +1023,7 @@ static Vec2* stbtt_FlattenCurves(stbtt_vertex* vertices, int num_verts, float ob
 {
 	userdata;
 
-	Vec2* points=null;
+	Vec2* points=nullptr;
 	int num_points=0;
 
 	float objspace_flatness_squared=objspace_flatness*objspace_flatness;
@@ -1033,14 +1033,14 @@ static Vec2* stbtt_FlattenCurves(stbtt_vertex* vertices, int num_verts, float ob
 	for(int i=0; i<num_verts; i++) if(vertices[i].type==STBTT_vmove) n++;
 
 	*num_contours=n;
-	if(n==0) return null;
+	if(n==0) return nullptr;
 
 	*contour_lengths=new int[n];
 
 	// make two passes through the points so we don't need to realloc
 	for(pass=0; pass<2; pass++)
 	{
-		SVec2 pos={0,0};
+		I16Vec2 pos={0,0};
 		if(pass==1) points=new Vec2[num_points];
 		num_points=0;
 		n=-1;
@@ -1076,7 +1076,7 @@ static Vec2* stbtt_FlattenCurves(stbtt_vertex* vertices, int num_verts, float ob
 	return points;
 }
 
-static void stbtt_Rasterize(stbtt__bitmap* result, float flatness_in_pixels, stbtt_vertex* vertices, int num_verts, Vec2 scale, Vec2 shift, SVec2 off, int invert, void* userdata)
+static void stbtt_Rasterize(stbtt__bitmap* result, float flatness_in_pixels, stbtt_vertex* vertices, int num_verts, Vec2 scale, Vec2 shift, I16Vec2 off, int invert, void* userdata)
 {
    float scale_min = Intra::Min(scale.x, scale.y);
    int winding_count; int* winding_lengths;
@@ -1095,9 +1095,9 @@ static void stbtt_FreeBitmap(byte* bitmap, void* userdata)
 	GlobalHeap.Free(bitmap);
 }
 
-static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale, Vec2 shift, int glyph, SVec2* size, SVec2* off)
+static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale, Vec2 shift, int glyph, I16Vec2* size, I16Vec2* off)
 {
-   SVec2 i0, i1;
+   I16Vec2 i0, i1;
    stbtt__bitmap gbm;
    stbtt_vertex* vertices;
    int num_verts=stbtt_GetGlyphShape(info, glyph, &vertices);
@@ -1105,7 +1105,7 @@ static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale
    if(scale.x==0) scale.x=scale.y;
    if(scale.y==0)
    {
-      if(scale.x==0) return null;
+      if(scale.x==0) return nullptr;
       scale.y=scale.x;
    }
 
@@ -1113,16 +1113,16 @@ static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale
 
    // now we get the size
    gbm.size=i1-i0;
-   gbm.pixels=null; // in case we error
+   gbm.pixels=nullptr; // in case we error
 
-   if(size!=null) *size=gbm.size;
-   if(off!=null) *off=i0;
+   if(size!=nullptr) *size=gbm.size;
+   if(off!=nullptr) *off=i0;
 
    if(gbm.size.x && gbm.size.y)
    {
 	  size_t bytesToAllocate = gbm.size.x*gbm.size.y;
       gbm.pixels = GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
-      if(gbm.pixels!=null)
+      if(gbm.pixels!=nullptr)
       {
          gbm.stride=gbm.size.x;
          stbtt_Rasterize(&gbm, 0.35f, vertices, num_verts, scale, shift, i0, 1, info->userdata);
@@ -1132,19 +1132,19 @@ static byte* stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale
    return gbm.pixels;
 }   
 
-byte* stbtt_GetGlyphBitmap(const stbtt_fontinfo* info, Vec2 scale, int glyph, SVec2* size, SVec2* off)
+byte* stbtt_GetGlyphBitmap(const stbtt_fontinfo* info, Vec2 scale, int glyph, I16Vec2* size, I16Vec2* off)
 {
    return stbtt_GetGlyphBitmapSubpixel(info, scale, Vec2(0), glyph, size, off);
 }
 
-static void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo* info, byte* output, SVec2 out_size, int out_stride, Vec2 scale, Vec2 shift, int glyph)
+static void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo* info, byte* output, I16Vec2 out_size, int out_stride, Vec2 scale, Vec2 shift, int glyph)
 {
 
    stbtt_vertex* vertices;
    int num_verts=stbtt_GetGlyphShape(info, glyph, &vertices);
 
-   SVec2 i0;
-   stbtt_GetGlyphBitmapBoxSubpixel(info, glyph, scale, shift, &i0, null);
+   I16Vec2 i0;
+   stbtt_GetGlyphBitmapBoxSubpixel(info, glyph, scale, shift, &i0, nullptr);
 
    stbtt__bitmap gbm={out_size, out_stride, output};
    if(gbm.size.x!=0 && gbm.size.y!=0)
@@ -1153,27 +1153,27 @@ static void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo* info, byte* outp
    GlobalHeap.Free(vertices);
 }
 
-void stbtt_MakeGlyphBitmap(const stbtt_fontinfo* info, byte* output, SVec2 out_size, int out_stride, Vec2 scale, int glyph)
+void stbtt_MakeGlyphBitmap(const stbtt_fontinfo* info, byte* output, I16Vec2 out_size, int out_stride, Vec2 scale, int glyph)
 {
    stbtt_MakeGlyphBitmapSubpixel(info, output, out_size, out_stride, scale, Vec2(0), glyph);
 }
 
-static byte *stbtt_GetCodepointBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale, Vec2 shift, int codepoint, SVec2* size, SVec2* off)
+static byte *stbtt_GetCodepointBitmapSubpixel(const stbtt_fontinfo* info, Vec2 scale, Vec2 shift, int codepoint, I16Vec2* size, I16Vec2* off)
 {
    return stbtt_GetGlyphBitmapSubpixel(info, scale, shift, stbtt_FindGlyphIndex(info, codepoint), size, off);
 }   
 
-static void stbtt_MakeCodepointBitmapSubpixel(const stbtt_fontinfo* info, byte* output, SVec2 out_size, int out_stride, Vec2 scale, Vec2 shift, int codepoint)
+static void stbtt_MakeCodepointBitmapSubpixel(const stbtt_fontinfo* info, byte* output, I16Vec2 out_size, int out_stride, Vec2 scale, Vec2 shift, int codepoint)
 {
    stbtt_MakeGlyphBitmapSubpixel(info, output, out_size, out_stride, scale, shift, stbtt_FindGlyphIndex(info, codepoint));
 }
 
-static byte* stbtt_GetCodepointBitmap(const stbtt_fontinfo* info, Vec2 scale, int codepoint, SVec2* size, SVec2* off)
+static byte* stbtt_GetCodepointBitmap(const stbtt_fontinfo* info, Vec2 scale, int codepoint, I16Vec2* size, I16Vec2* off)
 {
    return stbtt_GetCodepointBitmapSubpixel(info, scale, Vec2(0), codepoint, size, off);
 }   
 
-void stbtt_MakeCodepointBitmap(const stbtt_fontinfo* info, byte* output, SVec2 out_size, int out_stride, Vec2 scale, int codepoint)
+void stbtt_MakeCodepointBitmap(const stbtt_fontinfo* info, byte* output, I16Vec2 out_size, int out_stride, Vec2 scale, int codepoint)
 {
    stbtt_MakeCodepointBitmapSubpixel(info, output, out_size, out_stride, scale, Vec2(0), codepoint);
 }
@@ -1245,7 +1245,7 @@ const char* stbtt_GetFontNameString(const stbtt_fontinfo* font, int* length, int
    byte* fc=font->data;
    unsigned offset=font->fontstart;
    unsigned nm=stbtt__find_table(fc, offset, "name");
-   if(nm==0) return null;
+   if(nm==0) return nullptr;
 
    count=ttUSHORT(fc+nm+2);
    stringOffset=nm+ttUSHORT(fc+nm+4);
@@ -1259,7 +1259,7 @@ const char* stbtt_GetFontNameString(const stbtt_fontinfo* font, int* length, int
          return (const char*)(fc+stringOffset+ttUSHORT(fc+loc+10));
       }
    }
-   return null;
+   return nullptr;
 }
 
 static bool stbtt__matchpair(byte* fc, unsigned nm, byte* name, int nlen, int target_id, int next_id)
@@ -1339,7 +1339,7 @@ int stbtt_FindMatchingFont(const byte* font_collection, const char* name_utf8, i
 
 #include "IntraX/IO/File.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 using namespace Math;
 using namespace IO;
@@ -1357,19 +1357,19 @@ struct Font
 static FontHandle create_font(byte* data, unsigned height, unsigned* yadvance)
 {
 	FontHandle desc = new Font;
-	desc->last_bitmap=null;
+	desc->last_bitmap=nullptr;
 	stbtt_InitFont(&desc->font, data, stbtt_GetFontOffsetForIndex(data, 0));
 	desc->height_scale=stbtt_ScaleForPixelHeight(&desc->font, height);
 	short ascent, descent, lineGap;
 	stbtt_GetFontVMetrics(&desc->font, &ascent, &descent, &lineGap);
-	if(yadvance!=null) *yadvance = uint16((ascent-descent+lineGap)*desc->height_scale);
+	if(yadvance!=nullptr) *yadvance = uint16((ascent-descent+lineGap)*desc->height_scale);
 	return desc;
 }
 
 FontHandle FontCreate(StringView name, unsigned height, unsigned* yadvance)
 {
 	auto file = OS.MapFile(name);
-	if(file==null) return null;
+	if(file==nullptr) return nullptr;
 	size_t size = size_t(file.Size());
 	byte* data = GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	file.ReadData(0, data, size);
@@ -1385,32 +1385,32 @@ FontHandle FontCreateFromMemory(const void* src, size_t length, unsigned height,
 
 void FontDelete(FontHandle font)
 {
-	if(font!=null) GlobalHeap.Free(font->font.data);
+	if(font!=nullptr) GlobalHeap.Free(font->font.data);
 	delete font;
 }
 
-const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* offset, USVec2* size)
+const byte* FontGetCharBitmap(FontHandle font, int code, I16Vec2* offset, U16Vec2* size)
 {
-	if(font==null) return null;
-	stbtt_FreeBitmap(font->last_bitmap, null);
-	font->last_bitmap = stbtt_GetCodepointBitmap(&font->font, Vec2(0, font->height_scale), code, (SVec2*)size, offset);
+	if(font==nullptr) return nullptr;
+	stbtt_FreeBitmap(font->last_bitmap, nullptr);
+	font->last_bitmap = stbtt_GetCodepointBitmap(&font->font, Vec2(0, font->height_scale), code, (I16Vec2*)size, offset);
 	offset->y = -offset->y;
 	return font->last_bitmap;
 }
 
 void FontGetCharMetrics(FontHandle font, int code, short* xadvance, short* leftSideBearing)
 {
-	if(font==null) return;
+	if(font==nullptr) return;
 
 	short xAdvance, lsb;
 	stbtt_GetCodepointHMetrics(&font->font, code, &xAdvance, &lsb);
-	if(leftSideBearing!=null) *leftSideBearing = short(lsb*font->height_scale);
-	if(xadvance!=null) *xadvance = short(xAdvance*font->height_scale);
+	if(leftSideBearing!=nullptr) *leftSideBearing = short(lsb*font->height_scale);
+	if(xadvance!=nullptr) *xadvance = short(xAdvance*font->height_scale);
 }
 
 short FontGetKerning(FontHandle font, int left, int right)
 {
-	if(font==null) return 0;
+	if(font==nullptr) return 0;
 	return short(font->height_scale*stbtt_GetCodepointKernAdvance(&font->font, left, right));
 }
 

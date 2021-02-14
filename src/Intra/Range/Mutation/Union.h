@@ -5,7 +5,7 @@
 #include "Intra/Range/Mutation/Heap.h"
 #include "Intra/Range/Mutation/Remove.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename RR, typename P> struct RUnion: P
 {
 	constexpr RUnion(RR ranges, P pred): P(Move(pred)), mRanges(Move(ranges))
@@ -37,4 +37,4 @@ template<typename RR, typename P,
 	CRandomAccessRange<AsRR> &&
 	CCallable<P, T, T>,
 RUnion<AsRR, TFunctorOf<P>>> Union(RR&& range, P&& pred) {return {ForwardAsRange<RR>(range), ForwardAsFunc<P>(pred)};}
-INTRA_END
+} INTRA_END

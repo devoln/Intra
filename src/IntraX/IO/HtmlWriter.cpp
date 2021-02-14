@@ -1,7 +1,7 @@
 #include "IntraX/IO/HtmlWriter.h"
 #include "Intra/Range/Stream/ToString.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 //Insert this into the beginning of the HTML-file to make spoilers work
 static const StringView HtmlWriter_CssSpoilerCode =
@@ -62,7 +62,7 @@ public:
 		if(curFont.Bold && !newFont.Bold) s << "</b>";
 		if(curFont.Color != newFont.Color || curFont.Size != newFont.Size)
 		{
-			const auto c = USVec3(Min(newFont.Color*255.0f, 255.0f));
+			const auto c = U16Vec3(Min(newFont.Color*255.0f, 255.0f));
 			const String colstr = String::Format()((c.x<<16)|(c.y<<8)|c.z, 6, '0', 16);
 			s << "<font color=" << colstr << " size=" << newFont.Size << ">";
 		}
@@ -97,4 +97,4 @@ FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions)
 	if(addDefinitions) stream.Print(HtmlWriter_CssSpoilerCode);
 	return FormattedWriter(Move(stream), new HtmlFormatter);
 }
-INTRA_END
+} INTRA_END

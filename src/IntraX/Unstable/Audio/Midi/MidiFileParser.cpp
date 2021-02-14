@@ -5,7 +5,7 @@
 #include "IntraX/Container/Utility/OwningArrayRange.h"
 #include "IntraX/Container/Associative/HashMap.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 RTake<InputStream&> MidiFileParser::NextTrackByteStreamUnsafe()
 {
 	if(mTrack == mHeaderTracks || mMidiStream.Empty())
@@ -21,7 +21,7 @@ RTake<InputStream&> MidiFileParser::NextTrackByteStreamUnsafe()
 	{
 		mHeaderTracks = mTrack;
 		mMidiStream.PopFirstCount(index_t(size));
-		mMidiStream = null;
+		mMidiStream = nullptr;
 		mErr.Error(ErrorCode::InvalidStream, "Unexpected MIDI file block: expected MTrk.", INTRA_SOURCE_INFO);
 		return RTake<InputStream&>(mMidiStream, 0);
 	}
@@ -55,14 +55,14 @@ MidiFileParser::MidiFileParser(InputStream stream, ErrorReporter err):
 {
 	if(!StartsAdvanceWith(mMidiStream, "MThd"))
 	{
-		mMidiStream = null;
+		mMidiStream = nullptr;
 		mErr.Error(ErrorCode::InvalidStream, "Invalid MIDI file header!", INTRA_SOURCE_INFO);
 		return;
 	}
 	const unsigned chunkSize = mMidiStream.RawRead<uint32BE>();
 	if(chunkSize != 6)
 	{
-		mMidiStream = null;
+		mMidiStream = nullptr;
 		mErr.Error(ErrorCode::InvalidStream, String::Concat("Invalid MIDI file header chunk size: ", chunkSize), INTRA_SOURCE_INFO);
 		return;
 	}
@@ -72,7 +72,7 @@ MidiFileParser::MidiFileParser(InputStream stream, ErrorReporter err):
 
 	if(mHeaderType > 2)
 	{
-		mMidiStream = null;
+		mMidiStream = nullptr;
 		mErr.Error(ErrorCode::InvalidStream, String::Concat("Invalid MIDI file header type: ", mHeaderType), INTRA_SOURCE_INFO);
 		return;
 	}
@@ -152,4 +152,4 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorReporter err)
 	ChannelsUsed = 0;
 	for(bool used: countingDevice.ChannelIsUsed) if(used) ChannelsUsed++;
 }
-INTRA_END
+} INTRA_END

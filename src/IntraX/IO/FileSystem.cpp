@@ -47,14 +47,14 @@ struct IUnknown;
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static String osGetCurrentDirectory()
 {
 #ifdef _WIN32
 	wchar_t wpath[MAX_PATH];
 	unsigned wlength = GetCurrentDirectoryW(MAX_PATH, wpath);
 	char path[MAX_PATH*3];
-	int length = WideCharToMultiByte(CP_UTF8, 0u, wpath, int(wlength), path, sizeof(path), null, null);
+	int length = WideCharToMultiByte(CP_UTF8, 0u, wpath, int(wlength), path, sizeof(path), nullptr, nullptr);
 	String result = StringView::FromPointerAndLength(path, length);
 	if(!EndsWith(result, '\\')) result += '\\';
 #else
@@ -186,4 +186,4 @@ String OsFileSystem::FileToString(StringView fileName, ErrorReporter err)
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 OsFileSystem OS;
 
-INTRA_END
+} INTRA_END

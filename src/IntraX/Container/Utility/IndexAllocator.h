@@ -4,17 +4,17 @@
 #include "Intra/Range/Search/Single.h"
 #include "Intra/Range/Sort/Insertion.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> class IndexAllocator
 {
 public:
-	INTRA_FORCEINLINE IndexAllocator(decltype(null)=null): mCount(0), mMaxCount(0) {}
+	INTRA_FORCEINLINE IndexAllocator(decltype(nullptr)=nullptr): mCount(0), mMaxCount(0) {}
 	INTRA_FORCEINLINE explicit IndexAllocator(T maxCount): mCount(0), mMaxCount(maxCount) {}
 
 	/// Выделить любой свободный идентификатор
 	T Allocate()
 	{
-		if(mFreeList != null)
+		if(mFreeList != nullptr)
 		{
 			T result = mFreeList.Last();
 			mFreeList.RemoveLast();
@@ -55,7 +55,7 @@ public:
 	/// Выделить наименьший возможный неиспользуемый идентификатор
 	T AllocateFirst()
 	{
-		if(mFreeList!=null)
+		if(mFreeList!=nullptr)
 		{
 			T minimal = mCount, index = mCount;
 			for(T i=0; i<mFreeList.Count(); i++)
@@ -112,17 +112,17 @@ template<typename T, typename G, typename TYPE=void> struct CheckedId
 {
 	INTRA_FORCEINLINE operator T() const {return Value;}
 
-	INTRA_FORCEINLINE CheckedId(decltype(null)=null):
+	INTRA_FORCEINLINE CheckedId(decltype(nullptr)=nullptr):
 		Value(MaxValueOf(T())),
 		Generation(MaxValueOf(G())) {}
 
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const
 	{
 		return Value == MaxValueOf(T()) &&
 			Generation == MaxValueOf(G());
 	}
 
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 	INTRA_FORCEINLINE bool operator==(const CheckedId& rhs) const
 	{return Value == rhs.Value && Generation == rhs.Generation;}
@@ -143,7 +143,7 @@ template<typename T, typename G, typename TYPE=void> class CheckedIdAllocator
 public:
 	typedef CheckedId<T, G, TYPE> Id;
 
-	CheckedIdAllocator(decltype(null)=null): mIdAlloc(null) {}
+	CheckedIdAllocator(decltype(nullptr)=nullptr): mIdAlloc(nullptr) {}
 	explicit CheckedIdAllocator(T maxCount): mIdAlloc(maxCount) {}
 
 	/// Выделить любой свободный идентификатор
@@ -201,4 +201,4 @@ private:
 	IndexAllocator<T> mIdAlloc;
 	Array<G> mGenerations;
 };
-INTRA_END
+} INTRA_END

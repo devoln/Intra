@@ -1,7 +1,7 @@
 #include "SampleConversion.h"
 
-INTRA_BEGIN
-void InterleaveFloats(Span<float> dst, CSpan<float> src1, CSpan<float> src2)
+namespace Intra { INTRA_BEGIN
+void InterleaveFloats(Span<float> dst, Span<const float> src1, Span<const float> src2)
 {
 	while(dst.End != dst.Begin)
 	{
@@ -10,16 +10,16 @@ void InterleaveFloats(Span<float> dst, CSpan<float> src1, CSpan<float> src2)
 	}
 }
 
-template<typename T> void genericInterleave(Span<T> dst, Span<CSpan<T>> src)
+template<typename T> void genericInterleave(Span<T> dst, Span<Span<const T>> src)
 {
-	CSpan<T> srcs[16];
+	Span<const T> srcs[16];
 	auto srcsSpan = Take(srcs, src.CopyTo(srcs));
 	while(dst.End != dst.Begin)
 		for(auto& srci: srcsSpan)
 			*dst.Begin++ = *srci.Begin++;
 }
 
-void InterleaveFloats(Span<float> dst, Span<CSpan<float>> src)
+void InterleaveFloats(Span<float> dst, Span<Span<const float>> src)
 {
 	switch(src.Length())
 	{
@@ -33,7 +33,7 @@ void InterleaveFloats(Span<float> dst, Span<CSpan<float>> src)
 }
 
 
-void InterleaveShorts(Span<short> dst, CSpan<short> src1, CSpan<short> src2)
+void InterleaveShorts(Span<short> dst, Span<const short> src1, Span<const short> src2)
 {
 	while(dst.End != dst.Begin)
 	{
@@ -42,7 +42,7 @@ void InterleaveShorts(Span<short> dst, CSpan<short> src1, CSpan<short> src2)
 	}
 }
 
-void InterleaveShorts(Span<short> dst, Span<CSpan<short>> src)
+void InterleaveShorts(Span<short> dst, Span<Span<const short>> src)
 {
 	switch(src.Length())
 	{
@@ -56,7 +56,7 @@ void InterleaveShorts(Span<short> dst, Span<CSpan<short>> src)
 }
 
 
-void DeinterleaveFloats(CSpan<float> src, Span<float> dst1, Span<float> dst2)
+void DeinterleaveFloats(Span<const float> src, Span<float> dst1, Span<float> dst2)
 {
 	while(src.End != src.Begin)
 	{
@@ -65,7 +65,7 @@ void DeinterleaveFloats(CSpan<float> src, Span<float> dst1, Span<float> dst2)
 	}
 }
 
-template<typename T> void genericDeinterleave(CSpan<T> src, Span<Span<T>> dst)
+template<typename T> void genericDeinterleave(Span<const T> src, Span<Span<T>> dst)
 {
 	Span<T> dsts[16];
 	auto dstsSpan = Take(dsts, dst.CopyTo(dsts));
@@ -74,7 +74,7 @@ template<typename T> void genericDeinterleave(CSpan<T> src, Span<Span<T>> dst)
 			*dsti.Begin++ = *src.Begin++;
 }
 
-void DeinterleaveFloats(CSpan<float> src, Span<Span<float>> dst)
+void DeinterleaveFloats(Span<const float> src, Span<Span<float>> dst)
 {
 	switch(src.Length())
 	{
@@ -88,7 +88,7 @@ void DeinterleaveFloats(CSpan<float> src, Span<Span<float>> dst)
 }
 
 
-void DeinterleaveShorts(CSpan<short> src, Span<short> dst1, Span<short> dst2)
+void DeinterleaveShorts(Span<const short> src, Span<short> dst1, Span<short> dst2)
 {
 	while(src.End != src.Begin)
 	{
@@ -97,7 +97,7 @@ void DeinterleaveShorts(CSpan<short> src, Span<short> dst1, Span<short> dst2)
 	}
 }
 
-void DeinterleaveShorts(CSpan<short> src, Span<Span<short>> dst)
+void DeinterleaveShorts(Span<const short> src, Span<Span<short>> dst)
 {
 	switch(src.Length())
 	{
@@ -111,7 +111,7 @@ void DeinterleaveShorts(CSpan<short> src, Span<Span<short>> dst)
 }
 
 
-void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2)
+void InterleaveFloatsCastToShorts(Span<short> dst, Span<const float> src1, Span<const float> src2)
 {
 	while(dst.End > dst.Begin + 1)
 	{
@@ -120,16 +120,16 @@ void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<floa
 	}
 }
 
-static void genericInterleaveCast(Span<short> dst, Span<CSpan<float>> src)
+static void genericInterleaveCast(Span<short> dst, Span<Span<const float>> src)
 {
-	CSpan<float> srcs[16];
+	Span<const float> srcs[16];
 	auto srcsSpan = Take(srcs, src.CopyTo(srcs));
 	while(dst.End != dst.Begin)
 		for(auto& srci: srcsSpan)
 			*dst.Begin++ = short(*srci.Begin++ * 32767);
 }
 
-void InterleaveFloatsCastToShorts(Span<short> dst, Span<CSpan<float>> src)
+void InterleaveFloatsCastToShorts(Span<short> dst, Span<Span<const float>> src)
 {
 	switch(src.Length())
 	{
@@ -143,7 +143,7 @@ void InterleaveFloatsCastToShorts(Span<short> dst, Span<CSpan<float>> src)
 }
 
 
-void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<short> dst1, Span<short> dst2)
+void DeinterleaveFloatsCastToShorts(Span<const float> src, Span<short> dst1, Span<short> dst2)
 {
 	while(src.End != src.Begin)
 	{
@@ -152,7 +152,7 @@ void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<short> dst1, Span<sho
 	}
 }
 
-static void genericDeinterleaveCastToShorts(CSpan<float> src, Span<Span<short>> dst)
+static void genericDeinterleaveCastToShorts(Span<const float> src, Span<Span<short>> dst)
 {
 	Span<short> dsts[16];
 	auto dstsSpan = Take(dsts, dst.CopyTo(dsts));
@@ -161,7 +161,7 @@ static void genericDeinterleaveCastToShorts(CSpan<float> src, Span<Span<short>> 
 			*dsti.Begin++ = short(*src.Begin++ * 32767);
 }
 
-void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<Span<short>> dst)
+void DeinterleaveFloatsCastToShorts(Span<const float> src, Span<Span<short>> dst)
 {
 	switch(src.Length())
 	{
@@ -175,7 +175,7 @@ void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<Span<short>> dst)
 }
 
 
-void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<float> dst2)
+void DeinterleaveShortsCastToFloats(Span<const short> src, Span<float> dst1, Span<float> dst2)
 {
 	while(src.End != src.Begin)
 	{
@@ -184,7 +184,7 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<flo
 	}
 }
 
-static void genericDeinterleaveCastToFloats(CSpan<short> src, Span<Span<float>> dst)
+static void genericDeinterleaveCastToFloats(Span<const short> src, Span<Span<float>> dst)
 {
 	Span<float> dsts[16];
 	auto dstsSpan = Take(dsts, dst.CopyTo(dsts));
@@ -193,7 +193,7 @@ static void genericDeinterleaveCastToFloats(CSpan<short> src, Span<Span<float>> 
 			*dsti.Begin++ = *src.Begin++ / 32768.0f;
 }
 
-void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<Span<float>> dst)
+void DeinterleaveShortsCastToFloats(Span<const short> src, Span<Span<float>> dst)
 {
 	switch(src.Length())
 	{
@@ -205,4 +205,4 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<Span<float>> dst)
 		genericDeinterleaveCastToFloats(src, dst);
 	}
 }
-INTRA_END
+} INTRA_END

@@ -2,25 +2,25 @@
 
 #include "Intra/Range/Span.h"
 
-INTRA_BEGIN
-void InterleaveFloats(Span<float> dst, CSpan<float> src1, CSpan<float> src2);
-void InterleaveFloats(Span<float> dst, Span<CSpan<float>> srcChannels);
+namespace Intra { INTRA_BEGIN
+void InterleaveFloats(Span<float> dst, Span<const float> src1, Span<const float> src2);
+void InterleaveFloats(Span<float> dst, Span<Span<const float>> srcChannels);
 
-void InterleaveShorts(Span<short> dst, CSpan<short> src1, CSpan<short> src2);
-void InterleaveShorts(Span<short> dst, Span<CSpan<short>> srcChannels);
+void InterleaveShorts(Span<short> dst, Span<const short> src1, Span<const short> src2);
+void InterleaveShorts(Span<short> dst, Span<Span<const short>> srcChannels);
 
-void DeinterleaveFloats(CSpan<float> src, Span<float> dst1, Span<float> dst2);
-void DeinterleaveFloats(CSpan<float> src, Span<Span<float>> dst);
+void DeinterleaveFloats(Span<const float> src, Span<float> dst1, Span<float> dst2);
+void DeinterleaveFloats(Span<const float> src, Span<Span<float>> dst);
 
-void DeinterleaveShorts(CSpan<short> src, Span<short> dst1, Span<short> dst2);
-void DeinterleaveShorts(CSpan<short> src, Span<Span<short>> dst);
+void DeinterleaveShorts(Span<const short> src, Span<short> dst1, Span<short> dst2);
+void DeinterleaveShorts(Span<const short> src, Span<Span<short>> dst);
 
-void InterleaveFloatsCastToShorts(Span<short> dst, CSpan<float> src1, CSpan<float> src2);
-void InterleaveFloatsCastToShorts(Span<short> dst, Span<CSpan<float>> srcChannels);
+void InterleaveFloatsCastToShorts(Span<short> dst, Span<const float> src1, Span<const float> src2);
+void InterleaveFloatsCastToShorts(Span<short> dst, Span<Span<const float>> srcChannels);
 
-void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<short> dst1, Span<short> dst2);
-void DeinterleaveFloatsCastToShorts(CSpan<float> src, Span<Span<short>> dst);
+void DeinterleaveFloatsCastToShorts(Span<const float> src, Span<short> dst1, Span<short> dst2);
+void DeinterleaveFloatsCastToShorts(Span<const float> src, Span<Span<short>> dst);
 
-void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<float> dst2);
-void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<Span<float>> dst);
-INTRA_END
+void DeinterleaveShortsCastToFloats(Span<const short> src, Span<float> dst1, Span<float> dst2);
+void DeinterleaveShortsCastToFloats(Span<const short> src, Span<Span<float>> dst);
+} INTRA_END

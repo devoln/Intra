@@ -5,11 +5,11 @@
 #include "IntraX/System/Error.h"
 #include "IntraX/Container/ForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace detail {
 
 #ifdef _WIN32
-/// Converts UTF-8 to UTF-16 null-terminated string, using MultibyteToWideChar from WinAPI.
+/// Converts UTF-8 to UTF-16 nullptr-terminated string, using MultibyteToWideChar from WinAPI.
 GenericString<wchar_t> Utf8ToWStringZ(StringView str);
 #endif
 
@@ -17,4 +17,4 @@ GenericString<wchar_t> Utf8ToWStringZ(StringView str);
 void ProcessLastError(ErrorReporter err, StringView message, SourceInfo srcInfo = SourceInfo());
 
 }
-INTRA_END
+} INTRA_END

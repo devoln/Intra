@@ -13,7 +13,7 @@ INTRA_WARNING_POP
 
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #if(defined(_WIN32) && defined(INTRA_DROP_XP_SUPPORT))
 SoundDeviceInfo SoundDeviceInfo::Get(bool* oSupported)
 {
@@ -21,20 +21,20 @@ SoundDeviceInfo SoundDeviceInfo::Get(bool* oSupported)
 
 	if(oSupported) *oSupported = false;
 
-	CoInitialize(null);
+	CoInitialize(nullptr);
 
 	// get the device enumerator
-	IMMDeviceEnumerator* pEnumerator = null;
-	if(FAILED(CoCreateInstance(__uuidof(MMDeviceEnumerator), null,
+	IMMDeviceEnumerator* pEnumerator = nullptr;
+	if(FAILED(CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr,
 		CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), reinterpret_cast<void**>(&pEnumerator))))
 		return result;
 
 	// get default audio endpoint
-	IMMDevice * pDevice = null;
+	IMMDevice * pDevice = nullptr;
 	if(FAILED(pEnumerator->GetDefaultAudioEndpoint(eRender, eMultimedia, &pDevice)))
 		return result;
 
-	IPropertyStore* store = null;
+	IPropertyStore* store = nullptr;
 	if(FAILED(pDevice->OpenPropertyStore(STGM_READ, &store)))
 		return result;
 
@@ -62,4 +62,4 @@ SoundDeviceInfo SoundDeviceInfo::Get(bool* oSupported)
 }
 
 #endif
-INTRA_END
+} INTRA_END

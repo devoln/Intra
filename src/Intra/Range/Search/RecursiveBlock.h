@@ -8,7 +8,7 @@
 #include "Intra/Range/Operations.h"
 #include "Intra/Container/Tuple.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename OB, typename CB, typename ST, typename CBP, typename RCBP> constexpr Requires<
 	CNonInfiniteForwardRange<R> &&
 	CNonInfiniteForwardList<OB> &&
@@ -89,7 +89,7 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 
 		range.PopFirst();
 	}
-	if(ioIndex != null) *ioIndex += index;
+	if(ioIndex != nullptr) *ioIndex += index;
 	return Take(start, index);
 }
 
@@ -107,4 +107,4 @@ TTakeResult<R>> TakeRecursiveBlockAdvance(R& range, int& counter, size_t* ioInde
 		NullRange<Tuple<NullRange<T>, NullRange<T>>>(),
 		NullRange<Tuple<NullRange<T>, NullRange<T>>>());
 }
-INTRA_END
+} INTRA_END

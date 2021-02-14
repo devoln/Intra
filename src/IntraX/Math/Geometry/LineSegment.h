@@ -4,7 +4,7 @@
 #include "Intra/Math/Math.h"
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Math {
 
 template<typename T> struct LineSegment

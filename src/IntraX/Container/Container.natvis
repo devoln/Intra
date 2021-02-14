@@ -90,7 +90,7 @@
 	
 	  <Type Name="Intra::BList&lt;*&gt;">
       <DisplayString Condition="mCount==0">[]</DisplayString>
-	    <DisplayString Condition="(mRange.FirstNode==null || mRange.LastNode==null) &amp;&amp; mCount!=0 || mCount==0 &amp;&amp; (mRange.FirstNode!=null || mRange.LastNode!=null)">&lt;INVALID&gt;</DisplayString>
+	    <DisplayString Condition="(mRange.FirstNode==nullptr || mRange.LastNode==nullptr) &amp;&amp; mCount!=0 || mCount==0 &amp;&amp; (mRange.FirstNode!=nullptr || mRange.LastNode!=nullptr)">&lt;INVALID&gt;</DisplayString>
       <DisplayString>BList({mCount}){mRange}</DisplayString>
       <Expand>
           <Item Name="Count" ExcludeView="simple">mCount</Item>

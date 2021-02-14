@@ -7,7 +7,7 @@
 /** This header file contains the definitions of [Copyable][Mutable]Delegate type-erased functors wrapping corresponding I[Copyable][Mutable]Functor and managing their lifetime.
 */
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
 
 ///@{
@@ -22,7 +22,7 @@ template<typename R, typename... Args> class CopyableDelegate<R(Args...)>
 
 public:
 	CopyableDelegate() = default;
-	constexpr CopyableDelegate(decltype(null)) {}
+	constexpr CopyableDelegate(decltype(nullptr)) {}
 
 	template<typename T, typename NRT = TRemoveConstRef<T>, typename = Requires<
 		CCallable<NRT, Args...>
@@ -41,21 +41,21 @@ public:
 	constexpr CopyableDelegate(Unique<Interface> functor): mFunctor(Move(functor)) {}
 
 	INTRA_FORCEINLINE CopyableDelegate(const CopyableDelegate& rhs):
-		mFunctor(rhs? rhs.mFunctor->Clone(): null) {}
+		mFunctor(rhs? rhs.mFunctor->Clone(): nullptr) {}
 
 	INTRA_FORCEINLINE CopyableDelegate(CopyableDelegate&& rhs) = default;
 
 	INTRA_FORCEINLINE R operator()(Args... args) const
 	{return (*mFunctor)(Forward<Args>(args)...);}
 
-	[[nodiscard]] constexpr bool operator==(decltype(null)) const {return mFunctor == null;}
-	[[nodiscard]] constexpr bool operator!=(decltype(null)) const {return mFunctor != null;}
-	[[nodiscard]] constexpr bool operator!() const {return operator==(null);}
+	[[nodiscard]] constexpr bool operator==(decltype(nullptr)) const {return mFunctor == nullptr;}
+	[[nodiscard]] constexpr bool operator!=(decltype(nullptr)) const {return mFunctor != nullptr;}
+	[[nodiscard]] constexpr bool operator!() const {return operator==(nullptr);}
 
 
 	CopyableDelegate& operator=(const CopyableDelegate& rhs)
 	{
-		if(!rhs.mFunctor) mFunctor = null;
+		if(!rhs.mFunctor) mFunctor = nullptr;
 		else mFunctor = rhs.mFunctor->Clone();
 		return *this;
 	}
@@ -66,7 +66,7 @@ public:
 	[[nodiscard]] constexpr Interface& MyFunctor() const {return *mFunctor;}
 	[[nodiscard]] constexpr Interface* ReleaseFunctor() {return mFunctor.Release();}
 
-	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != null;}
+	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != nullptr;}
 };
 
 template<typename FuncSignature> class CopyableMutableDelegate;
@@ -79,7 +79,7 @@ template<typename R, typename... Args> class CopyableMutableDelegate<R(Args...)>
 	Unique<Interface> mFunctor;
 
 public:
-	INTRA_FORCEINLINE CopyableMutableDelegate(decltype(null)=null) noexcept {}
+	INTRA_FORCEINLINE CopyableMutableDelegate(decltype(nullptr)=nullptr) noexcept {}
 
 	template<typename T, typename NRT = TRemoveConstRef<T>, typename = Requires<
 		///CFunction<NRT>::_ &&
@@ -100,21 +100,21 @@ public:
 		mFunctor(Move(functor)) {}
 
 	INTRA_FORCEINLINE CopyableMutableDelegate(const CopyableMutableDelegate& rhs):
-		mFunctor(rhs? rhs.mFunctor->Clone(): null) {}
+		mFunctor(rhs? rhs.mFunctor->Clone(): nullptr) {}
 
 	INTRA_FORCEINLINE CopyableMutableDelegate(CopyableMutableDelegate&& rhs) = default;
 
 	INTRA_FORCEINLINE R operator()(Args... args)
 	{return (*mFunctor)(Forward<Args>(args)...);}
 
-	[[nodiscard]] constexpr bool operator==(decltype(null)) const {return mFunctor == null;}
-	[[nodiscard]] constexpr bool operator!=(decltype(null)) const {return mFunctor != null;}
-	[[nodiscard]] constexpr bool operator!() const {return operator==(null);}
+	[[nodiscard]] constexpr bool operator==(decltype(nullptr)) const {return mFunctor == nullptr;}
+	[[nodiscard]] constexpr bool operator!=(decltype(nullptr)) const {return mFunctor != nullptr;}
+	[[nodiscard]] constexpr bool operator!() const {return operator==(nullptr);}
 
 
 	CopyableMutableDelegate& operator=(const CopyableMutableDelegate& rhs)
 	{
-		if(!rhs.mFunctor) mFunctor = null;
+		if(!rhs.mFunctor) mFunctor = nullptr;
 		else mFunctor = rhs.mFunctor->Clone();
 		return *this;
 	}
@@ -125,7 +125,7 @@ public:
 	[[nodiscard]] constexpr Interface& MyFunctor() const {return *mFunctor;}
 	[[nodiscard]] constexpr Interface* ReleaseFunctor() {return mFunctor.Release();}
 
-	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != null;}
+	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != nullptr;}
 };
 
 
@@ -139,7 +139,7 @@ template<typename R, typename... Args> class Delegate<R(Args...)>
 	Unique<Interface> mFunctor;
 public:
 	Delegate() = default;
-	constexpr Delegate(decltype(null)) noexcept {}
+	constexpr Delegate(decltype(nullptr)) noexcept {}
 
 	template<typename T, typename = Requires<
 		CCallable<TRemoveConstRef<T>, Args...>
@@ -162,9 +162,9 @@ public:
 	INTRA_FORCEINLINE R operator()(Args... args) const
 	{return (*mFunctor)(Forward<Args>(args)...);}
 
-	[[nodiscard]] constexpr bool operator==(decltype(null)) const {return mFunctor == null;}
-	[[nodiscard]] constexpr bool operator!=(decltype(null)) const {return mFunctor != null;}
-	[[nodiscard]] constexpr bool operator!() const {return operator==(null);}
+	[[nodiscard]] constexpr bool operator==(decltype(nullptr)) const {return mFunctor == nullptr;}
+	[[nodiscard]] constexpr bool operator!=(decltype(nullptr)) const {return mFunctor != nullptr;}
+	[[nodiscard]] constexpr bool operator!() const {return operator==(nullptr);}
 
 	Delegate& operator=(Delegate&&) = default;
 	Delegate& operator=(const Delegate&) = delete;
@@ -173,7 +173,7 @@ public:
 	[[nodiscard]] constexpr Interface& MyFunctor() const {return *mFunctor;}
 	[[nodiscard]] constexpr Owner<Interface*> ReleaseFunctor() {return mFunctor.Release();}
 
-	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != null;}
+	[[nodiscard]] constexpr explicit operator bool() const {return mFunctor != nullptr;}
 };
 ///@}
-INTRA_END
+} INTRA_END

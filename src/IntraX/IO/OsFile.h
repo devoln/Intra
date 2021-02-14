@@ -11,7 +11,7 @@
 
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class OsFile
 {
 public:
@@ -19,12 +19,12 @@ public:
 
 	OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorReporter err);
 	OsFile(StringView fileName, Mode mode, ErrorReporter err): OsFile(fileName, mode, false, err) {}
-	OsFile(decltype(null)=null): mHandle(null), mMode(Mode::None), mOwning(false) {}
+	OsFile(decltype(nullptr)=nullptr): mHandle(nullptr), mMode(Mode::None), mOwning(false) {}
 	~OsFile() {Close();}
 	
 	OsFile(OsFile&& rhs):
 		mHandle(rhs.mHandle), mMode(rhs.mMode), mOwning(rhs.mOwning)
-	{rhs.mHandle = null; rhs.mOwning = false;}
+	{rhs.mHandle = nullptr; rhs.mOwning = false;}
 	
 	OsFile(const OsFile&) = delete;
 	
@@ -32,19 +32,19 @@ public:
 	{
 		Close();
 		mHandle = rhs.mHandle;
-		rhs.mHandle = null;
+		rhs.mHandle = nullptr;
 		mMode = rhs.mMode;
 		return *this;
 	}
 	OsFile& operator=(const OsFile&) = delete;
 
-	bool operator==(decltype(null)) const {return mHandle == null;}
-	bool operator!=(decltype(null)) const {return mHandle != null;}
+	bool operator==(decltype(nullptr)) const {return mHandle == nullptr;}
+	bool operator!=(decltype(nullptr)) const {return mHandle != nullptr;}
 
-	INTRA_FORCEINLINE OsFile& operator=(decltype(null)) {Close(); return *this;}
+	INTRA_FORCEINLINE OsFile& operator=(decltype(nullptr)) {Close(); return *this;}
 
 	/// ������� ����, ��������������� � ���� ��������.
-	/// ������� ������ ��������� � null ���������.
+	/// ������� ������ ��������� � nullptr ���������.
 	void Close();
 
 	/// ��������� ������ �� ����� �� ���������� ��������.
@@ -89,7 +89,7 @@ public:
 
 	bool OwnsHandle() const
 	{
-		INTRA_PRECONDITION(!mOwning || mHandle != null);
+		INTRA_PRECONDITION(!mOwning || mHandle != nullptr);
 		return mOwning;
 	}
 
@@ -101,4 +101,4 @@ private:
 	bool mOwning;
 	String mFullPath;
 };
-INTRA_END
+} INTRA_END

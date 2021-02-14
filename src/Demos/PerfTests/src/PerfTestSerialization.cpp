@@ -61,7 +61,7 @@ struct TestRef
 
 	TestRef& operator=(const TestRef&) = default;
 
-	CSpan<int> intArray;
+	Span<const int> intArray;
 	int fixedIntArray[3];
 	bool booleanVal;
 	float flt;
@@ -95,7 +95,7 @@ struct SuperTestRef
 	Array<StringView> strArr;
 	int foo;
 	StringView str;
-	CSpan<short> vals;
+	Span<const short> vals;
 	double dbl;
 	TestRef tests[3];
 	uint16 bar;
@@ -295,7 +295,7 @@ void RunSerializationPerfTests(FormattedWriter& output)
 	if(TestGroup gr{"Binary serialization"})
 	{
 		PrintPerformanceResults(output, "Serializing struct 1000000 times",
-			{"binary"}, null,
+			{"binary"}, nullptr,
 			{
 				TestBinarySerialization(1000000)
 			});
@@ -304,13 +304,13 @@ void RunSerializationPerfTests(FormattedWriter& output)
 	if(TestGroup gr{"Binary deserialization"})
 	{
 		PrintPerformanceResults(output, "Deserializing struct with containers 1000000 times",
-			{"binary"}, null,
+			{"binary"}, nullptr,
 			{
 				TestBinaryDeserialization(1000000)
 			});
 
 		PrintPerformanceResults(output, "Deserializing struct with ranges 1000000 times",
-			{"binary"}, null,
+			{"binary"}, nullptr,
 			{
 				TestBinaryRefDeserialization(1000000)
 			});
@@ -319,7 +319,7 @@ void RunSerializationPerfTests(FormattedWriter& output)
 	if(TestGroup gr{"Text serialization"})
 	{
 		PrintPerformanceResults(output, "Serializing struct 1000000 times",
-			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
+			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, nullptr,
 			{
 				TestTextSerialization(output, "(1) C struct", 1000000,
 					LanguageParams::CStructInitializer, TextSerializerParams::Verbose),
@@ -338,7 +338,7 @@ void RunSerializationPerfTests(FormattedWriter& output)
 	{
 		TestTextDeserialization(1, LanguageParams::Xml, TextSerializerParams::Verbose);
 		PrintPerformanceResults(output, "Deserializing struct 100000 times",
-			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, null,
+			{"(1) C struct", "(2) JSON", "(3) JSON compact", "(4) XML subset", "(5) JSON-like custom"}, nullptr,
 			{
 				TestTextDeserialization(100000, LanguageParams::CStructInitializer, TextSerializerParams::Verbose),
 				TestTextDeserialization(100000, LanguageParams::Json, TextSerializerParams::Verbose),

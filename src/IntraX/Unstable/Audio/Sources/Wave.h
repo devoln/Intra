@@ -9,11 +9,11 @@
 #include "IntraX/Unstable/Audio/SoundTypes.h"
 #include "IntraX/Unstable/Audio/AudioSource.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Sources {
 class Wave: public BasicAudioSource
 {
-	CSpan<byte> mData;
+	Span<const byte> mData;
 	index_t mSampleCount = 0, mCurrentDataPos = 0;
 	ValueType mDataType;
 public:
@@ -21,15 +21,15 @@ public:
 		BasicAudioSource(Move(onClose), int(info.SampleRate), short(info.Channels)),
 		mData(SpanOfRaw(data, info.GetBufferSize())), mDataType(info.SampleType) {}
 
-	Wave(OnCloseResourceCallback onClose, int sampleRate, short numChannels, CSpan<short> data):
+	Wave(OnCloseResourceCallback onClose, int sampleRate, short numChannels, Span<const short> data):
 		BasicAudioSource(Move(onClose), sampleRate, numChannels),
 		mData(data.ReinterpretUnsafe<byte>()), mSampleCount(data.Length()), mDataType(ValueType::SNorm16) {}
 
-	Wave(OnCloseResourceCallback onClose, NonNegative<int> sampleRate, NonNegative<short> numChannels, CSpan<float> data):
+	Wave(OnCloseResourceCallback onClose, NonNegative<int> sampleRate, NonNegative<short> numChannels, Span<const float> data):
 		BasicAudioSource(Move(onClose), sampleRate, numChannels),
 		mData(data.ReinterpretUnsafe<byte>()), mSampleCount(data.Length()), mDataType(ValueType::Float) {}
 
-	Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData);
+	Wave(OnCloseResourceCallback onClose, Span<const byte> srcFileData);
 
 	Wave(const Wave&) = delete;
 	Wave(Wave&&) = default;
@@ -41,7 +41,7 @@ public:
 
 	index_t GetInterleavedSamples(Span<short> outShorts) override;
 	index_t GetInterleavedSamples(Span<float> outFloats) override;
-	index_t GetUninterleavedSamples(CSpan<Span<float>> outFloats) override;
+	index_t GetUninterleavedSamples(Span<const Span<float>> outFloats) override;
 
 	FixedArray<const void*> GetRawSamplesData(Index maxSamplesToRead,
 		Optional<ValueType&> oType, Optional<bool&> oInterleaved, Optional<index_t&> oSamplesRead) override;
@@ -49,4 +49,4 @@ public:
 
 void WriteWave(IAudioSource& source, OutputStream& stream, ValueType sampleType = ValueType::SNorm16);
 }
-INTRA_END
+} INTRA_END

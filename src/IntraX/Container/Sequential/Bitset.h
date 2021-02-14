@@ -1,13 +1,13 @@
 #pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Range/Span.h"
 #include "IntraX/Memory/Memory.h"
 #include "IntraX/Container/Sequential/Array.h"
 
 //TODO
 #if 0
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 class Bitset
 {
@@ -54,14 +54,14 @@ class Bitset
 		for(size_t i = arrWords + 1; i < vlen; i++) v[i] = 0; //TODO: memset
 	}
 public:
-	INTRA_FORCEINLINE Bitset(decltype(null)=null) {}
+	INTRA_FORCEINLINE Bitset(decltype(nullptr)=nullptr) {}
 
 	template<typename T, typename=Requires<
-		CIntegral<TRemoveConstRef<T>>::_
+		CBasicIntegral<TRemoveConstRef<T>>::_
 	>> INTRA_FORCEINLINE Bitset(Span<T> arr)
 	{copyFrom<T, sizeof(T)*8>(arr);}
 
-	INTRA_FORCEINLINE Bitset(CSpan<bool> arr)
+	INTRA_FORCEINLINE Bitset(Span<const bool> arr)
 	{copyFrom<const bool, 1>(arr);}
 
 	/// Initialize bitset using a list of 64-bit numbers.
@@ -112,14 +112,14 @@ public:
 	}
 
 	/// Set all bits to zero.
-	constexpr Bitset& operator=(decltype(null)) noexcept
+	constexpr Bitset& operator=(decltype(nullptr)) noexcept
 	{
 		Initialize(v.AsRange());
 		return *this;
 	}
 
 	/// Check if all bits are zero.
-	bool operator==(decltype(null)) const noexcept
+	bool operator==(decltype(nullptr)) const noexcept
 	{
 		const size_t n = v.Length();
 		const auto data = v.Data();
@@ -137,7 +137,7 @@ public:
 #endif
 	}
 
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const noexcept {return !operator==(nullptr);}
 
 	/*! Check if two bitsets are equal.
 	  Two bitsets are considered equal if they have same Length() and all their corresponding bits are equal.
@@ -218,5 +218,5 @@ public:
 
 	constexpr explicit operator uint64() const {return v[0];}
 };
-INTRA_END
+} INTRA_END
 #endif

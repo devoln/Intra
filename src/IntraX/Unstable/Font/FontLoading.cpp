@@ -5,7 +5,7 @@
 
 
 #if INTRA_LIBRARY_FONT_LOADING == INTRA_LIBRARY_FONT_LOADING_Dummy
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 namespace FontLoadingAPI {
 
@@ -16,7 +16,7 @@ struct Font {};
 FontHandle FontCreate(StringView name, unsigned height, unsigned* yadvance)
 {
 	(void)name;
-	return FontCreateFromMemory(null, 0, height, yadvance);
+	return FontCreateFromMemory(nullptr, 0, height, yadvance);
 }
 
 FontHandle FontCreateFromMemory(const void* data, size_t length, unsigned height, unsigned* yadvance)
@@ -29,7 +29,7 @@ FontHandle FontCreateFromMemory(const void* data, size_t length, unsigned height
 
 void FontDelete(FontHandle font) {(void)font;}
 
-const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* offset, USVec2* size)
+const byte* FontGetCharBitmap(FontHandle font, int code, I16Vec2* offset, U16Vec2* size)
 {
 	(void)font; (void)code;
 	*offset = {0, 0};
@@ -41,8 +41,8 @@ const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* offset, USVec2* 
 void FontGetCharMetrics(FontHandle font, int code, short* xadvance, short* leftSideBearing)
 {
 	(void)font; (void)code;
-	if(leftSideBearing!=null) *leftSideBearing = 1;
-	if(xadvance!=null) *xadvance = 1;
+	if(leftSideBearing!=nullptr) *leftSideBearing = 1;
+	if(xadvance!=nullptr) *xadvance = 1;
 }
 
 short FontGetKerning(FontHandle font, int left, int right)
@@ -52,7 +52,7 @@ short FontGetKerning(FontHandle font, int left, int right)
 }
 
 }
-INTRA_END
+} INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING == INTRA_LIBRARY_FONT_LOADING_STB)
 
@@ -67,17 +67,17 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 namespace FontLoadingAPI {
 
-static FT_Library ft=null;
+static FT_Library ft=nullptr;
 
 static struct Deinitor
 {
 	~Deinitor()
 	{
-		if(ft != null) FT_Done_FreeType(ft);
+		if(ft != nullptr) FT_Done_FreeType(ft);
 	}
 } Deinitor; //Деинициализация при выходе из программы
 
@@ -90,18 +90,18 @@ struct Font
 
 FontHandle FontCreate(StringView name, uint16 height)
 {
-	if(ft==null) FT_Init_FreeType(&ft);
+	if(ft==nullptr) FT_Init_FreeType(&ft);
 	FontHandle desc = new Font;
-	desc->dataCopy = null;
+	desc->dataCopy = nullptr;
 	desc->dataSize = 0;
-	if(FT_New_Face(ft, String(name).CStr(), 0, &desc->face)!=0) return null;
+	if(FT_New_Face(ft, String(name).CStr(), 0, &desc->face)!=0) return nullptr;
 	FT_Set_Pixel_Sizes(desc->face, height, height);
 	return desc;
 }
 
 FontHandle FontCreateFromMemory(const void* data, size_t length, uint16 height)
 {
-	if(ft==null) FT_Init_FreeType(&ft);
+	if(ft==nullptr) FT_Init_FreeType(&ft);
 	FontHandle desc = new Font;
 	size_t bytesToAllocate = length;
 	desc->dataCopy = GlobalHeap.Allocate(bytesToAllocate, INTRA_SOURCE_INFO);
@@ -114,13 +114,13 @@ FontHandle FontCreateFromMemory(const void* data, size_t length, uint16 height)
 
 void FontDelete(FontHandle font)
 {
-	if(font==null) return;
+	if(font==nullptr) return;
 	FT_Done_Face(font->face);
 	GlobalHeap.Free(font->dataCopy, font->dataSize);
 	delete font;
 }
 
-const byte* FontGetCharBitmap(FontHandle desc, unsigned code, SVec2* offset, USVec2* size)
+const byte* FontGetCharBitmap(FontHandle desc, unsigned code, I16Vec2* offset, U16Vec2* size)
 {
 	FT_Face face = desc->face;
 	FT_Load_Char(face, code, FT_LOAD_RENDER);
@@ -131,7 +131,7 @@ const byte* FontGetCharBitmap(FontHandle desc, unsigned code, SVec2* offset, USV
 }
 
 }
-INTRA_END
+} INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING == INTRA_LIBRARY_FONT_LOADING_Gdiplus)
 
@@ -153,36 +153,36 @@ INTRA_WARNING_POP
 using namespace Gdiplus;
 using namespace Gdiplus::DllExports;
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace FontLoadingAPI {
 
-//static FT_Library ft=null;
+//static FT_Library ft=nullptr;
 
-struct Deinitor {~Deinitor() {/*if(ft!=null) FT_Done_FreeType(ft);}*/}} Deinitor; //Деинициализация при выходе из программы
+struct Deinitor {~Deinitor() {/*if(ft!=nullptr) FT_Done_FreeType(ft);}*/}} Deinitor; //Деинициализация при выходе из программы
 
 FontHandle FontCreate(StringView name, unsigned height, unsigned* yAdvance)
 {
 	(void)name; (void)height; (void)yAdvance;
-	/*if(ft==null) FT_Init_FreeType(&ft);
+	/*if(ft==nullptr) FT_Init_FreeType(&ft);
 	FT_Face font;
 	if(FT_New_Face(ft, name, 0, &font)!=0) throw FileNotFoundException(name);
 	FT_Set_Pixel_Sizes(font, height, height);
-	return font;*/return null;
+	return font;*/return nullptr;
 }
 
 FontHandle FontCreateFromMemory(const void* data, size_t length, size_t height, unsigned* yadvance)
 {
 	(void)data; (void)length; (void)height; (void)yadvance;
-	/*if(ft==null) FT_Init_FreeType(&ft);
+	/*if(ft==nullptr) FT_Init_FreeType(&ft);
 	FT_Face font;
 	FT_New_Memory_Face(ft, (const FT_Byte*)data, length, 0, &font);
 	FT_Set_Pixel_Sizes(font, height, height);
-	return (handle)font;*/ return null;
+	return (handle)font;*/ return nullptr;
 }
 
-void FontDelete(FontHandle font) {(void)font;/*if(font.ptr!=null) FT_Done_Face((FT_Face)font.ptr);*/}
+void FontDelete(FontHandle font) {(void)font;/*if(font.ptr!=nullptr) FT_Done_Face((FT_Face)font.ptr);*/}
 
-const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2* oSize)
+const byte* FontGetCharBitmap(FontHandle font, int code, I16Vec2* oOffset, U16Vec2* oSize)
 {
 	(void)font; (void)code;
 	static const byte whitePixel = 255;
@@ -191,13 +191,13 @@ const byte* FontGetCharBitmap(FontHandle font, int code, SVec2* oOffset, USVec2*
 	*offset=spoint2((short)glyph->bitmap_left, (short)glyph->bitmap_top);
 	*size=ussize2((uint16)glyph->bitmap.width, (uint16)glyph->bitmap.rows);
 	return glyph->bitmap.buffer;*/
-	*oOffset = SVec2(0,0);
-	*oSize = USVec2(1,1);
+	*oOffset = I16Vec2(0,0);
+	*oSize = U16Vec2(1,1);
 	return &whitePixel;
 }
 
 }
-INTRA_END
+} INTRA_END
 
 #elif(INTRA_LIBRARY_FONT_LOADING==INTRA_LIBRARY_FONT_LOADING_Qt)
 

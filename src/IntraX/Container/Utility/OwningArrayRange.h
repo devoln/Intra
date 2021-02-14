@@ -2,7 +2,7 @@
 
 #include "IntraX/Container/Sequential/Array.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct OwningArrayRange
 {
 	INTRA_FORCEINLINE OwningArrayRange(Array<T> elements): Elements(Move(elements)) {}
@@ -29,4 +29,4 @@ template<typename T> struct OwningArrayRange
 
 	Array<T> Elements;
 };
-INTRA_END
+} INTRA_END

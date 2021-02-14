@@ -28,18 +28,18 @@
 #endif
 
 
-INTRA_BEGIN
-Sound::Sound(decltype(null)) {}
+namespace Intra { INTRA_BEGIN
+Sound::Sound(decltype(nullptr)) {}
 
 Sound::Sound(const SoundInfo& bufferInfo, const void* initData)
 {
-	Sources::Wave src(null, bufferInfo, initData);
+	Sources::Wave src(nullptr, bufferInfo, initData);
 	mData = Shared<Data>::New(src);
 }
 
 Sound::Sound(const AudioBuffer& dataBuffer)
 {
-	Sources::Wave src(null, dataBuffer.SampleRate, 1, dataBuffer.Samples);
+	Sources::Wave src(nullptr, dataBuffer.SampleRate, 1, dataBuffer.Samples);
 	mData = Shared<Data>::New(src);
 }
 
@@ -48,28 +48,28 @@ Sound::Sound(Sound&& rhs): mData(Move(rhs.mData)) {}
 Sound::Sound(IAudioSource& src, ErrorReporter err):
 	mData(Shared<Data>::New(src))
 {
-	if(mData->Info != null) return;
-	mData = null;
+	if(mData->Info != nullptr) return;
+	mData = nullptr;
 	err.Error({ErrorCode::Other}, String::Concat("Couldn't create sound buffer with size of ", StringOf(src.SamplesLeft()), " samples!"), INTRA_SOURCE_INFO);
 }
 
 Sound::~Sound() {Release();}
 
-void Sound::Release() {mData = null;}
+void Sound::Release() {mData = nullptr;}
 
 Sound& Sound::operator=(Sound&&) = default;
 
 Sound Sound::FromFile(StringView fileName, ErrorReporter err)
 {
 	auto fileMapping = OS.MapFile(fileName, err);
-	if(fileMapping==null) return null;
+	if(fileMapping==nullptr) return nullptr;
 
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 
 	Unique<IAudioSource> source;
 
 	if(fileSignature.StartsWith("RIFF"))
-		source = new Sources::Wave(null, fileMapping.AsRange());
+		source = new Sources::Wave(nullptr, fileMapping.AsRange());
 	else
 #if(INTRA_LIBRARY_VORBIS_DECODER != INTRA_LIBRARY_VORBIS_DECODER_None)
 	if(fileSignature.StartsWith("OggS"))
@@ -78,7 +78,7 @@ Sound Sound::FromFile(StringView fileName, ErrorReporter err)
 #endif
 	{
 		err.Error({ErrorCode::NotSupported}, "Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);
-		return null;
+		return nullptr;
 	}
 
 	return Sound(*source, err);
@@ -91,19 +91,19 @@ void Sound::ReleaseAllSounds()
 
 Sound::Instance Sound::CreateInstance()
 {
-	INTRA_DEBUG_ASSERT(mData != null);
-	if(mData == null) return null;
+	INTRA_DEBUG_ASSERT(mData != nullptr);
+	if(mData == nullptr) return nullptr;
 	return Instance(*this);
 }
 
 Sound::Instance::Instance(Sound& sound):
 	mData(Shared<Data>::New(sound.mData)) {}
 
-Sound::Instance::Instance(decltype(null)) {}
+Sound::Instance::Instance(decltype(nullptr)) {}
 Sound::Instance::Instance(Instance&&) = default;
 Sound::Instance& Sound::Instance::operator=(Instance&&) = default;
 
-void Sound::Instance::Release() {mData = null;}
+void Sound::Instance::Release() {mData = nullptr;}
 
 Sound::Instance::~Instance() {Release();}
 
@@ -111,7 +111,7 @@ void Sound::Instance::Play(bool loop) const {if(mData) mData->Play(loop);}
 bool Sound::Instance::IsPlaying() const {return mData && mData->IsPlaying();}
 void Sound::Instance::Stop() const {if(mData) mData->Stop();}
 
-StreamedSound::StreamedSound(decltype(null)) {}
+StreamedSound::StreamedSound(decltype(nullptr)) {}
 
 StreamedSound::StreamedSound(StreamedSound&&) = default;
 
@@ -125,7 +125,7 @@ StreamedSound& StreamedSound::operator=(StreamedSound&&) = default;
 StreamedSound StreamedSound::FromFile(StringView fileName, Size bufSize, ErrorReporter err)
 {
 	auto fileMapping = OS.MapFile(fileName, err);
-	if(fileMapping == null) return null;
+	if(fileMapping == nullptr) return nullptr;
 	Unique<IAudioSource> source;
 	auto fileSignature = fileMapping.AsRangeOf<char>();
 #ifndef INTRA_NO_WAVE_LOADER
@@ -140,7 +140,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, Size bufSize, ErrorRe
 #endif
 	{
 		err.Error({ErrorCode::NotSupported}, "Unsupported audio format of file " + fileName + "!", INTRA_SOURCE_INFO);
-		return null;
+		return nullptr;
 	}
 
 	return StreamedSound(Move(source), bufSize);
@@ -148,7 +148,7 @@ StreamedSound StreamedSound::FromFile(StringView fileName, Size bufSize, ErrorRe
 
 void StreamedSound::release()
 {
-	mData = null;
+	mData = nullptr;
 }
 
 void StreamedSound::Play(bool loop) const
@@ -201,7 +201,7 @@ void StreamedSound::UpdateAllExistingInstances()
 	for(auto& ptr: soundsToUpdate)
 	{
 		ptr->Update();
-		ptr = null;
+		ptr = nullptr;
 	}
 #endif
 }
@@ -216,4 +216,4 @@ void CleanUpSoundSystem()
 	Sound::ReleaseAllSounds();
 	StreamedSound::ReleaseAllSounds();
 }
-INTRA_END
+} INTRA_END

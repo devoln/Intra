@@ -2,8 +2,8 @@
 #include "Intra/Range/StringView.h"
 #include "Intra/Math/Math.h"
 
-INTRA_BEGIN
-void ResampleLinear(CSpan<float> src, Span<float> dst)
+namespace Intra { INTRA_BEGIN
+void ResampleLinear(Span<const float> src, Span<float> dst)
 {
 	const auto srcL1 = src.Length() - 1;
 	const auto dstL1 = dst.Length() - 1;
@@ -22,7 +22,7 @@ Span<float> DecimateX2LinearInPlace(Span<float> inOutSamples)
 	return inOutSamples.TakeExactly(newLen);
 }
 
-Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src)
+Span<float> DecimateX2Linear(Span<float> dst, Span<const float> src)
 {
 	const auto newLen = index_t(size_t(src.Length()) / 2);
 	INTRA_PRECONDITION(dst.Length() >= newLen);
@@ -31,7 +31,7 @@ Span<float> DecimateX2Linear(Span<float> dst, CSpan<float> src)
 	return dst.TakeExactly(newLen);
 }
 
-Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src)
+Span<float> UpsampleX2Linear(Span<float> dst, Span<const float> src)
 {
 	const auto newLen = src.Length()*2;
 	dst = dst.TakeExactly(newLen);
@@ -46,4 +46,4 @@ Span<float> UpsampleX2Linear(Span<float> dst, CSpan<float> src)
 	dst.Last() = src.Last();
 	return dst;
 }
-INTRA_END
+} INTRA_END

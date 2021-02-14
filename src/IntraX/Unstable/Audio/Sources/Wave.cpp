@@ -5,7 +5,7 @@
 #include "Intra/Math/Math.h"
 #include "IntraX/Utils/Endianess.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace Sources {
 struct WaveHeader
 {
@@ -25,20 +25,20 @@ struct WaveHeader
 };
 
 
-Wave::Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData):
+Wave::Wave(OnCloseResourceCallback onClose, Span<const byte> srcFileData):
 	BasicAudioSource(Move(onClose))
 {
 	const WaveHeader& header = *reinterpret_cast<const WaveHeader*>(srcFileData.Begin);
 
 	const bool isValidHeader =
-		StringView::FromBuffer(header.RIFF) == "RIFF" &&
-		StringView::FromBuffer(header.WAVE) == "WAVE" &&
-		StringView::FromBuffer(header.fmt) == "fmt " &&
-		StringView::FromBuffer(header.data) == "data";
+		(Span(header.RIFF)|MatchesWith("RIFF"_span)) &&
+		(Span(header.WAVE)|MatchesWith("WAVE"_span)) &&
+		(Span(header.fmt)|MatchesWith("fmt "_span)) &&
+		(Span(header.data)|MatchesWith("data"_span));
 	
 	if(!isValidHeader) return;
 
-	mData = srcFileData.Drop(sizeof(WaveHeader)).ReinterpretUnsafe<const byte>().Take(index_t(header.DataSize));
+	mData = srcFileData|Drop(sizeof(WaveHeader))|Take(header.DataSize);
 	mChannelCount = short(header.Channels);
 	mSampleRate = int(header.SampleRate);
 	mSampleCount = index_t(header.DataSize / (sizeof(short)*size_t(mChannelCount)));
@@ -51,7 +51,7 @@ Wave::Wave(OnCloseResourceCallback onClose, CSpan<byte> srcFileData):
 	default:
 		mDataType = ValueType::Void;
 		mSampleCount = 0;
-		mData = null;
+		mData = nullptr;
 	}
 	else if(header.FormatTag == 3)
 	{
@@ -101,7 +101,7 @@ index_t Wave::GetInterleavedSamples(Span<float> outFloats)
 	return index_t(size_t(valuesRead) / size_t(mChannelCount));
 }
 
-index_t Wave::GetUninterleavedSamples(CSpan<Span<float>> outFloatChannels)
+index_t Wave::GetUninterleavedSamples(Span<const Span<float>> outFloatChannels)
 {
 	INTRA_PRECONDITION(outFloatChannels.Length() == mChannelCount);
 	const auto outSamplesCount = outFloatChannels.First().Length();
@@ -196,4 +196,4 @@ void WriteWave(IAudioSource& source, OutputStream& stream, ValueType sampleType)
 	INTRA_DEBUG_ASSERT(false); //Not supported yet
 }
 }
-INTRA_END
+} INTRA_END

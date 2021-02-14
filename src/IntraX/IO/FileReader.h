@@ -10,15 +10,15 @@
 
 #include "OsFile.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class OsFile;
 class FileReader: public InputStreamMixin<FileReader, char>
 {
 public:
-	INTRA_FORCEINLINE FileReader(decltype(null)=null): mOffset(0), mSize(0) {}
+	FileReader() = default;
 
 	INTRA_FORCEINLINE FileReader(Shared<OsFile> file, Index bufferSize = 4096):
-		mFile(Move(file)), mOffset(0), mSize(mFile == null? 0: mFile->Size())
+		mFile(Move(file)), mOffset(0), mSize(mFile == nullptr? 0: mFile->Size())
 	{
 		mBuffer.SetCountUninitialized(bufferSize);
 		loadBuffer(IgnoreErrors);
@@ -45,17 +45,17 @@ public:
 		mSize = rhs.mSize;
 		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
-		rhs.mBufferRest = null;
+		rhs.mBufferRest = nullptr;
 		return *this;
 	}
 
-	FileReader& operator=(decltype(null))
+	FileReader& operator=(decltype(nullptr))
 	{
-		mFile = null;
+		mFile = nullptr;
 		mOffset = 0;
 		mSize = 0;
-		mBuffer = null;
-		mBufferRest = null;
+		mBuffer = nullptr;
+		mBufferRest = nullptr;
 		return *this;
 	}
 
@@ -65,8 +65,6 @@ public:
 
 	INTRA_FORCEINLINE index_t Length() const {return index_t(mSize - PositionInFile());}
 
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const noexcept {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const noexcept {return !Empty();}
 	INTRA_FORCEINLINE explicit operator bool() const noexcept {return !Empty();}
 	
 	void PopFirst(ErrorReporter err = IgnoreErrors)
@@ -108,10 +106,8 @@ public:
 		return totalBytesRead;
 	}
 
-	template<typename AR> Requires<
-		CSame<TArrayElement<AR>, char> &&
-		!CConst<AR>,
-	index_t> ReadWrite(AR& dst, ErrorReporter err = IgnoreErrors)
+	template<typename AR> requires CSame<TArrayListValue<AR>, char> && (!CConst<AR>),
+	index_t ReadWrite(AR& dst, ErrorReporter err = IgnoreErrors)
 	{
 		Span<char> dstArr = SpanOf(dst);
 		const auto result = ReadWrite(dstArr, err);
@@ -120,7 +116,7 @@ public:
 	}
 
 	uint64 PositionInFile() const {return mOffset - uint64(mBufferRest.Length());}
-	CSpan<char> BufferedData() const {return mBufferRest;}
+	Span<const char> BufferedData() const {return mBufferRest;}
 
 	const Shared<OsFile>& File() const {return mFile;}
 
@@ -133,8 +129,8 @@ private:
 	}
 
 	Shared<OsFile> mFile;
-	uint64 mOffset, mSize;
+	uint64 mOffset = 0, mSize = 0;
 	Array<char> mBuffer;
 	Span<char> mBufferRest;
 };
-INTRA_END
+} INTRA_END

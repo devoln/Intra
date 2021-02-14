@@ -23,9 +23,9 @@ void TestSocketIO(FormattedWriter& output)
 	FatalErrorStatus status;
 	output.PrintLine("Started TestSocketIO.");
 	ServerSocket server(SocketType::TCP, 8080, 4, status);
-	if(server == null) output.PrintLine("Couldn't start server on port 8080.");
+	if(server == nullptr) output.PrintLine("Couldn't start server on port 8080.");
 	else output.PrintLine("Server started on port 8080.");
-	INTRA_ASSERT(server != null);
+	INTRA_ASSERT(server != nullptr);
 
 	Synchronized<FormattedWriter> syncOutput(&output);
 

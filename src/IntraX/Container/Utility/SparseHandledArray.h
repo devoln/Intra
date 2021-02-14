@@ -4,24 +4,24 @@
 #include "IntraX/Container/Sequential/Array.h"
 #include "IndexAllocator.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Разреженный массив, который вместо индексов возвращает идентификаторы, корректность которых может быть проверена
 template<typename T, typename Index, typename Generation> class SparseHandledArray
 {
 public:
 	typedef CheckedId<Index, Generation, T> Id;
 
-	SparseHandledArray(decltype(null)=null) {}
+	SparseHandledArray(decltype(nullptr)=nullptr) {}
 	SparseHandledArray(Index size): data(size) {}
 
 	/// Переместить элемент в массив.
 	/// \param[in] val Перемещаемый элемент.
 	/// \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	T& Add(T&& val, Id* oId=null)
+	T& Add(T&& val, Id* oId=nullptr)
 	{
 		Index index;
 		T& result = data.Add(Move(val), &index);
-		if(oId==null) return result;
+		if(oId==nullptr) return result;
 		oId->value = index;
 		oId->generation = generations[index];
 		return result;
@@ -30,11 +30,11 @@ public:
 	/// Добавить копию элемента в массив.
 	/// \param[in] val Копируемый элемент.
 	/// \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	T& Add(const T& val, Id* oId=null)
+	T& Add(const T& val, Id* oId=nullptr)
 	{
 		Index index;
 		T& result = data.Add(val, &index);
-		if(oId==null) return result;
+		if(oId==nullptr) return result;
 		oId->value = index;
 		oId->generation = generations[index];
 		return result;
@@ -43,11 +43,11 @@ public:
 	/// Сконструировать элемент в массиве.
 	/// \param[in] args Параметры конструктора.
 	/// \param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
-	template<typename... Args> T& Emplace(Args&&... args, Id* oId=null)
+	template<typename... Args> T& Emplace(Args&&... args, Id* oId=nullptr)
 	{
 		Index index;
 		T& result = data.Emplace(Forward<Args>(args)..., &index);
-		if(oId==null) return result;
+		if(oId==nullptr) return result;
 		oId->value = index;
 		oId->generation = generations[index];
 		return result;
@@ -63,7 +63,7 @@ public:
 
 	INTRA_FORCEINLINE bool IsValidId(Id id) const
 	{
-		return id != null && id.generation == generations[id.value];
+		return id != nullptr && id.generation == generations[id.value];
 	}
 
 
@@ -91,11 +91,11 @@ public:
 
 	INTRA_FORCEINLINE size_t Capacity() const {return data.Capacity();}
 
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !Empty();}
 
 private:
 	SparseArray<T, Index> data;
 	Array<Generation> generations;
 };
-INTRA_END
+} INTRA_END

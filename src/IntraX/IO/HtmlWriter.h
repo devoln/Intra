@@ -5,6 +5,6 @@
 #include "IntraX/Unstable/Random/FastUniform.h"
 #include "Intra/Range/Polymorphic/OutputRange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 FormattedWriter HtmlWriter(OutputStream stream, bool addDefinitions=false);
-INTRA_END
+} INTRA_END

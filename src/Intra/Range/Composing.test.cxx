@@ -16,7 +16,7 @@
 #include "IntraX/Unstable/Random/FastUniform.h"
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 INTRA_MODULE_UNITTEST
 {
@@ -25,41 +25,41 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT(StringOf(latinAlphabet) == "ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 	auto fib = Recurrence(FAdd, 1, 1);
-	INTRA_ASSERT1(StartsWith(fib, CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21, 34}));
+	INTRA_ASSERT1(StartsWith(fib, Span<const int>{1, 1, 2, 3, 5, 8, 13, 21, 34}));
 
 	Array<int> arr = {1, 2, 3, 4, 5, 6, 7, 8};
 	CopyTo(fib, arr);
 	INTRA_ASSERT(Equals(
 		arr,
-		CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21}
+		Span<const int>{1, 1, 2, 3, 5, 8, 13, 21}
 	));
 
 	Span<int> arrSecondHalf = Drop(fibArr, fibArr.Length() / 2);
-	INTRA_ASSERT(Equals(arrSecondHalf, CSpan<int>{5, 8, 13, 21}));
+	INTRA_ASSERT(Equals(arrSecondHalf, Span<const int>{5, 8, 13, 21}));
 	auto reversedArrSecondHalf = Retro(arrSecondHalf);
-	INTRA_ASSERT(Equals(reversedArrSecondHalf, CSpan<int>{21, 13, 8, 5}));
+	INTRA_ASSERT(Equals(reversedArrSecondHalf, Span<const int>{21, 13, 8, 5}));
 
 	CopyTo(Take(Drop(fib, 5), 7), LastAppender(arr));
 	INTRA_ASSERT(Equals(
 		arr,
-		CSpan<int>{1, 1, 2, 3, 5, 8, 13, 21, 8, 13, 21, 34, 55, 89, 144}
+		Span<const int>{1, 1, 2, 3, 5, 8, 13, 21, 8, 13, 21, 34, 55, 89, 144}
 	));
 
 	auto someRecurrencePart = Take(Recurrence([](int a, int b) {return a*2+b;}, 1, 1), 6);
 	INTRA_ASSERT(Equals(
 		someRecurrencePart,
-		CSpan<int>{1, 1, 3, 5, 11, 21}
+		Span<const int>{1, 1, 3, 5, 11, 21}
 	));
 	auto shiftedCycledRecurrencePart = Take(Drop(Cycle(someRecurrencePart), 9), 7);
 	INTRA_ASSERT(Equals(
 		complexRecurrencePart,
-		CSpan<int>{5, 11, 21, 1, 1, 3, 5}
+		Span<const int>{5, 11, 21, 1, 1, 3, 5}
 	));
 
 	StringView strs0[] = {"hello", "world"};
 	INTRA_ASSERT(Equals(
 		Retro(strs0),
-		CSpan<StringView>{"world", "hello"}
+		Span<const StringView>{"world", "hello"}
 	));
 
 	StringView strs1[] = {"range", "testing", "program"};
@@ -67,12 +67,12 @@ INTRA_MODULE_UNITTEST
 	auto chain = Chain(strs0, strs1, strs2);
 	INTRA_ASSERT(Equals(
 		chain,
-		CSpan<StringView>{"hello", "world", "range", "testing", "program", "C++", "is cool"}
+		Span<const StringView>{"hello", "world", "range", "testing", "program", "C++", "is cool"}
 	));
 
 	INTRA_ASSERT(Equals(
 		chain,
-		CSpan<StringView>{
+		Span<const StringView>{
 			"hello", "world", "range", "testing", "program", "C++", "is cool",
 			"hello", "world", "range", "testing", "program", "C++", "is cool",
 			"hello", "world", "range", "testing", "program", "C++"
@@ -92,16 +92,16 @@ INTRA_MODULE_UNITTEST
 	FillPattern(chain, pattern);
 	INTRA_ASSERT(Equals(
 		chain,
-		CSpan<StringView>{"pattern", "fills", "range", "pattern", "fills", "range", "pattern"}
+		Span<const StringView>{"pattern", "fills", "range", "pattern", "fills", "range", "pattern"}
 	));
 	INTRA_ASSERT(Equals(
 		strs1,
-		CSpan<StringView>{"range", "pattern", "fills"}
+		Span<const StringView>{"range", "pattern", "fills"}
 	));
 
 	INTRA_ASSERT(Equals(
 		Tail(Take(Cycle(strs1), 11), 2),
-		CSpan<StringView>{"range", "pattern"}
+		Span<const StringView>{"range", "pattern"}
 	));
 	
 
@@ -109,12 +109,12 @@ INTRA_MODULE_UNITTEST
 	auto indexedStrs1 = Map(indices, Bind(FIndex, CSpanOf(strs1)));
 	INTRA_ASSERT(Equals(
 		indexedStrs1,
-		CSpan<StringView>{"pattern", "pattern", "pattern", "fills", "fills", "range", "fills", "pattern", "range"}
+		Span<const StringView>{"pattern", "pattern", "pattern", "fills", "fills", "range", "fills", "pattern", "range"}
 	));
 
 	INTRA_ASSERT(Equals(
 		Repeat("Test", 5),
-		CSpan<StringView>{"Test", "Test", "Test", "Test", "Test"}
+		Span<const StringView>{"Test", "Test", "Test", "Test", "Test"}
 	));
 
 	auto roundRobin = RoundRobin(
@@ -125,7 +125,7 @@ INTRA_MODULE_UNITTEST
 	);
 	INTRA_ASSERT(Equals(
 		roundRobin,
-		CSpan<StringView>{
+		Span<const StringView>{
 			"pattern", "Test", "range", "range", //[0]
 			"pattern", "Test", "pattern", "pattern", //[1]
 			"pattern", "Test", "fills", //[2]
@@ -142,7 +142,7 @@ INTRA_MODULE_UNITTEST
 	auto helloWorldTokens = Split(helloWorldCode, IsSpace, AsciiSet("(){},;"));
 	INTRA_ASSERT(Equals(
 		helloWorldTokens,
-		CSpan<StringView>{"int", "main", "(", ")", "{", "printf", "(", "\"HelloWorld!\"", ")", ";", "}"}
+		Span<const StringView>{"int", "main", "(", ")", "{", "printf", "(", "\"HelloWorld!\"", ")", ";", "}"}
 	));
 
 	int arr[] = {1, 4, 11, 6, 8};
@@ -155,8 +155,8 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT(Equals(fromVector, toVector));
 	INTRA_ASSERT(Equals(
 		toVector,
-		CSpan<int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+		Span<const int>{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
 	));
 }
 
-INTRA_END
+} INTRA_END

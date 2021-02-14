@@ -4,6 +4,6 @@
 #include "IntraX/IO/FormattedWriter.h"
 #include "Intra/Range/StringView.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 void RunUnitTests(FormattedWriter& logger);
-INTRA_END
+} INTRA_END

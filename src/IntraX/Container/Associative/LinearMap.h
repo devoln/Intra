@@ -6,7 +6,7 @@
 #include "Intra/Range/Search/Single.h"
 #include "Intra/Range/Zip.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename K, typename V> class LinearMap
 {
 public:
@@ -14,8 +14,8 @@ public:
 	typedef Tuple<const K, V> CPair;
 	typedef Tuple<K&, V&> PairRef;
 	typedef Tuple<const K&, V&> CPairRef;
-	typedef RZip<CSpan<K>, Span<V>> ElementRange;
-	typedef RZip<CSpan<K>, CSpan<V>> ElementConstRange;
+	typedef RZip<Span<const K>, Span<V>> ElementRange;
+	typedef RZip<Span<const K>, Span<const V>> ElementConstRange;
 
 	typedef K key_type;
 	typedef V mapped_type;
@@ -64,8 +64,8 @@ public:
 
 		INTRA_FORCEINLINE bool operator==(const iterator& rhs) const {return mMymap==rhs.mMymap && mIndex==rhs.mIndex;}
 		INTRA_FORCEINLINE bool operator!=(const iterator& rhs) const {return !operator==(rhs);}
-		INTRA_FORCEINLINE bool operator==(decltype(null)) const {return mMymap==null;}
-		INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
+		INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return mMymap==nullptr;}
+		INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 	private:
 		LinearMap* mMymap;
@@ -112,8 +112,8 @@ public:
 
 		INTRA_FORCEINLINE bool operator==(const const_iterator& rhs) const {return mMymap==rhs.mMymap && mIndex==rhs.mIndex;}
 		INTRA_FORCEINLINE bool operator!=(const const_iterator& rhs) const {return !operator==(rhs);}
-		INTRA_FORCEINLINE bool operator==(decltype(null)) const {return mMymap==null;}
-		INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
+		INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return mMymap==nullptr;}
+		INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 	private:
 		const LinearMap* mMymap;
 		size_t mIndex;
@@ -122,16 +122,16 @@ public:
 	explicit LinearMap(size_t initialCapacity):
 		mKeys(initialCapacity), mValues(initialCapacity) {}
 
-	LinearMap(decltype(null)=null):
+	LinearMap(decltype(nullptr)=nullptr):
 		mKeys(), mValues() {}
 
-	LinearMap(CSpan<Pair> pairs):
+	LinearMap(Span<const Pair> pairs):
 		mKeys(), mValues()
 	{
 		for(auto& p: pairs) Insert(p);
 	}
 
-	LinearMap(CSpan<K> keyRange, CSpan<V> valueRange):
+	LinearMap(Span<const K> keyRange, Span<const V> valueRange):
 		mKeys(), mValues()
 	{
 		INTRA_PRECONDITION(keyRange.Length() == valueRange.Length());
@@ -140,7 +140,7 @@ public:
 			Insert({keyRange[i], valueRange[i]});
 	}
 
-	LinearMap(CSpan<K> keyRange, CSpan<const V*> valuePtrRange):
+	LinearMap(Span<const K> keyRange, Span<const const V*> valuePtrRange):
 		mKeys(), mValues()
 	{
 		INTRA_PRECONDITION(keyRange.Length() == valuePtrRange.Length());
@@ -149,7 +149,7 @@ public:
 			Insert(keyRange[i], *valuePtrRange[i]);
 	}
 
-	LinearMap(CSpan<K> keyRange, CSpan<V*> valuePtrRange):
+	LinearMap(Span<const K> keyRange, Span<const V*> valuePtrRange):
 		mKeys(), mValues()
 	{
 		INTRA_DEBUG_ASSERT(keyRange.Length() == valuePtrRange.Length());
@@ -159,8 +159,8 @@ public:
 	}
 
 	INTRA_FORCEINLINE bool Empty() const {return mKeys.Empty();}
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
+	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const {return Empty();}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !Empty();}
 
 	///@{
 	/// Linear time insertion O(n)
@@ -326,8 +326,8 @@ public:
 	INTRA_FORCEINLINE CPairRef GetPair(size_t index) const {return {mKeys[index], mValues[index]};}
 	INTRA_FORCEINLINE PairRef GetPair(size_t index) {return {mKeys[index], mValues[index]};}
 
-	CSpan<K> Keys() const {return mKeys;}
-	CSpan<V> Values() const {return mValues;}
+	Span<const K> Keys() const {return mKeys;}
+	Span<const V> Values() const {return mValues;}
 	Span<V> Values() {return mValues;}
 
 	const K& Key(size_t index) const {return mKeys[index];}
@@ -335,7 +335,7 @@ public:
 	K& Key(size_t index) {return mKeys[index];}
 	V& Value(size_t index) {return mValues[index];}
 
-	LinearMap& operator=(decltype(null))
+	LinearMap& operator=(decltype(nullptr))
 	{
 		mKeys.Clear();
 		mValues.Clear();
@@ -370,4 +370,4 @@ private:
 	Array<K> mKeys;
 	Array<V> mValues;
 };
-INTRA_END
+} INTRA_END

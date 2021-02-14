@@ -6,7 +6,7 @@
 #include "MidiDeviceState.h"
 #include "Messages.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class MidiTrackCombiner
 {
 	Array<MidiTrackParser> mTracks;
@@ -25,4 +25,4 @@ public:
 private:
 	bool trackTimeComparer(const MidiTrackParser& a, const MidiTrackParser& b);
 };
-INTRA_END
+} INTRA_END

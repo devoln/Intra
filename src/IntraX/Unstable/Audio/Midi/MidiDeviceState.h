@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Intra/Core.h"
-#include "Intra/Math/FixedPoint.h"
+#include "Intra/Math/Fixed.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 typedef Fixed32 MidiTime;
 
 struct MidiDeviceState
@@ -27,4 +27,4 @@ private:
 		return headerTimeFormatMSB == 29? 2997: 100*headerTimeFormatMSB;
 	}
 };
-INTRA_END
+} INTRA_END

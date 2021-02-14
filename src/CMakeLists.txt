@@ -6,21 +6,8 @@ option(OUTPUT_MAP "Output .map file." OFF)
 
 set(ADDITIONAL_COMPILER_PARAMETERS "" CACHE STRING "User-specified compiler flags")
 
-option(ENABLE_NEON OFF)
-option(ENABLE_SSE OFF)
-option(NEWEST_CXX_STANDARD ON)
-
-set(CMAKE_CXX_EXTENSIONS OFF)
-if(NOT NEWEST_CXX_STANDARD OR ${CMAKE_VERSION} VERSION_LESS "3.12.0")
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-else()
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
-endif()
-
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
-    set(COMMON_PARAMETERS "${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
+    set(COMMON_PARAMETERS "${ADDITIONAL_COMPILER_PARAMETERS} -I Intra -std=c++20")
 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
@@ -33,34 +20,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STR
 	else()
 		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -D_FILE_OFFSET_BITS=64")
 	endif()
-
-    option(COMPILE_32_BIT "Compile as a 32 bit application." OFF)
-    option(COMPILE_64_BIT "Compile as a 64 bit application." OFF)
-	
-    option(NATIVE_TUNE "Optimize for current processor (-mtune=native)." OFF)
-
-    if(COMPILE_64_BIT)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m64")
-    if(COMPILE_32_BIT)
-        message("Selected both options 64 and 32 bit. 64 bit build is chosen.")
-    endif()
-    elseif(COMPILE_32_BIT)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -m32")
-    endif()
-	
-    if(ENABLE_SSE)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -msse2")
-    else()
-        add_definitions(-D INTRA_MIN_SIMD_SUPPORT=0)
-    endif()
-	
-    if(NATIVE_TUNE)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mtune=native")
-    elseif(ENABLE_NEON)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -march=armv7-a -mfloat-abi=softfp -mfpmath=neon")
-    elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -mfloat-abi=softfp -mfpmath=vfp")
-    endif()
 
     if(OUTPUT_MAP)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-Map=output.map" CACHE INTERNAL "" FORCE)
@@ -117,13 +76,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STR
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_MINSIZEREL}")
     endif()
 elseif(MSVC)
-    set(COMMON_PARAMETERS "/MP /permissive- ${ADDITIONAL_COMPILER_PARAMETERS}")
-	
-    if(ENABLE_SSE)
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} /arch:SSE2")
-    elseif("${CMAKE_SIZEOF_VOID_P}" EQUAL "4")
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} /arch:IA32")
-    endif()
+    set(COMMON_PARAMETERS "/MP /permissive- /std:c++latest ${ADDITIONAL_COMPILER_PARAMETERS}")
 
     if(USE_EXCEPTIONS)
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} /EHsc")

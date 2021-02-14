@@ -1,4 +1,4 @@
-﻿#include "Intra/Range/Concepts.h"
+﻿#include "Intra/Concepts.h"
 #include "IntraX/IO/FormattedWriter.h"
 #include "IntraX/Container/Sequential/String.h"
 #include "IntraX/System/Debug.h"
@@ -15,12 +15,12 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <unordered_map>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct Point
 {
 	int x, y;
-	template<typename V> void ForEachField(V&& v) const {v(x); v(y);}
 };
+INTRA_ADD_FIELD_REFLECTION(Point, x, y);
 
 INTRA_MODULE_UNITTEST
 {
@@ -65,4 +65,4 @@ INTRA_MODULE_UNITTEST
 	INTRA_ASSERT_EQUALS(String(charDeque), "RangesHelloRanges");
 }
 
-INTRA_END
+} INTRA_END

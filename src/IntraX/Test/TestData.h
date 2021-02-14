@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Random/FastUniform.h"
 #include "IntraX/Hash/Murmur.h"
 #include "IntraX/Container/ForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<size_t N> struct Big
 {
 	char c[N];
@@ -19,7 +19,7 @@ template<size_t N> struct Big
 
 
 template<typename T> Requires<
-	CIntegral<T>
+	CBasicIntegral<T>
 > GenerateRandomValue(T& dst)
 {
 	auto rand = FastUniform<T>(unsigned(size_t(&dst)));
@@ -27,7 +27,7 @@ template<typename T> Requires<
 }
 
 template<typename T> Requires<
-	CFloatingPoint<T>
+	CBasicFloatingPoint<T>
 > GenerateRandomValue(T& dst)
 {
 	auto rand = FastUniform<T>(unsigned(&dst));
@@ -50,7 +50,7 @@ template<typename Char> void GenerateRandomValue(GenericString<Char>& dst)
 		dst[i] = char('A' + rand(26));
 }
 
-template<typename T> CSpan<T> GetRandomValueArray(size_t size)
+template<typename T> Span<const T> GetRandomValueArray(size_t size)
 {
 	static Array<T> arr;
 	size_t oldSize = arr.Count();
@@ -81,4 +81,4 @@ template<typename S> S GenerateRandomString(size_t len)
 	}
 	return result;
 }
-INTRA_END
+} INTRA_END

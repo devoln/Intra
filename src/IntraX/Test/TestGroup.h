@@ -8,7 +8,7 @@
 #include "IntraX/IO/FormattedWriter.h"
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 typedef Delegate<void(FormattedWriter&)> TestFunction;
 
 class TestGroup
@@ -77,7 +77,7 @@ private:
 	static void testFailException()
 	{
 #ifdef __cpp_exceptions
-		if(GetCurrent() != null)
+		if(GetCurrent() != nullptr)
 		{
 			GetCurrent()->Logger->Error("Test stack unwinding...");
 			throw TestException();
@@ -87,4 +87,4 @@ private:
 
 	static void processError(SourceInfo srcInfo, StringView msg);
 };
-INTRA_END
+} INTRA_END

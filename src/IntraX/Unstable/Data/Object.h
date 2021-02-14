@@ -7,7 +7,7 @@
 #include "Intra/Range/Polymorphic/FiniteRandomAccessRange.h"
 #include "IntraX/Unstable/Data/Serialization/TextSerializer.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct Object
 {
 	template<typename T> using StringMap = LinearMap<String, T>;
@@ -24,34 +24,34 @@ struct Object
 	Object& operator=(const Object&);
 	Object& operator=(Object&&);
 
-	Object(decltype(null)=null) {}
-	Object& operator=(decltype(null))
+	Object(decltype(nullptr)=nullptr) {}
+	Object& operator=(decltype(nullptr))
 	{
-		Numbers = null;
-		Strings = null;
-		Objects = null;
-		NumberArrays = null;
-		StringArrays = null;
-		ObjectArrays = null;
+		Numbers = nullptr;
+		Strings = nullptr;
+		Objects = nullptr;
+		NumberArrays = nullptr;
+		StringArrays = nullptr;
+		ObjectArrays = nullptr;
 		return *this;
 	}
 
-	bool operator==(decltype(null)) const
+	bool operator==(decltype(nullptr)) const
 	{
 		return Numbers.Empty() && Strings.Empty() && Objects.Empty() &&
 			NumberArrays.Empty() && StringArrays.Empty() && ObjectArrays.Empty();
 	}
 
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !operator==(null);}
+	INTRA_FORCEINLINE bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 	template<typename T> INTRA_FORCEINLINE Requires<
-		CFloatingPoint<T> || CIntegral<T>,
+		CBasicFloatingPoint<T> || CBasicIntegral<T>,
 	T> Get(StringView key, T defaultValue=T()) const
 	{return T(Numbers.Get(key, double(defaultValue)));}
 
 	/// Возвращает строку по ключу key. Если строка не найдена, то ищет число и переводит в строку.
 	/// Если ни строка, ни число не найдены, возвращает defaultValue.
-	String GetString(StringView key, StringView defaultValue=null) const
+	String GetString(StringView key, StringView defaultValue=nullptr) const
 	{
 		const size_t stringIndex = Strings.FindIndex(key);
 		if(stringIndex != Strings.Count()) return Strings.Value(stringIndex);
@@ -73,4 +73,4 @@ GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, const
 	return serializer;
 }*/
 
-INTRA_END
+} INTRA_END

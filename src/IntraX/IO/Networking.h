@@ -4,6 +4,6 @@
 #include "Intra/Range/StringView.h"
 #include "IntraX/Container/ForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 Array<byte> DownloadFile(StringView path);
-INTRA_END
+} INTRA_END

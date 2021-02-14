@@ -14,7 +14,7 @@
 
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 #if(INTRA_LIBRARY_VORBIS_DECODER == INTRA_LIBRARY_VORBIS_DECODER_libvorbis)
 
@@ -34,8 +34,8 @@ struct OggStream
 
 	static int CloseCallback(void *datasource)
 	{
-		StreamStart = null;
-		Stream = null;
+		StreamStart = nullptr;
+		Stream = nullptr;
 		Pos = 0;
 		Size = 0;
 		return 0;
@@ -66,7 +66,7 @@ struct OggStream
 
 		//Без forward range seek в общем случае реализовать нельзя.
 		//Библиотека libvorbis требует всегда возвращать -1, реализовывать частные случаи смысла нет.
-		if(os.StreamStart == null) return -1;
+		if(os.StreamStart == nullptr) return -1;
 
 		if(whence==SEEK_SET) SeekAbs(uint64(offset));
 		else if(whence==SEEK_CUR) SeekAbs(uint64(int64(Pos)+offset));
@@ -91,7 +91,7 @@ struct Vorbis::Decoder
 
 
 
-Vorbis::Vorbis(CSpan<byte> srcFileData): data(srcFileData)
+Vorbis::Vorbis(Span<const byte> srcFileData): data(srcFileData)
 {
 	decoder = new Decoder;
 	decoder->stream.StartStream = srcFileData.ReinterpretUnsafe<char>();
@@ -100,7 +100,7 @@ Vorbis::Vorbis(CSpan<byte> srcFileData): data(srcFileData)
 	decoder->stream.Size = srcFileData.Length();
 	ov_callbacks c = {OggStream::ReadCallback, OggStream::SeekCallback,
 		OggStream::CloseCallback, OggStream::TellCallback};
-	ov_open_callbacks(&decoder, &decoder->file, null, 0, c);
+	ov_open_callbacks(&decoder, &decoder->file, nullptr, 0, c);
 	decoder->currentSection = 0;
 
 	auto info = ov_info(&decoder->file, -1);
@@ -150,16 +150,16 @@ size_t Vorbis::GetInterleavedSamples(Span<float> outFloats)
 		size_t samplesRead = size_t(bytesRead)/sizeof(float);
 		decoder->current_position += samplesRead;
 		totalSamplesRead += samplesRead;
-		CSpan<float> inputChannels[8];
+		Span<const float> inputChannels[8];
 		for(size_t i=0; i<channelCount; i++)
-			inputChannels[i] = CSpan<float>(pcm[i], samplesRead);
-		Algo::Interleave(outFloats.Take(samplesRead), CSpan<CSpan<float>>(inputChannels, channelCount));
+			inputChannels[i] = Span<const float>(pcm[i], samplesRead);
+		Algo::Interleave(outFloats.Take(samplesRead), Span<const Span<const float>>(inputChannels, channelCount));
 		outFloats.PopFirstExactly(samplesRead);
 	}
 	return totalSamplesRead;
 }
 
-size_t Vorbis::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
+size_t Vorbis::GetUninterleavedSamples(Span<const Span<float>> outFloats)
 {
 	if(outFloats.Empty()) return 0;
 	INTRA_DEBUG_ASSERT(outFloats.Length()<=channelCount);
@@ -176,7 +176,7 @@ size_t Vorbis::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
 		totalSamplesRead += samplesRead;
 		for(size_t i=0; i<outFloats.Length(); i++)
 		{
-			CSpan<float>(pcm[i], samplesRead).WriteTo(outFloats1[i]);
+			Span<const float>(pcm[i], samplesRead).WriteTo(outFloats1[i]);
 		}
 	}
 	return totalSamplesRead;
@@ -188,15 +188,15 @@ FixedArray<const void*> Vorbis::GetRawSamplesData(size_t maxSamplesToRead,
 	if(oType) *outType = ValueType::Float;
 	if(oInterleaved) *oInterleaved = true;
 	if(oSamplesRead) *oSamplesRead = 0;
-	return null;
+	return nullptr;
 }
 
 #elif(INTRA_LIBRARY_VORBIS_DECODER==INTRA_LIBRARY_VORBIS_DECODER_STB)
 
-Vorbis::Vorbis(CSpan<byte> srcFileData): data(srcFileData)
+Vorbis::Vorbis(Span<const byte> srcFileData): data(srcFileData)
 {
 	decoder = reinterpret_cast<DecoderHandle>(stb_vorbis_open_memory(
-		reinterpret_cast<byte*>(srcFileData.Begin), unsigned(srcFileData.Count()), null, null));
+		reinterpret_cast<byte*>(srcFileData.Begin), unsigned(srcFileData.Count()), nullptr, nullptr));
 	stb_vorbis_info info = stb_vorbis_get_info(reinterpret_cast<stb_vorbis*>(decoder));
 	channelCount = uint16(info.channels);
 	sampleRate = info.sample_rate;
@@ -234,7 +234,7 @@ size_t Vorbis::GetInterleavedSamples(Span<float> outFloats)
 	return shortsRead/channelCount;
 }
 
-size_t Vorbis::GetUninterleavedSamples(CSpan<Span<float>> outFloats)
+size_t Vorbis::GetUninterleavedSamples(Span<const Span<float>> outFloats)
 {
 	INTRA_DEBUG_ASSERT(outFloats.Length()==channelCount);
 	const auto dec = reinterpret_cast<stb_vorbis*>(decoder);
@@ -255,7 +255,7 @@ FixedArray<const void*> Vorbis::GetRawSamplesData(size_t maxSamplesToRead,
 	if(oType) *oType = ValueType::Void;
 	if(oInterleaved) *oInterleaved = false;
 	if(oSamplesRead) *oSamplesRead = 0;
-	return null;
+	return nullptr;
 }
 
 #else
@@ -264,4 +264,4 @@ INTRA_IGNORE_WARN_LNK4221
 
 #endif
 
-INTRA_END
+} INTRA_END

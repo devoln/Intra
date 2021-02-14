@@ -1,24 +1,24 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Container/Concepts.h"
 #include "Intra/Range/Concepts.h"
 #include "Intra/Range/Inserter.h"
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Operations.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename L, typename R> requires
-	(CSequentialContainer<L> && CConsumableList<R>) ||
-	(CSequentialContainer<R> && CConsumableList<L>)
+	(CGrowingList<L> && CConsumableList<R>) ||
+	(CGrowingList<R> && CConsumableList<L>)
 [[nodiscard]] constexpr bool operator==(L&& lhs, R&& rhs)
 {
 	return INTRA_FWD(lhs)|Equals(INTRA_FWD(rhs));
 }
 
 template<typename L, typename R> requires
-	(CSequentialContainer<L> && CConsumableList<R>) ||
-	(CSequentialContainer<R> && CConsumableList<L>)
+	(CGrowingList<L> && CConsumableList<R>) ||
+	(CGrowingList<R> && CConsumableList<L>)
 [[nodiscard]] constexpr bool operator!=(L&& lhs, R&& rhs)
 {
 	return !operator==(INTRA_FWD(lhs), INTRA_FWD(rhs));
@@ -33,7 +33,7 @@ SC& operator+=(SC& lhs, R&& rhs)
 	{
 		LastAppender{lhs} << rhs;
 	}
-	else if constexpr(CSameArrays<SC, R> && CTriviallyCopyable<TArrayElement<SC>>)
+	else if constexpr(CSameArrays<SC, R> && CTriviallyCopyable<TArrayListValue<SC>>)
 	{
 		const auto oldLen = LengthOf(lhs);
 		SetCountTryNotInit(lhs, oldLen + LengthOf(rhs));
@@ -48,4 +48,4 @@ SC& operator+=(SC& lhs, R&& rhs)
 	}
 	return lhs;
 }
-INTRA_END
+} INTRA_END

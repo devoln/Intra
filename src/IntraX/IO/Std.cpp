@@ -19,7 +19,7 @@ INTRA_WARNING_POP
 #include <unistd.h>
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static bool StdInIsConsole()
 {
 #ifdef _WIN32
@@ -89,4 +89,4 @@ INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 StdInOut Std(StdInOut::ConstructOnce{});
 FormattedWriter StdErr(FileWriter(SharedMove(OsFile::FromNative(StdOutHandle(), false))));
 
-INTRA_END
+} INTRA_END

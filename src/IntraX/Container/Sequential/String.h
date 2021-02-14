@@ -2,12 +2,10 @@
 
 #include "IntraX/Container/ForwardDecls.h"
 #include "IntraX/Container/Operations.h"
-#include "IntraX/Memory/Allocator.hh"
+#include "Intra/Allocator.h"
 #include "IntraX/Memory/Memory.h"
 #include "StringFormatter.h"
 
-#include "Intra/Assert.h"
-#include "Intra/Container/Concepts.h"
 #include "Intra/Misc/RawMemory.h"
 #include "Intra/Range/Inserter.h"
 #include "Intra/Range/Mutation/Copy.h"
@@ -19,59 +17,38 @@
 #include "Intra/Range/Decorators.h"
 #include "Intra/Range/Zip.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //INTRA_IGNORE_WARN_SIGN_CONVERSION
 /// Class used to create, store and operate strings.
-/*!
-  It takes a template argument of code point type.
-  If Char = char then the string will be treated as UTF-8.
-  Be aware that elements of a GenericString are not characters because one non-ASCII character may be encoded with multiple code points.
-  If Char = char16_t then the string will be treated as UTF-16.
-  Be aware that elements of a GenericString are not characters because one non-ASCII character may be encoded with multiple code points.
-*/
-template<typename Char> class GenericString
+template<typename CodeUnit> class GenericString
 {
+	ArrayList<CodeUnit> mRawCodeUnits; //TODO: finish
 public:
-	constexpr GenericString(const Char* str):
-		GenericString(str, (str == null)? 0: CStringLength(str)) {}
+	constexpr GenericString(TUnsafe, const CodeUnit* str):
+		GenericString(GenericStringView(Unsafe, str)) {}
 
-	constexpr GenericString(decltype(null)=null) noexcept {setShortLength(0);}
+	constexpr GenericString() noexcept {setShortLength(0);}
 
-	constexpr static GenericString CreateReserve(Index reservedCapacity)
+	static constexpr GenericString CreateReserve(Index reservedCapacityInCodePoints)
 	{
 		GenericString result;
-		result.Reserve(reservedCapacity);
+		result.Reserve(reservedCapacityInCodePoints);
 		return result;
 	}
 
-	constexpr explicit GenericString(const Char* str, Index strLength)
-	{
-		SetLengthUninitialized(strLength);
-		BitwiseCopy(Unsafe, Data(), str, strLength);
-	}
+	constexpr GenericString(GenericStringView<CodePoint> str): mRawCodeUnits(str.RawCodeUnits()) {}
 
-	constexpr explicit GenericString(const Char* startPtr, const Char* endPtr):
-		GenericString(startPtr, endPtr - startPtr) {}
-	
-	constexpr explicit GenericString(Index initialLength, Char filler): GenericString(null)
-	{SetLength(initialLength, filler);}
-
-	template<typename R = StringView, typename AsR = TRangeOfRef<R>,
-	typename = Requires<
-		CConsumableRangeOf<AsR, Char> &&
-		CChar<TRangeValue<AsR>>
-	>> constexpr GenericString(R&& rhs)
+	template<typename R> requires CConstructible<ArrayList<CodeUnit>, R>
+	constexpr GenericString(R&& rhs): mRawCodeUnits(INTRA_FWD(rhs))
 	{
-		setShortLength(0); //avoid unnecessary copying of default zeros on allocation
-		SetLengthUninitialized(Count(rhs));
-		CopyTo(ForwardAsRange<R>(rhs), View());
+		INTRA_PRECONDITION(IsValidUnicode(mRawCodeUnits));
 	}
 
 	constexpr GenericString(const GenericString& rhs): u(rhs.u)
 	{
 		if(!IsHeapAllocated()) return;
 		u.m.Data = allocate(u.m.Len);
-		Misc::BitwiseCopyUnsafe(u.m.Data, rhs.u.m.Data, u.m.Len);
+		BitwiseCopy(Unsafe, u.m.Data, rhs.u.m.Data, u.m.Len);
 	}
 	
 	constexpr GenericString(GenericString&& rhs):
@@ -132,7 +109,7 @@ public:
 		return *this;
 	}
 
-	constexpr GenericString& operator=(decltype(null))
+	constexpr GenericString& operator=(decltype(nullptr))
 	{
 		if(IsHeapAllocated()) freeLongData();
 		resetToEmptySsoWithoutFreeing();
@@ -159,7 +136,7 @@ public:
 		return *this;
 	}
 
-	constexpr bool operator==(decltype(null)) const {return Empty();}
+	constexpr bool operator==(decltype(nullptr)) const {return Empty();}
 
 	constexpr bool operator==(const GenericStringView<const Char>& rhs) const {return View() == rhs;}
 
@@ -350,8 +327,8 @@ public:
 	}
 
 	static GenericString MultiReplace(GenericStringView<const Char> str,
-		CSpan<GenericStringView<const Char>> subStrs,
-		CSpan<GenericStringView<const Char>> newSubStrs)
+		Span<const GenericStringView<const Char>> subStrs,
+		Span<const GenericStringView<const Char>> newSubStrs)
 	{
 		GenericString result;
 		CountRange<Char> counter;
@@ -367,12 +344,12 @@ public:
 	/// @param format String, containing markers <^> where the arguments should be substituted.
 	/// @param () Use braces to pass arguments and their formatting options
 	/// @return A proxy formatter object implicitly convertible to GenericString.
-	[[nodiscard]] static StringFormatter<GenericString> Format(GenericStringView<const Char> format=null)
+	[[nodiscard]] static StringFormatter<GenericString> Format(GenericStringView<const Char> format=nullptr)
 	{return StringFormatter<GenericString>(format);}
 
 	/// Convert all arguments to string and concatenate them.
 	template<typename... Args> [[nodiscard]] static GenericString Concat(Args&&... args)
-	{return StringFormatter<GenericString>(null).Arg(Forward<Args>(args)...);}
+	{return StringFormatter<GenericString>(nullptr).Arg(Forward<Args>(args)...);}
 
 	template<typename Arg> GenericString& operator<<(Arg&& value)
 	{
@@ -530,7 +507,7 @@ template<typename Char> constexpr bool IsTriviallyRelocatable<GenericString<Char
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(CSame<TCommonRef<String, StringView>, String>);
-static_assert(CSequentialContainer<String>);
+static_assert(CGrowingList<String>);
 static_assert(CDynamicArrayContainer<String>);
 static_assert(CSame<TRangeValue<String>, char>);
 #endif
@@ -564,7 +541,7 @@ template<typename Char> GenericString<Char> operator+(Char lhs, GenericStringVie
 }
 
 template<typename S1, typename S2,
-	typename Char = TArrayElement<S1>
+	typename Char = TArrayListValue<S1>
 > requires CArrayList<S1> && CArrayList<S2> &&
 	(CHasData<S1> ||
 		CHasData<S2> ||
@@ -572,7 +549,7 @@ template<typename S1, typename S2,
 		CRange<S2> ||
 		CArrayType<TRemoveReference<S1>> ||
 		CArrayType<TRemoveReference<S2>>) && // To avoid conflicts with STL operator+
-	CSame<Char, TArrayElement<S2>>
+	CSame<Char, TArrayListValue<S2>>
 GenericString<Char> operator+(S1&& lhs, S2&& rhs)
 {
 	return GenericStringView<const Char>(lhs) + GenericStringView<const Char>(rhs);
@@ -586,7 +563,7 @@ template<typename S1, typename S2,
 	(CRange<AsS1> || CRange<AsS2>) &&
 	CConsumableRange<AsS1> &&
 	CConsumableRange<AsS2> &&
-	(!CArrayList<S1> || !CArrayList<S2> || !CSame<Char, TArrayElement<AsS2>>)
+	(!CArrayList<S1> || !CArrayList<S2> || !CSame<Char, TArrayListValue<AsS2>>)
 GenericString<Char> operator+(S1&& lhs, S2&& rhs)
 {
 	GenericString<Char> result;
@@ -626,10 +603,10 @@ GenericString<Char2> operator+(Char lhs, R&& rhs)
 #if INTRA_CONSTEXPR_TEST
 static_assert(CConsumableList<String>);
 static_assert(CConsumableList<const String>);
-static_assert(CSequentialContainer<String>);
-static_assert(CSequentialContainer<const String>);
+static_assert(CGrowingList<String>);
+static_assert(CGrowingList<const String>);
 
 //static_assert(CSame<TRangeOfRef<const String&>, StringView>);
 #endif
 
-INTRA_END
+} INTRA_END

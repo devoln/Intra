@@ -1,6 +1,6 @@
 #include "MidiRawEvent.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 MidiRawEvent::MidiRawEvent(unsigned delay, byte status, byte data0, byte data1, size_t metadataLength)
 {
 	mData.SetLengthUninitialized(7 + index_t(metadataLength));
@@ -18,7 +18,7 @@ void MidiRawEventStream::PopFirst()
 {
 	if(mStream.Empty())
 	{
-		mCurrentEvent = null;
+		mCurrentEvent = nullptr;
 		return;
 	}
 
@@ -44,8 +44,8 @@ void MidiRawEventStream::PopFirst()
 	if(status == 0xFF && data[0] == 0x2F)
 	{
 		// end of track event
-		mStream = null;
-		mCurrentEvent = null;
+		mStream = nullptr;
+		mCurrentEvent = nullptr;
 		return;
 	}
 
@@ -59,4 +59,4 @@ void MidiRawEventStream::PopFirst()
 	mCurrentEvent = MidiRawEvent(delay, status, data[0], data[1], metadataLength);
 	RawReadTo(mStream, mCurrentEvent.MetaData());
 }
-INTRA_END
+} INTRA_END

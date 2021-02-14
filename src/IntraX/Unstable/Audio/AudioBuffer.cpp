@@ -5,8 +5,8 @@
 #include "Intra/Range/Mutation/Fill.h"
 #include "Intra//Range/Mutation/Copy.h"
 
-INTRA_BEGIN
-AudioBuffer::AudioBuffer(Index sampleCount, NonNegative<int> sampleRate, CSpan<float> initData):
+namespace Intra { INTRA_BEGIN
+AudioBuffer::AudioBuffer(Index sampleCount, NonNegative<int> sampleRate, Span<const float> initData):
 	SampleRate(sampleRate)
 {
 	if(!initData.Empty()) Samples.AddLastRange(initData);
@@ -30,4 +30,4 @@ void AudioBuffer::ShiftSamples(index_t samplesToShift)
 	CopyTo(Samples, Samples.Drop(samplesToShift));
 	FillZeros(Samples.Take(samplesToShift));
 }
-INTRA_END
+} INTRA_END

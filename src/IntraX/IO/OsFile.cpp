@@ -43,7 +43,7 @@ struct IUnknown;
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorReporter err):
 	mMode(mode), mOwning(true)
 {
@@ -74,22 +74,22 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, Erro
 
 #ifndef WINSTORE_APP
 	const HANDLE hFile = CreateFileW(wFullFileName.Data(), desiredAccess,
-		FILE_SHARE_READ, null, creationDisposition, flags|attributes, null);
+		FILE_SHARE_READ, nullptr, creationDisposition, flags|attributes, nullptr);
 #else
 #undef WINTORE_APP
 #endif
 
 	if(hFile != INVALID_HANDLE_VALUE) mHandle = NativeHandle(hFile);
-	else mHandle = null;
+	else mHandle = nullptr;
 #else
 	auto openFlags = (mMode == Mode::Read)? O_RDONLY: (mMode == Mode::Write? O_WRONLY: O_RDWR);
 	if(mMode != Mode::Read) openFlags |= O_CREAT;
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
 	const int fd = open(mFullPath.CStr(), openFlags, 0664);
 	if(fd != -1) mHandle = NativeHandle(size_t(fd));
-	else mHandle = null;
+	else mHandle = nullptr;
 #endif
-	if(mHandle == null)
+	if(mHandle == nullptr)
 	{
 		mOwning = false;
 		detail::ProcessLastError(err, "Cannot open file " + fileName + ": ", INTRA_SOURCE_INFO);
@@ -98,7 +98,7 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, Erro
 
 void OsFile::Close()
 {
-	if(mHandle == null) return;
+	if(mHandle == nullptr) return;
 	if(!mOwning) return;
 #ifdef _WIN32
 	CloseHandle(HANDLE(mHandle));
@@ -110,7 +110,7 @@ void OsFile::Close()
 
 size_t OsFile::ReadData(uint64 fileOffset, void* dst, size_t bytes, ErrorReporter err) const
 {
-	INTRA_PRECONDITION(mHandle != null);
+	INTRA_PRECONDITION(mHandle != nullptr);
 	INTRA_PRECONDITION(mMode == Mode::Read || mMode == Mode::ReadWrite);
 #ifdef _WIN32
 	char* pdst = static_cast<char*>(dst);
@@ -148,7 +148,7 @@ size_t OsFile::ReadData(uint64 fileOffset, void* dst, size_t bytes, ErrorReporte
 
 uint64 OsFile::Size(ErrorReporter err) const
 {
-	if(mHandle == null) return 0;
+	if(mHandle == nullptr) return 0;
 #ifdef _WIN32
 	LARGE_INTEGER result;
 	result.QuadPart = 0;
@@ -168,7 +168,7 @@ uint64 OsFile::Size(ErrorReporter err) const
 
 size_t OsFile::WriteData(uint64 fileOffset, const void* src, size_t bytes, ErrorReporter err) const
 {
-	INTRA_DEBUG_ASSERT(mHandle != null);
+	INTRA_DEBUG_ASSERT(mHandle != nullptr);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
 #ifdef _WIN32
 	size_t totalBytesWritten = 0;
@@ -207,12 +207,12 @@ size_t OsFile::WriteData(uint64 fileOffset, const void* src, size_t bytes, Error
 
 void OsFile::SetSize(uint64 size, ErrorReporter err) const
 {
-	INTRA_DEBUG_ASSERT(mHandle != null);
+	INTRA_DEBUG_ASSERT(mHandle != nullptr);
 	INTRA_DEBUG_ASSERT(mMode == Mode::Write || mMode == Mode::ReadWrite);
 #ifdef _WIN32
 	LARGE_INTEGER largeSize;
 	largeSize.QuadPart = int64(size);
-	SetFilePointerEx(HANDLE(mHandle), largeSize, null, FILE_BEGIN);
+	SetFilePointerEx(HANDLE(mHandle), largeSize, nullptr, FILE_BEGIN);
 	if(!SetEndOfFile(HANDLE(mHandle)))
 		detail::ProcessLastError(err, String::Concat(
 			"Cannot set new size ", size, " of file", FullPath(), ": "), INTRA_SOURCE_INFO);
@@ -228,11 +228,11 @@ void OsFile::SetSize(uint64 size, ErrorReporter err) const
 String OsFile::ReadAsString(StringView fileName, ErrorReporter err)
 {
 	OsFile file(fileName, Mode::Read, err);
-	if(file == null) return null;
+	if(file == nullptr) return nullptr;
 	if(file.Size() != 0) return FileReader(SharedMove(file));
 
 #ifdef _WIN32
-	return null;
+	return nullptr;
 #else
 	//В Unix-подобных системах файлом могут являться устройства и другие объекты, размер которых заранее неизвестен.
 	//В этом случае мы попадём сюда. Будем читать файл блоками, пока он не закончится.
@@ -263,4 +263,4 @@ OsFile OsFile::FromNative(NativeHandle handle, bool owning)
 	result.mOwning = owning;
 	return result;
 }
-INTRA_END
+} INTRA_END

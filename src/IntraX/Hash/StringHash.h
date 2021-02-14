@@ -4,7 +4,7 @@
 #include "MurmurCT.h"
 #include "Murmur.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct StringHash
 {
 	unsigned hash;
@@ -19,12 +19,12 @@ struct StringHash
 	template<int len> constexpr StringHash(const char(&str)[len]);
 	constexpr StringHash(unsigned val): hash(val)
 #ifdef _DEBUG
-		, strLiteral(null)
+		, strLiteral(nullptr)
 #endif
 	{}
-	constexpr StringHash(decltype(null)=null): hash(0)
+	constexpr StringHash(decltype(nullptr)=nullptr): hash(0)
 #ifdef _DEBUG
-		, strLiteral(null)
+		, strLiteral(nullptr)
 #endif
 	{}
 
@@ -51,4 +51,4 @@ inline StringHash::StringHash(StringView sv): hash(Hash::Murmur3_32(sv, 0))
 	FillZeros(dst);
 #endif
 }
-INTRA_END
+} INTRA_END

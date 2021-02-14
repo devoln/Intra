@@ -37,7 +37,7 @@ struct IUnknown;
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 BasicFileMapping::BasicFileMapping(StringView fileName,
 	uint64 startByte, size_t bytes, bool writeAccess, ErrorReporter err)
 {
@@ -54,7 +54,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 	INTRA_ASSERT(startByte == 0);
 	auto file = OS.FileOpen(fullFileName, status);
 	file.RawReadTo(data, bytes);
-	file = null;
+	file = nullptr;
 	(void)writeAccess;
 #elif defined(_WIN32)
 
@@ -75,7 +75,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 
 #ifndef WINSTORE_APP
 	const HANDLE hFile = CreateFileW(wFullFileName.Data(),
-		fileDesiredAccess, FILE_SHARE_READ, null, creationDisposition, FILE_ATTRIBUTE_NORMAL, null);
+		fileDesiredAccess, FILE_SHARE_READ, nullptr, creationDisposition, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
 
 	if(hFile == INVALID_HANDLE_VALUE)
@@ -90,13 +90,13 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 #ifndef WINSTORE_APP
 	const DWORD lowSize = DWORD(bytes + startByte);
 	const DWORD highSize = DWORD(uint64(bytes + startByte) >> 32);
-	const HANDLE fileMapping = CreateFileMappingW(hFile, null, flProtect, highSize, lowSize, null);
+	const HANDLE fileMapping = CreateFileMappingW(hFile, nullptr, flProtect, highSize, lowSize, nullptr);
 #else
-	const HANDLE fileMapping = CreateFileMappingFromApp(hFile, null, flProtect, bytes, null);
+	const HANDLE fileMapping = CreateFileMappingFromApp(hFile, nullptr, flProtect, bytes, nullptr);
 #endif
 	INTRA_FINALLY{CloseHandle(fileMapping);};
 
-	if(fileMapping == null)
+	if(fileMapping == nullptr)
 	{
 		detail::ProcessLastError(err, "Cannot CreateFileMapping " + fileName + ": ", INTRA_SOURCE_INFO);
 		return;
@@ -124,11 +124,11 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 	}
 	INTRA_FINALLY_CALL(close, fd);
 
-	void* data = mmap(null, bytes,
+	void* data = mmap(nullptr, bytes,
 		writeAccess? PROT_WRITE: PROT_READ,
 		MAP_SHARED, fd, long(startByte));
 
-	if(data == MAP_FAILED || data == null)
+	if(data == MAP_FAILED || data == nullptr)
 	{
 		detail::ProcessLastError(err, "Cannot mmap " + fileName + ": ", INTRA_SOURCE_INFO);
 		return;
@@ -142,7 +142,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 
 void BasicFileMapping::Close()
 {
-	if(mData == null) return;
+	if(mData == nullptr) return;
 #ifdef __EMSCRIPTEN__
 	GlobalHeap.Free(mData.Data(), mData.Length());
 #elif defined(_WIN32)
@@ -150,14 +150,14 @@ void BasicFileMapping::Close()
 #else
 	munmap(mData.Data(), mData.Length());
 #endif
-	mData = null;
+	mData = nullptr;
 	if constexpr(DebugCheckLevel >= 1)
-		mFilePath = null;
+		mFilePath = nullptr;
 }
 
 void WritableFileMapping::Flush()
 {
-	if(mData == null) return;
+	if(mData == nullptr) return;
 #ifdef __EMSCRIPTEN__
 #elif defined(_WIN32)
 	FlushViewOfFile(mData.Data(), 0);
@@ -165,4 +165,4 @@ void WritableFileMapping::Flush()
 	msync(mData.Data(), mData.Length(), MS_SYNC);
 #endif
 }
-INTRA_END
+} INTRA_END

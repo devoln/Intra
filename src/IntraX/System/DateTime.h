@@ -1,23 +1,73 @@
 #pragma once
 
 #include "IntraX/Core.h"
-#include "Intra/Numeric.h"
+#include <Intra/Numeric.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
+template<typename T> struct GenericTimeDelta
+{
+	[[nodiscard]] constexpr double Nanoseconds() const {return ValueNs;}
+	[[nodiscard]] constexpr double Microseconds() const {return ValueNs / 1000.0;}
+	[[nodiscard]] constexpr double Milliseconds() const {return ValueNs / 1000000.0;}
+	[[nodiscard]] constexpr double Seconds() const {return ValueNs / 1000000000.0;}
+	[[nodiscard]] constexpr double Minutes() const {return ValueNs / 60000000000.0;}
+	[[nodiscard]] constexpr double Hours() const {return ValueNs / 3600000000000.0;}
+	[[nodiscard]] constexpr double Days() const {return ValueNs / 86400000000000.0;}
+
+	[[nodiscard]] constexpr int64 RoundedNanoseconds() const {return ValueNs;}
+	[[nodiscard]] constexpr int64 RoundedMicroseconds() const {return (ValueNs + 500) / 1000;}
+	[[nodiscard]] constexpr int64 RoundedMilliseconds() const {return (ValueNs + 500000) / 1000000;}
+	[[nodiscard]] constexpr int64 RoundedSeconds() const {return (ValueNs + 500000000) / 1000000000;}
+	[[nodiscard]] constexpr int64 RoundedMinutes() const {return (ValueNs + 30000000000) / 60000000000;}
+	[[nodiscard]] constexpr int64 RoundedHours() const {return (ValueNs + 1800000000000) / 3600000000000;}
+	[[nodiscard]] constexpr int64 RoundedDays() const {return (ValueNs + 43200000000000) / 86400000000000;}
+
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Nanoseconds(T n) const {return {int64(n)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Microseconds(T n) const {return {int64(n*1000LL)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Milliseconds(T n) const {return {int64(n*1000000LL)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Seconds(T n) const {return {int64(n*1000000000LL)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Minutes(T n) const {return {int64(n*60000000000LL)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Hours(T n) const {return {int64(n*3600000000000LL)};}
+	template<CNumber T> [[nodiscard]] static constexpr GenericTimeDelta Days(T n) const {return {int64(n*86400000000000LL)};}
+
+	[[nodiscard]] constexpr TimeDelta operator+(const GenericTimeDelta& rhs) const {return {ValueNs + rhs.ValueNs};}
+	[[nodiscard]] constexpr TimeDelta operator-(const GenericTimeDelta& rhs) const {return {ValueNs - rhs.ValueNs};}
+	template<CNumber T> [[nodiscard]] constexpr GenericTimeDelta operator*(T rhs) const {return {int64(ValueNs * rhs)};}
+	template<CNumber T> [[nodiscard]] constexpr GenericTimeDelta operator/(T rhs) const {return {int64(ValueNs / rhs)};}
+
+	T Seconds = 0;
+};
+
+using TimeDelta = GenericTimeDelta<Fixed<int64, 1000000000>>;
+
+[[nodiscard]] constexpr TimeDelta operator""_ns(long double n) {return TimeDelta::Nanoseconds(n);}
+[[nodiscard]] constexpr TimeDelta operator""_us(long double n) {return TimeDelta::Microseconds(n);}
+[[nodiscard]] constexpr TimeDelta operator""_ms(long double n) {return TimeDelta::Milliseconds(n);}
+[[nodiscard]] constexpr TimeDelta operator""_s(long double n) {return TimeDelta::Seconds(n);}
+[[nodiscard]] constexpr TimeDelta operator""_min(long double n) {return TimeDelta::Minutes(n);}
+[[nodiscard]] constexpr TimeDelta operator""_h(long double n) {return TimeDelta::Hours(n);}
+[[nodiscard]] constexpr TimeDelta operator""_d(long double n) {return TimeDelta::Days(n);}
+
 struct SystemTimestamp
 {
 	static SystemTimestamp Now();
 
-	constexpr int64 NsSince1970() const {return RawValueNs;}
-	constexpr int64 SecondsSince1970() const {return (NsSince1970() + 500000000) / 1000000000;}
+	[[nodiscard]] constexpr SystemTimestamp operator+(const TimeDelta& rhs) const {return {Since1970 + rhs.ValueNs};}
+	[[nodiscard]] constexpr SystemTimestamp operator-(const TimeDelta& rhs) const {return {Since1970 - rhs.ValueNs};}
+	[[nodiscard]] constexpr SystemTimestamp operator-(const SystemTimestamp& rhs) const {return {Since1970 - rhs.Since1970};}
 
-	int64 RawValueNs = MinValueOf<int64>;
+	TimeDelta Since1970 = MinValueOf<TimeDelta>;
 };
 
 struct MonotonicTimestamp
 {
 	static MonotonicTimestamp Now();
-	int64 RawValueNs = MinValueOf<int64>;
+
+	[[nodiscard]] constexpr MonotonicTimestamp operator+(const TimeDelta& rhs) const {return {Since1970 + rhs.ValueNs};}
+	[[nodiscard]] constexpr MonotonicTimestamp operator-(const TimeDelta& rhs) const {return {Since1970 - rhs.ValueNs};}
+	[[nodiscard]] constexpr MonotonicTimestamp operator-(const MonotonicTimestamp& rhs) const {return {Since1970 - rhs.Since1970};}
+
+	TimeDelta SinceEpoch = MinValueOf<int64>;
 };
 
 struct Timestamp
@@ -41,42 +91,6 @@ struct Timestamp
 	MonotonicTimestamp MonotonicTime;
 };
 
-struct TimeDelta
-{
-	[[nodiscard]] constexpr double Nanoseconds() const {return ValueNs;}
-	[[nodiscard]] constexpr double Microseconds() const {return ValueNs / 1000.0;}
-	[[nodiscard]] constexpr double Milliseconds() const {return ValueNs / 1000000.0;}
-	[[nodiscard]] constexpr double Seconds() const {return ValueNs / 1000000000.0;}
-	[[nodiscard]] constexpr double Minutes() const {return ValueNs / 60000000000.0;}
-	[[nodiscard]] constexpr double Hours() const {return ValueNs / 3600000000000.0;}
-	[[nodiscard]] constexpr double Days() const {return ValueNs / 86400000000000.0;}
-
-	[[nodiscard]] constexpr int64 RoundedNanoseconds() const {return ValueNs;}
-	[[nodiscard]] constexpr int64 RoundedMicroseconds() const {return (ValueNs + 500) / 1000;}
-	[[nodiscard]] constexpr int64 RoundedMilliseconds() const {return (ValueNs + 500000) / 1000000;}
-	[[nodiscard]] constexpr int64 RoundedSeconds() const {return (ValueNs + 500000000) / 1000000000;}
-	[[nodiscard]] constexpr int64 RoundedMinutes() const {return (ValueNs + 30000000000) / 60000000000;}
-	[[nodiscard]] constexpr int64 RoundedHours() const {return (ValueNs + 1800000000000) / 3600000000000;}
-	[[nodiscard]] constexpr int64 RoundedDays() const {return (ValueNs + 43200000000000) / 86400000000000;}
-
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Nanoseconds(T n) const {return {int64(n)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Microseconds(T n) const {return {int64(n*1000LL)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Milliseconds(T n) const {return {int64(n*1000000LL)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Seconds(T n) const {return {int64(n*1000000000LL)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Minutes(T n) const {return {int64(n*60000000000LL)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Hours(T n) const {return {int64(n*3600000000000LL)};}
-	template<typename T> [[nodiscard]] static constexpr TimeDelta Days(T n) const {return {int64(n*86400000000000LL)};}
-
-	int64 ValueNs = 0;
-};
-
-[[nodiscard]] constexpr TimeDelta operator""_ns(long double n) {return TimeDelta::Nanoseconds(n);}
-[[nodiscard]] constexpr TimeDelta operator""_us(long double n) {return TimeDelta::Microseconds(n);}
-[[nodiscard]] constexpr TimeDelta operator""_ms(long double n) {return TimeDelta::Milliseconds(n);}
-[[nodiscard]] constexpr TimeDelta operator""_s(long double n) {return TimeDelta::Seconds(n);}
-[[nodiscard]] constexpr TimeDelta operator""_min(long double n) {return TimeDelta::Minutes(n);}
-[[nodiscard]] constexpr TimeDelta operator""_h(long double n) {return TimeDelta::Hours(n);}
-[[nodiscard]] constexpr TimeDelta operator""_d(long double n) {return TimeDelta::Days(n);}
 
 struct DateTime
 {
@@ -86,10 +100,7 @@ struct DateTime
 	uint16 YearDay = 0;
 	int8 LocalTimeOffsetInQuarterHours = 0;
 
-	static DateTime UtcNow()
-	{
-		return FromTimestamp(SystemTimestamp::Now(), 0);
-	}
+	static DateTime UtcNow() {return FromTimestamp(SystemTimestamp::Now(), 0);}
 
 	static constexpr bool IsLeapYear(int year) const noexcept
 	{
@@ -100,13 +111,9 @@ struct DateTime
 	{
 		const auto leapYearsBefore = [](uint32 y) {y += 999999999; return (y / 4) - (y / 100) + (y / 400);};
 		const int numLeapYearsSince1970 = leapYearsBefore(Year) - leapYearsBefore(1971);
-		const bool isLeapYear = IsLeapYear(Year);
-		const int32 daysSinceJan1ThisYear = Day - 1 +
-			daysSinceJanNotLeap[Month - 1] + (IsLeapYear(Year) && Month >= 3);
-		const int32 numDaysSince1970 = daysSinceJan1ThisYear +
-			(Year - 1970) * 365 + numLeapYearsSince1970;
-		int64 seconds = Second + Minute * 60 +
-			(4*Hour - LocalTimeOffsetInQuarterHours) * 900;
+		const int32 daysSinceJan1ThisYear = Day - 1 + daysSinceJanNotLeap[Month - 1] + (IsLeapYear(Year) && Month >= 3);
+		const int32 numDaysSince1970 = daysSinceJan1ThisYear + (Year - 1970) * 365 + numLeapYearsSince1970;
+		int64 seconds = Second + Minute * 60 + (4*Hour - LocalTimeOffsetInQuarterHours) * 900;
 		seconds += numDaysSince1970 * 86400LL;
 		return Timestamp{seconds * 1000000000LL};
 	}
@@ -176,4 +183,4 @@ template<class R> constexpr R& operator<<(R&& stream, const DateTime& dt)
 		char('0' + dt.Second / 10) << char('0' + dt.Second % 10);
 	return stream;
 }
-INTRA_END
+} INTRA_END

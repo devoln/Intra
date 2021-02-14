@@ -3,7 +3,7 @@
 
   <Type Name="Intra::FileMapping">
     <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
-    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">nullptr</DisplayString>
     <DisplayString Optional="true">Map({mFilePath}){mData}</DisplayString>
     <DisplayString>Map{mData}</DisplayString>
     <Expand>
@@ -14,7 +14,7 @@
 
   <Type Name="Intra::WritableFileMapping">
     <DisplayString Condition="mData.Begin == nullptr &amp;&amp; mData.End != nullptr">&lt;ERROR&gt;</DisplayString>
-    <DisplayString Condition="mData.Begin == nullptr">null</DisplayString>
+    <DisplayString Condition="mData.Begin == nullptr">nullptr</DisplayString>
     <DisplayString Optional="true">MapWrite({mFilePath}){mData}</DisplayString>
     <DisplayString>WritableFileMapping{mData}</DisplayString>
     <Expand>
@@ -64,7 +64,7 @@
   </Type>
 
   <Type Name="Intra::OsFile">
-    <DisplayString Condition="mHandle==nullptr">null</DisplayString>
+    <DisplayString Condition="mHandle==nullptr">nullptr</DisplayString>
     <DisplayString Condition="!mOwning" IncludeView="noparens">Ref, {mFullPath}, {mMode,en}, &lt;{size_t(mHandle)}&gt;</DisplayString>
     <DisplayString IncludeView="noparens">{mFullPath}, {mMode,en}, &lt;{size_t(mHandle)}&gt;</DisplayString>
     <DisplayString ExcludeView="noparens">OsFile({*this,view(noparens)})</DisplayString>
@@ -77,7 +77,7 @@
   </Type>
 
   <Type Name="Intra::FileReader">
-    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
+    <DisplayString Condition="mFile.mData == nullptr">nullptr</DisplayString>
     <DisplayString>FileReader({mOffset-(mBufferRest.End-mBufferRest.Begin)}/{mSize}, {mFile.mData->Value,view(noparens)})</DisplayString>
     <StringView>mBufferRest.Begin,[mBufferRest.End-mBufferRest.Begin]s8b</StringView>
     <Expand>
@@ -90,7 +90,7 @@
   </Type>
 
   <Type Name="Intra::FileWriter">
-    <DisplayString Condition="mFile.mData == nullptr">null</DisplayString>
+    <DisplayString Condition="mFile.mData == nullptr">nullptr</DisplayString>
     <DisplayString>FileWriter({mOffset+(mBufferRest.Begin-mBuffer.range.Begin)}, {mFile.mData->Value,view(noparens)})</DisplayString>
     <StringView>mBuffer.range.Begin,[mBufferRest.Begin-mBuffer.range.Begin]s8b</StringView>
     <Expand>

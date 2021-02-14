@@ -14,10 +14,7 @@
 #include <alsa/asoundlib.h>
 
 
-INTRA_BEGIN
-namespace Audio {
-
-using namespace Intra::Math;
+namespace Intra { INTRA_BEGIN
 
 struct Buffer
 {
@@ -31,7 +28,7 @@ struct Buffer
 	unsigned sampleRate;
 	unsigned channels;
 
-	void* locked_bits=null;
+	void* locked_bits=nullptr;
 };
 
 struct Instance
@@ -68,17 +65,17 @@ struct StreamedBuffer
 
 struct Context
 {
-	Context(): Device(null), PrimaryBufferSampleCount(16384) {}
+	Context(): Device(nullptr), PrimaryBufferSampleCount(16384) {}
 
 	~Context()
 	{
-		if(Device == null) return;
+		if(Device == nullptr) return;
 		snd_pcm_close(Device);
 	}
 
 	void Prepare()
 	{
-		if(Device != null) return;
+		if(Device != nullptr) return;
 		
 		int err = snd_pcm_open(&Device, "default", SND_PCM_STREAM_PLAYBACK, 0);
 		if(err < 0)
@@ -219,7 +216,7 @@ BufferHandle BufferCreate(size_t sampleCount, unsigned channels, unsigned sample
 void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type)
 {
 	(void)type;
-	INTRA_DEBUG_ASSERT(data!=null);
+	INTRA_DEBUG_ASSERT(data!=nullptr);
 	INTRA_DEBUG_ASSERT(type==ValueType::Short);
     alBufferData(snd->buffer, snd->alformat, data, int(snd->SizeInBytes()), int(snd->sampleRate));
     INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
@@ -227,7 +224,7 @@ void BufferSetDataInterleaved(BufferHandle snd, const void* data, ValueType type
 
 void* BufferLock(BufferHandle snd)
 {
-	INTRA_DEBUG_ASSERT(snd!=null);
+	INTRA_DEBUG_ASSERT(snd!=nullptr);
 	auto size = snd->SizeInBytes();
     snd->locked_bits = GlobalHeap.Allocate(size, INTRA_SOURCE_INFO);
 	return snd->locked_bits;
@@ -235,23 +232,23 @@ void* BufferLock(BufferHandle snd)
 
 void BufferUnlock(BufferHandle snd)
 {
-	INTRA_DEBUG_ASSERT(snd!=null);
+	INTRA_PRECONDITION(snd != nullptr);
     alBufferData(snd->buffer, snd->alformat, snd->locked_bits, int(snd->SizeInBytes()), int(snd->sampleRate));
-    INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
+    INTRA_DEBUG_ASSERT(alGetError() == AL_NO_ERROR);
     GlobalHeap.Free(snd->locked_bits, snd->SizeInBytes());
-    snd->locked_bits=null;
+    snd->locked_bits=nullptr;
 }
 
 void BufferDelete(BufferHandle snd)
 {
-	if(snd==null) return;
+	if(snd==nullptr) return;
 	alDeleteBuffers(1, &snd->buffer);
 	delete snd;
 }
 
 InstanceHandle InstanceCreate(BufferHandle snd)
 {
-	INTRA_DEBUG_ASSERT(snd!=null);
+	INTRA_PRECONDITION(snd != nullptr);
 	unsigned source;
 	alGenSources(1, &source);
 	//alSource3f(source, AL_POSITION, 0, 0, 0);
@@ -260,7 +257,7 @@ InstanceHandle InstanceCreate(BufferHandle snd)
 	//alSourcef(source, AL_ROLLOFF_FACTOR, 0);
 	//alSourcei(source, AL_SOURCE_RELATIVE, true);
 	alSourcei(source, AL_BUFFER, int(snd->buffer));
-	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
+	INTRA_PRECONDITION(alGetError() == AL_NO_ERROR);
 	return new Instance(source, snd);
 }
 
@@ -271,22 +268,22 @@ void InstanceSetDeleteOnStop(InstanceHandle si, bool del)
 
 void InstanceDelete(InstanceHandle si)
 {
-	if(si==null) return;
+	if(si==nullptr) return;
 	alDeleteSources(1, &si->source);
 	delete si;
 }
 
 void InstancePlay(InstanceHandle si, bool loop)
 {
-	INTRA_DEBUG_ASSERT(si!=null);
+	INTRA_PRECONDITION(si != nullptr);
 	alSourcei(si->source, AL_LOOPING, loop);
 	alSourcePlay(si->source);
-	INTRA_DEBUG_ASSERT(alGetError()==AL_NO_ERROR);
+	INTRA_PRECONDITION(alGetError()==AL_NO_ERROR);
 }
 
 bool InstanceIsPlaying(InstanceHandle si)
 {
-	if(si==null) return false;
+	if(si==nullptr) return false;
 	ALenum state;
 	alGetSourcei(si->source, AL_SOURCE_STATE, &state);
 	return (state==AL_PLAYING);
@@ -294,7 +291,7 @@ bool InstanceIsPlaying(InstanceHandle si)
 
 void InstanceStop(InstanceHandle si)
 {
-	if(si==null) return;
+	if(si==nullptr) return;
 	alSourceStop(si->source);
 }
 
@@ -303,9 +300,9 @@ StreamedBufferHandle StreamedBufferCreate(size_t sampleCount,
 {
 	context.Prepare();
 	if(sampleCount==0 || channels==0 ||
-		sampleRate==0 || callback.CallbackFunction==null)
-			return null;
-	INTRA_DEBUG_ASSERT(channels<=2);
+		sampleRate==0 || callback.CallbackFunction==nullptr)
+			return nullptr;
+	INTRA_PRECONDITION(channels<=2);
 	StreamedBufferHandle result = new StreamedBuffer;
 	alGenBuffers(2, result->buffers);
 	alGenSources(1, &result->source);
@@ -349,7 +346,7 @@ static void load_buffer(StreamedBufferHandle snd, size_t index)
 
 void StreamedSoundPlay(StreamedBufferHandle snd, bool loop)
 {
-	INTRA_DEBUG_ASSERT(snd!=null);
+	INTRA_PRECONDITION(snd != nullptr);
 	load_buffer(snd, 0);
 	if(!snd->stop_soon) load_buffer(snd, 1);
 	alSourceQueueBuffers(snd->source, 2, snd->buffers);
@@ -392,5 +389,4 @@ void StreamedSoundUpdate(StreamedBufferHandle snd)
 	}
 }
 
-}}
-
+} INTRA_END

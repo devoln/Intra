@@ -3,7 +3,7 @@
 #include "Intra/Reflection.h"
 #include "Intra/Range/StringView.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Parameters for text serialization formatting.
 /// This parameters doesn't affect deserialization.
 struct TextSerializerParams
@@ -87,4 +87,4 @@ struct TextSerializerParamsBuiltin
 		"\r\n"_v
 	};
 };
-INTRA_END
+} INTRA_END

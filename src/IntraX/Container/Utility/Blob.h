@@ -7,17 +7,17 @@
 #include "IntraX/Memory/Allocator/System.h"
 #include "IntraX/Memory/Allocator/AllocatorRef.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //TODO: use <IndexListItems> in natvis to visualize this type
 
 template<typename T, typename OffsetType> class BlobTypedRange
 {
-	CSpan<byte> mData;
-	CSpan<OffsetType> mOffsetSizes;
+	Span<const byte> mData;
+	Span<const OffsetType> mOffsetSizes;
 public:
-	INTRA_FORCEINLINE BlobTypedRange(CSpan<byte> blobData)
+	INTRA_FORCEINLINE BlobTypedRange(Span<const byte> blobData)
 	{
-		CSpan<OffsetType> otdata = blobData.ReinterpretUnsafe<const OffsetType>();
+		Span<const OffsetType> otdata = blobData.ReinterpretUnsafe<const OffsetType>();
 		mOffsetSizes = otdata.DropLast().Tail(2*otdata.Last());
 		mData = blobData.Take(mOffsetSizes[0]+mOffsetSizes[1]);
 	}
@@ -116,7 +116,7 @@ template<typename OffsetType> struct BlobAdapterUnsafe
 		const auto offset = Aligned(prevDataSize, alignment);
 		const size_t newDataSizeInBytes = offset + bytes;
 		const bool elementFitsInContainer = RawData.Begin+newDataSizeInBytes < reinterpret_cast<byte*>(HeaderBegin()-2);
-		if(!CheckOffsetForOverflow(offset) || !elementFitsInContainer) return null;
+		if(!CheckOffsetForOverflow(offset) || !elementFitsInContainer) return nullptr;
 		Count()++;
 		HeaderBegin()[0] = OffsetType(prevDataSize);
 		HeaderBegin()[1] = bytes;
@@ -131,17 +131,17 @@ template<typename OffsetType> struct BlobAdapterUnsafe
 	template<typename T, typename... Args> INTRA_FORCEINLINE T& Add(Args&&... args) const
 	{
 		T* const result = TryAdd<T>(Forward<Args>(args)...);
-		INTRA_DEBUG_ASSERT(result != null);
+		INTRA_DEBUG_ASSERT(result != nullptr);
 		return *result;
 	}
 
 	/// Сконструировать новый объект в блобе, передав в конструктор указанные аргументы.
 	/// Деструктор впоследствии не вызывается, ответственность за его вызов лежит на пользователе!
-	/// @returns Указатель на сконструированный объект или null, если в блобе недостаточно места для его аллокации.
+	/// @returns Указатель на сконструированный объект или nullptr, если в блобе недостаточно места для его аллокации.
 	template<typename T, typename... Args> INTRA_FORCEINLINE T* TryAdd(Args&&... args) const
 	{
 		void* const data = AddElement(sizeof(T), alignof(T));
-		if(data == null) return null;
+		if(data == nullptr) return nullptr;
 		return &new(data) T(Forward<Args>(args)...);
 	}
 
@@ -248,7 +248,7 @@ template<typename OffsetType> struct BlobAdapterUnsafe
 			const size_t size = SizeOf(i);
 			if(size == 0) continue;
 			void* const el = dst.AddElement(size, alignment);
-			if(el == null)
+			if(el == nullptr)
 			{
 				dst.Count() = prevDstCount;
 				return false;
@@ -299,7 +299,7 @@ class DynamicBlob: public AllocatorRef<AllocatorType>
 	bool reallocate(size_t sizeInBytes)
 	{
 		auto newData = allocate(sizeInBytes);
-		if(newData == null) return false;
+		if(newData == nullptr) return false;
 		for(size_t i = 0; i < mData.Count(); i++)
 		{
 			const size_t size = mData.SizeOf(i);
@@ -333,7 +333,7 @@ public:
 	T1&> Add(Args&&... args)
 	{
 		T1* const result = mData.template TryAdd<T1>(Forward<Args>(args)...);
-		if(result == null)
+		if(result == nullptr)
 		{
 			const size_t minRequiredSize = mData.UsedSizeInBytes() + sizeof(T);
 			reallocate(minRequiredSize + minRequiredSize / 2);
@@ -364,7 +364,7 @@ public:
 
 	INTRA_FORCEINLINE T* operator[](size_t index) const
 	{
-		if(mData.SizeOf(index) == 0) return null;
+		if(mData.SizeOf(index) == 0) return nullptr;
 		return mData[OffsetType(index)];
 	}
 
@@ -375,4 +375,4 @@ public:
 	INTRA_FORCEINLINE BlobTypedRange<T, OffsetType> AsRange() const
 	{return BlobTypedRange<T, OffsetType>(mData.RawData);}
 };
-INTRA_END
+} INTRA_END

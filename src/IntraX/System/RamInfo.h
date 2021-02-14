@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct RamInfo
 {
 	uint64 TotalPhysicalMemory = 0;
@@ -14,4 +14,4 @@ struct RamInfo
 
 	static RamInfo Get();
 };
-INTRA_END
+} INTRA_END

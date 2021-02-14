@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Intra/Math/Math.h"
+#include <Intra/Math.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 template<typename T> struct Vector4
 {
@@ -240,13 +240,13 @@ template<typename T> constexpr Vector4<T> Sign(const Vector4<T>& v)
 template<typename T> constexpr Vector4<T> Abs(const Vector4<T>& v)
 {return {Abs(v.x), Abs(v.y), Abs(v.z), Abs(v.w)};}
 
-typedef Vector4<float> Vec4;
-typedef Vector4<double> DVec4;
-typedef Vector4<int> IVec4;
-typedef Vector4<unsigned> UVec4;
-typedef Vector4<byte> UBVec4;
-typedef Vector4<int8> SBVec4;
-typedef Vector4<uint16> USVec4;
-typedef Vector4<short> SVec4;
-typedef Vector4<bool> BVec4;
-INTRA_END
+using Vec4 = Vector4<float>;
+using DVec4 = Vector4<double>;
+using IVec4 = Vector4<int32>;
+using UVec4 = Vector4<uint32>;
+using U8Vec4 = Vector4<byte>;
+using I8Vec4 = Vector4<int8>;
+using U16Vec4 = Vector4<uint16>;
+using I16Vec4 = Vector4<int16>;
+using BVec4 = Vector4<bool>;
+} INTRA_END

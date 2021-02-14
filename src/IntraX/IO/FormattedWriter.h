@@ -11,39 +11,39 @@
 #include "Intra/Concurrency/Atomic.h"
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class FormattedWriter
 {
 public:
 	struct FormattedStream
 	{
-		bool IsOwner() const {return mStream != null;}
+		bool IsOwner() const {return mStream != nullptr;}
 
 		~FormattedStream() {clear();}
 
 		FormattedStream(Unique<IOutputStream> stream, Unique<IFormatter> formatter):
 			mStream(stream.Release()), mFormatter(formatter.Release())
 		{
-			INTRA_ASSERT(stream != null || formatter == null);
+			INTRA_ASSERT(stream != nullptr || formatter == nullptr);
 		}
 
 		FormattedStream(OutputStream stream, Unique<IFormatter> formatter):
 			FormattedStream(Move(stream.Stream), Move(formatter)) {}
 
 		FormattedStream(FormattedWriter* writerRef):
-			mStream(null), mWriter(writerRef) {mWriter->incRef();}
+			mStream(nullptr), mWriter(writerRef) {mWriter->incRef();}
 
-		bool operator==(decltype(null)) const {return mStream == null && mFormatter == null;}
-		bool operator!=(decltype(null)) const {return !operator==(null);}
+		bool operator==(decltype(nullptr)) const {return mStream == nullptr && mFormatter == nullptr;}
+		bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
-		FormattedStream(decltype(null)=null):
-			mStream(null), mFormatter(null) {}
+		FormattedStream(decltype(nullptr)=nullptr):
+			mStream(nullptr), mFormatter(nullptr) {}
 
 		FormattedStream(FormattedStream&& rhs) noexcept:
 			mStream(rhs.mStream), mFormatter(rhs.mFormatter)
 		{
-			rhs.mStream = null;
-			rhs.mFormatter = null;
+			rhs.mStream = nullptr;
+			rhs.mFormatter = nullptr;
 		}
 
 		FormattedStream(const FormattedStream& rhs) = delete;
@@ -69,8 +69,8 @@ public:
 			clear();
 			mStream = fs.mStream;
 			mFormatter = fs.mFormatter;
-			fs.mStream = null;
-			fs.mFormatter = null;
+			fs.mStream = nullptr;
+			fs.mFormatter = nullptr;
 			return *this;
 		}
 
@@ -79,8 +79,8 @@ public:
 		void reset()
 		{
 			clear();
-			mStream = null;
-			mFormatter = null;
+			mStream = nullptr;
+			mFormatter = nullptr;
 		}
 
 		friend class FormattedWriter;
@@ -110,7 +110,7 @@ private:
 #endif
 
 public:
-	FormattedWriter(decltype(null)=null) {}
+	FormattedWriter(decltype(nullptr)=nullptr) {}
 
 	explicit FormattedWriter(OutputStream stream)
 	{
@@ -136,7 +136,7 @@ public:
 	~FormattedWriter()
 	{
 		INTRA_ASSERT(getRC() == 0);
-		operator=(null);
+		operator=(nullptr);
 	}
 
 	FormattedWriter& operator=(FormattedWriter&& rhs)
@@ -148,15 +148,15 @@ public:
 		return *this;
 	}
 
-	FormattedWriter& operator=(decltype(null))
+	FormattedWriter& operator=(decltype(nullptr))
 	{
-		mFormattedStreams = null;
+		mFormattedStreams = nullptr;
 		return *this;
 	}
 
 	index_t Attach(OutputStream stream)
 	{
-		const auto index = CountUntil(mFormattedStreams, null);
+		const auto index = CountUntil(mFormattedStreams, nullptr);
 		if(index == mFormattedStreams.Length())
 			mFormattedStreams.EmplaceLast(Move(stream), new BasicFormatter);
 		else mFormattedStreams[index] = {Move(stream.Stream), new BasicFormatter};
@@ -165,7 +165,7 @@ public:
 
 	index_t Attach(FormattedWriter* writerRef)
 	{
-		const auto index = CountUntil(mFormattedStreams, null);
+		const auto index = CountUntil(mFormattedStreams, nullptr);
 		if(index == mFormattedStreams.Length())
 			mFormattedStreams.EmplaceLast(writerRef);
 		else mFormattedStreams[index] = {writerRef};
@@ -177,7 +177,7 @@ public:
 		const auto index = mFormattedStreams.Length();
 		for(auto& fs: writer.mFormattedStreams)
 		{
-			if(fs == null) continue;
+			if(fs == nullptr) continue;
 			mFormattedStreams.AddLast(Move(fs));
 		}
 		return index;
@@ -185,7 +185,7 @@ public:
 
 	index_t Attach(OutputStream stream, IFormatter* formatter)
 	{
-		const auto index = CountUntil(mFormattedStreams, null);
+		const auto index = CountUntil(mFormattedStreams, nullptr);
 		if(index == mFormattedStreams.Length())
 			mFormattedStreams.EmplaceLast(Move(stream.Stream), Move(formatter));
 		else mFormattedStreams[index] = {Move(stream.Stream), Move(formatter)};
@@ -193,14 +193,14 @@ public:
 	}
 
 
-	bool operator==(decltype(null)) const
+	bool operator==(decltype(nullptr)) const
 	{
 		for(auto& fs: mFormattedStreams)
-			if(fs != null) return false;
+			if(fs != nullptr) return false;
 		return true;
 	}
 
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 	FormattedWriter& PushFont(Vec3 color, float size=3,
 		bool bold=false, bool italic=false, bool underline=false, bool strike=false)
@@ -354,4 +354,4 @@ private:
 	FormattedWriter(const FormattedWriter&) = delete;
 	FormattedWriter& operator=(const FormattedWriter&) = delete;
 };
-INTRA_END
+} INTRA_END

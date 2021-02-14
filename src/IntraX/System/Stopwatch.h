@@ -8,7 +8,7 @@
 #define INTRA_LIBRARY_STOPWATCH_gettimeofday 4
 #define INTRA_LIBRARY_STOPWATCH_Cpp11 5
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class Stopwatch
 {
 public:
@@ -27,4 +27,4 @@ public:
 private:
 	uint64 mData;
 };
-INTRA_END
+} INTRA_END

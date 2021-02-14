@@ -29,16 +29,14 @@
 
 #include "IntraX/Unstable/Image/AnyImage.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Загрузить изображение средствами библиотек операционной системы
 /// или сторонних библиотек, поддерживающих сразу множество форматов:
 /// GDI+ (Windows)
 /// Java API через JNI (Android)
-/// Qt (стороння библиотека, входит во многие дистрибутивы Linux)
 /// DevIL (сторонняя библиотека)
 /// STB image (сторонняя библиотека)
-/// SDL image (сторонняя библиотека)
 AnyImage LoadWithPlatform(IInputStream& stream);
-INTRA_END
+} INTRA_END
 
 #endif

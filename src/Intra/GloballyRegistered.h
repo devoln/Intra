@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Intra/Range/ListRange.h"
+#include "Intra/Range.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> class GloballyRegistered
 {
 	T* mNext;
@@ -19,4 +19,4 @@ public:
 	[[nodiscard]] INTRA_FORCEINLINE static auto Instances() {return RangeOf(*lastInited);}
 };
 template<typename T> T* GloballyRegistered<T>::lastInited;
-INTRA_END
+} INTRA_END

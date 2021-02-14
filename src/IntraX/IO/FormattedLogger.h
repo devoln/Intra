@@ -4,11 +4,11 @@
 #include "IntraX/IO/FormattedWriter.h"
 #include "IntraX/Math/Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class FormattedLogger: public ILogger
 {
 public:
-	INTRA_FORCEINLINE explicit FormattedLogger(FormattedWriter writer=null) noexcept: Writer(Move(writer)) {}
+	INTRA_FORCEINLINE explicit FormattedLogger(FormattedWriter writer=nullptr) noexcept: Writer(Move(writer)) {}
 	FormattedLogger(const FormattedLogger&) = delete;
 	FormattedLogger(FormattedLogger&&) = default;
 	FormattedLogger& operator=(const FormattedLogger&) = delete;
@@ -26,4 +26,4 @@ public:
 	Vec3 CriticalErrorColor = {0.8f, 0, 0};
 	bool WriteLevelType = true;
 };
-INTRA_END
+} INTRA_END

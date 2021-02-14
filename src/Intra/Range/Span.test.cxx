@@ -1,9 +1,13 @@
-#include "Span.h"
-#include "Intra/Range/Concepts.h"
-#include "Intra/Range/Take.h"
+#include <Intra/Range/Span.h>
+#include <Intra/Concepts.h>
+#include <Intra/Range/Operations.h>
 #include "Intra/Range/Search/Single.h"
 
-INTRA_BEGIN
+#include <Intra/Range/Decorators.h>
+#include <Intra/Range/Generators.h>
+#include <Intra/Range/Composition.h>
+
+namespace Intra { INTRA_BEGIN
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(CHasLength<Span<float>>);
@@ -11,15 +15,15 @@ static_assert(CHasData<Span<int>>);
 static_assert(CArrayList<Span<double>>);
 static_assert(CRange<Span<float>>);
 static_assert(CForwardRange<Span<float>>);
-static_assert(CRange<CSpan<int>>);
-static_assert(CForwardRange<CSpan<int>>);
-static_assert(CRandomAccessRange<CSpan<unsigned>>);
-static_assert(CFiniteRandomAccessRange<CSpan<int>>);
+static_assert(CRange<Span<const int>>);
+static_assert(CForwardRange<Span<const int>>);
+static_assert(CRandomAccessRange<Span<const unsigned>>);
+static_assert(CFiniteRandomAccessRange<Span<const int>>);
 static_assert(CRandomAccessRange<Span<float>>);
 static_assert(CFiniteRandomAccessRange<Span<float>>);
 static_assert(CSame<TRangeValue<Span<float>>, float>);
-static_assert(CHasTakeMethod<CSpan<int>>);
-static_assert(CHasPopFirstCount<CSpan<int>>);
+static_assert(CHasTakeMethod<Span<const int>>);
+static_assert(CHasPopFirstCount<Span<const int>>);
 
 namespace CompileTimeTest_Span {
 static constexpr int arr[] = {54, 21, 83, 64};
@@ -44,4 +48,4 @@ static_assert(span|DropUntil(Bind(Equal, 12))|IsEmpty);
 }
 #endif
 
-INTRA_END
+} INTRA_END

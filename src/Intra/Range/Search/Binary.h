@@ -2,8 +2,8 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //TODO
 
 
-INTRA_END
+} INTRA_END

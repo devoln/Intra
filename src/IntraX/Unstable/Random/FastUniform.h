@@ -4,7 +4,7 @@
 #include "IntraX/System/Debug.h"
 #include "IntraX/Utils/Unique.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct FastUniform;
 
 template<> struct FastUniform<byte>
@@ -293,4 +293,4 @@ template<> struct FastUniform<double>
 
 	static FastUniform Global;
 };
-INTRA_END
+} INTRA_END

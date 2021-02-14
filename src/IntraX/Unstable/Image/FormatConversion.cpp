@@ -2,7 +2,7 @@
 #include "IntraX/Utils/Endianess.h"
 #include "Intra/Range/Stream/RawRead.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 unsigned ConvertColorBits(unsigned color, unsigned fromBitCount, unsigned toBitCount)
 {
 	if(toBitCount < fromBitCount)
@@ -16,7 +16,7 @@ unsigned ConvertColorBits(unsigned color, unsigned fromBitCount, unsigned toBitC
 }
 
 template<typename T> static void SwapRedBlueTyped(size_t lineUnused,
-	size_t componentCount, USVec2 sizes, T* data)
+	size_t componentCount, U16Vec2 sizes, T* data)
 {
 	for(int y = 0; y<sizes.y; y++)
 	{
@@ -29,7 +29,7 @@ template<typename T> static void SwapRedBlueTyped(size_t lineUnused,
 	}
 }
 
-void SwapRedBlueChannels(ImageFormat format, uint16 lineAlignment, USVec2 sizes, Span<byte> data)
+void SwapRedBlueChannels(ImageFormat format, uint16 lineAlignment, U16Vec2 sizes, Span<byte> data)
 {
 	const auto components = format.ComponentCount();
 	const auto bytesPerComp = format.GetComponentType().Size();
@@ -43,7 +43,7 @@ void SwapRedBlueChannels(ImageFormat format, uint16 lineAlignment, USVec2 sizes,
 
 
 
-void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
+void ReadPixelDataBlock(IInputStream& stream, U16Vec2 sizes,
 	ImageFormat srcFormat, ImageFormat dstFormat,
 	bool swapRB, bool flipVert, uint16 srcAlignment, uint16 dstAlignment, Span<byte> dstBuf)
 {
@@ -86,8 +86,8 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 		for(int y = 0; y < sizes.y; y++)
 		{
 			auto pixels = !flipVert?
-				reinterpret_cast<UBVec3*>(dstPos.Begin):
-				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
+				reinterpret_cast<U8Vec3*>(dstPos.Begin):
+				reinterpret_cast<U8Vec3*>(dstPos.End)-sizes.x;
 			for(unsigned x = 0; x < sizes.x; x++)
 			{
 				uint16 color = RawRead<ushortLE>(stream);
@@ -102,8 +102,8 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 		for(int y = 0; y < sizes.y; y++)
 		{
 			auto pixels = !flipVert?
-				reinterpret_cast<UBVec3*>(dstPos.Begin):
-				reinterpret_cast<UBVec3*>(dstPos.End) - sizes.x;
+				reinterpret_cast<U8Vec3*>(dstPos.Begin):
+				reinterpret_cast<U8Vec3*>(dstPos.End) - sizes.x;
 			for(unsigned x = 0; x < sizes.x; x++)
 			{
 				uint16 color = RawRead<ushortLE>(stream);
@@ -118,12 +118,12 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 		for(int y = 0; y < sizes.y; y++)
 		{
 			auto pixels = !flipVert?
-				reinterpret_cast<UBVec3*>(dstPos.Begin):
-				reinterpret_cast<UBVec3*>(dstPos.End)-sizes.x;
+				reinterpret_cast<U8Vec3*>(dstPos.Begin):
+				reinterpret_cast<U8Vec3*>(dstPos.End)-sizes.x;
 			if(swapRB) for(unsigned x = 0; x < sizes.x; x++)
-				*pixels++ = RawRead<UBVec4>(stream).swizzle<2, 1, 0>();
+				*pixels++ = RawRead<U8Vec4>(stream).swizzle<2, 1, 0>();
 			else for(unsigned x = 0; x < sizes.x; x++)
-				*pixels++ = RawRead<UBVec4>(stream).xyz;
+				*pixels++ = RawRead<U8Vec4>(stream).xyz;
 			if(flipVert) dstPos.PopLastExactly(dstLineBytes);
 			else dstPos.PopFirstExactly(dstLineBytes);
 			stream.PopFirstCount(srcLineBytes-usefulSrcLineBytes);
@@ -132,8 +132,8 @@ void ReadPixelDataBlock(IInputStream& stream, USVec2 sizes,
 	if(swapRB) SwapRedBlueChannels(dstFormat, dstAlignment, sizes, dstBuf);
 }
 
-void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
-	uint16 bpp, USVec2 sizes, ImageFormat format, bool flipVert,
+void ReadPalettedPixelDataBlock(IInputStream& stream, Span<const byte> palette,
+	uint16 bpp, U16Vec2 sizes, ImageFormat format, bool flipVert,
 	uint16 srcAlignment, uint16 dstAlignment, Span<byte> dstBuf)
 {
 	INTRA_PRECONDITION(palette.Length() >= 1 << bpp);
@@ -182,4 +182,4 @@ void ReadPalettedPixelDataBlock(IInputStream& stream, CSpan<byte> palette,
 		stream.PopFirstCount(srcLineBytes - usefulSrcLineBytes);
 	}
 }
-INTRA_END
+} INTRA_END

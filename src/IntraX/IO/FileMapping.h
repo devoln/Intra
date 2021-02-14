@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 
 #include "Intra/Range/Span.h"
 #include "Intra/Range/StringView.h"
@@ -8,7 +8,7 @@
 
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class BasicFileMapping
 {
 public:
@@ -17,7 +17,7 @@ public:
 #ifdef INTRA_DEBUG
 		, mFilePath(Move(rhs.mFilePath))
 #endif
-	{rhs.mData = null;}
+	{rhs.mData = nullptr;}
 
 	BasicFileMapping& operator=(BasicFileMapping&& rhs)
 	{
@@ -35,8 +35,8 @@ public:
 
 	void Close();
 
-	bool operator==(decltype(null)) const {return mData == null;}
-	bool operator!=(decltype(null)) const {return mData != null;}
+	bool operator==(decltype(nullptr)) const {return mData == nullptr;}
+	bool operator!=(decltype(nullptr)) const {return mData != nullptr;}
 
 protected:
 	Span<byte> mData;
@@ -64,11 +64,11 @@ public:
 
 	const byte* Data() const {return mData.Data();}
 
-	CSpan<byte> AsRange() const {return mData;}
+	Span<const byte> AsRange() const {return mData;}
 
 	template<typename T> Requires<
 		CTriviallySerializable<T>,
-	CSpan<T>> AsRangeOf() const {return CSpanOfRaw<T>(mData.Data(), size_t(mData.Length()));}
+	Span<const T>> AsRangeOf() const {return CSpanOfRaw<T>(mData.Data(), size_t(mData.Length()));}
 };
 
 class WritableFileMapping: public BasicFileMapping
@@ -96,4 +96,4 @@ public:
 		CTriviallySerializable<T>,
 	Span<T>> AsRangeOf() const {return SpanOfRaw<T>(mData.Data(), mData.Length());}
 };
-INTRA_END
+} INTRA_END

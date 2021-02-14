@@ -2,7 +2,7 @@
 #include "IntraX/Unstable/Image/Loaders/LoaderPlatform.h"
 #include "IntraX/Unstable/Image/AnyImage.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 bool LoaderTIFF::IsValidHeader(const void* header, size_t headerSize) const
 {
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
@@ -15,7 +15,7 @@ AnyImage LoaderTIFF::Load(IInputStream& stream) const
 	return LoadWithPlatform(stream);
 #else
 	(void)stream;
-	return null;
+	return nullptr;
 #endif
 }
-INTRA_END
+} INTRA_END

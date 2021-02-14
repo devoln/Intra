@@ -31,7 +31,7 @@ void TestTextSerialization(FormattedWriter& output)
 	output.LineBreak();
 	auto deserializer = TextDeserializer(LanguageParamsBuiltin::JsonLikeNoQuotes, strToDeserialize);
 	StructTest t2 = deserializer.Deserialize<StructTest>();
-	INTRA_ASSERT_EQUALS(deserializer.Log, null);
+	INTRA_ASSERT_EQUALS(deserializer.Log, nullptr);
 	if(!deserializer.Log.Empty())
 	{
 		output.PrintLine("Deserialization Log: ");
@@ -107,9 +107,9 @@ void TestBinarySerialization(FormattedWriter& output)
 	serializer << origE;
 	output.PrintLine("int origE[5] = ", origE);
 	
-	CSpan<int> origF = origE;
+	Span<const int> origF = origE;
 	serializer << origF;
-	output.PrintLine("CSpan<int> originalF = ", origF);
+	output.PrintLine("Span<const int> originalF = ", origF);
 	
 	Array<int> origG = origF;
 	serializer << origG;
@@ -145,8 +145,8 @@ void TestBinarySerialization(FormattedWriter& output)
 	output.PrintLine("int resE[5] = ", resE);
 	INTRA_ASSERT2(Equals(origE, resE), origE, resE);
 
-	CSpan<int> resF = deserializer.Deserialize<CSpan<int>>();
-	output.PrintLine("CSpan<int> resF = ", resF);
+	Span<const int> resF = deserializer.Deserialize<Span<const int>>();
+	output.PrintLine("Span<const int> resF = ", resF);
 	INTRA_ASSERT2(Equals(origF, resF), origF, resF);
 
 	Array<int> resG = deserializer.Deserialize<Array<int>>();

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Intra/Functional.h"
-#include "Range/Concepts.h"
-#include "Range/Take.h"
+#include <Intra/Functional.h>
+#include <Intra/Concepts.h>
+#include <Intra/Range/Take.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 template<class R, typename P = decltype(Equal)> class IsOneOf: P
 {
@@ -28,4 +28,4 @@ public:
 template<class R> IsOneOf(R) -> IsOneOf<TRangeOfRef<R>>;
 template<class R, class P> IsOneOf(R, P) -> IsOneOf<TRangeOfRef<R>, TFunctorOf<P>>;
 
-INTRA_END
+} INTRA_END

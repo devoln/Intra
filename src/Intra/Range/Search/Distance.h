@@ -1,9 +1,9 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Range/Concepts.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /** Pops elements from ``from``, until it becomes equal to ``to`` or ``from`` becomes empty.
   As a result either from.Empty() or from == to.
   @return The number of popped elements.
@@ -38,4 +38,4 @@ size_t> DistanceTo(R&& from, R&& to)
 	auto fromCopy = Forward<R>(from);
 	return DistanceAdvanceTo(fromCopy, to);
 }
-INTRA_END
+} INTRA_END

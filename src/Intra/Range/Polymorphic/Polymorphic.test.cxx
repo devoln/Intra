@@ -14,7 +14,7 @@
 #include "IntraX/Container/Sequential/List.h"
 #include "IntraX/Unstable/Random/FastUniform.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 static int SumPolymorphicRange(InputRange<int> ints)
 {

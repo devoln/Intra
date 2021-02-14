@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Concepts.h"
 #include "Intra/Range/Concepts.h"
 #include "Intra/Range/Operations.h"
@@ -18,7 +18,7 @@
 #include "IntraX/Container/Operations.hh"
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> class ArrayList
 {
 public:
@@ -26,18 +26,18 @@ public:
 
 	explicit INTRA_FORCEINLINE ArrayList(index_t initialLength) {SetCount(initialLength);}
 
-	template<CList R> requires(!CSameIgnoreCVRef<R, ArrayList>)
+	template<CList R> requires(!CSameUnqualRef<R, ArrayList>)
 	ArrayList(R&& values) {AddLastRange(ForwardAsRange<R>(values));}
 
 	constexpr ArrayList(ArrayList&& rhs) noexcept: mBuffer(rhs.mBuffer), mRange(rhs.mRange)
 	{
-		rhs.mBuffer = null;
-		rhs.mRange = null;
+		rhs.mBuffer = nullptr;
+		rhs.mRange = nullptr;
 	}
 
 	ArrayList(const ArrayList& rhs): ArrayList(CSpanOf(rhs)) {}
 	
-	~ArrayList() {operator=(null);}
+	~ArrayList() {operator=(nullptr);}
 
 
 	/** Take ownership of rangeToOwn elements and memory.
@@ -75,7 +75,7 @@ public:
 		return *this;
 	}
 
-	ArrayList& operator=(CSpan<T> values)
+	ArrayList& operator=(Span<const T> values)
 	{
 		INTRA_PRECONDITION(!mBuffer.Overlaps(values));
 		Assign(values);
@@ -85,16 +85,16 @@ public:
 	template<CAccessibleList R> ArrayList& operator=(R&& values) {return operator=(ArrayList(INTRA_FWD(values)));}
 
 	/// Delete all elements and free memory.
-	ArrayList& operator=(decltype(null))
+	ArrayList& operator=(decltype(nullptr))
 	{
 		Clear();
 		FreeRangeUninitialized(GlobalHeap, mBuffer);
-		mBuffer = null;
-		mRange = null;
+		mBuffer = nullptr;
+		mRange = nullptr;
 		return *this;
 	}
 
-	template<typename U> void Assign(CSpan<U> rhs)
+	template<typename U> void Assign(Span<const U> rhs)
 	{
 		Clear();
 		SetLengthUninitialized(rhs.Length());
@@ -242,7 +242,7 @@ public:
 	  As a result for each i-th element its index will stay unchanged if i < ``pos`` and will become i + ``values.Length()`` otherwise.
 	  The first inserted element will have index ``pos``.
 	*/
-	template<typename U> void Insert(Index pos, CSpan<U> values)
+	template<typename U> void Insert(Index pos, Span<const U> values)
 	{
 		if(values.Empty()) return;
 		INTRA_PRECONDITION(!mRange.Overlaps(values));
@@ -277,7 +277,7 @@ public:
 		CopyInit<T>(mRange|Drop(pos)|Take(valuesLength), values);
 	}
 
-	template<typename U> void Insert(const T* it, CSpan<U> values)
+	template<typename U> void Insert(const T* it, Span<const U> values)
 	{
 		INTRA_PRECONDITION(mRange.ContainsAddress(it));
 		Insert(it - mRange.Begin, values);
@@ -288,7 +288,7 @@ public:
 		if(mRange.ContainsAddress(&value))
 		{
 			T temp = value;
-			Insert(pos, CSpan<T>(Unsafe, &temp, 1));
+			Insert(pos, Span<const T>(Unsafe, &temp, 1));
 			return;
 		}
 		Insert(pos, {&value, 1});
@@ -335,7 +335,7 @@ public:
 	*/
 	void Resize(Size rightPartSize, Size leftPartSize = 0)
 	{
-		if((size_t(rightPartSize)|size_t(leftPartSize)) == 0) {*this = null; return;}
+		if((size_t(rightPartSize)|size_t(leftPartSize)) == 0) {*this = nullptr; return;}
 
 		// Delete all elements out of the new bounds
 		if(size_t(rightPartSize) <= size_t(Length())) Destruct(mRange|Drop(rightPartSize));
@@ -659,4 +659,4 @@ static_assert(CArrayList<const ArrayList<StringView>&>);
 static_assert(CTriviallyRelocatable<ArrayList<int>>);
 #endif
 
-INTRA_END
+} INTRA_END

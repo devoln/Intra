@@ -5,7 +5,7 @@
 #include "Intra/Range/Concepts.h"
 #include "Intra/Range/Operations.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /** Sort ``range`` using insertion sort algorithm using ``comparer`` predicate.
   1) The worst time O(n^2) is reached when source range has reverse order;
   2) Average time О(n^2);
@@ -58,4 +58,4 @@ template<typename R, typename C = decltype(Less),
 	CAssignableRange<AsR>
 > ShellSort(R&& range, C comparer = FLess)
 {ShellSort(ForwardAsRange<R>(range), comparer);}
-INTRA_END
+} INTRA_END

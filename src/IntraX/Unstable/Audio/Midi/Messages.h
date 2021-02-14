@@ -3,7 +3,7 @@
 #include "IntraX/Unstable/Audio/MusicNote.h"
 #include "IntraX/Unstable/Audio/Midi/MidiDeviceState.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct MidiNoteOn
 {
 	MidiTime Time;
@@ -78,4 +78,4 @@ public:
 	virtual void OnChannelProgramChange(const MidiChannelProgramChange& programChange) {(void)programChange;}
 };
 
-INTRA_END
+} INTRA_END

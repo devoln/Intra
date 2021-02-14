@@ -41,16 +41,16 @@
 #define INTRA_LIBRARY_SOUND_AUTO_STREAMING_SUPPORTED
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 class Sound
 {
 public:
 	class Instance;
 	struct Data;
 
-	Sound(decltype(null)=null);
+	Sound(decltype(nullptr)=nullptr);
 	explicit Sound(const AudioBuffer& data);
-    Sound(const SoundInfo& bufferInfo, const void* initData=null);
+    Sound(const SoundInfo& bufferInfo, const void* initData=nullptr);
 	Sound(Sound&& rhs);
 	Sound(IAudioSource& src, ErrorReporter err);
 	Sound(Unique<IAudioSource> src, ErrorReporter err): Sound(*src, err) {}
@@ -62,10 +62,10 @@ public:
 	static Sound FromFile(StringView fileName, ErrorReporter err);
 
 	Sound& operator=(Sound&& rhs);
-	Sound& operator=(decltype(null)) {Release(); return *this;}
+	Sound& operator=(decltype(nullptr)) {Release(); return *this;}
 
-	bool operator==(decltype(null)) const {return mData == null;}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator==(decltype(nullptr)) const {return mData == nullptr;}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 	const SoundInfo& Info() const;
 
@@ -86,7 +86,7 @@ class Sound::Instance
 {
 	friend class Sound;
 public:
-	Instance(decltype(null) = null);
+	Instance(decltype(nullptr) = nullptr);
 	Instance(Instance&&);
 	Instance& operator=(Instance&&);
 	Instance(Sound& sound);
@@ -111,7 +111,7 @@ class StreamedSound
 public:
 	typedef Delegate<void()> OnStopCallback;
 
-	StreamedSound(decltype(null)=null);
+	StreamedSound(decltype(nullptr)=nullptr);
 	StreamedSound(Unique<IAudioSource> src, Size bufferSizeInSamples=16384);
 	StreamedSound(StreamedSound&& rhs);
 	~StreamedSound();
@@ -147,4 +147,4 @@ private:
 };
 
 void CleanUpSoundSystem();
-INTRA_END
+} INTRA_END

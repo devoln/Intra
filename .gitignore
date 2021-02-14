@@ -4,6 +4,7 @@ cmake_install.cmake
 *.exe
 /bin
 /cache
+/out
 
 .vs/
 

@@ -5,13 +5,13 @@
 
 #ifdef __ANDROID__
 
-INTRA_BEGIN
-static CSpan<StringView> getAndParseCommandLine()
+namespace Intra { INTRA_BEGIN
+static Span<const StringView> getAndParseCommandLine()
 {
 	static const StringView result[] = {"program"};
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(_WIN32)
 
@@ -22,8 +22,8 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <Windows.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
-static CSpan<StringView> getAndParseCommandLine()
+namespace Intra { INTRA_BEGIN
+static Span<const StringView> getAndParseCommandLine()
 {
 	INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 	static FixedArray<char> buf;
@@ -55,7 +55,7 @@ static CSpan<StringView> getAndParseCommandLine()
 		{
 			if(a != '"') continue;
 			dstPtr += WideCharToMultiByte(CP_UTF8, 0,
-				wargStart, int(wcmdptr - 1 - wargStart), dstPtr, int(charBuf.end() - dstPtr), null, null);
+				wargStart, int(wcmdptr - 1 - wargStart), dstPtr, int(charBuf.end() - dstPtr), nullptr, nullptr);
 			wargStart = wcmdptr;
 			if(*wcmdptr == '"')
 			{
@@ -79,7 +79,7 @@ static CSpan<StringView> getAndParseCommandLine()
 				auto wendPtr = wcmdptr-1;
 				if(wendPtr>wargStart && wendPtr[-1]=='"') --wendPtr;
 				if(wendPtr>wargStart) dstPtr += WideCharToMultiByte(CP_UTF8, 0,
-					wargStart, int(wendPtr - wargStart), dstPtr, int(len), null, null);
+					wargStart, int(wendPtr - wargStart), dstPtr, int(len), nullptr, nullptr);
 				argOutput.Put(StringView::FromPointerRange(argStart, dstPtr));
 				*dstPtr++ = '\0';
 				argStart = dstPtr;
@@ -96,7 +96,7 @@ static CSpan<StringView> getAndParseCommandLine()
 		auto wendPtr = wcmdptr;
 		if(wendPtr > wargStart && wendPtr[-1] == '"') --wendPtr;
 		if(wendPtr > wargStart) dstPtr += WideCharToMultiByte(CP_UTF8, 0,
-			wargStart, int(wendPtr - wargStart), dstPtr, int(len), null, null);
+			wargStart, int(wendPtr - wargStart), dstPtr, int(len), nullptr, nullptr);
 		argOutput.Put(StringView::FromPointerRange(argStart, dstPtr));
 		*dstPtr++ = '\0';
 		argStart = dstPtr;
@@ -112,7 +112,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 	index_t num = 0;
 	for(auto wenvPtr = wenv; *wenvPtr;)
 	{
-		totalLen += size_t(WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, null, 0, null, null)) - 1;
+		totalLen += size_t(WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, nullptr, 0, nullptr, nullptr)) - 1;
 		while(*wenvPtr++) {}
 		wenvPtr++;
 		num++;
@@ -124,7 +124,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 	auto dstPairs = SpanOfRawElements<Tuple<StringView, StringView>>(buffer.Data(), num);
 	for(auto wenvPtr = wenv; *wenvPtr;)
 	{
-		const auto len = WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, dstChars.Begin, int(dstChars.Length()), null, null) - 1;
+		const auto len = WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, dstChars.Begin, int(dstChars.Length()), nullptr, nullptr) - 1;
 		const StringView key = dstChars.FindBefore('=');
 		const StringView value = dstChars.Drop(key.Length() + 1).Take(len - (key.Length() + 1));
 		dstChars.PopFirstExactly(len);
@@ -143,7 +143,7 @@ Optional<String> TEnvironment::operator[](StringView var) const
 	Span<wchar_t> wvar = SpanOfPtr(buffer.Data(), wvarLen + 1);
 	wvar.Last() = L'\0';
 	const auto wresultLen = index_t(GetEnvironmentVariableW(wvar.Data(), buffer.Data() + wvarLen + 1, 32767));
-	if(wresultLen == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return null;
+	if(wresultLen == 0 && GetLastError() == ERROR_ENVVAR_NOT_FOUND) return nullptr;
 
 	index_t resultLenLimit = wresultLen;
 	for(wchar_t c: wvar) if(c & ~0x7F) resultLenLimit += 2;
@@ -152,21 +152,21 @@ Optional<String> TEnvironment::operator[](StringView var) const
 	result.SetLengthUninitialized(resultLenLimit);
 	const index_t resultLen = WideCharToMultiByte(CP_UTF8, 0,
 		buffer.Data() + wvarLen + 1, int(wresultLen),
-		result.Data(), int(result.Length()), null, null);
+		result.Data(), int(result.Length()), nullptr, nullptr);
 	result.SetLengthUninitialized(resultLen);
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__EMSCRIPTEN__)
 
-INTRA_BEGIN
-static CSpan<StringView> getAndParseCommandLine()
+namespace Intra { INTRA_BEGIN
+static Span<const StringView> getAndParseCommandLine()
 {
 	static const StringView result[] = {"program"};
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__unix__)
 
@@ -175,8 +175,8 @@ INTRA_END
 #include <fcntl.h>
 #include <unistd.h>
 
-INTRA_BEGIN
-static CSpan<StringView> getAndParseCommandLine()
+namespace Intra { INTRA_BEGIN
+static Span<const StringView> getAndParseCommandLine()
 {
 	int fd = open(
 		TargetOS == OperatingSystem::Linux? "/proc/self/cmdline": "/proc/curproc/cmdline"
@@ -191,7 +191,7 @@ static CSpan<StringView> getAndParseCommandLine()
 	}
 	while(bytesRead == cmdlineBuf.Length());
 	cmdlineBuf.SetCount(bytesRead);
-	if(bytesRead == 0) return null;
+	if(bytesRead == 0) return nullptr;
 
 	size_t argc = 0;
 	for(char c: cmdlineBuf) if(c == '\0') argc++;
@@ -202,7 +202,7 @@ static CSpan<StringView> getAndParseCommandLine()
 		argv[i] = StringView(argv[i - 1].end() + 1);
 	return argv.AsConstRange();
 }
-INTRA_END
+} INTRA_END
 #endif
 
 #ifndef _WIN32
@@ -211,12 +211,12 @@ INTRA_END
 
 extern char** environ;
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 Optional<String> TEnvironment::operator[](StringView var) const
 {
 	auto result = getenv(String(var).CStr());
-	if(result != null) return String(result);
-	return null;
+	if(result != nullptr) return String(result);
+	return nullptr;
 }
 
 TEnvironment::VarSet TEnvironment::Variables() const
@@ -237,11 +237,11 @@ TEnvironment::VarSet TEnvironment::Variables() const
 	}
 	return {Move(buffer), num};
 }
-INTRA_END
+} INTRA_END
 #endif
 
-INTRA_BEGIN
-CSpan<const Tuple<StringView, StringView>> TEnvironment::VarSet::AsRange() const
+namespace Intra { INTRA_BEGIN
+Span<const const Tuple<StringView, StringView>> TEnvironment::VarSet::AsRange() const
 {
 	return SpanOfRaw<Tuple<StringView, StringView>>(
 		mData.Data(), size_t(mCount)*sizeof(Tuple<StringView, StringView>));
@@ -251,4 +251,4 @@ TEnvironment::TEnvironment(): CommandLine(getAndParseCommandLine()) {}
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const TEnvironment Environment;
-INTRA_END
+} INTRA_END

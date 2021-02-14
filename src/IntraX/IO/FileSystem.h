@@ -7,7 +7,17 @@
 
 #include "FileMapping.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
+
+enum class UnixFilePermission {
+	AllExecute, AllWrite, AllRead,
+	GroupExecute, GroupWrite, GroupRead,
+	UserExecute, UserWrite, UnixRead,
+	Directory,
+
+	Meta_BitsetWidth
+};
+
 struct FileInfo
 {
 	bool Exist() const {return Size != 0 || LastModified != 0;}
@@ -93,7 +103,7 @@ public:
 	{return WritableFileMapping(GetFullFileName(fileName), err);}
 
 	/// Открыть файл fileName для чтения.
-	/// Если файл не существует или не удаётся открыть по другим причинам, вернёт null.
+	/// Если файл не существует или не удаётся открыть по другим причинам, вернёт nullptr.
 	FileReader FileOpen(StringView fileName, ErrorReporter err);
 
 	/// Открыть файл fileName для записи.
@@ -115,4 +125,4 @@ private:
 };
 
 extern OsFileSystem OS;
-INTRA_END
+} INTRA_END

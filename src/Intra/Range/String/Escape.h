@@ -7,7 +7,7 @@
 #include "Intra/Range/Transversal.h"
 #include "IntraX/Utils/AsciiSet.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename ES, typename CTE> Requires<
 	CCharList<R> &&
 	CFiniteRange<ES> &&
@@ -52,4 +52,4 @@ TTakeResult<OR>> StringEscapeToAdvance(const R& src, OR&& dstBuffer,
 	}
 	return Take(dstBegin, DistanceTo(dstBegin, dstBuffer));
 }
-INTRA_END
+} INTRA_END

@@ -4,7 +4,7 @@
 #include "Vector2.h"
 #include "Vector3.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> struct Matrix4;
 
 template<typename T> struct Matrix3
@@ -460,4 +460,4 @@ typedef Matrix3<byte> UBMat3;
 typedef Matrix3<int8> SBMat3;
 typedef Matrix3<bool> BMat3;
 
-INTRA_END
+} INTRA_END

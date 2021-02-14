@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/EachField.h"
 
 #include "Intra/Reflection.h"
@@ -12,7 +12,7 @@
 #include "IntraX/Utils/Endianess.h"
 #include "IntraX/Container/Operations/Append.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename I> class GenericBinaryDeserializer
 {
 public:
@@ -43,7 +43,7 @@ public:
 	/// Deserialize GenericStringView referring to the data from Input.
 	template<typename Char> GenericBinaryDeserializer& operator>>(GenericStringView<const Char>& dst)
 	{
-		CSpan<Char> result;
+		Span<const Char> result;
 		*this >> result;
 		dst = GenericStringView<const Char>(result);
 		return *this;
@@ -107,10 +107,10 @@ public:
 	/// since `dst` refers to raw data inside Input.
 	template<typename T> Requires<
 		CTriviallySerializable<T>,
-	GenericBinaryDeserializer&> operator>>(CSpan<T>& dst)
+	GenericBinaryDeserializer&> operator>>(Span<const T>& dst)
 	{
 		unsigned count = Deserialize<uint32LE>();
-		dst = CSpan<T>(reinterpret_cast<const T*>(Input.Data()), count);
+		dst = Span<const T>(reinterpret_cast<const T*>(Input.Data()), count);
 		PopFirstExactly(Input, count*sizeof(T));
 		return *this;
 	}
@@ -162,4 +162,4 @@ public:
 	I Input;
 };
 using BinaryDeserializer GenericBinaryDeserializer<Span<byte>>;
-INTRA_END
+} INTRA_END

@@ -7,7 +7,7 @@
 
 //TODO: make this class more generic to work with even containers to avoid line splitting.
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 template<class R> class RByLine: NonCopyableType
 {
@@ -35,7 +35,7 @@ public:
 		mFirstResult = ReadWriteUntil(mOriginalRange, mOutputBuffer, IsLineSeparator);
 		if(mOriginalRange.Empty())
 		{
-			if(mOutputBuffer.Position() == 0) mOutputBuffer = null;
+			if(mOutputBuffer.Position() == 0) mOutputBuffer = nullptr;
 			return;
 		}
 		if(mOutputBuffer.Full()) return; //This line is longer than buffer size, so it will be splitted
@@ -90,4 +90,4 @@ template<typename R, typename OR,
 	CArrayList<AsOR>,
 RByLine<AsR>> ByLine(R&& range, OR&& buf)
 {return {ForwardAsRange<R>(range), ForwardAsRange<OR>(buf), false};}
-INTRA_END
+} INTRA_END

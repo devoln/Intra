@@ -1,13 +1,12 @@
 ﻿#pragma once
 
-#include "Intra/Operations.h"
-#include "Intra/Range/Concepts.h"
-#include "Intra/Range/Take.h"
+#include "Intra/Concepts.h"
 #include "Intra/Range/Operations.h"
+#include "Intra/Range/Decorators.h"
 #include "Intra/Functional.h"
-#include "Intra/Range/Iota.h"
+#include "Intra/Range/Generators.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 /// Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
 /// Начало этого диапазона смещается к найденному элементу или совмещается с концом в случае, когда элемент не найден.
@@ -20,7 +19,7 @@ template<class R, class Ws> requires(
 	CNonInfiniteForwardRange<Ws> && !CConst<Ws> &&
 	CEqualityComparable<TRangeValue<R>, TRangeValue<Ws>>)
 constexpr R& PopFirstUntilAnyAdvance(R&& range, Ws& whats,
-	Optional<index_t&> oWhatIndex = null)
+	Optional<index_t&> oWhatIndex = nullptr)
 {
 #if 0 //TODO: this is a shorter functional implementation, not finished
 	auto pred = IsOneOf(Zip(whats, IotaInf<index_t>()));
@@ -54,7 +53,7 @@ constexpr R& PopFirstUntilAnyAdvance(R&& range, Ws& whats,
 /// Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
 /// Начало этого диапазона смещается к найденному элементу или совмещается с концом в случае, когда элемент не найден.
 /// \param whats Диапазон искомых элементов.
-/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть null.
+/// \param ioIndex[inout] Указатель на счётчик, который увеличивается на количество элементов, предшествующих найденной позиции. Может быть nullptr.
 /// \param oWhatIndex[out] Указатель на переменную, в которую будет записан индекс найденного элемента в диапазоне whats. Если элемент не был найден, будет записано значение whats.Count().
 /// \return Возвращает ссылку на себя.
 template<class R, class Ws,
@@ -63,7 +62,7 @@ template<class R, class Ws,
 	CRange<R> && !CConst<R> &&
 	CNonInfiniteForwardRange<AsWs> &&
 	CEqualityComparable<TRangeValue<R>, TRangeValue<AsWs>>)
-constexpr R& PopFirstUntilAny(R&& range, Ws&& whats, Optional<index_t&> ioIndex = null, Optional<index_t&> oWhatIndex = null)
+constexpr R& PopFirstUntilAny(R&& range, Ws&& whats, Optional<index_t&> ioIndex = nullptr, Optional<index_t&> oWhatIndex = nullptr)
 {
 	auto whatsCopy = ForwardAsRange<Ws>(whats);
 	return FindAdvanceAnyAdvance(range, whatsCopy, ioIndex, oWhatIndex);
@@ -99,4 +98,4 @@ constexpr index_t CountUntilAdvanceAny(R&& range, Ws&& whats)
 	return index;
 }
 
-INTRA_END
+} INTRA_END

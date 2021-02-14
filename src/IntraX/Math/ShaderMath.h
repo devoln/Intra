@@ -18,7 +18,7 @@
 #undef max
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace ShaderMath {
 
 template<typename T> [[nodiscard]] constexpr T min(const T& t1, const T& t2) {return Min(t1, t2);}
@@ -130,4 +130,4 @@ typedef Matrix3<bool> bool3x3;
 //TODO: implement more functions from GLSL and HLSL
 
 }
-INTRA_END
+} INTRA_END

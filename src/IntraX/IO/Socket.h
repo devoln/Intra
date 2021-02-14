@@ -3,7 +3,7 @@
 #include "IntraX/System/Error.h"
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 //enum class AddressFamily: byte {Local, IPv4, IPv6, Bluetooth, IrDA};
 //enum class SocketType: byte {Stream=1, Datagram, Raw, ReliableDatagram, SeqPacket};
@@ -44,16 +44,16 @@ public:
 	NativeHandle GetNativeHandle() const {return mHandle;}
 
 	void Close();
-	BasicSocket& operator=(decltype(null)) {Close(); return *this;}
+	BasicSocket& operator=(decltype(nullptr)) {Close(); return *this;}
 	
-	bool operator==(decltype(null)) const {return mHandle == NullSocketHandle;}
-	bool operator!=(decltype(null)) const {return !operator==(null);}
+	bool operator==(decltype(nullptr)) const {return mHandle == NullSocketHandle;}
+	bool operator!=(decltype(nullptr)) const {return !operator==(nullptr);}
 
 protected:
 	NativeHandle mHandle;
 	SocketType mType;
 
-	BasicSocket(decltype(null) = null): mHandle(NullSocketHandle), mType(SocketType::End) {}
+	BasicSocket(decltype(nullptr) = nullptr): mHandle(NullSocketHandle), mType(SocketType::End) {}
 	BasicSocket(SocketType type, ErrorReporter err);
 
 	BasicSocket(BasicSocket&& rhs):
@@ -71,7 +71,7 @@ class StreamSocket: public BasicSocket
 {
 	friend class ServerSocket;
 public:
-	StreamSocket(decltype(null)=null) {}
+	StreamSocket(decltype(nullptr)=nullptr) {}
 	StreamSocket(SocketType type, StringView host, uint16 port, ErrorReporter err);
 	StreamSocket(StreamSocket&& rhs): BasicSocket(Move(rhs)) {}
 	~StreamSocket() {Shutdown();}
@@ -82,10 +82,10 @@ public:
 		return *this;
 	}
 
-	StreamSocket& operator=(decltype(null))
+	StreamSocket& operator=(decltype(nullptr))
 	{
 		Shutdown();
-		BasicSocket::operator=(null);
+		BasicSocket::operator=(nullptr);
 		return *this;
 	}
 
@@ -108,7 +108,7 @@ class ServerSocket: public BasicSocket
 public:
 	enum TNonBlocking {NonBlocking};
 
-	ServerSocket(decltype(null)=null) {}
+	ServerSocket(decltype(nullptr)=nullptr) {}
 	ServerSocket(SocketType type, uint16 port, size_t maxConnections, ErrorReporter err);
 
 	ServerSocket(ServerSocket&& rhs): BasicSocket(Move(rhs)) {}
@@ -119,9 +119,9 @@ public:
 		return *this;
 	}
 
-	ServerSocket& operator=(decltype(null))
+	ServerSocket& operator=(decltype(nullptr))
 	{
-		BasicSocket::operator=(null);
+		BasicSocket::operator=(nullptr);
 		return *this;
 	}
 
@@ -132,4 +132,4 @@ public:
 	StreamSocket Accept(String& oAddr, ErrorReporter err);
 	StreamSocket Accept(ErrorReporter err) {String addr; return Accept(addr, err);}
 };
-INTRA_END
+} INTRA_END

@@ -3,7 +3,7 @@
 #include "Intra/Functional.h"
 #include "Intra/Range/Concepts.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename R, typename P = decltype(Less)> [[nodiscard]] constexpr Requires<
 	CConsumableRange<R>,
 bool> IsSorted(R&& range, P comparer = FLess)
@@ -30,4 +30,4 @@ template<typename R, typename P = decltype(Less),
 	CNonInfiniteForwardRange<AsR>,
 bool> IsSorted(R&& range, P comparer = FLess)
 {return IsSorted(ForwardAsRange<R>(range), comparer);}
-INTRA_END
+} INTRA_END

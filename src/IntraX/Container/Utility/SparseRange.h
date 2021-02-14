@@ -3,7 +3,7 @@
 #include "Intra/Range/Span.h"
 #include "IntraX/Utils/FixedArray.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// TODO: this class should be renamed
 ///  It uses external memory from Span range but it manages the lifetime of its elements: it calls their constructors
 ///  and destructors Also it lacks range semantics.
@@ -11,13 +11,13 @@ INTRA_BEGIN
 template<typename T, typename Index> struct SparseRange
 {
 	static_assert(sizeof(T) >= sizeof(Index), "Type T must not be shorter than Index!");
-	static_assert(CUnsignedIntegral<Index>, "Type Index must be unsigned!");
+	static_assert(CBasicUnsignedIntegral<Index>, "Type Index must be unsigned!");
 
-	SparseRange(Span<T> sparseBuffer = null): mData(sparseBuffer), mFirstFree(empty_index()) {}
+	SparseRange(Span<T> sparseBuffer = nullptr): mData(sparseBuffer), mFirstFree(empty_index()) {}
 
 	SparseRange(SparseRange&& rhs): mData(rhs.mData), mFirstFree(rhs.mFirstFree)
 	{
-		rhs.mData = null;
+		rhs.mData = nullptr;
 		rhs.mFirstFree = empty_index();
 	}
 
@@ -26,7 +26,7 @@ template<typename T, typename Index> struct SparseRange
 		Clear();
 		mData = rhs.mData;
 		mFirstFree = rhs.mFirstFree;
-		rhs.mData = null;
+		rhs.mData = nullptr;
 		rhs.mFirstFree = empty_index();
 		return *this;
 	}
@@ -36,20 +36,20 @@ template<typename T, typename Index> struct SparseRange
 	/*!
 	  @returns The reference to the added element.
 	*/
-	T& Add(T&& val, Optional<Index&> oIndex = null);
+	T& Add(T&& val, Optional<Index&> oIndex = nullptr);
 
 	/// Add \p val returning a new element's index via \p oIndex pointer.
 	/*!
 	  @returns The reference to the added element.
 	*/
-	T& Add(const T& val, Optional<Index&> oIndex = null);
+	T& Add(const T& val, Optional<Index&> oIndex = nullptr);
 
 	/// Construct an element inplace passing \p args to its constructor and returning new element's index via \p oIndex
 	/// pointer.
 	/*!
 	  @returns The reference to the added element.
 	*/
-	template<typename... Args> T& Emplace(Args&&... args, Optional<Index&> oIndex = null);
+	template<typename... Args> T& Emplace(Args&&... args, Optional<Index&> oIndex = nullptr);
 
 	/// Remove the element at \p index.
 	void Remove(Index index);
@@ -60,7 +60,7 @@ template<typename T, typename Index> struct SparseRange
 	void MakeNull()
 	{
 		Clear();
-		mData = null;
+		mData = nullptr;
 	}
 
 	/// Warning: unsafe, use only when you know that corresponding element hasn't been deleted.
@@ -88,8 +88,8 @@ template<typename T, typename Index> struct SparseRange
 	/// In this case adding a new element into SparseArray overwrites all the data in this buffer.
 	Span<T> GetInternalDataBuffer() { return mData; }
 
-	bool operator==(decltype(null)) const { return Empty(); }
-	bool operator!=(decltype(null)) const { return !Empty(); }
+	bool operator==(decltype(nullptr)) const { return Empty(); }
+	bool operator!=(decltype(nullptr)) const { return !Empty(); }
 
 private:
 	Span<T> mData;
@@ -107,7 +107,7 @@ private:
 
 template<typename Index> struct SparseTypelessRange
 {
-	SparseTypelessRange(decltype(null) = null): mFirstFree(empty_index()), mNodeSize(0) {}
+	SparseTypelessRange(decltype(nullptr) = nullptr): mFirstFree(empty_index()), mNodeSize(0) {}
 
 	SparseTypelessRange(Span<byte> sparseBuffer, size_t nodeSize):
 		mData(sparseBuffer), mFirstFree(empty_index()), mNodeSize(nodeSize)
@@ -117,7 +117,7 @@ template<typename Index> struct SparseTypelessRange
 	SparseTypelessRange(SparseTypelessRange&& rhs):
 		mData(rhs.mData), mFirstFree(rhs.mFirstFree), mNodeSize(rhs.mNodeSize)
 	{
-		rhs.mData = null;
+		rhs.mData = nullptr;
 		rhs.mFirstFree = empty_index();
 		rhs.mNodeSize = 0;
 	}
@@ -127,7 +127,7 @@ template<typename Index> struct SparseTypelessRange
 		mData = rhs.mData;
 		mFirstFree = rhs.mFirstFree;
 		mNodeSize = rhs.mNodeSize;
-		rhs.mData = null;
+		rhs.mData = nullptr;
 		rhs.mFirstFree = empty_index();
 		rhs.mNodeSize = 0;
 		return *this;
@@ -135,7 +135,7 @@ template<typename Index> struct SparseTypelessRange
 
 	/// Construct a new element in the container.
 	/// @param[out] oIndex Where to write the index of the constructed element.
-	byte* Emplace(Optional<Index&> oIndex = null);
+	byte* Emplace(Optional<Index&> oIndex = nullptr);
 
 	/// Delete the element at index.
 	void Remove(Index index);
@@ -146,7 +146,7 @@ template<typename Index> struct SparseTypelessRange
 	void MakeNull()
 	{
 		Clear();
-		mData = null;
+		mData = nullptr;
 	}
 
 	/// Warning: unsafe, use only when you know that corresponding element hasn't been deleted.
@@ -172,8 +172,8 @@ template<typename Index> struct SparseTypelessRange
 	/// In this case adding a new element into SparseArray overwrites all the data in this buffer.
 	Span<byte> GetInternalDataBuffer() { return mData; }
 
-	bool operator==(decltype(null)) const { return Empty(); }
-	bool operator!=(decltype(null)) const { return !Empty(); }
+	bool operator==(decltype(nullptr)) const { return Empty(); }
+	bool operator!=(decltype(nullptr)) const { return !Empty(); }
 
 private:
 	Span<byte> mData;
@@ -190,6 +190,6 @@ private:
 	SparseTypelessRange(const SparseTypelessRange&) = delete;
 };
 
-INTRA_END
+} INTRA_END
 
 #include "SparseRange.inl"

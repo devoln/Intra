@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 #include "Intra/Range/Concepts.h"
 #include "Intra/Misc/RawMemory.h"
 #include "Intra/Range/Span.h"
@@ -8,7 +8,7 @@
 #include "Intra/Range/Operations.h"
 #include "Intra/Range/Mutation/Fill.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Call constructors for each element of unitialized span \p dst.
 template<typename T> constexpr void Initialize(Span<T> dst)
 {
@@ -26,7 +26,7 @@ template<typename T> inline void Destruct(Span<T> dst)
 }
 
 /// Assign via destructor + copy constructor
-template<typename T> void CopyRecreate(Span<T> dst, CSpan<T> src)
+template<typename T> void CopyRecreate(Span<T> dst, Span<const T> src)
 {
 	INTRA_PRECONDITION(dst.Length() == src.Length());
 	if constexpr(CTriviallyCopyable<T>) BitwiseCopy(Unsafe, dst.Data(), src.Data(), dst.Length());
@@ -38,7 +38,7 @@ template<typename T> void CopyRecreate(Span<T> dst, CSpan<T> src)
 }
 
 /// Assign backwards via destructor + copy constructor
-template<typename T> void CopyRecreateBackwards(Span<T> dst, CSpan<T> src)
+template<typename T> void CopyRecreateBackwards(Span<T> dst, Span<const T> src)
 {
 	INTRA_PRECONDITION(dst.Length() == src.Length());
 	if constexpr(CTriviallyCopyable<T>) BitwiseCopyBackwardsUnsafe(dst, src);
@@ -50,7 +50,7 @@ template<typename T> void CopyRecreateBackwards(Span<T> dst, CSpan<T> src)
 	}
 }
 
-template<typename T, typename U> void CopyInit(Span<T> dst, CSpan<U> src)
+template<typename T, typename U> void CopyInit(Span<T> dst, Span<const U> src)
 {
 	INTRA_PRECONDITION(dst.Length() == src.Length());
 	if constexpr(CTriviallyCopyable<T>)
@@ -59,7 +59,7 @@ template<typename T, typename U> void CopyInit(Span<T> dst, CSpan<U> src)
 		new(Construct, &dstVal) T(src.Next());
 }
 
-template<typename T, typename U> void CopyInitBackwards(Span<T> dst, CSpan<U> src)
+template<typename T, typename U> void CopyInitBackwards(Span<T> dst, Span<const U> src)
 {
 	INTRA_PRECONDITION(dst.Length() == src.Length());
 	if constexpr(CTriviallyCopyable<T>)
@@ -173,7 +173,7 @@ template<typename T, typename Allocator> Span<T> AllocateRange(
 template<typename T, typename Allocator> void FreeRangeUninitialized(Allocator& allocator, Span<T> range)
 {
 	(void)allocator;
-	if(range == null) return;
+	if(range == nullptr) return;
 	allocator.Free(range.Begin, size_t(range.Length())*sizeof(T));
 }
 
@@ -182,4 +182,4 @@ template<typename T, typename Allocator> void FreeRange(Allocator& allocator, Sp
 	Destruct(range);
 	FreeRangeUninitialized(allocator, range);
 }
-INTRA_END
+} INTRA_END

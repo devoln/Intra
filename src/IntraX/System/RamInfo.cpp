@@ -17,7 +17,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <Windows.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 RamInfo RamInfo::Get()
 {
 	RamInfo result;
@@ -32,13 +32,13 @@ RamInfo RamInfo::Get()
 	result.FreeVirtualMemory = statex.ullAvailVirtual;
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__linux__)
 
 #include <sys/sysinfo.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 RamInfo RamInfo::Get()
 {
 	RamInfo result;
@@ -47,7 +47,7 @@ RamInfo RamInfo::Get()
 #elif defined(__APPLE__)
 	uint64 mem=0;
 	size_t len = sizeof(mem);
-	sysctlbyname("hw.memsize", &result.TotalPhysicalMemory, &len, null, 0);
+	sysctlbyname("hw.memsize", &result.TotalPhysicalMemory, &len, nullptr, 0);
 #endif*/
 
 	struct sysinfo info;
@@ -62,7 +62,7 @@ RamInfo RamInfo::Get()
 
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__FreeBSD__)
 
@@ -90,7 +90,7 @@ static unsigned long long getSysCtl(int top_level, int next_level)
 	return ctlvalue;
 }
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 RamInfo RamInfo::Get()
 {
 	RamInfo result;
@@ -101,11 +101,11 @@ RamInfo RamInfo::Get()
 	unsigned activePages, wirePages;
 	unsigned cachePages, inactivePages, freePages;
 	size_t len = sizeof(unsigned);
-	sysctlbyname("vm.stats.vm.v_active_count", &activePages, &len, null, 0);
-	sysctlbyname("vm.stats.vm.v_wire_count", &wirePages, &len, null, 0);
-	sysctlbyname("vm.stats.vm.v_cache_count", &cachePages, &len, null, 0);
-	sysctlbyname("vm.stats.vm.v_inactive_count", &inactivePages, &len, null, 0);
-	sysctlbyname("vm.stats.vm.v_free_count", &freePages, &len, null, 0);
+	sysctlbyname("vm.stats.vm.v_active_count", &activePages, &len, nullptr, 0);
+	sysctlbyname("vm.stats.vm.v_wire_count", &wirePages, &len, nullptr, 0);
+	sysctlbyname("vm.stats.vm.v_cache_count", &cachePages, &len, nullptr, 0);
+	sysctlbyname("vm.stats.vm.v_inactive_count", &inactivePages, &len, nullptr, 0);
+	sysctlbyname("vm.stats.vm.v_free_count", &freePages, &len, nullptr, 0);
 
 	result.TotalPhysicalMemory = getSysCtl(CTL_HW, HW_PHYSMEM);
 	result.FreePhysicalMemory = result.TotalPhysicalMemory-uint64(activePages+wirePages)*pageSize;
@@ -116,16 +116,16 @@ RamInfo RamInfo::Get()
 
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #else
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 RamInfo RamInfo::Get()
 {
 	RamInfo result;
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #endif

@@ -1,9 +1,9 @@
 ﻿#pragma once
 
 #include "IntraX/Core.h"
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 enum class Access: uint8 {
 	None, Read, Write, ReadWrite, Execute,
 	ExecuteRead, ExecuteWrite, ExecuteReadWrite,
@@ -29,4 +29,4 @@ void VirtualFree(void* ptr, size_t size);
 void VirtualCommit(void* ptr, size_t bytes, Access access);
 
 size_t VirtualMemoryPageSize();
-INTRA_END
+} INTRA_END

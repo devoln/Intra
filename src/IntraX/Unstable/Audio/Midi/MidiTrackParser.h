@@ -7,7 +7,7 @@
 #include "MidiRawEvent.h"
 #include "MidiDeviceState.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct MidiTrackParser
 {
 	InputRange<MidiRawEvent> Events;
@@ -43,4 +43,4 @@ struct MidiTrackParser
 	void processSystemEvent(MidiDeviceState& state, const MidiRawEvent& event);
 };
 
-INTRA_END
+} INTRA_END

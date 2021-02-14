@@ -3,30 +3,28 @@
 #include "Intra/Concepts.h"
 #include "Intra/Misc/RawMemory.h"
 #include "Intra/Range/Span.h"
-#include "Intra/TypeSafe.h"
 #include "Intra/Range/Special/Unicode.h"
 #include "Intra/Range/Operations.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Not-owning reference to a string.
-template<typename CodeUnit> class GenericStringView
+template<CUnqualedChar CodeUnit> class GenericStringView
 {
-	static_assert(CChar<CodeUnit>);
-	CSpan<CodeUnit> mRawUnicodeUnits;
+	Span<const CodeUnit> mRawUnicodeUnits;
 public:
-	static constexpr bool IsAnyInstanceFinite = true;
+	using TagAnyInstanceFinite = TTag<>;
 
     [[nodiscard]] constexpr auto RawUnicodeUnits() const noexcept {return mRawUnicodeUnits;}
 
 	constexpr GenericStringView() = default;
 
-    template<CArrayList R> requires CSame<CodeUnit, TArrayElement<R>>
+    template<CArrayList R> requires CSame<CodeUnit, TArrayListValue<R>>
 	explicit constexpr GenericStringView(R&& src): GenericStringView(Unsafe, src)
 	{
 		INTRA_PRECONDITION(Unicode::IsValidUnicode(src));
 	}
 
-	template<CArrayList R> requires CSame<CodeUnit, TArrayElement<R>>
+	template<CArrayList R> requires CSame<CodeUnit, TArrayListValue<R>>
 	explicit constexpr GenericStringView(TUnsafe, R&& rhs) noexcept: mRawUnicodeUnits(rhs) {}
 
 	explicit constexpr GenericStringView(TUnsafe, const CodeUnit* begin, Size length):
@@ -35,7 +33,7 @@ public:
     explicit constexpr GenericStringView(TUnsafe, const CodeUnit* begin, const CodeUnit* end):
         mRawUnicodeUnits(Unsafe, begin, end) {}
 
-	/// Construct from null-terminated C-string.
+	/// Construct from nullptr-terminated C-string.
 	/// Null terminator itself will not be a part of the constructed view.
     explicit constexpr GenericStringView(TUnsafe, const CodeUnit* nullTermStr):
 		GenericStringView(Unsafe, nullTermStr, nullTermStr? CStringLength(nullTermStr): 0) {}
@@ -44,11 +42,7 @@ public:
 	{
 		return mRawUnicodeUnits|MatchesWith(rhs.mRawUnicodeUnits);
 	}
-	[[nodiscard]] constexpr bool operator!=(const GenericStringView& rhs) const noexcept {return !operator==(rhs);}
 	[[nodiscard]] constexpr bool operator<(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) < 0;}
-    [[nodiscard]] constexpr bool operator<=(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) <= 0;}
-    [[nodiscard]] constexpr bool operator>(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) > 0;}
-    [[nodiscard]] constexpr bool operator>=(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) >= 0;}
 
 	[[nodiscard]] constexpr char32_t First() const
 	{
@@ -118,12 +112,21 @@ public:
 
 	[[nodiscard]] constexpr GenericStringView TakeCodeUnits(ClampedSize count) const
 	{
+		if constexpr(sizeof(CodeUnit) == sizeof(char))
+			tailCodeUnits = tailCodeUnits|DropLastWhile(Unicode::IsUtf8ContinuationByte);
+		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
+			tailCodeUnits = tailCodeUnits|DropLastWhile(Unicode::IsUtf16LeadingSurrogate);
 	    return GenericStringView(Unsafe, mRawUnicodeUnits|Take(count));
 	}
 
 	[[nodiscard]] constexpr GenericStringView TailCodeUnits(ClampedSize count) const
 	{
-	    return GenericStringView(Unsafe, mRawUnicodeUnits|Tail(count));
+		auto tailCodeUnits = mRawUnicodeUnits|Tail(count);
+		if constexpr(sizeof(CodeUnit) == sizeof(char))
+			tailCodeUnits = tailCodeUnits|DropWhile(Unicode::IsUtf8ContinuationByte);
+		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
+			tailCodeUnits = tailCodeUnits|DropWhile(Unicode::IsUtf16TrailingSurrogate);
+	    return GenericStringView(Unsafe, tailCodeUnits);
 	}
 };
 using StringView = GenericStringView<char>;
@@ -161,6 +164,8 @@ inline namespace Literals {
 static_assert(CForwardRange<StringView>);
 static_assert(CFiniteRange<StringView>);
 static_assert(CForwardList<const StringView>);
+static_assert(CRange<const Intra::GenericStringView<char8_t>&>);
+static_assert(CForwardList<const Intra::GenericStringView<char8_t>&>);
 static_assert("test string"_v != "test string 2"_v);
 static_assert("test string"_v == "test string"_v);
 static_assert("test string"_v|Take(4)|MatchesWith("test"_v));
@@ -173,4 +178,4 @@ static_assert(u8"тестовая строка"_v < u8"тестовая стро
 static_assert(u8"тестовая строкА"_v < u8"тестовая строка"_v);
 #endif
 
-INTRA_END
+} INTRA_END

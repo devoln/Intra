@@ -9,7 +9,7 @@
 
 #include <cstdlib>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 int TestGroup::nestingLevel = 0;
 int TestGroup::YesForNestingLevel = 1000000000;
 int TestGroup::totalTestsFailed = 0;
@@ -24,7 +24,7 @@ TestGroup::TestGroup(ILogger* logger, FormattedWriter& output, StringView catego
 	else consoleAskToEnableTest();
 	if(Yes)
 	{
-		if(currentTestGroup != null && !currentTestGroup->mHadChildren)
+		if(currentTestGroup != nullptr && !currentTestGroup->mHadChildren)
 			currentTestGroup->mHadChildren = true;
 		Output.BeginSpoiler(Category);
 	}
@@ -64,16 +64,16 @@ void TestGroup::consoleAskToEnableTest()
 
 inline FormattedWriter& getOutput(TestGroup* currentTestGroup)
 {
-	if(currentTestGroup == null) return static_cast<FormattedWriter&>(Std);
+	if(currentTestGroup == nullptr) return static_cast<FormattedWriter&>(Std);
 	return currentTestGroup->Output;
 }
 
 TestGroup::TestGroup(StringView category):
-	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
+	TestGroup(currentTestGroup == nullptr? nullptr: currentTestGroup->Logger,
 		getOutput(currentTestGroup), category) {}
 
 TestGroup::TestGroup(StringView category, const TestFunction& funcToTest):
-	TestGroup(currentTestGroup == null? null: currentTestGroup->Logger,
+	TestGroup(currentTestGroup == nullptr? nullptr: currentTestGroup->Logger,
 		getOutput(currentTestGroup), category, funcToTest) {}
 
 TestGroup::~TestGroup()
@@ -83,7 +83,7 @@ TestGroup::~TestGroup()
 	if(!Yes) return;
 
 	PrintUnitTestResult();
-	if(mParentTestGroup != null)
+	if(mParentTestGroup != nullptr)
 	{
 		if(!ErrorInfo)
 		{
@@ -107,7 +107,7 @@ TestGroup::~TestGroup()
 
 void TestGroup::PrintUnitTestResult()
 {
-	if(Logger == null) return;
+	if(Logger == nullptr) return;
 	if(!ErrorInfo && mFailedChildren == 0)
 		Logger->Success("Test [ " + Category + " ] PASSED!");
 	else
@@ -119,11 +119,11 @@ void TestGroup::PrintUnitTestResult()
 	}
 }
 
-TestGroup* TestGroup::currentTestGroup = null;
+TestGroup* TestGroup::currentTestGroup = nullptr;
 
 void TestGroup::processError(SourceInfo srcInfo, StringView msg)
 {
-	if(GetCurrent() == null)
+	if(GetCurrent() == nullptr)
 	{
 		FatalErrorCallback()({msg.Data(), msg.Length()}, srcInfo);
 		return;
@@ -149,4 +149,4 @@ void TestGroup::processError(SourceInfo srcInfo, StringView msg)
 	testFailException();
 	exit(totalTestsFailed + 1);
 }
-INTRA_END
+} INTRA_END

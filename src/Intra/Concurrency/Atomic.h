@@ -1,8 +1,8 @@
 ﻿#pragma once
 
-#include "Intra/Type.h"
+#include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 
 enum class MemoryOrder
 {
@@ -104,7 +104,7 @@ constexpr T AtomicLoad(const T* ptr) noexcept
 		return __atomic_load_n(ptr, int(memoryOrder));
 	#elif defined(_MSC_VER)
 		static_assert(sizeof(T) <= 8, "AtomicLoad is not implemented for this type yet.");
-		TSignedIntMin<sizeof(T)> res;
+		TSignedIntOfSizeAtLeast<sizeof(T)> res;
 		if constexpr(sizeof(T) == 8)
 		{
 		#if defined(__amd64__)
@@ -165,7 +165,7 @@ constexpr T AtomicExchange(T* ptr, T val) noexcept
 		return __atomic_exchange_n(ptr, val, int(memoryOrder));
 	#else
 		static_assert(sizeof(T) <= 8, "AtomicExchange is not implemented for this type yet.");
-		TSignedIntMin<sizeof(T)> res;
+		TSignedIntOfSizeAtLeast<sizeof(T)> res;
 	#define INTRAZ_D_MSVC_IMPL_EXCHANGE(typeSize, suffix, T) res = _InterlockedExchange##typeSize##suffix(reinterpret_cast<T*>(ptr), reinterpret_cast<T&>(val))
 		INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS(INTRAZ_D_MSVC_IMPL_EXCHANGE)
 	#undef INTRAZ_D_MSVC_IMPL_EXCHANGE
@@ -264,7 +264,7 @@ constexpr T AtomicFetchAdd(T* ptr, T2 val)
 	#undef INTRAZ_D_MSVC_IMPL_ADD
 	#endif
 	}
-	if constexpr(CPointer<T>)
+	if constexpr(CBasicPointer<T>)
 	{
 		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
 		val /= sizeof(**ptr);
@@ -287,7 +287,7 @@ constexpr T AtomicFetchSub(T* ptr, T2 val)
 	#undef INTRAZ_D_MSVC_IMPL_SUB
 	#endif
 	}
-	if constexpr(CPointer<T>)
+	if constexpr(CBasicPointer<T>)
 	{
 		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
 		val /= sizeof(*ptr);
@@ -310,13 +310,13 @@ constexpr T AtomicFetchAnd(T* ptr, T val)
 	#undef INTRAZ_D_MSVC_IMPL_AND
 	#endif
 	}
-	if constexpr(CIntegral<T>)
+	if constexpr(CBasicIntegral<T>)
 	{
 		const T prev = *ptr;
 		*ptr &= val;
 		return prev;
 	}
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
@@ -332,13 +332,13 @@ constexpr T AtomicFetchOr(T* ptr, T val)
 	#undef INTRAZ_D_MSVC_IMPL_OR
 	#endif
 	}
-	if constexpr(CIntegral<T>)
+	if constexpr(CBasicIntegral<T>)
 	{
 		const T prev = *ptr;
 		*ptr |= val;
 		return prev;
 	}
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
@@ -355,13 +355,13 @@ constexpr T AtomicFetchXor(T* ptr, T val)
 	#endif
 	}
 	
-	if constexpr(CIntegral<T>)
+	if constexpr(CBasicIntegral<T>)
 	{
 		const T prev = *ptr;
 		*ptr ^= val;
 		return prev;
 	}
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 #undef INTRAZ_D_MSVC_IMPL_REPLICATE_FOR_TYPES_AND_MEMORY_ORDERS
@@ -380,7 +380,7 @@ constexpr T AtomicAddFetch(T* ptr, T2 val)
 		return AtomicFetchAdd<memoryOrder>(ptr, val) + val;
 	#endif
 	}
-	if constexpr(CPointer<T>)
+	if constexpr(CBasicPointer<T>)
 	{
 		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
 		val /= sizeof(*ptr);
@@ -399,7 +399,7 @@ constexpr T AtomicSubFetch(T* ptr, T2 val)
 		return AtomicFetchSub<memoryOrder>(ptr, val) - val;
 	#endif
 	}
-	if constexpr(CPointer<T>)
+	if constexpr(CBasicPointer<T>)
 	{
 		INTRA_ASSERT(val % sizeof(**ptr) == 0); // fractional pointer offsets are not allowed in constexpr
 		val /= sizeof(*ptr);
@@ -418,8 +418,8 @@ constexpr T AtomicAndFetch(T* ptr, T val)
 		return AtomicFetchAnd<memoryOrder>(ptr, val) & val;
 	#endif
 	}
-	if constexpr(CIntegral<T>) return *ptr &= val;
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	if constexpr(CBasicIntegral<T>) return *ptr &= val;
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
@@ -433,8 +433,8 @@ constexpr T AtomicOrFetch(T* ptr, T val)
 		return AtomicFetchOr<memoryOrder>(ptr, val) | val;
 	#endif
 	}
-	if constexpr(CIntegral<T>) return *ptr |= val;
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	if constexpr(CBasicIntegral<T>) return *ptr |= val;
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
@@ -448,8 +448,8 @@ constexpr T AtomicXorFetch(T* ptr, T val)
 		return AtomicFetchXor<memoryOrder>(ptr, val) ^ val;
 	#endif
 	}
-	if constexpr(CIntegral<T>) return *ptr ^= val;
-	else INTRA_ASSERT(CIntegral<T>); // constexpr execution of this function supports only integers
+	if constexpr(CBasicIntegral<T>) return *ptr ^= val;
+	else INTRA_ASSERT(CBasicIntegral<T>); // constexpr execution of this function supports only integers
 }
 
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
@@ -556,63 +556,63 @@ public:
 	/// Atomically add the argument to the previous value.
 	/// @return the previous value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetAdd(T rhs) noexcept requires CReal<T> {return AtomicFetchAdd<mo>(&mValue, rhs);}
+	constexpr T GetAdd(T rhs) noexcept requires CNumber<T> {return AtomicFetchAdd<mo>(&mValue, rhs);}
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetAdd(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchAdd<mo>(&mValue, rhs*sizeof(*mValue));}
+	constexpr T GetAdd(index_t rhs) noexcept requires CBasicPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchAdd<mo>(&mValue, rhs*sizeof(*mValue));}
 
 	/// Atomically subtract the argument from the previous value.
 	/// @return the previous value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetSub(T rhs) noexcept requires CReal<T> {return AtomicFetchSub<mo>(&mValue, rhs);}
+	constexpr T GetSub(T rhs) noexcept requires CNumber<T> {return AtomicFetchSub<mo>(&mValue, rhs);}
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetSub(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchSub<mo>(&mValue, rhs*sizeof(*mValue));}
+	constexpr T GetSub(index_t rhs) noexcept requires CBasicPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicFetchSub<mo>(&mValue, rhs*sizeof(*mValue));}
 
 	/// Atomically perform bitwise AND between the argument and the previous value.
 	/// @return the previous value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetAnd(T rhs) noexcept requires CIntegral<T> {return AtomicFetchAnd<mo>(&mValue, rhs);}
+	constexpr T GetAnd(T rhs) noexcept requires CBasicIntegral<T> {return AtomicFetchAnd<mo>(&mValue, rhs);}
 
 	/// Atomically perform bitwise OR between the argument and the previous value.
 	/// @return the previous value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetOr(T rhs) noexcept requires CIntegral<T> {return AtomicFetchOr<mo>(&mValue, rhs);}
+	constexpr T GetOr(T rhs) noexcept requires CBasicIntegral<T> {return AtomicFetchOr<mo>(&mValue, rhs);}
 
 	/// Atomically perform bitwise XOR between the argument and the previous value.
 	/// @return the previous value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T GetXor(T rhs) noexcept requires CIntegral<T> {return AtomicFetchXor<mo>(&mValue, rhs);}
+	constexpr T GetXor(T rhs) noexcept requires CBasicIntegral<T> {return AtomicFetchXor<mo>(&mValue, rhs);}
 
 	/// Atomically add the argument to the previous value.
 	/// @return the resulting value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Add(T rhs) noexcept requires CReal<T> {return AtomicAddFetch<mo>(&mValue, rhs);}
+	constexpr T Add(T rhs) noexcept requires CNumber<T> {return AtomicAddFetch<mo>(&mValue, rhs);}
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Add(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicAddFetch<mo>(&mValue, rhs*sizeof(*mValue));}
+	constexpr T Add(index_t rhs) noexcept requires CBasicPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicAddFetch<mo>(&mValue, rhs*sizeof(*mValue));}
 
 	/// Atomically subtract the argument from the previous value.
 	/// @return the resulting value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Sub(T rhs) noexcept requires CReal<T> {return AtomicSubFetch<mo>(&mValue, rhs);}
+	constexpr T Sub(T rhs) noexcept requires CNumber<T> {return AtomicSubFetch<mo>(&mValue, rhs);}
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Sub(index_t rhs) noexcept requires CPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicSubFetch<mo>(&mValue, rhs*sizeof(*mValue));}
+	constexpr T Sub(index_t rhs) noexcept requires CBasicPointer<T> && (!CVoid<TRemovePointer<T>>) {return AtomicSubFetch<mo>(&mValue, rhs*sizeof(*mValue));}
 
 	/// Atomically perform bitwise AND between the argument and the previous value.
 	/// @return the resulting value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T And(T rhs) noexcept requires CIntegral<T> {return AtomicAndFetch<mo>(&mValue, rhs);}
+	constexpr T And(T rhs) noexcept requires CBasicIntegral<T> {return AtomicAndFetch<mo>(&mValue, rhs);}
 
 	/// Atomically perform bitwise OR between the argument and the previous value.
 	/// @return the resulting value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Or(T rhs) noexcept requires CIntegral<T> {return AtomicOrFetch<mo>(&mValue, rhs);}
+	constexpr T Or(T rhs) noexcept requires CBasicIntegral<T> {return AtomicOrFetch<mo>(&mValue, rhs);}
 
 	/// Atomically perform bitwise XOR between the argument and the previous value.
 	/// @return the resulting value.
 	template<MemoryOrder mo = MemoryOrder::SequentiallyConsistent>
-	constexpr T Xor(T rhs) noexcept requires CIntegral<T> {return AtomicXorFetch<mo>(&mValue, rhs);}
+	constexpr T Xor(T rhs) noexcept requires CBasicIntegral<T> {return AtomicXorFetch<mo>(&mValue, rhs);}
 
 private:
 	T mValue;
 };
 
-INTRA_END
+} INTRA_END

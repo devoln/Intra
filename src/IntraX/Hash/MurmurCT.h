@@ -6,7 +6,7 @@
 
 #include "Types.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace HashCT {
 
 namespace z_D {
@@ -234,4 +234,4 @@ constexpr inline hash128 operator"" _h128(const char* str, size_t len)
 }
 
 }}
-INTRA_END
+} INTRA_END

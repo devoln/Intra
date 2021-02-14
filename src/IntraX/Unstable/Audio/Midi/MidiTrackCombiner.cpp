@@ -2,7 +2,7 @@
 #include "Intra/Range/Mutation/Heap.h"
 #include "Intra/Functional.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 bool MidiTrackCombiner::trackTimeComparer(const MidiTrackParser& a, const MidiTrackParser& b)
 {
 	return a.NextEventTime(mState) > b.NextEventTime(mState);
@@ -35,4 +35,4 @@ void MidiTrackCombiner::ProcessEvent(IMidiDevice& device)
 
 MidiTime MidiTrackCombiner::NextEventTime() const
 {return mTracks.First().NextEventTime(mState);}
-INTRA_END
+} INTRA_END

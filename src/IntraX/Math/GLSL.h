@@ -19,7 +19,7 @@
 #undef max
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace ShaderMath {
 
 template<typename T> [[nodiscard]] constexpr T min(const T& t1, const T& t2) {return Min(t1, t2);}
@@ -151,4 +151,4 @@ typedef Matrix4<int> int4x4;
 typedef Matrix4<bool> bool4x4;
 
 }
-INTRA_END
+} INTRA_END

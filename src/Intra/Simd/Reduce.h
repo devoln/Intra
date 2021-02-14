@@ -4,7 +4,7 @@
 #include "Intra/Range/Span.h"
 #include "Intra/Range/Reduce.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T, typename F> requires CCallable<F, TScalarOf<T>, TScalarOf<T>> && LengthOf(T()) == 4
 [[nodiscard]] INTRA_FORCEINLINE TScalarOf<T> INTRA_VECTORCALL HorReduce(T x, F&& f)
 {
@@ -38,7 +38,7 @@ template<typename F, typename T, index_t NumAccumulators = 4, bool ProcessLeftOv
 	!CScalar<T> &&
 	CCallable<F, TScalarOf<T>, TScalarOf<T>> &&
 	CCallable<F, T, T>
-[[nodiscard]] TScalarOf<T> INTRA_VECTORCALL Reduce(CSpan<TScalarOf<T>> arr, F&& f)
+[[nodiscard]] TScalarOf<T> INTRA_VECTORCALL Reduce(Span<const TScalarOf<T>> arr, F&& f)
 {
 	static_assert(IsPow2(NumAccumulators));
 	constexpr index_t VectorSize = StaticLengthOf<T>,
@@ -76,8 +76,8 @@ template<typename F, typename T, index_t NumAccumulators = 4, bool ProcessLeftOv
 }
 
 template<typename F, typename T> requires CScalar<T> && CCallable<F, T, T>
-[[nodiscard]] TResultOf<F, T, T> INTRA_VECTORCALL Reduce(CSpan<T> arr, F&& f)
+[[nodiscard]] TResultOf<F, T, T> INTRA_VECTORCALL Reduce(Span<const T> arr, F&& f)
 {
 	Reduce(arr, f);
 }
-INTRA_END
+} INTRA_END

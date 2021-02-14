@@ -40,7 +40,7 @@ INTRA_WARNING_POP
 #endif
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #ifdef _WIN32
 void PrintDebugMessage(StringView message)
 {
@@ -100,11 +100,11 @@ static bool ContainsMainFunction(StringView sym)
 }
 
 #endif
-INTRA_END
+} INTRA_END
 
 #ifdef _WIN32
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
 #ifndef INTRA_DBGHELP
@@ -112,7 +112,7 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	(void)framesToSkip;
 	(void)maxFrames;
 	(void)untilMain;
-	return null;
+	return nullptr;
 #else
 #define INTRA_STACKTRACE_SUPPORTED
 
@@ -120,11 +120,11 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 
 	SymSetOptions(SYMOPT_DEFERRED_LOADS|SYMOPT_INCLUDE_32BIT_MODULES|SYMOPT_UNDNAME);
 	if(!SymInitialize(GetCurrentProcess(), "http://msdl.microsoft.com/download/symbols", true))
-		return null;
+		return nullptr;
 
 	if(maxFrames > MAX_STACK_FRAMES) maxFrames = MAX_STACK_FRAMES;
 	void* addrs[MAX_STACK_FRAMES] = {};
-	uint16 frames = CaptureStackBackTrace(DWORD(1 + framesToSkip), maxFrames, addrs, null);
+	uint16 frames = CaptureStackBackTrace(DWORD(1 + framesToSkip), maxFrames, addrs, nullptr);
 
 	const auto dstStart = dst;
 	for(uint16 i = 0; i < frames; i++)
@@ -157,7 +157,7 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 	return StringView::FromPointerRange(dstStart.Data(), dst.Data());
 #endif
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__linux__) || defined(__FreeBSD__)
 #include <execinfo.h>
@@ -188,14 +188,14 @@ static Intra::StringView TryDemangle(Intra::Span<char>& dst, Intra::StringView m
 }
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
 #define INTRA_STACKTRACE_SUPPORTED
 	framesToSkip++;
 
 	enum {MAX_STACK_FRAMES = 50};
-	if(framesToSkip > MAX_STACK_FRAMES) return null;
+	if(framesToSkip > MAX_STACK_FRAMES) return nullptr;
 	if(maxFrames + framesToSkip > MAX_STACK_FRAMES) maxFrames = MAX_STACK_FRAMES - framesToSkip;
 	void* pointerArr[MAX_STACK_FRAMES];
 	size_t size = size_t(backtrace(pointerArr, Overflow::Saturate(maxFrames + framesToSkip)));
@@ -217,20 +217,20 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 
 	return StringView::FromPointerRange(dstStart.Data(), dst.Data());
 }
-INTRA_END
+} INTRA_END
 #else
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames, bool untilMain)
 {
 	(void)framesToSkip; (void)maxFrames; (void)untilMain;
 	return dst.TakeNone();
 }
-INTRA_END
+} INTRA_END
 
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 	StringView func, StringView file, unsigned line, StringView info, size_t stackFramesToSkip)
 {
@@ -243,7 +243,7 @@ StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 		dst << ") ";
 	}
 	dst << type << ' ';
-	if(func != null) dst << "in function\n" << func << ":\n";
+	if(func != nullptr) dst << "in function\n" << func << ":\n";
 	dst << info << '\n';
 #ifdef INTRA_STACKTRACE_SUPPORTED
 	if(stackFramesToSkip != ~size_t())
@@ -286,7 +286,7 @@ void FatalErrorMessageAbort(StringView msg, bool printStackTrace, SourceInfo src
 		wbuffer, int(wstrMaxLength)
 	));
 	wbuffer[wmessageLength] = L'\0';
-	MessageBoxW(null, wbuffer, L"Fatal error", MB_ICONERROR);
+	MessageBoxW(nullptr, wbuffer, L"Fatal error", MB_ICONERROR);
 #endif
 
 	exit(1);
@@ -304,4 +304,4 @@ INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 static char initAbortCallback =	(FatalErrorCallback() = FatalErrorMessageAbort, 0);
 }
 #endif
-INTRA_END
+} INTRA_END

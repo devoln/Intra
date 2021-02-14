@@ -7,7 +7,7 @@
 #include "Intra/Range/Polymorphic/InputRange.h"
 #include "IntraX/Utils/Endianess.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 bool LoaderPNG::IsValidHeader(const void* header, size_t headerSize) const
 {
 	const byte* headerBytes = reinterpret_cast<const byte*>(header);
@@ -27,7 +27,7 @@ ImageInfo LoaderPNG::GetInfo(IInputStream& stream) const
 	const byte ihdrBitsPerComponent = RawRead<byte>(stream);
 	const byte ihdrColorType = RawRead<byte>(stream);
 
-	ImageFormat fmt = null;
+	ImageFormat fmt = nullptr;
 	if(ihdrBitsPerComponent == 8)
 	{
 		if(ihdrColorType == 0) fmt = ImageFormat::Luminance8;
@@ -43,7 +43,7 @@ ImageInfo LoaderPNG::GetInfo(IInputStream& stream) const
 		else if(ihdrColorType == 6) fmt = ImageFormat::RGBA16;
 	}
 	return {
-		USVec3(ihdrSize.x, ihdrSize.y, 1),
+		U16Vec3(ihdrSize.x, ihdrSize.y, 1),
 		fmt, ImageType_2D, 0
 	};
 }
@@ -56,10 +56,10 @@ AnyImage LoaderPNG::Load(IInputStream& stream) const
 	return LoadWithPlatform(stream);
 #else
 	(void)stream;
-	return null;
+	return nullptr;
 #endif
 }
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderPNG LoaderPNG::Instance;
-INTRA_END
+} INTRA_END

@@ -1,25 +1,22 @@
 #pragma once
 
 #include "Intra/Functional.h"
-#include "Intra/Range/Concepts.h"
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Operations.h"
-#include "Intra/Range/Mutation/Copy.h"
+#include "Intra/Range.h"
 #include "Intra/Range/Stream/OutputStreamMixin.h"
 
 #include "IntraX/Utils/Unique.h"
 #include "Intra/Range/Polymorphic/IOutput.h"
 
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_SIGN_CONVERSION
 
-template<typename T, typename R> class OutputRangePolymorphicWrapper: public IOutputEx<T>
+template<typename T, typename R> class OutputRangePolymorphicWrapper: public IOutput<T>
 {
 public:
 	template<typename A> OutputRangePolymorphicWrapper(A&& range):
-		OriginalRange(Forward<A>(range)) {}
+		OriginalRange(INTRA_FWD(range)) {}
 
 	bool Full() const final {return EmptyOpt(OriginalRange).GetOr(false);}
 	void Put(const T& value) final {OriginalRange.Put(value);}
@@ -40,49 +37,35 @@ public:
 		return true;
 	}
 
-	size_t PutAllAdvance(CSpan<T>& src) final
+	size_t PutAllAdvance(Span<const T>& src) final
 	{return ReadWrite(src, OriginalRange);}
 
 	R OriginalRange;
 };
 
-template<typename T, typename R> inline IOutputEx<T>* WrapOutputRange(R&& range)
+template<typename T, typename R> inline IOutput<T>* WrapOutputRange(R&& range)
 {
-	return new OutputRangePolymorphicWrapper<T, TRangeOf<R&&>>(RangeOf(Forward<R>(range)));
+	return new OutputRangePolymorphicWrapper<T, TRangeOf<R&&>>(RangeOf(INTRA_FWD(range)));
 }
 
 template<typename T> class OutputRange: public TSelect<
 	OutputStreamMixin<OutputRange<T>, TRemoveConst<T>>,
 	EmptyType, CChar<T>>
 {
-	template<typename R> using EnableCondition = Requires<
-		CAsOutputRangeOf<R, T> &&
-		!CDerived<R, OutputRange>
-	>;
-
 public:
-	constexpr OutputRange(decltype(null)=null) {}
+	OutputRange() = default;
 
-	constexpr OutputRange(Unique<IOutputEx<T>> stream): Stream(Move(stream)) {}
+	constexpr OutputRange(Unique<IOutputEx<T>> stream): Stream(INTRA_MOVE(stream)) {}
 
-	constexpr OutputRange(OutputRange&& rhs):
-		Stream(Move(rhs.Stream)) {}
+	constexpr OutputRange(OutputRange&&) = default;
+	constexpr OutputRange& operator=(OutputRange&&) = default;
+	OutputRange(const OutputRange&) = delete;
+	OutputRange& operator=(const OutputRange&) = delete;
 
-	constexpr OutputRange& operator=(OutputRange&& rhs)
-	{
-		Stream = Move(rhs.Stream);
-		return *this;
-	}
+	template<typename R> requires CAsOutputRangeOf<R, T> && !CDerived<R, OutputRange>
+	OutputRange(R&& range): Stream(WrapOutputRange<T>(ForwardAsOutputRangeOf<R, T>(range))) {}
 
-	OutputRange(const OutputRange& rhs) = delete;
-
-	OutputRange& operator=(const OutputRange& rhs) = delete;
-
-	template<typename R, typename = EnableCondition<R>>
-	OutputRange(R&& range):
-		Stream(WrapOutputRange<T>(ForwardAsOutputRangeOf<R, T>(range))) {}
-
-	template<typename R, typename = EnableCondition<R>>
+	template<typename R> requires CAsOutputRangeOf<R, T> && !CDerived<R, OutputRange>
 	OutputRange& operator=(R&& range)
 	{
 		Stream = WrapOutputRange<T>(ForwardAsOutputRangeOf<R, T>(range));
@@ -99,26 +82,24 @@ public:
 	}
 
 
-	bool Full() const {return Stream == null || Stream->Full();}
+	bool Full() const {return !Stream || Stream->Full();}
 	void Put(const T& value) {Stream->Put(value);}
 	void Put(T&& value) {Stream->Put(Move(value));}
-	bool TryPut(const T& value) {return Stream != null && Stream->TryPut(value);}
-	bool TryPut(T&& value) {return Stream != null && Stream->TryPut(Move(value));}
+	bool TryPut(const T& value) {return Stream != nullptr && Stream->TryPut(value);}
+	bool TryPut(T&& value) {return Stream != nullptr && Stream->TryPut(Move(value));}
 
-	index_t PutAllAdvance(CSpan<T>& dst)
+	index_t PutAllAdvance(Span<const T>& dst)
 	{
-		if(Stream == null) return 0;
+		if(Stream == nullptr) return 0;
 		return Stream->PutAllAdvance(dst);
 	}
 
-	index_t PutAll(CSpan<T> dst) {return PutAllAdvance(dst);}
+	index_t PutAll(Span<const T> dst) {return PutAllAdvance(dst);}
 
-	template<typename AR> Requires<
-		CArrayRangeOfExactly<AR, T> &&
-		!CConst<AR>,
-	index_t> PutAllAdvance(AR& src)
+	template<typename AR> requires CArrayRangeOfExactly<AR, T> && (!CConst<AR>)
+	index_t PutAllAdvance(AR& src)
 	{
-		CSpan<T> srcArr = CSpanOf(src);
+		Span<const T> srcArr = CSpanOf(src);
 		const auto result = PutAllAdvance(srcArr);
 		PopFirstExactly(src, result);
 		return result;
@@ -128,4 +109,4 @@ public:
 };
 
 using OutputStream = OutputRange<char>;
-INTRA_END
+} INTRA_END

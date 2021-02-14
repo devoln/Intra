@@ -6,7 +6,7 @@
 #include "IntraX/Utils/FixedArray.h"
 #include "IntraX/Container/Sequential/String.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct TEnvironment
 {
 	TEnvironment(const TEnvironment&) = delete;
@@ -14,7 +14,7 @@ struct TEnvironment
 	TEnvironment& operator=(const TEnvironment&) = delete;
 	TEnvironment& operator=(TEnvironment&&) = delete;
 
-	CSpan<StringView> CommandLine;
+	Span<const StringView> CommandLine;
 
 	struct VarSet
 	{
@@ -33,7 +33,7 @@ struct TEnvironment
 			return *this;
 		}
 		
-		CSpan<Tuple<StringView, StringView>> AsRange() const;
+		Span<const Tuple<StringView, StringView>> AsRange() const;
 		index_t Length() const {return mCount;}
 	private:
 		FixedArray<char> mData;
@@ -46,4 +46,4 @@ struct TEnvironment
 };
 
 extern const TEnvironment Environment;
-INTRA_END
+} INTRA_END

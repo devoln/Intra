@@ -107,7 +107,7 @@
   </Type>
 	
   <Type Name="Intra::Optional&lt;*&gt;">
-    <DisplayString Condition="!mNotNull">null</DisplayString>
+    <DisplayString Condition="!mNotNull">nullptr</DisplayString>
     <DisplayString>{mVal.value}</DisplayString>
     <Expand>
       <ExpandedItem>mVal.value</ExpandedItem>
@@ -125,45 +125,6 @@
     <DisplayString>{&amp;FRef}</DisplayString>
     <Expand>
       <ExpandedItem>&amp;FRef</ExpandedItem>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::ObjectMethodWrapper&lt;*,*&gt;">
-    <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
-    <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
-    <Expand>
-      <Item Name="Object">ObjectRef</Item>
-      <Item Name="Method">Method</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::ObjectConstMethodWrapper&lt;*,*&gt;">
-    <DisplayString Condition="ObjectRef == nullptr || Method == null">null</DisplayString>
-    <DisplayString>({ObjectRef})-&gt;{Method}</DisplayString>
-    <Expand>
-      <Item Name="Object">ObjectRef</Item>
-      <Item Name="Method">Method</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::z_D::TFunctionPtrFunctor&lt;*&gt;">
-    <DisplayString>{Ptr}</DisplayString>
-    <Expand>
-      <Item Name="Function">Ptr</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::z_D::TMethodPtrFunctor&lt;*,*&gt;">
-    <DisplayString>{Ptr}</DisplayString>
-    <Expand>
-      <Item Name="Method">Ptr</Item>
-    </Expand>
-  </Type>
-
-  <Type Name="Intra::z_D::TConstMethodPtrFunctor&lt;*,*&gt;">
-    <DisplayString>{Ptr}</DisplayString>
-    <Expand>
-      <Item Name="Method">Ptr</Item>
     </Expand>
   </Type>
 

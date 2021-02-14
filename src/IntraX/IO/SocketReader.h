@@ -13,12 +13,12 @@
 
 #include "IntraX/Container/Sequential/Array.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// �������������� ������ ����� ��� ������ �� ������
 class SocketReader: public InputStreamMixin<SocketReader, char>
 {
 public:
-	INTRA_FORCEINLINE SocketReader(decltype(null)=null) {}
+	INTRA_FORCEINLINE SocketReader(decltype(nullptr)=nullptr) {}
 
 	INTRA_FORCEINLINE SocketReader(StreamSocket&& socket, size_t bufferSize=4096):
 		mSocket(Move(socket))
@@ -37,24 +37,21 @@ public:
 		mSocket = Move(rhs.mSocket);
 		mBuffer = Move(rhs.mBuffer);
 		mBufferRest = rhs.mBufferRest;
-		rhs.mBufferRest = null;
+		rhs.mBufferRest = nullptr;
 		return *this;
 	}
 
-	SocketReader& operator=(decltype(null))
+	SocketReader& operator=(decltype(nullptr))
 	{
-		mSocket = null;
-		mBuffer = null;
-		mBufferRest = null;
+		mSocket = nullptr;
+		mBuffer = nullptr;
+		mBufferRest = nullptr;
 		return *this;
 	}
 
 	INTRA_FORCEINLINE char First() const {return mBufferRest.First();}
 	
 	INTRA_FORCEINLINE bool Empty() const {return mBufferRest.Empty();}
-
-	INTRA_FORCEINLINE bool operator==(decltype(null)) const {return Empty();}
-	INTRA_FORCEINLINE bool operator!=(decltype(null)) const {return !Empty();}
 	
 	void PopFirst()
 	{
@@ -103,7 +100,7 @@ public:
 		return result;
 	}
 
-	INTRA_FORCEINLINE CSpan<char> BufferedData() const {return mBufferRest;}
+	INTRA_FORCEINLINE Span<const char> BufferedData() const {return mBufferRest;}
 
 	INTRA_FORCEINLINE StreamSocket& Socket() {return mSocket;}
 	INTRA_FORCEINLINE const StreamSocket& Socket() const {return mSocket;}
@@ -119,4 +116,4 @@ private:
 	Array<char> mBuffer;
 	Span<char> mBufferRest;
 };
-INTRA_END
+} INTRA_END

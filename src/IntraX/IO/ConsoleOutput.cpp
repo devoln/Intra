@@ -17,7 +17,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct ConsoleOutStream
 {
 	ConsoleOutStream()
@@ -38,7 +38,7 @@ struct ConsoleOutStream
 		wchar_t wbuf[2];
 		int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, mWriteBuf, int(charLen), wbuf, 2);
 		DWORD written;
-		WriteConsoleW(HANDLE(mOutputHandle), wbuf, DWORD(wsrcLength), &written, null);
+		WriteConsoleW(HANDLE(mOutputHandle), wbuf, DWORD(wsrcLength), &written, nullptr);
 		mWriteBufCount = 0;
 #else
 		const auto charsWritten = write(STDOUT_FILENO, &c, 1);
@@ -46,7 +46,7 @@ struct ConsoleOutStream
 #endif
 	}
 
-	index_t ReadFromAdvance(CSpan<char>& src)
+	index_t ReadFromAdvance(Span<const char>& src)
 	{
 		if(src.Empty()) return 0;
 #ifdef _WIN32
@@ -58,14 +58,14 @@ struct ConsoleOutStream
 			if(src.Empty()) return totalBytesToWrite;
 		}
 
-		const int wlen = MultiByteToWideChar(CP_UTF8, 0, src.Data(), int(src.Length()), null, 0);
+		const int wlen = MultiByteToWideChar(CP_UTF8, 0, src.Data(), int(src.Length()), nullptr, 0);
 		wchar_t wbuf[512];
 		GenericString<wchar_t> wsrc;
 		if(wlen > 512) wsrc.SetCountUninitialized(wlen);
 		auto wsrcPtr = wlen>512? wsrc.Data(): wbuf;
 		int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, src.Data(), int(src.Length()), wsrcPtr, wlen);
 		DWORD written;
-		WriteConsoleW(HANDLE(mOutputHandle), wsrcPtr, DWORD(wsrcLength), &written, null);
+		WriteConsoleW(HANDLE(mOutputHandle), wsrcPtr, DWORD(wsrcLength), &written, nullptr);
 		src.Begin = src.End;
 
 		return totalBytesToWrite;
@@ -100,7 +100,7 @@ public:
 			uint16 consoleCode = 0;
 			if(newFont.Color != Vec3(-1))
 			{
-				const float maxColorChannel = Max(Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = Max(newFont.Color.x, newFont.Color.y, newFont.Color.z);
 				if(maxColorChannel >= 0.25f)
 				{
 					if(newFont.Color.z >= maxColorChannel / 2) consoleCode |= FOREGROUND_BLUE;
@@ -121,7 +121,7 @@ public:
 			s << "\x1B[0m";
 			if(newFont.Color != Vec3(-1))
 			{
-				const float maxColorChannel = Max(Max(newFont.Color.x, newFont.Color.y), newFont.Color.z);
+				const float maxColorChannel = Max(newFont.Color.x, newFont.Color.y, newFont.Color.z);
 				int code = 0;
 				int colorCode = 30;
 				if(maxColorChannel >= 0.25f)
@@ -148,4 +148,4 @@ FormattedWriter ConsoleOutput() {return FormattedWriter(ConsoleOutStream(), new 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 FormattedWriter ConsoleOut = ConsoleOutput();
 
-INTRA_END
+} INTRA_END

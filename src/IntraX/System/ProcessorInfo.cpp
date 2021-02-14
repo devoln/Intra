@@ -21,7 +21,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #include <Windows.h>
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 ProcessorInfo ProcessorInfo::Get()
 {
 	ProcessorInfo result;
@@ -45,25 +45,25 @@ ProcessorInfo ProcessorInfo::Get()
 	{
 		DWORD dwMHz;
 		DWORD size = sizeof(dwMHz);
-		lError = RegQueryValueExA(hKey, "~MHz", null, null, reinterpret_cast<LPBYTE>(&dwMHz), &size);
+		lError = RegQueryValueExA(hKey, "~MHz", nullptr, nullptr, reinterpret_cast<LPBYTE>(&dwMHz), &size);
 		if(lError == ERROR_SUCCESS) result.Frequency = dwMHz*1000000ull;
 
 		char processorName[64] = {0};
 		size = sizeof(processorName);
-		lError = RegQueryValueExA(hKey, "ProcessorNameString", null, null, reinterpret_cast<LPBYTE>(processorName), &size);
+		lError = RegQueryValueExA(hKey, "ProcessorNameString", nullptr, nullptr, reinterpret_cast<LPBYTE>(processorName), &size);
 		if(lError == ERROR_SUCCESS) result.BrandString = TrimRight(SpanOfPtr(processorName, index_t(size)), '\0');
 	}
 
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__linux__)
 
 #include <unistd.h>
 #include <sys/sysinfo.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 ProcessorInfo ProcessorInfo::Get()
 {
 	ProcessorInfo result;
@@ -87,7 +87,7 @@ ProcessorInfo ProcessorInfo::Get()
 
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #elif defined(__FreeBSD__)
 
@@ -95,23 +95,23 @@ INTRA_END
 #include <sys/sysctl.h>
 #include <sys/limits.h>
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 ProcessorInfo ProcessorInfo::Get()
 {
 	int mib[2] = {CTL_HW, HW_NCPU};
 	int numCPU;
 	size_t len = sizeof(numCPU);
-	sysctl(mib, 2, &numCPU, &len, null, 0);
+	sysctl(mib, 2, &numCPU, &len, nullptr, 0);
 	if(numCPU<1) numCPU = 1;
 
 	int freq;
 	len = sizeof(freq);
-	sysctlbyname("hw.clockrate", &freq, &len, null, 0);
+	sysctlbyname("hw.clockrate", &freq, &len, nullptr, 0);
 
 	char brandString[64]={0};
 	mib[1] = HW_MODEL;
 	len=63;
-	sysctl(mib, 2, brandString, &len, null, 0);
+	sysctl(mib, 2, brandString, &len, nullptr, 0);
 
 
 	ProcessorInfo result;
@@ -121,11 +121,11 @@ ProcessorInfo ProcessorInfo::Get()
 	result.Frequency = uint64(freq)*1000000;
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #else
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 ProcessorInfo ProcessorInfo::Get()
 {
 	ProcessorInfo result;
@@ -134,6 +134,6 @@ ProcessorInfo ProcessorInfo::Get()
 #endif
 	return result;
 }
-INTRA_END
+} INTRA_END
 
 #endif

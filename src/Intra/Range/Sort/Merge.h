@@ -8,7 +8,7 @@
 
 #include "Intra/Range/Mutation/Copy.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace z_D {
 
 /*
@@ -79,4 +79,4 @@ template<typename R, typename C = decltype(Less)> Requires<
 	if(resultPtr == DataOf(range)) return;
 	CopyTo(temp.AsConstRange(), range);
 }
-INTRA_END
+} INTRA_END

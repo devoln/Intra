@@ -3,7 +3,7 @@
 
 #include "Intra/Range/Operations.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 index_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	INTRA_PRECONDITION(mChannelCount < 16);
@@ -12,7 +12,7 @@ index_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 	float tempSamples[4096];
 	const index_t samplesPerChannel = LengthOf(tempSamples) / mChannelCount;
 	Span<float> channels[16];
-	const auto channelCSpan = Take(channels, mChannelCount).ReinterpretUnsafe<CSpan<float>>();
+	const auto channelCSpan = Take(channels, mChannelCount).ReinterpretUnsafe<Span<const float>>();
 	for(uint16 i = 0; i < mChannelCount; i++)
 		channels[i] = Drop(tempSamples, samplesPerChannel*i).Take(samplesPerChannel);
 
@@ -33,7 +33,7 @@ index_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 	float tempSamples[16384];
 	const index_t samplesPerChannel = Min(LengthOf(tempSamples), outShorts.Length()) / mChannelCount;
 	Span<float> channels[16];
-	const auto channelCSpan = Take(channels, mChannelCount).ReinterpretUnsafe<CSpan<float>>();
+	const auto channelCSpan = Take(channels, mChannelCount).ReinterpretUnsafe<Span<const float>>();
 	for(uint16 i = 0; i < mChannelCount; i++)
 		channels[i] = Drop(tempSamples, samplesPerChannel*i).Take(samplesPerChannel);
 
@@ -47,4 +47,4 @@ index_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 	}
 	return totalSamplesRead;
 }
-INTRA_END
+} INTRA_END

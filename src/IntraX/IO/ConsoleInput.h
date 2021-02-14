@@ -2,7 +2,7 @@
 
 #include "Intra/Range/Stream/InputStreamMixin.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 /// Диапазон ввода с консоли.
 /// Может не работать, если stdin перенаправлен.
 /// Если нужно перенаправление, используйте Std.
@@ -29,4 +29,4 @@ public:
 };
 
 extern ConsoleInput ConsoleIn;
-INTRA_END
+} INTRA_END

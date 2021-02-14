@@ -6,13 +6,13 @@
 #include "IntraX/Math/Vector3.h"
 #include "IntraX/Unstable/Image/FormatConversion.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 static ImageInfo GetInfoFromHeader(const byte* header)
 {
 	if(!LoaderTGA::Instance.IsValidHeader(header, 18))
 		return ImageInfo();
 
-	USVec2 size = {
+	U16Vec2 size = {
 		(header[13] << 8) + header[12],
 		(header[15] << 8) + header[14]
 	};
@@ -22,7 +22,7 @@ static ImageInfo GetInfoFromHeader(const byte* header)
 	};
 	ImageFormat format = formatsFromComponents[header[16]/8-1];
 	return {
-		USVec3(size.x, size.y, 1),
+		U16Vec3(size.x, size.y, 1),
 		format, ImageType_2D, 0
 	};
 }
@@ -43,7 +43,7 @@ AnyImage LoaderTGA::Load(IInputStream& stream) const
 
 	AnyImage result;
 	auto fileInfo = GetInfoFromHeader(header);
-	if(fileInfo == null) return result;
+	if(fileInfo == nullptr) return result;
 
 	result.Info = fileInfo;
 	result.SwapRB = true;
@@ -114,6 +114,6 @@ bool LoaderTGA::IsValidHeader(const void* header, size_t headerSize) const
 
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 const LoaderTGA LoaderTGA::Instance;
-INTRA_END
+} INTRA_END
 
 #endif

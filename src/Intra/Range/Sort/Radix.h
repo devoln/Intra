@@ -4,9 +4,9 @@
 #include "Intra/Range/Span.h"
 #include "IntraX/Container/ForwardDecls.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T> constexpr Requires<
-	CSignedIntegral<T>,
+	CBasicSignedIntegral<T>,
 TToUnsigned<T>> ExtractKey(T t)
 {
 	const auto signBit = 1ull << (sizeof(T)*8-1);
@@ -14,7 +14,7 @@ TToUnsigned<T>> ExtractKey(T t)
 }
 
 template<typename T> constexpr Requires<
-	CUnsignedIntegral<T>,
+	CBasicUnsignedIntegral<T>,
 T> ExtractKey(T t) {return t;}
 
 template<typename T> INTRA_FORCEINLINE size_t ExtractKey(T* t) {return reinterpret_cast<size_t>(t);}
@@ -75,4 +75,4 @@ void RadixSort(Span<T> arr, ExtractKeyFunc extractKey)
 	if(arr==dst) return;
 	CopyTo(temp, arr);
 }
-INTRA_END
+} INTRA_END

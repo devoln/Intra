@@ -36,7 +36,7 @@ inline void closesocket(int socket) {close(socket);}
 
 #endif
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 #ifdef _WIN32
 struct WsaContext
 {
@@ -58,11 +58,11 @@ static uint32 getLastErrorCode() {return uint32(HRESULT_FROM_WIN32(static_cast<u
 
 static Intra::String getErrorMessage(uint32 err)
 {
-	char* s = null;
+	char* s = nullptr;
 	FormatMessageA(DWORD(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS),
-		null, DWORD(err),
+		nullptr, DWORD(err),
 		DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-		reinterpret_cast<char*>(&s), 0, null);
+		reinterpret_cast<char*>(&s), 0, nullptr);
 	Intra::String errorMsg = Intra::String(s);
 	LocalFree(s);
 	return errorMsg;
@@ -148,11 +148,11 @@ ServerSocket::ServerSocket(SocketType type, uint16 port, size_t maxConnections, 
 		socketConstants[byte(type)][0],
 		socketConstants[byte(type)][1],
 		socketConstants[byte(type)][2],
-		0, null, null, null};
-	addrinfo* addrInfo = null;
+		0, nullptr, nullptr, nullptr};
+	addrinfo* addrInfo = nullptr;
 	char portStr[6];
 	Span<char>(portStr) << port << '\0';
-	const auto gaiErr = getaddrinfo(null, portStr, &hints, &addrInfo);
+	const auto gaiErr = getaddrinfo(nullptr, portStr, &hints, &addrInfo);
 	if(gaiErr != 0)
 	{
 		err.Error({uint32(gaiErr)}, StringView("getaddrinfo failed: ") + StringView(gai_strerror(gaiErr)), INTRA_SOURCE_INFO);
@@ -194,7 +194,7 @@ bool BasicSocket::waitInputMs(size_t milliseconds) const
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
 	timeval timeout = {long(milliseconds/1000), long(milliseconds % 1000 * 1000)};
-	return select(int(mHandle + 1), &set, null, null, &timeout) > 0;
+	return select(int(mHandle + 1), &set, nullptr, nullptr, &timeout) > 0;
 }
 
 bool BasicSocket::waitInput() const
@@ -203,12 +203,12 @@ bool BasicSocket::waitInput() const
 	fd_set set;
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
-	return select(int(mHandle + 1), &set, null, null, null) > 0;
+	return select(int(mHandle + 1), &set, nullptr, nullptr, nullptr) > 0;
 }
 
 StreamSocket ServerSocket::Accept(String& addr, ErrorReporter err)
 {
-	if(mHandle == NullSocketHandle) return null;
+	if(mHandle == NullSocketHandle) return nullptr;
 	sockaddr sAddr;
 	socklen_t sAddrLen = sizeof(sAddr);
 	StreamSocket result;
@@ -231,8 +231,8 @@ StreamSocket::StreamSocket(SocketType type, StringView host, uint16 port, ErrorR
 		socketConstants[byte(type)][0],
 		socketConstants[byte(type)][1],
 		socketConstants[byte(type)][2],
-		0, null, null, null};
-	addrinfo* addrInfo = null;
+		0, nullptr, nullptr, nullptr};
+	addrinfo* addrInfo = nullptr;
 	char portStr[6];
 	Span<char>(portStr) << port << '\0';
 	const auto gaiErr = getaddrinfo(String(host).CStr(), portStr, &hints, &addrInfo);
@@ -307,4 +307,4 @@ void StreamSocket::Shutdown()
 	if(mHandle == NullSocketHandle) return; 
 	shutdown(mHandle, 2);
 }
-INTRA_END
+} INTRA_END

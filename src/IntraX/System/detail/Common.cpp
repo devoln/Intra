@@ -27,7 +27,7 @@ struct IUnknown;
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 namespace detail {
 #ifdef _WIN32
 
@@ -45,11 +45,11 @@ GenericString<wchar_t> Utf8ToWStringZ(StringView str)
 void ProcessLastError(ErrorReporter err, StringView message, SourceInfo srcInfo)
 {
 	const auto le = GetLastError();
-	char* s = null;
+	char* s = nullptr;
 	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-		null, le,
+		nullptr, le,
 		DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-		reinterpret_cast<char*>(&s), 0, null);
+		reinterpret_cast<char*>(&s), 0, nullptr);
 	err.Error({uint32(HRESULT_FROM_WIN32(le))}, message + StringView(s), srcInfo);
 	LocalFree(s);
 }
@@ -72,4 +72,4 @@ void ProcessLastError(ErrorStatus& status, StringView message, const Utils::Sour
 
 #endif
 }
-INTRA_END
+} INTRA_END

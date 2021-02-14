@@ -2,10 +2,6 @@
 
 #include "IntraX/Unstable/Image/Loaders/LoaderPlatform.h"
 #include "Intra/Range/Polymorphic/IInput.h"
-#include "IntraX/Math/ShaderMath.h"
-
-using Intra::ShaderMath::min;
-using Intra::ShaderMath::max;
 
 
 INTRA_PUSH_DISABLE_ALL_WARNINGS
@@ -21,11 +17,11 @@ struct IUnknown;
 #endif
 INTRA_WARNING_POP
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 //Загрузить изображение из BMP, JPG или GIF файла
 AnyImage LoadWithPlatform(IInputStream& stream)
 {
-	if(stream.Empty()) return null;
+	if(stream.Empty()) return nullptr;
 
 	using namespace Gdiplus;
 	using namespace Gdiplus::DllExports;
@@ -36,21 +32,21 @@ AnyImage LoadWithPlatform(IInputStream& stream)
 		{
 			GdiplusStartupInput input;
 			ULONG_PTR token;
-			GdiplusStartup(&token, &input, null);
+			GdiplusStartup(&token, &input, nullptr);
 		}
 	};
 	static InitGDIP sInitGDIP;
 
 	//Мы не знаем размер потока, поэтому считываем его целиком в global-память, которая нужна для создания потока GDI+
 	size_t size = 1 << 20;
-	HGLOBAL glob = null;
-	char* raw = null;
+	HGLOBAL glob = nullptr;
+	char* raw = nullptr;
 	for(;;)
 	{
 		HGLOBAL oldGlob = glob;
 		Span<char> oldData = SpanOfPtr(raw, size / 2);
 		glob = GlobalAlloc(0, size);
-		if(!glob) return null;
+		if(!glob) return nullptr;
 		raw = static_cast<char*>(GlobalLock(glob));
 		Span<char> range = SpanOfPtr(raw, size);
 		if(oldGlob)
@@ -67,7 +63,7 @@ AnyImage LoadWithPlatform(IInputStream& stream)
 	
 	IStream* istream;
 	if(FAILED(CreateStreamOnHGlobal(glob, true, &istream)))
-		return null;
+		return nullptr;
 	
 	GpBitmap* bmp;
 	GdipCreateBitmapFromStream(istream, &bmp);
@@ -129,8 +125,8 @@ AnyImage LoadWithPlatform(IInputStream& stream)
 		result.Info.Size.x*result.Info.Format.BytesPerPixel(),
 		format, result.Data.Data(), 0
 	};
-	GdipBitmapLockBits(bmp, null, ImageLockModeRead|ImageLockModeUserInputBuf, format, &data);
+	GdipBitmapLockBits(bmp, nullptr, ImageLockModeRead|ImageLockModeUserInputBuf, format, &data);
 	GdipDisposeImage(bmp);
 	return result;
 }
-INTRA_END
+} INTRA_END

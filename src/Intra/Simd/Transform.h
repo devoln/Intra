@@ -2,11 +2,11 @@
 
 #include "Simd.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T, typename F, bool ProcessLeftOver = true> requires !CScalar<T> &&
 	CCallable<F, TScalarOf<T>, TScalarOf<T>> &&
 	CCallable<F, T, T>
-[[nodiscard]] void SimdTransform(CSpan<TScalarOf<T>> arr, F&& f)
+[[nodiscard]] void SimdTransform(Span<const TScalarOf<T>> arr, F&& f)
 {
 }
-INTRA_END
+} INTRA_END

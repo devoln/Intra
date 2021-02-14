@@ -122,8 +122,8 @@ SpacesInSquareBrackets: false
 Standard:        Cpp11
 StatementMacros:
   - INTRA_EMPTY_BASES
-  - INTRA_BEGIN
-  - INTRA_END
+  - namespace Intra { INTRA_BEGIN
+  - } INTRA_END
   - INTRA_FORCEINLINE
 TypenameMacros:
   - INTRA_DEFINE_SAFE_DECLTYPE

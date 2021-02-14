@@ -4,7 +4,7 @@
 #include "IntraX/Utils/FixedArray.h"
 #include "SparseRange.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 template<typename T, typename Index> T& SparseRange<T, Index>::append_first_free(Optional<Index&> oIndex)
 {
 	if(Empty()) init_free_list();
@@ -57,7 +57,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::Remove(Index in
 
 template<typename T, typename Index> FixedArray<unsigned> SparseRange<T, Index>::DeadBitfield() const
 {
-	if(Empty()) return null;
+	if(Empty()) return nullptr;
 	enum { ValueBits = sizeof(unsigned) * 8 };
 	FixedArray<unsigned> result(mData.Length() / ValueBits); //Заполнит все биты нулями
 	Index ff = mFirstFree;
@@ -131,7 +131,7 @@ template<typename T, typename Index> void SparseRange<T, Index>::MoveTo(SparseRa
 template<typename Index> byte* SparseTypelessRange<Index>::append_first_free(Optional<Index&> oIndex)
 {
 	if(Empty()) init_free_list();
-	if(oIndex != null) oIndex.Unwrap() = mFirstFree;
+	if(oIndex != nullptr) oIndex.Unwrap() = mFirstFree;
 	byte* result = operator[](mFirstFree);
 	mFirstFree = *reinterpret_cast<Index*>(result);
 	return result;
@@ -186,4 +186,4 @@ template<typename Index> void SparseTypelessRange<Index>::MoveTo(SparseTypelessR
 	}
 	*prevEmpty = mFirstFree;
 }
-INTRA_END
+} INTRA_END

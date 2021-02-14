@@ -2,7 +2,7 @@
 
 #include "Intra/Core.h"
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 enum DxgiFormat: byte
 {
   UNKNOWN,
@@ -69,4 +69,4 @@ enum DxgiFormat: byte
 struct ImageFormat;
 ImageFormat DxgiToImageFormat(DxgiFormat fmt, bool* swapRB);
 DxgiFormat DxgiFromImageFormat(ImageFormat fmt, bool swapRB);
-INTRA_END
+} INTRA_END

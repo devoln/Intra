@@ -6,7 +6,7 @@
 // TODO: experimental, incomplete and untested
 // Based on an article from Molecular Matters blog
 
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 struct Job
 {
 	using Function = void(*)(Job*, const void*);
@@ -114,4 +114,4 @@ public:
 private:
 	unsigned mSize;
 };
-INTRA_END
+} INTRA_END

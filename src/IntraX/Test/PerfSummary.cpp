@@ -3,9 +3,9 @@
 
 #include "Intra/Assert.h"
 
-INTRA_BEGIN
-void PrintPerformanceResults(FormattedWriter& logger, StringView testName, CSpan<StringView> comparedTypes,
-	CSpan<double> set2Times, CSpan<double> set1Times)
+namespace Intra { INTRA_BEGIN
+void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Span<const StringView> comparedTypes,
+	Span<const double> set2Times, Span<const double> set1Times)
 {
 	INTRA_DEBUG_ASSERT_EQUALS(comparedTypes.Length(), set1Times.Length() + set2Times.Length());
 	static const Vec3 set1Color = {0, 0, 0.75f},
@@ -61,4 +61,4 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, CSpan
 
 	logger.LineBreak();
 }
-INTRA_END
+} INTRA_END
