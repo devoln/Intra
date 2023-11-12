@@ -70,7 +70,7 @@ public:
 
 	index_t PutAllAdvance(Span<const char>& src, ErrorReporter err = IgnoreErrors)
 	{
-		auto totalBytesWritten = ReadWrite(src, mBufferRest);
+		auto totalBytesWritten = StreamTo(src, mBufferRest);
 		if(!mBufferRest.Empty()) return totalBytesWritten;
 
 		Flush(err);
@@ -81,7 +81,7 @@ public:
 			src.Begin += bytesWritten;
 			totalBytesWritten += bytesWritten;
 		}
-		totalBytesWritten += ReadWrite(src, mBufferRest);
+		totalBytesWritten += StreamTo(src, mBufferRest);
 		return totalBytesWritten;
 	}
 

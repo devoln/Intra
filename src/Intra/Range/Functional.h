@@ -2,7 +2,6 @@
 
 #include <Intra/Functional.h>
 #include <Intra/Concepts.h>
-#include <Intra/Range/Take.h>
 
 namespace Intra { INTRA_BEGIN
 

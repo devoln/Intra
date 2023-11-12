@@ -153,7 +153,7 @@ template<typename T> void MoveAssignDeleteBackwards(Span<T> dst, Span<T> src)
 
 
 template<typename T, typename Allocator> Span<T> AllocateRangeUninitialized(
-	Allocator& allocator, size_t& count, SourceInfo sourceInfo = SourceInfo())
+	Allocator& allocator, size_t& count, SourceInfo sourceInfo = SourceInfo::Current())
 {
 	(void)allocator; //Чтобы устранить ложное предупреждение MSVC
 	size_t size = count*sizeof(T);
@@ -163,7 +163,7 @@ template<typename T, typename Allocator> Span<T> AllocateRangeUninitialized(
 }
 
 template<typename T, typename Allocator> Span<T> AllocateRange(
-	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo = SourceInfo())
+	Allocator& allocator, size_t& count, const SourceInfo& sourceInfo = SourceInfo::Current())
 {
 	auto result = AllocateRangeUninitialized(allocator, count, sourceInfo);
 	Initialize(result);

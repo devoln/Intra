@@ -1,4 +1,4 @@
-#include "Intra/Range/Composition.h"
+#include "Intra/Range.h"
 #include "Intra/Range/Comparison.h"
 #include "Intra/Range/Generators.h"
 #include "Intra/Range/Decorators.h"

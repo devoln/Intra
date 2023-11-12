@@ -1,6 +1,4 @@
-﻿#include "Intra/Range/Map.h"
-#include "Intra/Range/Reduce.h"
-#include "Intra/Range/Span.h"
+﻿#include "Intra/Range.h"
 #include "Intra/Range/Stream/Parse.h"
 #include "Intra/Range/StringView.h"
 #include "IntraX/Container/Sequential/List.h"

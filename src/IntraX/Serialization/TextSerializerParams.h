@@ -8,42 +8,42 @@ namespace Intra { INTRA_BEGIN
 /// This parameters doesn't affect deserialization.
 struct TextSerializerParams
 {
-	typedef byte TypeFlags;
-	enum: TypeFlags {
-		TypeFlags_None = 0,
-		TypeFlags_Number = 1,
-		TypeFlags_Char = 2,
-		TypeFlags_String = 4,
-		TypeFlags_Array = 8,
-		TypeFlags_Struct = 16,
-		TypeFlags_Tuple = 32,
-		TypeFlags_StructArray = 64,
-		TypeFlags_CustomType = 128,
+	enum TypeFlags {
+		None = 0,
+		Number = 1,
+		Char = 2,
+		String = 4,
+		Array = 8,
+		Struct = 16,
+		Tuple = 32,
+		StructArray = 64,
+		CustomType = 128,
 		
-		TypeFlags_All = 255
+		All = 255,
+
+		TagGenSameTypeBitOps
 	};
 
 	/// В определении экземпляра структуры указывать имена присваиваемых полей, а не просто перечисление значений.
 	/// Если в LanguageParams выставлено RequireFieldAssignments, то это поле игнорируется и считается равным true
-	bool FieldAssignments;
+	bool FieldAssignments: 1;
 
-	/// Использовать пробелы вокруг знака присваивания
-	bool UseAssignmentSpaces;
+	/// Spaces around assignment
+	bool UseAssignmentSpaces: 1;
 
-	/// Каждое значение на следующей строке. Иначе все значения в одну строку через пробел
+	/// Types that require one value per line
 	TypeFlags ValuePerLine;
 
-	/// Для каких типов использовать отступы в строках для обозначения уровня вложенности
-	TypeFlags UseTabs;
+	/// Which types need indentation to show nesting levels
+	TypeFlags Indent;
 
-	/// Чем делать табуляцию. Например символом "\t", или пробелами "    ".
-	StringView TabChars;
+	/// e.g. "\t" or "    ".
+	StringView IndentationLevel;
 
-	/// Окончание строк. Обычно встречаются варианты: CR "\r", LF "\n" или CRLF "\r\n"
+	/// e.g. "\r", "\n" or "\r\n"
 	StringView LineEnding;
-
-	//INTRA_ADD_FIELD_REFLECTION(TextSerializerParams, FieldAssignments, UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding);
 };
+//INTRA_ADD_FIELD_REFLECTION(TextSerializerParams, FieldAssignments, UseAssignmentSpaces, ValuePerLine, UseTabs, TabChars, LineEnding);
 
 struct TextSerializerParamsBuiltin
 {

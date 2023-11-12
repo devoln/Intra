@@ -1,13 +1,13 @@
 #pragma once
 
 #include <Intra/Core.h>
+#include <Intra/Numeric/Bits.h>
 
 namespace Intra { INTRA_BEGIN
 
 template<int ApproxOrder> constexpr auto Log2Approx = []<typename T>(const T& x) requires(CNumber<TScalarOf<T>>) {
 	static_assert(2 <= ApproxOrder && ApproxOrder <= 5);
 
-	using T = TRemoveConstRef<decltype(x)>;
 	using S = TScalarOf<T>;
 	using SInt = TToIntegral<S>;
 	using TInt = TToIntegral<T>;
@@ -50,7 +50,7 @@ template<int ApproxOrder> constexpr auto Log2Approx = []<typename T>(const T& x)
 	return p + e;
 };
 
-template<int ApproxOrder> constexpr auto LogApprox = []<typename T>(const T& x) requires(CReal<TScalarOf<T>>)
+template<int ApproxOrder> constexpr auto LogApprox = []<typename T>(const T& x) requires(CFloatingPoint<TScalarOf<T>>)
 {
 	return Log2Approx<ApproxOrder>(x) * TScalarOf<T>(Constants.LN2);
 };
@@ -60,11 +60,11 @@ INTRA_FORCEINLINE T INTRA_VECTORCALL Pow2(T x) noexcept
 {
 	const T fractionalPart = Fract(x);
 
-	T factor = float(-8.94283890931273951763e-03) + fractionalPart*float(-1.89646052380707734290e-03);
-	factor = float(-5.58662282412822480682e-02) + factor*fractionalPart;
-	factor = float(-2.40139721982230797126e-01) + factor*fractionalPart;
-	factor = float(3.06845249656632845792e-01) + factor*fractionalPart;
-	factor = float(1.06823753710239477000e-07) + factor*fractionalPart;
+	T factor = float(-8.94283890931273951763e-03) + fractionalPart * float(-1.89646052380707734290e-03);
+	factor = float(-5.58662282412822480682e-02) + factor * fractionalPart;
+	factor = float(-2.40139721982230797126e-01) + factor * fractionalPart;
+	factor = float(3.06845249656632845792e-01) + factor * fractionalPart;
+	factor = float(1.06823753710239477000e-07) + factor * fractionalPart;
 	x -= factor;
 
 	x *= float(1 << 23);
@@ -76,13 +76,13 @@ INTRA_FORCEINLINE T INTRA_VECTORCALL Pow2(T x) noexcept
 template<typename T> requires CSame<TScalarOf<T>, float>
 INTRA_FORCEINLINE T INTRA_VECTORCALL SimdExp(T x) noexcept //TODO: integrate with general Exp
 {
-	return Pow2(x * float(1/Constants.LN2));
+	return Pow2(x * float(1 / Constants.LN2));
 }
 
-constexpr auto Pow = [](const auto& x, const auto& power) noexcept {
-	using T = TRemoveConstRef<decltype(x)>;
+namespace z_D {
+template<typename T, typename P> constexpr auto Pow_(const T& x, const P& power) noexcept {
 #if defined(__GNUC__) || defined(__clang__)
-	if constexpr(CBasicIntegral<decltype(power)>)
+	if constexpr(CBasicIntegral<P>)
 	{
 		if constexpr(CSame<T, float>) return __builtin_powif(x, int(power));
 		else if constexpr(CSame<T, double>) return __builtin_powi(x, int(power));
@@ -92,10 +92,10 @@ constexpr auto Pow = [](const auto& x, const auto& power) noexcept {
 	else if constexpr(CSame<T, double>) return __builtin_pow(x, T(power));
 	else if constexpr(CSame<T, long double>) return __builtin_powl(x, T(power));
 #else
-	if constexpr(CBasicIntegral<decltype(power)>)
+	if constexpr(CBasicIntegral<P>)
 	{
 		auto v = x;
-		unsigned n = unsigned(Abs(y));
+		unsigned n = unsigned(Abs(power));
 		for(T z = 1; ; v *= v)
 		{
 			if((n & 1) != 0) z *= v;
@@ -105,10 +105,13 @@ constexpr auto Pow = [](const auto& x, const auto& power) noexcept {
 	else if constexpr(CSame<T, float>) return z_D::powf(x, T(power));
 	else if constexpr(CBasicFloatingPoint<T>) return T(z_D::pow(double(x), double(power)));
 #endif
-	else return Pow(TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>(x), T(power));
-};
+	else return Pow_(TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>(x), T(power));
+}
+}
 
-constexpr auto CeilToPow2 = []<CNumber T>(T x)
+INTRA_DEFINE_FUNCTOR(Pow)(const auto& x, const auto& power) noexcept {return z_D::Pow_(x, power);};
+
+INTRA_DEFINE_FUNCTOR(CeilToPow2)<CNumber T>(T x)
 {
 	if constexpr(CSigned<T>) if(x <= 0) return 0;
 	if constexpr(CIntegral<T>)
@@ -148,15 +151,16 @@ template<unsigned PowBase> constexpr auto IsPowerOf = []<CBasicIntegral T>(T x)
 	}
 };
 
-constexpr auto FloorLog2 = []<CBasicIntegral T>(T x)
+INTRA_DEFINE_FUNCTOR(FloorLog2)<CBasicIntegral T>(T x)
 {
 	INTRA_PRECONDITION(x > 0);
-	return UnsignedBitWidth(TToUnsigned<T>(x)) - 1;
+	return UnsignedBitWidth<TToUnsigned<T>>(TToUnsigned<T>(x)) - 1;
 };
 
 template<auto Base, size_t ArrSize> constexpr Array<decltype(Base), ArrSize> PowersOf = [] {
-	Array<decltype(Base), ArrSize> res;
-	T pow = 1;
+	using T = decltype(Base);
+	Array<T, ArrSize> res;
+	T pow(1);
 	for(auto& x: res) x = pow, pow *= Base;
 	return res;
 }();
@@ -172,26 +176,25 @@ constexpr auto CeilLog10 = []<CBasicIntegral T>(T x)
 {
 	INTRA_PRECONDITION(x > 0);
 	constexpr uint8* guess = z_D::Log10GuessTable + (64 - SizeofInBits<T>);
-	int digits = guess[CountLeadingZeros(x)];
+	int digits = guess[CountLeadingZeros<T>(x)];
 	return digits + (x >= PowersOf<T(10), z_D::Log10GuessTable[0] + 1>[digits]);
 };
 
-constexpr auto FloorLog10 = []<CBasicIntegral T>(T x)
+INTRA_DEFINE_FUNCTOR(FloorLog10)<CBasicIntegral T>(T x)
 {
 	INTRA_PRECONDITION(x > 0);
 	return CeilLog10(x + 1) - 1;
 };
 
-INTRA_OPTIMIZE_FUNCTION()
-template<CBasicUnsignedIntegral UInt> INTRA_FORCEINLINE constexpr int PowFactor(UInt x, int base)
+INTRA_OPTIMIZE_FUNCTION(template<CBasicUnsignedIntegral UInt>) INTRA_FORCEINLINE constexpr int PowFactor(UInt x, int base)
 {
 	INTRA_PRECONDITION(base >= 2);
 	if(x == 0) return 0;
-	if(base == 2) return CountTrailingZeros(x);
-	for(int i = 0; ; i++)
+	if(base == 2) return CountTrailingZeros<UInt>(x);
+	for(int i = 0;; i++)
 	{
-		auto div = x / base;
-		if(unsigned(x) - base*unsigned(div) != 0) return i;
+		auto div = x / uint32(base);
+		if(uint32(x) - uint32(base) * uint32(div) != 0) return i;
 		x = div;
 	}
 }
@@ -212,24 +215,19 @@ constexpr auto BitWidthOfPow5Approx64 = [](uint32 exponentOf5) {
 };
 INTRA_OPTIMIZE_FUNCTION(template<unsigned PowBase> constexpr auto BitWidthOfPow = [](uint32 exponentOfPowBase)) INTRA_FORCEINLINE_LAMBDA
 {
-	if constexpr(PowBase == 2) return 1 + exponentOfPowBase;
+	if constexpr(PowBase == 2) return 1 + int(exponentOfPowBase);
 	else if constexpr(PowBase == 5)
 	{
 		if constexpr(sizeof(size_t) == sizeof(uint64))
 			if(exponentOfPowBase <= 3528) return BitWidthOfPow5Approx32(exponentOfPowBase);
 		if(exponentOfPowBase <= 4003) return BitWidthOfPow5Approx64(exponentOfPowBase);
 	}
-	INTRA_DEBUG_ASSERT(!"Generic case is not implemented yet");
+	INTRA_DEBUG_ASSERT(false && "generic case is not implemented yet");
+	return 0;
 };
 
-#if INTRA_CONSTEXPR_TEST
-static_assert(BitWidthOfPow<5>(0) == UnsignedBitWidth(0u));
-static_assert(BitWidthOfPow<5>(1) == UnsignedBitWidth(5u));
-static_assert(BitWidthOfPow<5>(2) == UnsignedBitWidth(25u));
-#endif
-
-constexpr auto FloorLog10OfPow2Approx = [](uint32 exponentOf2) {return (uint32(exponentOf2) * 78913) >> 18;};
-constexpr auto FloorLog10OfPow5Approx = [](uint32 exponentOf5) {return (uint32(exponentOf5) * 732923) >> 20;};
+INTRA_DEFINE_FUNCTOR(FloorLog10OfPow2Approx)(uint32 exponentOf2) {return (uint32(exponentOf2) * 78913) >> 18;};
+INTRA_DEFINE_FUNCTOR(FloorLog10OfPow5Approx)(uint32 exponentOf5) {return (uint32(exponentOf5) * 732923) >> 20;};
 INTRA_OPTIMIZE_FUNCTION(template<unsigned LogBase, unsigned PowBase> constexpr auto FloorLogOfPow = [](uint32 exponentOfPowBase)) INTRA_FORCEINLINE_LAMBDA
 {
 	if constexpr(LogBase == 10)
@@ -238,14 +236,15 @@ INTRA_OPTIMIZE_FUNCTION(template<unsigned LogBase, unsigned PowBase> constexpr a
 		if constexpr(PowBase == 2) if(exponentOfPowBase <= 1650) return FloorLog10OfPow2Approx(exponentOfPowBase);
 		if constexpr(PowBase == 5) if(exponentOfPowBase <= 2620) return FloorLog10OfPow5Approx(exponentOfPowBase);
 	}
-	INTRA_DEBUG_ASSERT(!"Generic case is not implemented yet");
+	INTRA_DEBUG_ASSERT(false && "generic case is not implemented yet");
+	return uint32(0);
 };
 INTRA_OPTIMIZE_FUNCTION_END
 
 #if INTRA_CONSTEXPR_TEST
-static_assert(BitWidthOfPow<5>(0) == UnsignedBitWidth(0u));
-static_assert(BitWidthOfPow<5>(1) == UnsignedBitWidth(5u));
-static_assert(BitWidthOfPow<5>(2) == UnsignedBitWidth(25u));
+static_assert(BitWidthOfPow<5>(0) == UnsignedBitWidth<uint32>(1));
+static_assert(BitWidthOfPow<5>(1) == UnsignedBitWidth<uint32>(5));
+static_assert(BitWidthOfPow<5>(2) == UnsignedBitWidth<uint32>(25));
 
 static_assert(FloorLogOfPow<10, 2>(3) == 0);
 static_assert(FloorLogOfPow<10, 2>(4) == 1);
@@ -275,11 +274,11 @@ template<unsigned Radix> constexpr auto RadixShiftRight = [](auto x, int shift) 
 constexpr auto RadixWidth = []<CBasicIntegral T>(T x, unsigned radix = 10) INTRA_FORCEINLINE_LAMBDA
 {
 	if(x == 0) return 0;
-	if(radix == 2) return BitWidth(x);
-	if(radix == 16) return (BitWidth(x) + 3) >> 2;
-	if(radix == 256) return (BitWidth(x) + 7) >> 3;
+	if(radix == 2) return BitWidth<T>(x);
+	if(radix == 16) return (BitWidth<T>(x) + 3) >> 2;
+	if(radix == 256) return (BitWidth<T>(x) + 7) >> 3;
 	if(radix == 10) return 1 + FloorLog10(x);
-	INTRA_DEBUG_ASSERT(!"Common case is not implemented yet");
+	INTRA_DEBUG_ASSERT(!"common case is not implemented yet");
 };
 
 } INTRA_END

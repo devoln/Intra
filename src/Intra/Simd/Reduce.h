@@ -1,15 +1,14 @@
 #pragma once
 
 #include "Simd.h"
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Reduce.h"
+#include <Intra/Range.h>
 
 namespace Intra { INTRA_BEGIN
 template<typename T, typename F> requires CCallable<F, TScalarOf<T>, TScalarOf<T>> && LengthOf(T()) == 4
 [[nodiscard]] INTRA_FORCEINLINE TScalarOf<T> INTRA_VECTORCALL HorReduce(T x, F&& f)
 {
 	TScalarOf<T> v[4];
-	Store(x, v);
+	SimdStore(x, v);
 	return f(f(v[0], v[1]), f(v[2], v[3]));
 }
 
@@ -17,7 +16,7 @@ template<typename T, typename F> requires CCallable<F, TScalarOf<T>, TScalarOf<T
 [[nodiscard]] INTRA_FORCEINLINE TScalarOf<T> INTRA_VECTORCALL HorReduce(T x, F&& f)
 {
 	TScalarOf<T> v[8];
-	Store(x, v);
+	SimdStore(x, v);
 	return f(
 		f(f(v[0], v[1]), f(v[2], v[3])),
 		f(f(v[4], v[5]), f(v[6], v[7])));

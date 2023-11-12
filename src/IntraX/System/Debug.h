@@ -1,8 +1,7 @@
 ﻿#pragma once
 
-#include "Intra/GloballyRegistered.h"
-#include "Intra/Range/StringView.h"
-#include "IntraX/Core.h"
+#include <Intra/Range.h>
+#include <Intra/Range/StringView.h>
 
 namespace Intra { INTRA_BEGIN
 /// Print stack trace to the provided buffer.
@@ -16,13 +15,6 @@ namespace Intra { INTRA_BEGIN
 /// @return StringView referring to the result written in ``buf``.
 StringView GetStackTrace(Span<char>& buf, size_t framesToSkip, size_t maxFrames, bool untilMain = true);
 
-/// Prints ``message`` as debug output (on Windows) or prints to stderr (other OS).
-void PrintDebugMessage(StringView message);
-
-/// Prints ``message`` as debug output (on Windows) or prints to stderr (other OS).
-/// Adds ``file`` name and ``line`` number as a prefix.
-void PrintDebugMessage(StringView message, StringView file, unsigned line);
-
 
 /// Build a message, containing ``functionName``, ``fileName``, ``lineNumber``, ``type`` and ``msg``.
 /// Resulting message will contain stacktrace, if it is supported in this configuration.
@@ -31,8 +23,7 @@ void PrintDebugMessage(StringView message, StringView file, unsigned line);
 /// After calling this function ``buf`` will be advanced by <result>.Length() elements to point at the free part of the buffer.
 /// @param stackFramesToSkip Number of last frames before calling this function that must be skipped.
 /// @return StringView referring to the result written in ``buf``.
-StringView BuildDiagnosticMessage(Span<char>& buf, StringView type, StringView functionName, StringView fileName,
-	unsigned lineNumber, StringView msg, size_t stackFramesToSkip = 0);
+StringView BuildDiagnosticMessage(Span<char>& buf, StringView type, StringView msg, SourceInfo sourceInfo, size_t stackFramesToSkip = 0);
 
 ///@{
 /// Show critical error message and terminate the program.
@@ -42,7 +33,7 @@ void FatalErrorMessageAbort(StringView msg, SourceInfo);
 
 #define INTRA_ASSERT1(expr, arg0) INTRA_LIKELY(expr)? (void)0: (void)(\
     (INTRA_FATAL_ERROR(::Intra::DebugStringView("Assertion " # expr " failed!"\
-	"\n" # arg0 " = ")+::IntraX::StringOf(arg0)), true))
+	"\n" # arg0 " = ") + ::IntraX::StringOf(arg0)), true))
 
 #define INTRA_ASSERT2(expr, arg0, arg1) INTRA_LIKELY(expr)? (void)0: (void)(\
     (INTRA_FATAL_ERROR(::Intra::DebugStringView("Assertion " # expr " failed!"\
@@ -51,7 +42,7 @@ void FatalErrorMessageAbort(StringView msg, SourceInfo);
 
 #define INTRA_ASSERT3(expr, arg0, arg1, arg2) INTRA_LIKELY(expr)? (void)0: (void)(\
     (INTRA_FATAL_ERROR(::Intra::DebugStringView("Assertion " # expr " failed!"\
-	"\n" # arg0 " = ")+ ::IntraX::StringOf(arg0)+\
+	"\n" # arg0 " = ") + ::IntraX::StringOf(arg0)+\
 	"\n" # arg1 " = " + ::IntraX::StringOf(arg1)+\
 	"\n" # arg2 " = " + ::IntraX::StringOf(arg2)), true))
 
@@ -82,24 +73,11 @@ public:
 	void(*const Func)();
 	const SourceInfo Info;
 	
-	ModuleUnitTest(void(*func)(), SourceInfo info):
+	INTRA_FORCEINLINE constexpr ModuleUnitTest(void(*func)(), SourceInfo info):
 		Func(func), Info(info) {}
 };
 }
 } INTRA_END
-
-
-#ifdef _MSC_VER
-
-namespace Intra {
-namespace z_D {
-extern "C" INTRA_CRTIMP int __cdecl _heapchk();
-}}
-#define INTRA_HEAP_CHECK INTRA_ASSERT(Intra::z_D::_heapchk() == -2 /*_HEAPOK*/)
-
-#else
-#define INTRA_HEAP_CHECK
-#endif
 
 #define INTRA_CORE_INTERNAL_MODULE_TEST(uniqueName,qualifiers) \
 	static qualifiers void uniqueName(); \

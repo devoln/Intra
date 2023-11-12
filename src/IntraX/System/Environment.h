@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Range/Span.h"
+#include <Intra/Range.h>
 #include "Intra/Container/Tuple.h"
 #include "Intra/Container/Optional.h"
 #include "IntraX/Utils/FixedArray.h"
@@ -25,13 +25,7 @@ struct TEnvironment
 		VarSet(VarSet&& rhs) = default;
 
 		VarSet& operator=(const VarSet&) = delete;
-
-		VarSet& operator=(VarSet&& rhs) noexcept
-		{
-			mData = Move(rhs.mData);
-			mCount = rhs.mCount;
-			return *this;
-		}
+		VarSet& operator=(VarSet&& rhs) noexcept = default;
 		
 		Span<const Tuple<StringView, StringView>> AsRange() const;
 		index_t Length() const {return mCount;}

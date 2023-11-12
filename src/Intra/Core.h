@@ -1,15 +1,110 @@
 ﻿#pragma once
 
-#if (__cplusplus < 201703 || !defined(__cpp_concepts)) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201704 || _MSC_VER < 1928)
+// Overridable build config parameters
+// possible INTRA_SUPPORT_* values: 0 - no support, 1 - avoid static linking (some functions may fail at runtime), 2 - full support
+//////////////////////////////////////
+
+// Create a build for Windows XP, some Vista+ features will be unavailable, other features will be emulated even when running on newer systems.
+// On Visual Studio also requires setting target Windows version linker flag to 5.01
+#ifndef INTRA_BUILD_FOR_WINDOWS_XP
+#define INTRA_BUILD_FOR_WINDOWS_XP 0
+#endif
+
+#ifndef INTRA_SUPPORT_OLD_MACOS // 10.11 and older
+#define INTRA_SUPPORT_OLD_MACOS 0
+#endif
+
+#ifndef INTRA_SUPPORT_MSVCRT
+#define INTRA_SUPPORT_MSVCRT 0
+#endif
+
+// use 0 for glibc-only builds for Linux or 1 to avoid using glibc-only functions
+#ifndef INTRA_SUPPORT_MUSL
+#define INTRA_SUPPORT_MUSL 1
+#endif
+
+// This allows using optimizations which are considered by C++ standard as undefined behaviour but known to work as expected on target architecture and supported compilers.
+// Such functions are marked as INTRA_NO_SANITIZE_UB
+#ifndef INTRA_ALLOW_UB_OPTIMIZATIONS
+#define INTRA_ALLOW_UB_OPTIMIZATIONS 1
+#endif
+
+// Define to 1 to make Intra implement platform specific entry points (WinMain, android_main, etc.) and make them call main()
+#ifndef INTRA_UNIFIED_MAIN
+#define INTRA_UNIFIED_MAIN 0
+#endif
+
+// Define to 0 to make Intra #include all OS and 3rd-party API headers
+#ifndef INTRA_OWN_TOOLCHAIN
+#define INTRA_OWN_TOOLCHAIN 1
+#endif
+
+// may be useful to debug or prevent code bloat, or to use Intra without CRT
+#ifndef INTRA_AVOID_STATIC_INITIALIZERS
+#define INTRA_AVOID_STATIC_INITIALIZERS 0
+#endif
+
+#ifndef INTRA_WINSTORE_APP
+#if defined(_WIN32) && defined(WINAPI_FAMILY) && WINAPI_FAMILY == 2
+#define INTRA_WINSTORE_APP 1
+#else
+#define INTRA_WINSTORE_APP 0
+#endif
+#endif
+
+#ifdef _DEBUG
+#ifndef INTRA_DEBUG
+#define INTRA_DEBUG 1
+#endif
+#ifndef INTRA_DEBUG_ABI
+#define INTRA_DEBUG_ABI
+#endif
+/** Store some additional debug info in allocated blocks.
+Warning: breaks ABI.
+*/
+#define INTRA_DEBUG_ALLOCATORS
+#else
+#ifndef INTRA_DEBUG
+#define INTRA_DEBUG 0
+#endif
+#endif
+
+#ifndef INTRA_MINIMIZE_CODE_SIZE
+/// Define INTRA_MINIMIZE_CODE_SIZE to:
+/// - 0: default value - all optimizations and error checks are enabled
+/// - 1: disable large code size footprint optimizations (fast integer parsing, manual loop unrolling, complex SIMD)
+/// - 2: disable all optimizations even low code size footprint (all SIMD, early exit branches)
+/// - 3: disable troubleshooting (logging, error messages)
+/// - 4: reduce code size by all means - not for production. May be useful for microcontrollers or demoscene.
+///   This can even increase algorithmic complexity (e.g. using arrays everywhere) and
+///   sacrifice correctness (low precision or reduced range math, omitting most error checks)
+#define INTRA_MINIMIZE_CODE_SIZE 0
+#endif
+
+#ifndef INTRA_PREFER_CRT_FUNCTIONS
+#if INTRA_MINIMIZE_CODE_SIZE >= 1
+#define INTRA_PREFER_CRT_FUNCTIONS 0
+#else
+#define INTRA_PREFER_CRT_FUNCTIONS 1
+#endif
+#endif
+
+//////////////////////////////////
+
+#if (__cplusplus < 201703 || !defined(__cpp_concepts)) && (!defined(_MSVC_LANG) || _MSVC_LANG < 201704 || _MSC_VER < 1929) || defined(__INTEL_COMPILER)
 static_assert(false, "Unsupported compiler configuration. Supported configurations: "
 	"GCC 10 (-std=c++20), "
-	"Clang 10 (-std=c++20), "
-	"MSVC 2019.8 (/std:c++latest), "
-	"and above");
+	"Clang 12 (-std=c++20), "
+	"MSVC 2019.9 (/std:c++latest), "
+	"and above. Other compilers based on these may also be supported.");
+#endif
+
+#if !defined(__GNUC__) && !defined(_MSC_VER)
+static_assert(false, "Unrecognized compiler!");
 #endif
 
 #ifdef __BYTE_ORDER__
-static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Intra doesn't support this architecture");
+static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target architecture");
 #endif
 
 /// Useful to organize code in foldable sections.
@@ -19,14 +114,11 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Intra doesn't support thi
 //// <Compiler specific features>
 #if INTRA_CODE_SECTION
 
-#if !defined(__GNUC__) && !defined(_MSC_VER)
-static_assert(false, "Unrecognized compiler!");
-#endif
-
 #if defined(__GNUC__) || defined(__clang__)
 #define INTRA_MAY_ALIAS __attribute__((__may_alias__))
 #define INTRA_FORCEINLINE inline __attribute__((always_inline))
 #define INTRA_FORCEINLINE_LAMBDA __attribute__((always_inline))
+#define INTRA_NOINLINE __attribute__((noinline))
 #define INTRA_ARTIFICIAL [[gnu::artificial]]
 #define INTRA_OPTIMIZE_FUNCTION_END
 #define INTRA_LIKELY(expr) __builtin_expect(!!(expr), 1)
@@ -35,13 +127,29 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_NON_GNU_EXT_CODE(...)
 #define INTRA_MSVC_EXT_CODE(...)
 #define INTRA_GNU_EXTENSION_SUPPORT
-#define INTRA_CRTDECL
+#define INTRA_NO_SANITIZE_UB __attribute__((no_sanitize("undefined")))
+#define INTRA_HOT __attribute__((hot))
+#define INTRA_COLD __attribute__((cold))
+#define INTRA_TARGET_SSE3 __attribute__((__target__ ("sse3")))
+#define INTRA_TARGET_SSSE3 __attribute__((__target__ ("ssse3")))
+#define INTRA_TARGET_SSE41 __attribute__((__target__ ("sse4.1")))
+#define INTRA_TARGET_SSE42 __attribute__((__target__ ("sse4.2")))
+#define INTRA_TARGET_AVX __attribute__((__target__ ("avx")))
+#define INTRA_TARGET_AVX2 __attribute__((__target__ ("avx2")))
 #else
 #define INTRA_MAY_ALIAS
 #define INTRA_ARTIFICIAL
 #define INTRA_NON_GNU_EXT_CODE(...) __VA_ARGS__
 #define INTRA_GNU_EXT_CODE(...)
 #define INTRA_MSVC_EXT_CODE(...) __VA_ARGS__
+#define INTRA_HOT
+#define INTRA_COLD
+#define INTRA_TARGET_SSE3
+#define INTRA_TARGET_SSSE3
+#define INTRA_TARGET_SSE41
+#define INTRA_TARGET_SSE42
+#define INTRA_TARGET_AVX
+#define INTRA_TARGET_AVX2
 
 // Implement GCC CPU architecture defines for MSVC. We implement only __<arch>__ form
 #if !defined(__i386__) && defined(_M_IX86)
@@ -71,7 +179,7 @@ static_assert(false, "Unrecognized compiler!");
 
 #endif
 
-#if defined(__GNUC__) && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#if defined(__GNUC__) && !defined(__clang__)
 #define INTRA_MATH_CONSTEXPR constexpr
 #define INTRA_MATH_CONSTEXPR_SUPPORT
 #define INTRA_NO_VECTORIZE_FUNC __attribute__((optimize("no-tree-vectorize")))
@@ -80,7 +188,7 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_NO_VECTORIZE_FUNC
 #endif
 
-#if !defined(__INTEL_COMPILER) && (defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 11 || defined(_MSC_VER))
+#if !defined(__GNUC__) || __GNUC__ >= 11
 #define INTRA_CONSTEXPR_BITCAST_SUPPORT
 #endif
 
@@ -111,18 +219,25 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_ASSUME_ALIGNED(ptr, alignmentBytes) ptr
 #define INTRA_FORCEINLINE __forceinline
 #define INTRA_FORCEINLINE_LAMBDA
-#define __builtin_trap() __debugbreak()
+#define INTRA_NOINLINE __declspec(noinline)
+#endif
+
+#ifdef _MSC_VER
+#define INTRA_DEBUG_BREAK __debugbreak()
+#elif __has_builtin(__builtin_debugtrap)
+#define INTRA_DEBUG_BREAK __builtin_debugtrap()
+#elif __has_builtin(__builtin_trap)
+#define INTRA_DEBUG_BREAK __builtin_trap()
 #endif
 
 #define INTRA_UTIL_INLINE INTRA_ARTIFICIAL INTRA_FORCEINLINE
 
 #ifdef _MSC_VER
+#define INTRA_NOVTABLE  __declspec(novtable) // Promise that the class is never used by itself, but only as a base class for other classes. Use with interfaces, abstract classes and implementation CRTPs.
 #define INTRA_CURRENT_FUNCTION __FUNCSIG__
 #define INTRA_EMPTY_BASES __declspec(empty_bases)
-#define INTRA_NOVTABLE  __declspec(novtable)
 #define INTRA_CRTRESTRICT __declspec(restrict)
 #define INTRA_NO_VECTORIZE_LOOP __pragma(loop(no_vector))
-#define INTRA_INLINE_REQUIRES_EXPR(type, ...) CombineOverloads{[]<typename T>(T*) -> decltype((__VA_ARGS__), true) {return true;}, retFalse}(static_cast<type*>(nullptr))
 
 // Pass "/Ob1 -DINTRA_CONFIG_MSVC_INLINE_ONLY_FORCEINLINE" to the compiler
 // in order to get better performance wuthout losing code debugability.
@@ -136,15 +251,22 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_NOVTABLE
 #define INTRA_CRTRESTRICT
 #define INTRA_NO_VECTORIZE_LOOP
-#define INTRA_INLINE_REQUIRES_EXPR(type, ...) requires {__VA_ARGS__;}
 #endif
 
-#if defined(_WIN32) && defined(__i386__)
-#define INTRA_CRTDECL __cdecl //Used to import functions from CRT without including its headers
-#define INTRA_WINAPI __stdcall
+#define INTRA_INTERFACE struct INTRA_NOVTABLE
+
+#if __has_cpp_attribute(no_unique_address)
+#define INTRA_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#elif __has_cpp_attribute(msvc::no_unique_address)
+#define INTRA_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
-#define INTRA_CRTDECL
-#define INTRA_WINAPI
+#define INTRA_NO_UNIQUE_ADDRESS // clang-cl gets here but not MINGW Clang/GC
+#endif
+
+#if defined(__i386__) && defined(__GNUC__)
+#define INTRA_FORCEALIGN_ARG __attribute__((force_align_arg_pointer))
+#else
+#define INTRA_FORCEALIGN_ARG
 #endif
 
 
@@ -153,19 +275,13 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_DLL_EXPORT __declspec(dllexport)
 #define INTRA_DLL_LOCAL
 #elif defined(__GNUC__)
-#define INTRA_DLL_IMPORT __attribute__ ((visibility ("default")))
-#define INTRA_DLL_EXPORT __attribute__ ((visibility ("default")))
-#define INTRA_DLL_LOCAL  __attribute__ ((visibility ("hidden")))
+#define INTRA_DLL_IMPORT __attribute__((visibility ("default")))
+#define INTRA_DLL_EXPORT __attribute__((visibility ("default")))
+#define INTRA_DLL_LOCAL  __attribute__((visibility ("hidden")))
 #else
 #define INTRA_DLL_IMPORT
 #define INTRA_DLL_EXPORT
 #define INTRA_DLL_LOCAL
-#endif
-
-#if defined(_MSC_VER) && defined(_DLL)
-#define INTRA_CRTIMP INTRA_DLL_IMPORT
-#else
-#define INTRA_CRTIMP
 #endif
 
 #if defined(_MSC_VER) && defined(__SSE2__)
@@ -176,18 +292,6 @@ static_assert(false, "Unrecognized compiler!");
 
 #ifndef INTRA_CONSTEXPR_TEST // To disable constexpr tests, compile with -D INTRA_CONSTEXPR_TEST=0
 #define INTRA_CONSTEXPR_TEST __cpp_constexpr
-#endif
-
-#ifdef __cpp_constexpr_dynamic_alloc
-#define INTRA_CONSTEXPR_DESTRUCTOR constexpr
-#else
-#define INTRA_CONSTEXPR_DESTRUCTOR
-#endif
-
-#if !defined(_MSC_VER) || _MSC_VER >= 1929
-#define INTRA_CONSTEXPR_VIRTUAL constexpr
-#else
-#define INTRA_CONSTEXPR_VIRTUAL
 #endif
 
 #ifdef __cpp_modules
@@ -256,6 +360,8 @@ static_assert(false, "Unrecognized compiler!");
 
 #ifdef __clang__
 #define INTRA_IGNORE_WARN_CLANG(x) INTRA_IGNORE_WARN(x)
+#define INTRA_IGNORE_WARN_GCC(name)
+#define INTRAZ_D_USEFUL_WARNINGS_GCC(W)
 #else
 #define INTRA_IGNORE_WARN_CLANG(x)
 #ifdef __GNUC__
@@ -306,8 +412,10 @@ static_assert(false, "Unrecognized compiler!");
 #define INTRA_IGNORE_WARN_CONSTANT_CONDITION INTRA_IGNORE_WARNS_MSVC(4127)
 #define INTRA_IGNORE_WARN_SIGN_CONVERSION \
 	INTRA_IGNORE_WARN("sign-conversion") INTRA_IGNORE_WARNS_MSVC(4365)
+#define INTRA_IGNORE_WARN_INT_FLOAT_CONVERSION \
+	INTRA_IGNORE_WARN("implicit-int-float-conversion")
 #define INTRA_IGNORE_WARN_SIGN_COMPARE \
-	INTRA_IGNORE_WARN("sign-compare") INTRA_IGNORE_WARNS_MSVC(4018)
+	INTRA_IGNORE_WARN("sign-compare") INTRA_IGNORE_WARNS_MSVC(4018 4389)
 #define INTRA_IGNORE_WARN_LOSING_CONVERSION \
 	INTRA_IGNORE_WARN("conversion") INTRA_IGNORE_WARNS_MSVC(4244)
 #define INTRA_IGNORE_WARN_NO_VIRTUAL_DESTRUCTOR \
@@ -337,7 +445,7 @@ static_assert(false, "Unrecognized compiler!");
 	INTRA_IGNORE_WARN_CLANG("implicit-fallthrough") \
 	INTRA_IGNORE_WARN_CLANG("float-equal") \
 	INTRA_IGNORE_WARN_CLANG("reserved-id-macro") \
-	INTRA_IGNORE_WARNS_MSVC(4514 4710 4714 4820 4711 4577 4868 5045   4648 /*TODO: remove this when [[no_unique_address]] is supported*/)
+	INTRA_IGNORE_WARNS_MSVC(4514 4710 4714 4820 4711 4577 4868 5045)
 //4514 - unused inline function
 //4710 - function not inlined
 //4714 - cannot inline __forceinline function
@@ -373,9 +481,8 @@ using size_t = decltype(sizeof(0));
 /// All Intra libraries define everything in this namespace
 namespace Intra { INTRA_BEGIN
 //// <Basic type definitions and build config variables>
-using byte = unsigned char;
 using int8 = signed char;
-using uint8 = byte;
+using uint8 = unsigned char;
 using int16 = short;
 using uint16 = unsigned short;
 using int64 = long long;
@@ -409,9 +516,6 @@ using index_t = decltype(static_cast<char*>(nullptr) - static_cast<char*>(nullpt
 using char8_t = char;
 #endif
 
-constexpr struct TUnsafe {} Unsafe;
-constexpr struct TUndefined {} Undefined;
-
 #ifdef __SIZEOF_INT128__
 using int128 = __int128;
 using uint128 = unsigned __int128;
@@ -421,16 +525,6 @@ using uint128 = unsigned __int128;
 #define INTRA_FWD(...) static_cast<decltype(__VA_ARGS__)&&>(__VA_ARGS__)
 
 [[nodiscard]] INTRA_UTIL_INLINE constexpr bool IsConstantEvaluated() noexcept {return __builtin_is_constant_evaluated();}
-constexpr auto AddressOf = [](auto&& arg) noexcept {return __builtin_addressof(arg);};
-
-[[noreturn]] INTRA_UTIL_INLINE void UnreachableCode(TUnsafe)
-{
-#ifdef __GNUC__
-	__builtin_unreachable();
-#else
-	__assume(false);
-#endif
-}
 
 namespace z_D {
 // May be extended later to support other types by adding function overloads.
@@ -441,20 +535,67 @@ template<typename T1, typename T2> requires(requires(T1 a, T2 b) {a > b? a: b;})
 constexpr auto Max_(T1 a, T2 b) {return a > b? a: b;}
 }
 
-constexpr auto Min = [](auto&& a, auto&&... args)
+
+// This way to create aliases allows to reduce compiler verbosity by creating a new type with a shorter name.
+// The implementation below tries to achieve the same syntax as this simple implementation:
+//#define INTRA_CLASS_ALIAS(aliasName, ...) using aliasName = __VA_ARGS__
+#define INTRA_CLASS_ALIAS(aliasName, ...) class aliasName: public __VA_ARGS__ {public: using super = __VA_ARGS__; using super::super;}
+
+// Lambdas are not readable in compiler output, so we want to attach a type name to a functor.
+// The implementation below tries to achieve the same syntax as this simple implementation:
+//#define INTRA_DEFINE_FUNCTOR(name) constexpr auto name = []
+#define INTRA_DEFINE_FUNCTOR(name) namespace z_D {template<typename T> struct name ## T: T {constexpr name ## T() = default; constexpr name ## T(T t): T(t) {}};} constexpr z_D::name ## T name = []
+INTRA_DEFINE_FUNCTOR(AddressOf)(auto&& arg) noexcept {return __builtin_addressof(arg);};
+
+INTRA_DEFINE_FUNCTOR(Min)(auto&& a, auto&&... args)
 {
 	if constexpr(sizeof...(args) == 0) return INTRA_FWD(a);
 	else if constexpr(sizeof...(args) == 1) return z_D::Min_(INTRA_FWD(a), INTRA_FWD(args)...);
 	else return operator()(INTRA_FWD(a), operator()(INTRA_FWD(args)...));
 };
-constexpr auto Max = [](auto&& a, auto&&... args)
+INTRA_DEFINE_FUNCTOR(Max)(auto&& a, auto&&... args)
 {
 	if constexpr(sizeof...(args) == 0) return a;
 	else if constexpr(sizeof...(args) == 1) return z_D::Max_(a, args...);
 	else return operator()(a, operator()(args...));
 };
 
+// Used to define a placement new without including <new> and avoiding a conflict with it.
 constexpr struct {} Construct;
+
+template<bool Const> class UntypedPtr
+{
+	void* mPtr;
+	INTRA_UTIL_INLINE explicit UntypedPtr(void* ptr): mPtr(ptr) {}
+	friend struct TUnsafe;
+public:
+	template<typename T> INTRA_UTIL_INLINE operator T*() const requires(!Const) {return static_cast<T*>(mPtr);}
+};
+template<> class UntypedPtr<true>
+{
+	const void* mPtr;
+	INTRA_UTIL_INLINE explicit UntypedPtr(const void* ptr): mPtr(ptr) {}
+	friend struct TUnsafe;
+public:
+	template<typename T> INTRA_UTIL_INLINE operator const T*() const {return static_cast<const T*>(mPtr);}
+};
+
+// Used to declare an unsafe function is unsafe and mark all its invocations as such.
+// It's recomended to use only with short inline functions otherwise passing an extra parameter adds some overhead.
+constexpr struct TUnsafe {
+	// Allows to do automatic reinterpret casts for passing arguments to 3rd-party API
+	INTRA_UTIL_INLINE auto operator()(void* ptrToCast) const {return UntypedPtr<false>(ptrToCast);}
+	INTRA_UTIL_INLINE auto operator()(const void* ptrToCast) const {return UntypedPtr<true>(ptrToCast);}
+} Unsafe;
+
+[[noreturn]] INTRA_UTIL_INLINE void UnreachableCode(TUnsafe)
+{
+#ifdef __GNUC__
+	__builtin_unreachable();
+#else
+	__assume(false);
+#endif
+}
 
 INTRA_IGNORE_WARN_GCC("effc++")
 constexpr struct {template<typename T> auto& operator=(T&) const {return *this;}} _;
@@ -474,51 +615,46 @@ constexpr bool TargetIsFloatBigEndian =
 	TargetIsBigEndian;
 #endif
 
-enum class OperatingSystem {Windows, Linux, Android, FreeBSD, Emscripten, IOS, MacOS, Unknown};
+enum class OperatingSystem {Windows, Linux, Android, FreeBSD, DragonFly, NetBSD, OpenBSD, Emscripten, iOS, MacOS, Unknown};
 
 constexpr OperatingSystem TargetOS = OperatingSystem::
 #ifdef _WIN32
 	Windows;
-#elif defined(__linux__)
-	Linux;
 #elif defined(__ANDROID__)
 	Android;
+#elif defined(__linux__)
+	Linux;
 #elif defined(__FreeBSD__)
 	FreeBSD;
+#elif defined(__DragonFly__)
+	DragonFly;
+#elif defined(__NetBSD__)
+	NetBSD;
+#elif defined(__OpenBSD__)
+	OpenBSD;
 #elif defined(__EMSCRIPTEN__)
 	Emscripten;
 #elif defined(__APPLE__)
-#ifdef __MACH__
-    MacOS;
+#if TARGET_OS_IPHONE // iOS or simulatorm the user must #include <TargetConditionals.h> to properly tell iOS from Mac OS
+    iOS;
 #else
-    IOS;
+    MacOS;
 #endif
 #else
     Unknown;
 #endif
 
-#if defined(_MSC_VER) && !defined(__clang__)
-//Visual Studio 2019 has no Windows XP toolkit version.
-//Earlier versions are not supported by Intra.
-#define INTRA_DROP_XP_SUPPORT
+// We use INTRA_TARGET_IS_BSD macro when we don't know exactly but assume that the code would be valid for these OSes.
+// When we know it, we check each OS macro explicitly. Presence of INTRA_TARGET_IS_BSD means that the code hasn't been tested on OS not listed explicitly.
+#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__) // defined(__unix__) && !defined(__linux__) && !defined(__sun) && !defined(__hpux)
+#define INTRA_TARGET_IS_BSD 1
+#else
+#define INTRA_TARGET_IS_BSD 0
 #endif
 
-#ifdef _DEBUG
-#ifndef INTRA_DEBUG
-#define INTRA_DEBUG 1
-#endif
-#ifndef INTRA_DEBUG_ABI
-#define INTRA_DEBUG_ABI
-#endif
-/** Store some additional debug info in allocated blocks.
-Warning: breaks ABI.
-*/
-#define INTRA_DEBUG_ALLOCATORS
-#else
-#ifndef INTRA_DEBUG
-#define INTRA_DEBUG 0
-#endif
-#endif
+constexpr bool TargetIsLinux = TargetOS == OperatingSystem::Linux || TargetOS == OperatingSystem::Android;
+constexpr bool TargetIsApple = TargetOS == OperatingSystem::iOS || TargetOS == OperatingSystem::MacOS;
+constexpr bool TargetIsBSD = INTRA_TARGET_IS_BSD;
 
 /** Defines which debug checks should be included into the program.
 	0 - no checks
@@ -527,17 +663,6 @@ Warning: breaks ABI.
 */
 constexpr int DebugCheckLevel = INTRA_DEBUG;
 
-#ifndef INTRA_MINIMIZE_CODE_SIZE
-/// Define INTRA_MINIMIZE_CODE_SIZE to:
-/// - 0: default value - all optimizations and error checks are enabled
-/// - 1: disable large code size footprint optimizations (fast integer parsing, manual loop unrolling, complex SIMD)
-/// - 2: disable all optimizations even low code size footprint (all SIMD, early exit branches)
-/// - 3: disable troubleshooting (logging, error messages)
-/// - 4: reduce code size by all means - not for production. May be useful for microcontrollers or demoscene.
-///   This can even increase algorithmic complexity (e.g. using arrays everywhere) and
-///   sacrifice correctness (low precision or reduced range math, omitting most error checks)
-#define INTRA_MINIMIZE_CODE_SIZE 0
-#endif
 constexpr bool DisableLargeCodeSizeFootprintOptimizations = INTRA_MINIMIZE_CODE_SIZE >= 1;
 constexpr bool DisableAllOptimizations = INTRA_MINIMIZE_CODE_SIZE >= 2;
 constexpr bool DisableTroubleshooting = INTRA_MINIMIZE_CODE_SIZE >= 3;
@@ -596,7 +721,7 @@ namespace z_D {
 template<typename T, typename... Ts> struct TPackFirst_ {using _ = T;};
 }
 template<typename... Ts> using TPackFirst = typename z_D::TPackFirst_<Ts...>::_;
-#ifdef __clang__
+#if defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 14
 template<size_t Index, typename... Ts>
 using TPackAt = __type_pack_element<Index, Ts...>;
 #else
@@ -692,15 +817,27 @@ template<typename T> constexpr bool CSame_<T> = true;
 template<typename T> constexpr bool CSame_<T, T> = true;
 template<typename T1, typename T2, typename T3, typename... Ts>
 constexpr bool CSame_<T1, T2, T3, Ts...> = CSame_<T1, T2> && CSame_<T1, T3> && (CSame_<T1, Ts> && ...);
+template<typename... Ts> constexpr bool CAnyOf_ = false;
+template<typename T, typename... Ts> constexpr bool CAnyOf_<T, Ts...> = (CSame_<T, Ts> || ...);
 }
 template<typename... Ts> concept CSame = z_D::CSame_<Ts...>;
 template<typename... Ts> concept CSameUnqual = CSame<TUnqual<Ts>...>;
 template<typename... Ts> concept CSameIgnoreRef = CSame<TRemoveReference<Ts>...>;
 template<typename... Ts> concept CSameUnqualRef = CSameUnqual<TRemoveReference<Ts>...>;
 template<typename... Ts> concept CSameNotVoid = CSame<Ts...> && !CSame<void, Ts...>;
-template<typename T, typename... Ts> concept CAnyOf = (CSame<T, Ts> || ...);
+template<typename... Ts> concept CAnyOf = z_D::CAnyOf_<Ts...>;
+
+// use like this: static_assert(CFalse<T>, "This constexpr if branch is not supported!")
+template<typename... Ts> concept CFalse = false;
 
 template<typename T1, typename... Ts> concept CSameSize = ((sizeof(T1) == sizeof(Ts)) && ...);
+
+constexpr auto VSameTypes = []<typename... Ts>(Ts&&...) {return CSameUnqualRef<Ts...>;};
+constexpr auto VAnyOf = []<typename... Ts>(Ts&&...) {return CAnyOf<TUnqual<TRemoveReference<Ts>>...>;};
+
+struct TEmpty {};
+constexpr struct TUndefined {} Undefined;
+template<auto V> concept CDefined = !CSameUnqual<decltype(V), TUndefined>;
 
 namespace z_D {
 template<typename T, bool = CSameUnqual<T, void>> struct TAddReference
@@ -717,46 +854,25 @@ template<typename T> struct TAddReference<T, true>
 template<typename T> using TAddLValueReference = typename z_D::TAddReference<T>::LValue;
 template<typename T> using TAddRValueReference = typename z_D::TAddReference<T>::RValue;
 
+#if 0
 namespace z_D {
-template<typename T> constexpr bool CFunctionPointer_ = false;
+template<typename T> constexpr bool CFunction_ = false;
 #ifdef _MSC_VER
 #ifdef __i386__
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(__cdecl*)(Args...)> = true;
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(__stdcall*)(Args...)> = true;
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(__fastcall*)(Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret __cdecl (Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret __stdcall (Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret __fastcall (Args...)> = true;
 #else
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(*)(Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret(Args...)> = true;
 #endif
 #if defined(__SSE2__)
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(__vectorcall*)(Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret __vectorcall (Args...)> = true;
 #endif
 #else
-template<typename Ret, typename... Args> constexpr bool CFunctionPointer_<Ret(*)(Args...)> = true;
+template<typename Ret, typename... Args> constexpr bool CFunction_<Ret(Args...)> = true;
 #endif
 }
-template<typename T> concept CFunctionPointer = z_D::CFunctionPointer_<T>;
-template<typename T> concept CAbstractClass = __is_abstract(T);
-template<typename T> concept CUnion = __is_union(T);
-template<typename T> concept CClass = __is_class(T);
-template<typename T> concept CEnum = __is_enum(T);
-template<typename T> concept CEmpty = __is_empty(T);
-template<typename T> concept CFinalClass = __is_final(T);
-template<typename T> concept CTriviallyDestructible = __has_trivial_destructor(T);
-template<class T, class From> concept CDerived = __is_base_of(From, T);
-template<typename T> concept CHasVirtualDestructor = __has_virtual_destructor(T);
-template<typename T> concept CPolymorphic = __is_polymorphic(T);
-template<typename T> concept CFunction = !CReference<T> && !CConst<const T>;
-template<typename T> concept CObject = CConst<const T> && !CVoid<T>; //== CScalar<T> || CArray<T> || CUnion<T> || CClass<T> == !CFunction<T> && !CReference<T> && !CVoid<T>
-template<typename T> concept CAggregate = __is_aggregate(T);
-template<typename T> concept CStandardLayout = __is_standard_layout(T);
-template<typename T> concept CTriviallyCopyable = __is_trivially_copyable(T);
-template<typename T, typename... Args> concept CTriviallyConstructible = __is_trivially_constructible(T, Args...);
-template<typename T, typename Arg> concept CTriviallyAssignable = __is_trivially_assignable(T, Arg);
-template<typename T> concept CTriviallyCopyAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddLValueReference<const T>>;
-template<typename T> concept CTriviallyMoveAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddRValueReference<T>>;
-template<typename T> concept CHasUniqueObjectRepresentations = __has_unique_object_representations(T);
-
-template<typename T> using TUnderlyingType = __underlying_type(T);
+#endif
 
 namespace z_D {
 template<typename T, template<typename...> class> constexpr bool CInstanceOfTemplate_ = false;
@@ -767,13 +883,13 @@ template<typename T, template<typename...> class Template> concept CInstanceOfTe
 
 template<typename T> concept CUnqualedVoid = CSame<T, void>;
 template<typename T> concept CUnqualedBasicUnsignedIntegral = CAnyOf<T,
-	char16_t, char32_t, bool, uint8, uint16, unsigned, unsigned long, uint64,
+	char16_t, char32_t, bool, unsigned char, unsigned short, unsigned, unsigned long, unsigned long long,
 	TSelect<char, unsigned, (char(~0) > 0)>,
 	TSelect<wchar_t, unsigned, (wchar_t(~0) > 0)>
 >;
 
 template<typename T> concept CUnqualedBasicSignedIntegral = CAnyOf<T,
-	int8, short, int, long, int64,
+	int8, short, int, long, long long,
 	TSelect<int, char, (char(~0) > 0)>,
 	TSelect<int, wchar_t, (wchar_t(~0) > 0)>
 >;
@@ -788,6 +904,26 @@ template<typename T> concept CUnqualedChar = CAnyOf<T, char, char16_t, char32_t,
 	, char8_t
 #endif
 >;
+
+template<typename T> concept CAbstractClass = __is_abstract(T);
+template<typename T> concept CUnion = __is_union(T);
+template<typename T> concept CClass = __is_class(T);
+template<typename T> concept CEnum = __is_enum(T);
+template<typename T> concept CEmpty = __is_empty(T);
+template<typename T> concept CFinalClass = __is_final(T);
+template<typename T> concept CTriviallyDestructible = __is_trivially_destructible(T); //__has_trivial_destructor - deprecated
+template<class T, class From> concept CDerived = __is_base_of(From, T);
+template<typename T> concept CHasVirtualDestructor = __has_virtual_destructor(T);
+template<typename T> concept CPolymorphic = __is_polymorphic(T);
+template<typename T> concept CFunction = !CReference<T> && !CConst<const T>;
+template<typename T> concept CAggregate = __is_aggregate(T);
+template<typename T> concept CStandardLayout = __is_standard_layout(T);
+template<typename T> concept CTriviallyCopyable = __is_trivially_copyable(T);
+template<typename T, typename... Args> concept CTriviallyConstructible = __is_trivially_constructible(T, Args...);
+template<typename T, typename Arg> concept CTriviallyAssignable = __is_trivially_assignable(T, Arg);
+template<typename T> concept CTriviallyCopyAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddLValueReference<const T>>;
+template<typename T> concept CTriviallyMoveAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddRValueReference<T>>;
+template<typename T> concept CHasUniqueObjectRepresentations = __has_unique_object_representations(T);
 
 template<typename T> concept CUnqualedBasicIntegral = CUnqualedBasicUnsignedIntegral<T> || CUnqualedBasicSignedIntegral<T>;
 template<typename T> concept CUnqualedBasicSigned = CUnqualedBasicSignedIntegral<T> || CUnqualedBasicFloatingPoint<T>;
@@ -805,6 +941,7 @@ template<typename T, typename U> constexpr bool CUnqualedMethodPointer<T U::*> =
 template<typename T> concept CUnqualedFieldPointer = CUnqualedMemberPointer<T> && !CUnqualedMethodPointer<T>;
 
 template<typename T> concept CVoid = CUnqualedVoid<TUnqual<T>>;
+template<typename T> concept CNonVoid = !CVoid<T>;
 template<typename T> concept CChar = CUnqualedChar<TUnqual<T>>;
 template<typename T> concept CBasicSignedIntegral = CUnqualedBasicSignedIntegral<TUnqual<T>>;
 template<typename T> concept CBasicUnsignedIntegral = CUnqualedBasicUnsignedIntegral<TUnqual<T>>;
@@ -816,6 +953,8 @@ template<typename T> concept CBasicPointer = CUnqualedBasicPointer<TUnqual<T>>;
 template<typename T> concept CMemberPointer = CUnqualedMemberPointer<TUnqual<T>>;
 template<typename T> concept CMethodPointer = CUnqualedMethodPointer<TUnqual<T>>;
 template<typename T> concept CFieldPointer = CUnqualedFieldPointer<TUnqual<T>>;
+template<typename T> concept CFunctionPointer = CUnqualedBasicPointer<T> && CFunction<TRemovePointer<T>>;
+template<typename T> concept CObject = CConst<const T> && !CVoid<T>; //== CScalar<T> || CArray<T> || CUnion<T> || CClass<T> == !CFunction<T> && !CReference<T> && !CVoid<T>
 
 
 template<typename From, typename To> using TPropagateConst = TSelect<const To, To, CConst<From>>;
@@ -833,6 +972,8 @@ static_assert(CSame<TPropagateRef<int&, float>, float&>);
 static_assert(CSame<TPropagateRef<int&&, float>, float&&>);
 static_assert(CSame<TPropagateQualLVRef<const int&, float>, const float&>);
 #endif
+
+template<typename T> using TUnderlyingType = __underlying_type(T);
 
 template<class T, size_t N = 0> constexpr size_t ArrayExtent = 0;
 template<class T> constexpr size_t ArrayExtent<T[], 0> = 0;
@@ -857,16 +998,16 @@ template<typename T, size_t N> struct TRemoveAllExtents_<T[N]>: TRemoveAllExtent
 }
 template<typename T> using TRemoveAllExtents = typename z_D::TRemoveAllExtents_<T>::_;
 
-#define INTRA_DEFINE_SAFE_DECLTYPE(checker_name, expr) \
+#define INTRA_DEFINE_SAFE_DECLTYPE(checker_name, ...) \
 	struct z_D_ ## checker_name {\
-		template<typename T> static auto test(int) -> decltype(expr); \
+		template<typename T> static auto test(int) -> decltype(__VA_ARGS__); \
 		template<typename T> static void test(...); \
 	};\
 	template<typename U> using checker_name = decltype(z_D_ ## checker_name::test<U>(0))
 
-#define INTRA_DEFINE_SAFE_DECLTYPE_T_ARGS(checker_name, expr) \
+#define INTRA_DEFINE_SAFE_DECLTYPE_T_ARGS(checker_name, ...) \
 	struct z_D_ ## checker_name { \
-		template<typename T, typename... Args> static auto test(int) -> decltype(expr); \
+		template<typename T, typename... Args> static auto test(int) -> decltype(__VA_ARGS__); \
 		static void test(...); \
 	};\
 	template<typename U, typename... UArgs> using checker_name = decltype(z_D_ ## checker_name::test<U, UArgs...>(0))
@@ -896,7 +1037,7 @@ template<typename T> concept CTriviallyEqualComparable = CScalar<T> ||
 
 
 template<typename T> concept CDestructible =
-#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
+#if defined(_MSC_VER) || defined(__clang__) && __clang_major__ >= 16
 	__is_destructible(T);
 #else
 	CReference<T> || !CUnknownBoundArrayType<T> && requires(TRemoveAllExtents<T> x) {x.~T();};
@@ -906,7 +1047,7 @@ template<typename T, typename To> concept CStaticCastable = requires(T x, To) {s
 
 template<typename T, typename... Args> concept CConstructible = __is_constructible(T, Args...);
 
-#if defined(_MSC_VER) || defined(__clang__) || defined(__INTEL_COMPILER) || defined(__GNUC__) && __GNUC__ >= 11
+#if defined(_MSC_VER) || defined(__clang__) || defined(__GNUC__) && __GNUC__ >= 11
 template<typename T, typename... Args> concept CNothrowConstructible = __is_nothrow_constructible(T, Args...);
 template<typename To, typename From> concept CNothrowAssignable = __is_nothrow_assignable(To, From);
 #else
@@ -935,22 +1076,24 @@ template<typename F, typename... Args> concept CCallable = requires(F&& f, Args&
 template<typename T, typename... Args> using TResultOf = decltype(Val<T>()(Val<Args>()...));
 INTRA_DEFINE_SAFE_DECLTYPE_T_ARGS(TResultOfOrVoid, Val<T>()(Val<Args>()...));
 
+template<typename From, typename To> concept CConvertibleTo =
+#if defined(_MSC_VER) || defined(__clang__)
+	__is_convertible_to(From, To);
+#else
+	CVoid<From> && CVoid<To> || requires(void(*f)(To), From from) {f(from);};
+#endif
+
+namespace z_D {
+template<typename T, typename FuncSignature> constexpr bool CCallableWithSignature_ = false;
+template<typename R, typename... Args, CCallable<Args...> T> constexpr bool CCallableWithSignature_<T, R(Args...)> = CConvertibleTo<TResultOf<T, Args...>, R>;
+}
+template<typename T, typename FuncSignature> constexpr bool CCallableWithSignature = z_D::CCallableWithSignature_<T, FuncSignature>;
 
 template<typename To, typename From> concept CAssignable = __is_assignable(To, From);
 template<typename T> concept CCopyAssignable = CAssignable<TAddLValueReference<T>, TAddLValueReference<const T>>;
 template<typename T> concept CMoveAssignable = CAssignable<TAddLValueReference<T>, T>;
 template<typename T> concept CNothrowCopyAssignable = CNothrowAssignable<TAddLValueReference<T>, TAddLValueReference<const T>>;
 template<typename T> concept CNothrowMoveAssignable = CNothrowAssignable<TAddLValueReference<T>, T>;
-
-/*!
-  Trivially relocatable is a less constrained concept than trivially copyable.
-  All trivially copyable types are also trivially relocatable.
-  However there may be types having move constructor and destructor that are not trivial separately but combination of them may be trivial.
-  It is true for most containers. You can make a bitwise copy of a container object without calling the move constructor and the destructor of source.
-  Specialize IsTriviallyRelocatable for such types after their definition.
-*/
-template<typename T> constexpr bool IsTriviallyRelocatable = CTriviallyCopyable<T>;
-template<typename T> concept CTriviallyRelocatable = IsTriviallyRelocatable<T>;
 
 namespace z_D {
 template<bool Cond, class T=void> struct TRequires {};
@@ -960,13 +1103,6 @@ template<bool Cond, class T> struct TRequiresAssert {static_assert(Cond); using 
 template<bool Cond, typename T = void> using Requires = typename z_D::TRequires<Cond, T>::_;
 template<typename TypeToCheckValidity, typename T = void> using RequiresT = T;
 template<bool Cond, typename T = void> using RequiresAssert = typename z_D::TRequiresAssert<Cond, T>::_;
-
-template<typename From, typename To> concept CConvertibleTo =
-#if defined(_MSC_VER) || defined(__clang__) || defined(__INTEL_COMPILER)
-	__is_convertible_to(From, To);
-#else
-	CVoid<From> && CVoid<To> || requires(void(*f)(To), From from) {f(from);};
-#endif
 
 template<typename T> concept CScopedEnum = CEnum<T> && !CConvertibleTo<T, int>;
 
@@ -1012,7 +1148,7 @@ static_assert(CArrayType<TRemoveReference<const char(&)[9]>>);
 namespace z_D {
 template<typename F> struct TFinally
 {
-	INTRA_CONSTEXPR_DESTRUCTOR ~TFinally() {OnDestruct();}
+	constexpr ~TFinally() {OnDestruct();}
 	F OnDestruct;
 };
 struct TFinallyMaker
@@ -1073,8 +1209,8 @@ template<template<typename...> class TL, typename... Ts> constexpr size_t TListL
 
 namespace z_D {
 template<size_t N, class TL> struct TListAt_;
-template<size_t N, template<typename...> class TL, typename... Ts>
-struct TListAt_<N, TL<Ts...>> {using _ = TPackAt<N, Ts...>;};
+template<size_t N, template<typename...> class TL, typename T0, typename... Ts>
+struct TListAt_<N, TL<T0, Ts...>> {using _ = TPackAt<N, T0, Ts...>;};
 }
 template<unsigned N, typename TL> using TListAt = typename z_D::TListAt_<N, TL>::_;
 
@@ -1148,7 +1284,7 @@ constexpr size_t TListContains = TListFind<TL, T, IndexFrom> != TListLength<TL>;
 
 template<class TL, typename T, size_t IndexFrom = 0>
 constexpr size_t TListFindUnique = [] {
-	constexpr auto firstEntryIndex = TListFind<TL, T, IndexFrom>;
+	[[maybe_unused]] constexpr auto firstEntryIndex = TListFind<TL, T, IndexFrom>;
 	if constexpr(firstEntryIndex == TListLength<TL>) return firstEntryIndex;
 	else if constexpr(TListFind<TL, T, firstEntryIndex + 1> != TListLength<TL>) return TListLength<TL>;
 	else return firstEntryIndex;
@@ -1238,7 +1374,7 @@ template<typename From, typename To> using CConvertibleToT = TValue<CConvertible
 template<class From, class To> concept CTListConvertible = CListAllPairs<z_D::CConvertibleToT, From, To>;
 template<class To, class From> concept CTListAssignable = CListAllPairs<z_D::CAssignableT, To, From>;
 
-template<typename T, auto... Values> constexpr auto VMapByType = TListAt<TListFind<TList<decltype(Values)...>, T>, TList<TValue<Values>...>>::_;
+template<typename T, auto... Values> constexpr auto VMapByType = TListAt<TListFind<TList<decltype(Values)...>, T> != sizeof...(Values)? (TListFind<TList<decltype(Values)...>, T>): 0, TList<TValue<Values>...>>::_;
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(TListFind<TList<int, float, double>, int> == 0);
@@ -1256,36 +1392,44 @@ static_assert(VMapByType<int32,
 	uint32(4294967295),
 	int16(32767),
 	int32(2147483647),
-	float(3.14f)
+	int8(65) //float(3.14f) - not supported by Clang 16
 > == 2147483647);
 #endif
 
-template<template<typename... Ts> class TList> constexpr auto ForEachType = []<typename F>(F&& f) requires (CCallable<F, TType<Ts>> && ...)
+template<typename... Ts> constexpr auto ForEachTypeInArgs = []<typename F>(F&& f) requires (CCallable<F, TType<Ts>> && ...)
 {
 	(f(Type<Ts>), ...);
 	return TList<typename decltype(f(Type<Ts>))::_...>();
 };
-template<template<typename... Ts> class TList, class F> using TForEachType = decltype(ForEachType<TList>(Val<F>()));
 
-template<template<typename... Ts> class TList> constexpr auto TListMapReduce =
+template<typename... Ts> constexpr auto TypesMapReduce =
 	[]<typename M, typename R>(M&& map, R&& reduce) requires (CCallable<M, TType<Ts>> && ...)
 {
 	return reduce(map(Type<Ts>)...);
 };
+
+namespace z_D {
+template<typename... Ts> using ForEachTypeInArgsT = decltype(ForEachTypeInArgs<Ts...>);
+template<typename... Ts> using TypesMapReduceT = decltype(TypesMapReduce<Ts...>);
+}
+template<class TList> constexpr auto ForEachType = [] {return TListUnpackTo<TList, z_D::ForEachTypeInArgsT>();}();
+template<class TList, class F> using TForEachType = decltype(ForEachType<TList>(Val<F>()));
+
+template<class TList> constexpr auto TListMapReduce = []{return TListUnpackTo<TList, z_D::TypesMapReduceT>();}();
 
 } INTRA_END
 //// </Parameter pack and type list manipulation>
 
 //// <Functors>
 namespace Intra { INTRA_BEGIN
-constexpr auto FNot = []<typename P>(P&& f) {
+INTRA_DEFINE_FUNCTOR(FNot)(auto&& f) {
 	return [f = INTRA_FWD(f)]<typename... Args>(Args&&... args) -> decltype(!f(INTRA_FWD(args)...)) {
 		return !f(INTRA_FWD(args)...);
 	};
 };
 
-constexpr auto FRepeat = [](auto&& value) {
-	return [value = INTRA_FWD(value)](auto&&...) -> const auto& noexcept {return value;};
+INTRA_DEFINE_FUNCTOR(FRepeat)(auto&& value) {
+	return [value = INTRA_FWD(value)](auto&&...) noexcept -> const auto& {return value;};
 };
 
 template<typename T> struct FRef
@@ -1300,6 +1444,14 @@ template<typename T> struct FRef
 template<auto Value> constexpr auto StaticConst = [](auto&&...) {return Value;};
 constexpr auto Always = StaticConst<true>;
 constexpr auto Never = StaticConst<false>;
+template<CFunctionPointer auto F> struct TCall
+{
+	template<typename... Args> requires CCallable<decltype(F), Args...>
+	decltype(auto) operator()(Args&&... args) {return F(INTRA_FWD(args)...);}
+};
+template<CFunctionPointer auto F> TCall<F> Call;
+template<typename T> void Delete(T* ptr) {delete ptr;};
+template<typename T> void DeleteArr(T* ptr) {delete[] ptr;};
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(FRepeat(5)() == 5);
@@ -1307,97 +1459,82 @@ static_assert(Always(7, 5, "qwerty", 1));
 static_assert(!Never(43, nullptr, 65));
 #endif
 
+INTRA_WARNING_PUSH
+INTRA_IGNORE_WARN_SIGN_COMPARE
+INTRA_IGNORE_WARN_SIGN_CONVERSION
+INTRA_IGNORE_WARN_INT_FLOAT_CONVERSION
+
 /// Comparison operations
-constexpr auto Less = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) < INTRA_FWD(b)) {return INTRA_FWD(a) < INTRA_FWD(b);};
-constexpr auto LEqual = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) <= INTRA_FWD(b)) {return INTRA_FWD(a) <= INTRA_FWD(b);};
-constexpr auto Greater = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) > INTRA_FWD(b)) {return INTRA_FWD(a) > INTRA_FWD(b);};
-constexpr auto GEqual = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) >= INTRA_FWD(b)) {return INTRA_FWD(a) >= INTRA_FWD(b);};
-constexpr auto Equal = [](auto&& a, auto&&... args) -> decltype((INTRA_FWD(a) == INTRA_FWD(args) && ...)) {return (INTRA_FWD(a) == INTRA_FWD(args) && ...);};
-constexpr auto NotEqual = [](auto&& a, auto&&... args) -> decltype((INTRA_FWD(a) != INTRA_FWD(args) || ...)) {return (INTRA_FWD(a) != INTRA_FWD(args) || ...);};
+INTRA_DEFINE_FUNCTOR(Less)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) < INTRA_FWD(b)) {return INTRA_FWD(a) < INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(LEqual)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) <= INTRA_FWD(b)) {return INTRA_FWD(a) <= INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(Greater)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) > INTRA_FWD(b)) {return INTRA_FWD(a) > INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(GEqual)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) >= INTRA_FWD(b)) {return INTRA_FWD(a) >= INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(Equal)(auto&& a, auto&&... args) -> decltype(((INTRA_FWD(a) == INTRA_FWD(args)) && ...)) {return ((INTRA_FWD(a) == INTRA_FWD(args)) && ...);};
+INTRA_DEFINE_FUNCTOR(NotEqual)(auto&& a, auto&&... args) -> decltype(((INTRA_FWD(a) != INTRA_FWD(args)) || ...)) {return ((INTRA_FWD(a) != INTRA_FWD(args)) || ...);};
 
-constexpr auto EqualsTo = [](auto&& x) {return Bind(Equal, INTRA_FWD(x));};
+INTRA_DEFINE_FUNCTOR(EqualsTo)(auto&& x) {return Bind(Equal, INTRA_FWD(x));};
 
-constexpr auto Add = [](auto&&... args) -> decltype((INTRA_FWD(args) + ...)) {return (INTRA_FWD(args) + ...);};
-constexpr auto Mul = [](auto&&... args) -> decltype((INTRA_FWD(args) * ...)) {return (INTRA_FWD(args) * ...);};
+INTRA_DEFINE_FUNCTOR(Add)(auto&&... args) -> decltype((INTRA_FWD(args) + ...)) {return (INTRA_FWD(args) + ...);};
+INTRA_DEFINE_FUNCTOR(Mul)(auto&&... args) -> decltype((INTRA_FWD(args) * ...)) {return (INTRA_FWD(args) * ...);};
 
-constexpr auto Sub = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) - INTRA_FWD(b)) {return INTRA_FWD(a) - INTRA_FWD(b);};
-constexpr auto RSub = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(b) - INTRA_FWD(a)) {return INTRA_FWD(b) - INTRA_FWD(a);};
-constexpr auto Div = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) / INTRA_FWD(b)) {return INTRA_FWD(a) / INTRA_FWD(b);};
-constexpr auto RDiv = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(b) / INTRA_FWD(a)) {return INTRA_FWD(b) / INTRA_FWD(a);};
-constexpr auto RMod = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(b) % INTRA_FWD(a)) {return INTRA_FWD(b) % INTRA_FWD(a);};
+INTRA_DEFINE_FUNCTOR(Sub)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) - INTRA_FWD(b)) {return INTRA_FWD(a) - INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(RSub)(auto&& a, auto&& b) -> decltype(INTRA_FWD(b) - INTRA_FWD(a)) {return INTRA_FWD(b) - INTRA_FWD(a);};
+INTRA_DEFINE_FUNCTOR(Div)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) / INTRA_FWD(b)) {return INTRA_FWD(a) / INTRA_FWD(b);};
+INTRA_DEFINE_FUNCTOR(RDiv)(auto&& a, auto&& b) -> decltype(INTRA_FWD(b) / INTRA_FWD(a)) {return INTRA_FWD(b) / INTRA_FWD(a);};
+INTRA_DEFINE_FUNCTOR(RMod)(auto&& a, auto&& b) -> decltype(INTRA_FWD(b) % INTRA_FWD(a)) {return INTRA_FWD(b) % INTRA_FWD(a);};
 
-constexpr auto Cmp = [](const auto& a, const auto& b) {return (a > b) - (a < b);};
-constexpr auto ISign = [](const auto& a) {return (a > 0) - (a < 0);};
+INTRA_DEFINE_FUNCTOR(Cmp)(const auto& a, const auto& b) {return (a > b) - (a < b);};
 
-constexpr auto And = [](auto&&... args) -> decltype((args && ...)) {return (args && ...);};
-constexpr auto Or = [](auto&&... args) -> decltype((args || ...)) {return (args || ...);};
+INTRA_WARNING_POP
 
-constexpr auto BitAnd = [](auto&&... args) -> decltype((INTRA_FWD(args) & ...)) {return (INTRA_FWD(args) & ...);};
-constexpr auto BitOr = [](auto&&... args) -> decltype((INTRA_FWD(args) | ...)) {return (INTRA_FWD(args) | ...);};
-constexpr auto BitXor = [](auto&&... args) -> decltype((INTRA_FWD(args) ^ ...)) {return (INTRA_FWD(args) ^ ...);};
+INTRA_DEFINE_FUNCTOR(ISign)(const auto& a) {return (a > 0) - (a < 0);};
 
-constexpr auto LShift = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) << b) {return INTRA_FWD(a) << b;};
-constexpr auto RShift = [](auto&& a, auto&& b) -> decltype(INTRA_FWD(a) >> b) {return INTRA_FWD(a) >> b;};
+INTRA_DEFINE_FUNCTOR(And)(auto&&... args) -> decltype((args && ...)) {return (args && ...);};
+INTRA_DEFINE_FUNCTOR(Or)(auto&&... args) -> decltype((args || ...)) {return (args || ...);};
 
-constexpr auto Deref = [](auto&& x) noexcept -> decltype(*x) {return *x;};
-constexpr auto Negate = [](auto&& x) noexcept -> decltype(-x) {return -x;};
-constexpr auto BitNot = [](auto&& x) noexcept -> decltype(~x) {return ~x;};
+INTRA_DEFINE_FUNCTOR(BitAnd)(auto&&... args) -> decltype((INTRA_FWD(args) & ...)) {return (INTRA_FWD(args) & ...);};
+INTRA_DEFINE_FUNCTOR(BitOr)(auto&&... args) -> decltype((INTRA_FWD(args) | ...)) {return (INTRA_FWD(args) | ...);};
+INTRA_DEFINE_FUNCTOR(BitXor)(auto&&... args) -> decltype((INTRA_FWD(args) ^ ...)) {return (INTRA_FWD(args) ^ ...);};
 
-constexpr auto Swap = []<typename T>(T&& a, T&& b) {
-	if(AddressOf(a) == AddressOf(b)) return;
+INTRA_DEFINE_FUNCTOR(LShift)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) << b) {return INTRA_FWD(a) << b;};
+INTRA_DEFINE_FUNCTOR(RShift)(auto&& a, auto&& b) -> decltype(INTRA_FWD(a) >> b) {return INTRA_FWD(a) >> b;};
+
+INTRA_DEFINE_FUNCTOR(Deref)(auto&& x) noexcept -> decltype(*x) {return *x;};
+INTRA_DEFINE_FUNCTOR(Negate)(auto&& x) noexcept -> decltype(-x) {return -x;};
+INTRA_DEFINE_FUNCTOR(BitNot)(auto&& x) noexcept -> decltype(~x) {return ~x;};
+
+INTRA_DEFINE_FUNCTOR(Swap)<typename T>(T&& a, T&& b) noexcept(CNothrowMoveConstructible<T> && CNothrowMoveAssignable<T>) {
 	auto temp = INTRA_MOVE(a);
 	a = INTRA_MOVE(b);
 	b = INTRA_MOVE(temp);
 };
 
-constexpr auto Exchange = [](auto& dst, auto&& newValue) {
+INTRA_DEFINE_FUNCTOR(Exchange)(auto& dst, auto&& newValue) {
 	auto oldValue = INTRA_MOVE(dst);
 	dst = INTRA_FWD(newValue);
 	return oldValue;
 };
 
-constexpr auto Move = [](auto&& x) noexcept -> decltype(auto) {return INTRA_MOVE(x);};
+INTRA_DEFINE_FUNCTOR(Move)(auto&& x) noexcept -> decltype(auto) {return INTRA_MOVE(x);};
 
-constexpr auto MoveNoexcept = []<typename T>(T&& t) noexcept -> decltype(auto) {
+INTRA_DEFINE_FUNCTOR(MoveNoexcept)<typename T>(T&& t) noexcept -> decltype(auto) {
 	if constexpr(CNothrowMoveConstructible<T> || !CCopyConstructible<T>)
 		return static_cast<TRemoveReference<T>&&>(t);
 	else return static_cast<TRemoveReference<T>&>(t);
 };
 
-constexpr auto Dup = []<typename T>(T&& x) noexcept {
+INTRA_DEFINE_FUNCTOR(Dup)<typename T>(T&& x) noexcept {
 	if constexpr(CLValueReference<T>) return x;
 	else return INTRA_MOVE(x);
 };
 
 /// Useful with ranges, for example:
 /// indexRange|Map(Bind(IndexOp, valueRange))
-constexpr auto IndexOp = [](auto&& from, auto&& index) -> decltype(from[index]) {return from[index];};
+INTRA_DEFINE_FUNCTOR(IndexOp)(auto&& from, auto&& index) -> decltype(from[index]) {return from[index];};
 
 template<typename T> constexpr auto ImplicitCastTo = [](auto&& value) -> T {return INTRA_FWD(value);};
 template<typename T> constexpr auto CastTo = [](auto&& value) -> decltype(T(INTRA_FWD(value))) {return T(INTRA_FWD(value));};
-constexpr auto Identity = [](auto&& x) -> decltype(auto) {return INTRA_FWD(x);};
-
-template<auto Op, typename... Ts> concept CHasOp = CCallable<decltype(Op), Ts...>;
-template<typename T1, typename T2 = T1> concept CHasOpAdd = CCallable<decltype(Add), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpSub = CCallable<decltype(Sub), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpMul = CCallable<decltype(Mul), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpDiv = CCallable<decltype(Div), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpMod = requires(T1 x, T2 y) {x % y;}; //TODO: CCallable<decltype(Mod), T1, T2>
-template<typename T1, typename T2 = int> concept CHasOpLShift = CCallable<decltype(LShift), T1, T2>;
-template<typename T1, typename T2 = int> concept CHasOpRShift = CCallable<decltype(RShift), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpBitAnd = CCallable<decltype(BitAnd), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpBitOr = CCallable<decltype(BitOr), T1, T2>;
-template<typename T1, typename T2 = T1> concept CHasOpBitXor = CCallable<decltype(BitXor), T1, T2>;
-template<typename T> concept CHasOpBitNot = CCallable<decltype(BitNot), T>;
-template<class L, typename I = index_t> concept CHasIndex = requires(L&& list, I index) {list[index];};
-
-template<typename T> concept CAdditive = CHasOpAdd<T> && CHasOpSubtract<T>;
-template<typename T> concept CMultiplicative = CHasOpMul<T> && CHasOpDiv<T>;
-template<typename T> concept CArithmetic = CAdditive<T> && CMultiplicative<T>;
-template<typename T> concept CBitset = CHasOpBitAnd<T> && CHasOpBitOr<T> && CHasOpBitXor<T> && CHasOpBitNot<T>;
-template<typename T> concept CShiftable = CHasOpLShift<T> && CHasOpRShift<T>;
-template<typename T> concept CNumber = CArithmetic<T> && CConstructible<double, T> && CConstructible<T, double>;
-
+INTRA_DEFINE_FUNCTOR(Identity)(auto&& x) -> decltype(auto) {return INTRA_FWD(x);};
 } INTRA_END
 //// </Functors>
 
@@ -1406,10 +1543,8 @@ namespace Intra { INTRA_BEGIN
 namespace z_D {
 template<class To, class From> constexpr auto ConstexprBitCastBetweenFloatAndInt(const From& from) noexcept;
 }
-template<class To, class From> constexpr auto BitCastTo = [](const From& from) noexcept
+template<CTriviallyCopyable To> constexpr auto BitCastTo = []<CTriviallyCopyable From>(const From& from) noexcept requires CSameSize<From, To>
 {
-	static_assert(sizeof(From) == sizeof(To));
-	static_assert(CTriviallyCopyable<To> && CTriviallyCopyable<From>);
 #ifdef INTRA_CONSTEXPR_BITCAST_SUPPORT
 	return __builtin_bit_cast(To, from);
 #else
@@ -1425,6 +1560,35 @@ template<class To, class From> constexpr auto BitCastTo = [](const From& from) n
 #endif
 };
 
+template<auto Op, typename... Ts> concept CHasOp = CCallable<decltype(Op), Ts...>;
+template<typename T1, typename T2 = T1> concept CHasOpAdd = CCallable<decltype(Add), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpSub = CCallable<decltype(Sub), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpMul = CCallable<decltype(Mul), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpDiv = CCallable<decltype(Div), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpMod = requires(T1 x, T2 y) {x % y;}; //TODO: CCallable<decltype(Mod), T1, T2>
+template<typename T1, typename T2 = int> concept CHasOpLShift = CCallable<decltype(LShift), T1, T2>;
+template<typename T1, typename T2 = int> concept CHasOpRShift = CCallable<decltype(RShift), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpBitAnd = CCallable<decltype(BitAnd), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpBitOr = CCallable<decltype(BitOr), T1, T2>;
+template<typename T1, typename T2 = T1> concept CHasOpBitXor = CCallable<decltype(BitXor), T1, T2>;
+template<typename T> concept CHasOpBitNot = CCallable<decltype(BitNot), T>;
+template<class L, typename I = index_t> concept CHasIndex = requires(L&& list, I index) {list[index];};
+
+template<typename T> concept CAdditive = CHasOpAdd<T> && CHasOpSub<T>;
+template<typename T> concept CMultiplicative = CHasOpMul<T> && CHasOpDiv<T>;
+template<typename T> concept CArithmetic = CAdditive<T> && CMultiplicative<T>;
+template<typename T> concept CBitset = CHasOpBitAnd<T> && CHasOpBitOr<T> && CHasOpBitXor<T> && CHasOpBitNot<T>;
+template<typename T> concept CShiftable = CHasOpLShift<T> && CHasOpRShift<T>;
+template<typename T> concept CNumber = CArithmetic<T> && CConstructible<double, T> && CConstructible<TRemoveReference<T>, double>;
+
+template<CNumber T, CNumber auto Divisor> struct Fixed;
+namespace z_D {
+template<class T> constexpr bool CUnqualedFixedPoint_ = false;
+template<CNumber T, CNumber auto Divisor> constexpr bool CUnqualedFixedPoint_<Fixed<T, Divisor>> = true;
+}
+template<class T> concept CUnqualedFixedPoint = z_D::CUnqualedFixedPoint_<T>;
+template<class T> concept CFixedPoint = CUnqualedFixedPoint<TUnqual<T>>;
+
 template<size_t MinSize> using TUnsignedIntOfSizeAtLeast = TPackAt<MinSize-1,
 	uint8, uint16, uint32, uint32, uint64, uint64, uint64, uint64>;
 template<size_t MinSize> using TSignedIntOfSizeAtLeast = TPackAt<MinSize-1,
@@ -1435,12 +1599,12 @@ template<size_t MinSize, bool Signed> using TIntOfSizeAtLeast = TSelect<
 	TUnsignedIntOfSizeAtLeast<MinSize>,
 	Signed>;
 
-template<size_t MaxSize> using TUnsignedIntOfSizeAtMost = TPackAt<Min(8, MaxSize) - 1,
+template<size_t MaxSize> using TUnsignedIntOfSizeAtMost = TPackAt<Min(8u, MaxSize) - 1,
 	uint8, uint16, uint16, uint32, uint32, uint32, uint32, uint64>;
-template<size_t MaxSize> using TSignedIntOfSizeAtMost = TPackAt<Min(8, MaxSize) - 1,
+template<size_t MaxSize> using TSignedIntOfSizeAtMost = TPackAt<Min(8u, MaxSize) - 1,
 	int8, int16, int16, int32, int32, int32, int32, int64>;
 
-template<size_t MinSize, bool Signed> using TIntOfSizeAtMost = TSelect<
+template<size_t MaxSize, bool Signed> using TIntOfSizeAtMost = TSelect<
 	TSignedIntOfSizeAtMost<MaxSize>,
 	TUnsignedIntOfSizeAtMost<MaxSize>,
 	Signed>;
@@ -1457,13 +1621,14 @@ template<typename T> struct TToIntegral_<T, true> {using _ = TIntOfSizeAtLeast<s
 }
 template<CBasicArithmetic T> using TToIntegral = typename z_D::TToIntegral_<TRemoveConstRef<T>>::_;
 
-template<typename T> constexpr int SizeofInBits = int(sizeof(T)*8);
+template<typename T> constexpr int SizeofInBits = int(sizeof(T) * 8);
+
+constexpr double Infinity = __builtin_huge_val();
 
 } INTRA_END
 //// </BitCastTo and numeric traits>
 
 //// <assert>
-#if INTRA_CODE_SECTION
 namespace Intra { INTRA_BEGIN
 struct SourceInfo
 {
@@ -1476,17 +1641,19 @@ struct SourceInfo
 		return Function != nullptr || File != nullptr || Line != 0;
 	}
 
-	constexpr SourceInfo(
-#ifndef __INTEL_COMPILER
+	// TODO: use __builtin_source_location when available (returns a pointer to a struct {const char* file; const char* function; unsigned line, column;};)
+	constexpr static SourceInfo Current(
 		const char* function = __builtin_FUNCTION(),
 		const char* file = __builtin_FILE(),
-		unsigned line = __builtin_LINE()):
-#else
-		const char* function = nullptr,
-		const char* file = nullptr,
-		unsigned line = 0):
-#endif
-        Function(function), File(file), Line(line) {}
+		unsigned line = __builtin_LINE()
+	)
+	{
+		return {
+			.Function = function,
+			.File = file,
+			.Line = line
+		};
+	}
 };
 
 struct DebugStringView
@@ -1516,10 +1683,9 @@ inline FatalErrorCallbackType& FatalErrorCallback()
 
 namespace z_D {
 #ifdef _WIN32
-extern "C" INTRA_DLL_IMPORT int INTRA_WINAPI IsDebuggerPresent();
+extern "C" int __declspec(dllimport) __stdcall IsDebuggerPresent();
 #endif
 }
-
 constexpr bool IsDebuggerAttached()
 {
 	if(IsConstantEvaluated()) return false;
@@ -1529,15 +1695,14 @@ constexpr bool IsDebuggerAttached()
 	return false;
 #endif
 }
-} INTRA_END
 
-#define INTRA_SOURCE_INFO ::Intra::SourceInfo(INTRA_CURRENT_FUNCTION, __FILE__, unsigned(__LINE__))
+#define INTRA_SOURCE_INFO ::Intra::SourceInfo{INTRA_CURRENT_FUNCTION, __FILE__, unsigned(__LINE__)}
 
 #define INTRA_DEBUGGER_BREAKPOINT (( \
 		!::Intra::Config::DisableTroubleshooting && \
 		!::Intra::IsConstantEvaluated() && \
 		::Intra::IsDebuggerAttached() \
-	)? (__builtin_trap(), (void)0): (void)0)
+	)? (INTRA_DEBUG_BREAK, (void)0): (void)0)
 
 
 #define INTRA_FATAL_ERROR(msg) (( \
@@ -1546,7 +1711,7 @@ constexpr bool IsDebuggerAttached()
 	::Intra::FatalErrorCallback()(msg, INTRA_SOURCE_INFO)): ::Intra::UnreachableCode(::Intra::Unsafe))
 
 #define INTRA_ASSERT(expr) INTRA_LIKELY(expr)? (void)0: (void)(\
-    (INTRA_FATAL_ERROR("Assertion " # expr " failed!"), true))
+    (INTRA_FATAL_ERROR("assertion " # expr " failed!"), true))
 
 #define INTRA_DEBUG_FATAL_ERROR(msg) (( \
 	::Intra::Config::DebugCheckLevel > 0 || \
@@ -1560,5 +1725,4 @@ constexpr bool IsDebuggerAttached()
 
 #define INTRA_PRECONDITION INTRA_DEBUG_ASSERT
 #define INTRA_POSTCONDITION INTRA_DEBUG_ASSERT
-#endif
-//// </assert>
+} INTRA_END //// </assert>

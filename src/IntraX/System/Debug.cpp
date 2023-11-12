@@ -231,8 +231,18 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 #endif
 
 namespace Intra { INTRA_BEGIN
-StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
-	StringView func, StringView file, unsigned line, StringView info, size_t stackFramesToSkip)
+namespace z_D {
+template<typename... Ts> Span<char> SprintfHelper(Span<char>& dst, const char* format, Ts... args)
+{
+	const unsigned fullLengthWithoutNullOrMax = unsigned(snprintf(dst.Begin, dst.size(), format, args...)); // some implementations return -1 (MaxValue<unsigned>)
+	auto res = dst|Take(fullLengthWithoutNullOrMax);
+	dst.Begin += res.Length();
+	if(dst.Empty() && !res.Empty() && res.Last() == '\0') res.PopLast();
+	return res;
+}
+}
+	
+StringView BuildDiagnosticMessage(Span<char>& dst, StringView type, StringView msg, SourceInfo sourceInfo, size_t stackFramesToSkip)
 {
 	const StringView msg = dst;
 	dst << file;
@@ -243,7 +253,7 @@ StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 		dst << ") ";
 	}
 	dst << type << ' ';
-	if(func != nullptr) dst << "in function\n" << func << ":\n";
+	if(func) dst << "in function\n" << func << ":\n";
 	dst << info << '\n';
 #ifdef INTRA_STACKTRACE_SUPPORTED
 	if(stackFramesToSkip != ~size_t())
@@ -261,17 +271,17 @@ StringView BuildDiagnosticMessage(Span<char>& dst, StringView type,
 
 void FatalErrorMessageAbort(StringView msg, bool printStackTrace, SourceInfo srcInfo)
 {
-#if(INTRA_MINEXE >= 3)
-	(void)srcInfo;
-	(void)msg;
-	(void)printStackTrace;
-	abort();
-#else
+	if constexpr(DisableTroubleshooting)
+	{
+		abort();
+		return;
+	}
+
 	static bool alreadyInAbort = false;
 	if(alreadyInAbort) return; // prevent recursive call
 	alreadyInAbort = true;
 
-	char msgBuffer[8192]; // avoid dynamic memory allocation (Core module restriction)
+	char msgBuffer[8192]; // avoid dynamic memory allocation
 	Span<char> msgBuf = SpanOfBuffer(msgBuffer);
 	const StringView fullMsg = BuildDiagnosticMessage(msgBuf, "FATAL ERROR",
 		StringView(srcInfo.Function), StringView(srcInfo.File), srcInfo.Line, msg, printStackTrace? 2: MaxValueOf<size_t>);
@@ -279,18 +289,14 @@ void FatalErrorMessageAbort(StringView msg, bool printStackTrace, SourceInfo src
 	PrintDebugMessage(fullMsg);
 
 #if(defined(_WIN32) && !defined(WINSTORE_APP))
-	wchar_t wbuffer[8192]; // avoid dynamic memory allocation (Core module restriction)
+	wchar_t wbuffer[8192]; // avoid dynamic memory allocation
 	const index_t wstrMaxLength = Min(fullMsg.Length(), LengthOf(wbuffer) - 1);
-	const index_t wmessageLength = index_t(MultiByteToWideChar(CP_UTF8, 0,
-		fullMsg.Data(), int(fullMsg.Length()),
-		wbuffer, int(wstrMaxLength)
-	));
+	const index_t wmessageLength = z_D::MultiByteToWideChar(65001, 0, fullMsg.Data(), int(fullMsg.Length()), wbuffer, int(wstrMaxLength));
 	wbuffer[wmessageLength] = L'\0';
 	MessageBoxW(nullptr, wbuffer, L"Fatal error", MB_ICONERROR);
 #endif
 
 	exit(1);
-#endif
 }
 
 static void FatalErrorMessageAbort(DebugStringView msg, SourceInfo srcInfo)

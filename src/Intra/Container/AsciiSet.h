@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Range.h"
+#include <Intra/Range.h>
 
 namespace Intra { INTRA_BEGIN
 /** Set of ASCII chars useful for fast belonging checks in parsers.

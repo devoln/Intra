@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <Intra/Core.h>
+#include "Intra/Core.h"
 
 namespace Intra { INTRA_BEGIN
 constexpr struct
@@ -16,21 +16,21 @@ constexpr struct
 	double LN10 = 2.30258509299404568402;
 } Constants;
 
-constexpr auto Sqr = [](const auto& a) {return a * a;};
-constexpr auto IsEven = []<CBasicIntegral T>(T&& a) {return (a & 1) == 0;};
+INTRA_DEFINE_FUNCTOR(Sqr)(const auto& a) {return a * a;};
+INTRA_DEFINE_FUNCTOR(IsEven)<CBasicIntegral T>(T&& a) {return (a & 1) == 0;};
 constexpr auto IsOdd = FNot(IsEven);
-constexpr auto Sign = [](const auto& a) {return TRemoveConstRef<decltype(a)>(ISign(a));};
+INTRA_DEFINE_FUNCTOR(Sign)(const auto& a) {return TRemoveConstRef<decltype(a)>(ISign(a));};
 
 namespace z_D {
 template<CNumber To, CNumber From> constexpr To NumericCastTo_(const From& x) {return static_cast<To>(x);}
 }
 
 /// NumericCastTo is useful in generic code working with numbers and SIMD types
-template<typename To> constexpr auto NumericCastTo = [](const auto& x) {return z_D::NumericCastTo_<To>(x);}
+template<typename To> constexpr auto NumericCastTo = [](const auto& x) {return z_D::NumericCastTo_<To>(x);};
 
 
 
-constexpr auto Clamp = [](const auto& v, const auto& minv, const auto& maxv) noexcept {return Max(minv, Min(maxv, v));};
+INTRA_DEFINE_FUNCTOR(Clamp)(const auto& v, const auto& minv, const auto& maxv) noexcept {return Max(minv, Min(maxv, v));};
 
 #if defined(__clang__) || defined(__GNUC__)
 #define INTRAZ_D_WRAP_DECL(builtinNamePart)
@@ -78,10 +78,10 @@ INTRAZ_D_WRAP_DECL2(fmod);
 
 #define INTRAZ_D_WRAP_BUILTIN(functorName, builtinNamePart) \
 	INTRAZ_D_WRAP_DECL(builtinNamePart) \
-	namespace z_D {template<CNumber T> auto functorName##_(T x) { \
+	struct T ## functorName{template<CNumber T> auto operator()(const T& x) const noexcept { \
 		INTRAZ_D_WRAP_BUILTIN_PART(builtinNamePart) \
 		else return functorName(TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>(x)); \
-	}} constexpr auto functorName = [](const auto& x) noexcept {return z_D::functorName##_(x);}
+	}} functorName;
 
 INTRAZ_D_WRAP_BUILTIN(Floor, floor);
 INTRAZ_D_WRAP_BUILTIN(Ceil, ceil);
@@ -111,15 +111,16 @@ INTRAZ_D_WRAP_BUILTIN(Erfc, erfc);
 #undef INTRAZ_D_WRAP_DECL
 #undef INTRAZ_D_WRAP_BUILTIN_PART
 
-constexpr auto Fract = [](const auto& x) {return x - Floor(x);};
+INTRA_DEFINE_FUNCTOR(Fract)(const auto& x) {return x - Floor(x);};
 
 namespace z_D {
+// This template is specialized for each vector type
 template<typename T> struct TScalarOf_ {using _ = T;};
 }
 /// Maps SimdVector<T, N> to T. Leaves other types unchanged.
 template<typename T> using TScalarOf = typename z_D::TScalarOf_<T>::_;
 
-constexpr auto Abs = [](const auto& x) {
+INTRA_DEFINE_FUNCTOR(Abs)(const auto& x) {
 	using T = TRemoveConstRef<decltype(x)>;
 	if constexpr(!CBasicSigned<TScalarOf<T>>) return x;
 #if defined(__clang__) || defined(__GNUC__) //better code without -ffast-math
@@ -136,39 +137,37 @@ constexpr auto Abs = [](const auto& x) {
 	if constexpr(CConvertibleTo<decltype(x < 0), bool>) return x < 0? -x: x;
 };
 
-
-
-constexpr auto Mod = [](const auto& x, const auto& y) {
-	using T = TCommon<decltype(x), decltype(y)>;
-	if constexpr(CHasOpMod<T>) return x % y;
-	else if(!CNumber<T> || IsConstantEvaluated()) return x - Trunc(x / y) * y;
-#if defined(__GNUC__) || defined(__clang__)
-	else if constexpr(CSame<T, float>) return __builtin_fmodf(x, y);
-	else if constexpr(CSame<T, double>) return __builtin_fmod(x, y);
-	else if constexpr(CSame<T, long double>) return __builtin_fmodl(x, y);
-#else
-	else if constexpr(CSame<T, float>) return z_D::fmodf(x, y);
-	else if constexpr(CBasicFloatingPoint<T>) return T(z_D::fmod(double(x), double(y)));
-#endif
-	else if constexpr(CNumber<T>)
+constexpr struct TMod {
+	template<typename T1, typename T2> constexpr auto operator()(const T1& x, const T2& y) const
 	{
-		using T2 = TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>;
-		return Mod(T2(x), T2(y));
+		using T = TCommon<T1, T2>;
+		if constexpr(CHasOpMod<T>) return x % y;
+		else if(!CNumber<T> || IsConstantEvaluated()) return x - Trunc(x / y) * y;
+#if defined(__GNUC__) || defined(__clang__)
+		else if constexpr(CSame<T, float>) return __builtin_fmodf(x, y);
+		else if constexpr(CSame<T, double>) return __builtin_fmod(x, y);
+		else if constexpr(CSame<T, long double>) return __builtin_fmodl(x, y);
+#else
+		else if constexpr(CSame<T, float>) return z_D::fmodf(x, y);
+		else if constexpr(CBasicFloatingPoint<T>) return T(z_D::fmod(double(x), double(y)));
+#endif
+		else if constexpr(CNumber<T>)
+		{
+			using TF = TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>;
+			return Mod(TF(x), TF(y));
+		}
+		else static_assert(CFalse<T>, "Unsupported type. Specialize TMod::operator() to add support.");
 	}
-};
+} Mod;
 
 /// Linear interpolation
 template<typename T, typename U>
-[[nodiscard]] constexpr T LinearMix(T x, T y, U factor) {return T(x*(U(1) - factor) + y*factor);}
+[[nodiscard]] constexpr T LinearMix(T x, T y, U factor) {return T(x * (U(1) - factor) + y * factor);}
 
 template<typename T> [[nodiscard]] constexpr T SmoothStep(T edge0, T edge1, T value)
 {
 	const T t = Clamp((value - edge0) / (edge1 - edge0), T(0), T(1));
-	return t*t*(T(3) - t*2);
+	return t * t * (T(3) - t * 2);
 }
-
-
-
-
 
 } INTRA_END

@@ -1,43 +1,34 @@
 #pragma once
 
 #include <Intra/Core.h>
+#include <Intra/Platform/Toolchain.h>
 
 namespace Intra { INTRA_BEGIN
 
-#if !defined(__GNUC__) && defined(_MSC_VER)
-namespace z_D { extern "C" {
-byte _BitScanReverse(unsigned long* Index, unsigned long Mask);
-byte _BitScanReverse64(unsigned long* Index, uint64 Mask);
-uint16 __popcnt16(uint16 value);
-uint32 __popcnt(uint32 value);
-uint64 __popcnt64(uint64 value);
-}}
-#endif
-
-constexpr auto UnsignedBitWidth = []<CBasicUnsignedIntegral T>(T x)
+template<CBasicUnsignedIntegral T> constexpr auto UnsignedBitWidth = [](T x)
 {
 	if(x == 0) return 0;
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 	if constexpr(sizeof(T) <= sizeof(unsigned)) return SizeofInBits<T> - __builtin_clz(x);
 	else return SizeofInBits<T> - __builtin_clzll(x);
 #else
 	if(IsConstantEvaluated())
 	{
 		int i = 0;
-		for(int k = 32; k != 0; k /= 2)
+		for(int k = SizeofInBits<T> / 2; k != 0; k /= 2)
 			if(x >= (T(1) << k)) i += k, x >>= k;
 		return i;
 	}
 	int resOffset = 0;
 	uint32 v32 = uint32(x);
-	if constexpr(sizeof(T) == sizeof(uint64))
+	if constexpr(CSameSize<T, uint64>)
 	{
 	#if defined(__amd64__) || defined(__aarch64__)
 		unsigned long index;
-		_BitScanReverse64(&index, x);
-		return 1 +  index;
+		z_D::_BitScanReverse64(&index, x);
+		return int(1 + index);
 	#else
-		if(v >> 32)
+		if(x >> 32)
 		{
 			resOffset = 32;
 			v32 = uint32(x >> 32);
@@ -45,28 +36,28 @@ constexpr auto UnsignedBitWidth = []<CBasicUnsignedIntegral T>(T x)
 	#endif
 	}
 	unsigned long index;
-	_BitScanReverse(&index, v32);
-	return 1 + resOffset + index;
+	z_D::_BitScanReverse(&index, v32);
+	return int(1 + resOffset + index);
 #endif
 };
 
-constexpr auto SignedBitWidth = []<CBasicSignedIntegral T>(T x)
+template<CBasicSignedIntegral T> constexpr auto SignedBitWidth = [](T x)
 {
-	return 1 + UnsignedBitWidth(TToUnsigned<T>(x < 0? -x: x));
+	return 1 + UnsignedBitWidth<TToUnsigned<T>>(TToUnsigned<T>(x < 0? -x: x));
 };
 
-constexpr auto BitWidth = []<CBasicIntegral T>(T x)
+template<CBasicIntegral T> constexpr auto BitWidth = [](T x)
 {
-	if constexpr(CBasicSigned<T>) return SignedBitWidth(x);
-	else return UnsignedBitWidth(x);
+	if constexpr(CBasicSigned<T>) return SignedBitWidth<T>(x);
+	else return UnsignedBitWidth<T>(x);
 };
 
-constexpr auto ByteWidth = []<CBasicIntegral T>(T x) {return (BitWidth(x) + 7) >> 3;};
+template<CBasicIntegral T> constexpr auto ByteWidth = [](T x) {return (BitWidth<T>(x) + 7) >> 3;};
 
 
-constexpr auto Count1Bits = []<CBasicUnsignedIntegral T>(T mask)
+template<CBasicUnsignedIntegral T> constexpr auto Count1Bits = [](T mask)
 {
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__clang__)
 	if constexpr(sizeof(T) <= sizeof(unsigned)) return int(__builtin_popcount(mask));
 	else return int(__builtin_popcountll(mask));
 #else
@@ -89,7 +80,7 @@ constexpr auto Count1Bits = []<CBasicUnsignedIntegral T>(T mask)
 	{
 		uint32 v = mask;
 		v -= ((v >> 1) & 0b01010101010101010101010101010101);
-		v = (((v >> 2) & 0b00110011001100110011001100110011) + (n & 0b00110011001100110011001100110011));
+		v = (((v >> 2) & 0b00110011001100110011001100110011) + (v & 0b00110011001100110011001100110011));
 		v = (((v >> 4) + v) & 0b00001111000011110000111100001111);
 		v += (v >> 8);
 		v += (v >> 16);
@@ -98,39 +89,36 @@ constexpr auto Count1Bits = []<CBasicUnsignedIntegral T>(T mask)
 #endif
 };
 
-template<CBasicUnsignedIntegral T> constexpr auto CountLeadingZeros = [](T x)
-{
-	return SizeofInBits<T> - BitWidth(x);
-};
+template<CBasicUnsignedIntegral T> constexpr auto CountLeadingZeros = [](T x) {return SizeofInBits<T> - BitWidth<T>(x);};
 
 template<CBasicUnsignedIntegral T> constexpr auto CountTrailingZeros = [](T x)
 {
 	if(x == 0) return SizeofInBits<T>;
-	#ifdef __GNUC__
-		if constexpr(sizeof(T) <= sizeof(unsigned)) return __builtin_ctz(x);
-		else return __builtin_ctzll(x);
-	#else
-		if constexpr(sizeof(T) == sizeof(uint64))
+#if defined(__GNUC__) || defined(__clang__)
+	if constexpr(sizeof(T) <= sizeof(unsigned)) return __builtin_ctz(x);
+	else return __builtin_ctzll(x);
+#else
+	if constexpr(CSameSize<T, uint64>)
+	{
+	#if defined(__amd64__) || defined(__aarch64__)
+		if(!IsConstantEvaluated())
 		{
-		#if defined(__amd64__) || defined(__aarch64__)
-			if(!IsConstantEvaluated())
-			{
-				unsigned long index;
-				_BitScanForward64(&index, x);
-				return index;
-			}
-			else
-		#endif
-			{
-				if((x >> 32) == 0) return 32 + CountTrailingZeros(uint32(x));
-				else return CountTrailingZeros(uint32(x >> 32));
-			}
+			unsigned long index;
+			z_D::_BitScanForward64(&index, x);
+			return int(index);
 		}
-		if(IsConstantEvaluated()) return Count1Bits((x & (~x + 1)) - 1);
-		unsigned long index;
-		_BitScanForward(&index, x);
-		return index;
+		else
 	#endif
+		{
+			if((x >> 32) == 0) return 32 + CountTrailingZeros<uint32>(uint32(x));
+			else return CountTrailingZeros<uint32>(uint32(x >> 32));
+		}
+	}
+	if(IsConstantEvaluated()) return Count1Bits<T>((x & (~x + 1)) - 1);
+	unsigned long index;
+	z_D::_BitScanForward(&index, x);
+	return int(index);
+#endif
 };
 
 
@@ -140,17 +128,17 @@ template<CBasicIntegral T> constexpr auto NumBitsToMask = [](int bitCount)
 	return unsigned(bitCount) >= SizeofInBits<T>? MaxValueOf<UInt>: UInt((UInt(1) << bitCount) - 1);
 };
 
-template<CBasicIntegral T> [[nodiscard]] constexpr T RotateBitsLeft(TExplicitType<T> x, int n)
+template<CBasicIntegral T> constexpr auto RotateBitsLeft = [](T x, int n)
 {
 	const auto ux = TToUnsigned<T>(x);
 	return T((ux << n)|(ux >> (SizeofInBits<T> - n)));
-}
+};
 
-template<CBasicIntegral T> [[nodiscard]] constexpr T RotateBitsRight(TExplicitType<T> x, int n)
+template<CBasicIntegral T> constexpr auto RotateBitsRight = [](T x, int n)
 {
 	const auto ux = TToUnsigned<T>(x);
 	return T((ux >> n)|(ux << (SizeofInBits<T> - n)));
-}
+};
 
 template<CBasicIntegral T> constexpr auto ReverseBits = [](T x)
 {

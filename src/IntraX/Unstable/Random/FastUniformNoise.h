@@ -17,7 +17,7 @@ private:
 	{
 		Data(): data(new float[16384])
 		{
-			FastUniform<float> fRandom(3259417823U);
+			FastUniformF32 fRandom(3259417823U);
 			for(size_t i=0; i<16384; i++) data[i] = fRandom.SignedNext();
 		}
 		

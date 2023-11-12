@@ -1,11 +1,6 @@
-#include <Intra/Range/Span.h>
+#include <Intra/Range.h>
 #include <Intra/Concepts.h>
-#include <Intra/Range/Operations.h>
 #include "Intra/Range/Search/Single.h"
-
-#include <Intra/Range/Decorators.h>
-#include <Intra/Range/Generators.h>
-#include <Intra/Range/Composition.h>
 
 namespace Intra { INTRA_BEGIN
 

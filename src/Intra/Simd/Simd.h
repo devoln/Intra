@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Intra/Preprocessor.h"
-#include "Intra/Math.h"
+#include <Intra/Preprocessor.h>
+#include <Intra/Numeric/Math.h>
 
 // This module defines SIMD vector types that can be used on different platforms and compilers.
 // Its design is based on GCC vector extensions. When compiled with GCC or Clang it is defined as a thin free function wrapper around them.
@@ -259,8 +259,6 @@ extern "C" {
 	__m512i __cdecl _mm512_packs_epi16(__m512i a, __m512i b);
 	__m512i __cdecl _mm512_unpacklo_epi8(__m512i a, __m512i b);
 	__m512i __cdecl _mm512_unpackhi_epi8(__m512i a, __m512i b);
-
-
 }
 
 // The functions below will be defined to use direct intrinsics without any target instruction set checks or emulation.
@@ -2087,10 +2085,8 @@ INTRA_FORCEINLINE void SimdEnd() noexcept
 namespace z_D {
 #if defined(__i386__) || defined(__amd64__)
 #ifdef _MSC_VER
-extern "C" {
-	void __cpuid(int[4], int);
-	uint64 _xgetbv(unsigned index);
-}
+extern "C" void __cpuid(int[4], int);
+extern "C" uint64 _xgetbv(unsigned index);
 #elif defined(__GNUC__)
 inline void __cpuid(int* cpuinfo, int info)
 {
@@ -2117,6 +2113,238 @@ inline uint64 _xgetbv(unsigned int index)
 #endif
 }
 
+struct TCpuInfo
+{
+	union {
+		int Cpuid[33][4]{}; // EAX, EBX, EDX, ECX
+		struct
+		{
+			// Cpuid[0]
+			int MaxCpuIDParam;
+			char ManufacturerID[12];
+
+			// Cpuid[1]
+
+			// eax
+			uint32_t SteppingID: 4;
+			uint32_t Model: 4;
+			uint32_t FamilyID: 4;
+			uint32_t ProcessorType: 2;
+			uint32_t: 2;
+			uint32_t ExtendedModelID: 4;
+			uint32_t ExtendedFamilyID: 8;
+			uint32_t: 4;
+
+			// ebx
+			uint8_t BrandIndex;
+			uint8_t CacheLineSizeDiv8; // multiply by 8 to get cache line size; CLFSH must be set
+			uint8_t MaxAddressableIDsForLogicalProcessors; // HTT must be set
+			uint8_t LocalApicID;
+
+			// edx
+			bool FPU: 1;
+			bool VME: 1;
+			bool DE: 1;
+			bool PSE: 1;
+			bool TSC: 1;
+			bool MSR: 1;
+			bool PAE: 1;
+			bool MCE: 1;
+			bool CX8: 1;
+			bool APIC: 1;
+			bool: 1;
+			bool SEP: 1;
+			bool MTRR: 1;
+			bool PGE: 1;
+			bool MCA: 1;
+			bool CMOV: 1;
+			bool PAT: 1;
+			bool PSE36: 1;
+			bool PSN: 1; // Processor Serial Number supported and enabled
+			bool CLFSH: 1;
+			bool NX: 1; // Itanium-only
+			bool DS: 1;
+			bool ACPI: 1;
+			bool MMX: 1;
+			bool FXSR: 1;
+			bool SSE: 1;
+			bool SSE2: 1;
+			bool SS: 1;
+			bool HTT: 1;
+			bool TM: 1;
+			bool IA64: 1; // IA64 processor emulating x86
+			bool PBE: 1;
+
+			//ecx
+			bool SSE3: 1;
+			bool PCLMULQDQ: 1;
+			bool DTES64: 1;
+			bool MONITOR: 1;
+			bool DSCPL: 1;
+			bool VMX: 1;
+			bool SMX: 1;
+			bool EST: 1;
+			bool TM2: 1;
+			bool SSSE3: 1;
+			bool CNXT_ID: 1;
+			bool SDBG: 1;
+			bool FMA: 1;
+			bool CX16: 1; // CMPXCHG16B
+			bool XTPR: 1;
+			bool PDCM: 1;
+			bool: 1;
+			bool PSID: 1;
+			bool DCA: 1;
+			bool SSE41: 1;
+			bool SSE42: 1;
+			bool X2APIC: 1;
+			bool MOVBE: 1;
+			bool POPCNT: 1;
+			bool TSC_DEADLINE: 1;
+			bool AES_NI: 1;
+			bool XSAVE: 1;
+			bool OSXSAVE: 1;
+			bool AVX: 1; // requires OSXSAVE and OS support, must be checked together
+			bool F16C: 1;
+			bool RDRAND: 1;
+			bool Hypervisor: 1;
+
+			// Cpuid[2]
+			int CacheAndTLBCaps[4]; // a list of descriptors indicating cache and TLB capabilities
+
+			// Cpuid[3]
+			int ProcessorSerialNumber[4]; // not implemented in modern processors
+
+			// Cpuid[4]
+			int IntelTopology[4]; // Intel-only
+
+			int: 32;
+			int: 32;
+			int: 32;
+			int: 32;
+
+			// Cpuid[6]
+
+			// eax
+			bool DigitalThermalSensor: 1;
+			bool IntelTurboBoost: 1;
+			bool AlwaysRunningAPICTimer: 1;
+			bool PowerLimitNotification: 1;
+			bool ExtendedClockModulationDuty: 1;
+			bool PackageThermalManagement: 1;
+			bool HardwareControlledPerformanceStates: 1;
+			bool HWPNotification: 1;
+			bool HWPActivityWindow: 1;
+			bool HWPEnergyPerformancePreferenceControl: 1;
+			bool HWPPackageLevelControl: 1;
+			bool: 1;
+			bool HardwareDutyCycling: 1;
+			bool IntelTurboBoostMaxTechnology3: 1;
+			bool InterruptsUponChangesToHWPCaps: 1;
+			bool HWPPECIOverrideSupported: 1;
+			bool FlexibleHWP: 1;
+			bool FastAccessModeMSRSupported: 1;
+			bool HardwareFeedback: 1;
+			bool IgnoredIdleHWPRequest: 1;
+			bool: 1;
+			bool HwpCtlSupported: 1;
+			bool IntelThreadDirector: 1;
+			bool ThermInterrupSupported: 1;
+			bool: 8;
+
+			// ebx
+			uint32_t NumInterruptThresholdsInDigitalThermalSensor: 4;
+			uint32_t: 28;
+
+			// edx
+			bool PerformanceCapabilityReportingSupported: 1;
+			bool EfficiencyCapabilityReportingSupported: 1;
+			bool: 6;
+			uint8_t HardwareFeedbackInterfaceStructSize: 4; //(in units of 4 Kbytes) minus 1
+			uint8_t: 4;
+			uint16_t ThisLogicalProcessorRowIndex;
+
+			// ecx
+			bool EffectiveFrequencyInterfaceSupported: 1;
+			bool ACNT2: 1;
+			bool: 1;
+			bool PerformanceEnergyBias: 1;
+			bool: 4;
+			uint8_t NumSupportedIntelThreadDirectors;
+			uint16_t: 16;
+
+			// Cpuid[7]
+			int MaxCpuID7Param;
+
+			// ebx
+			bool FSGSBASE: 1;
+			bool TscAdjust: 1;
+			bool SoftwareGuardExtensions: 1;
+			bool BMI1: 1;
+			bool HLE: 1; // only on Intel CPUs, need to check manufacturer
+			bool AVX2: 1;
+			bool FdpExceptionOnly: 1;
+			bool SupervisorModeExecutionPrevention: 1;
+			bool BMI2: 1;
+			bool ERMS: 1;
+			bool INVPCID: 1;
+			bool RTM: 1; // only on Intel CPUs, need to check manufacturer
+			bool RdtmOrPqm: 1;
+			bool X87FpuCSAndDSDeprecated: 1;
+			bool MemoryProtectionExtensions: 1;
+			bool RdtaOrPqe: 1;
+			bool AVX512F: 1;
+			bool AVX512DQ: 1;
+			bool RDSEED: 1;
+			bool ADX: 1;
+			bool SupervisorModeAccessPrevention: 1;
+			bool AVX512IFMA: 1;
+			bool PCOMMIT: 1; // deprecated
+			bool CLFLUSHOPT: 1;
+			bool CLWB: 1; // Cache Line Writeback instruction
+			bool IntelProcessorTrace: 1;
+			bool AVX512PF: 1;
+			bool AVX512ER: 1;
+			bool AVX512CD: 1;
+			bool SHA: 1;
+
+			int: 32;
+
+			bool PREFETCHWT1: 1;
+			bool: 7;
+			bool: 8;
+			bool: 8;
+			bool: 8;
+
+		#if 0
+			static bool LAHF(void) { return CPU_Rep.f_81_ECX_[0]; }
+
+			static bool LZCNT(void) { return CPU_Rep.f_81_ECX_[5]; }
+
+			static bool SSE4a(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[6]; }
+			static bool XOP(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[11]; }
+			static bool TBM(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[21]; }
+
+			static bool SYSCALL(void) { return CPU_Rep.isIntel_ && CPU_Rep.f_81_EDX_[11]; }
+			static bool MMXEXT(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[22]; }
+			static bool RDTSCP(void) { return CPU_Rep.isIntel_ && CPU_Rep.f_81_EDX_[27]; }
+			static bool _3DNOWEXT(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[30]; }
+			static bool _3DNOW(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[31]; }
+		#endif
+		};
+	};
+	INTRA_NOINLINE void Init()
+	{
+		for(int i = 0; i <= 32 && i <= MaxCpuIDParam; i++)
+		{
+			z_D::__cpuid(Cpuid[i], i);
+			auto tmp = Cpuid[i][2];
+			Cpuid[i][2] = Cpuid[i][3];
+			Cpuid[i][3] = tmp;
+		}
+	}
+} CpuCaps;
+
 inline bool IsAvxSupported()
 {
 #if defined(__i386__) || defined(__amd64__)
@@ -2136,5 +2364,30 @@ inline bool IsAvxSupported()
 #endif
 }
 }
+
+template<typename T> using TIdentity = T;
+
+#ifdef __GNUC__
+#define INTRA_DISPATCHED(funcName, ...) TIdentity<__VA_ARGS__> funcName __attribute__((ifunc(#funcName "_dispatch"))); extern "C" TIdentity<__VA_ARGS__>* funcName ## _dispatch()
+#else
+namespace z_D {
+template<auto** FuncPtr> struct GenTrampoline;
+template<typename R, typename... Args, R(**FuncPtr)(Args...)> struct GenTrampoline<FuncPtr>
+{
+	template<class F> static R Trampoline(Args... args) {return (*FuncPtr = F()())(args...);}
+	template<typename F> auto operator*(F dispatcher) const {return &Trampoline<F>;}
+};
+}
+#define INTRA_DISPATCHED(funcName, ...) TIdentity<__VA_ARGS__>* funcName = z_D::GenTrampoline<&funcName>() * []()
+#endif
+
+INTRA_DISPATCHED(myfunc, int(int))
+{
+	int instrset = SupportedInstructionSets() & 0xFF;
+	printf("instrset = %i\n", instrset);
+	if(instrset >= 10) return myfuncAVX512;
+	if(instrset >= 8) return myfuncAVX2;
+	return myfuncGeneric;
+};
 
 } INTRA_END

@@ -1,6 +1,6 @@
 #include "SoundDriverInfo.h"
 
-#if(defined(_WIN32) && defined(INTRA_DROP_XP_SUPPORT))
+#if(defined(_WIN32) && !INTRA_BUILD_FOR_WINDOWS_XP)
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #ifdef _MSC_VER
@@ -14,7 +14,7 @@ INTRA_WARNING_POP
 #endif
 
 namespace Intra { INTRA_BEGIN
-#if(defined(_WIN32) && defined(INTRA_DROP_XP_SUPPORT))
+#if(defined(_WIN32) && !INTRA_BUILD_FOR_WINDOWS_XP)
 SoundDeviceInfo SoundDeviceInfo::Get(bool* oSupported)
 {
 	SoundDeviceInfo result;

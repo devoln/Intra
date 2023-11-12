@@ -9,7 +9,7 @@ INTRA_IGNORE_WARN_ASSIGN_IMPLICITLY_DELETED
 template<typename F, typename... BindArgs>
 [[nodiscard]] constexpr auto Bind(F&& f, BindArgs&&... args)
 {
-	return [...args = INTRA_FWD(args), f = ForwardAsFunc<F>(f)](auto&&... restArgs)
+	return [...args = INTRA_FWD(args), f = FunctorOf(INTRA_FWD(f))](auto&&... restArgs)
 		noexcept(noexcept(f(args..., INTRA_FWD(restArgs)...)))
 		-> decltype(f(args..., INTRA_FWD(restArgs)...))
 	{return f(args..., INTRA_FWD(restArgs)...);};
@@ -18,7 +18,7 @@ template<typename F, typename... BindArgs>
 template<typename F, typename... BindArgs>
 [[nodiscard]] constexpr auto BindRef(F&& f, BindArgs&... args)
 {
-	return [&, f = ForwardAsFunc<F>(f)](auto&&... restArgs)
+	return [&, f = FunctorOf(INTRA_FWD(f))](auto&&... restArgs)
 		noexcept(noexcept(f(args..., INTRA_FWD(restArgs)...)))
 		-> decltype(f(args..., INTRA_FWD(restArgs)...))
 	{return f(args..., INTRA_FWD(restArgs)...);};
@@ -26,7 +26,7 @@ template<typename F, typename... BindArgs>
 
 template<class P> class FCount
 {
-	[[no_unique_address]] P Predicate;
+	INTRA_NO_UNIQUE_ADDRESS P Predicate;
 	index_t InvocationCounter = 0;
 	constexpr FCount(P pred) noexcept: Predicate(INTRA_MOVE(pred)) {}
 	template<typename... Args> requires CCallable<P, Args&&...>
@@ -39,7 +39,7 @@ template<class P> class FCount
 
 template<class P> class CountPred
 {
-	[[no_unique_address]] P Predicate;
+	INTRA_NO_UNIQUE_ADDRESS P Predicate;
 	index_t FalseInvocations = 0;
 	index_t TrueInvocations = 0;
 	constexpr CountPred(P pred) noexcept: Predicate(INTRA_MOVE(pred)) {}
@@ -55,8 +55,8 @@ template<class P> class CountPred
 
 template<typename FR, typename FM, typename T> struct Accum
 {
-	[[no_unique_address]] FR Reduce;
-	[[no_unique_address]] FM Map;
+	INTRA_NO_UNIQUE_ADDRESS FR Reduce;
+	INTRA_NO_UNIQUE_ADDRESS FM Map;
 	T Result;
 	constexpr Accum(FR reduce, FM map, T initialValue):
 		Reduce(INTRA_MOVE(reduce)), Map(INTRA_MOVE(map)), Result(INTRA_MOVE(initialValue)) {}

@@ -1,13 +1,25 @@
 ﻿#pragma once
 
-#include "Intra/Functional.h"
-#include "Intra/CompoundTypes.h"
-#include "Intra/Concepts.h"
+#include <Intra/Concepts.h>
+#include <Intra/Functional.h>
+#include <Intra/Container/Compound.h>
 
-namespace Intra {
-INTRA_BEGIN
+namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
 INTRA_IGNORE_WARN_ASSIGN_IMPLICITLY_DELETED
+
+struct LengthInfo
+{
+	enum DimType: uint64 {HasKnownLength = MaxValueOf<uint64> - 3, Finite, Unknown, Infinite};
+	[[nodiscard]] INTRA_FORCEINLINE constexpr DimType Type() const {return Max(DimType(RawValue), HasKnownLength);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr uint64 Value() const {INTRA_PRECONDITION(Type() == DimType::HasKnownLength); return RawValue;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool IsKnown() const {return RawValue <= uint64(HasKnownLength);}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr LengthInfo(uint64 x): RawValue(x) {}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr LengthInfo(DimType type): RawValue(uint64(type)) {}
+
+	uint64 RawValue;
+};
 
 /// Non-owning reference to an array.
 template<typename T> struct Span
@@ -15,18 +27,15 @@ template<typename T> struct Span
 	Span() = default;
 	Span(const Span&) = default;
 
-	template<CArrayList L> requires !CSameUnqualRef<L, Span>
-	constexpr Span(L&& arr) noexcept: Span(Unsafe, DataOf(arr), LengthOf(arr)) {}
+	template<CConvertibleToSpan L> requires (!CSameUnqualRef<L, Span>)
+	INTRA_FORCEINLINE constexpr Span(L&& arr) noexcept: Span(Unsafe, Intra::Data(arr), Intra::Length(arr)) {}
 
 	constexpr Span(TUnsafe, T* begin, T* end) noexcept: Begin(begin), End(end) {INTRA_PRECONDITION(end >= begin);}
-	constexpr Span(TUnsafe, T* begin, Size length) noexcept: Begin(begin), End(Begin + size_t(length)) {}
+	INTRA_FORCEINLINE constexpr Span(TUnsafe, T* begin, Size length) noexcept: Begin(begin), End(Begin + size_t(length)) {}
 
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return Begin;}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const noexcept {return End - Begin;}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return Begin >= End;}
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return Begin;}
-
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* begin() const noexcept {return Begin;}
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* end() const noexcept {return End;}
 
 	[[nodiscard]] constexpr T& First() const
 	{
@@ -52,21 +61,21 @@ template<typename T> struct Span
 	    End--;
 	}
 
-	constexpr index_t PopFirstCount(ClampedSize count) noexcept
+	INTRA_FORCEINLINE constexpr index_t PopFirstCount(ClampedSize count) noexcept
 	{
 		const auto poppedElements = Min(index_t(count), Length());
 		Begin += poppedElements;
 		return poppedElements;
 	}
 
-	constexpr index_t PopLastCount(ClampedSize count) noexcept
+	INTRA_FORCEINLINE constexpr index_t PopLastCount(ClampedSize count) noexcept
 	{
 		const auto poppedElements = Min(index_t(count), Length());
 		End -= poppedElements;
 		return poppedElements;
 	}
 
-	[[nodiscard]] constexpr Span Take(ClampedSize count) const noexcept
+	[[nodiscard]] INTRA_FORCEINLINE constexpr Span Take(ClampedSize count) const noexcept
 	{
 	    return Span(Unsafe, Begin, Min(index_t(count), Length()));
 	}
@@ -82,36 +91,17 @@ template<typename T> struct Span
 };
 template<class R> Span(R&&) -> Span<TArrayElementKeepConst<R>>;
 
-constexpr auto ConstSpanOf = []<CArrayList L>(L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
+INTRA_DEFINE_FUNCTOR(ConstSpanOf)<CConvertibleToSpan L>(L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
 
 template<typename T> concept CSpan = CInstanceOfTemplate<TUnqualRef<T>, Span>;
 
 inline namespace Literals {
-[[nodiscard]] constexpr auto operator""_span(const char* str, size_t len) noexcept
-{
-	return Span(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_span(const wchar_t* str, size_t len) noexcept
-{
-	return Span(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_span(const char16_t* str, size_t len) noexcept
-{
-	return Span(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_span(const char32_t* str, size_t len) noexcept
-{
-	return Span(Unsafe, str, len);
-}
-
+[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const char* str, size_t len) noexcept {return Span(Unsafe, str, len);}
+[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const wchar_t* str, size_t len) noexcept {return Span(Unsafe, str, len);}
+[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const char16_t* str, size_t len) noexcept {return Span(Unsafe, str, len);}
+[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const char32_t* str, size_t len) noexcept {return Span(Unsafe, str, len);}
 #ifdef __cpp_char8_t
-[[nodiscard]] constexpr auto operator""_span(const char8_t* str, size_t len) noexcept
-{
-	return Span(Unsafe, str, len);
-}
+[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const char8_t* str, size_t len) noexcept {return Span(Unsafe, str, len);}
 #endif
 }
 
@@ -127,24 +117,24 @@ template<typename T> class SpanOutput: private Span<T>
 public:
 	SpanOutput() = default;
 
-	template<CArrayList R> requires CSame<TArrayListValue<R>, T>
-	constexpr SpanOutput(R&& dst): Span<T>(dst), mBegin(Span<T>::Begin) {}
+	template<CConvertibleToSpan R> requires CSame<TArrayListValue<R>, T>
+	INTRA_FORCEINLINE constexpr SpanOutput(R&& dst): Span<T>(dst), mBegin(Span<T>::Begin) {}
 
 	/// Reset this range to its original state to overwrite all elements written earlier.
-	constexpr void Reset() noexcept {Span<T>::Begin = mBegin;}
+	INTRA_FORCEINLINE constexpr void Reset() noexcept {Span<T>::Begin = mBegin;}
 
 	/// Get a range of all written data.
-	[[nodiscard]] constexpr Span<T> WrittenRange() const noexcept
+	[[nodiscard]] INTRA_FORCEINLINE constexpr Span<T> WrittenRange() const noexcept
 	{
 		return Span<T>(Unsafe, mBegin, Span<T>::Begin);
 	}
 
 	/// @return Number of elements written after last Reset() or construction.
-	[[nodiscard]] constexpr index_t Position() const noexcept {return Span<T>::Begin - mBegin;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Position() const noexcept {return Span<T>::Begin - mBegin;}
 
-	[[nodiscard]] constexpr bool IsInitialized() const noexcept {return mBegin != nullptr;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool IsInitialized() const noexcept {return mBegin != nullptr;}
 
-	[[nodiscard]] constexpr bool Full() const {return Span<T>::Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Full() const {return Span<T>::Empty();}
 
 	using Span<T>::Data;
 	using Span<T>::Length;
@@ -162,9 +152,9 @@ public:
 template<typename T> struct LinkedNode
 {
 	LinkedNode* Next;
-	[[no_unique_address]] T Value;
+	INTRA_NO_UNIQUE_ADDRESS T Value;
 
-	[[nodiscard]] constexpr LinkedNode* NextListNode() const {return Next;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr LinkedNode* NextListNode() const {return Next;}
 };
 
 template<typename T, typename NodeType> struct LinkedRange
@@ -173,9 +163,9 @@ template<typename T, typename NodeType> struct LinkedRange
 
 	LinkedRange() = default;
 
-	constexpr LinkedRange(Node* first): FirstNode(first) {}
+	INTRA_FORCEINLINE constexpr LinkedRange(Node* first): FirstNode(first) {}
 
-	[[nodiscard]] constexpr bool Empty() const {return FirstNode == nullptr;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return FirstNode == nullptr;}
 
 	constexpr void PopFirst()
 	{
@@ -190,7 +180,8 @@ template<typename T, typename NodeType> struct LinkedRange
 		else FirstNode->Value;
 	}
 
-	[[nodiscard]] constexpr bool operator==(const LinkedRange& rhs) const {return FirstNode == rhs.FirstNode;}
+	bool operator==(const LinkedRange&) const = default;
+	bool operator!=(const LinkedRange&) const = default;
 
 	Node* FirstNode = nullptr;
 };
@@ -202,8 +193,8 @@ template<typename T> struct BidirectionalLinkedNode
 	BidirectionalLinkedNode* Next;
 	T Value;
 
-	[[nodiscard]] BidirectionalLinkedNode* PrevListNode() const {return Prev;}
-	[[nodiscard]] BidirectionalLinkedNode* NextListNode() const {return Next;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr BidirectionalLinkedNode* PrevListNode() const {return Prev;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr BidirectionalLinkedNode* NextListNode() const {return Next;}
 };
 
 template<typename T, typename NodeType> struct BidirectionalLinkedRange: private LinkedRange<T, NodeType>
@@ -213,7 +204,7 @@ template<typename T, typename NodeType> struct BidirectionalLinkedRange: private
 
 	BidirectionalLinkedRange() = default;
 
-	constexpr BidirectionalLinkedRange(Node* first, Node* last): BASE(first), LastNode(last) {}
+	INTRA_FORCEINLINE constexpr BidirectionalLinkedRange(Node* first, Node* last): BASE(first), LastNode(last) {}
 
 	using BASE::Empty;
 	using BASE::First;
@@ -229,7 +220,7 @@ template<typename T, typename NodeType> struct BidirectionalLinkedRange: private
 	constexpr void PopLast()
 	{
 		INTRA_PRECONDITION(!Empty());
-		const bool last = BASE::FirstNode == LastNode;
+		const bool last = this->FirstNode == LastNode;
 		LastNode = LastNode->PrevListNode();
 		if(last) LastNode = BASE::FirstNode = nullptr;
 	}
@@ -241,18 +232,15 @@ template<typename T, typename NodeType> struct BidirectionalLinkedRange: private
 		else LastNode->Value;
 	}
 
-	[[nodiscard]] constexpr bool operator==(const BidirectionalLinkedRange& rhs) const
-	{
-		return BASE::FirstNode == rhs.FirstNode && LastNode == rhs.LastNode;
-	}
+	bool operator==(const BidirectionalLinkedRange&) const = default;
+	bool operator!=(const BidirectionalLinkedRange&) const = default;
 
 private:
 	Node* LastNode = nullptr;
 };
 
-
-constexpr auto ForEach = []<typename F>(F&& f) {
-	return [f = ForwardAsFunc<F>(f)]<typename Collection>(Collection&& collection)
+INTRA_DEFINE_FUNCTOR(ForEach)(auto&& f) {
+	return [f = FunctorOf(INTRA_FWD(f))]<typename Collection>(Collection&& collection)
 		requires(CConsumableList<Collection> || CStaticLengthContainer<Collection>)
 	{
 		if constexpr(CConsumableList<Collection>)
@@ -267,83 +255,84 @@ constexpr auto ForEach = []<typename F>(F&& f) {
 				range.PopFirst();
 			}
 		}
-		else collection|ForEachField(f);
+		else ForEachField(f)(collection);
 	};
 };
 
-constexpr auto First = []<CList L>(L&& list) -> decltype(auto) {
+INTRA_DEFINE_FUNCTOR(First)<CList L>(L&& list) -> decltype(auto) {
 	if constexpr(CHasFirst<L>) return list.First();
 	else return RangeOf(INTRA_FWD(list)).First();
 };
-constexpr auto Last = []<CBidirectionalList L>(L&& list) -> decltype(auto) {
+INTRA_DEFINE_FUNCTOR(Last)<CBidirectionalList L>(L&& list) -> decltype(auto) {
 	if constexpr(CHasLast<L>) return list.Last();
 	else return RangeOf(INTRA_FWD(list)).Last();
 };
-constexpr auto IsEmpty = []<CHasEmpty R>(R&& range) noexcept {return range.Empty();};
-constexpr auto Length = []<CHasLengthOf R>(R&& range) noexcept {return LengthOf(range);};
+INTRA_DEFINE_FUNCTOR(IsEmpty)<CHasEmpty R>(R&& range) noexcept {return range.Empty();};
 
-constexpr auto IsFull = []<class R>(R&& range) noexcept requires CHasFull<R> || CAssignableRange<R> {
+INTRA_DEFINE_FUNCTOR(IsFull)<class R>(R&& range) noexcept requires CHasFull<R> || CAssignableRange<R> {
 	if constexpr(CHasFull<R>) return range.Full();
 	else return range.Empty();
 };
 
-constexpr auto PopFirst = []<CHasPopFirst R>(R&& range) {range.PopFirst();};
-constexpr auto PopLast = []<CHasPopLast R>(R&& range) {range.PopLast();};
+INTRA_DEFINE_FUNCTOR(PopFirst)(CHasPopFirst auto&& range) {range.PopFirst();};
+INTRA_DEFINE_FUNCTOR(PopLast)(CHasPopLast auto&& range) {range.PopLast();};
 
-constexpr auto PopFirstCount = [](ClampedSize maxElementsToPop) noexcept {
+INTRA_DEFINE_FUNCTOR(PopFirstCount)(ClampedLongSize maxElementsToPop) noexcept {
 	return [maxElementsToPop]<CRange R>(R&& range) requires(!CConst<TRemoveReference<R>>)
 	{
-		if constexpr(CHasPopFirstCount<R>) return range.PopFirstCount(maxElementsToPop);
+		if constexpr(CHasPopFirstCount<R>)
+			return range.PopFirstCount(maxElementsToPop);
 		else
 		{
+			const size_t maxElemsToPop = size_t(maxElementsToPop); // optimize for 32 bit, ignoring cases of huge ranges without PopFirstCount method
 			size_t poppedElements = 0;
 			while(!range.Empty())
 			{
-				if(poppedElements < maxElementsToPop) break;
+				if(poppedElements < maxElemsToPop) break;
 				range.PopFirst();
 				poppedElements++;
 			}
-			return poppedElements;
+			return index_t(poppedElements);
 		}
 	};
 };
 
-constexpr auto PopLastCount = [](ClampedSize maxElementsToPop) noexcept {
+INTRA_DEFINE_FUNCTOR(PopLastCount)(ClampedLongSize maxElementsToPop) noexcept {
 	return [maxElementsToPop]<CBidirectionalRange R>(R&& range) requires(!CConst<TRemoveReference<R>>)
 	{
-		if constexpr(CHasPopFirstCount<R>) return range.PopLastCount(maxElementsToPop);
+		if constexpr(CHasPopFirstCount<R>)
+			return range.PopLastCount(maxElementsToPop);
 		else
 		{
+			const size_t maxElemsToPop = size_t(maxElementsToPop); // optimize for 32 bit, ignoring cases of huge ranges without PopLastCount method
 			size_t poppedElements = 0;
 			while(!range.Empty())
 			{
-				if(poppedElements < maxElementsToPop) break;
+				if(poppedElements < maxElemsToPop) break;
 				range.PopLast();
 				poppedElements++;
 			}
-			return poppedElements;
+			return index_t(poppedElements);
 		}
 	};
 };
 
-constexpr auto PopFirstAllCount = [](ClampedSize maxElementsToPop) noexcept {
-	return [maxElementsToPop]<CRange R>(R&& range) requires(!CConst<TRemoveReference<R>>)
+INTRA_DEFINE_FUNCTOR(PopFirstAllCount)<CRange R>(R&& range) requires(!CConst<TRemoveReference<R>>) {
+	if constexpr(CHasPopFirstCount<R>)
+		return range.PopFirstCount(MaxValueOf<size_t>);
+	else
 	{
-		if constexpr(CHasPopFirstCount<R>) return range.PopFirstCount(MaxValueOf<size_t>);
-		else
+		size_t poppedElements = 0;
+		while(!range.Empty())
 		{
-			size_t poppedElements = 0;
-			while(!range.Empty())
-			{
-				range.PopFirst();
-				poppedElements++;
-			}
-			return poppedElements;
+			range.PopFirst();
+			poppedElements++;
 		}
-	};
+		return index_t(poppedElements);
+	}
 };
 
-constexpr auto Next = []<CRange R>(R&& range) -> decltype(auto)
+INTRA_DEFINE_FUNCTOR(Next)<CRange R>(R&& range) -> decltype(auto)
 	requires CHasNext<R> || CCopyConstructible<TRangeValue<R>>
 {
 	if constexpr(CHasNext<R>) return range.Next();
@@ -355,23 +344,23 @@ constexpr auto Next = []<CRange R>(R&& range) -> decltype(auto)
 	}
 };
 
-constexpr auto PopFirstExactly = [](Size numElementsToPop) noexcept {
+INTRA_DEFINE_FUNCTOR(PopFirstExactly)(Size numElementsToPop) noexcept {
 	return [numElementsToPop]<CRange R>(R&& range) requires(!CConst<TRemoveReference<R>>)
 	{
 		[[maybe_unused]] index_t poppedElements = range|PopFirstCount(numElementsToPop);
-		INTRA_POSTCONDITION(poppedElements == numElementsToPop);
+		INTRA_POSTCONDITION(size_t(poppedElements) == numElementsToPop);
 	};
 };
-constexpr auto PopLastExactly = [](Size numElementsToPop) noexcept {
+INTRA_DEFINE_FUNCTOR(PopLastExactly)(Size numElementsToPop) noexcept {
 	return [numElementsToPop]<CBidirectionalRange R>(R&& range) requires(!CConst<TRemoveReference<R>>)
 	{
 		[[maybe_unused]] index_t poppedElements = range|PopLastCount(numElementsToPop);
-		INTRA_POSTCONDITION(poppedElements == numElementsToPop);
+		INTRA_POSTCONDITION(size_t(poppedElements) == numElementsToPop);
 	};
 };
 
-constexpr auto PopWhile = [](auto pop, auto&& pred) noexcept {
-	return [pred = FunctorOf(INTRA_FWD(pred))]<CRange R>(R&& range) requires
+INTRA_DEFINE_FUNCTOR(PopWhile)(auto pop, auto&& pred) noexcept {
+	return [pop, pred = FunctorOf(INTRA_FWD(pred))]<CRange R>(R&& range) requires
 		CCallable<decltype(pop), R&&> &&
 		CCallable<decltype(pred), TRangeValue<R>>
 	{
@@ -384,18 +373,17 @@ constexpr auto PopWhile = [](auto pop, auto&& pred) noexcept {
 		return poppedElements;
 	};
 };
-constexpr auto PopFirstWhile = [](auto&& pred) noexcept {return PopWhile(PopFirst, FNot(INTRA_FWD(pred)));};
-constexpr auto PopLastWhile = [](auto&& pred) noexcept {return PopWhile(PopLast, FNot(INTRA_FWD(pred)));};
-constexpr auto PopFirstUntil = [](auto&& pred) noexcept {return PopFirstWhile(FNot(INTRA_FWD(pred)));};
-constexpr auto PopLastUntil = [](auto&& pred) noexcept {return PopLastWhile(FNot(INTRA_FWD(pred)));};
-
-constexpr auto Count = []<typename L>(L&& list) requires CHasLengthOf<L> || CConsumableList<L>
+INTRA_DEFINE_FUNCTOR(PopFirstWhile)(auto&& pred) noexcept {return PopWhile(PopFirst, FNot(INTRA_FWD(pred)));};
+INTRA_DEFINE_FUNCTOR(PopLastWhile)(auto&& pred) noexcept {return PopWhile(PopLast, FNot(INTRA_FWD(pred)));};
+INTRA_DEFINE_FUNCTOR(PopFirstUntil)(auto&& pred) noexcept {return PopFirstWhile(FNot(INTRA_FWD(pred)));};
+INTRA_DEFINE_FUNCTOR(PopLastUntil)(auto&& pred) noexcept {return PopLastWhile(FNot(INTRA_FWD(pred)));};
+INTRA_DEFINE_FUNCTOR(Count)<typename L>(L&& list) requires CHasLength<L> || CConsumableList<L>
 {
-	if constexpr(CHasLengthOf<L>) return LengthOf(list);
+	if constexpr(CHasLength<L>) return Length(list);
 	else return Dup(RangeOf(INTRA_FWD(list)))|PopFirstAllCount;
 };
 
-constexpr auto FunctionalRangeOp = [](auto inplaceModifyingOp) {
+INTRA_DEFINE_FUNCTOR(FunctionalRangeOp)(auto inplaceModifyingOp) {
 	return [inplaceModifyingOp]<CAccessibleList L>(L&& list) -> decltype(auto)
 		requires CCallable<decltype(inplaceModifyingOp), TRangeOfRef<L>>
 	{
@@ -405,28 +393,28 @@ constexpr auto FunctionalRangeOp = [](auto inplaceModifyingOp) {
 	};
 };
 
-constexpr auto Drop = [](ClampedSize maxElementsToDrop) noexcept {
+INTRA_DEFINE_FUNCTOR(Drop)(ClampedSize maxElementsToDrop) noexcept {
 	return FunctionalRangeOp(PopFirstCount(maxElementsToDrop));
 };
-constexpr auto DropLast = [](ClampedSize maxElementsToDrop) noexcept {
+INTRA_DEFINE_FUNCTOR(DropLast)(ClampedSize maxElementsToDrop) noexcept {
 	return FunctionalRangeOp(PopLastCount(maxElementsToDrop));
 };
-constexpr auto DropExactly = [](ClampedSize maxElementsToDrop) {
+INTRA_DEFINE_FUNCTOR(DropExactly)(ClampedSize maxElementsToDrop) {
 	return FunctionalRangeOp(PopFirstExactly(maxElementsToDrop));
 };
-constexpr auto DropLastExactly = [](ClampedSize maxElementsToDrop) {
+INTRA_DEFINE_FUNCTOR(DropLastExactly)(ClampedSize maxElementsToDrop) {
 	return FunctionalRangeOp(PopLastExactly(maxElementsToDrop));
 };
-constexpr auto DropWhile = [](auto&& pred) noexcept {
+INTRA_DEFINE_FUNCTOR(DropWhile)(auto&& pred) noexcept {
 	return FunctionalRangeOp(PopFirstWhile(INTRA_FWD(pred)));
 };
-constexpr auto DropLastWhile = [](auto&& pred) noexcept {
+INTRA_DEFINE_FUNCTOR(DropLastWhile)(auto&& pred) noexcept {
 	return FunctionalRangeOp(PopLastWhile(INTRA_FWD(pred)));
 };
-constexpr auto DropUntil = [](auto&& pred) {
+INTRA_DEFINE_FUNCTOR(DropUntil)(auto&& pred) {
 	return FunctionalRangeOp(PopFirstUntil(INTRA_FWD(pred)));
 };
-constexpr auto DropLastUntil = [](auto&& pred) {
+INTRA_DEFINE_FUNCTOR(DropLastUntil)(auto&& pred) {
 	return FunctionalRangeOp(PopLastUntil(INTRA_FWD(pred)));
 };
 
@@ -437,49 +425,49 @@ static_assert(CHasPopFirst<Span<const int>>);
 static_assert(CHasEmpty<Span<const int>>);
 static_assert(CNonConstRValueReference<Span<const int>> || CCopyConstructible<TRemoveReference<Span<const int>>>);
 static_assert(CAccessibleRange<Span<const int>>);
-static_assert(Span<const int>()|DropExactly(ClampedSize(Index(0)))|IsEmpty);
-static_assert(Drop(2).MaxElementsToPop == 2);
+static_assert(Span<const int>()|IsEmpty);
+//static_assert(Span<const int>()|DropExactly(ClampedSize(Index(0)))|IsEmpty);
 static_assert(CCallable<decltype(PopFirstCount(0)), Span<const int>>);
 #endif
 
-constexpr auto Contains = []<typename P>(P&& pred) {
-	return [drop = DropUntil(INTRA_FWD(pred))](auto&& range) -> decltype(range|drop|FNot(IsEmpty)) {
+INTRA_DEFINE_FUNCTOR(Contains)<typename P>(P&& pred) {
+	return [drop = DropUntil(INTRA_FWD(pred))](auto&& range) -> decltype(range|DropUntil(INTRA_FWD(pred))|FNot(IsEmpty)) {
 		return range|drop|FNot(IsEmpty);
 	};
 };
 
-constexpr auto Tail = [](ClampedSize maxLength) noexcept {
+INTRA_DEFINE_FUNCTOR(Tail)(ClampedSize maxLength) noexcept {
 	return [maxLength]<CNonInfiniteForwardList L>(L&& list) {
 		return list|Drop((list|Count) - maxLength);
 	};
 };
 
-constexpr auto AtIndex = [](Index index) noexcept {
+INTRA_DEFINE_FUNCTOR(AtIndex)(Index index) noexcept {
 	return [index]<typename L>(L&& list) -> decltype(auto) requires CHasIndex<L> || CAccessibleList<L> {
-		if constexpr(CHasIndex<L>) return list[At];
-		else return INTRA_FWD(list)|DropExactly(At)|First;
+		if constexpr(CHasIndex<L>) return list[index];
+		else return INTRA_FWD(list)|DropExactly(index)|First;
 	};
 };
 
-constexpr auto TryFirst = []<CList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(TryFirst)<CList L>(L&& list) -> Optional<TListValueRef<L>>
 {
 	if(RangeOf(list).Empty()) return Undefined;
 	return list|First;
 };
-constexpr auto TryLast = []<CBidirectionalList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(TryLast)<CBidirectionalList L>(L&& list) -> Optional<TListValueRef<L>>
 {
 	if(RangeOf(list).Empty()) return Undefined;
 	return list|Last;
 };
-constexpr auto TryNext = []<CList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(TryNext)<CList L>(L&& list) -> Optional<TListValueRef<L>>
 {
 	if(RangeOf(list).Empty()) return Undefined;
 	return list|Next;
 };
 
-constexpr auto PutRef = [](TUnsafe, auto&& value) {
-	return [&]<COutputOf<decltype(value)> O>(O&& out) {
-		if constexpr(CHasPut<R, T>) out.Put(INTRA_FWD(value));
+INTRA_DEFINE_FUNCTOR(PutRef)<typename T>(TUnsafe, T&& value) {
+	return [&]<COutputOf<T> O>(O&& out) {
+		if constexpr(z_D::CHasMethodPut<O, T>) out.Put(INTRA_FWD(value));
 		else
 		{
 			out.First() = INTRA_FWD(value);
@@ -487,18 +475,19 @@ constexpr auto PutRef = [](TUnsafe, auto&& value) {
 		}
 	};
 };
-constexpr auto PutOnce = [](auto&& value) {
-	return [value = INTRA_FWD(value)]<COutputOf<decltype(value)> O>(O&& out) {
+
+INTRA_DEFINE_FUNCTOR(PutOnce)(auto&& value) {
+	return [value = INTRA_FWD(value)](COutputOf<decltype(value)> auto&& out) {
 		out|PutRef(Unsafe, INTRA_MOVE(value));
 	};
 };
-constexpr auto Put = [](auto&& value) {
-	return [value = INTRA_FWD(value)]<COutputOf<decltype(value)> O>(O&& out) {
+INTRA_DEFINE_FUNCTOR(Put)(auto&& value) {
+	return [value = INTRA_FWD(value)](COutputOf<decltype(value)> auto&& out) {
 		out|PutRef(Unsafe, value);
 	};
 };
 
-constexpr auto TryPut = [](auto&& value) {
+INTRA_DEFINE_FUNCTOR(TryPut)(auto&& value) {
 	return [value = INTRA_FWD(value)]<COutputOf<decltype(value)> O>(O&& out) {
 		if constexpr(CHasTryPut<O, decltype(value)>) return out.TryPut(value);
 		else
@@ -510,7 +499,7 @@ constexpr auto TryPut = [](auto&& value) {
 	};
 };
 
-constexpr auto PopWhileMatch = [](auto&& matchPred, auto get1, auto pop1, auto get2, auto pop2)
+INTRA_DEFINE_FUNCTOR(PopWhileMatch)(auto&& matchPred, auto get1, auto pop1, auto get2, auto pop2)
 {
 	return [=]<CRange R1, CRange R2>(R1&& range1, R2&& range2) ->
 		decltype(matchPred(get1(range1), get2(range2)), index_t())
@@ -533,67 +522,70 @@ constexpr auto PopFirstUntilEqual = PopWhileMatch(NotEqual, First, PopFirst, Fir
 constexpr auto PopLastUntilEqual = PopWhileMatch(NotEqual, Last, PopLast, Last, PopLast);
 
 namespace z_D {
-constexpr auto GenericListsMatch = [](auto&& matchPred,
-	auto get1, auto pop1, auto get2, auto pop2, auto prefixLengthPredicate) requires
+INTRA_DEFINE_FUNCTOR(GenericListsMatch)(auto&& matchPred,
+	const auto get1, const auto pop1, const auto get2, const auto pop2, const auto prefixLengthPredicate) requires
 	CAnyOf<decltype(get1), decltype(First), decltype(Last)> &&
 	CAnyOf<decltype(get2), decltype(First), decltype(Last)> &&
 	CAnyOf<decltype(pop1), decltype(PopFirst), decltype(PopLast)> &&
 	CAnyOf<decltype(pop2), decltype(PopFirst), decltype(PopLast)> &&
-	CSame<decltype(get1), decltype(First)> == CSame<decltype(pop1), decltype(PopFirst)> &&
-	CSame<decltype(get2), decltype(First)> == CSame<decltype(pop2), decltype(PopFirst)> &&
+	(CSame<decltype(get1), decltype(First)> == CSame<decltype(pop1), decltype(PopFirst)>) &&
+	(CSame<decltype(get2), decltype(First)> == CSame<decltype(pop2), decltype(PopFirst)>) &&
 	CAnyOf<decltype(prefixLengthPredicate), decltype(LEqual), decltype(Equal), decltype(GEqual)>
 {
 	return [=, matchPred = INTRA_FWD(matchPred)]<CList L1, CList L2>(L1&& list1, L2&& list2)
-		requires(requires(PopWhileMatch(matchPred, get1, pop1, get2, pop2)(RangeOf(INTRA_FWD(list1)), RangeOf(INTRA_FWD(list2)))))
+		requires(requires{PopWhileMatch(matchPred, get1, pop1, get2, pop2)(RangeOf(INTRA_FWD(list1)), RangeOf(INTRA_FWD(list2)));})
 	{
 		if constexpr(CSameArrays<L1, L2> && CTriviallyEqualComparable<TListValue<L1>> &&
-			CSame<decltype(get1), decltype(get2)> &&
-			CSame<TRemoveReference<decltype(matchPred)>, decltype(Equal)>)
+			CSame<decltype(get1), decltype(get2)> && CSame<decltype(matchPred), decltype(Equal)>)
 			if(!IsConstantEvaluated())
 			{
-				if(!prefixLengthPredicate(LengthOf(list1), LengthOf(list2))) return false;
-				auto data1 = DataOf(list1);
-				auto data2 = DataOf(list2);
-				if constexpr(CSame<TGet2, decltype(Last)>)
+				if(!prefixLengthPredicate(Length(list1), Length(list2))) return false;
+				auto data1 = Data(list1);
+				auto data2 = Data(list2);
+				if constexpr(VSameTypes(get2, Last))
 				{
-					if constexpr(CSame<decltype(prefixLengthPredicate), decltype(LEqual)>)
-						data2 += LengthOf(list2) - LengthOf(list1);
-					else if constexpr(CSame<decltype(prefixLengthPredicate), decltype(GEqual)>)
-						data1 += LengthOf(list1) - LengthOf(list2);
+					if constexpr(VSameTypes(prefixLengthPredicate, LEqual))
+						data2 += Length(list2) - Length(list1);
+					else if constexpr(VSameTypes(prefixLengthPredicate, GEqual))
+						data1 += Length(list1) - Length(list2);
 				}
-				auto length = CSame<decltype(prefixLengthPredicate), decltype(GEqual)>? LengthOf(list2): LengthOf(list1);
-				return __builtin_memcmp(data1, data2, length*sizeof(T1)) == 0;
+				auto length = VSameTypes(prefixLengthPredicate, GEqual)? Length(list2): Length(list1);
+				return __builtin_memcmp(data1, data2, size_t(length) * sizeof(TListValue<L1>)) == 0;
 			}
-		if constexpr(CSameNotVoid<TRawUnicodeUnit<Range1>, TRawUnicodeUnit<L>>)
+		if constexpr([]{
+			if constexpr(CUnicodeList<L1> && CUnicodeList<L2>)
+				return CSame<TRawUnicodeUnit<L1>, TRawUnicodeUnit<L2>>;
+			else return false;
+		}())
 		{
-			return list2.RawUnicodeUnits()|TMatch(mRange1.RawUnicodeUnits());
+			return list2.RawUnicodeUnits()|TMatch(list1.RawUnicodeUnits());
 		}
 		else
 		{
 			auto range1 = RangeOf(INTRA_FWD(list1));
 			auto range2 = RangeOf(INTRA_FWD(list2));
 			PopWhileMatch(matchPred, get1, pop1, get2, pop2)(range1, range2);
-			if constexpr(CSame<decltype(prefixLengthPredicate), decltype(LEqual)>) return range1.Empty();
-			else if constexpr(CSame<decltype(prefixLengthPredicate), decltype(GEqual)>) return range2.Empty();
+			if constexpr(VSameTypes(prefixLengthPredicate, LEqual)) return range1.Empty();
+			else if constexpr(VSameTypes(prefixLengthPredicate, GEqual)) return range2.Empty();
 			else return range1.Empty() && range2.Empty();
 		}
 	};
 };
 }
 
-constexpr auto MatchesWith = []<CList L2>(L2&& list)
+INTRA_DEFINE_FUNCTOR(MatchesWith)(CList auto&& list)
 {
 	return Bind(
 		z_D::GenericListsMatch(Equal, First, PopFirst, First, PopFirst, Equal),
 		INTRA_FWD(list));
 };
-constexpr auto StartsWith = []<CList L2>(L2&& prefixList)
+INTRA_DEFINE_FUNCTOR(StartsWith)(CList auto&& prefixList)
 {
 	return Bind(
 		z_D::GenericListsMatch(Equal, First, PopFirst, First, PopFirst, GEqual),
 		INTRA_FWD(prefixList));
 };
-constexpr auto EndsWith = []<CList L2>(L2&& suffixList)
+INTRA_DEFINE_FUNCTOR(EndsWith)(CList auto&& suffixList)
 {
 	return Bind(
 		z_D::GenericListsMatch(Equal, Last, PopLast, Last, PopLast, GEqual),
@@ -604,13 +596,13 @@ template<class Range2, class ComparePred = decltype(Less)> class LexCompareTo
 {
 	Range2 mRange2;
 	using T2 = TRangeValue<Range2>;
-	[[no_unique_address]] ComparePred mComparePred;
+	INTRA_NO_UNIQUE_ADDRESS ComparePred mComparePred;
 public:
 	template<CForwardList L> explicit constexpr LexCompareTo(L&& list2): mRange2(RangeOf(INTRA_FWD(list2))) {}
 
 	template<CForwardList L, typename ComparePredicate>
 	constexpr LexCompareTo(L&& list2, ComparePredicate&& comparePredicate):
-		mComparePred(ForwardAsFunc<ComparePredicate>(comparePredicate)),
+		mComparePred(FunctorOf(INTRA_FWD(comparePredicate))),
 		mRange2(RangeOf(INTRA_FWD(list2))) {}
 
 	template<CConsumableList L> [[nodiscard]] constexpr int operator()(L&& list1) const
@@ -619,13 +611,13 @@ public:
 			CByteByByteLexicographicallyComparable<T2> &&
 			CAnyOf<ComparePred, decltype(Less), decltype(Greater)>)
 			if(!IsConstantEvaluated()) //__builtin_memcmp doesn't work in constexpr with GCC with heap allocated memory
-		{
-			const auto res = __builtin_memcmp(DataOf(list1), DataOf(mRange2),
-				size_t(Min(LengthOf(list1), LengthOf(mRange2)))*sizeof(T2));
-			if(res == 0) res = Cmp(LengthOf(mRange2), LengthOf(list1));
-			if constexpr(CSame<ComparePred, decltype(Greater)>) res = -res;
-			return res;
-		}
+			{
+				const auto res = __builtin_memcmp(DataOf(list1), DataOf(mRange2),
+					size_t(Min(Length(list1), Length(mRange2)))*sizeof(T2));
+				if(res == 0) res = Cmp(Length(mRange2), Length(list1));
+				if constexpr(CSame<ComparePred, decltype(Greater)>) res = -res;
+				return res;
+			}
 
 		if constexpr(CSameNotVoid<TRawUnicodeUnit<L>, TRawUnicodeUnit<Range2>> &&
 			CAnyOf<ComparePred, decltype(Less), decltype(Greater)>)
@@ -653,18 +645,11 @@ public:
 		}
 	}
 };
-template<typename R2, typename ComparePredicate>
-LexCompareTo(R2, ComparePredicate) -> LexCompareTo<TRangeOf<R2>, TFunctorOf<ComparePredicate>>;
-template<typename R2> LexCompareTo(R2) -> LexCompareTo<TRangeOf<R2>>;
+template<CList L, typename ComparePredicate> LexCompareTo(L, ComparePredicate) -> LexCompareTo<TRangeOf<L>, TFunctorOf<ComparePredicate>>;
+template<CList L> LexCompareTo(L) -> LexCompareTo<TRangeOf<L>>;
 
-
-/**
-  May be faster than WriteTo(src).ConsumeFrom(dst) for short arrays of trivial types
-  when their length is not known at compile time.
-*/
-template<CRange R, class OR, typename P = decltype(Never)>
-requires (!CConst<R>) && COutputOf<OR, TRangeValue<R>>
-constexpr index_t ReadWriteByOne(R& src, OR& dst)
+template<CRange R, COutputOf<TRangeValue<R>> OR> requires (!CConst<R>)
+constexpr index_t StreamToGeneric(R& src, OR& dst)
 {
 	index_t minLen = 0;
 	while(!src.Empty())
@@ -680,7 +665,7 @@ constexpr index_t ReadWriteByOne(R& src, OR& dst)
 template<class Dst> struct CopyTo
 {
 	Dst Dest;
-	template<typename R> requires CAsOutputRange<R> || CAssignableList<R>
+	template<typename R> requires COutput<R> || CAssignableList<R>
 	constexpr CopyTo(R&& dst): Dest(RangeOf(INTRA_FWD(dst))) {}
 
 	/** Consume the first Min(Count(src), Count(Dest)) of `src` and put them into `Dest`.
@@ -691,37 +676,37 @@ template<class Dst> struct CopyTo
 	{
 		static_assert(COutputOf<Dst, TRangeValue<Src>> || CAssignableRange<Dst>);
 		static_assert(!CInfiniteRange<Dst> || !CInfiniteRange<Src>);
-		if constexpr(CArrayList<Src> &&
+		if constexpr(CConvertibleToSpan<Src> &&
 			CTriviallyCopyable<TArrayListValue<Src>> &&
 			CSame<TArrayListValue<Src>, TArrayListValue<Dst>>)
 		{
 			const auto minLen = Min(LengthOf(src), LengthOf(Dest));
-			BitwiseCopy(Unsafe, DataOf(Dest), DataOf(src), minLen);
+			MemoryCopy(Unsafe, Data(Dest), Data(src), minLen);
 			Dest|PopFirstExactly(minLen);
 			src|PopFirstExactly(minLen);
 			return minLen;
 		}
-		else if constexpr(CHasReadWriteMethod<Src&, Dst&>) return src.ReadWrite(Dest);
-		else if constexpr(CHasMethodPutAll<Dst&, Src&>) return Dest.PutAll(src);
-		else return ReadWriteByOne(src, Dest);
+		else if constexpr(CHasStreamToMethod<Src&, Dst&>) return src.StreamTo(Dest);
+		else if constexpr(z_D::CHasMethodPutAll<Dst&, Src&>) return Dest.PutAll(src);
+		else return StreamToGeneric(src, Dest);
 	}
 
 	/** Put the first Min(Count(src), Count(Dest)) of \p src into Dest.
 	  `Dest` and `src` may overlap only if `src` elements come after Dest elements
 	  @return The number of copied elements.
 	*/
-	template<CList Src> constexpr index_t From(Src&& src)
+	template<class Src> requires CList<Src> || CAdvance<Src>
+	INTRA_FORCEINLINE constexpr index_t From(Src&& src)
 	{
 		if constexpr(CRange<Src> && CRValueReference<Src&&>) return ConsumeFrom(src);
+		else if constexpr(CAdvance<Src>) return ConsumeFrom(src.RangeRef);
 		else return ConsumeFrom(RangeOf(src));
 	}
 
-	template<CList Src> constexpr index_t operator()(Src&& src)
-	{
-		return From(INTRA_FWD(src));
-	}
+	template<class Src> requires CList<Src> || CAdvance<Src>
+	INTRA_FORCEINLINE constexpr index_t operator()(Src&& src) {return From(INTRA_FWD(src));}
 };
-template<typename Dst> CopyTo(Dst&&) -> CopyTo<TRangeOf<Dst&&>>;
+template<CList Dst> CopyTo(Dst&&) -> CopyTo<TRangeOf<Dst&&>>;
 
 template<class Dst> requires COutput<Dst> || CAssignableList<Dst>
 [[nodiscard]] constexpr auto WriteTo(Dst& dst) {return CopyTo<Dst&>(dst);}
@@ -731,61 +716,61 @@ template<class Dst> requires COutput<Dst> || CAssignableList<Dst>
 
 template<class F, typename T> struct TReducer
 {
-	[[no_unique_address]] F Func;
+	INTRA_NO_UNIQUE_ADDRESS F Func;
 	T Value;
 
-	template<typename F1, typename T> constexpr TReducer(F1&& f, T&& seed):
-		Func(ForwardAsFunc<F1>(f)), Value(INTRA_FWD(seed)) {}
+	constexpr TReducer(auto&& f, auto&& seed):
+		Func(FunctorOf(INTRA_FWD(f))), Value(INTRA_FWD(seed)) {}
 
 	template<CConsumableList L> constexpr auto operator()(L&& list)
 	{
 		if constexpr(CRange<L> && !CConst<L>)
 		{
-			auto res = Move(Value);
-			while(!range.Empty()) res = Func(res, Next(range));
-			Value = Move(res);
+			auto res = INTRA_MOVE(Value);
+			while(!list.Empty()) res = Func(res, Next(list));
+			Value = INTRA_MOVE(res);
 			return Value;
 		}
-		else return operator()(Dup(ForwardAsRange<R>(range)));
+		else return operator()(Dup(RangeOf(INTRA_FWD(list))));
 	}
 };
 template<class F, typename T> TReducer(F, T) -> TReducer<TFunctorOf<F>, T>;
 
 template<class F> struct Reduce
 {
-	[[no_unique_address]] F Func;
+	INTRA_NO_UNIQUE_ADDRESS F Func;
 
-	template<typename F1> constexpr Reduce(F&& f): F(ForwardAsFunc<F1>(f)) {}
+	INTRA_FORCEINLINE constexpr Reduce(auto&& f): F(FunctorOf(INTRA_FWD(f))) {}
 
 	template<CConsumableList L>	constexpr auto operator()(L&& list)
 	{
 		if constexpr(CRange<L> && !CConst<L>)
 		{
-			TReducer<F&, TResultOf<F, TRangeValue<L>, TRangeValue<L>>> reducer(Func, Next(range));
+			TReducer<F&, TResultOf<F, TRangeValue<L>, TRangeValue<L>>> reducer(Func, Next(list));
 			return reducer(list);
 		}
-		else return operator()(Dup(ForwardAsRange<L>(list)));
+		else return operator()(Dup(RangeOf(INTRA_FWD(list))));
 	}
 };
 
 
 template<typename F> class Generate
 {
-	[[no_unique_address]] F mFunc;
+	INTRA_NO_UNIQUE_ADDRESS F mFunc;
 	TResultOf<F> mFirst;
 public:
 	using TagAnyInstanceInfinite = TTag<>;
 
-	constexpr Generate(F f): mFunc(INTRA_MOVE(f)), mFirst(mFunc()) {}
-	[[nodiscard]] constexpr bool Empty() const {return false;}
-	[[nodiscard]] constexpr const auto& First() const {return mFirst;}
-	constexpr void PopFirst() {mFirst = mFunc();}
+	INTRA_FORCEINLINE constexpr Generate(F f): mFunc(INTRA_MOVE(f)), mFirst(mFunc()) {}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return false;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr const auto& First() const {return mFirst;}
+	INTRA_FORCEINLINE constexpr void PopFirst() {mFirst = mFunc();}
 };
 
 template<typename F, typename T, size_t N> class Recurrence
 {
-	[[no_unique_address]] TSelect<size_t, EmptyType, (N > 2)> mIndex = 0;
-	[[no_unique_address]] F mFunc;
+	INTRA_NO_UNIQUE_ADDRESS TSelect<size_t, EmptyType, (N > 2)> mIndex = 0;
+	INTRA_NO_UNIQUE_ADDRESS F mFunc;
 	Array<T, N> mState;
 public:
 	using TagAnyInstanceInfinite = TTag<>;
@@ -795,7 +780,7 @@ public:
 		mFunc(INTRA_FWD(function)),
 		mState{INTRA_FWD(initialSequence)...} {}
 
-	[[nodiscard]] constexpr T First() const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T First() const
 	{
 		if constexpr(N <= 2) return mState[0];
 		else return mState[mIndex];
@@ -812,62 +797,63 @@ public:
 		{
 			auto& nextVal = mState[mIndex++];
 			if(mIndex == N) mIndex = 0;
-			nextVal = mFunc(mState[mIndex], mState[(mIndex+(1+Is) - (mIndex >= N-(1+Is)? N: 0))...]);
+			nextVal = mFunc(mState[mIndex], mState[(mIndex + (1 + Is) - (mIndex >= N - (1 + Is)? N: 0))]...);
 		}();
 	}
-	[[nodiscard]] constexpr bool Empty() const noexcept {return false;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return false;}
 };
 template<typename F, typename... Ts>
 Recurrence(F&&, Ts&&...) -> Recurrence<TFunctorOf<F&&>, TCommon<Ts...>, sizeof...(Ts)>;
 
-template<typename F> class Sequence
+template<CNumber TOffset, CAsCallable<TOffset> F> class Sequence
 {
-	[[no_unique_address]] F mFunc;
+	INTRA_NO_UNIQUE_ADDRESS F mFunc;
 public:
 	using TagAnyInstanceInfinite = TTag<>;
 
 	Sequence() = default;
-	template<CAsCallable<size_t> F1> constexpr Sequence(F1&& function, size_t offset = 0):
-		mFunc(function), Offset(offset) {}
+	constexpr Sequence(CAsCallable<TOffset> auto&& function, CNumber auto&& offset = 0):
+		mFunc(FunctorOf(INTRA_FWD(function))), Offset(INTRA_FWD(offset)) {}
 
-	[[nodiscard]] constexpr auto First() const {return mFunc(Offset);}
-	constexpr void PopFirst() noexcept {Offset++;}
-	[[nodiscard]] constexpr bool Empty() const noexcept {return false;}
-	[[nodiscard]] constexpr auto operator[](size_t index) const {return mFunc(Offset + index);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto First() const {return mFunc(Offset);}
+	INTRA_FORCEINLINE constexpr void PopFirst() noexcept {Offset++;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return false;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto operator[](CNumber auto&& index) const {return mFunc(Offset + INTRA_FWD(index));}
 
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize maxElementsToPop) noexcept
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) noexcept
 	{
-		Offset += size_t(maxElementsToPop);
-		return index_t(maxElementsToPop);
+		Offset += maxElementsToPop;
+		return INTRA_FWD(maxElementsToPop);
 	}
 
-	size_t Offset = 0;
+	INTRA_NO_UNIQUE_ADDRESS TOffset Offset = 0;
 };
-template<typename F> Sequence(F) -> Sequence<TFunctorOf<F>>;
+template<CAsCallable<NDebugOverflow<int64>> F> Sequence(F) -> Sequence<NDebugOverflow<int64>, TUnqualRef<TFunctorOf<F>>>;
+template<CNumber TOffset, CAsCallable<TOffset> F> Sequence(F, TOffset) -> Sequence<TUnqualRef<TOffset>, TUnqualRef<TFunctorOf<F>>>;
 
-constexpr auto Repeat = [](auto&& value) {
+INTRA_DEFINE_FUNCTOR(Repeat)(auto&& value) {
 	return Sequence(FRepeat(INTRA_FWD(value)));
 };
 
 template<typename T> struct REmptyRange
 {
-	[[nodiscard]] constexpr bool Empty() const noexcept {return true;}
-	[[nodiscard]] constexpr index_t Length() const noexcept {return 0;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return true;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const noexcept {return 0;}
 	[[nodiscard]] constexpr T First() const {INTRA_PRECONDITION(!Empty());}
 	[[nodiscard]] constexpr T Last() const {INTRA_PRECONDITION(!Empty());}
 	constexpr void PopFirst() const {INTRA_PRECONDITION(!Empty());}
 	constexpr void PopLast() const {INTRA_PRECONDITION(!Empty());}
-	constexpr T operator[](size_t) const {INTRA_PRECONDITION(!Empty());}
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize) const noexcept {return 0;}
-	constexpr T* Data() const noexcept {return nullptr;}
-	constexpr REmptyRange Take(ClampedSize) {return *this;}
+	constexpr T operator[](CNumber auto&&) const {INTRA_PRECONDITION(!Empty());}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t PopFirstCount(ClampedSize) const noexcept {return 0;}
+	INTRA_FORCEINLINE constexpr T* Data() const noexcept {return nullptr;}
+	INTRA_FORCEINLINE constexpr REmptyRange Take(CNumber auto&&) {return *this;}
 };
 template<typename T> constexpr REmptyRange<T> EmptyRange;
 
 constexpr struct {template<typename T> constexpr void Put(T&&) const {}} NullSink;
 
-constexpr auto IotaInf = []<CNumber T = int, CNumber S = int>(T first = 0, S step = 1) {
-	return Sequence([=](auto index) {return first + step*index;});
+INTRA_DEFINE_FUNCTOR(IotaInf)<CNumber T = NDebugOverflow<int64>, CNumber S = T>(T first = 0, S step = 1) {
+	return Sequence([=](CNumber auto&& index) {return T(first + step * index);}, NDebugOverflow<int64>(0));
 };
 
 /** Range that counts all elements that are put into it.
@@ -877,14 +863,14 @@ template<typename T = int, typename CounterT = index_t> struct RCounter
 {
 	using TagAnyInstanceInfinite = TTag<>;
 
-	[[nodiscard]] constexpr bool Empty() const noexcept {return false;}
-	[[nodiscard]] constexpr T First() const noexcept(noexcept(T())) {return T();}
-	constexpr void Put(const T&) noexcept {Counter++;}
-	constexpr void PopFirst() noexcept {Counter++;}
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize elementsToPop) const noexcept
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return false;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T First() const noexcept(noexcept(T())) {return T();}
+	INTRA_FORCEINLINE constexpr void Put(const T&) noexcept {Counter++;}
+	INTRA_FORCEINLINE constexpr void PopFirst() noexcept {Counter++;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& elementsToPop) const noexcept
 	{
-		Counter += CounterT(elementsToPop);
-		return index_t(elementsToPop);
+		Counter += NDebugOverflow<CounterT>(elementsToPop);
+		return INTRA_FWD(elementsToPop);
 	}
 
 	CounterT Counter = 0;
@@ -898,28 +884,23 @@ template<typename T> concept CCeilCounter = CInstanceOfTemplate<TRemoveConstRef<
 
 template<class T> concept CHasTakeMethod = requires(T x) {x.Take(index_t());};
 
-template<CRange R, bool Exactly> struct RTake: CopyableIf<!CReference<R>>
+template<CRange R, bool Exactly, CNumber TLen = size_t> struct RTake: CopyableIf<!CReference<R>>
 {
 	using TagAnyInstanceFinite = TTag<>;
 
 	constexpr RTake() = default;
 
-	template<CList L> constexpr RTake(L&& list, ClampedSize count):
-		mOriginalRange(RangeOf(INTRA_FWD(list))), mLen(size_t(count))
+	INTRA_FORCEINLINE constexpr RTake(CList auto&& list, CNumber auto&& count):
+		mOriginalRange(RangeOf(INTRA_FWD(list))), mLen(count)
 	{
 		if constexpr(CHasLength<R>)
 		{
-			if constexpr(Exactly) INTRA_PRECONDITION(count <= mOriginalRange.Length());
-			else mLen = Min(mLen, size_t(mOriginalRange.Length()));
+			if constexpr(Exactly) {INTRA_PRECONDITION(count <= mOriginalRange.Length());}
+			else mLen = Min(mLen, mOriginalRange.Length());
 		}
 	}
 
-	/*RTake(RTake&&) = default;
-	RTake(const RTake&) = default;
-	RTake& operator=(RTake&&) = default;
-	RTake& operator=(const RTake&) = default;*/
-
-	[[nodiscard]] constexpr bool Empty() const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const
 	{
 		if constexpr(Exactly || CHasLength<R> || CInfiniteRange<R>)
 			return mLen == 0;
@@ -943,7 +924,7 @@ template<CRange R, bool Exactly> struct RTake: CopyableIf<!CReference<R>>
 	[[nodiscard]] constexpr TRangeValueRef<R> Last() const requires CHasIndex<R>
 	{
 		INTRA_PRECONDITION(!Empty());
-		return mOriginalRange[mLen-1];
+		return mOriginalRange[mLen - 1];
 	}
 
 	constexpr void PopLast() requires CHasIndex<R>
@@ -952,28 +933,28 @@ template<CRange R, bool Exactly> struct RTake: CopyableIf<!CReference<R>>
 		mLen--;
 	}
 
-	[[nodiscard]] constexpr TRangeValueRef<R> operator[](Index index) const requires CHasIndex<R>
+	[[nodiscard]] constexpr TRangeValueRef<R> operator[](CNumber auto&& index) const requires CHasIndex<R>
 	{
-		INTRA_PRECONDITION(size_t(index) < mLen);
-		return mOriginalRange[index];
+		INTRA_PRECONDITION(0 <= index && index < mLen);
+		return mOriginalRange[INTRA_FWD(index)];
 	}
 
-	constexpr index_t Length() const noexcept requires CHasLength<R> || CInfiniteRange<R> {return index_t(mLen);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const noexcept requires CHasLength<R> || CInfiniteRange<R> {return mLen;}
 
-	[[nodiscard]] constexpr index_t LengthLimit() const noexcept {return index_t(mLen);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto LengthLimit() const noexcept {return mLen;}
 	
-	[[nodiscard]] constexpr RTake Take(Size count) const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr RTake Take(CNumber auto&& count) const
 	{
-		return RTake(mOriginalRange, Min(size_t(count), mLen));
+		return RTake(mOriginalRange, Min(count, mLen));
 	}
 
 private:
 	R mOriginalRange;
-	size_t mLen = 0;
+	TLen mLen = 0;
 };
 
-constexpr auto Take = [](ClampedSize maxCount) noexcept {
-	return [maxCount]<typename L>(L&& list) requires(CList<L> || CAdvance<L>) {
+INTRA_DEFINE_FUNCTOR(Take)(CNumber auto&& maxCount) noexcept {
+	return [maxCount = INTRA_FWD(maxCount)]<typename L>(L&& list) requires(CList<L> || CAdvance<L>) {
 		if constexpr(CAdvance<L>)
 		{
 			if constexpr(CHasTakeMethod<decltype(list.RangeRef)> && CHasPopFirstCount<decltype(list.RangeRef)>)
@@ -984,14 +965,14 @@ constexpr auto Take = [](ClampedSize maxCount) noexcept {
 			}
 			else return RTake<decltype(list.RangeRef), false>(list.RangeRef, maxCount);
 		}
-		else if constexpr(CHasTakeMethod<TRangeOfRef<R>>) return RangeOf(INTRA_FWD(list)).Take(maxCount);
-		else return RTake<TRangeOf<R>, false>(RangeOf(INTRA_FWD(list)), maxCount);
+		else if constexpr(CHasTakeMethod<TRangeOfRef<L>>) return RangeOf(INTRA_FWD(list)).Take(maxCount);
+		else return RTake<TRangeOf<L>, false, TUnqualRef<decltype(maxCount)>>(RangeOf(INTRA_FWD(list)), maxCount);
 	};
 };
 
-constexpr auto TakeExactly = [](Size numElementsToTake) noexcept {
-	return [numElementsToTake]<typename L>(L&& list) requires(CList<L> || CAdvance<L>) {
-		if constexpr(CAdvance<R>)
+INTRA_DEFINE_FUNCTOR(TakeExactly)(CNumber auto&& numElementsToTake) noexcept {
+	return [numElementsToTake = INTRA_FWD(numElementsToTake)]<typename L>(L&& list) requires(CList<L> || CAdvance<L>) {
+		if constexpr(CAdvance<L>)
 		{
 			if constexpr(CHasTakeMethod<decltype(list.RangeRef)> && CHasPopFirstCount<decltype(list.RangeRef)>)
 			{
@@ -1002,12 +983,12 @@ constexpr auto TakeExactly = [](Size numElementsToTake) noexcept {
 			}
 			else return RTake<decltype(list.RangeRef), true>(list.RangeRef, numElementsToTake);
 		}
-		else if constexpr(CHasTakeMethod<TRangeOfRef<R>>)
+		else if constexpr(CHasTakeMethod<TRangeOfRef<L>>)
 		{
-			if constexpr(CHasLength<TRangeOf<R>>) INTRA_PRECONDITION(numElementsToTake <= RangeOf(list).Length());
+			if constexpr(CHasLength<TRangeOf<L>>) INTRA_PRECONDITION(numElementsToTake <= RangeOf(list).Length());
 			return RangeOf(INTRA_FWD(list)).Take(numElementsToTake);
 		}
-		else return RTake<TRangeOf<R>, true>(RangeOf(INTRA_FWD(list)), numElementsToTake);
+		else return RTake<TRangeOf<L>, true>(RangeOf(INTRA_FWD(list)), numElementsToTake);
 	};
 };
 
@@ -1018,10 +999,10 @@ INTRA_DEFINE_SAFE_DECLTYPE(TTakeExactlyResult, TakeExactly(0)(Val<T>()));
 template<class R, class P, bool TestSubranges> class RTakeUntil
 {
 	R mRange;
-	[[no_unique_address]] P mPred;
+	INTRA_NO_UNIQUE_ADDRESS P mPred;
 	bool mEmpty = false;
 public:
-	constexpr RTakeUntil(R range, P pred): mPred(Move(pred)), mRange(Move(range)) {}
+	constexpr RTakeUntil(R range, P pred): mPred(INTRA_MOVE(pred)), mRange(INTRA_MOVE(range)) {}
 
 	[[nodiscard]] constexpr decltype(auto) First() const
 	{
@@ -1050,29 +1031,29 @@ public:
 	}
 };
 
-constexpr auto TakeUntil = [](auto&& pred) {
-	return [pred = ForwardAsFunc<decltype(pred)>(pred)]<CList L>(L&& list) {
+INTRA_DEFINE_FUNCTOR(TakeUntil)(auto&& pred) {
+	return [pred = FunctorOf(INTRA_FWD(pred))](CList auto&& list) {
 		return RTakeUntil(RangeOf(INTRA_FWD(list)), pred);
 	};
 };
 
-constexpr auto TakeUntilEagerly = [](auto&& pred) {
-	return [pred = ForwardAsFunc<decltype(pred)>(pred)]<CForwardList L>(L&& list) {
-		return r|Take(r|TakeUntil(pred)|Count);
+INTRA_DEFINE_FUNCTOR(TakeUntilEagerly)(auto&& pred) {
+	return [pred = FunctorOf(INTRA_FWD(pred))](CForwardList auto&& list) {
+		return INTRA_FWD(list)|Take(list|TakeUntil(pred)|Count);
 	};
 };
 
 INTRA_IGNORE_WARN_ASSIGN_IMPLICITLY_DELETED
-template<typename R> struct RCycle
+template<typename R, CNumber TOffset = size_t> struct RCycle
 {
 	static_assert(CForwardRange<R> && !CInfiniteRange<R>);
 	using TagAnyInstanceInfinite = TTag<>;
 
-	constexpr RCycle(R range) requires !CRandomAccessRange<R>:
-		mOriginalRange(Move(range)), mOffsetRange(mOriginalRange) {INTRA_PRECONDITION(!mOriginalRange.Empty());}
+	constexpr RCycle(R range) requires (!CRandomAccessRange<R>):
+		mOriginalRange(INTRA_MOVE(range)), mOffsetRange(mOriginalRange) {INTRA_PRECONDITION(!mOriginalRange.Empty());}
 
 	constexpr RCycle(R range) requires CRandomAccessRange<R>:
-		mOriginalRange(Move(range)) {INTRA_PRECONDITION(!mOriginalRange.Empty());}
+		mOriginalRange(INTRA_MOVE(range)) {INTRA_PRECONDITION(!mOriginalRange.Empty());}
 
 	[[nodiscard]] constexpr bool Empty() const {return false;}
 
@@ -1093,20 +1074,20 @@ template<typename R> struct RCycle
 		else if(mOffsetRange.Empty()) mOffsetRange = mOriginalRange;
 	}
 
-	constexpr index_t PopFirstCount(ClampedSize elementsToPop) const requires CRandomAccessRange<R> || CHasPopFirstCount<R> || CHasLength<R>
+	constexpr auto PopFirstCount(CNumber auto&& elementsToPop) const requires CRandomAccessRange<R> || CHasPopFirstCount<R> || CHasLength<R>
 	{
 		if constexpr(CRandomAccessRange<R>)
 		{
-			mOffsetRange.Counter += size_t(elementsToPop);
-			mOffsetRange.Counter %= size_t(mOriginalRange.Length());
+			mOffsetRange.Counter += elementsToPop;
+			mOffsetRange.Counter %= mOriginalRange.Length();
 		}
 		else
 		{
-			auto leftToPop = size_t(elementsToPop);
+			auto leftToPop = elementsToPop;
 			if constexpr(CHasLength<R>)
 			{
 				leftToPop %= mOriginalRange.Length();
-				const auto offLen = size_t(mOffsetRange.Length());
+				const auto offLen = mOffsetRange.Length();
 				if(offLen < leftToPop)
 				{
 					mOffsetRange = mOriginalRange;
@@ -1120,13 +1101,13 @@ template<typename R> struct RCycle
 				if(mOffsetRange.Empty()) mOffsetRange = mOriginalRange;
 			}
 		}
-		return index_t(elementsToPop);
+		return INTRA_FWD(elementsToPop);
 	}
 
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) const requires CRandomAccessRange<R>
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) const requires CRandomAccessRange<R>
 	{
-		size_t i = mOffsetRange.Counter + size_t(index);
-		i %= size_t(mOriginalRange.Length());
+		size_t i = mOffsetRange.Counter + index;
+		i %= mOriginalRange.Length();
 		return mOriginalRange[i];
 	}
 
@@ -1135,59 +1116,56 @@ private:
 	TSelect<RCounter<int, size_t>, R, CRandomAccessRange<R>> mOffsetRange;
 };
 
-constexpr auto Cycle = []<CList L>(L&& list) requires(CForwardList<L> || CInfiniteList<L>) {
-	if constexpr(CInfiniteList<R>) return RangeOf(INTRA_FWD(list));
+INTRA_DEFINE_FUNCTOR(Cycle)<CList L>(L&& list) requires(CForwardList<L> || CInfiniteList<L>) {
+	if constexpr(CInfiniteList<L>) return RangeOf(INTRA_FWD(list));
 	else return RCycle(RangeOf(INTRA_FWD(list)));
 };
 
-template<typename R, typename F> struct RMap
+template<class R, typename F> struct RMap
 {
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
-	template<CList L, CAsCallable<TListValueRef<L>> F1>
-	constexpr RMap(L&& list, F1&& f): Func(ForwardAsFunc<F1>(f)), OriginalRange(RangeOf(INTRA_FWD(list))) {}
+	template<CList L> INTRA_FORCEINLINE constexpr RMap(L&& list, CAsCallable<TListValueRef<L>> auto&& f):
+		Func(FunctorOf(INTRA_FWD(f))), OriginalRange(RangeOf(INTRA_FWD(list))) {}
 
-	[[nodiscard]] constexpr decltype(auto) First() const {return Func(OriginalRange.First());}
-	constexpr void PopFirst() {OriginalRange.PopFirst();}
-	[[nodiscard]] constexpr bool Empty() const {return OriginalRange.Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) First() const {return Func(OriginalRange.First());}
+	INTRA_FORCEINLINE constexpr void PopFirst() {OriginalRange.PopFirst();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return OriginalRange.Empty();}
 
-	constexpr decltype(auto) Last() const requires CHasLast<R> {return Func(OriginalRange.Last());}
-	constexpr void PopLast() requires CHaslPopLast<R> {OriginalRange.PopLast();}
-	constexpr decltype(auto) operator[](size_t index) const {return Func(OriginalRange[index]);}
-	[[nodiscard]] constexpr index_t Length() const requires CHasLength<R> {return OriginalRange.Length();}
+	constexpr INTRA_FORCEINLINE decltype(auto) Last() const requires CHasLast<R> {return Func(OriginalRange.Last());}
+	constexpr INTRA_FORCEINLINE void PopLast() requires CHasPopLast<R> {OriginalRange.PopLast();}
+	constexpr INTRA_FORCEINLINE decltype(auto) operator[](CNumber auto&& index) const {return Func(OriginalRange[index]);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const requires CHasLength<R> {return OriginalRange.Length();}
 
-	[[nodiscard]] constexpr auto PopFirstCount(ClampedSize numElementsToPop) requires CHasPopFirstCount<R>
-	{
-		return OriginalRange.PopFirstCount(numElementsToPop);
-	}
-	[[nodiscard]] constexpr auto PopLastCount(ClampedSize numElementsToPop) requires CHasPopLastCount<R>
-	{
-		return OriginalRange.PopLastCount(numElementsToPop);
-	}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& numElementsToPop) requires CHasPopFirstCount<R>
+	{return OriginalRange.PopFirstCount(numElementsToPop);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopLastCount(CNumber auto&& numElementsToPop) requires CHasPopLastCount<R>
+	{return OriginalRange.PopLastCount(numElementsToPop);}
 
-	[[no_unique_address]] F Func;
+	INTRA_NO_UNIQUE_ADDRESS F Func;
 	R OriginalRange;
 };
+template<CList L, CAsCallable<TListValueRef<L>> F> RMap(L, F) -> RMap<TRangeOf<L>, TFunctorOf<F>>;
 
-constexpr auto Map = []<typename F>(F&& f) {
-	return [func = ForwardAsFunc<F>(f)]<CAccessibleList L>(L&& list) {
-		return RMap<TRangeOf<L>, TFunctorOf<F>>(RangeOf(INTRA_FWD(list)), func);
+INTRA_DEFINE_FUNCTOR(Map)(auto&& f) {
+	return [func = FunctorOf(INTRA_FWD(f))](CAccessibleList auto&& list) mutable {
+		return RMap(RangeOf(INTRA_FWD(list)), INTRA_MOVE(func));
 	};
 };
 
 template<size_t N> constexpr auto Unzip = []<CList L>(L&& list) requires CStaticLengthContainer<L> {
-	return INTRA_FWD(list)|Map(TFieldAt<N>);
+	return INTRA_FWD(list)|Map(At<N>);
 };
 
 INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
-template<typename R, class P> class RFilter
+template<CRange R, class P> class RFilter
 {
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
-	template<CConsumableList L> constexpr RFilter(L&& list, P&& filterPredicate):
-		mPred(ForwardAsFunc<P>(filterPredicate)), mOriginalRange(RangeOf(INTRA_FWD(list)))
+	constexpr RFilter(CConsumableList auto&& list, auto&& filterPredicate):
+		mPred(FunctorOf(INTRA_FWD(filterPredicate))), mOriginalRange(RangeOf(INTRA_FWD(list)))
 	{skipFalsesFront(mOriginalRange, filterPredicate);}
 
 
@@ -1225,11 +1203,11 @@ template<typename R, class P> class RFilter
 
 private:
 	R mOriginalRange;
-	[[no_unique_address]] P mPred;
+	INTRA_NO_UNIQUE_ADDRESS P mPred;
 };
 
-constexpr auto Filter = []<typename P>(P&& pred) {
-	return [pred = ForwardAsFunc<P>(pred)]<CConsumableList L>(L&& list) {
+INTRA_DEFINE_FUNCTOR(Filter)<typename P>(P&& pred) {
+	return [pred = FunctorOf(INTRA_FWD(pred))]<CConsumableList L>(L&& list) {
 		return RFilter<TRangeOf<L>, P>(INTRA_FWD(list), pred);
 	};
 };
@@ -1238,48 +1216,46 @@ template<typename R> struct RRetro
 {
 	R OriginalRange;
 
-	[[nodiscard]] constexpr bool Empty() const {return OriginalRange.Empty();}
-	[[nodiscard]] constexpr decltype(auto) First() const {return OriginalRange.Last();}
-	constexpr void PopFirst() {OriginalRange.PopLast();}
-	[[nodiscard]] constexpr decltype(auto) Last() const {return OriginalRange.First();}
-	constexpr void PopLast() {OriginalRange.PopFirst();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return OriginalRange.Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) First() const {return OriginalRange.Last();}
+	INTRA_FORCEINLINE constexpr void PopFirst() {OriginalRange.PopLast();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) Last() const {return OriginalRange.First();}
+	INTRA_FORCEINLINE constexpr void PopLast() {OriginalRange.PopFirst();}
 	
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index)
-		requires CHasIndex<R> && CHasLength<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) operator[](CNumber auto&& index) requires CHasIndex<R> && CHasLength<R>
 	{
-		return OriginalRange[Length()-1-index];
+		return OriginalRange[Length() - 1 - index];
 	}
 
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) const
-		requires CHasIndex<R> && CHasLength<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) operator[](CNumber auto&& index) const requires CHasIndex<R> && CHasLength<R>
 	{
-		return OriginalRange[Length()-1-index];
+		return OriginalRange[Length() - 1 - index];
 	}
 
-	[[nodiscard]] constexpr auto Length() const requires CHasLength<R> {return OriginalRange.Length();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const requires CHasLength<R> {return OriginalRange.Length();}
 
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize maxElementsToPop) requires CHasPopLastCount<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) requires CHasPopLastCount<R>
 	{
 		return OriginalRange.PopLastCount(maxElementsToPop);
 	}
 
-	[[nodiscard]] constexpr index_t PopLastCount(ClampedSize maxElementsToPop) requires CHasPopFirstCount<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopLastCount(CNumber auto&& maxElementsToPop) requires CHasPopFirstCount<R>
 	{
 		return OriginalRange.PopFirstCount(maxElementsToPop);
 	}
 };
 
-constexpr auto Retro = []<CBidirectionalList L>(L&& list) {
+INTRA_DEFINE_FUNCTOR(Retro)<CBidirectionalList L>(L&& list) {
 	if constexpr(CInstanceOfTemplate<TRemoveConstRef<L>, RRetro>) return list.OriginalRange;
 	else return RRetro{RangeOf(INTRA_FWD(list))};
 };
 
-template<typename R> struct RChunks
+template<typename R, CNumber TChunkLen = size_t> struct RChunks
 {
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
-	template<CList L> constexpr RChunks(L&& list, ClampedSize chunkLen):
+	constexpr RChunks(CList auto&& list, CNumber auto&& chunkLen):
 		mOriginalRange(RangeOf(INTRA_FWD(list))), mChunkLen(chunkLen)
 	{
 		INTRA_PRECONDITION(chunkLen >= 1);
@@ -1287,23 +1263,23 @@ template<typename R> struct RChunks
 
 	[[nodiscard]] auto First() const {return mOriginalRange|Take(mChunkLen);}
 	void PopFirst() {mOriginalRange|PopFirstCount(mChunkLen);}
-	[[nodiscard]] bool Empty() const {return mChunkLen == 0 || mOriginalRange.Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE bool Empty() const {return mChunkLen == 0 || mOriginalRange.Empty();}
 
-	[[nodiscard]] constexpr index_t Length() const requires CHasLength<R>
+	[[nodiscard]] constexpr auto Length() const requires CHasLength<R>
 	{
 		return (mOriginalRange.Length() + mChunkLen - 1) / mChunkLen;
 	}
 
-	[[nodiscard]] constexpr auto operator[](Index index) const requires CHasPopFirstCount<R> && CHasLength<R>
+	[[nodiscard]] constexpr auto operator[](CNumber auto&& index) const requires CHasPopFirstCount<R> && CHasLength<R>
 	{
 		INTRA_PRECONDITION(index < Length());
-		return mOriginalRange|Drop(index*mChunkLen)|Take(mChunkLen);
+		return mOriginalRange|DropExactly(index * mChunkLen)|Take(mChunkLen);
 	}
 
 	[[nodiscard]] constexpr auto Last() const requires CHasPopFirstCount<R> && CHasLength<R>
 	{
 		INTRA_PRECONDITION(!Empty());
-		size_t numToTake = size_t(mOriginalRange.Length()) % mChunkLen;
+		auto numToTake = TChunkLen(mOriginalRange.Length() % mChunkLen);
 		if(numToTake == 0) numToTake = mChunkLen;
 		return mOriginalRange|Tail(numToTake);
 	}
@@ -1311,93 +1287,93 @@ template<typename R> struct RChunks
 	constexpr void PopLast() requires CHasPopLast<R> && CHasLength<R>
 	{
 		INTRA_PRECONDITION(!Empty());
-		size_t numToPop = size_t(mOriginalRange.Length()) % mChunkLen;
+		auto numToPop = TChunkLen(mOriginalRange.Length() % mChunkLen);
 		if(numToPop == 0) numToPop = mChunkLen;
 		mOriginalRange|PopLastExactly(numToPop);
 	}
 
 private:
 	R mOriginalRange;
-	size_t mChunkLen;
+	TChunkLen mChunkLen;
 };
 
-constexpr auto Chunks = [](ClampedSize chunkLen) {
+INTRA_DEFINE_FUNCTOR(Chunks)(ClampedSize chunkLen) {
 	return [chunkLen]<CForwardList L>(L&& list) {
-		return RChunks<TRangeOf<L>>>(RangeOf(INTRA_FWD(list)), chunkLen);
+		return RChunks<TRangeOf<L>>(RangeOf(INTRA_FWD(list)), chunkLen);
 	};
 };
 
 INTRA_IGNORE_WARN_ASSIGN_IMPLICITLY_DELETED
-template<typename R> struct RStride
+template<CAccessibleRange R> struct RStride
 {
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
 	RStride() = default;
 
-	constexpr RStride(R range, Size strideStep):
-		mOriginalRange(Move(range)), mStep(strideStep)
+	constexpr RStride(CAccessibleRange auto&& range, Size strideStep):
+		mOriginalRange(INTRA_FWD(range)), mStep(strideStep)
 	{
 		INTRA_PRECONDITION(strideStep > 0);
 		if constexpr(CHasPopLast<R> && CHasLength<R>)
 		{
 			const size_t len = size_t(mOriginalRange.Length());
 			if(len == 0) return;
-			mOriginalRange|PopLastExactly((len-1) % mStep);
+			mOriginalRange|PopLastExactly((len - 1) % mStep);
 		}
 	}
 
-	[[nodiscard]] constexpr decltype(auto) First() const {return mOriginalRange.First();}
-	constexpr void PopFirst() {mOriginalRange|Intra::PopFirstCount(mStep);}
-	[[nodiscard]] constexpr bool Empty() const {return mOriginalRange.Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) First() const {return mOriginalRange.First();}
+	INTRA_FORCEINLINE constexpr void PopFirst() {mOriginalRange|Intra::PopFirstCount(mStep);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return mOriginalRange.Empty();}
 
-	[[nodiscard]] constexpr decltype(auto) Last() const requires CHasLast<R> {return mOriginalRange.Last();}
-	constexpr void PopLast() requires CHasPopLast<R> {mOriginalRange|Intra::PopLastCount(mStep);}
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) const requires CHasIndex<R> {return mOriginalRange[index*mStep];}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) Last() const requires CHasLast<R> {return mOriginalRange.Last();}
+	INTRA_FORCEINLINE constexpr void PopLast() requires CHasPopLast<R> {mOriginalRange|Intra::PopLastCount(mStep);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) operator[](Index index) const requires CHasIndex<R> {return mOriginalRange[index*mStep];}
 
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize maxElementsToPop) requires CHasPopFirstCount<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) requires CHasPopFirstCount<R>
 	{
-		const auto originalElementsPopped = mOriginalRange.PopFirstCount(mStep*size_t(maxElementsToPop));
+		const auto originalElementsPopped = mOriginalRange.PopFirstCount(mStep * maxElementsToPop);
+		return (originalElementsPopped + mStep - 1) / mStep;
+	}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopLastCount(CNumber auto&& maxElementsToPop) requires CHasPopLastCount<R>
+	{
+		const auto originalElementsPopped = mOriginalRange.PopLastCount(mStep * maxElementsToPop);
 		return index_t((size_t(originalElementsPopped) + mStep - 1) / mStep);
 	}
 
-	[[nodiscard]] constexpr index_t PopLastCount(ClampedSize maxElementsToPop) requires CHasPopLastCount<R>
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const requires CHasLength<R>
 	{
-		const auto originalElementsPopped = mOriginalRange.PopLastCount(mStep*size_t(maxElementsToPop));
-		return index_t((size_t(originalElementsPopped) + mStep - 1) / mStep);
+		return (mOriginalRange.Length() + mStep - 1) / mStep;
 	}
 
-	[[nodiscard]] constexpr index_t Length() const requires CHasLength<R>
-	{
-		return index_t((size_t(mOriginalRange.Length()) + mStep - 1) / mStep);
-	}
-
-	[[nodiscard]] constexpr auto Stride(Size step) const {return RStride{mOriginalRange, mStep*size_t(step)};}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Stride(Size step) const {return RStride{mOriginalRange, mStep * step};}
 
 private:
 	R mOriginalRange;
 	size_t mStep = 0;
 };
 
-constexpr auto Stride = [](Size step) {
+INTRA_DEFINE_FUNCTOR(Stride)(Size step) {
 	return [step]<CAccessibleList L>(L&& list) {
 		if constexpr(CInstanceOfTemplate<TRemoveConstRef<L>, RStride>) return list.Stride(step);
 		else return RStride<TRangeOf<L>>(RangeOf(INTRA_FWD(list)), step);
 	};
 };
 
-template<class RangeOfLists> class RJoin
+template<CRange RangeOfLists> class RJoin
 {
 	using R = TRangeOf<TRangeValueRef<RangeOfLists>>;
 
 	RangeOfLists mLists;
 	R mCurrentRange;
-	[[no_unique_address]] TSelect<bool, EmptyType, CInfiniteRange<R>> mCreatedEmpty;
+	INTRA_NO_UNIQUE_ADDRESS TSelect<bool, EmptyType, CInfiniteRange<R>> mCreatedEmpty;
 public:
 	using TagAnyInstanceFinite = TTag<CFiniteRange<RangeOfLists> && CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<RangeOfLists>>;
 
-	template<CAccessibleList L> requires CAccessibleRange<TRangeValue<RangeOfLists>>
+	template<CAccessibleList L> requires CAccessibleRange<TListValue<L>>
 	constexpr RJoin(L&& listOfLists):
 		mLists(RangeOf(INTRA_FWD(listOfLists))),
 		mCreatedEmpty(mLists.Empty())
@@ -1405,7 +1381,7 @@ public:
 		goToNearestNonEmptyElement();
 	}
 
-	constexpr decltype(auto) First() const
+	[[nodiscard]] constexpr decltype(auto) First() const
 	{
 		INTRA_PRECONDITION(!Empty());
 		return mCurrentRange.First();
@@ -1416,22 +1392,22 @@ public:
 		mCurrentRange.PopFirst();
 		goToNearestNonEmptyElement();
 	}
-	[[nodiscard]] constexpr bool Empty() const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const
 	{
 		if constexpr(CInfiniteRange<R>) return mCreatedEmpty;
 		else return mCurrentRange.Empty();
 	}
 
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) const
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) const
 		requires CHasIndex<R> && (CInfiniteRange<R> || CHasLength<R> && CCopyConstructible<RangeOfLists>)
 	{
 		INTRA_PRECONDITION(!Empty());
-		if constexpr(CInfiniteRange<R>) return mCurrentRange[index];
+		if constexpr(CInfiniteRange<R>) return mCurrentRange[INTRA_FWD(index)];
 		else
 		{
 			INTRA_PRECONDITION(index < Length());
-			size_t curIndex = size_t(index);
-			size_t curLen = size_t(mCurrentRange.Length());
+			auto curIndex = INTRA_FWD(index);
+			auto curLen = mCurrentRange.Length();
 			if(curIndex < curLen) return mCurrentRange[curIndex];
 			curIndex -= curLen;
 			auto rr = mLists;
@@ -1446,7 +1422,7 @@ public:
 		}
 	}
 
-	[[nodiscard]] constexpr index_t Length() const
+	[[nodiscard]] constexpr auto Length() const
 		requires CHasLength<R> && CCopyConstructible<RangeOfLists>
 	{
 		auto result = mCurrentRange.Length();
@@ -1464,20 +1440,22 @@ private:
 		}
 	}
 };
-constexpr auto Join = []<CList ListOfLists>(ListOfLists&& lists) {
-	if constexpr(CInfiniteList<ListsOfLists> && CInfiniteList<TListValue<ListOfLists>>)
-	return RJoin<TRangeOf<ListOfLists>>(INTRA_FWD(lists));
+INTRA_DEFINE_FUNCTOR(Join)<CList ListOfLists>(ListOfLists&& lists) {
+	if constexpr(CInfiniteList<ListOfLists> && CInfiniteList<TListValue<ListOfLists>>)
+		return RangeOf(INTRA_FWD(lists)).First();
+	else return RJoin<TRangeOf<ListOfLists>>(INTRA_FWD(lists));
 };
 
 
+// TODO: support readers via ReadSome method, including partial reads
 template<CAccessibleRange R, CAssignableList B> class RBuffered
 {
 	static_assert(CSame<TRangeValueRef<R>, TListValueRef<B>>);
 public:
-	template<CAccessibleList L, CAssignableList LBuf> constexpr RBuffered(L&& list, LBuf&& buffer):
+	constexpr RBuffered(CAccessibleList auto&& list, CAssignableList auto&& buffer):
 		mOriginalRange(RangeOf(INTRA_FWD(list))), mBuffer(INTRA_FWD(buffer)) {loadBuffer();}
 
-	//External buffer referred by range cannot be copied
+	// External buffer referred by range cannot be copied
 	RBuffered(const RBuffered& rhs) requires(!CRange<B>) = default;
 	RBuffered& operator=(const RBuffered& rhs) requires(!CRange<B>) = default;
 	RBuffered(RBuffered&& rhs) = default;
@@ -1498,15 +1476,17 @@ public:
 		loadBuffer();
 	}
 
-	constexpr void PopFirstCount(ClampedSize n)
+	constexpr auto PopFirstCount(CNumber auto&& n)
 	{
-		const auto leftToPop = size_t(n) - size_t(mBufferRange|Intra::PopFirstCount(n));
-		if(!mBufferRange.Empty()) return;
-		mOriginalRange|Intra::PopFirstCount(leftToPop);
+		auto numElementsPopped = mBufferRange|Intra::PopFirstCount(n);
+		const auto leftToPop = n - numElementsPopped;
+		if(!mBufferRange.Empty()) return numElementsPopped;
+		numElementsPopped += mOriginalRange|Intra::PopFirstCount(leftToPop);
 		loadBuffer();
+		return numElementsPopped;
 	}
 
-	template<COutputOf<TRangeValue<R>> Dst> constexpr void ReadWrite(Dst&& dst)
+	template<COutputOf<TRangeValue<R>> Dst> constexpr void StreamTo(Dst&& dst)
 	{
 		if constexpr(CSameArrays<R, Dst>)
 		{
@@ -1522,11 +1502,14 @@ public:
 		}
 	}
 
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) requires CHasIndex<R>
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) requires CHasIndex<R>
 	{
-		if(size_t(index) < size_t(mBufferRange.Length())) return mBufferRange[index];
+		if(index < mBufferRange.Length()) return mBufferRange[index];
 		return mOriginalRange[size_t(index) - size_t(mBufferRange.Length())];
 	}
+
+	auto GetBuffer() requires CConvertibleToSpan<B> {return Span(mBuffer);}
+	auto GetBuffer() const requires CConvertibleToSpan<const B> {return Span(mBuffer);}
 
 private:
 	void loadBuffer()
@@ -1541,17 +1524,18 @@ private:
 };
 template<CAccessibleList L, CAssignableList LBuf> RBuffered(L&&, LBuf&&) -> RBuffered<TRangeOf<L>, TUnqualRef<LBuf>>;
 
-constexpr auto Buffered = []<CAssignableList B>(B&& buffer) {
+INTRA_DEFINE_FUNCTOR(Buffered)(CAssignableList auto&& buffer) {
 	return [buffer = INTRA_FWD(buffer)]<CAccessibleList L>(L&& list) {
-		return RBuffered<TRangeOf<L>, decltype(buffer)>(INTRA_FWD(list), buffer);
+		return RBuffered(INTRA_FWD(list), buffer);
 	};
 };
 
-constexpr auto Iota = []<typename T>(T begin, T end, auto step = 1) {
+INTRA_DEFINE_FUNCTOR(Iota)<CNumber T = NDebugOverflow<int64>>(T begin, T end, auto step = 1) {
 	return IotaInf(begin, step)|Take((end - begin + step - 1) / step);
 };
 
 #if INTRA_CONSTEXPR_TEST
+static_assert(CRandomAccessRange<decltype(IotaInf(1, 3))>);
 static_assert(CRandomAccessRange<decltype(Iota(1, 2, 3))>);
 #endif
 
@@ -1560,20 +1544,23 @@ template<class... Rs> class Chain
 {
 	Tuple<Rs...> mRanges;
 	size_t mIndex = 0;
-	[[no_unique_address]] TConditionalField<size_t, (CBidirectionalRange<Rs> && ...)> mLastIndex;
+	INTRA_NO_UNIQUE_ADDRESS TConditionalField<size_t, (CBidirectionalRange<Rs> && ...)> mLastIndex;
 public:
 	using TagAnyInstanceFinite = TTag<(CFiniteRange<Rs> && ...)>;
 	using TagAnyInstanceInfinite = TTag<(CInfiniteRange<Rs> || ...)>;
 
-	template<CAccessibleList... Ls> constexpr Chain(Ls&&... lists): mRanges(ForwardAsRange<Ls>(lists)...) {}
+	template<class... Ls> requires (sizeof...(Ls) > 1 || !CSameUnqualRef<Chain, Ls...>) && (CAccessibleList<Ls> && ...)
+	constexpr Chain(Ls&&... lists): mRanges(RangeOf(INTRA_FWD(lists))...) {}
 
 	[[nodiscard]] constexpr decltype(auto) First() const {return ForFieldAtRuntime(mIndex, Intra::First)(mRanges);}
+
 	constexpr void PopFirst()
 	{
 		INTRA_PRECONDITION(!Empty());
 		ForFieldAtRuntime(mIndex, Intra::PopFirst)(mRanges);
 		if(ForFieldAtRuntime(mIndex, Intra::IsEmpty)(mRanges)) mIndex++;
 	}
+
 	[[nodiscard]] constexpr bool Empty() const
 	{
 		if constexpr((CBidirectionalRange<Rs> && ...))
@@ -1593,45 +1580,45 @@ public:
 		if(ForFieldAtRuntime(mLastIndex, Intra::IsEmpty)(mRanges)) mLastIndex--;
 	}
 
-	[[nodiscard]] constexpr index_t Length() const requires (CHasLength<Rs> && ...)
+	[[nodiscard]] constexpr auto Length() const requires (CHasLength<Rs> && ...)
 	{
-		auto acc = Accum(Add, Count, 0);
+		auto acc = Accum(Add, Count, 0LL);
 		ForEach(FRef(acc))(mRanges);
 		return acc.Result;
 	}
 
-	[[nodiscard]] constexpr decltype(auto) operator[](Index index) const requires ((CHasIndex<Rs> && CHasLength<Rs>) && ...)
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) const requires ((CHasIndex<Rs> && CHasLength<Rs>) && ...)
 	{
 		INTRA_PRECONDITION(index < Length());
-		const auto getByIndex = [&]<size_t I>(auto& getByIndex, size_t index, TIndex<I>) -> decltype(auto) {
+		const auto getByIndex = [&]<size_t I>(auto& getByIndex, auto index, TIndex<I>) -> decltype(auto) {
 			auto& range = At<I>(mRanges);
 			if constexpr(I == sizeof...(Rs) - 1) return range[index];
 			else
 			{
 				auto len = size_t(range.Length());
 				if(index < len) return range[index];
-				else return getByIndex(getByIndex, index - len, TIndex<I+1>());
+				else return getByIndex(getByIndex, index - len, TIndex<I + 1>());
 			}
 		};
 		return getByIndex(getByIndex, index, TIndex<0>());
 	}
 
-	constexpr index_t PopFirstCount(ClampedSize maxElementsToPop) const requires (CHasPopFirstCount<Rs> && ...)
+	constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) const requires (CHasPopFirstCount<Rs> && ...)
 	{
-		size_t elemsLeftToPop = maxElementsToPop;
+		auto elemsLeftToPop = maxElementsToPop;
 		ForEach([&](auto& range) {
 			elemsLeftToPop -= range.PopFirstCount(elemsLeftToPop);
 		})(mRanges);
-		return index_t(maxElementsToPop - elemsLeftToPop);
+		return maxElementsToPop - elemsLeftToPop;
 	}
 
-	constexpr index_t PopLastCount(ClampedSize maxElementsToPop) const requires (CHasPopLastCount<Rs> && ...)
+	constexpr auto PopLastCount(CNumber auto&& maxElementsToPop) const requires (CHasPopLastCount<Rs> && ...)
 	{
-		size_t elemsLeftToPop = maxElementsToPop;
+		auto elemsLeftToPop = maxElementsToPop;
 		ForEach([&](auto& range) {
 			elemsLeftToPop -= range.PopLastCount(elemsLeftToPop);
 		})(mRanges);
-		return index_t(maxElementsToPop - elemsLeftToPop);
+		return maxElementsToPop - elemsLeftToPop;
 	}
 };
 template<CList... Ls> Chain(Ls&&...) -> Chain<TRangeOf<Ls&&>...>;
@@ -1643,7 +1630,8 @@ template<class... Rs> struct RoundRobin
 	using TagAnyInstanceFinite = TTag<(CFiniteRange<Rs> && ...)>;
 
 	RoundRobin() = default;
-	template<CList... Ls> constexpr RoundRobin(Ls&&... lists): mRanges(ForwardAsRange<Rs>(lists)...)
+	template<class... Ls> requires (sizeof...(Ls) > 1 || !CSameUnqualRef<RoundRobin, Ls...>) && (CList<Ls> && ...)
+	constexpr RoundRobin(Ls&&... lists): mRanges(RangeOf(INTRA_FWD(lists))...)
 	{
 		while(mCurrent < sizeof...(Rs) && ForFieldAtRuntime(mCurrent, IsEmpty)(mRanges))
 			mCurrent++;
@@ -1674,16 +1662,16 @@ template<class... Rs> struct RoundRobin
 		}
 	}
 
-	[[nodiscard]] constexpr bool Empty() const {return mCurrent == sizeof...(Rs);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return mCurrent == sizeof...(Rs);}
 
-	[[nodiscard]] constexpr index_t Length() const requires (CHasLength<Rs> && ...)
+	[[nodiscard]] constexpr auto Length() const requires (CHasLength<Rs> && ...)
 	{
-		auto accum = Accum(Add, Count, index_t(0));
+		auto accum = Accum(Add, Count, 0LL);
 		ForEachField(FRef(accum))(mRanges);
 		return accum.Result;
 	}
 
-//private:
+private:
 	Tuple<Rs...> mRanges;
 	size_t mCurrent = 0;
 };
@@ -1695,7 +1683,6 @@ static_assert(CRange<TUnqualRef<decltype(Chain(Span<int>()))>>);
 static_assert(CRange<TUnqualRef<decltype(Chain(Array{1, 2, 3, 4}))>>);
 static_assert(CSame<int, TUnqualRef<decltype(Chain(Array{1, 2, 3, 4}, Array{1, 2, 3, 4}).First())>>);
 static_assert(CRandomAccessRange<decltype(Chain(Array{1, 2, 3, 4}))>);
-static_assert(!CArrayList<const Intra::Tuple<Intra::Span<int>>&>);
 static_assert(CSame<RoundRobin<Span<int>, Span<int>>, decltype(RoundRobin<Span<int>, Span<int>>(Span<int>(), Span<int>()))>);
 static_assert(Array{1, 2, 3}|MatchesWith(Array{1, 2, 3}));
 static_assert(!RoundRobin(Array{1}).Empty());
@@ -1708,71 +1695,67 @@ static_assert(RoundRobin(Array{1, 2, 3}, Array{10, 20, 30, 40})|MatchesWith(Arra
 static_assert(RoundRobin(Array{0}, Array{10u, 20u, 30u, 40u})|MatchesWith(Array{0u, 10u, 20u, 30u, 40u}));
 #endif
 
-template<class LengthPolicy = decltype(Min), CRange... Rs>
+template<auto LengthPolicy = Min, CRange... Rs>
 class Zip: CopyableIf<!(CReference<Rs> || ...)>
 {
-	static_assert(CAnyOf<LengthPolicy,
-		decltype(Min), //Length = Min(Rs::Length...)
-		decltype(Equal), //Require all Rs::Length to be equal
-		decltype(Max) //Length = Max(Rs::Length...), empty range elements are default constructed
-	>);
-	static_assert(!CSame<LengthPolicy, decltype(Max)> || (CConstructible<TRangeValueRef<Rs>> && ...));
+	static_assert(VAnyOf(LengthPolicy,
+		Min, //Length = Min(Rs::Length...)
+		Equal, //Require all Rs::Length to be equal
+		Max //Length = Max(Rs::Length...), empty range elements are default constructed
+	));
+	static_assert(!VSameTypes(LengthPolicy, Max) || (CConstructible<TRangeValueRef<Rs>> && ...));
 	Tuple<Rs...> mRanges;
-	static constexpr bool cacheLengthInConstructor = sizeof...(Rs) != 0 && !CSame<LengthPolicy, decltype(Equal)> && ((CHasLength<Rs> && !CReference<Rs>) && ...);
-	[[no_unique_address]] TConditionalField<size_t, cacheLengthInConstructor> mLen;
+	static constexpr bool cacheLengthInConstructor = sizeof...(Rs) != 0 && !VSameTypes(LengthPolicy, Equal) && ((CHasLength<Rs> && !CReference<Rs>) && ...);
+	INTRA_NO_UNIQUE_ADDRESS TConditionalField<size_t, cacheLengthInConstructor> mLen;
 
 	static constexpr size_t IndexOfFirstRangeWithLength = IndexOfFirstTrueArg<0>(CHasLength<Rs>...);
 public:
-	using TagAnyInstanceFinite = TTag<(CFiniteRange<Rs> && ...) ||
-		CSame<LengthPolicy, decltype(Min)> && (CFiniteRange<Rs> || ...)>;
-	using TagAnyInstanceInfinite = TTag<(CInfiniteRange<Rs> && ...) ||
-		CSame<LengthPolicy, decltype(Max)> && (CInfiniteRange<Rs> || ...)>;
+	using TagAnyInstanceFinite = TTag<(CFiniteRange<Rs> && ...) || VSameTypes(LengthPolicy, Min) && (CFiniteRange<Rs> || ...)>;
+	using TagAnyInstanceInfinite = TTag<(CInfiniteRange<Rs> && ...) || VSameTypes(LengthPolicy, Max) && (CInfiniteRange<Rs> || ...)>;
 
-	static_assert(!(CSame<LengthPolicy, decltype(Equal)> &&
-		(CFiniteRange<Rs> || ...) && (CInfiniteRange<Rs> || ...)),
+	static_assert(!VSameTypes(LengthPolicy, Equal) || (CFiniteRange<Rs> || ...) && (CInfiniteRange<Rs> || ...),
 		"All ranges are required to have the same length but Rs contains both finite and infinite ranges!");
 
-	template<CAccessibleList... Ls> [[nodiscard]] constexpr Zip(Rs&&... ranges):
-		mRanges(ForwardAsRange<Rs>(ranges)...)
+	template<CAccessibleList... Ls> [[nodiscard]] constexpr Zip(Ls&&... lists): mRanges(RangeOf(INTRA_FWD(lists))...)
 	{
 		if constexpr(cacheLengthInConstructor)
 		{
-			mLen = mRanges|ForEachFieldToArray(Count)|ApplyPackedArgs(LengthPolicy());
+			mLen = mRanges|ForEachFieldToArray(Count)|ApplyPackedArgs(LengthPolicy);
 		}
 
 		//TODO: implement Min and Max policies
-		if constexpr(CSame<LengthPolicy, decltype(Equal)>)
+		if constexpr(VSameTypes(LengthPolicy, Equal))
 		{
 			if(IsConstantEvaluated() || Config::DebugCheckLevel >= 1)
 			{
 				//Try to check the requirement early, at construction
-				if constexpr((CFiniteRange<Rs> && !CReference<Rs>) || ...)
+				if constexpr(((CFiniteRange<Rs> && !CReference<Rs>) || ...))
 				{
-					bool allRangeLengthsAreNotEqual = false;
-					if constexpr(CHasLength<Rs> && ...)
+					bool allRangeLengthsAreEqual = true;
+					if constexpr((CHasLength<Rs> && ...))
 					{
-						index_t length = -1;
+						int64 length = -1;
 						mRanges|ForEach([&](auto& range) {
-							auto len = range.Length();
+							auto len = int64(range.Length());
 							if(length == -1) length = len;
-							if(len != length) allRangeLengthsAreNotEqual = true;
+							if(len != length) allRangeLengthsAreEqual = false;
 						});
 					}
 					else if constexpr(Config::DebugCheckLevel >= 2 && CCopyConstructible<Zip>)
 					{
 						auto copy = *this;
-						for(;;)
+						for(;; copy.PopFirst())
 						{
 							auto anyEmpty = AccumAny(IsEmpty);
+							ForEachField(anyEmpty)(copy.mRanges);
 							auto allEmpty = AccumAll(IsEmpty);
-							copy.mRanges|ForEach(anyEmpty);
-							copy.mRanges|ForEach(allEmpty);
+							ForEachField(allEmpty)(copy.mRanges);
 							if(!anyEmpty.Result) continue;
-							if(anyEmpty.Result != allEmpty.Result) allRangeLengthsAreNotEqual = true;
+							if(anyEmpty.Result != allEmpty.Result) allRangeLengthsAreEqual = false;
 							break;
 						}
 					}
-					INTRA_PRECONDITION(!allRangeLengthsAreNotEqual);
+					INTRA_PRECONDITION(allRangeLengthsAreEqual);
 				}
 			}
 		}
@@ -1780,30 +1763,103 @@ public:
 
 	[[nodiscard]] constexpr auto First() const
 	{
-		if constexpr(CSame<LengthPolicy, decltype(Max)>) return mRanges|ForEach([](auto&));
-		else return mRanges|ForEach(Intra::First);
+		if constexpr(VSameTypes(LengthPolicy, Max))
+			return ForEachField([](auto& r) {TryFirst(r).Or({});})(mRanges);
+		else return ForEachField(Intra::First)(mRanges);
 	}
-	constexpr void PopFirst() {mRanges|ForEach(Intra::PopFirst);}
+
+	constexpr void PopFirst()
+	{
+		INTRA_PRECONDITION(!Empty());
+		if constexpr(VSameTypes(LengthPolicy, Max))
+			ForEachField(Intra::PopFirstCount(1))(mRanges);
+		else ForEachField(Intra::PopFirst)(mRanges);
+	}
+
 	[[nodiscard]] constexpr bool Empty() const
 	{
-		return At<0>(mRanges).Empty();
+		if constexpr(cacheLengthInConstructor)
+			return mLen > 0;
+		else if constexpr(VSameTypes(LengthPolicy, Max))
+		{
+			auto allEmpty = AccumAll(IsEmpty);
+			ForEachField(allEmpty)(mRanges);
+			return allEmpty.Result;
+		}
+		else return At<0>(mRanges).Empty();
 	}
+
 
 	[[nodiscard]] constexpr auto Last() const requires(CHasLast<Rs> && ...)
-	{return OriginalRanges|ForEach(Intra::Last);}
-	constexpr void PopLast() {mRanges|ForEach(Intra::PopLast);}
-
-
-	[[nodiscard]] constexpr index_t Length() const requires CHasLength<TPackFirst<Rs...>>
 	{
-		return At<0>(mRanges).Length();
+		if constexpr(VSameTypes(LengthPolicy, Max))
+			return ForEachField([](auto& r) {TryLast(r).Or({});})(mRanges);
+		else return ForEachField(Intra::Last)(mRanges);
 	}
 
-	[[nodiscard]] constexpr auto operator[](Index index) const
-	{return mRanges|ForEach(AtIndex(index));}
+	constexpr void PopLast() requires (CHasPopLast<Rs> && ...)
+	{
+		INTRA_PRECONDITION(!Empty());
+		if constexpr(VSameTypes(LengthPolicy, Max))
+			ForEachField(Intra::PopLastCount(1))(mRanges);
+		else ForEachField(Intra::PopLast)(mRanges);
+	}
 
-	[[nodiscard]] constexpr index_t PopFirstCount(ClampedSize maxElementsToPop)
-	{return At<0>(mRanges|ForEach(Intra::PopFirstCount(maxElementsToPop)));}
+
+	[[nodiscard]] constexpr auto Length() const requires CHasLength<TPackFirst<Rs...>>
+	{
+		if constexpr(cacheLengthInConstructor)
+			return mLen;
+		else if constexpr(VSameTypes(LengthPolicy, Equal))
+			return At<0>(mRanges).Length();
+		else ForEachFieldToArray(Count)(mRanges)|ApplyPackedArgs(LengthPolicy);
+	}
+
+	[[nodiscard]] constexpr auto operator[](CNumber auto&& index) const requires (CHasIndex<Rs> && ...)
+	{return mRanges|ForEach(AtIndex(INTRA_FWD(index)));}
+
+	constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) requires (CHasPopFirstCount<Rs> || ...)
+	{return popCount(Intra::PopFirstCount(INTRA_FWD(maxElementsToPop)));}
+
+	constexpr auto PopLastCount(CNumber auto&& maxElementsToPop) requires (CHasPopLast<Rs> && ...) && (CHasPopLastCount<Rs> || ...)
+	{return popCount(Intra::PopLastCount(INTRA_FWD(maxElementsToPop)));}
+
+private:
+	constexpr auto popCount(auto op)
+	{
+		if constexpr(VSameTypes(LengthPolicy, Equal))
+			return At<0>(ForEachField(op)(mRanges));
+		else
+		{
+			auto accum = Accum(LengthPolicy, op, 0LL);
+			ForEachField(FRef(accum))(mRanges);
+			return accum.Result;
+		}
+	}
 };
+
+// Inherit from this class to globally register the object in a list using T as a key.
+/* Useful for interface implementations, for example, codecs:
+1. Each codec type inherits from GloballyRegistered<ICodec>;
+2. Each codec type implements interface ICodec;
+3. Each codec type has only one instance as a global variable/constant or static field (app initialization code must be able to call static initializers);
+4. Use GloballyRegistered<ICodec>::Instances() to iterate over a list of registered codecs.
+*/
+template<typename T> class GloballyRegistered
+{
+	T* mNext;
+	static T* lastInited;
+
+	GloballyRegistered(const GloballyRegistered&) = delete;
+	GloballyRegistered(GloballyRegistered&&) = delete;
+	GloballyRegistered& operator=(const GloballyRegistered&) = delete;
+	GloballyRegistered& operator=(GloballyRegistered&&) = delete;
+protected:
+	INTRA_FORCEINLINE GloballyRegistered(): mNext(lastInited) {lastInited = static_cast<T*>(this);}
+public:
+	[[nodiscard]] INTRA_FORCEINLINE T* NextListNode() const {return mNext;}
+	[[nodiscard]] INTRA_FORCEINLINE static auto Instances() {return RangeOf(*lastInited);}
+};
+template<typename T> T* GloballyRegistered<T>::lastInited;
 
 } INTRA_END

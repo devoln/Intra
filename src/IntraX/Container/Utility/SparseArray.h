@@ -7,7 +7,7 @@ namespace Intra { INTRA_BEGIN
 template<typename T, typename Index = size_t> class SparseArray
 {
 public:
-	INTRA_FORCEINLINE SparseArray(decltype(nullptr)=nullptr) {}
+	SparseArray() = default;
 	explicit SparseArray(Index size): mData(AllocateRangeUninitialized(size)) {}
 
 	SparseArray(InitializerList<T> values):
@@ -25,7 +25,7 @@ public:
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	INTRA_FORCEINLINE T& Add(T&& val, Index* oIndex=nullptr)
 	{
-		check_space();
+		checkSpace();
 		return mData.Add(Move(val), oIndex);
 	}
 
@@ -34,7 +34,7 @@ public:
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	INTRA_FORCEINLINE T& Add(const T& val, Index* oIndex = nullptr)
 	{
-		check_space();
+		checkSpace();
 		return mData.Add(val, oIndex);
 	}
 
@@ -43,7 +43,7 @@ public:
 	/// @param[out] oIndex Указатель, по которому будет записан индекс созданного элемента в массиве.
 	template<typename... Args> INTRA_FORCEINLINE T& Emplace(Args&&... args, Index* oIndex = nullptr)
 	{
-		check_space();
+		checkSpace();
 		mData.Emplace(Forward<Args>(args)..., oIndex);
 	}
 
@@ -79,7 +79,7 @@ public:
 private:
 	SparseRange<T, Index> mData;
 
-	void check_space()
+	void checkSpace()
 	{
 		if(!IsFull()) return;
 		size_t count = Capacity() + Capacity()/2;

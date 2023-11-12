@@ -7,6 +7,7 @@ namespace Intra { INTRA_BEGIN
 /// TODO: this class should be renamed
 ///  It uses external memory from Span range but it manages the lifetime of its elements: it calls their constructors
 ///  and destructors Also it lacks range semantics.
+/// TODO: use GenericItemPool and remove redundant code
 
 template<typename T, typename Index> struct SparseRange
 {
@@ -183,8 +184,8 @@ private:
 	byte* append_first_free(Optional<Index&> oIndex);
 	void init_free_list();
 
-	static Index end_index() { return MaxValueOf(Index()); }
-	static Index empty_index() { return end_index() - 1; }
+	static Index end_index() {return MaxValueOf<Index>;}
+	static Index empty_index() {return end_index() - 1;}
 
 	SparseTypelessRange& operator=(const SparseTypelessRange&) = delete;
 	SparseTypelessRange(const SparseTypelessRange&) = delete;

@@ -23,20 +23,17 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 INTRA_WARNING_POP
 
 namespace Intra { INTRA_BEGIN
+extern "C" int __wgetmainargs(int* argc, wchar_t*** argv, wchar_t*** env, int doWildCard, void* startInfo);
 static Span<const StringView> getAndParseCommandLine()
 {
 	INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
-	static FixedArray<char> buf;
-	INTRA_PRECONDITION(buf.Empty() && "This function must be called only once!");
-
+	static char buf[65536];
+#if 0
 	const wchar_t* const wcmdline = GetCommandLineW();
-	const wchar_t* wcmdptr = wcmdline;
-	index_t len = 0;
-	while(*wcmdptr++) len++;
+	const index_t len = wcslen(wcmdline);
 
 	const auto maxArgCount = index_t(size_t(len + 1) / 2);
-	buf.SetCount(maxArgCount*index_t(sizeof(StringView)) + len*3);
-	const Span<StringView> argBuf = SpanOfPtr(reinterpret_cast<StringView*>(buf.Data()), maxArgCount);
+	const Span<StringView> argBuf = SpanOfPtr(reinterpret_cast<StringView*>(buf), maxArgCount);
 	const Span<char> charBuf = SpanOf(buf).Drop(maxArgCount*index_t(sizeof(StringView)));
 
 	Span<StringView> argOutput = argBuf;
@@ -46,7 +43,7 @@ static Span<const StringView> getAndParseCommandLine()
 
 	enum State {InQuotes, InText, InSpace};
 	State state = InSpace;
-	wcmdptr = wcmdline;
+	const wchar_t* wcmdptr = wcmdline;
 	const wchar_t* wargStart = wcmdptr;
 	while(*wcmdptr)
 	{
@@ -102,6 +99,21 @@ static Span<const StringView> getAndParseCommandLine()
 		argStart = dstPtr;
 	}
 	return argBuf.DropLast(argOutput.Length());
+#else
+	int argc = 0;
+	wchar_t** wargv = nullptr;
+	wchar_t** wenv = nullptr;
+	__wgetmainargs(&argc, &wargv, &wenv, false, nullptr);
+	const Span<char> charBuf = SpanOf(buf).Drop(argc * index_t(sizeof(StringView)));
+	const Span<StringView> res = SpanOfPtr(reinterpret_cast<StringView*>(buf), argc);
+	for(int i = 0; i < __argc; i++)
+	{
+		const auto len = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, charBuf.Begin, int(Length(charBuf)), nullptr, nullptr) - 1;
+		res[i] = StringView(charBuf.Begin, len);
+		charBuf.Begin += len;
+	}
+	return res;
+#endif
 }
 
 TEnvironment::VarSet TEnvironment::Variables() const
@@ -113,8 +125,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 	for(auto wenvPtr = wenv; *wenvPtr;)
 	{
 		totalLen += size_t(WideCharToMultiByte(CP_UTF8, 0, wenvPtr, -1, nullptr, 0, nullptr, nullptr)) - 1;
-		while(*wenvPtr++) {}
-		wenvPtr++;
+		wenvPtr+= wcslen(wenvPtr) + 1;
 		num++;
 	}
 
@@ -133,6 +144,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 		while(*wenvPtr++) {}
 		wenvPtr++;
 	}
+	FreeEnvironmentStringsW(wenv);
 	return {Move(buffer), num};
 }
 
@@ -175,12 +187,29 @@ static Span<const StringView> getAndParseCommandLine()
 #include <fcntl.h>
 #include <unistd.h>
 
+#ifdef __linux__
+#define _GNU_SOURCE
+#include <features.h>
+#ifndef __USE_GNU
+#define INTRA_IS_MUSL_BUILD
+#endif
+#undef _GNU_SOURCE
+#endif
+
 namespace Intra { INTRA_BEGIN
-static Span<const StringView> getAndParseCommandLine()
+
+static FixedArray<StringView> gArgs;
+static __attribute__((constructor)) void initCmdlineArgs(
+#ifndef INTRA_IS_MUSL_BUILD
+	int argc, char** argv
+#endif
+)
 {
+#ifdef INTRA_IS_MUSL_BUILD
 	int fd = open(
-		TargetOS == OperatingSystem::Linux? "/proc/self/cmdline": "/proc/curproc/cmdline"
-		, O_RDONLY);
+		TargetOS == OperatingSystem::Linux? "/proc/self/cmdline":
+		"/proc/curproc/cmdline",
+		O_RDONLY);
 	static FixedArray<char> cmdlineBuf;
 	size_t bytesRead = 0;
 	do
@@ -195,13 +224,18 @@ static Span<const StringView> getAndParseCommandLine()
 
 	size_t argc = 0;
 	for(char c: cmdlineBuf) if(c == '\0') argc++;
-
-	static FixedArray<StringView> argv(argc);
+	gArgs.SetCount(argc);
 	argv[0] = StringView(cmdlineBuf.Data());
 	for(size_t i = 1; i < argc; i++)
 		argv[i] = StringView(argv[i - 1].end() + 1);
-	return argv.AsConstRange();
+#else
+	gArgs.SetCount(argc);
+	for(size_t i = 0; i < argc; i++)
+		gArgs[i] = StringView(argv[i]);
+#endif
 }
+
+static Span<const StringView> getAndParseCommandLine() {return gArgs;}
 } INTRA_END
 #endif
 
@@ -215,8 +249,8 @@ namespace Intra { INTRA_BEGIN
 Optional<String> TEnvironment::operator[](StringView var) const
 {
 	auto result = getenv(String(var).CStr());
-	if(result != nullptr) return String(result);
-	return nullptr;
+	if(result) return String(result);
+	return {};
 }
 
 TEnvironment::VarSet TEnvironment::Variables() const
@@ -228,7 +262,7 @@ TEnvironment::VarSet TEnvironment::Variables() const
 
 	auto dstPairs = SpanOfRaw<KeyValuePair<StringView, StringView>>(
 		buffer.Data(), num * sizeof(KeyValuePair<StringView, StringView>));
-	for(size_t i=0; i<num; i++)
+	for(size_t i = 0; i < num; i++)
 	{
 		const StringView envStr = StringView(environ[i]);
 		const StringView key = envStr.FindBefore('=');

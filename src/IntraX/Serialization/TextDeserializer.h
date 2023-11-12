@@ -87,7 +87,7 @@ template<typename I> struct GenericTextDeserializer
 
 	bool NextField(TextSerializerParams::TypeFlags typeFlag)
 	{
-		if(typeFlag & TextSerializerParams::TypeFlags_Struct)
+		if(typeFlag & TextSerializerParams::TypeFlags::Struct)
 		{
 			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Struct);
 			if(!Expect(Lang.FieldSeparator))
@@ -96,7 +96,7 @@ template<typename I> struct GenericTextDeserializer
 				return false;
 			}
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
+		if(typeFlag & TextSerializerParams::TypeFlags::Tuple)
 		{
 			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Tuple);
 			if(!Expect(Lang.TupleFieldSeparator))
@@ -105,13 +105,13 @@ template<typename I> struct GenericTextDeserializer
 				return false;
 			}
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_Array)
+		if(typeFlag & TextSerializerParams::TypeFlags::Array)
 		{
 			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Array);
 			if(!Expect(Lang.ArrayElementSeparator))
 				return !Input.Empty() && !IgnoreArrayElement();
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
+		if(typeFlag & TextSerializerParams::TypeFlags::StructArray)
 		{
 			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_StructArray);
 			if(!Expect(Lang.ArrayElementSeparator))
@@ -129,7 +129,7 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	/// Прочитать имя поля и пропустить оператор присваивания, перейдя к правой части присваивания.
-	/// Если в процессе обнаруживается ошибка, функция возвращает на исходную позицию и возвращает nullptr.
+	/// Если в процессе обнаруживается ошибка, функция возвращает на исходную позицию и возвращает пустую строку.
 	/// Иначе возвращает прочитанное имя поля.
 	StringView FieldAssignmentBeginning()
 	{
@@ -225,8 +225,7 @@ template<typename I> struct GenericTextDeserializer
 		);
 	}
 
-	INTRA_FORCEINLINE void SkipAllSpaces()
-	{Line += SkipSpacesCountLinesAdvance(Input);}
+	INTRA_FORCEINLINE void SkipAllSpaces() {Line += SkipSpacesCountLinesAdvance(Input);}
 
 	void SkipAllSpacesAndComments()
 	{
@@ -285,9 +284,9 @@ template<typename I> struct GenericTextDeserializer
 	{
 		char buf[1024];
 		SpanOutput<char> dst = buf;
-		dst << "Error(" << Line << "): token \"" << token << "\", where expected ";
-		if(expected.Length()>1) dst << "one of the folowing tokens: " << StringOf(expected, ", ", "\"", "\"");
-		if(expected.Length()==1) dst << "token \"" << expected[0] << "\"";
+		dst << "(" << Line << "): error: token \"" << token << "\", where expected ";
+		if(expected.Length() > 1) dst << "one of the folowing tokens: " << StringOf(expected, ", ", "\"", "\"");
+		if(expected.Length() == 1) dst << "token \"" << expected[0] << "\"";
 		dst << ".\r\n";
 		Log += dst.WrittenRange();
 	}
@@ -296,24 +295,24 @@ template<typename I> struct GenericTextDeserializer
 	/// Десериализовать структуру со статической информацией о полях
 	template<typename T> void DeserializeStruct(T& dst, Span<const const char*> fieldNames)
 	{
-		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
-		GenericTextDeserializerStructVisitor<I> visitor{this, fieldNames, false, TextSerializerParams::TypeFlags_Struct};
+		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags::Struct);
+		GenericTextDeserializerStructVisitor<I> visitor{this, fieldNames, false, TextSerializerParams::TypeFlags::Struct};
 		if(fieldNames.Empty())
 		{
 			ForEachField(dst, visitor);
-			StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
+			StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags::Struct);
 			return;
 		}
 
 		bool expectSeparator = false;
-		for(size_t i=0; ; i++)
+		for(size_t i = 0; ; i++)
 		{
 			SkipAllSpacesAndComments();
 			if(StartsWith(Input, Lang.StructInstanceClose)) break;
 
 			if(expectSeparator)
 			{
-				if(!NextField(TextSerializerParams::TypeFlags_Struct)) break;
+				if(!NextField(TextSerializerParams::TypeFlags::Struct)) break;
 			}
 			expectSeparator = true;
 
@@ -322,8 +321,8 @@ template<typename I> struct GenericTextDeserializer
 			//TODO: учесть, что имя поля может идти после его значения
 			size_t index = 0;
 			if(name.Empty()) index = fieldNames.Length();
-			else index = CountUntil(Map(fieldNames, FCastTo<StringView>), name);
-			if(index == fieldNames.Length() && name != nullptr) //Если такого поля в структуре нет, пропускаем его
+			else index = fieldNames|Map(CastTo<StringView>)|CountUntil(name);
+			if(index == fieldNames.Length() && !name.Empty()) //Если такого поля в структуре нет, пропускаем его
 			{
 				const bool finished = IgnoreField();
 				if(!finished)
@@ -334,13 +333,13 @@ template<typename I> struct GenericTextDeserializer
 				NestingLevel--;
 				return;
 			}
-			if(index != fieldNames.Length() || name == nullptr)
-				dst.VisitFieldById(name != nullptr? index: i, *this);
+			if(index != fieldNames.Length() || !name.Empty())
+				dst.VisitFieldById(!name.Empty()? index: i, *this);
 
 			if(Lang.AddFieldNameAfterAssignment)
 			{
 				StringView name2 = FieldAssignmentEnding();
-				if(name != nullptr && name2 != nullptr && name != name2) LogExpectError(name2, {name});
+				if(!name.Empty() && !name2.Empty() && name != name2) LogExpectError(name2, {name});
 			}
 		}
 		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
@@ -353,10 +352,10 @@ template<typename I> struct GenericTextDeserializer
 	/// Десериализовать структуру со статической информацией о полях
 	template<typename T> void DeserializeTuple(T& dst)
 	{
-		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
-		GenericTextDeserializerStructVisitor<I> visitor{this, nullptr, false, TextSerializerParams::TypeFlags_Tuple};
-		ForEachField(dst, visitor);
-		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
+		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags::Tuple);
+		GenericTextDeserializerStructVisitor<I> visitor{this, nullptr, false, TextSerializerParams::TypeFlags::Tuple};
+		ForEachField(visitor)(dst);
+		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags::Tuple);
 	}
 
 	void ConsumeArrayOpen()
@@ -404,7 +403,7 @@ template<typename I> struct GenericTextDeserializer
 	/// Десериализовать элементы в output-диапазон
 	template<typename R> void DeserializeRange(R& outputRange)
 	{
-		typedef TRangeValue<R> T;
+		using T = TRangeValue<R>;
 
 		ConsumeArrayOpen();
 
@@ -428,64 +427,34 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 
-	/// Десериализация вещественных чисел
-	template<typename T> INTRA_FORCEINLINE Requires<
-		CBasicFloatingPoint<T>,
-	GenericTextDeserializer&> operator>>(T& v)
+	/// Десериализация чисел и bool
+	template<CNumber T> INTRA_FORCEINLINE GenericTextDeserializer& operator>>(T& v)
 	{
-		v = ParseAdvance<T>(Input, Lang.DecimalSeparator);
-		return *this;
-	}
-
-	/// Десериализация целых чисел
-	template<typename T> INTRA_FORCEINLINE Requires<
-		CBasicIntegral<T>,
-	GenericTextDeserializer&> operator>>(T& v)
-	{
-		Input >> v;
-		return *this;
-	}
-
-	/// Десериализация bool
-	INTRA_FORCEINLINE GenericTextDeserializer& operator>>(bool& v)
-	{
-		SkipAllSpaces();
-		const StringView identifier = ParseIdentifier();
-		if(identifier == Lang.FalseTrueNames[true])
+		if constexpr(CFloatingPoint<T>) v = ParseAdvance<T>(Input, Lang.DecimalSeparator);
+		else if constexpr(CBasicIntegral<T>) Input >> v;
+		else if constexpr(CSame<T, bool>)
 		{
-			v = true;
-			return *this;
+			SkipAllSpaces();
+			const StringView identifier = ParseIdentifier();
+			if(identifier == Lang.FalseTrueNames[true])
+				v = true;
+			else if(identifier == Lang.FalseTrueNames[false])
+				v = false;
+			else LogExpectError(identifier, Lang.FalseTrueNames);
 		}
-		if(identifier != Lang.FalseTrueNames[false])
-			LogExpectError(identifier, Lang.FalseTrueNames);
-		v = false;
 		return *this;
 	}
 
-	/// Десериализация кортежей
-	template<typename T> INTRA_FORCEINLINE Requires<
-		CHasForEachField<T> &&
-		!CHasReflectionFieldNamesMethod<T>,
-	GenericTextDeserializer&> operator>>(T& v)
+	/// Десериализация структур и кортежей
+	template<CHasForEachField T> INTRA_FORCEINLINE GenericTextDeserializer& operator>>(T& v)
 	{
-		DeserializeTuple(v);
+		if constexpr(CHasReflectionFieldNamesMethod<T>) DeserializeStruct(v);
+		else DeserializeTuple(v);
 		return *this;
 	}
 
-	/// Десериализация структур
-	template<typename T> INTRA_FORCEINLINE Requires<
-		CHasForEachField<T> &&
-		CHasReflectionFieldNamesMethod<T>,
-	GenericTextDeserializer&> operator>>(T& v)
-	{
-		DeserializeStruct(v);
-		return *this;
-	}
-
-	template<typename C> Requires<
-		CCharList<C> &&
-		CHas_resize<C>,
-	GenericTextDeserializer&> operator>>(C& dst)
+	template<CCharList L> requires CHas_resize<L>
+	GenericTextDeserializer& operator>>(C& dst)
 	{
 		if(!Expect(Lang.StringQuote)) return *this;
 
@@ -495,7 +464,6 @@ template<typename I> struct GenericTextDeserializer
 		/*dst.SetLengthUninitialized(StringMultiReplaceAsciiLength(escapedResult, {"\\n", "\\r", "\\t"}, {"\n", "\r", "\t"}));
 		auto dstRange = dst.AsRange();
 		StringMultiReplaceAscii(escapedResult, dstRange, {"\\n", "\\r", "\\t"}, {"\n", "\r", "\t"});*/
-
 
 		//TODO: Вынести экранирование строк в LanguageParams и добавить экранирование кавычек
 		const Tuple<StringView, StringView> replacements[] = {{"\\n", "\n"}, {"\\r", "\r"}, {"\\t", "\t"}};
@@ -509,11 +477,8 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	/// Десериализовать массив
-	template<typename C> Requires<
-		CHas_clear<C> &&
-		CHas_push_back<C> &&
-		!CChar<TRangeValue<C>>,
-	GenericTextDeserializer&> operator>>(C& container)
+	template<typename C> requires CHas_clear<C> && CHas_push_back<C> && (!CChar<TRangeValue<C>>)
+	GenericTextDeserializer& operator>>(C& container)
 	{
 		container.clear();
 		auto appender = LastAppender(container);
@@ -522,9 +487,7 @@ template<typename I> struct GenericTextDeserializer
 	}
 
 	/// Десериализовать диапазон
-	template<typename R> INTRA_FORCEINLINE Requires<
-		COutput<R>,
-	GenericTextDeserializer&> operator>>(R&& range)
+	template<COutput R> INTRA_FORCEINLINE GenericTextDeserializer& operator>>(R&& range)
 	{
 		DeserializeRange(range);
 		return *this;
@@ -540,9 +503,7 @@ template<typename I> struct GenericTextDeserializer
 
 
 	/// Десериализовать любое значение
-	template<typename T> INTRA_FORCEINLINE Requires<
-		!CConst<T>,
-	GenericTextDeserializer&> operator()(T&& value) {return *this >> value;}
+	template<typename T> requires (!CConst<T>) INTRA_FORCEINLINE GenericTextDeserializer& operator()(T&& value) {return *this >> value;}
 
 	/// Десериализовать любое значение
 	template<typename T> INTRA_FORCEINLINE T Deserialize()
@@ -587,9 +548,7 @@ template<typename I> template<typename T> GenericTextDeserializerStructVisitor<I
 	return *this;
 }
 
-template<typename I> INTRA_FORCEINLINE Requires<
-	CForwardList<I>,
-GenericTextDeserializer<TRemoveConstRef<I>>> TextDeserializer(const LanguageParams& language, I&& input)
-{return {language, ForwardAsRange<I>(input)};}
+template<CForwardList I> INTRA_FORCEINLINE auto TextDeserializer(const LanguageParams& language, I&& input)
+{return GenericTextDeserializer<TRemoveConstRef<I>>(language, RangeOf(INTRA_FWD(input)));}
 
 } INTRA_END

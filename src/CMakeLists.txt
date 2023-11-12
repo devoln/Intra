@@ -6,8 +6,10 @@ option(OUTPUT_MAP "Output .map file." OFF)
 
 set(ADDITIONAL_COMPILER_PARAMETERS "" CACHE STRING "User-specified compiler flags")
 
+set(COMMON_PARAMETERS "${ADDITIONAL_COMPILER_PARAMETERS}")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
-    set(COMMON_PARAMETERS "${ADDITIONAL_COMPILER_PARAMETERS} -I Intra -std=c++20")
+    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -I Intra -std=c++20 -ftemplate-backtrace-limit=0")
 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
@@ -29,10 +31,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STR
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -fexceptions")
     else()
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -fno-exceptions")
-    endif()
-	
-	if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -ftemplate-backtrace-limit=0")
     endif()
     
     set(COMMON_MINSIZE_OPTIMIZATIONS "-fno-math-errno -fmerge-all-constants -ffunction-sections -fdata-sections -fno-rtti")
@@ -60,7 +58,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STR
 	
     if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 --llvm-lto 3 -s ELIMINATE_DUPLICATE_FUNCTIONS=1 --closure 1 --memory-init-file 0")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os --llvm-lto 3 -s ELIMINATE_DUPLICATE_FUNCTIONS=1 --closure 1 --memory-init-file 0 -s NO_EXIT_RUNTIME=1 -s NO_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" -s EXPORTED_FUNCTIONS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" ")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os --llvm-lto 3
+            -s ELIMINATE_DUPLICATE_FUNCTIONS=1 --closure 1 --memory-init-file 0 -s NO_EXIT_RUNTIME=1 -s NO_FILESYSTEM=1
+            -s EXPORTED_RUNTIME_METHODS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\"
+            -s EXPORTED_FUNCTIONS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" ")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g4")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -s ASSERTIONS=2 -g4 -s SAFE_HEAP=1 -s DEMANGLE_SUPPORT=1")
 		set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} -O2 --llvm-lto 1")
@@ -76,7 +77,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STR
       set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_MINSIZEREL}")
     endif()
 elseif(MSVC)
-    set(COMMON_PARAMETERS "/MP /permissive- /std:c++latest ${ADDITIONAL_COMPILER_PARAMETERS}")
+    set(COMMON_PARAMETERS "${COMMON_PARAMETERS} /MP /permissive- /std:c++latest")
 
     if(USE_EXCEPTIONS)
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} /EHsc")
@@ -101,7 +102,8 @@ endif()
 
 function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME TEST_SOURCE_VARIABLE_NAME)
   file(GLOB_RECURSE headers RELATIVE "${DIR}" *.h)
-  file(GLOB_RECURSE sources RELATIVE "${DIR}" *.cpp)
+  #file(GLOB_RECURSE sources RELATIVE "${DIR}" *.cpp)
+  file(GLOB_RECURSE sources RELATIVE "${DIR}" *.cc)
   file(GLOB_RECURSE testSources RELATIVE "${DIR}" *.test.cxx)
 
   foreach(_source IN ITEMS ${headers})

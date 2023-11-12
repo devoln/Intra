@@ -14,7 +14,7 @@ public:
 	FormattedLogger& operator=(const FormattedLogger&) = delete;
 	FormattedLogger& operator=(FormattedLogger&&) = default;
 
-	void Log(LogLevel level, StringView msg, SourceInfo srcInfo = SourceInfo()) override;
+	void Log(LogLevel level, StringView msg, SourceInfo srcInfo = SourceInfo::Current()) override;
 
 	FormattedWriter Writer;
 	LogLevel Verbosity = LogLevel::All;

@@ -35,23 +35,10 @@ GenericString<wchar_t> Utf8ToWStringZ(StringView str)
 {
 	GenericString<wchar_t> wfn;
 	wfn.SetLengthUninitialized(str.Length());
-	const int wlen = MultiByteToWideChar(CP_UTF8, 0, str.Data(),
-		int(str.Length()), wfn.Data(), int(wfn.Length()));
+	const int wlen = z_D::MultiByteToWideChar(65001, 0, str.Data(), int(str.Length()), wfn.Data(), int(wfn.Length()));
 	wfn.SetLengthUninitialized(wlen + 1);
 	wfn.Last() = 0;
 	return wfn;
-}
-
-void ProcessLastError(ErrorReporter err, StringView message, SourceInfo srcInfo)
-{
-	const auto le = GetLastError();
-	char* s = nullptr;
-	FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-		nullptr, le,
-		DWORD(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US)),
-		reinterpret_cast<char*>(&s), 0, nullptr);
-	err.Error({uint32(HRESULT_FROM_WIN32(le))}, message + StringView(s), srcInfo);
-	LocalFree(s);
 }
 
 #else

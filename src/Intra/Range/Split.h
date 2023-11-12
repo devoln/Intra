@@ -1,8 +1,7 @@
 ﻿#pragma once
 
-#include "Intra/Functional.h"
-#include "Intra/Concepts.h"
-#include "Intra/Range/Decorators.h"
+#include <Intra/Functional.h>
+#include <Intra/Concepts.h>
 
 namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
@@ -10,16 +9,16 @@ template<typename R, class F1, class P2> class RSplit
 {
 	R mOriginalRange;
 	TTakeResult<R> mFirst;
-	[[no_unique_address]] F1 mSkipDelimiter;
-	[[no_unique_address]] P2 mIsElementDelimiter;
+	INTRA_NO_UNIQUE_ADDRESS F1 mSkipDelimiter;
+	INTRA_NO_UNIQUE_ADDRESS P2 mIsElementDelimiter;
 public:
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
 	using TagAnyInstanceInfinite = TTag<CInfiniteRange<R>>;
 
 	RSplit() = default;
 
-	constexpr RSplit(R range, F1 SkipDelimiter, P2 isElementDelimiter):
-		mSkipDelimiter(Move(isSkippedDelimiter)),
+	constexpr RSplit(R range, F1 skipDelimiter, P2 isElementDelimiter):
+		mSkipDelimiter(Move(skipDelimiter)),
 		mIsElementDelimiter(Move(isElementDelimiter)),
 		mOriginalRange(Move(range)) {PopFirst();}
 
@@ -74,7 +73,7 @@ constexpr auto Split = []<typename F>(F&& skipDelimiter) {
 };
 
 template<typename L, typename P1, typename P2 = decltype(Never),
-	typename AsR = TRangeOfRef<R>,
+	typename AsR = TRangeOfRef<L>,
 	typename T = TRangeValue<AsR>
 > [[nodiscard]] constexpr Requires<
 	CForwardRange<AsR> &&

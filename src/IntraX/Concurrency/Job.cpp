@@ -1,15 +1,13 @@
-﻿
+﻿#include "Job.h"
 
-#include "IntraX/Container/Sequential/Array.h"
+
+#include "Intra/Container/Array.h"
 
 #include "Thread.h"
 #include "Mutex.h"
 #include "Intra/Concurrency/Atomic.h"
 #include "Lock.h"
 
-#if(INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None)
-
-#include "IntraX/Concurrency/Job.h"
 
 #undef Yield
 
@@ -17,56 +15,8 @@ namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 
 class WorkStealingQueue;
-static Array<WorkStealingQueue*> queues;
+static DynArray<WorkStealingQueue*> queues;
 
-#if(INTRA_LIBRARY_ATOMIC == INTRA_LIBRARY_ATOMIC_None)
-class WorkStealingQueue
-{
-public:
-	WorkStealingQueue(): mJobs(), mBottom(0), mTop(0), mMutex()
-	{
-		queues.AddLast(this);
-	}
-
-	WorkStealingQueue(const WorkStealingQueue&) = delete;
-	WorkStealingQueue& operator=(const WorkStealingQueue&) = delete;
-
-	enum: unsigned {NUMBER_OF_JOBS = 4096};
-
-	void Push(Job* job)
-	{
-		INTRA_SYNCHRONIZED(mMutex)
-		{
-			jobs[mBottom++ % NUMBER_OF_JOBS] = job;
-		}
-	}
-
-	Job* Pop()
-	{
-		auto locker = MakeLock(mMutex);
-		const int jobCount = int(mBottom) - int(mTop);
-		if(jobCount <= 0)
-		{
-			// no job left in the queue
-			return nullptr;
-		}
-		return jobs[--mBottom % NUMBER_OF_JOBS];
-	}
-
-	Job* Steal()
-	{
-		auto locker = MakeLock(mMutex);
-		const int jobCount = int(mBottom) - int(mTop);
-		if(jobCount <= 0) return nullptr;
-		return mJobs[mTop++ % NUMBER_OF_JOBS];
-	}
-
-private:
-	Array<Job*> mJobs;
-	unsigned mBottom, mTop;
-	Mutex mMutex;
-};
-#else
 class WorkStealingQueue
 {
 public:
@@ -92,67 +42,38 @@ public:
 	{
 		const int b = mBottom.GetRelaxed() - 1;
 		mBottom.Set(b);
-
 		int t = mTop.Get();
-		if(t <= b)
+		Job* job = nullptr;
+		if(t <= b) // non-empty queue
 		{
-			// non-empty queue
-			Job* job = mJobs[b % NUMBER_OF_JOBS];
-			if(t != b)
-			{
-				// there's still more than one item left in the queue
-				return job;
-			}
-
-			// this is the last item in the queue
-			if(mTop.CompareSet(t, t + 1))
-			{
-				// failed race against steal operation
-				job = nullptr;
-			}
-
-			mBottom.SetRelaxed(t + 1);
-			return job;
+			job = mJobs[b % NUMBER_OF_JOBS];
+			if(t != b) return job; // there's still more than one item left in the queue
+			if(mTop.CompareSet(t, t + 1)) // this is the last item in the queue
+				job = nullptr; // failed race against steal operation
+			t++;
 		}
-		else
-		{
-			// deque was already empty
-			mBottom.SetRelaxed(t);
-			return nullptr;
-		}
+		else job = nullptr; // deque was already empty
+		mBottom.SetRelaxed(t);
+		return job;
 	}
 
 	Job* Steal()
 	{
-		int t = mTop.Get();
-
-		int b = mBottom.GetRelaxed();
-		if(t < b)
+		int t = mTop.Get(), b = mBottom.GetRelaxed();
+		if(t < b) // non-empty queue
 		{
-			// non-empty queue
 			Job* job = mJobs[t % NUMBER_OF_JOBS];
-
 			// serves as a compiler barrier, and guarantees that the read happens before the CAS.
-			if(mTop.CompareSet(t, t + 1))
-			{
-				// a concurrent steal or pop operation removed an element from the deque in the meantime.
-				return nullptr;
-			}
-
-			return job;
+			if(!mTop.CompareSet(t, t + 1)) return job;
+			// a concurrent steal or pop operation removed an element from the deque in the meantime.
 		}
-		else
-		{
-			// empty queue
-			return nullptr;
-		}
+		return nullptr;
 	}
 
 private:
 	Array<Job*> mJobs;
-	AtomicInt mTop, mBottom;
+	Atomic<int> mTop, mBottom;
 };
-#endif
 
 
 
@@ -160,7 +81,7 @@ INTRA_IGNORE_WARN_GLOBAL_CONSTRUCTION
 namespace
 {
 	/*thread_local*/ WorkStealingQueue wsqueue;
-	AtomicInt JobToDeleteCount;
+	Atomic<int> JobToDeleteCount;
 	Array<Job*> JobsToDelete;
 }
 
@@ -170,7 +91,7 @@ void WorkerMain()
 	while(workerThreadActive)
 	{
 		Job* job = Job::Get();
-		if(job != nullptr) job->Execute();
+		if(job) job->Execute();
 	}
 }
 
@@ -236,9 +157,9 @@ Job* Job::CreateJob(Job::Function function)
 	g_jobAllocator.SetCountUninitialized(MaxJobCount);
 
 	Job* result = Job::Allocate();
-	result->mFunction = function;
-	result->mParent = nullptr;
-	result->mUnfinishedJobCount.Set(1);
+	result->Function = function;
+	result->Parent = nullptr;
+	result->UnfinishedJobCount.Set(1);
 
 	return result;
 }
@@ -271,6 +192,3 @@ void Job::Wait() const
 	}
 }
 } INTRA_END
-
-#endif
-

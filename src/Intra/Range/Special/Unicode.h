@@ -1,6 +1,9 @@
 ﻿#pragma once
 
-#include "Intra/Range/Span.h"
+#include <Intra/Concepts.h>
+#include <Intra/Range.h>
+#include <Intra/StringUtils.h>
+#include <Intra/Binary.h>
 
 namespace Intra { INTRA_BEGIN
 namespace Unicode {
@@ -11,8 +14,8 @@ template<typename Char> constexpr index_t ArrayCountValidAsciiBlocks16(Span<cons
 	const auto* ptr = range.Data();
 	for(index_t i = range.Length() >> 4; i--; ptr += 16)
 	{
-		auto a = BinaryDeserializePlatformSpecific<uint64>(Unsafe, ptr);
-		a |= BinaryDeserializePlatformSpecific<uint64>(Unsafe, ptr+8);
+		auto a = BinaryDeserialize<uint64>(Unsafe, ptr);
+		a |= BinaryDeserialize<uint64>(Unsafe, ptr + 8);
 		if constexpr(sizeof(void*) == 8)
 		{
 			if(a & 0x8080808080808080ull) break;
@@ -26,8 +29,9 @@ template<typename Char> constexpr index_t ArrayCountValidAsciiBlocks16(Span<cons
 	return ptr - range.Data();
 }
 
-template<typename Char> size_t ArrayCountValidAsciiBlocks32BranchlessSimd(Span<const Char> range)
+template<typename Char> index_t ArrayCountValidAsciiBlocks32BranchlessSimd(Span<const Char> range)
 {
+	return ArrayCountValidAsciiBlocks16(range);
 	const auto* ptr = range.Data();
 	//TODO: write branchless SIMD loop for 32-byte blocks. 
 	//for(size_t i = range.Length() >> 5; i--; ptr += 32)
@@ -35,13 +39,13 @@ template<typename Char> size_t ArrayCountValidAsciiBlocks32BranchlessSimd(Span<c
 		
 	}
 	//TODO: use _mm_movemask_epi8 to extract MSBs
-	return size_t(ptr - range.Data());
+	return ptr - range.Data();
 }
 }
 
 template<CCharRange R> constexpr bool PopWhileValidAscii(R& range)
 {
-	if constexpr(!Config::DisableAllOptimizations && CArrayList<R> && sizeof(TArrayListValue<R>) == 1)
+	if constexpr(!Config::DisableAllOptimizations && CConvertibleToSpan<R> && sizeof(TArrayListValue<R>) == 1)
 	{
 		const auto span = ConstSpanOf(range);
 		const auto numAsciiCharsToSkip = z_D::ArrayCountValidAsciiBlocks16(span);
@@ -51,10 +55,10 @@ template<CCharRange R> constexpr bool PopWhileValidAscii(R& range)
 	return range.Empty();
 }
 
-constexpr auto IsValidAscii = []<CCharList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(IsValidAscii)(CCharList auto&& list)
 {
 	auto range = RangeOf(INTRA_FWD(list));
-	if constexpr(!Config::DisableAllOptimizations && CArrayList<L> && sizeof(TListValue<L>) == 1)
+	if constexpr(!Config::DisableAllOptimizations && CConvertibleToSpan<L> && sizeof(TListValue<L>) == 1)
 	{
 		if(!IsConstantEvaluated())
 		{
@@ -76,22 +80,24 @@ constexpr char32_t
 
 constexpr const char Utf8BOM[] = "\xef\xbb\xbf";
 
-[[nodiscard]] constexpr byte Utf8SequenceBytes(byte i)
+INTRA_DEFINE_FUNCTOR(Utf8SequenceBytes)(uint8 i)
 {
 	const auto shift = unsigned(i & 0xF0) >> 2; //index (0-15) of the digit in the magic constant below, multiplied by 4
-	if constexpr(sizeof(size_t) < 8) return byte((shift < 32? 1: (0x43220000u >> (shift - 32))) & 0xF);
-	else return byte((0x4322000011111111ULL >> shift) & 0xF);
-}
+	if constexpr(sizeof(WidestFastInt) < 8)
+		return uint8((shift < 32? 1: (0x43220000u >> (shift & 31))) & 0xF);
+	else return uint8((0x4322000011111111ULL >> shift) & 0xF);
+};
 
-[[nodiscard]] constexpr int Utf8ContinuationBytes(int i)
+// @return how many extra bytes follow the leading UTF-8 byte
+INTRA_DEFINE_FUNCTOR(Utf8ContinuationBytes)(uint8 leadingByte)
 {
-	return int((0xE5000000U >> (unsigned(i & 0xF0) >> 3)) & 3);
-}
+	return int((0xE5000000U >> (unsigned(leadingByte & 0xF0) >> 3)) & 3);
+};
 
-[[nodiscard]] constexpr auto IsUtf8ContinuationByte = [](byte i) {return (i >> 6) == 2;};
+INTRA_DEFINE_FUNCTOR(IsUtf8ContinuationByte)(uint8 i) {return (i >> 6) == 2;};
 
 /// @return a mask to extract significant bits from a leading byte assuming that it is non-ASCII and valid
-[[nodiscard]] constexpr uint32 LeadingByteMaskNotAscii(byte leadingByte)
+[[nodiscard]] constexpr uint32 LeadingByteMaskNotAscii(uint8 leadingByte)
 {
 	INTRA_PRECONDITION(!IsAsciiChar(leadingByte));
 	INTRA_PRECONDITION(!IsUtf8ContinuationByte(leadingByte));
@@ -100,11 +106,11 @@ constexpr const char Utf8BOM[] = "\xef\xbb\xbf";
 }
 
 
-constexpr auto IsUtf16Surrogate = [](char16_t c) {return (c & 0xF800) == 0xD800;};
-constexpr auto IsUtf16LeadingSurrogate = [](char16_t c) {return (c & 0xFC00) == 0xD800;};
-constexpr auto IsUtf16TrailingSurrogate = [](char16_t c) {return (c & 0xFC00) == 0xDC00;};
+INTRA_DEFINE_FUNCTOR(IsUtf16Surrogate)(char16_t c) {return (c & 0xF800) == 0xD800;};
+INTRA_DEFINE_FUNCTOR(IsUtf16LeadingSurrogate)(char16_t c) {return (c & 0xFC00) == 0xD800;};
+INTRA_DEFINE_FUNCTOR(IsUtf16TrailingSurrogate)(char16_t c) {return (c & 0xFC00) == 0xDC00;};
 
-template<CCharRange R> [[nodiscard]] constexpr bool PopWhileValidUtf16(R& range)
+INTRA_DEFINE_FUNCTOR(PopWhileValidUtf16)(CCharRange auto& range)
 {
 	for(; !range.Empty(); range.PopFirst())
 	{
@@ -115,9 +121,9 @@ template<CCharRange R> [[nodiscard]] constexpr bool PopWhileValidUtf16(R& range)
 		if(range.Empty()) return false;
 	}
 	return true;
-}
+};
 
-constexpr auto IsValidUtf16 = []<CCharList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(IsValidUtf16)(CCharList auto&& list)
 {
 	auto range = RangeOf(INTRA_FWD(list));
 	return PopWhileValidUtf16(range);
@@ -127,7 +133,7 @@ constexpr auto IsValidUtf16 = []<CCharList L>(L&& list)
 // Decodes one code point from the range.
 template<CCharRange R> constexpr char32_t DecodeUtf8Codepoint(R&& range, Optional<uint32&> oError = Undefined)
 {
-	byte c = byte(Next(range));
+	uint8 c = uint8(Next(range));
 	if(c < 0x80)
 	{
 		if(oError) oError.Unwrap() = 0;
@@ -169,7 +175,7 @@ template<CCharRange R> constexpr char32_t DecodeUtf8Codepoint(R&& range, Optiona
 	return char32_t(res);
 }
 
-template<CCharRange R> [[nodiscard]] constexpr bool PopWhileValidUtf8(R& range)
+INTRA_DEFINE_FUNCTOR(PopWhileValidUtf8)(CCharRange auto& range)
 {
 	//PopWhileValidAscii(range);
 	while(!range.Empty())
@@ -179,7 +185,7 @@ template<CCharRange R> [[nodiscard]] constexpr bool PopWhileValidUtf8(R& range)
 		if(error) return false;
 	}
 	return true;
-}
+};
 
 constexpr auto IsValidUtf8 = []<CCharList L>(L&& str)
 {
@@ -196,12 +202,13 @@ constexpr auto IsValidUtf8 = []<CCharList L>(L&& str)
 	return PopWhileValidUtf8(range);
 }
 
-constexpr auto IsValidUtf32 = []<CCharList R>(R&& r)
+INTRA_DEFINE_FUNCTOR(IsValidUtf32)(CCharList auto&& list)
 {
+	// TODO
 	return true;
-}
+};
 
-constexpr auto IsValidUnicode = []<CCharList L>(L&& list)
+INTRA_DEFINE_FUNCTOR(IsValidUnicode)(CCharList auto&& list)
 {
 	if constexpr(sizeof(TListValue<L>) == 1) return IsValidUtf8(INTRA_FWD(list));
 	else if constexpr(sizeof(TListValue<L>) == 2) return IsValidUtf16(INTRA_FWD(list));
@@ -220,11 +227,10 @@ template<CCharRange R> constexpr char32_t DecodeUtf16Codepoint(R&& range)
 	return (char32_t(c - LeadingSurrogateStart) << 10) + char32_t(c2 - TrailingSurrogateStart) + 0x10000;
 }
 
-template<CRange R> requires CChar<TRangeValue<R>> &&
-	(sizeof(TRangeValue<R>) <= sizeof(char16_t))
+template<CCharRange R> requires (sizeof(TRangeValue<R>) <= sizeof(char16_t))
 constexpr char32_t DecodeCodepoint(R&& range)
 {
-	if constexpr(sizeof(TRangeValue<R>) == sizeof(char)) return DecodeUtf8Codepoint(range);
+	if constexpr(CSameSize<TRangeValue<R>, char>) return DecodeUtf8Codepoint(range);
 	return DecodeUtf16Codepoint(range);
 }
 

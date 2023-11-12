@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Intra/Core.h>
+#include <Intra/Numeric/Exponential.h>
+#include <Intra/Numeric/LongArith.h>
 
 namespace Intra { INTRA_BEGIN
 
@@ -14,7 +15,7 @@ template<CBasicIntegral T> [[nodiscard]] constexpr uint32 GreatestCommonDivisor(
 	return a;
 }
 
-INTRA_OPTIMIZE_FUNCTION(template<auto Divisor> constexpr auto FastDivByConstTrunc = [](auto dividend)) INTRA_FORCEINLINE_LAMBDA
+INTRA_OPTIMIZE_FUNCTION(template<CBasicUnsignedIntegral auto Divisor> constexpr auto FastDivByConstTrunc = [](auto dividend)) INTRA_FORCEINLINE_LAMBDA
 {
 	static_assert(Divisor != 0);
 	if constexpr(sizeof(dividend) > sizeof(size_t))
@@ -37,33 +38,36 @@ INTRA_OPTIMIZE_FUNCTION(template<auto Divisor> constexpr auto FastDivByConstTrun
 };
 INTRA_OPTIMIZE_FUNCTION_END
 
-template<auto Divisor> constexpr auto FastModByConst = [](auto dividend)) INTRA_FORCEINLINE_LAMBDA
+template<CBasicUnsignedIntegral auto Divisor> constexpr auto FastModByConst = [](auto dividend) INTRA_FORCEINLINE_LAMBDA
 {
 	if constexpr(sizeof(dividend) > sizeof(size_t) && Divisor < MaxValueOf<size_t>)
-		return size_t(dividend) - Divisor * size_t(FastDiv<Divisor>(dividend));
-	return dividend - Divisor * FastDivByConstTrunc<Divisor>(dividend);
+		return size_t(dividend) - Divisor * size_t(FastDivByConstTrunc<Divisor>(dividend));
+	else return dividend - Divisor * FastDivByConstTrunc<Divisor>(dividend);
 };
 
 constexpr auto IDivFast = [](auto&& dividend, auto&& divisor)
 {
-	if((dividend < 0) ^ (divisor < 0)) return (dividend - divisor/2) / divisor;
-	return (dividend + divisor/2) / divisor;
-}
+	if((dividend < 0) ^ (divisor < 0))
+		return (dividend - divisor / 2) / divisor;
+	return (dividend + divisor / 2) / divisor;
+};
 
-template<RoundMode rounding = RoundMode::Truncate, template<typename> Overflow = Overflow::Default>
+template<RoundMode Rounding = RoundMode::Truncate, template<typename> class Overflow = NDebugOverflow>
 constexpr auto IDiv = [](auto x, auto divisor)
 {
 	INTRA_PRECONDITION(divisor != 0);
-	if constexpr(rounding == RoundMode::Truncate || !CBasicSigned<decltype(dividend)> && rounding == RoundMode::Floor)
+	if constexpr(Rounding == RoundMode::Truncate ||
+		!CBasicSigned<decltype(x)> && Rounding == RoundMode::Floor)
 		return INTRA_FWD(x) / divisor;
-	else if constexpr(rounding == RoundMode::Floor)
+	else if constexpr(Rounding == RoundMode::Floor)
 	{
 		if(x < 0) x -= divisor - 1;
 		return INTRA_MOVE(x) / divisor;
 	}
-	else if constexpr(rounding == RoundMode::Ceil)
+	else if constexpr(Rounding == RoundMode::Ceil)
 	{
-
+		x += divisor - 1;
+		return INTRA_MOVE(x) / divisor;
 	}
 	else
 	{
@@ -73,18 +77,16 @@ constexpr auto IDiv = [](auto x, auto divisor)
 			if(divisor < 0) return (x1 + (-divisor + 1) / 2) / divisor + 1;
 			return (x1 + (divisor + 1) / 2) / divisor - 1;
 		}
-		if(divisor < 0) return (x1 - (-divisor + 1)/2) / divisor - 1;
-		return (x1 - (divisor + 1)/2) / divisor + 1;
+		if(divisor < 0) return (x1 - (-divisor + 1) / 2) / divisor - 1;
+		return (x1 - (divisor + 1) / 2) / divisor + 1;
 	}
-}
+};
 
-template<typename Ratio> auto MulDivConst = []<typename T>(T&& x)
+template<auto Ratio> auto MulDivConst = []<typename T>(T&& x)
 {
-	if constexpr(CBasicFloatingPoint<TRemoveReference<T>>) return INTRA_FWD(x)*Ratio::Ratio;
-	else
-	{
-		return INTRA_FWD(x)*Ratio::Num/Ratio::Denom;
-	}
+	if constexpr(CBasicFloatingPoint<TRemoveReference<T>>)
+		return INTRA_FWD(x) * Ratio.Ratio;
+	else return INTRA_FWD(x) * Ratio.Num / Ratio.Denom; // TODO: solve overflow
 };
 
 template<typename T> struct Ratio
@@ -94,13 +96,6 @@ template<typename T> struct Ratio
 
 	T Num = 1;
 	T Denom = 1;
-};
-
-template<int64 Num, uint64 Denom> struct TRatio
-{
-	static constexpr int64 Num = Num;
-	static constexpr uint64 Denom = Denom;
-	static constexpr double Ratio = double(Num) / Denom;
 };
 
 } INTRA_END

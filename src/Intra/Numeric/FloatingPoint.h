@@ -1,32 +1,28 @@
 #pragma once
 
-#include <Intra/Core.h>
-#include <Intra/Math.h>
-#include <Intra/Meta.h>
+#include <Intra/Numeric/Rational.h>
 
 namespace Intra { INTRA_BEGIN
 
-constexpr double Infinity = __builtin_huge_val();
-
 constexpr struct TNaN
 {
-	template<CNumber T> [[nodiscard]] constexpr bool operator==(T x) const noexcept
+	template<CNumber T> [[nodiscard]] INTRA_FORCEINLINE constexpr bool operator==(T x) const noexcept
 	{
 		if constexpr(!CBasicFloatingPoint<T>) return false;
 		else
 		{
 		#if defined(_M_FP_FAST) || defined(__FAST_MATH__)
 			if(IsConstantEvaluated()) return false;
-			return (z_D::utilBitCast<uint32>(x) << 1) > 0xFF000000u;
+			return (BitCastTo<uint32>(x) << 1) > 0xFF000000u;
 		#else
 			return x != x;
 		#endif
 		}
 	}
-	template<CNumber T> [[nodiscard]] constexpr bool operator!=(T x) const noexcept {return !operator==(x);}
-	template<CNumber T> friend [[nodiscard]] constexpr bool operator==(T x, TNaN nan) noexcept {return nan == x;}
-	template<CNumber T> friend [[nodiscard]] constexpr bool operator!=(T x, TNaN nan) noexcept {return nan != x;}
-	template<CBasicFloatingPoint T> [[nodiscard]] constexpr operator T() const noexcept {return T(__builtin_nan(""));}
+	template<CNumber T> [[nodiscard]] INTRA_FORCEINLINE constexpr bool operator!=(T x) const noexcept {return !operator==(x);}
+	template<CNumber T> [[nodiscard]] friend INTRA_FORCEINLINE constexpr bool operator==(T x, TNaN nan) noexcept {return nan == x;}
+	template<CNumber T> [[nodiscard]] friend INTRA_FORCEINLINE constexpr bool operator!=(T x, TNaN nan) noexcept {return nan != x;}
+	template<CBasicFloatingPoint T> [[nodiscard]] INTRA_FORCEINLINE constexpr operator T() const noexcept {return T(__builtin_nan(""));}
 } NaN;
 
 
@@ -44,18 +40,19 @@ template<CNumber T, CNumber auto Divisor> struct Fixed
 	T Raw{};
 
 private:
-	template<typename U> using MulT1 = TBasicIntegerWithRange<double(MinValueOf<T>)*MaxValueOf<U>, double(MaxValueOf<T>)*MaxValueOf<U>>;
-	template<typename U> using MulT = MulT<TUnqualRef<U>>;
+	template<typename U> struct MulT1: TType<TBasicNumberWithRange<double(MinValueOf<T>)* MaxValueOf<U>, double(MaxValueOf<T>)* MaxValueOf<U>>> {};
+	template<CBasicFloatingPoint U> struct MulT1<U>: TType<U> {};
+	template<typename U> using MulT = typename MulT1<TUnqualRef<U>>::_;
 
 public:
 	Fixed() = default;
-	template<typename RHS> constexpr Fixed(RHS value): Raw(T(value*MulT<RHS>(Divisor))) {}
+	template<typename RHS> constexpr Fixed(RHS value): Raw(T(value * MulT<RHS>(Divisor))) {}
 
-	explicit constexpr Fixed(Construct, T v): Raw(v) {}
+	explicit INTRA_FORCEINLINE constexpr Fixed(decltype(Construct), T v): Raw(v) {}
 
 	template<CNumber To> explicit constexpr operator To() const
 	{
-		if constexpr(CBasicIntegral<To>) return To(MulT<T2>(Raw) / MulT<To>(Divisor));
+		if constexpr(CBasicIntegral<To>) return To(MulT<To>(Raw) / MulT<To>(Divisor));
 		else return To(Raw.Value) / Divisor;
 	}
 
@@ -65,38 +62,42 @@ public:
 
 	[[nodiscard]] constexpr Fixed operator+(Fixed rhs) const {return Fixed(Construct, Raw + rhs.Raw);}
 	[[nodiscard]] constexpr Fixed operator-(Fixed rhs) const {return Fixed(Construct, Raw - rhs.Raw);}
-	[[nodiscard]] constexpr Fixed operator*(Fixed rhs) const {return Fixed(Construct, MulT<T>(Raw) * rhs.Raw / Divisor);}
-	[[nodiscard]] constexpr Fixed operator/(Fixed rhs) const {return Fixed(Construct, MulT<T>(Raw) * Divisor / rhs.Raw);}
+	[[nodiscard]] constexpr Fixed operator*(Fixed rhs) const {return Fixed(Construct, T(MulT<T>(Raw) * rhs.Raw / Divisor));}
+	[[nodiscard]] constexpr Fixed operator/(Fixed rhs) const {return Fixed(Construct, T(MulT<T>(Raw) * Divisor / rhs.Raw));}
 	[[nodiscard]] constexpr Fixed operator-() const {return Fixed(Construct, -Raw);}
 
-	template<CNumber U> [[nodiscard]] constexpr Fixed operator+(U&& rhs) const
-	{return Fixed(Construct, MulT<U>(Raw) + INTRA_FWD(rhs)*MulT<U>(Divisor));}
+	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
+	[[nodiscard]] constexpr Fixed operator+(U&& rhs) const
+	{return Fixed(Construct, MulT<U>(Raw) + INTRA_FWD(rhs) * MulT<U>(Divisor));}
 
-	template<CNumber U> [[nodiscard]] constexpr Fixed operator-(U&& rhs) const
-	{return Fixed(Construct, MulT<U>(Raw) - INTRA_FWD(rhs)*MulT<U>(Divisor));
-	}
-	template<CNumber U> [[nodiscard]] constexpr Fixed operator*(U&& rhs) const
-	{return Fixed(Construct, INTRA_FWD(rhs)*MulT<U>(Raw));}
+	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
+	[[nodiscard]] constexpr Fixed operator-(U&& rhs) const
+	{return Fixed(Construct, MulT<U>(Raw) - INTRA_FWD(rhs) * MulT<U>(Divisor));}
 
-	template<CNumber U> [[nodiscard]] constexpr Fixed operator/(U&& rhs) const
+	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
+	[[nodiscard]] constexpr Fixed operator*(U&& rhs) const
+	{return Fixed(Construct, INTRA_FWD(rhs) * MulT<U>(Raw));}
+
+	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
+	[[nodiscard]] constexpr Fixed operator/(U&& rhs) const
 	{return Fixed(Construct, MulT<U>(Raw) / INTRA_FWD(rhs));}
 
 	constexpr Fixed& operator=(const Fixed&) = default;
 
-	template<CNumber U> requires !CSameUnqual<Fixed, U> constexpr Fixed& operator=(U rhs)
+	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
+	constexpr Fixed& operator=(U rhs)
 	{
-		Raw = MulT<U>(rhs)*MulT<U>(Divisor);
+		Raw = MulT<U>(rhs) * MulT<U>(Divisor);
 		return *this;
 	}
 
-	[[nodiscard]] constexpr bool operator==(Fixed rhs) const noexcept = default;
+	bool operator==(const Fixed& rhs) const = default;
 	[[nodiscard]] constexpr bool operator<(Fixed rhs) const noexcept {return Raw < rhs.Raw;}
 
-	constexpr auto& WrappedValue() {return Raw;}
-	constexpr const auto& WrappedValue() const {return Raw;}
-
-	using MetaGenOpAssign = TTag<>;
-	using MetaGenOpCompare = TTag<>;
+	using TagGenOpAssign = TTag<>;
+	using TagGenOpCompare = TTag<>;
+	using TagGenMixedTypeAddOps = TTag<>;
+	using TagGenMixedTypeMulOps = TTag<>;
 };
 template<CNumber T, CNumber auto Divisor> constexpr Fixed<T, Divisor>
 	MinFiniteValueOf<Fixed<T, Divisor>> = Fixed<T, Divisor>(Construct, MinValueOf<T>);
@@ -104,8 +105,8 @@ template<CNumber T, CNumber auto Divisor> constexpr Fixed<T, Divisor>
 template<CNumber T, CNumber auto Divisor> constexpr Fixed<T, Divisor>
 	MaxFiniteValueOf<Fixed<T, Divisor>> = Fixed<T, Divisor>(Construct, MaxValueOf<T>);
 
-template<CNumber T, CNumber auto RangeMin, CNumber auto RangeMax> constexpr Fixed<T, Divisor>
-	MaxStepInRange = Fixed<T, Divisor>(Construct, 1);
+template<CNumber T, CNumber auto Divisor, CNumber auto RangeMin, CNumber auto RangeMax> constexpr Fixed<T, Divisor>
+	MaxStepInRange<Fixed<T, Divisor>, RangeMin, RangeMax> = Fixed<T, Divisor>(Construct, 1);
 
 template<CNumber T, CNumber auto Divisor> constexpr Fixed<T, Divisor>
 	MinNormPositiveValueOf<Fixed<T, Divisor>> = Fixed<T, Divisor>(Construct, 1);
@@ -113,6 +114,7 @@ template<CNumber T, CNumber auto Divisor> constexpr Fixed<T, Divisor>
 template<CNumber T> using Normalized = Fixed<T, TUnsignedIntOfSizeAtLeast<sizeof(T) + !CBasicSigned<T>>(MaxValueOf<T>) + 1>;
 
 #if INTRA_CONSTEXPR_TEST
+static_assert(CNumber<Fixed<uint8, 256>>);
 static_assert(MaxStepInRange<Fixed<uint8, 256>> == 1.0/256);
 static_assert(MinValueOf<Fixed<uint8, 256>> == 0);
 static_assert(MaxValueOf<Fixed<uint8, 256>> == 255.0/256);
@@ -136,17 +138,17 @@ static_assert(
 	Fixed<uint8, 256>(84.0/256));
 
 static_assert(
-	Fixed<uint8, 256, Overflow::Wrap>(178.0/256) +
-	Fixed<uint8, 256, Overflow::Wrap>(122.0/256) ==
-	Fixed<uint8, 256, Overflow::Wrap>(44.0/256));
+	Fixed<uint8, 256>(178.0/256) +
+	Fixed<uint8, 256>(122.0/256) ==
+	Fixed<uint8, 256>(44.0/256));
 
-static_assert(3 * Fixed<uint8, 256, Overflow::Wrap>(178.0/256) ==
-	Fixed<uint8, 256, Overflow::Wrap>(22.0/256));
+static_assert(3 * Fixed<uint8, 256>(178.0/256) ==
+	Fixed<uint8, 256>(22.0/256));
 
 static_assert(
-	Fixed<int8, 128, Overflow::Wrap>(-122.0/128) -
-	Fixed<int8, 128, Overflow::Wrap>(118.0/128) ==
-	Fixed<int8, 128, Overflow::Wrap>(16.0/128));
+	Fixed<NWrapOverflow<int8>, 128>(-122.0/128) -
+	Fixed<NWrapOverflow<int8>, 128>(118.0/128) ==
+	Fixed<NWrapOverflow<int8>, 128>(16.0/128));
 
 static_assert(
 	Fixed<int, 65536>(37.662445068359375) *
@@ -226,7 +228,7 @@ template<class To, class From> constexpr auto ConstexprBitCastBetweenFloatAndInt
 		return ComposeFloat<To>(
 			from & mantissaMask,
 			((from >> NumMantissaExplicitBitsOf<To>) & exponentMask) - ExponentBiasOf<To>,
-			From >> signBitShift);
+			from >> signBitShift);
 	}
 	else return ExtractMantissaImplicit1(from) |
 		(To(ExtractExponent(from)) << NumMantissaExplicitBitsOf<From>) |
@@ -239,24 +241,24 @@ struct HalfFloat
 	HalfFloat() = default;
 
 	constexpr explicit HalfFloat(decltype(Construct), uint16 s): AsUint16(s) {}
-	HalfFloat& operator=(const HalfFloat& rhs) = default;
+	INTRA_FORCEINLINE HalfFloat& operator=(const HalfFloat& rhs) = default;
 
-	template<CReal T> requires (!CSame<TRemoveConstRef<T>, HalfFloat>)
-	constexpr explicit HalfFloat(T f): AsUint16(fromFloat(float(f))) {}
+	template<CFloatingPoint T> requires (!CSame<TRemoveConstRef<T>, HalfFloat>)
+	INTRA_FORCEINLINE constexpr explicit HalfFloat(T f): AsUint16(fromFloat(float(f))) {}
 
-	template<CReal T> [[nodiscard]] constexpr operator T() const {return toFloat(AsUint16);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr operator float() const {return toFloat(AsUint16);}
 
-	template<typename T> requires CReal<T> || CSame<T, HalfFloat>
-	constexpr HalfFloat& operator+=(T rhs) {return *this = HalfFloat(*this + float(rhs));}
+	template<typename T> requires CFloatingPoint<T> || CSame<T, HalfFloat>
+	INTRA_FORCEINLINE constexpr HalfFloat& operator+=(T rhs) {return *this = HalfFloat(*this + float(rhs));}
 
-	template<typename T> requires CReal<T> || CSame<T, HalfFloat>
-	constexpr HalfFloat& operator-=(T rhs) {return *this = HalfFloat(*this - float(rhs));}
+	template<typename T> requires CFloatingPoint<T> || CSame<T, HalfFloat>
+	INTRA_FORCEINLINE constexpr HalfFloat& operator-=(T rhs) {return *this = HalfFloat(*this - float(rhs));}
 
-	template<typename T> requires CReal<T> || CSame<T, HalfFloat>
-	constexpr HalfFloat& operator*=(T rhs) {return *this = HalfFloat(*this * float(rhs));}
+	template<typename T> requires CFloatingPoint<T> || CSame<T, HalfFloat>
+	INTRA_FORCEINLINE constexpr HalfFloat& operator*=(T rhs) {return *this = HalfFloat(*this * float(rhs));}
 
-	template<typename T> requires CReal<T> || CSame<T, HalfFloat>
-	constexpr HalfFloat& operator/=(T rhs) {return *this = HalfFloat(*this / float(rhs));}
+	template<typename T> requires CFloatingPoint<T> || CSame<T, HalfFloat>
+	INTRA_FORCEINLINE constexpr HalfFloat& operator/=(T rhs) {return *this = HalfFloat(*this / float(rhs));}
 
 	uint16 AsUint16 = 0;
 
@@ -265,8 +267,8 @@ private:
 	{
 		return uint16(
 			(ExtractMantissaImplicit1(f) >> (NumMantissaExplicitBitsOf<float> - 10)) |
-			((ExtractExponent(f) + 15) << 10) |
-			((f < 0) << 15)
+			(uint32(ExtractExponent(f) + 15) << 10) |
+			(uint32(f < 0) << 15)
 		);
 	}
 
@@ -285,16 +287,15 @@ static_assert(ExtractBiasedExponent(3.14f) == 128);
 static_assert(ExtractBiasedExponent(6.14f) == 129);
 static_assert(ExtractBiasedExponent(3.14) == 1024);
 static_assert(ExtractExponent(3.14f) == ExtractExponent(3.14));
-
 #endif
 
-template<typename MantissaT, int Radix = 2> struct GenericFloat;
+template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix = 2> struct GenericFloat;
 namespace z_D {
 constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exponentOf2);
 constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int exponentOf2);
 }
 
-/// Represents Mantissa * Radix^Exponent * (Sign? -1: 1)
+/// Represents Mantissa * Radix^Exponent * (Negative? -1: 1)
 template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct GenericFloat
 {
 	MantissaT Mantissa = 0;
@@ -302,6 +303,9 @@ template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct Generi
 	bool Negative = false;
 
 	GenericFloat() = default;
+
+	INTRA_FORCEINLINE explicit constexpr GenericFloat(decltype(Construct), MantissaT mantissa, int16 exponent, bool negative):
+		Mantissa(mantissa), Exponent(exponent), Negative(negative) {}
 
 	template<CBasicFloatingPoint Float> constexpr GenericFloat(Float x)
 	{
@@ -312,20 +316,20 @@ template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct Generi
 			Negative = ExtractFloatSignBit(x);
 			if(Exponent == 0) Exponent++;
 			else Mantissa |= MantissaT(1) << NumMantissaExplicitBitsOf<Float>;
-			Exponent -= ExponentBiasOf<Float> + NumMantissaExplicitBits<Float>;
+			Exponent -= ExponentBiasOf<Float> + NumMantissaExplicitBitsOf<Float>;
 		}
 		else if constexpr(Radix == 10)
 		{
-			auto bin = GenericFloat<TUnsignedIntOfSizeAtLeast<sizeof(Float)>>, 2>(x);
+			auto bin = GenericFloat<TUnsignedIntOfSizeAtLeast<sizeof(Float)>, 2>(x);
 			if constexpr(CSameSize<Float, float>) *this = z_D::BinaryFloatToDecimal(bin.Mantissa, bin.Exponent);
 			else if constexpr(CSameSize<Float, double>) *this = z_D::BinaryDoubleToDecimal(bin.Mantissa, bin.Exponent);
 			Negative = bin.Negative;
 		}
-		else *this = GenericFloat(GenericFloat<TUnsignedIntOfSizeAtLeast<sizeof(Float)>>, 2>(x));
+		else *this = GenericFloat(GenericFloat<TUnsignedIntOfSizeAtLeast<sizeof(Float)>, 2>(x));
 	}
 
 	template<typename MantissaTFrom, unsigned RadixFrom> requires(!CSame<MantissaT, MantissaTFrom> || Radix != RadixFrom)
-	constexpr GenericFloat(GenericFloat<MantissaTFrom, RadixFrom> rhs): Sign(rhs.Sign)
+	constexpr GenericFloat(GenericFloat<MantissaTFrom, RadixFrom> rhs): Negative(rhs.Negative)
 	{
 		if constexpr(Radix == RadixFrom)
 		{
@@ -345,21 +349,21 @@ template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct Generi
 		else
 		{
 			if(-SizeofInBits<MantissaT> < rhs.Exponent && rhs.Exponent <= 0 &&
-				IsMultipleOfPowerOf(rhs.Mantissa, Radix2, -rhs.Exponent))
+				IsMultipleOfPowerOf(rhs.Mantissa, RadixFrom, -rhs.Exponent))
 			{
 				Mantissa = RadixShiftRight<Radix>(rhs.Mantissa, -rhs.Exponent);
 				Exponent = 0;
 				Negative = rhs.Negative;
 				return;
 			}
-			if constexpr(Radix == 10 && Radix2 == 2)
+			if constexpr(Radix == 10 && RadixFrom == 2)
 			{
 				if((rhs.Mantissa >> MantissaLenOf<float>) == 0 &&
 					-ExponentBiasOf<float> -NumMantissaExplicitBitsOf<float> < rhs.Exponent &&
 					rhs.Exponent <= ExponentBiasOf<float> -NumMantissaExplicitBitsOf<float>)
 				{
 					auto res = z_D::BinaryFloatToDecimal(rhs.Mantissa, rhs.Exponent);
-					Mantissa = Overflow::CheckedInDebug<MantissaT>(res.Mantissa);
+					Mantissa = NDebugOverflow<MantissaT>(res.Mantissa);
 					Exponent = res.Exponent;
 					return;
 				}
@@ -368,7 +372,7 @@ template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct Generi
 					rhs.Exponent <= ExponentBiasOf<double> -NumMantissaExplicitBitsOf<double>)
 				{
 					auto res = z_D::BinaryDoubleToDecimal(rhs.Mantissa, rhs.Exponent);
-					Mantissa = Overflow::CheckedInDebug<MantissaT>(res.Mantissa);
+					Mantissa = NDebugOverflow<MantissaT>(res.Mantissa);
 					Exponent = res.Exponent;
 					return;
 				}
@@ -381,9 +385,9 @@ template<CUnqualedBasicUnsignedIntegral MantissaT, unsigned Radix> struct Generi
 	GenericFloat TrimTrailingZeros() const
 	{
 		GenericFloat res = *this;
-		while(FastMod<Radix>(res.Mantissa) == 0)
+		while(FastModByConst<Radix>(res.Mantissa) == 0)
 		{
-			res.Mantissa = FastDiv<Radix>(res.Mantissa);
+			res.Mantissa = FastDivByConstTrunc<Radix>(res.Mantissa);
 			res.Exponent++;
 		}
 		return res;
@@ -457,9 +461,9 @@ constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exp
 	uint8 lastRemovedDigit = 0;
 	if(exponentOf2 >= 0)
 	{
-		const uint32 q = FloorLog10OfPow2Approx(exponentOf2);
+		const uint32 q = FloorLog10OfPow2Approx(uint32(exponentOf2));
 		e10 = int32(q);
-		const int32 k = FLOAT_POW5_INV_BITCOUNT + BitWidthOfPow5(int32(q)) - 1;
+		const int32 k = FLOAT_POW5_INV_BITCOUNT + BitWidthOfPow<5>(q) - 1;
 		const int32 i = -exponentOf2 + int32(q) + k;
 		vr = MulShift(mv, FLOAT_POW5_INV_SPLIT[q], i);
 		vp = MulShift(mp, FLOAT_POW5_INV_SPLIT[q], i);
@@ -469,32 +473,32 @@ constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exp
 			// We need to know one removed digit even if we are not going to loop below. We could use
 			// q = X - 1 above, except that would require 33 bits for the result, and we've found that
 			// 32-bit arithmetic is faster even on 64-bit machines.
-			const int32 l = FLOAT_POW5_INV_BITCOUNT + BitWidthOfPow5(int32(q - 1)) - 1;
-			lastRemovedDigit = byte(MulShift(mv, FLOAT_POW5_INV_SPLIT[q - 1], -exponentOf2 + int32(q) - 1 + l) % 10);
+			const int32 l = FLOAT_POW5_INV_BITCOUNT + BitWidthOfPow<5>(q - 1) - 1;
+			lastRemovedDigit = uint8(MulShift(mv, FLOAT_POW5_INV_SPLIT[q - 1], -exponentOf2 + int32(q) - 1 + l) % 10);
 		}
 		if(q <= 9)
 		{
 			// The largest power of 5 that fits in 24 bits is 5^10, but q <= 9 seems to be safe as well.
 			// Only one of mp, mv, and mm can be a multiple of 5, if any.
-			if(mv % 5 == 0) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 5, q);
-			else if(acceptBounds) vmIsTrailingZeros = IsMultipleOfPowerOf(mm, 5, q);
-			else vp -= IsMultipleOfPowerOf(mp, 5, q);
+			if(mv % 5 == 0) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 5, int(q));
+			else if(acceptBounds) vmIsTrailingZeros = IsMultipleOfPowerOf(mm, 5, int(q));
+			else vp -= IsMultipleOfPowerOf(mp, 5, int(q));
 		}
 	}
 	else
 	{
-		const uint32 q = FloorLog10OfPow5Approx(-exponentOf2);
+		const uint32 q = FloorLog10OfPow5Approx(uint32(-exponentOf2));
 		e10 = int32(q) + exponentOf2;
-		const int32 i = -exponentOf2 - int32(q);
-		const int32 k = BitWidthOfPow5(i) - FLOAT_POW5_BITCOUNT;
+		const int32 i = -e10;
+		const int32 k = BitWidthOfPow<5>(uint32(i)) - FLOAT_POW5_BITCOUNT;
 		int32 j = int32(q) - k;
 		vr = MulShift(mv, FLOAT_POW5_SPLIT[i], j);
 		vp = MulShift(mp, FLOAT_POW5_SPLIT[i], j);
 		vm = MulShift(mm, FLOAT_POW5_SPLIT[i], j);
 		if(q != 0 && (vp - 1) / 10 <= vm / 10)
 		{
-			j = int32(q) - 1 - BitWidthOfPow5(i + 1) - FLOAT_POW5_BITCOUNT;
-			lastRemovedDigit = byte(MulShift(mv, FLOAT_POW5_SPLIT[i + 1], j) % 10);
+			j = int32(q) - 1 - BitWidthOfPow<5>(uint32(i) + 1) - FLOAT_POW5_BITCOUNT;
+			lastRemovedDigit = uint8(MulShift(mv, FLOAT_POW5_SPLIT[i + 1], j) % 10);
 		}
 		if(q <= 1)
 		{
@@ -506,7 +510,7 @@ constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exp
 		}
 		else if(q < 31)
 		{ // TODO(ulfjack): Use a tighter bound here.
-			vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 2, q - 1);
+			vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 2, int(q - 1));
 		}
 	}
 
@@ -531,16 +535,16 @@ constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exp
 		// General case, which happens rarely (~4.0%).
 		while(vp / 10 > vm / 10)
 		{
-			vmIsTrailingZeros &= FastMod<10>(vm) == 0;
+			vmIsTrailingZeros &= FastModByConst<10u>(vm) == 0;
 			vrIsTrailingZeros &= lastRemovedDigit == 0;
-			lastRemovedDigit = byte(vr % 10);
+			lastRemovedDigit = uint8(vr % 10);
 			vr /= 10, vp /= 10, vm /= 10;
 			removed++;
 		}
 		if(vmIsTrailingZeros) while(vm % 10 == 0)
 		{
 			vrIsTrailingZeros &= lastRemovedDigit == 0;
-			lastRemovedDigit = byte(vr % 10);
+			lastRemovedDigit = uint8(vr % 10);
 			vr /= 10, vp /= 10, vm /= 10;
 			removed++;
 		}
@@ -554,7 +558,7 @@ constexpr GenericFloat<uint32, 10> BinaryFloatToDecimal(uint32 mantissa, int exp
 		if(vr == vm && (!acceptBounds || !vmIsTrailingZeros) || lastRemovedDigit >= 5) output++;
 	}
 	const int exp = e10 + removed;
-	return {output, exp};
+	return GenericFloat<uint32, 10>(Construct, output, int16(exp), false);
 }
 
 constexpr uint64 DOUBLE_POW5_INV_SPLIT2[15][2] = {
@@ -614,7 +618,7 @@ constexpr uint64 DOUBLE_POW5_TABLE[] = {
 
 constexpr Array<uint64, 2> double_computePow5(uint32 i)
 {
-	enum: uint32 {Pow5TableSize = LengthOf(DOUBLE_POW5_TABLE)};
+	enum: uint32 {Pow5TableSize = Length(DOUBLE_POW5_TABLE)};
 	const uint32 base = i / Pow5TableSize;
 	const uint32 base2 = base * Pow5TableSize;
 	const uint32 offset = i - base2;
@@ -628,17 +632,17 @@ constexpr Array<uint64, 2> double_computePow5(uint32 i)
 	const uint64 sum = high0 + low1;
 	if(sum < high0) high1++; // overflow into high1
 	// high1 | sum | low0
-	const uint32 delta = BitWidthOfPow<5>(i) - BitWidthOfPow<5>(base2);
+	const int delta = BitWidthOfPow<5>(i) - BitWidthOfPow<5>(base2);
 	return {
-		ShiftRight128(low0, sum, delta) + ((POW5_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3),
-		ShiftRight128(sum, high1, delta)
+		ShiftRight128UpTo64(low0, sum, delta) + ((POW5_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3),
+		ShiftRight128UpTo64(sum, high1, delta)
 	};
 }
 
 // Computes 5^-i in the form required by Ryu, and stores it in the given pointer.
 constexpr Array<uint64, 2> double_computeInvPow5(uint32 i)
 {
-	enum: uint32 {Pow5TableSize = LengthOf(DOUBLE_POW5_TABLE)};
+	enum: uint32 {Pow5TableSize = Length(DOUBLE_POW5_TABLE)};
 	const uint32 base = (i + Pow5TableSize - 1) / Pow5TableSize;
 	const uint32 base2 = base * Pow5TableSize;
 	const uint32 offset = base2 - i;
@@ -652,23 +656,23 @@ constexpr Array<uint64, 2> double_computeInvPow5(uint32 i)
 	const uint64 sum = high0 + low1;
 	if(sum < high0) high1++; // overflow into high1
 	// high1 | sum | low0
-	const uint32 delta = BitWidthOfPow<5>(base2) - BitWidthOfPow<5>(i);
+	const int delta = BitWidthOfPow<5>(base2) - BitWidthOfPow<5>(i);
 	return {
-		ShiftRight128(low0, sum, delta) + 1 + ((POW5_INV_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3),
-		ShiftRight128(sum, high1, delta)
+		ShiftRight128UpTo64(low0, sum, delta) + 1 + ((POW5_INV_OFFSETS[i / 16] >> ((i % 16) << 1)) & 3),
+		ShiftRight128UpTo64(sum, high1, delta)
 	};
 }
 
-constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int exponentOf2)
+INTRA_NOINLINE constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int exponentOf2)
 {
 	INTRA_PRECONDITION((mantissa >> MantissaLenOf<float>) == 0);
 	INTRA_PRECONDITION(-ExponentBiasOf<float> - NumMantissaExplicitBitsOf<float> < exponentOf2);
 	INTRA_PRECONDITION(exponentOf2 <= ExponentBiasOf<float> - NumMantissaExplicitBitsOf<float>);
 
 	const auto mulShiftAll64 = [](uint64 m, Array<uint64, 2> mul, int j, Out<uint64> vp, Out<uint64> vm, uint32 mmShift) {
-		vp = MulShift(4 * m + 2, mul, j);
-		vm = MulShift(4 * m - 1 - mmShift, mul, j);
-		return MulShift(4 * m, mul, j);
+		vp = MulShift64(4 * m + 2, mul[0], mul[1], j);
+		vm = MulShift64(4 * m - 1 - mmShift, mul[0], mul[1], j);
+		return MulShift64(4 * m, mul[0], mul[1], j);
 	};
 
 	// We subtract 2 so that the bounds computation has 2 additional bits.
@@ -687,38 +691,38 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 	bool vmIsTrailingZeros = false, vrIsTrailingZeros = false;
 	if(exponentOf2 >= 0)
 	{
-		const uint32 q = log10Pow2(e2) - (e2 > 3);
+		const uint32 q = FloorLog10OfPow2Approx(uint32(exponentOf2)) - (exponentOf2 > 3);
 		e10 = int32(q);
-		const int32 k = DOUBLE_POW5_INV_BITCOUNT + BitWidthOfPow<5>(int32(q)) - 1;
-		const int32 i = -e2 + int32(q) + k;
-		const auto pow5 = double_computeInvPow5(q, pow5);
-		vr = mulShiftAll64(m2, pow5, i, Out(vp), Out(vm), mmShift);
+		const int32 k = DOUBLE_POW5_INV_BITCOUNT + BitWidthOfPow<5>(q) - 1;
+		const int32 i = -exponentOf2 + int32(q) + k;
+		const auto pow5 = double_computeInvPow5(q);
+		vr = mulShiftAll64(uint64(exponentOf2), pow5, i, Out(vp), Out(vm), mmShift);
 		if(q <= 21)
 		{
-			const uint32 mvMod5 = FastMod<5>(mv);
-			if(mvMod5 == 0) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 5, q);
-			else if(acceptBounds) vmIsTrailingZeros = IsMultipleOfPowerOf(mv - 1 - mmShift, 5, q);
-			else vp -= IsMultipleOfPowerOf(mv + 2, 5, q);
+			const uint32 mvMod5 = FastModByConst<5u>(mv);
+			if(mvMod5 == 0) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 5, int(q));
+			else if(acceptBounds) vmIsTrailingZeros = IsMultipleOfPowerOf(mv - 1 - mmShift, 5, int(q));
+			else vp -= IsMultipleOfPowerOf(mv + 2, 5, int(q));
 		}
 	}
 	else
 	{
-		const uint32 q = FloorLog10OfPow5Approx(-e2) - (-e2 > 1);
-		e10 = int32(q) + e2;
-		const int32 i = -e2 - int32(q);
-		const int32 k = BitWidthOfPow<5>(i) - DOUBLE_POW5_BITCOUNT;
+		const uint32 q = FloorLog10OfPow5Approx(uint32(-exponentOf2)) - (-exponentOf2 > 1);
+		e10 = int32(q) + exponentOf2;
+		const uint32 i = uint32(-e10);
+		const int32 k = BitWidthOfPow<5>(uint32(i)) - DOUBLE_POW5_BITCOUNT;
 		const int32 j = int32(q) - k;
 		const auto pow5 = double_computePow5(i);
-		vr = mulShiftAll64(m2, pow5, j, Out(vp), Out(vm), mmShift);
+		vr = mulShiftAll64(mantissa, pow5, j, Out(vp), Out(vm), mmShift);
 		if(q <= 1)
 		{
 			// {vr,vp,vm} is trailing zeros if {mv,mp,mm} has at least q trailing 0 bits.
-			// mv = 4 * m2, so it always has at least two trailing 0 bits.
+			// mv = 4 * mantissa, so it always has at least two trailing 0 bits.
 			vrIsTrailingZeros = true;
 			if (acceptBounds) vmIsTrailingZeros = mmShift == 1;
 			else vp--; // mp = mv + 2, so it always has at least one trailing 0 bit.
 		}
-		else if(q < 63) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 2, q);
+		else if(q < 63) vrIsTrailingZeros = IsMultipleOfPowerOf(mv, 2, int(q));
 	}
 
 	// Step 4: Find the shortest decimal representation in the interval of valid representations.
@@ -730,11 +734,11 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 	{
 		// Specialized for the common case (~99.3%). Percentages below are relative to this.
 		bool roundUp = false;
-		const uint64 vpDiv100 = FastDiv<100>(vp);
-		const uint64 vmDiv100 = FastDiv<100>(vm);
-		if(vpDiv100 > vmDiv100)
-		{ // Optimization: remove two digits at a time (~86.2%).
-			const uint64 vrDiv100 = FastDiv<100>(vr);
+		const uint64 vpDiv100 = FastDivByConstTrunc<100u>(vp);
+		const uint64 vmDiv100 = FastDivByConstTrunc<100u>(vm);
+		if(vpDiv100 > vmDiv100) // Optimization: remove two digits at a time (~86.2%).
+		{
+			const uint64 vrDiv100 = FastDivByConstTrunc<100u>(vr);
 			const uint32 vrMod100 = uint32(vr) - 100 * uint32(vrDiv100);
 			roundUp = vrMod100 >= 50;
 			vr = vrDiv100, vp = vpDiv100, vm = vmDiv100;
@@ -746,10 +750,10 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 		// 0: 70.6%, 1: 27.8%, 2: 1.40%, 3: 0.14%, 4+: 0.02%
 		for(;;)
 		{
-			const uint64 vpDiv10 = FastDiv<10>(vp);
-			const uint64 vmDiv10 = FastDiv<10>(vm);
+			const uint64 vpDiv10 = FastDivByConstTrunc<10u>(vp);
+			const uint64 vmDiv10 = FastDivByConstTrunc<10u>(vm);
 			if(vpDiv10 <= vmDiv10) break;
-			const uint64 vrDiv10 = FastDiv<10>(vr);
+			const uint64 vrDiv10 = FastDivByConstTrunc<10u>(vr);
 			const uint32 vrMod10 = uint32(vr) - 10*uint32(vrDiv10);
 			roundUp = vrMod10 >= 5;
 			vr = vrDiv10, vp = vpDiv10, vm = vmDiv10;
@@ -758,16 +762,15 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 		// We need to take vr + 1 if vr is outside bounds or we need to round up.
 		output = vr + (vr == vm || roundUp);
 	}
-	else
+	else // General case, which happens rarely (~0.7%).
 	{
-		// General case, which happens rarely (~0.7%).
 		for (;;)
 		{
-			const uint64 vpDiv10 = FastDiv<10>(vp);
-			const uint64 vmDiv10 = FastDiv<10>(vm);
+			const uint64 vpDiv10 = FastDivByConstTrunc<10u>(vp);
+			const uint64 vmDiv10 = FastDivByConstTrunc<10u>(vm);
 			if(vpDiv10 <= vmDiv10) break;
 			const uint32 vmMod10 = uint32(vm) - 10*uint32(vmDiv10);
-			const uint64 vrDiv10 = FastDiv<10>(vr);
+			const uint64 vrDiv10 = FastDivByConstTrunc<10u>(vr);
 			const uint32 vrMod10 = uint32(vr) - 10*uint32(vrDiv10);
 			vmIsTrailingZeros &= vmMod10 == 0;
 			vrIsTrailingZeros &= lastRemovedDigit == 0;
@@ -778,11 +781,11 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 
 		if(vmIsTrailingZeros) for(;;)
 		{
-			const uint64 vmDiv10 = FastDiv<10>(vm);
+			const uint64 vmDiv10 = FastDivByConstTrunc<10u>(vm);
 			const uint32 vmMod10 = uint32(vm) - 10*uint32(vmDiv10);
 			if(vmMod10 != 0) break;
-			const uint64 vpDiv10 = FastDiv<10>(vp);
-			const uint64 vrDiv10 = FastDiv<10>(vr);
+			const uint64 vpDiv10 = FastDivByConstTrunc<10u>(vp);
+			const uint64 vrDiv10 = FastDivByConstTrunc<10u>(vr);
 			const uint32 vrMod10 = uint32(vr) - 10*uint32(vrDiv10);
 			vrIsTrailingZeros &= lastRemovedDigit == 0;
 			lastRemovedDigit = uint8(vrMod10);
@@ -794,7 +797,7 @@ constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 mantissa, int ex
 		// We need to take vr + 1 if vr is outside bounds or we need to round up.
 		output = vr + ((vr == vm && (!acceptBounds || !vmIsTrailingZeros)) || lastRemovedDigit >= 5);
 	}
-	return {e10 + removed, output};
+	return GenericFloat<uint64, 10>(Construct, output, int16(e10 + removed), false);
 }
 
 }

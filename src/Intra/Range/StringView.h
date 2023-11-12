@@ -1,80 +1,86 @@
 ﻿#pragma once
 
-#include "Intra/Concepts.h"
-#include "Intra/Misc/RawMemory.h"
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Special/Unicode.h"
-#include "Intra/Range/Operations.h"
+#include <Intra/Concepts.h>
+#include <Intra/Binary.h>
+#include <Intra/Range.h>
+#include <Intra/Range/Special/Unicode.h>
 
 namespace Intra { INTRA_BEGIN
 /// Not-owning reference to a string.
-template<CUnqualedChar CodeUnit> class GenericStringView
+template<CUnqualedChar CodeUnit, bool NullTerminated = false> class GenericStringView
 {
 	Span<const CodeUnit> mRawUnicodeUnits;
 public:
 	using TagAnyInstanceFinite = TTag<>;
 
-    [[nodiscard]] constexpr auto RawUnicodeUnits() const noexcept {return mRawUnicodeUnits;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto RawUnicodeUnits() const noexcept {return mRawUnicodeUnits;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto CStr() const noexcept requires NullTerminated {return mRawUnicodeUnits.Begin;}
 
 	constexpr GenericStringView() = default;
+	constexpr GenericStringView(const GenericStringView&) = default;
 
-    template<CArrayList R> requires CSame<CodeUnit, TArrayListValue<R>>
-	explicit constexpr GenericStringView(R&& src): GenericStringView(Unsafe, src)
+	template<CConvertibleToSpan L> requires CSame<CodeUnit, TArrayListValue<L>>
+	explicit constexpr GenericStringView(L&& src): GenericStringView(Unsafe, src)
 	{
 		INTRA_PRECONDITION(Unicode::IsValidUnicode(src));
+		if constexpr(NullTerminated)
+		{
+			INTRA_PRECONDITION(src|Empty || src|Last == '\0');
+			if(!mRawUnicodeUnits.Empty()) mRawUnicodeUnits.PopLast();
+		}
 	}
 
-	template<CArrayList R> requires CSame<CodeUnit, TArrayListValue<R>>
-	explicit constexpr GenericStringView(TUnsafe, R&& rhs) noexcept: mRawUnicodeUnits(rhs) {}
+	INTRA_FORCEINLINE GenericStringView(const GenericStringView<CodeUnit, false>& rhs) requires NullTerminated:
+		mRawUnicodeUnits(rhs.mRawUnicodeUnits) {}
 
-	explicit constexpr GenericStringView(TUnsafe, const CodeUnit* begin, Size length):
-	    mRawUnicodeUnits(Unsafe, begin, length) {}
+	template<CConvertibleToSpan L> requires CSame<CodeUnit, TArrayListValue<L>>
+	explicit INTRA_FORCEINLINE constexpr GenericStringView(TUnsafe, L&& src) noexcept: mRawUnicodeUnits(src) {}
 
-    explicit constexpr GenericStringView(TUnsafe, const CodeUnit* begin, const CodeUnit* end):
-        mRawUnicodeUnits(Unsafe, begin, end) {}
+	explicit INTRA_FORCEINLINE constexpr GenericStringView(TUnsafe, const CodeUnit* begin, Size length):
+		mRawUnicodeUnits(Unsafe, begin, length) {}
+
+	explicit INTRA_FORCEINLINE constexpr GenericStringView(TUnsafe, const CodeUnit* begin, const CodeUnit* end):
+		mRawUnicodeUnits(Unsafe, begin, end) {}
 
 	/// Construct from nullptr-terminated C-string.
 	/// Null terminator itself will not be a part of the constructed view.
-    explicit constexpr GenericStringView(TUnsafe, const CodeUnit* nullTermStr):
+	explicit INTRA_FORCEINLINE constexpr GenericStringView(TUnsafe, const CodeUnit* nullTermStr):
 		GenericStringView(Unsafe, nullTermStr, nullTermStr? CStringLength(nullTermStr): 0) {}
 
-	[[nodiscard]] constexpr bool operator==(const GenericStringView& rhs) const noexcept
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool operator==(const GenericStringView& rhs) const noexcept
 	{
 		return mRawUnicodeUnits|MatchesWith(rhs.mRawUnicodeUnits);
 	}
-	[[nodiscard]] constexpr bool operator<(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) < 0;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool operator<(const GenericStringView& rhs) const noexcept {return (*this|LexCompareTo(rhs)) < 0;}
 
-	[[nodiscard]] constexpr char32_t First() const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr char32_t First() const
 	{
-	    if constexpr(CSame<CodeUnit, char32_t>) return mRawUnicodeUnits.First();
-	    else return Unicode::DecodeCodepoint(RawUnicodeUnits());
+		if constexpr(CSame<CodeUnit, char32_t>) return mRawUnicodeUnits.First();
+		else return Unicode::DecodeCodepoint(RawUnicodeUnits());
 	}
 
 	constexpr void PopFirst()
 	{
-        if constexpr(sizeof(CodeUnit) == sizeof(char32_t))
-			return mRawUnicodeUnits.PopFirst();
-	    else if constexpr(sizeof(CodeUnit) == sizeof(char))
+		if constexpr(CSameSize<CodeUnit, char32_t>) return mRawUnicodeUnits.PopFirst();
+		else if constexpr(CSameSize<CodeUnit, char>)
 			mRawUnicodeUnits|PopFirstExactly(1 + Unicode::Utf8ContinuationBytes(mRawUnicodeUnits.First()));
-		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
+		else if constexpr(CSameSize<CodeUnit, char16_t>)
 			mRawUnicodeUnits|PopFirstExactly(1 + Unicode::IsUtf16LeadingSurrogate(mRawUnicodeUnits.First()));
 	}
 
-	constexpr void PopLast()
+	constexpr void PopLast() requires(!NullTerminated)
 	{
-		if constexpr(sizeof(CodeUnit) == sizeof(char))
-			while(Unicode::IsUtf8ContinuationByte(mRawUnicodeUnits.Last())) mRawUnicodeUnits.PopLast();
-		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
-			if(Unicode::IsUtf16TrailingSurrogate(mRawUnicodeUnits.Last())) mRawUnicodeUnits.PopLast();
+		if constexpr(sizeof(CodeUnit) == sizeof(char)) mRawUnicodeUnits|PopLastWhile(Unicode::IsUtf8ContinuationByte);
+		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t)) mRawUnicodeUnits|PopLastWhile(Unicode::IsUtf16TrailingSurrogate);
 		mRawUnicodeUnits.PopLast();
 	}
 
-	[[nodiscard]] constexpr bool Empty() const noexcept {return mRawUnicodeUnits.Empty();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return mRawUnicodeUnits.Empty();}
 
-    constexpr index_t PopFirstCount(ClampedSize maxCharsToPop) requires(sizeof(CodeUnit) == sizeof(char32_t))
-    {
-        return mRawUnicodeUnits.PopFirstCount(maxCharsToPop);
-    }
+	INTRA_FORCEINLINE constexpr index_t PopFirstCount(ClampedSize maxCharsToPop) requires(sizeof(CodeUnit) == sizeof(char32_t))
+	{
+		return mRawUnicodeUnits.PopFirstCount(maxCharsToPop);
+	}
 
 	constexpr index_t PopFirstCodeUnits(ClampedSize maxCodeUnitsToPop)
 	{
@@ -87,7 +93,7 @@ public:
 		return mRawUnicodeUnits.PopFirstCount(maxCodeUnitsToPop);
 	}
 
-	constexpr index_t PopLastCodeUnits(ClampedSize maxCodeUnitsToPop)
+	constexpr index_t PopLastCodeUnits(ClampedSize maxCodeUnitsToPop) requires(!NullTerminated)
 	{
 		if constexpr(sizeof(CodeUnit) == sizeof(char))
 			INTRA_PRECONDITION(maxCodeUnitsToPop >= RawUnicodeUnits().Length() ||
@@ -98,65 +104,44 @@ public:
 		return mRawUnicodeUnits.PopFirstCount(maxCodeUnitsToPop);
 	}
 
-    [[nodiscard]] constexpr GenericStringView DropCodeUnits(ClampedSize count) const
-    {
+	[[nodiscard]] INTRA_FORCEINLINE constexpr GenericStringView DropCodeUnits(ClampedSize count) const
+	{
 		auto result = *this;
 		result.PopFirstCodeUnits(count);
-        return result;
-    }
+		return result;
+	}
 
-	[[nodiscard]] constexpr GenericStringView DropLastCodeUnits(ClampedSize count) const
+	[[nodiscard]] INTRA_FORCEINLINE constexpr GenericStringView DropLastCodeUnits(ClampedSize count) const
 	{
-	    return GenericStringView(Unsafe, mRawUnicodeUnits|DropLast(count));
+		return GenericStringView<CodeUnit, false>(Unsafe, mRawUnicodeUnits|DropLast(count));
 	}
 
 	[[nodiscard]] constexpr GenericStringView TakeCodeUnits(ClampedSize count) const
 	{
-		if constexpr(sizeof(CodeUnit) == sizeof(char))
-			tailCodeUnits = tailCodeUnits|DropLastWhile(Unicode::IsUtf8ContinuationByte);
-		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
-			tailCodeUnits = tailCodeUnits|DropLastWhile(Unicode::IsUtf16LeadingSurrogate);
-	    return GenericStringView(Unsafe, mRawUnicodeUnits|Take(count));
+		auto res = mRawUnicodeUnits|Take(count);
+		if constexpr(CSameSize<CodeUnit, char>) res|PopLastWhile(Unicode::IsUtf8ContinuationByte);
+		else if constexpr(CSameSize<CodeUnit, char16_t>) res.Begin += Unicode::IsUtf16LeadingSurrogate;
+		return GenericStringView(Unsafe, res);
 	}
 
 	[[nodiscard]] constexpr GenericStringView TailCodeUnits(ClampedSize count) const
 	{
-		auto tailCodeUnits = mRawUnicodeUnits|Tail(count);
-		if constexpr(sizeof(CodeUnit) == sizeof(char))
-			tailCodeUnits = tailCodeUnits|DropWhile(Unicode::IsUtf8ContinuationByte);
-		else if constexpr(sizeof(CodeUnit) == sizeof(char16_t))
-			tailCodeUnits = tailCodeUnits|DropWhile(Unicode::IsUtf16TrailingSurrogate);
-	    return GenericStringView(Unsafe, tailCodeUnits);
+		auto res = mRawUnicodeUnits|Tail(count);
+		if constexpr(CSameSize<CodeUnit, char>) res|PopFirstWhile(Unicode::IsUtf8ContinuationByte);
+		else if constexpr(CSameSize<CodeUnit, char16_t>) res.Begin += Unicode::IsUtf16TrailingSurrogate(res.First());
+		return GenericStringView(Unsafe, res);
 	}
 };
-using StringView = GenericStringView<char>;
+using StringView = GenericStringView<char, false>;
+using ZStringView = GenericStringView<char, true>;
 
 inline namespace Literals {
-[[nodiscard]] constexpr StringView operator""_v(const char* str, size_t len) noexcept
-{
-	return StringView(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_v(const wchar_t* str, size_t len) noexcept
-{
-	return GenericStringView(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_v(const char16_t* str, size_t len) noexcept
-{
-	return GenericStringView(Unsafe, str, len);
-}
-
-[[nodiscard]] constexpr auto operator""_v(const char32_t* str, size_t len) noexcept
-{
-	return GenericStringView(Unsafe, str, len);
-}
-
+[[nodiscard]] constexpr ZStringView operator""_v(const char* str, size_t len) noexcept {return ZStringView(Unsafe, str, len);}
+[[nodiscard]] constexpr auto operator""_v(const wchar_t* str, size_t len) noexcept {return GenericStringView<wchar_t, true>(Unsafe, str, len);}
+[[nodiscard]] constexpr auto operator""_v(const char16_t* str, size_t len) noexcept {return GenericStringView<char16_t, true>(Unsafe, str, len);}
+[[nodiscard]] constexpr auto operator""_v(const char32_t* str, size_t len) noexcept {return GenericStringView<char32_t, true>(Unsafe, str, len);}
 #ifdef __cpp_char8_t
-[[nodiscard]] constexpr auto operator""_v(const char8_t* str, size_t len) noexcept
-{
-	return GenericStringView(Unsafe, str, len);
-}
+[[nodiscard]] constexpr auto operator""_v(const char8_t* str, size_t len) noexcept {return GenericStringView<char8_t, true>(Unsafe, str, len);}
 #endif
 }
 

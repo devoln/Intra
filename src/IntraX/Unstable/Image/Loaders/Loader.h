@@ -10,7 +10,7 @@ namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_NO_VIRTUAL_DESTRUCTOR
 INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
 class AnyImage;
-enum class FileFormat: byte {JPEG, BMP, GIF, TIFF, DDS, PNG, TGA, KTX, Unknown};
+enum class FileFormat: uint8 {JPEG, BMP, GIF, TIFF, DDS, PNG, TGA, KTX, Unknown};
 
 class AImageLoader: public GloballyRegistered<AImageLoader>
 {
@@ -75,21 +75,6 @@ public:
 #endif
 };
 
-
-class LoaderGIF: public AImageLoader
-{
-	LoaderGIF() {}
-public:
-	ImageInfo GetInfo(IInputStream& stream) const override;
-	AnyImage Load(IInputStream& stream) const override;
-	bool IsValidHeader(const void* header, size_t headerSize) const override;
-	FileFormat FileFormatOfLoader() const override {return FileFormat::GIF;}
-
-#ifndef INTRA_NO_GIF_LOADER
-	//static const LoaderGIF Instance;
-#endif
-};
-
 class LoaderJPEG: public AImageLoader
 {
 public:
@@ -114,19 +99,6 @@ public:
 
 #ifndef INTRA_NO_PNG_LOADER
 	static const LoaderPNG Instance;
-#endif
-};
-
-class LoaderTIFF: public AImageLoader
-{
-public:
-	ImageInfo GetInfo(IInputStream& stream) const override;
-	AnyImage Load(IInputStream& stream) const override;
-	bool IsValidHeader(const void* header, size_t headerSize) const override;
-	FileFormat FileFormatOfLoader() const override {return FileFormat::TIFF;}
-
-#ifndef INTRA_NO_TIFF_LOADER
-	//static const LoaderTIFF Instance;
 #endif
 };
 

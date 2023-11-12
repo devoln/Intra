@@ -9,7 +9,7 @@
 #include "IntraX/Container/Sequential/String.h"
 
 namespace Intra { INTRA_BEGIN
-typedef Delegate<void(FormattedWriter&)> TestFunction;
+using TestFunction = Delegate<void(FormattedWriter&)>;
 
 class TestGroup
 {

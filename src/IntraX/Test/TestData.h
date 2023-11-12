@@ -18,17 +18,13 @@ template<size_t N> struct Big
 };
 
 
-template<typename T> Requires<
-	CBasicIntegral<T>
-> GenerateRandomValue(T& dst)
+template<CBasicIntegral T> void GenerateRandomValue(T& dst)
 {
 	auto rand = FastUniform<T>(unsigned(size_t(&dst)));
 	dst = rand();
 }
 
-template<typename T> Requires<
-	CBasicFloatingPoint<T>
-> GenerateRandomValue(T& dst)
+template<CBasicFloatingPoint T> void GenerateRandomValue(T& dst)
 {
 	auto rand = FastUniform<T>(unsigned(&dst));
 	dst = rand()*1000;
@@ -75,8 +71,8 @@ template<typename S> S GenerateRandomString(size_t len)
 	for(char& c: result)
 	{
 		const int v = rand(62);
-		if(v<10) c = char('0' + v);
-		else if(v<36) c = char('A' + v - 10);
+		if(v < 10) c = char('0' + v);
+		else if(v < 36) c = char('A' + v - 10);
 		else c = char('a' + v - 36);
 	}
 	return result;

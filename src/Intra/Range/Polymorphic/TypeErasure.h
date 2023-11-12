@@ -15,7 +15,7 @@ template<size_t MaxSize, typename TItem = char> struct LocalStorage
 	constexpr LocalStorage(TConstructT<T>, Args&&... args) {new(Construct, mBuf) T(INTRA_FWD(args)...);}
 
 	~LocalStorage() = default;
-	INTRA_CONSTEXPR_DESTRUCTOR ~LocalStorage() requires CHasVirtualDestructor<TItem>
+	constexpr ~LocalStorage() requires CHasVirtualDestructor<TItem>
 	{
 		reinterpret_cast<TItem*>(mBuf)->~TItem();
 	}
@@ -57,7 +57,7 @@ template<class A, typename TItem = char> struct DynamicStorage
 	constexpr index_t Capacity() const {return 1;}
 
 private:
-	[[no_unique_address]] A Allocator;
+	INTRA_NO_UNIQUE_ADDRESS A Allocator;
 };
 
 template<class A, typename TItem = char> struct DynamicArrayStorage
@@ -76,13 +76,13 @@ template<class A, typename TItem = char> struct DynamicArrayStorage
 	constexpr index_t Capacity() const {return sizeof(Buf)/sizeof(TItem);}
 
 private:
-	[[no_unique_address]] A Allocator;
+	INTRA_NO_UNIQUE_ADDRESS A Allocator;
 };
 
 template<size_t MaxSizeInBytes, class A> struct SboStorage
 {
 	LocalStorage<MaxSizeInBytes> Local;
-	[[no_unique_address]] DynamicStorage<A> Dynamic;
+	INTRA_NO_UNIQUE_ADDRESS DynamicStorage<A> Dynamic;
 };
 
 namespace z_D {
@@ -154,14 +154,15 @@ template<typename T, typename R, typename PARENT> struct ImplRange: PARENT
 	template<CList L> ImplRange(L&& list): mRange(RangeOf(INTRA_FWD(list))) {}
 
 	using TP = TSelect<TRemoveReference<T>*, T, CReference<T>>;
-	INTRA_CONSTEXPR_VIRTUAL size_t Read(TP* dst, size_t maxElements) final
+	constexpr size_t Read(TP* dst, size_t maxElements) final
 	{
+		if(!dst) return size_t(mRange|Intra::PopFirstCount(maxElements));
 		auto copy = CopyTo(Span<TP>(Unsafe, dst, maxElements));
 		if constexpr(CReference<T>) return size_t(mRange|Map(AddressOf)|copy);
 		else return size_t(mRange|copy);
 	}
 
-	INTRA_CONSTEXPR_VIRTUAL bool TryFirst(TP* dst) const final
+	constexpr bool TryFirst(TP* dst) const final
 	{
 		if(mRange.Empty()) return false;
 		if constexpr(CReference<T>) *dst = &mRange.First();
@@ -169,9 +170,9 @@ template<typename T, typename R, typename PARENT> struct ImplRange: PARENT
 		return true;
 	}
 
-	INTRA_CONSTEXPR_VIRTUAL size_t PopFirstCount(size_t maxElementsToPop) final
+	constexpr size_t PopFirstCount(size_t maxElementsToPop) final
 	{
-		return size_t(mRange|Intra::PopFirstCount(maxElementsToPop));
+		
 	}
 };
 
@@ -266,7 +267,7 @@ template<typename T, class TFor> struct RangeWrapper
 		return index_t(range()->PopFirstCount(maxElementsToPop));
 	}
 
-	template<COutputOf<T> O> constexpr index_t ReadWrite(O&& dst)
+	template<COutputOf<T> O> constexpr index_t StreamTo(O&& dst)
 	{
 		size_t res = 0;
 		if constexpr(CArrayList<O> && CSame<TArrayListValue<O>, T> && CRange<O>)

@@ -1,15 +1,13 @@
 ﻿#pragma once
 
-#include "Intra/Functional.h"
-#include "Intra/Range/Concepts.h"
+#include <Intra/Core.h>
+#include <Intra/Concepts.h>
 
 namespace Intra { INTRA_BEGIN
-template<typename R, typename P = decltype(Less)> [[nodiscard]] constexpr Requires<
-	CConsumableRange<R>,
-bool> IsSorted(R&& range, P comparer = FLess)
+template<CConsumableRange R, class P = decltype(Less)> [[nodiscard]] constexpr bool IsSorted(R&& range, P comparer = Less)
 {
 	if(range.Empty()) return true;
-	R rangeCopy = Forward<R>(range);
+	R rangeCopy = INTRA_FWD(range);
 	TRangeValue<R> prev;
 	auto cur = rangeCopy.First();
 	rangeCopy.PopFirst();
@@ -22,12 +20,4 @@ bool> IsSorted(R&& range, P comparer = FLess)
 	}
 	return true;
 }
-
-template<typename R, typename P = decltype(Less),
-	typename AsR = TRangeOfRef<R>
-> [[nodiscard]] constexpr Requires<
-	!CRange<R> &&
-	CNonInfiniteForwardRange<AsR>,
-bool> IsSorted(R&& range, P comparer = FLess)
-{return IsSorted(ForwardAsRange<R>(range), comparer);}
 } INTRA_END

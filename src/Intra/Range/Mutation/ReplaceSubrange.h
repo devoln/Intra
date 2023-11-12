@@ -34,46 +34,29 @@ TTakeResult<OR>> MultiReplaceAdvanceToAdvance(R& src, OR& dstBuffer, const RR& r
 	return Take(resultStart, index);
 }
 
-template<class R, class OR, class RR> constexpr Requires<
-	CNonInfiniteForwardList<R> &&
-	COutput<OR> &&
-	CNonInfiniteForwardList<RR>,
-TTakeResult<OR>> MultiReplaceToAdvance(R&& range,
-	OR& dstBuffer, RR&& replacementSubranges)
+template<CNonInfiniteForwardList R, COutput OR, CNonInfiniteForwardList RR>
+constexpr TTakeResult<OR> MultiReplaceToAdvance(R&& range, OR& dstBuffer, RR&& replacementSubranges)
 {
-	auto rangeCopy = ForwardAsRange<R>(range);
+	auto rangeCopy = RangeOf(INTRA_FWD(range));
 	return MultiReplaceAdvanceToAdvance(rangeCopy,
 		dstBuffer, ForwardAsRange<RR>(replacementSubranges));
 }
 
-template<class R, class OR, class RR> constexpr inline Requires<
-	CNonInfiniteForwardList<R> &&
-	CAsOutputRange<OR> &&
-	CNonInfiniteForwardList<RR>,
-TTakeResult<TRangeOfRef<OR&&>>> MultiReplaceTo(R&& range,
-	OR&& dstBuffer, RR&& replacementSubranges)
+template<CNonInfiniteForwardList R, CAsOutputRange OR, CNonInfiniteForwardList RR>
+constexpr TTakeResult<TRangeOfRef<OR&&>> MultiReplaceTo(R&& range, OR&& dstBuffer, RR&& replacementSubranges)
 {
-	auto dstRangeCopy = ForwardAsRange<OR>(dstBuffer);
-	return MultiReplaceToAdvance(ForwardAsRange<R>(range),
-		dstRangeCopy, ForwardAsRange<RR>(replacementSubranges));
+	auto dstRangeCopy = RangeOf(INTRA_FWD(dstBuffer));
+	return MultiReplaceToAdvance(RangeOf(INTRA_FWD(range)), dstRangeCopy, RangeOf(INTRA_FWD(replacementSubranges)));
 }
 
-template<typename R, typename OR, typename LR, typename RR,
-	typename SubstitutionRangeOfTupleOfRanges, typename UnknownSubstitutionRange>
-constexpr Requires<
-	CNonInfiniteForwardList<R> &&
-	COutput<OR> &&
-	CCopyConstructible<OR> &&
-	CNonInfiniteForwardRange<LR> &&
-	CNonInfiniteForwardRange<RR> &&
-	CNonInfiniteForwardRange<SubstitutionRangeOfTupleOfRanges> &&
-	CNonInfiniteForwardRange<UnknownSubstitutionRange>,
-TTakeResult<TRangeOfRef<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
+template<CNonInfiniteForwardList R, COutput OR, CNonInfiniteForwardRange LR, CNonInfiniteForwardRange RR,
+	CNonInfiniteForwardRange SubstitutionRangeOfTupleOfRanges, CNonInfiniteForwardRange UnknownSubstitutionRange> requires CCopyConstructible<OR>
+constexpr TTakeResult<TRangeOfRef<R>>> MultiSubstituteTo(R&& range, OR& dstBuffer,
 	const LR& entryStart, const RR& entryEnd,
 	const SubstitutionRangeOfTupleOfRanges& substitutions,
 	const UnknownSubstitutionRange& unknownSubstitution)
 {
-	auto src = ForwardAsRange<R>(range);
+	auto src = RangeOf(INTRA_FWD(range));
 	size_t index = 0;
 	auto resultBufferStart = dstBuffer;
 	while(WriteTo(TakeUntilAdvance(src, entryStart, &index), dstBuffer), !src.Empty())

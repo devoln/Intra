@@ -116,7 +116,7 @@ BasicFileMapping::BasicFileMapping(StringView fileName,
 		return;
 	}
 #else
-	int fd = open(fullFileName.CStr(), writeAccess? O_RDONLY: O_RDWR);
+	int fd = open(fullFileName.CStr(), writeAccess? O_RDWR: O_RDONLY);
 	if(fd <= 0)
 	{
 		detail::ProcessLastError(err, "Cannot open file " + fileName + " for mapping: ", INTRA_SOURCE_INFO);

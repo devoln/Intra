@@ -41,24 +41,24 @@ public:
 
 	void NextField(TextSerializerParams::TypeFlags typeFlag)
 	{
-		if(typeFlag & TextSerializerParams::TypeFlags_Struct)
+		if(typeFlag & TextSerializerParams::TypeFlags::Struct)
 		{
-			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Struct);
+			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags::Struct);
 			CopyToAdvanceByOne(Lang.FieldSeparator, Output);
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_Tuple)
+		if(typeFlag & TextSerializerParams::TypeFlags::Tuple)
 		{
-			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Tuple);
+			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags::Tuple);
 			CopyToAdvanceByOne(Lang.TupleFieldSeparator, Output);
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_Array)
+		if(typeFlag & TextSerializerParams::TypeFlags::Array)
 		{
-			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_Array);
+			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags::Array);
 			CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
 		}
-		if(typeFlag & TextSerializerParams::TypeFlags_StructArray)
+		if(typeFlag & TextSerializerParams::TypeFlags::StructArray)
 		{
-			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags_StructArray);
+			INTRA_DEBUG_ASSERT(typeFlag == TextSerializerParams::TypeFlags::StructArray);
 			CopyToAdvanceByOne(Lang.ArrayElementSeparator, Output);
 		}
 		EndField(typeFlag);
@@ -72,9 +72,9 @@ public:
 			return;
 		}
 		CopyToAdvanceByOne(Params.LineEnding, Output);
-		if((Params.UseTabs & typeFlag)==0) return;
-		for(int i=0; i<NestingLevel; i++)
-			CopyToAdvanceByOne(Params.TabChars, Output);
+		if((Params.Indent & typeFlag) == TextSerializerParams::TypeFlags::None) return;
+		for(int i = 0; i < NestingLevel; i++)
+			CopyToAdvanceByOne(Params.IndentationLevel, Output);
 	}
 
 	void FieldAssignmentBeginning(StringView name)
@@ -89,13 +89,13 @@ public:
 
 		CopyToAdvanceByOne(Lang.LeftAssignmentOperator, Output);
 
-		if(Params.UseAssignmentSpaces && Lang.LeftAssignmentOperator!=nullptr)
+		if(Params.UseAssignmentSpaces && !Lang.LeftAssignmentOperator.Empty())
 			Output.Put(' ');
 	}
 
 	void FieldAssignmentEnding(StringView name)
 	{
-		INTRA_PRECONDITION(name != nullptr);
+		INTRA_PRECONDITION(!name.Empty());
 
 		if(Params.UseAssignmentSpaces)
 			Output.Put(' ');
@@ -110,51 +110,49 @@ public:
 		CopyToAdvanceByOne(Lang.RightFieldNameEndQuote, Output);
 	}
 
-	void StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct)
+	void StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags::Struct)
 	{
-		auto openStr = (type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceOpen: Lang.TupleOpen;
+		auto openStr = (type & TextSerializerParams::TypeFlags::Struct)? Lang.StructInstanceOpen: Lang.TupleOpen;
 		CopyToAdvanceByOne(openStr, Output);
 		NestingLevel++;
 		EndField(type);
 	}
 
-	void StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags_Struct)
+	void StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags type=TextSerializerParams::TypeFlags::Struct)
 	{
 		NestingLevel--;
 		EndField(type);
-		auto closeStr = (type & TextSerializerParams::TypeFlags_Struct)? Lang.StructInstanceClose: Lang.TupleClose;
+		auto closeStr = (type & TextSerializerParams::TypeFlags::Struct)? Lang.StructInstanceClose: Lang.TupleClose;
 		CopyToAdvanceByOne(closeStr, Output);
 	}
 
 	/// Сериализовать кортеж
-	template<typename Tuple> Requires<
-		CHasForEachField<Tuple, GenericTextSerializerStructVisitor<O>> &&
-		!CHasReflectionFieldNamesMethod<Tuple>
-	> SerializeTuple(Tuple&& src, Span<const StringView> fieldNames = nullptr)
+	template<CHasForEachField<GenericTextSerializerStructVisitor<O>> Tuple> requires (!CHasReflectionFieldNamesMethod<Tuple>)
+	void SerializeTuple(Tuple&& src, Span<const StringView> fieldNames = {})
 	{
-		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Tuple);
-		if((Params.ValuePerLine & TextSerializerParams::TypeFlags_Tuple) == 0)
+		StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags::Tuple);
+		if((Params.ValuePerLine & TextSerializerParams::TypeFlags::Tuple) == 0)
 			fieldNames = nullptr;
 		GenericTextSerializerStructVisitor<O> visitor = {this,
-			false, fieldNames, TextSerializerParams::TypeFlags_Tuple};
+			false, fieldNames, TextSerializerParams::TypeFlags::Tuple};
 		ForEachField(src, visitor);
-		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Tuple);
+		StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags::Tuple);
 	}
 
 
 	/// Сериализатор как функтор
-	template<typename T> INTRA_FORCEINLINE GenericTextSerializer& operator()(T&& v) {return *this << Forward<T>(v);}
+	template<typename T> INTRA_FORCEINLINE GenericTextSerializer& operator()(T&& v) {return *this << INTRA_FWD(v);}
 
 	/// Вычислить размер объекта в сериализованном виде в байтах
 	template<typename T> size_t SerializedSizeOf(T&& v) const
 	{
-		GenericTextSerializer<CountRange<char>> dummy(Lang, Params, CountRange<char>());
+		GenericTextSerializer<RCounter<char>> dummy(Lang, Params, RCounter<char>());
 		dummy.NestingLevel = NestingLevel;
-		dummy << Forward<T>(v);
+		dummy << INTRA_FWD(v);
 		return dummy.Output.Counter;
 	}
 
-	void ResetOutput(const O& output) {Output=output; NestingLevel=0;}
+	void ResetOutput(const O& output) {Output = output; NestingLevel = 0;}
 
 	TextSerializerParams Params;
 	LanguageParams Lang;
@@ -162,8 +160,8 @@ public:
 	O Output;
 };
 
-typedef GenericTextSerializer<SpanOutput<char>> TextSerializer;
-typedef GenericTextSerializer<CountRange<char>> DummyTextSerializer;
+using TextSerializer = GenericTextSerializer<SpanOutput<char>>;
+using DummyTextSerializer = GenericTextSerializer<RCounter<char>>;
 
 template<typename O> template<typename T> GenericTextSerializerStructVisitor<O>&
 	GenericTextSerializerStructVisitor<O>::operator()(T&& t)
@@ -178,7 +176,7 @@ template<typename O> template<typename T> GenericTextSerializerStructVisitor<O>&
 	if(!FieldNames.Empty())
 		Me->FieldAssignmentBeginning(StringView(FieldNames.First()));
 
-	*Me << Forward<T>(t);
+	*Me << INTRA_FWD(t);
 
 	if(!FieldNames.Empty() && Me->Lang.AddFieldNameAfterAssignment)
 		Me->FieldAssignmentEnding(StringView(FieldNames.First()));
@@ -193,13 +191,13 @@ template<typename T, typename O> INTRA_FORCEINLINE Requires<
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T&& src)
 {
 	auto fieldNames = TRemoveConstRef<T>::ReflectionFieldNames();
-	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags_Struct);
+	serializer.StructInstanceDefinitionBegin(TextSerializerParams::TypeFlags::Struct);
 	if(!serializer.Params.FieldAssignments && !serializer.Lang.RequireFieldAssignments)
 		fieldNames = nullptr;
 	GenericTextSerializerStructVisitor<O> visitor = {&serializer,
-		false, fieldNames, TextSerializerParams::TypeFlags_Struct};
-	ForEachField(Forward<T>(src), visitor);
-	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags_Struct);
+		false, fieldNames, TextSerializerParams::TypeFlags::Struct};
+	INTRA_FWD(src)|ForEachField(visitor);
+	serializer.StructInstanceDefinitionEnd(TextSerializerParams::TypeFlags::Struct);
 	return serializer;
 }
 
@@ -215,67 +213,58 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, Tupl
 
 
 /// Сериализация целых чисел
-template<typename T, typename O> Requires<
-	CBasicIntegral<T>,
-GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
+template<CBasicIntegral T, typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, T v)
 {
 	serializer.Output << v;
 	return serializer;
 }
 
 /// Сериализация чисел с плавающей запятой
-template<typename T, typename O> Requires<
-	CBasicFloatingPoint<T>,
-GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
+template<CBasicFloatingPoint T, typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, T v)
 {
-	ToString(serializer.Output, v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
+	ToString(serializer.Output, v, sizeof(T) <= 4? 7: 15, serializer.Lang.DecimalSeparator);
 	return serializer;
 }
 
 /// Сериализовать булевое значение
-template<typename O> INTRA_FORCEINLINE GenericTextSerializer<O>& operator<<(
-	GenericTextSerializer<O>& serializer, bool v)
+template<typename O> INTRA_FORCEINLINE GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, bool v)
 {
-	INTRA_DEBUG_ASSERT(int(v) <= 1 && "Invalid bool value!");
-	CopyToAdvanceByOne(serializer.Lang.FalseTrueNames[v!=false], serializer.Output);
+	INTRA_DEBUG_ASSERT(int(v) <= 1 && "invalid bool value!");
+	CopyToAdvanceByOne(serializer.Lang.FalseTrueNames[v], serializer.Output);
 	return serializer;
 }
 
 /// Сериализовать диапазон
-template<typename R, typename O> INTRA_FORCEINLINE Requires<
-	CConsumableList<R> &&
-	!CCharList<R>,
-GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, R&& r)
+template<CConsumableList L, typename O> requires (!CCharList<R>)
+INTRA_FORCEINLINE GenericTextSerializer<O>& operator<<(GenericTextSerializer<O>& serializer, L&& list)
 {
 	CopyToAdvanceByOne(serializer.Lang.ArrayOpen, serializer.Output);
-	auto range = ForwardAsRange<R>(r);
+	auto range = RangeOf(INTRA_FWD(list));
 	if(!range.Empty())
 	{
-		typedef TListValue<R> T;
+		using T = TListValue<L>;
 		
-		bool TypeIsSimpleArray = CBasicArithmetic<T> ||
-			CBasicPointer<T> || CCharList<T>;
+		constexpr bool TypeIsSimpleArray = CBasicArithmetic<T> || CBasicPointer<T> || CCharList<T>;
 
-		const int nestLevelUp = int(!TypeIsSimpleArray &&
-			serializer.Lang.ArrayOpen!=nullptr && serializer.Lang.ArrayClose!=nullptr);
+		const int nestLevelUp = int(!TypeIsSimpleArray && !serializer.Lang.ArrayOpen.Empty() && !serializer.Lang.ArrayClose.Empty());
 		serializer.NestingLevel += nestLevelUp;
 		if(!TypeIsSimpleArray && !serializer.Lang.StructInstanceOpen.Empty())
-			serializer.EndField(TextSerializerParams::TypeFlags_StructArray);
+			serializer.EndField(TextSerializerParams::TypeFlags::StructArray);
 
 		serializer << range.First();
 		range.PopFirst();
 		while(!range.Empty())
 		{
 			serializer.NextField(TypeIsSimpleArray?
-				TextSerializerParams::TypeFlags_Array:
-				TextSerializerParams::TypeFlags_StructArray);
+				TextSerializerParams::TypeFlags::Array:
+				TextSerializerParams::TypeFlags::StructArray);
 			serializer << range.First();
 			range.PopFirst();
 		}
 
 		serializer.NestingLevel -= nestLevelUp;
 		if(!TypeIsSimpleArray && !serializer.Lang.StructInstanceClose.Empty())
-			serializer.EndField(TextSerializerParams::TypeFlags_StructArray);
+			serializer.EndField(TextSerializerParams::TypeFlags::StructArray);
 	}
 	CopyToAdvanceByOne(serializer.Lang.ArrayClose, serializer.Output);
 	return serializer;
@@ -294,6 +283,6 @@ template<typename O> GenericTextSerializer<O>& operator<<(GenericTextSerializer<
 /// Сериализовать массив фиксированной длины или строковой литерал
 template<typename T, size_t N, typename O> INTRA_FORCEINLINE GenericTextSerializer<O>& operator<<(
 	GenericTextSerializer<O>& serializer, const T(&src)[N])
-{return serializer << SpanOf(src);}
+{return serializer << Span(src);}
 
 } INTRA_END

@@ -89,9 +89,9 @@ public:
 		return index_t(result);
 	}
 
-	index_t ReadWrite(Span<char>& dst, ErrorReporter err = IgnoreErrors)
+	index_t StreamTo(Span<char>& dst, ErrorReporter err = IgnoreErrors)
 	{
-		index_t totalBytesRead = Intra::ReadWrite(mBufferRest, dst);
+		index_t totalBytesRead = Intra::StreamTo(mBufferRest, dst);
 		if(!mBufferRest.Empty()) return totalBytesRead;
 
 		if(dst.Length() >= mBuffer.Length())
@@ -102,15 +102,15 @@ public:
 			totalBytesRead += index_t(bytesRead);
 		}
 		loadBuffer(err);
-		totalBytesRead += Intra::ReadWrite(mBufferRest, dst);
+		totalBytesRead += Intra::StreamTo(mBufferRest, dst);
 		return totalBytesRead;
 	}
 
 	template<typename AR> requires CSame<TArrayListValue<AR>, char> && (!CConst<AR>),
-	index_t ReadWrite(AR& dst, ErrorReporter err = IgnoreErrors)
+	index_t StreamTo(AR& dst, ErrorReporter err = IgnoreErrors)
 	{
 		Span<char> dstArr = SpanOf(dst);
-		const auto result = ReadWrite(dstArr, err);
+		const auto result = StreamTo(dstArr, err);
 		PopFirstExactly(dst, result);
 		return result;
 	}

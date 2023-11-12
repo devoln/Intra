@@ -63,7 +63,7 @@ char ConsoleInput::First() const
 #endif
 }
 
-index_t ConsoleInput::ReadWrite(Span<char>& dst)
+index_t ConsoleInput::StreamTo(Span<char>& dst)
 {
 #ifdef _WIN32
 	const auto dstLen = dst.Length();
@@ -84,7 +84,7 @@ char32_t ConsoleInput::GetChar()
 {
 #ifdef _WIN32
 	auto ch = _getwch();
-	return ch=='\r'? char32_t('\n'): char32_t(ch);
+	return ch == '\r'? char32_t('\n'): char32_t(ch);
 #else
 	termios oldt, newt;
 	tcgetattr(STDIN_FILENO, &oldt);

@@ -58,12 +58,12 @@ struct ConsoleOutStream
 			if(src.Empty()) return totalBytesToWrite;
 		}
 
-		const int wlen = MultiByteToWideChar(CP_UTF8, 0, src.Data(), int(src.Length()), nullptr, 0);
+		const int wlen = z_D::MultiByteToWideChar(65001, 0, src.Data(), int(src.Length()), nullptr, 0);
 		wchar_t wbuf[512];
 		GenericString<wchar_t> wsrc;
 		if(wlen > 512) wsrc.SetCountUninitialized(wlen);
 		auto wsrcPtr = wlen>512? wsrc.Data(): wbuf;
-		int wsrcLength = MultiByteToWideChar(CP_UTF8, 0, src.Data(), int(src.Length()), wsrcPtr, wlen);
+		int wsrcLength = z_D::MultiByteToWideChar(65001, 0, src.Data(), int(src.Length()), wsrcPtr, wlen);
 		DWORD written;
 		WriteConsoleW(HANDLE(mOutputHandle), wsrcPtr, DWORD(wsrcLength), &written, nullptr);
 		src.Begin = src.End;

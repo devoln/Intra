@@ -4,8 +4,8 @@
 #include "Intra/Assert.h"
 
 namespace Intra { INTRA_BEGIN
-void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Span<const StringView> comparedTypes,
-	Span<const double> set2Times, Span<const double> set1Times)
+void PrintPerformanceResults(FormattedWriter& logger, StringView testName,
+	Span<const StringView> comparedTypes, Span<const double> set2Times, Span<const double> set1Times)
 {
 	INTRA_DEBUG_ASSERT_EQUALS(comparedTypes.Length(), set1Times.Length() + set2Times.Length());
 	static const Vec3 set1Color = {0, 0, 0.75f},
@@ -16,7 +16,7 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Span<
 	logger.LineBreak();
 
 	logger.PushFont(Vec3(-1), -1, false, false, true);
-	logger.PrintLine("В тесте \"", testName, '"');
+	logger.PrintLine("In test \"", testName, '"');
 	logger.PopFont();
 
 	for(index_t i = 0; i < set2Times.Length(); i++)
@@ -51,7 +51,7 @@ void PrintPerformanceResults(FormattedWriter& logger, StringView testName, Span<
 	String timeStr;
 	for(index_t i = 0; i < comparedTypes.Length(); i++)
 	{
-		const bool isSet2Time = i<set2Times.Length();
+		const bool isSet2Time = i < Length(set2Times);
 		double time = isSet2Time? set2Times[i]: set1Times[i-set2Times.Length()];
 		logger.PushFont(isSet2Time? set2Color: set1Color, 3, true);
 		logger << comparedTypes[i];

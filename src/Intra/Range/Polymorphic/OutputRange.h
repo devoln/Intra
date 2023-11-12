@@ -38,7 +38,7 @@ public:
 	}
 
 	size_t PutAllAdvance(Span<const T>& src) final
-	{return ReadWrite(src, OriginalRange);}
+	{return src|StreamTo(OriginalRange);}
 
 	R OriginalRange;
 };

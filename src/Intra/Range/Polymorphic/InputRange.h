@@ -81,19 +81,17 @@ public:
 		return mInterface->PopFirstCount(count);
 	}
 
-	index_t ReadWrite(Span<value_type>& dst)
+	index_t StreamTo(Span<value_type>& dst)
 	{
 		if(mInterface == nullptr) return 0;
-		return mInterface->ReadWrite(dst);
+		return mInterface->StreamTo(dst);
 	}
 
-	template<typename AR> Requires<
-		CArrayRangeOfExactly<AR, value_type> &&
-		!CConst<AR>,
-	index_t> ReadWrite(AR& dst)
+	template<CArrayRangeOfExactly<value_type> AR> requires(!CConst<AR>)
+	index_t StreamTo(AR& dst)
 	{
 		Span<value_type> dstArr = SpanOf(dst);
-		size_t result = ReadWrite(dstArr);
+		size_t result = StreamTo(dstArr);
 		PopFirstExactly(dst, result);
 		return result;
 	}

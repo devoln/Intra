@@ -10,7 +10,7 @@ INTRA_PUSH_DISABLE_ALL_WARNINGS
 #endif
 struct IUnknown;
 #include <OleCtl.h>
-#include <gdiplus.h> //Supports BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, и EMF. Doesn't work on WinRT \ Windows Phone
+#include <gdiplus.h> //Supports BMP, GIF, JPEG, PNG, TIFF, Exif, WMF, Рё EMF. Doesn't work on WinRT \ Windows Phone
 
 #ifdef _MSC_VER
 #pragma comment(lib, "gdiplus.lib")
@@ -18,7 +18,7 @@ struct IUnknown;
 INTRA_WARNING_POP
 
 namespace Intra { INTRA_BEGIN
-//Загрузить изображение из BMP, JPG или GIF файла
+//Р—Р°РіСЂСѓР·РёС‚СЊ РёР·РѕР±СЂР°Р¶РµРЅРёРµ РёР· BMP, JPG РёР»Рё GIF С„Р°Р№Р»Р°
 AnyImage LoadWithPlatform(IInputStream& stream)
 {
 	if(stream.Empty()) return nullptr;
@@ -37,7 +37,7 @@ AnyImage LoadWithPlatform(IInputStream& stream)
 	};
 	static InitGDIP sInitGDIP;
 
-	//Мы не знаем размер потока, поэтому считываем его целиком в global-память, которая нужна для создания потока GDI+
+	//РњС‹ РЅРµ Р·РЅР°РµРј СЂР°Р·РјРµСЂ РїРѕС‚РѕРєР°, РїРѕСЌС‚РѕРјСѓ СЃС‡РёС‚С‹РІР°РµРј РµРіРѕ С†РµР»РёРєРѕРј РІ global-РїР°РјСЏС‚СЊ, РєРѕС‚РѕСЂР°СЏ РЅСѓР¶РЅР° РґР»СЏ СЃРѕР·РґР°РЅРёСЏ РїРѕС‚РѕРєР° GDI+
 	size_t size = 1 << 20;
 	HGLOBAL glob = nullptr;
 	char* raw = nullptr;

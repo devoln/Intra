@@ -1,18 +1,10 @@
 #pragma once
 
-#include <Intra/Core.h>
+#include <Intra/Platform/Toolchain.h>
+#include <Intra/Numeric/Traits.h>
 
 namespace Intra { INTRA_BEGIN
-
-#if defined(_MSC_VER) && defined(__amd64__)
-namespace z_D { extern "C" {
-	uint64 _umul128(uint64 x, uint64 y, uint64* highProduct);
-	uint64 __shiftright128(uint64 lowPart, uint64 highPart, uint8 shift);
-	uint64 __shiftleft128(uint64 lowPart, uint64 highPart, uint8 shift);
-}}
-#endif
-
-constexpr uint64 Mul64to128(uint64 x, uint64 y, Out<uint64> hi)
+INTRA_FORCEINLINE constexpr uint64 Mul64To128(uint64 x, uint64 y, Out<uint64> hi)
 {
 #ifdef __SIZEOF_INT128__
 	const auto xy = uint128(x) * y;
@@ -37,7 +29,7 @@ constexpr uint64 Mul64to128(uint64 x, uint64 y, Out<uint64> hi)
 #endif
 }
 
-constexpr uint64 ShiftRight128UpTo64(uint64 lowPart, uint64 highPart, uint8 shift)
+constexpr uint64 ShiftRight128UpTo64(uint64 lowPart, uint64 highPart, int shift)
 {
 	INTRA_PRECONDITION(0 < shift && shift < 64);
 #ifdef __SIZEOF_INT128__
@@ -51,7 +43,7 @@ constexpr uint64 ShiftRight128UpTo64(uint64 lowPart, uint64 highPart, uint8 shif
 #endif
 }
 
-constexpr uint64 ShiftLeft128UpTo64(uint64 lowPart, uint64 highPart, uint8 shift)
+constexpr uint64 ShiftLeft128UpTo64(uint64 lowPart, uint64 highPart, int shift)
 {
 	INTRA_PRECONDITION(0 < shift && shift < 64);
 #ifdef __SIZEOF_INT128__
@@ -67,9 +59,13 @@ constexpr uint64 ShiftLeft128UpTo64(uint64 lowPart, uint64 highPart, uint8 shift
 
 constexpr uint64 MulHighPart(uint64 x, uint64 y)
 {
+#if defined(_MSC_VER) && (defined(__amd64__) || defined(__aarch64__))
+	return z_D::__umulh(x, y);
+#else
 	uint64 res = 0;
-	Mul64to128(x, y, Out(res));
+	Mul64To128(x, y, Out(res));
 	return res;
+#endif
 }
 
 constexpr uint32 MulShift(uint32 m, uint64 factor, int shift)
@@ -79,17 +75,15 @@ constexpr uint32 MulShift(uint32 m, uint64 factor, int shift)
 	const uint32 factorHi = uint32(factor >> 32);
 	const uint64 bits0 = uint64(m) * factorLo;
 	const uint64 bits1 = uint64(m) * factorHi;
-	if constexpr(sizeof(size_t) == 8)
+	if constexpr(sizeof(WidestFastInt) >= 8)
 	{
 		const uint64 sum = (bits0 >> 32) + bits1;
 		const uint64 shiftedSum = sum >> (shift - 32);
 		INTRA_POSTCONDITION(shiftedSum <= MaxValueOf<uint32>);
 		return uint32(shiftedSum);
 	}
-	else
+	else // Avoid a 64-bit right shift since we only need the upper 32 bits of the result and the shift value is > 32.
 	{
-		// On 32-bit platforms we can avoid a 64-bit shift-right since we only
-		// need the upper 32 bits of the result and the shift value is > 32.
 		const uint32 bits0Hi = uint32(bits0 >> 32);
 		uint32 bits1Lo = uint32(bits1);
 		uint32 bits1Hi = uint32(bits1 >> 32);
@@ -98,6 +92,18 @@ constexpr uint32 MulShift(uint32 m, uint64 factor, int shift)
 		const int s = shift - 32;
 		return (bits1Hi << (32 - s)) | (bits1Lo >> s);
 	}
+}
+
+constexpr uint64 MulShift64(uint64 m, uint64 factorLo, uint64 factorHi, int shift)
+{
+	INTRA_PRECONDITION(shift > 64);
+	uint64 bits0Hi = 0, bits1Hi = 0;
+	Mul64To128(m, factorLo, Out(bits0Hi));
+	uint64 bits1Lo = Mul64To128(m, factorHi, Out(bits1Hi));
+	bits1Lo += bits0Hi;
+	bits1Hi += (bits1Lo < bits0Hi);
+	const int s = shift - 64;
+	return (bits1Hi << (64 - s)) | (bits1Lo >> s);
 }
 
 } INTRA_END

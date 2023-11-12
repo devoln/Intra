@@ -9,7 +9,7 @@ struct AlignedSystemHeapAllocator
 	AlignedSystemHeapAllocator(size_t allocatorAlignment=16):
 		alignment(Max(allocatorAlignment, sizeof(void*)*2)) {}
 
-	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = SourceInfo());
+	AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = SourceInfo::Current());
 	void Free(void* ptr, size_t size);
 	size_t GetAlignment() const {return alignment;}
 
@@ -19,7 +19,7 @@ private:
 
 struct PageAllocator
 {
-	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = SourceInfo())
+	static AnyPtr Allocate(size_t& bytes, SourceInfo sourceInfo = SourceInfo::Current())
 	{
 		(void)sourceInfo;
 		size_t pageSize = VirtualMemoryPageSize();

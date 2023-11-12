@@ -1,132 +1,89 @@
 ﻿#pragma once
 
-#include "Intra/Reflection.h"
-
-#include "Intra/Core.h"
-#include "Intra/EachField.h"
-
-#include "Intra/Range/Span.h"
-
-#include "Intra/CContainer.h"
-#include "Intra/Range/Concepts.h"
-
-#include "Intra/Range/Operations.h"
-#include "Intra/Range/ForEach.h"
-
-#include "Intra/Range/Stream/RawWrite.h"
-#include "Intra/Range/Count.h"
-
-#include "IntraX/Utils/Endianess.h"
-#include "IntraX/Container/Operations/Info.h"
+#include <Intra/Concepts.h>
+#include <Intra/TypeErasure.h>
+#include <Intra/Container/Compound.h>
+#include <Intra/Range.h>
 
 namespace Intra { INTRA_BEGIN
-template<typename O> class GenericBinarySerializer
+class BinarySerializer
 {
 public:
-	template<typename... Args> GenericBinarySerializer(Args&&... output):
-		Output(Forward<Args>(output)...) {}
+	/// When serializer has no enough space to write, it calls this callback.
+	/// The callback is expected to return Span with more space (at least 16 bytes).
+	/// Possible implementations:
+	///  1. Resize the container receiving serialized data
+	///  2. Flush the buffer to a file/socket to allow filling it again (may be blocking in case of I/O)
+	///  3. Switch to another fiber to be able to continue serialization later (e.g. when socket becomes writable)
+	///  4. Throw an exception if it's impossible to grow the buffer
+	using FlushCallback = PCallable<Span<char>()>;
 
-	/// Serialize array.
-	template<typename T> Requires<
-		CTriviallySerializable<T>
-	> SerializeArray(Span<const T> v)
-	{
-		RawWrite<uint32LE>(Output, unsigned(v.Length()));
-		RawWriteFrom(Output, v);
-	}
-	template<typename T> Requires<
-		!CTriviallySerializable<T>
-	> SerializeArray(Span<const T> v) {SerializeRange(v);}
+	explicit BinarySerializer(Span<char> output, FlushCallback flush):
+		Output(output), Flush(INTRA_MOVE(flush)) {}
 
-	/// Serialize range.
-	template<typename R> void SerializeRange(R&& v)
+	void SerializeLength(uint64 len)
 	{
-		RawWrite<uint32LE>(Output, unsigned(Count(v)));
-		ForEach(Forward<R>(v), *this);
+		if(FreeBufferSpace() < 9) Output = RequestMoreSpace();
+		Output|PopFirstExactly(EncodeP8UintLEUnsafe(size_t(len), Output.Begin));
 	}
 
-
-	/// Serialize anything. To avoid unintended type changes it is recommended to use Serialize method instead with an explicitly specified type.
-	template<typename T> Requires<
-		CTriviallySerializable<T> &&
-		!CRange<T>,
-	GenericBinarySerializer&> operator<<(const T& v)
+	LResult<size_t> Write(Span<const char> src)
 	{
-		RawWrite<T>(Output, v);
-		return *this;
-	}
-	template<typename R> Requires<
-		CArrayList<R> &&
-		!CStaticArrayContainer<R>,
-	GenericBinarySerializer&> operator<<(R&& v)
-	{
-		SerializeArray(CSpanOf(v));
-		return *this;
-	}
-	template<typename T> Requires<
-		!CList<T> &&
-		CHasForEachField<const T&, GenericBinarySerializer&> &&
-		!CTriviallySerializable<T>,
-	GenericBinarySerializer&> operator<<(const T& src)
-	{
-		ForEachField(src, *this);
-		return *this;
+		write(src);
+		return src.Length();
 	}
 
-#if 0 //delete this if raw array serialization works without this code
-	template<typename T, size_t N> Requires<
-		CTriviallySerializable<T>,
-	GenericBinarySerializer&> operator<<(T(&src)[N])
+	template<CList L> void SerializeListWithoutLength(L&& list)
 	{
-		RawWriteFrom(Output, src, sizeof(T)*N);
-		return *this;
-	}
-	template<typename T, size_t N> Requires<
-		!CTriviallySerializable<T>,
-	GenericBinarySerializer&> operator<<(T(&src)[N])
-	{
-		ForEach(src, *this);
-		return *this;
-	}
-#endif
-
-	template<typename C, typename T=TArrayListValue<C>> Requires<
-		CStaticArrayContainer<C> &&
-		CTriviallySerializable<T>,
-	GenericBinarySerializer&> operator<<(C&& src)
-	{
-		RawWriteFrom(Output, SpanOf(src));
-		return *this;
-	}
-	template<typename C, typename T=TRangeValue<C>> Requires<
-		CStaticArrayContainer<C> &&
-		!CTriviallySerializable<T>,
-	GenericBinarySerializer&> operator<<(C&& src)
-	{
-		ForEach(src, *this);
-		return *this;
+		if constexpr(CConvertibleToSpan<L>) if constexpr(CTriviallySerializable<TListValue<L>>)
+		{
+			writeRaw(Span(list));
+			return;
+		}
+		INTRA_FWD(list)|ForEach(*this);
 	}
 
+	template<CList L> void SerializeList(L&& list)
+	{
+		SerializeLength(list|Count);
+		SerializeListWithoutLength(INTRA_FWD(list));
+	}
+
+	/// Serialize anything. To avoid unintended type changes it is recommended to use Serialize method with an explicitly specified type instead.
+	template<typename T> requires CList<T> || CStaticLengthContainer<T> || CTriviallySerializable<T>
+	BinarySerializer& operator<<(T&& v)
+	{
+		if constexpr(CList<T>) SerializeList(INTRA_FWD(v));
+		else if constexpr(CStaticLengthContainer<T>) ForEachField(*this)(v);
+		else if(CTriviallySerializable<T>) writeRaw(Span(Unsafe, &v, 1));
+		else static_assert(CFalse<T>);
+		return *this;
+	}
 
 	/// Serialize anything. This operator makes this class functor.
-	template<typename T> GenericBinarySerializer& operator()(T&& value)
-	{return *this << Forward<T>(value);}
+	template<typename T> auto operator()(T&& value) -> decltype(*this << INTRA_FWD(value)) {return *this << INTRA_FWD(value);}
 
 	/// Serialize anything.
-	/// It is recommended to use this operator instead of () or << and specify the type explicitly.
-	template<typename T> GenericBinarySerializer& Serialize(const T& value)
-	{return *this << value;}
+	/// It is recommended to use this method instead of () or << and specify the type explicitly.
+	template<typename T> BinarySerializer& Serialize(const TExplicitType<T>& value) {return *this << value;}
 
-	/// Calculate serialized size of a value without doing any serialization.
-	template<typename T> static size_t SerializedSizeOf(T&& value)
+	Span<char> Output;
+	FlushCallback Flush;
+
+private:
+	INTRA_NOINLINE void write(Span<const char> src)
 	{
-		GenericBinarySerializer<CountRange<byte>> dummy({});
-		dummy << Forward<T>(value);
-		return dummy.Output.Counter;
+		for(;;)
+		{
+			Advance(src)|WriteTo(Output);
+			if(src.Empty()) break;
+			Output = Flush();
+		}
 	}
 
-	O Output;
+	template<CTriviallySerializable T> INTRA_FORCEINLINE void writeRaw(Span<const T> src)
+	{
+		write(Span<const char>(Unsafe, reinterpret_cast<const char*>(src.Begin), reinterpret_cast<const char*>(src.End)));
+	}
 };
-using BinarySerializer = GenericBinarySerializer<SpanOutput<byte>>;
-using DummyBinarySerializer = GenericBinarySerializer<CountRange<byte>>;
 } INTRA_END

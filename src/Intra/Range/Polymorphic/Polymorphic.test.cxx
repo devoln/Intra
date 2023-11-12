@@ -1,18 +1,11 @@
-﻿#include "Intra/Functional.h"
-#include "Intra/Range/Reduce.h"
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Cycle.h"
-#include "Intra/Range/Map.h"
-#include "Intra/Range/Recurrence.h"
-#include "Intra/Range/Generate.h"
-#include "Intra/Range/Filter.h"
-#include "Intra/Range/Stream/ToString.h"
-#include "Intra/Range/Polymorphic/InputRange.h"
-#include "Intra/Range/Polymorphic/RandomAccessRange.h"
+﻿#include <Intra/Functional.h>
+#include <Intra/Range.h>
+#include <Intra/String.h>
+#include <Intra/TypeErasure.h>
 
 #include "IntraX/System/Debug.h"
-#include "IntraX/Container/Sequential/List.h"
-#include "IntraX/Unstable/Random/FastUniform.h"
+#include "Intra/Container/Array.h"
+#include "Intra/Math/Random.h"
 
 namespace Intra { INTRA_BEGIN
 

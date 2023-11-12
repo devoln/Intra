@@ -19,11 +19,10 @@ public:
 
 	OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, ErrorReporter err);
 	OsFile(StringView fileName, Mode mode, ErrorReporter err): OsFile(fileName, mode, false, err) {}
-	OsFile(decltype(nullptr)=nullptr): mHandle(nullptr), mMode(Mode::None), mOwning(false) {}
+	OsFile() = default;
 	~OsFile() {Close();}
 	
-	OsFile(OsFile&& rhs):
-		mHandle(rhs.mHandle), mMode(rhs.mMode), mOwning(rhs.mOwning)
+	OsFile(OsFile&& rhs): mHandle(rhs.mHandle), mMode(rhs.mMode), mOwning(rhs.mOwning)
 	{rhs.mHandle = nullptr; rhs.mOwning = false;}
 	
 	OsFile(const OsFile&) = delete;
@@ -38,67 +37,39 @@ public:
 	}
 	OsFile& operator=(const OsFile&) = delete;
 
-	bool operator==(decltype(nullptr)) const {return mHandle == nullptr;}
-	bool operator!=(decltype(nullptr)) const {return mHandle != nullptr;}
+	explicit operator bool() const {return mHandle != nullptr;}
 
-	INTRA_FORCEINLINE OsFile& operator=(decltype(nullptr)) {Close(); return *this;}
-
-	/// ������� ����, ��������������� � ���� ��������.
-	/// ������� ������ ��������� � nullptr ���������.
 	void Close();
 
-	/// ��������� ������ �� ����� �� ���������� ��������.
-	/// @param fileOffset �������� ������ ����������� ������ � �����.
-	/// @param data ��������� �� ������ ������������ �� ����� ����� ������.
-	/// @param bytes ������ ����������� ������ � ������.
-	/// @return ���������� ����������� ����.
 	size_t ReadData(uint64 fileOffset, void* data, size_t bytes, ErrorReporter err) const;
 	
-	/// ���������� ������ ����� ��� 0, ���� ��� �� ����.
 	uint64 Size(ErrorReporter err = IgnoreErrors) const;
 
-	/// �������� ������ � ���� �� ���������� ��������.
-	/// @param fileOffset �������� ������ ������������ ������ � �����.
-	/// @param data ��������� �� ������ ������������� � ���� ����� ������.
-	/// @param bytes ������ ������������ ������ � ������.
-	/// @return ���������� ���������� ����.
 	size_t WriteData(uint64 fileOffset, const void* data, size_t bytes, ErrorReporter err) const;
 
-	/// ���������� ������ ����� ������ size.
 	void SetSize(uint64 size, ErrorReporter err) const;
 
-	/// ��������� ���� ������� � ������.
-	/// @param fileName ���� � �����.
-	/// @param[out] oFileOpened ����������, ��� �� ������ ����.
-	/// @return ������ � ���������� ����� ����� ��� ������ ������, ���� ���� �� ��� ������.
 	static String ReadAsString(StringView fileName, ErrorReporter err);
 
 	struct NativeData;
-	typedef NativeData* NativeHandle;
+	using NativeHandle = NativeData*;
 
-	/// ���������� ����� ����� ��.
-	/// ��� Windows ������������ �������� ����� ��������� � HANDLE (�������� ����� CreateFile).
-	/// ��� ��������� �� ������������ �������� ����� ��������� � int (file descriptor, �������� ����� open).
-	/// �������� ������������� ������ ������� ������� � ��� ������ ���������, ���� � ���� ���� ��������.
 	NativeHandle GetNativeHandle() const {return mHandle;}
 
-	/// ������ ������ OsFile �� ����������� ������ ��
-	/// @param handle ����� �� ���� HANDLE (��� WinAPI) ��� int (file descriptor, ��� �� ����� Windows).
-	/// @param owning ���� true, ���������� handle ����� ������ ��������� �������� �������������.
 	static OsFile FromNative(NativeHandle handle, bool owning);
 
 	bool OwnsHandle() const
 	{
-		INTRA_PRECONDITION(!mOwning || mHandle != nullptr);
+		INTRA_PRECONDITION(!mOwning || *this);
 		return mOwning;
 	}
 
 	StringView FullPath() const {return mFullPath;}
 
 private:
-	NativeHandle mHandle;
-	Mode mMode;
-	bool mOwning;
+	NativeHandle mHandle = nullptr;
+	Mode mMode = Mode::None;
+	bool mOwning = false;
 	String mFullPath;
 };
 } INTRA_END

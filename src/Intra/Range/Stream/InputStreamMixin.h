@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Intra/Concepts.h"
-#include "Intra/Range/Span.h"
+#include "Intra/Range.h"
 #include "Intra/Range/StringView.h"
-#include "Intra/Range/Concepts.h"
 #include "Intra/Range/Mutation/Fill.h"
 #include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Mutation/CopyUntil.h"
@@ -19,7 +18,7 @@ template<typename R, typename T> struct InputStreamMixin
 	template<CTriviallyCopyable U> index_t RawReadWrite(Span<U>& dst, ClampedSize maxElementsToRead)
 	{
 		auto dst1 = dst.Take(maxElementsToRead).template ReinterpretUnsafe<T>();
-		const auto elementsRead = index_t(size_t(ReadWrite(*static_cast<R*>(this), dst1))*sizeof(T)/sizeof(U));
+		const auto elementsRead = index_t(size_t(*static_cast<R*>(this)|StreamTo(dst1))*sizeof(T)/sizeof(U));
 		dst.Begin += elementsRead;
 		return elementsRead;
 	}
@@ -33,7 +32,7 @@ template<typename R, typename T> struct InputStreamMixin
 		return result;
 	}
 
-	template<COutput R1, CTriviallyCopyable U = TArrayListValue<R1>
+	template<COutput R1, CTriviallyCopyable U = TArrayListValue<R1>>
 	index_t RawReadWrite(R1& dst)
 	{return RawReadWrite(dst, dst.Length());}
 
@@ -50,7 +49,7 @@ template<typename R, typename T> struct InputStreamMixin
 		CTriviallyCopyable<U>,
 	index_t> RawReadTo(R1&& dst)
 	{
-		Span<U> range = ForwardAsRange<R1>(dst);
+		Span<U> range = RangeOf(INTRA_FWD(dst));
 		return RawReadWrite(range);
 	}
 

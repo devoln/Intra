@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "Intra/Core.h"
-#include "Intra/Concepts.h"
+#include <Intra/Core.h>
+#include <Intra/Concepts.h>
 
 namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED

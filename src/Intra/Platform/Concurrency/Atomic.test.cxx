@@ -1,5 +1,5 @@
 ﻿#include "Intra/Functional.h"
-#include "Intra/Range/ForEach.h"
+#include "Intra/Range.h"
 #include "Intra/Concurrency/Atomic.h"
 #include "IntraX/System/Debug.h"
 #include "IntraX/Container/Sequential/Array.h"

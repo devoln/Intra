@@ -2,7 +2,7 @@
   "configurations": [
     {
       "name": "x64-Debug",
-      "generator": "Visual Studio 16 2019",
+      "generator": "Visual Studio 17 2022",
       "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64" ],
       "buildRoot": "${projectDir}\\cache\\${name}",
@@ -15,6 +15,34 @@
           "name": "NEWEST_CXX_STANDARD",
           "value": "True",
           "type": "BOOL"
+        },
+        {
+          "name": "ADDITIONAL_COMPILER_PARAMETERS",
+          "value": "/std:c++latest",
+          "type": "STRING"
+        }
+      ]
+    },
+    {
+      "name": "x86-Debug-LLVM",
+      "generator": "Visual Studio 17 2022",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\cache\\${name}",
+      "installRoot": "${projectDir}\\bin\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "clang_cl_x86" ],
+      "variables": [
+        {
+          "name": "NEWEST_CXX_STANDARD",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "ADDITIONAL_COMPILER_PARAMETERS",
+          "value": "/std:c++latest",
+          "type": "STRING"
         }
       ]
     }

@@ -7,9 +7,11 @@
 #include "IntraX/Container/Utility/SparseArray.h"
 #include "Intra/Range/Search/Single.h"
 
-#ifndef INTRA_NO_CONCURRENCY
 #include "Intra/Concurrency/Atomic.h"
-#endif
+
+// TODO: replace with IWriter combined with a substring replacement interpreter that will replace special UTF-8 byte codes.
+//  Pass to it special UTF-8 byte codes to switch styles and modify nesting levels that
+//  can be replaced with HTML tags, markdown, etc. by IWriter implementation
 
 namespace Intra { INTRA_BEGIN
 class FormattedWriter

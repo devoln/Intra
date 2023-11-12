@@ -14,7 +14,7 @@ GenericString<wchar_t> Utf8ToWStringZ(StringView str);
 #endif
 
 /// Calls error on status with description of GetLastError on Windows and errno on other systems.
-void ProcessLastError(ErrorReporter err, StringView message, SourceInfo srcInfo = SourceInfo());
+void ProcessLastError(ErrorReporter err, StringView message, SourceInfo srcInfo = SourceInfo::Current());
 
 }
 } INTRA_END

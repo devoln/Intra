@@ -209,17 +209,12 @@ public:
 	  If ``newLen`` < Length(), discards last Length() - newLen code points.
 	  otherwise, adds ``newLen`` - Length() uninitialized code points.
 	*/
-	constexpr void SetLengthUninitialized(Index newLen)
+	constexpr void SetLength(Index newLen, TUndefined)
 	{
 		Reserve(newLen);
 		if(IsHeapAllocated()) u.m.Len = size_t(newLen);
 		else setShortLength(newLen);
 	}
-
-	/// Same as SetLengthUnitialized, used by template detection code.
-	/// @see SetLengthUninitialized
-	constexpr void SetCountUninitialized(Index newLen)
-	{SetLengthUninitialized(newLen);}
 
 	/// Number of code points this string can hold without memory reallocation.
 	constexpr index_t Capacity() const

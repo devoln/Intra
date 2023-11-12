@@ -21,7 +21,7 @@ template<size_t N> class Bitset
 		CSame<basicType, uint16>? 4:
 		CSame<basicType, uint8>? 3:
 		-1;
-	static constexpr size_t indexMask = sizeof(basicType)*8-1;
+	static constexpr size_t indexMask = sizeof(basicType)*8 - 1;
 	static constexpr size_t remainderBits = N & indexMask;
 	static constexpr basicType remainderMask = MaxValueOf<basicType> >>
 		basicType(remainderBits == 0? 0: (sizeof(basicType)*8 - remainderBits));
@@ -70,24 +70,46 @@ public:
 
 	/** @returns true if index < N and flag at \p index is set.
 
-	  Similar to operator[] but this version allows SBitset to be used as a predicate.
+	  Similar to operator[] but this version allows Bitset to be used as a predicate.
 	*/
 	constexpr bool operator()(Index index) const {return operator[](index);}
 
-	constexpr void Set(Index index)
+	constexpr Bitset& Set(Index index)
 	{
 		INTRA_PRECONDITION(index < N);
 		v[size_t(index) >> indexShift] |= basicType(basicType(1) << (size_t(index) & indexMask));
+		return *this;
 	}
 
-	constexpr void Reset(Index index)
+	constexpr Bitset& Reset(Index index)
 	{
-		INTRA_PRECONDITION(size_t(index) < N);
+		INTRA_PRECONDITION(index < N);
 		v[size_t(index) >> indexShift] &= basicType(~(basicType(1) << (size_t(index) & indexMask)));
+		return *this;
 	}
 
-	/// Set all bits to zero.
-	constexpr void ResetAllBits() noexcept {*this = Bitset();}
+	constexpr Bitset& Set(Index index, bool value)
+	{
+		Reset(index);
+		v[size_t(index) >> indexShift] |= basicType(basicType(value? 1: 0) << (size_t(index) & indexMask));
+		return *this;
+	}
+
+	constexpr Bitset& ResetAllBits() noexcept {return *this = Bitset();}
+
+	constexpr Bitset& SetAllBits() noexcept
+	{
+		for(auto& x: v) x = MaxValueOf<basicType>;
+		if constexpr(remainderBits > 0) result.v[nWords - 1] &= remainderMask;
+		return *this;
+	}
+
+	constexpr Bitset& FlipAllBits() noexcept
+	{
+		for(auto& x: v) x ^= MaxValueOf<basicType>;
+		if constexpr(remainderBits > 0) result.v[nWords - 1] &= remainderMask;
+		return *this;
+	}
 
 	/// Check if all bits are zero.
 	constexpr bool AreAllBitsUnset() const noexcept
@@ -132,7 +154,7 @@ public:
 	{
 		Bitset result;
 		for(size_t i = 0; i < nWords; i++) result.v[i] = basicType(~v[i]);
-		result.v[nWords-1] &= remainderMask;
+		if constexpr(remainderBits > 0) result.v[nWords - 1] &= remainderMask;
 		return result;
 	}
 
@@ -148,18 +170,27 @@ public:
 
 	template<CBasicUnsignedIntegral T> requires(SizeofInBits<T> >= N)
 	constexpr explicit operator T() const noexcept {return v[0];}
+
+	// STL compatibility:
+	Bitset& reset() noexcept {return ResetAllBits();}
+	Bitset& reset(size_t pos) {return Reset(pos);}
+	Bitset& flip() noexcept {return FlipAllBits();}
+	Bitset& flip(size_t pos) {return Flip(pos);}
+	Bitset& set() noexcept {return SetAllBits();}
+	Bitset& set(size_t pos) {return Set(pos);}
+	Bitset& set(size_t pos, bool value) {return Set(pos, value);}
 };
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(!Bitset<8>{0xFA}.AreAllBitsUnset());
-static_assert((Bitset<16>(0xFAAD) & SBitset<16>{0xAA0}) == SBitset<16>{0xAA0});
-static_assert(Bitset<64>{0xFAADABCD09876543} == SBitset<64>(0xFAADABCD09876543));
+static_assert((Bitset<16>(0xFAAD) & Bitset<16>{0xAA0}) == Bitset<16>{0xAA0});
+static_assert(Bitset<64>{0xFAADABCD09876543} == Bitset<64>(0xFAADABCD09876543));
 static_assert((
 	Bitset<67>{0x0000FAADA0A0A0A0, 3} |
 	Bitset<67>{0xFAAD00000B0B0B0B, 6}) ==
 	Bitset<67>{0xFAADFAADABABABAB, 7});
 static_assert(~Bitset<128>{0xAFAFAFAFAFAFAFAF, 0xBCBCBCBCBCBCBCBC} == Bitset<128>{0x5050505050505050, 0x4343434343434343});
-static_assert(~Bitset<3>(Span<const bool>{false, false, true}) == Bitset<3>(Span<const bool>{true, true, false}));
+static_assert(~Bitset<3>(Array{false, false, true}) == Bitset<3>(Array{true, true, false}));
 #endif
 
 } INTRA_END
