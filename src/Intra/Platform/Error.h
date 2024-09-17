@@ -297,12 +297,12 @@ template<typename T> class Result
 	ErrorCode mError{};
 public:
 	INTRA_FORCEINLINE constexpr Result(ErrorCode c) noexcept: mError(c) {}
-	template<typename... Args> INTRA_FORCEINLINE constexpr Result(Args&&... c) noexcept requires CConstructible<T, Args...>: mValue(c) {}
+	
+	template<typename... Args> requires CConstructible<T, Args...>
+	INTRA_FORCEINLINE constexpr Result(Args&&... args) noexcept: mValue(INTRA_FWD(args)...) {}
 	
 	[[nodiscard]] INTRA_FORCEINLINE constexpr ErrorCode Error() const {return mError;}
 
-	///@{
-	/// @return contained object. Must be called only if no error!
 	[[nodiscard]] constexpr T& Unwrap()
 	{
 		INTRA_PRECONDITION(!Error());
@@ -314,9 +314,11 @@ public:
 		INTRA_PRECONDITION(!Error());
 		return mValue;
 	}
-	///@}
+
+	[[nodiscard]] constexpr T Or(T fallbackValue) const {return Error()? fallbackValue: mValue;}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator bool() const {return !Error();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator ErrorCode() const {return Error();}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() {return AddressOf(mValue);}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr const T* Data() const {return AddressOf(mValue);}
@@ -351,12 +353,10 @@ public:
 		return T(mValueOrErrorCode);
 	}
 
-	[[nodiscard]] constexpr T Or(T fallbackValue) const
-	{
-		return mIsError? fallbackValue: T(mValueOrErrorCode);
-	}
+	[[nodiscard]] constexpr T Or(T fallbackValue) const {return mIsError? fallbackValue: T(mValueOrErrorCode);}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator bool() const {return !mIsError;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator ErrorCode() const {return Error();}
 };
 
 } INTRA_END

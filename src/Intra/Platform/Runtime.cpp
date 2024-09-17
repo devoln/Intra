@@ -64,7 +64,7 @@ inline size_t mallocGoodSize(size_t n)
 }
 }
 
-RawAllocResult PlatformTunedByteAllocator(RawAllocParams params)
+RawAllocResult PlatformTunedByteAllocator::operator()(RawAllocParams params)
 {
 	auto& p = params.ByteAllocParams;
 	INTRA_PRECONDITION(p.NumElements < size_t() - 32);

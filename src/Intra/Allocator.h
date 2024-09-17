@@ -5,100 +5,9 @@
 #include <Intra/Numeric/Exponential.h>
 #include <Intra/Range.h>
 #include <Intra/Container/Ownership.h>
+#include <Intra/LifeCycle.h>
 
 namespace Intra { INTRA_BEGIN
-// Structure with parameters to pass to a type-safe allocation functions.
-template<typename T> struct AllocParams
-{
-	// The block previously allocated by this allocator to grow, shrink, free or to do the special command with.
-	// Length() may be smaller than the original NumElements, in this case all the elements beyond Length() are expected to be uninitialized or destructed by the caller.
-	// After the reallocation is done their values will be either undefined or value-initialized depending on ValueInitialize.
-	Owner<Span<T>> ExistingMemoryBlock;
-
-	// Initialize newly allocated memory elements with default values by either calling default constructor or zero initialization. Otherwise the memory content will be undefined.
-	size_t ValueInitialize: 1 = false;
-
-	// Minimum allocation size to request. Pass 0 to free the ptr.
-	//  Note: Values above MaxValidNumElements are reserved and must not be used directly.
-	//  Note: Largest possible 256 values above are invalid and are treated as an integer underflow bug.
-	size_t NumElements: sizeof(size_t)*8 - 1 = 0;
-
-	// How many elements of ExistingMemoryBlock to keep.
-	// All elements having the index starting this number are expected to be already destructed by the caller.
-	size_t NumPrevElementsToKeep = 0;
-};
-
-struct RawAllocParams
-{
-	AllocParams<char> ByteAllocParams;
-
-	// This function is used during relocation to copy. For most types this task can be trivially done with memcpy.
-	// But if a type saves or passes pointers to itself then using memcpy would result in dangling references.
-	using TCustomRelocateSignature = void(Span<char> dst, Span<char> src);
-
-	// Function to use instead of memcpy to copy params.NumPrevElementsToKeep from previous allocation.
-	// It's recommended to pass a non-null pointer only when the result of memcpy would be incorrect.
-	TCustomRelocateSignature* CustomRelocateFunc;
-
-	// CRawAllocator allows to request info about it or its allocations by using reserved values in NumElements field.
-	// If the operation is supported the result gets written back to numBytes. Otherwise numBytes isn't modified.
-	enum class Cmd {
-		Allocate,
-		GetAllocatorInfo, // returns AllocatorInfo struct
-		GetSize, // returns existing allocation size in bytes in RawValue[0]
-		EnumLength
-	};
-
-	static RawAllocParams MakeCommand(Cmd cmd, char* existingMemoryBlockBegin = nullptr)
-	{
-		return {
-			.ByteAllocParams = {
-				.ExistingMemoryBlock = {existingMemoryBlockBegin, existingMemoryBlockBegin},
-				.NumElements = MaxValidNumElements + size_t(cmd)
-			}
-		};
-	}
-
-	Cmd GetCommand() const
-	{
-		INTRA_PRECONDITION(ByteAllocParams.NumElements < MaxRepresentableNumElements - 255); // catch a size integer underflow
-		if(ByteAllocParams.NumElements <= MaxValidNumElements) return Cmd::Allocate;
-		return Cmd(ByteAllocParams.NumElements - MaxValidNumElements);
-	}
-
-private:
-	static constexpr size_t MaxValidNumElements = (size_t() - (1519 << 1)) >> 1;
-	static constexpr size_t MaxRepresentableNumElements = (size_t() - 1) >> 1;
-};
-
-struct AllocatorInfo
-{
-	bool HoldsAllocationSize: 1; // means that AllocatorCmd::GetSize will work
-	bool SupportsFastMemZero: 1; // means that ValueInitialize may be faster than memset for large allocations
-	bool SupportsFree: 1; // free is never a no-op, otherwise it's necessary to delete the allocator to free all the memory (false for linear or stack allocators)
-	bool SupportsReallocInPlace: 1; // may sometimes grow or shrink allocations without copying the data
-	bool CanHoldDebugSourceInfo: 1; // can hold file and line of allocation site
-	bool NoDebugSentinels: 1; // can't be false when SmallAllocationOffsetBytes is non-zero, so this invalid combination means that the struct needs to be initialized
-	bool FixedSizePool: 1; // if true, the only supported size can be calculated as (1 << MinimumGranularityShift) - SmallAllocationOffsetBytes
-	bool ThreadSafe: 1; // can be used from multiple threads without any external synchronization
-	uint8 GuaranteedAlignmentShift: 4; // 1 << GuaranteedAlignmentShift is the value of guaranteed alignment in bytes of all allocations
-	uint8 MinimumGranularityShift: 4; // 1 << MinimumGranularityShift is the minimum step in bytes between possible allocation sizes
-	uint8 SmallAllocationOffsetBytes; // total per-allocation overhead stored inside the same block next to the user data for smallest allocations
-
-	explicit operator bool() const
-	{
-		static constexpr AllocatorInfo empty = {};
-		return z_D::memcmp(this, &empty, sizeof(*this)) == 0;
-	}
-};
-
-union RawAllocResult
-{
-	Owner<Span<char>> Allocation;
-	size_t RawValue[2];
-	AllocatorInfo Info;
-};
-
 // Non-relocatable type T can assign this implementation to FPostRelocateFix<T> if the code below fixes the object after relocation.
 // Otherwise it either will have to provide its own fix implementation or array reallocation with this type will be less efficient.
 template<class T> constexpr void DefaultPostRelocateFix(T* newBaseAddress, [[maybe_unused]] const T* oldFreedBaseAddress, size_t numElementsToPatch)
@@ -162,8 +71,8 @@ template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator 
 	
 	constexpr auto customRelocateFunc = [] -> RawAllocParams::TCustomRelocateSignature* {
 		if constexpr(CDefined<FPostRelocateFix<T>>) return nullptr; // if T has a defined post-relocation fix or requires no fix, allow allocator to use memcpy
-		return [](Span<char> dst, Span<char> src) {
-			for(size_t i = 0, n = numBytes / sizeof(T); i < numBytes; i++)
+		return [](char* dst, char* src, size_t numBytes) {
+			for(size_t i = 0, n = numBytes / sizeof(T); i < n; i++)
 				*static_cast<T*>(dst)[i] = INTRA_MOVE(*static_cast<T*>(src)[i]);
 		};
 	}();
@@ -172,7 +81,7 @@ template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator 
 		.ByteAllocParams = {
 			.ExistingMemoryBlock = reinterpret_cast<const Span<char>&>(params.ExistingMemoryBlock),
 			.NumElements = params.NumElements * sizeof(T),
-			.ValueInitialize = params.ValueInitialize,
+			.ValueInitialize = CTriviallyConstructible<T> && params.ValueInitialize,
 			.NumPrevElementsToKeep = params.NumPrevElementsToKeep * sizeof(T)
 		},
 		.CustomRelocateFunc = customRelocateFunc
@@ -180,7 +89,14 @@ template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator 
 
 	const auto res = reinterpret_cast<const Span<T>&>(rawRes);
 	if constexpr(CDefined<FPostRelocateFix<T>> && FPostRelocateFix<T>) // apply a post-relocation fix if necessary
-		if(res.Begin != params.ExistingMemoryBlock.Begin) FPostRelocateFix<T>(res, params.ExistingMemoryBlock);
+		if(res.Begin != params.ExistingMemoryBlock.Begin) FPostRelocateFix<T>(res.Begin, params.ExistingMemoryBlock.Begin, params.NumPrevElementsToKeep);
+
+	if constexpr(!CTriviallyConstructible<T>) if(params.ValueInitialize)
+	{
+		for(size_t i = params.NumPrevElementsToKeep, n = params.NumElements; i < n; i++)
+			LifeCycle::ConstructOne(res.Begin + i);
+	}
+
 	return res;
 }
 
@@ -192,15 +108,13 @@ template<typename T> INTRA_FORCEINLINE constexpr void Free(CAllocator auto& allo
 template<typename T> INTRA_FORCEINLINE constexpr size_t AllocationCapacity(CAllocator auto& allocator, T* ptr)
 {
 	size_t numBytes = AllocatorCmdGetSize;
-	allocator(numBytes, ptr, {}, nullptr);
+	allocator(RawAllocParams::MakeCommand(RawAllocParams::AllocatorCmdGetSize, ptr));
 }
 
 
 #if !defined(INTRA_OPTIMIZE_FOR_SEGMENT_HEAP) && defined(WINAPI_FAMILY) && WINAPI_FAMILY == 2 // assume Windows 10 2004+: segment heap is introduced
 #define INTRA_OPTIMIZE_FOR_SEGMENT_HEAP
 #endif
-
-RawAllocResult PlatformTunedByteAllocator(RawAllocParams);
 
 // Can be used to implement a linear allocator for any kind of intervals or memory
 template<bool ThreadSafe> struct LinearAllocatorLogic

@@ -2,9 +2,10 @@
 
 #include <Intra/Functional.h>
 #include <Intra/Concepts.h>
-#include <Intra/Concurrency/Atomic.h>
+#include <Intra/Platform/Atomic.h>
 
 namespace Intra { INTRA_BEGIN
+INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
 
 // Simplifies the implementation of move semantics. Such fields may allow to use compiler-generated move constructors.
 // NOTE: move assignment just swaps the wrappers. Make sure that such moved-from objects are destroyed correctly.
@@ -34,7 +35,7 @@ template<typename H> concept CSmartHandle = CHandle<H> && requires(H h) {{h.get(
 
 template<CHandle H, CCallable<H> Deleter> class ResourceOwner
 {
-	template<CHandle U> friend ResourceOwner<U, Deleter>;
+	friend ResourceOwner;
 	template<CHandle U, CCallable<H> D> static constexpr bool IsCompatible = CConstructible<H, U> &&
 		(CSame<D, Deleter> || CDerived<Deleter, D>) && (CSmartHandle<H> ||
 			CBasicPointer<H> && CBasicPointer<U> && (!CDerived<TRemovePointer<U>, TRemovePointer<H>> || CHasVirtualDestructor<TRemovePointer<H>>));
@@ -76,7 +77,7 @@ public:
 
 	INTRA_FORCEINLINE constexpr Owner<H> release() noexcept {return Exchange(mHandle, H());}
 
-	[[nodiscard]] INTRA_FORCEINLINE constexpr bool IsOwner() const noexcept requires requires {mHandle.IsOwner();} {return mHandle.IsOwner();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool IsOwner() const noexcept requires requires {Val<H>().IsOwner();} {return mHandle.IsOwner();}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator bool() const noexcept {return bool(mHandle);}
 
@@ -102,9 +103,10 @@ template<CHandle H, CCallable<H> Deleter> struct OptOwnerDeleter: Deleter
 	INTRA_FORCEINLINE constexpr void operator()(const OptOwnerHandle<H>& h) {if(h.IsOwning) Deleter::operator()(h.Handle);}
 };
 }
-template<CHandle H, CCallable<H> Deleter> class ResourceOptOwner: public ResourceOwner<z_D::OptOwnerHandle<H>, z_D::OptOwnerDeleter<Deleter>>
+template<CHandle H, CCallable<H> Deleter> class ResourceOptOwner:
+	public ResourceOwner<z_D::OptOwnerHandle<H>, z_D::OptOwnerDeleter<z_D::OptOwnerHandle<H>, Deleter>>
 {
-	using Base = ResourceOwner<z_D::OptOwnerHandle<H>, z_D::OptOwnerDeleter<Deleter>>;
+	using Base = ResourceOwner<z_D::OptOwnerHandle<H>, z_D::OptOwnerDeleter<z_D::OptOwnerHandle<H>, Deleter>>;
 public:
 	using Base::Base;
 };
@@ -130,7 +132,7 @@ public:
 
 	INTRA_FORCEINLINE constexpr SmartPointerBase& operator=(decltype(nullptr)) noexcept {this->reset(nullptr); return *this;}
 
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return get();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return this->get();}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const noexcept requires (!CUnknownBoundArrayType<TOrArr>)
 	{
 		enum: index_t {Extent = CKnownBoundArrayType<TOrArr>? ArrayExtent<TOrArr>: 1};
@@ -174,7 +176,7 @@ public:
 	[[nodiscard]] static INTRA_FORCEINLINE constexpr MaybeUnique Make(TRemoveExtent<TOrArr>* ptr, bool passOwnership)
 	{
 		MaybeUnique res;
-		res.mHandle = {.Handle = nonOwningPtr, .IsOwning = passOwnership};
+		res.mHandle = {.Handle = ptr, .IsOwning = passOwnership};
 		return res;
 	}
 	
@@ -192,8 +194,8 @@ template<typename T> [[nodiscard]] INTRA_FORCEINLINE constexpr MaybeUnique<T> No
 }
 
 template<class T> concept CRefCounter = requires(T& x) {
-	{x.IncRef()} -> CConvertible<size_t>;
-	{x.GetRC()} -> CConvertible<size_t>;
+	{x.IncRef()} -> CConvertibleTo<size_t>;
+	{x.GetRC()} -> CConvertibleTo<size_t>;
 	{x.DecRef()} -> CSame<bool>;
 };
 template<class T> concept CRefCounted = requires(T& x) {{x.RefCount} -> CRefCounter;};
@@ -230,23 +232,22 @@ template<typename T, bool ThreadSafe = true> class Shared
 	template<typename U, bool ThreadSafeU> friend class Shared;
 	template<typename U> static constexpr bool IsCompatible = !CSame<U, T> && (CSame<U, TRemoveConst<T>> || CDerived<U, T> && CHasVirtualDestructor<T>);
 
-	struct ConstexprData
+	struct ConstexprStorage
 	{
 		TCounter* Counter;
 		T* Object;
 	};
 
-	struct Data: TCounter
+	struct Storage: TCounter
 	{
 		union
 		{
 			T Value;
 			char Bytes[sizeof(T)];
 		};
-		Data() {}
-		~Data() {}
+		Storage() {}
+		~Storage() {}
 	};
-	struct Storage;
 
 	explicit INTRA_FORCEINLINE constexpr Shared(TCounter* counterAndData) noexcept: mData(counterAndData) {}
 public:
@@ -258,19 +259,14 @@ public:
 
 	/// Release reference ownership as a pointer that can be used to reconstruct Shared later.
 	/// After this operation, the pointer is set to nullptr. This call does not decrease reference counter.
-	INTRA_FORCEINLINE StorageHandle ReleaseHandleToReconstructLater(TUnsafe)
-	{
-		auto res = reinterpret_cast<StorageHandle>(mData);
-		mData = nullptr;
-		return res;
-	}
+	INTRA_FORCEINLINE StorageHandle ReleaseHandleToReconstructLater(TUnsafe) {return Exchange(mData, nullptr);}
 
 	/// Use to reconstruct a shared pointer passed via C APIs as user-defined data untyped user-defined data (pointers/ULONG_PTR/uintptr).
 	/// NOTE: Each handle must be reconstructed exactly once. Fewer reconstructions would result in a memory leak. More than one would result in double free.
 	static INTRA_FORCEINLINE Shared ReconstructFromReleasedHandle(TUnsafe, StorageHandle handle)
 	{
 		Shared res;
-		res.mData = reinterpret_cast<Data*>(handle);
+		res.mData = handle;
 		return res;
 	}
 
@@ -278,7 +274,7 @@ public:
 	{
 		if(IsConstantEvaluated())
 		{
-			mCData = new ConstexprData{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
+			mCData = new ConstexprStorage{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
 			if(mCData->Counter) mCData->Counter->IncRef();
 			return;
 		}
@@ -293,11 +289,11 @@ public:
 	{
 		if(IsConstantEvaluated())
 		{
-			mCData = new ConstexprData{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
+			mCData = new ConstexprStorage{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
 			if(mCData->Counter) mCData->Counter->IncRef();
 			return;
 		}
-		mData = reinterpret_cast<Data*>(rhs.mData);
+		mData = reinterpret_cast<Storage*>(rhs.mData);
 		castAllowedRuntimeCheck(rhs);
 		if(mData) mData->IncRef();
 	}
@@ -307,12 +303,12 @@ public:
 	{
 		if(IsConstantEvaluated())
 		{
-			mCData = new ConstexprData{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
+			mCData = new ConstexprStorage{.Counter = rhs.mCData->Counter, .Object = rhs.mCData->Object};
 			delete rhs.mCData;
 			rhs.mCData = nullptr;
 			return;
 		}
-		mData = reinterpret_cast<Data*>(rhs.mData);
+		mData = reinterpret_cast<Storage*>(rhs.mData);
 		castAllowedRuntimeCheck(rhs);
 		rhs.mData = nullptr;
 	}
@@ -359,10 +355,10 @@ public:
 	{
 		if(IsConstantEvaluated())
 		{
-			mCData = new ConstexprData{.Counter = new ConstexprCounter, .Data = new T(INTRA_FWD(args)...)};
+			mCData = new ConstexprStorage{.Counter = new TCounter, .Data = new T(INTRA_FWD(args)...)};
 			return;
 		}
-		const auto data = new Data;
+		const auto data = new Storage;
 		new(data->Bytes) T(INTRA_FWD(args)...);
 		return Shared(data);
 	}
@@ -380,8 +376,8 @@ public:
 private:
 	union
 	{
-		Data* mData;
-		ConstexprData* mCData = nullptr;
+		Storage* mData;
+		ConstexprStorage* mCData = nullptr;
 	};
 	template<typename U> void castAllowedRuntimeCheck(const Shared<U, ThreadSafe>& from)
 	{
@@ -393,7 +389,7 @@ private:
 		if(IsConstantEvaluated()) return mCData->Object;
 		return &mData->Value;
 	}
-	template<typename T> friend class SharedClass;
+	template<typename T, bool ThreadSafe> friend class SharedClass;
 };
 
 template<typename T, bool ThreadSafe = true> class SharedClass
@@ -401,7 +397,7 @@ template<typename T, bool ThreadSafe = true> class SharedClass
 	void* operator new(size_t bytes) = delete;
 	void operator delete(void* ptr, size_t bytes) = delete;
 
-	using DerivedData = typename Shared<T>::Data;
+	using DerivedStorage = typename Shared<T, ThreadSafe>::Storage;
 public:
 	/// Get a smart Shared pointer from this class instance.
 	/// If the class instance is being destroyed now, returns nullptr.
@@ -409,8 +405,8 @@ public:
 	/// Cannot be used with already destructed object.
 	[[nodiscard]] Shared<T> SharedThis()
 	{
-		void* const address = reinterpret_cast<char*>(this) - __builtin_offsetof(DerivedData, Value);
-		const auto data = static_cast<DerivedData*>(address);
+		void* const address = reinterpret_cast<char*>(this) - __builtin_offsetof(DerivedStorage, Value);
+		const auto data = static_cast<DerivedStorage*>(address);
 		if(data->IncRef() > 1) return data;
 
 		// The refcount is already zero, the object is being destroyed

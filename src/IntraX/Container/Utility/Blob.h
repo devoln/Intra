@@ -112,7 +112,7 @@ template<typename OffsetType> struct BlobAdapterUnsafe
 	void* AddElement(OffsetType bytes, OffsetType alignment) const
 	{
 		const auto prevDataSize = DataSizeInBytes();
-		const auto offset = Aligned(prevDataSize, alignment);
+		const auto offset = AlignUp(prevDataSize, alignment);
 		const size_t newDataSizeInBytes = offset + bytes;
 		const bool elementFitsInContainer = RawData.Begin+newDataSizeInBytes < reinterpret_cast<char*>(HeaderBegin()-2);
 		if(!CheckOffsetForOverflow(offset) || !elementFitsInContainer) return nullptr;

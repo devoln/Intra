@@ -82,8 +82,24 @@ public:
 
 	[[nodiscard]] INTRA_FORCEINLINE bool IsJoinable() const {return bool(mThread);}
 
-	/// Block running of current thread until this thread finishes
+	/// Block running of current thread until this thread finishes. Resets IsJoinable() to false
 	INTRA_FORCEINLINE void Join() {z_D::pthread_join(mThread, nullptr); mThread = {};}
+
+	/// Block running of current thread until this thread finishes or timeout expires. Resets IsJoinable() to false on success
+#if !defined(__linux__) && !defined(__FreeBSD__)
+	[[deprecated("timeout is ignored on this target OS")]]
+#endif
+	INTRA_FORCEINLINE void Join(Timestamp timeout)
+	{
+#if !defined(__linux__) && !defined(__FreeBSD__)
+		Join();
+#else
+		const auto ts = timeout.SystemTime.Since1970.To<z_D::timespec>();
+		if(z_D::pthread_timedjoin_np(mThread, nullptr, Unsafe(&ts))) return false;
+#endif
+		mThread = {};
+		return true;
+	}
 
 	/// This thread continues running independently of this object
 	INTRA_FORCEINLINE void Detach() {z_D::pthread_detach(mThread); mThread = {};}
@@ -338,8 +354,16 @@ public:
 
 	[[nodiscard]] INTRA_FORCEINLINE bool IsJoinable() const {return !mThread.IsNull();}
 
-	/// Block running of current thread until this thread finishes
+	/// Block running of current thread until this thread finishes. Sets IsJoinable() to false
 	INTRA_FORCEINLINE void Join() {z_D::WaitForSingleObject(Handle(), 0xFFFFFFFF); mThread = {};}
+
+	/// Block running of current thread until this thread finishes. Sets IsJoinable() to false on success.
+	INTRA_FORCEINLINE bool Join(Timestamp timeout)
+	{
+		if(z_D::WaitForSingleObject(Handle(), 0xFFFFFFFF) != 0) return false;
+		mThread = {};
+		return true;
+	}
 
 	/// This thread continues running independently of this object
 	INTRA_FORCEINLINE void Detach() {z_D::CloseHandle(Handle()); mThread = {};}

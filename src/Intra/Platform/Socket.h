@@ -1,10 +1,8 @@
 #pragma once
 
 #include <Intra/Platform/Error.h>
-#include "IntraX/Container/Sequential/String.h"
-
-namespace Intra { INTRA_BEGIN
-INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
+#include <Intra/Platform/DateTime.h>
+#include <Intra/Container/String.h>
 
 #ifdef _WIN32
 #define INTRAZ_D_CONST_(name, linux, freebsd, apple, win) win
@@ -38,6 +36,10 @@ INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
 #define INTRAZ_D_CONST INTRAZ_D_CONST_
 #endif
 
+namespace Intra { INTRA_BEGIN
+INTRA_IGNORE_WARN_COPY_IMPLICITLY_DELETED
+
+
 enum class AddressFamily: uint8
 {
 	Any = INTRAZ_D_CONST(AF_UNSPEC, 0, 0, 0, 0),
@@ -46,6 +48,7 @@ enum class AddressFamily: uint8
 	IPv6 = INTRAZ_D_CONST(AF_INET6, 10, 28, 30, 23)
 #if defined(_WIN32) || defined(__linux__) || defined(__FreeBSD__) || defined(AF_BLUETOOTH)
 	, Bluetooth = INTRAZ_D_CONST(AF_BLUETOOTH, 31, 36, 0, 32)
+#endif
 #if defined(__linux__) || defined(AF_CAN)
 	, CAN = INTRAZ_D_CONST(AF_CAN, 29, 0, 0)
 #endif
@@ -55,16 +58,18 @@ enum class ProtocolType: uint8 {TCP = 6, UDP = 17, ICMP = 1, IGMP = 2};
 enum class ShutdownEnd: uint8 {Read, Write, Both};
 enum class SockOptLevel {
 	Socket = INTRAZ_D_CONST(SOL_SOCKET, 1, 0xFFFF, 0xFFFF, 0xFFFF),
-	TCP = INTRAZ_D_CONST(SOL_TCP, 6, 6, 6, 6)
+	TCP = INTRAZ_D_CONST(IPPROTO_TCP, 6, 6, 6, 6)
 };
 enum class SockOptName {
 	NoDelay = INTRAZ_D_CONST(TCP_NODELAY, 1, 1, 1, 1),
 	ReuseAddr = INTRAZ_D_CONST(SO_REUSEADDR, 2, 4, 4, 4),
-	KeepAlive = INTRAZ_D_CONST(SO_KEEPALIVE, 9, 8, 8, 8),
-	KeepIdle = INTRAZ_D_CONST(TCP_KEEPIDLE, 4, 3, 0x10, 3),
+	KeepAlive = INTRAZ_D_CONST(SO_KEEPALIVE, 9, 8, 8, 8)
+#ifndef _WIN32
+	, KeepIdle = INTRAZ_D_CONST(TCP_KEEPIDLE, 4, 3, 0x10, 3),
 	KeepInterval = INTRAZ_D_CONST(TCP_KEEPINTVL, 5, 5, 0x101, 17),
 	KeepCount = INTRAZ_D_CONST(TCP_KEEPCNT, 6, 6, 0x102, 16),
 	FastOpen = INTRAZ_D_CONST(TCP_FASTOPEN, 23, 1025, 0x105, 15)
+#endif
 };
 
 #pragma pack(push, 1)
@@ -93,7 +98,7 @@ struct SocketAddr // binary layout of this struct matches largest possible socka
 	[[nodiscard]] constexpr size_t SizeOf() const
 	{
 		return 2 + (
-			Family == AddressFamily::IPv4? sizeof(IPv4):
+			Family == AddressFamily::IPv4? 14:
 			Family == AddressFamily::IPv6? sizeof(IPv6):
 			sizeof(Unix)
 		);
@@ -101,7 +106,7 @@ struct SocketAddr // binary layout of this struct matches largest possible socka
 	[[nodiscard]] static constexpr SocketAddr MakeIPv4(Array<uint8, 4> ipv4Addr, uint16 port)
 	{
 		return {
-			.Family == AddressFamily::IPv4, .Port = port,
+			.Family = AddressFamily::IPv4, .Port = port,
 			.Addr = {ipv4Addr[0], ipv4Addr[1], ipv4Addr[2], ipv4Addr[3]}
 		};
 	}
@@ -127,7 +132,11 @@ class AddrInfo
 {
 public:
 	AddrInfo() = default;
-	AddrInfo Create(StringView addr, bool bindAddr, AddressFamily family = AddressFamily::Any);
+	AddrInfo(AddrInfo&&) = default;
+	AddrInfo(const AddrInfo&) = delete;
+	AddrInfo& operator=(AddrInfo&&) = default;
+	AddrInfo& operator=(const AddrInfo&) = delete;
+	static Result<AddrInfo> Create(StringView addr, bool bindAddr, AddressFamily family = AddressFamily::Any);
 
 	struct Node
 	{
@@ -136,8 +145,13 @@ public:
 		union {SocketType SockType; int: 32;};
 		union {ProtocolType Protocol; int: 32;};
 		int AddrLen;
+#ifdef __linux__
+		SocketAddr& Value;
+		char* CanonName;
+#else
 		char* CanonName;
 		SocketAddr& Value;
+#endif
 		Node* Next;
 
 		[[nodiscard]] INTRA_FORCEINLINE Node* NextListNode() const {return Next;}
@@ -159,14 +173,14 @@ public:
 	~Socket() {Close();}
 
 	int Handle() const {return mHandle;}
-	Socket FromHandle(int handle) {Socket res; res.mHandle = handle; return handle;}
+	Socket FromHandle(int handle) {Socket res; res.mHandle = handle; return res;}
 
 	void Close();
 
 	ErrorCode SetNonBlocking(bool nonBlocking = true);
 	ErrorCode SetNoDelay(bool noDelay = true);
 	
-	explicit operator bool const {return !mHandle.IsNull();}
+	explicit operator bool() const {return !mHandle.IsNull();}
 
 protected:
 	HandleMovableWrapper<int, -1> mHandle;
@@ -191,9 +205,15 @@ public:
 	TcpConnection(TcpConnection&&) = default;
 	TcpConnection& operator=(TcpConnection&&) = default;
 
-	static Result<TcpConnection> Connect(const SocketAddr& address);
-	static Result<TcpConnection> Connect(const AddrInfo& addresses);
-	static Result<TcpConnection> Connect(StringView address) {return Connect(AddrInfo::Create(address, false));}
+	static Result<TcpConnection> Connect(const SocketAddr& address, bool nonBlocking = false);
+	static Result<TcpConnection> Connect(const AddrInfo& addresses, bool nonBlocking = false);
+
+	static Result<TcpConnection> Connect(StringView address)
+	{
+		auto addrInfo = AddrInfo::Create(address, false);
+		INTRA_RETURN_ON_ERROR(addrInfo);
+		return Connect(addrInfo.Unwrap());
+	}
 
 	static Result<Tuple<TcpConnection, size_t>> ConnectAndWriteSome(const SocketAddr& address, Span<const char> src);
 
@@ -221,7 +241,13 @@ public:
 	TcpListener& operator=(TcpListener&& rhs) = default;
 	static Result<TcpListener> Bind(const SocketAddr& address, bool allowFastopen = true, int maxListenersLimit = 0);
 	static Result<TcpListener> Bind(const AddrInfo& addresses, bool allowFastopen = true, int maxListenersLimit = 0);
-	static Result<TcpListener> Bind(StringView address) {return Connect(AddrInfo::Create(address, true));}
+	
+	static Result<TcpListener> Bind(StringView address)
+	{
+		auto addrInfo = AddrInfo::Create(address, true);
+		INTRA_RETURN_ON_ERROR(addrInfo);
+		return Bind(addrInfo.Unwrap());
+	}
 
 	bool WaitForConnectionMs(size_t milliseconds) const {return waitInputMs(milliseconds);}
 	bool WaitForConnection() const {return waitInput();}

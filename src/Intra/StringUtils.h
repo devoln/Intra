@@ -33,42 +33,55 @@ constexpr index_t UintToString100(unsigned x, char* dst)
 	uint32 low = x;
 	uint32 ll = ((uint32(low) * 103) >> 9) & 0x1E;
 	low += ll * 3;
-	ll = ((low & 0xF0) >> 4) | ((low & 0x0F) << 8);
+	if constexpr(Config::TargetIsBigEndian) ll = ((low & 0xF0) << 4) | (low & 0x0F);
+	else ll = ((low & 0xF0) >> 4) | ((low & 0x0F) << 8);
 	ll |= 0x3030;
-	BinarySerialize<uint16>(Unsafe, uint16(ll), dst);
+	BinarySerialize<uint16>(Unsafe, dst, uint16(ll));
 	return 2;
 }
 
+/// NOTE: this function writes 4 bytes to dst for x in range [100; 9999].
+///  If x <= 999, dst[3] must be ignored by the caller
+/// @return Number of bytes representing x in dst.
 constexpr index_t UintToString10k(unsigned x, char* dst)
 {
+	INTRA_PRECONDITION(x < 10000);
 	if(x < 100) return UintToString100(x, dst);
 
 	uint32 low = x;
 	uint32 ll = FastDivByConstTrunc<100u>(low);
 	low -= ll * 100;
 
-	low = (low << 16) | ll;
+	if constexpr(Config::TargetIsBigEndian) low |= ll << 16;
+	else low = (low << 16) | ll;
 
 	// Two divisions by 10 (14 bits needed)
 	ll = ((low * 103) >> 9) & 0x1E001E;
 	low += ll * 3;
 
-	ll = ((low & 0x00F000F0) >> 4) | ((low & 0x000F000F) << 8); // move digits into correct spot
+	// Move digits into correct spot
+	if constexpr(Config::TargetIsBigEndian) ll = ((low & 0x00F000F0) << 4) | (low & 0x000F000F);
+	else ll = ((low & 0x00F000F0) >> 4) | ((low & 0x000F000F) << 8);
 	ll |= 0x30303030; // digits -> ASCII digit codes
 
-	BinarySerialize<uint32>(Unsafe, ll >> (x > 999? 0: 8), dst);
+	if constexpr(!Config::TargetIsBigEndian) ll >>= x > 999? 0: 8;
+
+	BinarySerialize<uint32>(Unsafe, dst, ll);
 	return x > 999? 4: 3;
 }
 
 constexpr uint64 UintToString100mAsUInt64(uint32 x)
 {
-	const uint32 ll0 = FastDivByConstTrunc<10000u>(x);
-	uint64 low = FastModByConst<10000u>(x) | (uint64(ll0) << 32);
+	const uint32 ll0 = FastDivByConstTrunc<10'000u>(x);
+	uint64 low = Config::TargetIsBigEndian?
+		(uint64(FastModByConst<10'000u>(x) << 32)) | ll0:
+		FastModByConst<10'000u>(x) | (uint64(ll0) << 32);
 
 	// Four divisions and remainders by 100
 	uint64 ll = ((low * 5243) >> 19) & 0x000000FF000000FF;
 	low -= ll * 100;
-	low = (low << 16) | ll;
+	if constexpr(Config::TargetIsBigEndian) low |= ll << 16;
+	else low = (low << 16) | ll;
 
 	// Eight divisions by 10 (14 bits needed)
 	ll = ((low * 103) >> 9) & 0x001E001E001E001E;
@@ -81,6 +94,11 @@ constexpr uint64 UintToString100mAsUInt64(uint32 x)
 	ll |= 0x3030303030303030;  // digits -> ASCII digit codes
 	return ll;
 }
+#if INTRA_CONSTEXPR_TEST
+static_assert(Config::TargetIsBigEndian?
+	UintToString100mAsUInt64(12'345'678) == 0x3132333435363738:
+	UintToString100mAsUInt64(12'345'678) == 0x3837363534333231);
+#endif
 
 constexpr index_t UintToString(uint32 x, char* dst)
 {
@@ -96,14 +114,14 @@ constexpr index_t UintToString(uint32 x, char* dst)
 	{
 		const uint32 high = FastDivByConstTrunc<100'000'000u>(x);
 		x -= high * 100'000'000;
-		digits = UintToString100(high, dst); // two digit version since `high` <= 42
+		digits = UintToString100(high, dst); // two digit version since high <= 42
 		dst += digits;
 		digits += 8;
 	}
 
 	uint64 packedStr = UintToString100mAsUInt64(x);
-	if(x < 100'000'000) packedStr >>= (8 - digits)*8; //skip leading zeros if any
-	BinarySerialize<uint64>(Unsafe, packedStr, dst);
+	if(x < 100'000'000) packedStr >>= (8 - digits) * 8; //skip leading zeros if any
+	BinarySerialize<uint64>(Unsafe, dst, packedStr);
 	return digits;
 }
 
@@ -114,15 +132,47 @@ constexpr index_t UintToString(uint64 x, char* dst)
 	const uint64 xmod100m = x - xdiv100m * 100'000'000;
 	const index_t d = UintToString(xdiv100m, dst); //recursion: print highest part first
 	const uint64 packedStr = UintToString100mAsUInt64(uint32(xmod100m));
-	BinarySerialize<uint64>(Unsafe, packedStr, dst + d);
+	BinarySerialize<uint64>(Unsafe, dst + d, packedStr);
 	return d + 8;
 }
 
+#if INTRA_CONSTEXPR_TEST
 static_assert([] {
 	char buf[16]{};
 	auto len = UintToString(1234567890123456ULL, buf);
 	return __builtin_memcmp(buf, "1234567890123456", size_t(len)) == 0;
 }());
+#endif
+
+constexpr void UintToHexString(uint8 num, char* dst, bool lowerAlpha)
+{
+	unsigned x = num;
+	if constexpr(Config::TargetIsBigEndian) x = ((x & 0xF0) << 4) | (x & 0x0F); // 0x00FA => 0x0F0A
+	else x = ((x & 0xF0) >> 4) | (x & 0x0F) << 8; // 0x00FA => 0x0A0F
+	x |= 0x3030; // convert to ASCII digit characters
+	const uint32 afMask = ((x + 0x0606) >> 4) & 0x0101;
+	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
+	BinarySerialize<uint16>(Unsafe, dst, uint16(x));
+}
+
+constexpr void UintToHexString(uint16 num, char* dst, bool lowerAlpha)
+{
+	uint32 x = num;
+	if constexpr(Config::TargetIsBigEndian) // 0xFACE => 0x0F0A0C0E
+	{
+		x = ((x & 0x0000FF00) << 8) | (x & 0x000000FF); // 0x0000FACE => 0x00FA00CE
+		x = ((x & 0x00F000F0) << 4) | (x & 0x000F000F); // 0x00FA00CE => 0x0F0A0C0E
+	}
+	else // 0xFACE => 0x0E0C0A0F
+	{
+		x = ((x & 0x0000FF00) >> 8) | (x & 0x000000FF) << 16; // 0x0000FACE => 0x00CE00FA
+		x = ((x & 0x00F000F0) >> 4) | (x & 0x000F000F) << 8; // 0x00CE00FA => 0x0E0C0A0F
+	}
+	x |= 0x30303030; // convert to ASCII digit characters
+	const uint32 afMask = ((x + 0x06060606) >> 4) & 0x01010101;
+	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
+	BinarySerialize<uint32>(Unsafe, dst, x);
+}
 
 constexpr void UintToHexString(uint32 num, char* dst, bool lowerAlpha)
 {
@@ -142,7 +192,7 @@ constexpr void UintToHexString(uint32 num, char* dst, bool lowerAlpha)
 	x |= 0x3030303030303030; // convert to ASCII digit characters
 	const uint64 afMask = ((x + 0x0606060606060606) >> 4) & 0x0101010101010101;
 	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
-	BinarySerialize<uint64>(Unsafe, x, dst);
+	BinarySerialize<uint64>(Unsafe, dst, x);
 }
 
 constexpr void UintToHexString(uint64 num, char* dst, bool lowerAlpha)
@@ -151,17 +201,19 @@ constexpr void UintToHexString(uint64 num, char* dst, bool lowerAlpha)
 	UintToHexString(uint32(num), dst + 8, lowerAlpha);
 }
 
+#if INTRA_CONSTEXPR_TEST
 static_assert([] {
 	char buf[16]{};
 	UintToHexString(0x0123456789ABCDEFULL, buf, false);
 	return __builtin_memcmp(buf, "0123456789ABCDEF", sizeof(buf)) == 0;
 }());
+#endif
 
 
 
 template<typename T> constexpr index_t FloatToStringScientific(GenericFloat<T, 10> x, char decimalSep, char e, char* dst)
 {
-	index_t len = UintToString(x.Mantissa, dst+1);
+	index_t len = UintToString(x.Mantissa, dst + 1);
 	dst[0] = dst[1];
 	if(len > 1)
 	{
@@ -177,11 +229,11 @@ template<typename T> constexpr index_t FloatToStringScientific(GenericFloat<T, 1
 		exp = -exp;
 		dst[len++] = '-';
 	}
-	len += UintToString(uint32(exp), dst+len);
+	len += UintToString(uint32(exp), dst + len);
 	return len;
 }
 
-template<typename T> constexpr index_t FloatToString(GenericFloat<T, 10> x, char decimalSep, char e, char* dst)
+template<typename T> INTRA_NOINLINE constexpr index_t FloatToString(GenericFloat<T, 10> x, char decimalSep, char e, char* dst)
 {
 	enum {
 		MantissaDigits = int(sizeof(T) * 5 + 1) / 2,
@@ -189,7 +241,7 @@ template<typename T> constexpr index_t FloatToString(GenericFloat<T, 10> x, char
 	};
 	const bool fixedReprIsTooLong = MantissaDigits < x.Exponent || x.Exponent < -MantissaDigits - LeadingZerosBeforeSciFormat;
 	if(fixedReprIsTooLong) return DecimalToStringScientific(x, decimalSep, e, dst);
-	index_t len = UintToString(x.Mantissa, dst+1);
+	index_t len = UintToString(x.Mantissa, dst + 1);
 	index_t lenOfFixedFormat = len;
 	if(x.Exponent >= 0) lenOfFixedFormat += x.Exponent;
 	else
@@ -230,6 +282,7 @@ struct FormatParams
 	uint8 MinWidth = 0;
 };
 
+#if 0
 template<CCharOutput R, CBasicArithmetic X>
 constexpr R&& operator<<(R&& dst, X x)
 {
@@ -279,105 +332,72 @@ constexpr R&& operator<<(R&& dst, Collection&& r)
 
 template<CCharOutput OR, typename T> requires(!CBasicArithmetic<TRemoveReference<T>>)
 constexpr void ToString(OR&& dst, T&& v) {dst << INTRA_FWD(v);}
+#endif
 
-template<CCharOutput R, CBasicIntegral X> constexpr void ToString(R&& dst, X number, int minWidth, char filler = ' ', unsigned base = 10)
+template<CBasicIntegral X> constexpr void ToString(RCeilCounter<>& dst, X number, int minWidth, char filler = ' ', unsigned base = 10)
 {
-	if constexpr(CCeilCounter<R>)
+	size_t maxLog = sizeof(X) * 2;
+	if(base < 8) maxLog = sizeof(X) * 8;
+	else if(base < 16) maxLog = (sizeof(X) * 8 + 2) / 3;
+	dst.Counter += Max(index_t(maxLog) + CBasicSigned<X>, minWidth);
+}
+
+template<CBasicIntegral X> constexpr void ToString(char*& dst, X number, int minWidth, char filler = ' ', unsigned base = 10)
+{
+	if constexpr(CBasicSigned<X>)
 	{
-		index_t maxLog = sizeof(X)*2;
-		if(base < 8) maxLog = sizeof(X)*8;
-		else if(base < 16) maxLog = (sizeof(X)*8+2)/3;
-		dst.PopFirstCount(Max(maxLog + CBasicSigned<X>, index_t(minWidth)));
-	}
-	else if constexpr(CBasicSigned<X>)
-	{
-		if(number < 0)
-		{
-			if(FullOpt(dst).GetOr(false)) return;
-			dst.Put('-');
-			minWidth--;
-		}
+		if(number < 0) *dst++ = '-', minWidth--;
 		ToString(dst, TToUnsigned<X>(Abs(number)), minWidth, filler, base);
 	}
 	else
 	{
 		INTRA_PRECONDITION(base >= 2 && base <= 36);
-		char reversed[64];
+		char reversed[SizeofInBits<X>];
 		char* rev = reversed;
-		do *rev++ = "0123456789abcdefghijklmnopqrstuvwxyz"[number % base], number = X(number / base);
-		while(number != 0);
+		do *rev++ = "0123456789abcdefghijklmnopqrstuvwxyz"[number % base], number = X(number / base); while(number != 0);
 		for(int i = 0, s = int(minWidth - (rev - reversed)); i < s; i++)
-		{
-			if(FullOpt(dst).GetOr(false)) return;
-			dst.Put(filler);
-		}
-		while(rev != reversed && !FullOpt(dst).GetOr(false)) dst.Put(*--rev);
+			*dst++ = filler;
+		while(rev != reversed) *dst++ = *--rev;
 	}
 }
 
-template<CCharOutput R, CBasicIntegral X> constexpr void ToString(R&& dst, X x)
+template<typename T> auto MinBufferSizeForToString = [] {
+	if constexpr(CBasicIntegral<T>) return CChar<T>? 1: CSameUnqual<T, bool>? 5:
+		CBasicSigned<T> + (sizeof(T) < 2? 3: sizeof(T) == 2? 5: sizeof(T) <= 4? 10: sizeof(T) <= 8? 18: 35); // valid for radix >= 10
+	else if constexpr(CBasicFloatingPoint<T>) return sizeof(T) <= 4? 20: 30;
+	else if constexpr(CBasicPointer<T>) return sizeof(T) * 2;
+	else return Undefined;
+}();
+
+template<CBasicIntegral X> constexpr void ToString(char*& dst, X x)
 {
-	if constexpr(CCeilCounter<R>)
-	{
-		dst.PopFirstCount(CChar<X>? 1:
-			CBasicSigned<X> + (sizeof(X) < 2? 3: sizeof(X) == 2? 5: sizeof(X) <= 4? 10: sizeof(X) <= 8? 18: 35));
-	}
-	else if constexpr(CChar<X>) dst.Put(x);
+	if constexpr(CChar<X>) *dst++ = x;
 	else if constexpr(CBasicSigned<X>)
 	{
 		if(x < 0)
 		{
-			if(FullOpt(dst).GetOr(false)) return;
-			dst.Put('-');
+			*dst++ = '-';
 			x = X(-x);
 		}
 		ToString(dst, TToUnsigned<X>(x));
 	}
-	else if constexpr(sizeof(X) >= sizeof(size_t))
+	else
 	{
-		char reversed[20];
-		char* rev = reversed;
-		do *rev++ = char(x % 10 + '0'), x /= 10;
-		while(x != 0);
-		while(rev != reversed && !FullOpt(dst).GetOr(false)) dst.Put(*--rev);
-	}
-	else ToString(dst, size_t(x));
-}
-
-template<COutputCharRange R, CBasicUnsignedIntegral X> constexpr void ToStringHexInt(R&& dst, X number)
-{
-	if constexpr(CCeilCounter<R>)
-	{
-		dst.PopFirstCount(sizeof(X*)*2);
-		return;
-	}
-	index_t digitPos = index_t(sizeof(X) * 2);
-	while(digitPos-- && !FullOr(dst))
-	{
-		int value = int(number >> (digitPos*4)) & 15;
-		if(value > 9) value += 'A'-10;
-		else value += '0';
-		dst.Put(TRangeValue<R>(value));
+		if constexpr(sizeof(X) == 1) dst += UintToString10k(x, dst);
+		else if constexpr(sizeof(X) <= 4) dst += UintToString(uint32(x), dst);
+		else dst += UintToString(uint64(x), dst);
 	}
 }
 
-
-template<COutputCharRange R, typename X> INTRA_FORCEINLINE void ToString(R&& dst, X* pointer)
+INTRA_FORCEINLINE void ToString(char*& dst, void* pointer)
 {
-	ToStringHexInt(dst, size_t(pointer));
+	UintToHexString(size_t(pointer), dst, false);
+	dst += sizeof(pointer) * 2;
 }
 
-template<COutputCharRange R> constexpr void ToString(R&& dst, decltype(nullptr)) {ToString(dst, "nullptr"_v);}
-
-template<COutputCharRange R> constexpr void ToStringReal(R&& dst, long double number, int preciseness=15,
-	char dot='.', bool appendAllDigits=false)
+template<CBasicFloatingPoint T> constexpr void ToString(char*& dst, T number,
+	char decimalSep = '.', bool appendAllDigits = false)
 {
-	if constexpr(CCeilCounter<R>)
-	{
-		dst.PopFirstCount(20 + 1 + (preciseness + 1));
-		return;
-	}
-
 	if(number == NaN)
 	{
 		"NaN"_span|WriteTo(dst);
@@ -393,56 +413,14 @@ template<COutputCharRange R> constexpr void ToStringReal(R&& dst, long double nu
 		"-Infinity"_span|WriteTo(dst);
 		return;
 	}
-
-	//TODO: use Ryu algorithm
-	if(number < 0)
-	{
-		if(FullOpt(dst).GetOr(false)) return;
-		dst.Put('-');
-		number = -number;
-	}
-
-	const uint64 integralPart = uint64(number);
-	long double fractional = number - static_cast<long double>(integralPart);
-	if(fractional > 0.99)
-	{
-		ToString(dst, integralPart+1);
-		fractional = 0;
-	}
-	else ToString(dst, integralPart);
-
-	if(preciseness == 0) return;
-
-	if(FullOpt(dst).GetOr(false)) return;
-	dst.Put(dot);
-	do
-	{
-		if(FullOpt(dst).GetOr(false)) return;
-		fractional *= 10;
-		int digit = int(fractional);
-		fractional -= digit;
-		if(fractional > 0.99) fractional = 0, digit++;
-		dst.Put(char('0' + digit));
-	} while((fractional >= 0.01 || appendAllDigits) && --preciseness > 0);
+	dst += FloatToString(number, decimalSep, 'e', dst);
 }
 
-template<CCharOutput R, CBasicFloatingPoint X> constexpr void ToString(R&& dst, X number,
-	int preciseness = sizeof(X) <= 4? 7: 15, char dot = '.', bool appendAllDigits = false)
+constexpr void ToString(char*& dst, bool value)
 {
-	ToStringReal(dst, number, preciseness, dot, appendAllDigits);
-}
-
-template<CCharOutput R> constexpr void ToString(R&& dst, bool value)
-{
-	if constexpr(CCeilCounter<R>)
-	{
-		dst.PopFirstCount(5);
-		return;
-	}
-
-	INTRA_PRECONDITION(byte(value) <= 1);
-	const char* str = value? "true": "false";
-	while(*str != '\0' && !FullOpt(dst).GetOr(false)) dst.Put(*str++);
+	const size_t n = value? 4: 5;
+	MemoryCopySmall8(Unsafe, dst, value? "true": "false", n);
+	dst += n;
 }
 
 
@@ -518,7 +496,7 @@ constexpr X ParseAdvance(R& src)
 /// Сопоставляет начало исходного потока src со stringToExpect, игнорируя пробелы в начале src и stringToExpect.
 /// В случае совпадения сдвигает начало src в конец вхождения stringToExpect, а stringToExpect сдвигает в конец, делая его пустым.
 /// В случае несовпадения удаляет только пробелы из начала обоих потоков.
-/// @return Возвращает true в случае совпадения src и stringToExpect.
+/// @return true в случае совпадения src и stringToExpect.
 template<CCharRange R, CCharRange CR> requires (!CConst<R>) && (!CConst<CR>)
 constexpr bool ExpectAdvance(R& src, CR& stringToExpect)
 {
@@ -605,7 +583,7 @@ INTRA_DEFINE_FUNCTOR(StringFormat)(StringView format, auto&&... args)
 {
 	if constexpr(sizeof...(args))
 	{
-		const uint16_t formatSpecOffsets[] = {z_D::mapArgToFmt(args)...};
+		const uint16 formatSpecOffsets[] = {z_D::mapArgToFmt(args)...};
 		z_D::prepareFormatString(format, formatSpecOffsets);
 		auto res = StringSprintf(format, z_D::mapStorageToSprintf(z_D::mapArgStorage(INTRA_FWD(args)))...);
 		return res;

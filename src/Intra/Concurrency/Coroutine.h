@@ -2,7 +2,6 @@
 
 #include <Intra/Core.h>
 
-
 #if !defined(_MSC_VER) && !defined(__clang__)
 // GCC gives ICE without this header
 #include <coroutine>
@@ -17,7 +16,7 @@ struct Coroutine;
 // Currently supported:
 // 1. MSVC 2019+
 // 2. GCC 10.1+ works only with #include <coroutine> and -fcoroutines, otherwise ICE
-// 3. Clang 11+ (previous versions give ICE)
+// 3. Clang 11-17 (previous versions give ICE)
 // TODO: test with libc++
 namespace std {
 #if !defined(_MSC_VER)
@@ -26,10 +25,12 @@ inline namespace __n4861 { // libstdc++; libc++ may work differently
 template<class> struct coroutine_handle;
 template<class Ret, class...> struct coroutine_traits;
 #if !defined(_MSC_VER)
+#if !defined(__clang__) || __clang_major__ <= 13
 namespace experimental {
 template<typename... Ts> struct coroutine_traits: std::coroutine_traits<Ts...> {};
 template<typename... Ts> struct coroutine_handle: std::coroutine_handle<Ts...> {};
 }
+#endif
 }
 #endif
 

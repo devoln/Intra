@@ -37,10 +37,11 @@ class WinSockPoller
 	HANDLE mSocketEvents[NumSocketGroups];
 	Atomic<bool> mFinished = false;
 	Mutex mMutex;
+	EventQueue* mEventQueue;
 public:
 	// NOTE: In order to process all events, thread must be one of the threads that runs ProcessEvents or Run.
 	//  Otherwise, callbacks from ScheduleCallback won't be called.
-	WinSockPoller();
+	WinSockPoller(EventQueue* myEventQueue = nullptr);
 
 	WinSockPoller(WinSockPoller&&) = delete;
 	WinSockPoller& operator=(WinSockPoller&&) = delete;
@@ -58,8 +59,8 @@ public:
 	bool Finish(HANDLE dstThread);
 	bool IsFinished() const {return mFinished.Get();}
 
-	LResult<int> ProcessEvents(Optional<TimeDelta> waitTimeout = {});
-	void Run() {while(!IsFinished()) ProcessEvents();}
+	LResult<int> ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept;
+	void Run() noexcept {while(!IsFinished()) ProcessEvents();}
 
 private:
 	Subscription& subscriptionByFd(int fd);
@@ -86,7 +87,7 @@ class EventQueue
 	// Create these objects lazily only when they are first needed (first socket attached or first timer created)
 	Optional<WinSockPoller> mEventPoller;
 	WinThread mEventThread;
-	PCallable<void()> mFinishCallback; // storage for a callback scheduled on Finish() to wake each thread
+	Atomic<ICallable<void()>*> mFinishCallback; // storage for a callback scheduled on Finish() to wake each thread
 	
 	void callOnSocketEvent(Socket& socket, CallbackPtr callback, int callbackIndex);
 	void initThread();
@@ -98,7 +99,7 @@ public:
 		z_D::OVERLAPPED Overlapped;
 		CallbackPtr Callback;
 	};
-	bool IsFinished() const {return bool(mFinishCallback);}
+	bool IsFinished() const noexcept {return mFinishCallback.Get() != nullptr;}
 
 #elif defined(__linux__)
 	using CallbackPtr = ICallback<void()>*;
@@ -143,7 +144,7 @@ public:
 	EventQueue(EventQueue&&) = delete;
 	EventQueue& operator=(EventQueue&&) = delete;
 
-	// NOTE: Plftform-specific behaviour: om Windows these calls force socket to become non-blocking
+	// NOTE: Platform-specific behaviour: om Windows these calls force socket to become non-blocking
 	void CallOnReadable(Socket& socket, CallbackPtr callback);
 	void CallOnWritable(Socket& socket, CallbackPtr callback);
 	void CallOnError(Socket& socket, CallbackPtr callback);
@@ -155,8 +156,8 @@ public:
 	Result<TimerID> SetTimer(TimerID id, TimeDelta delta, bool periodic) {return setTimer(id, delta.IntNanoseconds(), false, periodic);}
 	ErrorCode FreeTimer(TimerID id);
 
-	LResult<int> ProcessEvents(Optional<TimeDelta> waitTimeout = {});
-	void Run() {while(!IsFinished()) ProcessEvents();}
+	LResult<int> ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept;
+	void Run() noexcept {while(!IsFinished()) ProcessEvents();}
 
 private:
 	Result<TimerID> setTimer(TimerID id, int64 value, bool abs, bool repeat);

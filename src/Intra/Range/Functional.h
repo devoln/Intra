@@ -5,26 +5,27 @@
 
 namespace Intra { INTRA_BEGIN
 
-template<class R, typename P = decltype(Equal)> class IsOneOf: P
+template<CNonInfiniteForwardRange R, CElementPredicate P = decltype(Equal)> class IsOneOf
 {
-	static_assert(CNonInfiniteForwardRange<R>);
+	INTRA_NO_UNIQUE_ADDRESS P mPred;
 	R mSet;
-	R mFound;
 public:
-	constexpr IsOneOf(R set): mSet(Move(set)) {}
-	constexpr IsOneOf(R set, P pred): P(Move(pred)), mSet(Move(set)) {}
+	constexpr IsOneOf(R set): mSet(INTRA_MOVE(set)) {}
+	constexpr IsOneOf(R set, P pred): mPred(INTRA_MOVE(pred)), mSet(INTRA_MOVE(set)) {}
 
-	template<typename T> requires CCallable<P, T&&>
+	template<typename T> requires CCallableWithSignature<P, bool(T&&)>
 	[[nodiscard]] constexpr bool operator()(T&& arg)
 	{
-		mFound = mSet;
-		while(!mFound.Empty() && !P::operator()(mFound.First())) mFound.PopFirst();
-		return !mFound.Empty();
+		Which = mSet;
+		while(!Which.Empty() && !mPred(Which.First()))
+			Which.PopFirst();
+		return !Which.Empty();
 	}
 
-	auto Which() const {return mFound.First();}
+	// If last predicate call returned true, points to the first matching element. Otherwise empty.
+	R Which;
 };
-template<class R> IsOneOf(R) -> IsOneOf<TRangeOfRef<R>>;
-template<class R, class P> IsOneOf(R, P) -> IsOneOf<TRangeOfRef<R>, TFunctorOf<P>>;
+template<CNonInfiniteForwardList L> IsOneOf(L) -> IsOneOf<TRangeOfRef<L>>;
+template<CNonInfiniteForwardList L, class P> IsOneOf(L, P) -> IsOneOf<TRangeOfRef<L>, TFunctorOf<P>>;
 
 } INTRA_END

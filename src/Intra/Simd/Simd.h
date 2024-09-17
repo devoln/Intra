@@ -20,6 +20,20 @@
 #endif
 #endif
 
+#ifdef _MSC_VER
+#define INTRA_ISA_TARGET(instrset)
+#else
+#define INTRA_ISA_TARGET(instrset) __attribute__((__target__ (instrset)));
+#endif
+#define INTRA_TARGET_SSE2 INTRA_ISA_TARGET("sse2")
+#define INTRA_TARGET_SSE3 INTRA_ISA_TARGET("sse3")
+#define INTRA_TARGET_SSSE3 INTRA_ISA_TARGET("ssse3")
+#define INTRA_TARGET_SSE41 INTRA_ISA_TARGET("sse4.1")
+#define INTRA_TARGET_SSE4 INTRA_ISA_TARGET("sse4")
+#define INTRA_TARGET_AVX INTRA_ISA_TARGET("avx")
+#define INTRA_TARGET_AVX2 INTRA_ISA_TARGET("avx2")
+#define INTRA_TARGET_FMA INTRA_ISA_TARGET("fma")
+
 
 namespace Intra { INTRA_BEGIN
 namespace Config {
@@ -137,7 +151,7 @@ false;
 
 template<typename T> constexpr size_t TargetMaxSimdLength = (TargetHasAVX512F? 64:
 	(CBasicIntegral<T>? TargetHasAVX2: TargetHasAVX)? 32:
-	(TargetHasNEON || (CBasicIntegral<T>? TargetHasSSE: TargetHasSSE2))? 16: sizeof(T))/sizeof(T);
+	(TargetHasNEON || (CBasicIntegral<T>? TargetHasSSE: TargetHasSSE2))? 16: sizeof(T)) / sizeof(T);
 }
 } INTRA_END
 
@@ -213,22 +227,22 @@ struct m256u {char c[32];};
 struct m512u {char c[64];};
 
 extern "C" {
-	__m128 _mm_set_ps(INTRA_MACRO_SIMPLE_REPEAT(4, float, (,)));
-	__m128d _mm_set_pd(INTRA_MACRO_SIMPLE_REPEAT(2, double, (,)));
+	__m128 _mm_set_ps(float, float, float, float);
+	__m128d _mm_set_pd(double, double);
 
 	__m128i _mm_set_epi8(INTRA_MACRO_SIMPLE_REPEAT(16, char, (,)));
 	__m128i _mm_set_epi16(INTRA_MACRO_SIMPLE_REPEAT(8, int16, (,)));
-	__m128i _mm_set_epi32(INTRA_MACRO_SIMPLE_REPEAT(4, int32, (,)));
-	__m128i _mm_set_epi64x(INTRA_MACRO_SIMPLE_REPEAT(2, int64, (,)));
+	__m128i _mm_set_epi32(int, int, int, int);
+	__m128i _mm_set_epi64x(int64, int64);
 
 
 	__m256 _mm256_set_ps(INTRA_MACRO_SIMPLE_REPEAT(8, float, (,)));
-	__m256d _mm256_set_pd(INTRA_MACRO_SIMPLE_REPEAT(4, double, (,)));
+	__m256d _mm256_set_pd(double, double, double, double);
 
 	__m256i _mm256_set_epi8(INTRA_MACRO_SIMPLE_REPEAT(32, char, (,)));
 	__m256i _mm256_set_epi16(INTRA_MACRO_SIMPLE_REPEAT(16, int16, (,)));
 	__m256i _mm256_set_epi32(INTRA_MACRO_SIMPLE_REPEAT(8, int32, (,)));
-	__m256i _mm256_set_epi64x(INTRA_MACRO_SIMPLE_REPEAT(4, int64, (,)));
+	__m256i _mm256_set_epi64x(int64, int64, int64, int64);
 
 
 	__m512 _mm512_set_ps(INTRA_MACRO_SIMPLE_REPEAT(16, float, (,)));
@@ -498,96 +512,94 @@ private:
 		TPackAt<CBasicIntegral<T>? 0: CSame<float, T>? 1: 2, z_D::__m512i, z_D::__m512, z_D::__m512d>
 	>;
 
-	static constexpr bool SupportedByTarget =
+	static constexpr bool SupportedByTarget = !CVoid<V> &&
 		(sizeof(V) == 16 ||
 			sizeof(V) == 32 && (CBasicIntegral<T>? Config::TargetHasAVX2: Config::TargetHasAVX) ||
 			sizeof(V) == 64 && Config::TargetHasAVX512F
-		) &&
-		!CVoid<V>;
-
+		);
 
 	using TInt = TToIntegral<T>;
-	using EquivIntVector = SimdVector<TInt>;
+	using EquivIntVector = SimdVector<TInt, N>;
 
 public:
 	V mV;
 
 	SimdVector() = default;
-	template<typename V1> requires(sizeof(V1) == sizeof(V) && alignof(V1) == alignof(V))
+	template<CSameSize<V> V1> requires(alignof(V1) == alignof(V))
 	explicit INTRA_FORCEINLINE SimdVector(V1 v) noexcept: mV(reinterpret_cast<V&>(v)) {}
 
-	template<typename V1> requires(sizeof(V1) == sizeof(V) && alignof(V1) == alignof(V))
+	template<CSameSize<V> V1> requires(alignof(V1) == alignof(V))
 	explicit INTRA_FORCEINLINE operator V1() const noexcept {return reinterpret_cast<V1&>(mV);}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1=0) noexcept requires(N == 2)
+	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0) noexcept requires(N == 2)
 	{
 		if constexpr(CSame<T, double>) mV = z_D::_mm_set_pd(x1, x0);
-		else if constexpr(sizeof(T) == sizeof(int64)) mV = z_D::_mm_set_epi64x(int64(x1), int64(x0));
-		else static_assert(false);
+		else if constexpr(CSameSize<T, int64>) mV = z_D::_mm_set_epi64x(int64(x1), int64(x0));
+		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1=0, T x2=0, T x3=0) noexcept requires(N == 4)
+	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0, T x2 = 0, T x3 = 0) noexcept requires(N == 4)
 	{
 		if constexpr(CSame<T, float>) mV = z_D::_mm_set_ps(x3, x2, x1, x0);
 		else if constexpr(CSame<T, double>) mV = z_D::_mm256_set_pd(x3, x2, x1, x0);
-		else if constexpr(sizeof(T) == sizeof(int64)) mV = z_D::_mm256_set_epi64x(int64(x3), int64(x2), int64(x1), int64(x0));
-		else if constexpr(sizeof(T) == sizeof(int)) mV = z_D::_mm_set_epi32(int(x3), int(x2), int(x1), int(x0));
-		else static_assert(false);
+		else if constexpr(CSameSize<T, int64>) mV = z_D::_mm256_set_epi64x(int64(x3), int64(x2), int64(x1), int64(x0));
+		else if constexpr(CSameSize<T, int>) mV = z_D::_mm_set_epi32(int(x3), int(x2), int(x1), int(x0));
+		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1=0, T x2=0, T x3=0, T x4=0, T x5=0, T x6=0, T x7=0) noexcept requires(N == 8)
+	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0) noexcept requires(N == 8)
 	{
 		if constexpr(CSame<T, float>) mV = z_D::_mm256_set_ps(x7, x6, x5, x4, x3, x2, x1, x0);
 		else if constexpr(CSame<T, double>)
 			mV = z_D::_mm512_set_pd(x7, x6, x5, x4, x3, x2, x1, x0);
-		else if constexpr(sizeof(T) == sizeof(int64))
+		else if constexpr(CSameSize<T, int64>)
 			mV = z_D::_mm512_set_epi64(int64(x7), int64(x6), int64(x5), int64(x4), int64(x3), int64(x2), int64(x1), int64(x0));
-		else if constexpr(sizeof(T) == sizeof(int))
+		else if constexpr(CSameSize<T, int>)
 			mV = z_D::_mm256_set_epi32(int(x7), int(x6), int(x5), int(x4), int(x3), int(x2), int(x1), int(x0));
-		else if constexpr(sizeof(T) == sizeof(short))
-			mV = z_D::_mm_set_epi16(short(x7), short(x6), short(x5), short(x4), short(x3), short(x2), short(x1), short(x0));
-		else static_assert(false);
+		else if constexpr(CSameSize<T, int16>)
+			mV = z_D::_mm_set_epi16(int16(x7), int16(x6), int16(x5), int16(x4), int16(x3), int16(x2), int16(x1), int16(x0));
+		else static_assert(CFalse<T>);
 	}
 
 	explicit INTRA_FORCEINLINE SimdVector(
-		T x0, T x1=0, T x2=0, T x3=0, T x4=0, T x5=0, T x6=0, T x7=0,
-		T x8=0, T x9=0, T x10=0, T x11=0, T x12=0, T x13=0, T x14=0, T x15=0) noexcept requires(N == 16)
+		T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
+		T x8 = 0, T x9 = 0, T x10 = 0, T x11 = 0, T x12 = 0, T x13 = 0, T x14 = 0, T x15 = 0) noexcept requires(N == 16)
 	{
 		if constexpr(CSame<T, float>)
 			mV = z_D::_mm512_set_ps(x15, x14, x13, x12, x11, x10, x9, x8, x7, x6, x5, x4, x3, x2, x1, x0);
-		else if constexpr(sizeof(T) == sizeof(int))
+		else if constexpr(CSameSize<T, int>)
 			mV = z_D::_mm512_set_epi32(
 				int(x15), int(x14), int(x13), int(x12), int(x11), int(x10), int(x9), int(x8),
 				int(x7), int(x6), int(x5), int(x4), int(x3), int(x2), int(x1), int(x0));
-		else if constexpr(sizeof(T) == sizeof(short))
+		else if constexpr(CSameSize<T, int16>))
 			mV = z_D::_mm256_set_epi16(
-				short(x15), short(x14), short(x13), short(x12), short(x11), short(x10), short(x9), short(x8),
-				short(x7), short(x6), short(x5), short(x4), short(x3), short(x2), short(x1), short(x0));
-		else if constexpr(sizeof(T) == sizeof(char))
+				int16(x15), int16(x14), int16(x13), int16(x12), int16(x11), int16(x10), int16(x9), int16(x8),
+				int16(x7), int16(x6), int16(x5), int16(x4), int16(x3), int16(x2), int16(x1), int16(x0));
+		else if constexpr(CSameSize<T, char>)
 			mV = z_D::_mm_set_epi8(char(x15), char(x14), char(x13), char(x12), char(x11), char(x10), char(x9), char(x8),
 				char(x7), char(x6), char(x5), char(x4), char(x3), char(x2), char(x1), char(x0));
-		else static_assert(false);
+		else static_assert(CFalse<T>);
 	}
 
 	explicit INTRA_FORCEINLINE SimdVector(
-		T x0, T x1=0, T x2=0, T x3=0, T x4=0, T x5=0, T x6=0, T x7=0,
-		T x8=0, T x9=0, T x10=0, T x11=0, T x12=0, T x13=0, T x14=0, T x15=0,
-		T x16=0, T x17=0, T x18=0, T x19=0, T x20=0, T x21=0, T x22=0, T x23=0,
-		T x24=0, T x25=0, T x26=0, T x27=0, T x28=0, T x29=0, T x30=0, T x31=0) noexcept requires(N == 32)
+		T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
+		T x8 = 0, T x9 = 0, T x10 = 0, T x11 = 0, T x12 = 0, T x13 = 0, T x14 = 0, T x15 = 0,
+		T x16 = 0, T x17 = 0, T x18 = 0, T x19 = 0, T x20 = 0, T x21 = 0, T x22 = 0, T x23 = 0,
+		T x24 = 0, T x25 = 0, T x26 = 0, T x27 = 0, T x28 = 0, T x29 = 0, T x30 = 0, T x31 = 0) noexcept requires(N == 32)
 	{
-		if constexpr(sizeof(T) == sizeof(short))
+		if constexpr(CSameSize<T, int16>)
 			mV = z_D::_mm512_set_epi16(
-				short(x31), short(x30), short(x29), short(x28), short(x27), short(x26), short(x25), short(x24),
-				short(x23), short(x22), short(x21), short(x20), short(x19), short(x18), short(x17), short(x16),
-				short(x15), short(x14), short(x13), short(x12), short(x11), short(x10), short(x9), short(x8),
-				short(x7), short(x6), short(x5), short(x4), short(x3), short(x2), short(x1), short(x0));
-		else if constexpr(sizeof(T) == sizeof(char))
+				int16(x31), int16(x30), int16(x29), int16(x28), int16(x27), int16(x26), int16(x25), int16(x24),
+				int16(x23), int16(x22), int16(x21), int16(x20), int16(x19), int16(x18), int16(x17), int16(x16),
+				int16(x15), int16(x14), int16(x13), int16(x12), int16(x11), int16(x10), int16(x9), int16(x8),
+				int16(x7), int16(x6), int16(x5), int16(x4), int16(x3), int16(x2), int16(x1), int16(x0));
+		else if constexpr(CSameSize<T, char>)
 			mV = z_D::_mm256_set_epi8(
 				char(x31), char(x30), char(x29), char(x28), char(x27), char(x26), char(x25), char(x24),
 				char(x23), char(x22), char(x21), char(x20), char(x19), char(x18), char(x17), char(x16),
 				char(x15), char(x14), char(x13), char(x12), char(x11), char(x10), char(x9), char(x8),
 				char(x7), char(x6), char(x5), char(x4), char(x3), char(x2), char(x1), char(x0));
-		else static_assert(false);
+		else static_assert(CFalse<T>);
 	}
 
 	
@@ -595,7 +607,7 @@ public:
 	INTRA_FORCEINLINE SimdVector operator+(SimdVector rhs) const noexcept
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_add<T>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_add<T>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_add<TToSigned<T>>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(+);
 	}
@@ -603,7 +615,7 @@ public:
 	INTRA_FORCEINLINE SimdVector operator-(SimdVector rhs) const noexcept
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_sub<T>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_sub<T>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_sub<TToSigned<T>>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(-);
 	}
@@ -633,13 +645,13 @@ public:
 			}
 			else if constexpr(CSame<T, int8>)
 			{
-				const auto a16 = SimdVector<uint16, N/2>(*this);
-				const auto b16 = SimdVector<uint16, N/2>(rhs);
+				const auto a16 = SimdVector<uint16, N / 2>(*this);
+				const auto b16 = SimdVector<uint16, N / 2>(rhs);
 				const auto dstEven = a16 * b16;
 				const auto dstOdd = (a16 >> 8) * (b16 >> 8));
-				SimdVector<uint16, N/2> mask;
+				SimdVector<uint16, N / 2> mask;
 				if constexpr(Config::TargetHasAVX2)
-					mask = (dstEven & SimdVectorFilled<N/2, uint16>(0xFF)); //AVX2?
+					mask = (dstEven & SimdVectorFilled<N / 2, uint16>(0xFF)); // AVX2?
 				else mask = (dstEven << 8) >> 8;
 				return SimdVector((dstOdd << 8) | mask);
 			}
@@ -649,7 +661,7 @@ public:
 			}
 			else
 		#endif
-				if constexpr(!CSame<decltype(z_D::simd_mul<T>(mV, rhs.mV)), TUndefined>)
+				if constexpr(CDefined<decltype(z_D::simd_mul<T>(mV, rhs.mV))>)
 					return SimdVector(z_D::simd_mul<T>(mV, rhs.mV));
 		}
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(*);
@@ -658,7 +670,7 @@ public:
 	INTRA_FORCEINLINE SimdVector operator/(SimdVector rhs) const
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_div<T>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_div<T>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_div<T>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(/);
 	}
@@ -671,39 +683,37 @@ public:
 	INTRA_FORCEINLINE SimdVector operator&(SimdVector rhs) const noexcept requires CBasicIntegral<T>
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_and<void>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_and<void>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_and<void>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(&);
 	}
 	INTRA_FORCEINLINE SimdVector operator|(SimdVector rhs) const noexcept requires CBasicIntegral<T>
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_or<void>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_or<void>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_or<void>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(|);
 	}
 	INTRA_FORCEINLINE SimdVector operator^(SimdVector rhs) const noexcept requires CBasicIntegral<T>
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N &&
-			!CSame<decltype(z_D::simd_xor<void>(mV, rhs.mV)), TUndefined>)
+			CDefined<decltype(z_D::simd_xor<void>(mV, rhs.mV))>)
 			return SimdVector(z_D::simd_xor<void>(mV, rhs.mV));
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(^);
 	}
-	INTRA_FORCEINLINE SimdVector operator~() const noexcept requires CBasicIntegral<T>
-	{
-		return *this ^ T(-1);
-	}
+	INTRA_FORCEINLINE SimdVector operator~() const noexcept requires CBasicIntegral<T> {return *this ^ T(-1);}
 
 
 	INTRA_FORCEINLINE SimdVector operator<<(int bits) const noexcept requires CBasicIntegral<T>
 	{
 		if constexpr(Config::TargetMaxSimdLength<T> >= N)
 		{
-			if constexpr(sizeof(T) == sizeof(int8))
+			if constexpr(CSameSize<T, int8>)
 			{
-				return SimdVector(SimdVector<uint16, N/2>(mV) << bits) & SimdVectorFilled<uint8, N>(0xFFu << (bits & 15)));
+				// TODO: support both signed/unsigned shifts
+				return SimdVector(SimdVector<uint16, N / 2>(mV) << bits) & SimdVectorFilled<uint8, N>(0xFFu << (bits & 15)));
 			}
-			else if constexpr(!CSame<decltype(z_D::simd_shl<void>(mV, rhs.mV)), TUndefined>)
+			else if constexpr(CDefined<decltype(z_D::simd_shl<void>(mV, rhs.mV))>)
 				return SimdVector(z_D::simd_shl<TToSigned<T>>(mV, rhs.mV));
 		}
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL_SCALAR(<<);
@@ -720,16 +730,16 @@ public:
 			else if constexpr(CSame<T, uint8>)
 			{
 				if constexpr(N == 16) return SimdVector(z_D::_mm_packs_epi16(
-					SimdVector<int16, N/2>(z_D::_mm_unpacklo_epi8(mV, mV)) >> (8 + bits),
-					SimdVector<int16, N/2>(z_D::_mm_unpackhi_epi8(mV, mV)) >> (8 + bits)
+					SimdVector<int16, N / 2>(z_D::_mm_unpacklo_epi8(mV, mV)) >> (8 + bits),
+					SimdVector<int16, N / 2>(z_D::_mm_unpackhi_epi8(mV, mV)) >> (8 + bits)
 				));
 				else if constexpr(N == 32) return SimdVector(z_D::_mm256_packs_epi16(
-					SimdVector<int16, N/2>(z_D::_mm256_unpacklo_epi8(mV, mV)) >> (8 + bits),
-					SimdVector<int16, N/2>(z_D::_mm256_unpackhi_epi8(mV, mV)) >> (8 + bits)
+					SimdVector<int16, N / 2>(z_D::_mm256_unpacklo_epi8(mV, mV)) >> (8 + bits),
+					SimdVector<int16, N / 2>(z_D::_mm256_unpackhi_epi8(mV, mV)) >> (8 + bits)
 				));
 				else if constexpr(N == 64) return SimdVector(z_D::_mm512_packs_epi16(
-					SimdVector<int16, N/2>(z_D::_mm512_unpacklo_epi8(mV, mV)) >> (8 + bits),
-					SimdVector<int16, N/2>(z_D::_mm512_unpackhi_epi8(mV, mV)) >> (8 + bits)
+					SimdVector<int16, N / 2>(z_D::_mm512_unpacklo_epi8(mV, mV)) >> (8 + bits),
+					SimdVector<int16, N / 2>(z_D::_mm512_unpackhi_epi8(mV, mV)) >> (8 + bits)
 				));
 			}
 			else if constexpr(CSame<T, int64> && !Config::TargetHasAVX512F)
@@ -738,16 +748,16 @@ public:
 				{
 					if(bits <= 32)
 					{
-						const auto sra = SimdVector<int32, N*2>(*this) >> bits;  // a >> b signed dwords
+						const auto sra = SimdVector<int, N * 2>(*this) >> bits;  // a >> b signed dwords
 						const auto srl = SimdVector<uint64, N>(*this) >> bits;   // a >> b unsigned qwords
-						return SimdSelect(SimdVector(srl), SimdVector(sra), SimdVector(SimdVector<int32, N*2>{0, -1, 0, -1})); // mask for signed high part
+						return SimdSelect(SimdVector(srl), SimdVector(sra), SimdVector(SimdVector<int, N * 2>{0, -1, 0, -1})); // mask for signed high part
 					}
 					else
 					{
-						const auto sign = SimdVector<int32, N*2>(*this) >> 31;       // sign of a
-						const auto sra2 = SimdVector<int32, N*2>(*this) >> (b - 32); // a >> (b-32) signed dwords
+						const auto sign = SimdVector<int, N * 2>(*this) >> 31;       // sign of a
+						const auto sra2 = SimdVector<int, N * 2>(*this) >> (bits - 32); // a >> (b-32) signed dwords
 						const auto sra3 = SimdVector<uint64, N>(sra2) >> 32;         // a >> (b-32) >> 32 (second shift unsigned qword)
-						return SimdSelect(SimdVector(sra3), SimdVector(sign), SimdVector(SimdVector<int32, N*2>{0, -1, 0, -1})); // mask for high part containing only sign
+						return SimdSelect(SimdVector(sra3), SimdVector(sign), SimdVector(SimdVector<int, N * 2>{0, -1, 0, -1})); // mask for high part containing only sign
 					}
 				}
 			}
@@ -762,8 +772,8 @@ public:
 		if constexpr(Config::TargetMaxSimdLength<T> >= N)
 		{
 			if constexpr(!Config::TargetHasAVX2) {}
-			else if constexpr(!Config::TargetHasAVX512F && sizeof(T) == sizeof(int16)) {}
-			else if constexpr(!CSame<decltype(z_D::simd_shl<T>(mV, rhs.mV)), TUndefined>)
+			else if constexpr(!Config::TargetHasAVX512F && CSameSize<T, int16>) {}
+			else if constexpr(CDefined<decltype(z_D::simd_shl<T>(mV, rhs.mV))>)
 				return SimdVector(z_D::simd_shl<T>(mV, rhs.mV));
 		}
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(<<);
@@ -775,7 +785,7 @@ public:
 		{
 			if constexpr(!Config::TargetHasAVX2) {}
 			else if constexpr(!Config::TargetHasAVX512F && sizeof(T) == sizeof(int16)) {}
-			else if constexpr(!CSame<decltype(z_D::simd_shr<T>(mV, rhs.mV)), TUndefined>)
+			else if constexpr(CDefined<decltype(z_D::simd_shr<T>(mV, rhs.mV))>)
 				return SimdVector(z_D::simd_shr<T>(mV, rhs.mV));
 		}
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(>>);
@@ -810,7 +820,7 @@ public:
 				else if constexpr(CSame<T, int32>) return EquivIntVector(z_D::_mm512_movm_epi32(z_D::simd_cmpgt_mask<T>(mV, rhs.mV)));
 				else if constexpr(CSame<T, int64>) return EquivIntVector(z_D::_mm512_movm_epi64(z_D::simd_cmpgt_mask<T>(mV, rhs.mV)));
 			}
-			else if constexpr(!CSame<decltype(z_D::simd_cmpgt<T>(mV, rhs.mV)), TUndefined>)
+			else if constexpr(CDefined<decltype(z_D::simd_cmpgt<T>(mV, rhs.mV))>)
 				return EquivIntVector(z_D::simd_cmpgt<T>(mV, rhs.mV));
 		}
 		INTRAZ_D_SIMD_OPERATOR_SCALAR_IMPL(>);
@@ -986,22 +996,20 @@ template<class T, size_t N> INTRA_FORCEINLINE SimdVector<T, N> operator&&(T lhs,
 
 namespace z_D {
 // Implement Min and Max functors for SIMD types
-template<class T, size_t N>
-INTRA_FORCEINLINE auto Min_(SimdVector<T, N> a, SimdVector<T, N> b)
+template<class T, size_t N> INTRA_FORCEINLINE auto Min_(SimdVector<T, N> a, SimdVector<T, N> b)
 {
 	if constexpr(!Config::TargetHasSSE41 && CAnyOf<T, int8, uint16, int32, uint32>) {}
 	else if constexpr(!Config::TargetHasAVX512F && CAnyOf<T, int64, uint64>) {}
-	else if constexpr(!CSame<decltype(z_D::simd_min<T>(a, b)), TUndefined>)
+	else if constexpr(CDefined<decltype(z_D::simd_min<T>(a, b))>)
 		return SimdVector<T, N>(z_D::simd_min<T>(a, b));
 	return SimdSelect(a, b, a > b);
 }
 
-template<class T, size_t N>
-INTRA_FORCEINLINE auto Max_(SimdVector<T, N> a, SimdVector<T, N> b)
+template<class T, size_t N> INTRA_FORCEINLINE auto Max_(SimdVector<T, N> a, SimdVector<T, N> b)
 {
 	if constexpr(!Config::TargetHasSSE41 && CAnyOf<T, int8, uint16, int32, uint32>) {}
 	else if constexpr(!Config::TargetHasAVX512F && CAnyOf<T, int64, uint64>) {}
-	else if constexpr(!CSame<decltype(z_D::simd_max<T>(a, b)), TUndefined>)
+	else if constexpr(CDefined<decltype(z_D::simd_max<T>(a, b))>)
 		return SimdVector<T, N>(z_D::simd_max<T>(a, b));
 	return SimdSelect(a, b, a < b);
 }
@@ -1030,13 +1038,23 @@ using __m512d = double INTRA_MAY_ALIAS __attribute__((__vector_size__(64)));
 using m128u = float INTRA_MAY_ALIAS __attribute__((__vector_size__(16), __aligned__(1)));
 using m256u = float INTRA_MAY_ALIAS __attribute__((__vector_size__(32), __aligned__(1)));
 using m512u = float INTRA_MAY_ALIAS __attribute__((__vector_size__(64), __aligned__(1)));
+
+using v16qi = char __attribute__((__vector_size__(16)));
 #endif
 
-#if INTRA_CONFIG_USE_VECTOR_EXTENSIONS && !defined(__INTEL_COMPILER)
+#if INTRA_CONFIG_USE_VECTOR_EXTENSIONS
+#if __has_builtin(__builtin_ia32_pshufb128)
+static INTRA_FORCEINLINE INTRA_TARGET_SSSE3 __m128i _mm_shuffle_epi8(__m128i a, __m128i b) {return __m128i(__builtin_ia32_pshufb128(v16qi(a), v16qi(b)));}
+#endif
+#if __has_builtin(__builtin_ia32_pmovmskb128)
+static INTRA_FORCEINLINE INTRA_TARGET_SSE2 int _mm_movemask_epi8(__m128i v) {return __builtin_ia32_pmovmskb128(v16qi(v));}
+#endif
 #else
 #ifdef __SSE__
 #define INTRAZ_D_USE_SSE_INTRINSICS
 extern "C" {
+	int _mm_movemask_epi8(__m128i);
+
 	__m128 _mm_round_ps(__m128 x, int roundMode);
 	__m128 _mm_round_pd(__m128 x, int roundMode);
 	__m256 __cdecl _mm256_round_ps(__m256 x, int roundMode);
@@ -1119,11 +1137,8 @@ extern "C" {
 }
 
 #ifdef INTRA_GNU_EXTENSION_SUPPORT
-template<typename T, size_t N> using SimdVector = Requires<
-	(CBasicIntegral<T> || CBasicFloatingPoint<T>) &&
-	!CSame<T, long double> &&
-	!CChar<T>,
-	T INTRA_MAY_ALIAS __attribute__((__vector_size__(sizeof(T)*N)))>;
+template<typename T, size_t N> requires (CBasicIntegral<T> || CBasicFloatingPoint<T>) && (!CSame<T, long double>) && (!CChar<T>)
+using SimdVector = T INTRA_MAY_ALIAS __attribute__((__vector_size__(sizeof(T)*N)));
 #endif
 
 namespace z_D {
@@ -1132,29 +1147,12 @@ template<typename T, size_t N> TScalarOf_<SimdVector<T, N>> {using _ = T;};
 template<typename T, size_t N> constexpr index_t StaticLength_<SimdVector<T, N>, 0> = N;
 template<typename T, size_t N> struct TToIntegral_<SimdVector<T, N>, false> {using _ = SimdVector<TToIntegral<T>, N>;};
 
-template<typename To, typename From> requires CSimdVector<To> && (CSimdVector<From> || CNumber<From>)
+template<CSimdVector To, typename From> requires CSimdVector<From> || CNumber<From>
 To NumericCastTo_(const From& x)
 {
 	if constexpr(CSimdVector<From>) return SimdCastTo<To>(x);
 	else return SimdVectorFilled<TScalarOf<To>, StaticLength<To>)>(x);
 }
-
-#if defined(__clang__) && (__clang_major__ < 10 || defined(__APPLE__) && __clang_major__ < 12) || defined(__INTEL_COMPILER)
-// Implement Min and Max functors for SIMD types. GCC and clang 10+ don't need this bacause they can use default generic implementation with ternary operator
-template<class T, size_t N>
-INTRA_FORCEINLINE auto Min_(SimdVector<T, N> a, SimdVector<T, N> b)
-{
-	using EquivIntVector = SimdVector<TToIntegral<T>, N>;
-	return T((EquivIntVector(a < b) & EquivIntVector(a)) | (~EquivIntVector(a < b) & EquivIntVector(b)));
-}
-
-template<class T, size_t N>
-INTRA_FORCEINLINE auto Max_(SimdVector<T, N> a, SimdVector<T, N> b)
-{
-	using EquivIntVector = SimdVector<TToIntegral<T>, N>;
-	return T((EquivIntVector(a > b) & EquivIntVector(a)) | (~EquivIntVector(a > b) & EquivIntVector(b)));
-}
-#endif
 
 template<typename T> constexpr bool CSimdVector_ = false;
 template<typename T, size_t N> constexpr bool CSimdVector_<SimdVector<T, N>> = true;
@@ -1165,7 +1163,7 @@ INTRA_OPTIMIZE_FUNCTION(template<typename T, size_t N>) INTRA_FORCEINLINE SimdVe
 {
 	if constexpr(N == 2) return SimdVector<T, N>{x, x};
 	else if constexpr(N == 4) return SimdVector<T, N>{x, x, x, x};
-	else if constexpr(N == 8) return SimdVector<T, N>{INTRA_MACRO_SIMPLE_REPEAT(8, x, (,))};
+	else if constexpr(N == 8) return SimdVector<T, N>{x, x, x, x, x, x, x, x};
 	else if constexpr(N == 16) return SimdVector<T, N>{INTRA_MACRO_SIMPLE_REPEAT(16, x, (,))};
 	else if constexpr(N == 32) return SimdVector<T, N>{INTRA_MACRO_SIMPLE_REPEAT(32, x, (,))};
 	else if constexpr(N == 64) return SimdVector<T, N>{INTRA_MACRO_SIMPLE_REPEAT(64, x, (,))};
@@ -1645,7 +1643,7 @@ INTRA_FORCEINLINE SimdVector<T, N> SimdShuffle(SimdVector<T, N> v1, SimdVector<T
 	}
 #endif
 	const SimdVector<T, N> vs[2] = {v1, v2};
-	return SimdVector<T, N>{vs[Is/N][Max(Is, 0) % N]...};
+	return SimdVector<T, N>{vs[Is / N][Max(Is, 0) % N]...};
 }
 
 template<int... Is, typename T, size_t N>
@@ -1659,18 +1657,23 @@ INTRA_FORCEINLINE SimdVector<T, N> SimdShuffle(SimdVector<T, N> v) noexcept
 template<typename T, size_t N>
 INTRA_FORCEINLINE SimdVector<T, N> SimdShuffleDynamic(SimdVector<T, N> v, SimdVector<TToIntegral<T>, N> indices) noexcept
 {
-#if INTRA_CONFIG_USE_VECTOR_EXTENSIONS && !defined(__clang__) && !defined(__INTEL_COMPILER)
+#if INTRA_CONFIG_USE_VECTOR_EXTENSIONS && __has_builtin(__builtin_shuffle) // GCC-only
 	return __builtin_shuffle(v, indices);
 #elif defined(INTRAZ_D_USE_SSE_INTRINSICS)
 	if constexpr(Config::TargetMaxSimdLength<T> >= N)
 	{
-		if constexpr(N == 4 && Config::TargetHasSSSE3)
+		if constexpr(Config::TargetHasSSSE3)
 		{
-			auto transformedIndices = z_D::_mm_shuffle_epi8(z_D::__m128i(indices << 2),
-				z_D::__m128i(SimdVector<int8, 16>{12, 12, 12, 12, 8, 8, 8, 8, 4, 4, 4, 4, 0, 0, 0, 0}));
-			transformedIndices = __m128i(SimdVector<int8, 16>(transformedIndices) +
-				SimdVector<int8, 16>{3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0});
-			return SimdVector<T, N>(z_D::_mm_shuffle_epi8(z_D::__m128i(v), indices));
+			if constexpr(N == 16 && CSameSize<T, int8>)
+				return SimdVector<T, N>(z_D::_mm_shuffle_epi8(z_D::__m128i(v), z_D::__m128i(indices)));
+			else if constexpr(N == 4 && CSameSize<T, int>)
+			{
+				auto transformedIndices = z_D::_mm_shuffle_epi8(z_D::__m128i(indices << 2),
+					z_D::__m128i(SimdVector<int8, 16>{12, 12, 12, 12, 8, 8, 8, 8, 4, 4, 4, 4, 0, 0, 0, 0}));
+				transformedIndices = __m128i(SimdVector<int8, 16>(transformedIndices) +
+					SimdVector<int8, 16>{3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0, 3, 2, 1, 0});
+				return SimdVector<T, N>(z_D::_mm_shuffle_epi8(z_D::__m128i(v), z_D::__m128i(indices)));
+			}
 		}
 	}
 #endif
@@ -1896,6 +1899,17 @@ template<typename T, size_t N> INTRA_FORCEINLINE SimdVector<T, N> SimdAnd(SimdVe
 	else return SimdVector<T, N>(SimdVector<TToIntegral<T>, N>(a) & SimdVector<TToIntegral<T>, N>(b));
 }
 
+template<typename T, size_t N> INTRA_FORCEINLINE int SimdMoveByteMask(SimdVector<T, N> v) noexcept
+{
+	if constexpr(CSameSize<T, int8> && N == 16)
+	{
+#if defined(__i386__) || defined(__amd64__)
+		return z_D::_mm_movemask_epi8(z_D::__m128i(v));
+#endif
+	}
+	else static_assert(CFalse<T>, "This combination is not implemented on this architecture");
+}
+
 namespace z_D {
 template<typename T, size_t N> requires CBasicSigned<T>
 inline SimdVector<T, N> Abs_(SimdVector<T, N> x)
@@ -2027,7 +2041,7 @@ inline SimdVector<T, N> Round_(SimdVector<T, N> x)
 #endif
 	const auto fi = SimdCastTo<SimdVector<T, N>>(SimdCastTo<SimdVector<TToIntegral<T>, N>>(x));
 	const auto offset = SimdCastTo<SimdVector<T, N>>(SimdCastTo<SimdVector<TToIntegral<T>, N>>(
-		(x - fi)*(2 - EpsilonOf<T>)
+		(x - fi)*(2 - MaxStepInRange<T>)
 	));
 	return fi + offset;
 }
@@ -2077,298 +2091,9 @@ INTRA_FORCEINLINE void SimdEnd() noexcept
 #endif
 }
 
-} INTRA_END
-
-
-
-// runtime instruction support detection
-namespace z_D {
-#if defined(__i386__) || defined(__amd64__)
-#ifdef _MSC_VER
-extern "C" void __cpuid(int[4], int);
-extern "C" uint64 _xgetbv(unsigned index);
-#elif defined(__GNUC__)
-inline void __cpuid(int* cpuinfo, int info)
-{
-	__asm__ __volatile__(
-		"xchg %%ebx, %%edi;"
-		"cpuid;"
-		"xchg %%ebx, %%edi;"
-		:"=a" (cpuinfo[0]), "=D" (cpuinfo[1]), "=c" (cpuinfo[2]), "=d" (cpuinfo[3])
-		:"0" (info)
-	);
-}
-
-inline uint64 _xgetbv(unsigned int index)
-{
-	unsigned eax, edx;
-	__asm__ __volatile__(
-		"xgetbv;"
-		: "=a" (eax), "=d"(edx)
-		: "c" (index)
-	);
-	return (static_cast<unsigned long long>(edx) << 32) | eax;
-}
-#endif
-#endif
-}
-
-struct TCpuInfo
-{
-	union {
-		int Cpuid[33][4]{}; // EAX, EBX, EDX, ECX
-		struct
-		{
-			// Cpuid[0]
-			int MaxCpuIDParam;
-			char ManufacturerID[12];
-
-			// Cpuid[1]
-
-			// eax
-			uint32_t SteppingID: 4;
-			uint32_t Model: 4;
-			uint32_t FamilyID: 4;
-			uint32_t ProcessorType: 2;
-			uint32_t: 2;
-			uint32_t ExtendedModelID: 4;
-			uint32_t ExtendedFamilyID: 8;
-			uint32_t: 4;
-
-			// ebx
-			uint8_t BrandIndex;
-			uint8_t CacheLineSizeDiv8; // multiply by 8 to get cache line size; CLFSH must be set
-			uint8_t MaxAddressableIDsForLogicalProcessors; // HTT must be set
-			uint8_t LocalApicID;
-
-			// edx
-			bool FPU: 1;
-			bool VME: 1;
-			bool DE: 1;
-			bool PSE: 1;
-			bool TSC: 1;
-			bool MSR: 1;
-			bool PAE: 1;
-			bool MCE: 1;
-			bool CX8: 1;
-			bool APIC: 1;
-			bool: 1;
-			bool SEP: 1;
-			bool MTRR: 1;
-			bool PGE: 1;
-			bool MCA: 1;
-			bool CMOV: 1;
-			bool PAT: 1;
-			bool PSE36: 1;
-			bool PSN: 1; // Processor Serial Number supported and enabled
-			bool CLFSH: 1;
-			bool NX: 1; // Itanium-only
-			bool DS: 1;
-			bool ACPI: 1;
-			bool MMX: 1;
-			bool FXSR: 1;
-			bool SSE: 1;
-			bool SSE2: 1;
-			bool SS: 1;
-			bool HTT: 1;
-			bool TM: 1;
-			bool IA64: 1; // IA64 processor emulating x86
-			bool PBE: 1;
-
-			//ecx
-			bool SSE3: 1;
-			bool PCLMULQDQ: 1;
-			bool DTES64: 1;
-			bool MONITOR: 1;
-			bool DSCPL: 1;
-			bool VMX: 1;
-			bool SMX: 1;
-			bool EST: 1;
-			bool TM2: 1;
-			bool SSSE3: 1;
-			bool CNXT_ID: 1;
-			bool SDBG: 1;
-			bool FMA: 1;
-			bool CX16: 1; // CMPXCHG16B
-			bool XTPR: 1;
-			bool PDCM: 1;
-			bool: 1;
-			bool PSID: 1;
-			bool DCA: 1;
-			bool SSE41: 1;
-			bool SSE42: 1;
-			bool X2APIC: 1;
-			bool MOVBE: 1;
-			bool POPCNT: 1;
-			bool TSC_DEADLINE: 1;
-			bool AES_NI: 1;
-			bool XSAVE: 1;
-			bool OSXSAVE: 1;
-			bool AVX: 1; // requires OSXSAVE and OS support, must be checked together
-			bool F16C: 1;
-			bool RDRAND: 1;
-			bool Hypervisor: 1;
-
-			// Cpuid[2]
-			int CacheAndTLBCaps[4]; // a list of descriptors indicating cache and TLB capabilities
-
-			// Cpuid[3]
-			int ProcessorSerialNumber[4]; // not implemented in modern processors
-
-			// Cpuid[4]
-			int IntelTopology[4]; // Intel-only
-
-			int: 32;
-			int: 32;
-			int: 32;
-			int: 32;
-
-			// Cpuid[6]
-
-			// eax
-			bool DigitalThermalSensor: 1;
-			bool IntelTurboBoost: 1;
-			bool AlwaysRunningAPICTimer: 1;
-			bool PowerLimitNotification: 1;
-			bool ExtendedClockModulationDuty: 1;
-			bool PackageThermalManagement: 1;
-			bool HardwareControlledPerformanceStates: 1;
-			bool HWPNotification: 1;
-			bool HWPActivityWindow: 1;
-			bool HWPEnergyPerformancePreferenceControl: 1;
-			bool HWPPackageLevelControl: 1;
-			bool: 1;
-			bool HardwareDutyCycling: 1;
-			bool IntelTurboBoostMaxTechnology3: 1;
-			bool InterruptsUponChangesToHWPCaps: 1;
-			bool HWPPECIOverrideSupported: 1;
-			bool FlexibleHWP: 1;
-			bool FastAccessModeMSRSupported: 1;
-			bool HardwareFeedback: 1;
-			bool IgnoredIdleHWPRequest: 1;
-			bool: 1;
-			bool HwpCtlSupported: 1;
-			bool IntelThreadDirector: 1;
-			bool ThermInterrupSupported: 1;
-			bool: 8;
-
-			// ebx
-			uint32_t NumInterruptThresholdsInDigitalThermalSensor: 4;
-			uint32_t: 28;
-
-			// edx
-			bool PerformanceCapabilityReportingSupported: 1;
-			bool EfficiencyCapabilityReportingSupported: 1;
-			bool: 6;
-			uint8_t HardwareFeedbackInterfaceStructSize: 4; //(in units of 4 Kbytes) minus 1
-			uint8_t: 4;
-			uint16_t ThisLogicalProcessorRowIndex;
-
-			// ecx
-			bool EffectiveFrequencyInterfaceSupported: 1;
-			bool ACNT2: 1;
-			bool: 1;
-			bool PerformanceEnergyBias: 1;
-			bool: 4;
-			uint8_t NumSupportedIntelThreadDirectors;
-			uint16_t: 16;
-
-			// Cpuid[7]
-			int MaxCpuID7Param;
-
-			// ebx
-			bool FSGSBASE: 1;
-			bool TscAdjust: 1;
-			bool SoftwareGuardExtensions: 1;
-			bool BMI1: 1;
-			bool HLE: 1; // only on Intel CPUs, need to check manufacturer
-			bool AVX2: 1;
-			bool FdpExceptionOnly: 1;
-			bool SupervisorModeExecutionPrevention: 1;
-			bool BMI2: 1;
-			bool ERMS: 1;
-			bool INVPCID: 1;
-			bool RTM: 1; // only on Intel CPUs, need to check manufacturer
-			bool RdtmOrPqm: 1;
-			bool X87FpuCSAndDSDeprecated: 1;
-			bool MemoryProtectionExtensions: 1;
-			bool RdtaOrPqe: 1;
-			bool AVX512F: 1;
-			bool AVX512DQ: 1;
-			bool RDSEED: 1;
-			bool ADX: 1;
-			bool SupervisorModeAccessPrevention: 1;
-			bool AVX512IFMA: 1;
-			bool PCOMMIT: 1; // deprecated
-			bool CLFLUSHOPT: 1;
-			bool CLWB: 1; // Cache Line Writeback instruction
-			bool IntelProcessorTrace: 1;
-			bool AVX512PF: 1;
-			bool AVX512ER: 1;
-			bool AVX512CD: 1;
-			bool SHA: 1;
-
-			int: 32;
-
-			bool PREFETCHWT1: 1;
-			bool: 7;
-			bool: 8;
-			bool: 8;
-			bool: 8;
-
-		#if 0
-			static bool LAHF(void) { return CPU_Rep.f_81_ECX_[0]; }
-
-			static bool LZCNT(void) { return CPU_Rep.f_81_ECX_[5]; }
-
-			static bool SSE4a(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[6]; }
-			static bool XOP(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[11]; }
-			static bool TBM(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_ECX_[21]; }
-
-			static bool SYSCALL(void) { return CPU_Rep.isIntel_ && CPU_Rep.f_81_EDX_[11]; }
-			static bool MMXEXT(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[22]; }
-			static bool RDTSCP(void) { return CPU_Rep.isIntel_ && CPU_Rep.f_81_EDX_[27]; }
-			static bool _3DNOWEXT(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[30]; }
-			static bool _3DNOW(void) { return CPU_Rep.isAMD_ && CPU_Rep.f_81_EDX_[31]; }
-		#endif
-		};
-	};
-	INTRA_NOINLINE void Init()
-	{
-		for(int i = 0; i <= 32 && i <= MaxCpuIDParam; i++)
-		{
-			z_D::__cpuid(Cpuid[i], i);
-			auto tmp = Cpuid[i][2];
-			Cpuid[i][2] = Cpuid[i][3];
-			Cpuid[i][3] = tmp;
-		}
-	}
-} CpuCaps;
-
-inline bool IsAvxSupported()
-{
-#if defined(__i386__) || defined(__amd64__)
-	int cpuinfo[4];
-	z_D::__cpuid(cpuinfo, 1);
-	bool supported = (cpuinfo[2] & (1 << 28)) != 0;
-	const bool osxsaveSupported = (cpuinfo[2] & (1 << 27)) != 0;
-	if(osxsaveSupported && supported)
-	{
-		// _XCR_XFEATURE_ENABLED_MASK = 0
-		unsigned long long xcrFeatureMask = z_D::_xgetbv(0);
-		supported = (xcrFeatureMask & 0x6) == 0x6;
-	}
-	return supported;
-#else
-	return false;
-#endif
-}
-}
-
-template<typename T> using TIdentity = T;
-
-#ifdef __GNUC__
-#define INTRA_DISPATCHED(funcName, ...) TIdentity<__VA_ARGS__> funcName __attribute__((ifunc(#funcName "_dispatch"))); extern "C" TIdentity<__VA_ARGS__>* funcName ## _dispatch()
+#if defined(__GNUC__) && (defined(__linux__) || defined(__FreeBSD__))
+#define INTRA_DISPATCHED(funcName, ...) TExplicitType<__VA_ARGS__> funcName __attribute__((ifunc(#funcName "_dispatch"))); \
+	extern "C" TExplicitType<__VA_ARGS__>* funcName ## _dispatch()
 #else
 namespace z_D {
 template<auto** FuncPtr> struct GenTrampoline;
@@ -2378,9 +2103,10 @@ template<typename R, typename... Args, R(**FuncPtr)(Args...)> struct GenTrampoli
 	template<typename F> auto operator*(F dispatcher) const {return &Trampoline<F>;}
 };
 }
-#define INTRA_DISPATCHED(funcName, ...) TIdentity<__VA_ARGS__>* funcName = z_D::GenTrampoline<&funcName>() * []()
+#define INTRA_DISPATCHED(funcName, ...) TExplicitType<__VA_ARGS__>* funcName = z_D::GenTrampoline<&funcName>() * []()
 #endif
 
+#if 0 // usage example
 INTRA_DISPATCHED(myfunc, int(int))
 {
 	int instrset = SupportedInstructionSets() & 0xFF;
@@ -2389,5 +2115,6 @@ INTRA_DISPATCHED(myfunc, int(int))
 	if(instrset >= 8) return myfuncAVX2;
 	return myfuncGeneric;
 };
+#endif
 
 } INTRA_END

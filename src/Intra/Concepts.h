@@ -3,6 +3,8 @@
 #include <Intra/Core.h>
 #include <Intra/Preprocessor.h>
 #include <Intra/Numeric/Traits.h>
+#include <Intra/Numeric/Integral.h>
+#include <Intra/Platform/Toolchain.h>
 
 namespace Intra {
 template<typename T, size_t N> struct Array;
@@ -39,7 +41,7 @@ template<class T> concept CHasReflectFieldNamesOf = !CVoid<decltype(ReflectField
 
 namespace z_D {
 template<typename T> concept CTupleSizeDefined = requires(T) {std::tuple_size<T>::value;};
-template<typename T> concept CTupleElementDefined = requires(T) {Val<typename std::tuple_element<0, TRemoveReference<T>>::type>();};
+template<typename T> concept CTupleElementDefined = requires(T) {Val<typename std::tuple_element<0, TUnqualRef<T>>::type>();};
 }
 template<typename T> constexpr index_t StaticLength = [] {
 	using T1 = TUnqualRef<T>;
@@ -312,6 +314,32 @@ template<typename T, typename Node = BidirectionalLinkedNode<T>> struct Bidirect
 template<class L> concept CLinkedList = requires(L&& r) {r.NextListNode();};
 template<class L> concept CBidirectionalLinkedList = CLinkedList<L> && requires(L&& r) {r.PrevListNode();};
 
+template<CRange R> struct Advance
+{
+	R& RangeRef;
+	INTRA_FORCEINLINE constexpr Advance(R& range) noexcept: RangeRef(range) {}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr decltype(auto) First() const {return RangeRef.First();}
+	INTRA_FORCEINLINE constexpr void PopFirst() {RangeRef.PopFirst();}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const {return RangeRef.Empty();}
+
+	constexpr INTRA_FORCEINLINE decltype(auto) Last() const requires CHasLast<R> {return RangeRef.Last();}
+	constexpr INTRA_FORCEINLINE void PopLast() requires CHasPopLast<R> {RangeRef.PopLast();}
+	constexpr INTRA_FORCEINLINE auto operator[](CNumber auto&& index) const -> decltype(RangeRef[index]) {return RangeRef[index];}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const requires CHasLength<R> {return RangeRef.Length();}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& numElementsToPop) requires CHasPopFirstCount<R>
+	{return RangeRef.PopFirstCount(INTRA_FWD(numElementsToPop));}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopLastCount(CNumber auto&& numElementsToPop) requires CHasPopLastCount<R>
+	{return RangeRef.PopLastCount(INTRA_FWD(numElementsToPop));}
+};
+template<typename R> concept CAdvance = CInstanceOfTemplate<TUnqualRef<R>, Advance>;
+namespace z_D {
+template<typename R> struct TApplyAdvance_: TType<R> {};
+template<CAdvance R> struct TApplyAdvance_<R>: TType<decltype(Val<R>().RangeRef)> {};
+}
+template<typename R> using TApplyAdvance = typename z_D::TApplyAdvance_<R>::_;
+
 template<typename T> struct Span;
 template<typename L, template<typename> class ArrayRange = Span, template<typename, typename> class LinkedRange = LinkedRange>
 [[nodiscard]] constexpr decltype(auto) RangeOf(L&& list)
@@ -329,8 +357,9 @@ template<typename L, template<typename> class ArrayRange = Span, template<typena
 	//TODO: else if constexpr(CAnyReader<L>) return ReaderToRange(INTRA_FWD(list));
 }
 
-template<typename T> using TRangeOfRef = decltype(RangeOf(Val<T>()));
-template<typename T> using TRangeOf = TUnqualRef<TRangeOfRef<T>>;
+template<typename T> using TBaseRangeOfRef = decltype(RangeOf(Val<T>()));
+template<typename T> using TRangeOfRef = TApplyAdvance<TBaseRangeOfRef<T>>;
+template<typename T> using TRangeOf = TApplyAdvance<TUnqualRef<TBaseRangeOfRef<T>>>;
 template<typename T> concept CHasRangeOf = !CVoid<TRangeOfRef<T>>;
 
 
@@ -406,7 +435,8 @@ template<class C, typename... Args> concept CHasMethodEmplaceFirst = requires(C 
 template<class C> concept CHasMethod_clear = requires(C c) {c.clear();};
 template<class C> concept CHasMethodClear = requires(C c) {c.Clear();};
 template<class C> concept CHasMethod_resize = requires(C c) {c.resize(size_t());};
-template<class C> concept CHasMethodSetLength = requires(C c) {c.CHasSetLength(index_t());};
+template<class C> concept CHasMethodSetLength = requires(C c) {c.SetLength(index_t());};
+template<class C> concept CHasMethodSetLengthRaw = requires(C c) {c.SetLengthRaw(Unsafe, index_t());};
 
 template<class C> concept CHasMethod_empty = requires(C c) {{c.empty()} -> CConvertibleTo<bool>;};
 template<class C> concept CHasMethod_reserve = requires(C c) {c.reserve(size_t());};
@@ -420,26 +450,18 @@ template<class L> concept CGrowingList = CList<L> &&
 
 template<class C> concept CDynamicArrayContainer =
 	CGrowingList<C> &&
-	z_D::CHasMethod_resize<TRemoveConst<C>> &&
+	(z_D::CHasMethod_resize<TRemoveConst<C>> || z_D::CHasMethodSetLength<TRemoveConst<C>>) &&
 	CHasData<C>;
 
-template<class C> concept CResizableArrayContainer =
-	CConvertibleToSpan<C> &&
-	z_D::CHasMethod_resize<TRemoveConst<C>>;
+template<class C> concept CResizableArrayContainer = CConvertibleToSpan<C> &&
+	(z_D::CHasMethod_resize<TRemoveConst<C>> || z_D::CHasMethodSetLength<TRemoveConst<C>>);
 
 template<class L> concept CStaticArrayContainer = CConvertibleToSpan<L> && CStaticLengthContainer<L>;
 
 template<class L> concept COwningList = CGrowingList<L> || CList<L> && (CStaticLengthContainer<L> || requires {L::TagOwningList::True;});
 
-template<CRange R> struct Advance
-{
-	R& RangeRef;
-	INTRA_FORCEINLINE constexpr Advance(R& range) noexcept: RangeRef(range) {}
-};
-template<typename R> concept CAdvance = CInstanceOfTemplate<TUnqualRef<R>, Advance>;
-
-template<typename L, typename F> requires CCallable<F, L> && (CList<L> || CAdvance<L>)
-constexpr INTRA_FORCEINLINE decltype(auto) operator|(L&& list, F&& func) {return INTRA_FWD(func)(INTRA_FWD(list));}
+template<typename L, typename F> requires CCallable<F, L> && CList<L>
+INTRA_FORCEINLINE constexpr decltype(auto) operator|(L&& list, F&& func) {return INTRA_FWD(func)(INTRA_FWD(list));}
 
 template<CConsumableRange R> [[nodiscard]] constexpr auto begin(R&& range)
 {
@@ -478,10 +500,7 @@ template<typename F> [[nodiscard]] constexpr decltype(auto) FunctorOf(F&& f)
 template<typename T> using TFunctorOfRef = decltype(FunctorOf(Val<T>()));
 template<typename T> using TFunctorOf = TFunctorOfRef<TUnqualRef<T>>;
 
-template<typename P, typename... R> concept CElementPredicate = CSame<bool, TResultOf<P, TRangeValue<R>...>>;
-template<typename P, typename... R> concept CElementAsPredicate = CElementPredicate<TFunctorOf<P>>;
-template<typename P, typename... Rs> concept CAsElementPredicate = CElementPredicate<P, TRangeOfRef<Rs>...>;
-template<typename P, typename... Rs> concept CAsElementAsPredicate = CElementAsPredicate<P, TRangeOfRef<Rs>...>;
+template<typename P, typename... Ls> concept CElementPredicate = CSame<bool, TResultOfOrVoid<TFunctorOf<P>, TListValue<Ls>...>>;
 
 template<typename F, typename... Ts> concept CAsCallable = CCallable<TFunctorOf<F>, Ts...>;
 
@@ -494,12 +513,11 @@ template<typename F, typename... Ts> concept CAsCallable = CCallable<TFunctorOf<
 #define INTRAZ_D_REFLECTION_FIELD_POINTER(class, field) &class::field
 #define INTRAZ_D_REFLECTION_FIELD_POINTERS(template, T, ...) \
 	template constexpr auto ReflectFieldPointersOf(TType<T>) noexcept {return Tuple { \
-		INTRA_MACRO2_FOR_EACH((,), INTRAZ_D_REFLECTION_FIELD_POINTER, T, __VA_ARGS__)\
+		INTRA_MACRO2_FOR_EACH((,), INTRAZ_D_REFLECTION_FIELD_POINTER, T, __VA_ARGS__) \
 	};}
 
-/** Add meta information about fields.
-  The first argument is the class/struct name, next are the fields in the order of their declaration.
-*/
+/// @brief Add meta information about fields.
+/// The first argument is the class/struct name, next are the fields in the order of their declaration.
 #define INTRA_ADD_FIELD_REFLECTION(T, ...) \
 	INTRAZ_D_REFLECTION_FIELD_NAMES(, T, __VA_ARGS__) \
     INTRAZ_D_REFLECTION_FIELD_POINTERS(, T, __VA_ARGS__)
@@ -533,9 +551,8 @@ template<class T> constexpr index_t ReflectAlignof = [] {
 
 template<typename T> concept CReflectionMatchesSize = ReflectSizeof<T> == sizeof(T) && ReflectAlignof<T> == alignof(T);
 
-/** CTriviallySerializable checks if a type can be trivially binary serialized and deserialized.
-It assumes that the type doesn't contain any pointers. It can be checked only if the type provides reflection information.
-*/
+/// @brief CTriviallySerializable checks if a type can be trivially binary serialized and deserialized.
+/// It assumes that the type doesn't contain any pointers. It can be checked only if the type provides reflection information.
 namespace z_D {
 template<typename T> constexpr bool CTriviallySerializable_ = false;
 
@@ -552,8 +569,8 @@ template<typename T> concept CSerializable = CSameUnqualRef<T, decltype(nullptr)
 
 template<class T> concept CIntraAware = CRange<T> || CList<T> && z_D::CHasMethodLength<T> || CInstanceOfTemplate<T, Tuple> || CInstanceOfTemplate<T, Variant>;
 
-//template<typename T, CCallable<T> F>
-//constexpr INTRA_FORCEINLINE decltype(auto) operator|(T&& obj, F&& func) {return INTRA_FWD(func)(INTRA_FWD(obj));}
+template<typename T, CCallable<T> F> requires CInstanceOfTemplate<T, Tuple> || CInstanceOfTemplate<T, Variant>
+constexpr INTRA_FORCEINLINE decltype(auto) operator|(T&& obj, F&& func) {return INTRA_FWD(func)(INTRA_FWD(obj));}
 
 
 template<CEnum T> constexpr index_t EnumLength = index_t(T::EnumLength);
@@ -582,28 +599,204 @@ static_assert(sizeof(SeekParams) == sizeof(int64));
 template<class T> concept CSeekable = requires(T&& r, SeekParams pos) {{r.Seek(pos).Unwrap()} -> CIntegral;};
 
 
-/*!
-Trivially relocatable is a less constrained concept than trivially copyable.
-All trivially copyable types are also trivially relocatable.
-However there may be types having move constructor and destructor that are not trivial separately but combination of them may be trivial.
-It is true for most containers. You can make a bitwise copy of a container object without calling the move constructor and the destructor of source.
-Specialize IsTriviallyRelocatable for such types after their definition.
-*/
+/// Non-owning reference to an array.
+template<typename T> struct Span
+{
+	Span() = default;
+	Span(const Span&) = default;
+
+	template<CConvertibleToSpan L> requires (!CSameUnqualRef<L, Span>)
+	INTRA_FORCEINLINE constexpr Span(L&& arr) noexcept: Span(Unsafe, Intra::Data(arr), Intra::Length(arr)) {}
+
+	constexpr Span(TUnsafe, T* begin, T* end) noexcept: Begin(begin), End(end) {INTRA_PRECONDITION(end >= begin);}
+	INTRA_FORCEINLINE constexpr Span(TUnsafe, T* begin, Size length) noexcept: Begin(begin), End(Begin + size_t(length)) {}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return Begin;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const noexcept {return End - Begin;}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return Begin >= End;}
+
+	[[nodiscard]] constexpr T& First() const
+	{
+	    INTRA_PRECONDITION(!Empty());
+	    return *Begin;
+	}
+
+	constexpr void PopFirst()
+	{
+	    INTRA_PRECONDITION(!Empty());
+	    Begin++;
+	}
+
+	[[nodiscard]] constexpr T& Last() const
+	{
+	    INTRA_PRECONDITION(!Empty());
+	    return End[-1];
+	}
+
+	constexpr void PopLast()
+	{
+	    INTRA_PRECONDITION(!Empty());
+	    End--;
+	}
+
+	INTRA_FORCEINLINE constexpr index_t PopFirstCount(ClampedSize count) noexcept
+	{
+		const auto poppedElements = Min(index_t(count), Length());
+		Begin += poppedElements;
+		return poppedElements;
+	}
+
+	INTRA_FORCEINLINE constexpr index_t PopLastCount(ClampedSize count) noexcept
+	{
+		const auto poppedElements = Min(index_t(count), Length());
+		End -= poppedElements;
+		return poppedElements;
+	}
+
+	[[nodiscard]] INTRA_FORCEINLINE constexpr Span Take(ClampedSize count) const noexcept
+	{
+	    return Span(Unsafe, Begin, Min(index_t(count), Length()));
+	}
+
+	[[nodiscard]] constexpr T& operator[](Index index) const
+	{
+		INTRA_PRECONDITION(index < Length());
+		return Begin[size_t(index)];
+	}
+
+	T* Begin = nullptr;
+	T* End = nullptr;
+};
+template<class R> Span(R&&) -> Span<TArrayElementKeepConst<R>>;
+
+INTRA_DEFINE_FUNCTOR(ConstSpanOf)<CConvertibleToSpan L>(L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
+
+template<typename T> concept CSpan = CInstanceOfTemplate<TUnqualRef<T>, Span>;
+
+
+/// Trivially relocatable is a less constrained concept than trivially copyable.
+/// All trivially copyable types are also trivially relocatable.
+/// However there may be types having move constructor and destructor that
+///  are not trivial separately but combination of them may be trivial.
+/// It is true for most containers. You can make a bitwise copy of a
+///  container object without calling the move constructor and the destructor of source.
+/// Specialize IsTriviallyRelocatable for such types after their definition.
 template<typename T> constexpr bool IsTriviallyRelocatable = CTriviallyCopyable<T> || requires {T::TagTriviallyRelocatable::True;};
 template<typename T> concept CTriviallyRelocatable = IsTriviallyRelocatable<T>;
 
 template<class T> using TPostRelocateFixSignature = void(T* newBaseAddress, const T* oldFreedBaseAddress, size_t numElementsToPatch);
 
-// Non-trivially relocatable types that support post=relocation fixes must specialize this function pointer.
+/// Non-trivially relocatable types that support post-relocation fixes must specialize this function pointer.
 template<class T> constexpr auto FPostRelocateFix = Undefined;
 template<CTriviallyRelocatable T> constexpr TPostRelocateFixSignature<T>* FPostRelocateFix<T> = nullptr; // nullptr means that patching is not required in this case
 
-// Raw allocators are realloc-like functions that also support memory zeroing and custom relocation for C++ classes.
-struct RawAllocParams;
-union RawAllocResult;
+/// Raw allocators are realloc-like functions that also support memory zeroing and custom relocation for C++ classes.
+/// Structure with parameters to pass to a type-safe allocation functions.
+template<typename T> struct AllocParams
+{
+	/// The block previously allocated by this allocator to grow, shrink, free or to do the special command with.
+	/// Length() may be smaller than the original NumElements, in this case all the elements beyond Length() are expected to be uninitialized or destructed by the caller.
+	/// After the reallocation is done their values will be either undefined or value-initialized depending on ValueInitialize.
+	Owner<Span<T>> ExistingMemoryBlock;
+
+	/// Initialize newly allocated memory elements with default values by either
+	///  calling default constructor or zero initialization. Otherwise the memory content will be undefined.
+	size_t ValueInitialize: 1 = false;
+
+	/// Minimum allocation size to request. Pass 0 to free the ptr.
+	///  Note: Values above MaxValidNumElements are reserved and must not be used directly.
+	///  Note: Largest possible 256 values above are invalid and are treated as an integer underflow bug.
+	size_t NumElements: sizeof(size_t)*8 - 1 = 0;
+
+	/// How many elements of ExistingMemoryBlock to keep.
+	/// All elements having the index starting this number are expected to be already destructed by the caller.
+	size_t NumPrevElementsToKeep = 0;
+};
+
+struct RawAllocParams
+{
+	AllocParams<char> ByteAllocParams;
+
+	/// This function is used during relocation to copy. For most types this task can be trivially done with memcpy.
+	/// But if a type saves or passes pointers to itself then using memcpy would result in dangling references.
+	using TCustomRelocateSignature = void(char* dst, char* src, size_t numBytes);
+
+	/// Function to use instead of memcpy to copy params.NumPrevElementsToKeep from previous allocation.
+	/// It's recommended to pass a non-null pointer only when the result of memcpy would be incorrect.
+	TCustomRelocateSignature* CustomRelocateFunc;
+
+	/// CRawAllocator allows to request info about it or its allocations by using reserved values in NumElements field.
+	/// If the operation is supported the result gets written back to numBytes. Otherwise numBytes isn't modified.
+	enum class Cmd {
+		Allocate,
+		GetAllocatorInfo, // returns AllocatorInfo struct
+		GetSize, // returns existing allocation size in bytes in RawValue[0]
+		EnumLength
+	};
+
+	static RawAllocParams MakeCommand(Cmd cmd, void* existingMemoryBlockBegin = nullptr)
+	{
+		return {
+			.ByteAllocParams = {
+				.ExistingMemoryBlock = Span(Unsafe, static_cast<char*>(existingMemoryBlockBegin), 0),
+				.NumElements = MaxValidNumElements + size_t(cmd)
+		}
+		};
+	}
+
+	Cmd GetCommand() const
+	{
+		INTRA_PRECONDITION(ByteAllocParams.NumElements < MaxRepresentableNumElements - 255); // catch a size integer underflow
+		if(ByteAllocParams.NumElements <= MaxValidNumElements) return Cmd::Allocate;
+		return Cmd(ByteAllocParams.NumElements - MaxValidNumElements);
+	}
+
+private:
+	static constexpr size_t MaxValidNumElements = (size_t() - (1519 << 1)) >> 1;
+	static constexpr size_t MaxRepresentableNumElements = (size_t() - 1) >> 1;
+};
+
+struct AllocatorInfo
+{
+	bool HoldsAllocationSize: 1; // means that AllocatorCmd::GetSize will work
+	bool SupportsFastMemZero: 1; // means that ValueInitialize may be faster than memset for large allocations
+	bool SupportsFree: 1; // free is never a no-op, otherwise it's necessary to delete the allocator to free all the memory (false for linear or stack allocators)
+	bool SupportsReallocInPlace: 1; // may sometimes grow or shrink allocations without copying the data
+	bool CanHoldDebugSourceInfo: 1; // can hold file and line of allocation site
+	bool NoDebugSentinels: 1; // can't be false when SmallAllocationOffsetBytes is non-zero, so this invalid combination means that the struct needs to be initialized
+	bool FixedSizePool: 1; // if true, the only supported size can be calculated as (1 << MinimumGranularityShift) - SmallAllocationOffsetBytes
+	bool ThreadSafe: 1; // can be used from multiple threads without any external synchronization
+	uint8 GuaranteedAlignmentShift: 4; // 1 << GuaranteedAlignmentShift is the value of guaranteed alignment in bytes of all allocations
+	uint8 MinimumGranularityShift: 4; // 1 << MinimumGranularityShift is the minimum step in bytes between possible allocation sizes
+	uint8 SmallAllocationOffsetBytes; // total per-allocation overhead stored inside the same block next to the user data for smallest allocations
+
+	explicit operator bool() const
+	{
+		static constexpr AllocatorInfo empty = {};
+		return __builtin_memcmp(this, &empty, sizeof(*this)) == 0;
+	}
+};
+
+INTRA_IGNORE_WARN_DEFAULT_CTOR_IMPLICITLY_DELETED
+union RawAllocResult
+{
+	Owner<Span<char>> Allocation;
+	size_t RawValue[2];
+	AllocatorInfo Info;
+};
+
 using TRawAllocatorSignature = RawAllocResult(RawAllocParams params);
 template<class A> concept CAllocator = CCallableWithSignature<A, TRawAllocatorSignature>;
 template<class A> concept COptAllocator = CAllocator<A> || CSame<A, TUndefined>;
+
+struct PlatformTunedByteAllocator {
+	RawAllocResult operator()(RawAllocParams);
+};
+using DefaultAllocator = PlatformTunedByteAllocator;
+static_assert(requires(RawAllocResult(*f)(RawAllocParams), RawAllocParams p) {f(p);});
+static_assert(CCallable<RawAllocResult(*)(RawAllocParams), RawAllocParams>);
+static_assert(CCallableWithSignature<DefaultAllocator, RawAllocResult(RawAllocParams params)>);
+static_assert(CAllocator<DefaultAllocator>);
 
 template<typename T> concept CPoolAllocator = requires(T allocator, SourceInfo allocatedAt)
 {

@@ -21,80 +21,6 @@ struct LengthInfo
 	uint64 RawValue;
 };
 
-/// Non-owning reference to an array.
-template<typename T> struct Span
-{
-	Span() = default;
-	Span(const Span&) = default;
-
-	template<CConvertibleToSpan L> requires (!CSameUnqualRef<L, Span>)
-	INTRA_FORCEINLINE constexpr Span(L&& arr) noexcept: Span(Unsafe, Intra::Data(arr), Intra::Length(arr)) {}
-
-	constexpr Span(TUnsafe, T* begin, T* end) noexcept: Begin(begin), End(end) {INTRA_PRECONDITION(end >= begin);}
-	INTRA_FORCEINLINE constexpr Span(TUnsafe, T* begin, Size length) noexcept: Begin(begin), End(Begin + size_t(length)) {}
-
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() const noexcept {return Begin;}
-	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const noexcept {return End - Begin;}
-	[[nodiscard]] INTRA_FORCEINLINE constexpr bool Empty() const noexcept {return Begin >= End;}
-
-	[[nodiscard]] constexpr T& First() const
-	{
-	    INTRA_PRECONDITION(!Empty());
-	    return *Begin;
-	}
-
-	constexpr void PopFirst()
-	{
-	    INTRA_PRECONDITION(!Empty());
-	    Begin++;
-	}
-
-	[[nodiscard]] constexpr T& Last() const
-	{
-	    INTRA_PRECONDITION(!Empty());
-	    return End[-1];
-	}
-
-	constexpr void PopLast()
-	{
-	    INTRA_PRECONDITION(!Empty());
-	    End--;
-	}
-
-	INTRA_FORCEINLINE constexpr index_t PopFirstCount(ClampedSize count) noexcept
-	{
-		const auto poppedElements = Min(index_t(count), Length());
-		Begin += poppedElements;
-		return poppedElements;
-	}
-
-	INTRA_FORCEINLINE constexpr index_t PopLastCount(ClampedSize count) noexcept
-	{
-		const auto poppedElements = Min(index_t(count), Length());
-		End -= poppedElements;
-		return poppedElements;
-	}
-
-	[[nodiscard]] INTRA_FORCEINLINE constexpr Span Take(ClampedSize count) const noexcept
-	{
-	    return Span(Unsafe, Begin, Min(index_t(count), Length()));
-	}
-
-	[[nodiscard]] constexpr T& operator[](Index index) const
-	{
-		INTRA_PRECONDITION(index < Length());
-		return Begin[size_t(index)];
-	}
-
-	T* Begin = nullptr;
-	T* End = nullptr;
-};
-template<class R> Span(R&&) -> Span<TArrayElementKeepConst<R>>;
-
-INTRA_DEFINE_FUNCTOR(ConstSpanOf)<CConvertibleToSpan L>(L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
-
-template<typename T> concept CSpan = CInstanceOfTemplate<TUnqualRef<T>, Span>;
-
 inline namespace Literals {
 [[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const char* str, size_t len) noexcept {return Span(Unsafe, str, len);}
 [[nodiscard]] INTRA_FORCEINLINE constexpr auto operator""_span(const wchar_t* str, size_t len) noexcept {return Span(Unsafe, str, len);}
@@ -1139,9 +1065,9 @@ template<class R, typename F> struct RMap
 	[[nodiscard]] INTRA_FORCEINLINE constexpr auto Length() const requires CHasLength<R> {return OriginalRange.Length();}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopFirstCount(CNumber auto&& numElementsToPop) requires CHasPopFirstCount<R>
-	{return OriginalRange.PopFirstCount(numElementsToPop);}
+	{return OriginalRange.PopFirstCount(INTRA_FWD(numElementsToPop));}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr auto PopLastCount(CNumber auto&& numElementsToPop) requires CHasPopLastCount<R>
-	{return OriginalRange.PopLastCount(numElementsToPop);}
+	{return OriginalRange.PopLastCount(INTRA_FWD(numElementsToPop));}
 
 	INTRA_NO_UNIQUE_ADDRESS F Func;
 	R OriginalRange;
@@ -1154,8 +1080,9 @@ INTRA_DEFINE_FUNCTOR(Map)(auto&& f) {
 	};
 };
 
-template<size_t N> constexpr auto Unzip = []<CList L>(L&& list) requires CStaticLengthContainer<L> {
-	return INTRA_FWD(list)|Map(At<N>);
+template<size_t N> constexpr auto Unzip = []<CList L>(L&& list) requires CStaticLengthContainer<TListValue<L>> {
+	if constexpr(requires {list.template Unzip<N>();}) return list.template Unzip<N>();
+	else return INTRA_FWD(list)|Map(At<N>);
 };
 
 INTRA_IGNORE_WARN_COPY_MOVE_IMPLICITLY_DELETED
@@ -1537,6 +1464,7 @@ INTRA_DEFINE_FUNCTOR(Iota)<CNumber T = NDebugOverflow<int64>>(T begin, T end, au
 #if INTRA_CONSTEXPR_TEST
 static_assert(CRandomAccessRange<decltype(IotaInf(1, 3))>);
 static_assert(CRandomAccessRange<decltype(Iota(1, 2, 3))>);
+static_assert(IotaInf(1, 3)[1] == 4);
 #endif
 
 
@@ -1699,9 +1627,9 @@ template<auto LengthPolicy = Min, CRange... Rs>
 class Zip: CopyableIf<!(CReference<Rs> || ...)>
 {
 	static_assert(VAnyOf(LengthPolicy,
-		Min, //Length = Min(Rs::Length...)
-		Equal, //Require all Rs::Length to be equal
-		Max //Length = Max(Rs::Length...), empty range elements are default constructed
+		Min, // Length = Min(Rs::Length...)
+		Equal, // Require all Rs::Length to be equal
+		Max // Length = Max(Rs::Length...), empty range elements are default constructed
 	));
 	static_assert(!VSameTypes(LengthPolicy, Max) || (CConstructible<TRangeValueRef<Rs>> && ...));
 	Tuple<Rs...> mRanges;
@@ -1812,17 +1740,24 @@ public:
 			return mLen;
 		else if constexpr(VSameTypes(LengthPolicy, Equal))
 			return At<0>(mRanges).Length();
-		else ForEachFieldToArray(Count)(mRanges)|ApplyPackedArgs(LengthPolicy);
+		else
+		{
+			const auto lengths = ForEachFieldToArray(CombineOverloads{Count, [](auto&&) {return MaxValueOf<index_t>; }})(mRanges);
+			return ApplyPackedArgs(LengthPolicy)(lengths);
+		}
 	}
 
 	[[nodiscard]] constexpr auto operator[](CNumber auto&& index) const requires (CHasIndex<Rs> && ...)
-	{return mRanges|ForEach(AtIndex(INTRA_FWD(index)));}
+	{return ForEachField(AtIndex(INTRA_FWD(index)))(mRanges);}
 
 	constexpr auto PopFirstCount(CNumber auto&& maxElementsToPop) requires (CHasPopFirstCount<Rs> || ...)
 	{return popCount(Intra::PopFirstCount(INTRA_FWD(maxElementsToPop)));}
 
 	constexpr auto PopLastCount(CNumber auto&& maxElementsToPop) requires (CHasPopLast<Rs> && ...) && (CHasPopLastCount<Rs> || ...)
 	{return popCount(Intra::PopLastCount(INTRA_FWD(maxElementsToPop)));}
+
+	template<size_t I> decltype(auto) Unzip() {return At<I>(mRanges);}
+	template<size_t I> decltype(auto) Unzip() const {return At<I>(mRanges);}
 
 private:
 	constexpr auto popCount(auto op)
@@ -1837,6 +1772,28 @@ private:
 		}
 	}
 };
+template<CList... Ls> Zip(Ls&&...) -> Zip<Min, TRangeOf<Ls>...>;
+
+#if INTRA_CONSTEXPR_TEST
+static_assert(Zip(Array{3, 1, 4}, IotaInf()).First() == Tuple(3, 0));
+static_assert(Zip(Array{3, 1, 4}, IotaInf()).Length() == 3);
+static_assert(CInfiniteRange<decltype(Zip<Max>(Array{3, 1, 4}, IotaInf()))>);
+#endif
+
+/// Найти первое вхождение любого элемента из диапазона whats в этот диапазон.
+/// Начало этого диапазона смещается к найденному элементу или совмещается с концом в случае, когда элемент не найден.
+/// @param whats Range of the elements to match with. If there is a match, whats it set to it. Иначе whats становится пустым
+/// @param oWhatIndex[out] Index of the first matching element in whats or whats|Count if there are no matching elements.
+/// @return Number of consumed elements from range.
+template<CRange R, CNonInfiniteForwardList Ws> requires (!CConst<R>) && CEqualityComparable<TRangeValue<R>, TListValue<Ws>>
+constexpr auto PopFirstUntilAny(R&& range, Ws&& whats, Optional<index_t&> oWhatIndex = {})
+{
+	auto pred = IsOneOf(Zip(whats, IotaInf(index_t(0))), [](auto& a, auto& b) {return a == At<0>(b);});
+	const auto res = range|PopFirstUntil(FRef(pred));
+	if constexpr(CAdvance<Ws>) whats.RangeOfRef = Unzip<0>(pred.Which);
+	if(oWhatIndex) oWhatIndex.Unwrap() = range.Empty()? 0: At<1>(pred.Which.First());
+	return res;
+}
 
 // Inherit from this class to globally register the object in a list using T as a key.
 /* Useful for interface implementations, for example, codecs:

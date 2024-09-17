@@ -76,11 +76,11 @@ public:
 
 	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
 	[[nodiscard]] constexpr Fixed operator*(U&& rhs) const
-	{return Fixed(Construct, INTRA_FWD(rhs) * MulT<U>(Raw));}
+	{return Fixed(Construct, T(INTRA_FWD(rhs) * MulT<U>(Raw)));}
 
 	template<typename U> requires (!CSame<U, Fixed>) && CNumber<U>
 	[[nodiscard]] constexpr Fixed operator/(U&& rhs) const
-	{return Fixed(Construct, MulT<U>(Raw) / INTRA_FWD(rhs));}
+	{return Fixed(Construct, T(MulT<U>(Raw) / INTRA_FWD(rhs)));}
 
 	constexpr Fixed& operator=(const Fixed&) = default;
 
@@ -682,8 +682,8 @@ INTRA_NOINLINE constexpr GenericFloat<uint64, 10> BinaryDoubleToDecimal(uint64 m
 
 	// Step 2: Determine the interval of valid decimal representations.
 	const uint64 mv = 4 * mantissa;
-	const uint64 mmShift = (mantissa & NumBitsToMask<uint64>(NumMantissaExplicitBitsOf<float>)) != 0 ||
-		exponentOf2 + ExponentBiasOf<float> + NumMantissaExplicitBitsOf<float> == 1;
+	const uint32 mmShift = (mantissa & NumBitsToMask<uint64>(NumMantissaExplicitBitsOf<double>)) != 0 ||
+		exponentOf2 + ExponentBiasOf<double> + NumMantissaExplicitBitsOf<double> == 1;
 
 	// Step 3: Convert to a decimal power base using 128-bit arithmetic.
 	uint64 vr = 0, vp = 0, vm = 0;

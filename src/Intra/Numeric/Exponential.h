@@ -102,8 +102,8 @@ template<typename T, typename P> constexpr auto Pow_(const T& x, const P& power)
 			if((n >>= 1) == 0) return (power < 0? T(1)/z: z);
 		}
 	}
-	else if constexpr(CSame<T, float>) return z_D::powf(x, T(power));
-	else if constexpr(CBasicFloatingPoint<T>) return T(z_D::pow(double(x), double(power)));
+	else if constexpr(CSame<T, float>) return powf(x, T(power));
+	else if constexpr(CBasicFloatingPoint<T>) return T(pow(double(x), double(power)));
 #endif
 	else return Pow_(TFloatOfSizeAtLeast<Min(sizeof(T), sizeof(double))>(x), T(power));
 }

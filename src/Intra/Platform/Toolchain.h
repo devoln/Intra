@@ -300,7 +300,10 @@ INTRA_WINFUNC(int) getaddrinfo(const char* nodeName, const char* serviceName, co
 INTRA_WINFUNC(void) freeaddrinfo(::addrinfo* pAddrInfo);
 INTRA_WINFUNC(in_addr_t) inet_addr(const char* s);
 INTRA_WINFUNC(char*) inet_ntoa(::in_addr in);
-INTRA_WINFUNC(int) inet_pton(int family, const char* addrString, void* outAddrBuf); // Vista+
+
+// Vista+
+INTRA_WINFUNC(const char*) inet_ntop(int family, const void* addr, char* stringBuf, size_t stringBufSize);
+INTRA_WINFUNC(int) inet_pton(int family, const char* addrString, void* outAddrBuf);
 
 #ifdef INTRAZ_D_TOOLCHAIN_DECLARE_PTHREAD
 constexpr int archValues(int win64, int win32, int android64, int android32, int linuxArm64, int linuxX64Mips64, int linuxX86Mips32Arm32)
@@ -366,6 +369,11 @@ int INTRA_PTHREADIMP pthread_attr_setstacksize(::pthread_attr_t* attr, size_t st
 
 int INTRA_PTHREADIMP pthread_create(::pthread_t *th, const ::pthread_attr_t *attr, void*(*func)(void*), void* arg);
 int INTRA_PTHREADIMP pthread_join(::pthread_t thread, void** retval);
+
+#if defined(__linux__) || defined(__FreeBSD__)
+// Linux, FreeBSD 9+
+int INTRA_PTHREADIMP pthread_timedjoin_np(::pthread_t thread, void** retval, const ::timespec* abstime);
+#endif
 
 int INTRA_PTHREADIMP pthread_mutexattr_init(::pthread_mutexattr_t* a);
 int INTRA_PTHREADIMP pthread_mutexattr_settype(::pthread_mutexattr_t* a, int type);

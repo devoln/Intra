@@ -1,6 +1,7 @@
 ﻿#pragma once
 
-#include "Intra/Core.h"
+#include <Intra/Core.h>
+#include <Intra/Platform/Toolchain.h>
 
 namespace Intra { INTRA_BEGIN
 constexpr struct
@@ -122,7 +123,7 @@ template<typename T> using TScalarOf = typename z_D::TScalarOf_<T>::_;
 
 INTRA_DEFINE_FUNCTOR(Abs)(const auto& x) {
 	using T = TRemoveConstRef<decltype(x)>;
-	if constexpr(!CBasicSigned<TScalarOf<T>>) return x;
+	if constexpr(!CSigned<TScalarOf<T>>) return x;
 #if defined(__clang__) || defined(__GNUC__) //better code without -ffast-math
 	else if constexpr(CBasicFloatingPoint<T>)
 	{
@@ -134,7 +135,7 @@ INTRA_DEFINE_FUNCTOR(Abs)(const auto& x) {
 		if(!IsConstantEvaluated(x)) return BitCastTo<T>(
 			BitCastTo<TToIntegral<T>>(x) & (SignBitMaskOf<TToIntegral<TScalarOf<T>>> - 1));
 	}
-	if constexpr(CConvertibleTo<decltype(x < 0), bool>) return x < 0? -x: x;
+	else if constexpr(CConvertibleTo<decltype(x < 0), bool>) return x < 0? -x: x;
 };
 
 constexpr struct TMod {

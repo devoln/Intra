@@ -50,13 +50,12 @@ void __iso_volatile_store8(volatile int8*, int8);
 #define INTRAZ_D_ARM_ONLY_CODE(...)
 #endif
 
-#define INTRAZ_D_MEMORDER_REPLICATE(macro, ...) macro(__VA_ARGS__,) \
-	INTRAZ_D_ARM_ONLY_CODE(macro(__VA_ARGS__, _acq) macro(__VA_ARGS__, _nf) macro(__VA_ARGS__, _rel))
-#define INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE(macro, ...) \
-	INTRAZ_D_MEMORDER_REPLICATE(macro, int64, 64, __VA_ARGS__) \
-	INTRAZ_D_MEMORDER_REPLICATE(macro, long, , __VA_ARGS__) \
-	INTRAZ_D_MEMORDER_REPLICATE(macro, int16, 16, __VA_ARGS__) \
-	INTRAZ_D_MEMORDER_REPLICATE(macro, char, 8, __VA_ARGS__)
+#define INTRAZ_D_MEMORDER_REPLICATE(macro, T, bits) macro(T, bits,) \
+	INTRAZ_D_ARM_ONLY_CODE(macro(T, bits, _acq) macro(T, bits, _nf) macro(T, bits, _rel))
+#define INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE32(macro) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, long,) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, int16, 16) \
+	INTRAZ_D_MEMORDER_REPLICATE(macro, char, 8)
 
 #define INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE(T, bits, suffix) \
 	T _InterlockedExchange##bits##suffix(volatile T* target, T value); \
@@ -65,12 +64,20 @@ void __iso_volatile_store8(volatile int8*, int8);
 	T _InterlockedOr##bits##suffix(volatile T* val, T mask); \
 	T _InterlockedXor##bits##suffix(volatile T* val, T mask); \
 	T _InterlockedExchangeAdd##bits##suffix(volatile T* addend, T value);
-INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE(INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE)
+
+INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE32(INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE)
+#if defined(__i386__) || defined(__arm__) // 32-bit architectures only support CAS 64-bit operation natively
 #undef INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE
-#undef INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE
+#define INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE(T, bits, suffix) \
+	T _InterlockedCompareExchange##bits##suffix(volatile T* dst, T exchange, T comparand);
+#endif
+INTRAZ_D_MEMORDER_REPLICATE(INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE, int64, 64)
+
+#undef INTRAZ_D_DECLARE_INTERLOCKED_OPS_ONE
+#undef INTRAZ_D_MEMORDER_AND_TYPE_REPLICATE32
 #undef INTRAZ_D_MEMORDER_REPLICATE
 
-#ifdef __i386__
+#if defined(__i386__) || defined(__arm__)
 #define INTRAZ_D_INTERLOCKED_OP64(name, arg) \
 inline int64 _Interlocked ## name ## 64(volatile int64* dst, int64 val) noexcept \
 { \
@@ -460,7 +467,7 @@ constexpr T AtomicXorFetch(T* ptr, T val)
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
 constexpr bool AtomicFlagGetSet(T* ptr)
 {
-	static_assert(CAnyOf<T, bool, char, sbyte, byte>);
+	static_assert(CAnyOf<T, bool, char, int8, uint8>);
 	if(!IsConstantEvaluated())
 	{
 	#if defined(__GNUC__) || defined(__clang__)
@@ -477,11 +484,11 @@ constexpr bool AtomicFlagGetSet(T* ptr)
 template<MemoryOrder memoryOrder = MemoryOrder::SequentiallyConsistent, typename T>
 constexpr void AtomicFlagReset(T* ptr)
 {
-	static_assert(CAnyOf<T, bool, char, sbyte, byte>);
+	static_assert(CAnyOf<T, bool, char, int8, uint8>);
 	static_assert(memoryOrder != MemoryOrder::Consume &&
 		memoryOrder != MemoryOrder::Acquire &&
 		memoryOrder != MemoryOrder::AcquireRelease);
-	if(!IsConstantEvaluated(ptr, *ptr, val))
+	if(!IsConstantEvaluated())
 	{
 	#if defined(__GNUC__) || defined(__clang__)
 		return __atomic_clear(ptr, int(memoryOrder));
@@ -526,7 +533,7 @@ public:
 
 	constexpr operator bool() requires CSame<T, bool> {return Get();}
 
-	constexpr bool IsAlwaysLockFree =
+	static constexpr bool IsAlwaysLockFree =
 	#if defined(__GNUC__) || defined(__clang__)
 		__atomic_always_lock_free(sizeof(T), nullptr);
 	#elif defined(__amd64__)
@@ -650,7 +657,7 @@ public:
 
 	constexpr operator bool() requires CSame<T, bool> {return Get();}
 
-	constexpr bool IsAlwaysLockFree = true;
+	static constexpr bool IsAlwaysLockFree = true;
 
 	/// Set value desired if the current value equals to expected.
 	template<MemoryOrder successMemoryOrder = MemoryOrder::SequentiallyConsistent, MemoryOrder failureMemoryOrder = MemoryOrder::SequentiallyConsistent>

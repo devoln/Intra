@@ -299,12 +299,12 @@ template<typename T, size_t N> struct Array
 	INTRA_FORCEINLINE constexpr T* Data() noexcept {return Elements;}
 	INTRA_FORCEINLINE constexpr const T* Data() const noexcept {return Elements;}
 	INTRA_FORCEINLINE constexpr index_t Length() const noexcept {return N;}
-	template<CIntegral I> T& operator[](I index)
+	template<CIntegral I> constexpr T& operator[](I index)
 	{
 		INTRA_PRECONDITION(index >= 0 && index < N);
 		return Elements[size_t(index)];
 	}
-	template<CIntegral I> const T& operator[](I index) const
+	template<CIntegral I> constexpr const T& operator[](I index) const
 	{
 		INTRA_PRECONDITION(index >= 0 && index < N);
 		return Elements[size_t(index)];

@@ -10,7 +10,7 @@
 //// <Common interfaces>
 namespace Intra { INTRA_BEGIN
 // Adds a virtual destructor to IParent interface, may be in the middle of an inheritance chain for interfaces usable without a virtual destructor.
-template<class IParent> INTRA_INTERFACE IGenericDestructible
+template<class IParent> INTRA_INTERFACE IGenericDestructible: ProtectedCopyable
 {
 	constexpr virtual ~IGenericDestructible() = default;
 };
@@ -113,7 +113,9 @@ public:
 template<typename T> INTRA_CLASS_ALIAS(PtrHolder, GenericPointerHolder<MaybeUnique<T>>);
 template<typename T> INTRA_CLASS_ALIAS(SharedHolder, GenericPointerHolder<Shared<T>>);
 
-// TODO: ������� Mixin'� ����� CRTP ��� ������ ��� operator(), ��� ������� � Mixin'�� ��� range � ������� me()
+// TODO: аналог std::function на основе определённых выше интерфейсов и их реализаций
+
+// TODO: сделать Mixin'ы через CRTP для обёртки над operator(), как сделано в Mixin'ах для range с методом me()
 } INTRA_END
 
 
@@ -122,14 +124,15 @@ namespace Intra { INTRA_BEGIN
 using IAllocator = ICallback<TRawAllocatorSignature>;
 using IDestructibleAllocator = IGenericDestructible<IAllocator>;
 
+// TODO: нужно ли это? Почти совпадает с GenericFunctor<TRawAllocatorSignature>
 template<CAllocator A> class PolymorphicAllocator: public IAllocator
 {
 public:
 	INTRA_NO_UNIQUE_ADDRESS A Allocator;
 
 	PolymorphicAllocator() = default;
-	template<typename... Args> explicit PolymorphicAllocator(Args&&... args): Allocator(INTRA_FWD(args)...) {}
-	[[nodiscard]] constexpr RawAllocResult Reallocate(RawAllocParams params) final {return Allocator(params);}
+	template<typename... Args> INTRA_FORCEINLINE explicit PolymorphicAllocator(Args&&... args): Allocator(INTRA_FWD(args)...) {}
+	[[nodiscard]] constexpr RawAllocResult operator()(RawAllocParams params) final {return Allocator(params);}
 };
 template<class A> PolymorphicAllocator(A&&) -> PolymorphicAllocator<TUnqualRef<A>>;
 

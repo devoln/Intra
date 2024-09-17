@@ -196,6 +196,16 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target archit
 #define INTRA_ENABLE_COMPILER_OPTIMIZATIONS
 #define INTRA_DISABLE_COMPILER_OPTIMIZATIONS
 #define INTRA_DEFAULT_COMPILER_OPTIMIZATIONS
+
+#ifdef __i386__
+#define INTRA_VECTORCALL __attribute__((vectorcall))
+#define INTRA_FASTCALL __attribute__((fastcall))
+#else
+#define INTRA_FASTCALL
+#define INTRA_VECTORCALL
+#endif
+#else
+#define INTRA_FASTCALL __fastcall
 #endif
 
 #ifdef __clang__
@@ -221,6 +231,7 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target archit
 #define INTRA_FORCEINLINE_LAMBDA
 #define INTRA_NOINLINE __declspec(noinline)
 #endif
+
 
 #ifdef _MSC_VER
 #define INTRA_DEBUG_BREAK __debugbreak()
@@ -300,6 +311,13 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target archit
 #else
 #define INTRA_EXPORT
 #define INTRA_EXPORT_MODULE(name)
+#endif
+
+// Work around MSVC compiler error with dependent fields in non-type template arguments
+#if defined(_MSC_VER) && !defined(__clang__)
+#define INTRA_NTTA(...) []{return __VA_ARGS__;}()
+#else
+#define INTRA_NTTA(...) __VA_ARGS__
 #endif
 
 #endif
@@ -478,6 +496,16 @@ using size_t = decltype(sizeof(0));
 #define INTRA_BEGIN INTRA_PUSH_ENABLE_USEFUL_WARNINGS INTRA_DISABLE_REDUNDANT_WARNINGS
 #define INTRA_END INTRA_WARNING_POP
 
+#ifdef __cpp_exceptions
+#define INTRA_TRY try
+#define INTRA_CATCH_ALL catch(...)
+#define INTRA_RETHROW throw
+#else
+#define INTRA_TRY
+#define INTRA_CATCH_ALL if constexpr(false)
+#define INTRA_RETHROW
+#endif
+
 /// All Intra libraries define everything in this namespace
 namespace Intra { INTRA_BEGIN
 //// <Basic type definitions and build config variables>
@@ -503,14 +531,16 @@ using int32 = int;
 using uint32 = unsigned;
 #endif
 
-#ifdef __wasm__ // wasm has 64-bit instructions and is likely to run on 64-bit systems
-using WidestFastInt = uint64;
-#else
-using WidestFastInt = size_t;
-#endif
-
 /// Signed integral type with size dependent on pointer size. Used for index and size arithmetics.
 using index_t = decltype(static_cast<char*>(nullptr) - static_cast<char*>(nullptr));
+
+#ifdef __wasm__ // wasm has 64-bit instructions and is likely to run on 64-bit systems
+using WidestFastInt = int64;
+using WidestFastUint = uint64;
+#else
+using WidestFastInt = index_t;
+using WidestFastUint = size_t;
+#endif
 
 #ifndef __cpp_char8_t
 using char8_t = char;
@@ -580,8 +610,10 @@ public:
 	template<typename T> INTRA_UTIL_INLINE operator const T*() const {return static_cast<const T*>(mPtr);}
 };
 
-// Used to declare an unsafe function is unsafe and mark all its invocations as such.
-// It's recomended to use only with short inline functions otherwise passing an extra parameter adds some overhead.
+// Used to declare an unsafe function and mark all its invocations as such.
+// Calling unsafe functions require special attention to avoid memory corruption and other serious bugs.
+// Such definition helps to easily find unsafe code in IDE to review its correctness.
+// It's recommended to use only with inline functions otherwise passing an extra parameter adds some overhead to every function invocation.
 constexpr struct TUnsafe {
 	// Allows to do automatic reinterpret casts for passing arguments to 3rd-party API
 	INTRA_UTIL_INLINE auto operator()(void* ptrToCast) const {return UntypedPtr<false>(ptrToCast);}
@@ -773,6 +805,14 @@ template<typename FieldType, bool Condition> using TConditionalField = TSelect<F
 
 
 template<bool Condition> using CopyableIf = TSelect<EmptyType, NonCopyableType, Condition>;
+class ProtectedCopyable
+{
+protected:
+	ProtectedCopyable(ProtectedCopyable&&) = default;
+	ProtectedCopyable(const ProtectedCopyable&) = default;
+	ProtectedCopyable& operator=(ProtectedCopyable&&) = default;
+	ProtectedCopyable& operator=(const ProtectedCopyable&) = default;
+};
 
 namespace z_D {
 template<typename T> struct TRemovePointer_ {using _ = T;};
@@ -837,7 +877,8 @@ constexpr auto VAnyOf = []<typename... Ts>(Ts&&...) {return CAnyOf<TUnqual<TRemo
 
 struct TEmpty {};
 constexpr struct TUndefined {} Undefined;
-template<auto V> concept CDefined = !CSameUnqual<decltype(V), TUndefined>;
+template<typename T> concept CDefined = !CSameUnqual<T, TUndefined>;
+constexpr auto VDefined = []<typename T>(T) {return CDefined<T>;};
 
 namespace z_D {
 template<typename T, bool = CSameUnqual<T, void>> struct TAddReference
@@ -896,9 +937,8 @@ template<typename T> concept CUnqualedBasicSignedIntegral = CAnyOf<T,
 
 template<typename T> concept CUnqualedBasicFloatingPoint = CAnyOf<T, float, double, long double>;
 
-/** note: signed char and unsigned char are not treated as character types.
-	They are separate types from char because Intra doesn't use them to store characters.
-*/
+/// Note: signed char and unsigned char are not treated as character types.
+/// They are separate types from char because Intra doesn't use them to store characters.
 template<typename T> concept CUnqualedChar = CAnyOf<T, char, char16_t, char32_t, wchar_t
 #ifdef __cpp_char8_t
 	, char8_t
@@ -924,6 +964,11 @@ template<typename T, typename Arg> concept CTriviallyAssignable = __is_trivially
 template<typename T> concept CTriviallyCopyAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddLValueReference<const T>>;
 template<typename T> concept CTriviallyMoveAssignable = CTriviallyAssignable<TAddLValueReference<T>, TAddRValueReference<T>>;
 template<typename T> concept CHasUniqueObjectRepresentations = __has_unique_object_representations(T);
+
+// Can be specialized for non-trivial types that initialize all fields to zero by default.
+// This may allow containers to use calloc/memset for such types and avoid calling constructors
+template<typename T> constexpr bool IsMemzeroConstructible = CTriviallyConstructible<T>;
+template<typename T> concept CMemzeroConstructible = IsMemzeroConstructible<T>;
 
 template<typename T> concept CUnqualedBasicIntegral = CUnqualedBasicUnsignedIntegral<T> || CUnqualedBasicSignedIntegral<T>;
 template<typename T> concept CUnqualedBasicSigned = CUnqualedBasicSignedIntegral<T> || CUnqualedBasicFloatingPoint<T>;
@@ -1011,13 +1056,6 @@ template<typename T> using TRemoveAllExtents = typename z_D::TRemoveAllExtents_<
 		static void test(...); \
 	};\
 	template<typename U, typename... UArgs> using checker_name = decltype(z_D_ ## checker_name::test<U, UArgs...>(0))
-
-#define INTRA_DEFINE_CONCEPT_EXPR(checker_name, expr, resultOnError) \
-	struct z_D_ ## checker_name {\
-		template<typename T> static constexpr auto test(int) -> decltype((expr), bool()) {return expr;} \
-		static constexpr bool test(...) {return resultOnError;} \
-	}; \
-	template<typename U> concept checker_name = z_D_ ## checker_name::test<U>(0)
 
 template<typename T> concept CScalar =
 	CBasicArithmetic<T> ||
@@ -1441,7 +1479,7 @@ template<typename T> struct FRef
 		-> decltype(FunctorReference(INTRA_FWD(args)...)) {return FunctorReference(INTRA_FWD(args)...);}
 };
 
-template<auto Value> constexpr auto StaticConst = [](auto&&...) {return Value;};
+template<auto Value> constexpr auto StaticConst = [](auto&&...) noexcept {return Value;};
 constexpr auto Always = StaticConst<true>;
 constexpr auto Never = StaticConst<false>;
 template<CFunctionPointer auto F> struct TCall

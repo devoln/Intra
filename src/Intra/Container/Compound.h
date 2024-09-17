@@ -5,6 +5,7 @@
 #include <Intra/Meta.h>
 #include <Intra/Preprocessor.h>
 #include <Intra/Numeric/Integral.h>
+#include <Intra/LifeCycle.h>
 
 namespace Intra { INTRA_BEGIN
 INTRA_IGNORE_WARN_COPY_MOVE_CONSTRUCT_IMPLICITLY_DELETED
@@ -31,7 +32,7 @@ public:
 	template<CSameUnqualRef<Optional> Me> requires(!CTriviallyDestructible<T>) Optional(Me&& rhs)
 	{
 		if(!rhs.mHasValue) return;
-		new(Construct, AddressOf(mVal.Value)) T(static_cast<TPropagateQualRef<Me&&, T>>(rhs.mVal.Value));
+		LifeCycle::ConstructOne(__builtin_addressof(mVal.Value), static_cast<TPropagateQualRef<Me&&, T>>(rhs.mVal.Value));
 		mHasValue = true;
 	}
 
@@ -41,14 +42,14 @@ public:
 	constexpr T& Set(const T& rhs) requires CCopyAssignable<T>
 	{
 		if(mHasValue) mVal.Value = rhs;
-		else new(Construct, AddressOf(mVal.Value)) T(rhs);
+		else LifeCycle::ConstructOne(__builtin_addressof(mVal.Value), rhs);
 		return mVal.Value;
 	}
 
 	constexpr T& Set(T&& rhs) requires CMoveAssignable<T>
 	{
 		if(mHasValue) mVal.Value = INTRA_MOVE(rhs);
-		else new(Construct, AddressOf(mVal.Value)) T(INTRA_MOVE(rhs));
+		else LifeCycle::ConstructOne(__builtin_addressof(mVal.Value), INTRA_MOVE(rhs));
 		return mVal.Value;
 	}
 
@@ -57,7 +58,7 @@ public:
 	constexpr T& Emplace(Args&&... args)
 	{
 		if(mHasValue) mVal.Value.~T();
-		new(Construct, AddressOf(mVal.Value)) T(INTRA_FWD(args)...);
+		LifeCycle::ConstructOne(__builtin_addressof(mVal.Value), INTRA_FWD(args)...);
 		return mVal.Value;
 	}
 
@@ -81,8 +82,8 @@ public:
 	[[nodiscard]] INTRA_FORCEINLINE constexpr bool operator!=(TUndefined) const {return !operator==(Undefined);}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr explicit operator bool() const {return !operator==(Undefined);}
 
-	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() {return AddressOf(mVal.Value);}
-	[[nodiscard]] INTRA_FORCEINLINE constexpr const T* Data() const {return AddressOf(mVal.Value);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr T* Data() {return __builtin_addressof(mVal.Value);}
+	[[nodiscard]] INTRA_FORCEINLINE constexpr const T* Data() const {return __builtin_addressof(mVal.Value);}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr index_t Length() const {return index_t(mHasValue);}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr T& Or(T& fallback) {return mHasValue? mVal.Value: fallback;}
@@ -183,7 +184,7 @@ template<size_t I> constexpr auto At = []<class T>(T&& v) -> decltype(auto) requ
 	if constexpr(CStaticLengthContainer<T>) static_assert(I < StaticLength<T>);
 	if constexpr(CHasIndex<T>) return v[I];
 	else if constexpr(z_D::CTupleElementDefined<T>) return get<I>(INTRA_FWD(v));
-	else return v.*(operator()(ReflectFieldPointersOf(Type<T>)));
+	else return v.*(get<I>(ReflectFieldPointersOf(Type<T>)));
 };
 
 
@@ -257,7 +258,6 @@ private:
 	using Impl = z_D::TupleImpl<TMakeIndexSeq<sizeof...(Ts)>, Ts...>;
 	INTRA_NO_UNIQUE_ADDRESS Impl impl_;
 public:
-
     explicit((!CConvertibleTo<const Ts&, Ts> || ...)) //TODO: strange compiler error MSVC
 		constexpr Tuple(const Ts&... t): impl_(
 		TMakeIndexSeq<sizeof...(Ts)>(),
@@ -344,7 +344,7 @@ template<typename... Ts1, typename... Ts2>
 
 template<typename... Ts> constexpr auto Tie(Ts&... args) {return Tuple<Ts&...>(args...);}
 
-namespace z_D::ADL {void get(...) {}}
+namespace z_D::ADL {void get(...);}
 
 namespace z_D {
 template<bool ReturnArray, typename F, typename T, size_t... Is>
@@ -386,7 +386,7 @@ constexpr auto ApplyPackedArgs = []<typename F>(F&& func) {
 	return [func = FunctorOf(INTRA_FWD(func))]<CStaticLengthContainer C>(C&& slc) mutable {
 		return [&]<size_t... Is>(TIndexSeq<Is...>) {
 			return func(At<Is>(slc)...);
-		}();
+		}(TMakeIndexSeq<StaticLength<C>>());
 	};
 };
 
@@ -593,7 +593,7 @@ public:
 	{
 		reset();
 		auto& storage = z_D::get<I>(static_cast<Storage&>(*this));
-		new(Construct, AddressOf(storage)) TPackAt<I, Ts...>(INTRA_FWD(args)...);
+		LifeCycle::ConstructOne(__builtin_addressof(storage), INTRA_FWD(args)...);
 		mAlternativeIndex = I;
 		return storage;
 	}
@@ -641,9 +641,7 @@ private:
 	{
 		if(rhs.Empty()) return;
 		ForFieldAtRuntime(rhs.mAlternativeIndex, [&, self=this]<size_t I, typename T>(T&& val, TIndex<I>) {
-			using DstT = TUnqualRef<T>;
-			DstT* storage = AddressOf(z_D::get<I>(*self));
-			new(Construct, storage) DstT(INTRA_FWD(val));
+			LifeCycle::ConstructOne(__builtin_addressof(z_D::get<I>(*self)), INTRA_FWD(val));
 		})(static_cast<TPropagateQualRef<decltype(rhs), z_D::VariantStorage<Ts...>>&>(rhs));
 		mAlternativeIndex = rhs.mAlternativeIndex;
 	}
@@ -668,18 +666,18 @@ private:
 			if constexpr(CRValueReference<T>)
 			{
 				reset();
-				new(Construct, AddressOf(storage)) DstT(INTRA_MOVE(val));
+				LifeCycle::ConstructOne(__builtin_addressof(storage), INTRA_MOVE(val));
 			}
 			else if constexpr(!CNothrowConstructible<DstT, T> && CNothrowMoveConstructible<DstT>)
 			{
 				DstT tempCopy = val;
 				reset();
-				new(Construct, AddressOf(storage)) DstT(INTRA_MOVE(tempCopy));
+				LifeCycle::ConstructOne(__builtin_addressof(storage), INTRA_MOVE(tempCopy));
 			}
 			else
 			{
 				reset();
-				new(Construct, AddressOf(storage)) DstT(val);
+				LifeCycle::ConstructOne(__builtin_addressof(storage), val);
 			}
 			mAlternativeIndex = I;
 		})(static_cast<TPropagateQualRef<decltype(rhs), Storage>&>(rhs));

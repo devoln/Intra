@@ -127,7 +127,6 @@ StatementMacros:
   - INTRA_FORCEINLINE
 TypenameMacros:
   - INTRA_DEFINE_SAFE_DECLTYPE
-  - INTRA_DEFINE_CONCEPT_EXPR
 TabWidth:        4
 UseTab:          ForContinuationAndIndentation
 ...

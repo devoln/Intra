@@ -1,28 +1,21 @@
 ﻿#pragma once
 
-#include "IntraX/Container/ForwardDecls.h"
-#include "IntraX/Container/Operations.h"
-#include "Intra/Allocator.h"
-#include "IntraX/Memory/Memory.h"
-#include "StringFormatter.h"
+#include <Intra/Container/Array.h>
+#include <Intra/Container.h>
+#include <Intra/Allocator.h>
+#include <Intra/Range.h>
+#include <Intra/Range/StringView.h>
 
-#include "Intra/Misc/RawMemory.h"
-#include "Intra/Range/Inserter.h"
-#include "Intra/Range/Mutation/Copy.h"
 #include "Intra/Range/Mutation/Fill.h"
 #include "Intra/Range/Mutation/ReplaceSubrange.h"
-#include "Intra/Range/Span.h"
-#include "Intra/Range/Special/Unicode.h"
-#include "Intra/Range/StringView.h"
-#include "Intra/Range/Decorators.h"
-#include "Intra/Range/Zip.h"
 
 namespace Intra { INTRA_BEGIN
 //INTRA_IGNORE_WARN_SIGN_CONVERSION
+
 /// Class used to create, store and operate strings.
 template<typename CodeUnit> class GenericString
 {
-	ArrayList<CodeUnit> mRawCodeUnits; //TODO: finish
+	DynArray<CodeUnit> mRawCodeUnits; //TODO: finish
 public:
 	constexpr GenericString(TUnsafe, const CodeUnit* str):
 		GenericString(GenericStringView(Unsafe, str)) {}
@@ -48,21 +41,13 @@ public:
 	{
 		if(!IsHeapAllocated()) return;
 		u.m.Data = allocate(u.m.Len);
-		BitwiseCopy(Unsafe, u.m.Data, rhs.u.m.Data, u.m.Len);
+		MemoryCopy(Unsafe, u.m.Data, rhs.u.m.Data, u.m.Len);
 	}
 	
 	constexpr GenericString(GenericString&& rhs):
 		u(rhs.u) {rhs.resetToEmptySsoWithoutFreeing();}
 	
-
-	~GenericString()
-	{
-		//The destructor is the most serious obstacle to String being constexpr
-		if(IsHeapAllocated()) freeLongData();
-	}
-
-	/// Get UTF-32 character range
-	//UTF8 ByChar() const {return UTF8(Data(), Length());}
+	constexpr ~GenericString() {if(IsHeapAllocated()) freeLongData();}
 
 	/*!
 	  @name String assignment
@@ -83,19 +68,15 @@ public:
 		INTRA_PRECONDITION(!containsView(rhs));
 		SetLengthUninitialized(0); //avoid unnecessary copying on reallocation
 		SetLengthUninitialized(rhs.Length());
-		Misc::BitwiseCopyUnsafe(Data(), rhs.Data(), rhs.Length());
+		MemoryCopy(Unsafe, Data(), rhs.Data(), rhs.Length());
 		return *this;
 	}
 
 	constexpr GenericString& operator=(const GenericString& rhs)
 	{return operator=(rhs.View());}
-
-	constexpr GenericString& operator=(const Char* rhs)
-	{return operator=(GenericStringView<const Char>(rhs));}
 	
-	template<typename R> constexpr Requires<
-		CArrayList<R>,
-	GenericString&> operator=(R&& rhs)
+	template<CConvertibleToSpan L>
+	GenericString& operator=(R&& rhs)
 	{return operator=(GenericStringView<const Char>(rhs));}
 
 	template<typename R> constexpr Requires<

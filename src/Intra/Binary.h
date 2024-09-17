@@ -47,23 +47,28 @@ INTRA_FORCEINLINE constexpr void MemoryCopySmall8(TUnsafe, char* dst, const char
 template<CTriviallyCopyAssignable T> INTRA_FORCEINLINE constexpr void MemoryCopyForward(TUnsafe, T* dst, const T* src, size_t count) noexcept
 {
 	INTRA_PRECONDITION(src + count <= dst || src >= dst);
-	if(IsConstantEvaluated())
-	{
-		for(size_t i = 0; i < count; i++) dst[i] = src[i];
-		return;
-	}
-	z_D::memmove(dst, src, count*sizeof(T));
+	if(IsConstantEvaluated()) for(size_t i = 0; i < count; i++) dst[i] = src[i];
+	else z_D::memmove(dst, src, count * sizeof(T));
 }
 
 /// Memory copying that can be used for shifting arrays to the right.
-template<CTriviallyCopyAssignable T> INTRA_FORCEINLINE constexpr void MemoryCopyBackwards(TUnsafe, T* dst, const T* src, Size count) noexcept
+template<CTriviallyCopyAssignable T> INTRA_FORCEINLINE constexpr void MemoryCopyBackward(TUnsafe, T* dst, const T* src, size_t count) noexcept
+{
+	if(IsConstantEvaluated()) while(count--) dst[count] = src[count];
+	else z_D::memmove(dst, src, size_t(count) * sizeof(T));
+}
+
+template<CTriviallyCopyAssignable T> INTRA_FORCEINLINE constexpr void MemoryZero(TUnsafe, T* dst, size_t count) noexcept
 {
 	if(IsConstantEvaluated())
 	{
-		for(index_t i = index_t(count) - 1; i >= 0; i--) dst[i] = src[i];
+		T zero = {};
+		if constexpr(!CTriviallyConstructible<T>)
+			zero = BitCastTo<T>(Array<char, sizeof(T)>{});
+		for(size_t i = 0; i < count; i++) dst[i] = zero;
 		return;
 	}
-	z_D::memmove(dst, src, size_t(count)*sizeof(T));
+	z_D::memset(dst, 0, count * sizeof(T));
 }
 
 template<CChar T> [[nodiscard]] INTRA_FORCEINLINE constexpr index_t CStringLength(const T* str) noexcept
@@ -94,7 +99,7 @@ INTRA_FORCEINLINE constexpr void BinarySerialize(TUnsafe, Byte* dst, TExplicitTy
 		#else
 			// MSVC doesn't optimize memcpy call in low optimization level builds (debug and min size without -Oi).
 			// Fortunately, MSVC doesn't implement any strict aliasing optimizations we have to worry about.
-			*reinterpret_cast<T*>(dst) = x;
+			*reinterpret_cast<__unaligned T*>(dst) = x;
 		#endif
 			return;
 		}
@@ -104,8 +109,8 @@ INTRA_FORCEINLINE constexpr void BinarySerialize(TUnsafe, Byte* dst, TExplicitTy
 	{
 		constexpr bool AsBigEndian = CBasicFloatingPoint<T>? Config::TargetIsFloatBigEndian: Config::TargetIsBigEndian;
 		auto v = BitCastTo<TToIntegral<T>>(x);
-		if constexpr((NumOutputBytes <= sizeof(T))) INTRA_PRECONDITION(BitWidth<TToIntegral<T>>(v) <= (NumOutputBytes * 8));
-		for(int i = 0; i < NumOutputBytes; i++)
+		if constexpr((NumOutputBytes <= sizeof(T))) INTRA_PRECONDITION(size_t(BitWidth<TToIntegral<T>>(v)) <= (NumOutputBytes * 8));
+		for(size_t i = 0; i < NumOutputBytes; i++)
 		{
 			const auto byteIndex = AsBigEndian? sizeof(v) - 1 - i: i;
 			dst[i] = Byte((v >> (byteIndex * 8)) & 0xFF);
@@ -125,7 +130,7 @@ template<CTriviallySerializable T, size_t NumInputBytes = sizeof(T), CSameSize<u
 	#else
 		// MSVC doesn't optimize memcpy call in low optimization level builds (debug and min size without -Oi).
 		// Fortunately, MSVC doesn't implement any strict aliasing optimizations we have to worry about.
-		x = *reinterpret_cast<const T*>(src);
+		x = *reinterpret_cast<__unaligned const T*>(src);
 	#endif
 		return x;
 	}
@@ -133,7 +138,7 @@ template<CTriviallySerializable T, size_t NumInputBytes = sizeof(T), CSameSize<u
 	UInt v{};
 	if constexpr(CBasicIntegral<T>)
 	{
-		for(int i = 0; i < NumInputBytes; i++)
+		for(size_t i = 0; i < NumInputBytes; i++)
 		{
 			const auto byteIndex = Config::TargetIsBigEndian? NumInputBytes - 1 - i: i;
 			v |= T(T(TToUnsigned<Byte>(src[i])) << T(byteIndex * 8));
@@ -185,7 +190,7 @@ template<CConvertibleToSpan L> [[nodiscard]] INTRA_FORCEINLINE constexpr bool Co
 	return size_t(address - Data(arr)) < size_t(Length(arr));
 }
 
-template<CConvertibleToSpan L1, CSameArrays<L1> L2> [[nodiscard]] constexpr bool Overlaps(L1&& list1, L2&& list2) noexcept
+template<CConvertibleToSpan L1, CSameArrays<L1> L2> [[nodiscard]] inline bool Overlaps(L1&& list1, L2&& list2) noexcept
 {
 	return Data(list1) < Data(list2) + Length(list2) &&
 		   Data(list2) < Data(list1) + Length(list1) &&
@@ -245,13 +250,13 @@ template<CBasicUnsignedIntegral T> INTRA_NOINLINE size_t INTRA_FASTCALL DecodeP8
 	if constexpr(sizeof(T) < 4)
 	{
 		uint32 val;
-		const auto numBytes = DecodeP8UintLE<uint32>(val, src);
+		const auto numBytes = DecodeP8UintLEUnsafe<uint32>(val, src);
 		value = T(val);
 		return numBytes;
 	}
 	T varValue = BinaryDeserialize<T>(Unsafe, src, sizeof(varValue));
 	if constexpr(Config::TargetIsBigEndian) varValue = SwapByteOrder<T>(varValue);
-	size_t numBytes = 1 + CountTrailingZeros<uint32_t>(uint32_t(~varValue));
+	size_t numBytes = 1 + CountTrailingZeros<uint32>(uint32(~varValue));
 	T highBits = 0;
 	if(numBytes > sizeof(T))
 		highBits = T(src[sizeof(T)]) << (sizeof(T) * 7);

@@ -3,7 +3,7 @@
 namespace Intra { INTRA_BEGIN
 
 #ifdef _WIN32
-WinSockPoller::WinSockPoller()
+WinSockPoller::WinSockPoller(EventQueue* myEventQueue): mEventQueue(myEventQueue)
 {
 	for(auto& ev: mSocketEvents)
 		ev = z_D::CreateEventW(nullptr, false, false, nullptr);
@@ -25,15 +25,15 @@ bool WinSockPoller::ScheduleCallback(CallbackPtr callback, HANDLE dstThread)
 
 bool WinSockPoller::Finish(HANDLE dstThread)
 {
-	return QueueUserAPC([](z_D::ULONG_PTR pollContextPtr) {
-		auto& pollContext = *reinterpret_cast<WinSockPoller*>(pollContextPtr);
-		pollContext.mFinished = true;
-	}, dstThread, size_t(callback)) != 0;
+	return QueueUserAPC([](z_D::ULONG_PTR pollerPtr) {
+		auto& poller = *reinterpret_cast<WinSockPoller*>(pollerPtr);
+		poller.mFinished = true;
+	}, dstThread, size_t(this)) != 0;
 }
 
-LResult<int> WinSockPoller::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept
+LResult<int> WinSockPoller::ProcessEvents(Optional<TimeDelta> waitTimeout) noexcept
 {
-	const auto milliseconds = waitTimeout? unsigned(Min(waitTimeout.IntMilliseconds(), MaxValue<uint32>)): MaxValue<uint32>;
+	const auto milliseconds = waitTimeout? unsigned(Min(waitTimeout.Unwrap().IntMilliseconds(), MaxValue<uint32>)): MaxValue<uint32>;
 	const auto eventIndex = z_D::WaitForMultipleObjectsEx(NumSocketGroups, mSocketEvents, false, milliseconds, true);
 	if(eventIndex >= NumSocketGroups) return 0; // timeout, wait error, APC, or overlapped I/O completion
 
@@ -68,22 +68,14 @@ LResult<int> WinSockPoller::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) 
 	for(int callbackIndex = 0; callbackIndex < 3; callbackIndex++)
 		for(size_t i = 1, n = fdsets[callbackIndex * maxElemsPerFdset]; i <= n; i++)
 		{
-			auto& subscription = subscriptionByFd(fdsets[i]);
+			auto& subscription = subscriptionByFd(int(fdsets[i]));
 			auto& callback = subscription.Callbacks[callbackIndex];
-			callback();
+			if(mEventQueue) mEventQueue->ScheduleCallback(callback);
+			else (*callback)();
 			callback = nullptr;
 		}
 	INTRA_DEBUG_ASSERT(size_t(ret) == numReadable + numWritable + numErrors);
 	return ret;
-}
-
-void WinSockPoller::Run() noexcept
-{
-	while(!mFinished)
-	{
-		// TODO: handle exceptions, log errors
-		ProcessEvents();
-	}
 }
 
 void WinSockPoller::CallOnSocketEvent(Socket& socket, CallbackPtr callback, int callbackIndex)
@@ -96,7 +88,7 @@ void WinSockPoller::CallOnSocketEvent(Socket& socket, CallbackPtr callback, int 
 	auto indexInGroup = group.size();
 	if(mFdToIndex.size() > socketID && mFdToIndex[socketID])
 		indexInGroup = mFdToIndex[socketID] - 1;
-	mFdToIndex.Set(socketID, indexInGroup);
+	mFdToIndex.Set(socketID, uint16_t(indexInGroup));
 	if(group.size() <= indexInGroup)
 		group.PushLast({.Fd = fd});
 
@@ -106,7 +98,7 @@ void WinSockPoller::CallOnSocketEvent(Socket& socket, CallbackPtr callback, int 
 		mSocketEvents[groupIndex], // TODO: to work with multiple providers sockets from different providers must be in different groups
 		(subscription.OnReadable? 0x29: 0) | // FD_READ|FD_ACCEPT|FD_CLOSE
 		(subscription.OnWritable? 0x12: 0) | // FD_WRITE|FD_CONNECT
-		(subscription.OnError? 0x14: 0) // FD_OOB|FD_CONNECT (with error)
+		(subscription.OnException? 0x14: 0) // FD_OOB|FD_CONNECT (with error)
 	);
 }
 
@@ -130,13 +122,13 @@ EventQueue::~EventQueue()
 	Finish();
 	if(mEventThread.IsJoinable()) mEventThread.Join();
 	z_D::CloseHandle(mCompletionPort);
+	if(auto cb = mFinishCallback.load()) delete cb;
 }
 
 void EventQueue::callOnSocketEvent(Socket& socket, CallbackPtr callback, int callbackIndex)
 {
 	initThread();
-	auto callbackForEventThread = [this, callback] {ScheduleCallback(callback);}; // TODO: find a way to convert it to CallbackPtr
-	mEventPoller.Unwrap().CallOnReadable(socket, callbackForEventThread);
+	mEventPoller.Unwrap().CallOnSocketEvent(socket, callback, callbackIndex);
 }
 
 // TODO: another way to emulate readiness API with pure IOCP is ReadFile(0 bytes) or WriteFile(1 byte)
@@ -164,14 +156,13 @@ bool EventQueue::Finish()
 		mEventPoller.Unwrap().Finish(mEventThread.Handle());
 		mEventPoller = {};
 	}
-	mFinished.Set(true);
 	// this callback schedules itself until all the threads exit ProcessEvents()
-	mFinishCallback = [this] {ScheduleCallback(mFinishCallback.get())};
+	mFinishCallback = [this] {ScheduleCallback(mFinishCallback.get());};
 	ScheduleCallback(mFinishCallback.get()); // start the scheduling chain
 	return true;
 }
 
-LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept
+LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout) noexcept
 {
 	if(mFinished) return 0;
 	const auto milliseconds = waitTimeout? unsigned(Min(waitTimeout.IntMilliseconds(), MaxValue<uint32>)): MaxValue<uint32>;
@@ -185,7 +176,7 @@ LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noe
 	z_D::OVERLAPPED_ENTRY completionPortEntries[5];
 	const bool ret = 0 != GetQueuedCompletionStatusEx(mCompletionPort,
 		reinterpret_cast<_OVERLAPPED_ENTRY*>(completionPortEntries),
-		sizeof(completionPortEntries)/sizeof(completionPortEntries[0]),
+		Length(completionPortEntries),
 		&numEntriesRemoved, milliseconds, true);
 #endif
 	if(!ret) return ErrorCode::LastError();
@@ -207,7 +198,7 @@ Result<EventQueue::TimerID> EventQueue::setTimer(TimerID timer, CallbackPtr call
 	if(newTimer)
 	{
 		initThread();
-		timer = Shared<TimerDesc>::New({
+		timer = TimerID::New({
 			.MyQueue = this,
 			.Handle = z_D::CreateWaitableTimerW(nullptr, false, nullptr),
 			.Callback = callback
@@ -224,14 +215,14 @@ Result<EventQueue::TimerID> EventQueue::setTimer(TimerID timer, CallbackPtr call
 	//  we delegate this to EventQueue's own thread created for this purpose.
 	// Then timer event handler schedules the callback to be run on any thread processing this EventQueue (I/O completion port).
 	bool ok = 0 != QueueUserAPC([](z_D::ULONG_PTR timerHandle) {
-		auto timer = Shared(Unsafe, reinterpret_cast<Shared<TimerDesc>::StorageHandle>(timerDesc));
+		auto timer = TimerID::ReconstructFromReleasedHandle(Unsafe, TimerID::StorageHandle(timerDesc));
 		if(!timer->Handle) return; // FreeTimer has been called, don't continue and automatically release the reference
 		z_D::SetWaitableTimer(timer->Handle,
 			reinterpret_cast<_LARGE_INTEGER*>(&timer->Time), timer->Period,
-			[](void* timerHandle) {
-				auto timer = TimerID::ReconstructFromReleasedHandle(Unsafe, reinterpret_cast<TimerID::StorageHandle>(timerHandle));
+			[](void* timerHandle, unsigned long timerLow, unsigned long timerHigh) {
+				auto timer = TimerID::ReconstructFromReleasedHandle(Unsafe, TimerID::StorageHandle(timerHandle));
 				if(!timer->Handle) return; // FreeTimer has been called, don't call callback and automatically release the reference
-				if(timer->Period) timer.ReleaseHandleToReconstructLater(Unsafe); // periodic timer ti going to get called again, avoid releasing the reference
+				if(timer->Period) timer.ReleaseHandleToReconstructLater(Unsafe); // periodic timer is going to get called again, avoid releasing the reference
 				timer->MyQueue->ScheduleCallback(timer->Callback);
 			}, timer.ReleaseHandleToReconstructLater(Unsafe), false);
 	}, mEventThread.Handle(), size_t(timer.ReleaseHandleToReconstructLater(Unsafe)));
@@ -251,7 +242,7 @@ ErrorCode EventQueue::FreeTimer(TimerID id)
 void EventQueue::initThread()
 {
 	if(mEventThread.IsJoinable()) return;
-	mEventPoller = WinSockPoller();
+	mEventPoller.Emplace(this);
 	mEventThread = WinThread([this] {mEventPoller.Unwrap().Run();});
 }
 #elif defined(__linux__)
@@ -284,7 +275,7 @@ bool EventQueue::Finish()
 	return ScheduleCallback(CallbackPtr(1));
 }
 
-LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept
+LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout) noexcept
 {
 	if(mFinished.Get()) return 0;
 	const auto milliseconds = waitTimeout? int(Min(waitTimeout.IntMilliseconds(), MaxValue<int>)): -1;
@@ -379,7 +370,7 @@ Result<TimerID> EventQueue::setTimer(TimerID fd, int64 value, bool abs, bool rep
 EventQueue::EventQueue(): mKqueueFd(z_D::kqueue()) {}
 EventQueue::~EventQueue() {z_D::close(mKqueueFd);}
 
-LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout = {}) noexcept
+LResult<int> EventQueue::ProcessEvents(Optional<TimeDelta> waitTimeout) noexcept
 {
 	if(mFinished.Get()) return 0;
 	const auto timeout = waitTimeout.Or({}).To<z_D::timespec>();

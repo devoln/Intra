@@ -54,7 +54,7 @@ INTRA_IGNORE_WARNS_MSVC(4548)
 SocketAddr SocketAddr::ParseIPv4(ZStringView ipv4Addr, uint16 port)
 {
 	SocketAddr res = {
-		.Family == AddressFamily::IPv4,
+		.Family = AddressFamily::IPv4,
 		.IPv4 = {.Port = port}
 	};
 	const auto addr = uint32(inet_addr(ipv4Addr.CStr()));
@@ -66,7 +66,7 @@ SocketAddr SocketAddr::ParseIPv4(ZStringView ipv4Addr, uint16 port)
 SocketAddr SocketAddr::ParseIPv6(ZStringView ipv6Addr, uint16 port)
 {
 	SocketAddr res = {
-		.Family == AddressFamily::IPv6,
+		.Family = AddressFamily::IPv6,
 		.IPv6 = {.Port = port}
 	};
 	if(inet_pton(int(AddressFamily::IPv6), ipv6Addr.CStr(), res.IPv6.Addr) != 1) return {};
@@ -75,13 +75,15 @@ SocketAddr SocketAddr::ParseIPv6(ZStringView ipv6Addr, uint16 port)
 
 SocketAddr SocketAddr::ParseLocal(StringView path)
 {
-	SocketAddr res = {.Family == AddressFamily::Local};
+	SocketAddr res;
+	res.Family = AddressFamily::Local;
 	if(Length(path) >= Length(res.Unix.Name)) return {}; // Too long path
-	path.RawUnicodeUnits()|Copy(res.Unix.Name);
+	path.RawUnicodeUnits()|CopyTo(res.Unix.Name);
+	res.Unix.Name[path.RawUnicodeUnits().Length()] = '\0';
 	return res;
 }
 
-SocketAddr SocketAddr::Parse(ZStringView addrStr, bool allowUnix = false)
+SocketAddr SocketAddr::Parse(ZStringView addrStr, bool allowUnix)
 {
 	auto addrChars = addrStr.RawUnicodeUnits();
 	const bool hasDot = addrChars|Contains('.');
@@ -101,8 +103,14 @@ SocketAddr SocketAddr::Parse(ZStringView addrStr, bool allowUnix = false)
 	}
 	if(hasColon) // probably IPv6 (or Windows path)
 	{
-		const auto portSuffix = addrChars|TakeLastUntil("]:");
-		addrChars|PopLastCount(Length(portSuffix) + 2);
+		Span<const char> portSuffix;
+		if(addrChars|StartsWith("["_span))
+		{
+			addrChars.Begin++;
+			portSuffix = addrChars|TakeLastUntil("]:"_span);
+			addrChars|PopLastCount(Length(portSuffix) + 2);
+			port = Intra::Parse<uint16>(portSuffix);
+		}
 		auto res = ParseIPv6(String(Unsafe, addrChars), port);
 		if(res) return res;
 		// not valid IPv6 string, try other families
@@ -115,14 +123,18 @@ String SocketAddr::ToHostString() const
 {
 	if(Family == AddressFamily::IPv4)
 	{
-		if(auto res = inet_ntoa(reinterpret_cast<unsigned long*>(IPv4.Addr))) return res;
+		struct myInAddr {uint32 Addr;};
+		static const auto myInetNtoa = reinterpret_cast<char*(INTRA_WINAPI*)(myInAddr)>(&z_D::inet_ntoa);
+		if(auto res = myInetNtoa({*reinterpret_cast<const uint32*>(IPv4.Addr)}) return res;
 		return {};
 	}
 	if(Family == AddressFamily::IPv6)
 	{
+#if !INTRA_BUILD_FOR_WINDOWS_XP
 		char strBuf[64];
-		if(auto res = inet_ntop(int(AddressFamily::IPv6), IPv6.Addr, strBuf, sizeof(strBuf)))
+		if(auto res = z_D::inet_ntop(int(AddressFamily::IPv6), IPv6.Addr, strBuf, sizeof(strBuf)))
 			return res;
+#endif
 		return {};
 	}
 	if(Family == AddressFamily::Local) return Unix.Name[0]? Unix.Name: Unix.Name + 1;
@@ -178,7 +190,7 @@ ErrorCode Socket::init(AddressFamily family, SocketType type, ProtocolType proto
 {
 	initContext();
 	mHandle = int(z_D::socket(int(family), int(type), int(protocol)));
-	if(mHandle == -1) return z_D::lastSocketErrorCode();
+	if(mHandle.IsNull()) return z_D::lastSocketErrorCode();
 	return {};
 }
 
@@ -189,18 +201,20 @@ void Socket::Close()
 	mHandle = {};
 }
 
-ErrorCode Socket::SetNonBlocking(bool nonBlocking = true)
+ErrorCode Socket::SetNonBlocking(bool nonBlocking)
 {
 #ifdef _WIN32
 	unsigned long nonBlock = nonBlocking;
-	z_D::ioctlsocket(SOCKET(mHandle), 0x4667E, &nonBlock); // FIONBIO
+	auto res = z_D::ioctlsocket(SOCKET(mHandle), 0x4667E, &nonBlock); // FIONBIO
 #else
 	const int nonBlock = INTRAZ_D_CONST(O_NONBLOCK, 2048, 4, 4);
-	z_D::fcntl(mHandle, 4, nonBlocking? nonBlock: 0); // F_SETFL
+	auto res = z_D::fcntl(mHandle, 4, nonBlocking? nonBlock: 0); // F_SETFL
 #endif
+	if(res < 0) return lastSocketErrorCode();
+	return ErrorCode::NoError;
 }
 
-ErrorCode Socket::SetNoDelay(bool noDelay = true)
+ErrorCode Socket::SetNoDelay(bool noDelay)
 {
 	return setOpt(SockOptLevel::TCP, SockOptName::NoDelay, noDelay);
 }
@@ -215,8 +229,8 @@ bool Socket::waitInputMs(size_t milliseconds) const
 	timeval timeout = {long(milliseconds / 1000), long(milliseconds % 1000 * 1000)};
 	return z_D::select(1, &set, nullptr, nullptr, &timeout) > 0;
 #else
-	pollfd pfd = {.fd = mHandle, .events = 0x300};
-	return z_D::poll(&fd, 1, milliseconds);
+	pollfd pfd = {.fd = mHandle, .events = 1}; // POLLIN
+	return z_D::poll(&fd, 1, milliseconds) > 0;
 #endif
 }
 
@@ -229,14 +243,14 @@ bool Socket::waitInput() const
 	set.fd_array[0] = SOCKET(mHandle);
 	return z_D::select(1, &set, nullptr, nullptr, nullptr) > 0;
 #else
-	pollfd pfd = {.fd = mHandle, .events = 0x300};
-	return z_D::poll(&fd, 1, -1);
+	pollfd pfd = {.fd = mHandle, .events = 1}; // POLLIN
+	return z_D::poll(&fd, 1, -1) > 0;
 #endif
 }
 
 ErrorCode Socket::setOpt(SockOptLevel level, SockOptName opt, int value)
 {
-	if(z_D::setsockopt(SOCKET(mHandle), int(level), int(opt), &value, sizeof(value)) == -1)
+	if(z_D::setsockopt(SOCKET(mHandle), int(level), int(opt), reinterpret_cast<const char*>(&value), sizeof(value)) == -1)
 		return z_D::lastSocketErrorCode();
 	return {};
 }
@@ -245,11 +259,31 @@ Result<TcpListener> TcpListener::Bind(const SocketAddr& address, bool allowFasto
 {
 	TcpListener res;
 	INTRA_RETURN_ON_ERROR(res.init(address.Family, SocketType::Stream, ProtocolType::TCP));
-	INTRA_RETURN_ON_ERROR(setOpt(SockOptLevel::Socket, SockOptName::ReuseAddr, 1));
-	if(z_D::bind(SOCKET(mHandle), reinterpret_cast<const sockaddr*>(address), socklen_t(address.SizeOf())) < 0)
+	INTRA_RETURN_ON_ERROR(res.setOpt(SockOptLevel::Socket, SockOptName::ReuseAddr, 1));
+	if(z_D::bind(SOCKET(res.mHandle), reinterpret_cast<const sockaddr*>(&address), socklen_t(address.SizeOf())) < 0)
 		return lastSocketErrorCode();
-	setOpt(SockOptLevel::TCP, SockOptName::TcpFastOpen, TargetIsLinux? 5: 1);
-	if(z_D::listen(SOCKET(mHandle), int(maxListenersLimit)) < 0)
+	res.setOpt(SockOptLevel::TCP, SockOptName::FastOpen, TargetIsLinux? 5: 1);
+	if(z_D::listen(SOCKET(res.mHandle), int(maxListenersLimit)) < 0)
+		return lastSocketErrorCode();
+	return res;
+}
+
+Result<TcpListener> TcpListener::Bind(const AddrInfo& addresses, bool allowFastopen, int maxListenersLimit)
+{
+	TcpListener res;
+	AGL_RETURN_ON_ERROR(res.init(addresses.First().Family, SocketType::Stream, ProtocolType::TCP));
+	AGL_RETURN_ON_ERROR(res.setOpt(SockOptLevel::Socket, SockOptName::ReuseAddr, 1));
+	ErrorCode lastError{};
+	for(auto node = &addresses.First(); node; node = node->Next)
+	{
+		auto& addr = node->Value;
+		if(z_D::bind(SOCKET(res.mHandle), reinterpret_cast<const sockaddr*>(&addr), socklen_t(addr.SizeOf())) == 0)
+			break;
+		lastError = lastSocketErrorCode();
+	}
+	if(lastError != ErrorCode::NoError) return lastError;
+	res.setOpt(SockOptLevel::TCP, SockOptName::FastOpen, 1);
+	if(listen(SOCKET(res.mHandle), int(maxListenersLimit)) < 0)
 		return lastSocketErrorCode();
 	return res;
 }
@@ -265,32 +299,43 @@ Result<Tuple<TcpListener, SocketAddr>> TcpListener::Accept()
 #ifdef _WIN32
 	// Accepted sockets inherit the properties of their listener, including WSAEventSelect, which is undesirable
 	z_D::WSAEventSelect(res.mHandle, nullptr, 0);
+	res.SetNonBlocking(false);
 #endif
 	return Tuple(INTRA_MOVE(res), INTRA_MOVE(addr));
 }
 
-ErrorCode tryConnect(const SocketAddr& address)
+ErrorCode TcpConnection::tryConnect(const SocketAddr& address)
 {
 	if(z_D::connect(SOCKET(mHandle), reinterpret_cast<const sockaddr*>(&address), socklen_t(address.SizeOf())) != 0)
 		return z_D::lastSocketErrorCode();
 	return ErrorCode::NoError;
 }
 
-Result<TcpConnection> TcpConnection::Connect(const SocketAddr& address)
+Result<TcpConnection> TcpConnection::Connect(const SocketAddr& address, bool nonBlocking)
 {
 	TcpConnection res;
 	res.init(address.Family, SocketType::Stream, ProtocolType::TCP);
-	INTRA_RETURN_ON_ERROR(res.tryConnect(address));
+	if(nonBlocking) res.SetNonBlocking();
+	auto err = res.tryConnect(address);
+	if(err != ErrorCode::NoError && (!nonBlocking || err != ErrorCode::TryAgain)) return err;
 	return res;
 }
 
-Result<TcpConnection> TcpConnection::Connect(const AddrInfo& addresses)
+Result<TcpConnection> TcpConnection::Connect(const AddrInfo& addresses, bool nonBlocking)
 {
 	INTRA_PRECONDITION(addresses);
 	TcpConnection res;
-	res.init(addresses.ToRange().First().Family, SocketType::Stream, ProtocolType::TCP);
-	for(auto&& address: addresses)
-		INTRA_RETURN_ON_ERROR(res.tryConnect(address));
+	ErrorCode lastError{};
+	for(auto addr = &addresses.First(); addr; addr = addr->Next)
+	{
+		if(addr->Protocol != ProtocolType::TCP) continue;
+		res = TcpConnection();
+		res.init(addr->Family, addr->SockType, addr->Protocol);
+		if(nonBlocking) res.SetNonBlocking();
+		lastError = res.tryConnect(addr->Value);
+		if(lastError == ErrorCode::NoError || nonBlocking && lastError == ErrorCode::TryAgain) break; // treat EAGAIN as success for non-blocking connect
+	}
+	if(lastError != ErrorCode::NoError) return lastError;
 	return res;
 }
 
@@ -334,14 +379,15 @@ Result<Tuple<TcpConnection, size_t>> TcpConnection::ConnectAndWriteSome(const So
 ErrorCode TcpConnection::SetTimeout(TimeDelta timeout)
 {
 #ifdef _WIN32
-	const int vals[] = {1, 1000, Max(200, timeout.IntMilliseconds() / 10) - 100};
+	int vals[] = {1, 1000, Max(200, timeout.IntMilliseconds() / 10) - 100};
 	unsigned long bytesReturned;
 	if(z_D::WSAIoctl(SOCKET(mHandle), 0x98000004, vals, sizeof(vals), nullptr, 0, &bytesReturned, nullptr, nullptr) != 0) // SIO_KEEPALIVE_VALS
 		return z_D::lastSocketErrorCode();
+	return ErrorCode::NoError;
 #elif defined(__APPLE__)
 	INTRA_RETURN_ON_ERROR(setOpt(SockOptLevel::Socket, SockOptName::KeepAlive, 1));
 	INTRA_RETURN_ON_ERROR(setOpt(SockOptLevel::TCP, SockOptName::KeepIdle, int(Ceil(timeout.Seconds()))));
-	setOpt(SockOptLevel::TCP, SockOptName(0x20), int(Ceil(timeout.Seconds()))) // TCP_CONNECTIONTIMEOUT
+	return setOpt(SockOptLevel::TCP, SockOptName(0x20), int(Ceil(timeout.Seconds()))) // TCP_CONNECTIONTIMEOUT
 #elif defined(__linux__) || defined(__FreeBSD__) || defined(__NetBSD__)
 	int timeoutInSeconds = Max(2, int(Ceil(timeout.Seconds())));
 	INTRA_RETURN_ON_ERROR(setOpt(SockOptLevel::Socket, SockOptName::KeepAlive, 1));
@@ -359,6 +405,7 @@ ErrorCode TcpConnection::SetTimeout(TimeDelta timeout)
 #ifdef __linux__
 	INTRA_RETURN_ON_ERROR(setOpt(SockOptLevel::TCP, SockOptName(18), count)); // TCP_USER_TIMEOUT
 #endif
+	return ErrorCode::NoError;
 #endif
 }
 

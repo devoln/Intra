@@ -2,13 +2,14 @@
 
 #include <Intra/Core.h>
 #include <Intra/Meta.h>
+#include <Intra/Numeric/Math.h>
 #include <Intra/Numeric/Traits.h>
 
 namespace Intra { INTRA_BEGIN
 
 template<auto Op, CNumber T> [[nodiscard]] INTRA_FORCEINLINE constexpr bool IsOverflowOp(T a, T b)
 {
-	if constexpr((MinValueOf<T> == 0 || MinValueOf<T> == -Infinity) && MaxValueOf<T> == Infinity) return false;
+	if constexpr((MinValueOf<T> == 0 || double(MinValueOf<T>) == -Infinity) && double(MaxValueOf<T>) == Infinity) return false;
 	else
 	{
 	#if defined(__GNUC__) || defined(__clang__)
@@ -32,16 +33,16 @@ template<auto Op, CNumber T> [[nodiscard]] INTRA_FORCEINLINE constexpr bool IsOv
 		else if constexpr(VSameTypes(Op, Mul))
 		{
 			using MaxType = TIntOfSizeAtLeast<sizeof(int64), CBasicSigned<T>>;
-			if(MaxType(MaxValueOf<T>) < MaxValueOf<MaxType>)
+			if constexpr(MaxType(MaxValueOf<T>) < MaxValueOf<MaxType>)
 			{
 				const auto mul = MaxType(a)*MaxType(b);
-				return mul == MaxType(T(mul));
+				return mul != MaxType(T(mul));
 			}
 			if(a == 0) return false;
-			const auto apos = TToUnsigned<T>(a < 0? -a: a);
-			const auto bpos = TToUnsigned<T>(b < 0? -b: b);
-			const auto mulPos = apos*bpos;
-			return mulPos > TToUnsigned<T>(MaxValueOf<T>) || apos != mulPos / apos;
+			const auto apos = TToUnsigned<T>(Abs(a));
+			const auto bpos = TToUnsigned<T>(Abs(b));
+			const auto mulPos = apos * bpos;
+			return mulPos > TToUnsigned<T>(MaxValueOf<T>) || bpos != mulPos / apos;
 		}
 		return false;
 	}
@@ -265,6 +266,11 @@ using LongIndex = NDebugOverflow<uint64>;
 using ClampedLongIndex = NSaturateOverflow<uint64>;
 
 #if INTRA_CONSTEXPR_TEST
+static_assert(!IsOverflowOp<Mul>(1, 3));
+static_assert(!IsOverflowOp<Mul>(int64(1), int64(3)));
+static_assert(!IsOverflowOp<Mul>(uint32(1), uint32(1)));
+static_assert(NCheckedOverflow<uint32>(1) * NCheckedOverflow<uint32>(0) == 0);
+static_assert(NCheckedOverflow<uint32>(1) * NCheckedOverflow<uint32>(1) == 1);
 static_assert(NWrapOverflow<uint32>(0) == 0);
 static_assert(CommonMaxValue<int32, uint32> == MaxValueOf<int32>);
 static_assert(CommonMinValue<int32, size_t> == 0);
