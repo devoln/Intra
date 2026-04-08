@@ -1,0 +1,58 @@
+#!/bin/bash
+
+set -e
+
+COMMAND="$1"
+shift
+
+case "$COMMAND" in
+  test-header)
+    HEADER="$1"
+    LINES="${2:-20}"
+    
+    if [ -z "$HEADER" ]; then
+      echo "Usage: run test-header <Header.h> [line_count]" >&2
+      exit 1
+    fi
+    
+    echo "#include <Intra/$HEADER>" > /tmp/test.cpp
+    clang++ -std=c++20 -I src -c /tmp/test.cpp -o /tmp/test.o 2>&1 | { head -$LINES; cat >/dev/null; }
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+      exit 1
+    fi
+    ;;
+  
+  test-headers)
+    LINES="${1:-5}"
+    shift || true
+    HEADERS="$*"
+    
+    if [ -z "$HEADERS" ]; then
+      # Default set of core headers to test
+      HEADERS="Concepts.h Core.h Numeric/Integral.h Range.h Numeric/Random.h"
+    fi
+    
+    FAILED=""
+    for header in $HEADERS; do
+      echo "=== Testing Intra/$header ==="
+      echo "#include <Intra/$header>" > /tmp/test.cpp
+      clang++ -std=c++20 -I src -c /tmp/test.cpp -o /tmp/test.o 2>&1 | { head -$LINES; cat >/dev/null; }
+      if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        FAILED="$FAILED $header"
+      fi
+    done
+    
+    if [ -n "$FAILED" ]; then
+      echo "FAILED headers:$FAILED" >&2
+      exit 1
+    fi
+    echo "All headers compiled successfully"
+    ;;
+  
+  *)
+    echo "Unknown command: $COMMAND" >&2
+    echo "Available commands:" >&2
+    echo "  test-header <Header.h> [line_count] - Test compile a header (default 20 lines of output)" >&2
+    exit 1
+    ;;
+esac

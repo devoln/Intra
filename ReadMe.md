@@ -1,11 +1,6 @@
 
 # Intra
 
-[![Build Status (master)](https://travis-ci.org/gammaker/Intra.svg?branch=master)](https://travis-ci.org/gammaker/Intra)
-
-[See Russian description below](#RuDesc)
-## English description
-
 This repository contains the Intra library and my [projects](Demos) based on it.
 
 This library is my attempt to create general purpose library for C++ which is fast and convenient to use.
@@ -21,16 +16,14 @@ This library contains the following functionality:
 - Sound system and music instrument synthesis.
 - etc: timer, IO streams, basic classes for multithreading.
 
-In addition to the library this repository also contains 3 demo projects:
-- [MusicSynthesizer](Demos/MusicSynthesizer) - MIDI synthesizer. This project is an CLI interface to the synthesizer. Most of the synthesizer code is located in the library at Intra/Audio/Synth.
-- [Tests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL.
+In addition to the library this repository also contains demo projects:
+- [PerfTests](Demos/Tests) - Performance tests of containers, algorithms and serialization with comparison to their counterparts in STL.
 - [UnitTests](Demos/UnitTests) - This project's source code contains many examples of Intra usage.
-- [Bin2C](Demos/Bin2C) - Utility to convert any file into byte array in C code.
 
 ### Supported compilers:
-- MSVC 2017+;
-- g++ 5.3+;
-- Clang 3.5+.
+- MSVC 2019.11+;
+- g++ 10+;
+- Clang 13+.
 
 ### Supported platforms:
 - Windows;
