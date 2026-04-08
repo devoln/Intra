@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Intra/Range/Span.h"
+#include <Intra/Concepts.h>
 #include "Intra/Range/StringView.h"
 
 namespace Intra { INTRA_BEGIN

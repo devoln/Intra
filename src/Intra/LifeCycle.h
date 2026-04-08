@@ -38,7 +38,7 @@ template<CConstructible T> constexpr void ValueInitialize(Span<T> dst) {ValueIni
 
 template<CDestructible T> constexpr void Destruct(TUnsafe, T* dst, size_t count)
 {
-	if constexpr(!CTriviallyDestructible<T>) while(count--) *dst++->~T();
+	if constexpr(!CTriviallyDestructible<T>) while(count--) dst++->~T();
 }
 template<CDestructible T> constexpr void Destruct(Span<T> dst) {Destruct(Unsafe, dst.Begin, size_t(dst.Length()));}
 

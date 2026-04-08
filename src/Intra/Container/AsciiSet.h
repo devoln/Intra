@@ -34,7 +34,7 @@ public:
 
 	/// Check if the set contains element c. Returns false for all non-ASCII characters.
 	/// This allows AsciiSet to be used as a predicate.
-	template<CChar Char> [[nodiscard]] constexpr bool operator()(Char c) const {return byte(c) < 128 && operator[](c);}
+	template<CChar Char> [[nodiscard]] constexpr bool operator()(Char c) const {return uint8(c) < 128 && operator[](c);}
 
 	/// Check if this set contains subset.
 	/// This allows AsciiSet to be used as a predicate.

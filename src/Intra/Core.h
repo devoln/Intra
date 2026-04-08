@@ -188,7 +188,7 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target archit
 #define INTRA_NO_VECTORIZE_FUNC
 #endif
 
-#if !defined(__GNUC__) || __GNUC__ >= 11
+#if !defined(__GNUC__) || __GNUC__ >= 11 || defined(_MSC_VER) || __has_builtin(__builtin_bit_cast)
 #define INTRA_CONSTEXPR_BITCAST_SUPPORT
 #endif
 
@@ -272,6 +272,14 @@ static_assert(__BYTE_ORDER__ != __ORDER_PDP_ENDIAN__, "Unsupported target archit
 #define INTRA_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
 #define INTRA_NO_UNIQUE_ADDRESS // clang-cl gets here but not MINGW Clang/GC
+#endif
+
+#if __has_cpp_attribute(clang::lifetimebound)
+#define INTRA_LIFETIMEBOUND [[clang::lifetimebound]]
+#elif __has_cpp_attribute(msvc::lifetimebound)
+#define INTRA_LIFETIMEBOUND [[msvc::lifetimebound]]
+#else
+#define INTRA_LIFETIMEBOUND
 #endif
 
 #if defined(__i386__) && defined(__GNUC__)
@@ -1472,11 +1480,14 @@ INTRA_DEFINE_FUNCTOR(FRepeat)(auto&& value) {
 
 template<typename T> struct FRef
 {
-	T& FunctorReference;
-	constexpr FRef(T& functorReference) noexcept: FunctorReference(functorReference) {}
+	T* Functor;
+	constexpr FRef(T& functorReference) noexcept: Functor(&functorReference) {}
 
-	template<typename... Args> constexpr auto operator()(Args&&... args) const
-		-> decltype(FunctorReference(INTRA_FWD(args)...)) {return FunctorReference(INTRA_FWD(args)...);}
+	template<typename... Args> requires(CCallable<T, Args...>)
+	constexpr auto operator()(Args&&... args) const
+		noexcept(noexcept(Functor->operator()(INTRA_FWD(args)...))) ->
+		decltype(Functor->operator()(INTRA_FWD(args)...))
+		{return Functor->operator()(INTRA_FWD(args)...);}
 };
 
 template<auto Value> constexpr auto StaticConst = [](auto&&...) noexcept {return Value;};
@@ -1590,7 +1601,7 @@ template<CTriviallyCopyable To> constexpr auto BitCastTo = []<CTriviallyCopyable
 	else
 	{
 		if constexpr(CBasicIntegral<From> && CBasicFloatingPoint<To> || CBasicFloatingPoint<From> && CBasicIntegral<To>)
-			if(IsConstantEvaluated()) return z_D::ConstexprBitCastBetweenFloatAndInt(from);
+			if(IsConstantEvaluated()) return z_D::ConstexprBitCastBetweenFloatAndInt<To>(from);
 		To to;
 		__builtin_memcpy(&to, &from, sizeof(to));
 		return to;

@@ -38,8 +38,11 @@ template<CBasicArithmetic T> constexpr T MinFiniteValueOf<T> = [] {
 
 template<typename T> constexpr auto MaxValueOf = Undefined;
 template<typename T> constexpr auto MinValueOf = Undefined;
-template<CNumber T> constexpr T MaxValueOf<T> = CFloatingPoint<T>? T(Infinity): MaxFiniteValueOf<T>;
-template<CNumber T> constexpr T MinValueOf<T> = CFloatingPoint<T>? T(-Infinity): MinFiniteValueOf<T>;
+
+template<class W> concept CNumberWrapper = CValueWrapper<W> && CNumber<TWrappedType<W>>;
+
+template<CNumber T> requires(!CNumberWrapper<T>) constexpr T MaxValueOf<T> = CFloatingPoint<T>? T(Infinity): MaxFiniteValueOf<T>;
+template<CNumber T> requires(!CNumberWrapper<T>) constexpr T MinValueOf<T> = CFloatingPoint<T>? T(-Infinity): MinFiniteValueOf<T>;
 
 template<typename T> constexpr auto SignBitMaskOf = Undefined;
 template<CNumber T> constexpr auto SignBitMaskOf<T> = [] {
@@ -158,9 +161,6 @@ static_assert(IntegerRangeMin<float> == -16777216);
 static_assert(IntegerRangeMax<double> == 9007199254740992 || sizeof(double) == sizeof(float));
 #endif
 
-
-template<class W> concept CNumberWrapper = CValueWrapper<W> && CNumber<TWrappedType<W>>;
-
 template<CNumberWrapper T> constexpr T MaxFiniteValueOf<T> = T(MaxFiniteValueOf<TWrappedType<T>>);
 template<CNumberWrapper T> constexpr T MinFiniteValueOf<T> = T(MinFiniteValueOf<TWrappedType<T>>);
 template<CNumberWrapper T> constexpr T SignBitMaskOf<T> = T(SignBitMaskOf<TWrappedType<T>>);
@@ -249,6 +249,32 @@ struct TBasicNumberWithRange_<Min, Max>: TType<TBasicSignedIntegerWithRange<Min,
 }
 template<CNumber auto Min, CNumber auto Max> requires(Min <= Max)
 using TBasicNumberWithRange = typename z_D::TBasicNumberWithRange_<Min, Max>::_;
+
+namespace z_D {
+	template<typename T> struct TIntegralPromoteUnwrap_ {using _ = TUnqualRef<T>;};
+	template<CNumberWrapper T> struct TIntegralPromoteUnwrap_<T>: TType<TWrappedType<T>> {};
+	template<typename T> using TIntegralPromoteUnwrap = typename TIntegralPromoteUnwrap_<T>::_;
+
+	template<CNumber A, CNumber B, bool Basic =
+		CBasicIntegral<TIntegralPromoteUnwrap<A>> && CBasicIntegral<TIntegralPromoteUnwrap<B>>>
+	struct TIntegralPromoteMul_;
+
+	template<CNumber A, CNumber B> struct TIntegralPromoteMul_<A, B, true>
+	{
+		using UA = TIntegralPromoteUnwrap<A>;
+		using UB = TIntegralPromoteUnwrap<B>;
+		static constexpr bool ResultSigned = IntegerRangeMin<UA> < 0 || IntegerRangeMin<UB> < 0;
+		static constexpr size_t Bits = size_t(MantissaLenOf<UA>) + size_t(MantissaLenOf<UB>) + size_t(ResultSigned);
+		static constexpr size_t Bytes = (Bits + 7) / 8;
+		using _ = TIntOfSizeAtLeast<Min(size_t(8), Max(size_t(1), Bytes)), ResultSigned>;
+	};
+
+	template<CNumber A, CNumber B> struct TIntegralPromoteMul_<A, B, false>
+	{using _ = TUnqualRef<decltype(Val<TIntegralPromoteUnwrap<A>>() * Val<TIntegralPromoteUnwrap<B>>())>;};
+}
+
+template<CNumber A, CNumber B>
+using TIntegralPromoteMul = typename z_D::TIntegralPromoteMul_<A, B>::_;
 
 template<CNumber auto Min, CNumber auto Max> requires CBasicIntegral<TBasicNumberWithRange<Min, Max>>
 using TBasicIntegerWithRange = TBasicNumberWithRange<Min, Max>;

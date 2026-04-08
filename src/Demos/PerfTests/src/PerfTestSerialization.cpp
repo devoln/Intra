@@ -206,7 +206,7 @@ double TestTextDeserialization(size_t times,
 
 double TestBinarySerialization(size_t times)
 {
-	byte buf[1000];
+	uint8 buf[1000];
 	BinarySerializer binser(buf);
 	Stopwatch tim;
 	for(size_t i=0; i<times; i++)
@@ -237,7 +237,7 @@ double TestTextSerialization(FormattedWriter& logger, StringView desc, size_t ti
 
 double TestBinaryDeserialization(size_t times)
 {
-	byte buf[1000];
+	uint8 buf[1000];
 	BinarySerializer binser(buf);
 	binser << g_SuperTest;
 
@@ -254,7 +254,7 @@ double TestBinaryDeserialization(size_t times)
 
 double TestBinaryRefDeserialization(size_t times)
 {
-	byte buf[1000];
+	uint8 buf[1000];
 	BinarySerializer binser(buf);
 	binser << g_SuperTestRef;
 

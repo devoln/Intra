@@ -40,18 +40,18 @@ template<class T> concept CHasReflectFieldPointersOf = !CVoid<decltype(ReflectFi
 template<class T> concept CHasReflectFieldNamesOf = !CVoid<decltype(ReflectFieldNamesOf(Type<T>))>;
 
 namespace z_D {
-template<typename T> concept CTupleSizeDefined = requires(T) {std::tuple_size<T>::value;};
-template<typename T> concept CTupleElementDefined = requires(T) {Val<typename std::tuple_element<0, TUnqualRef<T>>::type>();};
+template<typename T> concept CTupleSizeDefined = requires(T) {::std::tuple_size<T>::value;};
+template<typename T> concept CTupleElementDefined = requires(T) {Val<typename ::std::tuple_element<0, TUnqualRef<T>>::type>();};
 }
 template<typename T> constexpr index_t StaticLength = [] {
 	using T1 = TUnqualRef<T>;
-	if constexpr(z_D::CTupleSizeDefined<T1>) return index_t(std::tuple_size<T1>::value);
+	if constexpr(z_D::CTupleSizeDefined<T1>) return index_t(::std::tuple_size<T1>::value);
 	else if constexpr(CHasReflectFieldPointersOf<T1>) return StaticLength<decltype(ReflectFieldPointersOf(Type<T1>))>;
 	else if constexpr(CKnownBoundArrayType<T1>) return index_t(ArrayExtent<T1>);
 	else return -1;
 }();
 template<typename T> concept CStaticLengthContainer = StaticLength<T> != -1;
-template<typename T> concept CVariant = CInstanceOfTemplate<TUnqualRef<T>, Variant> || CInstanceOfTemplate<TUnqualRef<T>, std::variant>;
+template<typename T> concept CVariant = CInstanceOfTemplate<TUnqualRef<T>, Variant> || CInstanceOfTemplate<TUnqualRef<T>, ::std::variant>;
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(CStaticLengthContainer<const char(&)[5]>);
@@ -59,9 +59,9 @@ static_assert(CStaticLengthContainer<char[5]>);
 static_assert(!CStaticLengthContainer<const char>);
 static_assert(StaticLength<const char(&)[5]> == 5);
 
-static_assert(std::tuple_size<Tuple<int, float, char>>::value == 3);
+static_assert(::std::tuple_size<Tuple<int, float, char>>::value == 3);
 static_assert(z_D::CTupleSizeDefined<Tuple<int, float, char>>);
-static_assert(CSame<typename std::tuple_element<0, Intra::Tuple<int, float, char>>::type, int>);
+static_assert(CSame<typename ::std::tuple_element<0, Intra::Tuple<int, float, char>>::type, int>);
 static_assert(z_D::CTupleElementDefined<Tuple<int, float, char>>);
 
 static_assert(CStaticLengthContainer<Tuple<int, float, char>>);
@@ -74,10 +74,10 @@ template<class T> struct TFieldTList_;
 template<class T, class Seq> struct TupleElementsTList_;
 template<class T, size_t... Is> struct TupleElementsTList_<T, TIndexSeq<Is...>>
 {
-	using _ = TList<typename std::tuple_element<Is, T>::type...>;
+	using _ = TList<typename ::std::tuple_element<Is, T>::type...>;
 };
 template<CTupleSizeDefined T> requires CTupleElementDefined<T>
-struct TFieldTList_<T>: TupleElementsTList_<T, TMakeIndexSeq<std::tuple_size<T>::value>> {};
+struct TFieldTList_<T>: TupleElementsTList_<T, TMakeIndexSeq<::std::tuple_size<T>::value>> {};
 template<CHasReflectFieldPointersOf T> struct TFieldTList_<T>
 {
     using FieldPointersTuple = decltype(ReflectFieldPointersOf(Type<T>));
@@ -183,6 +183,14 @@ template<CRange R> using TRangeValueRef = decltype(Val<R>().First());
 template<CRange R> using TRangeValue = TUnqualRef<TRangeValueRef<R>>;
 template<class R> concept CHasLast = requires(R&& r, TRangeValue<R>& res) {{r.Last()} -> CSame<decltype(r.First())>;};
 template<class R> concept CHasPopLast = requires(R&& r) {r.PopLast();};
+
+template<class M, class R> concept CMatcherInput = CRange<R> && requires(M&& m, R& r) {
+	{INTRA_FWD(m)(r)} -> CConvertibleTo<bool>;
+};
+
+template<class M, class R> concept CMatcher = CMatcherInput<M, R>;
+
+template<class M> concept CInputSafeMatcher = requires {TUnqualRef<M>::TagInputSafe::True;};
 
 template<class R> concept CHasPopFirstCount = requires(R&& r, index_t& res) {res = r.PopFirstCount(size_t());};
 template<class R> concept CHasPopLastCount = requires(R&& r, index_t& res) {res = r.PopLastCount(size_t());};
@@ -341,8 +349,13 @@ template<CAdvance R> struct TApplyAdvance_<R>: TType<decltype(Val<R>().RangeRef)
 template<typename R> using TApplyAdvance = typename z_D::TApplyAdvance_<R>::_;
 
 template<typename T> struct Span;
-template<typename L, template<typename> class ArrayRange = Span, template<typename, typename> class LinkedRange = LinkedRange>
-[[nodiscard]] constexpr decltype(auto) RangeOf(L&& list)
+template<typename Node, typename T> struct LinkedRange;
+
+namespace z_D {
+// Internal RangeOfImpl - does NOT handle owning containers
+// Used to break the dependency cycle: CList -> TRangeOfImplRef -> RangeOfImpl -> (no CList dependency)
+template<typename L, template<typename> class ArrayRange = Span, template<typename, typename> class LinkedRange_ = LinkedRange>
+[[nodiscard]] constexpr decltype(auto) RangeOfImpl(L&& list)
 {
 	if constexpr(CRange<L>)
 	{
@@ -350,50 +363,79 @@ template<typename L, template<typename> class ArrayRange = Span, template<typena
 		else return INTRA_FWD(list);
 	}
 	else if constexpr(CConvertibleToSpan<L> && !CRValueReference<L>) return ArrayRange(list);
-	else if constexpr(CLinkedList<L>) return LinkedRange(list);
+	else if constexpr(CLinkedList<L>) return LinkedRange_(list);
 	else if constexpr(z_D::CRangeForIterableEx<L>) return IteratorRange{begin(list), end(list)};
 	else if constexpr(z_D::CRangeForIterableClass<L>) return IteratorRange{list.begin(), list.end()};
 	else if constexpr(z_D::CHasToRange<L>) return INTRA_FWD(list).ToRange();
 	//TODO: else if constexpr(CAnyReader<L>) return ReaderToRange(INTRA_FWD(list));
 }
+} // namespace z_D
+
+// Type aliases using RangeOfImpl (for concepts that need to be defined before RangeOf)
+template<typename T> using TBaseRangeOfImplRef = decltype(z_D::RangeOfImpl(Val<T>()));
+template<typename T> using TRangeOfImplRef = TApplyAdvance<TBaseRangeOfImplRef<T>>;
+
+// CList and related concepts use RangeOfImpl, breaking the cycle
+template<typename T> concept CList = CRange<TRangeOfImplRef<T>>;
+template<typename T> concept CFiniteList = CFiniteRange<TRangeOfImplRef<T>>;
+template<typename T> concept CNonFiniteList = CNonInfiniteRange<TRangeOfImplRef<T>>;
+template<typename T> concept CAssignableList = CAssignableRange<TRangeOfImplRef<T>>;
+template<typename T> concept CForwardList = CForwardRange<TRangeOfImplRef<T>>;
+template<typename T> concept CFiniteForwardList = CFiniteForwardRange<TRangeOfImplRef<T>>;
+template<typename T> concept CNonInfiniteForwardList = CNonInfiniteForwardRange<TRangeOfImplRef<T>>;
+template<typename T> concept CBidirectionalList = CBidirectionalRange<TRangeOfImplRef<T>>;
+template<typename T> concept CRandomAccessList = CRandomAccessRange<TRangeOfImplRef<T>>;
+template<typename T> concept CFiniteRandomAccessList = CFiniteRandomAccessRange<TRangeOfImplRef<T>>;
+template<typename T> concept CInfiniteList = CInfiniteRange<TRangeOfImplRef<T>>;
+template<typename T> concept CCharList = CCharRange<TRangeOfImplRef<T>>;
+template<typename T> concept CForwardCharList = CForwardCharRange<TRangeOfImplRef<T>>;
+template<typename T> using TListValueRef = TRangeValueRef<TRangeOfImplRef<T>>;
+template<typename T> using TListValue = TRangeValue<TRangeOfImplRef<T>>;
+template<typename R> concept CAccessibleList = CAccessibleRange<TRangeOfImplRef<R>>;
+template<typename R> concept CConsumableList = CConsumableRange<TRangeOfImplRef<R>>;
+template<typename R, typename T> concept CConsumableListOf = CConsumableRangeOf<TRangeOfImplRef<R>, T>;
+template<typename R> using CAccessibleListT = TValue<CAccessibleList<R>>;
+
+namespace z_D {
+template<class C, typename T = TListValue<C>> concept CHasMethod_push_back = requires(C c, T&& x) {c.push_back(INTRA_FWD(x));};
+template<class C, typename T = TListValue<C>> concept CHasMethodAddLast = requires(C c, T&& x) {c.AddLast(INTRA_FWD(x));};
+template<class C, typename T = TListValue<C>> concept CHasMethod_push_front = requires(C c, T&& x) {c.push_front(INTRA_FWD(x));};
+template<class C, typename T = TListValue<C>> concept CHasMethodAddFirst = requires(C c, T&& x) {c.AddFirst(INTRA_FWD(x));};
+template<class C, typename... Args> concept CHasMethod_emplace_back = requires(C c, Args&&... args) {c.emplace_back(INTRA_FWD(args)...);};
+template<class C, typename... Args> concept CHasMethodEmplaceLast = requires(C c, Args&&... args) {c.EmplaceLast(INTRA_FWD(args)...);};
+template<class C, typename... Args> concept CHasMethod_emplace_front = requires(C c, Args&&... args) {c.emplace_front(INTRA_FWD(args)...);};
+template<class C, typename... Args> concept CHasMethodEmplaceFirst = requires(C c, Args&&... args) {c.EmplaceFirst(INTRA_FWD(args)...);};
+
+template<class C> concept CHasMethod_clear = requires(C c) {c.clear();};
+template<class C> concept CHasMethodClear = requires(C c) {c.Clear();};
+template<class C> concept CHasMethod_resize = requires(C c) {c.resize(size_t());};
+template<class C> concept CHasMethodSetLength = requires(C c) {c.SetLength(index_t());};
+template<class C> concept CHasMethodSetLengthRaw = requires(C c) {c.SetLengthRaw(Unsafe, index_t());};
+
+template<class C> concept CHasMethod_empty = requires(C c) {{c.empty()} -> CConvertibleTo<bool>;};
+template<class C> concept CHasMethod_reserve = requires(C c) {c.reserve(size_t());};
+template<class C> concept CHasMethodReserve = requires(C c) {c.Reserve(index_t());};
+}
+
+template<class L> concept CGrowingList = CList<L> &&
+	z_D::CHasMethod_push_back<TRemoveConstRef<L>> &&
+	CHasLength<L> && z_D::CHasMethod_empty<L>;
 
 template<typename T> using TBaseRangeOfRef = decltype(RangeOf(Val<T>()));
 template<typename T> using TRangeOfRef = TApplyAdvance<TBaseRangeOfRef<T>>;
 template<typename T> using TRangeOf = TApplyAdvance<TUnqualRef<TBaseRangeOfRef<T>>>;
 template<typename T> concept CHasRangeOf = !CVoid<TRangeOfRef<T>>;
 
+template<class L> concept COwningList = CGrowingList<L> || CList<L> && (CStaticLengthContainer<L> || requires {L::TagOwningList::True;});
 
-template<typename T> concept CList = CRange<TRangeOfRef<T>>;
-template<typename T> concept CFiniteList = CFiniteRange<TRangeOfRef<T>>;
-template<typename T> concept CNonFiniteList = CNonInfiniteRange<TRangeOfRef<T>>;
-template<typename T> concept CAssignableList = CAssignableRange<TRangeOfRef<T>>;
+template<class L> concept CViewList = CList<L> && requires {TUnqualRef<L>::TagViewList::True;};
+template<class R> concept CViewRange = CViewList<R> && CRange<R>;
 
-template<typename T> concept CForwardList = CForwardRange<TRangeOfRef<T>>;
-template<typename T> concept CFiniteForwardList = CFiniteForwardRange<TRangeOfRef<T>>;
-template<typename T> concept CNonInfiniteForwardList = CNonInfiniteForwardRange<TRangeOfRef<T>>;
+// Forward declaration for OwningRange (defined after RangeOf since it uses RangeOf internally)
+template<typename C> struct OwningRange;
 
-template<typename T> concept CBidirectionalList = CBidirectionalRange<TRangeOfRef<T>>;
-
-template<typename T> concept CRandomAccessList = CRandomAccessRange<TRangeOfRef<T>>;
-template<typename T> concept CFiniteRandomAccessList = CFiniteRandomAccessRange<TRangeOfRef<T>>;
-
-template<typename T> concept CInfiniteList = CInfiniteRange<TRangeOfRef<T>>;
-template<typename T> concept CCharList = CCharRange<TRangeOfRef<T>>;
-template<typename T> concept CForwardCharList = CForwardCharRange<TRangeOfRef<T>>;
-
-template<typename T> using TListValueRef = TRangeValueRef<TRangeOfRef<T>>;
-template<typename T> using TListValue = TRangeValue<TRangeOfRef<T>>;
-
-template<typename R> concept CAccessibleList = CAccessibleRange<TRangeOfRef<R>>;
-template<typename R> concept CConsumableList = CConsumableRange<TRangeOfRef<R>>;
-template<typename R, typename T> concept CConsumableListOf = CConsumableRangeOf<TRangeOfRef<R>, T>;
-
-template<typename R> using CAccessibleListT = TValue<CAccessibleList<R>>;
-
-template<CList L> using TRawUnicodeUnit = decltype(RangeOf(Val<L>().RawUnicodeUnits()).First());
+INTRA_DEFINE_SAFE_DECLTYPE(TRawUnicodeUnit, RangeOf(Val<T>().RawUnicodeUnits()).First());
 template<class L> concept CUnicodeList = CChar<TRemoveReference<TRawUnicodeUnit<L>>>;
-
-
 
 template<class R> concept CHasFull = requires(R&& r) {{r.Full()} -> CConvertibleTo<bool>;};
 template<class R, typename T> concept CHasTryPut = requires(R&& r, T&& val) {{r.TryPut(val)} -> CConvertibleTo<bool>;};
@@ -422,32 +464,6 @@ template<typename L> [[nodiscard]] constexpr decltype(auto) OutputOf(L&& listOrO
 	else return INTRA_FWD(listOrOutput);
 }
 
-namespace z_D {
-template<class C, typename T = TListValue<C>> concept CHasMethod_push_back = requires(C c, T&& x) {c.push_back(INTRA_FWD(x));};
-template<class C, typename T = TListValue<C>> concept CHasMethodAddLast = requires(C c, T&& x) {c.AddLast(INTRA_FWD(x));};
-template<class C, typename T = TListValue<C>> concept CHasMethod_push_front = requires(C c, T&& x) {c.push_front(INTRA_FWD(x));};
-template<class C, typename T = TListValue<C>> concept CHasMethodAddFirst = requires(C c, T&& x) {c.AddFirst(INTRA_FWD(x));};
-template<class C, typename... Args> concept CHasMethod_emplace_back = requires(C c, Args&&... args) {c.emplace_back(INTRA_FWD(args)...);};
-template<class C, typename... Args> concept CHasMethodEmplaceLast = requires(C c, Args&&... args) {c.EmplaceLast(INTRA_FWD(args)...);};
-template<class C, typename... Args> concept CHasMethod_emplace_front = requires(C c, Args&&... args) {c.emplace_front(INTRA_FWD(args)...);};
-template<class C, typename... Args> concept CHasMethodEmplaceFirst = requires(C c, Args&&... args) {c.EmplaceFirst(INTRA_FWD(args)...);};
-
-template<class C> concept CHasMethod_clear = requires(C c) {c.clear();};
-template<class C> concept CHasMethodClear = requires(C c) {c.Clear();};
-template<class C> concept CHasMethod_resize = requires(C c) {c.resize(size_t());};
-template<class C> concept CHasMethodSetLength = requires(C c) {c.SetLength(index_t());};
-template<class C> concept CHasMethodSetLengthRaw = requires(C c) {c.SetLengthRaw(Unsafe, index_t());};
-
-template<class C> concept CHasMethod_empty = requires(C c) {{c.empty()} -> CConvertibleTo<bool>;};
-template<class C> concept CHasMethod_reserve = requires(C c) {c.reserve(size_t());};
-template<class C> concept CHasMethodReserve = requires(C c) {c.Reserve(index_t());};
-}
-
-
-template<class L> concept CGrowingList = CList<L> &&
-	z_D::CHasMethod_push_back<TRemoveConstRef<L>> &&
-	CHasLength<L> && z_D::CHasMethod_empty<L>;
-
 template<class C> concept CDynamicArrayContainer =
 	CGrowingList<C> &&
 	(z_D::CHasMethod_resize<TRemoveConst<C>> || z_D::CHasMethodSetLength<TRemoveConst<C>>) &&
@@ -458,7 +474,89 @@ template<class C> concept CResizableArrayContainer = CConvertibleToSpan<C> &&
 
 template<class L> concept CStaticArrayContainer = CConvertibleToSpan<L> && CStaticLengthContainer<L>;
 
-template<class L> concept COwningList = CGrowingList<L> || CList<L> && (CStaticLengthContainer<L> || requires {L::TagOwningList::True;});
+// TODO: split into INTRA_LIFETIMEBOUND and non-INTRA_LIFETIMEBOUND versions
+template<typename L, template<typename> class ArrayRange = Span, template<typename, typename> class LinkedRange = LinkedRange>
+[[nodiscard]] constexpr decltype(auto) RangeOf(INTRA_LIFETIMEBOUND L&& list)
+{
+	if constexpr(CRValueReference<L> && COwningList<L>)
+		return OwningRange<TRemoveReference<L>>{INTRA_FWD(list)};
+	else return z_D::RangeOfImpl<L, ArrayRange, LinkedRange>(INTRA_FWD(list));
+}
+
+// OwningRange: Stores container by value, provides range interface
+// Used for rvalue owning containers (vector, ArrayList) to avoid dangling references
+template<typename C> struct OwningRange
+{
+	C container;
+	
+	using ContainerRange = decltype(RangeOf(Val<C>()));
+	using TagAnyInstanceFinite = TTag<CFiniteRange<ContainerRange>>;
+	using TagAnyInstanceInfinite = TTag<CInfiniteRange<ContainerRange>>;
+	using TagOwningList = TTag<true>;
+	
+	[[nodiscard]] constexpr decltype(auto) First() {return RangeOf(container).First();}
+	[[nodiscard]] constexpr bool Empty() {return RangeOf(container).Empty();}
+	constexpr void PopFirst() { RangeOf(container).PopFirst(); }
+	
+	[[nodiscard]] constexpr decltype(auto) Last() requires CHasLast<C> {return RangeOf(container).Last();}
+	constexpr void PopLast() requires CHasPopLast<C> { RangeOf(container).PopLast(); }
+	
+	[[nodiscard]] constexpr auto Length() requires CHasLength<C> {return RangeOf(container).Length();}
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) requires CHasIndex<C> {return RangeOf(container)[INTRA_FWD(index)];}
+};
+
+template<CRandomAccessList L> struct RIndexedRef
+{
+	using TagAnyInstanceFinite = TTag<CFiniteList<L>>;
+	using TagAnyInstanceInfinite = TTag<CInfiniteList<L>>;
+	using TagViewList = TTag<>;
+
+	L* OriginalList = nullptr;
+	size_t BeginIndex = 0;
+	INTRA_NO_UNIQUE_ADDRESS TConditionalField<size_t, CHasLength<L>> EndIndex;
+
+	constexpr RIndexedRef() = default;
+	constexpr RIndexedRef(L& list): OriginalList(&list)
+	{
+		if constexpr(CHasLength<L>) EndIndex = size_t(Intra::Length(list));
+	}
+
+	[[nodiscard]] constexpr bool Empty() const
+	{
+		if constexpr(CHasLength<L>) return BeginIndex >= EndIndex;
+		else return false;
+	}
+
+	[[nodiscard]] constexpr decltype(auto) First() const {INTRA_PRECONDITION(!Empty()); return (*OriginalList)[BeginIndex];}
+	constexpr void PopFirst() {INTRA_PRECONDITION(!Empty()); BeginIndex++;}
+
+	[[nodiscard]] constexpr decltype(auto) Last() const requires CHasLength<L>
+	{
+		INTRA_PRECONDITION(!Empty());
+		return (*OriginalList)[EndIndex - 1];
+	}
+
+	constexpr void PopLast() requires CHasLength<L> {INTRA_PRECONDITION(!Empty()); EndIndex--;}
+
+	[[nodiscard]] constexpr decltype(auto) operator[](CNumber auto&& index) const
+	{
+		INTRA_PRECONDITION(!Empty());
+		return (*OriginalList)[BeginIndex + INTRA_FWD(index)];
+	}
+
+	[[nodiscard]] constexpr auto Length() const requires CHasLength<L> {return EndIndex - BeginIndex;}
+};
+
+template<CRandomAccessList L> RIndexedRef(L&) -> RIndexedRef<L>;
+
+template<CList L> [[nodiscard]] constexpr auto ViewRangeOf(L&& list)
+{
+	using TL = TRemoveReference<L>;
+	if constexpr(CRValueReference<L>) return RangeOf(INTRA_FWD(list));
+	else if constexpr(CConvertibleToSpan<L>) return Span(list);
+	else if constexpr(CRandomAccessList<TL>) return RIndexedRef<TL>(list);
+	else return RangeOf(INTRA_FWD(list));
+}
 
 template<typename L, typename F> requires CCallable<F, L> && CList<L>
 INTRA_FORCEINLINE constexpr decltype(auto) operator|(L&& list, F&& func) {return INTRA_FWD(func)(INTRA_FWD(list));}
@@ -470,10 +568,13 @@ template<CConsumableRange R> [[nodiscard]] constexpr auto begin(R&& range)
 
 template<CConsumableRange R> [[nodiscard]] constexpr auto end(R&&) noexcept {return nullptr;}
 
-
 template<typename F> [[nodiscard]] constexpr decltype(auto) FunctorOf(F&& f)
 {
-	if constexpr(CClass<TRemoveReference<F>>) return INTRA_FWD(f);
+	if constexpr(CClass<TRemoveReference<F>>)
+	{
+		if constexpr(CLValueReference<F> || !CMoveConstructible<TRemoveReference<F>>) return TRemoveReference<F>(f);
+		else return TRemoveReference<F>(INTRA_FWD(f));
+	}
 	else if constexpr(CFunctionPointer<F>)
 	{
 		return [f](auto&&... args)
@@ -606,7 +707,7 @@ template<typename T> struct Span
 	Span(const Span&) = default;
 
 	template<CConvertibleToSpan L> requires (!CSameUnqualRef<L, Span>)
-	INTRA_FORCEINLINE constexpr Span(L&& arr) noexcept: Span(Unsafe, Intra::Data(arr), Intra::Length(arr)) {}
+	INTRA_FORCEINLINE constexpr Span(INTRA_LIFETIMEBOUND L&& arr) noexcept: Span(Unsafe, Intra::Data(arr), Intra::Length(arr)) {}
 
 	constexpr Span(TUnsafe, T* begin, T* end) noexcept: Begin(begin), End(end) {INTRA_PRECONDITION(end >= begin);}
 	INTRA_FORCEINLINE constexpr Span(TUnsafe, T* begin, Size length) noexcept: Begin(begin), End(Begin + size_t(length)) {}
@@ -669,7 +770,7 @@ template<typename T> struct Span
 };
 template<class R> Span(R&&) -> Span<TArrayElementKeepConst<R>>;
 
-INTRA_DEFINE_FUNCTOR(ConstSpanOf)<CConvertibleToSpan L>(L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
+INTRA_DEFINE_FUNCTOR(ConstSpanOf)<CConvertibleToSpan L>(INTRA_LIFETIMEBOUND L&& list) noexcept {return Span<const TArrayListValue<L>>(list);};
 
 template<typename T> concept CSpan = CInstanceOfTemplate<TUnqualRef<T>, Span>;
 
@@ -738,7 +839,7 @@ struct RawAllocParams
 	{
 		return {
 			.ByteAllocParams = {
-				.ExistingMemoryBlock = Span(Unsafe, static_cast<char*>(existingMemoryBlockBegin), 0),
+				.ExistingMemoryBlock = Span(Unsafe, static_cast<char*>(existingMemoryBlockBegin), Size(0)),
 				.NumElements = MaxValidNumElements + size_t(cmd)
 		}
 		};

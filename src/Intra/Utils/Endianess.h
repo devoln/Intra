@@ -1,6 +1,5 @@
 ﻿#pragma once
 
-#include "IntraX/Core.h"
 #include <Intra/Core.h>
 #include <Intra/Binary.h>
 
@@ -10,7 +9,7 @@ template<typename T> struct ReverseByteOrder
 	constexpr ReverseByteOrder() = default;
 	constexpr ReverseByteOrder(T rhs) {operator=(rhs);}
 
-	constexpr ReverseByteOrder& operator=(T rhs) {ByteSwappedValue = SwapByteOrder(ByteSwappedValue); return *this;}
+	constexpr ReverseByteOrder& operator=(T rhs) {ByteSwappedValue = SwapByteOrder(rhs); return *this;}
 	constexpr ReverseByteOrder& operator+=(T rhs) {return operator=(*this + rhs);}
 	constexpr ReverseByteOrder& operator-=(T rhs) {return operator=(*this - rhs);}
 	constexpr ReverseByteOrder& operator*=(T rhs) {return operator=(*this * rhs);}
@@ -26,9 +25,9 @@ template<typename T> struct ReverseByteOrder
 	T ByteSwappedValue;
 };
 
-static_assert(CTriviallySerializable<AnotherEndian<int>>);
-template<typename T> using LittleEndian = TSelect<AnotherEndian<T>, T, Config::TargetIsBigEndian>;
-template<typename T> using BigEndian = TSelect<AnotherEndian<T>, T, !Config::TargetIsBigEndian>;
+static_assert(CTriviallySerializable<ReverseByteOrder<int>>);
+template<typename T> using LittleEndian = TSelect<ReverseByteOrder<T>, T, Config::TargetIsBigEndian>;
+template<typename T> using BigEndian = TSelect<ReverseByteOrder<T>, T, !Config::TargetIsBigEndian>;
 
 using int16BE = BigEndian<int16>;
 using uint16BE = BigEndian<uint16>;

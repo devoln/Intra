@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Intra/Functional.h"
-#include "Intra/Range/Concepts.h"
-#include "Intra/Range/StringView.h"
-#include "Intra/Range/Decorators.h"
+#include <Intra/Functional.h>
+#include <Intra/Concepts.h>
+#include <Intra/Range.h>
+#include <Intra/Range/StringView.h>
 
 //TODO: make this class more generic to work with even containers to avoid line splitting.
 

@@ -205,7 +205,7 @@ template<CIntegral TCounter = size_t, bool ThreadSafe = true> class RefCounter
 	TSelectAtomic<TCounter, ThreadSafe> mRefCount{1};
 public:
 	INTRA_FORCEINLINE constexpr TCounter IncRef() {return mRefCount.Add<MemoryOrder::Relaxed>(1);}
-	INTRA_FORCEINLINE constexpr TCounter GetRC() {return mRefCount.Get<MemoryOrder::Relaxed>();}
+	INTRA_FORCEINLINE constexpr TCounter GetRC() {return mRefCount.template Get<MemoryOrder::Relaxed>();}
 	INTRA_FORCEINLINE constexpr bool DecRef() {return mRefCount.Sub<MemoryOrder::AcquireRelease>(1) == 0;}
 
 	RefCounter() = default;
@@ -355,8 +355,9 @@ public:
 	{
 		if(IsConstantEvaluated())
 		{
-			mCData = new ConstexprStorage{.Counter = new TCounter, .Data = new T(INTRA_FWD(args)...)};
-			return;
+			Shared res;
+			res.mCData = new ConstexprStorage{.Counter = new TCounter, .Object = new T(INTRA_FWD(args)...)};
+			return res;
 		}
 		const auto data = new Storage;
 		new(data->Bytes) T(INTRA_FWD(args)...);
@@ -389,7 +390,7 @@ private:
 		if(IsConstantEvaluated()) return mCData->Object;
 		return &mData->Value;
 	}
-	template<typename T, bool ThreadSafe> friend class SharedClass;
+	template<typename T1, bool ThreadSafe1> friend class SharedClass;
 };
 
 template<typename T, bool ThreadSafe = true> class SharedClass

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Intra/Numeric/Rational.h>
+#include <Intra/Numeric/Traits.h>
+#include <Intra/Concepts.h>
 
 namespace Intra { INTRA_BEGIN
 
@@ -40,13 +42,13 @@ template<CNumber T, CNumber auto Divisor> struct Fixed
 	T Raw{};
 
 private:
-	template<typename U> struct MulT1: TType<TBasicNumberWithRange<double(MinValueOf<T>)* MaxValueOf<U>, double(MaxValueOf<T>)* MaxValueOf<U>>> {};
+	template<typename U> struct MulT1: TType<TIntegralPromoteMul<T, U>> {};
 	template<CBasicFloatingPoint U> struct MulT1<U>: TType<U> {};
 	template<typename U> using MulT = typename MulT1<TUnqualRef<U>>::_;
 
 public:
 	Fixed() = default;
-	template<typename RHS> constexpr Fixed(RHS value): Raw(T(value * MulT<RHS>(Divisor))) {}
+	template<typename RHS> constexpr Fixed(RHS value): Raw(T(MulT<RHS>(value) * MulT<RHS>(Divisor))) {}
 
 	explicit INTRA_FORCEINLINE constexpr Fixed(decltype(Construct), T v): Raw(v) {}
 
@@ -149,6 +151,15 @@ static_assert(
 	Fixed<NWrapOverflow<int8>, 128>(-122.0/128) -
 	Fixed<NWrapOverflow<int8>, 128>(118.0/128) ==
 	Fixed<NWrapOverflow<int8>, 128>(16.0/128));
+
+static_assert(
+	Fixed<NWrapOverflow<uint8>, 256>(1.0/256) +
+	Fixed<NWrapOverflow<uint8>, 256>(2.0/256) ==
+	Fixed<NWrapOverflow<uint8>, 256>(3.0/256));
+
+static_assert(
+	Fixed<NSaturateOverflow<uint8>, 256>(-1) ==
+	Fixed<NSaturateOverflow<uint8>, 256>(0));
 
 static_assert(
 	Fixed<int, 65536>(37.662445068359375) *

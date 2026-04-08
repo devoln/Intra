@@ -1,12 +1,15 @@
 ﻿#pragma once
 
 #include <Intra/Range.h>
+#include <Intra/Range/StringView.h>
 #include <Intra/Binary.h>
 #include <Intra/Numeric/Math.h>
 #include <Intra/Numeric/Rational.h>
 #include <Intra/Numeric/FloatingPoint.h>
 
 namespace Intra { INTRA_BEGIN
+
+class String;
 
 INTRA_DEFINE_FUNCTOR(IsHorSpace)(auto&& a) {return a == ' ' || a == '\t';};
 INTRA_DEFINE_FUNCTOR(IsLineSeparator)(auto&& a) {return a == '\r' || a == '\n';};
@@ -149,8 +152,8 @@ constexpr void UintToHexString(uint8 num, char* dst, bool lowerAlpha)
 	unsigned x = num;
 	if constexpr(Config::TargetIsBigEndian) x = ((x & 0xF0) << 4) | (x & 0x0F); // 0x00FA => 0x0F0A
 	else x = ((x & 0xF0) >> 4) | (x & 0x0F) << 8; // 0x00FA => 0x0A0F
-	x |= 0x3030; // convert to ASCII digit characters
 	const uint32 afMask = ((x + 0x0606) >> 4) & 0x0101;
+	x |= 0x3030; // convert to ASCII digit characters
 	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
 	BinarySerialize<uint16>(Unsafe, dst, uint16(x));
 }
@@ -168,8 +171,8 @@ constexpr void UintToHexString(uint16 num, char* dst, bool lowerAlpha)
 		x = ((x & 0x0000FF00) >> 8) | (x & 0x000000FF) << 16; // 0x0000FACE => 0x00CE00FA
 		x = ((x & 0x00F000F0) >> 4) | (x & 0x000F000F) << 8; // 0x00CE00FA => 0x0E0C0A0F
 	}
-	x |= 0x30303030; // convert to ASCII digit characters
 	const uint32 afMask = ((x + 0x06060606) >> 4) & 0x01010101;
+	x |= 0x30303030; // convert to ASCII digit characters
 	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
 	BinarySerialize<uint32>(Unsafe, dst, x);
 }
@@ -189,8 +192,8 @@ constexpr void UintToHexString(uint32 num, char* dst, bool lowerAlpha)
 		x = ((x & 0x0000FF000000FF00) >> 8) | (x & 0x000000FF000000FF) << 16; // 0x0000FACE00001234 => 0x00CE00FA00340012
 		x = ((x & 0x00F000F000F000F0) >> 4) | (x & 0x000F000F000F000F) << 8; // 0x00CE00FA00340012 => 0x0E0C0A0F04030201
 	}
-	x |= 0x3030303030303030; // convert to ASCII digit characters
 	const uint64 afMask = ((x + 0x0606060606060606) >> 4) & 0x0101010101010101;
+	x |= 0x3030303030303030; // convert to ASCII digit characters
 	x += (lowerAlpha? 0x27: 0x07) * afMask; // faster than checking afMask != 0 first
 	BinarySerialize<uint64>(Unsafe, dst, x);
 }
@@ -199,6 +202,11 @@ constexpr void UintToHexString(uint64 num, char* dst, bool lowerAlpha)
 {
 	UintToHexString(uint32(num >> 32), dst, lowerAlpha);
 	UintToHexString(uint32(num), dst + 8, lowerAlpha);
+}
+
+constexpr void UintToHexString(unsigned long num, char* dst, bool lowerAlpha)
+{
+	UintToHexString(TSelect<uint64, uint32, sizeof(uint64) == 8>(num), dst, lowerAlpha);
 }
 
 #if INTRA_CONSTEXPR_TEST
@@ -334,7 +342,7 @@ template<CCharOutput OR, typename T> requires(!CBasicArithmetic<TRemoveReference
 constexpr void ToString(OR&& dst, T&& v) {dst << INTRA_FWD(v);}
 #endif
 
-template<CBasicIntegral X> constexpr void ToString(RCeilCounter<>& dst, X number, int minWidth, char filler = ' ', unsigned base = 10)
+template<CBasicIntegral X> constexpr void ToString(RCeilCounter<>& dst, [[maybe_unused]] X number, int minWidth, [[maybe_unused]] char filler = ' ', unsigned base = 10)
 {
 	size_t maxLog = sizeof(X) * 2;
 	if(base < 8) maxLog = sizeof(X) * 8;
@@ -395,22 +403,24 @@ INTRA_FORCEINLINE void ToString(char*& dst, void* pointer)
 	dst += sizeof(pointer) * 2;
 }
 
-template<CBasicFloatingPoint T> constexpr void ToString(char*& dst, T number,
-	char decimalSep = '.', bool appendAllDigits = false)
+template<CBasicFloatingPoint T> constexpr void ToString(char*& dst, T number, char decimalSep = '.')
 {
 	if(number == NaN)
 	{
-		"NaN"_span|WriteTo(dst);
+		MemoryCopySmall8(Unsafe, dst, "NaN", 3);
+		dst += 3;
 		return;
 	}
 	if(number == Infinity)
 	{
-		"Infinity"_span|WriteTo(dst);
+		MemoryCopySmall8(Unsafe, dst, "Infinity", 8);
+		dst += 8;
 		return;
 	}
 	if(number == -Infinity)
 	{
-		"-Infinity"_span|WriteTo(dst);
+		MemoryCopy(Unsafe, dst, "-Infinity", 9);
+		dst += 9;
 		return;
 	}
 	dst += FloatToString(number, decimalSep, 'e', dst);
@@ -512,14 +522,14 @@ constexpr bool ExpectAdvance(R& src, CR& stringToExpect)
 }
 
 template<CBasicIntegral X, CCharList L> requires CConsumableList<L>
-[[nodiscard]] constexpr X Parse(R&& src)
+[[nodiscard]] constexpr X Parse(L&& src)
 {
 	auto range = RangeOf(INTRA_FWD(src));
 	return ParseAdvance<X>(range);
 }
 
 template<CBasicFloatingPoint X, CCharList L> requires CConsumableList<L>
-[[nodiscard]] constexpr X Parse(R&& src, TListValue<L> decimalSeparator = '.')
+[[nodiscard]] constexpr X Parse(L&& src, TListValue<L> decimalSeparator = '.')
 {
 	auto range = RangeOf(INTRA_FWD(src));
 	return ParseAdvance<X>(range, decimalSeparator);
@@ -556,28 +566,43 @@ constexpr R&& operator>>(R&& stream, CR&& stringToExpect)
 
 namespace z_D {
 static const char printfFormats[] = "%s\0%d\0%u\0%lld\0%llu\0%.2f\0%p";
-const auto mapArgToFmt = [](auto&& arg) -> uint16 INTRA_LAMBDA_FORCEINLINE {
+const auto mapArgToFmt = [](auto&& arg) INTRA_FORCEINLINE_LAMBDA -> uint16 {
 	using T = TUnqualRef<decltype(arg)>;
 	if constexpr(CSame<T, bool>) return 0;
 	else if constexpr(CIntegral<T>) return sizeof(T) <= sizeof(int)? (CSigned<T>? 3: 6): (CSigned<T>? 9: 14);
 	else if constexpr(CFloatingPoint<T>) return 19;
-	else if constexpr(CPointer<T>) return CSameUnqual<TRemovePointer<T>, char>? 0: 24;
+	else if constexpr(CBasicPointer<T>) return CSameUnqual<TRemovePointer<T>, char>? 0: 24;
 	else if constexpr(CSame<T, String>) return 0;
-	else if constexpr(CSame<T, StringView>) return uint16(sizeof(z_D::printfFormats) + arg.size()); // requires .{}s specifier depending on string length
+	else if constexpr(CSame<T, StringView>) return uint16(sizeof(printfFormats) + arg.size()); // requires .{}s specifier depending on string length
 	else return 0; // ToString
 };
-const auto mapArgStorage = [](auto&& arg) INTRA_LAMBDA_FORCEINLINE {
+const auto mapArgStorage = [](auto&& arg) INTRA_FORCEINLINE_LAMBDA {
 	using T = TUnqualRef<decltype(arg)>;
 	if constexpr(CSame<T, bool>) return arg? "true": "false";
-	else if constexpr(CIntegral<T> || CFloatingPoint<T> || CPointer<T> || CSame<T, String>) return INTRA_FWD(arg);
+	else if constexpr(CIntegral<T> || CFloatingPoint<T> || CBasicPointer<T> || CSame<T, String>) return INTRA_FWD(arg);
 	else return ToString(INTRA_FWD(arg));
 };
-const auto mapStorageToSprintf = []<typename T>(T&& arg) INTRA_LAMBDA_FORCEINLINE {
+const auto mapStorageToSprintf = []<typename T>(T&& arg) INTRA_FORCEINLINE_LAMBDA {
 	if constexpr(CSameUnqualRef<T, String>) return arg.c_str();
 	else if constexpr(CSameUnqualRef<T, StringView>) return arg.data();
 	else return INTRA_FWD(arg);
 };
 ZStringView prepareFormatString(Span<char>& dstBuf, StringView format, Span<const uint16> offsets);
+
+String StringSprintf(const String& format, int numArgs, ...)
+{
+	va_list args;
+	INTRAZ_D_VA_START(args, numArgs);
+	int resLen = vsnprintf(nullptr, 0, format.c_str(), args);
+	INTRAZ_D_VA_END(args);
+	if(resLen <= 0) return String{};
+	String res(resLen + 1, '\0');
+	INTRAZ_D_VA_START(args, numArgs);
+	vsnprintf(res.data(), resLen + 1, format.c_str(), args);
+	INTRAZ_D_VA_END(args);
+	res.pop_back();
+	return res;
+}
 }
 INTRA_DEFINE_FUNCTOR(StringFormat)(StringView format, auto&&... args)
 {
@@ -585,7 +610,7 @@ INTRA_DEFINE_FUNCTOR(StringFormat)(StringView format, auto&&... args)
 	{
 		const uint16 formatSpecOffsets[] = {z_D::mapArgToFmt(args)...};
 		z_D::prepareFormatString(format, formatSpecOffsets);
-		auto res = StringSprintf(format, z_D::mapStorageToSprintf(z_D::mapArgStorage(INTRA_FWD(args)))...);
+		auto res = z_D::StringSprintf(format, z_D::mapStorageToSprintf(z_D::mapArgStorage(INTRA_FWD(args)))...);
 		return res;
 	}
 	else return format;

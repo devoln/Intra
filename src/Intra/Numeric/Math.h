@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <Intra/Core.h>
+#include <Intra/Numeric/Traits.h>
 #include <Intra/Platform/Toolchain.h>
 
 namespace Intra { INTRA_BEGIN

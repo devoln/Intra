@@ -2,8 +2,8 @@
 
 #include <Intra/Concepts.h>
 #include <Intra/Range.h>
-#include <Intra/StringUtils.h>
 #include <Intra/Binary.h>
+#include <Intra/Utils/Endianess.h>
 
 namespace Intra { INTRA_BEGIN
 namespace Unicode {
@@ -51,14 +51,14 @@ template<CCharRange R> constexpr bool PopWhileValidAscii(R& range)
 		const auto numAsciiCharsToSkip = z_D::ArrayCountValidAsciiBlocks16(span);
 		range|PopFirstExactly(size_t(numAsciiCharsToSkip));
 	}
-	while(!range.Empty() && IsAsciiChar(range.First())) range.PopFirst();
+	while(!range.Empty() && unsigned(range.First()) <= 127) range.PopFirst();
 	return range.Empty();
 }
 
 INTRA_DEFINE_FUNCTOR(IsValidAscii)(CCharList auto&& list)
 {
 	auto range = RangeOf(INTRA_FWD(list));
-	if constexpr(!Config::DisableAllOptimizations && CConvertibleToSpan<L> && sizeof(TListValue<L>) == 1)
+	if constexpr(!Config::DisableAllOptimizations && CConvertibleToSpan<TRemoveReference<decltype(list)>> && sizeof(range.First()) == 1)
 	{
 		if(!IsConstantEvaluated())
 		{
@@ -99,7 +99,7 @@ INTRA_DEFINE_FUNCTOR(IsUtf8ContinuationByte)(uint8 i) {return (i >> 6) == 2;};
 /// @return a mask to extract significant bits from a leading byte assuming that it is non-ASCII and valid
 [[nodiscard]] constexpr uint32 LeadingByteMaskNotAscii(uint8 leadingByte)
 {
-	INTRA_PRECONDITION(!IsAsciiChar(leadingByte));
+	INTRA_PRECONDITION(unsigned(leadingByte) >= 128);
 	INTRA_PRECONDITION(!IsUtf8ContinuationByte(leadingByte));
 	const auto shift = uint32(leadingByte & 0x30) >> (4-3); //0, 8, 16, 24
 	return 0x070F1F1Fu >> shift;
@@ -154,7 +154,7 @@ template<CCharRange R> constexpr char32_t DecodeUtf8Codepoint(R&& range, Optiona
 			if(oError) oError.Unwrap() = uint32(i << 12);
 			return ReplacementChar;
 		}
-		c = byte(Next(range));
+		c = uint8(Next(range));
 		res <<= 6;
 		res |= c & 0x3F;
 		e |= c & 0xC0;
@@ -189,7 +189,7 @@ INTRA_DEFINE_FUNCTOR(PopWhileValidUtf8)(CCharRange auto& range)
 
 constexpr auto IsValidUtf8 = []<CCharList L>(L&& str)
 {
-	if constexpr(CArrayList<L> && sizeof(TListValue<L>) == 1)
+	if constexpr(CConvertibleToSpan<L> && sizeof(TListValue<L>) == 1)
 	{
 		//const auto* const data = DataOf(r);
 		//const auto len = LengthOf(r);
@@ -200,21 +200,29 @@ constexpr auto IsValidUtf8 = []<CCharList L>(L&& str)
 	}
 	auto range = RangeOf(INTRA_FWD(str));
 	return PopWhileValidUtf8(range);
-}
+};
 
 INTRA_DEFINE_FUNCTOR(IsValidUtf32)(CCharList auto&& list)
 {
-	// TODO
+	auto range = RangeOf(INTRA_FWD(list));
+	while(!range.Empty())
+	{
+		const char32_t c = char32_t(range.First());
+		if(c > MaxLegalCharCode) return false;
+		if(c >= LeadingSurrogateStart && c <= TrailingSurrogateEnd) return false;
+		range.PopFirst();
+	}
 	return true;
 };
 
 INTRA_DEFINE_FUNCTOR(IsValidUnicode)(CCharList auto&& list)
 {
-	if constexpr(sizeof(TListValue<L>) == 1) return IsValidUtf8(INTRA_FWD(list));
-	else if constexpr(sizeof(TListValue<L>) == 2) return IsValidUtf16(INTRA_FWD(list));
-	else if constexpr(sizeof(TListValue<L>) == 4) return IsValidUtf32(INTRA_FWD(list));
+	constexpr auto size = sizeof(RangeOf(list).First());
+	if constexpr(size == 1) return IsValidUtf8(INTRA_FWD(list));
+	else if constexpr(size == 2) return IsValidUtf16(INTRA_FWD(list));
+	else if constexpr(size == 4) return IsValidUtf32(INTRA_FWD(list));
 	return false;
-}
+};
 
 
 template<CCharRange R> constexpr char32_t DecodeUtf16Codepoint(R&& range)
@@ -224,7 +232,7 @@ template<CCharRange R> constexpr char32_t DecodeUtf16Codepoint(R&& range)
 	if(range.Empty()) return ReplacementChar;
 	auto c2 = char16_t(Next(range));
 	if(!IsUtf16TrailingSurrogate(c2)) return ReplacementChar;
-	return (char32_t(c - LeadingSurrogateStart) << 10) + char32_t(c2 - TrailingSurrogateStart) + 0x10000;
+	return ((char32_t(c) - LeadingSurrogateStart) << 10) + char32_t(c2) - TrailingSurrogateStart + 0x10000;
 }
 
 template<CCharRange R> requires (sizeof(TRangeValue<R>) <= sizeof(char16_t))
@@ -254,19 +262,19 @@ template<COutputOf<char16_t> R> constexpr void EncodeCodepointAsUtf16(char32_t c
 template<COutputOf<char8_t> R> constexpr index_t EncodeCodepointAsUtf8(char32_t code, R&& range)
 {
 	if(code > MaxLegalCharCode) return "\xEF\xBF\xBD"_span|WriteTo(range);
-	const size_t continuationBytes = (code >= 0x80) + (code >= 0x800) + (code >= 0x10000);
-	unsigned shift = continuationBytes*6;
-	const byte firstByteMark = byte(0xF0E0C000u >> (continuationBytes << 3));
-	range|Put(char8_t(byte((code >> shift) | firstByteMark)));
+	const uint32 continuationBytes = (code >= 0x80) + (code >= 0x800) + (code >= 0x10000);
+	uint32 shift = continuationBytes * 6;
+	const uint8 firstByteMark = uint8(0xF0E0C000u >> (continuationBytes << 3));
+	range|Put(char8_t(uint8((code >> shift) | firstByteMark)));
 	if(shift == 0) return 1;
 	shift -= 6;
-	range|Put(char8_t(byte(((code >> shift) | 0x80) & 0xBF)));
+	range|Put(char8_t(uint8(((code >> shift) | 0x80) & 0xBF)));
 	if(shift == 0) return 2;
 	shift -= 6;
-	range|Put(char8_t(byte(((code >> shift) | 0x80) & 0xBF)));
+	range|Put(char8_t(uint8(((code >> shift) | 0x80) & 0xBF)));
 	if(shift == 0) return 3;
 	shift -= 6;
-	range|Put(char8_t(byte(((code >> shift) | 0x80) & 0xBF)));
+	range|Put(char8_t(uint8(((code >> shift) | 0x80) & 0xBF)));
 	return 4;
 }
 }
@@ -308,7 +316,7 @@ template<class R> class RUtf8Encoder
 	{
 		char8_t four[4] = {0x80, 0xFF, 0xFF, 0xFF};
 		Unicode::EncodeCodepointAsUtf8(mRange|Next, Span(four));
-		mFirstFour = BinaryDeserializeLE<uint32>(Unsafe, four);
+		mFirstFour = BinaryDeserialize<uint32LE>(Unsafe, four);
 	}
 public:
 	using TagAnyInstanceFinite = TTag<CFiniteRange<R>>;
@@ -376,10 +384,10 @@ public:
 		}
 		setEmptyState();
 	}
-	[[nodiscard]] constexpr bool Empty() const {return mFirstTwo[1] == char16_t(LeadingSurrogateStart);}
+	[[nodiscard]] constexpr bool Empty() const {return mFirstTwo[1] == char16_t(Unicode::LeadingSurrogateStart);}
 };
 
-template<CAccessibleList R> constexpr RUtf16Encoder<TRangeOf<L>> ToUtf16(L&& list) {return {RangeOf(INTRA_FWD(list))};}
+template<CAccessibleList L> constexpr RUtf16Encoder<TRangeOf<L>> ToUtf16(L&& list) {return {RangeOf(INTRA_FWD(list))};}
 
 #if INTRA_CONSTEXPR_TEST
 static_assert(Unicode::Utf8ContinuationBytes(208) == 1);

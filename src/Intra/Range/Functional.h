@@ -13,11 +13,11 @@ public:
 	constexpr IsOneOf(R set): mSet(INTRA_MOVE(set)) {}
 	constexpr IsOneOf(R set, P pred): mPred(INTRA_MOVE(pred)), mSet(INTRA_MOVE(set)) {}
 
-	template<typename T> requires CCallableWithSignature<P, bool(T&&)>
+	template<typename T> requires CCallableWithSignature<P, bool(TRangeValueRef<R>, T&&)>
 	[[nodiscard]] constexpr bool operator()(T&& arg)
 	{
 		Which = mSet;
-		while(!Which.Empty() && !mPred(Which.First()))
+		while(!Which.Empty() && !mPred(Which.First(), arg))
 			Which.PopFirst();
 		return !Which.Empty();
 	}

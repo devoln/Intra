@@ -72,6 +72,7 @@ template<CIntegral T> struct NWrapOverflow
 	explicit INTRA_FORCEINLINE constexpr operator U() const noexcept {return U(mValue);}
 	//template<typename U> requires (!COverflowWrapper<U>) && CNumber<U> && CNoWrapConvertible<T, U>
 	//INTRA_FORCEINLINE constexpr operator U() const noexcept {return U(mValue);}
+	template<COverflowWrapper U> INTRA_FORCEINLINE constexpr NWrapOverflow(const U& t) noexcept: NWrapOverflow(t.WrappedValue()) {}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr NWrapOverflow operator+(const NWrapOverflow& rhs) const noexcept {return NWrapOverflow(TToUnsigned<T>(mValue) + TToUnsigned<T>(rhs.mValue));}
 	[[nodiscard]] INTRA_FORCEINLINE constexpr NWrapOverflow operator-(const NWrapOverflow& rhs) const noexcept {return NWrapOverflow(TToUnsigned<T>(mValue) - TToUnsigned<T>(rhs.mValue));}
@@ -113,10 +114,7 @@ template<typename T> struct NCheckedOverflow
 	//template<typename U> requires (!COverflowWrapper<U>) && CNumber<U> && CNoWrapConvertible<T, U>
 	//INTRA_FORCEINLINE constexpr operator U() const noexcept {return NCheckedOverflow<U>(mValue).WrappedValue();}
 
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr NCheckedOverflow(const NCheckedOverflow<U>& t) noexcept: mValue(t.WrappedValue()) {}
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr NCheckedOverflow(const NWrapOverflow<U>& t) noexcept: NCheckedOverflow(t.WrappedValue()) {}
-
-	INTRA_FORCEINLINE constexpr operator NWrapOverflow<T>() const {return NWrapOverflow<T>(mValue);}
+	template<COverflowWrapper U> INTRA_FORCEINLINE constexpr NCheckedOverflow(const U& t) noexcept: NCheckedOverflow(t.WrappedValue()) {}
 
 	[[nodiscard]] constexpr NCheckedOverflow operator+(NCheckedOverflow rhs) const
 	{
@@ -169,6 +167,7 @@ template<typename T> struct NSaturateOverflow
 		if constexpr(isNarrowingCast)
 			mValue = T(Max(Min(u, CommonMaxValue<U, T>), CommonMinValue<U, T>));
 	}
+	template<CBasicFloatingPoint U> explicit INTRA_FORCEINLINE constexpr NSaturateOverflow(U u) noexcept: mValue(T(Max(Min(u, CommonMaxValue<U, T>), CommonMinValue<U, T>))) {}
 
 	// NOTE: on Clang 16 explicit(!CNoWrapConvertible<T, U>) evaluates even if requires evalutes to false, we must avoid it to prevent concept recursion
 	template<typename U> requires (!COverflowWrapper<U>) && CNumber<U>// && (!CNoWrapConvertible<T, U>)
@@ -176,12 +175,7 @@ template<typename T> struct NSaturateOverflow
 	//template<typename U> requires (!COverflowWrapper<U>) && CNumber<U> && CNoWrapConvertible<T, U>
 	//INTRA_FORCEINLINE constexpr operator U() const noexcept {return NSaturateOverflow<U>(mValue).WrappedValue();}
 
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr NSaturateOverflow(const NSaturateOverflow<U>& t) noexcept: NSaturateOverflow(t.WrappedValue()) {}
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr NSaturateOverflow(NCheckedOverflow<U> t) noexcept: NSaturateOverflow(t.WrappedValue()) {}
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr NSaturateOverflow(NWrapOverflow<U> t) noexcept: NSaturateOverflow(t.WrappedValue()) {}
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr operator NCheckedOverflow<U>() const {return NCheckedOverflow<U>(mValue);}
-	template<CBasicIntegral U> INTRA_FORCEINLINE constexpr operator NWrapOverflow<U>() const noexcept {return NWrapOverflow<U>(mValue);}
-
+	template<COverflowWrapper U> INTRA_FORCEINLINE constexpr NSaturateOverflow(const U& t) noexcept: NSaturateOverflow(t.WrappedValue()) {}
 
 	[[nodiscard]] INTRA_FORCEINLINE constexpr NSaturateOverflow operator+(NSaturateOverflow rhs) const noexcept
 	{
@@ -256,16 +250,18 @@ template<COverflowWrapper W> INTRA_FORCEINLINE constexpr W& operator--(const W& 
 
 template<typename T> using NDebugOverflow = TSelect<NCheckedOverflow<T>, T, Config::DebugCheckLevel != 0>;
 
-using Size = NDebugOverflow<size_t>;
+using Size = NCheckedOverflow<size_t>;
 using ClampedSize = NSaturateOverflow<size_t>;
-using Index = NDebugOverflow<size_t>;
+using Index = NCheckedOverflow<size_t>;
 using ClampedIndex = NSaturateOverflow<size_t>;
-using LongSize = NDebugOverflow<uint64>;
+using LongSize = NCheckedOverflow<uint64>;
 using ClampedLongSize = NSaturateOverflow<uint64>;
-using LongIndex = NDebugOverflow<uint64>;
+using LongIndex = NCheckedOverflow<uint64>;
 using ClampedLongIndex = NSaturateOverflow<uint64>;
 
 #if INTRA_CONSTEXPR_TEST
+static_assert(CNumber<ClampedSize>);
+static_assert(CNumber<NCheckedOverflow<size_t>>);
 static_assert(!IsOverflowOp<Mul>(1, 3));
 static_assert(!IsOverflowOp<Mul>(int64(1), int64(3)));
 static_assert(!IsOverflowOp<Mul>(uint32(1), uint32(1)));
@@ -275,10 +271,10 @@ static_assert(NWrapOverflow<uint32>(0) == 0);
 static_assert(CommonMaxValue<int32, uint32> == MaxValueOf<int32>);
 static_assert(CommonMinValue<int32, size_t> == 0);
 static_assert(z_D::CGenCompareOp<decltype(Equal), NWrapOverflow<uint32>, int>);
-static_assert(z_D::CGenCompareOp<decltype(Equal), size_t, const Size&>);
+static_assert(z_D::CGenCompareOp<decltype(Equal), size_t, const ClampedSize&>);
 static_assert(CValueWrapper<ClampedSize&>);
 static_assert(z_D::CWrapperOpValid<decltype(Equal), ClampedSize&, int>);
-static_assert(CValueWrapper<const Size>);
+static_assert(CValueWrapper<const ClampedSize>);
 static_assert(CValueWrapper<const decltype(NWrapOverflow<uint32>(0x1234567890ULL))&&>);
 static_assert(NWrapOverflow<uint32>(0x1234567890ULL) == 0x34567890U);
 static_assert(NSaturateOverflow<uint32>(0x1234567890ULL) == 0xFFFFFFFF);

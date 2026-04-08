@@ -76,7 +76,7 @@ template<class TIndexable, QueueThreadSafety ThreadSafety, bool WaitOnEmptyOrFul
 	static_assert(!WaitOnEmptyOrFull || ThreadSafety != QueueThreadSafety::SingleThreaded);
 
 	using T = TRemoveReference<decltype(Val<TIndexable>()[0])>;
-	static constexpr bool CanUseMemcpy = CTriviallyCopyable<T> && (CConvertibleToSpan<TIndexable> || CPointer<TIndexable>);
+	static constexpr bool CanUseMemcpy = CTriviallyCopyable<T> && (CConvertibleToSpan<TIndexable> || CBasicPointer<TIndexable>);
 
 	TIndexable mIndexable;
 	FixedQueueLogic<PoTCapacity> mLogic;
@@ -89,10 +89,10 @@ public:
 	template<typename... Args> explicit GenericQueue(Args&&... args) requires CList<TIndexable>:
 		mIndexable(INTRA_FWD(args)...), mLogic(Length(mIndexable)) {}
 
-	INTRA_FORCEINLINE explicit GenericQueue(TIndexable ptr, index_t capacity) requires CPointer<TIndexable>:
+	INTRA_FORCEINLINE explicit GenericQueue(TIndexable ptr, index_t capacity) requires CBasicPointer<TIndexable>:
 		mIndexable(ptr), mLogic(capacity) {}
 
-	INTRA_FORCEINLINE explicit GenericQueue(Span<TRemovePointer<TIndexable>> span) requires CPointer<TIndexable>:
+	INTRA_FORCEINLINE explicit GenericQueue(Span<TRemovePointer<TIndexable>> span) requires CBasicPointer<TIndexable>:
 		mIndexable(span.Begin), mLogic(Length(span)) {}
 
 	void Close()

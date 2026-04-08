@@ -223,15 +223,18 @@ template<size_t... Is, typename... Ts> struct INTRA_EMPTY_BASES TupleImpl<TIndex
 		TupleLeaf<FirstIndices, FirstTypes>(INTRA_FWD(values))...,
 		TupleLeaf<LastIndices, LastTypes>()... {}
 
-	template<typename OtherTuple> constexpr TupleImpl(OtherTuple&& t):
+	template<typename OtherTuple> requires (!CSame<TupleImpl, TUnqual<OtherTuple>>)
+	constexpr TupleImpl(OtherTuple&& t):
 		TupleLeaf<Is, Ts>(INTRA_FWD(get<Is>(t)))... {}
 
-	template<typename OtherTuple> constexpr TupleImpl& operator=(OtherTuple&& t)
+	template<typename OtherTuple> requires (!CSame<TupleImpl, TUnqual<OtherTuple>>)
+	constexpr TupleImpl& operator=(OtherTuple&& t)
 	{
 		((static_cast<TupleLeaf<Is, Ts>*>(this)->Value = INTRA_FWD(get<Is>(t))), ...);
 		return *this;
 	}
 
+	constexpr TupleImpl(const TupleImpl& t): TupleLeaf<Is, Ts>(INTRA_FWD(get<Is>(t)))... {}
 	constexpr TupleImpl& operator=(const TupleImpl& t)
 	{
 		((static_cast<TupleLeaf<Is, Ts>*>(this)->Value = static_cast<const TupleLeaf<Is, Ts>&>(t).Value), ...);
@@ -248,6 +251,10 @@ template<size_t... Is, typename... Ts> struct INTRA_EMPTY_BASES TupleImpl<TIndex
 		return static_cast<TPropagateQualRef<TupleImplRef, z_D::TupleLeaf<I, TPackAt<I, Ts...>>>>(t).Value;
 	}
 };
+#if INTRA_CONSTEXPR_TEST
+static_assert(CCopyConstructible<TupleImpl<Intra::TIntSeq<unsigned long, 0>, int>>);
+static_assert(CCopyAssignable<TupleImpl<Intra::TIntSeq<unsigned long, 0>, int>>);
+#endif
 }
 
 

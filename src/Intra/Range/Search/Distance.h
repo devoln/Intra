@@ -1,17 +1,14 @@
 ﻿#pragma once
 
 #include "Intra/Core.h"
-#include "Intra/Range/Concepts.h"
+#include <Intra/Concepts.h>
 
 namespace Intra { INTRA_BEGIN
 /** Pops elements from ``from``, until it becomes equal to ``to`` or ``from`` becomes empty.
   As a result either from.Empty() or from == to.
   @return The number of popped elements.
 */
-template<typename R> Requires<
-	CRange<R> &&
-	!CConst<R>,
-size_t> DistanceAdvanceTo(R& from, const R& to)
+template<CRange R> requires (!CConst<R>) size_t DistanceAdvanceTo(R& from, const R& to)
 {
 	size_t result = 0;
 	if constexpr(CHasData<R>)
@@ -31,11 +28,9 @@ size_t> DistanceAdvanceTo(R& from, const R& to)
 
 /// How much elements must be popped from ``from``, to get range ``to`` or an empty range.
 /// @return The number of popped elements.
-template<typename R> Requires<
-	CAccessibleRange<R>,
-size_t> DistanceTo(R&& from, R&& to)
+template<CAccessibleRange R> size_t DistanceTo(R&& from, R&& to)
 {
-	auto fromCopy = Forward<R>(from);
-	return DistanceAdvanceTo(fromCopy, to);
+	auto fromCopy = INTRA_FWD(from);
+	return DistanceAdvanceTo(fromCopy, INTRA_FWD(to));
 }
 } INTRA_END

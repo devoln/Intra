@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Intra/Numeric/Integral.h>
 #include <Intra/Numeric/Exponential.h>
 #include <Intra/Numeric/LongArith.h>
 

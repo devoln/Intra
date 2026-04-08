@@ -25,12 +25,12 @@ public:
 		INTRA_PRECONDITION(Unicode::IsValidUnicode(src));
 		if constexpr(NullTerminated)
 		{
-			INTRA_PRECONDITION(src|Empty || src|Last == '\0');
+			INTRA_PRECONDITION(RangeOf(src).Empty() || RangeOf(src).Last() == '\0');
 			if(!mRawUnicodeUnits.Empty()) mRawUnicodeUnits.PopLast();
 		}
 	}
 
-	INTRA_FORCEINLINE GenericStringView(const GenericStringView<CodeUnit, false>& rhs) requires NullTerminated:
+	INTRA_FORCEINLINE constexpr GenericStringView(const GenericStringView<CodeUnit, false>& rhs) requires NullTerminated:
 		mRawUnicodeUnits(rhs.mRawUnicodeUnits) {}
 
 	template<CConvertibleToSpan L> requires CSame<CodeUnit, TArrayListValue<L>>
@@ -63,7 +63,7 @@ public:
 	{
 		if constexpr(CSameSize<CodeUnit, char32_t>) return mRawUnicodeUnits.PopFirst();
 		else if constexpr(CSameSize<CodeUnit, char>)
-			mRawUnicodeUnits|PopFirstExactly(1 + Unicode::Utf8ContinuationBytes(mRawUnicodeUnits.First()));
+			mRawUnicodeUnits|PopFirstExactly(1 + Unicode::Utf8ContinuationBytes(uint8(mRawUnicodeUnits.First())));
 		else if constexpr(CSameSize<CodeUnit, char16_t>)
 			mRawUnicodeUnits|PopFirstExactly(1 + Unicode::IsUtf16LeadingSurrogate(mRawUnicodeUnits.First()));
 	}

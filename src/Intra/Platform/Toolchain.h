@@ -65,10 +65,10 @@ union epoll_data;
 struct epoll_event;
 #endif
 
-struct timeval;
-struct timespec;
-struct timezone;
-struct tm;
+// Forward declare all structs expected to be defined in system headers
+#ifndef _WIN32
+
+#endif
 
 #ifdef _WIN32
 using time_t = long long;
@@ -81,9 +81,19 @@ struct dirent;
 struct DIR;
 struct regex_t;
 struct regmatch_t;
+struct timeval;
+struct timespec;
+struct timezone;
+struct tm;
+struct Dl_info;
+struct stat;
+#if INTRA_TARGET_IS_BSD
+struct kevent;
 #ifdef __FreeBSD__
 struct sf_hdtr;
 #endif
+#endif
+
 #endif
 struct sockaddr;
 struct pollfd;
@@ -105,7 +115,7 @@ struct addrinfo;
 #include <dirent.h>
 #endif
 
-#if defined(_WIN32) || defined(__linux__) && (defined(__amd64__) || defined(__i386__) || defined(__aarch64__) || defined(__arm__) || defined(__mips__))
+#if defined(_WIN32) || defined(__linux__) && (defined(__amd64__) || defined(__i386__) || defined(__aarch64__) || defined(__arm__) || defined(__mips__)) || defined(__APPLE__)
 #define INTRAZ_D_TOOLCHAIN_DECLARE_PTHREAD
 
 #ifdef _WIN32
@@ -126,7 +136,7 @@ struct pthread_attr_t;
 using pthread_mutexattr_t = long;
 using pthread_condattr_t = long;
 using pthread_rwlockattr_t = long;
-#else // GLIBC
+#elif defined(__linux__) // GLIBC
 using pthread_t = unsigned long;
 // TODO: to avoid conflicts when building with musl headers, we should detect them and use struct instead of union
 union pthread_mutex_t;
@@ -136,12 +146,19 @@ union pthread_attr_t;
 union pthread_mutexattr_t;
 union pthread_condattr_t;
 union pthread_rwlockattr_t;
+#else
+typedef struct _opaque_pthread_t* pthread_t;
+typedef struct _opaque_pthread_mutex_t pthread_mutex_t;
+typedef struct _opaque_pthread_cond_t pthread_cond_t;
+typedef struct _opaque_pthread_rwlock_t pthread_rwlock_t;
+typedef struct _opaque_pthread_attr_t pthread_attr_t;
+typedef struct _opaque_pthread_mutexattr_t pthread_mutexattr_t;
+typedef struct _opaque_pthread_condattr_t pthread_condattr_t;
+typedef struct _opaque_pthread_rwlockattr_t pthread_rwlockattr_t;
 #endif
 #else
 #include <pthread.h>
 #endif
-
-
 namespace Intra::z_D { extern "C" {
 #if defined(_MSC_VER) && !defined(__clang__)
 using va_list = char*;
@@ -150,13 +167,13 @@ void __cdecl __va_start(va_list*, ...);
 #define INTRAZ_D_APALIGN(t, ap) ((va_list(0) - (ap)) & (alignof(t) - 1))
 
 #ifdef _M_X64
-#define INTRAZ_D_VA_START(ap, v) __va_start(&ap, v)
+#define INTRAZ_D_VA_START(ap, v) ::Intra::z_D::__va_start(&ap, v)
 #define INTRAZ_D_VA_ARG(ap, t) ((sizeof(t) > 8 || (sizeof(t) & (sizeof(t) - 1)))? **(t**)((ap += 8) - 8):  *(t*)((ap += 8) - 8))
 #elif defined(_M_ARM64)
-#define INTRAZ_D_VA_START(ap, v) __va_start(&ap, __builtin_addressof(v), INTRAZ_D_SLOTSIZEOF(v), alignof(v), __builtin_addressof(v))
+#define INTRAZ_D_VA_START(ap, v) ::Intra::z_D::__va_start(&ap, __builtin_addressof(v), INTRAZ_D_SLOTSIZEOF(v), alignof(v), __builtin_addressof(v))
 #define INTRAZ_D_VA_ARG(ap, t) (sizeof(t) > 16? **(t**)((ap += 8) - 8):  *(t*)((ap += INTRAZ_D_SLOTSIZEOF(t) + INTRAZ_D_APALIGN(t, ap)) - INTRAZ_D_SLOTSIZEOF(t)))
 #elif defined(_M_ARM)
-#define INTRAZ_D_VA_START(ap, v) __va_start(&ap, __builtin_addressof(v), INTRAZ_D_SLOTSIZEOF(v), __builtin_addressof(v))
+#define INTRAZ_D_VA_START(ap, v) ::Intra::z_D::__va_start(&ap, __builtin_addressof(v), INTRAZ_D_SLOTSIZEOF(v), __builtin_addressof(v))
 #define INTRAZ_D_VA_ARG(ap, t) (*(t*)((ap += INTRAZ_D_SLOTSIZEOF(t) + INTRAZ_D_APALIGN(t, ap)) - INTRAZ_D_SLOTSIZEOF(t)))
 #elif defined(_M_IX86)
 #define INTRAZ_D_VA_START(ap, v) ap = va_list(__builtin_addressof(v)) + INTRAZ_D_SLOTSIZEOF(v)
@@ -278,7 +295,7 @@ using in_addr_t = int;
 
 struct timeval {long tv_sec, tv_usec;};
 struct timespec {time_t tv_sec; long tv_nsec;};
-struct timezone {int tz_minuteswest, tz_dsttime;};
+struct timezone_ {int tz_minuteswest, tz_dsttime;};
 struct tm {int tm_sec, tm_min, tm_hour, tm_mday, tm_mon, tm_year, tm_wday, tm_yday, tm_isdst;};
 
 struct pollfd {SOCKET fd; short events, revents;};
@@ -306,10 +323,11 @@ INTRA_WINFUNC(const char*) inet_ntop(int family, const void* addr, char* stringB
 INTRA_WINFUNC(int) inet_pton(int family, const char* addrString, void* outAddrBuf);
 
 #ifdef INTRAZ_D_TOOLCHAIN_DECLARE_PTHREAD
-constexpr int archValues(int win64, int win32, int android64, int android32, int linuxArm64, int linuxX64Mips64, int linuxX86Mips32Arm32)
+constexpr int archValues(int win64, int win32, int android64, int android32, int linuxArm64, int linuxX64Mips64, int linuxX86Mips32Arm32, int apple64)
 {
     return Config::TargetOS == Config::OperatingSystem::Windows? sizeof(void*) == 8? win64: win32:
         Config::TargetOS == Config::OperatingSystem::Android? sizeof(void*) == 8? android64: android32:
+        Config::TargetOS == Config::OperatingSystem::MacOS || Config::TargetOS == Config::OperatingSystem::iOS? apple64:
         Config::TargetOS == Config::OperatingSystem::Linux?
 #if defined(__aarch64__)
         linuxArm64:
@@ -324,12 +342,13 @@ constexpr int archValues(int win64, int win32, int android64, int android32, int
 }
 #define INTRAZ_D_DEFINE_STRUCT(T, ...) struct alignas(size_t) T {int32 priv[archValues(__VA_ARGS__) / 4];}
 
-INTRAZ_D_DEFINE_STRUCT(pthread_attr_t, 32, 16, 56, 24, 64, 56, 36);
-INTRAZ_D_DEFINE_STRUCT(pthread_mutex_t, 8, 4, 40, 4, 48, 40, 24);
-INTRAZ_D_DEFINE_STRUCT(pthread_mutexattr_t, 4, 4, 8, 4, 8, 4, 4);
-INTRAZ_D_DEFINE_STRUCT(pthread_cond_t, 8, 4, 48, 4, 48, 48, 48);
-INTRAZ_D_DEFINE_STRUCT(pthread_condattr_t, 4, 4, 8, 4, 8, 4, 4);
-INTRAZ_D_DEFINE_STRUCT(pthread_rwlock_t, 8, 4, 56, 40, 56, 56, 32);
+INTRAZ_D_DEFINE_STRUCT(pthread_attr_t, 32, 16, 56, 24, 64, 56, 36, 64);
+INTRAZ_D_DEFINE_STRUCT(pthread_mutex_t, 8, 4, 40, 4, 48, 40, 24, 64);
+INTRAZ_D_DEFINE_STRUCT(pthread_mutexattr_t, 4, 4, 8, 4, 8, 4, 4, 16);
+INTRAZ_D_DEFINE_STRUCT(pthread_cond_t, 8, 4, 48, 4, 48, 48, 48, 48);
+INTRAZ_D_DEFINE_STRUCT(pthread_condattr_t, 4, 4, 8, 4, 8, 4, 4, 16);
+INTRAZ_D_DEFINE_STRUCT(pthread_rwlock_t, 8, 4, 56, 40, 56, 56, 32, 200);
+INTRAZ_D_DEFINE_STRUCT(pthread_rwlockattr_t, 4, 4, 8, 4, 8, 4, 4, 24); // BUG: probably incorrect on all OS except macOS!
 
 #if defined(__ANDROID__) && (!defined(__LP64__) || __ANDROID_API__ >= 28)
 #define INTRAZ_D_HAS_pthread_cond_timedwait_monotonic_np
@@ -656,11 +675,12 @@ INTRA_WINFUNC(int) WSAPoll(pollfd fds[], unsigned long nfds, int timeoutMs);
 INTRA_FORCEINLINE int poll(pollfd fds[], unsigned nfds, int timeoutMs) {return WSAPoll(fds, nfds, timeoutMs);}
 #endif
 #else
-tm* gmtime(const time_t* time);
-tm* localtime(const time_t* time);
-int gettimeofday(timeval* tv, timezone* tz);
-int settimeofday(const timeval* tv, const timezone* tz);
-int clock_gettime(int clockid, timespec* tp);
+::tm* gmtime(const time_t* time);
+::tm* localtime(const time_t* time);
+int gettimeofday(::timeval* tv, struct ::timezone* tz);
+int settimeofday(const ::timeval* tv, const struct ::timezone* tz);
+//int clock_gettime(int clockid, ::timespec* tp);
+extern "C++" int clock_gettime(int clockid, ::timespec* tp) __asm__("clock_gettime");
 int nanosleep(const ::timespec* req, ::timespec* rem);
 int vsnprintf(char* dstBuf, size_t bufSize, const char* format, va_list argList);
 void* memmem(const void* haystack, size_t haystackLen, const void* needle, size_t needleLen);
@@ -885,7 +905,7 @@ size_t regerror(int errcode, const ::regex_t* preg, char* errbuf, size_t errbuf_
 int regexec(const ::regex_t* preg, const char* string, size_t nmatch, ::regmatch_t* pmatch, int eflags);
 void regfree(::regex_t* preg);
 
-int kill(pid_t pid int sig);
+int kill(pid_t pid, int sig);
 
 #ifdef __linux__
 // including Android
@@ -1066,7 +1086,7 @@ inline int strerror_s(char* dstBuf, size_t bufsz, int errnum)
 INTRA_CRTFUNC(int) strerror_s(char* dstBuf, size_t bufsz, int errnum);
 #else
 int strerror_r(int errnum, char* dstBuf, size_t bufsz);
-INTRA_FORCEINLINE int strerror_s(char* dstBuf, size_t bufsz, int errnum) {return strerror_r(errnum, n, dstBuf);}
+INTRA_FORCEINLINE int strerror_s(char* dstBuf, size_t bufsz, int errnum) {return strerror_r(errnum, dstBuf, bufsz);}
 #endif
 
 // Safe access to errno

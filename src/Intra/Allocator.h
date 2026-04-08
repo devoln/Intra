@@ -21,30 +21,26 @@ template<class T> constexpr void DefaultPostRelocateFix(T* newBaseAddress, [[may
 	}
 }
 
-[[nodiscard]] constexpr size_t AlignDown(size_t value, size_t alignment)
-{
-	INTRA_PRECONDITION(IsPowerOf<2>(alignment));
-	return value & (~alignment + 1);
-}
-
-template<typename T> [[nodiscard]] INTRA_FORCEINLINE constexpr T* AlignDown(size_t alignmentInBytes, T* value)
-{
-	if(IsConstantEvaluated()) return value;
-	return reinterpret_cast<T*>(AlignUp(reinterpret_cast<size_t>(value), alignmentInBytes));
-}
-
 INTRA_DEFINE_FUNCTOR(AlignUp)<typename T>(size_t alignmentInBytes, T value) requires CBasicIntegral<T> || CBasicPointer<T>
 {
 	INTRA_PRECONDITION(IsPowerOf<2>(alignmentInBytes));
-	if constexpr(CBasicPointer<T>) if(IsConstantEvaluated()) return value;
-	return T((TUnsignedIntOfSizeAtLeast<sizeof(T)>(value) + alignmentInBytes - 1) & (~alignmentInBytes + 1));
+	if constexpr(CBasicPointer<T>)
+	{
+		if(IsConstantEvaluated()) return value;
+		else return reinterpret_cast<T>((TUnsignedIntOfSizeAtLeast<sizeof(T)>(reinterpret_cast<size_t>(value)) + alignmentInBytes - 1) & (~alignmentInBytes + 1));
+	}
+	else return T((TUnsignedIntOfSizeAtLeast<sizeof(T)>(value) + alignmentInBytes - 1) & (~alignmentInBytes + 1));
 };
 
 INTRA_DEFINE_FUNCTOR(AlignDown)<typename T>(size_t alignmentInBytes, T value) requires CBasicIntegral<T> || CBasicPointer<T>
 {
 	INTRA_PRECONDITION(IsPowerOf<2>(alignmentInBytes));
-	if constexpr(CBasicPointer<T>) if(IsConstantEvaluated()) return value;
-	return T(TUnsignedIntOfSizeAtLeast<sizeof(T)>(value) & (~alignmentInBytes + 1));
+	if constexpr(CBasicPointer<T>)
+	{
+		if(IsConstantEvaluated()) return value;
+		else return reinterpret_cast<T>(TUnsignedIntOfSizeAtLeast<sizeof(T)>(reinterpret_cast<size_t>(value)) & (~alignmentInBytes + 1));
+	}
+	else return T(TUnsignedIntOfSizeAtLeast<sizeof(T)>(value) & (~alignmentInBytes + 1));
 };
 
 INTRA_DEFINE_FUNCTOR(IsAligned)<typename T>(size_t alignment, T value) requires CBasicIntegral<T> || CBasicPointer<T> {
@@ -54,7 +50,7 @@ INTRA_DEFINE_FUNCTOR(IsAligned)<typename T>(size_t alignment, T value) requires 
 
 
 // All allocators should be accessed through these external type-safe functions.
-template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator auto& rawAllocator, AllocParams<T> params)
+template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CAllocator auto& rawAllocator, AllocParams<T> params)
 {
 	if constexpr(CTriviallyDestructible<T> && CMoveAssignable<T>)
 		if(IsConstantEvaluated()) // constexpr evaluation ignores allocator and just uses new[]
@@ -62,18 +58,19 @@ template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator 
 			auto res = params.NumElements? new T[params.NumElements]{}: nullptr;
 			if(params.ExistingMemoryBlock)
 			{
+				auto prevAllocation = params.ExistingMemoryBlock.Begin;
 				for(size_t i = 0; i < params.NumPrevElementsToKeep; i++)
 					res[i] = INTRA_MOVE(prevAllocation[i]);
 				delete[] prevAllocation;
 			}
-			return res;
+			return Span(Unsafe, res, res + params.NumElements);
 		}
 	
-	constexpr auto customRelocateFunc = [] -> RawAllocParams::TCustomRelocateSignature* {
-		if constexpr(CDefined<FPostRelocateFix<T>>) return nullptr; // if T has a defined post-relocation fix or requires no fix, allow allocator to use memcpy
+	constexpr auto customRelocateFunc = []() -> RawAllocParams::TCustomRelocateSignature* {
+		if constexpr(CDefined<decltype(FPostRelocateFix<T>)>) return nullptr; // if T has a defined post-relocation fix or requires no fix, allow allocator to use memcpy
 		return [](char* dst, char* src, size_t numBytes) {
 			for(size_t i = 0, n = numBytes / sizeof(T); i < n; i++)
-				*static_cast<T*>(dst)[i] = INTRA_MOVE(*static_cast<T*>(src)[i]);
+				static_cast<T*>(dst)[i] = INTRA_MOVE(static_cast<T*>(src)[i]);
 		};
 	}();
 
@@ -88,7 +85,7 @@ template<typename T> INTRA_FORCEINLINE constexpr Span<T> Allocate(CRawAllocator 
 	}).Allocation;
 
 	const auto res = reinterpret_cast<const Span<T>&>(rawRes);
-	if constexpr(CDefined<FPostRelocateFix<T>> && FPostRelocateFix<T>) // apply a post-relocation fix if necessary
+	if constexpr(CDefined<decltype(FPostRelocateFix<T>)> && FPostRelocateFix<T>) // apply a post-relocation fix if necessary
 		if(res.Begin != params.ExistingMemoryBlock.Begin) FPostRelocateFix<T>(res.Begin, params.ExistingMemoryBlock.Begin, params.NumPrevElementsToKeep);
 
 	if constexpr(!CTriviallyConstructible<T>) if(params.ValueInitialize)
@@ -107,8 +104,8 @@ template<typename T> INTRA_FORCEINLINE constexpr void Free(CAllocator auto& allo
 
 template<typename T> INTRA_FORCEINLINE constexpr size_t AllocationCapacity(CAllocator auto& allocator, T* ptr)
 {
-	size_t numBytes = AllocatorCmdGetSize;
-	allocator(RawAllocParams::MakeCommand(RawAllocParams::AllocatorCmdGetSize, ptr));
+	const auto res = allocator(RawAllocParams::MakeCommand(RawAllocParams::Cmd::GetSize, ptr));
+	return res.RawValue[0] / sizeof(T);
 }
 
 
@@ -135,7 +132,7 @@ template<bool ThreadSafe> struct LinearAllocatorLogic
 	{return tryReallocate<true, false, true>(sizeInBytes, bufferSize, 0, 0, alignment);}
 
 	[[nodiscard]] constexpr Optional<size_t> TryReallocate(size_t sizeInBytes, size_t bufferSize, size_t prevBegin, size_t prevEnd, size_t alignment)
-	{return tryReallocate<true, true, true>(sizeInBytes, bufferSize, prevBegin, prevBegin, alignment);}
+	{return tryReallocate<true, true, true>(sizeInBytes, bufferSize, prevBegin, prevEnd, alignment);}
 
 	[[nodiscard]] constexpr Span<char> Allocate(size_t sizeInBytes, size_t alignment, Span<char> buffer)
 	{return buffer|DropExactly(Allocate(sizeInBytes, Length(buffer), alignment))|TakeExactly(sizeInBytes);}
@@ -152,7 +149,7 @@ private:
 	template<bool Align, bool Realloc, bool Limit> [[nodiscard]] constexpr Optional<size_t> tryReallocate(
 		size_t size, size_t bufferSize, size_t prevBegin, size_t prevEnd, size_t alignment)
 	{
-		size_t prevHead = Head.Get<MemoryOrder::Relaxed>(), newHead = 0;
+		size_t prevHead = Head.template Get<MemoryOrder::Relaxed>(), newHead = 0;
 		do
 		{
 			if(Realloc && prevHead == prevEnd)
@@ -161,7 +158,7 @@ private:
 			else newHead = prevHead + size;
 			if constexpr(Limit) if(newHead > bufferSize) return {};
 			if constexpr(!ThreadSafe) Head.Set(newHead);
-		} while(ThreadSafe && Head.WeakCompareGetSet<MemoryOrder::Release, MemoryOrder::Relaxed>(prevHead, newHead) != prevHead);
+		} while(ThreadSafe && Head.template WeakCompareGetSet<MemoryOrder::Release, MemoryOrder::Relaxed>(prevHead, newHead) != prevHead);
 		return prevHead;
 	}
 };
@@ -192,7 +189,7 @@ struct BaseCheckedID
 	INTRA_FORCEINLINE explicit operator bool() const {return SlotIndex != MaxValueOf<IndexT>;}
 protected:
 	IndexT SlotIndex = MaxValueOf<IndexT>;
-	INTRA_NO_UNIQUE_ADDRESS GenT Generation = []{if constexpr(CBasicIntegral<GenT>) return MaxValueOf<GenT>; else return {};};
+	INTRA_NO_UNIQUE_ADDRESS GenT Generation = []{if constexpr(CBasicIntegral<GenT>) return MaxValueOf<GenT>; else return GenT{};};
 };
 
 // Can be used to implement pool for Span or for any other CConvertibleToSpan: see GenericItemPool below
@@ -231,7 +228,7 @@ struct ItemPoolImpl
 	{
 		INTRA_PRECONDITION(!CanAllocate(oldBufferSize));
 		INTRA_PRECONDITION(newBuffer.Length() < MaxValueOf<IndexT>);
-		for(size_t i = oldBufferSize, n = newBuffer.size(); i < n; i++)
+		for(size_t i = size_t(oldBufferSize), n = size_t(newBuffer.Length()); i < n; i++)
 			newBuffer[i].NextFreeIndex = i + 1;
 		mFirstFreeItem = IndexT(oldBufferSize);
 	}
@@ -241,7 +238,7 @@ struct ItemPoolImpl
 	constexpr Optional<IndexT> AllocateIndex(Span<Item> buffer)
 	{
 		auto res = mFirstFreeItem;
-		mFirstFreeItem = buffer[index].NextFreeIndex;
+		mFirstFreeItem = buffer[res].NextFreeIndex;
 		return res;
 	}
 
@@ -278,12 +275,12 @@ private:
 	IndexT mFirstFreeItem = MaxValueOf<IndexT>;
 };
 
-template<typename T, typename GenT = TUndefined, CConvertibleToSpan B> struct GenericItemPool
+template<typename T, CConvertibleToSpan B, typename GenT = TUndefined>
+struct GenericItemPool
 {
-	using IndexT = typename ItemPoolImpl<T>::IndexT;
-	using ID = typename ItemPoolImpl<T>::ID;
-	using Item = typename ItemPoolImpl<T>::Item;
-	static_assert(CConvertibleToSpan<B<Item>>);
+	using IndexT = typename ItemPoolImpl<T, GenT>::IndexT;
+	using ID = typename ItemPoolImpl<T, GenT>::ID;
+	using Item = typename ItemPoolImpl<T, GenT>::Item;
 
 	GenericItemPool() = default;
 	GenericItemPool(GenericItemPool&&) = default;
@@ -293,7 +290,7 @@ template<typename T, typename GenT = TUndefined, CConvertibleToSpan B> struct Ge
 		reinterpret_cast<Item*>(uninitializedBuffer.Begin),
 		reinterpret_cast<Item*>(uninitializedBuffer.End))) {}
 
-	constexpr explicit GenericItemPool(Span<Item> unitializedBuffer) requires(!CResizableArrayContainer<B>):
+	constexpr explicit GenericItemPool(Span<Item> uninitializedBuffer) requires(!CResizableArrayContainer<B>):
 		mImpl(uninitializedBuffer), mBuffer(uninitializedBuffer) {}
 
 	// Use to grow the buffer to allow more allocations.
@@ -313,8 +310,8 @@ template<typename T, typename GenT = TUndefined, CConvertibleToSpan B> struct Ge
 		mBuffer = newBuffer;
 	}
 
-	[[nodiscard]] constexpr CanAllocate() const {return CResizableArrayContainer<B> || CanAllocateWithoutGrowing();}
-	[[nodiscard]] constexpr CanAllocateWithoutGrowing() const {return mImpl.CanAllocate(mBuffer.size());}
+	[[nodiscard]] constexpr bool CanAllocate() const {return CResizableArrayContainer<B> || CanAllocateWithoutGrowing();}
+	[[nodiscard]] constexpr bool CanAllocateWithoutGrowing() const {return mImpl.CanAllocate(mBuffer.size());}
 	constexpr IndexT AllocateIndex()
 	{
 		if constexpr(CResizableArrayContainer<B>) if(!CanAllocateWithoutGrowing()) grow();
@@ -336,13 +333,13 @@ template<typename T, typename GenT = TUndefined, CConvertibleToSpan B> struct Ge
 	[[nodiscard]] INTRA_FORCEINLINE constexpr bool IsValidID(ID id) const requires CDefined<GenT> {return mImpl.IsValidID(id, mBuffer);}
 
 private:
-	ItemPoolImpl<T> mImpl;
+	ItemPoolImpl<T, GenT> mImpl;
 	B mBuffer;
 	void grow() requires CResizableArrayContainer<B> {Resize(mBuffer.size() + mBuffer.size() / 2 + 1);}
 };
 
 template<typename T> INTRA_CLASS_ALIAS(ItemPool, GenericItemPool<T, Span<typename ItemPoolImpl<T>::Item>>);
-template<typename T> INTRA_CLASS_ALIAS(DynItemPool, GenericItemPool<T, ResizableArray<typename ItemPoolImpl<T>::Item>>);
+//template<typename T> INTRA_CLASS_ALIAS(DynItemPool, GenericItemPool<T, ResizableArray<typename ItemPoolImpl<T>::Item>>);
 
 template<typename T = void> struct FreeList
 {
@@ -357,8 +354,8 @@ template<typename T = void> struct FreeList
 	INTRA_NOINLINE static FreeList FromSpan(Span<uint8> buf, size_t elementSize = sizeof(Node), size_t alignment = alignof(Node))
 	{
 		INTRA_PRECONDITION(elementSize >= sizeof(Node));
-		uint8* bufPtr = AlignUp(buf.Begin, alignment);
-		elementSize = AlignUp(elementSize, alignment);
+		uint8* bufPtr = AlignUp(alignment, buf.Begin);
+		elementSize = AlignUp(alignment, elementSize);
 
 		const auto numElements = size_t(buf.End - bufPtr) / elementSize;
 		FreeList res = {};
@@ -380,8 +377,8 @@ template<typename T = void> struct FreeList
 	static FreeList FromSpan(Span<Node> buf)
 	{
 		return FromSpan(Span<uint8>(Unsafe,
-			reinterpret_cast<uint8*>(uninitializedBuffer.Begin),
-			reinterpret_cast<uint8*>(uninitializedBuffer.End)));
+			reinterpret_cast<uint8*>(buf.Begin),
+			reinterpret_cast<uint8*>(buf.End)));
 	}
 
 	INTRA_FORCEINLINE constexpr bool CanAllocate() const {return FirstFreeItem != nullptr;}

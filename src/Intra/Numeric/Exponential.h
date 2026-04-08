@@ -2,6 +2,7 @@
 
 #include <Intra/Core.h>
 #include <Intra/Numeric/Bits.h>
+#include <Intra/Numeric/Math.h>
 
 namespace Intra { INTRA_BEGIN
 
