@@ -25,6 +25,11 @@ Demos/UnitTests/UnitTests
 logs.html
 *.map
 /Build
+build/
+build-native/
+build-wasm/
+dist/
+gmon.out
 *.vcxproj.user
 *.psess
 *.vspx
@@ -82,3 +87,10 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+
+# Local build output and analysis scripts (not tracked)
+# `web/` is assembled by scripts/build-wasm.sh + scripts/build-web.js for the
+# preview/deploy runs; not part of the source tree.
+#
+/scripts/
+/web/
