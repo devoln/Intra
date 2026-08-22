@@ -44,7 +44,9 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 #if(INTRA_SIMD_SUPPORT<=INTRA_SIMD_AVX2)
 
 #if(INTRA_SIMD_SUPPORT>INTRA_SIMD_NONE)
-#include <mmintrin.h>  //MMX
+#if(INTRA_PLATFORM_ARCH!=INTRA_PLATFORM_Emscripten)
+#include <mmintrin.h>  //MMX (Emscripten/wasm-SIMD has no MMX; the SSE compat headers don't need it)
+#endif
 #if(INTRA_SIMD_SUPPORT>INTRA_SIMD_MMX)
 #include <xmmintrin.h> //SSE
 #if(INTRA_SIMD_SUPPORT>INTRA_SIMD_SSE)

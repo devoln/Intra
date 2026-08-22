@@ -258,17 +258,20 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& g = Instruments["AcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
-			// Эталонная модель — один измеренный голос: амплитуды, фазы и
-			// затухание уже извлечены из полного SF2-семпла. Случайные голоса
-			// унисона не добавляем: их биения не подтверждены анализом семпла
-			// (стабильный участок — одна струна). Ударная атака задаётся
-			// измеренной кривой PianoEnvelopeCorrections (подъём из тишины +
-			// strike-выброс, см. PianoEnvelope.h); отдельный тональный
-			// «молоточек» (f0/2+f0) не подтверждён анализом семпла и убран —
-			// он добавлял звонкий тон вместо глухого удара.
-			return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1, 0.35f, 0.0f, 0.0f};
+			// Эталонная модель: амплитуды, фазы и затухание извлечены из
+			// полного SF2-семпла. 2 голоса унисона с расстройкой (биения).
+			// HammerLevel=1.0 — плоский, как в «хорошем» состоянии 0819;
+			// молоточек = тон f0/2+f0 (глухой удар), НЕ шум. Per-key
+			// HammerLevel/StereoPan в PianoRegions.h пока не используются
+			// молоточком (они остались от шумовой итерации — отброшены).
+			// StereoPan — per-key, измерен по разнице уровней L/R семплов
+			// SF2: constant-power pan даёт честное стерео.
+			return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.0f, 0.0f, 2, 0.35f, 1.0f, 0.0f};
 		}());
-		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.6f, 0, false, true});
+		// Без ADSR-огибающей: AdditiveSampler сам управляет концом ноты
+		// (фейд на mEndSamples). Без ADSR NoteSampler::GenerateStereo идёт по
+		// пути fillStereo → AdditiveSampler::GenerateStereo → честное стерео.
+		// g.Envelope = MakeWebEnvelope({0, 0, 1, 0.6f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["BrightAcousticPiano"];

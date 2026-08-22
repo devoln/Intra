@@ -94,7 +94,7 @@ size_t NoteSampler::GenerateMono(Span<float> ioDst)
 
 size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb)
 {
-	if(Modifiers.Empty() && !ADSR && GenericSamplers.Empty())
+	if(Modifiers.Empty() && !ADSR)
 	{
 		fillStereo(dstLeft, dstRight, dstReverb);
 		return dstLeft.Length();
@@ -107,50 +107,11 @@ size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Sp
 	float tempArr[1024] = {0};
 	while(!dstLeft.Empty() && !Empty())
 	{
-		// Временный буфер на стеке ограничен 1024 семплами: регион задачи
-		// может быть больше, поэтому обрабатываем по кускам.
 		auto tempDst = Take(tempArr, Math::Min<size_t>(1024, dstLeft.Length()));
 		FillZeros(tempDst);
 		fill(tempDst);
-#ifdef INTRA_PROBE_NAN
-		{
-			static int probeLines = 0;
-			if(probeLines < 20)
-			{
-				float mx = 0;
-				for(size_t pi = 0; pi < tempDst.Length(); pi++)
-				{
-					float a = tempDst[pi]; if(a < 0) a = -a; if(a > mx) mx = a;
-				}
-				if(mx > 1e20f)
-				{
-					fprintf(stderr, "[AFTER-FILL] amp=%.3e\n", double(mx));
-					probeLines++;
-				}
-			}
-		}
-#endif
 		sampleCount += tempDst.Length();
 		applyModifiers(tempDst);
-#ifdef INTRA_PROBE_NAN
-		{
-			static int probeLines2 = 0;
-			if(probeLines2 < 20)
-			{
-				float mx = 0;
-				for(size_t pi = 0; pi < tempDst.Length(); pi++)
-				{
-					float a = tempDst[pi]; if(a < 0) a = -a; if(a > mx) mx = a;
-				}
-				if(mx > 1e20f)
-				{
-					fprintf(stderr, "[AFTER-MOD] amp=%.3e\n", double(mx));
-					probeLines2++;
-				}
-			}
-		}
-#endif
-		// Панорама и запись в оба канала одним проходом (вместо двух AddMultiplied).
 		auto dstL = dstLeft.TakeAdvance(tempDst.Length());
 		auto dstR = dstRight.TakeAdvance(tempDst.Length());
 		for(size_t i = 0; i < tempDst.Length(); i++)
@@ -199,6 +160,11 @@ void NoteSampler::fillStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span
 	}
 	for(size_t i = 0; i < WhiteNoiseSamplers.Length(); i++)
 		WhiteNoiseSamplers[i].GenerateMono(ioDstLeft);
+	for(size_t i = 0; i < GenericSamplers.Length(); i++)
+	{
+		const size_t samplesProcessed = GenericSamplers[i]->GenerateStereo(ioDstLeft, ioDstRight, ioDstReverb);
+		if(samplesProcessed < ioDstLeft.Length()) GenericSamplers.RemoveUnordered(i--);
+	}
 }
 
 void NoteSampler::applyModifiers(Span<float> dst)

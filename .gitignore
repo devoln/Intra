@@ -89,8 +89,15 @@ Temporary Items
 .apdisk
 
 # Local build output and analysis scripts (not tracked)
-# `web/` is assembled by scripts/build-wasm.sh + scripts/build-web.js for the
-# preview/deploy runs; not part of the source tree.
+#
+# `web/` only carries hand-written source for the player
+# (web/index.html, web/synth.js). Every artifact produced by the build
+# pipeline lives in `web/generated/` (intra build wasm + js loaders) so
+# `web/*.wasm` cannot accidentally be re-tracked. The final assembled
+# deploy bundle lives in `dist/`.
+#
+# See docs/decisions/active/20260820-WebBuildArtifactsLayout.md.
 #
 /scripts/
-/web/
+/web/generated/
+/dist/

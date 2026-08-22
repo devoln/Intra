@@ -43,6 +43,11 @@ class AdditiveSampler: public IGenericSampler
 	// mDecay1/2/3/4 — шаги сегментов; переключение выполняется за O(count)
 	// на точной границе сэмпла.
 	FixedArray<float> mAmp, mDecay, mDecay1, mDecay2, mDecay3, mDecay4;
+// mDecayRelease[p] — шаг затухания при отпускании клавиши (демпфер):
+// быстрее обычного, с зависимостью от k (высокие гармоники гаснут
+// быстрее, как в реальном пианино). Применяется через dec[p] в
+// hot loop — никаких доп. вычислений на сэмпл.
+	FixedArray<float> mDecayRelease;
 // mAtk[p] — шаг per-partial разгона (0→1 за τ≈AttackT/k): фундаментал
 // нарастает медленно, верхние обертоны быстрее; в любом случае обнуляется
 // на DecayOnset, чтобы не тянуть амплитуду вверх во время затухания.
@@ -55,6 +60,14 @@ class AdditiveSampler: public IGenericSampler
 	float mHammerAmp;
 	float mHammerDecay;
 	size_t mHammerPos;
+	// «Стрик» — удар по фундаменталу (region root 75, зона D5–E5): короткий
+	// тон на f0 с τ≈15 мс. Измерено по семплу 75(L): H1 в первые 5–20 мс на
+	// +13 дБ выше steady и гаснет за ~35 мс — глухой низкий «тук», которого
+	// нет у соседних регионов (72/78: только +1..+5 дБ). Без него D5–E5
+	// звучат ярче/«писклявее» семпла.
+	FixedArray<float> mStrikeNoise;
+	float mStrikeAmp;
+	size_t mStrikePos;
 	size_t mCount;   // число осцилляторов (партиалы × струны, кратно 4)
 	float mVolume;
 	float mExpStep;  // глобальное экспоненциальное затухание (не используется)
@@ -76,6 +89,15 @@ class AdditiveSampler: public IGenericSampler
 	// фейд (иначе щелчок); после — тишина.
 	size_t mEndSamples;
 	size_t mFadeSamples;
+	// Стерео: панорамирование голосов унисона. При StereoPan > 0 голос 0
+	// (первая струна) панорамируется влево, голос 1 — вправо. Pan = 0
+	// означает моно (L=R). Измерено по разнице уровней L/R семплов SF2:
+	// tanh(dB/6) даёт мягкую S-кривую в диапазоне [-1; +1].
+	float mStereoPan;
+	float mStereoGainL;
+	float mStereoGainR;
+	// Число партиал на голос (для стерео-разделения голосов в GenerateStereo).
+	size_t mPartialsPerVoice;
 	// Correction curve measured from the AcousticPiano SF2 roots. It is enabled
 	// only for the AcousticPiano parameter set; other additive instruments keep
 	// their own envelopes unchanged.
@@ -84,6 +106,12 @@ class AdditiveSampler: public IGenericSampler
 	float mEnvelopeLevel;
 	size_t mEnvelopeSegment;
 	bool mUseEnvelopeCorrection;
+	// mDone = true когда нота полностью закончилась (mRendered >= mEndSamples):
+	// GenerateMono/GenerateStereo возвращают 0, и NoteSampler удаляет голос.
+	bool mDone;
+// mReleased = true после NoteRelease(): dec[p] уже переключён на
+// mDecayRelease, mEndSamples не используется для fade.
+	bool mReleased;
 
 public:
 	static const size_t mBlockSize = 512;
@@ -129,36 +157,42 @@ public:
 			size_t n = Math::Min(mBlockSize, numSamples);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
-			if(!mDecayStarted && mRendered >= mDecayOnsetSamples)
+			// При release (демпфере) эти переключения пропускаются — dec[p]
+			// уже установлен на mDecayRelease в NoteRelease().
+			if(!mReleased && !mDecayStarted && mRendered >= mDecayOnsetSamples)
 			{
 				float* dec1 = mDecay1.Data();
 				for(size_t p = 0; p < count; p++) { dec[p] = dec1[p]; atk[p] = 0.0f; }
 				mDecayStarted = true;
 			}
-			if(!mSegSwitched && mRendered >= mSegSamples)
+			if(!mReleased && !mSegSwitched && mRendered >= mSegSamples)
 			{
 				float* dec2 = mDecay2.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec2[p];
 				mSegSwitched = true;
 			}
-			if(!mSegSwitched2 && mRendered >= mSegSamples2)
+			if(!mReleased && !mSegSwitched2 && mRendered >= mSegSamples2)
 			{
 				float* dec3 = mDecay3.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec3[p];
 				mSegSwitched2 = true;
 			}
-			if(!mSegSwitched3 && mRendered >= mSegSamples3)
+			if(!mReleased && !mSegSwitched3 && mRendered >= mSegSamples3)
 			{
 				float* dec4 = mDecay4.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec4[p];
 				mSegSwitched3 = true;
 			}
 			// Не пересекать ближайшую границу внутри блока: следующий проход
-			// применит новый шаг с точного сэмпла границы.
-			if(!mDecayStarted) n = Math::Min(n, mDecayOnsetSamples - mRendered);
-			else if(!mSegSwitched) n = Math::Min(n, mSegSamples - mRendered);
-			else if(!mSegSwitched2) n = Math::Min(n, mSegSamples2 - mRendered);
-			else if(!mSegSwitched3) n = Math::Min(n, mSegSamples3 - mRendered);
+			// применит новый шаг с точного сэмпла границы. При release — без
+			// границ (демпфер не переключается).
+			if(!mReleased)
+			{
+				if(!mDecayStarted) n = Math::Min(n, mDecayOnsetSamples - mRendered);
+				else if(!mSegSwitched) n = Math::Min(n, mSegSamples - mRendered);
+				else if(!mSegSwitched2) n = Math::Min(n, mSegSamples2 - mRendered);
+				else if(!mSegSwitched3) n = Math::Min(n, mSegSamples3 - mRendered);
+			}
 			if(n == 0) continue;
 			mRendered += n;
 			float* acc = mScratch.Data();
@@ -234,13 +268,20 @@ public:
 				}
 				// Молоточек добавляется ПОСЛЕ коррекции огибающей: кривая коррекции
 				// измерена по синусоидам (target/current по RMS), а удар — отдельный
-				// перкуссионный компонент (f0/2+f0), который не проходит через
-				// строковую огибающую. У подогнанного инструмента он выключен;
-				// у остальных добавляется поверх уже скорректированного сигнала.
+				// перкуссионный шумовой компонент (беспитичевый), который не
+				// проходит через строковую огибающую. У подогнанного инструмента он
+				// выключен; у остальных добавляется поверх уже скорректированного
+				// сигнала.
 				if(mHammerPos < mHammerNoise.Length() && mHammerAmp > 1e-5f)
 				{
 					s += mHammerNoise[mHammerPos++]*mHammerAmp;
 					mHammerAmp *= mHammerDecay;
+				}
+				// Стрик по фундаменталу (только region root 75) — после молоточка,
+				// поверх скорректированного сигнала, как и молоточек.
+				if(mStrikePos < mStrikeNoise.Length() && mStrikeAmp > 1e-5f)
+				{
+					s += mStrikeNoise[mStrikePos++]*mStrikeAmp;
 				}
 				// Конец семпла: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
@@ -256,10 +297,27 @@ public:
 			numSamples -= n;
 		}
 		mVolume = vol;
+		if(mEndSamples && mRendered >= mEndSamples) mDone = true;
+		else if(mReleased)
+		{
+			// При release (демпфере) нота заканчивается, когда все amp ~ 0.
+			// Проверяем max |amp| только в конце блока.
+			float maxAmp = 0.0f;
+			for(size_t p = 0; p < count; p++)
+			{
+				const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+				if(a > maxAmp) maxAmp = a;
+			}
+			// Порог −60 дБ (−100 дБ раньше): ниже уже не слышно в любой смеси,
+			// а голос с τ=280 мс добирался бы до 1e-5 ~2.6 с — рендер после
+			// release тормозил в разы (живые «хвосты» копились на каждой ноте).
+			if(maxAmp < 1e-3f) mDone = true;
+		}
 	}
 
 	size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb) override;
+	void NoteRelease() override;
 };
 
 /// Фабрика аддитивного фортепиано.

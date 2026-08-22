@@ -69,11 +69,26 @@ if(UNITY_BUILD)
 enable_unity_build(Intra INTRA_SOURCES)
 endif()
 
+# In size-optimised builds the whole library compiles at -Oz/-Os, which badly
+# hurts library code that runs during a render: the wave-table FFT
+# (Audio/AudioProcessing.cpp) showed up as ~35% of render time at -Os native,
+# and the MIDI parser lives here too. Allow overriding the library's own level
+# (e.g. -Os) while the synth's cold code stays at -Oz.
 option(BUILD_DYNAMIC_LIB "Build a dynamic library instead of static." OFF)
 if(BUILD_DYNAMIC_LIB)
 add_library(Intra SHARED ${INTRA_SOURCES} ${INTRA_HEADERS})
 else()
 add_library(Intra STATIC ${INTRA_SOURCES} ${INTRA_HEADERS})
+endif()
+
+# In size-optimised builds the whole library compiles at -Oz/-Os, which badly
+# hurts library code that runs during a render: the wave-table FFT
+# (Audio/AudioProcessing.cpp) showed up as ~35% of render time at -Os native,
+# and the MIDI parser lives here too. Allow overriding the library's own level
+# (e.g. -Os) while the synth's cold code stays at -Oz.
+set(INTRA_SIZE_LIB_LEVEL "" CACHE STRING "Optimisation level override for the Intra library in size builds (e.g. -Os)")
+if(NOT INTRA_SIZE_LIB_LEVEL STREQUAL "")
+    target_compile_options(Intra PRIVATE "${INTRA_SIZE_LIB_LEVEL}")
 endif()
 
 if(ENABLE_AUDIO_MODULE)

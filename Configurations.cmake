@@ -9,16 +9,23 @@ option(ENABLE_SSE OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_COMPILER_IS_GNUCXX)
     set(ALL_WARNINGS "-Wall -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor")
     set(ALL_WARNINGS "${ALL_WARNINGS} -Wold-style-cast -Wconversion -Wsign-conversion -Winit-self -Wunreachable-code -pedantic")
+    # Pre-existing Intra library noise (legacy Cyrillic comments, deprecated
+    # compiler builtins/literal syntax, fast-math NaN helpers): not synth bugs.
+    # These are clang-only flags; GCC uses different spellings and would emit
+    # "unrecognized option" notes.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set(ALL_WARNINGS "${ALL_WARNINGS} -Wno-invalid-utf8 -Wno-deprecated-builtins -Wno-deprecated-literal-operator -Wno-nan-infinity-disabled -Wno-deprecated-copy-with-user-provided-copy -Wno-nontrivial-memcall -Wno-deprecated-copy -Wno-unused-but-set-variable -Wno-enum-float-conversion -Wno-variadic-macro-arguments-omitted -Wno-implicit-int-float-conversion -Wno-implicit-const-int-float-conversion")
+    endif()
     set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11 ${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
 
-    if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles")
+    if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
     endif()
 	
 	if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	
 	elif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} ${ALL_WARNINGS} --memory-init-file 0 -s NO_EXIT_RUNTIME=1 -s NO_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" -s EXPORTED_FUNCTIONS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" ")
+		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} ${ALL_WARNINGS} -s NO_EXIT_RUNTIME=1 -s NO_FILESYSTEM=1")
 	else()
 		set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -D_FILE_OFFSET_BITS=64")
 	endif()
@@ -89,11 +96,11 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS}")
 	
     if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 --llvm-lto 3 -s ELIMINATE_DUPLICATE_FUNCTIONS=1 --closure 2 --memory-init-file 0")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os --llvm-lto 3 -s ELIMINATE_DUPLICATE_FUNCTIONS=1 --closure 1 --memory-init-file 0")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g4")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -s ASSERTIONS=2 -g4 -s SAFE_HEAP=1 -s DEMANGLE_SUPPORT=1")
-		set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} -O2 --llvm-lto 1")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -s ASSERTIONS=2 -g4 -s DEMANGLE_SUPPORT=1")
+		set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} -O2")
 	else()
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
@@ -136,6 +143,25 @@ elseif(MSVC)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MAP")
     endif()
 	
+endif()
+
+# Size-optimised builds: append -Oz (Emscripten) / -Os (native) as the LAST
+# -O flag so it wins over the -O2/-O3/-Ofast set above. Applies to every project
+# that includes this file (Intra library, demos).
+if(INTRA_SIZE_OPT)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        set(_size_lto "")
+        if(INTRA_SIZE_LTO)
+            set(_size_lto " -flto")
+        endif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Oz${_size_lto}")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Oz${_size_lto}")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Oz${_size_lto}")
+    else()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
+        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
+    endif()
 endif()
 
 function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
