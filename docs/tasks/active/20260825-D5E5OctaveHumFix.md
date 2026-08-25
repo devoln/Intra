@@ -190,6 +190,45 @@ Session-32's refactor dropped the per-key attack/sustain normalization and the b
 
 User: "И все равно щелчок". Diagnosis: **the preview never served the Session-6 build.** The preview command is `node scripts/build-web.js && node scripts/serve.js` and serves `dist/`; `build-wasm.sh` only stages to `web/generated/`. `dist/IntraSynth.wasm` was last assembled at 17:34 — from the Session-5 (pre-fix, raw-buffer) WASM — so both the "щёлкает опять" and the "всё равно щелчок" feedback was about the same old clicking build. Fix: run `node scripts/build-web.js` to re-assemble `dist/` from the current `web/generated/` (md5-identical, verified), re-ran the full piece render from the dist artifact (47.4×, peak 0.52). **Lesson: after `build-wasm.sh`, the preview needs `build-web.js` (or a preview restart) to pick up the new WASM.**
 
+## Session 7 (2026-08-25): the "двойной" (doubled) timbre — onset balance of region 75
+
+User (after the Session-6 commit): D#5–E5 sounds "как будто двойной" — like the note is doubled; asks what was tried with H1/H2 before (the answer: Session 1 removed the unison comb filter that made h2 +10 dB hot, Session 3 re-fit λ2 so the 1.2–3.0 s sustain matches, Session 4 tried an h1 strike overshoot that clicked and was reverted — but nobody ever touched the **initial balance** of the region).
+
+### Measurement (per-harmonic onset probe, key 75, D#5)
+
+| window | h2 ours/sample | h3 | h4 | h5 | h6 |
+|---|---|---|---|---|---|
+| 0–10 ms | −1.3/−9.9 | −6.2/−15.9 | −3.7/−12.7 | −6.4/−13.9 | −14.1/−22.8 |
+| 10–30 ms | −1.6/−6.9 | −4.5/−7.0 | −3.4/−10.5 | −5.5/−9.9 | −13.2/−19.6 |
+| 300–1000 ms | −2.4/−7.4 | −15.9/−17.1 | −15.4/−9.1 | −22.7/−14.2 | −37.8/−31.5 |
+| 1.2–3.0 s | −7.4 ✓ | ✓ | ✓ | ✓ | ✓ |
+
+### Root cause
+Region-75 table amps put h2 only **−1.5 dB below h1** (2440 vs 2893). The sample's h2/h1 is ≈ −7…−10 dB **from t=0** (flat through the whole note); our decay differentials only "caught up" to −7.4 dB by ~1.2 s. So for the first ~1.5 s of every D5–E5 note the octave played 5–8 dB too loud — the "двойной" sound. h4–h6 (the 2.5–4.5 kHz squeak band) oscillated around the sample's flat line: +9 dB at onset, −6…−8 dB at 0.5 s.
+
+### Fix (PianoRegions.h, region 75 only)
+Set the initial balance to the sample's measured sustain levels and give h1–h6 **identical decay rates** (h1's D1/D2/D3), so the ratios are flat from t=0 and the 1.2–3.0 s sustain is preserved exactly by construction:
+
+| partial | amp old→new | D1/D2/D3 | hK/h1 target |
+|---|---|---|---|
+| h1 | 2893 (unchanged) | 7485/6640/3284 | 0 dB (ref) |
+| h2 | 2440→1234 | 6520/7726/2987→7485/6640/3284 | −7.4 dB |
+| h3 | 1609→404 | 17837/7394/6114→7485/6640/3284 | −17.1 dB |
+| h4 | 1877→1015 | 18877/4316/3227→7485/6640/3284 | −9.1 dB |
+| h5 | 1471→564 | 19405/6067/3445→7485/6640/3284 | −14.2 dB |
+| h6 | 605→77 | 21538/10803/4000→7485/6640/3284 | −31.5 dB |
+
+h7/h8 untouched (Session-2 fixes). The attack-buffer per-key normalization self-adjusts (naturalScale/peakS), so the attack RMS stays calibrated while the balance shifts toward h1.
+
+### Verified
+- Keys 74/75/76 (whole island): h2 −7.3…−7.9, h3 −16…−18.7, h4 −8.8…−9.4, h5 −13.5…−14.8, h6 −29…−32 dB in 10–100 ms — flat, matching the sample's sustain levels from the first milliseconds.
+- Sustain (1.2–3.0 s) unchanged: equal decay rates ⇒ ratios constant ⇒ the previously verified match is preserved exactly.
+- Perf: full Chopin 47.4× realtime, peak 0.52 (no clipping). Onset click-free (s0 = 0, max|diff| 0.018). Smoke test passed.
+- dist/ re-assembled (md5-identical to web/generated) so the preview serves the new WASM.
+
+### Known remaining difference
+- 0–10 ms: our h2/h1 ≈ −6.7 vs sample −9.9 — the sample's **h1 strike** (+13 dB hammer thump, settling by ~30–50 ms) is still not replicated (Session 4's attempt clicked and was reverted). Candidate follow-up: a *ramped* h1 strike (rise over 2–4 ms, settle τ ≈ 15 ms).
+
 ## Changed files
 
 - `intrasynth/src/Intra/Synth/AdditiveSampler.cpp` — remove the 0.9 ms unison phase delay (comb fix); decode `Decay4` with the D3 scale (5461.25) so `D4 = D3` is a no-op; contact-force attack (attack buffer, Tikhonov G, `driven` seeding); fix `driven` to exclude silent/padding lanes (perf gate); per-key attack/sustain normalization + bloom fade-in; cabinet «рокот» layer (4 body resonances, impactV).
