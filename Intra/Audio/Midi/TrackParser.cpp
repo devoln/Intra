@@ -40,6 +40,7 @@ void TrackParser::ProcessEvent(DeviceState& state, IDevice& device)
 		if(data0 == 7) state.Volumes[channel] = data1;
 		if(data0 == 0x0A) state.Pans[channel] = data1;
 		if(data0 == 0x7B) device.OnAllNotesOff(channel);
+		if(data0 == 64) device.OnSustain(channel, data1 >= 64);
 		return;
 	}
 	if(type == RawEvent::Type::ProgramChange)

@@ -53,6 +53,9 @@ public:
 	virtual void OnNoteOff(const NoteOff& noteOff) = 0;
 	virtual void OnPitchBend(const PitchBend& pitchBend) = 0;
 	virtual void OnAllNotesOff(byte channel) = 0;
+	/// Sustain-педаль (CC64): down==true — педаль нажата. Устройства, не
+	/// поддерживающие педаль, могут оставить реализацию по умолчанию (no-op).
+	virtual void OnSustain(byte channel, bool down) {}
 };
 
 }}}

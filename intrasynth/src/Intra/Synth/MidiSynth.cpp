@@ -234,7 +234,9 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 		auto& sampler = mNoteSamplers.Get(samplerIndex);
 		auto& samplerInfo = sampler.GetInfo<NoteInfo>();
 		if(samplerInfo.Time == float(noteOn.Time)) return;
-		sampler.NoteRelease();
+		if(!samplerInfo.Released) sampler.NoteRelease();
+		samplerInfo.Released = true;
+		samplerInfo.SustainHold = false;
 	}
 
 	if(noteOn.Channel == 9)
@@ -245,7 +247,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 		note.GenericSamplers.AddLast((*instr)(totalStartVolume, mSampleRate));
 		auto& stored = mNoteSamplers.Add<NoteSampler>(Move(note));
 		const uint16 idx = uint16(mNoteSamplers.Length() - 1);
-		stored.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId};
+		stored.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
 		mPlayingNoteMap[key] = idx;
 		return;
 	}
@@ -257,7 +259,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 
 	uint16 idx = 0;
 	Sampler& newSampler = instr->CreateSampler(noteOn.Frequency(), totalStartVolume, mSampleRate, mNoteSamplers, &idx);
-	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId};
+	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
 	newSampler.SetPan(float(noteOn.Pan) / 64.0f);
 	const float freqMult = pitchBendToFreqMultiplier(mMidiState.ChannelPitchBend[noteOn.Channel]);
 	if(freqMult != 1) newSampler.MultiplyPitch(freqMult);
@@ -267,12 +269,22 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
 {
 	auto found = mPlayingNoteMap.Find(noteOff.Id());
-	if(!found.Empty())
+	if(found.Empty()) return;
+	const auto samplerIndex = found.First().Value;
+	auto& sampler = mNoteSamplers.Get(samplerIndex);
+	auto& info = sampler.GetInfo<NoteInfo>();
+	if(info.Released) return;
+	if(mSustain[noteOff.Channel])
 	{
-		const auto samplerIndex = found.First().Value;
-		mNoteSamplers.Get(samplerIndex).NoteRelease();
-		mPlayingNoteMap.Remove(noteOff.Id());
+		// Педаль нажата: клавиша отпущена, но струна продолжает звучать до
+		// снятия педали. Голос остаётся в mPlayingNoteMap — повторный удар той
+		// же клавиши демпфирует его через OnNoteOn, как в обычном пианино.
+		info.SustainHold = true;
+		return;
 	}
+	sampler.NoteRelease();
+	info.Released = true;
+	mPlayingNoteMap.Remove(noteOff.Id());
 }
 
 void MidiSynth::OnPitchBend(const Midi::PitchBend& pitchBend)
@@ -293,8 +305,27 @@ void MidiSynth::OnAllNotesOff(byte channel)
 	for(auto noteSamplers = mNoteSamplers.AsRange(); !noteSamplers.Empty();)
 	{
 		auto& sampler = noteSamplers.Next();
-		const auto& info = sampler.GetInfo<NoteInfo>();
-		if(info.Channel == channel) sampler.NoteRelease();
+		auto& info = sampler.GetInfo<NoteInfo>();
+		if(info.Channel != channel || info.Released) continue;
+		sampler.NoteRelease();
+		info.Released = true;
+		info.SustainHold = false;
+	}
+}
+
+void MidiSynth::OnSustain(byte channel, bool down)
+{
+	mSustain[channel] = down;
+	if(down) return;
+	// Педаль снята: демпфируем все голоса канала, удерживавшиеся ею.
+	for(auto noteSamplers = mNoteSamplers.AsRange(); !noteSamplers.Empty();)
+	{
+		auto& sampler = noteSamplers.Next();
+		auto& info = sampler.GetInfo<NoteInfo>();
+		if(info.Channel != channel || !info.SustainHold) continue;
+		if(!info.Released) sampler.NoteRelease();
+		info.Released = true;
+		info.SustainHold = false;
 	}
 }
 
@@ -352,6 +383,7 @@ void MidiSynth::SendMidiEvent(byte status, byte data0, byte data1)
 	case 0xB0: // Control Change
 	{
 		if(data0 == 0x7B) OnAllNotesOff(channel);            // All Notes Off
+		else if(data0 == 0x40) OnSustain(channel, data1 >= 64); // Sustain Pedal
 		else if(data0 == 0x07) mLiveVolume[channel] = data1; // Channel Volume
 		else if(data0 == 0x0A) mLivePan[channel] = data1;    // Pan
 		return;

@@ -49,6 +49,10 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	byte mLivePan[16];
 	double mLastLiveEventTime = -1;
 
+	// Sustain-педаль (CC64) на канал. Пока педаль нажата, NoteOff не демпфирует
+	// голос — он продолжает звучать и отпускается только при снятии педали.
+	bool mSustain[16] = {};
+
 	// Живой режим (SourceCreateLive): без MIDI-файла, бесконечный поток тишины,
 	// звучащий только от SendMidiEvent. Рендер не завершается, когда нет ни нот,
 	// ни музыки (иначе поток бы закончился в первом же кадре тишины).
@@ -61,6 +65,11 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 		float Time;
 		byte Channel;
 		byte NoteOctaveOrDrumId;
+		// Голос получил NoteOff при нажатой педали и ждёт её снятия.
+		bool SustainHold = false;
+		// NoteRelease уже вызывался: защита от двойного демпфирования (повторный
+		// NoteOn той же клавиши, AllNotesOff, снятие педали после повторного удара).
+		bool Released = false;
 
 		INTRA_FORCEINLINE uint16 Key() const {return uint16((Channel << 8) | NoteOctaveOrDrumId);}
 	};
@@ -101,6 +110,7 @@ public:
 	void OnNoteOff(const Audio::Midi::NoteOff& noteOff) final;
 	void OnPitchBend(const Audio::Midi::PitchBend& pitchBend) final;
 	void OnAllNotesOff(byte channel) final;
+	void OnSustain(byte channel, bool down) final;
 
 	/// Меняет инструмент канала на лету: последующие ноты канала будут
 	/// синтезироваться программой program (GM-номер). 0xFF снимает переопределение.
@@ -114,7 +124,8 @@ public:
 	/// Change, Pitch Bend, Control Change (7 — громкость, 10 — панорама,
 	/// 123 — All Notes Off). Время события — текущая позиция потока, поэтому
 	/// сообщение звучит немедленно. Единая точка входа для живого ввода
-	/// (Web MIDI-клавиатура и т.п.) вместо набора кастомных API.
+	/// (Web MIDI-клавиатура и т.п.) вместо набора кастомных API. Control Change:
+	/// 64 — sustain-педаль, 7 — громкость, 10 — панорама, 123 — All Notes Off.
 	void SendMidiEvent(byte status, byte data0, byte data1);
 
 private:
