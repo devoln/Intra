@@ -101,3 +101,10 @@ Temporary Items
 /scripts/
 /web/generated/
 /dist/
+
+# Temporary experiment output (build trees, probes, scratch) — never tracked.
+# Ad-hoc build trees and probe artifacts must live under .scratch/ or be
+# gitignored; see AGENTS.md.
+/.scratch/
+/build-*/
+/probe-tmp/

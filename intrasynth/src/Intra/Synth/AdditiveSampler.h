@@ -54,20 +54,6 @@ class AdditiveSampler: public IGenericSampler
 	FixedArray<float> mAtk;
 	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока.
 	FixedArray<float> mScratch;
-	// «Молоточек»: короткий глухой удар (затухающий низкочастотный тон на
-	// f0/2 + f0, ~10-40 мс) в начале ноты — не шум, а «глухой удар».
-	FixedArray<float> mHammerNoise;
-	float mHammerAmp;
-	float mHammerDecay;
-	size_t mHammerPos;
-	// «Стрик» — удар по фундаменталу (region root 75, зона D5–E5): короткий
-	// тон на f0 с τ≈15 мс. Измерено по семплу 75(L): H1 в первые 5–20 мс на
-	// +13 дБ выше steady и гаснет за ~35 мс — глухой низкий «тук», которого
-	// нет у соседних регионов (72/78: только +1..+5 дБ). Без него D5–E5
-	// звучат ярче/«писклявее» семпла.
-	FixedArray<float> mStrikeNoise;
-	float mStrikeAmp;
-	size_t mStrikePos;
 	size_t mCount;   // число осцилляторов (партиалы × струны, кратно 4)
 	float mVolume;
 	float mExpStep;  // глобальное экспоненциальное затухание (не используется)
@@ -128,8 +114,8 @@ public:
 	///   AttackBoost — зарезервировано (0), атака — рамп по AttackT из таблицы;
 	///   UnisonVoices — число «струн» на ноту (1..3);
 	///   VelBrightness — чувствительность яркости к velocity (0..1);
-	///   HammerLevel — сила глухого удара молоточка (0 = нет; короткий
-	///     низкочастотный всплеск на f0/2+f0, как измерено по атаке семплов);
+	/// HammerLevel — сила глухого удара молоточка (0 = нет; короткий
+	///     глухой шум через ФНЧ ~2 кГц, по атаке семплов);
 	///   TrebleTilt — подавление обертонов с ростом высоты (0 = по семплу).
 	AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		size_t maxPartials, float brightness, float scale, float decayScale,
@@ -150,11 +136,11 @@ public:
 		float* amp = mAmp.Data();
 		float* dec = mDecay.Data();
 		float* atk = mAtk.Data();
-		float vol = mVolume;
-		const float expStep = mExpStep;
-		while(numSamples)
-		{
-			size_t n = Math::Min(mBlockSize, numSamples);
+	float vol = mVolume;
+	const float expStep = mExpStep;
+	while(numSamples)
+	{
+		size_t n = Math::Min(mBlockSize, numSamples);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
 			// При release (демпфере) эти переключения пропускаются — dec[p]
@@ -242,9 +228,7 @@ public:
 				amp[p] = av;
 			}
 #endif
-			// Свёртка 4 лейнов + молоточек + огибающая. Разгон синусоид (если
-			// нужен для этого регистра) уже внутри hot-лупа; верхний регистр
-			// стартует сразу, без вязкого ramp от нуля.
+			// Свёртка 4 лейнов и применение общей огибающей.
 			for(size_t i = 0; i < n; i++)
 			{
 				float s = (acc[4*i] + acc[4*i+1]) + (acc[4*i+2] + acc[4*i+3]);
@@ -266,24 +250,7 @@ public:
 					}
 					s *= gain*mEnvelopeLevel;
 				}
-				// Молоточек добавляется ПОСЛЕ коррекции огибающей: кривая коррекции
-				// измерена по синусоидам (target/current по RMS), а удар — отдельный
-				// перкуссионный шумовой компонент (беспитичевый), который не
-				// проходит через строковую огибающую. У подогнанного инструмента он
-				// выключен; у остальных добавляется поверх уже скорректированного
-				// сигнала.
-				if(mHammerPos < mHammerNoise.Length() && mHammerAmp > 1e-5f)
-				{
-					s += mHammerNoise[mHammerPos++]*mHammerAmp;
-					mHammerAmp *= mHammerDecay;
-				}
-				// Стрик по фундаменталу (только region root 75) — после молоточка,
-				// поверх скорректированного сигнала, как и молоточек.
-				if(mStrikePos < mStrikeNoise.Length() && mStrikeAmp > 1e-5f)
-				{
-					s += mStrikeNoise[mStrikePos++]*mStrikeAmp;
-				}
-				// Конец семпла: фейд на последних mFadeSamples, дальше тишина
+				// Конец региона: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
 				if(mEndSamples)
 				{

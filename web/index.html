@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Intra MIDI Synth — синтезатор в браузере</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a0e17;
+    --bg2: #0f1522;
+    --panel: #141b2b;
+    --panel2: #1b2438;
+    --line: #263149;
+    --ink: #eaf0fb;
+    --muted: #8f9bb5;
+    --accent: #35d0a5;
+    --accent2: #4cc2ff;
+    --accent-ink: #04140f;
+    --danger: #ff6b81;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% -10%, rgba(76, 194, 255, 0.10), transparent 60%),
+      radial-gradient(800px 600px at -10% 110%, rgba(53, 208, 165, 0.10), transparent 55%),
+      var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.55;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 20px 26px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(10, 14, 23, 0.7);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .logo {
+    width: 34px; height: 34px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: grid; place-items: center;
+    box-shadow: 0 6px 18px -6px rgba(53, 208, 165, 0.6);
+  }
+  .logo svg { width: 18px; height: 18px; fill: var(--accent-ink); }
+  header h1 {
+    font-size: 1.02rem;
+    margin: 0;
+    letter-spacing: 0.01em;
+    font-weight: 650;
+  }
+  header .sub { color: var(--muted); font-size: 0.8rem; }
+  main {
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 40px 22px 72px;
+    flex: 1;
+  }
+  .hero { margin-bottom: 30px; }
+  .eyebrow {
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .hero h2 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    line-height: 1.1;
+    margin: 8px 0 10px;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    color: var(--muted);
+    max-width: 620px;
+    margin: 0;
+  }
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 24px;
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin: 18px 0 20px;
+  }
+  .status::before {
+    content: "";
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(53, 208, 165, 0.15);
+    flex: none;
+  }
+  .status.error { color: var(--danger); }
+  .status.error::before { background: var(--danger); box-shadow: 0 0 0 4px rgba(255, 107, 129, 0.15); }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 18px;
+  }
+  .panel h3 {
+    margin: 0 0 14px;
+    font-size: 0.86rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .drop {
+    border: 2px dashed #33405f;
+    border-radius: 14px;
+    padding: 34px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .drop:hover, .drop.dragging {
+    border-color: var(--accent);
+    background: rgba(53, 208, 165, 0.05);
+  }
+  .drop svg { width: 30px; height: 30px; stroke: var(--accent); margin-bottom: 10px; }
+  .drop strong { display: block; margin-bottom: 4px; }
+  .drop span { color: var(--muted); font-size: 0.9rem; }
+  .urlrow { display: flex; gap: 10px; position: relative; }
+  input[type="text"], input[type="url"] {
+    flex: 1;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    padding: 11px 14px;
+    font-size: 0.95rem;
+    outline: none;
+  }
+  .urlsuggest {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+  }
+  .urlsuggest .sug-head {
+    padding: 8px 14px 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .urlsuggest .sug-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    color: var(--ink);
+    padding: 9px 14px;
+    border-radius: 0;
+    font-weight: 500;
+    font-size: 0.9rem;
+  }
+  .urlsuggest .sug-item:hover, .urlsuggest .sug-item:focus {
+    background: var(--bg2);
+    color: var(--accent2);
+  }
+  .urlsuggest .sug-item .sug-file {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+  input[type="text"]:focus { border-color: var(--accent2); }
+  button {
+    font: inherit;
+    border: none;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-weight: 600;
+    transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-accent { background: var(--accent); color: var(--accent-ink); }
+  .btn-accent:hover { filter: brightness(1.08); }
+  .btn-ghost { background: var(--panel2); color: var(--ink); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: #223052; }
+  .btn-live { padding: 8px 14px; font-size: 0.88rem; }
+  .btn-live svg { width: 15px; height: 15px; }
+  #player { transition: opacity 0.2s ease; }
+  #player.hidden { display: none; }
+  .track-title { font-weight: 650; font-size: 1.05rem; margin-bottom: 14px; word-break: break-all; }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .controls .btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .controls svg { width: 16px; height: 16px; fill: currentColor; }
+  .seek-wrap { flex: 1; min-width: 200px; }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 22px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 3px;
+    background:
+      linear-gradient(var(--accent), var(--accent)) 0 / var(--pct, 0%) 100% no-repeat,
+      var(--panel2);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: var(--ink);
+    margin-top: -4.5px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 6px; border-radius: 3px; background: var(--panel2);
+  }
+  input[type="range"]::-moz-range-progress {
+    height: 6px; border-radius: 3px; background: var(--accent);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 15px; height: 15px; border-radius: 50%; background: var(--ink); border: none;
+  }
+  .time { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 96px; text-align: right; }
+  .volrow { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .volrow label { color: var(--muted); font-size: 0.85rem; }
+  .volrow input { max-width: 180px; }
+  .volrow span { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.85rem; min-width: 42px; }
+  .pregenrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+  }
+  .pregenrow input[type="checkbox"] {
+    width: 17px; height: 17px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .pregen-result {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--accent2);
+    font-variant-numeric: tabular-nums;
+    min-height: 20px;
+  }
+  .pregen-result.error { color: var(--danger); }
+  .liverow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .liverow select {
+    flex: 1;
+    min-width: 220px;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    padding: 10px 12px;
+    font-size: 0.92rem;
+    outline: none;
+    cursor: pointer;
+  }
+  .liverow select:focus { border-color: var(--accent2); }
+  .liverow select:disabled { opacity: 0.5; cursor: not-allowed; }
+  .drumsrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .drumsrow input[type="checkbox"] {
+    width: 16px; height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .midi-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin: 2px 0 12px;
+    min-height: 20px;
+  }
+  .midi-status::before {
+    content: "";
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    flex: none;
+  }
+  .midi-status.off::before { background: var(--line); }
+  .piano {
+    position: relative;
+    height: 150px;
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--bg2);
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .piano .key {
+    position: relative;
+    cursor: pointer;
+  }
+  .piano .white {
+    flex: 1;
+    background: linear-gradient(#f5f7fc, #dde3ef);
+    border-right: 1px solid #8a94a8;
+    border-bottom: 1px solid #8a94a8;
+    border-radius: 0 0 4px 4px;
+  }
+  .piano .white:last-child { border-right: none; }
+  .piano .white .label {
+    position: absolute;
+    bottom: 6px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 0.62rem;
+    color: #5a6478;
+    pointer-events: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .piano .white.active {
+    background: linear-gradient(#a8dcff, #4cc2ff);
+  }
+  .piano .black {
+    position: absolute;
+    top: 0;
+    width: 7%;
+    height: 58%;
+    z-index: 2;
+    background: linear-gradient(#333b4d, #0c101c);
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.45);
+  }
+  .piano .black.active {
+    background: linear-gradient(#4cc2ff, #1c74ab);
+  }
+  .btn-active {
+    background: var(--accent2) !important;
+    color: #04101c !important;
+  }
+  .info {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+  }
+  .info span {
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 0.92rem;
+  }
+  .midi-status { font-size: 0.85rem; padding: 8px 0; }
+  .midi-status.off { color: var(--muted); }
+  .midi-status.on { color: var(--accent2); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
+    </div>
+    <div>
+      <h1>Intra MIDI Synth</h1>
+      <div class="sub">C++ синтезатор, скомпилированный в WebAssembly · sample rate: <span id="audioSampleRate">—</span></div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <span class="eyebrow">WebAssembly · Emscripten</span>
+      <h2>Сыграйте любой MIDI прямо в браузере</h2>
+      <p>
+        Синтез выполняется нативно (C++) внутри WASM-модуля и выводится через
+        Web Audio. Выберите локальный <code>.mid</code> файл, перетащите его
+        сюда или укажите ссылку.
+      </p>
+    </div>
+
+    <div class="status" id="status">Загрузка…</div>
+
+    <section class="panel">
+      <h3>Локальный файл</h3>
+      <div class="drop" id="drop">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+        <strong>Перетащите MIDI файл сюда</strong>
+        <span>или нажмите, чтобы выбрать файл</span>
+        <input type="file" id="fileInput" accept=".mid,.midi,audio/midi,audio/x-midi" hidden />
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3>Или по URL</h3>
+      <div class="urlrow">
+        <input type="url" id="urlInput" placeholder="https://example.com/song.mid" />
+        <button class="btn-accent" id="loadUrl">Загрузить</button>
+        <div class="urlsuggest" id="urlSuggest" hidden>
+          <div class="sug-head">Тестовые MIDI (внешние)</div>
+          <button class="sug-item" data-url="https://raw.githubusercontent.com/devoln/web-midisynth/demo-data/midi/Merry%20Christmas.mid">🎄 Merry Christmas<span class="sug-file">web-midisynth · Merry Christmas.mid</span></button>
+          <button class="sug-item" data-url="https://raw.githubusercontent.com/devoln/web-midisynth/demo-data/midi/Hardy%20Francoise%20-%20Tous%20Les%20Garcons.mid">🎸 Tous les garçons<span class="sug-file">web-midisynth · Hardy Francoise - Tous Les Garcons.mid</span></button>
+          <button class="sug-item" data-url="https://devoln.github.io/midi/celine_dion-my_heart_will_go_on.mid">🎤 Céline<span class="sug-file">devoln.github.io · celine_dion-my_heart_will_go_on.mid</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel hidden" id="player">
+      <div class="track-title" id="trackTitle">MIDI</div>
+      <div class="controls">
+        <button class="btn-accent btn-icon" id="playBtn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Играть
+        </button>
+        <button class="btn-ghost btn-icon" id="stopBtn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg> Стоп
+        </button>
+        <div class="seek-wrap">
+          <input type="range" id="seek" min="0" max="1" step="1" value="0" disabled />
+        </div>
+        <div class="time" id="time">0:00 / 0:00</div>
+      </div>
+      <div class="volrow">
+        <label for="volume">Громкость</label>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" />
+        <span id="volLabel">80%</span>
+      </div>
+      <label class="pregenrow" for="pregen">
+        <input type="checkbox" id="pregen" />
+        <span>Полная генерация перед воспроизведением + замер времени</span>
+      </label>
+      <div class="pregen-result" id="pregenResult">Офлайн-рендер: —</div>
+      <div class="info" id="info"></div>
+    </section>
+
+    <section class="panel" id="livePanel">
+      <h3>Live-режим · игра без MIDI-файла</h3>
+      <div class="liverow">
+        <button class="btn-accent btn-icon btn-live" id="liveBtn">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Live
+        </button>
+        <button class="btn-ghost" id="allNotesOff">All notes off</button>
+      </div>
+      <div class="liverow">
+        <select id="instrument" title="Инструмент (Program Change)"></select>
+        <label class="drumsrow" for="drumsCh">
+          <input type="checkbox" id="drumsCh" /> Ударные (канал 10)
+        </label>
+      </div>
+      <div class="midi-status off" id="midiStatus">MIDI: проверка…</div>
+      <div class="piano" id="piano"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    Движок: <a href="https://github.com/devoln/Intra" target="_blank" rel="noopener">Intra</a> ·
+    Демо: <code>Demos/MusicSynthesizer</code> · Синтез и инструменты — целиком в WASM
+  </footer>
+
+  <script src="IntraSynth.js"></script>
+  <script src="synth.js"></script>
+</body>
+</html>
