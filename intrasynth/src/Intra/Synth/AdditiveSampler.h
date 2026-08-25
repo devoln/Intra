@@ -6,7 +6,6 @@
 #include "Intra/Range/Span.h"
 #include "Utils/FixedArray.h"
 #include "Types.h"
-#include "PianoEnvelope.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -48,15 +47,32 @@ class AdditiveSampler: public IGenericSampler
 // быстрее, как в реальном пианино). Применяется через dec[p] в
 // hot loop — никаких доп. вычислений на сэмпл.
 	FixedArray<float> mDecayRelease;
-// mAtk[p] — шаг per-partial разгона (0→1 за τ≈AttackT/k): фундаментал
-// нарастает медленно, верхние обертоны быстрее; в любом случае обнуляется
-// на DecayOnset, чтобы не тянуть амплитуду вверх во время затухания.
+// mAtk[p] — шаг per-partial разгона амплитуды струны после контакта:
+// возбуждённые ударом партиалы стартуют с уровня gSeam (последний сэмпл
+// буфера атаки) и дорастают до табличной амплитуды (gSeam→1), не
+// возбуждённые (G≈0) — с нуля (0→1), всё за τ≈AttackT/k. В любом случае
+// mAtk обнуляется на DecayOnset, чтобы не тянуть амплитуду вверх при
+// затухании.
 	FixedArray<float> mAtk;
+	// Буфер атаки контактной силы: предвычисленный накопленный отклик мод
+	// на удар молоточка (первые mAttackLen отсчётов ноты). Последний сэмпл
+	// буфера равен первому сэмплу струны (состояние мод после контакта =
+	// табличному состоянию), поэтому шов буфер→SIMD-рекурсия бесшовный.
+	FixedArray<float> mAttackBuf;
+	size_t mAttackLen;
+	size_t mAttackPos;
+	// «Рокот»: корпусные резонансы деки (78/116/168/285 Гц, τ≈45 мс),
+	// возбуждённые той же контактной силой. У средних/верхних нот их
+	// частоты ниже f0 струны, которых модальный банк не даёт, а в семплах
+	// полоса 60-300 Гц на атаке всегда есть. Играется сразу после
+	// attack-буфера и гаснет за ~0.12 с, в сустейн не входит.
+	FixedArray<float> mBodyBuf;
+	size_t mBodyLen;
+	size_t mBodyPos;
 	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока.
 	FixedArray<float> mScratch;
 	size_t mCount;   // число осцилляторов (партиалы × струны, кратно 4)
 	float mVolume;
-	float mExpStep;  // глобальное экспоненциальное затухание (не используется)
 	// Переключение затухания: старт на DecayOnset (1.0 → λ1), λ1 → λ2 на
 	// DecayOnset+SegT, λ2 → λ3 на DecayOnset+SegT+SegT2, λ3 → λ4 на
 	// DecayOnset+SegT+SegT2+SegT3 (границы — окна измерений, из таблицы).
@@ -82,16 +98,6 @@ class AdditiveSampler: public IGenericSampler
 	float mStereoPan;
 	float mStereoGainL;
 	float mStereoGainR;
-	// Число партиал на голос (для стерео-разделения голосов в GenerateStereo).
-	size_t mPartialsPerVoice;
-	// Correction curve measured from the AcousticPiano SF2 roots. It is enabled
-	// only for the AcousticPiano parameter set; other additive instruments keep
-	// their own envelopes unchanged.
-	float mEnvelopeGain[PianoEnvelopePointCount];
-	float mEnvelopeTimeScale;
-	float mEnvelopeLevel;
-	size_t mEnvelopeSegment;
-	bool mUseEnvelopeCorrection;
 	// mDone = true когда нота полностью закончилась (mRendered >= mEndSamples):
 	// GenerateMono/GenerateStereo возвращают 0, и NoteSampler удаляет голос.
 	bool mDone;
@@ -111,17 +117,17 @@ public:
 	///     <1 — длиннее, >1 — короче);
 	///   DecayStiffness — «жёсткость»: λ_k ·= (1 + c·k²) (0 = по семплу);
 	///   DetuneCents — расстройка унисона (полный разброс, 0 = одна струна);
-	///   AttackBoost — зарезервировано (0), атака — рамп по AttackT из таблицы;
 	///   UnisonVoices — число «струн» на ноту (1..3);
 	///   VelBrightness — чувствительность яркости к velocity (0..1);
-	/// HammerLevel — сила глухого удара молоточка (0 = нет; короткий
-	///     глухой шум через ФНЧ ~2 кГц, по атаке семплов);
 	///   TrebleTilt — подавление обертонов с ростом высоты (0 = по семплу).
+	///
+	/// Атака — контактная сила: короткий sin²-импульс возбуждает те же
+	/// моды, что звучат в сустейне (см. конструктор); отдельного «слоя
+	/// молоточка» нет.
 	AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		size_t maxPartials, float brightness, float scale, float decayScale,
-		float decayStiffness, float detuneCents, float attackBoost,
-		int unisonVoices, float velBrightness, float hammerLevel,
-		float trebleTilt);
+		float decayStiffness, float detuneCents,
+		int unisonVoices, float velBrightness, float trebleTilt);
 
 	/// Рендерит numSamples отсчётов. Лямбда-sink — как у KS/SpectralString:
 	/// на wasm поинтер-инкремент в лямбде даёт лучший код, чем индексная
@@ -137,9 +143,30 @@ public:
 		float* dec = mDecay.Data();
 		float* atk = mAtk.Data();
 	float vol = mVolume;
-	const float expStep = mExpStep;
 	while(numSamples)
 	{
+		// Атака контактной силы: первые mAttackLen отсчётов — предвычисленный
+		// накопленный отклик мод на удар молоточка (конструктор). Последний
+		// сэмпл буфера равен первому сэмплу струны, поэтому переход в
+		// SIMD-рекурсию ниже бесшовный. Затухание на этом отрезке не
+		// переключается (контакт ~2 мс всегда раньше DecayOnset). Параллельно
+		// играется «рокот» (корпус): mBodyBuf[0..contactN] добавляется к
+		// атаке, остаток доигрывает поверх струны в свёртке ниже.
+		while(mAttackPos < mAttackLen && numSamples)
+		{
+			const size_t t = mRendered++;
+			float s = mAttackBuf[mAttackPos++];
+			if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++];
+			if(mEndSamples)
+			{
+				if(t >= mEndSamples) s = 0.0f;
+				else if(t + mFadeSamples >= mEndSamples)
+					s *= float(mEndSamples - t)/float(mFadeSamples);
+			}
+			sink(s*vol);
+			numSamples--;
+		}
+		if(numSamples == 0) break;
 		size_t n = Math::Min(mBlockSize, numSamples);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
@@ -228,28 +255,13 @@ public:
 				amp[p] = av;
 			}
 #endif
-			// Свёртка 4 лейнов и применение общей огибающей.
+			// Свёртка 4 лейнов.
 			for(size_t i = 0; i < n; i++)
 			{
 				float s = (acc[4*i] + acc[4*i+1]) + (acc[4*i+2] + acc[4*i+3]);
+				// «Рокот» (корпус) доигрывает поверх струны первые ~0.12 с.
+				if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++];
 				const size_t t = mRendered - n + i;
-				if(mUseEnvelopeCorrection)
-				{
-					const float refTime = float(t)*mEnvelopeTimeScale;
-					while(mEnvelopeSegment + 1 < PianoEnvelopePointCount - 1
-						&& refTime > PianoEnvelopeTimes[mEnvelopeSegment + 1])
-						mEnvelopeSegment++;
-					float gain = mEnvelopeGain[PianoEnvelopePointCount - 1];
-					if(refTime <= PianoEnvelopeTimes[0]) gain = mEnvelopeGain[0];
-					else if(refTime < PianoEnvelopeTimes[PianoEnvelopePointCount - 1])
-					{
-						const size_t j = mEnvelopeSegment;
-						const float u = (refTime - PianoEnvelopeTimes[j])
-							/(PianoEnvelopeTimes[j + 1] - PianoEnvelopeTimes[j]);
-						gain = mEnvelopeGain[j]*(1.0f - u) + mEnvelopeGain[j + 1]*u;
-					}
-					s *= gain*mEnvelopeLevel;
-				}
 				// Конец региона: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
 				if(mEndSamples)
@@ -259,7 +271,6 @@ public:
 						s *= float(mEndSamples - t)/float(mFadeSamples);
 				}
 				sink(s*vol);
-				vol *= expStep;
 			}
 			numSamples -= n;
 		}
@@ -294,10 +305,8 @@ public:
 ///   DecayScale — множитель сустейн-затухания (1 = семпл, <1 длиннее);
 ///   DecayStiffness — «жёсткость»: верха гаснут быстрее (0 = по семплу);
 ///   DetuneCents — расстройка унисона (биения; honky-tonk — широкая);
-///   AttackBoost — зарезервировано (0), атака по семплу;
 ///   UnisonVoices — число «струн» на ноту (1..3);
 ///   VelBrightness — чувствительность яркости к velocity (0..1);
-///   HammerLevel — сила удара молоточка (0 = нет);
 ///   TrebleTilt — подавление обертонов на высоких нотах (0 = по семплу).
 struct AdditivePianoInstrument
 {
@@ -307,18 +316,15 @@ struct AdditivePianoInstrument
 	float DecayScale;
 	float DecayStiffness;
 	float DetuneCents;
-	float AttackBoost;
 	int UnisonVoices;
 	float VelBrightness;
-	float HammerLevel;
 	float TrebleTilt;
 
 	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		return new AdditiveSampler(freq, volume, sampleRate,
 			MaxPartials, Brightness, Scale, DecayScale, DecayStiffness,
-			DetuneCents, AttackBoost, UnisonVoices, VelBrightness, HammerLevel,
-			TrebleTilt);
+			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt);
 	}
 };
 

@@ -253,23 +253,22 @@ InstrumentLibrary::InstrumentLibrary()
 	// нужна — у Acoustic лёгкий двухструнный унисон, основные биения уже записаны в семпле) и
 	// velocity→яркость. DecayScale=1 значит «затухание ровно как в семпле».
 	// Параметры: Brightness, MaxPartials, Scale, DecayScale, DecayStiffness,
-	// DetuneCents, AttackBoost, UnisonVoices, VelBrightness, HammerLevel,
-	// TrebleTilt.
+	// DetuneCents, UnisonVoices, VelBrightness, TrebleTilt.
+	// Атака у всех аддитивных инструментов — контактная сила (см.
+	// AdditiveSampler): короткий удар возбуждает те же моды, что и сустейн.
 	{
 		auto& g = Instruments["AcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 				// Эталонная модель: амплитуды, фазы и затухание извлечены из
-				// полного SF2-семпла. Атака — не аудио-слой, а КОНТАКТНАЯ СИЛА:
-				// короткий sin^2-импульс возбуждает комплексные состояния тех же
-				// партиал (z[n+1] = e^{jw}·z[n] + G·F[n]), первые ~2 мс звучит
-				// накопленный отклик мод, дальше SIMD-струна без шва (G подобран
+				// полного SF2-семпла. Атака — КОНТАКТНАЯ СИЛА: короткий sin²-импульс
+				// возбуждает комплексные состояния тех же партиал (первые ~2 мс —
+				// накопленный отклик мод, дальше SIMD-струна без шва; G подобран
 				// так, что финальное состояние РОВНО по таблице Amp/Phase).
-				// TEMP-TEST (GPT шаг 1): UnisonVoices=1 и VelBrightness=0 —
-				// отделить дефекты атаки от фазовых дефектов унисона и двойной
-				// регулировки яркости. HammerLevel больше не используется.
-				// StereoPan — per-key, измерен по разнице уровней L/R семплов
-				// SF2: линейное разделение каналов даёт честное стерео.
-				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 0.3f, 0.0f, 2, 0.0f, 0.0f, 0.0f};
+				// Двухструнный унисон с расстройкой DetuneCents=0.3 (биения;
+				// фазы струн одинаковые — расстройка сама даёт биения, сдвиг фаз
+				// давал гребенчатый фильтр). StereoPan — per-key, измерен по
+				// разнице уровней L/R семплов SF2.
+				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 0.3f, 2, 0.0f, 0.0f};
 			}());
 		// Без ADSR-огибающей: AdditiveSampler сам управляет концом ноты
 		// (фейд на mEndSamples). Без ADSR NoteSampler::GenerateStereo идёт по
@@ -279,16 +278,16 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		auto& g = Instruments["BrightAcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
-			// Ярче (k^0.12), 3 струны с расстройкой, сильнее молоточек.
-			return AdditivePianoInstrument{0.4f, 40, 0.84f, 1.0f, 0.0f, 0.7f, 0.0f, 3, 0.4f, 0.45f, 0.0f};
+			// Ярче (k^0.12), 3 струны с расстройкой.
+			return AdditivePianoInstrument{0.4f, 40, 0.84f, 1.0f, 0.0f, 0.7f, 3, 0.4f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["ElectricGrandPiano"];
 		g.GenericInstruments.EmplaceLast([](){
-			// CP-80: ярче, длинный сустейн, хорус из расстройки, удар мягче.
-			return AdditivePianoInstrument{0.45f, 40, 0.42f, 0.8f, 0.0f, 2.5f, 0.0f, 2, 0.1f, 0.1f, 0.0f};
+			// CP-80: ярче, длинный сустейн, хорус из расстройки.
+			return AdditivePianoInstrument{0.45f, 40, 0.42f, 0.8f, 0.0f, 2.5f, 2, 0.1f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.9f, 0, false, true});
 	}
@@ -297,7 +296,7 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Honky-tonk: широкая расстройка → сильные биения (сам характер), 3
 			// струны, затухание по семплу.
-			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 0.0f, 3, 0.4f, 0.1f, 0.0f};
+			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
@@ -305,8 +304,8 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["ElectricPiano1"];
 		g.GenericInstruments.EmplaceLast([](){
 			// Родс: колокольный верх, длинный сустейн, две струны с малой
-			// расстройкой, без ударной атаки.
-			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 0.0f, 2, 0.05f, 0.05f, 0.0f};
+			// расстройкой, мягкая атака.
+			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 1.0f, 0, false, true});
 	}
@@ -314,7 +313,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["ElectricPiano2"];
 		g.GenericInstruments.EmplaceLast([](){
 			// DX7-подобный: статичный FM-тембр, одна струна.
-			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 0.4f, 0.0f, 1, 0.05f, 0.05f, 0.0f};
+			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 0.4f, 1, 0.05f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 1.2f, 0, false, true});
 	}
@@ -323,7 +322,7 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Клавесин: яркий, короткий (щипок), без velocity-динамики, одна
 			// струна, резкая атака.
-			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 0.0f, 1, 0.0f, 0.15f, 0.0f};
+			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.25f, 0, false, true});
 	}
@@ -331,7 +330,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["Clavinet"];
 		g.GenericInstruments.EmplaceLast([](){
 			// Клавинет: очень короткий, яркий, перкуссионный.
-			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 0.0f, 2, 0.2f, 0.2f, 0.0f};
+			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.15f, 0, false, true});
 	}

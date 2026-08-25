@@ -16,9 +16,6 @@ using namespace Audio;
 
 extern "C"
 {
-	// Debug hook: AdditiveSampler dumps per-partial state here on every NoteOn;
-	// JS reads it via SynthGetDebugFloats() to inspect the attack/sustain seam.
-
 	IAudioSource* EMSCRIPTEN_KEEPALIVE SourceCreateFromMidiFileData(char* midiDataPtr, unsigned midiDataLength, unsigned sampleRate, unsigned numChannels)
 	{
 		ErrorStatus status;
