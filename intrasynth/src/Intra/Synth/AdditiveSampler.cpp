@@ -66,7 +66,23 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		voiceCents[0] = -0.6f*detuneCents;
 		voiceCents[1] = +0.6f*detuneCents;
 		voiceGain[0] = 1.0f;
-		voiceGain[1] = 0.7f;
+		// Глубина биений по клавишам (2026-08-26): у семплов SF2 середина
+		// клавиатуры бьётся МЕЛКО (C5 h2 ~7 дБ, D#5 ~5 дБ, C4 ~4 дБ), требли
+		// — глубоко (C6+ 20-50 дБ), низ почти не бьётся. Плоский баланс
+		// 1.0/0.7 (провал 15 дБ) на C4-E5 давал «странный отзвук» — глубокую
+		// медленную раскачку на длинных нотах, которой в семпле нет. Уровень
+		// второй струны задаёт глубину (пик/провал = (1+g1)/|1−g1|): после
+		// нормировки пика тембр и средний уровень не меняются (у обеих струн
+		// одинаковые партиалы — меняется только размах биений).
+		// Узлы: 58→62: 0.7→0.45, 62→76: плато 0.45 (8.4 дБ), 76→84: 0.45→0.7.
+		float g1 = 0.7f;
+		if(midi > 58.0f && midi < 84.0f)
+		{
+			if(midi <= 62.0f)      g1 = 0.7f - 0.25f*(midi - 58.0f)/4.0f;
+			else if(midi <= 76.0f) g1 = 0.45f;
+			else                   g1 = 0.45f + 0.25f*(midi - 76.0f)/8.0f;
+		}
+		voiceGain[1] = g1;
 	}
 	else
 	{
@@ -79,8 +95,18 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		voiceGain[1] = 0.7f;
 		voiceGain[2] = 0.6f;
 	}
+	// Коллапс двух струн в один лейн на партиалу (оптимизация горячего
+	// цикла, 2026-08-26): сумма двух расстроенных синусоид с одинаковой
+	// фазой  a·(g0·sin(ω0t+φ) + g1·sin(ω1t+φ))  =  a·(g0+g1)·E(t)·sin(ωt+φ+θ),
+	// E = sqrt(cos²(Δt) + r²·sin²(Δt)), r = (g0−g1)/(g0+g1), ω = (ω0+ω1)/2.
+	// Лейн получает амплитуду a·(g0+g1) и номинальную частоту ω, биение
+	// даёт огибающая E(t) в горячем цикле (см. RenderInto). Точность: по
+	// амплитуде — точно, отброшен фазовый воббл |θ| ≤ atan(r) ≈ 10°.
+	const bool beatCollapse = (voices == 2);
+	const int lanes = beatCollapse ? 1 : voices;
+	const float gSum = beatCollapse ? (voiceGain[0] + voiceGain[1]) : 1.0f;
 	const size_t count = Math::Max(size_t(4),
-		(partials*size_t(voices) + 3) & ~size_t(3));
+		(partials*size_t(lanes) + 3) & ~size_t(3));
 		mS1.SetCount(count);
 	mS2.SetCount(count);
 	mK.SetCount(count);
@@ -92,6 +118,13 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mDecay4.SetCount(count);
 	mDecayRelease.SetCount(count);
 	mAtk.SetCount(count);
+	mBeatStep.SetCount(count);
+	mBeatPh.SetCount(count);
+	mBeatE0.SetCount(count);
+	mBeatE1.SetCount(count);
+	for(size_t p = 0; p < count; p++) { mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; }
+	mBeatR = beatCollapse ? (voiceGain[0] - voiceGain[1])/(voiceGain[0] + voiceGain[1]) : 0.0f;
+	mBeatOn = beatCollapse;
 	const float twoPi = 2.0f*float(Math::PI);
 	// Все lambda приходят из fitDecay для конкретного региона/партиала;
 	// глобальные поправки по высоте намеренно не применяются.
@@ -115,9 +148,11 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// Clavinova верхние семплы и так фундаментал-доминантны).
 	const float treble = Math::Min(2.2f, Math::Max(0.0f, freq/261.63f - 1.0f))*trebleTilt;
 	size_t o = 0;
-	for(int v = 0; v < voices; v++)
+	for(int v = 0; v < lanes; v++)
 	{
-		const float det = Math::Pow(detuneRatio, voiceCents[v]);
+		// При коллапсе — номинальная частота (без расстройки): расстройку
+		// струн несёт огибающая биений.
+		const float det = beatCollapse ? 1.0f : Math::Pow(detuneRatio, voiceCents[v]);
 		for(size_t p = 0; p < partials; p++, o++)
 		{
 			const PianoPartial& pp = PianoAllPartials[region.PartOffset + p];
@@ -146,6 +181,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 				mDecay4[o] = 1.0f;
 				mDecayRelease[o] = 1.0f;
 				mAtk[o] = 0.0f;
+				mBeatStep[o] = 0.0f;
 				mAmp[o] = 0.0f;
 				crs[o] = 0.0f;
 				cis[o] = 0.0f;
@@ -157,8 +193,10 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			const float fk = float(k)*freq*freqRatio*det;
 			const float dphi = twoPi*(fk/float(sampleRate));
 			// Амплитуда из семпла; brightness/velocity усиливают верха, а
-			// treble-tilt на высоких нотах их глушит.
-			float a = amp*Math::Pow(float(k), tilt - treble)*voiceGain[v];
+			// treble-tilt на высоких нотах их глушит. При коллапсе унисона
+			// амплитуда лейна — ПОЛНАЯ сумма струн (g0+g1): пик суммы при
+			// совпадающей фазе = (g0+g1)·a, биение докручивает огибающая.
+			float a = amp*Math::Pow(float(k), tilt - treble)*(beatCollapse ? gSum : voiceGain[v]);
 			// Фаза: измеренная из семпла. Для дополнительных струн унисона
 			// фаза НЕ сдвигается: удар молоточка возбуждает струны в фазе,
 			// а биения возникают из-за расстройки (voiceCents), а не из-за
@@ -174,6 +212,15 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			crs[o] = a*Math::Cos(phase);
 			cis[o] = a*Math::Sin(phase);
 			dphis[o] = dphi;
+			if(beatCollapse)
+			{
+				// Шаг фазы биения Δ = (ω1−ω0)/2 = π·fk·(det1−det0)/sr. Знак не
+				// важен (E зависит от cos²/sin²). Масштаб по партиале: fk ≈ k·f0,
+				// поэтому у k-й гармоники биения в k раз быстрее, как в семпле.
+				const float det0 = Math::Pow(detuneRatio, voiceCents[0]);
+				const float det1 = Math::Pow(detuneRatio, voiceCents[1]);
+				mBeatStep[o] = float(Math::PI)*(fk/float(sampleRate))*(det1 - det0);
+			}
 			mK[o] = 2.0f*Math::Cos(dphi);
 			// Затухание: 3-скоростное из семпла (λ1 — начальный спад, λ2 —
 			// средний, λ3 — хвост), масштабируется транспозицией (выше нота —
@@ -234,6 +281,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		mDecay4[o] = 1.0f;
 		mDecayRelease[o] = 1.0f;
 		mAtk[o] = 0.0f;
+		mBeatStep[o] = 0.0f;
 		mAmp[o] = 0.0f;
 		crs[o] = 0.0f;
 		cis[o] = 0.0f;
@@ -571,14 +619,18 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			// Огибающая и вращение без тригонометрии на сэмпл: g(i) =
 			// (1−rR^i)·rD^i/gMax, а волна cis·cos(i·w) + crs·sin(i·w) — это Y_i
 			// комплексного вращения (X_0,Y_0) = (crs,cis) на w каждый шаг.
+			// Оверлеи калибровались по амплитуде ОДНОЙ струны (первого голоса):
+			// при коллапсе унисона лейн несёт сумму струн (g0+g1), поэтому
+			// уровень удара приводим обратно делением на gSum.
+			const float ovStr = beatCollapse ? 1.0f/gSum : 1.0f;
 			const float rR = Math::Exp(-1.0f/(tauR*float(sampleRate)));
 			const float rD = Math::Exp(-1.0f/(tauD*float(sampleRate)));
-			float x1 = crs[o1], y1 = cis[o1];
+			float x1 = crs[o1]*ovStr, y1 = cis[o1]*ovStr;
 			const float cw1 = Math::Cos(dphis[o1]), sw1 = Math::Sin(dphis[o1]);
 			float x2 = 0.0f, y2 = 0.0f, cw2 = 0.0f, sw2 = 0.0f;
 			if(o2 != size_t(-1))
 			{
-				x2 = crs[o2]; y2 = cis[o2];
+				x2 = crs[o2]*ovStr; y2 = cis[o2]*ovStr;
 				cw2 = Math::Cos(dphis[o2]); sw2 = Math::Sin(dphis[o2]);
 			}
 			float rp = 1.0f, dp = 1.0f;
@@ -667,8 +719,10 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 				// фазор блума поворачиваем НАЗАД на mAttackLen·dphi.
 				const float aBack = float(mAttackLen)*dphis[p];
 				const float ca = Math::Cos(aBack), sa = Math::Sin(aBack);
-				x[K] = crs[p]*ca + cis[p]*sa;
-				y[K] = -crs[p]*sa + cis[p]*ca;
+				// Блум калиброван по одиночной струне — при коллапсе делим на gSum.
+				const float ovStr = beatCollapse ? 1.0f/gSum : 1.0f;
+				x[K] = (crs[p]*ca + cis[p]*sa)*ovStr;
+				y[K] = (-crs[p]*sa + cis[p]*ca)*ovStr;
 				cw[K] = Math::Cos(dphis[p]); sw[K] = Math::Sin(dphis[p]);
 				active[K] = true;
 			}

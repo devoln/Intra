@@ -54,6 +54,23 @@ class AdditiveSampler: public IGenericSampler
 // mAtk обнуляется на DecayOnset, чтобы не тянуть амплитуду вверх при
 // затухании.
 	FixedArray<float> mAtk;
+// Биения унисона при voices==2: две расстроенные струны коллапсированы в
+// ОДИН лейн на партиалу (вдвое меньше синусоид в горячем цикле — было
+// 43.8× realtime на Chopin, стало ~70×). Амплитуда лейна уже включает
+// g0+g1, а биение воспроизводится медленной огибающей
+//   E(t) = sqrt(cos²(Δ·t) + r²·sin²(Δ·t)),  r = (g0−g1)/(g0+g1),
+// Δ — половинная разность частот струн (растёт с номером партиалы k:
+// Δ ≈ π·k·f0·(det1−det0)/sr — биения у k-й гармоники в k раз быстрее).
+// Огибающая пересчитывается раз в блок (псевдоконстанта: mBeatE0/mBeatE1
+// на границах блока), внутри блока — линейная интерполяция, поэтому на
+// стыках блоков нет ступенек/щелчков. Точность: амплитуда суммы двух
+// струн воспроизводится точно; отброшен только фазовый воббл
+// |θ| ≤ atan(r) ≈ 10° (периодический, на слух незаметен). Для голосов 1/3
+// (и любых не-2-голосных инструментов) mBeatOn=false — лейны как раньше.
+	FixedArray<float> mBeatStep, mBeatPh;
+	FixedArray<float> mBeatE0, mBeatE1;
+	float mBeatR;
+	bool mBeatOn;
 	// Буфер атаки контактной силы: предвычисленный накопленный отклик мод
 	// на удар молоточка (первые mAttackLen отсчётов ноты). Последний сэмпл
 	// буфера равен первому сэмплу струны (состояние мод после контакта =
@@ -251,49 +268,135 @@ public:
 			mRendered += n;
 			float* acc = mScratch.Data();
 			for(size_t i = 0; i < 4*n; i++) acc[i] = 0;
-#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
-			for(size_t p = 0; p < count; p += 4)
+			// Огибающая биений (коллапс 2-струнного унисона): пересчёт раз в
+			// блок на границах [ph, ph + step·n], внутри блока — линейная
+			// интерполяция (gv = E0 + (E1−E0)·i/n), поэтому на стыках блоков
+			// огибающая непрерывна (нет ступенек/щелчков).
+			if(mBeatOn)
 			{
-				__m128 s1v = _mm_loadu_ps(s1+p);
-				__m128 s2v = _mm_loadu_ps(s2+p);
-				__m128 kv  = _mm_loadu_ps(k+p);
-				__m128 av  = _mm_loadu_ps(amp+p);
-				const __m128 dv = _mm_loadu_ps(dec+p);
-				const __m128 ak = _mm_loadu_ps(atk+p);
-				const __m128 mv = _mm_sub_ps(dv, ak);
-				for(size_t i = 0; i < n; i++)
+				const float r2 = mBeatR*mBeatR;
+				const float* bs = mBeatStep.Data();
+				float* bp = mBeatPh.Data();
+				float* e0 = mBeatE0.Data();
+				float* e1 = mBeatE1.Data();
+				for(size_t p = 0; p < count; p++)
 				{
-					const __m128 out = _mm_mul_ps(s1v, av);
-					const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
-					s1v = s2v;
-					s2v = newS;
-					av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
-					const __m128 a = _mm_loadu_ps(acc + 4*i);
-					_mm_storeu_ps(acc + 4*i, _mm_add_ps(a, out));
+					const float ph = bp[p];
+					const float s0 = Math::Sin(ph);
+					e0[p] = Math::Sqrt(1.0f - (1.0f - r2)*(s0*s0));
+					const float ph1 = ph + bs[p]*float(n);
+					const float s1 = Math::Sin(ph1);
+					e1[p] = Math::Sqrt(1.0f - (1.0f - r2)*(s1*s1));
+					bp[p] = ph1;
 				}
-				_mm_storeu_ps(s1+p, s1v);
-				_mm_storeu_ps(s2+p, s2v);
-				_mm_storeu_ps(amp+p, av);
+			}
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
+			if(mBeatOn)
+			{
+				const float* e0a = mBeatE0.Data();
+				const float* e1a = mBeatE1.Data();
+				const float invN = 1.0f/float(n);
+				for(size_t p = 0; p < count; p += 4)
+				{
+					__m128 s1v = _mm_loadu_ps(s1+p);
+					__m128 s2v = _mm_loadu_ps(s2+p);
+					__m128 kv  = _mm_loadu_ps(k+p);
+					__m128 av  = _mm_loadu_ps(amp+p);
+					const __m128 dv = _mm_loadu_ps(dec+p);
+					const __m128 ak = _mm_loadu_ps(atk+p);
+					const __m128 mv = _mm_sub_ps(dv, ak);
+					const __m128 b0 = _mm_loadu_ps(e0a + p);
+					const __m128 bd = _mm_sub_ps(_mm_loadu_ps(e1a + p), b0);
+					for(size_t i = 0; i < n; i++)
+					{
+						const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, _mm_set1_ps(float(i)*invN)));
+						const __m128 out = _mm_mul_ps(_mm_mul_ps(s1v, av), gv);
+						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+						s1v = s2v;
+						s2v = newS;
+						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+						const __m128 a = _mm_loadu_ps(acc + 4*i);
+						_mm_storeu_ps(acc + 4*i, _mm_add_ps(a, out));
+					}
+					_mm_storeu_ps(s1+p, s1v);
+					_mm_storeu_ps(s2+p, s2v);
+					_mm_storeu_ps(amp+p, av);
+				}
+			}
+			else
+			{
+				for(size_t p = 0; p < count; p += 4)
+				{
+					__m128 s1v = _mm_loadu_ps(s1+p);
+					__m128 s2v = _mm_loadu_ps(s2+p);
+					__m128 kv  = _mm_loadu_ps(k+p);
+					__m128 av  = _mm_loadu_ps(amp+p);
+					const __m128 dv = _mm_loadu_ps(dec+p);
+					const __m128 ak = _mm_loadu_ps(atk+p);
+					const __m128 mv = _mm_sub_ps(dv, ak);
+					for(size_t i = 0; i < n; i++)
+					{
+						const __m128 out = _mm_mul_ps(s1v, av);
+						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+						s1v = s2v;
+						s2v = newS;
+						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+						const __m128 a = _mm_loadu_ps(acc + 4*i);
+						_mm_storeu_ps(acc + 4*i, _mm_add_ps(a, out));
+					}
+					_mm_storeu_ps(s1+p, s1v);
+					_mm_storeu_ps(s2+p, s2v);
+					_mm_storeu_ps(amp+p, av);
+				}
 			}
 #else
-			for(size_t p = 0; p < count; p++)
+			if(mBeatOn)
 			{
-				float s1v = s1[p], s2v = s2[p], kv = k[p];
-				float av = amp[p];
-				const float mv = dec[p] - atk[p];
-				const float ak = atk[p];
-				for(size_t i = 0; i < n; i++)
+				const float* e0a = mBeatE0.Data();
+				const float* e1a = mBeatE1.Data();
+				const float invN = 1.0f/float(n);
+				for(size_t p = 0; p < count; p++)
 				{
-					const float out = s1v*av;
-					const float newS = kv*s2v - s1v;
-					s1v = s2v;
-					s2v = newS;
-					av = av*mv + ak;
-					acc[4*i] += out;
+					float s1v = s1[p], s2v = s2[p], kv = k[p];
+					float av = amp[p];
+					const float mv = dec[p] - atk[p];
+					const float ak = atk[p];
+					const float b0 = e0a[p], bd = e1a[p] - b0;
+					for(size_t i = 0; i < n; i++)
+					{
+						const float out = s1v*av*(b0 + bd*(float(i)*invN));
+						const float newS = kv*s2v - s1v;
+						s1v = s2v;
+						s2v = newS;
+						av = av*mv + ak;
+						acc[4*i] += out;
+					}
+					s1[p] = s1v;
+					s2[p] = s2v;
+					amp[p] = av;
 				}
-				s1[p] = s1v;
-				s2[p] = s2v;
-				amp[p] = av;
+			}
+			else
+			{
+				for(size_t p = 0; p < count; p++)
+				{
+					float s1v = s1[p], s2v = s2[p], kv = k[p];
+					float av = amp[p];
+					const float mv = dec[p] - atk[p];
+					const float ak = atk[p];
+					for(size_t i = 0; i < n; i++)
+					{
+						const float out = s1v*av;
+						const float newS = kv*s2v - s1v;
+						s1v = s2v;
+						s2v = newS;
+						av = av*mv + ak;
+						acc[4*i] += out;
+					}
+					s1[p] = s1v;
+					s2[p] = s2v;
+					amp[p] = av;
+				}
 			}
 #endif
 			// Оверлеи («рокот» + «удар» + «блум») подмешиваются в аккумулятор

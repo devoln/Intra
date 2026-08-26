@@ -519,3 +519,97 @@ User to decide.
 - Low notes (C2-C4) held for a few seconds: the pumping "отзвук" should be gone; the note
   should decay smoothly.
 - C5+ long notes: shimmer should be unchanged from Session 13.
+
+## Session 14 (2026-08-26): unison collapse — 1 sine per partial (perf 43.8× → 76.4×)
+
+User asked to commit the Session 13 baseline (done, `e7b85f7`) and to start the unison
+optimization for realtime headroom on weak hardware: piano is 5-10× more expensive than the
+other instruments.
+
+### Change
+
+`AdditiveSampler` now collapses the two detuned unison voices into ONE lane per partial.
+The sum of the two voices (identical phases by design) is reproduced exactly in amplitude by
+a per-partial slow AM envelope in the hot loop:
+
+    g0·sin(ω0t+φ) + g1·sin(ω1t+φ) = (g0+g1)·E(t)·sin(ωt+φ+θ),
+    E(t) = √(cos²(Δ·t) + r²·sin²(Δ·t)),  r = (g0−g1)/(g0+g1) = 0.3/1.7,
+    Δ = π·k·f0·(det1−det0)/sr   (per-partial: beat rate scales with k, as in the sample),
+    |θ| ≤ atan(r) ≈ 10° (dropped — periodic pitch wobble, inaudible).
+
+The lane carries amplitude a·(g0+g1) at the nominal frequency; the envelope E(t) is
+recomputed once per 512-sample block (pseudo-constant, `mBeatE0/mBeatE1`) and linearly
+interpolated across the block, so there are no block-boundary steps/clicks. Peak
+normalization, the contact-force attack buffer and the G-fit are unchanged by construction
+(the collapsed lane's target amplitude is exactly the two-voice sum, so `c`, `gSeam`, the
+attack buffer and all decays are bit-identical). Voices==1/3 keep the old path
+(`mBeatOn=false`); HonkyTonk (3 voices, asymmetric detune) is untouched.
+
+Two overlay calibration fixes were required after the collapse:
+- the push (hammer-strike) overlay and the region-75 bloom overlay are built from lane
+  `crs/cis` states, which now carry g0+g1; they were calibrated against the single-string
+  amplitude, so they are scaled back by `1/gSum` (otherwise C7's +14 dB h1 strike would be
+  +4.6 dB too loud and the waveform correlation fell to 0.92 at C7).
+
+### Verified (equivalence: pre-opt saved build vs new build, keys 60/72/76/84/96)
+
+- 0-100 ms waveform correlation 0.996-1.000 across the keys (was 0.92-0.98 before the overlay
+  fix); per-partial h1/h2 amplitude trajectories match to <1% of audible level; beat crest
+  times match (C7 h2: 0.55/0.95/1.4 s pre vs 0.5/0.95/1.45 s new).
+- Attack untouched: D#5 0-10 ms h2/h1 = −9.2 dB (same as committed baseline), overshoot
+  1.08×, max|diff|(0-5 ms) = 0.032 (normal sine slew, no click).
+- Chopin 290.5 s in 3.80 s → **76.4× realtime** (was 43.8×, +1.74×), peak 0.662 (was 0.667),
+  nonFinite 0. The extra per-sample cost is ~1 SIMD mul per lane (AM lerp), lane count halved.
+- Smoke ×3 passed, `node --check` and `git diff --check` passed, `dist/` reassembled.
+- **WASM: 166,008 → 167,948 bytes** (+1,940 — duplicated hot loop for the `mBeatOn` branch
+  and the beat-state arrays; the size-optimized build with the branch costs less than the
+  runtime overhead of always multiplying by 1.0 for non-piano instruments).
+- Committed baseline `e7b85f7`; this session is uncommitted (user listening).
+
+### Needs Human Verification
+
+- Piano timbre unchanged vs Session 13 (beats/shimmer present, attack identical), especially
+  C7 (strike) and E5 (bloom) where the overlay fix matters.
+- Non-piano programs (HonkyTonk 3-voice, 1-voice instruments) unaffected.
+
+## Session 14b (2026-08-26): beat DEPTH matched to samples per key ("странный отзвук")
+
+User still hears a strange sustained-note artifact that predates the collapse optimization;
+asked whether beats match the samples on all keys. Measured beat rate + depth per root key
+(25-105) in the SF2 samples vs ours (windowed-DFT amplitude trajectories, minima counting
+for rate, residual ratio for depth).
+
+### Findings
+
+- **Rates**: ours matches the samples in the audible range (both scale with f0·detune); the
+  C4+ rates agree within ~0.5-1 Hz (e.g. C6 h2 2.6 vs 4.8, C7 h2 5.2 vs 7.4 — same ballpark,
+  and the Session-13 taper keeps low keys intentional).
+- **Depth**: the samples' beat depth is strongly non-uniform — shallow in the middle of the
+  keyboard (C4 h2 4 dB, C5 h2 7 dB, D#5 5 dB, A4 21 dB) and deep in the treble (C6 21 dB,
+  C7 47 dB); ours was a flat 15.1 dB (gains 1.0/0.7) everywhere. On C5-E5 sustained notes
+  that produced a slow deep pump (period 3-5 s, notch to 17% of the crest) that the sample
+  does not have — the "странный отзвук" the taper only partially fixed.
+
+### Change
+
+Second-string gain is now a per-key curve (the depth is `20log10((g0+g1)/|g0-g1|)`; after
+peak normalization the timbre and average level are unchanged — both strings carry the same
+partials — only the beat swing changes):
+
+- midi ≤ 58 and ≥ 84: g1 = 0.7 (unchanged; low keys have suppressed rates anyway, treble
+  samples beat deep);
+- 58→62: 0.7 → 0.45; 62→76: plateau 0.45 (depth 8.4 dB); 76→84: 0.45 → 0.7.
+
+### Verified
+
+- Sustained C5 h2 now swings ~6 dB (0.0006→0.0012 over 0.4-2.4 s) vs sample 7 dB; C4 h2
+  4/4 dB, F5 15/15, A4 21/15 (sample/ours). Rates untouched (detune unchanged).
+- Attack unchanged (D#5 0-10 ms h2/h1 −9.3 dB), no clicks (max|diff| 0-5 ms = 0.032), Chopin
+  **76.9×** realtime, peak 0.665, nonFinite 0; smoke ×3, `node --check`, `git diff --check`
+  passed; `dist/` reassembled.
+- **WASM: 167,948 → 168,034 bytes** (+86, the depth curve).
+
+### Needs Human Verification
+
+- C4-B5 sustained notes: the slow deep pump should be gone; shimmer lighter, closer to the
+  sample. C6+ should be unchanged (deep beats preserved).
