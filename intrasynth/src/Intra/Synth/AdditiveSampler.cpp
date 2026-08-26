@@ -38,6 +38,19 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		if(fk >= 0.92f*float(sampleRate)*0.5f) break;
 		partials = i + 1;
 	}
+	// 2026-08-26: per-key unison spread. Широкая расстройка (1.4 цента у
+	// AcousticPiano) даёт мерцание в первую секунду на C5+ (измерено из
+	// семпла), но ниже C4 та же расстройка превращается в медленное глубокое
+	// биение фундаментала (0.14-0.28 Гц на C3-C4, глубина ±70%) — «странный
+	// отзвук» в наушниках; в низких семплах SF2 биений почти нет. Плавно
+	// сводим расстройку к ~0.3 цента (принятое до расширения значение) на
+	// C4 и ниже, к базовому значению инструмента на C5, выше — константа.
+	{
+		const float spreadLo = 0.3f;  // абсолютный потолок для низких нот
+		const float spreadHi = 1.4f;  // эталонная расстройка на C5+ (AcousticPiano)
+		const float t = Math::Clamp((midi - 60.0f)/12.0f, 0.0f, 1.0f);
+		detuneCents *= (spreadLo + (spreadHi - spreadLo)*t) / spreadHi;
+	}
 	// «Струны» унисона: 1-3, каждая со своей расстройкой, громкостью и фазой.
 	unisonVoices = Math::Clamp(unisonVoices, 1, 3);
 	const int voices = unisonVoices;
@@ -68,8 +81,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 	const size_t count = Math::Max(size_t(4),
 		(partials*size_t(voices) + 3) & ~size_t(3));
-
-	mS1.SetCount(count);
+		mS1.SetCount(count);
 	mS2.SetCount(count);
 	mK.SetCount(count);
 	mAmp.SetCount(count);
@@ -473,6 +485,228 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		const float bodyScale = c*bodyGain;
 		for(size_t i = 0; i < bodyAlloc; i++) bb[i] *= bodyScale;
 	}
+	// === «УДАР» — фундаментальный транзиент h1(+h2) ===
+	// В семплах SF2 на атаке h1 бьёт пиком выше сустейна (измерено по сырым
+	// семплам, пик 5-40 мс / сустейн 60-200 мс: C4 0.0 дБ, C5 +3.1,
+	// D#5 +10.0, C6 +3.2, D6 +5.7, F6 +5.9, A6 +8.8, C7 +13.9, E7 +13.7,
+	// G7 +14.3), h2 — примерно вдвое слабее и тем слабее, чем выше нота.
+	// Это удар молоточка: h1 раскачивается сильнее остальных мод и гаснет за
+	// ~50-70 мс. Воспроизводим оверлеем, фаза-выровненным к струне (та же
+	// комбинация ci·cos(wt) + cr·sin(wt), что у партиал), огибающая стартует
+	// с нуля — ни шва на стыке буфер→струна, ни щелчка.
+	{
+		// A1 — пиковое превышение h1 (линейное: 10^(дБ/20) − 1), интерполяция
+		// по измеренным точкам семпла; ниже C4 удара нет.
+		float A1;
+		if(midi <= 60.0f) A1 = 0.0f;
+		else if(midi <= 72.0f) A1 = 1.43f*(midi - 60.0f)/12.0f;
+		else if(midi <= 75.0f) A1 = 1.43f + (3.16f - 1.43f)*(midi - 72.0f)/3.0f;
+		else if(midi <= 84.0f) A1 = 3.16f + (1.45f - 3.16f)*(midi - 75.0f)/9.0f;
+		else if(midi <= 87.0f) A1 = 1.45f + (1.93f - 1.45f)*(midi - 84.0f)/3.0f;
+		else if(midi <= 90.0f) A1 = 1.93f + (1.97f - 1.93f)*(midi - 87.0f)/3.0f;
+		else if(midi <= 93.0f) A1 = 1.97f + (2.75f - 1.97f)*(midi - 90.0f)/3.0f;
+		else if(midi <= 96.0f) A1 = 2.75f + (4.95f - 2.75f)*(midi - 93.0f)/3.0f;
+		else if(midi <= 99.0f) A1 = 4.95f + (4.84f - 4.95f)*(midi - 96.0f)/3.0f;
+		else if(midi <= 102.0f) A1 = 4.84f + (5.19f - 4.84f)*(midi - 99.0f)/3.0f;
+		else A1 = 5.19f;
+		// h2-удар относительно h1 (w2, линейное отношение пиков): измерено по
+		// сырым семплам SF2 (окно 10-30 мс, с учётом A1): C5 0.74, D#5 0.62,
+		// C6 1.0, A6 1.4, C7 0.3 (у C7 h2 в таблице и так близок к h1 — удар
+		// его почти не раскачивает), E7 1.1; D6-F6 шумно в семплах, берём ~1.1.
+		float w2;
+		if(midi <= 72.0f) w2 = 0.8f;
+		else if(midi <= 75.0f) w2 = 0.8f + (0.62f - 0.8f)*(midi - 72.0f)/3.0f;
+		else if(midi <= 84.0f) w2 = 0.62f + (1.0f - 0.62f)*(midi - 75.0f)/9.0f;
+		else if(midi <= 93.0f) w2 = 1.0f + (1.4f - 1.0f)*(midi - 84.0f)/9.0f;
+		// w2 — отношение пиков «удара» h2/h1. Так как push-удар h2 пропорционален
+		// амплитуде h2-лейна (A2·state_h2), после снижения табличных амплитуд h2
+		// (96: 1900→300, 99: 470→110) w2 поднят так, чтобы произведение w2·Amp
+		// сохранилось (атака не изменилась): 96: 0.3·1900 = 570 → 1.9·300;
+		// 99: 1.1·470 = 517 → 4.7·110. Сустейн при этом — новая табличная форма.
+		else if(midi <= 96.0f) w2 = 1.4f + (1.9f - 1.4f)*(midi - 93.0f)/3.0f;
+		else if(midi <= 99.0f) w2 = 1.9f + (4.7f - 1.9f)*(midi - 96.0f)/3.0f;
+		else if(midi <= 101.0f) w2 = 4.7f;
+		else w2 = 1.1f;
+		// Кламп 5.0: после снижения табличных амплитуд h2 (96: 1900→300,
+		// 99: 470→110) компенсирующий w2 достигает 4.7; старый потолок 1.5
+		// не давал сохранить атаку (произведение w2·Amp_h2).
+		w2 = Math::Clamp(w2, 0.2f, 5.0f);
+		const float A2 = A1*w2;
+		// Лейны «удара»: ищем РЕАЛЬНЫЕ k=1 (фундаментал) и k=2 (октава) с
+		// ненулевой амплитудой. У большинства регионов это первые две строки
+		// таблицы, но в верхних регионах (84/93/96/99) первая строка — старший
+		// партиал (k=5/k=4/k=3/k=4), а k=1 стоит второй; у 96 есть и мёртвый
+		// дубль k=2 (Amp=0). Жёсткие o1=0/o2=1 давали «удар» h2 на частоте
+		// фундаментала, а h1 — на случайной высокой гармонике.
+		size_t o1 = size_t(-1), o2 = size_t(-1);
+		{
+			size_t o2Best = size_t(-1);
+			uint16 a2Best = 0;
+			for(size_t p = 0; p < partials; p++)
+			{
+				const PianoPartial& pr = PianoAllPartials[region.PartOffset + p];
+				if(pr.K == 1 && pr.Amp > 0 && o1 == size_t(-1)) o1 = p;
+				if(pr.K == 2 && pr.Amp > 0 && pr.Amp > a2Best) { a2Best = pr.Amp; o2Best = p; }
+			}
+			if(A2 > 0.01f && o2Best != size_t(-1)) o2 = o2Best;
+		}
+		mPushLen = 0;
+		mPushPos = 0;
+		if(A1 > 0.01f && o1 != size_t(-1))
+		{
+			// Ramped удар: подъём за ~3 мс (быстрее семплового «тука» h1, но
+			// не ступенькой — старт строго с нуля, без щелчка), спад τ≈15 мс.
+			// Измерение 2026-08-26: прежний τr=14 мс/τd=40 мс слишком «размазывал»
+			// удар — в окне 0-10 мс h2/h1 оставалось −6.7 вместо −9.9 у семпла
+			// (h1 не успевал подняться над октавой). Новый удар пикует ~5 мс и
+			// гаснет к ~50-70 мс, как h1-тук в сыром семпле («settle ~30-50 мс»).
+			const float tauR = 0.003f, tauD = 0.015f;
+			// Длина: пока огибающая > ~1% пика (τd·ln(100) ≈ 0.069 с).
+			mPushLen = size_t(tauD*Math::Log(100.0f)*float(sampleRate)) + 1;
+			// Нормировка огибающей к пику 1 (пик при t* = τr·ln(1+τd/τr)).
+			const float tStar = tauR*Math::Log(1.0f + tauD/tauR);
+			const float gMax = (1.0f - Math::Exp(-tStar/tauR))*Math::Exp(-tStar/tauD);
+			mPushBuf.SetCount(mPushLen);
+			float* pb = mPushBuf.Data();
+			// Огибающая и вращение без тригонометрии на сэмпл: g(i) =
+			// (1−rR^i)·rD^i/gMax, а волна cis·cos(i·w) + crs·sin(i·w) — это Y_i
+			// комплексного вращения (X_0,Y_0) = (crs,cis) на w каждый шаг.
+			const float rR = Math::Exp(-1.0f/(tauR*float(sampleRate)));
+			const float rD = Math::Exp(-1.0f/(tauD*float(sampleRate)));
+			float x1 = crs[o1], y1 = cis[o1];
+			const float cw1 = Math::Cos(dphis[o1]), sw1 = Math::Sin(dphis[o1]);
+			float x2 = 0.0f, y2 = 0.0f, cw2 = 0.0f, sw2 = 0.0f;
+			if(o2 != size_t(-1))
+			{
+				x2 = crs[o2]; y2 = cis[o2];
+				cw2 = Math::Cos(dphis[o2]); sw2 = Math::Sin(dphis[o2]);
+			}
+			float rp = 1.0f, dp = 1.0f;
+			for(size_t i = 0; i < mPushLen; i++)
+			{
+				const float g = (1.0f - rp)*dp/gMax;
+				float s = A1*y1;
+				if(o2 != size_t(-1)) s += A2*y2;
+				pb[i] = c*g*s;
+				rp *= rR; dp *= rD;
+				const float nx1 = x1*cw1 - y1*sw1;
+				y1 = x1*sw1 + y1*cw1;
+				x1 = nx1;
+				if(o2 != size_t(-1))
+				{
+					const float nx2 = x2*cw2 - y2*sw2;
+					y2 = x2*sw2 + y2*cw2;
+					x2 = nx2;
+				}
+			}
+		}
+	}
+	// === «БЛУМ» сустейна — яркая голова, сседающая к таблице ===
+	// В сырых семплах SF2 у D5–E5 (регион 75) обертона h2–h3 в первые
+	// ~0.1–0.7 с держатся ПОВЫШЕННО (h2 почти вровень с h1 на 0.1–0.3 с:
+	// +1 дБ, к ~0.7 с сседает к плоской табличной форме −8 дБ; h3 выше на
+	// 4–8 дБ) и только потом проседают к плоской табличной форме. У плоской
+	// струны (Session 7 дала региону ОДИНАКОВОЕ затухание, чтобы отношения
+	// держались ровно от t=0) этой временной «яркой головы» нет — первые
+	// полсекунды длинной ноты звучат беднее семпла на 4–10 дБ по h2–h3.
+	// Блум — третий оверлей: фаза-выровненная сумма партиал h2–h3 × мал.
+	// множитель × огибающая (0 до 45 мс — после атаки, подъём τr≈55 мс,
+	// экспоненц. спад τd=0.20 с), стартует с нуля — без щелчка, к ~0.75 с
+	// доходит до нуля, в поздний сустейн (уже плоский и откалиброванный) не
+	// входит. Атака не меняется: блум начинается после неё и на её окнах
+	// (0–30 мс) пренебрежимо мал.
+	mBloomPos = 0;
+	mBloomLen = 0;
+	mBloomOn = false;
+	// Только остров D5–E5 (регион 75): у соседних регионов (69/72/78/81/84)
+	// ранний сустейн УЖЕ совпадает с семплом (h2 в пределах 0–2 дБ) — блум там
+	// перелетал бы в «двойной» тембр. Измеренный разрыв 0.1–0.7 с именно у
+	// региона 75: h2 −9…−10 дБ, h3 −4…−8 дБ (см. docs/tasks/20260825-*).
+	if(region.RootKey == 75)
+	{
+		// Пер-частичные усиления головы сустейна (линейная амплитуда):
+		//   h2 ≈ +7 дБ (×2.2), h3 ≈ +3 дБ (×1.4); h4 — не трогаем: разрыв мал
+		// (наши −28 против семпла −27), а с блумом он перелетал в +7 дБ.
+		const float b2 = 2.2f, b3 = 1.4f;
+		// Огибающая: 0 до t=delay (после атаки), затем (1−e^(−(t−delay)/τr))·e^(−t/τd),
+		// норм. к пику; хвост обрезается на −26 дБ с коротким линейным фейдом.
+		const float tauR = 0.055f, tauD = 0.20f;
+		const float delay = 0.045f;
+		const float ts = delay + tauR*Math::Log(1.0f + tauD/tauR);
+		const float gMax = (1.0f - Math::Exp(-(ts-delay)/tauR))*Math::Exp(-ts/tauD);
+		const size_t lenCut = size_t((tauD*Math::Log(1.0f/0.026f))*float(sampleRate));
+		const size_t len = lenCut + size_t(0.02f*float(sampleRate)); // +20 мс фейд
+		// Найти лейны h2/h3 с реальной амплитудой (h1/h4/h5 не участвуют).
+		size_t lanes[4] = {size_t(-1), size_t(-1), size_t(-1), size_t(-1)};
+		for(size_t p = 0; p < partials; p++)
+		{
+			const PianoPartial& pr = PianoAllPartials[region.PartOffset + p];
+			if((unsigned)pr.K >= 2 && (unsigned)pr.K <= 3 && pr.Amp > 0)
+				if(lanes[pr.K] == size_t(-1)) lanes[pr.K] = p;
+		}
+		const float bAmp[4] = {0.0f, 0.0f, b2, b3};
+		const bool any = (lanes[2] != size_t(-1) && b2 > 0.01f) || (lanes[3] != size_t(-1) && b3 > 0.01f);
+		if(any && gMax > 1e-3f)
+		{
+			mBloomOn = true;
+			mBloomLen = len;
+			mBloomBuf.SetCount(len);
+			float* bb = mBloomBuf.Data();
+			float x[4] = {0}, y[4] = {0}, cw[4] = {0}, sw[4] = {0};
+			bool active[4] = {false, false, false, false};
+			for(int K = 2; K <= 3; K++)
+			{
+				const size_t p = lanes[K];
+				if(p == size_t(-1) || bAmp[K] <= 0.01f) continue;
+				// Фаза на стыке: струна начинает играть после attack-буфера со
+				// своего t=0 состояния (состояния SineRange при проигрывании
+				// буфера не продвигаются), а блум играет с сэмпла 0. Чтобы на
+				// сэмпле mAttackLen фазы совпали (иначе блум складывается с
+				// партиалом от противо- до синфазно в зависимости от частоты —
+				// на C5 h3 это давало разрушающую интерференцию −10 дБ), стартовый
+				// фазор блума поворачиваем НАЗАД на mAttackLen·dphi.
+				const float aBack = float(mAttackLen)*dphis[p];
+				const float ca = Math::Cos(aBack), sa = Math::Sin(aBack);
+				x[K] = crs[p]*ca + cis[p]*sa;
+				y[K] = -crs[p]*sa + cis[p]*ca;
+				cw[K] = Math::Cos(dphis[p]); sw[K] = Math::Sin(dphis[p]);
+				active[K] = true;
+			}
+			// Бегущие множители огибающей: decay_ = e^(−i/(τd·sr)); rise_ =
+			// 1−e^(−(i−delay)/(τr·sr)) через экспоненциальное сглаживание
+			// rise_ += (1−rise_)·(1−rR) — начинается с 0 на i=dN. 4 умножения
+			// на сэмпл — конструктор дёшев.
+			const float rD = Math::Exp(-1.0f/(tauD*float(sampleRate)));
+			const float rR = Math::Exp(-1.0f/(tauR*float(sampleRate)));
+			const size_t dN = size_t(delay*float(sampleRate));
+			float decay_ = 1.0f, rise_ = 0.0f;
+			for(size_t i = 0; i < len; i++)
+			{
+				float g = 0.0f;
+				if(i > dN) rise_ += (1.0f - rise_)*(1.0f - rR);
+				if(i >= dN) g = rise_*decay_/gMax;
+				float s = 0.0f;
+				for(int K = 2; K <= 3; K++) if(active[K]) s += bAmp[K]*y[K];
+				bb[i] = c*g*s;
+				decay_ *= rD;
+				for(int K = 2; K <= 3; K++)
+				{
+					if(!active[K]) continue;
+					const float nxx = x[K]*cw[K] - y[K]*sw[K];
+					y[K] = x[K]*sw[K] + y[K]*cw[K];
+					x[K] = nxx;
+				}
+			}
+			// Линейный фейд последних 20 мс к нулю (без щелчка на обрезании).
+			const size_t fadeN = size_t(0.02f*float(sampleRate));
+			for(size_t i = lenCut; i < len; i++)
+			{
+				const float f = float(len - i)/float(fadeN);
+				bb[i] *= f;
+			}
+		}
+	}
+
 	// Струна: состояния — табличные (моды после контакта), амплитуды:
 	//   - возбуждённые ударом входят на уровне gSeam (последний сэмпл буфера
 	//     уже приведён к нему — шов бесшовный) и дорастают до табличной
@@ -510,6 +744,10 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mVolume = volume;
 	mDone = false;
 	mReleased = false;
+	mOverlayGain = 1.0f;
+	mOverlayRel = 1.0f;
+	mOverlayActive = true;
+	mSampleRate = sampleRate;
 	// Стерео: constant-power pan. Voice 0 → left, voice 1 → right.
 	// StereoPan из региона — измеренный L/R level diff. При 2 голосах
 	// каждый панорамируется в свою сторону. При 1 или 3 голосах —
@@ -560,6 +798,11 @@ void AdditiveSampler::NoteRelease()
 	const float* decR = mDecayRelease.Data();
 	float* atk = mAtk.Data();
 	for(size_t p = 0; p < count; p++) { dec[p] *= decR[p]; atk[p] = 0.0f; }
+	// Транзиенты удара/корпуса при отпускании гаснут плавно (τ≈8 мс):
+	// это «удар в воздухе», демпфер убивает и его (иначе на стаккато
+	// h1-удар +14 дБ продолжал бы звучать после отпускания), но резкий
+	// обрыв в ненулевой амплитуде дал бы щелчок.
+	mOverlayRel = Math::Exp(-1.0f/(0.008f*float(mSampleRate)));
 	// mEndSamples не трогаем — нота закончится естественным путём,
 	// когда amp[p] → 0 для всех партиал. mDone установится в RenderInto.
 }

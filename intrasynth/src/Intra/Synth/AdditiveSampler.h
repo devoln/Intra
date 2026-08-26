@@ -69,6 +69,40 @@ class AdditiveSampler: public IGenericSampler
 	FixedArray<float> mBodyBuf;
 	size_t mBodyLen;
 	size_t mBodyPos;
+	// «Удар» — фундаментальный транзиент: в семплах SF2 h1 (и слабее h2) на
+	// атаке бьёт пиком на +3..+14 дБ выше сустейна (зависит от высоты; C7
+	// +13.9 дБ) и гаснет за ~100 мс — плотный удар молоточка по струне, он
+	// и даёт высоким нотам объём. Чисто-аддитивная струна его не даёт (моды
+	// стартуют ровно по таблице), поэтому без него атака верхних нот звучит
+	// «пищалкой»: h2/h1 ≈ 0 дБ вместо −10..−20 дБ у семпла. Транзиент —
+	// оверлей (как «рокот»): фаза-выровненная сумма партиал h1/h2 × A1/A2 ×
+	// огибающая (подъём τr≈14 мс, спад τd≈40 мс, норм. к пику 1), старт с
+	// нуля — без щелчка; в сустейн не входит, при release гасится сразу.
+	FixedArray<float> mPushBuf;
+	size_t mPushLen;
+	size_t mPushPos;
+	// «Блум» сустейна — времязависимый тембр, которого нет у плоской таблицы:
+	// в сырых семплах SF2 обертона h2–h3 держатся ПОВЫШЕННО первые ~0.1–0.7 с
+	// сустейна (на D#5 h2 почти вровень с h1 на 0.1–0.3 с, к ~0.7 с сседает к
+	// плоскому уровню), а наша плоская струна (Session 7) разница со семплом
+	// по h2–h3 в первые полсекунды длинной ноты 4–10 дБ — это и звучит как
+	// «бедно». Блум — третий оверлей (как рокот/удар): фаза-выровненная сумма
+	// партиал h2–h3 × малый множитель × огибающая (0 до 45 мс — после атаки,
+	// подъём τr≈55 мс, экспоненц. спад τd=0.20 с), стартует с нуля — без
+	// щелчка; к ~0.75 с доходит до нуля и в поздний сустейн не входит.
+	FixedArray<float> mBloomBuf;
+	size_t mBloomLen;
+	size_t mBloomPos;
+	// Bloom включается только для региона 75 (остров D5–E5, см. ctor).
+	bool mBloomOn;
+// Фейд оверлеев (рокот+удар) при release: демпфер убивает и «удар в
+	// воздухе», но плавно (τ≈8 мс), иначе стаккато на верхних нотах обрывало
+	// h1-транзиент в +14 дБ щелчком. mOverlayGain умножается на mOverlayRel
+	// каждый сэмпл, пока идут оверлеи.
+	float mOverlayGain;
+	float mOverlayRel;
+	bool mOverlayActive;
+	unsigned mSampleRate;
 	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока.
 	FixedArray<float> mScratch;
 	size_t mCount;   // число осцилляторов (партиалы × струны, кратно 4)
@@ -122,8 +156,8 @@ public:
 	///   TrebleTilt — подавление обертонов с ростом высоты (0 = по семплу).
 	///
 	/// Атака — контактная сила: короткий sin²-импульс возбуждает те же
-	/// моды, что звучат в сустейне (см. конструктор); отдельного «слоя
-	/// молоточка» нет.
+	/// моды, что звучат в сустейне (см. конструктор); отдельного слоя
+	/// молоточка нет.
 	AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		size_t maxPartials, float brightness, float scale, float decayScale,
 		float decayStiffness, float detuneCents,
@@ -156,7 +190,14 @@ public:
 		{
 			const size_t t = mRendered++;
 			float s = mAttackBuf[mAttackPos++];
-			if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++];
+			if(mOverlayActive)
+			{
+				if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++]*mOverlayGain;
+				if(mPushPos < mPushLen) s += mPushBuf[mPushPos++]*mOverlayGain;
+				if(mBloomOn && mBloomPos < mBloomLen) s += mBloomBuf[mBloomPos++];
+				mOverlayGain *= mOverlayRel;
+				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
+			}
 			if(mEndSamples)
 			{
 				if(t >= mEndSamples) s = 0.0f;
@@ -255,12 +296,27 @@ public:
 				amp[p] = av;
 			}
 #endif
+			// Оверлеи («рокот» + «удар» + «блум») подмешиваются в аккумулятор
+			// отдельным коротким циклом, пока они активны.
+			if(mOverlayActive)
+			{
+				size_t ov = 0;
+				while(ov < n && (mBodyPos < mBodyLen || mPushPos < mPushLen || (mBloomOn && mBloomPos < mBloomLen)))
+				{
+					float o = 0.0f;
+					if(mBodyPos < mBodyLen) o += mBodyBuf[mBodyPos++]*mOverlayGain;
+					if(mPushPos < mPushLen) o += mPushBuf[mPushPos++]*mOverlayGain;
+					if(mBloomOn && mBloomPos < mBloomLen) o += mBloomBuf[mBloomPos++];
+					mOverlayGain *= mOverlayRel;
+					acc[4*ov] += o;
+					ov++;
+				}
+				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
+			}
 			// Свёртка 4 лейнов.
 			for(size_t i = 0; i < n; i++)
 			{
 				float s = (acc[4*i] + acc[4*i+1]) + (acc[4*i+2] + acc[4*i+3]);
-				// «Рокот» (корпус) доигрывает поверх струны первые ~0.12 с.
-				if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++];
 				const size_t t = mRendered - n + i;
 				// Конец региона: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).

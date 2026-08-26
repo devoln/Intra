@@ -53,6 +53,8 @@
     drumsCh: document.getElementById("drumsCh"),
     midiStatus: document.getElementById("midiStatus"),
     piano: document.getElementById("piano"),
+    noteTestNotes: document.getElementById("noteTestNotes"),
+    noteTestStatus: document.getElementById("noteTestStatus"),
     audioSampleRate: document.getElementById("audioSampleRate"),
   };
 
@@ -484,6 +486,28 @@
     return true;
   }
 
+  const noteTestTimers = new Map();
+
+  function auditionTestNote(note) {
+    if (!Module) {
+      if (els.noteTestStatus) els.noteTestStatus.textContent = "Синтезатор ещё загружается.";
+      return;
+    }
+    if (!liveMode && !startLive()) return;
+    sendMidiEvent(0xC0, 0, 0);
+    sendMidiEvent(0x90, note, 100);
+    if (els.noteTestStatus) {
+      els.noteTestStatus.textContent = "Звучит MIDI-нота " + note + ".";
+    }
+    const oldTimer = noteTestTimers.get(note);
+    if (oldTimer) clearTimeout(oldTimer);
+    const timer = setTimeout(() => {
+      if (liveMode && currentSource) sendMidiEvent(0x80, note, 0);
+      noteTestTimers.delete(note);
+    }, 1400);
+    noteTestTimers.set(note, timer);
+  }
+
   function stopLive() {
     if (!liveMode) return;
     allNotesOff();
@@ -733,6 +757,12 @@
 
   els.playBtn.addEventListener("click", playPause);
   els.stopBtn.addEventListener("click", stopPlayback);
+
+  els.noteTestNotes.querySelectorAll("[data-note]").forEach((button) => {
+    button.addEventListener("click", () => {
+      auditionTestNote(parseInt(button.dataset.note, 10));
+    });
+  });
 
   els.liveBtn.addEventListener("click", () => {
     if (liveMode) stopLive();
