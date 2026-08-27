@@ -16,6 +16,5 @@ If work continues for a while in one direction without an assigned task, and dec
 
 High-level process artifacts and shared skills in `.agents/` must not be changed without explicit owner agreement.
 
-Use `./run` script the same way you would use npm scripts: running tests, building or deploying. Propose adding new commands and arguments there if needed. This script is white-listed, you can use it freely without asking permission.
 
 Temporary experiment output (ad-hoc build trees, probes, scratch renders) must go under `.scratch/` and stay gitignored; never leave untracked `build-*/` or `probe-*` dirs in the repo root (`/.scratch/`, `/build-*/`, `/probe-tmp/` are in `.gitignore`).

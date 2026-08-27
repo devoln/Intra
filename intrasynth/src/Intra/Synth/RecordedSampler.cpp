@@ -26,7 +26,7 @@ GenericSamplerRef CachedDrumInstrument::operator()(float volume, unsigned sample
 			size_t(double(SampleCount)*sampleRate/44100.0 + 0.5));
 		Data.SetCountUninitialized(targetCount);
 		FillZeros(Data.AsRange());
-		DataSampler->GenerateMono(Data, nullptr);
+		DataSampler->GenerateMono(Data);
 		float u = 1;
 		LinearMultiply(Data.Tail(300), u, -0.00333f);
 	}

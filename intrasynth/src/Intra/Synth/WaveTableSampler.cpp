@@ -42,7 +42,7 @@ WaveTableSampler::WaveTableSampler(Span<const float> periodicWave, float rate,
 	float attenuationPerSample, float volume, float vibratoDeltaPhase,
 	float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples):
 	mSampleFragmentStart(periodicWave.Data()), mSampleFragmentLength(unsigned(periodicWave.Length())),
-	mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f), mReverbMultiplier(0),
+	mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f),
 	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mEnvelope(envelope),
 	mExpAtten(ExponentAttenuator::FromFactorAndStep(volume, attenuationPerSample)),
 	mFragmentOffset(randGen(periodicWave, rate, volume)(mSampleFragmentLength)),
@@ -76,12 +76,6 @@ void WaveTableSampler::generateWithDefaultRate(SamplerTaskContainer& dstTasks, s
 			//В этом случае невозможно применить трюк с предварительным наложением экспоненты на периодический семпл.
 			//Поэтому честно накладываем экспоненту и ADSR. Класс ADSR умеет делать это всё за один проход.
 			leftSegment.Exp *= leftExpAtten;
-		}
-		if(mReverbMultiplier)
-		{
-			EnvelopeSegment reverbSegment = leftSegment;
-			reverbSegment.Exp.Factor *= mReverbMultiplier;
-			dstTasks.Add<NormalRateTask>(0, leftOffsetInSamples, leftFragment, reverbSegment);
 		}
 		if(mLeftMultiplier)
 		{
@@ -148,13 +142,12 @@ bool WaveTableSampler::Generate(SamplerTaskContainer& dstTasks, size_t offsetInS
 // Общий прямой рендер стерео/реверба (используется NoteSampler).
 // Прибавляет результат в dst (буферы предварительно занулены).
 // Возвращает число обработанных семплов.
-size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb)
+size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight)
 {
 	const size_t n = dstLeft.Length();
 	if(n == 0 || mSampleFragmentLength == 0) return 0;
 
 	const bool hasRight = !dstRight.Empty() && mRightMultiplier != 0;
-	const bool hasReverb = !dstReverb.Empty() && mReverbMultiplier != 0;
 	const bool preAttenuated = OwnExponentialAttenuatedDataArray();
 
 	const float* frag = mSampleFragmentStart;
@@ -162,7 +155,6 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight,
 	float leftOffset = mFragmentOffset;
 	float rightOffset = float(mRightFragmentOffset);
 	float noteFactor = mExpAtten.Factor;
-	const float noteStep = mExpAtten.FactorStep;
 	// Правый канал всегда читает ту же таблицу со сдвигом channelDelta
 	// (mRightFragmentOffset = (mFragmentOffset + channelDelta) mod len).
 	const size_t channelDelta = (mRightFragmentOffset + len - unsigned(mFragmentOffset)) % len;
@@ -180,14 +172,9 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight,
 		const float expStep = seg.Exp.FactorStep;
 		const float lin = seg.Linear.Factor;
 		const float linStep = seg.Linear.FactorStep;
-		const float wrapStep = preAttenuated ? noteStep : 1.0f;
-		const float wrapStart = preAttenuated ? noteFactor : 1.0f;
-
 		const Span<const float> src(frag, len);
 		auto dstLeftChunk = dstLeft.Drop(processed).Take(chunk);
 		const bool constantAmp = (expStep == 1.0f && linStep == 0.0f);
-		const float reverbStart = leftOffset;
-
 		if(hasRight)
 		{
 			auto dstRightChunk = dstRight.Drop(processed).Take(chunk);
@@ -238,16 +225,6 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight,
 			SynthKernels::MultiplyAddLinearInterpolated(dstLeftChunk, src,
 				leftOffset, mRate, exp, expStep, constWrap, 1.0f,
 				lin*mLeftMultiplier, linStep*mLeftMultiplier);
-		}
-
-		if(hasReverb)
-		{
-			float reverbOffset = reverbStart;
-			float reverbWrap = wrapStart;
-			SynthKernels::MultiplyAddLinearInterpolated(
-				dstReverb.Drop(processed).Take(chunk), src,
-				reverbOffset, mRate, exp*mReverbMultiplier, expStep, reverbWrap, wrapStep,
-				lin, linStep);
 		}
 
 		mFragmentOffset = leftOffset;
@@ -339,9 +316,9 @@ Span<float> WaveTableSampler::GenerateMono(Span<float> ioDst)
 	return nullptr;
 }
 
-size_t WaveTableSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb)
+size_t WaveTableSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight)
 {
-	return renderDirect(dstLeft, dstRight, dstReverb);
+	return renderDirect(dstLeft, dstRight);
 }
 
 WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, unsigned sampleRate) const

@@ -22,14 +22,14 @@ class SamplerTask
 public:
     enum Channel: byte
     {
-        LeftChannel = 0, RightChannel = 1, ReverbChannel = 2,
-        AllChannels = 3   // задача пишет во все каналы (выполняется главным потоком)
+        LeftChannel = 0, RightChannel = 1,
+        AllChannels = 2   // задача пишет во все dry-каналы (выполняется главным потоком)
     };
 
     enum ChannelFlag: byte
     {
-        LeftChannelFlag = 1, RightChannelFlag = 2, ReverbChannelFlag = 4,
-        ChannelFlags = LeftChannelFlag|RightChannelFlag|ReverbChannelFlag
+        LeftChannelFlag = 1, RightChannelFlag = 2,
+        ChannelFlags = LeftChannelFlag|RightChannelFlag
     };
 
     uint16 OffsetInSamples, NumSamples;
@@ -57,28 +57,28 @@ typedef Intra::Container::DynamicBlob<SamplerTask, alignof(SamplerTask), uint16>
 /// этого семплера.
 struct SamplerJob { uint16 Begin, End, Cost; };
 
-/// Буферы трёх каналов кадра + выполнение задач.
+/// Два dry-канала кадра + выполнение задач. Master reverb получает отдельный
+/// mono-send после сведения этих каналов в MidiSynth.
 class SamplerTaskContext
 {
     FixedArray<float> allSamples;
 public:
     uint16 UsedChannels;
-    Span<float> Channels[3];
+    Span<float> Channels[2];
 
     SamplerTaskContext& operator=(const SamplerTaskContext&) = delete;
 
     SamplerTaskContext(size_t frameLength):
-        allSamples(frameLength*3), UsedChannels(0),
+        allSamples(frameLength*2), UsedChannels(0),
         Channels{
             allSamples.AsRange().Take(frameLength),
-            allSamples.AsRange().Drop(frameLength).Take(frameLength),
-            allSamples.AsRange().Drop(frameLength * 2)
+            allSamples.AsRange().Drop(frameLength).Take(frameLength)
         }
     {}
 
     void ClearChannels()
     {
-        for(int i = 0; i < 3; i++) FillZeros(Channels[i]);
+        for(int i = 0; i < 2; i++) FillZeros(Channels[i]);
         UsedChannels = 0;
     }
 
@@ -87,7 +87,7 @@ public:
     // а задачи каждого кадра трогают только первые count семплов.
     void ClearChannels(size_t count)
     {
-        for(int i = 0; i < 3; i++) FillZeros(Channels[i].Take(count));
+        for(int i = 0; i < 2; i++) FillZeros(Channels[i].Take(count));
         UsedChannels = 0;
     }
 
@@ -104,7 +104,7 @@ public:
 
     void MergeTo(SamplerTaskContext& dst) const
     {
-        for(int i = 0; i < 3; i++)
+        for(int i = 0; i < 2; i++)
         {
             if((UsedChannels & (1 << i)) == 0) continue;
             if((dst.UsedChannels & (1 << i)) == 0) CopyTo(Channels[i], dst.Channels[i]);

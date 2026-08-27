@@ -7,8 +7,8 @@
 //   _SourceFree(source*)
 //   _SourceSamplesLeft(source*) -> uint (samples per channel remaining)
 //   _SourceGetUninterleavedSamples(source*, dstPtr, count, bufferSizeInSamples) -> uint
-//   _SourceSendMidiEvent(source*, status, data0, data1) -> void
-//   _GetMidiInfoString(dataPtr, len) -> char* (malloc'd, must be freed)
+//   _SourceSendMidiEvent(source*, status, data0, data1) -> void  //   _GetMidiInfoString(dataPtr, len) -> char* (malloc'd, must be freed)
+
 //
 // sendMidiEvent() is the single live-input entry point: it forwards one raw
 // MIDI message (status + up to two data bytes, as in Web MIDI's data arrays)
@@ -28,6 +28,30 @@
   const AUDIO_CHUNK = 8192; // max samples pulled per fast-forward step
   const PROC_BUFFER = 256; // ScriptProcessor buffer size (min для live-задержки)
   const MAX_PREGEN_BYTES = 512 * 1024 * 1024; // cap for the offline buffer
+
+  // Yield that is NOT throttled by browser timer throttling. In iframe /
+  // headless contexts setTimeout can be clamped to ~1 Hz, which made full
+  // generation look frozen (percent barely moving). MessageChannel posts are
+  // delivered at the normal task rate even when timers are throttled.
+  // Waiters are queued (not a single onmessage slot) so that concurrent
+  // awaiters — e.g. the generation loop and loadFromBytes waiting for it to
+  // stop — each get their own wake-up instead of stealing each other's.
+  const yieldResolvers = [];
+  let yieldChannel = null;
+  function yieldToUI() {
+    if (!yieldChannel) {
+      yieldChannel = new MessageChannel();
+      yieldChannel.port1.onmessage = () => {
+        const resolve = yieldResolvers.shift();
+        if (resolve) resolve();
+      };
+      yieldChannel.port1.start();
+    }
+    return new Promise((resolve) => {
+      yieldResolvers.push(resolve);
+      yieldChannel.port2.postMessage(null);
+    });
+  }
 
   const els = {
     drop: document.getElementById("drop"),
@@ -51,6 +75,8 @@
     allNotesOff: document.getElementById("allNotesOff"),
     instrument: document.getElementById("instrument"),
     drumsCh: document.getElementById("drumsCh"),
+    reverb: document.getElementById("reverb"),
+    reverbLabel: document.getElementById("reverbLabel"),
     midiStatus: document.getElementById("midiStatus"),
     piano: document.getElementById("piano"),
     noteTestNotes: document.getElementById("noteTestNotes"),
@@ -58,8 +84,10 @@
     audioSampleRate: document.getElementById("audioSampleRate"),
   };
 
-  // Live-режим: игра без MIDI-файла на бесконечном источнике тишины.
-  let liveMode = false;
+  // MIDI-клавиатура — независимый источник, работающий параллельно с песней.
+  let keyboardSource = 0;
+  let keyboardEnabled = false; // external Web MIDI input only
+  let pianoSourceReady = false; // on-screen piano/test-note source only
   let liveChannel = 0; // 9 (канал ударных), когда включены ударные
   let currentProgram = 0; // выбранный GM-инструмент (Program Change)
   let midiAccess = null;
@@ -70,6 +98,9 @@
   let processor = null;
   let gainNode = null;
   let scratchPtr = 0;
+  let paramsPtr = 0;
+  const renderParams = { ReverbWet: 0 };
+  let renderParamsGeneration = 0;
 
   let currentSource = 0; // WASM pointer, 0 = none
   let midiBytes = null; // last loaded MIDI bytes (for seek/replay)
@@ -85,6 +116,9 @@
   let pregenAudio = null;   // { left: Float32Array, right: Float32Array, len }
   let pregenMs = null;      // last full-render duration in ms
   let pregenPos = 0;        // read position inside pregenAudio
+  let generationActive = false; // a full-generation pass is in flight
+  let generationAbort = false;  // set by Stop while generating (safe abort)
+  let loadingFile = false;      // a file read/load is in flight (async FileReader)
 
   function fmtTime(sec) {
     if (!isFinite(sec) || sec < 0) sec = 0;
@@ -140,13 +174,15 @@
     const outR = e.outputBuffer.getChannelData(1);
     const n = outL.length;
 
-    if ((!currentSource && !pregenAudio) || paused || !Module) {
+    if ((!currentSource && !pregenAudio && !keyboardSource) || !Module) {
       outL.fill(0);
       outR.fill(0);
       return;
     }
 
-    if (pregenAudio) {
+    if (pregenAudio && !paused) {
+      // Render parameters are applied before generation; changing them invalidates
+      // the cached buffer so this path never hides the live WASM effect state.
       // Playback from the fully rendered buffer: zero WASM calls per callback.
       const len = pregenAudio.len;
       const copy = Math.min(n, Math.max(0, len - pregenPos));
@@ -166,9 +202,9 @@
     }
 
     // Channel 0 -> [0 .. n), channel 1 -> [n .. 2n) in the scratch buffer.
-    const written = Module._SourceGetUninterleavedSamples(
-      currentSource, scratchPtr, n, n
-    );
+    const written = currentSource && !paused
+      ? Module._SourceGetUninterleavedSamples(currentSource, scratchPtr, n, n)
+      : 0;
     const heap = Module.HEAPF32;
     const off = scratchPtr >> 2;
     for (let i = 0; i < n; i++) {
@@ -180,10 +216,22 @@
       outR[i] = 0;
     }
 
-    playedSamples += n;
-    updateProgressUI();
+    if (keyboardSource) {
+      const keyboardWritten = Module._SourceGetUninterleavedSamples(
+        keyboardSource, scratchPtr, n, n
+      );
+      for (let i = 0; i < keyboardWritten; i++) {
+        outL[i] += heap[off + i];
+        outR[i] += heap[off + n + i];
+      }
+    }
 
-    if (written === 0 || Module._SourceSamplesLeft(currentSource) === 0) {
+    if (currentSource && !paused) {
+      playedSamples += n;
+      updateProgressUI();
+    }
+
+    if (currentSource && !paused && written === 0 && Module._SourceSamplesLeft(currentSource) === 0) {
       stopPlayback();
     }
   }
@@ -191,6 +239,11 @@
   function freeSource() {
     if (currentSource && Module) Module._SourceFree(currentSource);
     currentSource = 0;
+  }
+
+  function freeKeyboardSource() {
+    if (keyboardSource && Module) Module._SourceFree(keyboardSource);
+    keyboardSource = 0;
   }
 
   // Parses bytes and builds a synth source. Returns { src, info }.
@@ -219,8 +272,25 @@
     return { src: srcPtr, info: infoText };
   }
 
-  function loadFromBytes(bytes, name) {
-    if (liveMode) stopLive();
+  async function loadFromBytes(bytes, name) {
+    loadingFile = true;
+    try {
+      // If a full-generation pass is rendering the current source, never free
+      // it out from under the loop (use-after-free made the WASM render loop
+      // spin forever: the page froze, Stop did nothing). Ask it to stop and
+      // wait until it has fully unwound before touching any source.
+      if (generationActive) {
+        generationAbort = true;
+        setStatus("Ожидание остановки генерации…");
+        while (generationActive) await yieldToUI();
+      }
+      await loadFromBytesInner(bytes, name);
+    } finally {
+      loadingFile = false;
+    }
+  }
+
+  async function loadFromBytesInner(bytes, name) {
     releaseAllPianoNotes();
     freeSource();
     midiBytes = bytes;
@@ -242,7 +312,10 @@
       ensureAudio();
       const { src, info } = createSource(bytes);
       currentSource = src;
+      if (!paramsPtr) paramsPtr = Module._malloc(4);
       totalSamples = Module._SourceSamplesLeft(src);
+      applyRenderParams(currentSource);
+    applyRenderParams(keyboardSource);
       const lines = (info || "").split("\n").filter(Boolean);
       els.info.innerHTML = lines.length
         ? lines.map((l) => `<span>${escapeHtml(l)}</span>`).join("")
@@ -261,6 +334,7 @@
   }
 
   async function loadFromUrl(url) {
+    loadingFile = true;
     setStatus("Загрузка MIDI по URL…");
     let bytes;
     try {
@@ -276,6 +350,7 @@
         if (!res.ok) throw new Error("HTTP " + res.status);
         bytes = new Uint8Array(await res.arrayBuffer());
       } catch (e2) {
+        loadingFile = false;
         setStatus(
           "Не удалось загрузить URL (CORS/сеть). Скачайте файл и откройте локально.",
           true
@@ -304,49 +379,123 @@
       setStatus("Файл слишком длинный для полной генерации", true);
       return null;
     }
-    const left = new Float32Array(totalSamples);
-    const right = new Float32Array(totalSamples);
+    // Если источник уже частично потреблён реальным временем (играли до этого),
+    // пересоздаём его, чтобы буфер начинался с 0 и процент совпадал со всей песней.
+    if (midiBytes && Module._SourceSamplesLeft(currentSource) < totalSamples) {
+      try {
+        const { src } = createSource(midiBytes);
+        freeSource();
+        currentSource = src;
+        applyRenderParams(currentSource);
+      } catch (err) {
+        setStatus(err.message || "Ошибка при пересоздании источника", true);
+        return null;
+      }
+    }
+    let left, right;
+    try {
+      left = new Float32Array(totalSamples);
+      right = new Float32Array(totalSamples);
+    } catch (err) {
+      setStatus(
+        "Не хватило памяти для полной генерации (~" + Math.round(bytes / 1048576) + " МБ)",
+        true
+      );
+      return null;
+    }
+    // Capture the source locally: from here on we render THIS source. Nobody
+    // may free it while the loop runs (loadFromBytes / seekTo / stopPlayback
+    // are all excluded while generationActive is set), so the loop can never
+    // dereference a freed WASM pointer (that used to hang the whole page).
+    const src = currentSource;
     const heap = Module.HEAPF32;
     const off = scratchPtr >> 2;
     const t0 = performance.now();
     let pos = 0;
     let reportCounter = 0;
     while (pos < totalSamples) {
+      // Stop во время генерации — безопасная остановка: выходим на следующем
+      // чанке, не трогая источник (иначе use-after-free повесил бы WASM-цикл).
+      if (generationAbort) {
+        setStatus("Генерация отменена");
+        return null;
+      }
+      // Keep the browser responsive on long files and avoid monopolising the
+      // main thread while WASM renders a large chunk.
       const n = Math.min(AUDIO_CHUNK, totalSamples - pos);
       const written = Module._SourceGetUninterleavedSamples(
-        currentSource, scratchPtr, n, AUDIO_CHUNK
+        src, scratchPtr, n, AUDIO_CHUNK
       );
       if (written > 0) {
         left.set(heap.subarray(off, off + written), pos);
         right.set(heap.subarray(off + AUDIO_CHUNK, off + AUDIO_CHUNK + written), pos);
       }
       pos += written;
-      if (written === 0) break;
-      if (++reportCounter % 16 === 0) {
-        setStatus("Полная генерация… " + Math.round(pos * 100 / totalSamples) + "%");
-        await new Promise((r) => setTimeout(r, 0));
+      if (written === 0) {
+        // Источник перестал отдавать семплы раньше конца: сообщаем, где
+        // остановились, вместо бесконечного ожидания.
+        if (pos < totalSamples) {
+          setStatus(
+            "Источник замолчал на " + Math.round(pos * 100 / totalSamples) + "%",
+            true
+          );
+        }
+        break;
       }
+      if (++reportCounter % 4 === 0) {
+        setStatus("Полная генерация… " + Math.round(pos * 100 / totalSamples) + "%");
+        await yieldToUI();
+      }
+      if (pos >= totalSamples || written < n) break;
     }
     const ms = performance.now() - t0;
     return { left, right, len: pos, ms };
   }
 
   async function playPause() {
-    if (!currentSource && !pregenAudio) return;
+    if (loadingFile || (!currentSource && !pregenAudio)) return;
     ensureAudio();
 
     // Offline render first (with timing) when the checkbox is on and there is
     // no generated buffer yet. If generation fails, stay paused.
     if (els.pregen.checked && !pregenAudio && currentSource) {
+      if (generationActive) return; // already generating — ignore double clicks
+      generationActive = true;
+      generationAbort = false;
       paused = true;
+      els.playBtn.disabled = true;
       setPlayIcon(true);
       setStatus("Полная генерация…");
-      const result = await generateAll();
+      let result;
+      try {
+        result = await generateAll();
+      } catch (err) {
+        setStatus("Полная генерация: " + err, true);
+        result = null;
+      } finally {
+        // Кнопка «Играть» ВСЕГДА возвращается в рабочее состояние, даже если
+        // генерация упала или была остановлена (раньше она оставалась
+        // заблокированной навсегда).
+        generationActive = false;
+        els.playBtn.disabled = false;
+      }
       if (!result || !result.len) {
         if (totalSamples) {
-          setStatus("Полная генерация не дала звука", true);
           els.pregenResult.textContent = "Офлайн-рендер: ошибка";
           els.pregenResult.classList.add("error");
+          if (result) setStatus("Полная генерация не дала звука", true);
+        }
+        // После отмены генерации источник может быть частично потреблён —
+        // вернём его в начало, чтобы следующее «Играть» работало с нуля.
+        if (generationAbort && midiBytes) {
+          try {
+            const { src } = createSource(midiBytes);
+            freeSource();
+            currentSource = src;
+            applyRenderParams(currentSource);
+          } catch (err) {
+            setStatus(err.message || "Ошибка", true);
+          }
         }
         return;
       }
@@ -371,9 +520,25 @@
   }
 
   function stopPlayback() {
-    if (liveMode) return; // у live-источника нет конца, чтобы останавливаться
+    // Генерация идёт: не освобождаем источник, который она использует (это
+    // был бы use-after-free, вешающий WASM-цикл навсегда). Просим генерацию
+    // остановиться на следующем чанке; playPause сам вернёт источник в начало.
+    if (generationActive) {
+      generationAbort = true;
+      paused = true;
+      setPlayIcon(true);
+      els.seek.value = "0";
+      els.seek.style.setProperty("--pct", "0%");
+      els.time.textContent = "0:00 / " + fmtTime(totalSamples / (audioCtx ? audioCtx.sampleRate : 44100));
+      updateProgressUI();
+      setStatus("Остановка генерации…");
+      return;
+    }
     if (!currentSource && !pregenAudio) return;
     paused = true;
+    seeking = false;
+    playedSamples = 0;
+    pregenPos = 0;
     setPlayIcon(true);
 
     if (pregenAudio) {
@@ -385,6 +550,10 @@
         const { src } = createSource(midiBytes);
         freeSource();
         currentSource = src;
+        // Новый источник стартует с параметрами по умолчанию (реверб 0) —
+        // возвращаем текущие, иначе после Стоп/перемотки реверб на файле
+        // «пропадал», хотя на клавишах оставался.
+        applyRenderParams(currentSource);
       } catch (err) {
         freeSource();
         setStatus(err.message || "Ошибка", true);
@@ -393,13 +562,16 @@
     }
     els.seek.value = "0";
     els.seek.style.setProperty("--pct", "0%");
-    els.time.textContent = "0:00 / 0:00";
+    els.time.textContent = "0:00 / " + fmtTime(totalSamples / (audioCtx ? audioCtx.sampleRate : 44100));
     updateProgressUI();
     setStatus("Остановлено. Нажмите «Играть», чтобы воспроизвести с начала.");
   }
 
   async function seekTo(sample) {
-    if (!midiBytes) return;
+    // Never seek while full generation is rendering: seekTo recreates the
+    // source (freeSource + new), which would free the source the loop is
+    // pulling from and hang the page in a WASM render loop.
+    if (!midiBytes || generationActive) return;
     const target = Math.max(0, Math.min(sample, totalSamples));
 
     if (pregenAudio) {
@@ -419,6 +591,7 @@
     const { src } = createSource(midiBytes);
     freeSource();
     currentSource = src;
+    applyRenderParams(currentSource);
 
     let remaining = target;
     while (remaining > 0) {
@@ -428,8 +601,9 @@
       );
       if (written === 0) break;
       remaining -= written;
-      // Yield so the UI stays responsive on long seeks.
-      await new Promise((r) => setTimeout(r, 0));
+      // Yield so the UI stays responsive on long seeks (MessageChannel, not
+      // setTimeout: timer throttling in iframes would make seeks crawl).
+      await yieldToUI();
     }
 
     playedSamples = target - remaining;
@@ -445,15 +619,25 @@
   // All Notes Off, etc.). The C side applies the event at the current stream
   // position, so it sounds immediately. Returns false when no source is loaded.
   function sendMidiEvent(status, data0, data1) {
-    if (!Module || !currentSource) return false;
+    if (!Module || !keyboardSource) return false;
     Module._SourceSendMidiEvent(
-      currentSource, status & 0xFF, data0 & 0xFF, data1 & 0xFF
+      keyboardSource, status & 0xFF, data0 & 0xFF, data1 & 0xFF
     );
     return true;
   }
 
+  function ensureKeyboardSource() {
+    if (!Module) return false;
+    ensureAudio();
+    if (!keyboardSource) {
+      keyboardSource = Module._SourceCreateLive(audioCtx.sampleRate, 2);
+      applyRenderParams(keyboardSource);
+    }
+    return true;
+  }
+
   function allNotesOff() {
-    if (!Module || !currentSource) return;
+    if (!Module || !keyboardSource) return;
     for (let ch = 0; ch < 16; ch++) sendMidiEvent(0xB0 | ch, 0x7B, 0);
   }
 
@@ -462,26 +646,13 @@
   // Starts the infinite live source (pure playing, no MIDI file). НЕ удаляет
   // загруженную песню: midiBytes сохраняется, чтобы stopLive() мог вернуть
   // её на место (раньше песня терялась безвозвратно).
-  function startLive() {
-    if (!Module) return false;
-    ensureAudio();
+  function enableExternalMidi() {
+    if (!ensureKeyboardSource()) return false;
+    keyboardEnabled = true;
     releaseAllPianoNotes();
-    // Полностью отрендеренный буфер несовместим с живым источником в
-    // onAudioProcess (он главнее) — выбрасываем буфер, но не байты песни.
-    pregenAudio = null;
-    pregenMs = null;
-    pregenPos = 0;
-    freeSource();
-    totalSamples = 0;
-    playedSamples = 0;
-    paused = false;
-    liveMode = true;
-    currentSource = Module._SourceCreateLive(audioCtx.sampleRate, 2);
-    els.player.classList.add("hidden");
     els.liveBtn.classList.add("btn-active");
-    els.liveBtn.innerHTML =
-      '<svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Live вкл.';
-    setStatus("Live-режим: играйте на экранном пианино или MIDI-клавиатуре");
+    els.liveBtn.textContent = "MIDI-клавиатура включена";
+    setStatus("MIDI-клавиатура включена; она играет независимо от MIDI-файла");
     if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
     return true;
   }
@@ -493,7 +664,8 @@
       if (els.noteTestStatus) els.noteTestStatus.textContent = "Синтезатор ещё загружается.";
       return;
     }
-    if (!liveMode && !startLive()) return;
+    if (!pianoSourceReady && !ensureKeyboardSource()) return;
+    pianoSourceReady = true;
     sendMidiEvent(0xC0, 0, 0);
     sendMidiEvent(0x90, note, 100);
     if (els.noteTestStatus) {
@@ -502,40 +674,22 @@
     const oldTimer = noteTestTimers.get(note);
     if (oldTimer) clearTimeout(oldTimer);
     const timer = setTimeout(() => {
-      if (liveMode && currentSource) sendMidiEvent(0x80, note, 0);
+      if (keyboardSource) sendMidiEvent(0x80, note, 0);
       noteTestTimers.delete(note);
     }, 1400);
     noteTestTimers.set(note, timer);
   }
 
-  function stopLive() {
-    if (!liveMode) return;
+  function stopKeyboard() {
+    keyboardEnabled = false;
+    if (!keyboardSource) return;
     allNotesOff();
     releaseAllPianoNotes();
-    freeSource();
-    liveMode = false;
+    allNotesOff();
+    pianoSourceReady = false;
     els.liveBtn.classList.remove("btn-active");
-    els.liveBtn.innerHTML =
-      '<svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Live';
-    if (midiBytes) {
-      // Возвращаем загруженную песню (с начала — источник был выключен).
-      try {
-        const { src } = createSource(midiBytes);
-        currentSource = src;
-        totalSamples = Module._SourceSamplesLeft(src);
-        playedSamples = 0;
-        els.player.classList.remove("hidden");
-        setEnabled("playBtn", true);
-        setEnabled("stopBtn", true);
-        setEnabled("seek", true);
-        updateProgressUI();
-        setStatus("Песня восстановлена — нажмите «Играть»");
-      } catch (err) {
-        setStatus("Live-режим выключен (песня не восстановилась: " + err.message + ")", true);
-      }
-      return;
-    }
-    setStatus("Live-режим выключен");
+    els.liveBtn.textContent = "Включить MIDI-клавиатуру";
+    setStatus("MIDI-клавиатура выключена");
   }
 
 
@@ -635,15 +789,15 @@
   // Прямая пересылка сырых байтов Web MIDI в текущий поток: нота, CC,
   // pitch bend, program change — как есть, байт-в-байт.
   function onMidiMessage(e) {
+    if (!keyboardEnabled) return;
     const data = e.data;
     if (!data || data.length < 1) return;
     const status = data[0];
     if (status < 0x80) return;
     const data0 = data.length > 1 ? data[1] : 0;
     const data1 = data.length > 2 ? data[2] : 0;
-    // MIDI-клавиатура звучит только в Live-режиме: при выключенном live — тишина.
-    if (!liveMode) return;
-    sendMidiEvent(status, data0, data1);
+    // External MIDI is opt-in; on-screen piano uses the same independent layer.
+    if (keyboardEnabled && keyboardSource) sendMidiEvent(status, data0, data1);
   }
 
   // ---- Инструменты (GM Program Change) -----------------------------------
@@ -691,10 +845,17 @@
   els.fileInput.addEventListener("change", (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
+    // Block Play while the file is still being read/loaded, so a click that
+    // lands in this async window cannot start generation on the old source
+    // (whose source loadFromBytes is about to free -> WASM use-after-free).
+    loadingFile = true;
     const reader = new FileReader();
     reader.onload = () =>
       loadFromBytes(new Uint8Array(reader.result), file.name);
-    reader.onerror = () => setStatus("Не удалось прочитать файл", true);
+    reader.onerror = () => {
+      loadingFile = false;
+      setStatus("Не удалось прочитать файл", true);
+    };
     reader.readAsArrayBuffer(file);
     e.target.value = "";
   });
@@ -756,17 +917,13 @@
   });
 
   els.playBtn.addEventListener("click", playPause);
-  els.stopBtn.addEventListener("click", stopPlayback);
-
-  els.noteTestNotes.querySelectorAll("[data-note]").forEach((button) => {
+  els.stopBtn.addEventListener("click", stopPlayback);    els.noteTestNotes.querySelectorAll("[data-note]").forEach((button) => {
     button.addEventListener("click", () => {
       auditionTestNote(parseInt(button.dataset.note, 10));
     });
-  });
-
-  els.liveBtn.addEventListener("click", () => {
-    if (liveMode) stopLive();
-    else startLive();
+  });  els.liveBtn.addEventListener("click", () => {
+    if (keyboardEnabled) stopKeyboard();
+    else enableExternalMidi();
   });
 
   els.allNotesOff.addEventListener("click", () => {
@@ -796,10 +953,8 @@
     e.preventDefault();
     els.piano.setPointerCapture(e.pointerId);
     const note = parseInt(key.dataset.note, 10);
-    if (!liveMode) {
-      setStatus("Сначала включите Live-режим, чтобы играть на пианино", true);
-      return;
-    }
+    if (!pianoSourceReady && !ensureKeyboardSource()) return;
+    pianoSourceReady = true;
     pressedNotes.set(e.pointerId, { note, channel: liveChannel });
     if (sendMidiEvent(0x90 | liveChannel, note, 100)) {
       key.classList.add("active");
@@ -819,6 +974,37 @@
     if (gainNode) gainNode.gain.value = v;
   });
 
+  function applyRenderParams(source = currentSource) {
+    if (!Module || !source || !paramsPtr) return;
+    const view = Module.HEAPF32;
+    const offset = paramsPtr >> 2;
+    view[offset] = renderParams.ReverbWet;
+    if (typeof Module._SourceSetParams !== "function") {
+      setStatus("Загружен старый WASM: реверб недоступен. Пересоберите dist.", true);
+      return;
+    }
+    Module._SourceSetParams(source, paramsPtr);
+    renderParamsGeneration++;
+  }
+
+  function applyAllRenderParams() {
+    applyRenderParams(currentSource);
+    applyRenderParams(keyboardSource);
+  }
+
+  els.reverb.addEventListener("input", () => {
+    renderParams.ReverbWet = parseFloat(els.reverb.value);
+    // A pre-generated buffer contains the old effect state. Force a fresh
+    // source on the next Play so the slider is audible for full-generation too.
+    if (pregenAudio) {
+      pregenAudio = null;
+      pregenPos = 0;
+      playedSamples = 0;
+    }
+    els.reverbLabel.textContent = Math.round(renderParams.ReverbWet * 100) + "%";
+    applyAllRenderParams();
+  });
+
   // Toggling "full pre-generation" invalidates the generated buffer. When the
   // WASM source was consumed by an offline render, bring it back for the
   // real-time path.
@@ -832,6 +1018,7 @@
       try {
         const { src } = createSource(midiBytes);
         currentSource = src;
+        applyRenderParams(currentSource);
       } catch (err) {
         setStatus(err.message || "Ошибка", true);
       }
@@ -841,24 +1028,95 @@
   });
 
   // ---- Boot --------------------------------------------------------------
-
   async function boot() {
     buildInstrumentSelect();
     buildPiano();
     initMidiAccess();
     try {
       setStatus("Загрузка синтезатора…");
+      if (typeof IntraMidiSynth !== "function") {
+        throw new Error("WASM loader не найден (проверьте IntraSynth.js)");
+      }
       Module = await IntraMidiSynth();
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
-      setStatus("Синтезатор готов. Загрузите MIDI или включите Live-режим.");
+      paramsPtr = Module._malloc(4);
+      ensureAudio();
+      ensureKeyboardSource();
+      setStatus("Синтезатор готов. Загрузите MIDI или включите MIDI-клавиатуру.");
     } catch (err) {
       setStatus("Не удалось загрузить WASM-модуль: " + err, true);
     }
   }
 
+  // Minimal test hook for automated playback checks; production UI does not
+  // depend on internal effect telemetry.
+  window.__synthDebug = {
+    hasKeySource() { return !!keyboardSource; },
+    setReverb(w) {
+      const v = Math.max(0, Math.min(1, w));
+      if (pregenAudio) { pregenAudio = null; pregenPos = 0; playedSamples = 0; }
+      renderParams.ReverbWet = v;
+      els.reverb.value = String(v);
+      if (els.reverbLabel) els.reverbLabel.textContent = Math.round(v * 100) + "%";
+      applyAllRenderParams();
+      return renderParams.ReverbWet;
+    },
+    renderChunk(srcName) {
+      const src = srcName === 'current' ? currentSource : keyboardSource;
+      if (!Module || !src) return 0;
+      const n = 4096;
+      return Module._SourceGetUninterleavedSamples(src, scratchPtr, n, n);
+    },
+    playNote(note, vel, chan) {
+      if (!Module || !keyboardSource) return false;
+      const c = chan === undefined ? 0 : chan;
+      Module._SourceSendMidiEvent(keyboardSource, 0xC0 | c, currentProgram, 0);
+      if (vel === 0) {
+        Module._SourceSendMidiEvent(keyboardSource, 0x80 | c, note, 0);
+      } else {
+        Module._SourceSendMidiEvent(keyboardSource, 0x90 | c, note, vel === undefined ? 100 : vel);
+      }
+      return true;
+    },
+    releaseNote(note, chan) {
+      if (!Module || !keyboardSource) return false;
+      const c = chan === undefined ? 0 : chan;
+      Module._SourceSendMidiEvent(keyboardSource, 0x80 | c, note, 0);
+      return true;
+    },
+    // Renders `blocks` chunks (4096 samples each) from the given source and
+    // returns output levels for automated playback checks.
+    outputStats(srcName, blocks) {
+      if (!Module) return null;
+      const src = srcName === 'current' ? currentSource : keyboardSource;
+      if (!src) return null;
+      const heap = Module.HEAPF32;
+      const off = scratchPtr >> 2;
+      const n = 4096;
+      let peakL = 0, peakR = 0, sumL2 = 0, sumR2 = 0, total = 0, clipped = 0;
+      for (let k = 0; k < blocks; k++) {
+        const written = Module._SourceGetUninterleavedSamples(src, scratchPtr, n, n);
+        if (!written) break;
+        for (let i = 0; i < written; i++) {
+          const l = heap[off + i], r = heap[off + n + i];
+          const al = Math.abs(l), ar = Math.abs(r);
+          if (al > peakL) peakL = al;
+          if (ar > peakR) peakR = ar;
+          if (al > 0.99 || ar > 0.99) clipped++;
+          sumL2 += l * l;
+          sumR2 += r * r;
+        }
+        total += written;
+      }
+      const rmsL = total ? Math.sqrt(sumL2 / total) : 0;
+      const rmsR = total ? Math.sqrt(sumR2 / total) : 0;
+      return { peakL, peakR, rmsL, rmsR, total, clipped };
+    },
+  };
+
   window.MidiSynthApp = {
     boot, loadFromBytes, loadFromUrl, sendMidiEvent,
-    startLive, stopLive, allNotesOff,
+    enableExternalMidi, stopKeyboard, allNotesOff,
   };
   boot();
 })();

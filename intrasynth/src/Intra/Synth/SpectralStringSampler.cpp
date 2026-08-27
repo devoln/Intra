@@ -133,18 +133,16 @@ void SpectralStringSampler::advancePeriod()
 	for(size_t k = 0; k < n; k++) mWaveB[k] = mFftRe[k];
 }
 
-size_t SpectralStringSampler::GenerateMono(Span<float> ioDst, Span<float> ioDstReverb)
+size_t SpectralStringSampler::GenerateMono(Span<float> ioDst)
 {
-	(void)ioDstReverb;
 	const size_t n = ioDst.Length();
 	float* dst = ioDst.Data();
 	RenderInto(n, [dst](float v) mutable {*dst++ += v;});
 	return n;
 }
 
-size_t SpectralStringSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+size_t SpectralStringSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
 {
-	(void)ioDstReverb;
 	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();

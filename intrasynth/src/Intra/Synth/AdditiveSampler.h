@@ -69,7 +69,10 @@ class AdditiveSampler: public IGenericSampler
 // (и любых не-2-голосных инструментов) mBeatOn=false — лейны как раньше.
 	FixedArray<float> mBeatStep, mBeatPh;
 	FixedArray<float> mBeatE0, mBeatE1;
-	float mBeatR;
+	// Per-partial квадрат глубины r²: огибающая E = sqrt(1 − (1−r²)·sin²).
+	// r зависит от партиалы через вес w(k) (см. конструктор): низкие партиалы
+	// бьются, высокие (h4+) — нет, в басе мелко бьётся и h1. 1.0 = нет биений.
+	FixedArray<float> mBeatR2;
 	bool mBeatOn;
 	// Буфер атаки контактной силы: предвычисленный накопленный отклик мод
 	// на удар молоточка (первые mAttackLen отсчётов ноты). Последний сэмпл
@@ -155,7 +158,6 @@ class AdditiveSampler: public IGenericSampler
 // mReleased = true после NoteRelease(): dec[p] уже переключён на
 // mDecayRelease, mEndSamples не используется для fade.
 	bool mReleased;
-
 public:
 	static const size_t mBlockSize = 512;
 
@@ -274,7 +276,7 @@ public:
 			// огибающая непрерывна (нет ступенек/щелчков).
 			if(mBeatOn)
 			{
-				const float r2 = mBeatR*mBeatR;
+				const float* r2a = mBeatR2.Data();
 				const float* bs = mBeatStep.Data();
 				float* bp = mBeatPh.Data();
 				float* e0 = mBeatE0.Data();
@@ -283,6 +285,7 @@ public:
 				{
 					const float ph = bp[p];
 					const float s0 = Math::Sin(ph);
+					const float r2 = r2a[p];
 					e0[p] = Math::Sqrt(1.0f - (1.0f - r2)*(s0*s0));
 					const float ph1 = ph + bs[p]*float(n);
 					const float s1 = Math::Sin(ph1);
@@ -452,8 +455,10 @@ public:
 		}
 	}
 
-	size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) override;
-	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb) override;
+	// Реализации GenerateMono/GenerateStereo/NoteRelease — в AdditiveSampler.cpp
+	// (не инлайн: без дублирования кода в TU, меньше WASM).
+	size_t GenerateMono(Span<float> ioDst) override;
+	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
 	void NoteRelease() override;
 };
 

@@ -77,6 +77,7 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	typedef Container::HashMap<uint16, uint16> NoteSamplerMap;
 	NoteSamplerMap mPlayingNoteMap;
 
+	RenderParams mRenderParams;
 	PostEffects::HallReverb mReverberator;
 	PostEffects::DynamicsCompressor mCompressor;
 	bool mCompress;
@@ -112,6 +113,11 @@ public:
 	void OnAllNotesOff(byte channel) final;
 	void OnSustain(byte channel, bool down) final;
 
+	/// Applies the source-level parameters to the master effects and to any
+	/// currently sounding note-local processors. Reverb is a master-bus effect;
+	/// it is never configured on an individual sampler.
+	void SetRenderParams(const RenderParams& params);
+
 	/// Меняет инструмент канала на лету: последующие ноты канала будут
 	/// синтезироваться программой program (GM-номер). 0xFF снимает переопределение.
 	void SetChannelProgram(byte channel, byte program)
@@ -130,7 +136,7 @@ public:
 
 private:
 	double liveEventTime();
-	bool synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb);
+	bool synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight);
 	float pitchBendToFreqMultiplier(short relativePitchBend) const;
 };
 

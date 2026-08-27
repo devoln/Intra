@@ -90,6 +90,15 @@ HallReverb::HallReverb(size_t delayLength, size_t numDelays, float reverbVolume,
 }
 
 
+void HallReverb::Reset()
+{
+	for(auto& sample: mAccum) sample = 0.0f;
+	mS = 0.0f;
+	mRF = 0.0f;
+	mAccumIndex = 0;
+	mBufferedReverbSamples = 0;
+}
+
 void HallReverb::ProcessSample(float* ioL, float* ioR, float reverbSample)
 {
 	float* const accumData = mAccum.Data();

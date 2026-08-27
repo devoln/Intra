@@ -256,6 +256,10 @@
   .volrow label { color: var(--muted); font-size: 0.85rem; }
   .volrow input { max-width: 180px; }
   .volrow span { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.85rem; min-width: 42px; }
+  .fxrow { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+  .fxrow label { color: var(--muted); font-size: 0.85rem; min-width: 92px; }
+  .fxrow input { max-width: 180px; }
+  .fxrow span { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.85rem; min-width: 42px; }
   .pregenrow {
     display: flex;
     align-items: center;
@@ -474,7 +478,7 @@
       </div>
     </section>
 
-    <section class="panel hidden" id="player">
+    <section class="panel" id="player">
       <div class="track-title" id="trackTitle">MIDI</div>
       <div class="controls">
         <button class="btn-accent btn-icon" id="playBtn" disabled>
@@ -493,6 +497,11 @@
         <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" />
         <span id="volLabel">80%</span>
       </div>
+      <div class="fxrow">
+        <label for="reverb">Реверб</label>
+        <input type="range" id="reverb" min="0" max="1" step="0.01" value="0" title="Реверберация зала (0 = выключена, без затрат CPU)" />
+        <span id="reverbLabel">0%</span>
+      </div>
       <label class="pregenrow" for="pregen">
         <input type="checkbox" id="pregen" />
         <span>Полная генерация перед воспроизведением + замер времени</span>
@@ -503,23 +512,24 @@
 
     <section class="panel" id="noteTestPanel">
       <h3>Проверка отдельных нот</h3>
-      <p>Нажмите ноту, чтобы быстро проверить её в Live-режиме.</p>
-      <div class="note-test-notes" id="noteTestNotes">
-        <button class="note-test-note" type="button" data-note="60">C4</button>
-        <button class="note-test-note" type="button" data-note="72">C5</button>
+      <p>Нажмите ноту, чтобы быстро проверить её на независимом слое клавиатуры.</p>
+      <div class="note-test-notes" id="noteTestNotes">          <button class="note-test-note" type="button" data-note="36">C2</button>
+          <button class="note-test-note" type="button" data-note="48">C3</button>
+          <button class="note-test-note" type="button" data-note="60">C4</button>
+          <button class="note-test-note" type="button" data-note="72">C5</button>
         <button class="note-test-note" type="button" data-note="75">D#5</button>
         <button class="note-test-note" type="button" data-note="76">E5</button>
         <button class="note-test-note" type="button" data-note="84">C6</button>
         <button class="note-test-note" type="button" data-note="96">C7</button>
       </div>
-      <div class="note-test-status" id="noteTestStatus">Включите Live или нажмите любую ноту выше.</div>
+      <div class="note-test-status" id="noteTestStatus">Нажмите любую ноту выше.</div>
     </section>
 
     <section class="panel" id="livePanel">
-      <h3>Live-режим · игра без MIDI-файла</h3>
+      <h3>Клавиатура и MIDI-вход</h3>
       <div class="liverow">
-        <button class="btn-accent btn-icon btn-live" id="liveBtn">
-          <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Live
+        <button class="btn-ghost btn-icon btn-live" id="liveBtn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Включить MIDI-клавиатуру
         </button>
         <button class="btn-ghost" id="allNotesOff">All notes off</button>
       </div>

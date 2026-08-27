@@ -26,18 +26,16 @@ KarplusStrongSampler::KarplusStrongSampler(float freq, float volume, unsigned sa
 	mExpStep = expCoeff == 0 ? 1.0f : Math::Exp(-expCoeff/float(sampleRate));
 }
 
-size_t KarplusStrongSampler::GenerateMono(Span<float> ioDst, Span<float> ioDstReverb)
+size_t KarplusStrongSampler::GenerateMono(Span<float> ioDst)
 {
-	(void)ioDstReverb;
 	const size_t n = ioDst.Length();
 	float* dst = ioDst.Data();
 	RenderInto(n, [dst](float v) mutable {*dst++ += v;});
 	return n;
 }
 
-size_t KarplusStrongSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+size_t KarplusStrongSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
 {
-	(void)ioDstReverb;
 	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();

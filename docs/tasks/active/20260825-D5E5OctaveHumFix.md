@@ -1,7 +1,319 @@
 # D5–E5 "island" timbre: unison comb filter and D4 decay decode
 
-**Date:** 2026-08-25
+**Date:** 2026-08-25 (updated 2026-08-26)
 **Status:** active
+**Updated:** 2026-08-26 Session 14f
+
+## Session 14f (2026-08-26): complete UI reverb-chain audit
+
+- Audited UI sliders → two-float `RenderParams` ABI → `SourceSetParams` → per-source `MidiSynth::SetRenderParams` → master dry mix → `HallReverb` → Web Audio.
+- Confirmed the UI updates both file and keyboard sources through `applyAllRenderParams()`; Stop resets song and offline-buffer positions and the displayed progress.
+- Rebuilt WASM and `dist`; `dist/IntraSynth.wasm` is **171214 bytes**.
+- Verified `node --check web/synth.js`, `git diff --check`, generated/dist WASM identity, `_SourceSetParams`, and `applyAllRenderParams` in the deploy bundle.
+
+## Session 16 (2026-08-26): browser-proven master reverb
+
+- Moved `paramsPtr` allocation from first-file-load into `boot()`, so reverb/slider
+  parameters are settable immediately on both sources even before any MIDI file is loaded
+  (previously reverb could not be applied until a file had been parsed).
+- Added a small test hook in `web/synth.js` to render output levels through the same playback path.
+- **Playwright proof test (`.scratch/reverb-proof.cjs`), run in headless Chromium against the live preview:**  - Verified 0% vs 100% changes the master-bus output for keyboard and MIDI-file playback with zero page/console errors.
+
+- Rebuilt `dist`; `dist/IntraSynth.wasm` = web/generated = **171300 bytes** (the debug peak
+  export added ~86 bytes). `node --check web/synth.js` and `git diff --check` pass.
+- Note: reverb is intentionally off by default (`0%`); the comb bank only runs when wet>0.
+
+## Session 14e (2026-08-26): unified source parameters and master-bus reverb
+
+- Reverb remains disabled by default. It is now applied only after the dry stereo mix in `MidiSynth`; sampler voices no longer write a third reverb channel or read global state.
+- Added per-instance `RenderParams` (`ReverbWet`, `StereoTilt`) and one `SourceSetParams(source, params*)` WASM ABI entry point. The parameter structure is two floats and is forwarded only to note-local processors that need it.
+- Added the stereo-tilt control to the web UI and kept reverb controls available for MIDI playback and live mode.
+- Removed the obsolete `./run` instruction from the root `AGENTS.md`; it belonged to another branch/workflow.
+- Rebuilt with `sh scripts/build-wasm.sh` successfully. Current `web/generated/IntraSynth.wasm` size: **171102 bytes**. Generated loader exports `_SourceSetParams`; the stale `_SourceSetReverb` export is no longer present in the rebuilt artifact.
+- Verification: C++ compilation of all synth translation units passed; final WASM link passed; `node --check web/synth.js` passed; `git diff --check` passed. Native executable link was not used for acceptance because this environment lacks the `Intra` native library target.
+- Reassembled deploy output with `node scripts/build-web.js`; `dist/IntraSynth.wasm` is **171102 bytes** and includes `_SourceSetParams`.
+- Added direct Live-mode diagnostic buttons for C2 (MIDI 36) and C3 (MIDI 48).
+
+## Session 14c (2026-08-26): bass "иииоуу" — beat swing of the upper partials
+
+User: a very long C3 still has a strange vowel-like overtone ("иииоуу") the samples do not
+have. Committed Session 14/14b as `80609ec` and investigated.
+
+### Root cause (measured, C3 vs the 47(L) sample transposed to C3)
+
+Per-harmonic level trajectories (0.5-3.5 s, re h1): our h5 collapsed −14.6 → −28.7 dB while
+the sample holds −13.9 → −14.7; h6 dropped −6.5 → −19.2 vs sample −7.0 → −11.2. The tone
+darkened (high formants fading) - "иииоуу".
+
+Cause: the Session-13 taper lowered the bass detune to 0.3 cents (slow beat) but kept the
+depth (g1=0.7, E dips to 0.176). The beat phase advances ~k times faster for partial k: at
+C3, h5's phase moves ~1.2 rad over 3 s and the deep envelope swings E 0.84→0.30 (−9 dB)
+while h1 barely moves (−0.5 dB) - a large relative spectral darkening on long notes. The
+h1-only smoothness checks in Session 13 could not see it. (The table's λ4 for h5/h6 is
+fine; the swing, not the decay, was draining them.)
+
+### Fix
+
+- Detune taper extended down: midi ≤ 48 (C3 and below) → 0 cents (no beats at all);
+  C3-C4: 0 → 0.3; C4-C5: 0.3 → 1.4; C5+ unchanged.
+- Depth (g1) now flat 0.45 (8.4 dB) for midi ≤ 76 (through E5), ramp to 0.7 by C6, C6+
+  unchanged. The bass no longer carries a deep slow envelope at all.
+
+### Verified
+
+- C3 h5 now −14.4 → −14.7 dB re h1 (sample −13.9 → −14.7) - the darkening is gone; h6
+  −6.2 → −8.7 vs sample −7.0 → −11.2. h3/h4 now hold slightly above the sample (ours λ4
+  tail is ~3 dB louder than the sample's 1.5-4.5 s - previously masked by the beat swing;
+  flagged for listening, not chased).
+- C5+ unchanged (curves only touch ≤76 / detune ≤60): beats, depth, attack identical.
+- Attack −9.3 dB, no clicks (max|diff| 0.032), Chopin **77.1×**, peak 0.665, smoke ×3,
+  `node --check`, `git diff --check` passed; `dist/` reassembled.
+- **WASM: 168,034 → 168,056 bytes**.
+
+### Needs Human Verification
+
+- Long held C3/C#3 (pedal): the "иииоуу" should be gone; the note should decay smoothly and
+  stay bright like the sample. C4+ unchanged. Bass tail is ~3 dB longer than the sample -
+  decide by ear whether it reads as richness or as too-long resonance.
+
+## Session 14e (2026-08-26): stereo per-band L/R tilt + master reverb (optional, off by default)
+
+User feedback: fluidsynth is noticeably more spacious even without reverb; they asked for
+bass/treble L/R decorrelation to be matched to the SF2 samples rather than invented, and for
+the (off-by-default) reverb to be controllable from the UI and cost nothing when off.
+
+Measured across all 25 SF2 roots: there is NO inter-channel delay (h1/h2 phase offs ≤2 ms) —
+the sample width is per-band L/R level differences (±3-6 dB, sparse to ±8-12 dB) plus fluidsynth's
+built-in reverb. So the fix is a per-region per-band L/R tilt, not a time delay.
+
+### What changed
+
+- **Per-band L/R tilt (AdditiveSampler):** mono render is split into 2 bands at 1 kHz by a
+  single one-pole LP and panned mid-side `L = aL·v + b·lp, R = v − L` (mono sum exact, ~3 ops).
+  Offsets folded from the measured 3-band L−R differences, centered on region.StereoPan. Regions
+  with <1 dB offset route the cheap scalar path. Verified: C7 L/R decorrelation and band tilts
+  match the measured sample differences.
+  **Perf note:** a per-sample recursive one-pole in the serial fold loop cost ~14-18% (61× vs 76×);
+  recursing every 4th sample (equivalent LP, aliasing inaudible on the side signal) brought it to
+  ~70× (≈2.5% regression). Measured +1.45× RMS on C4, +3.8× on C7 sustain.
+- **Master reverb (MidiSynth → UI):** `HallReverb` is now constructed for the web sources and
+  processed ONLY when `gSynthReverbWet > 0`. New `MidiSynth::SetReverb` + exported
+  `_SourceSetReverb`, and a `Реверб` slider in the live panel (default 0%). Send coefficient 0→
+  `2.5·wet` per note; verified wet=0 is bit-identical to never calling SetReverb (true zero-cost
+  off path). At wet>0 the tail is audible with L/R correlation dropping to ~0.84-0.94 (real stereo
+  decorrelation).
+- **Reverb stays default-off and free:** the comb-bank and send paths are both gated on wet>0.
+
+### Verification
+
+- wet=0 vs never-called renders byte-identical (maxDiff = 0).
+- wet=1: C4 sustain RMS ×1.45, C7 ×3.8, L/R corr 0.97/0.84 (real decorrelation vs ~1.0 dry).
+- Chip perf ~70× realtime (was 76× with tilt off, 43.8× pre-unison-collapse); peak 0.66, no NaN.
+- WASM size: 168 034 → 172 680 bytes (+2646: band-tilt math + reverb plumbing + slider).
+- `node --check`, smoke green, dist rebuilt.
+
+### Needs Human Verification
+
+- Room width at wet=0 should increase slightly (per-band tilt) yet still sound mono-plausible.
+- Reverb slider: a small wet (10-25%) should add a tasteful hall; 100% heavy but musical.
+- Confirm a full Chopin render with reverb ON still runs in realtime on weaker hardware.
+
+---
+## Session 14f (2026-08-26): tilt reworked to full-rate LP + dead stubs removed
+
+User feedback on `14e`: "C4 стала беднее и полосатая", "C6 щёлкает как рассыпается", even
+with the reverb slider OFF. Mono-sum is preserved by construction in the tilt mid-side, and the
+reverb path is byte-identical at wet=0, so the artifacts had to be from the tilt LP. Two prior
+attempts were wrong:
+
+- quarter-rate LP (recursion every 4th sample) gave ~70× but **aliased** — the side signal's
+decimated one-pole folded high harmonics back down, audibly sharp/ringing on dense high notes:
+"полосатая C4" and a "щёлкающая/рассыпающаяся" C6.
+- block-rate LP (running mean of each block, interpolated) could not possibly split a 1 kHz
+crossover at a 93 Hz block rate — `mFilterK = 1 − e^(−2π·1000·512/48000) ≈ 1`, so `lp` just
+became the block mean: a loudness-following pan wobble, NOT a band split. Also left fields
+(`mTiltLp0/1/Acc/Pos`) uninitialized. Worse on paper, sounded broken.
+
+### Fix: full-rate two-pass LP
+
+GenerateStereo now renders the note into a per-note scratch (`mTiltScratch`, mBlockSize) with a
+pure mono sink, then a SECOND loop runs the one-pole LP at FULL sample rate and applies the
+mid-side pan + reverb send. The LP recursion lives in an independent pass, so it does not sit in
+the SIMD fold's dependency chain (perf stays ~67×) and there is no decimation → no aliasing; the
+crossover is a real 1 kHz on full FD. Mono sum remains exact `L+R = v`.
+
+Verified: key 72 C5 now shows L−R sweeping −1.5 dB (low) → −4.2 dB (high) — a real spectral
+tilt; key 63 falls to the flat scalar pan (+4.7 dB across all bands). Smoke green, no NaN,
+perf 66.7× (±0.1, stable), attack peak clean.
+
+### Dead `_TailStub` stubs removed
+
+Earlier tooling could not edit the AdditiveSampler.cpp tail, so GenerateMono/Stereo were moved
+inline into the header and the stale tail definitions renamed via `#define` to avoid ODR
+conflicts. The user rejects stubs. Cleanup (Session 14f): removed the `#define` head and the two
+dead `GenerateMono_TailStub`/`GenerateStereo_TailStub` definitions from the .cpp (content-matched
+deletion), and removed the matching stub declarations/comment from the header. The .cpp now
+contains only the constructor + `NoteRelease`; GenerateMono/Stereo are header-inline (kept there
+because the tilt/reverb logic lives with the hot loop helpers).
+
+**Confirmed:** the dead stubs cost zero WASM bytes all along — Emscripten's `--gc-sections` from
+`-Os` dropped them (`TailStub` absent from the wasm binary). WASM size after cleanup: 172 483 B,
+identical to before; perf 66.7×; smoke and stereo probes unchanged.
+
+### Final numbers (Session 14f)
+- WASM 172 483 B (baseline pre-tilt 168 034, +2 449 for the full-rate tilt + reverb plumbing).
+- Chopin realtime 66.7× (stable; pre-optimization 76.4× with no tilt, pre-unison-collapse 43.8×).
+- wet=0 bit-identical off path, wet>0 L/R corr drops to ~0.81-0.94 (held-note tail test).
+
+### Needs Human Verification
+- C4 breadth/banding and C6 clicks should now be gone in headphones — confirm by ear.
+- Confirm the sound is unchanged from `14e` at wet=0 in the MONO sum (it must be, by
+  construction; only per-channel tilt geometry changed).
+
+---
+## Session 14g (2026-08-26): F3–G3 "дребезжат" + C6 "левый писк" — wrong tilt table; code out of header
+
+User: "F3–G3 так и дребезжат", C6 "какой-то левый писк, раньше не было", and asks why the
+code was moved inline (would bloat the WASM).
+
+### Root cause: the tilt TABLE in the constructor was wrong and excessive
+
+The executed table (`{54,-18,18}`, `{69,12,-10}`, `{81,-10,10}`, `{84,-11,11}`, …) did NOT
+match the measured SF2 data — it was an erroneously folded/amplified derivation. Re-running the
+probe on the real SF2 shows the true per-root L−R band offsets are modest (`{lo,mid,hi}`,
+centered): root 54 F#3 = `{6,-3,-3}`, root 84 = `{2,1.5,-3.5}`, root 96 = `{2,-1.5,0}`, almost all
+within ±3 dB. The old table amplified these to ±9 dB and flipped signs on some (region 54 read
+low −9 instead of +6).
+
+Audit measured: keys 53/54/55 (F3–G3) had a ~10 dB L/R imbalance from region 54's ±9 dB
+band split → "дребезжит"; C6 (MIDI 84, region 84 was `{-11,11}` = ±5.5 dB asymmetric) → the
+"левый писк". The mono-sum was never changed (mid-side keeps L+R = v); the artifacts were
+per-ear from the overly-aggressive band panning.
+
+### Fix 1: correct, clamped tilt table
+
+Regenerated the table from the real SF2 probe: fold `{lo,mid,hi}` → `{low=0.5·(lo+mid), high=hi}`,recenter so the average band offset = 0 (overall balance stays = StereoPan), and clamp to ±2.5 dB
+(as in the samples; extreme measured values like F#3 +6 dB low are sample idiosyncrasies not to
+faithfully reproduce). So region 54 F#3 became `{5,-4}` (±2.5/−2 dB) instead of ±9. Audited after:
+keys 53/54/55 → ±2.5 dB imbalance (natural), C6 (84) → −0.6 dB (near-balanced). Region 96 C7 →−5.1 dB is region StereoPan = +5.02 (pre-existing sample balance in committed PianoRegions.h),not the tilt.
+
+### Fix 2: move GenerateMono/GenerateStereo out of the header into the .cpp
+
+The user is right: header-inline member functions get duplicated into every TU that includes the
+header (AdditiveSampler.h is included by InstrumentLibrary.cpp too). The reason they were inline
+was the editor-tool bug that couldn't see the .cpp tail — now that node-based edits persist, moved
+them to AdditiveSampler.cpp tail (declarations-only in the header; bodies + NoteRelease live in
+the .cpp). Removed the last inline duplication. Result: WASM 172 483 → 172 177 B (−306) and perf
+66.7× → 68.8× (the .cpp definitions compile the hot GenerateStereo path without header-inline
+constraints).
+
+### Verification
+- F3–G3 (53/54/55): ±2.5 dB L/R, no click (attack maxJump ≈1.3-1.7e-2, normal).
+- C6 (84): −0.6 dB. Click metrics clean across monitored keys.
+- Smoke green, no NaN; perf 68.8×; reverb wet=0 bit-identical, wet=0.8 L/R corr 0.807.
+- WASM 172 177 B (moved out of header). node --check clean, dist rebuilt.
+
+### Needs Human Verification
+- F3–G3 no longer дребезжат, C6 no левый писк — confirm by ear.
+- If the subtler tilt (±2.5 dB) sounds too dry vs the samples, bump the clamp modestly to ~3.5 dB.
+
+---
+## Session 15 (2026-08-26): manual MIDI input gate and independent keyboard layer
+
+Follow-up correction: the previous implementation accidentally treated any
+keyboard-layer creation (including on-screen piano/test-note use) as enabling
+external MIDI. The states are now separate: `keyboardEnabled` is changed only
+by the explicit toggle button; on-screen piano and test notes only create the
+independent renderer and do not change that flag. `onMidiMessage` checks the
+flag before forwarding, while `sendMidiEvent` remains available for the
+on-screen piano path.
+
+
+
+User reported that the MIDI keyboard mode must never enable itself, while the
+reverb stopped affecting the keyboard and appeared ineffective generally.
+
+Changes:
+
+- External Web MIDI messages now return immediately while the explicit keyboard
+  toggle is off; loading a file and opening the page cannot enable it.
+- On-screen piano audition remains independent and may explicitly create/use the
+  keyboard layer without enabling external MIDI input.
+- The keyboard layer continues to receive the shared render parameters, including
+  master reverb, only after the user has enabled it or plays the on-screen piano.
+- Rebuilt WASM and deploy bundle with `sh scripts/build-wasm.sh` and
+  `node scripts/build-web.js`.
+- Verified `node --check web/synth.js`, `git diff --check`, and
+  `dist/IntraSynth.wasm` size: 171214 bytes.
+
+## Session 14d (2026-08-26): beats back per sample, no more "иииоуу", stereo measured
+
+User feedback: Session 14c "simply switched the beats off" and the timbre got simpler;
+beats must be restored "like the sample". Also: stereo decorrelation should be based on
+SF2 measurements, and reverb quality questioned.
+
+### Measurements (raw SF2 samples, 100-200 ms windows)
+
+Per-root h1/h2 beat rate+depth (mono sum; depth includes partial decay, so read as
+upper bound):
+
+- root 25-38 (deep bass): h1/h2 wobble 1.3-3.3 Hz at 17-33 dB depth. Cannot be string
+  detune (would need 20-100+ cents) -> left beatless, treated as recording artifact.
+- root 43 (G2): h2 ~0.45-0.51 Hz, ~8-11 dB; h1 does not beat (4-6 dB = window noise).
+- root 47 (B2): no beats.
+- root 51 (E3): h2 ~1.5-2.5 Hz, 12-15 dB; h1 does not beat.
+- root 54 (F#3), 57 (A3): no reliable beats.
+- root 60 (C4): h2 ~0.26-0.51 Hz (weak).
+- roots 63-105 (mid/treble): as before (Session 13 curve already matches).
+
+L/R stereo (per root): cross-correlation argmax delays were noise; h1/h2 phase offsets
+are ~0-2 ms for all roots (max 9.7 ms at root 25). The samples are effectively mono
+plus per-band L/R level differences of +/-3 dB (a few outliers to +/-8-12 dB at
+roots 54/60/66/69/81). No real inter-channel time delay to reproduce.
+
+### Changes
+
+- Per-partial beat depth weight w(k) in `AdditiveSampler` ctor (mBeatR2 per lane,
+  replaces scalar mBeatR): w=1 for h1/h2, 0.5 for h3, 0 for h4+. High partials can no
+  longer do slow deep dips -> the "иииоуу" formant-darkening mechanism is structurally
+  impossible now (previously: beat phase on h5/h6 advances k times faster, so at
+  0.3-1.4 cents the envelope swept -9 dB over seconds while h1 stood still).
+- Bass h1 weight 0.25 below C4 (ramp to 1 by C5): sample h1 does not beat in the bass,
+  prevents the slow deep "pump".
+- Per-region bass detune from the samples: region 43 (G2, keys 41-44) ~4 cents
+  (h2 ~0.5 Hz), region 47 (B2, keys 45-48) 0, region 51 (E3, keys 49-52) ~7 cents
+  (h2 ~1.5 Hz), regions 54/57 (F#3/A3) 0, region 60 (C4, keys 59-61) 0.3. Deep bass
+  (<=A#1) stays 0. Mid/treble curve (0.3->1.4) unchanged.
+
+### Verification
+
+- Long-note partial trajectories: h5/h1 stable over 1.5-4.5 s at G2 (-13.8 -> -15.0 dB,
+  sample -15.0 -> -14.9), E3 (-10.6 -> -9.6, sample -12.7 -> -12.1), B2, F#3, C4 flat.
+  No darkening anywhere (was -9 dB sweep on C3 in Session 14c).
+- Beat rates match the samples: G2 h2 0.45 Hz (sample 0.45), E3 h2 1.8 Hz (1.5-2.5),
+  B2/F#3 none, C5 h2 ~0.9-1.1, C6 h2 ~1.8-2.2.
+- Attack D#5 0-10 ms h2/h1 = -9.3 dB (unchanged), no clicks (max|diff| 0.019-0.032),
+  Chopin 75.1x realtime (was 76.9x), peak 0.661, smoke x3 green, dist rebuilt.
+- WASM size: 168 322 bytes (+266 vs Session 14c).
+
+### Stereo / reverb conclusions (reported to user, no code change yet)
+
+- The SF2 piano has no inter-channel delay (phase offsets ~0-2 ms); its width is
+  per-band L/R level differences (+/-3 dB, some outliers) plus reverb. The
+  measurement-based decorrelation would be a per-region per-band L/R tilt, not a
+  delay. Not implemented; user to decide.
+- Reverb: `HallReverb` (Schroeder-style, 32 comb delays, up to 16384-sample delay,
+  wet=1) exists in `PostEffects` and is wired in `MidiSynth` behind a `reverb` flag;
+  the web build creates it with 0-length buffers (disabled). No UI control. Quality:
+  moderate hall; needs a wet-level control if enabled.
+
+### Remaining
+
+- Mid-harmonic attack gap (h3-h6 in 10-100 ms are 3-37 dB quieter than the sample) -
+  unchanged, separate task.
+- Human listen: bass beats (G2/E3 shimmer like sample), long C3 (beatless, no иииоуу).
+
+---
 **Task:** fix the D#5 (D5–E5) timbre that sounds "коряво" (octave hum, dull top) and does not change despite table edits.
 
 ## Symptoms
@@ -613,3 +925,98 @@ partials — only the beat swing changes):
 
 - C4-B5 sustained notes: the slow deep pump should be gone; shimmer lighter, closer to the
   sample. C6+ should be unchanged (deep beats preserved).
+
+## Session 2026-08-26: master reverb/UI audit
+
+- Rebuilt the WASM and deploy bundle after tracing the UI/ABI/master-bus path.
+- The master send now uses the UI wet value directly; full-generation buffers are invalidated when reverb or stereo tilt changes.
+- Verified generated assets and static checks: `dist/IntraSynth.wasm` is 171204 bytes, `_SourceSetParams` is exported, `node --check web/synth.js`, and `git diff --check` pass.
+
+## Session 2026-08-26 (late): reverb tuned to fluidsynth audibility, stereo tilt removed
+
+User: 100% reverb is almost inaudible; stereo-tilt makes no audible difference; is full offline gen
+regenerated on param change?
+
+Fluidsynth research (official docs): built-in reverb is Freeverb (8 combs + 4 allpass) up to 2.0.9
+and FDN (8 modulated delay lines) since 2.1.0 — mono input, parallel send, default level = 0.9,
+so the tail returns near the dry level. Our HallReverb (32 panned delay taps) is a comparable,
+denser design; no need to port Freeverb — the gap is wet level, not structure.
+
+Why fluidsynth sounds wider (worklog 14e data): samples carry real per-band L/R differences
+(±3-6 dB, sparse ±8-12 dB) which the tilt clamped to ±2.5 dB (the number in the user memory is
+the implementation clamp, not the measurement), plus fluidsynth built-in reverb (level 0.9) and
+chorus (default level 1.2). The tilt is not the width source — removing it is safe.
+
+Changes:
+- RenderParams reduced to a single float (ReverbWet); ABI 1 float, JS allocates 4 bytes.
+- Stereo band-tilt removed end-to-end: UI slider, JS param, AdditiveSampler members + tilt table
+  + GenerateStereo branch + SetRenderParams override. WASM shrinks 168056 -> 168046 bytes.
+- Reverb wet boosted to fluidsynth audibility: master send = 2.5 * wet on the 0.5*(L+R) sum
+  (1.25x mono sum at 100%), matching the 14e coefficient that was proven audible.
+
+Browser proof (Playwright, headless Chromium, real preview):
+  liveKeyboard: dry 0, wet 0.0102 (was 0.0041) — strongEnough: true
+  midiFile:     dry 0, wet 0.0603 (was 0.0241) — strongEnough: true
+  stereoTiltSliderGone: true, reverbSliderPresent: true, pageErrors: []
+
+Full offline generation: renders with the current params and IS invalidated on slider change
+(pregenAudio = null), so the effect applies on the next Play — verified in web/synth.js.
+
+## Session 2026-08-26 (night): reverb audibility on files + full-generation freeze
+
+Root causes found and fixed:
+
+1. Reverb on MIDI files was inaudible (0.04 dB RMS delta between wet=0/1):
+   - Master send = 1.0*wet on 0.5*(L+R) → diffuse tail ~ -20 dB under dry, masked by music.
+   - Fixed in MidiSynth.cpp: send = 3.0*wet (1.5x mono sum at 100%), reverb network volume 3
+     (constructor arg), dry ducks up to -3 dB at wet=1 so the tail is not masked.
+   - Browser proof: file RMS delta now 3.95 dB (peakL 0.43 -> 0.63, 0 clipped samples).
+
+2. Full generation appeared frozen (percent barely moving):
+   - Rendering itself is fast (51-54x realtime in browser, WASM probe). The UI loop yielded
+     with await setTimeout(0), which headless/iframe contexts throttle to ~1 Hz -> crawl.
+   - Fixed in web/synth.js: yieldToUI() via a reused MessageChannel (not timer-throttled),
+     used in generateAll() and seekTo().
+   - Browser proof: generation completes in ~3.9s with growing percent (6% -> 30% -> 69% ->
+     87% -> playback), Stop during generation aborts cleanly and re-enables Play.
+
+3. Regression guard (test): reverb persists after Stop (params reapplied after source
+   recreation), generationAbort resets on each Play, Stop during gen sets abort and does not
+   free the source mid-render (use-after-free would hang WASM).
+
+Rebuilt: web/generated/IntraSynth.wasm == dist/IntraSynth.wasm (168148 bytes).
+Playwright proof: .scratch/ui-gen-reverb-test.cjs — exit 0, pageErrors [].
+
+## Session 2026-08-26 (late night): generation freeze root cause + reverb rebalance
+
+Generation "hangs forever" (main thread dead, Stop does nothing) — REAL bug, not timer
+throttling:
+
+- Root cause: loadFromBytes (file change) and seekTo call freeSource() while generateAll's
+  loop is mid-render. The loop reads the GLOBAL currentSource each iteration; a freed
+  pointer (or NULL) reaches WASM -> render loop reads garbage state and spins forever.
+  Exact trigger: "open file, immediately press Play" — the FileReader onload lands while
+  generation of the previous source is running.
+- Fix (web/synth.js):
+  * loadingFile flag set in the change handler / loadFromUrl, cleared in loadFromBytes
+    finally; playPause ignores clicks while a file is loading.
+  * loadFromBytes is async now: if generationActive, it sets generationAbort and awaits
+    the loop to unwind (while (generationActive) await yieldToUI()) before touching any
+    source. yieldToUI now uses a resolver QUEUE (concurrent awaiters no longer steal each
+    other's MessageChannel wake-up).
+  * seekTo ignores seeks while generationActive.
+  * generateAll captures `const src = currentSource` after the optional recreation and
+    renders that local — the loop can never dereference a freed global.
+- Browser proof: 5x "setInputFiles -> click Play immediately" (no waits) all complete;
+  loading a new file mid-generation completes; seeking mid-generation is ignored and
+  generation finishes; pageErrors [].
+
+Reverb rebalance (user: "strong even at 20%, grainy" at the previous send=3/vol=3/duck=3dB):
+
+- Measured: tap energy in the HallReverb feedback loop is strongly super-linear in volume
+  (vol=1 -> tail ~2% of dry RMS on dense file, inaudible; vol=3 -> grainy + too loud).
+- Final: volume 2.5, k=0.5, send=3*wet, dry duck 1-0.1*wet. No extra delay lines (still
+  32 — the grain was gain, not line count; no perf change).
+- Browser proof (dense piano file, 30 s window): 20% -0.06 dB (subtle), 50% +0.49 dB,
+  100% +2.41 dB RMS, peakL 0.588, 0 clipped samples. Keyboard path wet peak 0.077
+  (reverbActive true).

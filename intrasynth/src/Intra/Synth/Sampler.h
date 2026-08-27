@@ -3,6 +3,7 @@
 #include "Container/Utility/SparseArray.h"
 #include "Container/Sequential/Array.h"
 #include "SamplerTask.h"
+#include "Types.h"
 
 class Sampler
 {
@@ -30,9 +31,9 @@ public:
 	/// Изменение должно происходить плавно, иначе будет щелчок.
 	virtual void SetPan(float newPan) {(void)newPan;}
 
-	/// Установить коэффициент канала реверберации.
-	/// Изменение должно происходить плавно, иначе будет щелчок.
-	virtual void SetReverbCoeff(float newCoeff) {(void)newCoeff;}
+	/// Pass source-level render parameters to note samplers. Master effects are
+	/// handled by MidiSynth; only note-local parameters are forwarded further.
+	virtual void SetRenderParams(const RenderParams& params) {(void)params;}
 
 	/// Нота отпущена, что означает, что пора начать её затухание.
 	virtual void NoteRelease() {}

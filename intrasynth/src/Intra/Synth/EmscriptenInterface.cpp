@@ -25,12 +25,11 @@ extern "C"
 
 		auto mapping = GetMapping();
 		mapping.Preload(info, sampleRate);
-		// Реверберация в этом порте не маршрутизируется (ReverbCoeff всегда 0),
-		// поэтому отключаем её: HallReverb всё равно добавляет нули, но тратит
-		// по 32 операции на каждый семпл (заметная часть времени генерации).
+		// Реверберация отключена по умолчанию; обработка включается через SourceSetParams.
+		// При нулевом wet master-bus эффект не выполняет работу.
 		return new MidiSynth(
 			Midi::MidiFileParser::CreateSingleOrderedMessageStream(stream, status),
-			info.Duration, mapping, 0.05f, nullptr, sampleRate, numChannels >= 2, false, false, false);
+			info.Duration, mapping, 0.05f, nullptr, sampleRate, numChannels >= 2, true, false, false);
 	}
 
 	void EMSCRIPTEN_KEEPALIVE SourceFree(IAudioSource* sourcePtr)
@@ -45,7 +44,7 @@ extern "C"
 	{
 		return new MidiSynth(
 			Midi::TrackCombiner(1), Infinity, GetMapping(), 0.05f, nullptr,
-			sampleRate, numChannels >= 2, false, true, false);
+			sampleRate, numChannels >= 2, true, true, false);
 	}
 
 	// Единая точка входа для живых MIDI-событий (вместо набора кастомных API):
@@ -56,6 +55,13 @@ extern "C"
 	void EMSCRIPTEN_KEEPALIVE SourceSendMidiEvent(IAudioSource* sourcePtr, unsigned status, unsigned data0, unsigned data1)
 	{
 		static_cast<MidiSynth*>(sourcePtr)->SendMidiEvent(byte(status), byte(data0), byte(data1));
+	}
+
+	// Устанавливает все runtime-параметры конкретного источника одной структурой.
+	// ABI: один float — ReverbWet.
+	void EMSCRIPTEN_KEEPALIVE SourceSetParams(IAudioSource* sourcePtr, const RenderParams* params)
+	{
+		if(params) static_cast<MidiSynth*>(sourcePtr)->SetRenderParams(*params);
 	}
 
 	unsigned EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)

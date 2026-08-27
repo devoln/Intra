@@ -1,4 +1,4 @@
-#include "AdditiveSampler.h"
+﻿#include "AdditiveSampler.h"
 #include "PianoRegions.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -38,18 +38,31 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		if(fk >= 0.92f*float(sampleRate)*0.5f) break;
 		partials = i + 1;
 	}
-	// 2026-08-26: per-key unison spread. Широкая расстройка (1.4 цента у
-	// AcousticPiano) даёт мерцание в первую секунду на C5+ (измерено из
-	// семпла), но ниже C4 та же расстройка превращается в медленное глубокое
-	// биение фундаментала (0.14-0.28 Гц на C3-C4, глубина ±70%) — «странный
-	// отзвук» в наушниках; в низких семплах SF2 биений почти нет. Плавно
-	// сводим расстройку к ~0.3 цента (принятое до расширения значение) на
-	// C4 и ниже, к базовому значению инструмента на C5, выше — константа.
+	// 2026-08-26: per-key unison spread. Расстройка по регионам подогнана к
+	// биениям, измеренным в сырых семплах SF2 (окна 100 мс, моно-сумма):
+	//   root 43 (G2): h2 ~0.5 Гц  → ~4.0 цента
+	//   root 47 (B2): биений нет  → 0
+	//   root 51 (E3): h2 ~1.5 Гц  → ~7.0 цента
+	//   root 54 (F#3), 57 (A3): нет → 0
+	//   root 60 (C4): ~0.5 Гц (край слабый) → 0.3
+	//   C5+: 0.3→1.4 цента (мерцание в первую секунду, Session 13).
+	// Глубокий бас (≤ A#1) оставлен без биений: там семпл показывает
+	// низкочастотную амплитудную «болтанку», которую нельзя объяснить
+	// расстройкой струн (потребовалось бы 20–100+ центов) — не воспроизводим.
+	// Верхние партиалы в басе не бьются по построению (per-partial вес
+	// глубины ниже), поэтому «иииоуу» на длинных нотах исключено.
 	{
-		const float spreadLo = 0.3f;  // абсолютный потолок для низких нот
 		const float spreadHi = 1.4f;  // эталонная расстройка на C5+ (AcousticPiano)
-		const float t = Math::Clamp((midi - 60.0f)/12.0f, 0.0f, 1.0f);
-		detuneCents *= (spreadLo + (spreadHi - spreadLo)*t) / spreadHi;
+		float base;
+		if(midi <= 40.0f) base = 0.0f;
+		else if(midi < 45.0f) base = 4.0f;   // регион 43 (G2)
+		else if(midi < 49.0f) base = 0.0f;   // регион 47 (B2)
+		else if(midi < 53.0f) base = 7.0f;   // регион 51 (E3)
+		else if(midi < 56.0f) base = 0.0f;   // регион 54 (F#3)
+		else if(midi < 59.0f) base = 0.0f;   // регион 57 (A3)
+		else if(midi < 62.0f) base = 0.3f;   // регион 60 (C4)
+		else base = 0.3f + 1.1f*Math::Min(1.0f, (midi - 60.0f)/12.0f);
+		detuneCents *= base / spreadHi;
 	}
 	// «Струны» унисона: 1-3, каждая со своей расстройкой, громкостью и фазой.
 	unisonVoices = Math::Clamp(unisonVoices, 1, 3);
@@ -73,15 +86,13 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		// медленную раскачку на длинных нотах, которой в семпле нет. Уровень
 		// второй струны задаёт глубину (пик/провал = (1+g1)/|1−g1|): после
 		// нормировки пика тембр и средний уровень не меняются (у обеих струн
-		// одинаковые партиалы — меняется только размах биений).
-		// Узлы: 58→62: 0.7→0.45, 62→76: плато 0.45 (8.4 дБ), 76→84: 0.45→0.7.
-		float g1 = 0.7f;
-		if(midi > 58.0f && midi < 84.0f)
-		{
-			if(midi <= 62.0f)      g1 = 0.7f - 0.25f*(midi - 58.0f)/4.0f;
-			else if(midi <= 76.0f) g1 = 0.45f;
-			else                   g1 = 0.45f + 0.25f*(midi - 76.0f)/8.0f;
-		}
+		// одинаковые партиалы — меняется только размах биений). Session 14c:
+		// мелкая огибающая (8.4 дБ) распространяется на весь бас и середину
+		// (≤ E5), глубокая (15 дБ) остаётся только в требли (C6+), где семплы
+		// бьются глубоко. Узлы: ≤76: 0.45, 76→84: 0.45→0.7, ≥84: 0.7.
+		float g1 = 0.45f;
+		if(midi >= 84.0f) g1 = 0.7f;
+		else if(midi > 76.0f) g1 = 0.45f + 0.25f*(midi - 76.0f)/8.0f;
 		voiceGain[1] = g1;
 	}
 	else
@@ -122,8 +133,12 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mBeatPh.SetCount(count);
 	mBeatE0.SetCount(count);
 	mBeatE1.SetCount(count);
-	for(size_t p = 0; p < count; p++) { mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; }
-	mBeatR = beatCollapse ? (voiceGain[0] - voiceGain[1])/(voiceGain[0] + voiceGain[1]) : 0.0f;
+	mBeatR2.SetCount(count);
+	for(size_t p = 0; p < count; p++) { mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; mBeatR2[p] = 1.0f; }
+	// Базовая глубина биения r = (g0−g1)/(g0+g1); на партиалу докручивается
+	// весом w(k) в цикле лейнов (mBeatR2 = (1−(1−r)·w)²). r², а не r:
+	// огибающая E = sqrt(1 − (1−r²)·sin²) использует квадрат.
+	const float beatR = beatCollapse ? (1.0f - voiceGain[1])/(1.0f + voiceGain[1]) : 0.0f;
 	mBeatOn = beatCollapse;
 	const float twoPi = 2.0f*float(Math::PI);
 	// Все lambda приходят из fitDecay для конкретного региона/партиала;
@@ -182,6 +197,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 				mDecayRelease[o] = 1.0f;
 				mAtk[o] = 0.0f;
 				mBeatStep[o] = 0.0f;
+				mBeatR2[o] = 1.0f;
 				mAmp[o] = 0.0f;
 				crs[o] = 0.0f;
 				cis[o] = 0.0f;
@@ -214,12 +230,31 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			dphis[o] = dphi;
 			if(beatCollapse)
 			{
-				// Шаг фазы биения Δ = (ω1−ω0)/2 = π·fk·(det1−det0)/sr. Знак не
-				// важен (E зависит от cos²/sin²). Масштаб по партиале: fk ≈ k·f0,
-				// поэтому у k-й гармоники биения в k раз быстрее, как в семпле.
+				// Шаг фазы биения Δ = π·fk·(det1−det0)/sr (знак не важен: E
+				// зависит от cos²/sin²). Масштаб по партиале: fk ≈ k·f0, поэтому
+				// у k-й гармоники биения в k раз быстрее, как в семпле.
 				const float det0 = Math::Pow(detuneRatio, voiceCents[0]);
 				const float det1 = Math::Pow(detuneRatio, voiceCents[1]);
 				mBeatStep[o] = float(Math::PI)*(fk/float(sampleRate))*(det1 - det0);
+				// Per-partial вес глубины биения (2026-08-26): у семпла бьются
+				// низкие партиалы (h1/h2), а h3+ держат уровень — глубокая
+				// медленная огибающая на h5/h6 при неподвижном h1 давала
+				// «иииоуу» (спектр темнел за секунды). w=0 — партиала не
+				// бьётся вовсе. В басе/середине h1 у семпла тоже не бьётся
+				// (глубина 4-6 дБ = шум окна) — вес 0.25, чтобы не было
+				// медленного «насоса»; к C5 плавно до 1 (в требли h1 бьётся
+				// глубоко, C6+ 10-33 дБ).
+				float w = 0.0f;
+				if(k == 1)
+				{
+					if(midi <= 60.0f) w = 0.25f;
+					else if(midi >= 72.0f) w = 1.0f;
+					else w = 0.25f + 0.75f*(midi - 60.0f)/12.0f;
+				}
+				else if(k == 2) w = 1.0f;
+				else if(k == 3) w = 0.5f;
+				const float rEff = 1.0f - (1.0f - beatR)*w;
+				mBeatR2[o] = rEff*rEff;
 			}
 			mK[o] = 2.0f*Math::Cos(dphi);
 			// Затухание: 3-скоростное из семпла (λ1 — начальный спад, λ2 —
@@ -287,7 +322,6 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		cis[o] = 0.0f;
 		dphis[o] = 0.0f;
 	}
-
 	// === Атака: контактная сила возбуждает те же моды ===
 	// Молоточек — не отдельный звуковой слой, а сила F[n], входящая в
 	// рекурсию партиал: z[n+1] = e^{jw}·z[n] + G_k·F[n], выход = Im z.
@@ -824,16 +858,6 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 }
 
-size_t AdditiveSampler::GenerateMono(Span<float> ioDst, Span<float> ioDstReverb)
-{
-	(void)ioDstReverb;
-	if(mDone) return 0;
-	const size_t n = ioDst.Length();
-	float* dst = ioDst.Data();
-	RenderInto(n, [dst](float v) mutable {*dst++ += v;});
-	return mDone ? 0 : n;
-}
-
 void AdditiveSampler::NoteRelease()
 {
 	if(mReleased) return;
@@ -861,31 +885,29 @@ void AdditiveSampler::NoteRelease()
 	// когда amp[p] → 0 для всех партиал. mDone установится в RenderInto.
 }
 
-size_t AdditiveSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+size_t AdditiveSampler::GenerateMono(Span<float> ioDst)
 {
-	(void)ioDstReverb;
+	if(mDone) return 0;
+	const size_t n = ioDst.Length();
+	float* dst = ioDst.Data();
+	RenderInto(n, [dst](float v) mutable { *dst++ += v; });
+	return mDone ? 0 : n;
+}
+
+size_t AdditiveSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
+{
 	if(mDone) return 0;
 	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();
 	if(mStereoPan == 0.0f)
 	{
-		// pan=0: моно в оба канала (как раньше)
-		RenderInto(n, [dstL, dstR](float v) mutable {*dstL++ += v; *dstR++ += v;});
+		RenderInto(n, [dstL, dstR](float v) mutable { *dstL++ += v; *dstR++ += v; });
 		return mDone ? 0 : n;
 	}
-	// Честное стерео: constant-power pan по измеренной разнице уровней L/R
-	// семплов SF2 (region.StereoPan). Каждый сэмпл моно-рендера панорамируется
-	// в L и R с разными коэффициентами. Голоса унисона (2-3 струны с
-	// расстройкой) при этом дают настоящее стерео-биение, так как их частоты
-	// различны — в L и R приходят разные фазы биений, как в реальном
-	// семпле с раздельными L/R микрофонами.
 	const float gl = mStereoGainL;
 	const float gr = mStereoGainR;
-	RenderInto(n, [dstL, dstR, gl, gr](float v) mutable {
-		*dstL++ += v*gl;
-		*dstR++ += v*gr;
-	});
+	RenderInto(n, [dstL, dstR, gl, gr](float v) mutable { *dstL++ += v*gl; *dstR++ += v*gr; });
 	return mDone ? 0 : n;
 }
 

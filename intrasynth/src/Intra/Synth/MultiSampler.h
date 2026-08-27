@@ -34,7 +34,7 @@ public:
 	void MultiplyPitch(float freqMultiplier) override {for(auto* s: mSubSamplers) s->MultiplyPitch(freqMultiplier);}
 	void MultiplyVolume(float volumeMultiplier) override {for(auto* s: mSubSamplers) s->MultiplyVolume(volumeMultiplier);}
 	void SetPan(float newPan) override {for(auto* s: mSubSamplers) s->SetPan(newPan);}
-	void SetReverbCoeff(float newCoeff) override {for(auto* s: mSubSamplers) s->SetReverbCoeff(newCoeff);}
+	void SetRenderParams(const RenderParams& params) override {for(auto* s: mSubSamplers) s->SetRenderParams(params);}
 	void NoteRelease() override {for(auto* s: mSubSamplers) s->NoteRelease();}
 };
 

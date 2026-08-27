@@ -37,7 +37,11 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 	// длины. Живой режим задаёт бесконечную длину напрямую флагом.
 	mSampleCount(live ? ~size_t() : size_t((duration + 2)*sampleRate)),
 	mMaxSample(maxVolume),
-	mReverberator(size_t(reverb ? 16384 : 0), size_t(reverb ? 32 : 0), 1),
+	// reverbVolume 2.5: the tap energy in the feedback loop grows super-linearly
+	// with volume (vol 1 measured ~2% of dry RMS on a dense file — inaudible; vol 3
+	// overshot into grain). 2.5 lands clearly audible without the sandy texture.
+	// k 0.5 keeps the decay short enough that the tail does not smear the piano.
+	mReverberator(size_t(reverb ? 16384 : 0), size_t(reverb ? 32 : 0), 2.5f, 0.5f),
 	mCompressor(compress ? sampleRate : 0u),
 	mCompress(compress),
 	mLiveMode(live)
@@ -48,6 +52,22 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 	for(auto& p: mChannelProgramOverride) p = 0xFF;
 	for(auto& v: mLiveVolume) v = 127;
 	for(auto& p: mLivePan) p = 64;
+}
+
+void MidiSynth::SetRenderParams(const RenderParams& params)
+{
+	RenderParams next = params;
+	next.ReverbWet = next.ReverbWet < 0.0f ? 0.0f :
+		(next.ReverbWet > 1.0f ? 1.0f : next.ReverbWet);
+
+	// Do not retain old delay-line energy across an explicit off/on cycle.
+	// This runs only when the UI changes the mode, never in the audio loop.
+	if((mRenderParams.ReverbWet > 0.0f) != (next.ReverbWet > 0.0f))
+		mReverberator.Reset();
+
+	mRenderParams = next;
+	for(auto noteSamplers = mNoteSamplers.AsRange(); !noteSamplers.Empty();)
+		noteSamplers.Next().SetRenderParams(mRenderParams);
 }
 
 size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatChannels)
@@ -159,9 +179,43 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 		Add(dstLeftPart, frame.Channels[0].Take(samplesBeforeNextEvent));
 		if(!dstRightPart.Empty()) Add(dstRightPart, frame.Channels[1].Take(samplesBeforeNextEvent));
 
-		// 3. Эффекты (реверберация добавляется к уже сгенерированным каналам).
-		if(mReverberator)
-			mReverberator(dstLeftPart, dstRightPart, frame.Channels[2].Take(samplesBeforeNextEvent));
+	// 3. Master effects. Reverb receives the already mixed dry signal,
+	// not a per-voice send. At wet=0 this whole block is skipped, so the
+	// reverb comb bank does not consume render CPU in the default mode.
+	if(mRenderParams.ReverbWet > 0.0f && mReverberator)
+		{
+			// Audibility budget (verified in-browser on a dense piano MIDI file):
+			// send = 3*wet (1.5x the mono sum at 100%), network volume 2.5 (tap
+			// energy grows super-linearly — 1 was inaudible on files, 3 was grainy),
+			// dry ducks at most -1 dB so the tail is not masked yet keeps its body.
+			const float wet = mRenderParams.ReverbWet;
+			const float dryGain = 1.0f - 0.1f*wet;
+			if(dryGain != 1.0f)
+			{
+				for(size_t i = 0; i < samplesBeforeNextEvent; i++)
+				{
+					dstLeftPart[i] *= dryGain;
+					if(!dstRightPart.Empty()) dstRightPart[i] *= dryGain;
+				}
+			}
+			mReverbChannelBuffer.SetCount(samplesBeforeNextEvent);
+			const float sendGain = 3.0f * wet;
+			for(size_t i = 0; i < samplesBeforeNextEvent; i++)
+			{
+				const float dryL = frame.Channels[0][i];
+				const float dryR = frame.Channels[1][i];
+				mReverbChannelBuffer[i] = 0.5f*(dryL + dryR)*sendGain;
+			}
+			if(dstRightPart.Empty())
+			{
+				mReverbChannelBuffer.SetCount(samplesBeforeNextEvent);
+				for(size_t i = 0; i < samplesBeforeNextEvent; i++)
+					mReverbChannelBuffer[i] = frame.Channels[0][i]*sendGain;
+			}
+			Span<float> reverbRight = dstRightPart.Empty() ? dstLeftPart : dstRightPart;
+			mReverberator(dstLeftPart, reverbRight,
+				Span<const float>(mReverbChannelBuffer.Data(), samplesBeforeNextEvent));
+		}
 
 #ifdef INTRA_PROBE_NAN
 		{
@@ -248,6 +302,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 		auto& stored = mNoteSamplers.Add<NoteSampler>(Move(note));
 		const uint16 idx = uint16(mNoteSamplers.Length() - 1);
 		stored.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
+		stored.SetRenderParams(mRenderParams);
 		mPlayingNoteMap[key] = idx;
 		return;
 	}
@@ -261,6 +316,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	Sampler& newSampler = instr->CreateSampler(noteOn.Frequency(), totalStartVolume, mSampleRate, mNoteSamplers, &idx);
 	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
 	newSampler.SetPan(float(noteOn.Pan) / 64.0f);
+	newSampler.SetRenderParams(mRenderParams);
 	const float freqMult = pitchBendToFreqMultiplier(mMidiState.ChannelPitchBend[noteOn.Channel]);
 	if(freqMult != 1) newSampler.MultiplyPitch(freqMult);
 	mPlayingNoteMap[key] = idx;

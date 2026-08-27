@@ -6,16 +6,27 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+// Parameters shared by the source-level render path and the WASM ABI. The
+// structure is copied into one MidiSynth instance; it is deliberately not a
+// global so two sources can be rendered with different settings.
+struct RenderParams
+{
+	float ReverbWet = 0.0f;  // 0..1, master effect amount; zero skips the effect
+};
+static_assert(sizeof(RenderParams) == sizeof(float), "RenderParams ABI must stay one float");
+
 class IGenericSampler
 {
 public:
 	virtual ~IGenericSampler() {}
-	virtual size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) = 0;
-	size_t GenerateMono(Span<float> ioDst) {return GenerateMono(ioDst, nullptr);}
-	virtual size_t GenerateStereo(Span<float> ioDst, Span<float> ioDstRight, Span<float> ioDstReverb) = 0;
-	virtual size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) {return GenerateStereo(ioDstLeft, ioDstRight, nullptr);}
+	virtual size_t GenerateMono(Span<float> ioDst) = 0;
+	virtual size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) = 0;
 	virtual void NoteRelease() {}
 	virtual void MultiplyPitch(float freqMultiplier) {(void)freqMultiplier;}
+	/// Pass source-level render parameters to samplers that have a note-level
+	/// parameter (currently the measured piano stereo tilt). Master effects are
+	/// handled by MidiSynth and are ignored by these samplers.
+	virtual void SetRenderParams(const RenderParams& params) {(void)params;}
 };
 
 typedef Unique<IGenericSampler> GenericSamplerRef;
@@ -28,16 +39,15 @@ template<typename F> class FunctorGenericSampler: public IGenericSampler
 public:
 	explicit FunctorGenericSampler(F f): mFunctor(Move(f)) {}
 
-	size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) override
+	size_t GenerateMono(Span<float> ioDst) override
 	{
-		(void)ioDstReverb;
 		Span<float> rest = mFunctor(ioDst, false);
 		return ioDst.Length() - rest.Length();
 	}
 
-	size_t GenerateStereo(Span<float> ioDst, Span<float> ioDstRight, Span<float> ioDstReverb) override
+	size_t GenerateStereo(Span<float> ioDst, Span<float> ioDstRight) override
 	{
-		(void)ioDstRight; (void)ioDstReverb;
+		(void)ioDstRight;
 		Span<float> rest = mFunctor(ioDst, false);
 		return ioDst.Length() - rest.Length();
 	}

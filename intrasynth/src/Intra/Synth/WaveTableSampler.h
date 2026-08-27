@@ -53,7 +53,7 @@ protected:
 	ExponentAttenuator mExpAtten;
 
 	//Множители, на которые умножается каждый семпл при записи в соответствующий канал
-	float mLeftMultiplier, mRightMultiplier, mReverbMultiplier;
+	float mLeftMultiplier, mRightMultiplier;
 
 	//Осциллятор скорости воспроизведения, которая рассчитывается как mRate*(1 + mFreqOscillator.value)
 	Intra::SineRange<float> mFreqOscillator;
@@ -76,7 +76,7 @@ public:
 	// Прямой рендер, используемый вложенными семплерами (NoteSampler).
 	// GenerateMono возвращает необработанный остаток (nullptr, если буфер заполнен).
 	Span<float> GenerateMono(Span<float> ioDst);
-	size_t GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
+	size_t GenerateStereo(Span<float> dstLeft, Span<float> dstRight);
 
 	void MultiplyPitch(float freqMultiplier) final
 	{
@@ -92,18 +92,17 @@ public:
 		mLeftMultiplier = 1 - mRightMultiplier;
 	}
 
-	void SetReverbCoeff(float newCoeff) final {mReverbMultiplier = newCoeff;}
 	void NoteRelease() final {mEnvelope.StartLastSegment();}
 
 private:
-	size_t renderDirect(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
+	size_t renderDirect(Span<float> dstLeft, Span<float> dstRight);
 
 	void generateWithDefaultRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples);
 
 	void generateWithVaryingRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples);
 
 	template<bool FreqOsc, bool Adsr>
-	void generateWithVaryingRateTask(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb);
+	void generateWithVaryingRateTask(Span<float> dstLeft, Span<float> dstRight);
 };
 
 struct WaveTableCache

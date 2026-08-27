@@ -226,7 +226,7 @@ void ParallelSynthExecutor::Run(SamplerTaskContext& frame, const SamplerTaskCont
 	for(size_t wi = 0; wi < activeWorkers; wi++)
 	{
 		SamplerTaskContext& context = mWorkers[wi]->Context;
-		for(int c = 0; c < 3; c++)
+		for(int c = 0; c < 2; c++)
 		{
 			if((context.UsedChannels & (1 << c)) == 0) continue;
 			Add(frame.Channels[c].Take(frameLength), context.Channels[c].Take(frameLength));

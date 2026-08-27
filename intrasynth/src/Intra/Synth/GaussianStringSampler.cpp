@@ -26,18 +26,16 @@ GaussianStringSampler::GaussianStringSampler(float freq, float volume, unsigned 
 	mRadiusCap = radiusCap;
 }
 
-size_t GaussianStringSampler::GenerateMono(Span<float> ioDst, Span<float> ioDstReverb)
+size_t GaussianStringSampler::GenerateMono(Span<float> ioDst)
 {
-	(void)ioDstReverb;
 	const size_t n = ioDst.Length();
 	float* dst = ioDst.Data();
 	RenderInto(n, [dst](float v) mutable {*dst++ += v;});
 	return n;
 }
 
-size_t GaussianStringSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+size_t GaussianStringSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
 {
-	(void)ioDstReverb;
 	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();

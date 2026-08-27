@@ -25,16 +25,15 @@ public:
 	Array<GenericModifier> Modifiers;
 	AdsrAttenuator ADSR;
 	float Pan = 0;
-	float ReverbCoeff = 0;
 
 	size_t GenerateMono(Span<float> ioDst);
-	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb);
+	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight);
 
 	void MultiplyPitch(float freqMultiplier) override;
 	void NoteRelease() override;
 	void SetPan(float pan) override;
 	void MultiplyVolume(float volumeMultiplier) override;
-	void SetReverbCoeff(float reverbCoeff) override;
+	void SetRenderParams(const RenderParams& params) override;
 
 	bool Empty() const noexcept
 	{
@@ -48,7 +47,7 @@ public:
 
 private:
 	void fill(Span<float> ioDst);
-	void fillStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb);
+	void fillStereo(Span<float> ioDstLeft, Span<float> ioDstRight);
 	void applyModifiers(Span<float> ioDst);
 };
 

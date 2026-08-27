@@ -196,9 +196,8 @@ public:
 		mVolume = volume*scale;
 	}
 
-	size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) override
+	size_t GenerateMono(Span<float> ioDst) override
 	{
-		(void)ioDstReverb;
 		const size_t L = mTable.Length();
 		for(size_t i = 0; i < ioDst.Length(); i++)
 		{
@@ -208,9 +207,8 @@ public:
 		return ioDst.Length();
 	}
 
-	size_t GenerateStereo(Span<float> ioDst, Span<float> ioDstRight, Span<float> ioDstReverb) override
+	size_t GenerateStereo(Span<float> ioDst, Span<float> ioDstRight) override
 	{
-		(void)ioDstReverb;
 		const size_t n = Math::Min(ioDst.Length(), ioDstRight.Length());
 		const size_t L = mTable.Length();
 		for(size_t i = 0; i < n; i++)

@@ -199,6 +199,7 @@ class HallReverb
 public:
 	HallReverb(decltype(nullptr)=nullptr) {}
 	HallReverb(size_t delayLength, size_t numDelays, float reverbVolume=1, float k=0.5f);
+	void Reset();
 	void ProcessSample(float* ioL, float* ioR, float reverbSample);
 	void operator()(Span<float> dstLeft, Span<float> dstRight, Span<const float> reverbBuffer);
 	INTRA_FORCEINLINE bool operator==(decltype(nullptr)) const noexcept {return mAccum.Empty();}

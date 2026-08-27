@@ -151,8 +151,8 @@ public:
 		mTime = t;
 	}
 
-	size_t GenerateMono(Span<float> ioDst, Span<float> ioDstReverb) override;
-	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb) override;
+	size_t GenerateMono(Span<float> ioDst) override;
+	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
 
 private:
 	static unsigned randGen(float freq, float volume, unsigned sampleRate);

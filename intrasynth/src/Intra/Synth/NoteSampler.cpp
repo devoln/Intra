@@ -33,9 +33,8 @@ public:
 		const size_t n = NumSamples;
 		auto left = stc.Channels[0].Drop(OffsetInSamples).Take(n);
 		auto right = stc.Channels[1].Drop(OffsetInSamples).Take(n);
-		auto reverb = stc.Channels[2].Drop(OffsetInSamples).Take(n);
-		SamplerPtr->GenerateStereo(left, right, reverb);
-		stc.UsedChannels |= LeftChannel | RightChannel | ReverbChannel;
+		SamplerPtr->GenerateStereo(left, right);
+		stc.UsedChannels |= LeftChannel | RightChannel;
 
 #ifdef INTRA_PROBE_NAN
 		{
@@ -92,11 +91,11 @@ size_t NoteSampler::GenerateMono(Span<float> ioDst)
 	return ioDst.Length();
 }
 
-size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Span<float> dstReverb)
+size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight)
 {
 	if(Modifiers.Empty() && !ADSR)
 	{
-		fillStereo(dstLeft, dstRight, dstReverb);
+		fillStereo(dstLeft, dstRight);
 		return dstLeft.Length();
 	}
 
@@ -120,7 +119,6 @@ size_t NoteSampler::GenerateStereo(Span<float> dstLeft, Span<float> dstRight, Sp
 			dstL[i] += s*panLeft;
 			dstR[i] += s*panRight;
 		}
-		if(ReverbCoeff != 0) AddMultiplied(dstReverb.TakeAdvance(tempDst.Length()), tempDst, ReverbCoeff);
 	}
 	return sampleCount;
 }
@@ -146,23 +144,23 @@ void NoteSampler::fill(Span<float> ioDst)
 	}
 }
 
-void NoteSampler::fillStereo(Span<float> ioDstLeft, Span<float> ioDstRight, Span<float> ioDstReverb)
+void NoteSampler::fillStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
 {
 	for(size_t i = 0; i < WaveFormSamplers.Length(); i++)
 	{
-		size_t samplesProcessed = WaveFormSamplers[i].GenerateStereo(ioDstLeft, ioDstRight, ioDstReverb);
+		size_t samplesProcessed = WaveFormSamplers[i].GenerateStereo(ioDstLeft, ioDstRight);
 		if(samplesProcessed != ioDstLeft.Length()) WaveFormSamplers.RemoveUnordered(i--);
 	}
 	for(size_t i = 0; i < WaveTableSamplers.Length(); i++)
 	{
-		size_t samplesProcessed = WaveTableSamplers[i].GenerateStereo(ioDstLeft, ioDstRight, ioDstReverb);
+		size_t samplesProcessed = WaveTableSamplers[i].GenerateStereo(ioDstLeft, ioDstRight);
 		if(samplesProcessed != ioDstLeft.Length()) WaveTableSamplers.RemoveUnordered(i--);
 	}
 	for(size_t i = 0; i < WhiteNoiseSamplers.Length(); i++)
 		WhiteNoiseSamplers[i].GenerateMono(ioDstLeft);
 	for(size_t i = 0; i < GenericSamplers.Length(); i++)
 	{
-		const size_t samplesProcessed = GenericSamplers[i]->GenerateStereo(ioDstLeft, ioDstRight, ioDstReverb);
+		const size_t samplesProcessed = GenericSamplers[i]->GenerateStereo(ioDstLeft, ioDstRight);
 		if(samplesProcessed < ioDstLeft.Length()) GenericSamplers.RemoveUnordered(i--);
 	}
 }
@@ -211,11 +209,9 @@ void NoteSampler::MultiplyVolume(float volumeMultiplier)
 	for(auto& sampler: WaveTableSamplers) sampler.MultiplyVolume(volumeMultiplier);
 }
 
-void NoteSampler::SetReverbCoeff(float reverbCoeff)
+void NoteSampler::SetRenderParams(const RenderParams& params)
 {
-	for(auto& sampler: WaveFormSamplers) sampler.SetReverbCoeff(reverbCoeff);
-	for(auto& sampler: WaveTableSamplers) sampler.SetReverbCoeff(reverbCoeff);
-	ReverbCoeff = reverbCoeff;
+	for(auto& sampler: GenericSamplers) sampler->SetRenderParams(params);
 }
 
 INTRA_WARNING_POP
