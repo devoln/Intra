@@ -283,12 +283,13 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			//
 			// Скорость демпфера: выше нота — быстрее (короткая струна гасится
 			// быстрее), выше гармоника — быстрее, но МЯГКО (√k, не k):
-			//   λ_damper(k) = (1/0.28с)·√(f_note/f_C4)·√k
+			//   λ_damper(k) = (1/0.13с)·(f_note/f_C4)^0.65 / √k
 			// Скалирование по √k (а не по k) не даёт тембру «провалиться» до
 			// чистого фундаментала на коротких нотах — именно это звучало как
 			// странный призвук/квакание после release.
-			// C4: k=1 → τ=280мс, k=8 → τ≈99мс (растекание 2.8×, не 8×).
-			const float tauR = 0.28f*Math::Sqrt(261.625565f/freq) / Math::Sqrt(float(k));
+			// Калибровка по FL-рендеру (окно после NoteOff): C4 156→91 мс,
+			// C5 92→56, D#5 104→57, C6 51→55 мс vs FL 100/58/54/40.
+			const float tauR = 0.13f*Math::Pow(261.625565f/freq, 0.65f) / Math::Sqrt(float(k));
 			mDecayRelease[o] = Math::Exp(-1.0f/(tauR*float(sampleRate)));
 			// Per-partial attack rise для партиал, которых удар не успевает
 			// раскачать (короткий контакт не передаёт энергию высоким модам):
@@ -304,7 +305,6 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			}
 		}
 	}
-
 	// Лишние лейны (округление до кратного 4) — тишина.
 	for(; o < count; o++)
 	{
@@ -832,6 +832,8 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mVolume = volume;
 	mDone = false;
 	mReleased = false;
+	mReleasePending = false;
+	mReleaseAt = 0;
 	mOverlayGain = 1.0f;
 	mOverlayRel = 1.0f;
 	mOverlayActive = true;
@@ -858,7 +860,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 }
 
-void AdditiveSampler::NoteRelease()
+void AdditiveSampler::ApplyRelease()
 {
 	if(mReleased) return;
 	mReleased = true;
@@ -883,6 +885,25 @@ void AdditiveSampler::NoteRelease()
 	mOverlayRel = Math::Exp(-1.0f/(0.008f*float(mSampleRate)));
 	// mEndSamples не трогаем — нота закончится естественным путём,
 	// когда amp[p] → 0 для всех партиал. mDone установится в RenderInto.
+}
+
+// «Окно свободной атаки»: если NoteOff пришёл раньше, чем струна успела
+// сформировать атаку (< 35 мс), демпфер не применяется сразу — иначе
+// ультракороткие ноты (5-30 мс) обрезались бы на полупустой амплитуде
+// и звучали как щелчок вместо удара. Release откладывается до конца окна
+// и применяется в RenderInto (см. mReleasePending). Ноты длиннее окна
+// работают как раньше.
+void AdditiveSampler::NoteRelease()
+{
+	if(mReleased || mReleasePending) return;
+	const size_t freeWindow = size_t(0.035f*float(mSampleRate));
+	if(mRendered < freeWindow)
+	{
+		mReleasePending = true;
+		mReleaseAt = freeWindow;
+		return;
+	}
+	ApplyRelease();
 }
 
 size_t AdditiveSampler::GenerateMono(Span<float> ioDst)

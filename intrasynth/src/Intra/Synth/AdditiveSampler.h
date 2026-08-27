@@ -122,6 +122,10 @@ class AdditiveSampler: public IGenericSampler
 	float mOverlayGain;
 	float mOverlayRel;
 	bool mOverlayActive;
+	// «Окно свободной атаки»: NoteOff раньше 35 мс откладывает
+	// демпфер до конца окна (см. NoteRelease/RenderInto).
+	bool mReleasePending;
+	size_t mReleaseAt;
 	unsigned mSampleRate;
 	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока.
 	FixedArray<float> mScratch;
@@ -213,7 +217,7 @@ public:
 			{
 				if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++]*mOverlayGain;
 				if(mPushPos < mPushLen) s += mPushBuf[mPushPos++]*mOverlayGain;
-				if(mBloomOn && mBloomPos < mBloomLen) s += mBloomBuf[mBloomPos++];
+				if(mBloomOn && mBloomPos < mBloomLen) s += mBloomBuf[mBloomPos++]*mOverlayGain;
 				mOverlayGain *= mOverlayRel;
 				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
 			}
@@ -227,7 +231,11 @@ public:
 			numSamples--;
 		}
 		if(numSamples == 0) break;
-		size_t n = Math::Min(mBlockSize, numSamples);
+		if(mReleasePending && mRendered >= mReleaseAt)
+		{
+			mReleasePending = false;
+			ApplyRelease();
+		}			size_t n = Math::Min(mBlockSize, numSamples);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
 			// При release (демпфере) эти переключения пропускаются — dec[p]
@@ -412,7 +420,7 @@ public:
 					float o = 0.0f;
 					if(mBodyPos < mBodyLen) o += mBodyBuf[mBodyPos++]*mOverlayGain;
 					if(mPushPos < mPushLen) o += mPushBuf[mPushPos++]*mOverlayGain;
-					if(mBloomOn && mBloomPos < mBloomLen) o += mBloomBuf[mBloomPos++];
+					if(mBloomOn && mBloomPos < mBloomLen) o += mBloomBuf[mBloomPos++]*mOverlayGain;
 					mOverlayGain *= mOverlayRel;
 					acc[4*ov] += o;
 					ov++;
@@ -460,6 +468,7 @@ public:
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
 	void NoteRelease() override;
+	void ApplyRelease();
 };
 
 /// Фабрика аддитивного фортепиано.
