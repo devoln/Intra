@@ -450,3 +450,10 @@ static const size_t PianoSampleRegionCount = sizeof(PianoSampleRegions)/sizeof(P
 
 
 
+// Decode one packed partial by row index (shared table). Lives at the end of
+// the region block so the packer passes it through verbatim.
+static inline PianoPartial PianoGetPartial(size_t row)
+{
+	return PianoDecodePartial(PianoAllPartialsPacked + row*PianoPartialPackedSize);
+}
+
