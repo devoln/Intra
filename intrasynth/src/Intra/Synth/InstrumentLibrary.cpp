@@ -257,6 +257,10 @@ InstrumentLibrary::InstrumentLibrary()
 	// Атака у всех аддитивных инструментов — контактная сила (см.
 	// AdditiveSampler): короткий удар возбуждает те же моды, что и сустейн.
 	{
+		// Калибровка громкости (2026-08-28, замер против AcousticPiano, vel 100,
+		// окна peak 0-100 мс и rms 100-400 мс, клавиши 36/48/60/72/84 — см.
+		// ворклог). 10-й параметр AdditivePianoInstrument — VolumeDb (дБ):
+		// умножает выход ВСЕЙ ноты (атака+сустейн), Scale и динамику не трогает.
 		auto& g = Instruments["AcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 				// Эталонная модель: амплитуды, фазы и затухание извлечены из
@@ -274,7 +278,7 @@ InstrumentLibrary::InstrumentLibrary()
 				// C4 h1 0.14 Гц, C5 h2 1.0, C6 h2 2.0, C7 h1 2.3. Глубина
 				// (±70% по h2 на C6) совпадает с семплом.
 				// StereoPan — per-key, измерен по разнице уровней L/R семплов SF2.
-				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f};
+				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 0.0f};
 			}());
 		// Без ADSR-огибающей: AdditiveSampler сам управляет концом ноты
 		// (фейд на mEndSamples). Без ADSR NoteSampler::GenerateStereo идёт по
@@ -285,7 +289,11 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["BrightAcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 			// Ярче (k^0.12), 3 струны с расстройкой.
-			return AdditivePianoInstrument{0.4f, 40, 0.84f, 1.0f, 0.0f, 0.7f, 3, 0.4f, 0.0f};
+			// BeatScale=0 (11-й): 3 голоса + региональный профиль (base=7.0 на
+			// регионе 51) давали h3-h8 AM-глубину 15-40 дБ на C#3-E3 — тот же
+			// «чужой инструмент», что у honky-tonk (замер probe-inst-depth
+			// 2026-08-29). Остаётся собственная DetuneCents=0.7.
+			return AdditivePianoInstrument{0.4f, 40, 0.84f, 1.0f, 0.0f, 0.7f, 3, 0.4f, 0.0f, 0.7f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
@@ -293,7 +301,10 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["ElectricGrandPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 			// CP-80: ярче, длинный сустейн, хорус из расстройки.
-			return AdditivePianoInstrument{0.45f, 40, 0.42f, 0.8f, 0.0f, 2.5f, 2, 0.1f, 0.0f};
+			// BeatScale=0 (11-й): 2.5c×7/1.4≈12.5 центов на регионе 51 давали
+			// шов h2 ~10 дБ против ~2 дБ у соседей (замер 2026-08-29) — быстрый
+			// шиммер только на C#3-E3. Остаётся собственная DetuneCents=2.5.
+			return AdditivePianoInstrument{0.45f, 40, 0.42f, 0.8f, 0.0f, 2.5f, 2, 0.1f, 0.0f, 6.8f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.9f, 0, false, true});
 	}
@@ -302,7 +313,14 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Honky-tonk: широкая расстройка → сильные биения (сам характер), 3
 			// струны, затухание по семплу.
-			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f};
+			// BeatScale=1 (11-й): региональный профиль биений ВКЛЮЧЁН (см.
+			// ворклог 2026-08-29). Регион 51 (C#3-E3) у широких пресетов
+			// зануляется в AdditiveSampler (base=0 для instDetune>spreadHi),
+			// т.е. D3-E3 у HT плоский, как AGP — так принято на слух
+			// (2026-08-30). Свой характер HT живёт в басу G2 (~26 центов)
+			// и требли C5+ (9 центов) — как в коммите; середина C3-G3 без
+			// региональной расстройки (лестница base=0, как было).
+			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f, 1.8f, 1.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
@@ -311,7 +329,9 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Родс: колокольный верх, длинный сустейн, две струны с малой
 			// расстройкой, мягкая атака.
-			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f};
+			// BeatScale=0 (11-й): шов h2 ~8 дБ против ~2 дБ у соседей на
+			// C#3-E3 (замер 2026-08-29). Остаётся собственная DetuneCents=0.8.
+			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f, 6.2f, 0.0f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 1.0f, 0, false, true});
 	}
@@ -319,7 +339,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["ElectricPiano2"];
 		g.GenericInstruments.EmplaceLast([](){
 			// DX7-подобный: статичный FM-тембр, одна струна.
-			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 0.4f, 1, 0.05f, 0.0f};
+			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 0.4f, 1, 0.05f, 0.0f, 5.7f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 1.2f, 0, false, true});
 	}
@@ -328,7 +348,7 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Клавесин: яркий, короткий (щипок), без velocity-динамики, одна
 			// струна, резкая атака.
-			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f};
+			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f, 7.5f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.25f, 0, false, true});
 	}
@@ -336,7 +356,7 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["Clavinet"];
 		g.GenericInstruments.EmplaceLast([](){
 			// Клавинет: очень короткий, яркий, перкуссионный.
-			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f};
+			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f, 9.1f};
 		}());
 		g.Envelope = MakeWebEnvelope({0, 0, 1, 0.15f, 0, false, true});
 	}

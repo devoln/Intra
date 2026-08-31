@@ -72,7 +72,6 @@
     pregen: document.getElementById("pregen"),
     pregenResult: document.getElementById("pregenResult"),
     liveBtn: document.getElementById("liveBtn"),
-    allNotesOff: document.getElementById("allNotesOff"),
     instrument: document.getElementById("instrument"),
     drumsCh: document.getElementById("drumsCh"),
     reverb: document.getElementById("reverb"),
@@ -80,8 +79,6 @@
     midiStatus: document.getElementById("midiStatus"),
     piano: document.getElementById("piano"),
     noteTestNotes: document.getElementById("noteTestNotes"),
-    noteTestStatus: document.getElementById("noteTestStatus"),
-    audioSampleRate: document.getElementById("audioSampleRate"),
   };
 
   // MIDI-клавиатура — независимый источник, работающий параллельно с песней.
@@ -101,6 +98,18 @@
   let paramsPtr = 0;
   const renderParams = { ReverbWet: 0 };
   let renderParamsGeneration = 0;
+  // A/B: ?wasm=ref loads the last-commit baseline wasm (IntraSynth.ref.wasm).
+  // Parsed synchronously so the toggle highlights the active build; switchWasmBuild()
+  // re-instantiates and swaps it at runtime WITHOUT a page reload.
+  let abBuild = new URLSearchParams(location.search).get("wasm") === "ref";
+  let swapping = false; // true while the A/B WASM build is being hot-swapped
+
+  let midiStatLines = [];
+  function renderSynthInfo() {
+    const parts = ['<span>Sample rate: ' + escapeHtml(audioCtx ? audioCtx.sampleRate + " Hz" : "—") + '</span>'];
+    for (const l of midiStatLines) parts.push("<span>" + escapeHtml(l) + "</span>");
+    els.info.innerHTML = parts.join("");
+  }
 
   let currentSource = 0; // WASM pointer, 0 = none
   let midiBytes = null; // last loaded MIDI bytes (for seek/replay)
@@ -156,7 +165,7 @@
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (els.audioSampleRate) els.audioSampleRate.textContent = audioCtx.sampleRate + " Hz";
+      renderSynthInfo();
       setStatus("Web Audio готов: " + audioCtx.sampleRate + " Hz");
       gainNode = audioCtx.createGain();
       gainNode.gain.value = parseFloat(els.volume.value);
@@ -173,6 +182,14 @@
     const outL = e.outputBuffer.getChannelData(0);
     const outR = e.outputBuffer.getChannelData(1);
     const n = outL.length;
+
+    // During a hot WASM-swap the sources/heap are being replaced; emit silence
+    // rather than dereference pointers belonging to the old module instance.
+    if (swapping) {
+      outL.fill(0);
+      outR.fill(0);
+      return;
+    }
 
     if ((!currentSource && !pregenAudio && !keyboardSource) || !Module) {
       outL.fill(0);
@@ -316,10 +333,8 @@
       totalSamples = Module._SourceSamplesLeft(src);
       applyRenderParams(currentSource);
     applyRenderParams(keyboardSource);
-      const lines = (info || "").split("\n").filter(Boolean);
-      els.info.innerHTML = lines.length
-        ? lines.map((l) => `<span>${escapeHtml(l)}</span>`).join("")
-        : "<span>MIDI загружен</span>";
+      midiStatLines = (info || "").split("\n").filter(Boolean);
+      renderSynthInfo();
       els.player.classList.remove("hidden");
       setEnabled("playBtn", true);
       setEnabled("stopBtn", true);
@@ -329,7 +344,8 @@
     } catch (err) {
       midiBytes = null;
       setStatus(err.message || "Ошибка загрузки", true);
-      els.info.innerHTML = "";
+      midiStatLines = [];
+      renderSynthInfo();
     }
   }
 
@@ -365,8 +381,8 @@
 
   function setPlayIcon(play) {
     els.playBtn.innerHTML = play
-      ? '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Играть'
-      : '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg> Пауза';
+      ? '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
   }
 
   // Fully renders the current WASM source into JS float buffers, measuring
@@ -408,7 +424,6 @@
     // are all excluded while generationActive is set), so the loop can never
     // dereference a freed WASM pointer (that used to hang the whole page).
     const src = currentSource;
-    const heap = Module.HEAPF32;
     const off = scratchPtr >> 2;
     const t0 = performance.now();
     let pos = 0;
@@ -427,6 +442,13 @@
         src, scratchPtr, n, AUDIO_CHUNK
       );
       if (written > 0) {
+        // WASM-куча может вырасти в середине рендера (аллокации голосов/
+        // партиалов на нотах): Emscripten тогда заменяет Module.HEAPF32
+        // свежим видом на новый буфер, а старый вид остаётся отцепленным
+        // и его subarray() кидает "Cannot perform Construct on a detached
+        // ArrayBuffer". Перечитываем вид на каждом чанке, а не один раз
+        // до цикла.
+        const heap = Module.HEAPF32;
         left.set(heap.subarray(off, off + written), pos);
         right.set(heap.subarray(off + AUDIO_CHUNK, off + AUDIO_CHUNK + written), pos);
       }
@@ -651,7 +673,9 @@
     keyboardEnabled = true;
     releaseAllPianoNotes();
     els.liveBtn.classList.add("btn-active");
-    els.liveBtn.textContent = "MIDI-клавиатура включена";
+    els.liveBtn.setAttribute("aria-pressed", "true");
+    els.liveBtn.title = "Выключить MIDI-клавиатуру";
+    els.liveBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6L7 10H3z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
     setStatus("MIDI-клавиатура включена; она играет независимо от MIDI-файла");
     if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
     return true;
@@ -659,24 +683,64 @@
 
   const noteTestTimers = new Map();
 
-  function auditionTestNote(note) {
-    if (!Module) {
-      if (els.noteTestStatus) els.noteTestStatus.textContent = "Синтезатор ещё загружается.";
-      return;
+  // Семплы для сравнения: файл -> нота тест-панели (те же клавиши, что и
+  // кнопки data-note). Прелодим при старте: fetch → ArrayBuffer → blob-URL
+  // в памяти. Когда сервер отвалится, blob-URL продолжит работать (байты
+  // уже загружены), а <audio> не полезет в сеть. Заодно вытаскиваем
+  // длительность из заголовка wav, чтобы тест-нота держалась столько же.
+  const SAMPLE_NOTE_MAP = { 36: "C2", 48: "C3", 50: "D3", 60: "C4", 72: "C5", 75: "D#5", 76: "E5", 84: "C6", 96: "C7" };
+  const sampleDurations = {}; // note -> секунды
+
+  async function preloadSamples() {
+    const audios = document.querySelectorAll("#sampleSpoiler audio");
+    const tasks = [];
+    for (const audio of audios) {
+      const src = audio.getAttribute("src");
+      if (!src || !/_sample\.wav$/.test(src)) continue;
+      // В имени D#5_sample.wav символ # в URL — это фрагмент, браузер без
+      // %23 запросил бы D5_sample.wav и получил 404. Декодируем для матчинга.
+      const file = decodeURIComponent(src.split("/").pop());
+      const note = Object.keys(SAMPLE_NOTE_MAP).find((n) => file.startsWith(SAMPLE_NOTE_MAP[n] + "_"));
+      if (!note) continue;
+      tasks.push(
+        fetch(src)
+          .then((r) => {
+            if (!r.ok) throw new Error("HTTP " + r.status);
+            return r.arrayBuffer();
+          })
+          .then((buf) => {
+            const dv = new DataView(buf);
+            const channels = dv.getUint16(22, true);
+            const rate = dv.getUint32(24, true);
+            const bits = dv.getUint16(34, true);
+            const dataSize = dv.getUint32(40, true);
+            if (rate && channels && bits && dataSize) sampleDurations[note] = dataSize / (rate * channels * bits / 8);
+            const url = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+            audio.src = url;
+            audio.preload = "auto"; // байты уже в памяти — играет при падении сервера
+          })
+          .catch(() => { /* сервер жив — оставляем исходный src */ })
+      );
     }
+    await Promise.all(tasks);
+  }
+
+  function auditionTestNote(note) {
+    if (!Module) return;
     if (!pianoSourceReady && !ensureKeyboardSource()) return;
     pianoSourceReady = true;
-    sendMidiEvent(0xC0, 0, 0);
+    // Тест-нота играет текущий выбранный инструмент (Program Change) на
+    // мелодическом канале — независимо от переключателя ударных.
+    sendMidiEvent(0xC0, currentProgram, 0);
     sendMidiEvent(0x90, note, 100);
-    if (els.noteTestStatus) {
-      els.noteTestStatus.textContent = "Звучит MIDI-нота " + note + ".";
-    }
     const oldTimer = noteTestTimers.get(note);
     if (oldTimer) clearTimeout(oldTimer);
+    // Держим ноту столько же, сколько звучит семпл рядом — A/B честный.
+    const holdMs = sampleDurations[note] ? Math.round(sampleDurations[note] * 1000) : 1400;
     const timer = setTimeout(() => {
       if (keyboardSource) sendMidiEvent(0x80, note, 0);
       noteTestTimers.delete(note);
-    }, 1400);
+    }, holdMs);
     noteTestTimers.set(note, timer);
   }
 
@@ -688,7 +752,9 @@
     allNotesOff();
     pianoSourceReady = false;
     els.liveBtn.classList.remove("btn-active");
-    els.liveBtn.textContent = "Включить MIDI-клавиатуру";
+    els.liveBtn.setAttribute("aria-pressed", "false");
+    els.liveBtn.title = "Включить MIDI-клавиатуру";
+    els.liveBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6L7 10H3z"/><path d="M16 9l6 6M22 9l-6 6"/></svg>';
     setStatus("MIDI-клавиатура выключена");
   }
 
@@ -926,12 +992,6 @@
     else enableExternalMidi();
   });
 
-  els.allNotesOff.addEventListener("click", () => {
-    releaseAllPianoNotes();
-    allNotesOff();
-    setStatus("Все ноты отпущены");
-  });
-
   els.instrument.addEventListener("change", () => {
     currentProgram = parseInt(els.instrument.value, 10);
     sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
@@ -1027,8 +1087,147 @@
     updateProgressUI();
   });
 
+  // ---- UI state persistence (survives A/B version-switch reload) ----------
+  const STORAGE_KEY = "intra.playerState.v1";
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; }
+    catch (_e) { return {}; }
+  }
+  function saveState(patch) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.assign({}, loadState(), patch))); }
+    catch (_e) { /* private mode etc. */ }
+  }
+
+  // Apply saved state synchronously so boot()/buildInstrumentSelect() pick it up.
+  {
+    const saved = loadState();
+    if (Number.isInteger(saved.instrument)) {
+      currentProgram = Math.max(0, Math.min(127, saved.instrument));
+    }
+    if (saved.volume) els.volume.value = String(Math.max(0, Math.min(1, saved.volume)));
+    els.volLabel.textContent = Math.round(parseFloat(els.volume.value) * 100) + "%";
+    if (Number.isFinite(saved.reverb)) {
+      renderParams.ReverbWet = Math.max(0, Math.min(1, saved.reverb));
+      els.reverb.value = String(renderParams.ReverbWet);
+      els.reverbLabel.textContent = Math.round(renderParams.ReverbWet * 100) + "%";
+    }
+    if (typeof saved.pregen === "boolean") els.pregen.checked = saved.pregen;
+    if (typeof saved.drums === "boolean") els.drumsCh.checked = saved.drums;
+    els.instrument.disabled = els.drumsCh.checked;
+    const spoiler = document.getElementById("sampleSpoiler");
+    if (spoiler && typeof saved.spoiler === "boolean") spoiler.open = saved.spoiler;
+  }
+  function bindPersist(el, key, read) {
+    if (!el) return;
+    const ev = el.tagName === "SELECT" ? "change" : (el.type === "range" || el.type === "checkbox" ? "input" : "change");
+    el.addEventListener(ev, () => saveState({ [key]: read(el) }));
+  }
+  bindPersist(els.instrument, "instrument", (el) => parseInt(el.value, 10));
+  bindPersist(els.volume, "volume", (el) => parseFloat(el.value));
+  bindPersist(els.reverb, "reverb", (el) => parseFloat(el.value));
+  bindPersist(els.pregen, "pregen", (el) => el.checked);
+  bindPersist(els.drumsCh, "drums", (el) => el.checked);
+  const spoiler = document.getElementById("sampleSpoiler");
+  if (spoiler) spoiler.addEventListener("toggle", () => saveState({ spoiler: spoiler.open }));
+  function updateAbHighlight() {
+    document.querySelectorAll("[data-abbuild]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.abbuild === (abBuild ? "ref" : "cur"));
+      btn.classList.toggle("busy", swapping);
+    });
+  }
+  // Reload-free A/B: re-instantiates the WASM module with the other build and
+  // swaps it at runtime. The AudioWorklet keeps playing live (sources + heap are
+  // replaced under a `swapping` guard); the loaded file, playback position,
+  // selected instrument, volume and reverer are all preserved — no page reload.
+  async function switchWasmBuild(toRef) {
+    if (swapping || toRef === abBuild) return;
+    const wasPaused = paused;
+    const savedPos = Math.max(0, playedSamples || 0);
+    swapping = true;
+    paused = true;
+    updateAbHighlight();
+    if (generationActive) {
+      generationAbort = true;
+      while (generationActive) await yieldToUI();
+    }
+    setStatus("Переключение сборки WASM…");
+    try {
+      // Free resources owned by the OLD module instance before dropping it.
+      freeSource();
+      freeKeyboardSource();
+      if (scratchPtr && Module) Module._free(scratchPtr);
+      if (paramsPtr && Module) Module._free(paramsPtr);
+      scratchPtr = 0;
+      paramsPtr = 0;
+      // A pre-generated buffer is a render of the OLD binary — drop it.
+      pregenAudio = null;
+      pregenPos = 0;
+      pregenMs = null;
+
+      abBuild = toRef;
+      const loaderCfg = toRef
+        ? { locateFile: (path, dir) => (path === "IntraSynth.wasm" ? dir + "IntraSynth.ref.wasm" : path) }
+        : {};
+      Module = await IntraMidiSynth(loaderCfg);
+      scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
+      paramsPtr = Module._malloc(4);
+
+      // Reload the loaded song in the new module at its previous position.
+      if (midiBytes) {
+        try {
+          const { src } = createSource(midiBytes);
+          currentSource = src;
+          totalSamples = Module._SourceSamplesLeft(src);
+          applyRenderParams(currentSource);
+          let remaining = savedPos;
+          while (remaining > 0) {
+            const nb = Math.min(AUDIO_CHUNK, remaining);
+            const written = Module._SourceGetUninterleavedSamples(currentSource, scratchPtr, nb, AUDIO_CHUNK);
+            if (written === 0) break;
+            remaining -= written;
+            await yieldToUI();
+          }
+          playedSamples = savedPos - remaining;
+        } catch (err) {
+          freeSource();
+          currentSource = 0;
+          playedSamples = 0;
+        }
+      } else {
+        currentSource = 0;
+      }
+
+      // Rebuild the live (keyboard) source and re-apply program + effect params.
+      ensureKeyboardSource();
+      if (keyboardSource) {
+        if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
+        applyRenderParams(keyboardSource);
+      }
+
+      paused = wasPaused;
+      setPlayIcon(paused);
+      updateProgressUI();
+      setStatus("Сборка переключена на " + (toRef ? "A/B: HEAD a99c8ec" : "текущую") + ".");
+    } catch (err) {
+      setStatus("Не удалось переключить сборку WASM: " + err, true);
+      paused = true;
+    }
+    swapping = false;
+    updateAbHighlight();
+  }
+  document.querySelectorAll("[data-abbuild]").forEach((btn) => {
+    const isActive = btn.dataset.abbuild === (abBuild ? "ref" : "cur");
+    btn.classList.toggle("active", isActive);
+    btn.addEventListener("click", () => {
+      const toRef = btn.dataset.abbuild === "ref";
+      if (toRef === abBuild) return;
+      switchWasmBuild(toRef);
+    });
+  });
+
   // ---- Boot --------------------------------------------------------------
   async function boot() {
+    preloadSamples(); // не ждём — идёт параллельно с загрузкой WASM
     buildInstrumentSelect();
     buildPiano();
     initMidiAccess();
@@ -1037,12 +1236,22 @@
       if (typeof IntraMidiSynth !== "function") {
         throw new Error("WASM loader не найден (проверьте IntraSynth.js)");
       }
-      Module = await IntraMidiSynth();
+      // A/B build: ?wasm=ref loads the last-commit baseline wasm
+      // (IntraSynth.ref.wasm, built from HEAD a99c8ec) next to the current
+      // intraSynth.wasm. Both share the 1-float RenderParams ABI, so only the
+      // binary needs swapping via locateFile. `abBuild` is module scope (parsed
+      // synchronously above) so the header toggle highlights correctly.
+      const loaderCfg = abBuild
+        ? { locateFile: (path, dir) => (path === "IntraSynth.wasm" ? dir + "IntraSynth.ref.wasm" : path) }
+        : {};
+      Module = await IntraMidiSynth(loaderCfg);
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
       paramsPtr = Module._malloc(4);
       ensureAudio();
       ensureKeyboardSource();
-      setStatus("Синтезатор готов. Загрузите MIDI или включите MIDI-клавиатуру.");
+      setStatus(abBuild
+        ? "Синтезатор готов (A/B: HEAD a99c8ec). Загрузите MIDI или включите MIDI-клавиатуру."
+        : "Синтезатор готов. Загрузите MIDI или включите MIDI-клавиатуру.");
     } catch (err) {
       setStatus("Не удалось загрузить WASM-модуль: " + err, true);
     }
@@ -1090,13 +1299,14 @@
       if (!Module) return null;
       const src = srcName === 'current' ? currentSource : keyboardSource;
       if (!src) return null;
-      const heap = Module.HEAPF32;
       const off = scratchPtr >> 2;
       const n = 4096;
       let peakL = 0, peakR = 0, sumL2 = 0, sumR2 = 0, total = 0, clipped = 0;
       for (let k = 0; k < blocks; k++) {
         const written = Module._SourceGetUninterleavedSamples(src, scratchPtr, n, n);
         if (!written) break;
+        // Heap view can go stale when wasm memory grows — re-read each chunk.
+        const heap = Module.HEAPF32;
         for (let i = 0; i < written; i++) {
           const l = heap[off + i], r = heap[off + n + i];
           const al = Math.abs(l), ar = Math.abs(r);

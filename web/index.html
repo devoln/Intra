@@ -35,7 +35,7 @@
     flex-direction: column;
   }
   header {
-    padding: 20px 26px;
+    padding: 14px 22px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -54,21 +54,65 @@
     box-shadow: 0 6px 18px -6px rgba(53, 208, 165, 0.6);
   }
   .logo svg { width: 18px; height: 18px; fill: var(--accent-ink); }
-  header h1 {
-    font-size: 1.02rem;
+  .hdr-title {
+    font-size: 1rem;
     margin: 0;
     letter-spacing: 0.01em;
     font-weight: 650;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  header .sub { color: var(--muted); font-size: 0.8rem; }
+  .hdr-player {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex: 1;
+    min-width: 0;
+    max-width: 480px;
+  }
+  .hdr-player .hdr-icon {
+    width: 32px; height: 32px;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: var(--panel2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+  }
+  .hdr-player .hdr-icon:hover { background: #223052; }
+  .hdr-player .hdr-icon svg { width: 15px; height: 15px; fill: currentColor; }
+  .ab-toggle {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .ab-btn {
+    padding: 3px 8px;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    background: var(--panel2);
+    color: var(--ink-dim);
+    border: none;
+    cursor: pointer;
+  }
+  .ab-btn + .ab-btn { border-left: 1px solid var(--line); }
+  .ab-btn:hover { background: #223052; color: var(--ink); }
+  .ab-btn.active { background: var(--accent); color: var(--accent-ink); }
   main {
     width: 100%;
     max-width: 880px;
     margin: 0 auto;
-    padding: 40px 22px 72px;
+    padding: 18px 20px 48px;
     flex: 1;
   }
-  .hero { margin-bottom: 30px; }
   .eyebrow {
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -76,25 +120,14 @@
     color: var(--accent);
     font-weight: 700;
   }
-  .hero h2 {
-    font-size: clamp(1.7rem, 4vw, 2.6rem);
-    line-height: 1.1;
-    margin: 8px 0 10px;
-    letter-spacing: -0.02em;
-  }
-  .hero p {
-    color: var(--muted);
-    max-width: 620px;
-    margin: 0;
-  }
   .status {
     display: flex;
     align-items: center;
     gap: 9px;
-    min-height: 24px;
-    font-size: 0.92rem;
+    min-height: 22px;
+    font-size: 0.9rem;
     color: var(--muted);
-    margin: 18px 0 20px;
+    margin: 12px 0 16px;
   }
   .status::before {
     content: "";
@@ -109,21 +142,21 @@
   .panel {
     background: var(--panel);
     border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 22px;
-    margin-bottom: 18px;
+    border-radius: 14px;
+    padding: 15px 17px;
+    margin-bottom: 13px;
   }
   .panel h3 {
-    margin: 0 0 14px;
+    margin: 0 0 9px;
     font-size: 0.86rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     color: var(--muted);
   }
   .drop {
-    border: 2px dashed #33405f;
-    border-radius: 14px;
-    padding: 34px 20px;
+    border: 1.5px dashed #33405f;
+    border-radius: 12px;
+    padding: 22px 18px;
     text-align: center;
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
@@ -202,24 +235,9 @@
   .btn-accent:hover { filter: brightness(1.08); }
   .btn-ghost { background: var(--panel2); color: var(--ink); border: 1px solid var(--line); }
   .btn-ghost:hover { background: #223052; }
-  .btn-live { padding: 8px 14px; font-size: 0.88rem; }
-  .btn-live svg { width: 15px; height: 15px; }
   #player { transition: opacity 0.2s ease; }
   #player.hidden { display: none; }
-  .track-title { font-weight: 650; font-size: 1.05rem; margin-bottom: 14px; word-break: break-all; }
-  .controls {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .controls .btn-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .controls svg { width: 16px; height: 16px; fill: currentColor; }
-  .seek-wrap { flex: 1; min-width: 200px; }
+  .seek-wrap { flex: 1; min-width: 120px; }
   input[type="range"] {
     -webkit-appearance: none;
     width: 100%;
@@ -317,13 +335,34 @@
     accent-color: var(--accent);
     cursor: pointer;
   }
-  .midi-status {
+  .midi-row {
     display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 30px;
+    margin: 4px 0 6px;
+  }
+  .btn-midi-toggle {
+    width: 30px; height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex: none;
+    background: var(--panel2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+  }
+  .btn-midi-toggle svg { width: 15px; height: 15px; fill: currentColor; }
+  .btn-midi-toggle:hover { background: #223052; }
+  .btn-midi-toggle.btn-active { background: var(--accent2); color: #04101c; }
+  .midi-status {
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     font-size: 0.85rem;
     color: var(--muted);
-    margin: 2px 0 12px;
     min-height: 20px;
   }
   .midi-status::before {
@@ -404,28 +443,58 @@
   }
   .note-test-notes {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
-    margin-top: 15px;
+    margin: 2px 0 10px;
   }
   .note-test-note {
-    min-width: 62px;
-    padding: 9px 12px;
+    min-width: 50px;
+    padding: 5px 9px;
     background: var(--panel2);
     color: var(--ink);
     border: 1px solid var(--line);
-    font-size: 0.86rem;
+    font-size: 0.79rem;
   }
   .note-test-note:hover { background: #223052; border-color: var(--accent2); }
-  .note-test-status {
-    min-height: 21px;
-    margin-top: 12px;
-    color: var(--accent2);
-    font-size: 0.84rem;
-  }
-  .midi-status { font-size: 0.85rem; padding: 8px 0; }
-  .midi-status.off { color: var(--muted); }
   .midi-status.on { color: var(--accent2); }
+  .debug-samples { padding: 0; overflow: hidden; }
+  .debug-samples > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 20px 22px;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .debug-samples > summary::-webkit-details-marker { display: none; }
+  .debug-samples > summary:hover { background: rgba(76, 194, 255, 0.05); }
+  .debug-title { font-size: 0.95rem; font-weight: 600; }
+  .debug-desc {
+    margin: 0;
+    padding: 0 22px 8px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .debug-desc code { color: var(--accent2); }
+  .debug-rows { border-top: 1px solid var(--line); }
+  .debug-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 22px;
+    flex-wrap: wrap;
+  }
+  .debug-row + .debug-row { border-top: 1px solid var(--line); }
+  .debug-note {
+    min-width: 52px;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .debug-src { color: var(--muted); font-size: 0.85rem; flex: 1; min-width: 150px; }
+  .debug-src code { color: var(--ink); }
+  .debug-row audio { height: 34px; }
 </style>
 </head>
 <body>
@@ -433,23 +502,22 @@
     <div class="logo">
       <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg>
     </div>
-    <div>
-      <h1>Intra MIDI Synth</h1>
-      <div class="sub">C++ синтезатор, скомпилированный в WebAssembly · sample rate: <span id="audioSampleRate">—</span></div>
+    <h1 class="hdr-title" id="trackTitle">Intra MIDI Synth</h1>
+    <div class="hdr-player">
+      <button class="hdr-icon" id="playBtn" disabled title="Играть/Пауза">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="hdr-icon" id="stopBtn" disabled title="Стоп">
+        <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
+      </button>
+      <div class="seek-wrap">
+        <input type="range" id="seek" min="0" max="1" step="1" value="0" disabled />
+      </div>
+      <div class="time" id="time">0:00 / 0:00</div>
     </div>
   </header>
 
   <main>
-    <div class="hero">
-      <span class="eyebrow">WebAssembly · Emscripten</span>
-      <h2>Сыграйте любой MIDI прямо в браузере</h2>
-      <p>
-        Синтез выполняется нативно (C++) внутри WASM-модуля и выводится через
-        Web Audio. Выберите локальный <code>.mid</code> файл, перетащите его
-        сюда или укажите ссылку.
-      </p>
-    </div>
-
     <div class="status" id="status">Загрузка…</div>
 
     <section class="panel">
@@ -479,19 +547,6 @@
     </section>
 
     <section class="panel" id="player">
-      <div class="track-title" id="trackTitle">MIDI</div>
-      <div class="controls">
-        <button class="btn-accent btn-icon" id="playBtn" disabled>
-          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg> Играть
-        </button>
-        <button class="btn-ghost btn-icon" id="stopBtn" disabled>
-          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg> Стоп
-        </button>
-        <div class="seek-wrap">
-          <input type="range" id="seek" min="0" max="1" step="1" value="0" disabled />
-        </div>
-        <div class="time" id="time">0:00 / 0:00</div>
-      </div>
       <div class="volrow">
         <label for="volume">Громкость</label>
         <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" />
@@ -510,45 +565,104 @@
       <div class="info" id="info"></div>
     </section>
 
-    <section class="panel" id="noteTestPanel">
-      <h3>Проверка отдельных нот</h3>
-      <p>Нажмите ноту, чтобы быстро проверить её на независимом слое клавиатуры.</p>
-      <div class="note-test-notes" id="noteTestNotes">          <button class="note-test-note" type="button" data-note="36">C2</button>
-          <button class="note-test-note" type="button" data-note="48">C3</button>
-          <button class="note-test-note" type="button" data-note="60">C4</button>
-          <button class="note-test-note" type="button" data-note="72">C5</button>
-        <button class="note-test-note" type="button" data-note="75">D#5</button>
-        <button class="note-test-note" type="button" data-note="76">E5</button>
-        <button class="note-test-note" type="button" data-note="84">C6</button>
-        <button class="note-test-note" type="button" data-note="96">C7</button>
-      </div>
-      <div class="note-test-status" id="noteTestStatus">Нажмите любую ноту выше.</div>
-    </section>
-
     <section class="panel" id="livePanel">
       <h3>Клавиатура и MIDI-вход</h3>
-      <div class="liverow">
-        <button class="btn-ghost btn-icon btn-live" id="liveBtn" type="button">
-          <svg viewBox="0 0 24 24"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg> Включить MIDI-клавиатуру
-        </button>
-        <button class="btn-ghost" id="allNotesOff">All notes off</button>
-      </div>
       <div class="liverow">
         <select id="instrument" title="Инструмент (Program Change)"></select>
         <label class="drumsrow" for="drumsCh">
           <input type="checkbox" id="drumsCh" /> Ударные (канал 10)
         </label>
       </div>
-      <div class="midi-status off" id="midiStatus">MIDI: проверка…</div>
+      <div class="midi-row">
+        <button class="btn-midi-toggle" id="liveBtn" type="button" title="Включить MIDI-клавиатуру" aria-pressed="false">
+          <svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6L7 10H3z"/><path d="M16 9l6 6M22 9l-6 6"/></svg>
+        </button>
+        <span class="midi-status off" id="midiStatus">MIDI: проверка…</span>
+      </div>
+      <div class="note-test-notes" id="noteTestNotes">
+        <button class="note-test-note" type="button" data-note="36">C2</button>
+        <button class="note-test-note" type="button" data-note="48">C3</button>
+        <button class="note-test-note" type="button" data-note="50">D3</button>
+        <button class="note-test-note" type="button" data-note="60">C4</button>
+        <button class="note-test-note" type="button" data-note="72">C5</button>
+        <button class="note-test-note" type="button" data-note="75">D#5</button>
+        <button class="note-test-note" type="button" data-note="76">E5</button>
+        <button class="note-test-note" type="button" data-note="84">C6</button>
+        <button class="note-test-note" type="button" data-note="96">C7</button>
+      </div>
       <div class="piano" id="piano"></div>
     </section>
 
+    <details class="panel debug-samples" id="sampleSpoiler">
+      <summary>
+        <span class="eyebrow">Отладка</span>
+        <span class="debug-title">Сырые сэмплы (из SF2) — без обработки FluidSynth</span>
+      </summary>
+      <p class="debug-desc">
+        Чистые записи звукбанка <code>Titanic 200 GM-GS v1.2.sf2</code>, извлечённые напрямую,
+        без реверба/фильтров. Семплы прелодятся в память при загрузке — играют даже если сервер
+        отвалился. Клавиша = тест-нота рядом; тест-нота держится столько же, сколько семпл.
+      </p>
+      <div class="debug-row">
+        <span class="debug-note">A/B</span>
+        <span class="debug-src">Сборка синтезатора
+          <span class="ab-toggle">
+            <button class="ab-btn" data-abbuild="cur" title="Текущая рабочая сборка">текущая</button>
+            <button class="ab-btn" data-abbuild="ref" title="Последний коммит (a99c8ec)">коммит</button>
+          </span>
+        </span>
+      </div>
+      <div class="debug-rows">
+        <div class="debug-row">
+          <span class="debug-note">C2</span>
+          <span class="debug-src">семпл <code>38(L)</code> (транспонирован) · 65 Гц</span>
+          <audio controls preload="none" src="C2_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">C3</span>
+          <span class="debug-src">семпл <code>47(L)</code> (транспонирован) · 131 Гц</span>
+          <audio controls preload="none" src="C3_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">D3</span>
+          <span class="debug-src">семпл <code>51(L)</code> (записан D#3, транспонирован) · 147 Гц</span>
+          <audio controls preload="none" src="D3_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">C4</span>
+          <span class="debug-src">семпл <code>60(L)</code> · 262 Гц</span>
+          <audio controls preload="none" src="C4_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">C5</span>
+          <span class="debug-src">семпл <code>72(L)</code> · 523 Гц</span>
+          <audio controls preload="none" src="C5_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">D#5</span>
+          <span class="debug-src">семпл <code>75(L)</code> · 622 Гц</span>
+          <audio controls preload="none" src="D%235_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">E5</span>
+          <span class="debug-src">семпл <code>75(L)</code> (транспонирован) · 659 Гц</span>
+          <audio controls preload="none" src="E5_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">C6</span>
+          <span class="debug-src">семпл <code>84(L)</code> · 1047 Гц (MIDI 84)</span>
+          <audio controls preload="none" src="C6_sample.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">C7</span>
+          <span class="debug-src">семпл <code>96(L)</code> · 2093 Гц</span>
+          <audio controls preload="none" src="C7_sample.wav"></audio>
+        </div>
+      </div>
+    </details>
+
   </main>
 
-  <footer>
-    Движок: <a href="https://github.com/devoln/Intra" target="_blank" rel="noopener">Intra</a> ·
-    Демо: <code>Demos/MusicSynthesizer</code> · Синтез и инструменты — целиком в WASM
-  </footer>
 
   <script src="IntraSynth.js"></script>
   <script src="synth.js"></script>

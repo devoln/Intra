@@ -66,3 +66,27 @@ that signal levels stay within safe bounds across all notes and velocities.
 ## Next Safe Step
 
 Run velocity-127 peak test; if safe, mark task done.
+
+### Session 2 (2026-08-28): full-generation "detached ArrayBuffer" crash
+
+User: "Периодически при полной генерации в начале или даже в середине процесса
+вылезает ошибка: TypeError: Cannot perform Construct on a detached ArrayBuffer".
+
+Root cause (web/synth.js, generateAll): the wasm heap view was captured once
+before the render loop — `const heap = Module.HEAPF32`. When Emscripten grows
+wasm memory mid-render (voice/partial/instrument allocations inside
+_SourceGetUninterleavedSamples), the old ArrayBuffer is detached and
+`heap.subarray(...)` throws exactly "Cannot perform Construct on a detached
+ArrayBuffer". Intermittent because growth depends on session/file state.
+
+Fix: re-read `Module.HEAPF32` on every chunk inside the loop (Emscripten's
+updateMemoryViews keeps Module.HEAPF32 pointing at the current buffer after
+each grow). Same stale-view pattern fixed in the __synthDebug.outputStats
+test hook. applyRenderParams (view written before the only wasm call) and the
+per-callback audio path were already safe.
+
+Verified: .scratch/probe-detach-fix.js reproduces the exact error through the
+real _emscripten_resize_heap path (stale view throws, fresh view works);
+.smoke probe renders heavy polyphonic+96-program+reverb files with no error;
+smoke-test-wasm.mjs and smoke-live-midi.js pass; dist rebuilt, dist/synth.js
+== web/synth.js.

@@ -8,12 +8,15 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 // Parameters shared by the source-level render path and the WASM ABI. The
 // structure is copied into one MidiSynth instance; it is deliberately not a
-// global so two sources can be rendered with different settings.
+// global so two sources can be rendered with different settings. The ABI is a
+// fixed array of floats written from JS (see SourceSetParams in
+// EmscriptenInterface.cpp): keep this struct flat and float-only so sizeof
+// matches the wire layout.
 struct RenderParams
 {
-	float ReverbWet = 0.0f;  // 0..1, master effect amount; zero skips the effect
+	float ReverbWet = 0.0f;   // 0..1, master effect amount; zero skips the effect
 };
-static_assert(sizeof(RenderParams) == sizeof(float), "RenderParams ABI must stay one float");
+static_assert(sizeof(RenderParams) == 1*sizeof(float), "RenderParams ABI must stay a single float");
 
 class IGenericSampler
 {

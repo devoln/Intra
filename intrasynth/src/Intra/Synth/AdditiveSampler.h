@@ -54,6 +54,7 @@ class AdditiveSampler: public IGenericSampler
 // mAtk обнуляется на DecayOnset, чтобы не тянуть амплитуду вверх при
 // затухании.
 	FixedArray<float> mAtk;
+
 // Биения унисона при voices==2: две расстроенные струны коллапсированы в
 // ОДИН лейн на партиалу (вдвое меньше синусоид в горячем цикле — было
 // 43.8× realtime на Chopin, стало ~70×). Амплитуда лейна уже включает
@@ -184,7 +185,8 @@ public:
 	AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		size_t maxPartials, float brightness, float scale, float decayScale,
 		float decayStiffness, float detuneCents,
-		int unisonVoices, float velBrightness, float trebleTilt);
+		int unisonVoices, float velBrightness, float trebleTilt,
+		float volumeDb = 0, float beatScale = 1.0f);
 
 	/// Рендерит numSamples отсчётов. Лямбда-sink — как у KS/SpectralString:
 	/// на wasm поинтер-инкремент в лямбде даёт лучший код, чем индексная
@@ -469,6 +471,7 @@ public:
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
 	void NoteRelease() override;
 	void ApplyRelease();
+
 };
 
 /// Фабрика аддитивного фортепиано.
@@ -492,12 +495,24 @@ struct AdditivePianoInstrument
 	int UnisonVoices;
 	float VelBrightness;
 	float TrebleTilt;
+	/// VolumeDb — per-instrument калибровка громкости (дБ, 0 = эталон).
+	/// Применяется ко всей ноте целиком (атака+сустейн) множителем на выходе;
+	/// Scale и остальные параметры НЕ трогает — значения калибровки от 2026-08-28
+	/// (замер против AcousticPiano, см. ворклог) лежат в InstrumentLibrary.cpp.
+	float VolumeDb = 0;
+	/// BeatScale — per-instrument множитель регионального профиля биений
+	/// (лестница base в AdditiveSampler, измерена по семплам SF2 2026-08-26).
+	/// 1 = полный профиль (эталон — AcousticPiano); 0 = региональная расстройка
+	/// отключена у инструмента (только его собственная DetuneCents). Wide-
+	/// detune пресеты (honky-tonk 9.0c) на регионе 51 давали ~45 центов и
+	/// деструктивные биения (AM до 50 дБ) — для них 0 (см. ворклог 2026-08-29).
+	float BeatScale = 1.0f;
 
 	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		return new AdditiveSampler(freq, volume, sampleRate,
 			MaxPartials, Brightness, Scale, DecayScale, DecayStiffness,
-			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt);
+			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeDb, BeatScale);
 	}
 };
 

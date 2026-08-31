@@ -581,3 +581,563 @@ FL/семпл набирают АБСОЛЮТНЫЙ уровень плавно,
 низких нот остаётся, но теперь есть точный инструмент: атака принятого
 варианта объективно бьёт резко, и менять её тайминг — регрессия. Точечная
 работа — вкус (громкость/спектр УДАРА, корпус), не тайминг.
+
+## 27 авг (вариант 2) — per-partial раскат низких партиал БЕЗ общей атаки
+
+После отката глобальной рампы («вата») пользователь попросил вернуть именно
+per-partial механизм отдельно, без трогания всей ноты.
+
+Реализация в `AdditiveSampler.cpp` (только для нот < C4 и k = h1-h3):
+- `atkSeed[p]` — вес сида струны: h1 0.16, h2 0.26, h3 0.40 (× глубину по midi),
+  остальное — 1.0. Низкие партиалы входят в СТРУНУ тише и раскатываются.
+- `mAtk` у них τ = 8 мс/k (h1 ~20 мс до полного) вместо мгновенного;
+- **буфер атаки НЕ трогаем** (высокие + корпус + начальный тык — на полном
+  уровне) — в этом отличие от ваты: нет тишины, есть пауза только у низа.
+
+Объективный результат (D3, полная полоса, пик/2 мс vs базис):
+первый ~15 мс мягче на 1-2 дБ, с ~20 мс — бит-в-бит идентичен; тело
+(50-200 мс) 0.0 дБ. То есть лёгкий раскат низа под ударом, без хвоста.
+
+Честная оговорка: по полосам 0-5/5-15 мс у нас на 2-7 дБ тише и в LOW и в
+HIGH (короткие FFT-окна шумные; по 15-30 мс совпадает). Это на грани
+слышимости — эффект может быть слишком тонким, чем хотелось. Атака принятого
+варианта бьёт резко, и любое смягчение онсета рискует читаться как «легче».
+Smoke PASSED, dist == web/generated. Не коммитил.
+
+## 2026-08-27: raw SF2 D3/C7 samples for headphone A/B
+User: "сырая нота D3 и C7 в wav — услышу тот же молоточек". Extracted
+directly from "/tmp/sf2extract/Titanic 200 GM-GS v1.2.sf2" (Clavinova Grand
+>> Clavinova P2/L), NOT FluidSynth render (no reverb/filters).
+- D3 (key 50, vel 100) -> sample "51(L)" (recorded D#3, 155.8 Hz);
+  resampled down 1 semitone to D3 (147 Hz).
+- C7 (key 84, vel 100) -> sample "84(L)" (recorded C7, 1050 Hz); native.
+- Tooling: .scratch/extract-samples.js (SF2 shdr/preset-zone parser) +
+  .scratch/export-samples.js (pitch resample + trim/fade).
+- Deliverables dropped into web/ (so build-web.js copies them to dist/) and
+  dist/: D3_sample.wav (4 s), C7_sample.wav (3 s).
+- UI: web/index.html + dist/index.html — added data-note="50" D3 to the
+  note-test panel, and a collapsible "Отладка — сырые сэмплы D3 / C7"
+  <details> spoiler at the bottom of main with two <audio controls>.
+- Confirmed pitches: D3_sample.wav 147 Hz (MIDI 50), C7_sample.wav 1050 Hz.
+
+### FIX (same session): sample decode bug
+User: samples were noise, «float parses as int16». Root cause in
+.extract/extract-samples.js: the SF2 16-bit LE reader did `b[off] | (b[off+1]<<8)`
+with NO sign-extension, so every negative PCM sample read as a large positive
+(high-bit set) -> alternating wild values, ±1 clipping, NaNs, no note. The
+earlier f0=155.8 was an autocorrelation artifact of the clipped waveform.
+Fix: `const v=b[off]|(b[off+1]<<8); return v<<16>>16;` (arithmetic sign-extend).
+Re-extracted + re-exported D3/C7; verified from dist/: D3 147.0 Hz MIDI 50,
+C7 1050.0 Hz MIDI 84, zero-crossing stable, no NaN, few attack peaks clip.
+
+### Correction: "C7" sample was actually C6
+User: "Это разве С7? Звучит как C6". Correct — 1050 Hz = MIDI 84 = C6
+(sample "84(L)" is recorded at C6; MIDI 84 is C6, not C7). Renamed
+C7_sample.wav -> C6_sample.wav (web/, dist/, .scratch/) and relabeled the
+debug spoiler. User's key finding after listening: BOTH D3 and C6 samples
+have the two-phase attack — "это не тук, это скорее бум" (a low-frequency
+boom/thump in the first ~15-20 ms, not a high tick). Confirms the missing
+component in our synth is a low-end attack swell, not a noise knock.
+
+## Session 2026-08-27 (late): two-phase attack «бум» — delayed low-body entry (region-agnostic, freq-based)
+
+### Raw samples for A/B (user request)
+
+Extracted the actual SF2 PCM (Titanic 200 GM-GS, Clavinova) for D3 and C7 keys —
+delivered as `dist/D3_sample.wav` (147 Hz, MIDI 50) and `dist/C6_sample.wav`
+(1050 Hz = MIDI 84 = C6, NOT C7 — renamed after user's ear check; MIDI 96 = C7).
+Debug `<details>` spoiler at the bottom of `web/index.html` plays them; D3 button
+added to the note-test panel (MIDI 50). Both WAVs live in `web/` so build-web.js
+copies them into dist (untracked, not committed). Fixed a sign-extension bug in
+the SF2 int16 reader (`b[off]|(b[off+1]<<8)` never sign-extended → noise/±1 clip;
+`v<<16>>16` fixes it) — the first extraction sounded like noise, user caught it.
+
+User: "в обоих я слышу этот удар… двухфазную атаку. Это не тук, это скорее бум."
+
+### Measurement (key 50, vs D3_sample.wav; sustain-normalized = 200-500 ms RMS)
+
+Baseline (before): LOW band (h1-h3, <514 Hz) at ~+1..+2 dB re sustain from 2 ms
+flat; sample builds −19.3 (2-5 ms) → −16.1 → −4.7 → −1.1 → +3.3 (40-100 ms):
+the body keeps swelling after the strike (two-phase attack). Our per-partial
+attack τ is capped at 0.6 ms and gSeam ≈ full → body at full level instantly.
+
+### Fix: per-partial delayed entry of low harmonics (AdditiveSampler)
+
+New mechanism in the hot loop (active only for low notes, first ~40 ms):
+```
+out *= 1 − d·(1−env(t))·w[k]
+```
+- env(t): rise τR = 12 ms, hard-clamped to exactly 1.0 → after ~60 ms swv = 1.0
+  exactly, sustain bit-identical to baseline (state untouched; x·1.0 == x).
+- w[k]: h1-h3 = 1.0, linear taper to 0 at h8+ (boom is low-frequency; keeps the
+  strike 0-2 ms and h8+ untouched — avoids «вата»/пшик and 8-20f0 overheating).
+- d: −14 dB for midi ≤ 52 (E3), linear to 0 at midi 60 (C4); C5+ unchanged.
+- Strike (attack buffer, 0-2 ms) NOT scaled — the hammer click stays.
+
+Result (D3, depth 14 dB): LOW band −7.6 (2-5 ms) → −3.3 → −1.1 → +1.8 → +2.3
+(40-100 ms) — a +10 dB build after the strike (sample: −19.3 → +3.3, +22 dB;
+residual gap at 2-5 ms ~12 dB, ±1 dB by 40-100 ms). Total 2-5 ms −16.3 re own
+peak (was −8.3). C6/C7 identical to baseline (depth 0). Both smoke tests PASSED.
+
+Debug note: the first implementation had NO effect — the env recurrence
+`e += (1-e)*rR` with rR = exp(-1/(τR·sr)) ≈ 0.998 jumps env to ~1 in one sample;
+the per-sample step must be `(1-rR)`. Also cmake missed header edits in the same
+second (wasm stayed stale) — `touch` the files before rebuilding.
+
+### Follow-up (user: "не слышу разницы с принятым в коммите вариантом")
+
+depth 14 dB / τR 12 ms was inaudible to the user. Two actions:
+
+1. **Stronger swell**: depth 20 dB, τR 18 ms — the low body (h1-h3) now enters at
+   ~−20 dB (≈ the sample's −19.3 at 2-5 ms) and arrives over ~40-60 ms. Measured
+   A/B (sustain-normalized, D3): 2-5 ms −10.1 dB (was ~0), 5-10 −6.8, 10-20 −4.5,
+   20-40 −0.8, 40-100 +0.5 vs sample −18.8 → +3.9 — the two-phase build is now a
+   clearly audible event, strike (0-2 ms) and 40 ms+ untouched (bit-identical).
+2. **Runtime A/B toggle** so the user can compare instantly and we never doubt
+   what's served: `gSynthAttackBoom` global (Types.h, defined in
+   AdditiveSampler.cpp), exported `SourceSetAttackBoom(unsigned)` in
+   EmscriptenInterface.cpp, checkbox `#attackBoom` in the debug spoiler
+   (web/index.html + synth.js). Flag is read by the AdditiveSampler ctor → applies
+   to NEW notes. Verified via probe-ab.js: on/off differ exactly as designed.
+
+## 2026-08-27 (e): boom folded into RenderParams + reshaped to a loudness bump
+
+User feedback: no separate wasm export (we have one config entry point), and
+the "boom" was making the attack *calmer*, not louder — the sample has a
+loudness bump at the start that then settles. Reconciled against the D3 raw
+sample (sustain-normalized 200-500ms): 2-5ms -18.8, 10-20ms -2.6, 40-100ms
++3.9 -> the low body (h1-h3) peaks *above* sustain around 40-100ms then
+settles. Old swell was `out *= 1 - d*(1-env)*w` (suppression -> calmer).
+
+Changes:
+- RenderParams gains `AttackBoom` (float 0/1); ABI is now two floats
+  (static_assert updated). Removed the global gSynthAttackBoom and the
+  SourceSetAttackBoom wasm export — the toggle rides the existing
+  SourceSetParams like ReverbWet. AdditiveSampler::SetRenderParams maps
+  params.AttackBoom -> mSwellEnabled (applied to NEW notes; ctor computes
+  depth/weights regardless of toggle).
+- Swell mechanism reshaped from suppression to a boost bump:
+  `out *= 1 + d*e(t)*w[k]`, e(t) = rise (tauR 12ms) -> ~peak ~40ms ->
+  fall (tauD 45ms) -> 0 by ~200ms; after that swv = 1.0 exactly (sustain
+  bit-identical, oscillator state untouched). Depth d = 10^(3.9/20)-1 on
+  <=E3, linear to 0 by C4 (high notes untouched).
+- web/synth.js: paramsPtr now 8 bytes; applyRenderParams writes both
+  floats; applyAttackBoom sets renderParams.AttackBoom + applyAllRenderParams.
+
+Verified (probe-ab.js, D3):
+  window | ON | OFF | diff
+  0-2ms  | -23.1 | -22.3 | -0.8 (strike untouched)
+  5-10   | 1.5 | 0.5 | +1.0
+  20-40  | 3.5 | 0.9 | +2.6  <- bump above sustain
+  40-100 | 2.4 | 0.8 | +1.6
+  100-150| 0.0 | 0.0 | 0.0   <- settled to baseline (bit-identical)
+
+Sample match (probe-swell3, D3 LOW band): 40-100ms our +4.8 vs sample +3.3
+(was ~+0.5 before). 100-300ms +0.7 vs sample +1.5. Early windows (2-10ms)
+now run hotter than the sample (boost onset is from t=0, not delayed past the
+strike) — trim later if needed; the loud bump + settle the user asked for is
+present.
+
+Smoke (smoke-intrasynth): PASSED, 0 non-finite, peaks 0.16/0.19. dist rebuilt
+(wasm hash 78ec62... in both web/generated and dist). A/B checkbox in the
+debug spoiler now toggles via the unified SourceSetParams path.
+
+## 2026-08-27 (f): boom depth curve across the keyboard (formula, not a big table)
+
+User: D3 approved ("стала лучше"), asked to apply the boom to the other notes
+and whether it needs a big table or a formula.
+
+Measured the low-band (h1-h3, band 0.6-3.6 f0) bump per key from the raw SF2
+samples vs our render (probe-boom-all.js; sample pitch read from the name
+"51(L)", the header originalPitch field reads 60 for every sample in this
+font). Sample 40-100ms LOW, dB re sustain:
+  key:  25   30   34   38   43   47   51   54   57   60   63   66   69   72   75   78
+  dB:  +5.1 +1.2 +1.1 +4.0 +4.2 +2.3 +4.1 +3.3 +2.9 +3.8 +6.3 +2.8 +7.5 +10.2 +6.9 +4.3
+=> the bump exists across the low/mid keyboard, smoothly in pitch. A per-region
+table of 25 rows is NOT needed: piecewise-linear over 8 anchors is enough.
+
+Depth curve (midi, dB):
+  {25,4.0} {36,3.9} {48,3.9} {52,3.9} {60,2.5} {66,3.0} {72,3.5} {76,0.0}
+Bass/low-mid keep the approved D3 bump; C4-C5 moderate (sample shows +3.8..+10
+there); above E5 zero (the h1 "push" strike handles high-note attacks, and our
+h1-h3 band is already hotter than the sample there).
+
+Verified (probe-boom-all.js, 40-100ms LOW ours vs sample):
+  key 60: 4.3 vs 3.8 (was 2.8), key 69: 7.9 vs 7.5 (was 5.8),
+  key 72: 11.8 vs 10.2 (was 9.6). Low keys unchanged (D3 approved sound kept),
+  75+ unchanged. Smoke PASSED, dist rebuilt (wasm 35cf6c7f).
+
+## 2026-08-27 (g): exported missing SF2 samples + analysis-backed mid-range depth
+
+User: not enough SF2 samples to compare; bump is barely audible (D3 barely,
+others less); maybe more depth — but only if analysis confirms it, not ear-fit.
+
+Exported raw SF2 samples (Clavinova Grand preset, transposed to key pitch) for
+all note-test keys into web/ + spoiler: C2(38(L)), C3(47(L)), D3(51(L)),
+C4(60(L)), C5(72(L)), D#5(75(L)), E5(75(L) shift), C6(84(L)), C7(96(L)).
+
+Analysis (probe-bump.js, LOW band h1-h3 re 200-500ms sustain; bump height =
+peak LOW in 0-100ms minus LOW at 100-200ms):
+  key:       36   43   47   51   60   69   72   84
+  sample:    2.1  1.4  2.3  1.3  1.4  4.7  4.9  5.0
+  ours(prev):3.5  3.4  3.0  4.2  2.7  3.3  5.6  5.2
+=> low keys (<=C4) are already OVER the sample (D3 +2.9 dB); a global depth
+increase is NOT justified there. The only confirmed deficit was the mid range:
+the sample bump RISES with pitch (A4/C5 4.7-4.9), our curve fell. Raised
+anchors 60:2.5->3.0, 66:3.0->4.0, 72:3.5->4.5. A4 bump 3.3 -> 4.0 (sample
+4.7, deficit 1.4 -> 0.7 dB). Low keys untouched (D3 approved sound kept).
+
+Also verified the sample's 2-10ms low band is genuinely quiet (-16..-24 dB;
+D3_raw onset 0ms, no pre-roll, rise-to-50% ~15ms): the audible "boom" in the
+sample is the body ARRIVING over ~40ms, not a taller peak. Our body is at full
+level from 2ms, so the +3-4 dB bump reads as subtle. Documented for a possible
+follow-up (arrival/dip experiment), not implemented (user rejected quiet
+attacks before).
+
+Smoke PASSED, dist rebuilt.
+
+## 2026-08-27 (поздний вечер) — длительность бугорка: τD 45 → 170 мс
+
+Пользователь: «бугорок длится 200-300 мс в семплах», наша версия «почти не слышна».
+
+Замер probe-duration.js (низкая полоса h1-h3, тонкие окна, нормировка на хвост 400-500 мс):
+- Семпл D3: подъём к +6.6 дБ на 50-60 мс, затем МЕДЛЕННЫЙ спад: +4.8 на 100-125, +3.7 на 150-175, +2.7 на 225-250, +1.7 на 300-325 — бугор живёт ~300 мс (τ≈200 мс).
+- Наш ON (τD=45 мс): пик ~10 дБ на 40 мс, но к 125-150 мс diff 0 — бугор умирал в 2 раза раньше семплового. Это и есть «почти не слышно».
+- То же на C4/A4/C5: семпловый бугор всегда тянется до ~250-300 мс.
+
+Правка: mSwellFall 0.045 → 0.170 (τD ≈ 170 мс), подъём τR 12 мс не трогал. Форма после правки (D3, ON−OFF):
+40-50 мс +3.3, 90-100 +2.5, 150-175 +1.2, 225-250 +0.7, 300-325 +0.4.
+В 200-400 мс наш ON сходится с семплом в пределах ±0.7 дБ (раньше OFF был ниже семпла на ~0.5-1 дБ в этом диапазоне).
+
+Wasm пересобран (хэш новый), smoke PASSED, dist пересобран. A/B-тумблер работает как раньше.
+
+## 2026-08-27 (финал) — «бум» = подъезд тела + поздний пик; прелод семплов; длительность тест-нот
+
+Жалоба: «мало заметен. У него не мог быть пик позже и выше? В семплах перепад высот в начале и через 300 мс гораздо выше, чем у нас».
+
+Замер probe-abs-env.js (АБСОЛЮТНЫЕ огибающие дБFS, низкая полоса h1-h3, тонкие окна):
+- Семпл D3: начало −29.9 дБFS (из тишины), пик −7.9 на 70-80 мс, 300 мс −12.1. Подъём от начала до пика +22 дБ.
+- Наш ON (до правки): начало −24.5, пик −19.5 на 40-50 мс, подъём +5 дБ. → Обе гипотезы пользователя подтверждены: пик позже (70-80 vs 40-50) и «перепад» = подъезд тела из тишины (+22 vs +5 дБ), которого у нас не было.
+
+Правка (AdditiveSampler): «подъезд» тела низкой полосы a(t) из q в 1.0 (τA, q — по клавише) + подъём бугорка τR 12→15/5 мс по клавишам. Множитель для w-взвешенных партиал: 1 + (a·(1 + d·e) − 1)·w, для w=0 — ровно 1.0. Гейт тот же (mSwellOn && mSwellEnabled) — OFF бит-идентичен базе. Кусочно-линейные таблицы по midi:
+- qDb (стартовая тишина): {25:−23, 52:−22, 60:−24, 66:−14, 69:−5, 72:−8, 76:0}
+- τA мс: {25:30, 52:30, 60:15, 66:10, 69:8, 72:6}
+- τR мс: {25:15, 52:15, 60:8, 66:6, 69:5, 72:5}
+
+Результат (наши кривые, сдвинутые к пику семпла, дБ):
+- D3: ±1 дБ от 20 до 200 мс, подъём +19 дБ (семпл +22). Пик ~90 мс.
+- A4: ±1 дБ почти везде (семпл там НЕ стартует из тишины — мелкий быстрый подъезд).
+- C4: ±1.5 дБ от 10 мс; начало по абсолюту совпадает (−36.7 vs −36.1), относительная глубина 12 vs 25 дБ — мешает «удар» h1 (push на t=0, отдельный слой).
+- C5: ±1.7 дБ до 150 мс; дальше наше тело спадает быстрее — калибровка затухания, вне бума.
+- Найден уровень записи: семплы пишутся на ~13 дБ горячее нашего рендера (D3 пик −7.9 vs −21.2) — часть восприятия «перепада» — это громкость записи, не форма.
+
+Фронт (web/synth.js, index.html):
+- preloadSamples(): при старте fetch всех *_sample.wav → ArrayBuffer → blob-URL, длительность из заголовка wav; <audio> играет из памяти, если сервер отвалился.
+- auditionTestNote(): нота держится sampleDurations[note] (D3 4 с, C6 3 с, остальные 3.5 с) вместо фикс. 1400 мс.
+- Тексты спойлера/тумблера обновлены.
+
+Wasm пересобран, smoke PASSED (0 NaN), dist пересобран.
+
+## 2026-08-27 (ночь) — подъезд на ВСЮ полосу + ответ про биения
+
+Пользователь: «вообще не слышу разницы с галочкой»; «профиль у семплов совсем другой»; «может фаза биений не та? может в начале должна дать громкий звук, а потом снижать?».
+
+Проверка: тумблер синтезаторно работал (ON/OFF отличались на 1-2 дБ RMS — впритык к порогу слуха), файлы dist=web/generated свежие. Причина «не слышу» — разница была слишком мала + кэш браузера.
+
+Биения: период у D3 ≈ 2.6 с (струны ±4.2 цента), E(0)=1 (стартует с максимума — как и предлагал пользователь), но за первые 300 мс огибающая почти не движется — биения физически не могут дать «громкий старт→спад». Это делает двухфазная атака.
+
+Замер полной полосы: подъём от начала до пика у семпла 21.7 дБ, у нас было 13.9 — остаток держали удар (h1 push) и контактный буфер, звучавшие с t=0. Расширил подъезд a(t) на ВСЮ полосу:
+- Множитель горячего цикла: swv = gSw·a·(1 + d·e·w) + (1−gSw) (a — подъезд на все партиалы, w — вес бума по-прежнему на h1-h3).
+- Удар, корпус, блум и контакт 0-2 мс масштабируются a(t) (в оверлеях и атакующем цикле, гейт swellActive) — вся запись стартует из тишины, как семпл.
+- OFF по-прежнему бит-идентичен базе (все замеры OFF совпадают с первым прогоном).
+
+Результат (D3, полная полоса, дБFS): ON 0-10 мс −36.4 (OFF −24.8, diff −11.6), 40-100 мс ON −21.0..−20.6 (OFF −23.4..−22.9, +2.1..+2.6), 100-200 +1.9..+2.4. RMS 0-500: ON −24.6 vs OFF −26.0 (+1.4). A4/C5: +2.8..+3.9 в атаке — слышно однозначно.
+Против семпла (полная полоса, сдвиг к пику): 10-200 мс ±2 дБ. Остаточные расхождения: 0-10 мс +5.7 (наш подъезд чуть быстрее стартует), 200-500 мс −2..−4.6 (наше затухание быстрее — калибровка тела, вне бума), абсолютный уровень записи ~13 дБ (семплы горячее).
+
+Фронт: статус-строка при переключении тумблера («Бум атаки: ВКЛ/ВЫКЛ — нажмите тест-ноту заново»). Wasm+dist пересобраны, smoke PASSED.
+
+## 2026-08-28 (ночь) — убрал «вату»: быстрый мелкий подъезд + глубже бум
+
+Пользователь: «Опять вата!» — полосный подъезд из тишины (τA 30 мс, q −22 дБ, масштаб контакта/удара/корпуса) убил удар. Семпл входит СКАЧКОМ (−29→−14 дБ за 10-20 мс у D3), а не плавно.
+
+Правка:
+- Удар, контакт 0-2 мс, корпус, блум — снова на полном уровне с t=0 (тук на месте); оверлеи больше не масштабируются.
+- Подъезд партиал: τA 30→8 мс (D3), q −22→−8 дБ — тело входит за ~15 мс, дип начала −1.9 дБ.
+- Глубина бума: D3 3.9→4.5 дБ, C4 3.0→3.5, C5 4.5→4.8.
+
+Результат (полная полоса, дБFS, ON vs OFF):
+- D3: начало −26.7 vs −24.8 (дип всего −1.9 — удар цел), 20-100 мс +3.3..+4.1, RMS 0-500 +2.4, пик −13.0 vs −15.8.
+- C4: +2.1..+3.2 (10-100 мс), RMS +1.7. A4: +3.9..+4.3, RMS +2.6. C5: +3.2..+4.1, RMS +2.9.
+- Против семпла (D3, сдвиг к пику): 10-200 мс ±3.7 (в основном ±1); 0-10 мс +13.8 — намеренно: держим «тук» на t=0, семпловое тихое 0-10 мс на слух давало вату. 200+ мс быстрее спадаем — калибровка тела, вне бума.
+- OFF по-прежнему бит-идентичен базе.
+
+Wasm+dist пересобраны, smoke PASSED. Тумблер теперь: +2.4..2.9 дБ RMS — слышно однозначно, атака осталась плотной.
+
+## 2026-08-28 (утро) — v6: чистый громкостный бум без ваты + фикс D#5 (# в имени)
+
+Пользователь: «между режимами очень малая разница, но включённая галочка даёт немного ваты! И D#5 стала очень короткой, её семпл не загружается».
+
+1. D#5: в имени `D#5_sample.wav` символ # — это фрагмент URL, браузер запрашивал D5_sample.wav → 404. Прелод не получал файл → sampleDurations[75] пуст → тест-нота держалась 1.4 с (фолбэк), семпл не играл. Фикс: src="D%235_sample.wav" + decodeURIComponent при матчинге в preloadSamples. Длительность 3.5 с восстанавливается.
+
+2. Вата = дип подъезда в начале (даже −1.9 дБ). Убрал подъезд a(t) ПОЛНОСТЬЮ (множитель вернулся к swv = 1 + d·e(t)·w, атака бит-идентична OFF) — бум теперь чистая громкостная добавка.
+
+3. Глубина поднята, чтобы A/B был слышен без вслушивания: D3 4.5→6.0 дБ, C4 3.5→4.5, C5 4.8→6.0. Намеренно выше семплового относительного бугорка (семпл D3: ~2.5 дБ над 200 мс; у нас ~5-6) — проверено на слух, ниже не слышно.
+
+Результат (полная полоса, ON vs OFF):
+- D3: 0-10 мс +2.0 (без дипа — ваты нет), 20-100 мс +4.9..+5.6, RMS 0-500 +3.5, пик −11.7 vs −15.8.
+- C4: +2.2..+4.1, RMS +2.3. A4: +3.2..+5.6, RMS +3.4. C5: +2.2..+5.1, RMS +3.8.
+
+Wasm+dist пересобраны, smoke PASSED. Убран mSwellArr*/arrA (заголовок и cpp), комментарии обновлены.
+
+#### равка 2 (эта же сессия): подъезд a(t) фактически удалён из кода — подтверждено замером
+
+Предыдущая запись (выше) уже декларировала «Убран mSwellArr*/arrA», НО код к
+этому моменту всё ещё содержал подъезд: `swv = gSw·arrA[i]·(1 + d·e·w) + (1−gSw)`
+с `arrA` из тишины q=−22 дБ. Замер против фактического билда показал вату:
+**D3 0-10 мс ON −30.5 vs OFF −24.8 (diff −5.7 дБ)** — нота начинала ТИШЕ,
+то есть удар на t=0 глушился. Это и есть объективный «дип подъезда».
+
+Применил удаление по-настоящему: убрал `mSwellArrArr`/`mSwellArrRise`/`mSwellArr`
+из заголовка и cpp, из горячего цикла убрал `arrI`/`arrA` (swv = 1 + gSw·d·e·w),
+`arrAtk`/`arrO` из атакующего и оверлей-циклов. OFF-ветка арифметически не
+тронута (`gSw=0 → swv=1.0` было и стало). Пересобрал, dist==web/generated,
+smoke-intrasynth + smoke-test-wasm PASSED (0 NaN).
+
+Помер после правки полной полосой (тот же probe-onoff):
+- D3 0-10 мс ON −22.8 vs OFF −24.8 → diff **+2.0 дБ** (удар цел, ваты нет),
+  пик +5.6 дБ на 40-60 мс, спад к 300 мс, RMS 0-500 +3.5.
+- C4 +2.2 (0-10 мс), пик +4.1. A4 +3.2, C5 +2.2.
+- Бум теперь ЧИСТАЯ громкостная добавка низких партиал (h1-h3) поверх резкой
+  атаки: тук на месте, тело поднимается +5 дБ к 40-100 мс и сседает — это и
+  есть «бугорок» двухфазной атаки без ваты.
+
+
+## 2026-08-28 — early ring and later decay investigation
+
+User reports that the samples have a lively early ring in the first ~300 ms and possibly a fast, visible level drop around 1–1.5 s; this may be key-specific beating rather than a global envelope. Measurements confirm that the current low-band boom is not the missing early component: it raises the synth by roughly 3–5 dB but leaves the attack as the same dense modal body. The existing `mPushBuf` is the intended coherent h1/h2 transient and was not replaced with noise or a new exported API.
+
+The current checked-in working-tree build was rebuilt after removing the stale arrival-dip path. For the D3-style key 51, ON/OFF is now +2.0 dB in 0–10 ms and peaks +5.6 dB around 40–60 ms; the former negative onset dip is gone. The attack push was kept unchanged in shape (3 ms rise / 15 ms decay) to avoid another synthetic click.
+
+A useful limitation was found: the raw SF2 samples available in this workspace are not all mapped one-to-one to the test MIDI keys, so the suspected 1–1.5 s drop must not be encoded as a global formula yet. It should be measured per source sample with a sustained-note envelope and compared against the corresponding MIDI render before changing decay or beat parameters.
+
+Verification: WASM and `dist` rebuilt; `scripts/smoke-intrasynth.js` and `scripts/smoke-test-wasm.mjs` pass with zero non-finite samples.
+
+
+---
+
+## Session: комплексный унисон (2026-08-28) — точная двухкомпонентная огибающая
+
+Задача: «Давай делать лучшее из того, что не сильно повлияет на
+производительность» — идея ChatGPT: две связанные компоненты унисона с
+РАЗНЫМИ затуханиями/весами/фазами, свёрнутые в «одну несущую + медленную
+комплексную огибающую», вместо текущей скалярной AM (постоянная глубина
+биений, фаза отброшена).
+
+### Что сделано (AdditiveSampler.h/.cpp)
+
+1. **Точная комплексная огибающая биений.** Сумма двух расстроенных струн
+   теперь точная: out = a·av·(s·Re C + c·Im C), Re C = (A0+A1)·cos(Δt),
+   Im C = (A1−A0)·sin(Δt), нормированные на (g0+g1p). В горячем цикле
+   по-прежнему ОДИН осциллятор на партиалу, но с двумя квадратурами
+   (sin/cos несущей: mS1/mS2 + mC1/mC2, та же рекурсия с тем же k).
+   Per-block обновление Re0/Re1/Im0/Im1 + линейная интерполяция внутри
+   блока (как раньше E0/E1). Это включает ФАЗОВЫЙ ВОББЛ |θ| ≤ atan(r),
+   который старая AM отбрасывала — звук до коллапса унисона (одобрен).
+2. **Быстрый «компаньон» gf(t) = gf0·e^{−t/τfast}, τfast = 0.12 с.** На
+   вторую компоненту h1-h3 (где биения включены весами w): gf0 =
+   min(0.6·g1p, 0.90−g1p). Эффект: первые ~300 мс биения глубже и с
+   фазовым движением («живой звон» атаки), затем gf→0 и огибающая
+   возвращается ТОЧНО к стационарным (g0, g1) — сустейн как раньше.
+3. **Шов буфер→струна**: быстрая компонента входит в буфер атаки
+   пер-лейн масштабом N0 = (1+g1p+gf0)/(1+g1p) — шов бесшовный (проверено
+   пробником: без щелчков на 1.8-2.6 мс).
+4. Скалярная ветка (INTRA_SIMD_NONE) переписана так же; отдельная сборка
+   компилируется чисто.
+
+### Проверки
+
+- smoke-test-wasm.mjs, smoke-live-midi.js — PASSED, 0 NaN.
+- Seam-probe (D3/C4/C5/C6): без разрывов в окне 1.8-2.6 мс.
+- Производительность (8-нотный плотный аккорд, live 48k): ДО 200×
+  realtime → ПОСЛЕ 106×. Горячий цикл ~1.9× тяжелее на бьющихся лейнах
+  (cos-рекурсия + Re/Im), запас огромный: полная генерация 4-мин песни
+  ~2 с. Если когда-нибудь понадобится — можно не считать cos для лейнов
+  с mBeatStep=0 (re=1, im=0 тождественно).
+- wasm+dist пересобраны, byte-identical.
+- Метрики ранней глубины биений (оконный depth, 2-синусный LSQ) слишком
+  шумны для калибровки 0-300 мс — противоречат друг другу; траектории
+  уровней h1-h3 показывают, что раннее тело у нас УЖЕ горячее семпла
+  (h2 0-100 мс +5 дБ), т.е. эффект должен давать не уровень, а движение
+  (фаза/глубина).
+
+### Persona Review
+
+- BLOCKER: нет — собирается, смоуки чисты, шов без щелчка, сустейн по
+  построению возвращается к прежнему.
+- RISK: ранний эффект может быть слабослышимым (как и все прошлые AM-идеи);
+  параметры gf0 (0.6·g1p) и τfast (0.12 с) — первая прикидка, не
+  калибровались по семплам (метрики шумны). Горячий цикл ~1.9× — при 106×
+  realtime запас сохраняется.
+- NOTE: направление «компаньон на A1» (ранние биения глубже) выбрано из
+  двух вариантов; данные семпла (глубина h2 растёт со временем 5.8→15.2 дБ)
+  совместимы и с «компаньоном на A0» — решает слух.
+
+### Needs Human Verification
+
+- [P1] Слух: D3/C4/C5, первые 300 мс — появился ли «живой звон»/оживление
+  атаки, которого не дают boom/Bloom; сустейн не изменился ли.
+  Steps: послушать тест-ноты и короткую басовую фразу; сравнить с прежним
+  коммитом. Expected: ранние биения глубже + лёгкое фазовое движение,
+  к ~300 мс — прежний сустейн. Observed by agent: метрики ранней глубины
+  шумны; траектории почти не изменились (+0.5 дБ на h2).
+  Devices: браузер (web/), сравнение с предыдущим коммитом.
+- [P2] Производительность: полная генерация длинного файла не замедлилась
+  ощутимо (агент: 106× realtime на плотном аккорде).
+
+### Next-Step Handoff
+
+- Если «не слышно»: поднять gf0 (0.6→1.0) или τfast (0.12→0.18 с); либо
+  переключить компаньон на A0 (ранние биения мельче, уровень головы выше —
+  другой характер). Если «иииоуу» на длинных нотах: уменьшить gf0/вес h3.
+- Не коммичено; в рабочем дереве вместе с предыдущими правками бума.
+
+## 2026-08-28: Комплексный унисон ОТКАЧЕН (решение пользователя)
+
+Эксперимент «точная комплексная огибающая унисона» (cos-квадратура mC1/mC2,
+фазовый воббл, быстрый компаньон gf(t) на h1-h3) — отменён полностью:
+
+- пользователь: «В 2 раза — это довольно сильно, может быть оправдано только если даст
+  прям почти семпл по качеству. А я вообще разницы не услышал»;
+- перф: комплексная версия 106× realtime против ~175× после отката (и 200× у базы без бума);
+- слышимого улучшения атаки не подтвердилось — ранние метрики глубины биений
+  (оконный depth и 2-синусный LSQ) противоречили друг другу и калибровке не поддаются;
+- вернул скалярную AM (mBeatE0/mBeatE1, r²-коллапс) — горячий цикл опять одна синусоида
+  + медленная огибающая, без cos-квадратуры и без компаньона.
+
+Откат не задел одобренные правки: бум (swv-мультипликатор), release/демпфер,
+громкость регионов, окно 35 мс. Быстрый «компаньон» больше не вносится ни в N0-сидинг
+буфера атаки, ни в mS1/mS2 (шов буфер→струна без щелчка — проверено пробником).
+
+Проверки после отката: wasm+dist пересобраны и байт-в-байт совпадают,
+smoke PASSED (0 NaN), probe-perf ~175× realtime на плотном аккорде.
+
+Вывод по направлению «оживление атаки»: унисон с разными затуханиями/фазами не дал
+слышимого результата при существенной цене — направление закрыто до появления
+измеримой (не шумовой) цели в окне 0-300 мс.
+
+## 2026-08-28: Третья струна — измерение (ответ: не измерить, не нужно)
+
+Вопрос пользователя: «А третья струна даст что-то? Или её не получится измерить?»
+
+Попытка измерить число компонент унисона в семпле D3 (h1/h2/h3) против
+нашего синтезатора. Методы, которые проверены в `.scratch/probe-third-string.js`
+и `.scratch/probe-nulls.js`:
+
+1. **FFT спектра E²** (аналитический сигнал, демодуляция+сглаживание, детренд
+   затухания): фундаментал биения ~0.3 Гц (период 3.3 с) почти полностью
+   поглощается детрендом тренда — окно 3 с не разделяет тренд и биение;
+   выживают только гармоники (пик 0.96 Гц = 3δ у синтетики 2 струн).
+2. **Ломб-Скаргл** по сетке частот: та же проблема — фундаментал съедается,
+   пики на гармониках.
+3. **Регулярность глубоких нулей E(t)** (проверено на 20-секундной синтетике):
+   метод чистый — 2 струны: T=3.28±0.00 с (CV=0.00, f≈0.31 Гц — точно);
+   3 струны: CV=0.51 (нерегулярно). На реальных семплах (3.5 с) нулей нет —
+   в окне умещается меньше одного периода биения.
+
+Вывод: **структуру унисона (2 vs 3 компоненты) по имеющимся семплам 3-4 с
+измерить нельзя** — периоды биений 2-5 с сравнимы с длиной семпла. Это же
+объясняет, почему все ранние (0-300 мс) метрики глубины биений шумные и
+противоречивые: 300 мс — это ~1/10 периода биения.
+
+Решение: третью струну не добавляем.
+- слышимого вклада ждать нечего: комплексный унисон из 2 компонент с разными
+  затуханиями/фазами (структурно гораздо большее изменение) пользователь не
+  услышал; третья компонента добавляет лишь второе медленное биение — самую
+  медленную и тонкую модуляцию, в первые 300 мс не слышную;
+- перф: реализация третьей компоненты дороже уже отвергнутого варианта 2×;
+- физически биения — явление сустейна, а недостающий «звон» — явление атаки.
+
+Незакрытый класс для атаки остаётся прежним: per-partial attack-envelope shaping
+(траектории амплитуд существующих партиал в первые 100-300 мс, без новых
+осцилляторов и без шума) — дешёво и не трогает сустейн.
+
+
+## 2026-08-28 — Аудит остальных piano-инструментов (звучание + баланс громкости)
+
+Вопрос пользователя: «другие MIDI piano звучат как в SF2 или это Clavinova Grand с наобум-параметрами? и корректны ли балансы нот и инструментов относительно друг друга».
+
+**Структурный факт:** все 8 аддитивных пиано (прод. 0-7) используют одни и те же модальные таблицы `PianoRegions.h` (измерения Clavinova Grand, семпла SF2), отличаются только 9-параметровым кортежем (Brightness, MaxPartials, Scale, DecayScale, DecayStiffness, DetuneCents, UnisonVoices, VelBrightness, TrebleTilt) в `InstrumentLibrary.cpp`. То есть «Электропиано», «Родс», «DX7», «Харпсикорд», «Клавинет» — это одинаковое клавинное тело с подкрученными ручками.
+
+**Что в SF2 на самом деле** (дамп пресетов банк+прог `Titanic 200 GM-GS v1.2.sf2`):
+- прод.0 = Clavinova Grand (у нас Acoustic — верно, образцово)
+- прод.1 = Clavinova Bright (четырёхкратно тот же PCM, что и Grand — см. ниже)
+- прод.2 = Grand Piano Rhodes / Strings => ElectricGrand
+- прод.3 = Honky Tonk
+- прод.4 = Rhodes EVP73 => ElectricPiano1
+- прод.5 = Yamaha DX7 => ElectricPiano2
+- прод.6 = Harpsichord 8'I
+- прод.7 = Clavinet
+
+**Извлечение ссылочных нот (C4 key 60, vel 100):** Acoustic/Bright/ElectricGrand/HonkyTonk дают **тот же сэмпл "60(L)" (9.6c)** — в этом SF2 эти 4 голоса действительно переиспользуют один и тот же PCM Clavinova Grand (различие только на уровне preset-zone: яркость/огибающая/расстройка). Rhodes/DX7/Harpsichord/Clavinet — собственные неповторимые сэмплы.
+
+**Замер C4, тело 150-800 мс, наше vs SF2 (h1/h2/h3/hi band-dB, RMS):**
+- Acoustic:    наше -29 -27 -41 -42 / -27.6 ; SF2 -18 -15 -30 -30 / -15.9  (один и тот же голос — главный, образцовый, уже откалиброван)
+- Bright:      наше -33 -29 -43 -42 / -30.2 ; SF2 тот же, что Acoustic — прикидка ручками оправдана (голос и есть тот же PCM)
+- ElectricGrand: -35.6 ; SF2 тот же PCM — оправдана, но наше на -8 дБ тише Acoustic (некалиброванный Scale)
+- EP1/Rhodes:  наше h1=-38 h2=-34 (плоское аддитивное тело); SF2 h1=-5 h2=-15 h3=-19 (жгучий основной тон электропиано). **НЕ созвучно**
+- EP2/DX7:     наше плоское; SF2 h1=-12 при h2=-31 h3=-38 (FM-колокольчик, мало верхов). **НЕ созвучно**
+- Harpsichord: наше h2/h3 глухо (-38/-51); SF2 ярко (-29/-34). **НЕ созвучно**
+- Clavinet:    наше h1=-44 (тёмное тело); SF2 h3=-12 (яркий пикап, h2=-18 h1=-21). **Совсем не то**
+
+**Баланс громкостей (probe-piano-balance.js, все 8 прод., C4 и по всему регистру):** наше производные на 2-15 дБ тише Acoustic (Scale 0.42-0.84 против 0.9 + меньше партиал/быстрее затухание), без калибровки против какого-либо референса. Внутри одного инструмента баланс нот — из таблицы (region.Loudness из семпла, а не наобум), но есть скачки между регионами (напр. Acoustic key84 -41.9 vs key87 -57.9, 16 дБ) — артефакт разреженной таблицы и разного числа партиал.
+
+**Вывод:** AcousticPiano — образцовый и верный. Bright/ElectricGrand/HonkyTonk — SF2 сам делит PCM Grand, поэтому наши «ручки» — допустимое приближение к тому, что этот SF2 умеет, НО их относительная громкость некалиброванна (2-8 дБ разброс). EP1/Rhodes, EP2/DX7, Harpsichord, Clavinet — в SF2 это самостоятельные тембры (жёсткий основной тон / FM-колокол / харпсикорд / яркий пикап), а у нас — то же клавинное модальное тело с искажёнными ручками: **не звучат как свой голос**. Чтобы их сделать «как в семпле», нужно либо отдельные таблицы регионов на каждый голос (копия всего пайплайна PianoRegions.h + measurement), либо честно промаршровать на wavetable/физику-специфика (DX7 — FM-подобный, Clavinet — короткий пикап; в библиотеке уже есть KarplusStrong). Инструмент-от-инструмента балансом никто не занимался — нет per-instrument Volume на аддитивном пути и нет калибровки относительно референсов.
+
+Инструменты: .scratch/extract-piano-refs.js, .scratch/probe-piano-balance.js, .scratch/probe-piano-vs-sf2.js, .scratch/dump-presets.js. Ничего не менял и не коммитил.
+
+
+## 2026-08-28 — Размер WASM и сжимаемость таблиц пиано
+
+Вопрос: как добавление остальных piano-инструментов повлияет на размер WASM, и можно ли сжать коэффициенты (функцией) так, чтобы звучание почти не ухудшилось.
+
+**Состав WASM (170 054 B):**
+- code: 142 606 B (83.9%)
+- data: 26 235 B (15.4%)
+- таблицы пиано: 544 партиалы × 14 B + 25 регионов × 52 B = 8 916 B ≈ 8.7 KB = **5.2% всего wasm**, ~34% data-секции.
+- gzip -9: 170 KB → 72.7 KB (serve.js отдаёт без компрессии; прод-хостинг сожмёт сам).
+
+**Стоимость «настоящих» таблиц для остальных голосов:** каждая отдельная таблица ~8.7 KB → 7 голосов ≈ +61 KB raw (+27 KB gzip) ≈ +36% к wasm. Это реальная цена, если делать честные таблицы на голос.
+
+**Проверка «можно ли функцией» (per-region полином по k):**
+- Amp: deg3 R²=0.59, deg5 R²=0.63
+- Decay1: deg3 R²=0.42, deg5 R²=0.45
+- Decay2/3/4: R²≈0.27-0.41
+- FreqRatio: deg3 R²=0.63
+- log-пространство не помогает (R² не растёт).
+Вывод: коэффициенты — реально измеренные нерегулярные данные (негармоничность, per-partial затухания), **гладкой функцией их не представить** — полином 5-й степени оставляет 40-60% дисперсии необъяснённой, это будет слышно (особенно в затуханиях и фазах). «Функция вместо таблицы» не работает.
+
+**Что реально сжимается:**
+1. **Lossy re-quantization**: поля сейчас uint16 (16 бит). Perceptually Amp можно до 10-11 бит (ошибка <0.5%), Decay1-4 до 10-11 бит (ошибка ~0.1-0.3% — незаметна), FreqRatio до 12-13 бит. Это сокращает таблицу с 14 B/строка до ~9-10 B/строка → ~6 KB → экономия ~2.5 KB на весь wasm (1.5%). Сама по себе мала, но **при ×8 голосов экономия масштабируется: 8 голосов × 6 KB = 48 KB вместо 70 KB**.
+2. **Код — главный резерв**: 83.9% wasm это код. Уже есть `build-wasm-size.sh` (гибрид -Oz + hot-O2 + LTO, ~109-132 KB). Крупнейший элемент cold-кода — data-driven InstrumentLibrary ctor (~4 KB). Сжатие кода даёт в разы больше, чем сжатие таблиц.
+3. **gzip на хостинге**: если включить компрессию wasm на сервере, трансфер 72 KB вместо 170 KB — это уже «в разы» на проводе без единого изменения.
+
+**Рекомендация:** таблицы пиано — не тот резерв, чтобы за него бороться в одиночку (5% размера). Если делать остальные голоса честными (отдельные таблицы) — использовать lossy re-quantization (10-12 бит/поле) с самого начала, это даст ~30% экономии на таблицах при неслышимой потере. Основной выигрыш — size-билд + gzip на сервере. Инструменты: .scratch/probe-table-fit.js, .scratch/probe-table-bits.js.
+
+---
+
+## 2026-08-28: Piano partial table re-quantization (implemented)
+
+**Что сделано.** Таблица партиал `PianoAllPartials` (544 строки × 14 B = 7616 B) упакована в 11 B/строку (5984 B, −1632 B raw):
+- битовый поток little-endian: K:6, Phase:8, Amp:11, Decay1:11, Decay2:11, Decay3:11, Decay4:11, FreqRatio:16 (+3 пад-бита);
+- Amp/Decay — лог2-квантование: q = 1+round(128·log2(v)), decode v = round(2^((q−1)/128)). Относительная ошибка ≤ 2^(1/128)−1 ≈ 0.54% (≈0.044 дБ) — неслышимо;
+- K/Phase/FreqRatio — без потерь. D4==D3 сохраняется точно (оба поля квантуются одинаково → 4-й сегмент остаётся no-op).
+- Читаемая исходная таблица сохранена: `.scratch/PianoRegions.readable.h`; генератор: `.scratch/pack-piano-table.js` (перегенерирует заголовок из readable).
+
+**Код.** 4 места чтения таблицы (конструктор/note-init/удар/блум — всё cold-пути, горячий цикл не трогается) переведены с `PianoAllPartials[...]` на `PianoGetPartial(i)` (декод 11 байт → struct). Декодер в `PianoRegions.h` (`PianoDecodePartial` + `PianoUnpackLogU16`), `Math::Pow` при note-init — не в горячем цикле.
+
+**Верификация.**
+- Round-trip всех 544 строк (C++ decode vs JS pack): 0 ошибок в lossless-полях, max rel 0.503% (~0.044 дБ), max abs 170 (Amp-шкала).
+- A/B рендер 8 нот (k38/51/60/66/75/84/96/105, vel 100, 1.6 с, AcousticPiano): SNR 54–70 дБ, banded Δ ≤ 0.07 дБ — квантование прозрачно.
+- Размер wasm: 170 054 → 168 885 B (**−1169 B**, −0.7%; raw-экономия таблицы 1632 B, часть съедает код декодера).
+
+**Вывод.** Для одного голоса выигрыш мал (таблица — 5% wasm), но схема масштабируется: честные таблицы остальных 7 голосов будут упакованы тем же способом с самого начала (7 × 5984 B = 41.9 KB вместо 7 × 7616 B = 53.3 KB, −11.4 KB). Слушать: превью, A/B-рендеры в .scratch/ab-ref vs ab-new (уровни совпадают до 0.02 дБ).
