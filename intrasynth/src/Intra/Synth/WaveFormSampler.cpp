@@ -90,7 +90,7 @@ WaveFormSampler::WaveFormSampler(const void* params, WaveForm wave,
 	if(mRightFragmentOffset < channelDeltaSamples) mRightFragmentOffset += mSampleFragmentLength;
 	mRightFragmentOffset -= channelDeltaSamples;
 
-	if(expCoeff == 0) return; //��������� ���, ������� ������� mExpAtten = {1, 1} - no op
+	if(expCoeff == 0) return; //затухания нет, поэтому оставим mExpAtten = {1, 1} - no op
 
 	if(canDataMutate()) mExpAtten.FactorStep = Math::Exp(-expCoeff/float(sampleRate));
 	else preattenuateExponential(expCoeff, sampleRate);
