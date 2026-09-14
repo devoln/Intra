@@ -78,7 +78,16 @@
     reverbLabel: document.getElementById("reverbLabel"),
     midiStatus: document.getElementById("midiStatus"),
     piano: document.getElementById("piano"),
+    octDown: document.getElementById("octDown"),
+    octUp: document.getElementById("octUp"),
+    octLabel: document.getElementById("octLabel"),
     noteTestNotes: document.getElementById("noteTestNotes"),
+    tracksPanel: document.getElementById("tracksPanel"),
+    tracksHint: document.getElementById("tracksHint"),
+    tracks: document.getElementById("tracks"),
+    sampleTabs: document.getElementById("sampleTabs"),
+    sampleRows: document.getElementById("sampleRows"),
+    abGroups: document.getElementById("abGroups"),
   };
 
   // MIDI-клавиатура — независимый источник, работающий параллельно с песней.
@@ -96,6 +105,26 @@
   let gainNode = null;
   let scratchPtr = 0;
   let paramsPtr = 0;
+  let metersRaf = 0;
+  // Кольцо фидбека канальных событий (NoteOn/CC7/ProgramChange): 3 байта на
+  // событие, осушается SourceDrainMidiFeedback в rAF-цикле. Вид обязан
+  // строиться от свежей кучи: рост WASM-кучи отсоединяет старый ArrayBuffer —
+  // протухший вид и был причиной «умирающих» индикаторов с прочерками.
+  const FB_CAP = 256;
+  let feedbackPtr = 0;
+  let feedbackU8 = null;
+  // Уровни нот каналов для яркости индикаторов: 16 байт, на канал — уровень
+  // огибающей самой громкой звучащей ноты (0 = канал молчит). Спрашивается у
+  // синтезатора (SourceGetNoteLevels) раз в 200 мс и сразу по событию
+  // отпускания — на семпл расходов нет.
+  let levelsPtr = 0;
+  function ensureMetersViews() {
+    if (!Module) return;
+    if (!feedbackPtr) feedbackPtr = Module._malloc(FB_CAP * 3);
+    if (!levelsPtr) levelsPtr = Module._malloc(16);
+    if (feedbackU8 && feedbackU8.buffer === Module.HEAPU8.buffer) return;
+    feedbackU8 = new Uint8Array(Module.HEAPU8.buffer, feedbackPtr, FB_CAP * 3);
+  }
   const renderParams = { ReverbWet: 0 };
   let renderParamsGeneration = 0;
   // A/B: ?wasm=ref loads the last-commit baseline wasm (IntraSynth.ref.wasm).
@@ -103,6 +132,58 @@
   // re-instantiates and swaps it at runtime WITHOUT a page reload.
   let abBuild = new URLSearchParams(location.search).get("wasm") === "ref";
   let swapping = false; // true while the A/B WASM build is being hot-swapped
+
+  // Дорожки загруженного MIDI-файла: индексы, имена, каналы, программы.
+  // Заполняется после успешной загрузки файла (loadFromBytesInner).
+  let midiTracks = [];
+  // Переопределения инструментов каналов (channel -> GM-программа). Живут в JS,
+  // потому что источник пересоздаётся при перемотке/стопе/A-B и переопределения
+  // в C++ состоянии теряются. Применяются к каждому новому источнику.
+  let trackOverrides = {};
+  // Громкость дорожек — честный MIDI CC7 (0..127): UI шлёт сообщение в
+  // синтезатор, а CC7/ProgramChange ИЗ ФАЙЛА приходят обратно кольцом фидбека
+  // и отражаются в контролах. Мьют — чекбокс, и он НЕ трогает громкость: это
+  // отдельный слой микшера (битовая маска каналов, SourceSetChannelMute).
+  // Иначе файл, который сам присылает CC7 (tous les garçons — CC7 по 7 каналам
+  // в начале), отменял бы мьют. Во время офлайн-рендера (полная генерация или
+  // проигрывание готового буфера) фичи индикаторов не работают вовсе: события
+  // фидбека осушаются и выбрасываются, чтобы кольцо не копило мусор.
+  let trackCC7 = {};
+  let muted = {};
+  // Состояние индикаторов нот: ch -> { note, vel, target, level, live }.
+  // Яркость — громкость ИГРАЮЩЕЙ ноты с учётом её огибающей: уровень огибающей
+  // из синтезатора умножается на velocity ноты и CC7 дорожки. Опрос редкий
+  // (LEVEL_POLL_MS), а между опросами яркость ИНТЕРПОЛИРУЕТСЯ в rAF: без этого
+  // она менялась скачками (шаг опроса) и «не гасла» после события отпускания.
+  // Живого потока нет (пауза, стоп, офлайн-рендер) — цель 0, индикатор гаснет.
+  const noteGlow = {};
+  const GLOW_TAU_MS = 55;    // постоянная сглаживания яркости (мс)
+  const LEVEL_POLL_MS = 100; // период опроса уровней огибающих
+  const SILENT_LUM = "0.06"; // фон прямоугольника, когда нота не звучит
+  let levelsDirty = true;    // опросить уровни вне очереди (событие отпускания)
+  let lastLevelsAt = 0;
+  let lastFrameAt = 0;       // время прошлого кадра (для интерполяции по dt)
+
+  /// Множитель яркости дорожки: velocity ноты × CC7 канала (мьют = тишина).
+  function noteCcFactor(ch, velocity) {
+    const cc7 = muted[ch] ? 0 : (trackCC7[ch] ?? 127);
+    return Math.min(1, (velocity / 127) * (0.35 + 0.65 * (cc7 / 127)));
+  }
+  function noteGlowOn(ch, noteNum, velocity) {
+    const g = noteGlow[ch] || (noteGlow[ch] = { note: -1, vel: 0, target: 0, level: 0, live: false });
+    g.note = noteNum;
+    g.vel = velocity;
+    // Сразу ставим ЦЕЛЬ по ноте (вспышка на новом NoteOn), а показываемый
+    // уровень подтягивается к ней интерполяцией; следующий опрос заменит цель
+    // настоящим значением огибающей.
+    g.target = noteCcFactor(ch, velocity);
+    g.live = true;
+    levelsDirty = true;
+  }
+  // Каналы, попавшие в панель дорожек, и их DOM-прямоугольники нот
+  // (заполняются в renderTracks, читаются в pollTrackMeters).
+  const channelsOfTracks = [];
+  const noteBoxes = [];
 
   let midiStatLines = [];
   function renderSynthInfo() {
@@ -146,6 +227,7 @@
   }
 
   function escapeHtml(s) {
+    if (s == null) return ""; // необязательные поля манифеста могут отсутствовать
     return s.replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
     }[c]));
@@ -198,9 +280,8 @@
     }
 
     if (pregenAudio && !paused) {
-      // Render parameters are applied before generation; changing them invalidates
-      // the cached buffer so this path never hides the live WASM effect state.
       // Playback from the fully rendered buffer: zero WASM calls per callback.
+      // Индикаторы нот обновляет rAF-цикл (NoteOn-фидбек копится в очередь).
       const len = pregenAudio.len;
       const copy = Math.min(n, Math.max(0, len - pregenPos));
       if (copy > 0) {
@@ -286,6 +367,11 @@
     if (!srcPtr) {
       throw new Error(infoText || "Не удалось разобрать MIDI файл");
     }
+    // Переопределения инструментов и гейн/мьют дорожек живут в JS (C++-состояние
+    // источника теряется при каждом пересоздании: перемотка, стоп, A/B-переключение,
+    // полная генерация). Единая точка входа покрывает все эти пути.
+    applyTrackOverrides(srcPtr);
+    applyTrackMix(srcPtr);
     return { src: srcPtr, info: infoText };
   }
 
@@ -325,6 +411,11 @@
     els.pregenResult.textContent = "Офлайн-рендер: —";
     els.pregenResult.classList.remove("error");
 
+    // Новый файл — чистый лист: переопределения инструментов и громкость/мьют
+    // сбрасываются ДО createSource (он применяет текущие настройки к источнику).
+    trackOverrides = {};
+    trackCC7 = {};
+    muted = {};
     try {
       ensureAudio();
       const { src, info } = createSource(bytes);
@@ -333,16 +424,28 @@
       totalSamples = Module._SourceSamplesLeft(src);
       applyRenderParams(currentSource);
     applyRenderParams(keyboardSource);
+      // Панель дорожек: парсим файл в JS, сбрасываем переопределения
+      // инструментов (новый файл — чистый лист).
+      try {
+        midiTracks = parseMidiTracks(bytes);
+      } catch (_e) {
+        midiTracks = [];
+      }
+      renderTracks();
       midiStatLines = (info || "").split("\n").filter(Boolean);
       renderSynthInfo();
       els.player.classList.remove("hidden");
       setEnabled("playBtn", true);
       setEnabled("stopBtn", true);
       setEnabled("seek", true);
+      updatePregenControls();
       setStatus("Готов к воспроизведению");
       updateProgressUI();
     } catch (err) {
       midiBytes = null;
+      midiTracks = [];
+      trackOverrides = {};
+      els.tracksPanel.hidden = true;
       setStatus(err.message || "Ошибка загрузки", true);
       midiStatLines = [];
       renderSynthInfo();
@@ -385,6 +488,20 @@
       : '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
   }
 
+  // Во время оффлайн-генерации и при воспроизведении из pregen-буфера все
+  // контролы панели дорожек неактивны: менять нельзя (рендер уже посчитан
+  // или считается).
+  function updatePregenControls() {
+    const locked = generationActive || (!!pregenAudio && !paused);
+    document.querySelectorAll(".track-vol, .track-mute, .track-prog").forEach((el) => {
+      el.disabled = locked;
+    });
+  }
+  // Держим блокировку актуальной: смена paused/pregen может произойти мимо
+  // явных вызовов (конец файла, переменотка).
+  const _updateProgressUICB = updateProgressUI;
+  updateProgressUI = function () { _updateProgressUICB(); updatePregenControls(); };
+
   // Fully renders the current WASM source into JS float buffers, measuring
   // the wall-clock time. Yields periodically so the status bar keeps its
   // progress percentage visible.
@@ -403,6 +520,7 @@
         freeSource();
         currentSource = src;
         applyRenderParams(currentSource);
+        applyTrackOverrides(currentSource);
       } catch (err) {
         setStatus(err.message || "Ошибка при пересоздании источника", true);
         return null;
@@ -486,6 +604,7 @@
       generationAbort = false;
       paused = true;
       els.playBtn.disabled = true;
+      updatePregenControls();
       setPlayIcon(true);
       setStatus("Полная генерация…");
       let result;
@@ -500,6 +619,7 @@
         // заблокированной навсегда).
         generationActive = false;
         els.playBtn.disabled = false;
+        updatePregenControls();
       }
       if (!result || !result.len) {
         if (totalSamples) {
@@ -515,6 +635,7 @@
             freeSource();
             currentSource = src;
             applyRenderParams(currentSource);
+            applyTrackOverrides(currentSource);
           } catch (err) {
             setStatus(err.message || "Ошибка", true);
           }
@@ -539,6 +660,8 @@
     paused = !paused;
     setPlayIcon(paused);
     setStatus(paused ? "Пауза" : "Воспроизведение…");
+    metersRestart();
+    updatePregenControls();
   }
 
   function stopPlayback() {
@@ -576,6 +699,8 @@
         // возвращаем текущие, иначе после Стоп/перемотки реверб на файле
         // «пропадал», хотя на клавишах оставался.
         applyRenderParams(currentSource);
+        // Переопределения инструментов дорожек тоже живут в JS — вернуть их.
+        applyTrackOverrides(currentSource);
       } catch (err) {
         freeSource();
         setStatus(err.message || "Ошибка", true);
@@ -587,26 +712,44 @@
     els.time.textContent = "0:00 / " + fmtTime(totalSamples / (audioCtx ? audioCtx.sampleRate : 44100));
     updateProgressUI();
     setStatus("Остановлено. Нажмите «Играть», чтобы воспроизвести с начала.");
+    metersRestart();
+    updatePregenControls();
   }
 
   async function seekTo(sample) {
-    // Never seek while full generation is rendering: seekTo recreates the
-    // source (freeSource + new), which would free the source the loop is
-    // pulling from and hang the page in a WASM render loop.
-    if (!midiBytes || generationActive) return;
     const target = Math.max(0, Math.min(sample, totalSamples));
 
+    // Pregen: перемотка — тривиальная подмена позиции в готовом буфере,
+    // работает всегда (и во время генерации следующего… pregen единственный).
     if (pregenAudio) {
-      // Seek straight in the offline-rendered buffer — no WASM re-synthesis.
       pregenPos = target;
       playedSamples = target;
       updateProgressUI();
       return;
     }
 
+    // Never seek while full generation is rendering: seekTo recreates the
+    // source (freeSource + new), which would free the source the loop is
+    // pulling from and hang the page in a WASM render loop.
+    if (!midiBytes || generationActive) return;
     if (!currentSource || seeking) return;
-    seeking = true;
     const wasPaused = paused;
+    // Вперёд — мгновенно: события файла до целевой позиции пропускаются в C++
+    // без рендера (SourceFastForward), звучащие голоса гасятся.
+    const curPos = Module._SourceSamplesLeft(currentSource);
+    const curSample = totalSamples - curPos;
+    if (target >= curSample) {
+      seeking = true;
+      Module._SourceFastForward(currentSource, target);
+      playedSamples = target;
+      seeking = false;
+      paused = wasPaused;
+      updateProgressUI();
+      setStatus(wasPaused ? "Готов к воспроизведению" : "Воспроизведение…");
+      return;
+    }
+    // Назад: состояние потока необратимо — пересоздаём источник и мотаем вперёд.
+    seeking = true;
     paused = true;
     setStatus("Перемотка…");
 
@@ -614,25 +757,17 @@
     freeSource();
     currentSource = src;
     applyRenderParams(currentSource);
+    // Перемотка пересоздаёт источник — вернуть переопределения дорожек ДО
+    // прогона вперёд, чтобы и пропущенный участок звучал выбранными.
+    applyTrackOverrides(currentSource);
 
-    let remaining = target;
-    while (remaining > 0) {
-      const n = Math.min(AUDIO_CHUNK, remaining);
-      const written = Module._SourceGetUninterleavedSamples(
-        currentSource, scratchPtr, n, AUDIO_CHUNK
-      );
-      if (written === 0) break;
-      remaining -= written;
-      // Yield so the UI stays responsive on long seeks (MessageChannel, not
-      // setTimeout: timer throttling in iframes would make seeks crawl).
-      await yieldToUI();
-    }
-
-    playedSamples = target - remaining;
+    if (target > 0) Module._SourceFastForward(currentSource, target);
+    playedSamples = target;
     paused = wasPaused;
     seeking = false;
     updateProgressUI();
     setStatus(wasPaused ? "Готов к воспроизведению" : "Воспроизведение…");
+    metersRestart();
   }
 
   // Sends one raw MIDI message into the current stream. status is the status
@@ -683,25 +818,232 @@
 
   const noteTestTimers = new Map();
 
-  // Семплы для сравнения: файл -> нота тест-панели (те же клавиши, что и
-  // кнопки data-note). Прелодим при старте: fetch → ArrayBuffer → blob-URL
-  // в памяти. Когда сервер отвалится, blob-URL продолжит работать (байты
-  // уже загружены), а <audio> не полезет в сеть. Заодно вытаскиваем
-  // длительность из заголовка wav, чтобы тест-нота держалась столько же.
-  const SAMPLE_NOTE_MAP = { 36: "C2", 48: "C3", 50: "D3", 60: "C4", 72: "C5", 75: "D#5", 76: "E5", 84: "C6", 96: "C7" };
-  const sampleDurations = {}; // note -> секунды
+  // ---- Сырые семплы (вкладки по инструментам) ---------------------------
+  // Манифест из web/generated/samples/manifest.json: вкладка (инструмент) ->
+  // список { file, note, noteLabel, sample, ... }. Семплы прелодим в blob-URL
+  // при активации вкладки (fetch → ArrayBuffer → blob): когда сервер отвалится,
+  // <audio> продолжит играть из памяти. Длительность вытаскиваем из заголовка
+  // wav, чтобы тест-нота рядом держалась столько же, сколько семпл.
+  let sampleManifest = [];
+  let sampleTabIndex = 0;
+  const sampleDurations = {}; // tabDir -> { note: секунды }
+  const sampleBlobs = {};     // tabDir -> { file: blobURL }
+  // GM-программа для автопереключения инструмента при смене вкладки.
+  // Update 42: Recorder (74) и Ocarina (79) добавлены — семплы этих двух
+  // инструментов появились вкладками в спойлере, но без записи в карте клик по
+  // вкладке не переключал синтезатор, и тест-ноты рядом играли чужой тембр.
+  const SAMPLE_TAB_PROG = {
+    AcousticPiano: 0, ElectricGrand: 2, ElectricPiano1: 4, ElectricPiano2: 5,
+    Harpsichord: 6, Clavinet: 7, StringEnsemble: 48, Flute: 73,
+    PanFlute: 75, Whistle: 78, Recorder: 74, Ocarina: 79,
+  };
 
-  async function preloadSamples() {
-    const audios = document.querySelectorAll("#sampleSpoiler audio");
+  // ---- A/B-рендеры (спойлер) --------------------------------------------
+  // Манифест web/generated/ab/manifest.json → dist/ab/manifest.json пишет
+  // intrasynth/tools/ab/render-ab.mjs. Имена файлов содержат хеш содержимого,
+  // поэтому URL меняется только у изменившегося рендера; превью отдаёт
+  // ab/*.wav с Cache-Control: immutable (scripts/serve.js) — неизменившиеся
+  // файлы браузер не перекачивает. Все <audio> создаются сразу с
+  // preload="auto" (и audio.load()), поэтому файлы грузятся даже при закрытом
+  // спойлере; сам манифест запрашиваем с cache: "no-cache", чтобы новый набор
+  // файлов был виден сразу.
+  async function loadAbManifest() {
+    let data = null;
+    try {
+      const res = await fetch("ab/manifest.json", { cache: "no-cache" });
+      if (res.ok) data = await res.json();
+    } catch (err) { /* dist без ab/ — оставляем пояснение ниже */ }
+    renderAbGroups(data);
+  }
+
+  function renderAbGroups(data) {
+    const box = els.abGroups;
+    if (!box) return;
+    box.innerHTML = "";
+    const groups = data && Array.isArray(data.groups) ? data.groups : [];
+    if (!groups.length) {
+      const row = document.createElement("div");
+      row.className = "debug-row";
+      const note = document.createElement("span");
+      note.className = "debug-note";
+      note.textContent = "пусто";
+      const src = document.createElement("span");
+      src.className = "debug-src";
+      src.innerHTML = "Каталог <code>ab/</code> не собран — запустите "
+        + "<code>node intrasynth/tools/ab/render-ab.mjs</code> и "
+        + "<code>node scripts/build-web.js</code>.";
+      row.appendChild(note);
+      row.appendChild(src);
+      box.appendChild(row);
+      return;
+    }
+    for (const g of groups) {
+      const head = document.createElement("div");
+      head.className = "ab-group";
+      head.textContent = g.title;
+      box.appendChild(head);
+      for (const it of g.items || []) {
+        const row = document.createElement("div");
+        row.className = "debug-row";
+        const note = document.createElement("span");
+        note.className = "debug-note";
+        note.textContent = it.label;
+        const src = document.createElement("span");
+        src.className = "debug-src";
+        src.innerHTML = escapeHtml(it.desc || "")
+          + (it.bytes ? " · " + (it.bytes / 1024).toFixed(0) + " КБ" : "");
+        const audio = document.createElement("audio");
+        audio.controls = true;
+        audio.preload = "auto";
+        audio.src = it.src;
+        row.appendChild(note);
+        row.appendChild(src);
+        row.appendChild(audio);
+        box.appendChild(row);
+        // element слушает спойлер: грузим сразу, он может быть закрыт.
+        audio.load();
+      }
+    }
+  }
+
+  // Запускаем сразу при разборе (скрипт подключён в конце <body>, так что
+  // #abGroups уже есть) и не ждём: спойлер может быть закрыт, а файлы всё
+  // равно должны загрузиться.
+  loadAbManifest();
+
+  async function loadSampleManifest() {
+    try {
+      const res = await fetch("samples/manifest.json");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      sampleManifest = await res.json();
+    } catch (err) {
+      // dist без samples/ (не собраны) — оставляем пустую панель.
+      sampleManifest = [];
+    }
+    renderSampleTabs();
+    if (sampleManifest.length) switchSampleTab(0);
+    if (sampleManifest.length > 1) preloadAllSampleTabs();
+  }
+
+  // Update 74: до-качиваем ОСТАЛЬНЫЕ вкладки семплов в фоне — владелец:
+  // «делай все wav preloaded, лучше даже чтобы они загружались даже если
+  // спойлер не открывать». Идём ПО ОДНОЙ вкладке (внутри вкладки файлы
+  // качаются параллельно), чтобы не отбирать канал у первого экрана.
+  let samplePreloadAllDone = false;
+  async function preloadAllSampleTabs() {
+    if (samplePreloadAllDone) return;
+    samplePreloadAllDone = true;
+    for (let i = 0; i < sampleManifest.length; i++) {
+      if (i === sampleTabIndex) continue;
+      try { await preloadSamplesForTab(sampleManifest[i]); }
+      catch (err) { /* офлайн — не беда, вкладка дотянет при клике */ }
+    }
+  }
+
+  function renderSampleTabs() {
+    const tabs = els.sampleTabs;
+    tabs.innerHTML = "";
+    sampleManifest.forEach((inst, i) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "sample-tab";
+      b.textContent = inst.label;
+      b.addEventListener("click", () => switchSampleTab(i));
+      tabs.appendChild(b);
+    });
+  }
+
+  function sampleSrc(inst, file) {
+    return "samples/" + inst.dir + "/" + encodeURIComponent(file);
+  }
+
+  // Рисует строки семплов активной вкладки. <audio> сначала с preload="none"
+  // и сетевым src; preloadSamplesForTab затем подменяет их blob-URL.
+  const sampleAudioEls = {}; // tabDir -> { file: <audio> }
+  function renderSampleRows(inst) {
+    const rows = els.sampleRows;
+    rows.innerHTML = "";
+    const map = (sampleAudioEls[inst.dir] = {});
+    for (const f of inst.files) {
+      const row = document.createElement("div");
+      row.className = "debug-row";
+      const note = document.createElement("span");
+      note.className = "debug-note";
+      note.textContent = f.noteLabel;
+      const src = document.createElement("span");
+      src.className = "debug-src";
+      // Файл транспонирован на ноту подписи (как сделал бы SF2-плеер);
+      // sourcePitch — реальная высота исходной записи (из манифеста).
+      const orig = !f.sourcePitch || Math.abs(f.shiftSemis || 0) < 0.01
+        ? ""
+        : " (записан " + noteLabelFor(f.sourcePitch) + ")";
+      // Духовые вкладки — не сырые экстракты, а сухие рендеры банка: поля
+      // sample/sourcePitch у них отсутствуют.
+      const srcLabel = f.sample
+        ? "семпл <code>" + escapeHtml(f.sample) + "</code>" + escapeHtml(orig)
+        : "сухой рендер банка (FluidSynth, без реверба)";
+      src.innerHTML = srcLabel +
+        " · " + (f.ms >= 1000 ? (f.ms / 1000).toFixed(1) + " с" : f.ms + " мс");
+      // Update 74: если байты вкладки уже скачаны в blob (повторный заход на
+      // вкладку), сразу отдаём blob и preload="auto". Иначе повторный заход
+      // показывал ПУСТЫЕ плееры: renderSampleRows создаёт <audio> заново с
+      // сетевым src и preload="none", а preloadSamplesForTab уже находил файл
+      // в кеше (sampleBlobs) и пропускал его (`if (...) continue;`) — то есть
+      // подмена на blob для новых элементов не происходила никогда.
+      const cached = sampleBlobs[inst.dir] && sampleBlobs[inst.dir][f.file];
+      const audio = document.createElement("audio");
+      audio.controls = true;
+      audio.preload = cached ? "auto" : "none";
+      audio.src = cached || sampleSrc(inst, f.file);
+      map[f.file] = audio;
+      row.appendChild(note);
+      row.appendChild(src);
+      row.appendChild(audio);
+      rows.appendChild(row);
+    }
+  }
+
+  function noteLabelFor(note) {
+    const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    return NAMES[note % 12] + (Math.floor(note / 12) - 1);
+  }
+
+  // boot() вызывает preloadSamples() при старте (старое имя, сохранено чтобы
+  // не трогать код запуска): загружаем манифест, рисуем вкладки и прелодим
+  // первую вкладку.
+  function preloadSamples() {
+    loadSampleManifest();
+  }
+
+  function switchSampleTab(i) {
+    const inst = sampleManifest[i];
+    if (!inst) return;
+    sampleTabIndex = i;
+    document.querySelectorAll(".sample-tab").forEach((b, bi) =>
+      b.classList.toggle("active", bi === i));
+    renderSampleRows(inst);
+    // Вкладка = инструмент: переключаем и синтезатор на тот же GM-инструмент,
+    // чтобы тест-ноты рядом играли его, а не что попало из селектора.
+    const prog = SAMPLE_TAB_PROG[inst.dir];
+    if (prog !== undefined && els.instrument) {
+      const opt = els.instrument.querySelector('option[value="' + prog + '"]');
+      if (opt) {
+        currentProgram = prog;
+        els.instrument.value = String(prog);
+        if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
+      }
+    }
+    preloadSamplesForTab(inst); // не ждём
+  }
+
+  async function preloadSamplesForTab(inst) {
+    const key = inst.dir;
+    if (!sampleDurations[key]) sampleDurations[key] = {};
+    if (!sampleBlobs[key]) sampleBlobs[key] = {};
     const tasks = [];
-    for (const audio of audios) {
-      const src = audio.getAttribute("src");
-      if (!src || !/_sample\.wav$/.test(src)) continue;
-      // В имени D#5_sample.wav символ # в URL — это фрагмент, браузер без
-      // %23 запросил бы D5_sample.wav и получил 404. Декодируем для матчинга.
-      const file = decodeURIComponent(src.split("/").pop());
-      const note = Object.keys(SAMPLE_NOTE_MAP).find((n) => file.startsWith(SAMPLE_NOTE_MAP[n] + "_"));
-      if (!note) continue;
+    for (const f of inst.files) {
+      if (sampleBlobs[key][f.file]) continue;
+      const src = sampleSrc(inst, f.file);
       tasks.push(
         fetch(src)
           .then((r) => {
@@ -714,12 +1056,22 @@
             const rate = dv.getUint32(24, true);
             const bits = dv.getUint16(34, true);
             const dataSize = dv.getUint32(40, true);
-            if (rate && channels && bits && dataSize) sampleDurations[note] = dataSize / (rate * channels * bits / 8);
-            const url = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
-            audio.src = url;
-            audio.preload = "auto"; // байты уже в памяти — играет при падении сервера
+            if (rate && channels && bits && dataSize) {
+              sampleDurations[key][f.note] = dataSize / (rate * channels * bits / 8);
+            }
+            sampleBlobs[key][f.file] = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
+            // Если вкладка всё ещё активна, подменяем сетевой src на blob-URL
+            // и разрешаем авто-прелоад (байты уже в памяти).
+            const active = sampleManifest[sampleTabIndex];
+            if (active && active.dir === key) {
+              const audio = (sampleAudioEls[key] || {})[f.file];
+              if (audio) {
+                audio.src = sampleBlobs[key][f.file];
+                audio.preload = "auto";
+              }
+            }
           })
-          .catch(() => { /* сервер жив — оставляем исходный src */ })
+          .catch(() => { /* сервер жив — остаёмся на сетевом src */ })
       );
     }
     await Promise.all(tasks);
@@ -730,13 +1082,17 @@
     if (!pianoSourceReady && !ensureKeyboardSource()) return;
     pianoSourceReady = true;
     // Тест-нота играет текущий выбранный инструмент (Program Change) на
-    // мелодическом канале — независимо от переключателя ударных.
+    // мелодическом канале — независимо от переключателя ударных. При
+    // переключении вкладки семплов инструмент переключается на тот же, так
+    // что тест-нота звучит как A/B к сырому семплу рядом.
     sendMidiEvent(0xC0, currentProgram, 0);
     sendMidiEvent(0x90, note, 100);
     const oldTimer = noteTestTimers.get(note);
     if (oldTimer) clearTimeout(oldTimer);
     // Держим ноту столько же, сколько звучит семпл рядом — A/B честный.
-    const holdMs = sampleDurations[note] ? Math.round(sampleDurations[note] * 1000) : 1400;
+    const active = sampleManifest[sampleTabIndex];
+    const dur = active ? (sampleDurations[active.dir] || {})[note] : undefined;
+    const holdMs = dur ? Math.round(dur * 1000) : 1400;
     const timer = setTimeout(() => {
       if (keyboardSource) sendMidiEvent(0x80, note, 0);
       noteTestTimers.delete(note);
@@ -765,22 +1121,30 @@
   // Чёрная клавиша стоит после белой с индексом i в октаве (смещение = полутон).
   const PIANO_BLACK_AFTER = { 0: 1, 1: 3, 3: 6, 4: 8, 5: 10 };
   const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const PIANO_START = 48; // C3
-  const PIANO_OCTAVES = 2; // C3..B4
+  const PIANO_START = 48; // C3 — базовая точка; октава сдвигается стрелками
+  const PIANO_OCTAVES = 2; // видимых октав
+  const PIANO_OCTAVE_MIN = -1; // самая низкая позиция: C2..B3 (C2 — низший семпл)
+  const PIANO_OCTAVE_MAX = 4; // самая высокая: C7..B8 (C7 — высший семпл)
+  let pianoOctave = 0; // 0 = C3..B4 (по умолчанию)
+
+  function noteOctave(note) {
+    return Math.floor(note / 12) - 1;
+  }
 
   function buildPiano() {
     const piano = els.piano;
     piano.innerHTML = "";
     const whites = [];
+    const startNote = PIANO_START + pianoOctave * 12;
     for (let oct = 0; oct < PIANO_OCTAVES; oct++) {
       for (const w of PIANO_WHITE) {
-        const note = PIANO_START + oct * 12 + w;
+        const note = startNote + oct * 12 + w;
         const el = document.createElement("div");
         el.className = "key white";
         el.dataset.note = note;
         const label = document.createElement("span");
         label.className = "label";
-        label.textContent = NOTE_NAMES[w] + (oct + 3);
+        label.textContent = NOTE_NAMES[w] + noteOctave(note);
         el.appendChild(label);
         piano.appendChild(el);
         whites.push(el);
@@ -789,7 +1153,7 @@
     const totalWhites = whites.length;
     for (let oct = 0; oct < PIANO_OCTAVES; oct++) {
       for (const [afterWhite, semitone] of Object.entries(PIANO_BLACK_AFTER)) {
-        const note = PIANO_START + oct * 12 + semitone;
+        const note = startNote + oct * 12 + semitone;
         const el = document.createElement("div");
         el.className = "key black";
         el.dataset.note = note;
@@ -798,6 +1162,21 @@
         piano.appendChild(el);
       }
     }
+  }
+
+  function updateOctaveArrows() {
+    els.octDown.disabled = pianoOctave <= PIANO_OCTAVE_MIN;
+    els.octUp.disabled = pianoOctave >= PIANO_OCTAVE_MAX;
+    els.octLabel.textContent = "C" + (pianoOctave + 3) + "–B" + (pianoOctave + 4);
+  }
+
+  function shiftPiano(delta) {
+    const next = Math.max(PIANO_OCTAVE_MIN, Math.min(PIANO_OCTAVE_MAX, pianoOctave + delta));
+    if (next === pianoOctave) return;
+    pianoOctave = next;
+    releaseAllPianoNotes(); // не оставляем зажатых нот при перестроении клавиш
+    buildPiano();
+    updateOctaveArrows();
   }
 
   function releasePointer(e) {
@@ -880,7 +1259,8 @@
     ["Ансамбли", [[48, "String Ensemble 1"], [49, "String Ensemble 2"], [50, "Synth Strings 1"], [51, "Synth Strings 2"], [52, "Choir Aahs"], [53, "Voice Oohs"], [54, "Synth Voice"], [55, "Orchestra Hit"]]],
     ["Медь", [[56, "Trumpet"], [57, "Trombone"], [58, "Tuba"], [59, "Muted Trumpet"], [60, "French Horn"], [61, "Brass Section"], [62, "Synth Brass 1"], [63, "Synth Brass 2"]]],
     ["Духовые", [[64, "Soprano Sax"], [65, "Alto Sax"], [66, "Tenor Sax"], [67, "Baritone Sax"], [68, "Oboe"], [69, "English Horn"], [70, "Bassoon"], [71, "Clarinet"]]],
-    ["Флейты", [[72, "Piccolo"], [73, "Flute"], [74, "Recorder"], [75, "Pan Flute"], [76, "Blown Bottle"], [77, "Shakuhachi"], [78, "Whistle"], [79, "Ocarina"]]],
+    ["Флейты", [[72, "Piccolo"], [73, "Flute (macOS DLS)"], [74, "Recorder"], [75, "Pan Flute"], [76, "Blown Bottle"], [77, "Shakuhachi"], [78, "Whistle"], [79, "Ocarina"]]],
+    ["Альтернативные флейты", [[43, "Flute (Titanic, чистый профиль)"], [115, "Flute (гибрид: атака DLS + тело Titanic)"]]],
     ["Синт-лиды", [[80, "Lead 1 (square)"], [81, "Lead 2 (sawtooth)"], [82, "Lead 3 (calliope)"], [83, "Lead 4 (chiff)"], [84, "Lead 5 (charang)"], [85, "Lead 6 (voice)"], [86, "Lead 7 (fifths)"], [87, "Lead 8 (bass + lead)"]]],
     ["Синт-пэды", [[88, "Pad 1 (new age)"], [89, "Pad 2 (warm)"], [90, "Pad 3 (polysynth)"], [91, "Pad 4 (choir)"], [92, "Pad 5 (bowed)"], [93, "Pad 6 (metallic)"], [94, "Pad 7 (halo)"], [95, "Pad 8 (sweep)"]]],
     ["Синт-эффекты", [[96, "FX 1 (rain)"], [97, "FX 2 (soundtrack)"], [98, "FX 3 (crystal)"], [99, "FX 4 (atmosphere)"], [100, "FX 5 (brightness)"], [101, "FX 6 (goblins)"], [102, "FX 7 (echoes)"], [103, "FX 8 (sci-fi)"]]],
@@ -905,6 +1285,466 @@
     }
     sel.value = String(currentProgram);
   }
+
+  // ---- Дорожки MIDI-файла -----------------------------------------------
+  // Лёгкий парсер формата SMF: извлекает по дорожкам имена (FF 03), каналы и
+  // программы (Program Change). Этого достаточно для панели дорожек — сам
+  // синтез остаётся в WASM (MidiFileParser там).
+  // Имя дорожки в SMF — просто байты без объявленной кодировки: старые
+  // редакторы писали его в системной кодировке (cp1251 для русских названий:
+  // «скрипки» → ñêðèïêè при чтении как Latin-1), новые — в UTF-8.
+  // Порядок: строгий UTF-8, иначе выбор между cp1251 и cp1252 по доле латинских
+  // букв с диакритикой в cp1252-декодировании. Русский текст, прочитанный как
+  // cp1252, почти целиком состоит из них («ñêðèïêè» — 7 из 7), а настоящий
+  // западный текст — нет («Café» — 1 из 4, «Mélodie» — 1 из 6). Порог 0.5 и оба
+  // исхода проверены в .scratch/encoding-probe.mjs.
+  function decodeMidiText(data) {
+    if (!data || !data.length) return "";
+    try { return new TextDecoder("utf-8", { fatal: true }).decode(data); } catch (e) {}
+    let cp1251 = "", cp1252 = "";
+    try {
+      cp1251 = new TextDecoder("windows-1251").decode(data);
+      cp1252 = new TextDecoder("windows-1252").decode(data);
+    } catch (e) {
+      return String.fromCharCode.apply(null, data); // экзотический браузер
+    }
+    let cyrillic = 0;
+    for (const ch of cp1251) {
+      const c = ch.charCodeAt(0);
+      if ((c >= 0x410 && c <= 0x44f) || c === 0x401 || c === 0x451) cyrillic++;
+    }
+    let ascii = 0, accented = 0;
+    for (const ch of cp1252) {
+      const c = ch.charCodeAt(0);
+      if ((c >= 0x41 && c <= 0x5a) || (c >= 0x61 && c <= 0x7a)) ascii++;
+      else if (c >= 0xa0 && c <= 0xff) accented++;
+    }
+    if (cyrillic > 0 && accented * 2 > ascii + accented) return cp1251;
+    return cp1252;
+  }
+
+  function parseMidiTracks(bytes) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const u8 = bytes;
+    let p = 0;
+    const rdU32 = () => { const v = dv.getUint32(p, false); p += 4; return v; };
+    const rdU16 = () => { const v = dv.getUint16(p, false); p += 2; return v; };
+    const rdVLQ = () => {
+      let v = 0, b;
+      do { b = u8[p++]; v = (v << 7) | (b & 0x7f); } while (b & 0x80);
+      return v;
+    };
+    const rdStr = (n) => { const s = String.fromCharCode.apply(null, u8.subarray(p, p + n)); p += n; return s; };
+
+    if (rdStr(4) !== "MThd") throw new Error("не MIDI файл");
+    const hdrLen = rdU32();
+    // Порядок полей заголовка SMF: format, nTracks, division — именно в этом
+    // порядке (формат-1 файл читался как 1 дорожка, пока nTracks не читался
+    // из поля format).
+    rdU16(); // format
+    const nTracks = rdU16();
+    rdU16(); // division
+    p += hdrLen - 6;
+
+    const tracks = [];
+    for (let t = 0; t < nTracks; t++) {
+      if (rdStr(4) !== "MTrk") throw new Error("битая дорожка MIDI");
+      const len = rdU32();
+      const end = p + len;
+      const track = {
+        index: t, name: "", channels: [],
+        programs: {}, // channel -> последняя программа
+        volumes: {},  // channel -> последний CC7 (начальная громкость канала)
+        noteCount: 0,
+      };
+      let running = 0;
+      while (p < end) {
+        rdVLQ();
+        let b = u8[p++];
+        if (b === 0xff) {
+          const type = u8[p++];
+          const l = rdVLQ();
+          const data = u8.subarray(p, p + l); p += l;
+          if (type === 0x03) track.name = decodeMidiText(data);
+          continue;
+        }
+        if (b === 0xf0 || b === 0xf7) { const l = rdVLQ(); p += l; continue; }
+        if ((b & 0x80) === 0) { b = running; p--; } else running = b;
+        const kind = b & 0xf0;
+        const ch = b & 0x0f;
+        if (kind === 0xc0) {
+          track.programs[ch] = u8[p++];
+        } else if (kind === 0xb0) {
+          const d0 = u8[p], d1 = u8[p + 1];
+          if (d0 === 0x07) track.volumes[ch] = d1; // начальный CC7 канала
+          p += 2;
+        } else if (kind === 0x90) {
+          const vel = u8[p + 1];
+          if (vel > 0) track.noteCount++;
+          p += 2;
+        } else if (kind === 0x80 || kind === 0xb0 || kind === 0xe0 || kind === 0xa0 || kind === 0xd0) {
+          p += 2;
+        } else {
+          throw new Error("неизвестное MIDI-событие " + b.toString(16));
+        }
+      }
+      track.channels = Object.keys(track.programs).map(Number);
+      // Канал с CC7, но без Program Change тоже должен попасть в панель:
+      // иначе начальная громкость канала нигде не покажется.
+      for (const ch of Object.keys(track.volumes)) {
+        const chNum = Number(ch);
+        if (!track.channels.includes(chNum)) track.channels.push(chNum);
+      }
+      tracks.push(track);
+    }
+    return tracks;
+  }
+
+  // GM-программа по умолчанию для канала, у которого в файле не было
+  // Program Change (в стандарте — фортепиано, кроме канала 9).
+  const DEFAULT_PROG = 0;
+
+  function renderTracks() {
+    // Одна строка на канал (инструмент в MIDI назначается каналу, а не
+    // дорожке; несколько дорожек могут делить канал). Имена дорожек
+    // склеиваются для подсказки.
+    const byChannel = new Map();
+    for (const t of midiTracks) {
+      for (const ch of t.channels) {
+        if (!byChannel.has(ch)) byChannel.set(ch, { names: [], progs: [], vols: [] });
+        const rec = byChannel.get(ch);
+        if (t.name && !rec.names.includes(t.name)) rec.names.push(t.name);
+        if (t.programs[ch] !== undefined) rec.progs.push(t.programs[ch]);
+        if (t.volumes && t.volumes[ch] !== undefined) rec.vols.push(t.volumes[ch]);
+      }
+    }
+    const rows = [];
+    channelsOfTracks.length = 0;
+    noteBoxes.length = 0;
+    for (const k of Object.keys(noteGlow)) delete noteGlow[k];
+    for (const [ch, rec] of byChannel) {
+      channelsOfTracks.push(ch);
+      // Начальный CC7 канала из файла: сидируем один раз, чтобы ползунок
+      // показывал громкость, ЗАДАННУЮ ФАЙЛОМ, ещё до первого воспроизведения.
+      if (trackCC7[ch] === undefined) {
+        const fileVol = rec.vols.length ? rec.vols[rec.vols.length - 1] : 127;
+        trackCC7[ch] = fileVol;
+      }
+      const fileProg = rec.progs.length ? rec.progs[rec.progs.length - 1] : DEFAULT_PROG;
+      const isDrums = ch === 9;
+      const row = document.createElement("div");
+      row.className = "track-row";
+      row.dataset.channel = ch;
+
+      const chEl = document.createElement("span");
+      chEl.className = "track-ch";
+      chEl.textContent = String(ch + 1);
+      chEl.title = "канал " + (ch + 1);
+      row.appendChild(chEl);
+
+      // Мьют — чекбокс слева: включён = играет, выключен = тише. При мьюте
+      // шлём CC7=0; анмьют возвращает CC7, который был до мьюта.
+      const mute = document.createElement("input");
+      mute.type = "checkbox";
+      mute.className = "track-mute";
+      mute.checked = !muted[ch];
+      mute.title = "Дорожка включена (выключить = мьют)";
+      mute.setAttribute("aria-label", "Включить дорожку " + (ch + 1));
+      mute.addEventListener("change", () => {
+        if (!mute.checked) muted[ch] = true;
+        else delete muted[ch];
+        volLabel.textContent = volLabelOf(ch);
+        row.classList.toggle("track-muted", !!muted[ch]);
+        // Мьют — отдельный слой микшера (маска каналов): громкость дорожки
+        // (CC7) остаётся как есть, поэтому файл, который сам присылает CC7,
+        // мьют не отменяет. Звучащие ноты канала гасит сам синтезатор.
+        applyChannelMute();
+      });
+      row.appendChild(mute);
+
+      // Компактный слайдер CC7 (0..127), значение — мелко под слайдером.
+      const volWrap = document.createElement("span");
+      volWrap.className = "track-vol-wrap";
+      const vol = document.createElement("input");
+      vol.type = "range";
+      vol.className = "track-vol";
+      vol.min = "0";
+      vol.max = "127";
+      vol.step = "1";
+      vol.value = String(trackCC7[ch] ?? 127);
+      vol.title = "Громкость дорожки (MIDI CC7)";
+      vol.setAttribute("aria-label", "Громкость дорожки " + (ch + 1));
+      const volLabel = document.createElement("span");
+      volLabel.className = "track-vol-label";
+      volLabel.textContent = volLabelOf(ch);
+      vol.addEventListener("input", () => {
+        trackCC7[ch] = parseInt(vol.value, 10) || 0;
+        volLabel.textContent = volLabelOf(ch);
+        // Реальное время: CC7 уходит в синтезатор обычным MIDI-сообщением.
+        if (Module && currentSource && !generationActive) {
+          Module._SourceSendMidiEvent(currentSource, 0xB0 | ch, 0x07, trackCC7[ch] & 127);
+        }
+      });
+      volWrap.appendChild(vol);
+      volWrap.appendChild(volLabel);
+      row.appendChild(volWrap);
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "track-name";
+      nameEl.title = rec.names.join(" · ") || "Без названия";
+      nameEl.textContent = isDrums ? "Ударные" : (rec.names.join(" · ") || "—");
+      row.appendChild(nameEl);
+
+      // Индикатор последней ноты: приклеен вплотную слева к комбобоксу.
+      const noteBox = document.createElement("div");
+      noteBox.className = "track-note";
+      noteBox.dataset.ch = ch;
+      noteBox.textContent = "—";
+      noteBox.title = "Последняя нота дорожки (яркость — громкость)";
+      noteBoxes.push([ch, noteBox]);
+
+      row.appendChild(noteBox);
+      if (isDrums) {
+        const tag = document.createElement("span");
+        tag.className = "tracks-hint";
+        tag.textContent = "канал ударных";
+        row.appendChild(tag);
+      } else {
+        const sel = document.createElement("select");
+        sel.className = "track-prog";
+        const overridden = trackOverrides[ch] !== undefined;
+        const current = overridden ? trackOverrides[ch] : fileProg;
+        const orig = document.createElement("option");
+        orig.value = "-1";
+        orig.textContent = "Исходный из файла (" + progName(fileProg) + ")";
+        sel.appendChild(orig);
+        for (const [group, items] of GM_GROUPS) {
+          const og = document.createElement("optgroup");
+          og.label = group;
+          for (const [prog, name] of items) {
+            const opt = document.createElement("option");
+            opt.value = String(prog);
+            opt.textContent = prog + " · " + name;
+            og.appendChild(opt);
+          }
+          sel.appendChild(og);
+        }
+        sel.value = String(current);
+        if (overridden) sel.classList.add("btn-active");
+        sel.addEventListener("change", () => {
+          const v = parseInt(sel.value, 10);
+          if (v >= 0) trackOverrides[ch] = v;
+          else delete trackOverrides[ch];
+          sel.classList.toggle("btn-active", v >= 0);
+          // Реальное время: последующие ноты канала играют новой программой.
+          // 255 (0xFF) снимает переопределение в C++ (SetChannelProgram).
+          // При pregen-проигрывании контрол заблокирован — сюда не попадём.
+          if (Module && currentSource && !generationActive) {
+            Module._SourceSendMidiEvent(currentSource, 0xC0 | ch, v >= 0 ? v : 0xFF, 0);
+          }
+          // Офлайн-буфер содержит старый рендер — сбросить, как при ревербе.
+          if (pregenAudio) {
+            pregenAudio = null;
+            pregenPos = 0;
+            playedSamples = 0;
+            els.pregenResult.textContent = "Офлайн-рендер: —";
+          }
+        });
+        row.appendChild(sel);
+      }
+      rows.push(row);
+    }
+    els.tracks.innerHTML = "";
+    rows.forEach((r) => els.tracks.appendChild(r));
+    // Панель перерисована: прямоугольники заменены, цикл метров продолжит
+    // обновлять новые элементы (он читает noteBoxes каждый кадр).
+    metersRestart();
+    if (midiTracks.length) {
+      const withNotes = midiTracks.filter((t) => t.noteCount > 0).length;
+      els.tracksHint.textContent =
+        "Дорожек: " + midiTracks.length + ", с нотами: " + withNotes +
+        ". Смена инструмента и громкость применяются к каналу в реальном времени.";
+    }
+    els.tracksPanel.hidden = !rows.length;
+  }
+
+  const volLabelOf = (ch) => String(trackCC7[ch] ?? 127);
+
+  // Мьют дорожек = битовая маска каналов в синтезаторе (отдельный слой
+  // микшера). Громкость (CC7) она не трогает: «снял галочку — тишина,
+  // поставил — вернулась та же громкость».
+  function channelMuteMask() {
+    let mask = 0;
+    for (const ch of Object.keys(muted)) if (muted[ch]) mask |= 1 << Number(ch);
+    return mask;
+  }
+  /// Ставит маску мьюта живому источнику (во время генерации контролы
+  /// заблокированы — менять мьют некому).
+  function applyChannelMute() {
+    if (Module && currentSource) Module._SourceSetChannelMute(currentSource, channelMuteMask());
+  }
+
+  function progName(prog) {
+    for (const [, items] of GM_GROUPS) {
+      for (const [p, name] of items) if (p === prog) return name;
+    }
+    return "GM " + prog;
+  }
+
+  // Возвращает каналы с переопределениями (для повторного применения после
+  // пересоздания источника: перемотка, стоп, A/B, полная генерация).
+  function applyTrackOverrides(source) {
+    if (!Module || !source) return;
+    for (const [ch, prog] of Object.entries(trackOverrides)) {
+      Module._SourceSendMidiEvent(source, 0xC0 | Number(ch), prog, 0);
+    }
+  }
+
+  // Громкость дорожек = MIDI CC7, мьют = маска каналов; единая точка применения
+  // к ЛЮБОМУ источнику (создание файла, перемотка, стоп, A-B, полная генерация).
+  // CC7 раскатывается в стартовую громкость нот в C++ (OnNoteOn), маска гасит
+  // канал целиком. Состояние источника в C++ теряется при каждом пересоздании,
+  // поэтому известные JS значения возвращаются здесь.
+  function sendChannelMix() { applyTrackMix(currentSource); }
+  function applyTrackMix(source) {
+    if (!Module || !source) return;
+    // Синтезатор по умолчанию держит CC7=127 на всех каналах, поэтому шлём
+    // только каналы с известным JS-состоянием: иначе дефолтные CC7=127
+    // возвращаются фидбеком и затирают начальную громкость из файла.
+    for (let ch = 0; ch < 16; ch++) {
+      if (trackCC7[ch] === undefined) continue;
+      Module._SourceSendMidiEvent(source, 0xB0 | ch, 0x07, trackCC7[ch] & 127);
+    }
+    Module._SourceSetChannelMute(source, channelMuteMask());
+  }
+
+  // ---- Метры дорожек (rAF) ----------------------------------------------
+
+  // Пока панель дорожек видима: раз в кадр осушает кольцо фидбека синтезатора
+  // (NoteOn/CC7/Program Change из любого источника) и обновляет прямоугольники
+  // нот с яркостью по громкости. Когда панель скрыта, rAF-цикл не идёт —
+  // расходов нет. Цикл продолжает идти и на паузе: иначе ярлыки замирали
+  // «залипшими яркими» до следующей ноты на том же канале.
+  function pollTrackMeters() {
+    metersRaf = 0;
+    if (!Module) return;
+    const panelVisible = midiTracks.length > 0 && !els.tracksPanel.hidden;
+    if (!panelVisible) return;
+    // Виды буферов обязаны строиться от СВЕЖЕЙ кучи: рост WASM-кучи отсоединяет
+    // старый ArrayBuffer (виды протухали — индикаторы «умирали» с прочерками).
+    ensureMetersViews();
+    // Фидбек: канальные события (NoteOn/CC7/ProgramChange) из синтезатора.
+    // Офлайн-рендер (полная генерация и проигрывание готового буфера) фич
+    // индикаторов не требует: события фидбека осушаются и выбрасываются,
+    // уровни не опрашиваются, прямоугольники просто гаснут.
+    const offline = generationActive || !!pregenAudio;
+    const liveStream = !offline && !!currentSource && !paused;
+    if (currentSource) {
+      const n = Module._SourceDrainMidiFeedback(currentSource, feedbackPtr, FB_CAP);
+      if (n > 0 && !offline) applyMidiFeedback(feedbackU8, n);
+    }
+    // Уровни огибающих звучащих нот: спрашиваем редко (100 мс) или сразу после
+    // события отпускания. Яркость = уровень огибающей × velocity × CC7.
+    const now = performance.now();
+    if (liveStream && typeof Module._SourceGetNoteLevels === "function" &&
+        (levelsDirty || now - lastLevelsAt >= LEVEL_POLL_MS)) {
+      Module._SourceGetNoteLevels(currentSource, levelsPtr);
+      // Вид строится от свежей кучи: рост WASM-кучи отсоединяет старый буфер.
+      const u8 = Module.HEAPU8;
+      for (const ch of channelsOfTracks) {
+        const g = noteGlow[ch];
+        if (!g) continue;
+        const env = u8[levelsPtr + ch] / 127;
+        g.target = env * noteCcFactor(ch, g.vel);
+        g.live = env > 0;
+      }
+      levelsDirty = false;
+      lastLevelsAt = now;
+    } else if (!liveStream) {
+      // Живого потока нет: цель 0 — индикаторы плавно гаснут (пауза, стоп,
+      // офлайн-рендер). Раньше цикл на паузе останавливался, и ярлыки висели
+      // яркими, пока их не заменит нота на том же канале.
+      for (const ch of channelsOfTracks) {
+        const g = noteGlow[ch];
+        if (!g) continue;
+        g.target = 0;
+        g.live = false;
+      }
+    }
+
+    // Интерполяция показанного уровня к цели: без неё яркость прыгала шагами
+    // опроса, а на отпускании резко пропадала.
+    const dt = lastFrameAt ? Math.min(120, now - lastFrameAt) : 16;
+    lastFrameAt = now;
+    const k = 1 - Math.exp(-dt / GLOW_TAU_MS);
+    for (const [ch, box] of noteBoxes) {
+      const g = noteGlow[ch];
+      if (!g || g.note < 0) {
+        if (box.textContent !== "—") box.textContent = "—";
+        box.style.setProperty("--lum", SILENT_LUM);
+        continue;
+      }
+      g.level += (g.target - g.level) * k;
+      // Номер ноты НЕ забываем при гашении: на паузе индикатор гаснет, но та же
+      // нота продолжает звучать в синтезаторе — при возобновлении он обязан
+      // вернуться сам, без нового NoteOn. Гаснет только изображение.
+      if (!g.live && g.level < 0.02) {
+        g.level = 0;
+        if (box.textContent !== "—") box.textContent = "—";
+        box.style.setProperty("--lum", SILENT_LUM);
+        continue;
+      }
+      box.textContent = NOTE_NAMES[g.note % 12] + noteOctave(g.note);
+      box.style.setProperty("--lum", (0.12 + 0.88 * Math.min(1, g.level)).toFixed(3));
+    }
+    metersRaf = requestAnimationFrame(pollTrackMeters);
+  }
+
+  // Применяет события фидбека к UI: CC7 → слайдер/чекбокс, ProgramChange →
+  // комбобокс дорожки (файл сам сменил инструмент канала).
+  function applyMidiFeedback(u8, n) {
+    for (let i = 0; i < n; i++) {
+      const st = u8[i*3], d0 = u8[i*3+1], d1 = u8[i*3+2];
+      const kind = st & 0xF0, ch = st & 0x0F;
+      if (kind === 0x90) {
+        // NoteOn из синтезатора: индикатор ноты дорожки.
+        if (d1 > 0) noteGlowOn(ch, d0, d1);
+      } else if (kind === 0x80) {
+        // Отпускание: яркость пересчитываем сразу — видно спад релиза, не
+        // дожидаясь очередного 100-мс опроса.
+        levelsDirty = true;
+      } else if (kind === 0xB0 && d0 === 0x07) {
+        trackCC7[ch] = d1;
+        // Файл изменил громкость канала: показываем её (мьют — отдельный
+        // слой, он файловой громкостью не снимается и не ставится).
+        const row = document.querySelector('.track-row[data-channel="' + ch + '"]');
+        if (row) {
+          const vol = row.querySelector(".track-vol");
+          const label = row.querySelector(".track-vol-label");
+          if (vol) vol.value = String(d1);
+          if (label) label.textContent = volLabelOf(ch);
+        }
+      } else if (kind === 0xC0) {
+        // ProgramChange из файла: обновить комбобокс дорожки (если она не
+        // переопределена пользователем и не перетаскивается мышью сейчас).
+        const row = document.querySelector('.track-row[data-channel="' + ch + '"]');
+        const sel = row && row.querySelector(".track-prog");
+        if (sel && trackOverrides[ch] === undefined && document.activeElement !== sel) {
+          sel.value = String(d0);
+        }
+      }
+    }
+  }
+
+  // Индикаторы строятся из NoteOn-фидбека и уровней огибающих
+  // синтезатора; цикл запускается при перерисовке панели.
+  function metersRestart() {
+    levelsDirty = true;
+    lastFrameAt = 0;
+    if (!metersRaf && midiTracks.length) metersRaf = requestAnimationFrame(pollTrackMeters);
+  }
+  // Цикл на паузе/стопе не останавливается намеренно: он гасит
+  // индикаторы и заканчивается сам, когда панель дорожек скрыта.
 
   // ---- Wiring ------------------------------------------------------------
 
@@ -1023,6 +1863,9 @@
   els.piano.addEventListener("pointerup", releasePointer);
   els.piano.addEventListener("pointercancel", releasePointer);
   els.piano.addEventListener("lostpointercapture", releasePointer);
+
+  els.octDown.addEventListener("click", () => shiftPiano(-1));
+  els.octUp.addEventListener("click", () => shiftPiano(1));
 
   els.seek.addEventListener("input", () => {
     seekTo(parseInt(els.seek.value, 10) || 0);
@@ -1157,8 +2000,14 @@
       freeKeyboardSource();
       if (scratchPtr && Module) Module._free(scratchPtr);
       if (paramsPtr && Module) Module._free(paramsPtr);
+      if (feedbackPtr && Module) Module._free(feedbackPtr);
+      if (levelsPtr && Module) Module._free(levelsPtr);
       scratchPtr = 0;
       paramsPtr = 0;
+      feedbackPtr = 0;
+      feedbackU8 = null;
+      levelsPtr = 0;
+      lastLevelsAt = 0;
       // A pre-generated buffer is a render of the OLD binary — drop it.
       pregenAudio = null;
       pregenPos = 0;
@@ -1171,6 +2020,7 @@
       Module = await IntraMidiSynth(loaderCfg);
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
       paramsPtr = Module._malloc(4);
+      ensureMetersViews();
 
       // Reload the loaded song in the new module at its previous position.
       if (midiBytes) {
@@ -1230,6 +2080,7 @@
     preloadSamples(); // не ждём — идёт параллельно с загрузкой WASM
     buildInstrumentSelect();
     buildPiano();
+    updateOctaveArrows();
     initMidiAccess();
     try {
       setStatus("Загрузка синтезатора…");
@@ -1247,6 +2098,7 @@
       Module = await IntraMidiSynth(loaderCfg);
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
       paramsPtr = Module._malloc(4);
+      ensureMetersViews();
       ensureAudio();
       ensureKeyboardSource();
       setStatus(abBuild
@@ -1261,6 +2113,26 @@
   // depend on internal effect telemetry.
   window.__synthDebug = {
     hasKeySource() { return !!keyboardSource; },
+    // Состояние индикаторов нот: цель/показанный уровень из синтезатора, что
+    // реально нарисовано в DOM и идёт ли rAF-цикл (для автотестов панели).
+    noteGlowState() {
+      const boxes = {};
+      for (const [ch, box] of noteBoxes) {
+        const g = noteGlow[ch];
+        boxes[ch] = {
+          note: g ? g.note : null,
+          target: g ? Number(g.target.toFixed(3)) : null,
+          level: g ? Number(g.level.toFixed(3)) : null,
+          live: g ? g.live : null,
+          dom: box.textContent,
+          lum: box.style.getPropertyValue("--lum"),
+        };
+      }
+      return {
+        raf: !!metersRaf, paused, hasSource: !!currentSource,
+        generation: generationActive, pregen: !!pregenAudio, boxes,
+      };
+    },
     setReverb(w) {
       const v = Math.max(0, Math.min(1, w));
       if (pregenAudio) { pregenAudio = null; pregenPos = 0; playedSamples = 0; }

@@ -424,6 +424,44 @@
   .piano .black.active {
     background: linear-gradient(#4cc2ff, #1c74ab);
   }
+  .piano-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .piano-row .piano {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .oct-btn {
+    width: 38px;
+    flex: none;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--bg2);
+    color: var(--ink);
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .oct-btn:hover:not(:disabled) {
+    background: #223052;
+    color: var(--ink);
+  }
+  .oct-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .oct-label {
+    display: block;
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 6px;
+    font-variant-numeric: tabular-nums;
+  }
   .btn-active {
     background: var(--accent2) !important;
     color: #04101c !important;
@@ -477,7 +515,125 @@
     font-size: 0.88rem;
   }
   .debug-desc code { color: var(--accent2); }
-  .debug-rows { border-top: 1px solid var(--line); }
+  .debug-row audio { height: 34px; }
+  .tracks { display: flex; flex-direction: column; gap: 6px; }
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    background: var(--bg2);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    /* Одна строка: перенос только на узких экранах. Порог уменьшен на
+       четверть относительно прежнего (контролы компактнее и уже). */
+    flex-wrap: wrap;
+  }
+  @media (min-width: 420px) {
+    .track-row { flex-wrap: nowrap; }
+  }
+  .track-ch {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 18px;
+    font-size: 0.8rem;
+    text-align: right;
+  }
+  .track-mute {
+    flex: none;
+    width: 15px;
+    height: 15px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    margin: 0;
+  }
+  .track-vol-wrap {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 58px;
+  }
+  .track-vol { width: 58px; max-width: 58px; flex: none; height: 14px; margin: 0; }
+  .track-vol-label {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.58rem;
+    line-height: 1;
+    margin-top: -1px;
+    text-align: center;
+  }
+  .track-name {
+    color: var(--muted);
+    font-size: 0.72rem;
+    flex: 1 1 70px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-note { margin-right: -6px; z-index: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .track-prog {
+    flex: 2 1 240px;
+    min-width: 220px;
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    padding: 5px 8px;
+    font-size: 0.78rem;
+    outline: none;
+    cursor: pointer;
+  }
+  .track-prog:focus { border-color: var(--accent2); }
+  .tracks-hint { color: var(--muted); font-size: 0.85rem; }
+  .track-note {
+    width: 44px;
+    height: 30px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    font-weight: 700;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+    /* Зелёный фон: --lum 0.06 (тишина) .. 1 (громкая нота), задаётся JS-циклом. */
+    background:
+      linear-gradient(rgba(53, 208, 165, calc(var(--lum, 0.06))), rgba(53, 208, 165, calc(var(--lum, 0.06)))),
+      var(--panel2);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+    transition: background 0.06s linear;
+  }
+  .track-muted .track-name,
+  .track-muted .track-ch,
+  .track-muted .track-note { opacity: 0.45; }
+  .track-vol:disabled, .track-mute:disabled, .track-prog:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .sample-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 14px 22px 0;
+  }
+  .sample-tab {
+    padding: 4px 11px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.3;
+    background: var(--panel2);
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+  .sample-tab:hover { background: #223052; color: var(--ink); }
+  .sample-tab.active { background: var(--accent2); color: #04101c; border-color: var(--accent2); }
+  .debug-rows { border-top: 1px solid var(--line); margin-top: 10px; }
   .debug-row {
     display: flex;
     align-items: center;
@@ -486,6 +642,14 @@
     flex-wrap: wrap;
   }
   .debug-row + .debug-row { border-top: 1px solid var(--line); }
+  .ab-group {
+    padding: 9px 12px 3px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .ab-group + .debug-row { border-top: 0; }
   .debug-note {
     min-width: 52px;
     font-weight: 700;
@@ -546,6 +710,12 @@
       </div>
     </section>
 
+    <section class="panel" id="tracksPanel" hidden>
+      <h3>Дорожки MIDI</h3>
+      <p class="tracks-hint" id="tracksHint"></p>
+      <div class="tracks" id="tracks"></div>
+    </section>
+
     <section class="panel" id="player">
       <div class="volrow">
         <label for="volume">Громкость</label>
@@ -590,7 +760,12 @@
         <button class="note-test-note" type="button" data-note="84">C6</button>
         <button class="note-test-note" type="button" data-note="96">C7</button>
       </div>
-      <div class="piano" id="piano"></div>
+      <div class="piano-row">
+        <button class="oct-btn" id="octDown" type="button" title="Октава ниже" aria-label="Октава ниже">‹</button>
+        <div class="piano" id="piano"></div>
+        <button class="oct-btn" id="octUp" type="button" title="Октава выше" aria-label="Октава выше">›</button>
+      </div>
+      <span class="oct-label" id="octLabel"></span>
     </section>
 
     <details class="panel debug-samples" id="sampleSpoiler">
@@ -599,9 +774,15 @@
         <span class="debug-title">Сырые сэмплы (из SF2) — без обработки FluidSynth</span>
       </summary>
       <p class="debug-desc">
-        Чистые записи звукбанка <code>Titanic 200 GM-GS v1.2.sf2</code>, извлечённые напрямую,
-        без реверба/фильтров. Семплы прелодятся в память при загрузке — играют даже если сервер
-        отвалился. Клавиша = тест-нота рядом; тест-нота держится столько же, сколько семпл.
+        Клавишные и струнные — чистые записи звукбанка <code>Titanic 200 GM-GS v1.2.sf2</code>,
+        извлечённые напрямую, без реверба/фильтров (Bright и Honky-tonk используют тот же
+        семпловый пул, что Acoustic). Духовые (Flute, Pan Flute, Whistle) — сухие
+        2-секундные рендеры того же банка (FluidSynth без реверба/хоруса): сырой семпл
+        слишком короткий, чтобы сравнивать тембр.
+        Вкладка = инструмент: при переключении инструмент справа переключается на тот же — так
+        можно сравнивать сырой семпл с нашим синтезатором (A/B). Семплы прелодятся в память —
+        играют даже если сервер отвалился. Клавиша = тест-нота рядом; тест-нота держится столько
+        же, сколько семпл.
       </p>
       <div class="debug-row">
         <span class="debug-note">A/B</span>
@@ -612,51 +793,158 @@
           </span>
         </span>
       </div>
+      <div class="sample-tabs" id="sampleTabs"></div>
+      <div class="debug-rows" id="sampleRows"></div>
+    </details>
+
+    <details class="panel debug-samples" id="abSpoiler">
+      <summary>
+        <span class="eyebrow">Отладка</span>
+        <span class="debug-title">A/B-рендеры: наш · текущая / наш · предыдущая / банк — флейты и пан-флейта по нотам</span>
+      </summary>
+      <p class="debug-desc">
+        Короткие рендеры (2.6 с: атака и начало сустейна), по одному файлу на сборку.
+        Список строится из <code>ab/manifest.json</code>, который пишет
+        <code>node intrasynth/tools/ab/render-ab.mjs</code>. Имена файлов содержат хеш
+        содержимого, поэтому URL меняется только у изменившегося рендера, а превью
+        отдаёт <code>ab/*.wav</code> с <code>Cache-Control: immutable</code> — браузер
+        не перекачивает то, что не изменилось. Элементы <code>&lt;audio&gt;</code>
+        создаются сразу с <code>preload="auto"</code> и без <code>src</code>-подмены,
+        так что файлы догружаются даже при закрытом спойлере: после правки кода
+        достаточно обновить страницу.
+      </p>
+      <div class="debug-rows" id="abGroups"></div>
+    </details>
+
+    <details class="panel debug-samples" id="cheriladySpoiler">
+      <summary>
+        <span class="eyebrow">Отладка</span>
+        <span class="debug-title">cherilady-flute (первые 15 с): наш рендер против FluidSynth-банков — все без реверба/эффектов (+ PanFlute и Whistle внизу)</span>
+      </summary>
+      <p class="debug-desc">
+        Один и тот же MIDI (<code>.scratch/cherilady-flute.mid</code>: GM-флейта, один голос,
+        первые 15 секунд при 123 BPM). Банки рендерятся через <code>fluidsynth</code> НАСУХО
+        (<code>synth.reverb.active=0 synth.chorus.active=0</code>) — как и наш выход.
+        Строки приведены к общей громкости (RMS −20 дБFS) — сравнивайте тембр/артикуляцию,
+        не уровень.
+        Три «наши» строки — три кандидата: <b>DLS-профиль</b> (GM 73, замерен со
+        встроенного GM-банка macOS; дуновение перетюнено по чистым замерам — «белого»
+        пшиканья нет), <b>Titanic-профиль</b> (программа 43, перетюнен по чистым замерам
+        Titanic SF2) и <b>гибрид</b> (программа 115, Update 17: атака от DLS, тело Titanic
+        — общая таблица с «FluteClean», спектр и вибрато те же — и релиз посередине,
+        0.25 с: Titanic-банк звонит ~500 мс, DLS режет мгновенно). Банковые строки —
+        эталоны: Titanic, FluidR3 и сам <code>gs_instruments.dls</code>. Слушайте, какая из
+        наших ближе к «дешёвому» банку и к реальной флейте.
+      </p>
       <div class="debug-rows">
         <div class="debug-row">
-          <span class="debug-note">C2</span>
-          <span class="debug-src">семпл <code>38(L)</code> (транспонирован) · 65 Гц</span>
-          <audio controls preload="none" src="C2_sample.wav"></audio>
+          <span class="debug-note">Наш · DLS</span>
+          <span class="debug-src">Синтезатор IntraSynth, текущая сборка. GM 73 =
+            «FluteDLS»: профиль замерен со встроенного GM-банка macOS (gs_instruments.dls),
+            по-клавишно совпадает с банком ±0.2 дБ (замер L-канала, C4-C7). Update 16:
+            дуновение перетюнено по чистым замерам банка (1-2 кГц ≈ −52…−55 дБ отн. h1 на
+            C5-G5, почти тишина ниже C5 и выше G5; срез опущен до min(2.5·f0, 1600 Гц)) —
+            «пшиканье» ушло, остался тёмный воздух. Слушайте против строки «Банк
+            gs_instruments.dls» ниже.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_15s.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">C3</span>
-          <span class="debug-src">семпл <code>47(L)</code> (транспонирован) · 131 Гц</span>
-          <audio controls preload="none" src="C3_sample.wav"></audio>
+          <span class="debug-note">Наш · Titanic</span>
+          <span class="debug-src">Программа 43 = «FluteClean» — эталон Titanic,
+            перетюнен по SUSTAIN-петле банка (окно 1.0-2.0 с удержания, Update 26):
+            старые цифры ловили яркую атаку семпла, а в сустейне банк темнее — у нас
+            было +10…+16 дБ в h4 (зоны C#4/E4) и до +25…+32 дБ в высоких гармониках
+            F#6. Теперь все 8 зон совпадают с банком ±2.3 дБ в окне удержания (замер
+            по клавише в середине каждой зоны). Релиз 0.50 с — как у банка.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_titanic_15s.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">D3</span>
-          <span class="debug-src">семпл <code>51(L)</code> (записан D#3, транспонирован) · 147 Гц</span>
-          <audio controls preload="none" src="D3_sample.wav"></audio>
+          <span class="debug-note">Наш · Гибрид</span>
+          <span class="debug-src">Программа 115 = «FluteHybrid» — средний вариант
+            (Update 17): атака от DLS (быстрая, без «раздува»), тело Titanic (общая
+            таблица с «FluteClean» — спектр и вибрато те же), релиз 0.25 с — посередине
+            между ~500 мс у Titanic-банка и ~15 мс у DLS. Дуновение — Titanic.
+            Слушайте против обеих «наших» строк и банков ниже.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_hybrid_15s.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">C4</span>
-          <span class="debug-src">семпл <code>60(L)</code> · 262 Гц</span>
-          <audio controls preload="none" src="C4_sample.wav"></audio>
+          <span class="debug-note">Банк</span>
+          <span class="debug-src">FluidSynth + <code>Titanic 200 GM-GS v1.2.sf2</code> —
+            «этот SF2» (наш эталон, из него вкладки «Сырые сэмплы»), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_titanic_15s_dry.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">C5</span>
-          <span class="debug-src">семпл <code>72(L)</code> · 523 Гц</span>
-          <audio controls preload="none" src="C5_sample.wav"></audio>
+          <span class="debug-note">Банк</span>
+          <span class="debug-src">FluidSynth + <code>FluidR3_GM.sf2</code> — второй банк
+            на машине (если «другая версия» звучит как он — дело в банке), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_fluidr3_15s_dry.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">D#5</span>
-          <span class="debug-src">семпл <code>75(L)</code> · 622 Гц</span>
-          <audio controls preload="none" src="D%235_sample.wav"></audio>
+          <span class="debug-note">Банк</span>
+          <span class="debug-src">FluidSynth + <code>gs_instruments.dls</code> — встроенный
+            GM-банк macOS (тот, что звучит в приложении «APlayMIDI»; зеркало с GitHub,
+            md5 <code>94660977…</code>), сухо. Эталон, под который настроен наш GM 73.
+            Ниже — те же рендеры с программой 75 (PanFlute) и 78 (Whistle): наш
+            против тех же трёх банков, тоже сухо и на том же уровне (−20 дБFS).
+            Свист (Update 23) перетюнен на Apple DLS по чистым замерам: банки
+            рендерятся с program 78 (в GM это Whistle, а 77 — Shakuhachi; ранние
+            «свистовые» замеры Update 21 мерили банки с 77, т.е. шакухати — они
+            отменены).</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_appledls_15s_dry.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">E5</span>
-          <span class="debug-src">семпл <code>75(L)</code> (транспонирован) · 659 Гц</span>
-          <audio controls preload="none" src="E5_sample.wav"></audio>
+          <span class="debug-note">Наш · PanFlute</span>
+          <span class="debug-src">Тот же MIDI с программой 75 = «PanFlute», текущая
+            сборка. По замерам (Update 21) наш тембр ближе к Titanic, чем к DLS:
+            у DLS почти нет шума воздуха и чуть сильнее h2. Слушайте против
+            трёх банковых строк ниже.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/panflute_ours_15s.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">C6</span>
-          <span class="debug-src">семпл <code>84(L)</code> · 1047 Гц (MIDI 84)</span>
-          <audio controls preload="none" src="C6_sample.wav"></audio>
+          <span class="debug-note">Банк · PanFlute</span>
+          <span class="debug-src">FluidSynth + <code>Titanic 200 GM-GS v1.2.sf2</code>
+            (программа 75), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/panflute_titanic_15s_dry.wav"></audio>
         </div>
         <div class="debug-row">
-          <span class="debug-note">C7</span>
-          <span class="debug-src">семпл <code>96(L)</code> · 2093 Гц</span>
-          <audio controls preload="none" src="C7_sample.wav"></audio>
+          <span class="debug-note">Банк · PanFlute</span>
+          <span class="debug-src">FluidSynth + <code>FluidR3_GM.sf2</code>
+            (программа 75), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/panflute_fluidr3_15s_dry.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">Банк · PanFlute</span>
+          <span class="debug-src">FluidSynth + <code>gs_instruments.dls</code>
+            (программа 75), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/panflute_appledls_15s_dry.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">Наш · Whistle</span>
+          <span class="debug-src">Тот же MIDI с программой 78 = «Whistle», текущая
+            сборка (Update 23): профиль перетюнен на Apple DLS — почти чистый
+            тон с лёгкой гребёнкой h5-h10 (−53…−71 дБ отн. h1), без вибрато и
+            без шума, как в банке (раньше h2/h3/h4 были на −17…−20 дБ — ярко и
+            «синтетично»). Слушайте против строки «Банк · Whistle DLS» ниже.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/whistle_ours_15s.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">Банк · Whistle</span>
+          <span class="debug-src">FluidSynth + <code>Titanic 200 GM-GS v1.2.sf2</code>
+            (программа 78), сухо. У Titanic свист ещё чище и с настоящей
+            шумовой подложкой −56…−63 дБ — наш под DLS, не под него.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/whistle_titanic_15s_dry.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">Банк · Whistle</span>
+          <span class="debug-src">FluidSynth + <code>FluidR3_GM.sf2</code>
+            (программа 78), сухо</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/whistle_fluidr3_15s_dry.wav"></audio>
+        </div>
+        <div class="debug-row">
+          <span class="debug-note">Банк · Whistle</span>
+          <span class="debug-src">FluidSynth + <code>gs_instruments.dls</code>
+            (программа 78), сухо — эталон, под который перетюнен наш свист.</span>
+          <audio controls preload="none" src="samples/CheriladyFlute/whistle_appledls_15s_dry.wav"></audio>
         </div>
       </div>
     </details>
