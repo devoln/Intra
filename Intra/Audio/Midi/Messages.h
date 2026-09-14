@@ -55,7 +55,13 @@ public:
 	virtual void OnAllNotesOff(byte channel) = 0;
 	/// Sustain-педаль (CC64): down==true — педаль нажата. Устройства, не
 	/// поддерживающие педаль, могут оставить реализацию по умолчанию (no-op).
-	virtual void OnSustain(byte channel, bool down) {}
+	virtual void OnSustain(byte /*channel*/, bool /*down*/) {}
+	/// Канальные события: Control Change (7 — громкость, 10 — панорама) и
+	/// Program Change. Синтезатор ведёт громкость/инструмент канала сам и
+	/// отсюда же наполняет кольцо фидбека для веб-UI (MidiSynth.h). Реализации
+	/// по умолчанию — no-op (парсер уведомления не требует).
+	virtual void OnChannelControlChange(byte /*channel*/, byte /*control*/, byte /*value*/) {}
+	virtual void OnProgramChange(byte /*channel*/, byte /*program*/) {}
 };
 
 }}}
