@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "build": "node scripts/build-web.js",
+    "dev": "node scripts/serve.js",
+    "start": "node scripts/serve.js",
+    "preview": "node scripts/serve.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}
