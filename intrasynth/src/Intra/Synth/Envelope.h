@@ -57,7 +57,14 @@ struct Envelope
 		INTRA_FORCEINLINE float CalcDU(float curVolume) const
 		{
 			if(Length == 0) return Exponential? 1.0f: 0.0f;
-			if(Exponential) return Intra::Pow((Volume + 1) / (curVolume * 256.0f), 1.0f / Length);
+			if(Exponential)
+			{
+				// curVolume == 0 дал бы Pow(inf, 1/L) = inf (NaN на первом же
+				// шаге). Экспоненциальная асимптота никогда не бывает ниже
+				// 1/256 (~-48 дБ), поэтому нулевой старт клампуется до неё.
+				const float start = Max(curVolume, 1.0f / 256.0f);
+				return Intra::Pow((Volume + 1) / (start * 256.0f), 1.0f / Length);
+			}
 			return (Volume / 255.0f - curVolume) / Length;
 		}
 
@@ -212,7 +219,14 @@ struct EnvelopeFactory
 		result.Segments[N - 4] = {exponential, 1, attackTime};
 		result.Segments[N - 3] = {exponential, sustainVolume, decayTime};
 		result.Segments[N - 2] = {false, sustainVolume, Intra::Infinity};
-		result.Segments[N - 1] = {false, 0, releaseTime};
+		// Release подчиняется общему флагу exponential (иначе fade-out всегда
+		// линейный: амплитуда падает с постоянной скоростью, и нота «висит»
+		// почти на полной громкости до последних миллисекунд). Экспоненциальный
+		// релиз глушит начало быстрее (как у SF2/fluidsynth) и мягко добивает
+		// хвост; из нулевой громкости экспонента вырождается в линейный спад
+		// (StartSegment: CalcDU с curVolume == 0), NaN исключён тем, что
+		// NoteRelease не вызывается для уже отпущенных голосов (MidiSynth).
+		result.Segments[N - 1] = {exponential, 0, releaseTime};
 		return result;
 	}
 

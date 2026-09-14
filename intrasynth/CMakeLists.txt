@@ -25,6 +25,18 @@ option(INTRA_SIZE_EMSMALLOC "Use emmalloc in the size build" OFF)
 option(INTRA_SIZE_OS "Use -Os instead of -Oz in the size build" OFF)
 option(INTRA_SIZE_HOT_FAST "Compile the render hot-loop files with -O3 in the size build" OFF)
 set(INTRA_SIZE_HOT_LEVEL "-Os" CACHE STRING "Optimisation level for the hot-loop files in the size build (-O2/-O3/-Os)")
+# Per-instrument SF2-derived piano tables (PianoRegions.h). OFF (default) =
+# minimal build: all pianos share the single acoustic table (~6 KB packed).
+# ON compiles every instrument's own table into the binary (honky-tonk
+# currently aliases the shared one — same samples in the SF2 — so the size
+# stays identical until an instrument with distinct samples is added).
+option(INTRA_PIANO_ALL_TABLES "Compile per-instrument SF2-derived piano tables (larger WASM)" OFF)
+# Уровни нот для индикаторов громкости в веб-UI (SourceGetNoteLevels):
+# виртуальная Sampler::GetLevel в базовом классе семплеров и их реализациях.
+# OFF (default) = минимальная сборка: ни виртуальной функции, ни экспорта с
+# телом — в бинарь не попадает ни байта. ON — канонический WASM (см.
+# scripts/build-wasm.sh), потому что UI без этих уровней не работает.
+option(INTRA_UI_METERS "Per-note envelope levels for the web UI indicators" OFF)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(_synth_simd "INTRA_SIMD_SSE2")
@@ -54,7 +66,7 @@ else()
     endif()
     if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(INTRA_SYNTH_BASE_FLAGS "-fno-exceptions -fno-rtti -ffast-math -msimd128 ${_synth_simd} ${_synth_arch}")
-        set(INTRA_SYNTH_LINK_FLAGS "-msimd128 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_GetMidiInfoString','_malloc','_free']")
+        set(INTRA_SYNTH_LINK_FLAGS "-msimd128 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_GetMidiInfoString','_malloc','_free']")
         if(INTRA_SIZE_OPT)
             set(_size_extra "")
             if(INTRA_SIZE_LTO)
@@ -78,7 +90,7 @@ else()
         endif()
     else()
         set(INTRA_SYNTH_BASE_FLAGS "-g4 -fno-exceptions -fno-rtti -ffast-math ${_synth_simd} ${_synth_arch}")
-        set(INTRA_SYNTH_LINK_FLAGS "-g4 -s SAFE_HEAP=1 -s ASSERTIONS=2 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_GetMidiInfoString','_malloc','_free']")
+        set(INTRA_SYNTH_LINK_FLAGS "-g4 -s SAFE_HEAP=1 -s ASSERTIONS=2 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_GetMidiInfoString','_malloc','_free']")
     endif()
 endif()
 # The synth target re-runs project(), so it does not inherit the Intra
@@ -88,6 +100,12 @@ endif()
 set(_synth_warn_noise "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(_synth_warn_noise "-Wno-invalid-utf8 -Wno-deprecated-builtins -Wno-deprecated-literal-operator -Wno-nan-infinity-disabled -Wno-deprecated-copy-with-user-provided-copy -Wno-nontrivial-memcall -Wno-deprecated-copy -Wno-unused-but-set-variable -Wno-enum-float-conversion -Wno-variadic-macro-arguments-omitted -Wno-implicit-int-float-conversion -Wno-implicit-const-int-float-conversion")
+endif()
+if(INTRA_PIANO_ALL_TABLES)
+    set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_PIANO_ALL_TABLES")
+endif()
+if(INTRA_UI_METERS)
+    set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_UI_METERS")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_synth_warn_noise} ${INTRA_SYNTH_BASE_FLAGS} -include ${CMAKE_CURRENT_SOURCE_DIR}/shim/glue.h")
 

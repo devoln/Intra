@@ -16,8 +16,20 @@
 
 #include "MusicalInstrument.h"
 
-#if defined(INTRA_PROBE_NAN) || defined(INTRA_PROBE_ACTIVE_VOICES)
+#if defined(INTRA_PROBE_NAN) || defined(INTRA_PROBE_ACTIVE_VOICES) || defined(INTRA_FRAME_TRACE)
 #include <stdio.h>
+#endif
+
+#ifdef INTRA_FRAME_TRACE
+// Trace everything up to INTRA_FRAME_TRACE_LIMIT seconds of song time
+// (set via env var in probe builds; everything by default).
+static const double gTraceLimitSeconds = [] {
+	const char* s = ::getenv("INTRA_FRAME_TRACE_LIMIT");
+	return s != nullptr ? ::atof(s) : 1e30;
+}();
+#define FRAME_TRACE(...) do { if(mTime < gTraceLimitSeconds) fprintf(stderr, __VA_ARGS__); } while(0)
+#else
+#define FRAME_TRACE(...) ((void)0)
 #endif
 
 using namespace Audio;
@@ -94,6 +106,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 		// поэтому точное == почти никогда не срабатывает для ненулевых времён.
 		if(!musicEmpty && nextTime - mTime <= 0.0001)
 		{
+			FRAME_TRACE("[EV-FIRE] t=%.9f next=%.9f\n", mTime, nextTime);
 			mMusic.ProcessEvent(*this);
 			continue;
 		}
@@ -111,13 +124,17 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 		// 1. Голоса генерируют таски в общую очередь, запоминая диапазон задач
 		// каждого семплера и суммарную цену — это нужно для равномерного
 		// распределения нагрузки между потоками на нативных сборках.
+		// (Update 77: отдельный tap-проход для измерения дорожек убран —
+		// индикаторы нот в UI строятся из кольца фидбека NoteOn-событий,
+		// почти бесплатно; см. PushFeedback в OnNoteOn.)
 		SamplerTaskContainer tasks;
 		Array<SamplerJob> jobs;
 		for(auto noteSamplers = mNoteSamplers.AsRange(); !noteSamplers.Empty();)
 		{
 			const size_t samplerIndex = noteSamplers.Index;
 			auto& sampler = noteSamplers.Next();
-			const uint16 key = sampler.GetInfo<NoteInfo>().Key();
+			const auto& info = sampler.GetInfo<NoteInfo>();
+			const uint16 key = info.Key();
 			const uint16 taskBegin = uint16(tasks.Length());
 			const bool alive = sampler.Generate(tasks, 0, samplesBeforeNextEvent);
 			const uint16 taskEnd = uint16(tasks.Length());
@@ -133,6 +150,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 			}
 			if(!alive)
 			{
+				FRAME_TRACE("[VOICE-END] t=%.9f key=%u age=%.3f\n", mTime, key, double(mTime - sampler.GetInfo<NoteInfo>().Time));
 				mNoteSamplers.Delete(samplerIndex);
 				// ВАЖНО: удалять запись из mPlayingNoteMap можно только если она всё ещё
 				// указывает на умирающий семплер. Если та же нота (канал+клавиша) была
@@ -168,6 +186,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 
 		// 2. Выполняем таски в локальные буферы каналов (нативно — параллельно).
 		SamplerTaskContext frame(samplesBeforeNextEvent);
+		FRAME_TRACE("[FRAME] t=%.9f n=%zu\n", mTime, samplesBeforeNextEvent);
 #ifdef __EMSCRIPTEN__
 		frame.RunTasks(tasks);
 #else
@@ -272,13 +291,48 @@ size_t MidiSynth::GetUninterleavedSamples(Span<const Span<float>> outFloatChanne
 	return GetUninterleavedSamplesAdd(outFloatChannels);
 }
 
+#ifdef INTRA_UI_METERS
+void MidiSynth::GetChannelNoteLevels(byte* dst)
+{
+	// На канал — один уровень (0 = канал молчит): берём самую громкую звучащую
+	// ноту канала. Номер ноты не отдаём — его UI уже знает из кольца фидбека
+	// (NoteOn), а здесь важна только громкость её огибающей.
+	for(size_t ch = 0; ch < 16; ch++) dst[ch] = 0;
+	for(auto samplers = mNoteSamplers.AsRange(); !samplers.Empty();)
+	{
+		auto& sampler = samplers.Next();
+		const auto& info = sampler.GetInfo<NoteInfo>();
+		if(info.Channel >= 16) continue;
+		const byte level = byte(Min(1.0f, Max(0.0f, sampler.GetLevel()))*127.0f + 0.5f);
+		dst[info.Channel] = Max(dst[info.Channel], level);
+	}
+}
+#endif
+
 void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 {
+	FRAME_TRACE("[ON] t=%.9f ch=%u note=%u inst=%u vel=%u vol=%u\n", noteOn.Time, noteOn.Channel, noteOn.NoteOctaveOrDrumId, noteOn.Instrument, noteOn.Velocity, noteOn.Volume);
+	// Ноты пропущенного перемоткой участка не создаются: все они стартовали бы
+	// не в своих файловых временах, а разом на целевой позиции. Состояние
+	// каналов при этом читается (см. FastForward), а фидбек не пишется, чтобы UI
+	// не подсвечивал пропущенное.
+	if(mSkippingEvents) return;
+	// Фидбек NoteOn для индикаторов дорожек (веб-UI).
+	PushFeedback(byte(0x90 | noteOn.Channel), noteOn.NoteOctaveOrDrumId, noteOn.Velocity);
 	// web-midisynth: volume = Math.exp(velocity/127 - 1) * instrument.Volume * (CC7/127).
 	// The old linear velocity*CC7/(127*127) crushed soft notes (velocity=1 was ~47x quieter
 	// than web), so soft piano melody notes disappeared under the sustained pads in layered
 	// files like Celine. Exponential curve reproduces web's per-note loudness exactly.
-	const float totalStartVolume = Math::Exp(float(noteOn.Velocity)/127.0f - 1.0f) * (float(noteOn.Volume)/127.0f);
+	// Доля канала запекается в стартовую громкость (по CC7 канала из ЛЮБОГО
+	// источника: файл через IDevice, UI через SendMidiEvent), но не ниже 1/127:
+	// нота, родившаяся на нулевой дорожке, остаётся ЖИВОЙ (её текущую громкость
+	// несёт отдельный слой Sampler::ChannelGain, см. ChannelGainFor). Иначе CC7=0
+	// убивал бы ноту навсегда — «потом поднял громкость дорожки, а длинной ноты
+	// не слышно». Мьют дорожки — тот же слой (множитель 0), а не отмена ноты.
+	const byte bornCC7 = BornCC7For(mLiveVolume[noteOn.Channel]);
+	const float totalStartVolume = Math::Exp(float(noteOn.Velocity)/127.0f - 1.0f)
+		* (float(bornCC7)/127.0f);
+	const float channelGain = ChannelGainFor(noteOn.Channel, bornCC7);
 	const uint16 key = noteOn.Id();
 
 	auto found = mPlayingNoteMap.Find(key);
@@ -302,6 +356,8 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 		auto& stored = mNoteSamplers.Add<NoteSampler>(Move(note));
 		const uint16 idx = uint16(mNoteSamplers.Length() - 1);
 		stored.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
+		stored.BornCC7 = bornCC7;
+		stored.ChannelGain = channelGain;
 		stored.SetRenderParams(mRenderParams);
 		mPlayingNoteMap[key] = idx;
 		return;
@@ -315,6 +371,8 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	uint16 idx = 0;
 	Sampler& newSampler = instr->CreateSampler(noteOn.Frequency(), totalStartVolume, mSampleRate, mNoteSamplers, &idx);
 	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
+	newSampler.BornCC7 = bornCC7;
+	newSampler.ChannelGain = channelGain;
 	newSampler.SetPan(float(noteOn.Pan) / 64.0f);
 	newSampler.SetRenderParams(mRenderParams);
 	const float freqMult = pitchBendToFreqMultiplier(mMidiState.ChannelPitchBend[noteOn.Channel]);
@@ -324,6 +382,14 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 
 void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
 {
+	FRAME_TRACE("[OFF] t=%.9f ch=%u note=%u\n", noteOff.Time, noteOff.Channel, noteOff.NoteOctaveOrDrumId);
+	// Перемотка: голоса пропущенного участка не создавались, а звучавшие до неё
+	// уже отпущены в её начале — NoteOff делать нечего. Состояние педали при
+	// этом продолжает отслеживаться (её события идут через OnSustain).
+	if(mSkippingEvents) return;
+	// Отпускание тоже уходит в кольцо фидбека: веб-UI обновляет яркость
+	// индикатора сразу по нему, не дожидаясь следующего 200-мс опроса уровней.
+	PushFeedback(byte(0x80 | noteOff.Channel), noteOff.NoteOctaveOrDrumId, 0);
 	auto found = mPlayingNoteMap.Find(noteOff.Id());
 	if(found.Empty()) return;
 	const auto samplerIndex = found.First().Value;
@@ -345,6 +411,7 @@ void MidiSynth::OnNoteOff(const Midi::NoteOff& noteOff)
 
 void MidiSynth::OnPitchBend(const Midi::PitchBend& pitchBend)
 {
+	FRAME_TRACE("[BEND] t=%.9f ch=%u pitch=%d\n", pitchBend.Time, pitchBend.Channel, pitchBend.Pitch);
 	const short shift = short(pitchBend.Pitch - mMidiState.ChannelPitchBend[pitchBend.Channel]);
 	mMidiState.ChannelPitchBend[pitchBend.Channel] = pitchBend.Pitch;
 	const float freqMult = pitchBendToFreqMultiplier(shift);
@@ -369,8 +436,11 @@ void MidiSynth::OnAllNotesOff(byte channel)
 	}
 }
 
+// Снятие педали после перемотки: голосов пропущенного участка нет, а
+// отпущенные в её начале уже доигрывают свой релиз — дополнительно гасить нечего.
 void MidiSynth::OnSustain(byte channel, bool down)
 {
+	FRAME_TRACE("[SUSTAIN] t=%.9f ch=%u down=%d\n", mTime, channel, int(down));
 	mSustain[channel] = down;
 	if(down) return;
 	// Педаль снята: демпфируем все голоса канала, удерживавшиеся ею.
@@ -431,7 +501,7 @@ void MidiSynth::SendMidiEvent(byte status, byte data0, byte data1)
 		// Инструмент живого канала: переопределение из Program Change, либо
 		// GM-дефолт (фортепиано). Ударные — по маппингу нот, как в файле.
 		noteOn.Instrument = channel == 9? byte(data0 + 128): byte(0);
-		noteOn.Volume = mLiveVolume[channel];
+		noteOn.Volume = 127; // mLiveVolume канала применит OnNoteOn — иначе CC7 учтётся дважды
 		noteOn.Pan = sbyte(mLivePan[channel] - 64);
 		OnNoteOn(noteOn);
 		return;
@@ -440,8 +510,9 @@ void MidiSynth::SendMidiEvent(byte status, byte data0, byte data1)
 	{
 		if(data0 == 0x7B) OnAllNotesOff(channel);            // All Notes Off
 		else if(data0 == 0x40) OnSustain(channel, data1 >= 64); // Sustain Pedal
-		else if(data0 == 0x07) mLiveVolume[channel] = data1; // Channel Volume
-		else if(data0 == 0x0A) mLivePan[channel] = data1;    // Pan
+		// Живой ввод идёт через ту же точку фиксации, что и файл: состояние
+		// канала и фидбек обновляются одинаково для любых источников.
+		else if(data0 == 0x07 || data0 == 0x0A) OnChannelControlChange(channel, data0, data1);
 		return;
 	}
 	case 0xC0: // Program Change
@@ -464,6 +535,46 @@ void MidiSynth::SendMidiEvent(byte status, byte data0, byte data1)
 float MidiSynth::pitchBendToFreqMultiplier(short relativePitchBend) const
 {
 	return Pow2(float(relativePitchBend) / 8192.0f * float(mMidiState.PitchBendRangeInSemitones) / 12.0f);
+}
+
+// Канальные события ИЗ ЛЮБОГО источника (файл — через IDevice, живой ввод —
+// SendMidiEvent): единая точка фиксации CC7 канала. Синтезатор хранит текущий
+// CC7/панораму канала и ретранслирует их в кольцо фидбека для веб-UI; OnNoteOn
+// применяет громкость канала один раз (см. комментарий там).
+void MidiSynth::UpdateChannelGain(byte channel)
+{
+	for(auto notes = mNoteSamplers.AsRange(); !notes.Empty();)
+	{
+		auto& sampler = notes.Next();
+		if(sampler.GetInfo<NoteInfo>().Channel != channel) continue;
+		sampler.ChannelGain = ChannelGainFor(channel, sampler.BornCC7);
+	}
+}
+
+void MidiSynth::OnChannelControlChange(byte channel, byte control, byte value)
+{
+	if(channel >= 16) return;
+	if(control == 0x07)
+	{
+		if(mLiveVolume[channel] != value)
+		{
+			mLiveVolume[channel] = value;
+			// Громкость канала — живой слой: доигрывающие ноты меняют громкость
+			// сразу (как в MIDI), а не только последующие.
+			UpdateChannelGain(channel);
+		}
+		PushFeedback(byte(0xB0 | channel), 0x07, value);
+	}
+	else if(control == 0x0A) mLivePan[channel] = value;
+}
+
+void MidiSynth::OnProgramChange(byte channel, byte program)
+{
+	if(channel >= 16 || program >= 128) return;
+	mChannelProgramOverride[channel] = program;
+	auto* instr = mInstruments.Instruments[program];
+	if(instr) instr->PreloadTables(mSampleRate);
+	PushFeedback(byte(0xC0 | channel), program, 0);
 }
 
 #ifndef __EMSCRIPTEN__

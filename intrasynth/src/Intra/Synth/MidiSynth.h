@@ -10,6 +10,7 @@
 #include "Audio/Midi/Messages.h"
 #include "Audio/Midi/MidiFileParser.h"
 #include "InstrumentSet.h"
+#include "MusicalInstrument.h"
 #include "PostEffects.hh"
 #include "Sampler.h"
 
@@ -42,12 +43,51 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	// последующим нотам: и к нотам файла, и к живым нотам.
 	byte mChannelProgramOverride[16];
 
-	// Живой ввод (SourceSendMidiEvent): состояние каналов для событий, приходящих
-	// из браузера. В файле его ведёт DeviceState внутри TrackCombiner, у живых
-	// событий доступа к нему нет, поэтому дублируем только то, что нужно нотам.
+	// Громкость/пан/инструмент каналов — единое MIDI-состояние (CC7/CC10/
+	// Program Change). Оно одно для событий из любого источника: файлового
+	// потока и живого ввода (SendMidiEvent). Громкость из веб-UI посылается
+	// обычным MIDI CC7 — раскатка на ноты происходит в одном месте (OnNoteOn),
+	// никакого отдельного gain-пути.
 	byte mLiveVolume[16];
 	byte mLivePan[16];
 	double mLastLiveEventTime = -1;
+
+	// Мьют дорожек веб-UI: битовая маска каналов (1 = замьючен). Мьют — слой
+	// микшера ПОВЕРХ MIDI-громкости: CC7 канала остаётся его настоящим
+	// состоянием (его меняет и сам файл, и ползунок UI), а мьют задаёт
+	// Sampler::ChannelGain = 0 звучащим нотам. Ноты при этом НЕ гасятся, поэтому
+	// снятие мьюта возвращает их в том же месте огибающей. Мьют через CC7=0 для
+	// этого не годится: файл сам присылает CC7 (например, tous les garçons — CC7
+	// по 7 каналам в начале) и отменял бы мьют.
+	uint16 mChannelMuteMask = 0;
+
+	// Кольцо обратной связи для веб-UI: канальные события (NoteOn/CC7/CC10/
+	// Program Change), замеченные синтезатором ИЗ ЛЮБОГО источника — файловый
+	// поток (OnChannelControlChange/OnProgramChange/OnNoteOn) или живой ввод.
+	// UI осушает кольцо SourceDrainMidiFeedback. Точка фиксации — синтезатор:
+	// парсер файла о фидбеке не знает. 3 байта на событие, переполнение
+	// затирает старейшее. Ёмкость 64 (192 байта статики): UI осушает кольцо
+	// каждый кадр (~16 мс), плотность событий каналов много меньше. Стоимость:
+	// несколько записей на событие, нулевая — на семпл.
+	static constexpr size_t FEEDBACK_CAP = 64;
+	byte mFeedback[FEEDBACK_CAP][3];
+	size_t mFeedbackHead = 0, mFeedbackCount = 0;
+	void PushFeedback(byte status, byte d0, byte d1)
+	{
+		const size_t idx = (mFeedbackHead + mFeedbackCount) % FEEDBACK_CAP;
+		if(mFeedbackCount == FEEDBACK_CAP) mFeedbackHead = (mFeedbackHead + 1) % FEEDBACK_CAP;
+		else mFeedbackCount++;
+		mFeedback[idx][0] = status; mFeedback[idx][1] = d0; mFeedback[idx][2] = d1;
+	}
+
+	// Перемотка вперёд читает события файла (чтобы состояние каналов было
+	// актуальным), но ноты пропущенного участка не создаёт: иначе все они
+	// зазвучали бы разом — «оглушающий взрыв» при каждом seek. Так же (решение
+	// владельца, Update 84) гасятся и голоса, звучавшие до перемотки: после seek
+	// играют только ноты, начинающиеся ПОСЛЕ цели, — обычное поведение
+	// MIDI-секвенсера. Это дешевле дозвучивания удерживаемых нот на 1.4 КБ WASM
+	// и не даёт транзиента переатакованных педальных нот.
+	bool mSkippingEvents = false;
 
 	// Sustain-педаль (CC64) на канал. Пока педаль нажата, NoteOff не демпфирует
 	// голос — он продолжает звучать и отпускается только при снятии педали.
@@ -112,17 +152,84 @@ public:
 	void OnPitchBend(const Audio::Midi::PitchBend& pitchBend) final;
 	void OnAllNotesOff(byte channel) final;
 	void OnSustain(byte channel, bool down) final;
+	void OnChannelControlChange(byte channel, byte control, byte value) final;
+	void OnProgramChange(byte channel, byte program) final;
 
 	/// Applies the source-level parameters to the master effects and to any
 	/// currently sounding note-local processors. Reverb is a master-bus effect;
 	/// it is never configured on an individual sampler.
 	void SetRenderParams(const RenderParams& params);
 
+	/// Мьют каналов (дорожек) из веб-UI: битовая маска, 1 = канал замьючен.
+	/// Уже звучащие ноты новомьюченных каналов гасятся сразу, новые ноты таких
+	/// каналов не создаются. Громкость канала (CC7) не затрагивается.
+	void SetChannelMuteMask(ushort mask)
+	{
+		const ushort changed = ushort(mask ^ mChannelMuteMask);
+		mChannelMuteMask = mask;
+		for(byte ch = 0; changed != 0 && ch < 16; ch++)
+			if((changed >> ch) & 1) UpdateChannelGain(ch);
+	}
+
 	/// Меняет инструмент канала на лету: последующие ноты канала будут
 	/// синтезироваться программой program (GM-номер). 0xFF снимает переопределение.
+	/// Волновые таблицы выбранного инструмента строятся сразу (на JS-потоке,
+	/// вне аудио-колбэка), чтобы первая нота после смены инструмента не
+	/// генерировала таблицы внутри рендера и не роняла звук.
 	void SetChannelProgram(byte channel, byte program)
 	{
 		if(channel < 16) mChannelProgramOverride[channel] = program;
+		if(program != 0xFF && program < 128)
+		{
+			auto* instr = mInstruments.Instruments[program];
+			if(instr) instr->PreloadTables(mSampleRate);
+		}
+	}
+
+	/// Осушает кольцо обратной связи канальных событий (CC7/CC10/Program Change,
+	/// пришедших ИЗ ФАЙЛА или от живого ввода) в буфер вызывающего. Формат записи:
+	/// 3 байта — статус+канал, data0, data1. Возвращает число записанных событий.
+	size_t DrainMidiFeedback(byte dst[][3], size_t maxEvents)
+	{
+		const size_t n = Min(mFeedbackCount, Min(maxEvents, FEEDBACK_CAP));
+		for(size_t i = 0; i < n; i++)
+		{
+			const size_t idx = (mFeedbackHead + i) % FEEDBACK_CAP;
+			dst[i][0] = mFeedback[idx][0];
+			dst[i][1] = mFeedback[idx][1];
+			dst[i][2] = mFeedback[idx][2];
+		}
+		mFeedbackHead = (mFeedbackHead + n) % FEEDBACK_CAP;
+		mFeedbackCount -= n;
+		return n;
+	}
+
+#ifdef INTRA_UI_METERS
+	/// Уровни нот каналов для индикаторов дорожек в веб-UI: 16 байт, на канал —
+	/// уровень огибающей самой громкой звучащей ноты (0 = канал молчит). Номер
+	/// ноты UI берёт из кольца фидбека (NoteOn), здесь нужна только громкость.
+	/// Дёргается из JS раз в ~200 мс — на семпл расходов нет.
+	void GetChannelNoteLevels(byte* dst);
+#endif
+
+	/// Мгновенная перемотка: гасит всё звучащее и пропускает события файла до
+	/// времени targetSample без рендера (линейно дешевле реального времени).
+	/// Ноты пропущенного участка НЕ создаются (иначе они зазвучали бы разом на
+	/// целевой позиции — «оглушающий взрыв»), а голоса, звучавшие до перемотки,
+	/// отпускаются: после seek играют только ноты, начинающиеся после цели.
+	/// Назад — через пересоздание источника в веб-UI (состояние потока не
+	/// обращаемо).
+	void FastForward(size_t targetSample)
+	{
+		const double targetTime = double(targetSample) / mSampleRate;
+		// Голоса не убиваем, а отпускаем (NoteRelease): их релиз доигрывается
+		// ~0.5 с и гаснет сам, а мгновенное обнуление дало бы щелчок.
+		for(byte ch = 0; ch < 16; ch++) OnAllNotesOff(ch);
+		mSkippingEvents = true;
+		while(!mMusic.Empty() && mMusic.NextEventTime() <= targetTime)
+			mMusic.ProcessEvent(*this);
+		mSkippingEvents = false;
+		mTime = targetTime;
 	}
 
 	/// Отправляет одно сырое MIDI-сообщение (статус-байт + до двух байт данных)
@@ -135,6 +242,24 @@ public:
 	void SendMidiEvent(byte status, byte data0, byte data1);
 
 private:
+	/// Громкость канала как живой множитель для ноты: 0 — дорожка замьючена,
+	/// иначе CC7 канала относительно CC7 в момент рождения ноты (BornCC7).
+	float ChannelGainFor(byte channel, byte bornCC7) const
+	{
+		if((mChannelMuteMask >> channel) & 1) return 0.0f;
+		return float(mLiveVolume[channel])/float(bornCC7);
+	}
+
+	/// CC7, с которым нота родится живой: 0 запрещён (нота, рождённая при
+	/// нулевой громкости дорожки, ждёт подъёма CC7 и звучит тогда).
+	static byte BornCC7For(byte volume) {return volume == 0 ? byte(1) : volume;}
+
+	/// Пересчитывает живой множитель громкости у всех звучащих нот канала
+	/// (изменение CC7 файла/ползунка или мьюта). Само тело ноты не трогается —
+	/// меняется только слой поверх него, поэтому доигрывающие ноты слышат
+	/// изменение сразу, а их тембр остаётся тем, с каким они родились.
+	void UpdateChannelGain(byte channel);
+
 	double liveEventTime();
 	bool synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight);
 	float pitchBendToFreqMultiplier(short relativePitchBend) const;

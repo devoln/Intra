@@ -64,6 +64,47 @@ extern "C"
 		if(params) static_cast<MidiSynth*>(sourcePtr)->SetRenderParams(*params);
 	}
 
+	// Кольцо обратной связи: канальные события (CC7/CC10/Program Change),
+	// замеченные синтезом ИЗ ФАЙЛА или от живого ввода. UI осушает кольцо
+	// и отражает изменения, сделанные самим MIDI-файлом, в своих контролах.
+	unsigned EMSCRIPTEN_KEEPALIVE SourceDrainMidiFeedback(IAudioSource* sourcePtr, byte* dst, unsigned capEvents)
+	{
+		return unsigned(static_cast<MidiSynth*>(sourcePtr)->DrainMidiFeedback(
+			reinterpret_cast<byte(*)[3]>(dst), size_t(capEvents)));
+	}
+
+	// Уровни нот каналов для индикаторов дорожек в веб-UI: на канал 2 байта —
+	// номер ноты (0xFF = канал молчит) и уровень её огибающей (0..127). Тело
+	// собирается только с -DINTRA_UI_METERS (канонический WASM); без него —
+	// пустая заглушка, чтобы минимальная сборка не тянула ни строчки.
+	void EMSCRIPTEN_KEEPALIVE SourceGetNoteLevels(IAudioSource* sourcePtr, byte* dst)
+	{
+#ifdef INTRA_UI_METERS
+		static_cast<MidiSynth*>(sourcePtr)->GetChannelNoteLevels(dst);
+#else
+		(void)sourcePtr;
+		(void)dst;
+#endif
+	}
+
+	// Мьют дорожек веб-UI: битовая маска каналов (1 = замьючен). Мьют — слой
+	// микшера, а не громкость: CC7 канала (его меняет и сам файл, и ползунок UI)
+	// остаётся как есть, замьюченный канал просто не звучит. Уже звучащие ноты
+	// новомьюченного канала гасятся синтезатором.
+	void EMSCRIPTEN_KEEPALIVE SourceSetChannelMute(IAudioSource* sourcePtr, unsigned mask)
+	{
+		static_cast<MidiSynth*>(sourcePtr)->SetChannelMuteMask(ushort(mask));
+	}
+
+	// Мгновенная перемотка вперёд: звучащее гасится, события файла до targetSample
+	// пропускаются без рендера, поэтому после seek играют только ноты,
+	// начинающиеся после цели (пропущенный участок разом не звучит).
+	// Назад — пересозданием источника в JS.
+	void EMSCRIPTEN_KEEPALIVE SourceFastForward(IAudioSource* sourcePtr, unsigned targetSample)
+	{
+		static_cast<MidiSynth*>(sourcePtr)->FastForward(size_t(targetSample));
+	}
+
 	unsigned EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)
 	{
 		return unsigned(source->SamplesLeft());

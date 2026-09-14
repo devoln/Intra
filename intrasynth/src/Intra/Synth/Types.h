@@ -3,6 +3,7 @@
 #include <Cpp/Warnings.h>
 #include <Utils/Span.h>
 #include <Funal/Delegate.h>
+#include "Envelope.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -18,18 +19,64 @@ struct RenderParams
 };
 static_assert(sizeof(RenderParams) == 1*sizeof(float), "RenderParams ABI must stay a single float");
 
+struct RenderEnvelope
+{
+	float Exp;
+	float ExpStep;
+	float Linear;
+	float LinearStep;
+
+	INTRA_FORCEINLINE explicit RenderEnvelope(const EnvelopeSegment& segment):
+		Exp(segment.Exp.Factor), ExpStep(segment.Exp.FactorStep),
+		Linear(segment.Linear.Factor), LinearStep(segment.Linear.FactorStep) {}
+
+	INTRA_FORCEINLINE float NextGain()
+	{
+		const float result = Exp*Linear;
+		// ExponentialLinearAttenuate's SIMD implementation evaluates eight
+		// consecutive gains in parallel; it does not hold one gain for the
+		// whole vector. Keep the source-level sink semantically identical.
+		Exp *= ExpStep;
+		Linear += LinearStep;
+		return result;
+	}
+};
+
 class IGenericSampler
 {
 public:
 	virtual ~IGenericSampler() {}
 	virtual size_t GenerateMono(Span<float> ioDst) = 0;
 	virtual size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) = 0;
+
+	/// Opt-in path for applying the note-level ADSR before adding to the shared
+	/// mix. Sources that do not implement it must stay on NoteSampler's isolated
+	/// scratch-buffer path.
+	virtual bool SupportsEnvelopeRender() const {return false;}
+	virtual size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft,
+		Span<float> ioDstRight, const EnvelopeSegment& envelope)
+	{
+		(void)ioDstLeft;
+		(void)ioDstRight;
+		(void)envelope;
+		return 0;
+	}
+
 	virtual void NoteRelease() {}
 	virtual void MultiplyPitch(float freqMultiplier) {(void)freqMultiplier;}
 	/// Pass source-level render parameters to samplers that have a note-level
 	/// parameter (currently the measured piano stereo tilt). Master effects are
 	/// handled by MidiSynth and are ignored by these samplers.
 	virtual void SetRenderParams(const RenderParams& params) {(void)params;}
+
+#ifdef INTRA_UI_METERS
+	/// Уровень огибающей ноты (0..1) для индикатора громкости в веб-UI, либо -1,
+	/// если семплер уровня не измеряет (ударные, шум, физические модели) — тогда
+	/// индикатор ведёт себя как раньше (ровный уровень). Спрашивается редко
+	/// (SourceGetNoteLevels, ~100 мс), на семпл расходов нет. Собирается только
+	/// с -DINTRA_UI_METERS. Замер стоимости замены на поле — см. Sampler::GetLevel.
+	virtual float GetLevel() const {return -1.0f;}
+#endif
 };
 
 typedef Unique<IGenericSampler> GenericSamplerRef;

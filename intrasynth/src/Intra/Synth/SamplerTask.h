@@ -66,14 +66,24 @@ public:
     uint16 UsedChannels;
     Span<float> Channels[2];
 
+    /// Отдельный буфер ноты для случая, когда её громкость отличается от
+    /// «как родилась» (MIDI CC7/мьют канала, см. Sampler::ChannelGain): ноты
+    /// разных каналов пишут в общий смешанный буфер кадра, поэтому домножить
+    /// вклад одной ноты можно только через свой буфер. Он один на контекст:
+    /// задачи выполняются последовательно, а такой ноте нужен максимум один
+    /// раз за задачу.
+    Span<float> ScratchL, ScratchR;
+
     SamplerTaskContext& operator=(const SamplerTaskContext&) = delete;
 
     SamplerTaskContext(size_t frameLength):
-        allSamples(frameLength*2), UsedChannels(0),
+        allSamples(frameLength*4), UsedChannels(0),
         Channels{
             allSamples.AsRange().Take(frameLength),
             allSamples.AsRange().Drop(frameLength).Take(frameLength)
-        }
+        },
+        ScratchL(allSamples.AsRange().Drop(frameLength*2).Take(frameLength)),
+        ScratchR(allSamples.AsRange().Drop(frameLength*3).Take(frameLength))
     {}
 
     void ClearChannels()
