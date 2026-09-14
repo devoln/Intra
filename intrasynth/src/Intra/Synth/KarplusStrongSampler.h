@@ -42,6 +42,11 @@ class KarplusStrongSampler: public IGenericSampler
 	// не нужен.
 	float mVolume;
 	float mExpStep;
+#ifdef INTRA_UI_METERS
+	// 1 / стартовая mVolume: уровень струны для индикатора веб-UI — своё
+	// затухание ноты относительно её начала (см. GetLevel).
+	float mInvInitialVolume = 0;
+#endif
 
 public:
 	KarplusStrongSampler(float freq, float volume, unsigned sampleRate,
@@ -109,6 +114,16 @@ public:
 
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	bool SupportsEnvelopeRender() const override {return true;}
+	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
+		const EnvelopeSegment& envelope) override;
+
+#ifdef INTRA_UI_METERS
+	/// Уровень затухания струны для индикатора веб-UI: mVolume домножен на
+	/// каждом семпле на mExpStep, поэтому это собственная огибающая ноты
+	/// (1 в начале, дальше спад семпла). Спрашивается редко (см. Sampler::GetLevel).
+	float GetLevel() const override {return mVolume*mInvInitialVolume;}
+#endif
 
 private:
 	static unsigned randGen(float freq, float volume, unsigned sampleRate);

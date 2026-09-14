@@ -46,6 +46,10 @@ class GaussianStringSampler: public IGenericSampler
 	float mRate;                // len/precisePeriod (как у KS)
 	float mVolume;
 	float mExpStep;
+#ifdef INTRA_UI_METERS
+	// 1 / стартовая mVolume: уровень струны для индикатора веб-UI.
+	float mInvInitialVolume = 0;
+#endif
 	float mRadiusA;
 	float mRadiusCap;           // в долях len
 	float mTime;                // счётчик семплов (float, чтобы не гонять uint64->float)
@@ -153,6 +157,14 @@ public:
 
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	bool SupportsEnvelopeRender() const override {return true;}
+	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
+		const EnvelopeSegment& envelope) override;
+
+#ifdef INTRA_UI_METERS
+	/// Уровень затухания струны для индикатора веб-UI (см. Sampler::GetLevel).
+	float GetLevel() const override {return mVolume*mInvInitialVolume;}
+#endif
 
 private:
 	static unsigned randGen(float freq, float volume, unsigned sampleRate);

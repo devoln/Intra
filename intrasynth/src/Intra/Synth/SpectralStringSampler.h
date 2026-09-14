@@ -59,6 +59,10 @@ class SpectralStringSampler: public IGenericSampler
 	float mCrossfade;      // длина кроссфейда между периодами (в форме-координатах)
 	float mVolume;
 	float mExpStep;
+#ifdef INTRA_UI_METERS
+	// 1 / стартовая mVolume: уровень струны для индикатора веб-UI.
+	float mInvInitialVolume = 0;
+#endif
 	bool mHavePrev;        // есть предыдущий период (ложь только для первого)
 
 	// Домножает спектр на затухание и пересчитывает форму текущего периода.
@@ -139,6 +143,14 @@ public:
 
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	bool SupportsEnvelopeRender() const override {return true;}
+	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
+		const EnvelopeSegment& envelope) override;
+
+#ifdef INTRA_UI_METERS
+	/// Уровень затухания струны для индикатора веб-UI (см. Sampler::GetLevel).
+	float GetLevel() const override {return mVolume*mInvInitialVolume;}
+#endif
 
 private:
 	static unsigned randGen(float freq, float volume, unsigned sampleRate);

@@ -17,6 +17,7 @@ public:
 		mT(0), mDT(dt), mAmplitude(amplitude) {}
 
 	size_t GenerateMono(Span<float> inOutSamples);
+	size_t GenerateStereo(Span<float> inOutLeft, Span<float> inOutRight);
 };
 
 struct WhiteNoiseInstrument

@@ -111,6 +111,9 @@ SpectralStringSampler::SpectralStringSampler(float freq, float volume, unsigned 
 
 	mVolume = volume * scale;
 	mExpStep = expCoeff == 0 ? 1.0f : Math::Exp(-expCoeff/float(sampleRate));
+#ifdef INTRA_UI_METERS
+	mInvInitialVolume = mVolume > 0 ? 1.0f/mVolume : 0.0f;
+#endif
 }
 
 void SpectralStringSampler::advancePeriod()
@@ -147,6 +150,22 @@ size_t SpectralStringSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> 
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();
 	RenderInto(n, [dstL, dstR](float v) mutable {*dstL++ += v; *dstR++ += v;});
+	return n;
+}
+
+size_t SpectralStringSampler::GenerateStereoWithEnvelope(Span<float> ioDstLeft,
+	Span<float> ioDstRight, const EnvelopeSegment& envelope)
+{
+	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
+	float* dstL = ioDstLeft.Data();
+	float* dstR = ioDstRight.Data();
+	RenderEnvelope gain(envelope);
+	RenderInto(n, [dstL, dstR, &gain](float v) mutable
+	{
+		const float s = v*gain.NextGain();
+		*dstL++ += s;
+		*dstR++ += s;
+	});
 	return n;
 }
 

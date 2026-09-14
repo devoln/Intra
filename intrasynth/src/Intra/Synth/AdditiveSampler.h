@@ -6,6 +6,7 @@
 #include "Intra/Range/Span.h"
 #include "Utils/FixedArray.h"
 #include "Types.h"
+#include "PianoRegions.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -157,6 +158,9 @@ class AdditiveSampler: public IGenericSampler
 	float mStereoPan;
 	float mStereoGainL;
 	float mStereoGainR;
+	// Таблица партиал/регионов (PianoRegions.h): по умолчанию общая
+	// (acoustic), per-instrument SF2-таблицы — через PianoTableId.
+	const PianoTable* mTable;
 	// mDone = true когда нота полностью закончилась (mRendered >= mEndSamples):
 	// GenerateMono/GenerateStereo возвращают 0, и NoteSampler удаляет голос.
 	bool mDone;
@@ -186,7 +190,8 @@ public:
 		size_t maxPartials, float brightness, float scale, float decayScale,
 		float decayStiffness, float detuneCents,
 		int unisonVoices, float velBrightness, float trebleTilt,
-		float volumeDb = 0, float beatScale = 1.0f);
+		float volumeDb = 0, float beatScale = 1.0f, int tableId = 0,
+		float beatCents = 0);
 
 	/// Рендерит numSamples отсчётов. Лямбда-sink — как у KS/SpectralString:
 	/// на wasm поинтер-инкремент в лямбде даёт лучший код, чем индексная
@@ -469,6 +474,36 @@ public:
 	// (не инлайн: без дублирования кода в TU, меньше WASM).
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+
+#ifdef INTRA_UI_METERS
+	/// Уровень громкости ноты для индикатора веб-UI (см. Sampler::GetLevel).
+	/// У пиано общей огибающей нет: затухание «зашито» в партиалы (у каждой
+	/// гармоники свой шаг mDecay) — берём максимум по лейнам, то есть самую
+	/// громкую гармонику. В атаке и большей части сустейна это фундаментал,
+	/// он же определяет воспринимаемую громкость, поэтому яркость индикатора
+	/// повторяет затухание ноты в семпле. Уровень относительный (0..1):
+	/// velocity и CC7 дорожки домножает UI.
+	float GetLevel() const override;
+#endif
+	bool SupportsEnvelopeRender() const override {return true;}
+	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
+		const EnvelopeSegment& envelope) override
+	{
+		if(mDone) return 0;
+		const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
+		float* dstL = ioDstLeft.Data();
+		float* dstR = ioDstRight.Data();
+		const float gl = mStereoPan == 0.0f ? 0.5f : mStereoGainL;
+		const float gr = mStereoPan == 0.0f ? 0.5f : mStereoGainR;
+		RenderEnvelope gain(envelope);
+		RenderInto(n, [dstL, dstR, gl, gr, &gain](float v) mutable
+		{
+			const float s = v*gain.NextGain();
+			*dstL++ += s*gl;
+			*dstR++ += s*gr;
+		});
+		return mDone ? 0 : n;
+	}
 	void NoteRelease() override;
 	void ApplyRelease();
 
@@ -497,8 +532,11 @@ struct AdditivePianoInstrument
 	float TrebleTilt;
 	/// VolumeDb — per-instrument калибровка громкости (дБ, 0 = эталон).
 	/// Применяется ко всей ноте целиком (атака+сустейн) множителем на выходе;
-	/// Scale и остальные параметры НЕ трогает — значения калибровки от 2026-08-28
-	/// (замер против AcousticPiano, см. ворклог) лежат в InstrumentLibrary.cpp.
+	/// Scale и остальные параметры НЕ трогает. Калибровка сверена с SF2
+	/// (замеры scripts/_tmp-instlevel.js — рендер, _tmp-sf2level.js —
+	/// семплы×attenuation): AGP 0 (эталон), Bright +0.7, HT +1.8, EG +0.2,
+	/// EP1 +1.0, EP2 -8.6 (после Soft-layer таблицы 2026-09-04), Harpsi
+	/// -1.8, Clav +3.2. Значения лежат в InstrumentLibrary.cpp.
 	float VolumeDb = 0;
 	/// BeatScale — per-instrument множитель регионального профиля биений
 	/// (лестница base в AdditiveSampler, измерена по семплам SF2 2026-08-26).
@@ -507,12 +545,28 @@ struct AdditivePianoInstrument
 	/// detune пресеты (honky-tonk 9.0c) на регионе 51 давали ~45 центов и
 	/// деструктивные биения (AM до 50 дБ) — для них 0 (см. ворклог 2026-08-29).
 	float BeatScale = 1.0f;
+	/// TableId — таблица коэффициентов (PianoTableId в PianoRegions.h).
+	/// 0 = общая acoustic-таблица (по умолчанию). Honky-Tonk =
+	/// PianoTableHonkyTonk: его SF2-семплы — те же, что у acoustic (ворклог
+	/// 2026-08-30), поэтому под INTRA_PIANO_ALL_TABLES таблица алиасит
+	/// общую (0 лишних байт); без define все TableId резолвятся в общую.
+	int TableId = 0;
+	/// BeatCents — ПЛОСКАЯ расстройка биений унисона в центах (0 = выкл.).
+	/// Когда > 0, заменяет региональную лестницу base (которая откалибрована
+	/// по acoustic-семплам Clavinova) на постоянный разброс по всей
+	/// клавиатуре, а per-partial вес глубины биений берёт EP-профиль
+	/// (h1 полный, h2/h3 половинный, h4+ четверть — все партиалы бьются
+	/// вместе, как хорус семпла). Это для EP-инструментов, чьи семплы бьются
+	/// примерно постоянной скоростью ~2-3 Гц на C4-C5 (DX7/Rhodes тайны), а
+	/// не по лестнице струн рояля (2026-09-04, EP2).
+	float BeatCents = 0;
 
 	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		return new AdditiveSampler(freq, volume, sampleRate,
 			MaxPartials, Brightness, Scale, DecayScale, DecayStiffness,
-			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeDb, BeatScale);
+			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeDb, BeatScale, TableId,
+			BeatCents);
 	}
 };
 

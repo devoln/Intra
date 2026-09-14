@@ -40,14 +40,31 @@ static inline auto randGen(Span<const float> periodicWave, float rate, float vol
 
 WaveTableSampler::WaveTableSampler(Span<const float> periodicWave, float rate,
 	float attenuationPerSample, float volume, float vibratoDeltaPhase,
-	float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples):
+	float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples,
+	float vibratoDelaySamples, float vibratoRampSamples, float vibratoTremolo,
+	float vibratoJitter, float vibratoJitterDeltaPhase,
+	float vibratoHarm2, float vibratoHarm3, float vibratoHarm4, float vibratoHarm5):
 	mSampleFragmentStart(periodicWave.Data()), mSampleFragmentLength(unsigned(periodicWave.Length())),
 	mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f),
-	mFreqOscillator(vibratoValue, 0, vibratoDeltaPhase), mEnvelope(envelope),
+	mFreqOscillator(1.0f, 0, vibratoDeltaPhase, vibratoJitter, vibratoJitterDeltaPhase,
+		vibratoHarm2, vibratoHarm3, vibratoHarm4, vibratoHarm5),
+	mVibratoValue(vibratoValue), mVibratoTremolo(vibratoTremolo),
+	mHasVibrato((vibratoValue != 0.0f || vibratoTremolo != 0.0f) && vibratoDeltaPhase != 0.0f), mEnvelope(envelope),
 	mExpAtten(ExponentAttenuator::FromFactorAndStep(volume, attenuationPerSample)),
 	mFragmentOffset(randGen(periodicWave, rate, volume)(mSampleFragmentLength)),
 	mRightFragmentOffset((unsigned(mFragmentOffset) + channelDeltaSamples) % mSampleFragmentLength)
-{}
+{
+	if(mHasVibrato && vibratoRampSamples > 0)
+	{
+		mVibratoDelaySamples = vibratoDelaySamples;
+		mVibratoRampSamples = vibratoRampSamples;
+	}
+	else if(mHasVibrato && vibratoDelaySamples > 0)
+	{
+		// Мгновенное включение после паузы (без плавного входа).
+		mVibratoDelaySamples = vibratoDelaySamples;
+	}
+}
 
 void WaveTableSampler::generateWithDefaultRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples)
 {
@@ -175,7 +192,30 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight)
 		const Span<const float> src(frag, len);
 		auto dstLeftChunk = dstLeft.Drop(processed).Take(chunk);
 		const bool constantAmp = (expStep == 1.0f && linStep == 0.0f);
-		if(hasRight)
+		if(mHasVibrato)
+		{
+			// Частотное вибрато: скорость чтения модулируется осциллятором
+			// (mRate*(1 + vib)); SIMD-ядра с постоянной скоростью неприменимы.
+			// VibGate — плавное появление вибрато после атаки (Delay+Ramp).
+			const float vibGate = VibratoGate();
+			const float vibGateStep = VibratoGateStep();
+			if(hasRight)
+			{
+				auto dstRightChunk = dstRight.Drop(processed).Take(chunk);
+				SynthKernels::MultiplyAddVibratoStereo(dstLeftChunk, dstRightChunk, src,
+					leftOffset, rightOffset, mRate, exp, expStep, lin, linStep,
+					mLeftMultiplier, mRightMultiplier, mFreqOscillator,
+					vibGate, vibGateStep, mVibratoValue, mVibratoTremolo);
+			}
+			else
+			{
+				SynthKernels::MultiplyAddVibrato(dstLeftChunk, src,
+					leftOffset, mRate, exp, expStep,
+					lin*mLeftMultiplier, linStep*mLeftMultiplier, mFreqOscillator,
+					vibGate, vibGateStep, mVibratoValue, mVibratoTremolo);
+			}
+		}
+		else if(hasRight)
 		{
 			auto dstRightChunk = dstRight.Drop(processed).Take(chunk);
 			if(constantAmp)
@@ -260,6 +300,7 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight)
 		if(mEnvelope.CurrentSegment.SamplesLeft == 0) mEnvelope.StartNextSegment();
 		if(preAttenuated) mExpAtten.Factor = noteFactor;
 		else mExpAtten.SkipSamples(chunk);
+		mElapsedSamples += unsigned(chunk);
 
 		processed += chunk;
 	}
@@ -291,7 +332,13 @@ Span<float> WaveTableSampler::GenerateMono(Span<float> ioDst)
 		const float expStep = seg.Exp.FactorStep;
 		const float lin = seg.Linear.Factor;
 		const float linStep = seg.Linear.FactorStep;		const Span<const float> src(frag, len);
-		if(expStep == 1.0f && linStep == 0.0f)
+		if(mHasVibrato)
+		{
+			SynthKernels::MultiplyAddVibrato(ioDst.Drop(processed).Take(chunk), src,
+				offset, mRate, exp, expStep, lin, linStep, mFreqOscillator,
+				VibratoGate(), VibratoGateStep(), mVibratoValue, mVibratoTremolo);
+		}
+		else if(expStep == 1.0f && linStep == 0.0f)
 		{
 			// Sustain-сегмент: только интерполяция, без пошаговых огибающих.
 			SynthKernels::AddInterpolatedConst(ioDst.Drop(processed).Take(chunk), src,
@@ -309,6 +356,7 @@ Span<float> WaveTableSampler::GenerateMono(Span<float> ioDst)
 		if(mEnvelope.CurrentSegment.SamplesLeft == 0) mEnvelope.StartNextSegment();
 		if(preAttenuated) mExpAtten.Factor = noteFactor;
 		else mExpAtten.SkipSamples(chunk);
+		mElapsedSamples += unsigned(chunk);
 
 		processed += chunk;
 	}
@@ -327,10 +375,24 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, unsig
 	const float ratio = freq / float(sampleRate);
 	const size_t level = table.NearestLevelForRatio(ratio);
 	const auto samples = table.LevelSamples(level);
+	// Регистровый профиль вибрато (если задан) перекрывает фиксированные
+	// VibratoFrequency/VibratoValue инструмента и добавляет задержку появления.
+	Vibrato vib;
+	if(VibratoProfile) vib = VibratoProfile(freq);
+	else
+	{
+		vib.Frequency = VibratoFrequency;
+		vib.Value = VibratoValue;
+	}
+	EnvelopeFactory envelopeFactory = Envelope;
+	if(EnvelopeProfile) envelopeFactory = EnvelopeProfile(freq);
 	return WaveTableSampler(samples, ratio/table.LevelRatio(level),
 		Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
-		2*float(PI)*VibratoFrequency/float(sampleRate), VibratoValue,
-		Envelope(sampleRate), (sampleRate >> 7) % samples.Length());
+		2*float(PI)*Math::Max(vib.Frequency, 0.0f)/float(sampleRate), vib.Value,
+		envelopeFactory(sampleRate), (sampleRate >> 7) % samples.Length(),
+		vib.Delay*float(sampleRate), vib.Ramp*float(sampleRate), vib.Tremolo,
+		vib.Jitter, 2*float(PI)*vib.JitterFreq/float(sampleRate),
+		vib.Harm2, vib.Harm3, vib.Harm4, vib.Harm5);
 }
 
 
@@ -342,7 +404,16 @@ WaveTable& WaveTableCache::Get(float freq, unsigned sampleRate) const
 		float rate = freqSampleRateRatio / Tables[i].BaseLevelRatio;
 		if(!AllowMipmaps)
 		{
-			if(0.9999f < rate && rate < 1.0001f) return Tables[i];
+			// Таблица квантует основной тон на сетку ДПФ (см. BuildWaveTable):
+			// её BaseLevelRatio = bin/N, поэтому «своя» частота воспроизводится с
+			// rate = 1 ± 0.5/bin. Жёсткий допуск 0.9999…1.0001 не попадал НИКОГДА
+			// (расстройка до 0.5 %, т.е. до ±8.9 центов на C4) — каждый note-on
+			// строил новую таблицу, кеш только рос. Допуск по bin это учитывает;
+			// переиспользование соседнего bin безвредно: таблица гармонична, а
+			// высоту выправляет та же скорость воспроизведения.
+			const float bins = Math::Max(Tables[i].BaseLevelRatio*float(Tables[i].BaseLevelLength), 1.0f);
+			const float tolerance = 0.9f/bins;
+			if(rate > 1.0f - tolerance && rate < 1.0f + tolerance) return Tables[i];
 			continue;
 		}
 		float r = rate;

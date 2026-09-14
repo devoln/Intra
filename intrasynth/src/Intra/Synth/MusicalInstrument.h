@@ -32,6 +32,9 @@ struct MusicalInstrument: public Instrument
 	Sampler& CreateSampler(float freq, float volume, unsigned sampleRate,
 		SamplerContainer& dst, uint16* oIndex = nullptr) const override;
 
+	void PreloadTables(unsigned sampleRate) override;
+	void PreloadKey(float freq, unsigned sampleRate) override;
+
 private:
 	NoteSampler BuildNoteSampler(float freq, float volume, unsigned sampleRate) const;
 };

@@ -671,6 +671,92 @@ namespace SynthKernels
         ioOffsetL = float(i) + frac;
         ioOffsetR = float(iR) + frac;
     }
+
+    /// Частотное вибрато: скорость чтения модулируется осциллятором
+    /// (ioOffset += baseRate*(1 + vibrato.Next()) на семпл), интерполяция и
+    /// пошаговые огибающие — как в MultiplyAddLinearInterpolated. Используется
+    /// вейвтабличными инструментами с лёгким вибрато (флейта, пан-флейта);
+    /// SIMD-варианты здесь неприменимы — скорость не постоянна.
+    /// vibGate — стартовый множитель глубины вибрато в [0,1], vibGateStep —
+    /// его прирост на семпл (плавное появление вибрато после атаки); когда
+    /// vibGateStep == 0 и vibGate == 1 — классическое вибрато без задержки.
+    template<typename SineRangeT>
+    forceinline void MultiplyAddVibrato(Span<float> dst, Span<const float> src,
+        float& ioOffset, float baseRate, float exp, float expStep,
+        float lin, float linStep, SineRangeT& vibrato,
+        float vibGate = 1.0f, float vibGateStep = 0.0f,
+        float vibValue = 1.0f, float tremolo = 0.0f)
+    {
+        const size_t len = src.Length();
+        if(len == 0) return;
+        float gate = vibGate;
+        for(float& out: dst)
+        {
+            // vibrato.Next() нормирован (±1): масштаб ЧМ задаёт vibValue,
+            // масштаб АМ — tremolo (Update 64c, «вибрирующая часть» флейты).
+            const float vib = vibrato.Next()*gate;
+            ioOffset += baseRate*(1.0f + vibValue*vib);
+            if(ioOffset >= float(len)) ioOffset -= float(len);
+            const int ii = int(ioOffset);
+            const float frac = ioOffset - float(ii);
+            const size_t i = size_t(ii);
+            const size_t j = i + 1 < len ? i + 1 : 0;
+            const float s = src[i] + (src[j] - src[i])*frac;
+            out += s*exp*lin*(1.0f + tremolo*vib);
+            exp *= expStep;
+            lin += linStep;
+            if(gate < 1.0f)
+            {
+                gate += vibGateStep;
+                if(gate > 1.0f) gate = 1.0f;
+            }
+        }
+    }
+
+    /// Стерео-вариант вибрато-ядра: один осциллятор на семпл (общий для обоих
+    /// каналов, позиции каналов идут с постоянным сдвигом channelDelta).
+    /// vibGate/vibGateStep — как в MultiplyAddVibrato (задержка появления).
+    template<typename SineRangeT>
+    forceinline void MultiplyAddVibratoStereo(Span<float> dstL, Span<float> dstR,
+        Span<const float> src, float& ioOffsetL, float& ioOffsetR, float baseRate,
+        float exp, float expStep, float lin, float linStep, float ampL, float ampR,
+        SineRangeT& vibrato, float vibGate = 1.0f, float vibGateStep = 0.0f,
+        float vibValue = 1.0f, float tremolo = 0.0f)
+    {
+        const size_t len = src.Length();
+        const size_t n = Min(dstL.Length(), dstR.Length());
+        if(len == 0 || n == 0) return;
+        float gate = vibGate;
+        for(size_t k = 0; k < n; k++)
+        {
+            const float vibNorm = vibrato.Next()*gate;
+            const float vib = baseRate*(1.0f + vibValue*vibNorm);
+            ioOffsetL += vib;
+            if(ioOffsetL >= float(len)) ioOffsetL -= float(len);
+            ioOffsetR += vib;
+            if(ioOffsetR >= float(len)) ioOffsetR -= float(len);
+            const int li = int(ioOffsetL);
+            const float lf = ioOffsetL - float(li);
+            const size_t i = size_t(li);
+            const size_t j = i + 1 < len ? i + 1 : 0;
+            const float sL = src[i] + (src[j] - src[i])*lf;
+            const int ri = int(ioOffsetR);
+            const float rf = ioOffsetR - float(ri);
+            const size_t iR = size_t(ri);
+            const size_t jR = iR + 1 < len ? iR + 1 : 0;
+            const float sR = src[iR] + (src[jR] - src[iR])*rf;
+            const float amp = exp*lin*(1.0f + tremolo*vibNorm);
+            dstL[k] += sL*amp*ampL;
+            dstR[k] += sR*amp*ampR;
+            exp *= expStep;
+            lin += linStep;
+            if(gate < 1.0f)
+            {
+                gate += vibGateStep;
+                if(gate > 1.0f) gate = 1.0f;
+            }
+        }
+    }
 }
 
 INTRA_WARNING_POP

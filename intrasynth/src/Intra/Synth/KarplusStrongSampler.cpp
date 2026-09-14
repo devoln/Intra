@@ -24,6 +24,9 @@ KarplusStrongSampler::KarplusStrongSampler(float freq, float volume, unsigned sa
 
 	mVolume = volume * scale;
 	mExpStep = expCoeff == 0 ? 1.0f : Math::Exp(-expCoeff/float(sampleRate));
+#ifdef INTRA_UI_METERS
+	mInvInitialVolume = mVolume > 0 ? 1.0f/mVolume : 0.0f;
+#endif
 }
 
 size_t KarplusStrongSampler::GenerateMono(Span<float> ioDst)
@@ -40,6 +43,22 @@ size_t KarplusStrongSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> i
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();
 	RenderInto(n, [dstL, dstR](float v) mutable {*dstL++ += v; *dstR++ += v;});
+	return n;
+}
+
+size_t KarplusStrongSampler::GenerateStereoWithEnvelope(Span<float> ioDstLeft,
+	Span<float> ioDstRight, const EnvelopeSegment& envelope)
+{
+	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
+	float* dstL = ioDstLeft.Data();
+	float* dstR = ioDstRight.Data();
+	RenderEnvelope gain(envelope);
+	RenderInto(n, [dstL, dstR, &gain](float v) mutable
+	{
+		const float s = v*gain.NextGain();
+		*dstL++ += s;
+		*dstR++ += s;
+	});
 	return n;
 }
 

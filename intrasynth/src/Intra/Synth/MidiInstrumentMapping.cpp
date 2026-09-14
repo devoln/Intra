@@ -89,11 +89,21 @@ MidiInstrumentSet GetMapping()
 	instruments[69] = lib["EnglishHorn"];
 	instruments[70] = lib["TrumpetOld"];
 	instruments[71] = lib["Clarinet"];
-	instruments[72] = lib["Flute"];
-	instruments[73] = lib["Flute"];
+	instruments[72] = lib["Piccolo"];
+	// GM 73 (Flute) = профиль GM-банка macOS (gs_instruments.dls); дуновение
+	// перетюнено по чистым замерам (Update 16 — «белого» пшиканья нет, см.
+	// InstrumentLibrary). Программа 43 = «FluteClean» — эталон Titanic,
+	// перетюнен по чистым замерам (Update 16: зона C6 и др. несли артефакты
+	// старой пробы). Legacy-блок «Flute» в InstrumentLibrary не замаплен.
+	instruments[73] = lib["FluteDLS"];
+	instruments[43] = lib["FluteClean"];
+	// GM 115 (Woodblock) в наборе не реализован (тишина) — отдаём его под
+	// «FluteHybrid» (средний вариант: атака DLS + тело Titanic + релиз 0.25 с,
+	// Update 17), чтобы не трогать занятые GM-программы.
+	instruments[115] = lib["FluteHybrid"];
 	instruments[74] = lib["Recorder"];
-	instruments[75] = lib["Flute"];
-	instruments[76] = lib["Whistle"];
+	instruments[75] = lib["PanFlute"];
+	instruments[76] = lib["Bottle"];
 	instruments[77] = lib["Whistle"];
 	instruments[78] = lib["Whistle"];
 	instruments[79] = lib["Ocarina"];

@@ -3,26 +3,54 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+#ifdef INTRA_UI_METERS
+float AdditiveSampler::GetLevel() const
+{
+	// Максимум по лейнам: у пиано каждый партиал затухает СВОИМ шагом
+	// (mDecay1/2/3/4, измерены из семпла), поэтому единой огибающей нет.
+	// Самая громкая гармоника в атаке и большей части сустейна — фундаментал,
+	// она и задаёт воспринимаемую громкость, так что её уровень — честная
+	// яркость индикатора (раньше пиано показывало ровный максимум).
+	const size_t count = mCount;
+	const float* amp = mAmp.Data();
+	float lvl = 0.0f;
+	for(size_t p = 0; p < count; p++)
+	{
+		const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+		if(a > lvl) lvl = a;
+	}
+	// Конец региона: последние mFadeSamples ноту гасят — показываем и это,
+	// чтобы индикатор не оборвался скачком.
+	if(mEndSamples && mRendered + mFadeSamples >= mEndSamples)
+		lvl *= float(mEndSamples > mRendered ? mEndSamples - mRendered : size_t(0))/float(mFadeSamples);
+	return lvl > 1.0f ? 1.0f : lvl;
+}
+#endif
+
 AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	size_t maxPartials, float brightness, float scale, float decayScale,
 	float decayStiffness, float detuneCents,
 	int unisonVoices, float velBrightness, float trebleTilt, float volumeDb,
-	float beatScale)
+	float beatScale, int tableId, float beatCents)
 {
+	// Таблица коэффициентов: общая (acoustic) или per-instrument (SF2),
+	// см. PianoGetTable в PianoRegions.h.
+	mTable = &PianoGetTable(tableId);
+
 	// Ближайший регион по MIDI-ноте (высота = равномерная темперация).
 	const float midi = 69.0f + 12.0f*Math::Log(freq/440.0f)/0.6931471805599453f;
 	size_t best = 0;
 	float bestDist = 1e30f;
-	for(size_t i = 0; i < PianoSampleRegionCount; i++)
+	for(size_t i = 0; i < mTable->RegionCount; i++)
 	{
-		const float d = Math::Abs(float(PianoSampleRegions[i].RootKey) - midi);
+		const float d = Math::Abs(float(mTable->Regions[i].RootKey) - midi);
 		if(d < bestDist)
 		{
 			bestDist = d;
 			best = i;
 		}
 	}
-	const PianoRegionData& region = PianoSampleRegions[best];
+	const PianoRegionData& region = mTable->Regions[best];
 
 	// Число партиал: сколько влезает из региона (не больше maxPartials и не
 	// выше Найквиста с запасом 8% — зависит от транспозиции). FreqRatio —
@@ -31,7 +59,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	size_t partials = 0;
 	for(size_t i = 0; i < size_t(region.PartCount) && i < maxPartials; i++)
 	{
-		const PianoPartial pp = PianoGetPartial(region.PartOffset + i);
+		const PianoPartial pp = PianoGetPartial(*mTable, region.PartOffset + i);
 		const int k = pp.K;
 		if(k <= 0) break;
 		const float fr = 0.95f + float(pp.FreqRatio)*(1.0f/327675.0f);
@@ -74,27 +102,37 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// лестнице. Узкий acoustic (1.4 цента) — по чистой лестнице, «семпловая»
 	// качка h2 ~1.5 Гц на регионе 51, как в коммите.
 	{
+		// BeatCents > 0 — плоская расстройка биений (EP-инструменты): лестница
+		// ниже откалибрована по acoustic-семплам Clavinova, а семплы EP бьются
+		// примерно постоянной скоростью ~2-3 Гц на C4-C5 (хорус тайн DX7/Rhodes).
+		// Лестница на C4 дала бы 0.214·DetuneCents (base 0.3) — почти без биений
+		// в середине, поэтому для них лестница заменяется плоским значением.
 		const float spreadHi = 1.4f;  // эталонная расстройка на C5+ (AcousticPiano)
 		const float instDetune = detuneCents;  // собственная расстройка инструмента (до умножения)
-		float base;
-		if(midi <= 40.0f) base = 0.0f;
-		else if(midi < 45.0f) base = 4.0f;   // регион 43 (G2)
-		else if(midi < 49.0f) base = 0.0f;   // регион 47 (B2)
-		else if(midi < 53.0f) base = 7.0f;   // регион 51 (E3)
-		else if(midi < 56.0f) base = 0.0f;   // регион 54 (F#3)
-		else if(midi < 59.0f) base = 0.0f;   // регион 57 (A3)
-		else if(midi < 62.0f) base = 0.3f;   // регион 60 (C4)
-		else base = 0.3f + 1.1f*Math::Min(1.0f, (midi - 60.0f)/12.0f);
-		// Регион-51 base (7.0) откалиброван под УЗКУЮ расстройку эталонного
-		// acoustic (spreadHi). Широкий пресет (honky-tonk, instDetune=9.0)
-		// умножил бы его до ~45 центов — деструктивные биения (AM до 50 дБ)
-		// именно на C#3-E3. Для широких пресетов регион 51 НЕ берёт лестничный
-		// base (base=0 → D3-E3 плоский, как AGP; так принято на слух 2026-08-30
-		// — «хоть и звучит как AGP»). Свой характер широких пресетов — в басу
-		// G2 и требли C5+ (коммитная лестница), остальное как в коммите.
-		if(midi >= 49.0f && midi < 53.0f && instDetune > spreadHi)
-			base = 0.0f;
-		detuneCents *= (base * beatScale) / spreadHi;
+		if(beatCents > 0.0f)
+			detuneCents = beatCents;
+		else
+		{
+			float base;
+			if(midi <= 40.0f) base = 0.0f;
+			else if(midi < 45.0f) base = 4.0f;   // регион 43 (G2)
+			else if(midi < 49.0f) base = 0.0f;   // регион 47 (B2)
+			else if(midi < 53.0f) base = 7.0f;   // регион 51 (E3)
+			else if(midi < 56.0f) base = 0.0f;   // регион 54 (F#3)
+			else if(midi < 59.0f) base = 0.0f;   // регион 57 (A3)
+			else if(midi < 62.0f) base = 0.3f;   // регион 60 (C4)
+			else base = 0.3f + 1.1f*Math::Min(1.0f, (midi - 60.0f)/12.0f);
+			// Регион-51 base (7.0) откалиброван под УЗКУЮ расстройку эталонного
+			// acoustic (spreadHi). Широкий пресет (honky-tonk, instDetune=9.0)
+			// умножил бы его до ~45 центов — деструктивные биения (AM до 50 дБ)
+			// именно на C#3-E3. Для широких пресетов регион 51 НЕ берёт лестничный
+			// base (base=0 → D3-E3 плоский, как AGP; так принято на слух 2026-08-30
+			// — «хоть и звучит как AGP»). Свой характер широких пресетов — в басу
+			// G2 и требли C5+ (коммитная лестница), остальное как в коммите.
+			if(midi >= 49.0f && midi < 53.0f && instDetune > spreadHi)
+				base = 0.0f;
+			detuneCents *= (base * beatScale) / spreadHi;
+		}
 	}
 	// «Струны» унисона: 1-3, каждая со своей расстройкой, громкостью и фазой.
 	unisonVoices = Math::Clamp(unisonVoices, 1, 3);
@@ -202,7 +240,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		const float det = beatCollapse ? 1.0f : Math::Pow(detuneRatio, voiceCents[v]);
 		for(size_t p = 0; p < partials; p++, o++)
 		{
-			const PianoPartial pp = PianoGetPartial(region.PartOffset + p);
+			const PianoPartial pp = PianoGetPartial(*mTable, region.PartOffset + p);
 			const int k = pp.K;
 			// Упакованные поля таблицы (Amp/Decay — U16, Phase — U8: шаг фазы
 			// 360/256=1.41° — неслышим). Декодируем тут, дальше — чистый float.
@@ -276,15 +314,29 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 				// (глубина 4-6 дБ = шум окна) — вес 0.25, чтобы не было
 				// медленного «насоса»; к C5 плавно до 1 (в требли h1 бьётся
 				// глубоко, C6+ 10-33 дБ).
-				float w = 0.0f;
-				if(k == 1)
+				// EP-профиль (BeatCents>0, 2026-09-04): у DX7/Rhodes-семплов
+				// бьются ВСЕ партиалы вместе (хорус тайн), h1 в середине тоже
+				// (C4 h1 ~7 дБ — лестничные 0.25 дали бы 1.5 дБ) — плоский вес:
+				// h1 полный, h2/h3 половинный, h4+ четверть.
+				float w;
+				if(beatCents > 0.0f)
 				{
-					if(midi <= 60.0f) w = 0.25f;
-					else if(midi >= 72.0f) w = 1.0f;
-					else w = 0.25f + 0.75f*(midi - 60.0f)/12.0f;
+					if(k == 1) w = 1.0f;
+					else if(k == 2 || k == 3) w = 0.5f;
+					else w = 0.25f;
 				}
-				else if(k == 2) w = 1.0f;
-				else if(k == 3) w = 0.5f;
+				else
+				{
+					w = 0.0f;
+					if(k == 1)
+					{
+						if(midi <= 60.0f) w = 0.25f;
+						else if(midi >= 72.0f) w = 1.0f;
+						else w = 0.25f + 0.75f*(midi - 60.0f)/12.0f;
+					}
+					else if(k == 2) w = 1.0f;
+					else if(k == 3) w = 0.5f;
+				}
 				const float rEff = 1.0f - (1.0f - beatR)*w;
 				mBeatR2[o] = rEff*rEff;
 			}
@@ -658,7 +710,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			uint16 a2Best = 0;
 			for(size_t p = 0; p < partials; p++)
 			{
-				const PianoPartial pr = PianoGetPartial(region.PartOffset + p);
+				const PianoPartial pr = PianoGetPartial(*mTable, region.PartOffset + p);
 				if(pr.K == 1 && pr.Amp > 0 && o1 == size_t(-1)) o1 = p;
 				if(pr.K == 2 && pr.Amp > 0 && pr.Amp > a2Best) { a2Best = pr.Amp; o2Best = p; }
 			}
@@ -758,7 +810,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		size_t lanes[4] = {size_t(-1), size_t(-1), size_t(-1), size_t(-1)};
 		for(size_t p = 0; p < partials; p++)
 		{
-			const PianoPartial pr = PianoGetPartial(region.PartOffset + p);
+			const PianoPartial pr = PianoGetPartial(*mTable, region.PartOffset + p);
 			if((unsigned)pr.K >= 2 && (unsigned)pr.K <= 3 && pr.Amp > 0)
 				if(lanes[pr.K] == size_t(-1)) lanes[pr.K] = p;
 		}
