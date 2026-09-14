@@ -108,3 +108,11 @@ Temporary Items
 /.scratch/
 /build-*/
 /probe-tmp/
+
+# Node tooling (playwright for local probes only, scripts/ is untracked)
+node_modules/
+
+# Local env files
+.env
+.env.local
+.env.*.local
