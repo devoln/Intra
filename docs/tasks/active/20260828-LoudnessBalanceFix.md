@@ -3,7 +3,7 @@ title: "Piano loudness balance: StereoPan==0 fast-path fix + per-instrument Volu
 status: "active"
 created: 2026-08-28
 started: 2026-08-28
-updated: 2026-08-28
+updated: 2026-09-02
 risk_level: medium
 related_files:
   - intrasynth/src/Intra/Synth/AdditiveSampler.cpp
@@ -472,3 +472,314 @@ HT D3-E3 now gets exactly its own detune (9c, same as its accepted treble) inste
 - Trade-off: D3-E3 RMS dips ~4 dB vs neighbors (loudmap key 51: 4.0 vs 48: 7.9 / 54: 9.6) —
   inherent to a honky wobble; the commit's peak dip was 11.6 dB. Knob: region-51 base for
   wide presets (spreadHi = 9c; lower toward 0 = calmer, higher = more honky).
+
+## 2026-08-30 — Final HT detune decision (revert), commits, per-instrument table mechanism
+
+### HT extra detune reverted (accepted on listening)
+The 9c region-51 override ("умеренное расстроенное пианино") sounded bad ("плохо звучит").
+Reverted AdditiveSampler.cpp: wide presets on region 51 → `base = 0.0f` again — D3-E3 flat
+like AGP (accepted: "хоть это и звучит как AGP"). HT keeps its commit character in bass G2
+(~26c) and treble C5+ (9c). Acoustic unchanged (narrow preset, ladder intact, h2 wobble ~13 dB
+on 49-52 verified).
+
+### Commits
+- ae4f1b5: packed partial table + per-instrument VolumeDb/BeatScale + C#3-E3 beating fix +
+  compact web player (header playback bar, reload-free A/B wasm swap, localStorage state,
+  sample preload to blob URLs, detached-ArrayBuffer fix) + reference samples + worklogs.
+- fe9f14e: fix missing `PianoGetPartial` definition — the packing refactor referenced it but
+  the packer template never emitted it (regenerating the header dropped the manual append).
+  Now appended to the region block so .scratch/pack-piano-table.js passes it through.
+
+### Honky-Tonk SF2 analysis — NO separate table exists
+Built a full SF2 preset→instrument→sample resolver (Titanic 200 GM-GS v1.2.sf2):
+- Honky Tonk preset (prog 3, phdr idx 80) → instrument 121 "ClavinovaGrand mono" → the SAME
+  key samples as acoustic (25(L)..72(R)); its zones add `modEnvPitch ±300` + `modEnvDepth 702`
+  (pitch-envelope detune) — the honky character is detune, not new samples.
+- FluidR3_GM.sf2 cross-check: Honky Tonk and Yamaha Grand Piano share the identical
+  "P200 Piano" sample set.
+=> An HT coefficient table built from samples would be byte-identical to the shared acoustic
+   table; a duplicate would add ~6 KB to the WASM for zero sonic change (against the minimal
+   size goal). Conclusion recorded: HT's table = the shared one.
+
+### Per-instrument table mechanism (#if + build choice)
+- intrasynth/CMakeLists.txt: `INTRA_PIANO_ALL_TABLES` option (default OFF = minimal build).
+  ON adds `-DINTRA_PIANO_ALL_TABLES`.
+- PianoRegions.h (tail, passthrough through the packer): `PianoTableId` enum
+  (Shared=0, HonkyTonk=1), `PianoTable` struct, `PianoGetTable(id)` — under the define the
+  HT slot aliases the shared table (0 extra bytes); without it every id resolves to shared.
+  `PianoGetPartial` now takes the table.
+- AdditiveSampler: `tableId` ctor param (default 0), `mTable` member resolved once per note;
+  region lookup + partial decode go through mTable. AdditivePianoInstrument gains `TableId`
+  (default 0); Honky-tonk sets `PianoTableHonkyTonk` (12th initializer, with comment).
+- scripts/build-wasm.sh: `sh scripts/build-wasm.sh` = minimal (OFF), `... all` = ON;
+  build-wasm-size.sh / build-wasm-simd.sh keep OFF.
+- Verified: both variants compile; HT D3 renders BIT-IDENTICAL (max diff 0.0); sizes
+  minimal 164,865 B vs all 164,765 B (codegen noise, no table data). dist/ = minimal build.
+
+## 2026-08-31 — Per-instrument SF2 tables for the 5 remaining additive pianos
+
+Completed the "Next" item above: every additive piano with genuinely distinct samples in the
+Titanic SF2 now has its own coefficient table under `INTRA_PIANO_ALL_TABLES`.
+
+### Sample maps (resolved from the SF2 preset→instrument→zone→sample graph)
+
+| instrument (GM prog) | preset | regions (root key) | samples used |
+|---|---|---|---|
+| ElectricGrand (2) | "Roland XP50 EPiano" | 43, 48, 53, 60, 65, 72, 77 | XP50 G2L..F5L (L) |
+| ElectricPiano1 (4) | "Rhodes EVP73" | 48, 60, 72 | c2/c3/c4-90 (L) — the loud velocity layer |
+| ElectricPiano2 (5) | "Yamaha DX7" | 43, 48, 55, 60, 67, 72, 79, 84, 91 | DX7_EP_0NN — the FM layer (the "Soft" piano layer is a different, more piano-like sound; the FM tines are the EP2 character) |
+| Harpsichord (6) | "Harpsichord 8'I" | 34, 37, 42, 48, 59, 66, 72, 80, 86 | H8'I-A..I (Key Noise layer not modelled — our attack is contact force without noise) |
+| Clavinet (7) | "Clavinet" | 31, 36, 43, 48, 55, 60, 67, 72, 79, 84, 91 | Clavinet G2..G7 |
+
+Bright (1) and Honky-Tonk (3) still alias the shared acoustic table (same Clavinova samples).
+
+### Generator
+
+`.scratch/gen-instrument-tables.js` — same pipeline as generate-piano-regions.js (attack-window
+DFT per partial with frequency refinement, 4-segment decay fit, attack-rise tau, peak-RMS
+loudness normalised to 1.0 per instrument), but packs straight to the 11 B/row format and
+emits a standalone header. Two partial finders:
+- harmonic-chain (same ±3 % + B-stretch as the acoustic generator) for EG/EP1/Harpsi/Clav;
+- loose peak-pick for the FM (DX7) layer: `k = round(f/f0)`, one peak per harmonic, ratio
+  `f/(k·f0)` clamped to [0.95, 1.95] — FM partial chains are sparse, sequential k produced
+  garbage. The first attempt had this exact bug (only the top-frequency tail survived the
+  ratio filter) and was fixed by the k-rounding above.
+
+Output: `intrasynth/src/Intra/Synth/PianoTablesExtra.h` (784 lines, generated; the repo's
+packer/generator convention of writing into src/). In `PianoRegions.h` an `#ifdef
+INTRA_PIANO_ALL_TABLES` `#include` + five new `PianoTableId` entries (2..6) + five branches in
+`PianoGetTable`. TableIds wired in InstrumentLibrary.cpp (EG/EP1/EP2/Harpsi/Clav, 12th
+initializer, with per-instrument comments). The packer pipeline stays consistent: the readable
+copy got the same tail splice, so re-running pack-piano-table.js re-emits the wiring verbatim
+(verified — 544 rows parsed, 0.000 % round-trip error, only the intended tail in the diff).
+
+### Packed size (in the ALL-tables build)
+
+| table | regions | partial rows | packed bytes |
+|---|---|---|---|
+| EG | 7 | 213 | 2,343 |
+| EP1 | 3 | 26 | 286 |
+| EP2 | 9 | 157 | 1,727 |
+| Harpsi | 9 | 289 | 3,179 |
+| Clav | 11 | 314 | 3,454 |
+| total | 39 | 999 | 10,989 |
+
+WASM: minimal 164,865 B vs all 177,772 B (+12,907 B = ~11 KB partial/region data + dispatch).
+
+### Per-table model notes (honest first pass — listen and tune)
+- Clavinet samples are ~0.2 s: decay measured as-is, note ends at region SampleLen (like the
+  SF2, whose loop is a tiny slice); rendered envelope dies by ~300 ms — short pluck, by design.
+- Harpsichord notes end at SampleLen (~0.7-0.8 s) — matches the non-looping SF2 behavior.
+- EP2 (DX7): FM table with synthetic SampleLen = 4 s (the raw samples are 0.1-0.26 s looped
+  clips; without an override the note would gate at ~0.2 s and lose the EP character). Decays
+  come from the short real audio; the fallback for missing windows is a mild decay.
+- VolumeDb calibration values are UNCHANGED (measured 2026-08-28 against the shared table);
+  per-key/per-instrument levels may shift with the new tables — recalibrate after listening.
+- Unison beat-ladder, brightness/velocity tilt and TrebleTilt still apply on top exactly as for
+  acoustic — the new tables replace only RegionData/partials.
+
+### Verification (A/B, .scratch/ab-tables.mjs + ab-tables-out/)
+- Acoustic C3/C4 renders are BIT-IDENTICAL between minimal and all builds (shared-table code
+  path untouched; the extra header is empty in the minimal build).
+- All five new-table instruments render non-silent, non-NaN output in the all build and differ
+  substantially from their shared-table render (maxAbs 0.29-0.41), i.e. the tables are live.
+- Envelope spot-check (L channel, 100 ms RMS): clav C3 -21→-45 dB→silence by ~300 ms;
+  harpsi C4 dies at ~0.9 s; EG/EP1/EP2 sustain through 1 s at -19/-16.6/-21 dB — short-pluck
+  vs sustained behavior is correct.
+- dist/ + web/generated/ = minimal build (deploy spec). The "all" build is one command away:
+  `sh scripts/build-wasm.sh all`.
+
+## 2026-09-01 — Ship the all-tables build + octave-shift keyboard (user report: "разные инструменты одинаковы")
+
+User listened to the deployed build and reported that HT up to A3 sounds like instruments 1-3 and
+almost like AGP, that progs 0/1 differ only in attack, and that EGP/EP1/EP2 sound identical.
+Root cause: the served wasm was the MINIMAL build (INTRA_PIANO_ALL_TABLES=OFF) — every TableId
+resolved to the shared acoustic table, so 2..7 differed only via Brightness/Detune/Unison/Volume
+params. The per-instrument SF2 tables existed in source but were compiled only on demand.
+
+Facts re-checked against the SF2 (resolve-inst-samples.js): progs 0/1/3 all use the SAME
+Clavinova Grand sample pool; prog 0 layers 6 velocity instruments (P6 soft .. P1 loud, filters
+fc=7935..10677 cents on the soft layers only), prog 1 uses one layer set without those filter
+gens, prog 3 uses the mono "ClavinovaGrand mono" samples — HT's character in the SF2 is
+preset-level detune, not different samples. So "HT sounds like AGP" is partly true in the SF2
+itself; our HT differs via DetuneCents=9, 3 voices, beat profile, and the deliberate flat
+mid-register (2026-08-30 decision). AGP vs Bright: same samples in the SF2; our difference is the
+Brightness param (0.25 vs 0.4 + VelBrightness 0.4 → at vel 100 k^0.37 treble tilt) — wired and
+compiled (line 196 AdditiveSampler.cpp), not a no-op; if it still reads as "same timbre", raise
+Brightness on prog 1.
+
+Changes:
+- scripts/build-wasm.sh: default = full build (all SF2 tables in), `min` opt-in for the minimal
+  size build. web/generated/ + dist/ refreshed (IntraSynth.wasm 177,772 B = previously A/B-verified
+  all-tables artifact, bit-identical to /tmp/IntraSynth-all2.wasm).
+- web/synth.js + web/index.html: octave-shift arrows ‹/› on the sides of the on-screen keyboard
+  (C2..B8 range, default C3-B4, label above, held notes released on shift, buttons disabled at
+  the range ends).
+
+Next: re-calibrate per-instrument VolumeDb against the new tables after listening; optionally
+strengthen prog 1 brightness.
+
+## 2026-09-02 — VolumeDb recalibrated against the per-instrument SF2 tables
+
+User (2026-09-01): "EGP/EP1/EP2/Hapsichord/Clavinet громче остальных во много раз! Надо везде
+баланс громкостей правильно настраивать, чтобы было как в FL!"
+
+### Root cause (measured)
+The table generator (`.scratch/gen-instrument-tables.js`) normalises each table's `Loudness`
+column to max 1.0 per instrument, while the shared acoustic table tops out at 0.4569 — so every
+new-table instrument got a ~+5..+8 dB offset on top of its own sample loudness. The 2026-08-28
+VolumeDb values were measured against the SHARED table and became wrong the moment each
+instrument switched to its own table (commit ae4f1b5 shipped the tables, the shipped wasm was
+still minimal until 2026-09-01, which is why the imbalance only surfaced now).
+
+Render measurements (scripts/_tmp-instlevel.js, all-tables build, vel 100, RMS 0-300 ms avg
+over keys 36..91, delta vs Acoustic): before calibration EG +7.1, EP1 +11.1, EP2 +8.0,
+Harpsi +5.4, Clav +6.6 dB — exactly the user's "громче во много раз".
+
+### SF2 ground truth (the "как в FL" target)
+New resolver scripts/_tmp-sf2level.js: preset → pbag/igen zones (bag records are 4 B
+{genNdx, modNdx}; gen count = next bag's genNdx minus ours; opcodes 41=instrument, 43=keyRange,
+44=velRange, 48=initialAttenuation (0.4 dB units), 53=sampleID), sample RMS 0-300 ms ×
+10^(-atten·0.4/20) at vel 100 (no vel gain), same 10-key window as the render probe.
+Deltas vs Acoustic Grand: EG +0.5, HT +0.6, EP1 +5.9, Harpsi -3.9, Clav +0.7.
+- EP2 nuance: the preset layers "Yamaha DX7" (Soft samples) AND "Chorused Piano" (DX7_EP_*);
+  the FM layer carries initialAttenuation 123..363 (-49..-145 dB) — inaudible in players, so
+  the audible level is the Soft layer = **-5.8 dB** vs AGP (per-key levels measured with
+  _tmp-sf2debug.js). Our table models the FM layer's timbre but must sit at the preset's
+  audible level, not the inaudible FM layer's.
+- HT/EG rows re-verified: HT samples are the shared Clavinova set (preset-level detune only,
+  as established 2026-08-30); EG (XP50) is +0.5 dB.
+
+### Correction
+VolumeDb_new = VolumeDb_old - (measured delta - SF2 delta):
+
+| instrument | old | new | note |
+|---|---|---|---|
+| Bright | +0.7 | +0.7 | unchanged (shared table, still correct) |
+| HT | +1.8 | +1.8 | unchanged (aliases shared table) |
+| EG | +6.8 | **+0.2** | -6.6 (7.1 - 0.5) |
+| EP1 | +6.2 | **+1.0** | -5.2 (11.1 - 5.9) |
+| EP2 | +5.7 | **-8.1** | -13.8 (8.0 - (-5.8)) |
+| Harpsi | +7.5 | **-1.8** | -9.3 (5.4 - (-3.9)) |
+| Clav | +9.1 | **+3.2** | -5.9 (6.6 - 0.7) |
+
+(A first-pass EP2 value -2.3 was an arithmetic slip and measured -0.0 vs target -5.8; caught by
+the post-fix re-measurement and corrected to -8.1.)
+
+### Verification (post-fix, RMS 0-300 ms delta vs Acoustic)
+EG +0.5 (=target), HT -1.3 (target +0.6; HT's mid is deliberately flat — no regional detune —
+and its peak window is +0.9, within the accepted ±2.5 dB spread), EP1 +5.9 (=target),
+EP2 -5.8 (=target), Harpsi -3.9 (=target), Clav +0.7 (=target). Peak 0-100 ms deltas sit in the
+same band (EG +1.2, EP1 +3.2, EP2 -5.5, Harpsi -1.7, Clav +2.2) — the strike-to-body ratio
+follows each instrument's own envelope shape, as it should.
+
+WASM: 177,772 B (unchanged — VolumeDb is a per-note multiplier, no table data). dist/ refreshed
+and verified byte-identical to web/generated/. Values documented in AdditiveSampler.h
+(VolumeDb comment) and each initializer in InstrumentLibrary.cpp carries the derivation.
+
+Next: user listening pass (A/B vs an actual FL/SF2 render if desired); per-key/per-region
+touch-ups only with new sample-backed evidence.
+
+## 2026-09-04 — EP-family C4-C5 held-note decay (D4 scale bug) + EP2 audible-layer table
+
+User A/B report (sample tabs, C4-C5): "EP1 тембр 1:1, но не затухает при удержании
+(постоянно громкий)"; "EGP тембр как в начале, но не меняется при удержании, а в семпле
+успокаивается — перестаёт быть явной пилой"; "EP2 ничем не похож и ужасно громкий".
+
+### Root cause 1 — per-instrument table D4 pack scale (EP1/EG long flat tails)
+
+`PianoTablesExtra.h` (per-instrument tables for EG/EP1/EP2/Harpsi/Clav) is decoded by
+AdditiveSampler with D1/D2 on the 2621.4 scale and D3/D4 on the 5461.25 scale (D4 was
+added later as a 4th decay segment; see the decode comment in AdditiveSampler.cpp).
+`gen-instrument-tables.js` packed D4 on the OLD 2621.4 scale, so the synth decoded
+λ4 = field/5461.25 at 0.48× the intended rate: from SegT3 (~t>1.8 s, the windows at
+1.2-5 s where the fit lives) every per-instrument EP tail decayed at roughly HALF the
+sample's rate and kept ringing — the "не затухает при удержании" report. Same bug made
+EG keep its bright upper partials (the "saw") far past where the XP50 sample melts.
+
+Fix (generator only, no runtime change): pack D4 with the 5461.25 quantizer (qDec3),
+matching AdditiveSampler's decode. Regenerated PianoTablesExtra.h (2026-09-04).
+
+### Root cause 2 — EP2 modeled the inaudible FM layer ("ничем не похож")
+
+The preset-5 zone picker for the per-instrument table had selected the "Yamaha DX7"
+FM layer (DX7_EP_* samples, initialAttenuation −49..−145 dB — inaudible in any real
+player). The table therefore rendered a bright saw-ish tine that matched nothing the
+user could hear, while the audible "Soft" layer samples sat unmodeled. The sample-tab
+A/B (which plays the raw audible zone sample) confirmed: EP2 C4/C5 tab WAVs are
+FUNDAMENTAL-DOMINANT (measured h2 ≈ −35 dB rel h1 at C4 AND C5 — a mellow layered EP,
+not a tine bell).
+
+Fix: regenerated the EP2 table from the audible Soft-layer zone samples (per-zone
+roots/attenuation from the SF2), 14 regions ≈0.6 KB. Verify vs the tab WAVs with
+`.scratch/probe-ref-spectra.js`: table rows at C4 (h2 −34.9, h4 −53.2) vs measured tab
+WAV (h2 −35.2, h4 −50.5); C5 h2 −35.0 vs −36.8 — timbre now tracks the reference
+within ~1.5 dB.
+
+### EP2 VolumeDb −8.6 (was −1.9)
+
+With the Soft-layer table the render sat at RMS03 +0.9 dB vs Acoustic; SF2 target for
+the audible layer (Soft vs Clavinova, scripts/_tmp-sf2level.js) is −5.8 dB →
+VolumeDb_new = −1.9 − (0.9 − (−5.8)) = −8.6. Documented in AdditiveSampler.h comment
+and the EP2 initializer in InstrumentLibrary.cpp.
+
+### Verification (final build, dist refreshed 2026-09-04 18:16)
+
+- scripts/_tmp-instlevel.js (instlevel-final.log), RMS 0-300 ms delta vs Acoustic:
+  EG +0.5 (=target), EP1 +5.9 (=target), EP2 −5.8 (=target), Harpsi −3.9 (=target),
+  Clav +0.7 (=target) — all sit exactly on the SF2-derived targets again.
+- .scratch/probe-held2.js (held2-final.log), render vs tab WAV at C4/C5, 4 s holds:
+  - EP1 C4 decays −15.9 → −27.8 dBFS over 3.8 s and the note ends at SampleLen ≈ 9 s
+    (tab sample 9.6 s) — pre-fix the λ4 tail (0.48×) kept the note audibly ringing
+    through the whole 9 s hold.
+  - EG C4/C5 note length = 2.81/2.76 s == the XP50 sample length; decay slope now
+    tracks the sample window-by-window (render −20.0 → −30.5 over 2.5 s vs sample
+    −11.9 → −21.3 over the same span, both ending together).
+  - EP2 now matches its (short, fundamental-only) tab sample: −22.2 @50 ms decaying
+    −4.7 dB/s; the 4 s SampleLen is only audible if the key is held past the 1.75 s
+    sample — the note-test releases at the sample duration.
+- dist/ + web/generated/ rebuilt (IntraSynth.wasm 176,876 B, full all-tables build).
+
+Next: user A/B re-listen at C4-C5; remaining per-key touch-ups only with new
+sample-backed evidence.
+
+## 2026-09-04 (evening) — Full re-verification pass on the shipped build (user: "не заметил")
+
+User came back after the EP-family fixes saying they did not notice any change
+and repeated the C4-C5 complaints. Re-verified the entire chain instead of
+assuming the work was already done:
+
+### Build chain (all byte-identical, all newer than the sources)
+- Sources (AdditiveSampler.h 18:16:10, InstrumentLibrary.cpp 18:16:06,
+  PianoTablesExtra.h 18:14:38) < wasm build (build-wasm 18:16:22, 176,876 B)
+  < web/generated 18:16:23 < dist assembly 18:59. md5 of dist/IntraSynth.wasm
+  == web/generated == build-wasm (4ccee7a3…). The preview serves dist/ via
+  scripts/serve.js (which already sends `Cache-Control: no-cache`, so a plain
+  reload always re-fetches the fresh wasm).
+- The A/B "коммит" build is NOT persisted: `abBuild` comes only from the URL
+  (`?wasm=ref`), localStorage saves instrument/volume/reverb/pregen/drums/
+  spoiler only. A stale-sound report is not explained by the A/B toggle
+  sticking; the likely cause is a preview tab that predated the 18:59 dist
+  rebuild (no reload / hard refresh).
+
+### Fresh measurements on the shipped dist binary (scripts/_tmp-instlevel.js, .scratch/probe-held2.js)
+- RMS 0-300 ms delta vs Acoustic: EG +0.5, EP1 +5.9, EP2 −5.8, Harpsi −3.9,
+  Clav +0.7 dB — exactly the SF2-derived targets (2026-09-02/04 calibration
+  holds; EP2 no longer "ужасно громкий").
+- EP1 held C4/C5: render −15.9 → −27.8 dBFS over 3.8 s at the sample's decay
+  rate (sample −6.6 → −23.8); the pre-fix flat 9 s ring is gone. Per-partial
+  trajectories track the tab WAV within ~5 dB through 4 s.
+- EG held C4/C5: note ends at SampleLen 2.81/2.76 s == XP50 sample length;
+  decay slope matches window-by-window (render −20.0 → −30.5 vs sample
+  −11.9 → −21.3) and the saw-like upper partials melt with the sample
+  (h3 −1 → −14 dB by 2-3 s on both sides).
+- EP2 C4/C5: fundamental-dominant table (h2 −34.9/−35.0 dB rel h1 vs tab WAV
+  −35.2/−36.8, h4 −53/−55 vs −50.5); decay −4.7 dB/s like the (short, 1.75 s)
+  tab sample; the 4 s SampleLen only matters for holds past the sample length.
+
+No code changes were needed this pass — the shipped build already contains all
+2026-09-02/04 fixes. Answer to the user: the task IS done; hard-refresh the
+preview (or reopen it) and re-listen EP1/EGP/EP2 at C4-C5 against the sample
+tabs. Note for future A/B: the tab WAVs are raw SF2 samples ~9 dB hotter in
+absolute level than the calibrated synth — compare shape/timbre and relative
+deltas, not absolute dBFS.
