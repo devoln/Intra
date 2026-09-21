@@ -828,15 +828,6 @@
   let sampleTabIndex = 0;
   const sampleDurations = {}; // tabDir -> { note: секунды }
   const sampleBlobs = {};     // tabDir -> { file: blobURL }
-  // GM-программа для автопереключения инструмента при смене вкладки.
-  // Update 42: Recorder (74) и Ocarina (79) добавлены — семплы этих двух
-  // инструментов появились вкладками в спойлере, но без записи в карте клик по
-  // вкладке не переключал синтезатор, и тест-ноты рядом играли чужой тембр.
-  const SAMPLE_TAB_PROG = {
-    AcousticPiano: 0, ElectricGrand: 2, ElectricPiano1: 4, ElectricPiano2: 5,
-    Harpsichord: 6, Clavinet: 7, StringEnsemble: 48, Flute: 73,
-    PanFlute: 75, Whistle: 78, Recorder: 74, Ocarina: 79,
-  };
 
   // ---- A/B-рендеры (спойлер) --------------------------------------------
   // Манифест web/generated/ab/manifest.json → dist/ab/manifest.json пишет
@@ -890,8 +881,9 @@
         note.textContent = it.label;
         const src = document.createElement("span");
         src.className = "debug-src";
-        src.innerHTML = escapeHtml(it.desc || "")
-          + (it.bytes ? " · " + (it.bytes / 1024).toFixed(0) + " КБ" : "");
+        // Update 127: объясняющий текст в строках A/B убран (владелец:
+        // «убери объясняющий текст из всех спойлеров») — остаётся размер сборки.
+        src.innerHTML = it.bytes ? (it.bytes / 1024).toFixed(0) + " КБ" : "";
         const audio = document.createElement("audio");
         audio.controls = true;
         audio.preload = "auto";
@@ -1024,7 +1016,10 @@
     renderSampleRows(inst);
     // Вкладка = инструмент: переключаем и синтезатор на тот же GM-инструмент,
     // чтобы тест-ноты рядом играли его, а не что попало из селектора.
-    const prog = SAMPLE_TAB_PROG[inst.dir];
+    // Программу берём из манифеста (поле prog), а не из таблицы в коде: две
+    // правки подряд вкладки инструментов не переключали ровно потому, что
+    // таблицу забывали дополнить (Recorder/Ocarina, потом гитары 29/30).
+    const prog = inst.prog;
     if (prog !== undefined && els.instrument) {
       const opt = els.instrument.querySelector('option[value="' + prog + '"]');
       if (opt) {

@@ -62,6 +62,7 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 #endif
 {
 	for(auto& p: mChannelProgramOverride) p = 0xFF;
+	for(auto& f: mChannelProgramForced) f = false;
 	for(auto& v: mLiveVolume) v = 127;
 	for(auto& p: mLivePan) p = 64;
 }
@@ -571,6 +572,9 @@ void MidiSynth::OnChannelControlChange(byte channel, byte control, byte value)
 void MidiSynth::OnProgramChange(byte channel, byte program)
 {
 	if(channel >= 16 || program >= 128) return;
+	// Ручной выбор инструмента из веб-UI (ФОРС канала) сильнее файла: событие
+	// программы из MIDI-файла не меняет ни инструмент, ни состояние UI.
+	if(mChannelProgramForced[channel]) return;
 	mChannelProgramOverride[channel] = program;
 	auto* instr = mInstruments.Instruments[program];
 	if(instr) instr->PreloadTables(mSampleRate);

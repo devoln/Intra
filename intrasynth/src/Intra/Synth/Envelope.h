@@ -10,9 +10,17 @@ using Intra::Audio::Synth::ExponentialLinearAttenuateAdd;
 
 struct Envelope
 {
+	// ШЕСТЬ сегментов, а не пять (Update 92): гитарным полосам нужен сегмент
+	// НАРАСТАНИЯ перед щипком. Пять сегментов (атака + три узла + полка)
+	// описывали только спад, поэтому огибающая полосы СТАРТОВАЛА в самой
+	// громкой точке: замер .scratch/guitar-band-attack92.mjs показал, что в
+	// первые 6 мс после note-on наша нота на 32 дБ громче банка (банк выходит
+	// на пик за 20-30 мс), а слушалось это щелчком и «оглушительно». Кто
+	// заполняет меньше сегментов — как раньше: незанятые (нулевой длины)
+	// пропускаются в operator() и в StartNextSegment.
 	enum: unsigned
 	{
-		N = 5
+		N = 6
 	};
 
 	enum: int
@@ -72,9 +80,15 @@ struct Envelope
 		/// Вызывать эту функцию только после установки значения Exponential!
 		INTRA_FORCEINLINE void SetVolume(float volume)
 		{
+			// Кламп ОБЯЗАТЕЛЕН (падение уровня на 18 дБ): Volume — поле в 8 бит, а уровень выше 1.0
+			// (у гитар опорный уровень сдвинут к максимуму узлов, а узел бывает
+			// выше среднего) давал volume*256−1 > 255 и усечение значения:
+			// 1 дБ (×1.122) → 286 → 286&255 = 30 → −18 дБ вместо +1 — целое
+			// падение полосы на 18 дБ в середине ноты (замер
+			// .scratch/guitar-band-track.mjs 29 60).
 			Volume = unsigned(Exponential?
-				Intra::Max(volume * 256.0f - 1.0f, 0.0f):
-				volume*255.0f);
+				Intra::Min(Intra::Max(volume * 256.0f - 1.0f, 0.0f), 255.0f):
+				Intra::Min(Intra::Max(volume*255.0f, 0.0f), 255.0f));
 		}
 	};
 	Point Points[N - 1];
@@ -88,6 +102,12 @@ struct Envelope
 			StartSegment(NextSegmentStartPointIndex++);
 	}
 
+	/// Переход к ПОСЛЕДНЕМУ сегменту — это и есть релиз по note-off.
+	/// Указатель: Points[N−2] ← Segments[N-1], поэтому штатный слот релиза —
+	/// Segments[N-1]. Профили, написанные под прежние ПЯТЬ сегментов (вся семья
+	/// флейт), кладут релиз в Segments[N-2] — фабрика переносит его в слот
+	/// релиза сама (см. EnvelopeFactory::operator()), иначе нота гаснет за один
+	/// семпл — «каждая нота заканчивается щелчком».
 	INTRA_FORCEINLINE void StartLastSegment() {StartSegment(N - 2);}
 
 	void StartSegment(int index)
@@ -236,6 +256,19 @@ struct EnvelopeFactory
 		while(Segments[startIndex].Duration == 0) startIndex++;
 		auto& startSeg = Segments[startIndex];
 
+		// ЛЕГАСИ-РЕЛИЗ (5-сегментные профили). До Update 92 сегментов было
+		// пять, и вся семья флейт кладёт релиз в Segments[N-2]. Штатный слот
+		// релиза — последний (Points[N-2] ← Segments[N-1]), поэтому такой
+		// релиз был ПУСТЫМ и нота гасла за один семпл: владелец слышал это
+		// как щелчок на каждой ноте (сильнее всего на GM 73). Признак релиза —
+		// КОНЕЧНЫЙ сегмент, гаснущий в ноль: у ADSR здесь бессрочная полка
+		// сюстейна (Duration == Infinity), у гитарных полос — полка хвоста,
+		// поэтому их схемы не меняются.
+		const bool legacyRelease = Segments[N - 1].Duration == 0 &&
+			Segments[N - 2].Duration != 0 &&
+			Segments[N - 2].Duration < Intra::Infinity &&
+			Segments[N - 2].EndVolume == 0;
+
 		Envelope result;
 		result.NextSegmentStartPointIndex = startIndex;
 		auto& resSeg = result.CurrentSegment;
@@ -252,7 +285,7 @@ struct EnvelopeFactory
 		for(int i = startIndex; i < N - 1; i++)
 		{
 			auto& pt = result.Points[i];
-			auto& s = Segments[i + 1];
+			auto& s = legacyRelease && i == N - 2? Segments[N - 2]: Segments[i + 1];
 			pt.Exponential = unsigned(s.Exponential);
 			pt.Length = s.LengthInSamples(sampleRate);
 			pt.SetVolume(s.EndVolume);

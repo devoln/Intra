@@ -21,7 +21,14 @@ struct VoiceChannelState
     float ExpFactor = 1;         // экспоненциальное затухание ноты
     float ExpStep = 1;           // его шаг: на семпл, либо на обёртку периода (предзатухание)
     float ChannelMultiplier = 0; // множитель канала (панорама / реверберация)
-    byte Padding[12] = {0};      // до ровно 64 байт
+    /// Поля до добивки — 5 float (Offset, Rate, ExpFactor, ExpStep,
+    /// ChannelMultiplier) и сама огибающая. Считаем их через sizeof, а не жёстким
+    /// числом байт: размер Envelope — НЕ константа (Update 92 добавил шестой
+    /// сегмент ради нарастания щипка, и жёсткая добивка в 12 байт перестала
+    /// сходиться — 68 вместо 64).
+    static constexpr size_t FieldsSize = 5*sizeof(float) + sizeof(Envelope);
+    static constexpr size_t PaddingSize = 64 > FieldsSize? 64 - FieldsSize: 1;
+    byte Padding[PaddingSize] = {0}; // до ровно 64 байт
 };
 static_assert(sizeof(VoiceChannelState) == 64, "VoiceChannelState must be exactly 64 bytes");
 

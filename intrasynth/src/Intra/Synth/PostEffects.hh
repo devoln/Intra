@@ -193,6 +193,7 @@ class HallReverb
 	float mK = 0;
 	float mS = 0;
 	float mRF = 0;
+	float mFeedbackLP = 0;
 	size_t mAccumIndex = 0;
 	size_t mMaxDelay = 0;
 	size_t mBufferedReverbSamples = 0;

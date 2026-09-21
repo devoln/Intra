@@ -8,10 +8,11 @@ Task/history documents live in `docs/tasks/`: `active/`, `planned/`, `archived/`
 
 Architecture and trade-off records live in `docs/decisions/`: `active/`, `accepted/`, `archived/`.
 
-## Язык (правило владельца)
+## Language (owner's rule)
 
-- Всё, что не является размышлениями и комментариями в коде, должно быть **только на русском**: ответы агента, тексты worklog/task/decision-документов, описания изменений, отчёты о размере WASM и т.п.
-- Исключения: внутренние рассуждения (reasoning), комментарии в коде и технические идентификаторы (имена файлов, функций, переменных).
+- Anything that is not reasoning or code comments must be **Russian only**: agent replies, worklog/task/decision documents, change descriptions, WASM size reports, and so on.
+- Exceptions: internal reasoning, code comments, and technical identifiers (file, function, and variable names).
+- **Commit messages are English only** (subject and body). This is the single exception to the Russian-language rule for text.
 
 Task and decision file names should use the format `YYYYMMDD-UpperCamelCase.md`.
 
@@ -19,13 +20,12 @@ If work continues for a while in one direction without an assigned task, and dec
 
 High-level process artifacts and shared skills in `.agents/` must not be changed without explicit owner agreement.
 
-
 Temporary experiment output (ad-hoc build trees, probes, scratch renders) must go under `.scratch/` and stay gitignored; never leave untracked `build-*/` or `probe-*` dirs in the repo root (`/.scratch/`, `/build-*/`, `/probe-tmp/` are in `.gitignore`).
 
 ## IntraSynth WASM build mandate (Intra project)
 
 - The canonical, owner-tracked build is **plain `-Os` everywhere with
-  `INTRA_PIANO_ALL_TABLES=ON`** (`sh scripts/build-wasm.sh`, ~199 KB on the
+  `INTRA_PIANO_ALL_TABLES=ON`** (`sh scripts/build-wasm.sh`, ~216 KB on the
   current instrument set). It is the ONLY configuration whose size the owner
   tracks and wants reported.
 - **Every modification to the synth code must rebuild the canonical config

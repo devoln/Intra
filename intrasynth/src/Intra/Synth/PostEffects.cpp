@@ -95,6 +95,7 @@ void HallReverb::Reset()
 	for(auto& sample: mAccum) sample = 0.0f;
 	mS = 0.0f;
 	mRF = 0.0f;
+	mFeedbackLP = 0.0f;
 	mAccumIndex = 0;
 	mBufferedReverbSamples = 0;
 }
@@ -119,7 +120,10 @@ void HallReverb::ProcessSample(float* ioL, float* ioR, float reverbSample)
 		*ptr++ += accum*d.LeftVolume;
 		*ptr += accum*d.RightVolume;
 	}
-	accumData[mAccumIndex*3] *= mK;
+	// Dampen only the recirculated tail. Early reflections stay unchanged,
+	// while high-frequency modes lose more energy on each delayLength loop.
+	mFeedbackLP += 0.75f*(accum - mFeedbackLP);
+	accumData[mAccumIndex*3] = mFeedbackLP*mK;
 	*ioL += accumData[prevAccumIndex3 + 1];
 	*ioR += accumData[prevAccumIndex3 + 2];
 	accumData[prevAccumIndex3 + 1] = 0;

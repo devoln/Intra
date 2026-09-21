@@ -43,6 +43,16 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	// последующим нотам: и к нотам файла, и к живым нотам.
 	byte mChannelProgramOverride[16];
 
+	// Ручной выбор инструмента из веб-UI (событие 0xC0 от веб-UI) — ФОРС
+	// канала: пока он стоит, Program Change ИЗ ФАЙЛА на этом канале не
+	// применяется вообще (владелец: «ручной выбор инструмента должен
+	// форсить его и игнорить любые переключения инструментов на канале»).
+	// Без флага файл перезаписывал выбор UI своим событием программы — после
+	// выбора «Flute» вместо Pan Flute в дорожке всё равно звучала Pan Flute
+	// (и в реальном времени, и в полной генерации). Снимается выбором
+	// «Исходный из файла» (0xFF).
+	bool mChannelProgramForced[16];
+
 	// Громкость/пан/инструмент каналов — единое MIDI-состояние (CC7/CC10/
 	// Program Change). Оно одно для событий из любого источника: файлового
 	// потока и живого ввода (SendMidiEvent). Громкость из веб-UI посылается
@@ -178,7 +188,9 @@ public:
 	/// генерировала таблицы внутри рендера и не роняла звук.
 	void SetChannelProgram(byte channel, byte program)
 	{
-		if(channel < 16) mChannelProgramOverride[channel] = program;
+		// Ставит и ФОРС канала: пришедшее от UI переопределение — ручное
+		// решение, которое файл больше не имеет права перебить.
+		if(channel < 16) {mChannelProgramOverride[channel] = program; mChannelProgramForced[channel] = program != 0xFF;}
 		if(program != 0xFF && program < 128)
 		{
 			auto* instr = mInstruments.Instruments[program];

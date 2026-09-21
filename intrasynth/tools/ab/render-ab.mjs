@@ -68,9 +68,19 @@ const GROUPS = [
   { title: "Пан-флейта · C4", program: 75, key: 60, variants: ["nash", "prev", "bank"] },
   { title: "Пан-флейта · C5", program: 75, key: 72, variants: ["nash", "prev", "bank"] },
   { title: "Пан-флейта · C6", program: 75, key: 84, variants: ["nash", "prev", "bank"] },
+  // Update 93: РЕЛИЗ флейт. У этих групп note-off стоит ВНУТРИ файла (1.2 с),
+  // иначе щелчок окончания ноты просто не попадает в 2.6-секундный рендер
+  // (у остальных групп нота держится до конца файла). Владелец слышал
+  // «каждая нота флейты заканчивается щелчком» ИМЕННО здесь: в «предыдущей»
+  // сборке (снимок prev — та, что он слушал) флейта глохнет за один семпл.
+  { title: "Флейта 73 (FluteDLS) · релиз C4", program: 73, key: 60, noteOff: 1.2, variants: ["nash", "prev", "bank"] },
+  { title: "Флейта 43 · релиз C4", program: 43, key: 60, noteOff: 1.2, variants: ["nash", "prev", "bank"] },
 ];
 
-const slugFor = (program, key, id) => `${program === 75 ? "pf" : `f${program}`}-${key}-${id}`;
+// note-off — часть имени файла: у релизных групп он свой, и без этого slug
+// совпал бы с обычной группой той же программы и клавиши.
+const slugFor = (program, key, id, noteOff) =>
+  `${program === 75 ? "pf" : `f${program}`}-${key}-${id}` + (noteOff === undefined ? "" : `-rel${Math.round(noteOff * 1000)}`);
 
 // Имена пресетов Titanic (bank 0) — чтобы в подписи было видно, ЧТО играет.
 const PRESET_NAME = { 73: "Flute", 74: "Recorder", 75: "Panflute", 76: "Bottle Blow",
@@ -97,7 +107,7 @@ async function main() {
       // сопоставления (BANK_PROGRAM) не меняла имя файла, а готовый файл
       // считался валидным по mtime SF2 — и в панели оставался старый, неверный
       // рендер (именно это владелец и услышал: «в A/B Titanic звук посторонний»).
-      const slug = slugFor(g.program, g.key, id) + (build.bank ? `-p${bankProgramFor(g.program)}` : "");
+      const slug = slugFor(g.program, g.key, id, g.noteOff) + (build.bank ? `-p${bankProgramFor(g.program)}` : "");
       const mtime = inputMtime(build);
       const existing = fs.readdirSync(OUT_DIR).filter((f) => f.startsWith(slug + ".") && f.endsWith(".wav"));
       let file = null;
@@ -109,8 +119,8 @@ async function main() {
         let x = null;
         try {
           x = build.bank
-            ? renderBank({ program: g.program, key: g.key })
-            : await renderOurs({ program: g.program, key: g.key, wasmJs: build.wasmJs });
+            ? renderBank({ program: g.program, key: g.key, noteOff: g.noteOff })
+            : await renderOurs({ program: g.program, key: g.key, wasmJs: build.wasmJs, noteOff: g.noteOff });
         } catch (err) { x = null; }
         if (!x || !x.length) {
           console.log(`  ${slug}: пропуск (${build.bank ? "банк не отрендерился" : `нет сборки ${build.wasmJs}`})`);
@@ -141,7 +151,7 @@ async function main() {
         : build.label;
       items.push({ label, desc: build.desc, src: `ab/${file}`, bytes });
     }
-    if (items.length) groups.push({ title: g.title, program: g.program, key: g.key, items });
+    if (items.length) groups.push({ title: g.title, program: g.program, key: g.key, noteOff: g.noteOff, items });
   }
 
   // Устаревшие файлы (нет в матрице) удаляем, чтобы каталог не рос вечно.
