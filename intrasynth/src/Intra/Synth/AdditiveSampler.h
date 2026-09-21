@@ -163,6 +163,12 @@ class AdditiveSampler: public IGenericSampler
 	float mStereoPan;
 	float mStereoGainL;
 	float mStereoGainR;
+	// MIDI CC10 is a channel pan layer on top of the measured per-partial
+	// stereo image. Gains are normalized so pan=0 is exactly the accepted
+	// stereo render; hard pan matches the existing linear pan law used by
+	// WaveTableSampler (the surviving side is 2x relative to centered 0.5).
+	float mMidiPanGainL = 1.0f;
+	float mMidiPanGainR = 1.0f;
 	// Таблица партиал/регионов (PianoRegions.h): по умолчанию общая
 	// (acoustic), per-instrument SF2-таблицы — через PianoTableId.
 	const PianoTable* mTable;
@@ -214,7 +220,8 @@ public:
 		const float* stereoL = mStereoPartL.Data();
 		const float* stereoRA = mStereoPartRA.Data();
 		const float* stereoRB = mStereoPartRB.Data();
-	float vol = mVolume;
+	const float volL = mVolume*mMidiPanGainL;
+	const float volR = mVolume*mMidiPanGainR;
 	while(numSamples)
 	{
 		// Атака контактной силы: первые mAttackLen отсчётов — предвычисленный
@@ -242,8 +249,8 @@ public:
 				else if(t + mFadeSamples >= mEndSamples)
 					s *= float(mEndSamples - t)/float(mFadeSamples);
 			}
-			const float sv = 0.5f*s*vol;
-			sink(sv, sv);
+			const float sv = 0.5f*s;
+			sink(sv*volL, sv*volR);
 			numSamples--;
 		}
 		if(numSamples == 0) break;
@@ -476,11 +483,10 @@ public:
 						s *= f; sr *= f;
 					}
 				}
-				sink(s*vol, sr*vol);
+				sink(s*volL, sr*volR);
 			}
 			numSamples -= n;
 		}
-		mVolume = vol;
 		if(mEndSamples && mRendered >= mEndSamples) mDone = true;
 		else if(mReleased)
 		{
@@ -532,6 +538,12 @@ public:
 		return mDone ? 0 : n;
 	}
 	void NoteRelease() override;
+	void SetPan(float newPan) override
+	{
+		const float pan = Math::Clamp(newPan, -1.0f, 1.0f);
+		mMidiPanGainL = 1.0f - pan;
+		mMidiPanGainR = 1.0f + pan;
+	}
 	void ApplyRelease();
 
 };

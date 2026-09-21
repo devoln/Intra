@@ -369,6 +369,7 @@ void NoteSampler::SetPan(float pan)
 {
 	for(auto& sampler: WaveFormSamplers) sampler.SetPan(pan);
 	for(auto& sampler: WaveTableSamplers) sampler.SetPan(pan);
+	for(auto& sampler: GenericSamplers) sampler->SetPan(pan);
 	Pan = pan;
 }
 

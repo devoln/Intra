@@ -271,6 +271,7 @@ private:
 	/// меняется только слой поверх него, поэтому доигрывающие ноты слышат
 	/// изменение сразу, а их тембр остаётся тем, с каким они родились.
 	void UpdateChannelGain(byte channel);
+	void UpdateChannelPan(byte channel);
 
 	double liveEventTime();
 	bool synthNote(Sampler& sampler, Span<float> ioDstLeft, Span<float> ioDstRight);

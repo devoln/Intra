@@ -552,6 +552,17 @@ void MidiSynth::UpdateChannelGain(byte channel)
 	}
 }
 
+void MidiSynth::UpdateChannelPan(byte channel)
+{
+	const float pan = (float(mLivePan[channel]) - 64.0f)/64.0f;
+	for(auto notes = mNoteSamplers.AsRange(); !notes.Empty();)
+	{
+		auto& sampler = notes.Next();
+		if(sampler.GetInfo<NoteInfo>().Channel != channel) continue;
+		sampler.SetPan(pan);
+	}
+}
+
 void MidiSynth::OnChannelControlChange(byte channel, byte control, byte value)
 {
 	if(channel >= 16) return;
@@ -566,7 +577,17 @@ void MidiSynth::OnChannelControlChange(byte channel, byte control, byte value)
 		}
 		PushFeedback(byte(0xB0 | channel), 0x07, value);
 	}
-	else if(control == 0x0A) mLivePan[channel] = value;
+	else if(control == 0x0A)
+	{
+		if(mLivePan[channel] != value)
+		{
+			mLivePan[channel] = value;
+			// CC10 is a live channel layer too: repan notes that are already
+			// sounding instead of affecting only future NoteOn events.
+			UpdateChannelPan(channel);
+		}
+		PushFeedback(byte(0xB0 | channel), 0x0A, value);
+	}
 }
 
 void MidiSynth::OnProgramChange(byte channel, byte program)

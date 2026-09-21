@@ -917,7 +917,11 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		mS1[p] = cis[p]*c;
 		mS2[p] = (cis[p]*Math::Cos(dphis[p]) + crs[p]*Math::Sin(dphis[p]))*c;
 		mAmp[p] = 0.0f;
-		mAtk[p] = stringRiseStep;
+		// Fast onset belongs only to real measured partials. Silent table rows
+		// and SIMD padding have decay/release step 1; ramping them to unity
+		// makes maxAmp stay near 1 forever after NoteRelease and prevents the
+		// voice-cleanup gate from ever deleting the note.
+		mAtk[p] = (crs[p]*crs[p] + cis[p]*cis[p] > 0.0f) ? stringRiseStep : 0.0f;
 	}
 
 	// The note's t=0 now corresponds to the old SF2 DecayOnset state. Preserve
