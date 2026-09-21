@@ -204,7 +204,14 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mBeatE0.SetCount(count);
 	mBeatE1.SetCount(count);
 	mBeatR2.SetCount(count);
-	for(size_t p = 0; p < count; p++) { mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; mBeatR2[p] = 1.0f; }
+	mStereoPartL.SetCount(count);
+	mStereoPartRA.SetCount(count);
+	mStereoPartRB.SetCount(count);
+	for(size_t p = 0; p < count; p++)
+	{
+		mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; mBeatR2[p] = 1.0f;
+		mStereoPartL[p] = 0.5f; mStereoPartRA[p] = 0.5f; mStereoPartRB[p] = 0.0f;
+	}
 	// Базовая глубина биения r = (g0−g1)/(g0+g1); на партиалу докручивается
 	// весом w(k) в цикле лейнов (mBeatR2 = (1−(1−r)·w)²). r², а не r:
 	// огибающая E = sqrt(1 − (1−r²)·sin²) использует квадрат.
@@ -298,6 +305,23 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			crs[o] = a*Math::Cos(phase);
 			cis[o] = a*Math::Sin(phase);
 			dphis[o] = dphi;
+			float ratioRtoL = 1.0f, phaseRminusL = 0.0f;
+			PianoGetStereo(size_t(region.PartOffset) + p, ratioRtoL, phaseRminusL);
+			// Preserve stereo energy: gl^2 + gr^2 = 0.5, while gr/gl
+			// follows the measured R/L ratio. Right-channel phase is reconstructed
+			// from the same two adjacent sine-recurrence states, so no second
+			// oscillator recurrence is needed.
+			const float gl = Math::Sqrt(0.5f/(1.0f + ratioRtoL*ratioRtoL));
+			const float gr = ratioRtoL*gl;
+			const float sd = Math::Sin(dphi);
+			if(Math::Abs(sd) > 1e-5f)
+			{
+				const float q = Math::Sin(phaseRminusL)/sd;
+				mStereoPartL[o] = gl;
+				mStereoPartRA[o] = gr*(Math::Cos(phaseRminusL) - Math::Cos(dphi)*q);
+				mStereoPartRB[o] = gr*q;
+			}
+			else { mStereoPartL[o] = gl; mStereoPartRA[o] = gr; mStereoPartRB[o] = 0.0f; }
 			if(beatCollapse)
 			{
 				// Шаг фазы биения Δ = π·fk·(det1−det0)/sr (знак не важен: E
@@ -918,6 +942,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 
 	mScratch.SetCount(4*mBlockSize);
+	mScratchR.SetCount(4*mBlockSize);
 	mCount = count;
 	// Per-instrument калибровка громкости: множитель на выходе всей ноты
 	// (атака+сустейн+буферы). Отдельно от Scale — чтобы не трогать
@@ -1013,7 +1038,7 @@ size_t AdditiveSampler::GenerateMono(Span<float> ioDst)
 	if(mDone) return 0;
 	const size_t n = ioDst.Length();
 	float* dst = ioDst.Data();
-	RenderInto(n, [dst](float v) mutable { *dst++ += v; });
+	RenderInto(n, [dst](float l, float r) mutable { *dst++ += l + r; });
 	return mDone ? 0 : n;
 }
 
@@ -1023,15 +1048,11 @@ size_t AdditiveSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstR
 	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 	float* dstL = ioDstLeft.Data();
 	float* dstR = ioDstRight.Data();
-	// Единый уровень для всех регионов: (L+R)/2 = 0.5 (как в моно-пути
-	// NoteSampler panLeft=panRight=0.5 и как у панорамированных регионов).
-	// Раньше при StereoPan==0 (центральный пан) сюда писался ПОЛНЫЙ сигнал
-	// (×1.0): безогибаечные инструменты (AcousticPiano) звучали на 6 дБ
-	// громче в басовых регионах (StereoPan=0) и ломали баланс с
-	// производными пиано, которые всегда идут через путь с огибающей (×0.5).
-	const float gl = mStereoPan == 0.0f ? 0.5f : mStereoGainL;
-	const float gr = mStereoPan == 0.0f ? 0.5f : mStereoGainR;
-	RenderInto(n, [dstL, dstR, gl, gr](float v) mutable { *dstL++ += v*gl; *dstR++ += v*gr; });
+	RenderInto(n, [dstL, dstR](float l, float r) mutable
+	{
+		*dstL++ += l;
+		*dstR++ += r;
+	});
 	return mDone ? 0 : n;
 }
 

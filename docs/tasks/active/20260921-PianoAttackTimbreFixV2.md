@@ -650,3 +650,48 @@ baseline, а к более чистому joint temporal target / raw SF2 trajec
 Решение: fast string onset становится новым рабочим piano baseline. Старые
 attack overlays остаются в исходнике только как материал для будущего
 исследования hammer transient, но не рендерятся в текущем piano path.
+
+
+---
+
+## Эксперимент 14: per-partial true stereo — ПРИНЯТО
+
+После принятого fast-onset mono сравнение с DecayOnset-cropped SF2 показало,
+что общий harmonic energy-spectrum уже близок, но оригинал заметно объёмнее.
+Особенно показательной была повторяющаяся D4 (MIDI 62): в mono у synth h3
+казалась примерно на 8–10 dB сильнее, чем у SF2, что субъективно давало
+локальный «пилообразный» оттенок.
+
+Повторный анализ одним и тем же fixed-peak tracker'ом показал, что Amp-fit тут
+не виноват. У SF2 D4/h3 левый и правый каналы имеют относительную фазу около
+145–150°, поэтому при mono-сумме эта гармоника сильно гасится. Новый joint Amp
+для h3 относительно старого baseline изменился всего примерно на +0.2 dB.
+То есть локальный артефакт был следствием потерянной stereo-phase structure.
+
+Измерена static complex stereo-проекция каждого partial в точке DecayOnset:
+- R/L gain;
+- относительная R-L phase;
+- слабые/неустойчивые partial'ы отклоняются и получают centered in-phase fallback.
+
+Runtime хранит 2 signed bytes на partial:
+- gain: 0.25 dB/step;
+- phase: pi/127 per step.
+
+544 partial × 2 bytes = 1088 bytes raw.
+
+Для воспроизведения НЕ добавляется второй oscillator recurrence. Левый канал
+использует существующее состояние sine recurrence, а правый восстанавливается
+как линейная комбинация двух соседних состояний этой же recurrence. Поэтому
+частота/decay/beat state остаются общими, а hot loop получает только несколько
+дополнительных SIMD mul/add и второй accumulator.
+
+Listening result:
+- true-stereo prototype заметно лучше accepted dual-mono;
+- локальная D4 «пила» исчезла;
+- исходный SF2 всё ещё воспринимается несколько объёмнее, поэтому stereo
+  считается крупным положительным шагом, но не финальным объяснением всей
+  оставшейся разницы.
+
+Решение: per-partial static complex stereo fingerprint принят в рабочий piano
+baseline. Следующие исследования должны объяснять оставшуюся разницу с SF2,
+не откатывая fast onset и true stereo.

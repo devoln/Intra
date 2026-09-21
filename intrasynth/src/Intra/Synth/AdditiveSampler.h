@@ -71,6 +71,10 @@ class AdditiveSampler: public IGenericSampler
 // (и любых не-2-голосных инструментов) mBeatOn=false — лейны как раньше.
 	FixedArray<float> mBeatStep, mBeatPh;
 	FixedArray<float> mBeatE0, mBeatE1;
+	// Accepted true-stereo fingerprint. One oscillator recurrence stays shared
+	// between channels; right-channel phase is reconstructed as a linear
+	// combination of the two adjacent sine recurrence states.
+	FixedArray<float> mStereoPartL, mStereoPartRA, mStereoPartRB;
 	// Per-partial квадрат глубины r²: огибающая E = sqrt(1 − (1−r²)·sin²).
 	// r зависит от партиалы через вес w(k) (см. конструктор): низкие партиалы
 	// бьются, высокие (h4+) — нет, в басе мелко бьётся и h1. 1.0 = нет биений.
@@ -129,8 +133,9 @@ class AdditiveSampler: public IGenericSampler
 	bool mReleasePending;
 	size_t mReleaseAt;
 	unsigned mSampleRate;
-	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока.
+	// Скрэтч-аккумуляторы: 4 лейна на сэмпл блока, отдельно L/R.
 	FixedArray<float> mScratch;
+	FixedArray<float> mScratchR;
 	size_t mCount;   // число осцилляторов (партиалы × струны, кратно 4)
 	float mVolume;
 	// Переключение затухания: старт на DecayOnset (1.0 → λ1), λ1 → λ2 на
@@ -206,6 +211,9 @@ public:
 		float* amp = mAmp.Data();
 		float* dec = mDecay.Data();
 		float* atk = mAtk.Data();
+		const float* stereoL = mStereoPartL.Data();
+		const float* stereoRA = mStereoPartRA.Data();
+		const float* stereoRB = mStereoPartRB.Data();
 	float vol = mVolume;
 	while(numSamples)
 	{
@@ -234,7 +242,8 @@ public:
 				else if(t + mFadeSamples >= mEndSamples)
 					s *= float(mEndSamples - t)/float(mFadeSamples);
 			}
-			sink(s*vol);
+			const float sv = 0.5f*s*vol;
+			sink(sv, sv);
 			numSamples--;
 		}
 		if(numSamples == 0) break;
@@ -284,7 +293,8 @@ public:
 			if(n == 0) continue;
 			mRendered += n;
 			float* acc = mScratch.Data();
-			for(size_t i = 0; i < 4*n; i++) acc[i] = 0;
+			float* accR = mScratchR.Data();
+			for(size_t i = 0; i < 4*n; i++) { acc[i] = 0; accR[i] = 0; }
 			// Огибающая биений (коллапс 2-струнного унисона): пересчёт раз в
 			// блок на границах [ph, ph + step·n], внутри блока — линейная
 			// интерполяция (gv = E0 + (E1−E0)·i/n), поэтому на стыках блоков
@@ -323,18 +333,24 @@ public:
 					const __m128 dv = _mm_loadu_ps(dec+p);
 					const __m128 ak = _mm_loadu_ps(atk+p);
 					const __m128 mv = _mm_sub_ps(dv, ak);
+					const __m128 glv = _mm_loadu_ps(stereoL+p);
+					const __m128 rav = _mm_loadu_ps(stereoRA+p);
+					const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 					const __m128 b0 = _mm_loadu_ps(e0a + p);
 					const __m128 bd = _mm_sub_ps(_mm_loadu_ps(e1a + p), b0);
 					for(size_t i = 0; i < n; i++)
 					{
 						const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, _mm_set1_ps(float(i)*invN)));
-						const __m128 out = _mm_mul_ps(_mm_mul_ps(s1v, av), gv);
+						const __m128 env = _mm_mul_ps(av, gv);
+						const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
+						const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+						const __m128 outR = _mm_mul_ps(carrierR, env);
 						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
 						s1v = s2v;
 						s2v = newS;
 						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
-						const __m128 a = _mm_loadu_ps(acc + 4*i);
-						_mm_storeu_ps(acc + 4*i, _mm_add_ps(a, out));
+						_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+						_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
 					}
 					_mm_storeu_ps(s1+p, s1v);
 					_mm_storeu_ps(s2+p, s2v);
@@ -352,15 +368,20 @@ public:
 					const __m128 dv = _mm_loadu_ps(dec+p);
 					const __m128 ak = _mm_loadu_ps(atk+p);
 					const __m128 mv = _mm_sub_ps(dv, ak);
+					const __m128 glv = _mm_loadu_ps(stereoL+p);
+					const __m128 rav = _mm_loadu_ps(stereoRA+p);
+					const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 					for(size_t i = 0; i < n; i++)
 					{
-						const __m128 out = _mm_mul_ps(s1v, av);
+						const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, av), glv);
+						const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+						const __m128 outR = _mm_mul_ps(carrierR, av);
 						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
 						s1v = s2v;
 						s2v = newS;
 						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
-						const __m128 a = _mm_loadu_ps(acc + 4*i);
-						_mm_storeu_ps(acc + 4*i, _mm_add_ps(a, out));
+						_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+						_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
 					}
 					_mm_storeu_ps(s1+p, s1v);
 					_mm_storeu_ps(s2+p, s2v);
@@ -379,15 +400,17 @@ public:
 					float av = amp[p];
 					const float mv = dec[p] - atk[p];
 					const float ak = atk[p];
+					const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
 					const float b0 = e0a[p], bd = e1a[p] - b0;
 					for(size_t i = 0; i < n; i++)
 					{
-						const float out = s1v*av*(b0 + bd*(float(i)*invN));
+						const float env = av*(b0 + bd*(float(i)*invN));
+						acc[4*i] += s1v*env*gl;
+						accR[4*i] += (ra*s1v + rb*s2v)*env;
 						const float newS = kv*s2v - s1v;
 						s1v = s2v;
 						s2v = newS;
 						av = av*mv + ak;
-						acc[4*i] += out;
 					}
 					s1[p] = s1v;
 					s2[p] = s2v;
@@ -402,14 +425,15 @@ public:
 					float av = amp[p];
 					const float mv = dec[p] - atk[p];
 					const float ak = atk[p];
+					const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
 					for(size_t i = 0; i < n; i++)
 					{
-						const float out = s1v*av;
+						acc[4*i] += s1v*av*gl;
+						accR[4*i] += (ra*s1v + rb*s2v)*av;
 						const float newS = kv*s2v - s1v;
 						s1v = s2v;
 						s2v = newS;
 						av = av*mv + ak;
-						acc[4*i] += out;
 					}
 					s1[p] = s1v;
 					s2[p] = s2v;
@@ -429,7 +453,8 @@ public:
 					if(mPushPos < mPushLen) o += mPushBuf[mPushPos++]*mOverlayGain;
 					if(mBloomOn && mBloomPos < mBloomLen) o += mBloomBuf[mBloomPos++]*mOverlayGain;
 					mOverlayGain *= mOverlayRel;
-					acc[4*ov] += o;
+					acc[4*ov] += 0.5f*o;
+					accR[4*ov] += 0.5f*o;
 					ov++;
 				}
 				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
@@ -438,16 +463,20 @@ public:
 			for(size_t i = 0; i < n; i++)
 			{
 				float s = (acc[4*i] + acc[4*i+1]) + (acc[4*i+2] + acc[4*i+3]);
+				float sr = (accR[4*i] + accR[4*i+1]) + (accR[4*i+2] + accR[4*i+3]);
 				const size_t t = mRendered - n + i;
 				// Конец региона: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
 				if(mEndSamples)
 				{
-					if(t >= mEndSamples) s = 0.0f;
+					if(t >= mEndSamples) { s = 0.0f; sr = 0.0f; }
 					else if(t + mFadeSamples >= mEndSamples)
-						s *= float(mEndSamples - t)/float(mFadeSamples);
+					{
+						const float f = float(mEndSamples - t)/float(mFadeSamples);
+						s *= f; sr *= f;
+					}
 				}
-				sink(s*vol);
+				sink(s*vol, sr*vol);
 			}
 			numSamples -= n;
 		}
@@ -493,14 +522,12 @@ public:
 		const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 		float* dstL = ioDstLeft.Data();
 		float* dstR = ioDstRight.Data();
-		const float gl = mStereoPan == 0.0f ? 0.5f : mStereoGainL;
-		const float gr = mStereoPan == 0.0f ? 0.5f : mStereoGainR;
 		RenderEnvelope gain(envelope);
-		RenderInto(n, [dstL, dstR, gl, gr, &gain](float v) mutable
+		RenderInto(n, [dstL, dstR, &gain](float l, float r) mutable
 		{
-			const float s = v*gain.NextGain();
-			*dstL++ += s*gl;
-			*dstR++ += s*gr;
+			const float g = gain.NextGain();
+			*dstL++ += l*g;
+			*dstR++ += r*g;
 		});
 		return mDone ? 0 : n;
 	}
