@@ -879,24 +879,30 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		}
 	}
 
-	// Струна: состояния — табличные (моды после контакта), амплитуды:
-	//   - возбуждённые ударом входят на уровне gSeam (последний сэмпл буфера
-	//     уже приведён к нему — шов бесшовный) и дорастают до табличной
-	//     амплитуды через per-partial mAtk;
-	//   - не возбуждённые (G≈0) — плавный bloom с нуля через per-partial mAtk.
+	// Accepted 2026-09-21 fast string onset. The packed Amp/Phase state is the
+	// measured modal state at region.DecayOnset, not a target that should bloom
+	// slowly from zero. Starting that state through the old contact/body/push/
+	// bloom chain made the piano audibly soft. Instead, expose the complete
+	// measured harmonic stack with a short ~1 ms click-safe rise and start
+	// Decay1 immediately afterwards. This matches the clarity of the diagnostic
+	// SF2 whose samples were shifted to the same DecayOnset measurement point.
+	const size_t stringRiseSamples = Math::Max(size_t(1), size_t(0.001f*float(sampleRate) + 0.5f));
+	const float stringRiseStep = 1.0f - Math::Exp(Math::Log(0.005f)/float(stringRiseSamples));
 	for(size_t p = 0; p < count; p++)
 	{
 		mS1[p] = cis[p]*c;
 		mS2[p] = (cis[p]*Math::Cos(dphis[p]) + crs[p]*Math::Sin(dphis[p]))*c;
-		if(driven[p]) mAmp[p] = gSeam;
-		else mAmp[p] = 0.0f;
+		mAmp[p] = 0.0f;
+		mAtk[p] = stringRiseStep;
 	}
-	// Затухание: старт на DecayOnset, λ1 → λ2 на SegT, λ2 → λ3 на SegT2,
-	// λ3 → λ4 на SegT3 (границы — центры окон измерений, из таблицы).
-	mDecayOnsetSamples = size_t(decayOnset*float(sampleRate));
-	mSegSamples = size_t((decayOnset + region.SegT)*float(sampleRate));
-	mSegSamples2 = size_t((decayOnset + region.SegT + region.SegT2)*float(sampleRate));
-	mSegSamples3 = size_t((decayOnset + region.SegT + region.SegT2 + region.SegT3)*float(sampleRate));
+
+	// The note's t=0 now corresponds to the old SF2 DecayOnset state. Preserve
+	// the measured segment durations relative to that state instead of waiting
+	// another DecayOnset interval before starting Decay1.
+	mDecayOnsetSamples = stringRiseSamples;
+	mSegSamples = stringRiseSamples + size_t(region.SegT*float(sampleRate));
+	mSegSamples2 = stringRiseSamples + size_t((region.SegT + region.SegT2)*float(sampleRate));
+	mSegSamples3 = stringRiseSamples + size_t((region.SegT + region.SegT2 + region.SegT3)*float(sampleRate));
 	mRendered = 0;
 	mDecayStarted = false;
 	mSegSwitched = false;
@@ -923,7 +929,16 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mReleaseAt = 0;
 	mOverlayGain = 1.0f;
 	mOverlayRel = 1.0f;
-	mOverlayActive = true;
+	// The fast-onset state above supersedes the legacy attack overlays. Keep the
+	// buffers in the source for future hammer work, but do not render them in
+	// the accepted sustain baseline.
+	mAttackLen = 0;
+	mAttackPos = 0;
+	mBodyLen = mBodyPos = 0;
+	mPushLen = mPushPos = 0;
+	mBloomLen = mBloomPos = 0;
+	mBloomOn = false;
+	mOverlayActive = false;
 	mSampleRate = sampleRate;
 	// Стерео: constant-power pan. Voice 0 → left, voice 1 → right.
 	// StereoPan из региона — измеренный L/R level diff. При 2 голосах
