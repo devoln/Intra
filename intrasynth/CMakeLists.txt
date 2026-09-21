@@ -56,8 +56,15 @@ else()
     # Emscripten: Debug-сборки оставляют SAFE_HEAP/ASSERTIONS для отладки
     # памяти; Release — чистый быстрый билд (SAFE_HEAP+ASSERTIONS+отладочная
     # информация замедляли рендер в разы).
-    set(_synth_simd "")
-    set(_synth_arch "")
+    # WebAssembly SIMD is part of the production synth contract. `-msimd128`
+    # only enables wasm SIMD instructions in the compiler; Intra's handwritten
+    # kernels are selected separately by INTRA_SIMD_SUPPORT. Leaving that macro
+    # at its library default silently compiled the scalar kernels and made the
+    # piano roughly 2.5-3x slower while the command line still looked "SIMD".
+    set(_synth_simd "-DINTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2")
+    # Emscripten compat emmintrin/xmmintrin headers are gated by -msse2 even
+    # though codegen ultimately targets wasm SIMD128. Keep both switches.
+    set(_synth_arch "-msse2")
     if(NOT INTRA_SYNTH_SIMD STREQUAL "DEFAULT")
         set(_synth_simd "-DINTRA_SIMD_SUPPORT=${INTRA_SYNTH_SIMD}")
     endif()
