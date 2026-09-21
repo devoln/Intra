@@ -9,10 +9,7 @@ KarplusStrongSampler::KarplusStrongSampler(float freq, float volume, unsigned sa
 {
 	Random::FastUniform<float> noise(randGen(freq, volume, sampleRate));
 
-	const float note = Math::Log(freq / 16.352f) / Math::Log(2.0f) * 12.0f;
-	const float noteFactor = Math::Max(0.0f, note / 128.0f);
-	mSmoothFactor = smoothFactorBase *
-		(0.9f - Math::Pow(noteFactor, smoothFactorExp)*smoothFactorMul + noise()*0.1f);
+	mSmoothFactor = smoothFactor(freq, smoothFactorBase, smoothFactorMul, smoothFactorExp, noise);
 
 	const float precisePeriod = float(sampleRate) / freq - mSmoothFactor;
 	const size_t len = Math::Max(size_t(1), size_t(Math::Round(precisePeriod)));
@@ -60,6 +57,17 @@ size_t KarplusStrongSampler::GenerateStereoWithEnvelope(Span<float> ioDstLeft,
 		*dstR++ += s;
 	});
 	return n;
+}
+
+/// Сглаживающий коэффициент петли KS (единый для KS и модальной струны).
+/// Потребляет один отсчёт шума: порядок обращений к генератору должен совпадать
+/// с затравкой (см. generateExcitation), иначе щипок перестанет быть тем же.
+float KarplusStrongSampler::smoothFactor(float freq, float base, float mul, float exp,
+	Random::FastUniform<float>& noise)
+{
+	const float note = Math::Log(freq / 16.352f) / Math::Log(2.0f) * 12.0f;
+	const float noteFactor = Math::Max(0.0f, note / 128.0f);
+	return base*(0.9f - Math::Pow(noteFactor, exp)*mul + noise()*0.1f);
 }
 
 unsigned KarplusStrongSampler::randGen(float freq, float volume, unsigned sampleRate)

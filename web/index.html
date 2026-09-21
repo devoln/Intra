@@ -652,6 +652,16 @@
   .debug-src { color: var(--muted); font-size: 0.85rem; flex: 1; min-width: 150px; }
   .debug-src code { color: var(--ink); }
   .debug-row audio { height: 34px; }
+  /* Ручки живого эксперимента гитар 29/30 (Update 125) */
+  .gtweak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px 26px; margin-top: 10px; }
+  .gtweak-row { display: flex; align-items: center; gap: 10px; }
+  .gtweak-row label { color: var(--muted); font-size: 0.82rem; min-width: 128px; }
+  .gtweak-row input[type="range"] { flex: 1; min-width: 90px; }
+  .gtweak-row .gtweak-val { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.82rem; min-width: 52px; text-align: right; }
+  .gtweak-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+  .gtweak-head label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.88rem; cursor: pointer; }
+  .gtweak-head input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
+  .gtweak-head .btn-ghost { padding: 6px 12px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -760,6 +770,25 @@
       </div>
       <span class="oct-label" id="octLabel"></span>
     </section>
+
+    <details class="panel debug-samples" id="guitarTweakSpoiler">
+      <summary>
+        <span class="eyebrow">Эксперимент</span>
+        <span class="debug-title">Ручки гитар 29 Overdriven / 30 Distortion</span>
+      </summary>
+      <div class="gtweak-head">
+        <label for="gt_enable"><input type="checkbox" id="gt_enable" /> Включить ручки</label>
+        <button class="btn-ghost" data-gtpreset="steel" type="button">Guitar steel (базис)</button>
+        <button class="btn-ghost" data-gtpreset="canon" type="button">Канон 29/30 (перегруз)</button>
+        <button class="btn-ghost" data-gtpreset="rock" type="button">Рок-драйв (широкий вход, мягкий клип)</button>
+        <button class="btn-ghost" data-gtpreset="shelf" type="button">Тембр после клипера (+18 дБ)</button>
+        <button class="btn-ghost" data-gtpreset="shelf9" type="button">Полка 9 дБ (если оглушает верх)</button>
+        <button class="btn-ghost" data-gtpreset="lowfric" type="button">Без трения струны</button>
+        <button class="btn-ghost" data-gtpreset="highfric" type="button">Трение вдвое</button>
+        <button class="btn-ghost" data-gtpreset="nostack" type="button">Без тембр-стека (прежняя окраска)</button>
+      </div>
+      <div class="gtweak-grid" id="gtweakGrid"></div>
+    </details>
 
     <details class="panel debug-samples" id="sampleSpoiler">
       <summary>
@@ -871,5 +900,6 @@
 
   <script src="IntraSynth.js"></script>
   <script src="synth.js"></script>
+  <script src="guitar-tweaks.js"></script>
 </body>
 </html>

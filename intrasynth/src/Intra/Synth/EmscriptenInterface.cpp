@@ -5,6 +5,7 @@
 
 #include "Audio/Midi/MidiFileParser.h"
 #include "MidiSynth.h"
+#include "SpectralStringSampler.h"
 
 using namespace Audio;
 
@@ -103,6 +104,49 @@ extern "C"
 	void EMSCRIPTEN_KEEPALIVE SourceFastForward(IAudioSource* sourcePtr, unsigned targetSample)
 	{
 		static_cast<MidiSynth*>(sourcePtr)->FastForward(size_t(targetSample));
+	}
+
+	// РУЧКИ ЖИВОГО ЭКСПЕРИМЕНТА (Update 125): множители чисел тракта модальных
+	// гитар (программы 29/30). Порядок значений: [0] — включено (0/1), далее по
+	// полям GuitarTweaks (Drive, Bias, Tone, PickupHz, Pickup, PickupDepth,
+	// SustainMax, Tilt, Damping, BeatDepth, CabQ, SfBase, ExpCoeff, Inharm,
+	// Scale, PresenceHz, PresenceDb, DampSlope, ToneStack, ToneStackLowDb,
+	// ToneStackPeakHz, ToneStackPeakQ, ToneStackHighDb). Действует на НОВЫЕ ноты: голос читает
+	// множители при создании. PresenceHz/PresenceDb — ИСКЛЮЧЕНИЕ из правила
+	// «множитель»: они АБСОЛЮТНЫЕ (Гц и дБ), потому что полка в каноне
+	// выключена нулём (см. GuitarTweaks.PresenceDb).
+	void EMSCRIPTEN_KEEPALIVE SynthSetGuitarTweaks(const float* values)
+	{
+		if(!values) return;
+		GuitarTweakState.Enabled = values[0] != 0.0f;
+		GuitarTweakState.Drive = values[1];
+		GuitarTweakState.Bias = values[2];
+		GuitarTweakState.Tone = values[3];
+		GuitarTweakState.PickupHz = values[4];
+		GuitarTweakState.Pickup = values[5];
+		GuitarTweakState.PickupDepth = values[6];
+		GuitarTweakState.SustainMax = values[7];
+		GuitarTweakState.Tilt = values[8];
+		GuitarTweakState.Damping = values[9];
+		GuitarTweakState.BeatDepth = values[10];
+		GuitarTweakState.CabQ = values[11];
+		GuitarTweakState.SfBase = values[12];
+		GuitarTweakState.ExpCoeff = values[13];
+		GuitarTweakState.Inharm = values[14];
+		GuitarTweakState.Scale = values[15];
+		GuitarTweakState.PresenceHz = values[16];
+		GuitarTweakState.PresenceDb = values[17];
+		// Хвостовое поле (Update 134): старые клиенты его не присылают — остаётся 1.0.
+		GuitarTweakState.DampSlope = values[18];
+		// ТЕМБР-СТЕК ПО ФИКСИРОВАННЫМ Гц (Update 150) — то же правило: поля в
+		// хвосте, старые клиенты их не присылают, и тогда остаются канонические
+		// значения (Tone = 1 — усиления как в каноне, добавки 0, абсолютные
+		// частота/добротность 0 = «как в каноне»).
+		GuitarTweakState.ToneStack = values[19];
+		GuitarTweakState.ToneStackLowDb = values[20];
+		GuitarTweakState.ToneStackPeakHz = values[21];
+		GuitarTweakState.ToneStackPeakQ = values[22];
+		GuitarTweakState.ToneStackHighDb = values[23];
 	}
 
 	unsigned EMSCRIPTEN_KEEPALIVE SourceSamplesLeft(IAudioSource* source)

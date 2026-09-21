@@ -100,6 +100,11 @@
   const pressedNotes = new Map(); // pointerId -> { note, channel } на экранном пианино
 
   let Module = null;
+  // РУЧКИ ЖИВОГО ЭКСПЕРИМЕНТА ГИТАР 29/30 (Update 125): отдельный скрипт
+  // guitar-tweaks.js строит панель слайдеров и ему нужен ТЕКУЩИЙ WASM-инстанс —
+  // сам модуль живёт в замыкании, поэтому отдаём его через этот хук. Стрелка
+  // захватывает переменную, так что возвращает и модуль после A/B-переключения.
+  window.__intraGuitarTweaks = { getModule: () => Module };
   let audioCtx = null;
   let processor = null;
   let gainNode = null;

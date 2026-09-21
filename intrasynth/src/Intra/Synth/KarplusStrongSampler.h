@@ -49,6 +49,15 @@ class KarplusStrongSampler: public IGenericSampler
 #endif
 
 public:
+	// Затравка и закон потерь KS — ОБЩИЕ с модальной струной (Update 106):
+	// SpectralStringSampler берёт здесь и форму щипка с шумом (generateExcitation),
+	// и сглаживающий коэффициент петли (smoothFactor), чтобы линейная струна
+	// звучала как наш AcousticGuitarSteel, а не как отдельный инструмент.
+	static unsigned randGen(float freq, float volume, unsigned sampleRate);
+	static void generateExcitation(Span<float> dst, float damping, Random::FastUniform<float>& noise);
+	static float smoothFactor(float freq, float base, float mul, float exp,
+		Random::FastUniform<float>& noise);
+
 	KarplusStrongSampler(float freq, float volume, unsigned sampleRate,
 		float damping, float smoothFactorBase, float smoothFactorMul, float smoothFactorExp,
 		float scale, float expCoeff);
@@ -124,10 +133,6 @@ public:
 	/// (1 в начале, дальше спад семпла). Спрашивается редко (см. Sampler::GetLevel).
 	float GetLevel() const override {return mVolume*mInvInitialVolume;}
 #endif
-
-private:
-	static unsigned randGen(float freq, float volume, unsigned sampleRate);
-	static void generateExcitation(Span<float> dst, float damping, Random::FastUniform<float>& noise);
 };
 
 /// Instrument factory producing KarplusStrongSampler. Parameters are taken
