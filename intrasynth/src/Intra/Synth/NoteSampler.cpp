@@ -373,6 +373,11 @@ void NoteSampler::SetPan(float pan)
 	Pan = pan;
 }
 
+void NoteSampler::SetVelocity(float velocity01)
+{
+	for(auto& sampler: GenericSamplers) sampler->SetVelocity(velocity01);
+}
+
 void NoteSampler::MultiplyVolume(float volumeMultiplier)
 {
 	for(auto& sampler: WaveFormSamplers) sampler.MultiplyVolume(volumeMultiplier);

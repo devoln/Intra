@@ -10,6 +10,7 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+
 /// Аддитивный семплер: сумма N независимых SineRange-осцилляторов (рекурсия
 /// s2 = 2·cos(dphi)·s1 − s0, по 1 FMA на партиал на семпл). Партиалы берутся
 /// из таблицы PianoRegions.h — реального пианино (Clavinova Grand), измерены
@@ -75,59 +76,51 @@ class AdditiveSampler: public IGenericSampler
 	// between channels; right-channel phase is reconstructed as a linear
 	// combination of the two adjacent sine recurrence states.
 	FixedArray<float> mStereoPartL, mStereoPartRA, mStereoPartRB;
+	// Experimental early harmonic trajectory. Coefficients describe the raw
+	// SF2 amplitude before DecayOnset as three common exponential basis
+	// functions; env0/env1 are block endpoints for cheap linear interpolation.
+	FixedArray<float> mAttackCoeff0, mAttackCoeff1, mAttackCoeff2;
+	FixedArray<float> mAttackEnv0, mAttackEnv1;
+	// Current/end exponential basis values for the three shared attack time
+	// constants. Advancing these recursively avoids libm exp calls per block.
+	float mAttackBasis0 = 1.0f, mAttackBasis1 = 1.0f, mAttackBasis2 = 1.0f;
+	float mAttackBasisEnd0 = 0.0f, mAttackBasisEnd1 = 0.0f, mAttackBasisEnd2 = 0.0f;
+	float mAttackBasisStep0 = 1.0f, mAttackBasisStep1 = 1.0f, mAttackBasisStep2 = 1.0f;
+	// Attack interpolation is anchored to fixed note-relative 128-sample
+	// segments, not caller/render blocks. This makes the onset bit-stable when
+	// MIDI events, cache handoff or host block sizes split a segment midway.
+	float mAttackSegEndBasis0 = 1.0f, mAttackSegEndBasis1 = 1.0f, mAttackSegEndBasis2 = 1.0f;
+	size_t mAttackInterpPos = 0, mAttackInterpLen = 0;
 	// Per-partial квадрат глубины r²: огибающая E = sqrt(1 − (1−r²)·sin²).
 	// r зависит от партиалы через вес w(k) (см. конструктор): низкие партиалы
 	// бьются, высокие (h4+) — нет, в басе мелко бьётся и h1. 1.0 = нет биений.
 	FixedArray<float> mBeatR2;
 	bool mBeatOn;
-	// Буфер атаки контактной силы: предвычисленный накопленный отклик мод
-	// на удар молоточка (первые mAttackLen отсчётов ноты). Последний сэмпл
-	// буфера равен первому сэмплу струны (состояние мод после контакта =
-	// табличному состоянию), поэтому шов буфер→SIMD-рекурсия бесшовный.
-	FixedArray<float> mAttackBuf;
-	size_t mAttackLen;
-	size_t mAttackPos;
-	// «Рокот»: корпусные резонансы деки (78/116/168/285 Гц, τ≈45 мс),
-	// возбуждённые той же контактной силой. У средних/верхних нот их
-	// частоты ниже f0 струны, которых модальный банк не даёт, а в семплах
-	// полоса 60-300 Гц на атаке всегда есть. Играется сразу после
-	// attack-буфера и гаснет за ~0.12 с, в сустейн не входит.
-	FixedArray<float> mBodyBuf;
-	size_t mBodyLen;
-	size_t mBodyPos;
-	// «Удар» — фундаментальный транзиент: в семплах SF2 h1 (и слабее h2) на
-	// атаке бьёт пиком на +3..+14 дБ выше сустейна (зависит от высоты; C7
-	// +13.9 дБ) и гаснет за ~100 мс — плотный удар молоточка по струне, он
-	// и даёт высоким нотам объём. Чисто-аддитивная струна его не даёт (моды
-	// стартуют ровно по таблице), поэтому без него атака верхних нот звучит
-	// «пищалкой»: h2/h1 ≈ 0 дБ вместо −10..−20 дБ у семпла. Транзиент —
-	// оверлей (как «рокот»): фаза-выровненная сумма партиал h1/h2 × A1/A2 ×
-	// огибающая (подъём τr≈14 мс, спад τd≈40 мс, норм. к пику 1), старт с
-	// нуля — без щелчка; в сустейн не входит, при release гасится сразу.
-	FixedArray<float> mPushBuf;
-	size_t mPushLen;
-	size_t mPushPos;
-	// «Блум» сустейна — времязависимый тембр, которого нет у плоской таблицы:
-	// в сырых семплах SF2 обертона h2–h3 держатся ПОВЫШЕННО первые ~0.1–0.7 с
-	// сустейна (на D#5 h2 почти вровень с h1 на 0.1–0.3 с, к ~0.7 с сседает к
-	// плоскому уровню), а наша плоская струна (Session 7) разница со семплом
-	// по h2–h3 в первые полсекунды длинной ноты 4–10 дБ — это и звучит как
-	// «бедно». Блум — третий оверлей (как рокот/удар): фаза-выровненная сумма
-	// партиал h2–h3 × малый множитель × огибающая (0 до 45 мс — после атаки,
-	// подъём τr≈55 мс, экспоненц. спад τd=0.20 с), стартует с нуля — без
-	// щелчка; к ~0.75 с доходит до нуля и в поздний сустейн не входит.
-	FixedArray<float> mBloomBuf;
-	size_t mBloomLen;
-	size_t mBloomPos;
-	// Bloom включается только для региона 75 (остров D5–E5, см. ctor).
-	bool mBloomOn;
-// Фейд оверлеев (рокот+удар) при release: демпфер убивает и «удар в
-	// воздухе», но плавно (τ≈8 мс), иначе стаккато на верхних нотах обрывало
-	// h1-транзиент в +14 дБ щелчком. mOverlayGain умножается на mOverlayRel
-	// каждый сэмпл, пока идут оверлеи.
-	float mOverlayGain;
-	float mOverlayRel;
-	bool mOverlayActive;
+	// Compact SF2-sample-level amplitude modulation fitted per physical region.
+	// This is deliberately COMMON to the summed note, not a per-partial table.
+	// It replaces the old k*fBeat unison approximation only where the fitter has
+	// an identifiable region-level solution. Runtime cost: two slow evaluations
+	// per canonical 128-sample segment, linearly interpolated inside it.
+	bool mCommonAmOn = false;
+	float mCommonAmFreqHz = 0.0f;
+	float mCommonAmGain0 = 0.0f;
+	float mCommonAmLambda = 0.0f;
+	float mCommonAmPhase = 0.0f;
+	float mCommonAmRefInv = 1.0f;
+	float mCommonAmPlaybackRate = 1.0f;
+
+	INTRA_FORCEINLINE float CommonAmAtSample(size_t targetSample) const
+	{
+		if(!mCommonAmOn) return 1.0f;
+		const float sourceAge = float(targetSample)*mCommonAmPlaybackRate/float(mSampleRate);
+		const float tt = sourceAge - 0.125f;
+		const float g = mCommonAmGain0*Math::Exp(-mCommonAmLambda*tt);
+		const float ph = 2.0f*float(Math::PI)*mCommonAmFreqHz*tt + mCommonAmPhase;
+		const float z = Math::Sqrt(Math::Max(0.0f, 1.0f + g*g + 2.0f*g*Math::Cos(ph)));
+		const float fitted = z*mCommonAmRefInv;
+		const float mix = Math::Clamp((sourceAge - 0.080f)*(1.0f/0.080f), 0.0f, 1.0f);
+		return 1.0f + (fitted - 1.0f)*mix;
+	}
 	// «Окно свободной атаки»: NoteOff раньше 35 мс откладывает
 	// демпфер до конца окна (см. NoteRelease/RenderInto).
 	bool mReleasePending;
@@ -142,6 +135,15 @@ class AdditiveSampler: public IGenericSampler
 	// DecayOnset+SegT, λ2 → λ3 на DecayOnset+SegT+SegT2, λ3 → λ4 на
 	// DecayOnset+SegT+SegT2+SegT3 (границы — окна измерений, из таблицы).
 	size_t mDecayOnsetSamples;
+	// Raw-SF2 contact prelude: coherent modal string is revealed only after the
+	// contact window. The string state itself is analytically fast-forwarded to
+	// this age, so hidden oscillators do not burn CPU sample-by-sample.
+	size_t mStringRevealSamples = 0;
+	// The recorded sample transition is continuous, unlike a binary gate. Blend
+	// the already-developed string in over a short source-time window so reveal
+	// does not inject a broadband step/click. This changes output only, never the
+	// analytically sought modal state.
+	size_t mStringRevealBlendSamples = 0;
 	size_t mSegSamples;
 	size_t mSegSamples2;
 	size_t mSegSamples3;
@@ -160,7 +162,6 @@ class AdditiveSampler: public IGenericSampler
 	// (первая струна) панорамируется влево, голос 1 — вправо. Pan = 0
 	// означает моно (L=R). Измерено по разнице уровней L/R семплов SF2:
 	// tanh(dB/6) даёт мягкую S-кривую в диапазоне [-1; +1].
-	float mStereoPan;
 	float mStereoGainL;
 	float mStereoGainR;
 	// MIDI CC10 is a channel pan layer on top of the measured per-partial
@@ -169,15 +170,93 @@ class AdditiveSampler: public IGenericSampler
 	// WaveTableSampler (the surviving side is 2x relative to centered 0.5).
 	float mMidiPanGainL = 1.0f;
 	float mMidiPanGainR = 1.0f;
+
+	// Clavinova program 0 reuses the same raw stereo samples for all six
+	// velocity zones. Keep the raw source independent of velocity, then apply
+	// the SF2 velocity low-pass as an outer per-note layer. Coefficients use
+	// the same 2-pole Butterworth form as FilterCoeffs::Calculate.
+	bool mVelocityFilterModel = false;
+	bool mVelocityFilterBypass = true;
+	bool mVelocityFilterInPartials = false;
+	size_t mVelocityFilterHandoffSamples = 0;
+	float mVelA1 = 0, mVelA2 = 0, mVelB1 = 0, mVelB2 = 0, mVelC = 1;
+	float mVelPrevSrcL = 0, mVelPrevSrc2L = 0, mVelPrevOutL = 0, mVelPrevOut2L = 0;
+	float mVelPrevSrcR = 0, mVelPrevSrc2R = 0, mVelPrevOutR = 0, mVelPrevOut2R = 0;
+	// P1/P2 in the original SF2 also route the very slow modulation envelope
+	// to filter cutoff. It is negligible inside the 200 ms PCM onset cache,
+	// then updated in the partial domain at a low control rate.
+	float mVelocityFilterBaseCutoff = 19912.0f;
+	float mVelocityFilterCurrentCutoff = 19912.0f;
+	float mVelocityModEnvCents = 0.0f;
+	float mVelocityModReleaseLevel = 0.0f;
+	size_t mVelocityModNextUpdate = 0;
+	size_t mVelocityModReleaseSample = 0;
+	bool mVelocityModReleased = false;
+
+	// Compact upper-register SF2 harmonic attack residual.  The packed modal
+	// state is measured at DecayOnset; roots 96+ need a hotter common transient
+	// before that point.  Region-level envelopes plus one shared velocity law
+	// reconstruct it without per-partial or velocity-zone tables.  Applied
+	// outside the raw onset cache so cache ON/OFF use the same envelope.
+	float mAttackBoostExp = 1.0f;
+	float mAttackBoostStep = 1.0f;
+	float mAttackBoostEndExp = 1.0f;
+	float mAttackBoostDepth = 0.0f;
+	float mAttackBoostPolyDepth = 0.0f;
+	float mAttackBoostVelocityScale = 1.0f;
+	size_t mAttackBoostSamples = 0;
+
+	INTRA_FORCEINLINE float StepAttackBoost(size_t t)
+	{
+		if(mAttackBoostSamples == 0 || t >= mAttackBoostSamples) return 1.0f;
+		if(mAttackBoostPolyDepth != 0.0f)
+		{
+			const float u = float(t)/float(mAttackBoostSamples);
+			const float u2 = u*u;
+			return 1.0f + mAttackBoostPolyDepth*mAttackBoostVelocityScale*(1.0f - u2*u2);
+		}
+		const float g = 1.0f + mAttackBoostDepth*mAttackBoostVelocityScale*(mAttackBoostExp - mAttackBoostEndExp);
+		mAttackBoostExp *= mAttackBoostStep;
+		if(mAttackBoostExp < mAttackBoostEndExp) mAttackBoostExp = mAttackBoostEndExp;
+		return g;
+	}
+
 	// Таблица партиал/регионов (PianoRegions.h): по умолчанию общая
 	// (acoustic), per-instrument SF2-таблицы — через PianoTableId.
 	const PianoTable* mTable;
+	uint8 mTableId = 0; // compact preset/table selector for velocity calibration
+	uint8 mVelocityProfile = 0;
+	uint8 mRegionIndex = 0;
 	// mDone = true когда нота полностью закончилась (mRendered >= mEndSamples):
 	// GenerateMono/GenerateStereo возвращают 0, и NoteSampler удаляет голос.
 	bool mDone;
-// mReleased = true после NoteRelease(): dec[p] уже переключён на
-// mDecayRelease, mEndSamples не используется для fade.
+// mReleased = true после NoteRelease().  Для SF2-match acoustic P1
+// естественная траектория партиал продолжает идти как при удержании, а поверх
+// неё действует общий линейный volume-envelope release FluidSynth.
 	bool mReleased;
+	bool mSf2UniformRelease = false;
+	float mSf2ReleaseGain = 1.0f;
+	float mSf2ReleaseStep = 1.0f;
+	size_t mSf2ReleaseSamples = 0;
+	size_t mSf2ReleaseSamplesLeft = 0;
+
+	INTRA_FORCEINLINE float ApplyVelocityFilter(float x, bool right)
+	{
+		if(!mVelocityFilterModel || mVelocityFilterBypass) return x;
+		float &ps = right ? mVelPrevSrcR : mVelPrevSrcL;
+		float &ps2 = right ? mVelPrevSrc2R : mVelPrevSrc2L;
+		float &po = right ? mVelPrevOutR : mVelPrevOutL;
+		float &po2 = right ? mVelPrevOut2R : mVelPrevOut2L;
+		const float y = x*mVelC + ps*mVelA1 + ps2*mVelA2 + po*mVelB1 + po2*mVelB2;
+		ps2 = ps; ps = x; po2 = po; po = y;
+		return y;
+	}
+
+	void SetHeldStringStateAt(size_t target);
+	void PromoteVelocityFilterToPartials();
+	void UpdateVelocityModEnvelope();
+	void SetVelocityFilterCutoff(float newCutoff);
+	void ApplyVelocityFilterCutoffRatio(float newCutoff);
 public:
 	static const size_t mBlockSize = 512;
 
@@ -201,8 +280,9 @@ public:
 		size_t maxPartials, float brightness, float scale, float decayScale,
 		float decayStiffness, float detuneCents,
 		int unisonVoices, float velBrightness, float trebleTilt,
-		float volumeDb = 0, float beatScale = 1.0f, int tableId = 0,
-		float beatCents = 0);
+		float volumeScale = 1.0f, float beatScale = 1.0f, int tableId = 0,
+		float beatCents = 0, uint8 velocityProfile = 0);
+	~AdditiveSampler() override;
 
 	/// Рендерит numSamples отсчётов. Лямбда-sink — как у KS/SpectralString:
 	/// на wasm поинтер-инкремент в лямбде даёт лучший код, чем индексная
@@ -224,64 +304,83 @@ public:
 	const float volR = mVolume*mMidiPanGainR;
 	while(numSamples)
 	{
-		// Атака контактной силы: первые mAttackLen отсчётов — предвычисленный
-		// накопленный отклик мод на удар молоточка (конструктор). Последний
-		// сэмпл буфера равен первому сэмплу струны, поэтому переход в
-		// SIMD-рекурсию ниже бесшовный. Затухание на этом отрезке не
-		// переключается (контакт ~2 мс всегда раньше DecayOnset). Параллельно
-		// играется «рокот» (корпус): mBodyBuf[0..contactN] добавляется к
-		// атаке, остаток доигрывает поверх струны в свёртке ниже.
-		while(mAttackPos < mAttackLen && numSamples)
-		{
-			const size_t t = mRendered++;
-			float s = mAttackBuf[mAttackPos++];
-			if(mOverlayActive)
-			{
-				if(mBodyPos < mBodyLen) s += mBodyBuf[mBodyPos++]*mOverlayGain;
-				if(mPushPos < mPushLen) s += mPushBuf[mPushPos++]*mOverlayGain;
-				if(mBloomOn && mBloomPos < mBloomLen) s += mBloomBuf[mBloomPos++]*mOverlayGain;
-				mOverlayGain *= mOverlayRel;
-				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
-			}
-			if(mEndSamples)
-			{
-				if(t >= mEndSamples) s = 0.0f;
-				else if(t + mFadeSamples >= mEndSamples)
-					s *= float(mEndSamples - t)/float(mFadeSamples);
-			}
-			const float sv = 0.5f*s;
-			sink(sv*volL, sv*volR);
-			numSamples--;
-		}
-		if(numSamples == 0) break;
 		if(mReleasePending && mRendered >= mReleaseAt)
 		{
 			mReleasePending = false;
 			ApplyRelease();
-		}			size_t n = Math::Min(mBlockSize, numSamples);
+		}
+		// Before the coherent string reveal there is no audible modal string.
+		// Do not spend the SIMD hot loop advancing inaudible oscillators sample by
+		// sample: advance note time cheaply, then analytically seek the complete
+		// string state once at the reveal boundary. This prefix is intentionally
+		// kept as a separate hook for the hammer/contact model below.
+		if(mStringRevealSamples != 0 && mRendered < mStringRevealSamples)
+		{
+			size_t pre = Math::Min(numSamples, mStringRevealSamples - mRendered);
+			const size_t start = mRendered;
+			mRendered += pre;
+			for(size_t i = 0; i < pre; i++)
+			{
+				const size_t t = start + i;
+				const float contact = 0.0f;
+				const float attackBoost = StepAttackBoost(t);
+				float releaseGain = 1.0f;
+				if(mReleased && mSf2UniformRelease)
+				{
+					releaseGain = mSf2ReleaseGain;
+					if(mSf2ReleaseSamplesLeft != 0)
+					{ mSf2ReleaseGain *= mSf2ReleaseStep; --mSf2ReleaseSamplesLeft; }
+				}
+				sink(ApplyVelocityFilter(contact, false)*volL*releaseGain*attackBoost,
+					ApplyVelocityFilter(contact, true)*volR*releaseGain*attackBoost);
+			}
+			numSamples -= pre;
+			if(mRendered == mStringRevealSamples) SetHeldStringStateAt(mRendered);
+			continue;
+		}
+		size_t n = Math::Min(mBlockSize, numSamples);
+			// The fastest basis is 10 ms; keep early blocks short enough that
+			// endpoint interpolation is accurate. Sustain keeps the normal 512.
+			if(mRendered < mDecayOnsetSamples) n = Math::Min(n, size_t(128));
+			float commonAm0 = 1.0f, commonAmStep = 0.0f;
+			if(mCommonAmOn)
+			{
+				// Anchor interpolation to fixed note-relative 128-sample segments so
+				// host block boundaries and cache handoff cannot change the waveform.
+				const size_t pos = mRendered & size_t(127);
+				const size_t base = mRendered - pos;
+				n = Math::Min(n, size_t(128) - pos);
+				const float a = CommonAmAtSample(base);
+				const float b = CommonAmAtSample(base + 128);
+				commonAmStep = (b - a)*(1.0f/128.0f);
+				commonAm0 = a + commonAmStep*float(pos);
+			}
+			if(mVelocityFilterModel && !mVelocityFilterInPartials && mVelocityFilterHandoffSamples > mRendered)
+				n = Math::Min(n, mVelocityFilterHandoffSamples - mRendered);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
 			// При release (демпфере) эти переключения пропускаются — dec[p]
 			// уже установлен на mDecayRelease в NoteRelease().
-			if(!mReleased && !mDecayStarted && mRendered >= mDecayOnsetSamples)
+			const bool naturalActive = !mReleased || mSf2UniformRelease;
+			if(naturalActive && !mDecayStarted && mRendered >= mDecayOnsetSamples)
 			{
 				float* dec1 = mDecay1.Data();
 				for(size_t p = 0; p < count; p++) { dec[p] = dec1[p]; atk[p] = 0.0f; }
 				mDecayStarted = true;
 			}
-			if(!mReleased && !mSegSwitched && mRendered >= mSegSamples)
+			if(naturalActive && !mSegSwitched && mRendered >= mSegSamples)
 			{
 				float* dec2 = mDecay2.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec2[p];
 				mSegSwitched = true;
 			}
-			if(!mReleased && !mSegSwitched2 && mRendered >= mSegSamples2)
+			if(naturalActive && !mSegSwitched2 && mRendered >= mSegSamples2)
 			{
 				float* dec3 = mDecay3.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec3[p];
 				mSegSwitched2 = true;
 			}
-			if(!mReleased && !mSegSwitched3 && mRendered >= mSegSamples3)
+			if(naturalActive && !mSegSwitched3 && mRendered >= mSegSamples3)
 			{
 				float* dec4 = mDecay4.Data();
 				for(size_t p = 0; p < count; p++) dec[p] = dec4[p];
@@ -290,7 +389,7 @@ public:
 			// Не пересекать ближайшую границу внутри блока: следующий проход
 			// применит новый шаг с точного сэмпла границы. При release — без
 			// границ (демпфер не переключается).
-			if(!mReleased)
+			if(naturalActive)
 			{
 				if(!mDecayStarted) n = Math::Min(n, mDecayOnsetSamples - mRendered);
 				else if(!mSegSwitched) n = Math::Min(n, mSegSamples - mRendered);
@@ -298,6 +397,46 @@ public:
 				else if(!mSegSwitched3) n = Math::Min(n, mSegSamples3 - mRendered);
 			}
 			if(n == 0) continue;
+			// Start/continue a fixed note-relative attack interpolation segment.
+			// The segment endpoints never depend on how the host split RenderInto,
+			// so cache/no-cache and different audio block sizes render identically.
+			if(mRendered < mDecayOnsetSamples)
+			{
+				if(mAttackInterpLen == 0)
+				{
+					const size_t segLen = Math::Min(size_t(128), mDecayOnsetSamples - mRendered);
+					auto advance = [segLen](float step)
+					{
+						float r = 1.0f, b = step;
+						size_t q = segLen;
+						while(q) { if(q & 1) r *= b; b *= b; q >>= 1; }
+						return r;
+					};
+					mAttackSegEndBasis0 = mAttackBasis0*advance(mAttackBasisStep0);
+					mAttackSegEndBasis1 = mAttackBasis1*advance(mAttackBasisStep1);
+					mAttackSegEndBasis2 = mAttackBasis2*advance(mAttackBasisStep2);
+					const float b00 = mAttackBasis0 - mAttackBasisEnd0;
+					const float b01 = mAttackBasis1 - mAttackBasisEnd1;
+					const float b02 = mAttackBasis2 - mAttackBasisEnd2;
+					const float b10 = mAttackSegEndBasis0 - mAttackBasisEnd0;
+					const float b11 = mAttackSegEndBasis1 - mAttackBasisEnd1;
+					const float b12 = mAttackSegEndBasis2 - mAttackBasisEnd2;
+					const float* c0 = mAttackCoeff0.Data();
+					const float* c1 = mAttackCoeff1.Data();
+					const float* c2 = mAttackCoeff2.Data();
+					float* e0 = mAttackEnv0.Data();
+					float* e1 = mAttackEnv1.Data();
+					for(size_t p = 0; p < count; p++)
+					{
+						e0[p] = Math::Max(0.05f, 1.0f + c0[p]*b00 + c1[p]*b01 + c2[p]*b02);
+						e1[p] = Math::Max(0.05f, 1.0f + c0[p]*b10 + c1[p]*b11 + c2[p]*b12);
+					}
+					mAttackInterpPos = 0;
+					mAttackInterpLen = segLen;
+				}
+				n = Math::Min(n, mAttackInterpLen - mAttackInterpPos);
+			}
+			const size_t blockStart = mRendered;
 			mRendered += n;
 			float* acc = mScratch.Data();
 			float* accR = mScratchR.Data();
@@ -325,146 +464,289 @@ public:
 					bp[p] = ph1;
 				}
 			}
-#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
-			if(mBeatOn)
+if(blockStart < mDecayOnsetSamples)
 			{
-				const float* e0a = mBeatE0.Data();
-				const float* e1a = mBeatE1.Data();
-				const float invN = 1.0f/float(n);
-				for(size_t p = 0; p < count; p += 4)
+	#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
+				if(mBeatOn)
 				{
-					__m128 s1v = _mm_loadu_ps(s1+p);
-					__m128 s2v = _mm_loadu_ps(s2+p);
-					__m128 kv  = _mm_loadu_ps(k+p);
-					__m128 av  = _mm_loadu_ps(amp+p);
-					const __m128 dv = _mm_loadu_ps(dec+p);
-					const __m128 ak = _mm_loadu_ps(atk+p);
-					const __m128 mv = _mm_sub_ps(dv, ak);
-					const __m128 glv = _mm_loadu_ps(stereoL+p);
-					const __m128 rav = _mm_loadu_ps(stereoRA+p);
-					const __m128 rbv = _mm_loadu_ps(stereoRB+p);
-					const __m128 b0 = _mm_loadu_ps(e0a + p);
-					const __m128 bd = _mm_sub_ps(_mm_loadu_ps(e1a + p), b0);
-					for(size_t i = 0; i < n; i++)
+					const float* e0a = mBeatE0.Data();
+					const float* e1a = mBeatE1.Data();
+					const float invN = 1.0f/float(n);
+					const float attackInvLen = 1.0f/float(mAttackInterpLen);
+					const float attackBase = float(mAttackInterpPos);
+					for(size_t p = 0; p < count; p += 4)
 					{
-						const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, _mm_set1_ps(float(i)*invN)));
-						const __m128 env = _mm_mul_ps(av, gv);
-						const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
-						const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
-						const __m128 outR = _mm_mul_ps(carrierR, env);
-						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
-						s1v = s2v;
-						s2v = newS;
-						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
-						_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
-						_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						__m128 s1v = _mm_loadu_ps(s1+p);
+						__m128 s2v = _mm_loadu_ps(s2+p);
+						__m128 kv  = _mm_loadu_ps(k+p);
+						__m128 av  = _mm_loadu_ps(amp+p);
+						const __m128 dv = _mm_loadu_ps(dec+p);
+						const __m128 ak = _mm_loadu_ps(atk+p);
+						const __m128 mv = _mm_sub_ps(dv, ak);
+						const __m128 glv = _mm_loadu_ps(stereoL+p);
+						const __m128 rav = _mm_loadu_ps(stereoRA+p);
+						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
+						const __m128 b0 = _mm_loadu_ps(e0a + p);
+						const __m128 bd = _mm_sub_ps(_mm_loadu_ps(e1a + p), b0);
+						const __m128 a0 = _mm_loadu_ps(mAttackEnv0.Data() + p);
+						const __m128 ad = _mm_sub_ps(_mm_loadu_ps(mAttackEnv1.Data() + p), a0);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 fi = _mm_set1_ps(float(i)*invN);
+							const __m128 afi = _mm_set1_ps((attackBase + float(i))*attackInvLen);
+							const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, fi));
+							const __m128 ae = _mm_add_ps(a0, _mm_mul_ps(ad, afi));
+							const __m128 env = _mm_mul_ps(_mm_mul_ps(av, gv), ae);
+							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
+							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+							const __m128 outR = _mm_mul_ps(carrierR, env);
+							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+							s1v = s2v;
+							s2v = newS;
+							av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						}
+						_mm_storeu_ps(s1+p, s1v);
+						_mm_storeu_ps(s2+p, s2v);
+						_mm_storeu_ps(amp+p, av);
 					}
-					_mm_storeu_ps(s1+p, s1v);
-					_mm_storeu_ps(s2+p, s2v);
-					_mm_storeu_ps(amp+p, av);
 				}
+				else
+				{
+					for(size_t p = 0; p < count; p += 4)
+					{
+						__m128 s1v = _mm_loadu_ps(s1+p);
+						__m128 s2v = _mm_loadu_ps(s2+p);
+						__m128 kv  = _mm_loadu_ps(k+p);
+						__m128 av  = _mm_loadu_ps(amp+p);
+						const __m128 dv = _mm_loadu_ps(dec+p);
+						const __m128 ak = _mm_loadu_ps(atk+p);
+						const __m128 mv = _mm_sub_ps(dv, ak);
+						const __m128 glv = _mm_loadu_ps(stereoL+p);
+						const __m128 rav = _mm_loadu_ps(stereoRA+p);
+						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
+						const __m128 a0 = _mm_loadu_ps(mAttackEnv0.Data() + p);
+						const __m128 ad = _mm_sub_ps(_mm_loadu_ps(mAttackEnv1.Data() + p), a0);
+						const float attackInvLen = 1.0f/float(mAttackInterpLen);
+						const float attackBase = float(mAttackInterpPos);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 ae = _mm_add_ps(a0, _mm_mul_ps(ad, _mm_set1_ps((attackBase + float(i))*attackInvLen)));
+							const __m128 ave = _mm_mul_ps(av, ae);
+							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, ave), glv);
+							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+							const __m128 outR = _mm_mul_ps(carrierR, ave);
+							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+							s1v = s2v;
+							s2v = newS;
+							av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						}
+						_mm_storeu_ps(s1+p, s1v);
+						_mm_storeu_ps(s2+p, s2v);
+						_mm_storeu_ps(amp+p, av);
+					}
+				}
+	#else
+				if(mBeatOn)
+				{
+					const float* e0a = mBeatE0.Data();
+					const float* e1a = mBeatE1.Data();
+					const float invN = 1.0f/float(n);
+					const float attackInvLen = 1.0f/float(mAttackInterpLen);
+					const float attackBase = float(mAttackInterpPos);
+					for(size_t p = 0; p < count; p++)
+					{
+						float s1v = s1[p], s2v = s2[p], kv = k[p];
+						float av = amp[p];
+						const float mv = dec[p] - atk[p];
+						const float ak = atk[p];
+						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float b0 = e0a[p], bd = e1a[p] - b0;
+						const float a0 = mAttackEnv0[p], ad = mAttackEnv1[p] - a0;
+						for(size_t i = 0; i < n; i++)
+						{
+							const float env = av*(b0 + bd*(float(i)*invN))*(a0 + ad*((attackBase + float(i))*attackInvLen));
+							acc[4*i] += s1v*env*gl;
+							accR[4*i] += (ra*s1v + rb*s2v)*env;
+							const float newS = kv*s2v - s1v;
+							s1v = s2v;
+							s2v = newS;
+							av = av*mv + ak;
+						}
+						s1[p] = s1v;
+						s2[p] = s2v;
+						amp[p] = av;
+					}
+				}
+				else
+				{
+					for(size_t p = 0; p < count; p++)
+					{
+						float s1v = s1[p], s2v = s2[p], kv = k[p];
+						float av = amp[p];
+						const float mv = dec[p] - atk[p];
+						const float ak = atk[p];
+						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float a0 = mAttackEnv0[p], ad = mAttackEnv1[p] - a0;
+						const float attackInvLen = 1.0f/float(mAttackInterpLen);
+						const float attackBase = float(mAttackInterpPos);
+						for(size_t i = 0; i < n; i++)
+						{
+							const float ae = a0 + ad*((attackBase + float(i))*attackInvLen);
+							acc[4*i] += s1v*av*ae*gl;
+							accR[4*i] += (ra*s1v + rb*s2v)*av*ae;
+							const float newS = kv*s2v - s1v;
+							s1v = s2v;
+							s2v = newS;
+							av = av*mv + ak;
+						}
+						s1[p] = s1v;
+						s2[p] = s2v;
+						amp[p] = av;
+					}
+				}
+	#endif
 			}
 			else
 			{
-				for(size_t p = 0; p < count; p += 4)
+	#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
+				if(mBeatOn)
 				{
-					__m128 s1v = _mm_loadu_ps(s1+p);
-					__m128 s2v = _mm_loadu_ps(s2+p);
-					__m128 kv  = _mm_loadu_ps(k+p);
-					__m128 av  = _mm_loadu_ps(amp+p);
-					const __m128 dv = _mm_loadu_ps(dec+p);
-					const __m128 ak = _mm_loadu_ps(atk+p);
-					const __m128 mv = _mm_sub_ps(dv, ak);
-					const __m128 glv = _mm_loadu_ps(stereoL+p);
-					const __m128 rav = _mm_loadu_ps(stereoRA+p);
-					const __m128 rbv = _mm_loadu_ps(stereoRB+p);
-					for(size_t i = 0; i < n; i++)
+					const float* e0a = mBeatE0.Data();
+					const float* e1a = mBeatE1.Data();
+					const float invN = 1.0f/float(n);
+					for(size_t p = 0; p < count; p += 4)
 					{
-						const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, av), glv);
-						const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
-						const __m128 outR = _mm_mul_ps(carrierR, av);
-						const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
-						s1v = s2v;
-						s2v = newS;
-						av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
-						_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
-						_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						__m128 s1v = _mm_loadu_ps(s1+p);
+						__m128 s2v = _mm_loadu_ps(s2+p);
+						__m128 kv  = _mm_loadu_ps(k+p);
+						__m128 av  = _mm_loadu_ps(amp+p);
+						const __m128 dv = _mm_loadu_ps(dec+p);
+						const __m128 ak = _mm_loadu_ps(atk+p);
+						const __m128 mv = _mm_sub_ps(dv, ak);
+						const __m128 glv = _mm_loadu_ps(stereoL+p);
+						const __m128 rav = _mm_loadu_ps(stereoRA+p);
+						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
+						const __m128 b0 = _mm_loadu_ps(e0a + p);
+						const __m128 bd = _mm_sub_ps(_mm_loadu_ps(e1a + p), b0);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, _mm_set1_ps(float(i)*invN)));
+							const __m128 env = _mm_mul_ps(av, gv);
+							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
+							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+							const __m128 outR = _mm_mul_ps(carrierR, env);
+							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+							s1v = s2v;
+							s2v = newS;
+							av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						}
+						_mm_storeu_ps(s1+p, s1v);
+						_mm_storeu_ps(s2+p, s2v);
+						_mm_storeu_ps(amp+p, av);
 					}
-					_mm_storeu_ps(s1+p, s1v);
-					_mm_storeu_ps(s2+p, s2v);
-					_mm_storeu_ps(amp+p, av);
 				}
-			}
-#else
-			if(mBeatOn)
-			{
-				const float* e0a = mBeatE0.Data();
-				const float* e1a = mBeatE1.Data();
-				const float invN = 1.0f/float(n);
-				for(size_t p = 0; p < count; p++)
+				else
 				{
-					float s1v = s1[p], s2v = s2[p], kv = k[p];
-					float av = amp[p];
-					const float mv = dec[p] - atk[p];
-					const float ak = atk[p];
-					const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
-					const float b0 = e0a[p], bd = e1a[p] - b0;
-					for(size_t i = 0; i < n; i++)
+					for(size_t p = 0; p < count; p += 4)
 					{
-						const float env = av*(b0 + bd*(float(i)*invN));
-						acc[4*i] += s1v*env*gl;
-						accR[4*i] += (ra*s1v + rb*s2v)*env;
-						const float newS = kv*s2v - s1v;
-						s1v = s2v;
-						s2v = newS;
-						av = av*mv + ak;
+						__m128 s1v = _mm_loadu_ps(s1+p);
+						__m128 s2v = _mm_loadu_ps(s2+p);
+						__m128 kv  = _mm_loadu_ps(k+p);
+						__m128 av  = _mm_loadu_ps(amp+p);
+						const __m128 dv = _mm_loadu_ps(dec+p);
+						const __m128 ak = _mm_loadu_ps(atk+p);
+						const __m128 mv = _mm_sub_ps(dv, ak);
+						const __m128 glv = _mm_loadu_ps(stereoL+p);
+						const __m128 rav = _mm_loadu_ps(stereoRA+p);
+						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, av), glv);
+							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
+							const __m128 outR = _mm_mul_ps(carrierR, av);
+							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
+							s1v = s2v;
+							s2v = newS;
+							av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+						}
+						_mm_storeu_ps(s1+p, s1v);
+						_mm_storeu_ps(s2+p, s2v);
+						_mm_storeu_ps(amp+p, av);
 					}
-					s1[p] = s1v;
-					s2[p] = s2v;
-					amp[p] = av;
 				}
-			}
-			else
-			{
-				for(size_t p = 0; p < count; p++)
+	#else
+				if(mBeatOn)
 				{
-					float s1v = s1[p], s2v = s2[p], kv = k[p];
-					float av = amp[p];
-					const float mv = dec[p] - atk[p];
-					const float ak = atk[p];
-					const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
-					for(size_t i = 0; i < n; i++)
+					const float* e0a = mBeatE0.Data();
+					const float* e1a = mBeatE1.Data();
+					const float invN = 1.0f/float(n);
+					for(size_t p = 0; p < count; p++)
 					{
-						acc[4*i] += s1v*av*gl;
-						accR[4*i] += (ra*s1v + rb*s2v)*av;
-						const float newS = kv*s2v - s1v;
-						s1v = s2v;
-						s2v = newS;
-						av = av*mv + ak;
+						float s1v = s1[p], s2v = s2[p], kv = k[p];
+						float av = amp[p];
+						const float mv = dec[p] - atk[p];
+						const float ak = atk[p];
+						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float b0 = e0a[p], bd = e1a[p] - b0;
+						for(size_t i = 0; i < n; i++)
+						{
+							const float env = av*(b0 + bd*(float(i)*invN));
+							acc[4*i] += s1v*env*gl;
+							accR[4*i] += (ra*s1v + rb*s2v)*env;
+							const float newS = kv*s2v - s1v;
+							s1v = s2v;
+							s2v = newS;
+							av = av*mv + ak;
+						}
+						s1[p] = s1v;
+						s2[p] = s2v;
+						amp[p] = av;
 					}
-					s1[p] = s1v;
-					s2[p] = s2v;
-					amp[p] = av;
 				}
-			}
-#endif
-			// Оверлеи («рокот» + «удар» + «блум») подмешиваются в аккумулятор
-			// отдельным коротким циклом, пока они активны.
-			if(mOverlayActive)
-			{
-				size_t ov = 0;
-				while(ov < n && (mBodyPos < mBodyLen || mPushPos < mPushLen || (mBloomOn && mBloomPos < mBloomLen)))
+				else
 				{
-					float o = 0.0f;
-					if(mBodyPos < mBodyLen) o += mBodyBuf[mBodyPos++]*mOverlayGain;
-					if(mPushPos < mPushLen) o += mPushBuf[mPushPos++]*mOverlayGain;
-					if(mBloomOn && mBloomPos < mBloomLen) o += mBloomBuf[mBloomPos++]*mOverlayGain;
-					mOverlayGain *= mOverlayRel;
-					acc[4*ov] += 0.5f*o;
-					accR[4*ov] += 0.5f*o;
-					ov++;
+					for(size_t p = 0; p < count; p++)
+					{
+						float s1v = s1[p], s2v = s2[p], kv = k[p];
+						float av = amp[p];
+						const float mv = dec[p] - atk[p];
+						const float ak = atk[p];
+						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						for(size_t i = 0; i < n; i++)
+						{
+							acc[4*i] += s1v*av*gl;
+							accR[4*i] += (ra*s1v + rb*s2v)*av;
+							const float newS = kv*s2v - s1v;
+							s1v = s2v;
+							s2v = newS;
+							av = av*mv + ak;
+						}
+						s1[p] = s1v;
+						s2[p] = s2v;
+						amp[p] = av;
+					}
 				}
-				if(mBodyPos >= mBodyLen && mPushPos >= mPushLen && (!mBloomOn || mBloomPos >= mBloomLen)) mOverlayActive = false;
+	#endif
+			}
+			if(blockStart < mDecayOnsetSamples && mAttackInterpLen != 0)
+			{
+				mAttackInterpPos += n;
+				if(mAttackInterpPos == mAttackInterpLen)
+				{
+					mAttackBasis0 = mAttackSegEndBasis0;
+					mAttackBasis1 = mAttackSegEndBasis1;
+					mAttackBasis2 = mAttackSegEndBasis2;
+					mAttackInterpPos = 0;
+					mAttackInterpLen = 0;
+				}
 			}
 			// Свёртка 4 лейнов.
 			for(size_t i = 0; i < n; i++)
@@ -472,6 +754,17 @@ public:
 				float s = (acc[4*i] + acc[4*i+1]) + (acc[4*i+2] + acc[4*i+3]);
 				float sr = (accR[4*i] + accR[4*i+1]) + (accR[4*i+2] + accR[4*i+3]);
 				const size_t t = mRendered - n + i;
+				if(t < mStringRevealSamples) { s = 0.0f; sr = 0.0f; }
+				else if(mStringRevealBlendSamples != 0 && t < mStringRevealSamples + mStringRevealBlendSamples)
+				{
+					const float blend = float(t - mStringRevealSamples)/float(mStringRevealBlendSamples);
+					s *= blend; sr *= blend;
+				}
+				if(mCommonAmOn)
+				{
+					const float am = commonAm0 + commonAmStep*float(i);
+					s *= am; sr *= am;
+				}
 				// Конец региона: фейд на последних mFadeSamples, дальше тишина
 				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
 				if(mEndSamples)
@@ -483,25 +776,83 @@ public:
 						s *= f; sr *= f;
 					}
 				}
-				sink(s*volL, sr*volR);
+				const float vl = ApplyVelocityFilter(s, false);
+				const float vr = ApplyVelocityFilter(sr, true);
+				const float attackBoost = StepAttackBoost(t);
+				float releaseGain = 1.0f;
+				if(mReleased && mSf2UniformRelease)
+				{
+					releaseGain = mSf2ReleaseGain;
+					if(mSf2ReleaseSamplesLeft != 0)
+					{
+						mSf2ReleaseGain *= mSf2ReleaseStep;
+						--mSf2ReleaseSamplesLeft;
+					}
+				}
+				sink(vl*volL*releaseGain*attackBoost, vr*volR*releaseGain*attackBoost);
 			}
+			// After the attack every modal amplitude is monotonic. Once the
+			// highest SIMD group falls below the inaudible trim threshold it can never
+			// become audible again. Drop trailing groups permanently so long
+			// piano tails do not keep evaluating dead upper harmonics. Keep the
+			// canonical cache builder untrimmed so every note starts from the same
+			// full physical source recipe.
+			if(
+				mRendered >= mDecayOnsetSamples && mCount > 4)
+			{
+				size_t trimmed = mCount;
+				while(trimmed > 4)
+				{
+					bool silent = true;
+					for(size_t q = trimmed - 4; q < trimmed; q++)
+					{
+						float a = amp[q] < 0.0f ? -amp[q] : amp[q];
+						if(mReleased && mSf2UniformRelease) a *= mSf2ReleaseGain;
+						const float trimFloor = (mReleased && mSf2UniformRelease) ? 1e-3f : 1e-4f;
+						if(a >= trimFloor) { silent = false; break; }
+					}
+					if(!silent) break;
+					trimmed -= 4;
+				}
+				mCount = trimmed;
+			}
+			// A raw cache builder must stay raw for the entire cached prefix. The old
+			// 160 ms cache ended before the 200 ms velocity-filter handoff; with a
+			// 500 ms cache, promoting here would bake the builder velocity into PCM.
+			if(
+				mVelocityFilterModel && !mVelocityFilterInPartials &&
+				mRendered >= mVelocityFilterHandoffSamples)
+				PromoteVelocityFilterToPartials();
+			if(mVelocityModEnvCents != 0.0f && mRendered >= mVelocityModNextUpdate)
+				UpdateVelocityModEnvelope();
 			numSamples -= n;
 		}
 		if(mEndSamples && mRendered >= mEndSamples) mDone = true;
 		else if(mReleased)
 		{
-			// При release (демпфере) нота заканчивается, когда все amp ~ 0.
-			// Проверяем max |amp| только в конце блока.
-			float maxAmp = 0.0f;
-			for(size_t p = 0; p < count; p++)
+			if(mSf2UniformRelease)
 			{
-				const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
-				if(a > maxAmp) maxAmp = a;
+				// FluidSynth also retires voices once sample*envelope falls below its
+				// noise floor. Keep the old proven -60 dB modal gate instead of
+				// evaluating an inaudible full 1.2-second release tail.
+				float maxAmp = 0.0f;
+				for(size_t p = 0; p < mCount; p++)
+				{
+					const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+					if(a > maxAmp) maxAmp = a;
+				}
+				if(mSf2ReleaseSamplesLeft == 0 || maxAmp*mSf2ReleaseGain < 1e-3f) mDone = true;
 			}
-			// Порог −60 дБ (−100 дБ раньше): ниже уже не слышно в любой смеси,
-			// а голос с τ=280 мс добирался бы до 1e-5 ~2.6 с — рендер после
-			// release тормозил в разы (живые «хвосты» копились на каждой ноте).
-			if(maxAmp < 1e-3f) mDone = true;
+			else
+			{
+				float maxAmp = 0.0f;
+				for(size_t p = 0; p < count; p++)
+				{
+					const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+					if(a > maxAmp) maxAmp = a;
+				}
+				if(maxAmp < 1e-3f) mDone = true;
+			}
 		}
 	}
 
@@ -509,6 +860,7 @@ public:
 	// (не инлайн: без дублирования кода в TU, меньше WASM).
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	void MultiplyVolume(float volumeMultiplier) override {mVolume *= volumeMultiplier;}
 
 #ifdef INTRA_UI_METERS
 	/// Уровень громкости ноты для индикатора веб-UI (см. Sampler::GetLevel).
@@ -525,17 +877,26 @@ public:
 		const EnvelopeSegment& envelope) override
 	{
 		if(mDone) return 0;
-		const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
+		const size_t total = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
 		float* dstL = ioDstLeft.Data();
 		float* dstR = ioDstRight.Data();
 		RenderEnvelope gain(envelope);
-		RenderInto(n, [dstL, dstR, &gain](float l, float r) mutable
+		float tmpL[mBlockSize], tmpR[mBlockSize];
+		size_t done = 0;
+		while(done < total)
 		{
-			const float g = gain.NextGain();
-			*dstL++ += l*g;
-			*dstR++ += r*g;
-		});
-		return mDone ? 0 : n;
+			const size_t n = Math::Min(mBlockSize, total - done);
+			for(size_t i = 0; i < n; i++) tmpL[i] = tmpR[i] = 0.0f;
+			GenerateStereo(Span<float>(tmpL, n), Span<float>(tmpR, n));
+			for(size_t i = 0; i < n; i++)
+			{
+				const float g = gain.NextGain();
+				dstL[done + i] += tmpL[i]*g;
+				dstR[done + i] += tmpR[i]*g;
+			}
+			done += n;
+		}
+		return mDone ? 0 : total;
 	}
 	void NoteRelease() override;
 	void SetPan(float newPan) override
@@ -544,6 +905,7 @@ public:
 		mMidiPanGainL = 1.0f - pan;
 		mMidiPanGainR = 1.0f + pan;
 	}
+	void SetVelocity(float velocity01) override;
 	void ApplyRelease();
 
 };
@@ -569,14 +931,10 @@ struct AdditivePianoInstrument
 	int UnisonVoices;
 	float VelBrightness;
 	float TrebleTilt;
-	/// VolumeDb — per-instrument калибровка громкости (дБ, 0 = эталон).
-	/// Применяется ко всей ноте целиком (атака+сустейн) множителем на выходе;
-	/// Scale и остальные параметры НЕ трогает. Калибровка сверена с SF2
-	/// (замеры scripts/_tmp-instlevel.js — рендер, _tmp-sf2level.js —
-	/// семплы×attenuation): AGP 0 (эталон), Bright +0.7, HT +1.8, EG +0.2,
-	/// EP1 +1.0, EP2 -8.6 (после Soft-layer таблицы 2026-09-04), Harpsi
-	/// -1.8, Clav +3.2. Значения лежат в InstrumentLibrary.cpp.
-	float VolumeDb = 0;
+	/// VolumeScale — готовый линейный per-instrument множитель громкости.
+	/// Постоянные dB-калибровки заранее преобразованы в InstrumentLibrary.cpp:
+	/// note-on не вычисляет 10^(dB/20). Scale и тембральные параметры не трогает.
+	float VolumeScale = 1.0f;
 	/// BeatScale — per-instrument множитель регионального профиля биений
 	/// (лестница base в AdditiveSampler, измерена по семплам SF2 2026-08-26).
 	/// 1 = полный профиль (эталон — AcousticPiano); 0 = региональная расстройка
@@ -599,14 +957,21 @@ struct AdditivePianoInstrument
 	/// примерно постоянной скоростью ~2-3 Гц на C4-C5 (DX7/Rhodes тайны), а
 	/// не по лестнице струн рояля (2026-09-04, EP2).
 	float BeatCents = 0;
+	/// Explicit SF2 velocity/profile id. 0=Grand, 1=Bright, 2=ElectricGrand,
+	/// 3=Honky, 4=EP1, 5=EP2, 6=Harpsichord, 7=Clavinet.
+	uint8 VelocityProfile = 0;
 
 	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate) const
 	{
 		return new AdditiveSampler(freq, volume, sampleRate,
 			MaxPartials, Brightness, Scale, DecayScale, DecayStiffness,
-			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeDb, BeatScale, TableId,
-			BeatCents);
+			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeScale, BeatScale, TableId,
+			BeatCents, VelocityProfile);
 	}
 };
+
+// Prebuild the canonical raw 500 ms region prefix outside the audio callback.
+// Repeated keys in the same SF2 region are no-ops after the first build.
+INTRA_FORCEINLINE void PreloadAcousticPianoKey(float, unsigned) {}
 
 INTRA_WARNING_POP

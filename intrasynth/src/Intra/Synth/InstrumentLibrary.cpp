@@ -255,7 +255,7 @@ namespace
 		// ровно 8.50 Гц — здесь просьба и замер согласны (в Update 68 срез был
 		// сделан по двусмысленному «чуть чаще»).
 		static const float vibRateV[] = {
-			3.90f, 5.00f, 5.55f, 5.95f, 5.40f, 7.10f, 6.30f, 8.50f};
+			3.90f, 5.00f, 5.55f, 5.95f, 1.86208714f, 7.10f, 6.30f, 8.50f};
 		const float rf = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f),
 			vibRateX[0], vibRateX[7]);
 		r.Frequency = MixParam(vibRateX, vibRateV, 8, rf);
@@ -556,14 +556,14 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& g = Instruments["AcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 				// Партиалы/атака/унисон (Detune 1.4) — из SF2-семпла.
-				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 0.0f};
+				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 2.18524432f, 1.0f, 0, 0.0f, 0};
 			}());
 	}
 	{
 		auto& g = Instruments["BrightAcousticPiano"];
 		g.GenericInstruments.EmplaceLast([](){
 			// Ярче; BeatScale=0 (региональный профиль давал AM 15-40 дБ, 2026-08-29).
-			return AdditivePianoInstrument{0.4f, 40, 0.84f, 1.0f, 0.0f, 0.7f, 3, 0.4f, 0.0f, 0.7f, 0.0f};
+			return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 2.28823171f, 1.0f, 0, 0.0f, 1};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
@@ -572,7 +572,7 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// CP-80: BeatScale=0, TableId=XP50, Brightness 0.40 + DecayStiffness 0.02
 			// (калибровки 2026-08-31..09-04, см. ворклог).
-			return AdditivePianoInstrument{0.40f, 40, 0.42f, 0.8f, 0.02f, 2.5f, 2, 0.1f, 0.0f, 0.2f, 0.0f, PianoTableElectricGrand};
+			return AdditivePianoInstrument{0.40f, 40, 0.42f, 0.8f, 0.02f, 2.5f, 2, 0.1f, 0.0f, 1.05803492f, 0.0f, PianoTableElectricGrand, 0.0f, 2};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.9f, 0, false, true});
 	}
@@ -581,39 +581,39 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericInstruments.EmplaceLast([](){
 			// Honky-tonk: BeatScale=1 (характер в басу G2/требли C5+, середина
 			// плоская), TableId=HonkyTonk (в Titanic алиасит acoustic, 2026-08-30).
-			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f, 1.8f, 1.0f, PianoTableHonkyTonk};
+			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f, 1.88473372f, 1.0f, PianoTableHonkyTonk, 0.0f, 3};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["ElectricPiano1"];
 		g.GenericInstruments.EmplaceLast([](){
-			// Родс EVP73: BeatScale=0, TableId=EP1, VolumeDb=1.0 (2026-08-31/09-02).
-			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f, 1.0f, 0.0f, PianoTableElectricPiano1};
+			// Родс EVP73: BeatScale=0, TableId=EP1; VolumeScale откалиброван относительно AGP по Titanic.
+			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f, 0.665196568f, 0.0f, PianoTableElectricPiano1, 0.0f, 4};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 1.0f, 0, false, true});
 	}	{
  		auto& g = Instruments["ElectricPiano2"];
  		g.GenericInstruments.EmplaceLast([](){
 			// DX7 EP2: TableId=EP2 из слышимого слоя "* Soft" (14 зон, 2026-09-04),
-			// 2 струны BeatCents=6.0 (биения ~2.2 Гц как в семпле), VolumeDb=-7.2.
-			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 6.0f, 2, 0.05f, 0.0f, -7.2f, 1.0f, PianoTableElectricPiano2, 6.0f};
+			// 2 струны BeatCents=6.0 (биения ~2.2 Гц как в семпле); VolumeScale — линейная калибровка.
+			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 6.0f, 2, 0.05f, 0.0f, 1.5324983f, 1.0f, PianoTableElectricPiano2, 6.0f, 5};
  		}());
  		g.Envelope = MakeEnvelope({0, 0, 1, 1.2f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["Harpsichord"];
 		g.GenericInstruments.EmplaceLast([](){
-			// Клавесин: TableId=Harpsichord 8'I (9 регионов), VolumeDb=-1.8.
-			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f, -1.8f, 1.0f, PianoTableHarpsichord};
+			// Клавесин: TableId=Harpsichord 8'I (9 регионов), линейный VolumeScale.
+			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f, 2.3850638f, 1.0f, PianoTableHarpsichord, 0.0f, 6};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.25f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["Clavinet"];
 		g.GenericInstruments.EmplaceLast([](){
-			// Клавинет: TableId=Clavinet (11 регионов, короткие семплы), VolumeDb=3.2.
-			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f, 3.2f, 1.0f, PianoTableClavinet};
+			// Клавинет: TableId=Clavinet (11 регионов, короткие семплы), линейный VolumeScale.
+			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f, 2.45244909f, 1.0f, PianoTableClavinet, 0.0f, 7};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.15f, 0, false, true});
 	}

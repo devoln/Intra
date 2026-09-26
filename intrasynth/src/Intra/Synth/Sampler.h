@@ -31,6 +31,11 @@ public:
 	/// Изменение должно происходить плавно, иначе будет щелчок.
 	virtual void SetPan(float newPan) {(void)newPan;}
 
+	/// Raw MIDI key velocity, normalized to [0; 1]. This is deliberately
+	/// separate from CC7/channel gain so timbre does not change when a track
+	/// fader moves after NoteOn.
+	virtual void SetVelocity(float velocity01) {(void)velocity01;}
+
 	/// Pass source-level render parameters to note samplers. Master effects are
 	/// handled by MidiSynth; only note-local parameters are forwarded further.
 	virtual void SetRenderParams(const RenderParams& params) {(void)params;}

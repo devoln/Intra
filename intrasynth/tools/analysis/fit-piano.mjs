@@ -93,10 +93,13 @@ function readSf2(file) {
 
 function parseHeader(file) {
   const text = fs.readFileSync(file, "utf8");
-  const rm = [...text.matchAll(/^\s*\{(\d+),\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*(\d+),\s*(\d+),\s*([0-9.]+)f,\s*(-?[0-9.]+)f\},?$/gm)];
+  // Current compact PianoRegionData:
+  // {RootKey, PartCount, PartOffset, F0, AttackT, DecayOnset, SampleLen, StereoRatioRtoL}.
+  // Decay segment durations are shared by all regions in the runtime.
+  const rm = [...text.matchAll(/^\s*\{(\d+),\s*(\d+),\s*(\d+),\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f,\s*([0-9.]+)f\},?$/gm)];
   const regions = rm.slice(0, 25).map((m) => ({
-    root: +m[1], f0: +m[2], attackT: +m[3], decayOnset: +m[4], segT: +m[5], segT2: +m[6], segT3: +m[7],
-    sampleLen: +m[8], loudness: +m[9], count: +m[10], offset: +m[11], hammer: +m[12], pan: +m[13],
+    root: +m[1], count: +m[2], offset: +m[3], f0: +m[4], attackT: +m[5], decayOnset: +m[6],
+    segT: 0.235, segT2: 0.550, segT3: 0.900, sampleLen: +m[7], stereo: +m[8],
   }));
   if (regions.length !== 25) throw new Error(`Ожидалось 25 acoustic regions, найдено ${regions.length}`);
   const tm = text.match(/static const uint8 PianoAllPartialsPacked\[\] = \{([\s\S]*?)\n\};/);
@@ -208,7 +211,16 @@ function robustPieceFit(times, ys, r, baseRates) {
   const rates = fixed.slice(); vars.slice(1).forEach((j, i) => rates[j] = clamp(beta[i + 1], 0, 180));
   const abs = pts.map((p) => Math.abs(beta[0] - pieceDurations(p.t, r).reduce((q, d, j) => q + d * rates[j], 0) - p.y));
   const sorted = abs.slice().sort((a, b) => a - b);
-  return { L0: beta[0], rates, active, n: pts.length, maeDb: median(abs), p90Db: sorted[Math.floor(0.9 * (sorted.length - 1))], topDb: top, floorDb: floor };
+  // Quality-gate the replacement against the currently packed model on the
+  // exact same trajectory. Convergence alone is not enough for sparse/noisy
+  // upper partials.
+  const baseL0 = median(pts.map((p) => p.y + pieceDurations(p.t, r).reduce((q, d, j) => q + d * baseRates[j], 0)));
+  const baseAbs = pts.map((p) => Math.abs(baseL0 - pieceDurations(p.t, r).reduce((q, d, j) => q + d * baseRates[j], 0) - p.y));
+  const baseSorted = baseAbs.slice().sort((a, b) => a - b);
+  const maeDb = median(abs), p90Db = sorted[Math.floor(0.9 * (sorted.length - 1))];
+  const baseMaeDb = median(baseAbs), baseP90Db = baseSorted[Math.floor(0.9 * (baseSorted.length - 1))];
+  const accepted = maeDb <= 4.0 && p90Db <= 10.0 && (maeDb + 0.10 < baseMaeDb || p90Db + 0.25 < baseP90Db);
+  return { L0: beta[0], rates, active, n: pts.length, maeDb, p90Db, baseMaeDb, baseP90Db, accepted, topDb: top, floorDb: floor };
 }
 
 function spectraForPair(samples, hl, hr, onset, r) {
@@ -278,15 +290,34 @@ if (!opts.sf2) { console.error("Нужен --sf2 путь"); process.exit(2); }
 const headerPath = opts.header || "intrasynth/src/Intra/Synth/PianoRegions.h";
 const outPath = opts.out || ".scratch/piano-joint-fit.json";
 const H = parseHeader(headerPath), sf2 = readSf2(opts.sf2), nameToId = new Map(sf2.headers.map((h, i) => [h.name, i]));
+const selectedRoots = opts.roots ? new Set(String(opts.roots).split(",").map((x) => +x.trim()).filter(Number.isFinite)) : null;
+const checkpointDir = opts["checkpoint-dir"] ? path.resolve(String(opts["checkpoint-dir"])) : null;
+if (checkpointDir) fs.mkdirSync(checkpointDir, { recursive: true });
 const measured = [];
 for (let i = 0; i < H.regions.length; i++) {
-  const r = H.regions[i]; process.stderr.write(`root ${r.root} (${i + 1}/${H.regions.length})\n`);
-  measured.push(measureRegion(sf2, r, H.packed, nameToId));
+  const r = H.regions[i];
+  if (selectedRoots && !selectedRoots.has(r.root)) continue;
+  const cp = checkpointDir ? path.join(checkpointDir, `root_${r.root}.json`) : null;
+  let data = null;
+  if (cp && opts.resume && fs.existsSync(cp)) {
+    process.stderr.write(`root ${r.root}: resume ${cp}\n`);
+    data = JSON.parse(fs.readFileSync(cp, "utf8"));
+  } else {
+    process.stderr.write(`root ${r.root} (${i + 1}/${H.regions.length})\n`);
+    data = measureRegion(sf2, r, H.packed, nameToId);
+    if (cp) {
+      const tmp = `${cp}.tmp`;
+      fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+      fs.renameSync(tmp, cp);
+    }
+  }
+  measured.push({ ri: i, data });
 }
 
 const fitted = Uint8Array.from(H.packed), perRegion = [];
-for (let ri = 0; ri < H.regions.length; ri++) {
-  const r = H.regions[ri], ps = measured[ri].partials.filter((p) => p.valid);
+for (const item of measured) {
+  const ri = item.ri, r = H.regions[ri], validPs = item.data.partials.filter((p) => p.valid);
+  const ps = validPs.filter((p) => p.accepted !== false);
   const low = ps.filter((p) => p.k <= 16 && decodeRow(H.packed, p.row).ampQ > 0);
   // Абсолютный уровень FFT произволен. Сохраняем Loudness зоны, выравнивая
   // median low-harmonic Amp к текущей таблице, а меняем только форму спектра.
@@ -308,7 +339,7 @@ for (let ri = 0; ri < H.regions.length; ri++) {
       setBits(fitted, p.row, 69, 16, q);
     }
   }
-  perRegion.push({ root: r.root, ampOffsetDb: offsetDb, validPartials: ps.length });
+  perRegion.push({ root: r.root, ampOffsetDb: offsetDb, validPartials: validPs.length, acceptedPartials: ps.length });
 }
 
 const report = {
@@ -320,14 +351,15 @@ const report = {
     ampTimeZero: "PianoRegionData::DecayOnset; attack before it is deliberately excluded",
     applies: opts["fit-frequency"] ? "Amp + Decay1..4 + FreqRatio" : "Amp + Decay1..4; FreqRatio/Phase preserved",
   },
-  sf2: path.resolve(opts.sf2), header: path.resolve(headerPath), perRegion, regions: measured,
+  sf2: path.resolve(opts.sf2), header: path.resolve(headerPath), selectedRoots: selectedRoots ? Array.from(selectedRoots) : null,
+  perRegion, regions: measured.map((x) => x.data),
 };
 fs.mkdirSync(path.dirname(outPath), { recursive: true }); fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
 console.log(`Замеры: ${outPath}`);
 
 if (opts["write-header"]) {
   let text = H.text;
-  const re = /(static const uint8 PianoAllPartialsPacked\[\] = \{)\n[\s\S]*?\n(\};\n\nstatic const PianoRegionData PianoSampleRegions\[\] = \{)/;
+  const re = /(static const uint8 PianoAllPartialsPacked\[\] = \{)\n[\s\S]*?\n(\};)/;
   if (!re.test(text)) throw new Error("Не удалось заменить PianoAllPartialsPacked");
   text = text.replace(re, `$1\n${renderPackedArray(fitted)}\n$2`);
   fs.mkdirSync(path.dirname(opts["write-header"]), { recursive: true }); fs.writeFileSync(opts["write-header"], text);

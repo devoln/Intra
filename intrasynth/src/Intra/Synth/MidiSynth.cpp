@@ -331,8 +331,9 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	// убивал бы ноту навсегда — «потом поднял громкость дорожки, а длинной ноты
 	// не слышно». Мьют дорожки — тот же слой (множитель 0), а не отмена ноты.
 	const byte bornCC7 = BornCC7For(mLiveVolume[noteOn.Channel]);
+	const float cc7 = float(bornCC7)/127.0f;
 	const float totalStartVolume = Math::Exp(float(noteOn.Velocity)/127.0f - 1.0f)
-		* (float(bornCC7)/127.0f);
+		* cc7*cc7;
 	const float channelGain = ChannelGainFor(noteOn.Channel, bornCC7);
 	const uint16 key = noteOn.Id();
 
@@ -374,6 +375,7 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
 	newSampler.BornCC7 = bornCC7;
 	newSampler.ChannelGain = channelGain;
+	newSampler.SetVelocity(float(noteOn.Velocity) / 127.0f);
 	newSampler.SetPan(float(noteOn.Pan) / 64.0f);
 	newSampler.SetRenderParams(mRenderParams);
 	const float freqMult = pitchBendToFreqMultiplier(mMidiState.ChannelPitchBend[noteOn.Channel]);

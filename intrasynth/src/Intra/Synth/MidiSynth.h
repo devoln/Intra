@@ -259,7 +259,8 @@ private:
 	float ChannelGainFor(byte channel, byte bornCC7) const
 	{
 		if((mChannelMuteMask >> channel) & 1) return 0.0f;
-		return float(mLiveVolume[channel])/float(bornCC7);
+		const float ratio = float(mLiveVolume[channel])/float(bornCC7);
+		return ratio*ratio;
 	}
 
 	/// CC7, с которым нота родится живой: 0 запрещён (нота, рождённая при

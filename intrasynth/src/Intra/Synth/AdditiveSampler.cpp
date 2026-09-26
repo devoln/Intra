@@ -1,56 +1,458 @@
 #include "AdditiveSampler.h"
 #include "PianoRegions.h"
+#include "PianoAttackCoeffs.h"
+#include "Container/Sequential/Array.h"
+
+#ifndef INTRA_PIANO_ONSET_CACHE_MS
+#define INTRA_PIANO_ONSET_CACHE_MS 500
+#endif
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
+
+
+
+// Residual preset-level calibration for instruments that intentionally share the
+// acoustic sample table. Quarter-dB signed values, indexed by acoustic region.
+static const int8 gHonkyRegionGainQdb[25]  = {-28,-25,-23,-20,0,-22,-11,-8,-19,0,15,18,27,40,23,16,2,31,20,-14,-3,-3,-11,1,0};
+
+// Titanic velocity residual after the common SF2 (v/127)^2 law. Each pair
+// stores extra gain at velocity 50 and 85 in quarter-dB units; v115+ = 0.
+static const int8 gVel2Q50[7] = {13,14,13,11,14,12,11};
+static const int8 gVel2Q85[7] = {2,2,0,-3,3,1,1};
+static const int8 gVel3Q50[25] = {17,13,11,12,11,8,3,2,5,2,4,0,1,1,2,0,-2,-1,-3,-6,-10,-16,-20,-31,-28};
+static const int8 gVel3Q85[25] = {10,7,6,7,7,5,3,2,4,2,3,1,1,1,2,1,0,1,1,0,1,0,-1,-2,-4};
+static const int8 gVel4Q50[3] = {7,3,-2};
+static const int8 gVel4Q85[3] = {1,0,0};
+static const int8 gVel5Q50[14] = {27,25,30,37,31,24,30,31,28,31,31,31,33,29};
+static const int8 gVel5Q85[14] = {-1,1,2,5,-4,-3,-1,4,1,2,0,1,-3,0};
+static const int8 gVel7Q50[11] = {6,6,6,6,5,4,4,3,1,0,0};
+static const int8 gVel7Q85[11] = {4,4,3,4,3,3,2,2,1,0,0};
+
+static forceinline void PianoVelocityCalibrationQ(uint8 profile, uint8 region, int8& q50, int8& q85)
+{
+	q50 = q85 = 0;
+	switch(profile)
+	{
+	case 2: q50=gVel2Q50[region]; q85=gVel2Q85[region]; break;
+	case 3: q50=gVel3Q50[region]; q85=gVel3Q85[region]; break;
+	case 4: q50=gVel4Q50[region]; q85=gVel4Q85[region]; break;
+	case 5: q50=gVel5Q50[region]; q85=gVel5Q85[region]; break;
+	case 7: q50=gVel7Q50[region]; q85=gVel7Q85[region]; break;
+	default: break; // Harpsichord already follows the common SF2 law.
+	}
+}
+
+namespace
+{
+
+// Used by both onset-cache state reconstruction and the cache-independent
+// analytic pre-contact string seek. Keep it available in cache-OFF builds too.
+static noinline float PianoPowSamples(float x, size_t n)
+{
+	float r = 1.0f;
+	while(n) { if(n & 1) r *= x; x *= x; n >>= 1; }
+	return r;
+}
+
+static void PianoVelocityFilterCoeffs(unsigned sampleRate, float cutoff,
+	float& c0, float& a1, float& a2, float& b1, float& b2)
+{
+	cutoff = Math::Clamp(cutoff, 20.0f, 0.49f*float(sampleRate));
+	float q = 1.0f/Math::Tan(float(Math::PI)*cutoff/float(sampleRate));
+	const float rez = 1.41421356237f;
+	c0 = 1.0f/(1.0f + rez*q + q*q);
+	a1 = 2.0f*c0; a2 = c0;
+	b1 = -2.0f*(1.0f - q*q)*c0;
+	b2 = (-1.0f + rez*q - q*q)*c0;
+}
+}
+
+
+AdditiveSampler::~AdditiveSampler()
+{
+}
+
+void AdditiveSampler::SetVelocity(float velocity01)
+{
+	velocity01 = Math::Clamp(velocity01, 0.0f, 1.0f);
+	// MidiSynth applies the common SF2-like v^2 loudness correction to every
+	// voice after construction.  Piano-specific work here is therefore only
+	// residual timbre/level behaviour that the common law cannot express.
+	if(mTableId == 0 && mVelocityProfile <= 1)
+	{
+		const float v = 127.0f*velocity01;
+		// Harmonic-only upper-attack fit: the common transient residual weakens
+		// at low velocity.  One shared exponent replaces any velocity-zone table.
+		// Only the recorded upper-register transient has a velocity-dependent
+		// residual.  The root-75 sample transient selected by the common-residual
+		// fitter is essentially velocity-invariant from v57 through v100.
+		mAttackBoostVelocityScale = mRegionIndex >= 21
+			? Math::Pow(Math::Max(v, 1.0f)*0.01f, 0.25f) : 1.0f;
+		if(v <= 0.0f) mVolume = 0.0f;
+		else if(mVelocityProfile == 0 && mRegionIndex >= 21)
+		{
+			// Smooth upper-register residual: four constants instead of a literal
+			// P1..P6 velocity-zone staircase. Gain@v100 and residual exponent are
+			// both linear in the physical Titanic source root (96..105).
+			const float rootOffset = Math::Clamp(float(mTable->Regions[mRegionIndex].RootKey) - 96.0f, 0.0f, 9.0f);
+			const float gain100Db = -6.2983701f + 0.2577147f*rootOffset;
+			const float exponentResidual = -0.5105314f - 0.1585468f*rootOffset;
+			mVolume *= Math::Pow(10.0f, gain100Db*(1.0f/20.0f))*Math::Pow(v*0.01f, exponentResidual);
+		}
+	}
+	if(mVelocityProfile > 1)
+	{
+		// Keep the accepted exp(v-1) velocity loudness law for every piano.
+		// Preset-specific SF2 velocity behaviour is only a residual correction.
+		int8 q50, q85; PianoVelocityCalibrationQ(mVelocityProfile, mRegionIndex, q50, q85);
+		const float v = 127.0f*velocity01;
+		float q = 0.0f;
+		if(v <= 50.0f) q = float(q50);
+		else if(v < 85.0f) q = float(q50) + (float(q85)-float(q50))*((v-50.0f)*(1.0f/35.0f));
+		else if(v < 115.0f) q = float(q85)*(1.0f - (v-85.0f)*(1.0f/30.0f));
+		// Titanic has real preset velocity-zone steps which the old 50->85
+		// interpolation smoothed away.  Keep them as one compact profile-level
+		// residual: quarter-dB units, fading to zero at v=85.  This matches the
+		// measured SF2 relative-level curve without another table or another pow.
+		if(mVelocityProfile == 2 && v >= 59.0f && v < 85.0f)
+			q -= 9.356f*(85.0f-v)*(1.0f/26.0f); // -2.339 dB at the v59 zone edge.
+		else if(mVelocityProfile == 5 && v >= 53.0f && v < 85.0f)
+			q -= 25.717f*(85.0f-v)*(1.0f/32.0f); // -6.429 dB at the v53 zone edge.
+		if(q != 0.0f) mVolume *= PianoQuarterDbGain(q);
+	}
+	if(!mVelocityFilterModel) return;
+	mVelocityFilterInPartials = false;
+	// Filter-domain handoff is a property of the SF2 velocity model, not of
+	// how much raw PCM happens to be cached.  Keep the accepted 200 ms point
+	// when the region cache window grows to 500 ms.
+	mVelocityFilterHandoffSamples = size_t(0.20f*float(mSampleRate));
+
+	const int vel = int(velocity01*127.0f + 0.5f);
+	float cutoff;
+	if(vel <= 35) cutoff = 800.0f;
+	else if(vel <= 58) cutoff = 1000.0f;
+	else if(vel <= 76) cutoff = 1700.0f;
+	else if(vel <= 91) cutoff = 2700.0f;
+	else if(vel <= 105) cutoff = 3900.0f;
+	else cutoff = 19912.0f; // SF2 default initialFilterFc = 13500 cents.
+	mVelocityFilterBaseCutoff = cutoff;
+	mVelocityFilterCurrentCutoff = cutoff;
+	mVelocityModEnvCents = vel >= 106 ? -2000.0f : (vel >= 92 ? -1000.0f : 0.0f);
+	mVelocityModReleaseLevel = 0.0f;
+	mVelocityModReleaseSample = 0;
+	mVelocityModReleased = false;
+	mVelocityModNextUpdate = mVelocityModEnvCents != 0.0f
+		? size_t(0.04f*float(mSampleRate)) : mVelocityFilterHandoffSamples;
+
+	mVelPrevSrcL = mVelPrevSrc2L = mVelPrevOutL = mVelPrevOut2L = 0.0f;
+	mVelPrevSrcR = mVelPrevSrc2R = mVelPrevOutR = mVelPrevOut2R = 0.0f;
+	SetVelocityFilterCutoff(cutoff);
+}
+
+void AdditiveSampler::SetVelocityFilterCutoff(float newCutoff)
+{
+	newCutoff = Math::Clamp(newCutoff, 20.0f, 0.49f*float(mSampleRate));
+	mVelocityFilterCurrentCutoff = newCutoff;
+	if(newCutoff >= 0.49f*float(mSampleRate))
+	{
+		mVelocityFilterBypass = true;
+		mVelA1 = mVelA2 = mVelB1 = mVelB2 = 0.0f; mVelC = 1.0f;
+		return;
+	}
+	mVelocityFilterBypass = false;
+	PianoVelocityFilterCoeffs(mSampleRate, newCutoff, mVelC, mVelA1, mVelA2, mVelB1, mVelB2);
+}
+
+void AdditiveSampler::PromoteVelocityFilterToPartials()
+{
+	if(!mVelocityFilterModel || mVelocityFilterInPartials) return;
+	mVelocityFilterInPartials = true;
+	if(mVelocityFilterBypass) return;
+	for(size_t p = 0; p < mCount; p++)
+	{
+		const float cw = Math::Clamp(0.5f*mK[p], -1.0f, 1.0f);
+		const float w = Math::Acos(cw);
+		const float sw = Math::Sin(w);
+		if(Math::Abs(sw) < 1e-6f) continue;
+		const float c2 = 2.0f*cw*cw - 1.0f;
+		const float s2 = 2.0f*sw*cw;
+		const float nr = mVelC + mVelA1*cw + mVelA2*c2;
+		const float ni = -mVelA1*sw - mVelA2*s2;
+		const float dr = 1.0f - mVelB1*cw - mVelB2*c2;
+		const float di = mVelB1*sw + mVelB2*s2;
+		const float den = dr*dr + di*di;
+		if(den < 1e-20f) continue;
+		const float hr = (nr*dr + ni*di)/den;
+		const float hi = (ni*dr - nr*di)/den;
+		const float b = hi/sw;
+		const float a = hr - cw*b;
+		const float x1 = mS1[p], x2 = mS2[p];
+		const float x3 = mK[p]*x2 - x1;
+		mS1[p] = a*x1 + b*x2;
+		mS2[p] = a*x2 + b*x3;
+	}
+	// The filter is now represented by the carrier complex state. From here on
+	// sustain returns to the old SIMD path; no scalar IIR work per sample.
+	mVelocityFilterBypass = true;
+	mVelocityModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate));
+}
+
+void AdditiveSampler::ApplyVelocityFilterCutoffRatio(float newCutoff)
+{
+	if(!mVelocityFilterInPartials) return;
+	newCutoff = Math::Clamp(newCutoff, 20.0f, 0.49f*float(mSampleRate));
+	const float oldCutoff = Math::Clamp(mVelocityFilterCurrentCutoff, 20.0f, 0.49f*float(mSampleRate));
+	if(Math::Abs(newCutoff - oldCutoff) < 0.01f) return;
+	float oc,oa1,oa2,ob1,ob2,nc,na1,na2,nb1,nb2;
+	PianoVelocityFilterCoeffs(mSampleRate, oldCutoff, oc, oa1, oa2, ob1, ob2);
+	PianoVelocityFilterCoeffs(mSampleRate, newCutoff, nc, na1, na2, nb1, nb2);
+	for(size_t p = 0; p < mCount; p++)
+	{
+		const float cw = Math::Clamp(0.5f*mK[p], -1.0f, 1.0f);
+		const float sw2 = Math::Max(0.0f, 1.0f - cw*cw);
+		const float sw = Math::Sqrt(sw2);
+		if(sw < 1e-6f) continue;
+		const float c2 = 2.0f*cw*cw - 1.0f, s2 = 2.0f*sw*cw;
+		auto h = [cw,sw,c2,s2](float c0,float a1,float a2,float b1,float b2,float& hr,float& hi)
+		{
+			const float nr = c0 + a1*cw + a2*c2, ni = -a1*sw - a2*s2;
+			const float dr = 1.0f - b1*cw - b2*c2, di = b1*sw + b2*s2;
+			const float den = dr*dr + di*di;
+			hr = (nr*dr + ni*di)/den; hi = (ni*dr - nr*di)/den;
+		};
+		float or_,oi,nr,ni; h(oc,oa1,oa2,ob1,ob2,or_,oi); h(nc,na1,na2,nb1,nb2,nr,ni);
+		const float den = or_*or_ + oi*oi; if(den < 1e-20f) continue;
+		const float rr = (nr*or_ + ni*oi)/den, ri = (ni*or_ - nr*oi)/den;
+		const float b = ri/sw, a = rr - cw*b;
+		const float x1 = mS1[p], x2 = mS2[p], x3 = mK[p]*x2 - x1;
+		mS1[p] = a*x1 + b*x2; mS2[p] = a*x2 + b*x3;
+	}
+	mVelocityFilterCurrentCutoff = newCutoff;
+}
+
+void AdditiveSampler::UpdateVelocityModEnvelope()
+{
+	if(mVelocityModEnvCents == 0.0f) return;
+	const float attackSamples = 7.000704f*float(mSampleRate); // attackModEnv = 3369 timecents.
+	float env;
+	if(mVelocityModReleased)
+	{
+		const float rel = float(mRendered - mVelocityModReleaseSample)/float(mSampleRate); // releaseModEnv=0 => 1 s.
+		env = mVelocityModReleaseLevel*Math::Max(0.0f, 1.0f - rel);
+	}
+	else env = Math::Min(1.0f, float(mRendered)/attackSamples);
+	const float cutoff = mVelocityFilterBaseCutoff*Math::Pow(2.0f, mVelocityModEnvCents*env/1200.0f);
+	if(mVelocityFilterInPartials) ApplyVelocityFilterCutoffRatio(cutoff);
+	else SetVelocityFilterCutoff(cutoff);
+	mVelocityModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate)); // 25 Hz control rate; envelope itself is ~7 s.
+}
+
+
+void AdditiveSampler::SetHeldStringStateAt(size_t target)
+{
+	// Reconstruct the held modal-string state analytically at an exact note age.
+	// Used both by cache handoff and by the pre-contact reveal fast path, so the
+	// first audible string sample does not require rendering the hidden prefix.
+	const size_t delta = target;
+	const size_t count = mCount;
+	const size_t heldTarget = target;
+	const size_t attackN = Math::Min(heldTarget, mDecayOnsetSamples);
+	const float basis0 = PianoPowSamples(mAttackBasisStep0, Math::Min(target, mDecayOnsetSamples));
+	const float basis1 = PianoPowSamples(mAttackBasisStep1, Math::Min(target, mDecayOnsetSamples));
+	const float basis2 = PianoPowSamples(mAttackBasisStep2, Math::Min(target, mDecayOnsetSamples));
+
+	for(size_t p = 0; p < count; p++)
+	{
+		const float x0 = mS1[p], x1 = mS2[p];
+		const float c = Math::Clamp(0.5f*mK[p], -1.0f, 1.0f);
+		const float ss = Math::Max(0.0f, 1.0f - c*c);
+		const float sn = Math::Sqrt(ss);
+		if(sn > 1e-7f && (x0 != 0.0f || x1 != 0.0f))
+		{
+			float zr = c, zi = sn, rr = 1.0f, ri = 0.0f;
+			size_t n = delta;
+			while(n)
+			{
+				if(n & 1)
+				{
+					const float tr = rr*zr - ri*zi;
+					ri = rr*zi + ri*zr; rr = tr;
+				}
+				const float tr = zr*zr - zi*zi;
+				zi = 2.0f*zr*zi; zr = tr;
+				n >>= 1;
+			}
+			const float b = (x1 - x0*c)/sn;
+			mS1[p] = x0*rr + b*ri;
+			const float r1 = rr*c - ri*sn;
+			const float i1 = ri*c + rr*sn;
+			mS2[p] = x0*r1 + b*i1;
+		}
+
+		const float atkStep = mAtk[p];
+		float a = atkStep != 0.0f ? 1.0f - PianoPowSamples(1.0f - atkStep, attackN) : 0.0f;
+		if(heldTarget > mDecayOnsetSamples)
+		{
+			const size_t e1 = Math::Min(heldTarget, mSegSamples);
+			if(e1 > mDecayOnsetSamples) a *= PianoPowSamples(mDecay1[p], e1 - mDecayOnsetSamples);
+			const size_t e2 = Math::Min(heldTarget, mSegSamples2);
+			if(e2 > mSegSamples) a *= PianoPowSamples(mDecay2[p], e2 - mSegSamples);
+			const size_t e3 = Math::Min(heldTarget, mSegSamples3);
+			if(e3 > mSegSamples2) a *= PianoPowSamples(mDecay3[p], e3 - mSegSamples2);
+			if(heldTarget > mSegSamples3) a *= PianoPowSamples(mDecay4[p], heldTarget - mSegSamples3);
+		}
+
+		float naturalStep;
+		if(heldTarget < mDecayOnsetSamples) naturalStep = 1.0f;
+		else if(heldTarget < mSegSamples) naturalStep = mDecay1[p];
+		else if(heldTarget < mSegSamples2) naturalStep = mDecay2[p];
+		else if(heldTarget < mSegSamples3) naturalStep = mDecay3[p];
+		else naturalStep = mDecay4[p];
+
+		mDecay[p] = naturalStep;
+		if(target >= mDecayOnsetSamples) mAtk[p] = 0.0f;
+		mAmp[p] = a;
+		mBeatPh[p] = mBeatStep[p]*float(target);
+	}
+
+	mReleased = false;
+	mDecayStarted = target >= mDecayOnsetSamples;
+	mSegSwitched = target >= mSegSamples;
+	mSegSwitched2 = target >= mSegSamples2;
+	mSegSwitched3 = target >= mSegSamples3;
+	mAttackInterpPos = mAttackInterpLen = 0;
+	if(target < mDecayOnsetSamples)
+	{
+		mAttackBasis0 = basis0; mAttackBasis1 = basis1; mAttackBasis2 = basis2;
+	}
+	else
+	{
+		mAttackBasis0 = mAttackBasisEnd0;
+		mAttackBasis1 = mAttackBasisEnd1;
+		mAttackBasis2 = mAttackBasisEnd2;
+	}
+}
 
 #ifdef INTRA_UI_METERS
 float AdditiveSampler::GetLevel() const
 {
-	// Максимум по лейнам: у пиано каждый партиал затухает СВОИМ шагом
-	// (mDecay1/2/3/4, измерены из семпла), поэтому единой огибающей нет.
-	// Самая громкая гармоника в атаке и большей части сустейна — фундаментал,
-	// она и задаёт воспринимаемую громкость, так что её уровень — честная
-	// яркость индикатора (раньше пиано показывало ровный максимум).
-	const size_t count = mCount;
-	const float* amp = mAmp.Data();
 	float lvl = 0.0f;
-	for(size_t p = 0; p < count; p++)
 	{
-		const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
-		if(a > lvl) lvl = a;
+		const size_t count = mCount;
+		const float* amp = mAmp.Data();
+		for(size_t p = 0; p < count; p++)
+		{
+			const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+			if(a > lvl) lvl = a;
+		}
 	}
-	// Конец региона: последние mFadeSamples ноту гасят — показываем и это,
-	// чтобы индикатор не оборвался скачком.
+	// The previous meter forgot the common SF2 release envelope, so released
+	// piano notes looked much louder/longer in the UI than in the audio.
+	if(mReleased && mSf2UniformRelease) lvl *= mSf2ReleaseGain;
 	if(mEndSamples && mRendered + mFadeSamples >= mEndSamples)
 		lvl *= float(mEndSamples > mRendered ? mEndSamples - mRendered : size_t(0))/float(mFadeSamples);
 	return lvl > 1.0f ? 1.0f : lvl;
 }
 #endif
 
+struct PianoSf2CommonAmFit
+{
+	float FreqHz, Gain0, RelDecay, Phase;
+};
+
+// Common-AM fits accepted by the quality gate.  Roots 99+ were rejected: the
+// optimiser hit its 0.04 Hz lower bound and was fitting ordinary decay trend.
+// No per-partial beat parameters are stored.
+static const PianoSf2CommonAmFit gPianoSf2CommonAmFit[25] =
+{
+	{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0},
+	{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0},
+	{0,0,0,0}, {0,0,0,0},
+		{2.0555895f,0.0527957f,0.0000000f,-0.9918837f}, // 69
+		{4.7561314f,0.1032765f,1.1401322f,-2.6881953f}, // 72
+		{1.4132774f,2.1643159f,5.8601925f,-2.9861449f}, // 75
+		{1.7527649f,0.1431691f,0.5819905f,1.1313308f}, // 78
+		{1.3217540f,0.1770851f,0.0000000f,1.3820464f}, // 81
+		{1.8030221f,1.6103136f,2.8958629f,-2.1690283f}, // 84
+		{1.4385468f,0.5434305f,1.1103205f,-1.5128575f}, // 87
+		{2.3145363f,0.4510102f,0.0000000f,-1.0473212f}, // 90
+		{5.3973945f,0.2051190f,0.0000000f,1.8214151f}, // 93
+		{0,0,0,0}, // 96 rejected pending upper-region refit
+	{0,0,0,0}, {0,0,0,0}, {0,0,0,0}
+};
+
+// Diagnostic v100 sweep-derived constant level residual per physical P1 region.
+static const float gPianoSf2CommonLevel[25] =
+{
+	1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f,
+	1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 0.9884750f, 0.8489246f, 0.9913867f, 1.0343440f,
+	1.0061266f, 0.6894692f, 0.7117317f, 0.7081260f, 0.6988234f, 1.0000000f, 1.0000000f, 1.0000000f,
+	1.0000000f
+};
+
+static size_t PianoAcousticRegionForKey(float midi)
+{
+	// Exact Titanic Grand P1 key-zone upper bounds.  Region ownership follows
+	// the SF2 keyRange, not nearest-root distance.
+	static const uint8 hi[25] =
+	{25,31,35,40,45,49,52,55,58,61,64,67,70,73,76,79,82,85,88,91,94,97,100,103,127};
+	const int key = Math::Clamp(int(midi + 0.5f), 0, 127);
+	for(size_t i = 0; i < 25; i++) if(key <= int(hi[i])) return i;
+	return 24;
+}
+
 AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	size_t maxPartials, float brightness, float scale, float decayScale,
 	float decayStiffness, float detuneCents,
-	int unisonVoices, float velBrightness, float trebleTilt, float volumeDb,
-	float beatScale, int tableId, float beatCents)
+	int unisonVoices, float velBrightness, float trebleTilt, float volumeScale,
+	float beatScale, int tableId, float beatCents, uint8 velocityProfile)
 {
 	// Таблица коэффициентов: общая (acoustic) или per-instrument (SF2),
 	// см. PianoGetTable в PianoRegions.h.
 	mTable = &PianoGetTable(tableId);
+	mTableId = uint8(tableId);
+	// Titanic programs 0 and 1 share the same physical Clavinova P1 source.
+	// Grand changes timbre with velocity by filtering that source; Bright keeps
+	// P1 open at every velocity.  Keep the source recipe/cache shared and move
+	// the program difference to the velocity/output layer.
+	const bool acousticProgram0 = velocityProfile == 0;
+	const bool sharedAcousticP1 = tableId == 0 && velocityProfile <= 1;
+	mVelocityProfile = velocityProfile;
+	mVelocityFilterModel = acousticProgram0;
 
 	// Ближайший регион по MIDI-ноте (высота = равномерная темперация).
 	const float midi = 69.0f + 12.0f*Math::Log(freq/440.0f)/0.6931471805599453f;
 	size_t best = 0;
-	float bestDist = 1e30f;
-	for(size_t i = 0; i < mTable->RegionCount; i++)
+	if(sharedAcousticP1) best = PianoAcousticRegionForKey(midi);
+	else
 	{
-		const float d = Math::Abs(float(mTable->Regions[i].RootKey) - midi);
-		if(d < bestDist)
+		float bestDist = 1e30f;
+		for(size_t i = 0; i < mTable->RegionCount; i++)
 		{
-			bestDist = d;
-			best = i;
+			const float d = Math::Abs(float(mTable->Regions[i].RootKey) - midi);
+			if(d < bestDist) { bestDist = d; best = i; }
 		}
 	}
+	mRegionIndex = uint8(best);
 	const PianoRegionData& region = mTable->Regions[best];
+	// Acoustic program 0 models a transposed physical SF2 source region. Every
+	// source-time event (attack, DecayOnset and later segment boundaries) must
+	// scale by F0/freq so the complete note prefix can be shared as one region PCM.
+	const float sourceTimeScale = sharedAcousticP1 && freq > 1e-6f ? region.F0/freq : 1.0f;
+	const PianoSf2CommonAmFit& commonFit = gPianoSf2CommonAmFit[best < 25 ? best : 0];
+	const bool sf2CommonAm = acousticProgram0 && commonFit.Gain0 > 0.0f;
+	if(sf2CommonAm)
+	{
+		mCommonAmOn = true;
+		mCommonAmFreqHz = commonFit.FreqHz;
+		mCommonAmGain0 = commonFit.Gain0;
+		mCommonAmLambda = commonFit.RelDecay;
+		mCommonAmPhase = commonFit.Phase;
+		mCommonAmPlaybackRate = freq/region.F0;
+		const float z0 = Math::Sqrt(Math::Max(1e-12f, 1.0f + commonFit.Gain0*commonFit.Gain0
+			+ 2.0f*commonFit.Gain0*Math::Cos(commonFit.Phase)));
+		mCommonAmRefInv = 1.0f/z0;
+	}
 
 	// Число партиал: сколько влезает из региона (не больше maxPartials и не
 	// выше Найквиста с запасом 8% — зависит от транспозиции). FreqRatio —
@@ -63,7 +465,11 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		const int k = pp.K;
 		if(k <= 0) break;
 		const float fr = 0.95f + float(pp.FreqRatio)*(1.0f/327675.0f);
-		const float fk = float(k)*freq*fr;
+		// A real SF2 region is one source sample whose spectrum is fixed before
+		// transposition. For the shared acoustic-source path keep the same modal
+		// set across the whole region; transposition happens on the time axis.
+		const float spectrumFreq = sharedAcousticP1 ? region.F0 : freq;
+		const float fk = float(k)*spectrumFreq*fr;
 		if(fk >= 0.92f*float(sampleRate)*0.5f) break;
 		partials = i + 1;
 	}
@@ -207,16 +613,23 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mStereoPartL.SetCount(count);
 	mStereoPartRA.SetCount(count);
 	mStereoPartRB.SetCount(count);
+	mAttackCoeff0.SetCount(count);
+	mAttackCoeff1.SetCount(count);
+	mAttackCoeff2.SetCount(count);
+	mAttackEnv0.SetCount(count);
+	mAttackEnv1.SetCount(count);
 	for(size_t p = 0; p < count; p++)
 	{
 		mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; mBeatR2[p] = 1.0f;
 		mStereoPartL[p] = 0.5f; mStereoPartRA[p] = 0.5f; mStereoPartRB[p] = 0.0f;
+		mAttackCoeff0[p] = mAttackCoeff1[p] = mAttackCoeff2[p] = 0.0f;
+		mAttackEnv0[p] = mAttackEnv1[p] = 1.0f;
 	}
 	// Базовая глубина биения r = (g0−g1)/(g0+g1); на партиалу докручивается
 	// весом w(k) в цикле лейнов (mBeatR2 = (1−(1−r)·w)²). r², а не r:
 	// огибающая E = sqrt(1 − (1−r²)·sin²) использует квадрат.
 	const float beatR = beatCollapse ? (1.0f - voiceGain[1])/(1.0f + voiceGain[1]) : 0.0f;
-	mBeatOn = beatCollapse;
+	mBeatOn = beatCollapse && !sf2CommonAm && !acousticProgram0;
 	const float twoPi = 2.0f*float(Math::PI);
 	// Все lambda приходят из fitDecay для конкретного региона/партиала;
 	// глобальные поправки по высоте намеренно не применяются.
@@ -289,7 +702,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			// treble-tilt на высоких нотах их глушит. При коллапсе унисона
 			// амплитуда лейна — ПОЛНАЯ сумма струн (g0+g1): пик суммы при
 			// совпадающей фазе = (g0+g1)·a, биение докручивает огибающая.
-			float a = amp*Math::Pow(float(k), tilt - treble)*(beatCollapse ? gSum : voiceGain[v]);
+			float a = amp*Math::Pow(float(k), tilt - treble)*(beatCollapse ? (sharedAcousticP1 ? 1.0f : gSum) : voiceGain[v]);
 			// Фаза: измеренная из семпла. Для дополнительных струн унисона
 			// фаза НЕ сдвигается: удар молоточка возбуждает струны в фазе,
 			// а биения возникают из-за расстройки (voiceCents), а не из-за
@@ -322,7 +735,17 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 				mStereoPartRB[o] = gr*q;
 			}
 			else { mStereoPartL[o] = gl; mStereoPartRA[o] = gr; mStereoPartRB[o] = 0.0f; }
-			if(beatCollapse)
+			// The measured early-attack table is currently calibrated only for
+			// the acoustic piano table. Other additive instruments keep the
+			// accepted fast-onset trajectory (zero coefficients => multiplier 1).
+			if(tableId == 0 && region.RootKey <= 81)
+			{
+				const PianoAttackCoeff ac = PianoGetAttackCoeff(size_t(region.PartOffset) + p);
+				mAttackCoeff0[o] = ac.C0;
+				mAttackCoeff1[o] = ac.C1;
+				mAttackCoeff2[o] = ac.C2;
+			}
+			if(beatCollapse && !sf2CommonAm && !acousticProgram0)
 			{
 				// Шаг фазы биения Δ = π·fk·(det1−det0)/sr (знак не важен: E
 				// зависит от cos²/sin²). Масштаб по партиале: fk ≈ k·f0, поэтому
@@ -354,9 +777,12 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 					w = 0.0f;
 					if(k == 1)
 					{
-						if(midi <= 60.0f) w = 0.25f;
-						else if(midi >= 72.0f) w = 1.0f;
-						else w = 0.25f + 0.75f*(midi - 60.0f)/12.0f;
+						// Beat depth belongs to the recorded region, not to the key used
+						// to transpose that region. This makes one region PCM reusable.
+						const float beatMidi = sharedAcousticP1 ? float(region.RootKey) : midi;
+						if(beatMidi <= 60.0f) w = 0.25f;
+						else if(beatMidi >= 72.0f) w = 1.0f;
+						else w = 0.25f + 0.75f*(beatMidi - 60.0f)/12.0f;
 					}
 					else if(k == 2) w = 1.0f;
 					else if(k == 3) w = 0.5f;
@@ -430,507 +856,85 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		cis[o] = 0.0f;
 		dphis[o] = 0.0f;
 	}
-	// === Атака: контактная сила возбуждает те же моды ===
-	// Молоточек — не отдельный звуковой слой, а сила F[n], входящая в
-	// рекурсию партиал: z[n+1] = e^{jw}·z[n] + G_k·F[n], выход = Im z.
-	// Первые contactN отсчётов ноты — накопленный отклик мод (буфер атаки),
-	// дальше — та же SIMD-рекурсия струны с табличным состоянием. G_k
-	// подобраны так, что состояние мод после контакта РОВНО равно табличному
-	// (Amp/Phase из семпла): атака и сустейн — один модальный банк, и шов
-	// буфер→струна бесшовный по построению (последний сэмпл буфера равен
-	// первому сэмплу струны — см. seeding ниже).
-	//
-	// Уроки прошлых щелчков (2026-08-24, сессии 28-30):
-	//   - сила стартует с нуля (sin²-огибающая + явный нулевой первый сэмпл) —
-	//     нет скачка F[0]−0 на первом сэмпле;
-	//   - импульс не плоский: sin²-форма даёт подъём и спад огибающей
-	//     (плоская RMS-нормированная «подушка» и была щёлкающим шумом);
-	//   - буфер — отклик тех же мод, а не отдельный слой: после контакта
-	//     нечему вступать «отдельно».
-	const float contactT = 0.0016f + 0.0006f*Math::Clamp((72.0f - midi)/36.0f, 0.0f, 1.0f);
-	const size_t contactN = Math::Max(size_t(48), size_t(contactT*float(sampleRate)));
-	// Начальная скорость молотка от MIDI velocity (степенная кривая):
-	//   v(v) = v_min + (v_max - v_min)·(v/127)^gamma.
-	// На модальный буфер не влияет (G нормирует отклик), но определяет
-	// силу удара по корпусу — «рокот» ниже.
-	const float impactV = 0.25f + 0.75f*Math::Pow(volume, 1.5f);
-	FixedArray<float> contactF(contactN);
-	{
-		const float noiseGain = 0.22f; // шум контакта (входит в моды, не отдельный звук)
-		for(size_t i = 0; i < contactN; i++)
-		{
-			const float u = float(i + 1)/float(contactN);
-			const float s2 = Math::Sin(float(Math::PI)*u);
-			// Детерминированный шум контакта (хэш): в семпле атака 1.5-6 кГц
-			// богата шумом молоточка; тот же шум проходит через модальные
-			// резонаторы, как «жёсткий» удар, а не отдельный аудиослой.
-			const unsigned h = unsigned(i)*2654435761u + 0x9e3779b9u;
-			const float no = 2.0f*(float((h >> 8) & 0xffff)/65535.0f) - 1.0f;
-			contactF[i] = impactV*s2*s2*(1.0f + noiseGain*no);
-		}
-		contactF[0] = 0.0f; // нулевой первый сэмпл — нет скачка на старте
-	}
-	// Уровень: нормировка пика суммы партиал за один период на effScale.
-	const float effScale = scale*region.Loudness;
-	const size_t period = Math::Max(size_t(1), size_t(Math::Round(float(sampleRate)/freq)));
-	// cos/sin(dphis[p]) — константы партиалы; предвычисляем один раз. В wasm
-	// нет аппаратного sin: cosf/sinf — полиномиальная libm (сотни инструкций),
-	// их нельзя вызывать внутри циклов по (i,p).
-	FixedArray<float> coTab(count), snTab(count);
-	for(size_t p = 0; p < count; p++)
-	{
-		const float w = dphis[p];
-		coTab[p] = Math::Cos(w);
-		snTab[p] = Math::Sin(w);
-	}
-	float peakS = 0;
-	{
-		// Пик суммы за период — через рекуррентное вращение (4 умножения на
-		// партиалу на шаг вместо вызова тригонометрии).
-		FixedArray<float> ca(count), sa(count);
-		for(size_t p = 0; p < count; p++) { ca[p] = 1.0f; sa[p] = 0.0f; }
-		for(size_t t = 0; t < period; t++)
-		{
-			float s = 0;
-			for(size_t p = 0; p < count; p++)
-				s += cis[p]*ca[p] + crs[p]*sa[p];
-			peakS = Math::Max(peakS, Math::Abs(s));
-			for(size_t p = 0; p < count; p++)
-			{
-				const float na = ca[p]*coTab[p] - sa[p]*snTab[p];
-				sa[p] = ca[p]*snTab[p] + sa[p]*coTab[p];
-				ca[p] = na;
-			}
-		}
-	}
-	const float c = peakS > 1e-9f ? effScale/peakS : effScale;
-	// Проход 1 (G=1): Z_ref_k — комплексное состояние после полного контакта.
-	// Math::Cos/Sin — forceinline-обёртки над cosf/sinf: компилятор сам
-	// выносит их из цикла по i (dphis[p] от i не зависит), поэтому здесь
-	// держим инлайн, а не предвычисленные массивы.
-	FixedArray<float> ur(count), ui(count), gr(count), gi(count);
-	for(size_t p = 0; p < count; p++) { ur[p] = 0.0f; ui[p] = 0.0f; }
-	for(size_t i = 0; i < contactN; i++)
-	{
-		const float f = contactF[i];
-		for(size_t p = 0; p < count; p++)
-		{
-			const float co = coTab[p], sn = snTab[p];
-			const float re = ur[p], im = ui[p];
-			ur[p] = co*re - sn*im + f;
-			ui[p] = sn*re + co*im;
-		}
-	}
-	// G_k = (crs + j·cis)/Z_ref_k (комплексное деление). Tikhonov-регуляризация:
-	// партиалы, которые удар не успевает раскачать (|Z_ref|² << max), получают
-	// G ≈ 0 — их атака берётся per-partial bloom'ом струны (mAtk), как в
-	// базисе, а не взрывным делением (без регуляризации |G| доходил до 29 и
-	// буфер атаки «взрывался», затягивая всю ноту).
-	float zmax2 = 0.0f;
-	for(size_t p = 0; p < count; p++)
-	{
-		// Регуляризация по отклику РЕАЛЬНЫХ мод. Паддинг-лейны и «молчаливые»
-		// строки таблицы (Amp==0) имеют dphis=0: на единичную силу они накапливают
-		// постоянную DC-составляющую (ur = ΣF), и без этого фильтра именно они
-		// выходили на максимум |Z_ref|². Тогда eps2 считался от их DC-отклика,
-		// а сами они помечались driven → mAmp=1.0 с dec=1.0 навсегда → гейт −60 дБ
-		// не мог закрыть голос → живые «хвосты» копились (13× вместо 43×).
-		if(crs[p]*crs[p] + cis[p]*cis[p] > 0.0f)
-			zmax2 = Math::Max(zmax2, ur[p]*ur[p] + ui[p]*ui[p]);
-	}
-	const float eps2 = 1e-4f*zmax2;
-	FixedArray<float> driven(count);
-	for(size_t p = 0; p < count; p++)
-	{
-		const float den = ur[p]*ur[p] + ui[p]*ui[p];
-		const float d2 = den + eps2;
-		gr[p] = d2 > 1e-30f ? (crs[p]*ur[p] + cis[p]*ui[p])/d2 : 0.0f;
-		gi[p] = d2 > 1e-30f ? (cis[p]*ur[p] - crs[p]*ui[p])/d2 : 0.0f;
-		// driven — только лейны с реальной табличной амплитудой: молчаливые
-		// строки (Amp==0) и паддинг не должны получать amp=1/atk=0, иначе они
-		// навсегда держат maxAmp=1 и блокируют гейт очистки голосов.
-		driven[p] = crs[p]*crs[p] + cis[p]*cis[p] > 0.0f && d2 > 1e-30f && den >= eps2;
-	}
-	// Проход 2: буфер атаки = Σ Im(z[n]) с реальными G. contactN+1 сэмплов:
-	// последний равен Σ Im(реального состояния после контакта) — ровно первому
-	// сэмплу струны, шов без разрыва.
-	mAttackBuf.SetCount(contactN + 1);
-	mAttackLen = contactN + 1;
-	mAttackPos = 0;
-	float gSeam = 0.0f;
-	{
-		float* zb = mAttackBuf.Data();
-		for(size_t p = 0; p < count; p++) { ur[p] = 0.0f; ui[p] = 0.0f; }
-		for(size_t i = 0; i < contactN; i++)
-		{
-			const float f = contactF[i];
-			float s = 0.0f;
-			for(size_t p = 0; p < count; p++)
-			{
-				const float co = coTab[p], sn = snTab[p];
-				const float re = ur[p], im = ui[p];
-				ur[p] = co*re - sn*im + gr[p]*f;
-				ui[p] = sn*re + co*im + gi[p]*f;
-				s += ui[p];
-			}
-			zb[i] = s;
-		}
-		// Реальное накопленное состояние после контакта (для возбуждённых
-		// партиал оно равно табличному; для остальных ≈ 0).
-		float sEnd = 0.0f;
-		for(size_t p = 0; p < count; p++) sEnd += ui[p];
-		zb[contactN] = sEnd;
-		for(size_t i = 0; i <= contactN; i++) zb[i] *= c;
-		// Уровень атаки: отклик мод на удар по построению бьёт пиком в
-		// несколько раз выше сустейна (во время контакта моды складываются
-		// в фазе), и без нормировки каждый удар звучит как щелчок. Приводим
-		// attack/sustain к измеренным отношениям семпла (RMS 0-10 мс /
-		// 30-300 мс: key 33≈0.13, 47≈0.16, 60≈0.12, 72≈0.73, 84≈0.91,
-		// 96≈2.29 — интерполяция по midi) и умножаем на keyScale (ручная
-		// доводка по контрольным точкам: 24:0.35, 36:0.25, 48:0.10,
-		// 60:0.06, 72:0.15, 84:0.17, 96:0.26, 108:0.30).
-		float rawRms = 0.0f;
-		for(size_t i = 0; i < contactN; i++) rawRms += zb[i]*zb[i];
-		rawRms = Math::Sqrt(rawRms/float(contactN));
-		// naturalScale — во сколько раз буфер громче сустейна (RMS/RMS):
-		// струна после нормировки даёт RMS ≈ 0.5·effScale, буфер уже ×c,
-		// поэтому отношение = rawRms/(0.5·effScale) = rawRms·2/peakS.
-		const float naturalScale = rawRms*2.0f/peakS;
-		float tr;
-		if(midi <= 47.0f) tr = 0.16f;
-		else if(midi <= 60.0f) tr = 0.16f + (0.12f - 0.16f)*(midi - 47.0f)/13.0f;
-		else if(midi <= 72.0f) tr = 0.12f + (0.73f - 0.12f)*(midi - 60.0f)/12.0f;
-		else if(midi <= 84.0f) tr = 0.73f + (0.91f - 0.73f)*(midi - 72.0f)/12.0f;
-		else if(midi <= 96.0f) tr = 0.91f + (2.29f - 0.91f)*(midi - 84.0f)/12.0f;
-		else tr = Math::Min(4.0f, 2.29f + (midi - 96.0f)*0.1f);
-		float keyScale;
-		if(midi <= 36.0f) keyScale = 0.35f - 0.10f*(midi - 24.0f)/12.0f;
-		else if(midi <= 48.0f) keyScale = 0.25f - 0.15f*(midi - 36.0f)/12.0f;
-		else if(midi <= 60.0f) keyScale = 0.10f - 0.04f*(midi - 48.0f)/12.0f;
-		else if(midi <= 72.0f) keyScale = 0.06f + 0.09f*(midi - 60.0f)/12.0f;
-		else if(midi <= 84.0f) keyScale = 0.15f + 0.02f*(midi - 72.0f)/12.0f;
-		else if(midi <= 96.0f) keyScale = 0.17f + 0.09f*(midi - 84.0f)/12.0f;
-		else keyScale = 0.26f + 0.04f*Math::Min(1.0f, (midi - 96.0f)/12.0f);
-		float gain = naturalScale > 1e-6f ? tr/naturalScale : 0.0f;
-		gain = Math::Clamp(gain, 0.02f, 8.0f);
-		gain *= keyScale;
-		// Bloom: в семпле струна набирает силу плавно (низ 40-45 мс,
-		// верх 8-10 мс) — тот же темп накладываем на буфер, чтобы удар
-		// «раскатывался», а не бил ступенькой. Последний сэмпл буфера
-		// (i == contactN) приводится к gain·bloom(contactN) = gSeam — ровно
-		// на этот уровень сейдится амплитуда струны, шов остаётся точным.
-		float bloomTauBase;
-		if(midi <= 24.0f) bloomTauBase = 0.045f;
-		else if(midi <= 36.0f) bloomTauBase = 0.045f - 0.005f*(midi - 24.0f)/12.0f;
-		else if(midi <= 48.0f) bloomTauBase = 0.040f - 0.008f*(midi - 36.0f)/12.0f;
-		else if(midi <= 60.0f) bloomTauBase = 0.032f - 0.010f*(midi - 48.0f)/12.0f;
-		else if(midi <= 72.0f) bloomTauBase = 0.022f - 0.012f*(midi - 60.0f)/12.0f;
-		else if(midi <= 84.0f) bloomTauBase = 0.010f - 0.002f*(midi - 72.0f)/12.0f;
-		else bloomTauBase = 0.008f + 0.002f*Math::Min(1.0f, (midi - 84.0f)/24.0f);
-		bloomTauBase = Math::Max(0.004f, Math::Min(0.045f, bloomTauBase));
-		gSeam = gain*(1.0f - Math::Exp(-float(contactN)/(bloomTauBase*float(sampleRate))));
-		for(size_t i = 0; i <= contactN; i++)
-			zb[i] *= gain*(1.0f - Math::Exp(-float(i)/(bloomTauBase*float(sampleRate))));
-	}
-	// === «РОКОТ» — корпусные резонансы деки (подфундаментальный удар) ===
-	// Та же контактная сила возбуждает 4 тяжёлых корпусных резонанса
-	// (~78/116/168/285 Гц, τ≈45 мс). У средних/верхних нот их частоты ниже
-	// f0, поэтому чисто-струнная модель их не даёт, а в семплах полоса
-	// 60-300 Гц на атаке всегда есть. Резонансы быстро гаснут (~0.1 с) и
-	// не входят в сустейн. Громкость калибруется по измеренному дефициту:
-	// усилитель (scale) у всех клавиш одинаков, поэтому bodyGain постоянна.
-	// Удар набирает силу (в семпле 0-2 мс почти тишина) — воронка rise² в
-	// пределах контакта.
-	{
-		const size_t bodyAlloc = contactN + size_t(0.12f*float(sampleRate));
-		mBodyBuf.SetCount(bodyAlloc);
-		mBodyLen = bodyAlloc;
-		mBodyPos = 0;
-		float* bb = mBodyBuf.Data();
-		const float bodyF[4] = { 78.0f, 116.0f, 168.0f, 285.0f };
-		const float bodyGain = 0.0011f; // калибруется по band-проберу
-		const float tau = 0.045f;
-		const float rho = Math::Exp(-1.0f/(tau*float(sampleRate)));
-		float br[4] = {0.0f, 0.0f, 0.0f, 0.0f}, bi[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-		for(size_t i = 0; i < bodyAlloc; i++)
-		{
-			const float f0 = i < contactN ? contactF[i] : 0.0f;
-			// Корпус отвечает не непрерывно: удар набирает силу (в семпле
-			// 0-2 мс почти тишина — 0.00-0.03 от пика). Воронка в пределах
-			// контакта.
-			const float rise = Math::Min(1.0f, float(i)/(0.5f*float(contactN)));
-			const float f = f0*rise*rise;
-			float s = 0.0f;
-			for(int j = 0; j < 4; j++)
-			{
-				const float w = twoPi*bodyF[j]/float(sampleRate);
-				const float co = rho*Math::Cos(w), sn = rho*Math::Sin(w);
-				const float re = br[j], im = bi[j];
-				br[j] = co*re - sn*im + f;
-				bi[j] = sn*re + co*im;
-				s += bi[j];
-			}
-			bb[i] = s;
-		}
-		const float bodyScale = c*bodyGain;
-		for(size_t i = 0; i < bodyAlloc; i++) bb[i] *= bodyScale;
-	}
-	// === «УДАР» — фундаментальный транзиент h1(+h2) ===
-	// В семплах SF2 на атаке h1 бьёт пиком выше сустейна (измерено по сырым
-	// семплам, пик 5-40 мс / сустейн 60-200 мс: C4 0.0 дБ, C5 +3.1,
-	// D#5 +10.0, C6 +3.2, D6 +5.7, F6 +5.9, A6 +8.8, C7 +13.9, E7 +13.7,
-	// G7 +14.3), h2 — примерно вдвое слабее и тем слабее, чем выше нота.
-	// Это удар молоточка: h1 раскачивается сильнее остальных мод и гаснет за
-	// ~50-70 мс. Воспроизводим оверлеем, фаза-выровненным к струне (та же
-	// комбинация ci·cos(wt) + cr·sin(wt), что у партиал), огибающая стартует
-	// с нуля — ни шва на стыке буфер→струна, ни щелчка.
-	{
-		// A1 — пиковое превышение h1 (линейное: 10^(дБ/20) − 1), интерполяция
-		// по измеренным точкам семпла; ниже C4 удара нет.
-		float A1;
-		if(midi <= 60.0f) A1 = 0.0f;
-		else if(midi <= 72.0f) A1 = 1.43f*(midi - 60.0f)/12.0f;
-		else if(midi <= 75.0f) A1 = 1.43f + (3.16f - 1.43f)*(midi - 72.0f)/3.0f;
-		else if(midi <= 84.0f) A1 = 3.16f + (1.45f - 3.16f)*(midi - 75.0f)/9.0f;
-		else if(midi <= 87.0f) A1 = 1.45f + (1.93f - 1.45f)*(midi - 84.0f)/3.0f;
-		else if(midi <= 90.0f) A1 = 1.93f + (1.97f - 1.93f)*(midi - 87.0f)/3.0f;
-		else if(midi <= 93.0f) A1 = 1.97f + (2.75f - 1.97f)*(midi - 90.0f)/3.0f;
-		else if(midi <= 96.0f) A1 = 2.75f + (4.95f - 2.75f)*(midi - 93.0f)/3.0f;
-		else if(midi <= 99.0f) A1 = 4.95f + (4.84f - 4.95f)*(midi - 96.0f)/3.0f;
-		else if(midi <= 102.0f) A1 = 4.84f + (5.19f - 4.84f)*(midi - 99.0f)/3.0f;
-		else A1 = 5.19f;
-		// h2-удар относительно h1 (w2, линейное отношение пиков): измерено по
-		// сырым семплам SF2 (окно 10-30 мс, с учётом A1): C5 0.74, D#5 0.62,
-		// C6 1.0, A6 1.4, C7 0.3 (у C7 h2 в таблице и так близок к h1 — удар
-		// его почти не раскачивает), E7 1.1; D6-F6 шумно в семплах, берём ~1.1.
-		float w2;
-		if(midi <= 72.0f) w2 = 0.8f;
-		else if(midi <= 75.0f) w2 = 0.8f + (0.62f - 0.8f)*(midi - 72.0f)/3.0f;
-		else if(midi <= 84.0f) w2 = 0.62f + (1.0f - 0.62f)*(midi - 75.0f)/9.0f;
-		else if(midi <= 93.0f) w2 = 1.0f + (1.4f - 1.0f)*(midi - 84.0f)/9.0f;
-		// w2 — отношение пиков «удара» h2/h1. Так как push-удар h2 пропорционален
-		// амплитуде h2-лейна (A2·state_h2), после снижения табличных амплитуд h2
-		// (96: 1900→300, 99: 470→110) w2 поднят так, чтобы произведение w2·Amp
-		// сохранилось (атака не изменилась): 96: 0.3·1900 = 570 → 1.9·300;
-		// 99: 1.1·470 = 517 → 4.7·110. Сустейн при этом — новая табличная форма.
-		else if(midi <= 96.0f) w2 = 1.4f + (1.9f - 1.4f)*(midi - 93.0f)/3.0f;
-		else if(midi <= 99.0f) w2 = 1.9f + (4.7f - 1.9f)*(midi - 96.0f)/3.0f;
-		else if(midi <= 101.0f) w2 = 4.7f;
-		else w2 = 1.1f;
-		// Кламп 5.0: после снижения табличных амплитуд h2 (96: 1900→300,
-		// 99: 470→110) компенсирующий w2 достигает 4.7; старый потолок 1.5
-		// не давал сохранить атаку (произведение w2·Amp_h2).
-		w2 = Math::Clamp(w2, 0.2f, 5.0f);
-		const float A2 = A1*w2;
-		// Лейны «удара»: ищем РЕАЛЬНЫЕ k=1 (фундаментал) и k=2 (октава) с
-		// ненулевой амплитудой. У большинства регионов это первые две строки
-		// таблицы, но в верхних регионах (84/93/96/99) первая строка — старший
-		// партиал (k=5/k=4/k=3/k=4), а k=1 стоит второй; у 96 есть и мёртвый
-		// дубль k=2 (Amp=0). Жёсткие o1=0/o2=1 давали «удар» h2 на частоте
-		// фундаментала, а h1 — на случайной высокой гармонике.
-		size_t o1 = size_t(-1), o2 = size_t(-1);
-		{
-			size_t o2Best = size_t(-1);
-			uint16 a2Best = 0;
-			for(size_t p = 0; p < partials; p++)
-			{
-				const PianoPartial pr = PianoGetPartial(*mTable, region.PartOffset + p);
-				if(pr.K == 1 && pr.Amp > 0 && o1 == size_t(-1)) o1 = p;
-				if(pr.K == 2 && pr.Amp > 0 && pr.Amp > a2Best) { a2Best = pr.Amp; o2Best = p; }
-			}
-			if(A2 > 0.01f && o2Best != size_t(-1)) o2 = o2Best;
-		}
-		mPushLen = 0;
-		mPushPos = 0;
-		if(A1 > 0.01f && o1 != size_t(-1))
-		{
-			// Ramped удар: подъём за ~3 мс (быстрее семплового «тука» h1, но
-			// не ступенькой — старт строго с нуля, без щелчка), спад τ≈15 мс.
-			// Измерение 2026-08-26: прежний τr=14 мс/τd=40 мс слишком «размазывал»
-			// удар — в окне 0-10 мс h2/h1 оставалось −6.7 вместо −9.9 у семпла
-			// (h1 не успевал подняться над октавой). Новый удар пикует ~5 мс и
-			// гаснет к ~50-70 мс, как h1-тук в сыром семпле («settle ~30-50 мс»).
-			const float tauR = 0.003f, tauD = 0.015f;
-			// Длина: пока огибающая > ~1% пика (τd·ln(100) ≈ 0.069 с).
-			mPushLen = size_t(tauD*Math::Log(100.0f)*float(sampleRate)) + 1;
-			// Нормировка огибающей к пику 1 (пик при t* = τr·ln(1+τd/τr)).
-			const float tStar = tauR*Math::Log(1.0f + tauD/tauR);
-			const float gMax = (1.0f - Math::Exp(-tStar/tauR))*Math::Exp(-tStar/tauD);
-			mPushBuf.SetCount(mPushLen);
-			float* pb = mPushBuf.Data();
-			// Огибающая и вращение без тригонометрии на сэмпл: g(i) =
-			// (1−rR^i)·rD^i/gMax, а волна cis·cos(i·w) + crs·sin(i·w) — это Y_i
-			// комплексного вращения (X_0,Y_0) = (crs,cis) на w каждый шаг.
-			// Оверлеи калибровались по амплитуде ОДНОЙ струны (первого голоса):
-			// при коллапсе унисона лейн несёт сумму струн (g0+g1), поэтому
-			// уровень удара приводим обратно делением на gSum.
-			const float ovStr = beatCollapse ? 1.0f/gSum : 1.0f;
-			const float rR = Math::Exp(-1.0f/(tauR*float(sampleRate)));
-			const float rD = Math::Exp(-1.0f/(tauD*float(sampleRate)));
-			float x1 = crs[o1]*ovStr, y1 = cis[o1]*ovStr;
-			const float cw1 = Math::Cos(dphis[o1]), sw1 = Math::Sin(dphis[o1]);
-			float x2 = 0.0f, y2 = 0.0f, cw2 = 0.0f, sw2 = 0.0f;
-			if(o2 != size_t(-1))
-			{
-				x2 = crs[o2]*ovStr; y2 = cis[o2]*ovStr;
-				cw2 = Math::Cos(dphis[o2]); sw2 = Math::Sin(dphis[o2]);
-			}
-			float rp = 1.0f, dp = 1.0f;
-			for(size_t i = 0; i < mPushLen; i++)
-			{
-				const float g = (1.0f - rp)*dp/gMax;
-				float s = A1*y1;
-				if(o2 != size_t(-1)) s += A2*y2;
-				pb[i] = c*g*s;
-				rp *= rR; dp *= rD;
-				const float nx1 = x1*cw1 - y1*sw1;
-				y1 = x1*sw1 + y1*cw1;
-				x1 = nx1;
-				if(o2 != size_t(-1))
-				{
-					const float nx2 = x2*cw2 - y2*sw2;
-					y2 = x2*sw2 + y2*cw2;
-					x2 = nx2;
-				}
-			}
-		}
-	}
-	// === «БЛУМ» сустейна — яркая голова, сседающая к таблице ===
-	// В сырых семплах SF2 у D5–E5 (регион 75) обертона h2–h3 в первые
-	// ~0.1–0.7 с держатся ПОВЫШЕННО (h2 почти вровень с h1 на 0.1–0.3 с:
-	// +1 дБ, к ~0.7 с сседает к плоской табличной форме −8 дБ; h3 выше на
-	// 4–8 дБ) и только потом проседают к плоской табличной форме. У плоской
-	// струны (Session 7 дала региону ОДИНАКОВОЕ затухание, чтобы отношения
-	// держались ровно от t=0) этой временной «яркой головы» нет — первые
-	// полсекунды длинной ноты звучат беднее семпла на 4–10 дБ по h2–h3.
-	// Блум — третий оверлей: фаза-выровненная сумма партиал h2–h3 × мал.
-	// множитель × огибающая (0 до 45 мс — после атаки, подъём τr≈55 мс,
-	// экспоненц. спад τd=0.20 с), стартует с нуля — без щелчка, к ~0.75 с
-	// доходит до нуля, в поздний сустейн (уже плоский и откалиброванный) не
-	// входит. Атака не меняется: блум начинается после неё и на её окнах
-	// (0–30 мс) пренебрежимо мал.
-	mBloomPos = 0;
-	mBloomLen = 0;
-	mBloomOn = false;
-	// Только остров D5–E5 (регион 75): у соседних регионов (69/72/78/81/84)
-	// ранний сустейн УЖЕ совпадает с семплом (h2 в пределах 0–2 дБ) — блум там
-	// перелетал бы в «двойной» тембр. Измеренный разрыв 0.1–0.7 с именно у
-	// региона 75: h2 −9…−10 дБ, h3 −4…−8 дБ (см. docs/tasks/20260825-*).
-	if(region.RootKey == 75)
-	{
-		// Пер-частичные усиления головы сустейна (линейная амплитуда):
-		//   h2 ≈ +7 дБ (×2.2), h3 ≈ +3 дБ (×1.4); h4 — не трогаем: разрыв мал
-		// (наши −28 против семпла −27), а с блумом он перелетал в +7 дБ.
-		const float b2 = 2.2f, b3 = 1.4f;
-		// Огибающая: 0 до t=delay (после атаки), затем (1−e^(−(t−delay)/τr))·e^(−t/τd),
-		// норм. к пику; хвост обрезается на −26 дБ с коротким линейным фейдом.
-		const float tauR = 0.055f, tauD = 0.20f;
-		const float delay = 0.045f;
-		const float ts = delay + tauR*Math::Log(1.0f + tauD/tauR);
-		const float gMax = (1.0f - Math::Exp(-(ts-delay)/tauR))*Math::Exp(-ts/tauD);
-		const size_t lenCut = size_t((tauD*Math::Log(1.0f/0.026f))*float(sampleRate));
-		const size_t len = lenCut + size_t(0.02f*float(sampleRate)); // +20 мс фейд
-		// Найти лейны h2/h3 с реальной амплитудой (h1/h4/h5 не участвуют).
-		size_t lanes[4] = {size_t(-1), size_t(-1), size_t(-1), size_t(-1)};
-		for(size_t p = 0; p < partials; p++)
-		{
-			const PianoPartial pr = PianoGetPartial(*mTable, region.PartOffset + p);
-			if((unsigned)pr.K >= 2 && (unsigned)pr.K <= 3 && pr.Amp > 0)
-				if(lanes[pr.K] == size_t(-1)) lanes[pr.K] = p;
-		}
-		const float bAmp[4] = {0.0f, 0.0f, b2, b3};
-		const bool any = (lanes[2] != size_t(-1) && b2 > 0.01f) || (lanes[3] != size_t(-1) && b3 > 0.01f);
-		if(any && gMax > 1e-3f)
-		{
-			mBloomOn = true;
-			mBloomLen = len;
-			mBloomBuf.SetCount(len);
-			float* bb = mBloomBuf.Data();
-			float x[4] = {0}, y[4] = {0}, cw[4] = {0}, sw[4] = {0};
-			bool active[4] = {false, false, false, false};
-			for(int K = 2; K <= 3; K++)
-			{
-				const size_t p = lanes[K];
-				if(p == size_t(-1) || bAmp[K] <= 0.01f) continue;
-				// Фаза на стыке: струна начинает играть после attack-буфера со
-				// своего t=0 состояния (состояния SineRange при проигрывании
-				// буфера не продвигаются), а блум играет с сэмпла 0. Чтобы на
-				// сэмпле mAttackLen фазы совпали (иначе блум складывается с
-				// партиалом от противо- до синфазно в зависимости от частоты —
-				// на C5 h3 это давало разрушающую интерференцию −10 дБ), стартовый
-				// фазор блума поворачиваем НАЗАД на mAttackLen·dphi.
-				const float aBack = float(mAttackLen)*dphis[p];
-				const float ca = Math::Cos(aBack), sa = Math::Sin(aBack);
-				// Блум калиброван по одиночной струне — при коллапсе делим на gSum.
-				const float ovStr = beatCollapse ? 1.0f/gSum : 1.0f;
-				x[K] = (crs[p]*ca + cis[p]*sa)*ovStr;
-				y[K] = (-crs[p]*sa + cis[p]*ca)*ovStr;
-				cw[K] = Math::Cos(dphis[p]); sw[K] = Math::Sin(dphis[p]);
-				active[K] = true;
-			}
-			// Бегущие множители огибающей: decay_ = e^(−i/(τd·sr)); rise_ =
-			// 1−e^(−(i−delay)/(τr·sr)) через экспоненциальное сглаживание
-			// rise_ += (1−rise_)·(1−rR) — начинается с 0 на i=dN. 4 умножения
-			// на сэмпл — конструктор дёшев.
-			const float rD = Math::Exp(-1.0f/(tauD*float(sampleRate)));
-			const float rR = Math::Exp(-1.0f/(tauR*float(sampleRate)));
-			const size_t dN = size_t(delay*float(sampleRate));
-			float decay_ = 1.0f, rise_ = 0.0f;
-			for(size_t i = 0; i < len; i++)
-			{
-				float g = 0.0f;
-				if(i > dN) rise_ += (1.0f - rise_)*(1.0f - rR);
-				if(i >= dN) g = rise_*decay_/gMax;
-				float s = 0.0f;
-				for(int K = 2; K <= 3; K++) if(active[K]) s += bAmp[K]*y[K];
-				bb[i] = c*g*s;
-				decay_ *= rD;
-				for(int K = 2; K <= 3; K++)
-				{
-					if(!active[K]) continue;
-					const float nxx = x[K]*cw[K] - y[K]*sw[K];
-					y[K] = x[K]*sw[K] + y[K]*cw[K];
-					x[K] = nxx;
-				}
-			}
-			// Линейный фейд последних 20 мс к нулю (без щелчка на обрезании).
-			const size_t fadeN = size_t(0.02f*float(sampleRate));
-			for(size_t i = lenCut; i < len; i++)
-			{
-				const float f = float(len - i)/float(fadeN);
-				bb[i] *= f;
-			}
-		}
-	}
+	// Absolute packed Amp tables are already calibrated per region. Avoid the
+	// legacy period peak-normalization for every calibrated piano preset.
+	float c = scale;
+	if(tableId == PianoTableHonkyTonk)
+		c *= PianoQuarterDbGain(float(gHonkyRegionGainQdb[best]));
 
-	// Accepted 2026-09-21 fast string onset. The packed Amp/Phase state is the
-	// measured modal state at region.DecayOnset, not a target that should bloom
-	// slowly from zero. Starting that state through the old contact/body/push/
-	// bloom chain made the piano audibly soft. Instead, expose the complete
-	// measured harmonic stack with a short ~1 ms click-safe rise and start
-	// Decay1 immediately afterwards. This matches the clarity of the diagnostic
-	// SF2 whose samples were shifted to the same DecayOnset measurement point.
-	const size_t stringRiseSamples = Math::Max(size_t(1), size_t(0.001f*float(sampleRate) + 0.5f));
+	// The packed Amp/Phase state is measured at region.DecayOnset. Runtime
+	// reconstruction rewinds that state to raw-sample t=0 and lets the measured
+	// modal/attack basis evolve from note-on. Keep the existing 5 ms internal
+	// convergence here only for cache/seek state continuity; it is hidden from
+	// the listener by the contact-prelude gate below and is not an audible string
+	// attack envelope. The owner-selected string-only candidate applies only the
+	// explicit 1 ms linear anti-click blend below.
+	const size_t stringRiseSamples = Math::Max(size_t(1), size_t(0.005f*float(sampleRate)*sourceTimeScale + 0.5f));
 	const float stringRiseStep = 1.0f - Math::Exp(Math::Log(0.005f)/float(stringRiseSamples));
+	// String-only listening candidate: reveal the analytically-seeked coherent
+	// string at the measured ~4.3 ms source-time boundary, then fade it in
+	// linearly over 1 ms. This is intentionally the minimal anti-click bridge:
+	// no hammer/contact head and no felt microtexture are mixed in.
+	mStringRevealBlendSamples = sharedAcousticP1
+		? Math::Max(size_t(1), size_t(0.001f*float(sampleRate)*sourceTimeScale + 0.5f))
+		: 0;
+	const size_t contactBoundarySamples = sharedAcousticP1
+		? Math::Max(size_t(1), size_t(0.0043f*float(sampleRate)*sourceTimeScale + 0.5f))
+		: 0;
+	mStringRevealSamples = contactBoundarySamples;
+
+	const bool acousticMeasuredState = (tableId == 0);
+	const bool measuredAttack = (tableId == 0 && region.RootKey <= 81);
+	const size_t measuredOnsetSamples = acousticMeasuredState
+		? Math::Max(size_t(1), size_t(region.DecayOnset*float(sampleRate)*sourceTimeScale + 0.5f))
+		: stringRiseSamples;
 	for(size_t p = 0; p < count; p++)
 	{
-		mS1[p] = cis[p]*c;
-		mS2[p] = (cis[p]*Math::Cos(dphis[p]) + crs[p]*Math::Sin(dphis[p]))*c;
+		// Early-attack reconstruction starts before the packed complex state.
+		// Rewind by exactly DecayOnset so the free recurrence reaches that
+		// accepted state at the measurement boundary.
+		float ci0 = cis[p], cr0 = crs[p];
+		if(acousticMeasuredState)
+		{
+			const float back = dphis[p]*float(measuredOnsetSamples);
+			const float cb = Math::Cos(back), sb = Math::Sin(back);
+			ci0 = cis[p]*cb - crs[p]*sb;
+			cr0 = crs[p]*cb + cis[p]*sb;
+		}
+		mS1[p] = ci0*c;
+		mS2[p] = (ci0*Math::Cos(dphis[p]) + cr0*Math::Sin(dphis[p]))*c;
 		mAmp[p] = 0.0f;
-		// Fast onset belongs only to real measured partials. Silent table rows
-		// and SIMD padding have decay/release step 1; ramping them to unity
-		// makes maxAmp stay near 1 forever after NoteRelease and prevents the
-		// voice-cleanup gate from ever deleting the note.
+		// Keep the existing hidden state evolution. The harmonic output is gated
+		// until mStringRevealSamples, so this rise is not an audible post-contact
+		// ramp; it only keeps cache/seek state identical to the accepted baseline.
 		mAtk[p] = (crs[p]*crs[p] + cis[p]*cis[p] > 0.0f) ? stringRiseStep : 0.0f;
 	}
 
-	// The note's t=0 now corresponds to the old SF2 DecayOnset state. Preserve
-	// the measured segment durations relative to that state instead of waiting
-	// another DecayOnset interval before starting Decay1.
-	mDecayOnsetSamples = stringRiseSamples;
-	mSegSamples = stringRiseSamples + size_t(region.SegT*float(sampleRate));
-	mSegSamples2 = stringRiseSamples + size_t((region.SegT + region.SegT2)*float(sampleRate));
-	mSegSamples3 = stringRiseSamples + size_t((region.SegT + region.SegT2 + region.SegT3)*float(sampleRate));
+	// Experimental path: t=0 is the original sample onset. The measured
+	// harmonic state is reached at the real DecayOnset, then the accepted
+	// sustain Decay1..4 path resumes unchanged.
+	mDecayOnsetSamples = measuredOnsetSamples;
+	{
+		const float onsetT = float(measuredOnsetSamples)/float(sampleRate);
+		const float attackTauScale = sharedAcousticP1 ? sourceTimeScale : 1.0f;
+		mAttackBasis0 = mAttackBasis1 = mAttackBasis2 = 1.0f;
+		mAttackBasisEnd0 = Math::Exp(-onsetT/(0.010f*attackTauScale));
+		mAttackBasisEnd1 = Math::Exp(-onsetT/(0.032f*attackTauScale));
+		mAttackBasisEnd2 = Math::Exp(-onsetT/(0.140f*attackTauScale));
+		mAttackBasisStep0 = Math::Exp(-1.0f/(0.010f*attackTauScale*float(sampleRate)));
+		mAttackBasisStep1 = Math::Exp(-1.0f/(0.032f*attackTauScale*float(sampleRate)));
+		mAttackBasisStep2 = Math::Exp(-1.0f/(0.140f*attackTauScale*float(sampleRate)));
+	}
+	// Segment durations are shared by every calibrated piano table. Keeping
+	// them out of every region saves metadata without changing a single value.
+	// After the measured onset the source is a transposed SF2 sample: the whole
+	// body time axis scales by F0/freq. Decay rates already scale by freq/F0,
+	// so scaling the segment boundaries too makes the body exactly compatible
+	// with constant-rate region-PCM resampling. The measured attack itself stays
+	// note-local and unchanged.
+	mSegSamples = measuredOnsetSamples + size_t(0.235f*float(sampleRate)*sourceTimeScale + 0.5f);
+	mSegSamples2 = measuredOnsetSamples + size_t((0.235f + 0.550f)*float(sampleRate)*sourceTimeScale + 0.5f);
+	mSegSamples3 = measuredOnsetSamples + size_t((0.235f + 0.550f + 0.900f)*float(sampleRate)*sourceTimeScale + 0.5f);
 	mRendered = 0;
 	mDecayStarted = false;
 	mSegSwitched = false;
@@ -951,40 +955,70 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// Per-instrument калибровка громкости: множитель на выходе всей ноты
 	// (атака+сустейн+буферы). Отдельно от Scale — чтобы не трогать
 	// нормировку атаки (буфер контактной силы от Scale не зависит).
-	mVolume = volume*Math::Pow(10.0f, volumeDb/20.0f);
+	mVolume = volume*volumeScale*(acousticProgram0 ? gPianoSf2CommonLevel[best < 25 ? best : 0] : 1.0f);
+	// Mid-register transient residual for Titanic root 75. The regenerated
+	// per-partial attack table fixes spectral shape; this short common envelope
+	// restores the remaining 5-80 ms energy without touching sustain.
+	if(acousticProgram0 && region.RootKey == 75)
+	{
+		mAttackBoostPolyDepth = 0.40f;
+		mAttackBoostSamples = Math::Max(size_t(1), size_t(0.090f*float(sampleRate) + 0.5f));
+	}
+	// Compact upper-register attack residual, fitted only on harmonic-band energy
+	// of dry Titanic g=0.6. Full-band fitting is deliberately avoided here:
+	// low-velocity high notes expose recorded ~50/100-Hz sample hum that is not
+	// part of the physical string model. Depth/tau are physical source-region
+	// properties; one shared velocity exponent is applied in SetVelocity().
+	else if(acousticProgram0 && region.RootKey == 96)
+	{
+		// Root 96 has a short 40 ms pre-decay plateau rather than the 115 ms
+		// exponential transient of roots 99+.  A quartic taper is the smallest
+		// common-envelope fit that follows it without per-partial coefficients.
+		mAttackBoostPolyDepth = 1.2269134f;
+		mAttackBoostSamples = Math::Max(size_t(1), size_t(region.DecayOnset*float(sampleRate) + 0.5f));
+	}
+	else if(acousticProgram0 && region.RootKey >= 99)
+	{
+		float tau;
+		if(region.RootKey == 99) { mAttackBoostDepth = 18.0731969f; tau = 0.03146143f; }
+		else if(region.RootKey == 102) { mAttackBoostDepth = 10.3358593f; tau = 0.08746335f; }
+		else { mAttackBoostDepth = 11.5f; tau = 0.02544526f; } // root 105
+		mAttackBoostSamples = Math::Max(size_t(1), size_t(region.DecayOnset*float(sampleRate) + 0.5f));
+		mAttackBoostStep = Math::Exp(-1.0f/(tau*float(sampleRate)));
+		mAttackBoostEndExp = Math::Exp(-float(mAttackBoostSamples)/(tau*float(sampleRate)));
+		mAttackBoostExp = 1.0f;
+	}
 	mDone = false;
 	mReleased = false;
 	mReleasePending = false;
 	mReleaseAt = 0;
-	mOverlayGain = 1.0f;
-	mOverlayRel = 1.0f;
-	// The fast-onset state above supersedes the legacy attack overlays. Keep the
-	// buffers in the source for future hammer work, but do not render them in
-	// the accepted sustain baseline.
-	mAttackLen = 0;
-	mAttackPos = 0;
-	mBodyLen = mBodyPos = 0;
-	mPushLen = mPushPos = 0;
-	mBloomLen = mBloomPos = 0;
-	mBloomOn = false;
-	mOverlayActive = false;
 	mSampleRate = sampleRate;
-	// Стерео: constant-power pan. Voice 0 → left, voice 1 → right.
-	// StereoPan из региона — измеренный L/R level diff. При 2 голосах
-	// каждый панорамируется в свою сторону. При 1 или 3 голосах —
-	// используется только общий pan для mono-рендера.
-	mStereoPan = region.StereoPan;
-	// StereoPan — измеренная разница уровней R-L в дБ (SF2 семплы).
-	// Преобразуем в коэффициенты L/R так, чтобы разница уровней совпала
-	// с SF2, а суммарный уровень (L+R)/2 сохранился = 0.5 (как при старом
-	// моно-рендере panLeft=panRight=0.5). Linear pan, не constant-power,
-	// чтобы не менять общую громкость.
-	// ratio = 10^(dB/20) — во сколько раз R громче L.
-	// L + R = 1.0 (нормировка), R/L = ratio → L=1/(1+ratio), R=ratio/(1+ratio).
-	// (L+R)/2 = 0.5 — совпадает со старым моно-путём.
+	mSf2UniformRelease = sharedAcousticP1;
+	mSf2ReleaseGain = 1.0f;
+	mSf2ReleaseSamplesLeft = 0;
+	if(mSf2UniformRelease)
 	{
-		const float dB = region.StereoPan;
-		const float ratio = Math::Pow(10.0f, dB/20.0f);
+		// Titanic P1: preset +702 tc + instrument -386 tc = +316 tc.
+		// FluidSynth's volEnv value itself ramps linearly 1 -> 0, but output
+		// amplitude is cb2amp(960 * (1-volEnv)): exactly 96 dB of exponential
+		// attenuation over the release duration. Quantize duration to FluidSynth's
+		// 64-sample renderer buffer count.
+		const float seconds = Math::Pow(2.0f, 316.0f/1200.0f);
+		const size_t buffers = 1 + size_t(seconds*float(sampleRate)/64.0f);
+		mSf2ReleaseSamples = Math::Max(size_t(1), buffers*size_t(64));
+		mSf2ReleaseStep = Math::Exp(-11.05240845f/float(mSf2ReleaseSamples)); // ln(10)*4.8
+	}
+	else
+	{
+		mSf2ReleaseSamples = 0;
+		mSf2ReleaseStep = 1.0f;
+	}
+
+	// Stereo ratio R/L is precomputed in the region table: the source values
+	// are fixed, so note-on must not evaluate 10^(dB/20). Keep L+R = 1 to
+	// preserve the previous linear-pan loudness.
+	{
+		const float ratio = region.StereoRatioRtoL;
 		const float inv = 1.0f/(1.0f + ratio);
 		mStereoGainL = inv;
 		mStereoGainR = ratio*inv;
@@ -994,7 +1028,21 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 void AdditiveSampler::ApplyRelease()
 {
 	if(mReleased) return;
+	if(mVelocityModEnvCents != 0.0f)
+	{
+		const float attackSamples = 7.000704f*float(mSampleRate);
+		mVelocityModReleaseLevel = Math::Min(1.0f, float(mRendered)/attackSamples);
+		mVelocityModReleaseSample = mRendered;
+		mVelocityModReleased = true;
+		mVelocityModNextUpdate = mRendered;
+	}
 	mReleased = true;
+	if(mSf2UniformRelease)
+	{
+		mSf2ReleaseGain = 1.0f;
+		mSf2ReleaseSamplesLeft = mSf2ReleaseSamples;
+		return;
+	}
 #ifdef INTRA_PROBE_NAN
 	fprintf(stderr, "[RELEASE] mRendered=%zu mEndSamples=%zu mFadeSamples=%zu count=%zu\n", mRendered, mEndSamples, mFadeSamples, mCount);
 #endif
@@ -1009,11 +1057,6 @@ void AdditiveSampler::ApplyRelease()
 	const float* decR = mDecayRelease.Data();
 	float* atk = mAtk.Data();
 	for(size_t p = 0; p < count; p++) { dec[p] *= decR[p]; atk[p] = 0.0f; }
-	// Транзиенты удара/корпуса при отпускании гаснут плавно (τ≈8 мс):
-	// это «удар в воздухе», демпфер убивает и его (иначе на стаккато
-	// h1-удар +14 дБ продолжал бы звучать после отпускания), но резкий
-	// обрыв в ненулевой амплитуде дал бы щелчок.
-	mOverlayRel = Math::Exp(-1.0f/(0.008f*float(mSampleRate)));
 	// mEndSamples не трогаем — нота закончится естественным путём,
 	// когда amp[p] → 0 для всех партиал. mDone установится в RenderInto.
 }
@@ -1027,6 +1070,9 @@ void AdditiveSampler::ApplyRelease()
 void AdditiveSampler::NoteRelease()
 {
 	if(mReleased || mReleasePending) return;
+	// Publish the clean pre-release raw prefix, but never cache the damped tail.
+	// Warm playback reconstructs live state analytically before applying the
+	// normal damper, so short repeated notes still benefit from the cache.
 	const size_t freeWindow = size_t(0.035f*float(mSampleRate));
 	if(mRendered < freeWindow)
 	{
@@ -1040,24 +1086,43 @@ void AdditiveSampler::NoteRelease()
 size_t AdditiveSampler::GenerateMono(Span<float> ioDst)
 {
 	if(mDone) return 0;
-	const size_t n = ioDst.Length();
-	float* dst = ioDst.Data();
-	RenderInto(n, [dst](float l, float r) mutable { *dst++ += l + r; });
-	return mDone ? 0 : n;
+	const size_t original = ioDst.Length();
+	// Keep only one non-envelope hot-loop instantiation. Mono is an adapter
+	// over the already-specialized stereo path; web playback is stereo, while
+	// this removes an otherwise complete duplicate of RenderInto from WASM.
+	float right[mBlockSize];
+	while(!ioDst.Empty() && !mDone)
+	{
+		const size_t n = Math::Min(ioDst.Length(), mBlockSize);
+		for(size_t i = 0; i < n; i++) right[i] = 0.0f;
+		Span<float> left = ioDst.Take(n);
+		GenerateStereo(left, Span<float>(right, n));
+		float* dst = left.Data();
+		for(size_t i = 0; i < n; i++) dst[i] += right[i];
+		ioDst.PopFirstExactly(n);
+	}
+	return mDone ? 0 : original;
 }
 
 size_t AdditiveSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight)
 {
 	if(mDone) return 0;
-	const size_t n = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
-	float* dstL = ioDstLeft.Data();
-	float* dstR = ioDstRight.Data();
-	RenderInto(n, [dstL, dstR](float l, float r) mutable
+	const size_t original = Math::Min(ioDstLeft.Length(), ioDstRight.Length());
+	ioDstLeft = ioDstLeft.Take(original); ioDstRight = ioDstRight.Take(original);
+	// Region cache starts at source sample zero, so there is no separate
+	// pre-cache live prefix. Keeping a second RenderInto lambda here would
+	// instantiate the full additive hot loop twice in WASM.
+	if(!ioDstLeft.Empty() && !mDone)
 	{
-		*dstL++ += l;
-		*dstR++ += r;
-	});
-	return mDone ? 0 : n;
+		float* dstL = ioDstLeft.Data();
+		float* dstR = ioDstRight.Data();
+		RenderInto(ioDstLeft.Length(), [dstL, dstR](float l, float r) mutable
+		{
+			*dstL++ += l;
+			*dstR++ += r;
+		});
+	}
+	return mDone ? 0 : original;
 }
 
 INTRA_WARNING_POP

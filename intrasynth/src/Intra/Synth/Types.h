@@ -67,6 +67,9 @@ public:
 	/// MIDI channel pan. Generic samplers that own a stereo image can apply it
 	/// as an outer balance layer; mono/irrelevant samplers keep the no-op.
 	virtual void SetPan(float newPan) {(void)newPan;}
+	/// Raw MIDI key velocity, normalized to [0; 1]. Sources that model
+	/// velocity-dependent timbre can keep it separate from channel volume.
+	virtual void SetVelocity(float velocity01) {(void)velocity01;}
 	/// Pass source-level render parameters to samplers that have a note-level
 	/// parameter (currently the measured piano stereo tilt). Master effects are
 	/// handled by MidiSynth and are ignored by these samplers.
