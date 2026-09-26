@@ -29,6 +29,7 @@ struct RecordedSampler: public IGenericSampler
 		(void)ioDstRight;
 		return operator()(ioDst);
 	}
+	void MultiplyVolume(float volumeMultiplier) override {Volume *= volumeMultiplier;}
 };
 
 struct CachedDrumInstrument

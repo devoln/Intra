@@ -123,6 +123,14 @@ public:
 
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	void MultiplyVolume(float volumeMultiplier) override
+	{
+		mVolume *= volumeMultiplier;
+#ifdef INTRA_UI_METERS
+		if(volumeMultiplier > 0.0f) mInvInitialVolume /= volumeMultiplier;
+		else mInvInitialVolume = 0.0f;
+#endif
+	}
 	bool SupportsEnvelopeRender() const override {return true;}
 	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
 		const EnvelopeSegment& envelope) override;

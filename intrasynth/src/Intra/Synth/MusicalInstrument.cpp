@@ -26,6 +26,10 @@ NoteSampler MusicalInstrument::BuildNoteSampler(float freq, float volume, unsign
 	for(auto& mod: GenericModifiers) addModifierPair(mod);
 	if(Envelope) result.ADSR = AdsrAttenuator(Envelope(sampleRate));
 
+	// Static InstrumentLibrary calibration is baked into already-created
+	// sampler amplitudes. The original input volume above remains untouched
+	// during seed/timbre initialization.
+	if(VolumeScale != 1.0f) result.MultiplyVolume(VolumeScale);
 	return result;
 }
 

@@ -403,6 +403,8 @@ public:
 		}
 	}
 
+	void MultiplyVolume(float volumeMultiplier) override {mVolume *= volumeMultiplier;}
+
 	size_t GenerateMono(Span<float> ioDst) override
 	{
 		if(mHasEnv) return generateWithEnvelope(ioDst, nullptr);
@@ -527,6 +529,8 @@ public:
 		mGateStep = toneRiseSeconds > 0 ? 1.0f/(toneRiseSeconds*float(sampleRate)) : 1.0f;
 		mReleaseStep = Math::Exp(-1.0f/(0.008f*float(sampleRate)));
 	}
+
+	void MultiplyVolume(float volumeMultiplier) override {mVolume *= volumeMultiplier;}
 
 	size_t GenerateMono(Span<float> ioDst) override
 	{

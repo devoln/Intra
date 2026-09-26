@@ -426,6 +426,12 @@ public:
 
 	size_t GenerateMono(Span<float> ioDst) override;
 	size_t GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstRight) override;
+	void MultiplyVolume(float volumeMultiplier) override
+	{
+		// The amp/cab chain is nonlinear; static loudness calibration belongs
+		// after it. mVolume is only the UI-meter decay counter here.
+		mOutGain *= volumeMultiplier;
+	}
 	bool SupportsEnvelopeRender() const override {return true;}
 	size_t GenerateStereoWithEnvelope(Span<float> ioDstLeft, Span<float> ioDstRight,
 		const EnvelopeSegment& envelope) override;

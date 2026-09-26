@@ -382,6 +382,8 @@ void NoteSampler::MultiplyVolume(float volumeMultiplier)
 {
 	for(auto& sampler: WaveFormSamplers) sampler.MultiplyVolume(volumeMultiplier);
 	for(auto& sampler: WaveTableSamplers) sampler.MultiplyVolume(volumeMultiplier);
+	for(auto& sampler: WhiteNoiseSamplers) sampler.MultiplyVolume(volumeMultiplier);
+	for(auto& sampler: GenericSamplers) sampler->MultiplyVolume(volumeMultiplier);
 }
 
 void NoteSampler::SetRenderParams(const RenderParams& params)

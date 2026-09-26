@@ -126,13 +126,16 @@ export function readWavMono(file) {
 /// Рендер банка (fluidsynth, без реверба и хоруса). sf2 по умолчанию — Titanic.
 /// `program` — программа СИНТЕЗАТОРА: к банку применяется bankProgramFor()
 /// (см. BANK_PROGRAM). Отключить подмену: `rawProgram: true`.
-export function renderBank({ program, key, sampleRate = SR, sf2 = DEFAULT_SF2, noteOn, noteOff, tag = "_an", rawProgram = false }) {
+export function renderBank({ program, key, sampleRate = SR, sf2 = DEFAULT_SF2, noteOn, noteOff, tag = "_an", rawProgram = false, gain = 0.2 }) {
   const bankProg = rawProgram ? program : bankProgramFor(program);
   const mid = path.join(".scratch", `${tag}_${bankProg}_${key}.mid`);
   const wav = path.join("/tmp", `${tag}_${bankProg}_${key}.wav`);
   fs.mkdirSync(".scratch", { recursive: true });
   fs.writeFileSync(mid, buildMidi({ program: bankProg, key, noteOn, noteOff }));
-  execFileSync("fluidsynth", ["-ni", "-g", "0.6", "-r", String(sampleRate), "-F", wav, "-R", "0", "-C", "0", sf2, mid], { stdio: "ignore" });
+  // FluidSynth master gain is deliberately low by default to leave polyphony
+  // headroom.  It is NOT an SF2 instrument-level property.  Relative program
+  // calibration must use ratios (program/AGP), where this gain cancels.
+  execFileSync("fluidsynth", ["-ni", "-g", String(gain), "-r", String(sampleRate), "-F", wav, "-R", "0", "-C", "0", sf2, mid], { stdio: "ignore" });
   return readWavMono(wav);
 }
 

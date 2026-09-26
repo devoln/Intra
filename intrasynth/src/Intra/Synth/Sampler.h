@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Container/Utility/SparseArray.h"
 #include "Container/Sequential/Array.h"
@@ -65,6 +65,7 @@ public:
 	/// дорожки, остаётся живой и звучит, когда дорожку поднимут (раньше CC7
 	/// входил прямо в стартовую громкость, и такая нота молчала навсегда).
 	float ChannelGain = 1.0f;
+
 
 	/// CC7 канала в момент создания ноты, но не менее 1: нота всегда рождается
 	/// живой (доля канала запекается в её стартовую громкость), а ChannelGain

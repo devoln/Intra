@@ -2628,10 +2628,115 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericModifiers.EmplaceLast(ExpExpModifierFactory(0.00005f, 15));
 	}
 
+	// === Относительная калибровка громкости InstrumentLibrary по SF2 ===
+	// Таблица хранит измеренные масштабы относительно одного SF2-рендера и
+	// нормируется на AcousticPiano. Scale применяется после создания
+	// подсэмплеров, поэтому не меняет random seed или тембр. Aliases одной
+	// физической модели используют общий scale.
+	struct LoudnessCalibration { const char* Name; float Scale; };
+	static const LoudnessCalibration loudness[] =
+	{
+		{"AcousticPiano", 0.274233091f},
+		{"BrightAcousticPiano", 0.259456011f},
+		{"ElectricGrandPiano", 0.240274915f},
+		{"HonkyTonkPiano", 0.222677977f},
+		{"ElectricPiano1", 0.291012219f},
+		{"ElectricPiano2", 0.317560594f},
+		{"Harpsichord", 0.25013232f},
+		{"Clavinet", 0.196793055f},
+		{"Celesta", 0.772990019f},
+		{"Glockenspiel", 0.764348995f},
+		{"MusicBox", 2.38408939f},
+		{"Vibraphone", 0.806053586f},
+		{"Marimba", 0.788491423f},
+		{"Xylophone", 0.653546973f},
+		{"Kalimba", 0.633785532f},
+		{"SynthOrgan", 1.10905283f},
+		{"PercussiveOrgan", 0.841096876f},
+		{"RockOrgan", 2.33379382f},
+		{"Accordion", 0.0853056219f},
+		{"Harmonica", 0.287458068f},
+		{"AcousticGuitarNylon", 0.354750737f},
+		{"AcousticGuitarSteel", 0.435116245f},
+		{"ElectricGuitarJazz", 0.266021473f},
+		{"ElectricGuitarClean", 0.995729464f},
+		{"ElectricGuitarMuted", 0.087562241f},
+		{"OverdrivenGuitar", 0.781535858f},
+		{"DistortionGuitar", 0.925345847f},
+		{"AcousticBass", 0.795711319f},
+		{"ElectricBassPick", 0.600093414f},
+		{"FretlessBass", 1.1555767f},
+		{"SlapBass", 0.344080479f},
+		{"SynthBass1", 1.08706824f},
+		{"SynthBass2", 0.402880302f},
+		{"Violin", 0.390453207f},
+		{"TremoloStrings", 1.1257499f},
+		{"PizzicatoStrings", 1.38400675f},
+		{"Timpani", 6.4923766f},
+		{"StringEnsemble", 0.885255787f},
+		{"StringEnsemble2", 0.85068152f},
+		{"SynthStrings", 2.10827779f},
+		{"Pad8Sweep", 0.951159042f},
+		{"ChoirAahs", 0.410166021f},
+		{"VoiceOohs", 0.875044174f},
+		{"SynthVoice", 0.807618388f},
+		{"OrchestraHit", 6.73203941f},
+		{"Trumpet", 0.2982267f},
+		{"TrumpetOld", 0.119836103f},
+		{"Tuba", 0.127586419f},
+		{"FrenchHorn", 0.224128752f},
+		{"BrassSection", 0.0883457357f},
+		{"SynthBrass", 0.240555807f},
+		{"Sax", 0.0833557064f},
+		{"Oboe", 0.0821525854f},
+		{"EnglishHorn", 0.144122328f},
+		{"Clarinet", 0.126937065f},
+		{"Piccolo", 0.297115854f},
+		{"FluteDLS", 0.368067336f},
+		{"FluteClean", 0.370320539f},
+		{"FluteHybrid", 0.392000176f},
+		{"Recorder", 0.430118122f},
+		{"PanFlute", 0.864841389f},
+		{"Bottle", 0.277267032f},
+		{"Whistle", 0.312059983f},
+		{"Ocarina", 0.45740524f},
+		{"Lead1Square", 0.20444209f},
+		{"Lead2Sawtooth", 0.422596287f},
+		{"Calliope", 1.0219101f},
+		{"Lead5Charang", 0.182225191f},
+		{"BassLead", 0.237394204f},
+		{"NewAge", 0.594710379f},
+		{"Pad3Polysynth", 0.44645347f},
+		{"Pad4Choir", 0.858471492f},
+		{"Pad5Bowed", 0.892858465f},
+		{"Pad7Halo", 0.312697938f},
+		{"Fx1Rain", 0.423555829f},
+		{"Fx2SoundTrack", 4.43444022f},
+		{"Fx4Atmosphere", 0.140412232f},
+		{"Fx6Goblins", 0.443835365f},
+		{"Sitar", 0.11011638f},
+		{"Fiddle", 0.939146472f},
+		{"SteelDrums", 0.100787127f},
+		{"ReverseCymbal", 3.07238825f},
+		{"Seashore", 1.92319897f},
+		{"PhoneRing", 0.0318148621f},
+		{"Helicopter", 0.468300756f},
+		{"Applause", 3.57810666f},
+		{"Gunshot", 0.91503318f},
+	};
+	// Normalize the SF2 calibration table to AcousticPiano.
+	const float loudnessReferenceInv = 1.0f/0.274233091f;
+	for(const auto& c: loudness)
+	{
+		auto found = Instruments.Find(c.Name);
+		if(!found.Empty()) found.First().Value.VolumeScale = c.Scale*loudnessReferenceInv;
+	}
+
 	// === Ударные, которых нет в web-midisynth (остаются) ===
 
-	UniDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 44100, 0.015f);
-	ClosedHiHat = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 44100, 0.015f);
-	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 88200, 0.015f);
-	AcousticSnare = CachedDrumInstrument(SnarePhysicalModel(), 22000, 0.05f);
+	// Channel-10 shared drum models use the same SF2-relative normalization.
+	UniDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 44100, 0.111335589f);
+	ClosedHiHat = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 44100, 0.054962151f);
+	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 88200, 0.264330194f);
+	AcousticSnare = CachedDrumInstrument(SnarePhysicalModel(), 22000, 1.16524823f);
 }

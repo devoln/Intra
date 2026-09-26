@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 
 
@@ -18,6 +18,7 @@ public:
 
 	size_t GenerateMono(Span<float> inOutSamples);
 	size_t GenerateStereo(Span<float> inOutLeft, Span<float> inOutRight);
+	void MultiplyVolume(float volumeMultiplier) {mAmplitude *= volumeMultiplier;}
 };
 
 struct WhiteNoiseInstrument

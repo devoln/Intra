@@ -17,6 +17,11 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
 struct MusicalInstrument: public Instrument
 {
+	// Static instrument loudness calibration. Applied once after all voice
+	// generators have been constructed, so it cannot affect random seeds,
+	// velocity-dependent timbre or other initialization state.
+	float VolumeScale = 1.0f;
+
 	Array<WaveInstrument> Waves;
 	Array<WaveTableInstrument> WaveTables;
 	WhiteNoiseInstrument WhiteNoise;

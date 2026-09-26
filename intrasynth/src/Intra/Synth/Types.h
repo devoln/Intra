@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <Cpp/Warnings.h>
 #include <Utils/Span.h>
@@ -64,6 +64,9 @@ public:
 
 	virtual void NoteRelease() {}
 	virtual void MultiplyPitch(float freqMultiplier) {(void)freqMultiplier;}
+	/// One-time/static amplitude scaling (instrument calibration) or live gain.
+	/// Implementations must not rebuild timbral/seed state.
+	virtual void MultiplyVolume(float volumeMultiplier) {(void)volumeMultiplier;}
 	/// MIDI channel pan. Generic samplers that own a stereo image can apply it
 	/// as an outer balance layer; mono/irrelevant samplers keep the no-op.
 	virtual void SetPan(float newPan) {(void)newPan;}
