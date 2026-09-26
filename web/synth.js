@@ -16,11 +16,12 @@
 // old custom APIs (e.g. SourceSetProgram) and is what the Web MIDI keyboard
 // and the on-screen piano both use.
 //
-// Default playback pulls rendered samples from the WASM module in real time
-// via a ScriptProcessorNode. When the "full pre-generation" checkbox is on,
-// the whole song is first rendered into JS float buffers (with the measured
-// wall-clock time shown in the UI), and playback then reads from those
-// buffers with zero WASM calls per audio callback.
+// Default playback still pulls rendered samples from the WASM module in real
+// time via a ScriptProcessorNode. When the "full pre-generation" checkbox is
+// on, the whole song is first rendered into an AudioBuffer (with the measured
+// wall-clock time shown in the UI), then playback is handed to a native
+// AudioBufferSourceNode. The pre-generated path therefore has no JS audio
+// callback at all.
 
 (() => {
   "use strict";
@@ -107,6 +108,7 @@
   window.__intraGuitarTweaks = { getModule: () => Module };
   let audioCtx = null;
   let processor = null;
+  let processorConnected = false;
   let gainNode = null;
   let scratchPtr = 0;
   let paramsPtr = 0;
@@ -145,6 +147,8 @@
   // потому что источник пересоздаётся при перемотке/стопе/A-B и переопределения
   // в C++ состоянии теряются. Применяются к каждому новому источнику.
   let trackOverrides = {};
+  // Effective GM program per channel, kept in sync with file ProgramChange and UI overrides.
+  let trackProgram = {};
   // Громкость дорожек — честный MIDI CC7 (0..127): UI шлёт сообщение в
   // синтезатор, а CC7/ProgramChange ИЗ ФАЙЛА приходят обратно кольцом фидбека
   // и отражаются в контролах. Мьют — чекбокс, и он НЕ трогает громкость: это
@@ -164,25 +168,34 @@
   const noteGlow = {};
   const GLOW_TAU_MS = 55;    // постоянная сглаживания яркости (мс)
   const LEVEL_POLL_MS = 100; // период опроса уровней огибающих
+  const NOTE_FALLBACK_MS = 600; // fixed-length fallback without a live meter
   const SILENT_LUM = "0.06"; // фон прямоугольника, когда нота не звучит
   let levelsDirty = true;    // опросить уровни вне очереди (событие отпускания)
   let lastLevelsAt = 0;
   let lastFrameAt = 0;       // время прошлого кадра (для интерполяции по dt)
 
-  /// Множитель яркости дорожки: velocity ноты × CC7 канала (мьют = тишина).
-  function noteCcFactor(ch, velocity) {
-    const cc7 = muted[ch] ? 0 : (trackCC7[ch] ?? 127);
-    return Math.min(1, (velocity / 127) * (0.35 + 0.65 * (cc7 / 127)));
+  /// Relative audible note amplitude used by the UI glow. The synth now applies
+  // the common SF2-like v^2 velocity law to every melodic voice and drum after
+  // construction; keep the display on the same law. CC7 is amplitude-squared.
+  function noteCcFactor(ch, noteNum, velocity) {
+    if (muted[ch]) return 0;
+    const v = Math.max(0, Math.min(1, velocity / 127));
+    const cc = Math.max(0, (trackCC7[ch] ?? 100) / 100);
+    // Titanic Standard Kit key 36 has a 1440 cB velocity attenuation override,
+    // equivalent here to one extra velocity factor on top of the common v^2.
+    const velAmp = ch === 9 && noteNum === 36 ? v * v * v : v * v;
+    return Math.min(1, velAmp * cc * cc);
   }
   function noteGlowOn(ch, noteNum, velocity) {
-    const g = noteGlow[ch] || (noteGlow[ch] = { note: -1, vel: 0, target: 0, level: 0, live: false });
+    const g = noteGlow[ch] || (noteGlow[ch] = { note: -1, vel: 0, target: 0, level: 0, live: false, fallbackUntil: 0 });
     g.note = noteNum;
     g.vel = velocity;
     // Сразу ставим ЦЕЛЬ по ноте (вспышка на новом NoteOn), а показываемый
     // уровень подтягивается к ней интерполяцией; следующий опрос заменит цель
     // настоящим значением огибающей.
-    g.target = noteCcFactor(ch, velocity);
+    g.target = noteCcFactor(ch, noteNum, velocity);
     g.live = true;
+    g.fallbackUntil = performance.now() + NOTE_FALLBACK_MS;
     levelsDirty = true;
   }
   // Каналы, попавшие в панель дорожек, и их DOM-прямоугольники нот
@@ -206,11 +219,15 @@
   let seeking = false;
 
   // Fully rendered song (used when the "full pre-generation" box is ticked).
-  // Populated once per loaded file; playback then reads from these plain JS
-  // arrays instead of pulling from the WASM source on every callback.
-  let pregenAudio = null;   // { left: Float32Array, right: Float32Array, len }
+  // Populated once per loaded file; playback is delegated to a native
+  // AudioBufferSourceNode and therefore does not need JS audio callbacks.
+  let pregenAudio = null;   // { buffer: AudioBuffer, len }
   let pregenMs = null;      // last full-render duration in ms
   let pregenPos = 0;        // read position inside pregenAudio
+  let pregenNode = null;    // native AudioBufferSourceNode during playback
+  let pregenStartSample = 0;
+  let pregenStartedAt = 0;
+  let playbackRaf = 0;
   let generationActive = false; // a full-generation pass is in flight
   let generationAbort = false;  // set by Stop while generating (safe abort)
   let loadingFile = false;      // a file read/load is in flight (async FileReader)
@@ -249,6 +266,83 @@
     els.seek.style.setProperty("--pct", pct + "%");
   }
 
+  function connectProcessor() {
+    if (!processor || !gainNode || processorConnected) return;
+    processor.connect(gainNode);
+    processorConnected = true;
+  }
+
+  function disconnectProcessor() {
+    if (!processor || !processorConnected) return;
+    try { processor.disconnect(); } catch (_e) { /* already disconnected */ }
+    processorConnected = false;
+  }
+
+  function syncPregenPosition() {
+    if (!pregenAudio || !pregenNode || paused || !audioCtx) return;
+    const elapsed = Math.max(0, audioCtx.currentTime - pregenStartedAt);
+    const advanced = Math.floor(elapsed * audioCtx.sampleRate);
+    pregenPos = Math.min(pregenAudio.len, pregenStartSample + advanced);
+    playedSamples = pregenPos;
+  }
+
+  function stopPregenNode() {
+    if (!pregenNode) return;
+    const node = pregenNode;
+    pregenNode = null;
+    node.onended = null;
+    try { node.stop(); } catch (_e) { /* already ended */ }
+    try { node.disconnect(); } catch (_e) { /* already disconnected */ }
+  }
+
+  function playbackUiTick() {
+    playbackRaf = 0;
+    if (pregenNode && !paused) syncPregenPosition();
+    updateProgressUI();
+    if (!paused && (currentSource || pregenNode)) {
+      playbackRaf = requestAnimationFrame(playbackUiTick);
+    }
+  }
+
+  function startPlaybackUiLoop() {
+    if (!playbackRaf) playbackRaf = requestAnimationFrame(playbackUiTick);
+  }
+
+  function stopPlaybackUiLoop() {
+    if (!playbackRaf) return;
+    cancelAnimationFrame(playbackRaf);
+    playbackRaf = 0;
+  }
+
+  function startPregenNode() {
+    if (!pregenAudio || !audioCtx || paused) return;
+    stopPregenNode();
+    disconnectProcessor();
+    const node = audioCtx.createBufferSource();
+    node.buffer = pregenAudio.buffer;
+    node.connect(gainNode);
+    pregenNode = node;
+    pregenStartSample = Math.min(pregenPos, pregenAudio.len);
+    if (pregenStartSample >= pregenAudio.len) {
+      pregenNode = null;
+      node.disconnect();
+      stopPlayback();
+      return;
+    }
+    pregenStartedAt = audioCtx.currentTime;
+    const offsetSec = pregenStartSample / audioCtx.sampleRate;
+    const durationSec = (pregenAudio.len - pregenStartSample) / audioCtx.sampleRate;
+    node.onended = () => {
+      if (pregenNode !== node) return;
+      pregenNode = null;
+      pregenPos = pregenAudio ? pregenAudio.len : 0;
+      playedSamples = pregenPos;
+      stopPlayback();
+    };
+    node.start(0, offsetSec, durationSec);
+    startPlaybackUiLoop();
+  }
+
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -258,7 +352,7 @@
       gainNode.gain.value = parseFloat(els.volume.value);
       processor = audioCtx.createScriptProcessor(PROC_BUFFER, 0, 2);
       processor.onaudioprocess = onAudioProcess;
-      processor.connect(gainNode);
+      connectProcessor();
       gainNode.connect(audioCtx.destination);
     }
     if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
@@ -281,26 +375,6 @@
     if ((!currentSource && !pregenAudio && !keyboardSource) || !Module) {
       outL.fill(0);
       outR.fill(0);
-      return;
-    }
-
-    if (pregenAudio && !paused) {
-      // Playback from the fully rendered buffer: zero WASM calls per callback.
-      // Индикаторы нот обновляет rAF-цикл (NoteOn-фидбек копится в очередь).
-      const len = pregenAudio.len;
-      const copy = Math.min(n, Math.max(0, len - pregenPos));
-      if (copy > 0) {
-        outL.set(pregenAudio.left.subarray(pregenPos, pregenPos + copy), 0);
-        outR.set(pregenAudio.right.subarray(pregenPos, pregenPos + copy), 0);
-      }
-      for (let i = copy; i < n; i++) {
-        outL[i] = 0;
-        outR[i] = 0;
-      }
-      pregenPos += n;
-      playedSamples = Math.min(pregenPos, len);
-      updateProgressUI();
-      if (pregenPos >= len) stopPlayback();
       return;
     }
 
@@ -331,7 +405,6 @@
 
     if (currentSource && !paused) {
       playedSamples += n;
-      updateProgressUI();
     }
 
     if (currentSource && !paused && written === 0 && Module._SourceSamplesLeft(currentSource) === 0) {
@@ -400,6 +473,9 @@
 
   async function loadFromBytesInner(bytes, name) {
     releaseAllPianoNotes();
+    stopPregenNode();
+    connectProcessor();
+    stopPlaybackUiLoop();
     freeSource();
     midiBytes = bytes;
     midiName = name || "MIDI";
@@ -419,6 +495,7 @@
     // Новый файл — чистый лист: переопределения инструментов и громкость/мьют
     // сбрасываются ДО createSource (он применяет текущие настройки к источнику).
     trackOverrides = {};
+    trackProgram = {};
     trackCC7 = {};
     muted = {};
     try {
@@ -450,6 +527,7 @@
       midiBytes = null;
       midiTracks = [];
       trackOverrides = {};
+      trackProgram = {};
       els.tracksPanel.hidden = true;
       setStatus(err.message || "Ошибка загрузки", true);
       midiStatLines = [];
@@ -507,9 +585,9 @@
   const _updateProgressUICB = updateProgressUI;
   updateProgressUI = function () { _updateProgressUICB(); updatePregenControls(); };
 
-  // Fully renders the current WASM source into JS float buffers, measuring
-  // the wall-clock time. Yields periodically so the status bar keeps its
-  // progress percentage visible.
+  // Fully renders the current WASM source into an AudioBuffer, measuring the
+  // wall-clock time. Yields periodically so the status bar keeps its progress
+  // percentage visible.
   async function generateAll() {
     if (!currentSource || !Module || !totalSamples) return null;
     const bytes = totalSamples * 2 * 4;
@@ -531,10 +609,11 @@
         return null;
       }
     }
-    let left, right;
+    let buffer, left, right;
     try {
-      left = new Float32Array(totalSamples);
-      right = new Float32Array(totalSamples);
+      buffer = audioCtx.createBuffer(2, totalSamples, audioCtx.sampleRate);
+      left = buffer.getChannelData(0);
+      right = buffer.getChannelData(1);
     } catch (err) {
       setStatus(
         "Не хватило памяти для полной генерации (~" + Math.round(bytes / 1048576) + " МБ)",
@@ -594,7 +673,7 @@
       if (pos >= totalSamples || written < n) break;
     }
     const ms = performance.now() - t0;
-    return { left, right, len: pos, ms };
+    return { buffer, len: pos, ms };
   }
 
   async function playPause() {
@@ -658,11 +737,27 @@
         " реального времени, " + durSec.toFixed(1) + " с)";
       els.pregenResult.classList.remove("error");
       // The WASM source has been consumed by the offline render; playback now
-      // reads straight from the float buffers.
+      // runs as a native scheduled AudioBufferSourceNode.
       freeSource();
     }
 
-    paused = !paused;
+    if (pregenAudio) {
+      if (paused) {
+        paused = false;
+        startPregenNode();
+      } else {
+        syncPregenPosition();
+        paused = true;
+        stopPregenNode();
+        connectProcessor();
+        stopPlaybackUiLoop();
+      }
+    } else {
+      paused = !paused;
+      connectProcessor();
+      if (paused) stopPlaybackUiLoop();
+      else startPlaybackUiLoop();
+    }
     setPlayIcon(paused);
     setStatus(paused ? "Пауза" : "Воспроизведение…");
     metersRestart();
@@ -685,6 +780,9 @@
       return;
     }
     if (!currentSource && !pregenAudio) return;
+    stopPregenNode();
+    connectProcessor();
+    stopPlaybackUiLoop();
     paused = true;
     seeking = false;
     playedSamples = 0;
@@ -727,8 +825,11 @@
     // Pregen: перемотка — тривиальная подмена позиции в готовом буфере,
     // работает всегда (и во время генерации следующего… pregen единственный).
     if (pregenAudio) {
+      const resume = !paused;
+      stopPregenNode();
       pregenPos = target;
       playedSamples = target;
+      if (resume) startPregenNode();
       updateProgressUI();
       return;
     }
@@ -1427,7 +1528,7 @@
       // Начальный CC7 канала из файла: сидируем один раз, чтобы ползунок
       // показывал громкость, ЗАДАННУЮ ФАЙЛОМ, ещё до первого воспроизведения.
       if (trackCC7[ch] === undefined) {
-        const fileVol = rec.vols.length ? rec.vols[rec.vols.length - 1] : 127;
+        const fileVol = rec.vols.length ? rec.vols[rec.vols.length - 1] : 100;
         trackCC7[ch] = fileVol;
       }
       const fileProg = rec.progs.length ? rec.progs[rec.progs.length - 1] : DEFAULT_PROG;
@@ -1471,7 +1572,7 @@
       vol.min = "0";
       vol.max = "127";
       vol.step = "1";
-      vol.value = String(trackCC7[ch] ?? 127);
+      vol.value = String(trackCC7[ch] ?? 100);
       vol.title = "Громкость дорожки (MIDI CC7)";
       vol.setAttribute("aria-label", "Громкость дорожки " + (ch + 1));
       const volLabel = document.createElement("span");
@@ -1514,6 +1615,7 @@
         sel.className = "track-prog";
         const overridden = trackOverrides[ch] !== undefined;
         const current = overridden ? trackOverrides[ch] : fileProg;
+        trackProgram[ch] = current;
         const orig = document.createElement("option");
         orig.value = "-1";
         orig.textContent = "Исходный из файла (" + progName(fileProg) + ")";
@@ -1535,6 +1637,7 @@
           const v = parseInt(sel.value, 10);
           if (v >= 0) trackOverrides[ch] = v;
           else delete trackOverrides[ch];
+          trackProgram[ch] = v >= 0 ? v : fileProg;
           sel.classList.toggle("btn-active", v >= 0);
           // Реальное время: последующие ноты канала играют новой программой.
           // 255 (0xFF) снимает переопределение в C++ (SetChannelProgram).
@@ -1544,6 +1647,9 @@
           }
           // Офлайн-буфер содержит старый рендер — сбросить, как при ревербе.
           if (pregenAudio) {
+            stopPregenNode();
+            connectProcessor();
+            stopPlaybackUiLoop();
             pregenAudio = null;
             pregenPos = 0;
             playedSamples = 0;
@@ -1568,7 +1674,7 @@
     els.tracksPanel.hidden = !rows.length;
   }
 
-  const volLabelOf = (ch) => String(trackCC7[ch] ?? 127);
+  const volLabelOf = (ch) => String(trackCC7[ch] ?? 100);
 
   // Мьют дорожек = битовая маска каналов в синтезаторе (отдельный слой
   // микшера). Громкость (CC7) она не трогает: «снял галочку — тишина,
@@ -1608,8 +1714,8 @@
   function sendChannelMix() { applyTrackMix(currentSource); }
   function applyTrackMix(source) {
     if (!Module || !source) return;
-    // Синтезатор по умолчанию держит CC7=127 на всех каналах, поэтому шлём
-    // только каналы с известным JS-состоянием: иначе дефолтные CC7=127
+    // Синтезатор по GM/SF2 умолчанию держит CC7=100 на всех каналах, поэтому шлём
+    // только каналы с известным JS-состоянием: иначе дефолтные CC7=100
     // возвращаются фидбеком и затирают начальную громкость из файла.
     for (let ch = 0; ch < 16; ch++) {
       if (trackCC7[ch] === undefined) continue;
@@ -1648,18 +1754,51 @@
     const now = performance.now();
     if (liveStream && typeof Module._SourceGetNoteLevels === "function" &&
         (levelsDirty || now - lastLevelsAt >= LEVEL_POLL_MS)) {
+      // Pre-fill with the no-meter sentinel. Historical minimal WASMs exported
+      // SourceGetNoteLevels as an empty stub; leaving 0xFF untouched lets this
+      // UI detect those old builds too and use the fixed-length fallback.
+      Module.HEAPU8.fill(0xFF, levelsPtr, levelsPtr + 16);
       Module._SourceGetNoteLevels(currentSource, levelsPtr);
       // Вид строится от свежей кучи: рост WASM-кучи отсоединяет старый буфер.
       const u8 = Module.HEAPU8;
+      // Historical/min-size WASMs export SourceGetNoteLevels as an empty stub.
+      // The 0xFF prefill survives untouched in that case. Treat it exactly like
+      // a missing meter and keep the old fixed-length NoteOn animation alive.
+      let meterStub = true;
+      for (let ch = 0; ch < 16; ch++) {
+        if (u8[levelsPtr + ch] !== 0xFF) { meterStub = false; break; }
+      }
       for (const ch of channelsOfTracks) {
         const g = noteGlow[ch];
         if (!g) continue;
-        const env = u8[levelsPtr + ch] / 127;
-        g.target = env * noteCcFactor(ch, g.vel);
-        g.live = env > 0;
+        const env = meterStub ? 0 : u8[levelsPtr + ch] / 127;
+        if (!meterStub && env > 0) {
+          g.target = env * noteCcFactor(ch, g.note, g.vel);
+          g.live = true;
+        } else if (now < (g.fallbackUntil || 0)) {
+          const left = Math.max(0, (g.fallbackUntil - now) / NOTE_FALLBACK_MS);
+          g.target = noteCcFactor(ch, g.note, g.vel) * left;
+          g.live = true;
+        } else {
+          g.target = 0;
+          g.live = false;
+        }
       }
       levelsDirty = false;
       lastLevelsAt = now;
+    } else if (liveStream && typeof Module._SourceGetNoteLevels !== "function") {
+      for (const ch of channelsOfTracks) {
+        const g = noteGlow[ch];
+        if (!g) continue;
+        if (now < (g.fallbackUntil || 0)) {
+          const left = Math.max(0, (g.fallbackUntil - now) / NOTE_FALLBACK_MS);
+          g.target = noteCcFactor(ch, g.note, g.vel) * left;
+          g.live = true;
+        } else {
+          g.target = 0;
+          g.live = false;
+        }
+      }
     } else if (!liveStream) {
       // Живого потока нет: цель 0 — индикаторы плавно гаснут (пауза, стоп,
       // офлайн-рендер). Раньше цикл на паузе останавливался, и ярлыки висели
@@ -1725,6 +1864,7 @@
           if (label) label.textContent = volLabelOf(ch);
         }
       } else if (kind === 0xC0) {
+        if (trackOverrides[ch] === undefined) trackProgram[ch] = d0;
         // ProgramChange из файла: обновить комбобокс дорожки (если она не
         // переопределена пользователем и не перетаскивается мышью сейчас).
         const row = document.querySelector('.track-row[data-channel="' + ch + '"]');
@@ -1900,6 +2040,9 @@
     // A pre-generated buffer contains the old effect state. Force a fresh
     // source on the next Play so the slider is audible for full-generation too.
     if (pregenAudio) {
+      stopPregenNode();
+      connectProcessor();
+      stopPlaybackUiLoop();
       pregenAudio = null;
       pregenPos = 0;
       playedSamples = 0;
@@ -1912,6 +2055,9 @@
   // WASM source was consumed by an offline render, bring it back for the
   // real-time path.
   els.pregen.addEventListener("change", () => {
+    stopPregenNode();
+    connectProcessor();
+    stopPlaybackUiLoop();
     pregenAudio = null;
     pregenMs = null;
     pregenPos = 0;
@@ -1947,10 +2093,10 @@
     if (Number.isInteger(saved.instrument)) {
       currentProgram = Math.max(0, Math.min(127, saved.instrument));
     }
-    if (saved.volume) els.volume.value = String(Math.max(0, Math.min(1, saved.volume)));
+    if (saved.volume) els.volume.value = String(Math.max(0, Math.min(2, saved.volume)));
     els.volLabel.textContent = Math.round(parseFloat(els.volume.value) * 100) + "%";
     if (Number.isFinite(saved.reverb)) {
-      renderParams.ReverbWet = Math.max(0, Math.min(1, saved.reverb));
+      renderParams.ReverbWet = Math.max(0, Math.min(2, saved.reverb));
       els.reverb.value = String(renderParams.ReverbWet);
       els.reverbLabel.textContent = Math.round(renderParams.ReverbWet * 100) + "%";
     }
@@ -2009,6 +2155,9 @@
       levelsPtr = 0;
       lastLevelsAt = 0;
       // A pre-generated buffer is a render of the OLD binary — drop it.
+      stopPregenNode();
+      connectProcessor();
+      stopPlaybackUiLoop();
       pregenAudio = null;
       pregenPos = 0;
       pregenMs = null;
@@ -2134,8 +2283,15 @@
       };
     },
     setReverb(w) {
-      const v = Math.max(0, Math.min(1, w));
-      if (pregenAudio) { pregenAudio = null; pregenPos = 0; playedSamples = 0; }
+      const v = Math.max(0, Math.min(2, w));
+      if (pregenAudio) {
+        stopPregenNode();
+        connectProcessor();
+        stopPlaybackUiLoop();
+        pregenAudio = null;
+        pregenPos = 0;
+        playedSamples = 0;
+      }
       renderParams.ReverbWet = v;
       els.reverb.value = String(v);
       if (els.reverbLabel) els.reverbLabel.textContent = Math.round(v * 100) + "%";
