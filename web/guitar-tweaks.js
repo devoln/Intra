@@ -163,6 +163,10 @@
     sliders.forEach((s, i) => { view[off + 1 + i] = parseFloat(s.input.value); });
     if (typeof M._SynthSetGuitarTweaks !== "function") return false;
     M._SynthSetGuitarTweaks(ptr);
+    const hook = window.__intraGuitarTweaks;
+    if (hook && hook.pushRealtime) {
+      hook.pushRealtime(Array.from(view.subarray(off, off + COUNT)));
+    }
     return true;
   }
 

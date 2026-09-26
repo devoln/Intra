@@ -16,18 +16,16 @@
 // old custom APIs (e.g. SourceSetProgram) and is what the Web MIDI keyboard
 // and the on-screen piano both use.
 //
-// Default playback still pulls rendered samples from the WASM module in real
-// time via a ScriptProcessorNode. When the "full pre-generation" checkbox is
-// on, the whole song is first rendered into an AudioBuffer (with the measured
-// wall-clock time shown in the UI), then playback is handed to a native
-// AudioBufferSourceNode. The pre-generated path therefore has no JS audio
-// callback at all.
+// Realtime playback is synthesized by a second instance of the same WASM binary
+// inside AudioWorkletProcessor, on the Web Audio rendering thread. The main-thread
+// Emscripten Module is kept for MIDI metadata and full offline rendering only.
+// When "full pre-generation" is enabled, playback is handed to a native
+// AudioBufferSourceNode and the realtime worklet is disconnected entirely.
 
 (() => {
   "use strict";
 
   const AUDIO_CHUNK = 8192; // max samples pulled per fast-forward step
-  const PROC_BUFFER = 256; // ScriptProcessor buffer size (min для live-задержки)
   const MAX_PREGEN_BYTES = 512 * 1024 * 1024; // cap for the offline buffer
 
   // Yield that is NOT throttled by browser timer throttling. In iframe /
@@ -105,33 +103,26 @@
   // guitar-tweaks.js строит панель слайдеров и ему нужен ТЕКУЩИЙ WASM-инстанс —
   // сам модуль живёт в замыкании, поэтому отдаём его через этот хук. Стрелка
   // захватывает переменную, так что возвращает и модуль после A/B-переключения.
-  window.__intraGuitarTweaks = { getModule: () => Module };
+  window.__intraGuitarTweaks = {
+    getModule: () => Module,
+    pushRealtime: (values) => realtimePost({ type: "guitarTweaks", values }),
+  };
   let audioCtx = null;
-  let processor = null;
-  let processorConnected = false;
+  let realtimeNode = null;
+  let realtimeConnected = false;
+  let realtimeInit = null;
+  let realtimeSongLoaded = false;
+  let realtimeMeterPending = false;
+  let realtimeLevels = null;
+  let realtimeStartSample = 0;
+  let realtimeStartedAt = 0;
   let gainNode = null;
   let scratchPtr = 0;
   let paramsPtr = 0;
   let metersRaf = 0;
-  // Кольцо фидбека канальных событий (NoteOn/CC7/ProgramChange): 3 байта на
-  // событие, осушается SourceDrainMidiFeedback в rAF-цикле. Вид обязан
-  // строиться от свежей кучи: рост WASM-кучи отсоединяет старый ArrayBuffer —
-  // протухший вид и был причиной «умирающих» индикаторов с прочерками.
-  const FB_CAP = 256;
-  let feedbackPtr = 0;
-  let feedbackU8 = null;
-  // Уровни нот каналов для яркости индикаторов: 16 байт, на канал — уровень
-  // огибающей самой громкой звучащей ноты (0 = канал молчит). Спрашивается у
-  // синтезатора (SourceGetNoteLevels) раз в 200 мс и сразу по событию
-  // отпускания — на семпл расходов нет.
-  let levelsPtr = 0;
-  function ensureMetersViews() {
-    if (!Module) return;
-    if (!feedbackPtr) feedbackPtr = Module._malloc(FB_CAP * 3);
-    if (!levelsPtr) levelsPtr = Module._malloc(16);
-    if (feedbackU8 && feedbackU8.buffer === Module.HEAPU8.buffer) return;
-    feedbackU8 = new Uint8Array(Module.HEAPU8.buffer, feedbackPtr, FB_CAP * 3);
-  }
+  // Realtime MIDI feedback and 16-channel note levels are owned by the
+  // AudioWorklet and arrive as small control snapshots; no main-thread WASM
+  // buffers are needed for meters anymore.
   const renderParams = { ReverbWet: 0 };
   let renderParamsGeneration = 0;
   // A/B: ?wasm=ref loads the last-commit baseline wasm (IntraSynth.ref.wasm).
@@ -267,15 +258,187 @@
   }
 
   function connectProcessor() {
-    if (!processor || !gainNode || processorConnected) return;
-    processor.connect(gainNode);
-    processorConnected = true;
+    if (!realtimeNode || !gainNode || realtimeConnected) return;
+    realtimeNode.connect(gainNode);
+    realtimeConnected = true;
   }
 
   function disconnectProcessor() {
-    if (!processor || !processorConnected) return;
-    try { processor.disconnect(); } catch (_e) { /* already disconnected */ }
-    processorConnected = false;
+    if (!realtimeNode || !realtimeConnected) return;
+    try { realtimeNode.disconnect(); } catch (_e) { /* already disconnected */ }
+    realtimeConnected = false;
+  }
+
+  function realtimePost(message, transfer) {
+    if (!realtimeNode) return false;
+    if (transfer) realtimeNode.port.postMessage(message, transfer);
+    else realtimeNode.port.postMessage(message);
+    return true;
+  }
+
+  function syncRealtimePosition() {
+    if (!audioCtx || paused || pregenAudio || !realtimeSongLoaded) return;
+    const elapsed = Math.max(0, audioCtx.currentTime - realtimeStartedAt);
+    playedSamples = Math.min(
+      totalSamples,
+      realtimeStartSample + Math.floor(elapsed * audioCtx.sampleRate)
+    );
+  }
+
+  function setRealtimePlaying(value) {
+    if (value) {
+      realtimeStartSample = playedSamples;
+      realtimeStartedAt = audioCtx ? audioCtx.currentTime : 0;
+    } else {
+      syncRealtimePosition();
+    }
+    realtimePost({ type: "play", value: !!value });
+  }
+
+  function realtimeTrackState() {
+    return {
+      overrides: { ...trackOverrides },
+      cc7: { ...trackCC7 },
+      muteMask: channelMuteMask(),
+      reverbWet: renderParams.ReverbWet,
+    };
+  }
+
+  function loadRealtimeSong(position = 0, playing = false) {
+    if (!realtimeNode || !midiBytes) return false;
+    const copy = midiBytes.slice();
+    const state = realtimeTrackState();
+    realtimeSongLoaded = false;
+    realtimePost({
+      type: "loadSong",
+      bytes: copy.buffer,
+      position: position >>> 0,
+      playing: !!playing,
+      overrides: state.overrides,
+      cc7: state.cc7,
+      muteMask: state.muteMask,
+      reverbWet: state.reverbWet,
+    }, [copy.buffer]);
+    realtimeStartSample = position >>> 0;
+    realtimeStartedAt = audioCtx ? audioCtx.currentTime : 0;
+    return true;
+  }
+
+  function onRealtimeMessage(event) {
+    const message = event.data || {};
+    if (message.type === "songLoaded") {
+      realtimeSongLoaded = true;
+      return;
+    }
+    if (message.type === "ended") {
+      if (!pregenAudio && !paused) stopPlayback();
+      return;
+    }
+    if (message.type === "meters") {
+      realtimeMeterPending = false;
+      if (message.feedback && message.feedback.length) {
+        applyMidiFeedback(message.feedback, Math.floor(message.feedback.length / 3));
+      }
+      if (message.levels) realtimeLevels = message.levels;
+      return;
+    }
+    if (message.type === "error") {
+      setStatus("AudioWorklet: " + (message.message || "ошибка"), true);
+    }
+  }
+
+  let workletModuleLoaded = false;
+  const realtimeWasmCache = new Map();
+  async function getRealtimeWasm() {
+    const key = abBuild ? "ref" : "cur";
+    if (realtimeWasmCache.has(key)) return realtimeWasmCache.get(key);
+    const url = abBuild ? "IntraSynth.ref.wasm" : "IntraSynth.wasm";
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Не удалось загрузить " + url + ": HTTP " + response.status);
+    const bytes = await response.arrayBuffer();
+    const module = await WebAssembly.compile(bytes);
+    const result = { module, bytes };
+    realtimeWasmCache.set(key, result);
+    return result;
+  }
+
+  async function createRealtimeNode() {
+    if (!audioCtx) throw new Error("AudioContext не создан");
+    if (!audioCtx.audioWorklet || typeof AudioWorkletNode !== "function") {
+      throw new Error("AudioWorklet не поддерживается этим браузером");
+    }
+    if (!workletModuleLoaded) {
+      await audioCtx.audioWorklet.addModule("synth-worklet.js");
+      workletModuleLoaded = true;
+    }
+    const wasm = await getRealtimeWasm();
+    let node;
+    try {
+      node = new AudioWorkletNode(audioCtx, "intra-midi-synth", {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+        processorOptions: { wasmModule: wasm.module },
+      });
+    } catch (_cloneError) {
+      // WebAssembly.Module is structured-cloneable in modern browsers. Keep a
+      // bytes fallback for older implementations without changing the audio ABI.
+      const copy = wasm.bytes.slice(0);
+      node = new AudioWorkletNode(audioCtx, "intra-midi-synth", {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [2],
+        processorOptions: { wasmBytes: copy },
+      });
+    }
+    const ready = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("AudioWorklet init timeout")), 5000);
+      node.port.onmessage = (event) => {
+        if (event.data && event.data.type === "ready") {
+          clearTimeout(timer);
+          resolve();
+          return;
+        }
+        if (event.data && event.data.type === "error") {
+          clearTimeout(timer);
+          reject(new Error(event.data.message || "AudioWorklet init error"));
+          return;
+        }
+        onRealtimeMessage(event);
+      };
+    });
+    await ready;
+    node.port.onmessage = onRealtimeMessage;
+    realtimeNode = node;
+    realtimeConnected = false;
+    connectProcessor();
+    realtimePost({ type: "params", reverbWet: renderParams.ReverbWet });
+    return node;
+  }
+
+  async function ensureRealtimeNode() {
+    if (realtimeNode) return realtimeNode;
+    if (!realtimeInit) {
+      realtimeInit = createRealtimeNode().catch((error) => {
+        realtimeInit = null;
+        throw error;
+      });
+    }
+    return realtimeInit;
+  }
+
+  async function replaceRealtimeNode(position, wasPlaying) {
+    const old = realtimeNode;
+    if (old) {
+      try { old.port.postMessage({ type: "dispose" }); } catch (_e) {}
+      try { old.disconnect(); } catch (_e) {}
+    }
+    realtimeNode = null;
+    realtimeConnected = false;
+    realtimeInit = null;
+    realtimeSongLoaded = false;
+    await ensureRealtimeNode();
+    if (midiBytes) loadRealtimeSong(position, wasPlaying);
   }
 
   function syncPregenPosition() {
@@ -298,8 +461,9 @@
   function playbackUiTick() {
     playbackRaf = 0;
     if (pregenNode && !paused) syncPregenPosition();
+    else if (!paused && !pregenAudio) syncRealtimePosition();
     updateProgressUI();
-    if (!paused && (currentSource || pregenNode)) {
+    if (!paused && (currentSource || pregenNode || realtimeSongLoaded)) {
       playbackRaf = requestAnimationFrame(playbackUiTick);
     }
   }
@@ -345,71 +509,15 @@
 
   function ensureAudio() {
     if (!audioCtx) {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
       renderSynthInfo();
       setStatus("Web Audio готов: " + audioCtx.sampleRate + " Hz");
       gainNode = audioCtx.createGain();
       gainNode.gain.value = parseFloat(els.volume.value);
-      processor = audioCtx.createScriptProcessor(PROC_BUFFER, 0, 2);
-      processor.onaudioprocess = onAudioProcess;
-      connectProcessor();
       gainNode.connect(audioCtx.destination);
     }
     if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
     return audioCtx;
-  }
-
-  function onAudioProcess(e) {
-    const outL = e.outputBuffer.getChannelData(0);
-    const outR = e.outputBuffer.getChannelData(1);
-    const n = outL.length;
-
-    // During a hot WASM-swap the sources/heap are being replaced; emit silence
-    // rather than dereference pointers belonging to the old module instance.
-    if (swapping) {
-      outL.fill(0);
-      outR.fill(0);
-      return;
-    }
-
-    if ((!currentSource && !pregenAudio && !keyboardSource) || !Module) {
-      outL.fill(0);
-      outR.fill(0);
-      return;
-    }
-
-    // Channel 0 -> [0 .. n), channel 1 -> [n .. 2n) in the scratch buffer.
-    const written = currentSource && !paused
-      ? Module._SourceGetUninterleavedSamples(currentSource, scratchPtr, n, n)
-      : 0;
-    const heap = Module.HEAPF32;
-    const off = scratchPtr >> 2;
-    for (let i = 0; i < n; i++) {
-      outL[i] = heap[off + i];
-      outR[i] = heap[off + n + i];
-    }
-    for (let i = written; i < n; i++) {
-      outL[i] = 0;
-      outR[i] = 0;
-    }
-
-    if (keyboardSource) {
-      const keyboardWritten = Module._SourceGetUninterleavedSamples(
-        keyboardSource, scratchPtr, n, n
-      );
-      for (let i = 0; i < keyboardWritten; i++) {
-        outL[i] += heap[off + i];
-        outR[i] += heap[off + n + i];
-      }
-    }
-
-    if (currentSource && !paused) {
-      playedSamples += n;
-    }
-
-    if (currentSource && !paused && written === 0 && Module._SourceSamplesLeft(currentSource) === 0) {
-      stopPlayback();
-    }
   }
 
   function freeSource() {
@@ -418,7 +526,6 @@
   }
 
   function freeKeyboardSource() {
-    if (keyboardSource && Module) Module._SourceFree(keyboardSource);
     keyboardSource = 0;
   }
 
@@ -500,12 +607,13 @@
     muted = {};
     try {
       ensureAudio();
+      await ensureRealtimeNode();
       const { src, info } = createSource(bytes);
       currentSource = src;
       if (!paramsPtr) paramsPtr = Module._malloc(4);
       totalSamples = Module._SourceSamplesLeft(src);
       applyRenderParams(currentSource);
-    applyRenderParams(keyboardSource);
+      loadRealtimeSong(0, false);
       // Панель дорожек: парсим файл в JS, сбрасываем переопределения
       // инструментов (новый файл — чистый лист).
       try {
@@ -679,6 +787,8 @@
   async function playPause() {
     if (loadingFile || (!currentSource && !pregenAudio)) return;
     ensureAudio();
+    try { await ensureRealtimeNode(); }
+    catch (err) { setStatus("AudioWorklet: " + err, true); return; }
 
     // Offline render first (with timing) when the checkbox is on and there is
     // no generated buffer yet. If generation fails, stay paused.
@@ -686,6 +796,7 @@
       if (generationActive) return; // already generating — ignore double clicks
       generationActive = true;
       generationAbort = false;
+      if (!paused) setRealtimePlaying(false);
       paused = true;
       els.playBtn.disabled = true;
       updatePregenControls();
@@ -736,9 +847,15 @@
         "Офлайн-рендер: " + result.ms.toFixed(1) + " мс (x" + rt.toFixed(3) +
         " реального времени, " + durSec.toFixed(1) + " с)";
       els.pregenResult.classList.remove("error");
-      // The WASM source has been consumed by the offline render; playback now
-      // runs as a native scheduled AudioBufferSourceNode.
-      freeSource();
+      // The main-thread source was consumed by offline rendering. Recreate a
+      // fresh idle copy so changing parameters can invalidate pregen without
+      // forcing a WASM reload; realtime audio remains owned by AudioWorklet.
+      if (midiBytes) {
+        const { src } = createSource(midiBytes);
+        freeSource();
+        currentSource = src;
+        applyRenderParams(currentSource);
+      }
     }
 
     if (pregenAudio) {
@@ -753,10 +870,16 @@
         stopPlaybackUiLoop();
       }
     } else {
-      paused = !paused;
-      connectProcessor();
-      if (paused) stopPlaybackUiLoop();
-      else startPlaybackUiLoop();
+      if (paused) {
+        paused = false;
+        connectProcessor();
+        setRealtimePlaying(true);
+        startPlaybackUiLoop();
+      } else {
+        setRealtimePlaying(false);
+        paused = true;
+        stopPlaybackUiLoop();
+      }
     }
     setPlayIcon(paused);
     setStatus(paused ? "Пауза" : "Воспроизведение…");
@@ -783,10 +906,12 @@
     stopPregenNode();
     connectProcessor();
     stopPlaybackUiLoop();
+    if (!paused && !pregenAudio) setRealtimePlaying(false);
     paused = true;
     seeking = false;
     playedSamples = 0;
     pregenPos = 0;
+    realtimeStartSample = 0;
     setPlayIcon(true);
 
     if (pregenAudio) {
@@ -794,21 +919,7 @@
       pregenPos = 0;
       playedSamples = 0;
     } else if (midiBytes) {
-      try {
-        const { src } = createSource(midiBytes);
-        freeSource();
-        currentSource = src;
-        // Новый источник стартует с параметрами по умолчанию (реверб 0) —
-        // возвращаем текущие, иначе после Стоп/перемотки реверб на файле
-        // «пропадал», хотя на клавишах оставался.
-        applyRenderParams(currentSource);
-        // Переопределения инструментов дорожек тоже живут в JS — вернуть их.
-        applyTrackOverrides(currentSource);
-      } catch (err) {
-        freeSource();
-        setStatus(err.message || "Ошибка", true);
-        return;
-      }
+      realtimePost({ type: "stop" });
     }
     els.seek.value = "0";
     els.seek.style.setProperty("--pct", "0%");
@@ -834,45 +945,17 @@
       return;
     }
 
-    // Never seek while full generation is rendering: seekTo recreates the
-    // source (freeSource + new), which would free the source the loop is
-    // pulling from and hang the page in a WASM render loop.
-    if (!midiBytes || generationActive) return;
-    if (!currentSource || seeking) return;
-    const wasPaused = paused;
-    // Вперёд — мгновенно: события файла до целевой позиции пропускаются в C++
-    // без рендера (SourceFastForward), звучащие голоса гасятся.
-    const curPos = Module._SourceSamplesLeft(currentSource);
-    const curSample = totalSamples - curPos;
-    if (target >= curSample) {
-      seeking = true;
-      Module._SourceFastForward(currentSource, target);
-      playedSamples = target;
-      seeking = false;
-      paused = wasPaused;
-      updateProgressUI();
-      setStatus(wasPaused ? "Готов к воспроизведению" : "Воспроизведение…");
-      return;
-    }
-    // Назад: состояние потока необратимо — пересоздаём источник и мотаем вперёд.
+    // Realtime file synthesis lives in AudioWorklet. Seeking therefore never
+    // touches the main-thread source (kept pristine for possible offline render).
+    if (!midiBytes || generationActive || seeking || !realtimeNode) return;
     seeking = true;
-    paused = true;
-    setStatus("Перемотка…");
-
-    const { src } = createSource(midiBytes);
-    freeSource();
-    currentSource = src;
-    applyRenderParams(currentSource);
-    // Перемотка пересоздаёт источник — вернуть переопределения дорожек ДО
-    // прогона вперёд, чтобы и пропущенный участок звучал выбранными.
-    applyTrackOverrides(currentSource);
-
-    if (target > 0) Module._SourceFastForward(currentSource, target);
+    realtimePost({ type: "seek", position: target >>> 0 });
     playedSamples = target;
-    paused = wasPaused;
+    realtimeStartSample = target;
+    realtimeStartedAt = audioCtx ? audioCtx.currentTime : 0;
     seeking = false;
     updateProgressUI();
-    setStatus(wasPaused ? "Готов к воспроизведению" : "Воспроизведение…");
+    setStatus(paused ? "Готов к воспроизведению" : "Воспроизведение…");
     metersRestart();
   }
 
@@ -882,25 +965,24 @@
   // All Notes Off, etc.). The C side applies the event at the current stream
   // position, so it sounds immediately. Returns false when no source is loaded.
   function sendMidiEvent(status, data0, data1) {
-    if (!Module || !keyboardSource) return false;
-    Module._SourceSendMidiEvent(
-      keyboardSource, status & 0xFF, data0 & 0xFF, data1 & 0xFF
-    );
+    if (!realtimeNode || !keyboardSource) return false;
+    realtimePost({
+      type: "keyboardMidi",
+      status: status & 0xFF, data0: data0 & 0xFF, data1: data1 & 0xFF,
+    });
     return true;
   }
 
   function ensureKeyboardSource() {
-    if (!Module) return false;
     ensureAudio();
-    if (!keyboardSource) {
-      keyboardSource = Module._SourceCreateLive(audioCtx.sampleRate, 2);
-      applyRenderParams(keyboardSource);
-    }
+    if (!realtimeNode) return false;
+    keyboardSource = 1; // readiness flag; the actual source pointer lives in worklet
+    connectProcessor();
     return true;
   }
 
   function allNotesOff() {
-    if (!Module || !keyboardSource) return;
+    if (!keyboardSource) return;
     for (let ch = 0; ch < 16; ch++) sendMidiEvent(0xB0 | ch, 0x7B, 0);
   }
 
@@ -1585,6 +1667,9 @@
         if (Module && currentSource && !generationActive) {
           Module._SourceSendMidiEvent(currentSource, 0xB0 | ch, 0x07, trackCC7[ch] & 127);
         }
+        if (!generationActive) {
+          realtimePost({ type: "songMidi", status: 0xB0 | ch, data0: 0x07, data1: trackCC7[ch] & 127 });
+        }
       });
       volWrap.appendChild(vol);
       volWrap.appendChild(volLabel);
@@ -1645,6 +1730,9 @@
           if (Module && currentSource && !generationActive) {
             Module._SourceSendMidiEvent(currentSource, 0xC0 | ch, v >= 0 ? v : 0xFF, 0);
           }
+          if (!generationActive) {
+            realtimePost({ type: "songMidi", status: 0xC0 | ch, data0: v >= 0 ? v : 0xFF, data1: 0 });
+          }
           // Офлайн-буфер содержит старый рендер — сбросить, как при ревербе.
           if (pregenAudio) {
             stopPregenNode();
@@ -1687,7 +1775,9 @@
   /// Ставит маску мьюта живому источнику (во время генерации контролы
   /// заблокированы — менять мьют некому).
   function applyChannelMute() {
-    if (Module && currentSource) Module._SourceSetChannelMute(currentSource, channelMuteMask());
+    const mask = channelMuteMask();
+    if (Module && currentSource) Module._SourceSetChannelMute(currentSource, mask);
+    realtimePost({ type: "mute", mask });
   }
 
   function progName(prog) {
@@ -1736,42 +1826,32 @@
     if (!Module) return;
     const panelVisible = midiTracks.length > 0 && !els.tracksPanel.hidden;
     if (!panelVisible) return;
-    // Виды буферов обязаны строиться от СВЕЖЕЙ кучи: рост WASM-кучи отсоединяет
-    // старый ArrayBuffer (виды протухали — индикаторы «умирали» с прочерками).
-    ensureMetersViews();
-    // Фидбек: канальные события (NoteOn/CC7/ProgramChange) из синтезатора.
-    // Офлайн-рендер (полная генерация и проигрывание готового буфера) фич
-    // индикаторов не требует: события фидбека осушаются и выбрасываются,
-    // уровни не опрашиваются, прямоугольники просто гаснут.
+    // Realtime source state lives in AudioWorklet. Meter snapshots are tiny
+    // control messages (feedback ring + 16 envelope bytes), never PCM.
     const offline = generationActive || !!pregenAudio;
-    const liveStream = !offline && !!currentSource && !paused;
-    if (currentSource) {
-      const n = Module._SourceDrainMidiFeedback(currentSource, feedbackPtr, FB_CAP);
-      if (n > 0 && !offline) applyMidiFeedback(feedbackU8, n);
-    }
-    // Уровни огибающих звучащих нот: спрашиваем редко (100 мс) или сразу после
-    // события отпускания. Яркость = уровень огибающей × velocity × CC7.
+    const liveStream = !offline && realtimeSongLoaded && !paused;
     const now = performance.now();
-    if (liveStream && typeof Module._SourceGetNoteLevels === "function" &&
-        (levelsDirty || now - lastLevelsAt >= LEVEL_POLL_MS)) {
-      // Pre-fill with the no-meter sentinel. Historical minimal WASMs exported
-      // SourceGetNoteLevels as an empty stub; leaving 0xFF untouched lets this
-      // UI detect those old builds too and use the fixed-length fallback.
-      Module.HEAPU8.fill(0xFF, levelsPtr, levelsPtr + 16);
-      Module._SourceGetNoteLevels(currentSource, levelsPtr);
-      // Вид строится от свежей кучи: рост WASM-кучи отсоединяет старый буфер.
-      const u8 = Module.HEAPU8;
-      // Historical/min-size WASMs export SourceGetNoteLevels as an empty stub.
-      // The 0xFF prefill survives untouched in that case. Treat it exactly like
-      // a missing meter and keep the old fixed-length NoteOn animation alive.
+
+    if (liveStream && !realtimeMeterPending) {
+      const needLevels = levelsDirty || now - lastLevelsAt >= LEVEL_POLL_MS;
+      realtimeMeterPending = realtimePost({ type: "meters", levels: needLevels });
+      if (needLevels) {
+        levelsDirty = false;
+        lastLevelsAt = now;
+      }
+    }
+
+    if (liveStream && realtimeLevels) {
+      const levels = realtimeLevels;
+      realtimeLevels = null;
       let meterStub = true;
       for (let ch = 0; ch < 16; ch++) {
-        if (u8[levelsPtr + ch] !== 0xFF) { meterStub = false; break; }
+        if (levels[ch] !== 0xFF) { meterStub = false; break; }
       }
       for (const ch of channelsOfTracks) {
         const g = noteGlow[ch];
         if (!g) continue;
-        const env = meterStub ? 0 : u8[levelsPtr + ch] / 127;
+        const env = meterStub ? 0 : (levels[ch] || 0) / 127;
         if (!meterStub && env > 0) {
           g.target = env * noteCcFactor(ch, g.note, g.vel);
           g.live = true;
@@ -1784,25 +1864,21 @@
           g.live = false;
         }
       }
-      levelsDirty = false;
-      lastLevelsAt = now;
-    } else if (liveStream && typeof Module._SourceGetNoteLevels !== "function") {
+    } else if (liveStream) {
+      // Until the next worklet snapshot arrives, keep the fixed-duration
+      // fallback alive for builds without INTRA_UI_METERS.
       for (const ch of channelsOfTracks) {
         const g = noteGlow[ch];
-        if (!g) continue;
+        if (!g || g.live) continue;
         if (now < (g.fallbackUntil || 0)) {
           const left = Math.max(0, (g.fallbackUntil - now) / NOTE_FALLBACK_MS);
           g.target = noteCcFactor(ch, g.note, g.vel) * left;
           g.live = true;
-        } else {
-          g.target = 0;
-          g.live = false;
         }
       }
-    } else if (!liveStream) {
-      // Живого потока нет: цель 0 — индикаторы плавно гаснут (пауза, стоп,
-      // офлайн-рендер). Раньше цикл на паузе останавливался, и ярлыки висели
-      // яркими, пока их не заменит нота на том же канале.
+    } else {
+      realtimeMeterPending = false;
+      realtimeLevels = null;
       for (const ch of channelsOfTracks) {
         const g = noteGlow[ch];
         if (!g) continue;
@@ -2032,7 +2108,7 @@
 
   function applyAllRenderParams() {
     applyRenderParams(currentSource);
-    applyRenderParams(keyboardSource);
+    realtimePost({ type: "params", reverbWet: renderParams.ReverbWet });
   }
 
   els.reverb.addEventListener("input", () => {
@@ -2073,6 +2149,8 @@
       }
     }
     playedSamples = 0;
+    realtimeStartSample = 0;
+    realtimePost({ type: "stop" });
     updateProgressUI();
   });
 
@@ -2124,10 +2202,9 @@
       btn.classList.toggle("busy", swapping);
     });
   }
-  // Reload-free A/B: re-instantiates the WASM module with the other build and
-  // swaps it at runtime. The AudioWorklet keeps playing live (sources + heap are
-  // replaced under a `swapping` guard); the loaded file, playback position,
-  // selected instrument, volume and reverer are all preserved — no page reload.
+  // Reload-free A/B: re-instantiates both the main-thread offline module and
+  // the realtime AudioWorklet with the selected binary. Playback position and
+  // UI state are preserved; realtime PCM still never crosses threads.
   async function switchWasmBuild(toRef) {
     if (swapping || toRef === abBuild) return;
     const wasPaused = paused;
@@ -2146,13 +2223,8 @@
       freeKeyboardSource();
       if (scratchPtr && Module) Module._free(scratchPtr);
       if (paramsPtr && Module) Module._free(paramsPtr);
-      if (feedbackPtr && Module) Module._free(feedbackPtr);
-      if (levelsPtr && Module) Module._free(levelsPtr);
       scratchPtr = 0;
       paramsPtr = 0;
-      feedbackPtr = 0;
-      feedbackU8 = null;
-      levelsPtr = 0;
       lastLevelsAt = 0;
       // A pre-generated buffer is a render of the OLD binary — drop it.
       stopPregenNode();
@@ -2169,24 +2241,18 @@
       Module = await IntraMidiSynth(loaderCfg);
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
       paramsPtr = Module._malloc(4);
-      ensureMetersViews();
 
-      // Reload the loaded song in the new module at its previous position.
+      // Keep the main-thread source pristine at sample 0: it exists only for
+      // metadata/offline rendering now. The realtime worklet restores position.
       if (midiBytes) {
         try {
           const { src } = createSource(midiBytes);
           currentSource = src;
           totalSamples = Module._SourceSamplesLeft(src);
           applyRenderParams(currentSource);
-          let remaining = savedPos;
-          while (remaining > 0) {
-            const nb = Math.min(AUDIO_CHUNK, remaining);
-            const written = Module._SourceGetUninterleavedSamples(currentSource, scratchPtr, nb, AUDIO_CHUNK);
-            if (written === 0) break;
-            remaining -= written;
-            await yieldToUI();
-          }
-          playedSamples = savedPos - remaining;
+          applyTrackOverrides(currentSource);
+          applyTrackMix(currentSource);
+          playedSamples = Math.min(savedPos, totalSamples);
         } catch (err) {
           freeSource();
           currentSource = 0;
@@ -2194,16 +2260,23 @@
         }
       } else {
         currentSource = 0;
+        playedSamples = 0;
       }
 
-      // Rebuild the live (keyboard) source and re-apply program + effect params.
+      // Recreate realtime audio with the selected binary. This creates the
+      // keyboard source inside the worklet and restores the song position.
+      await replaceRealtimeNode(playedSamples, false);
       ensureKeyboardSource();
-      if (keyboardSource) {
-        if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
-        applyRenderParams(keyboardSource);
+      if (keyboardSource && !els.drumsCh.checked) {
+        sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
       }
 
       paused = wasPaused;
+      if (!paused && midiBytes) {
+        connectProcessor();
+        setRealtimePlaying(true);
+        startPlaybackUiLoop();
+      }
       setPlayIcon(paused);
       updateProgressUI();
       setStatus("Сборка переключена на " + (toRef ? "A/B: HEAD a99c8ec" : "текущую") + ".");
@@ -2247,8 +2320,8 @@
       Module = await IntraMidiSynth(loaderCfg);
       scratchPtr = Module._malloc(2 * AUDIO_CHUNK * 4);
       paramsPtr = Module._malloc(4);
-      ensureMetersViews();
       ensureAudio();
+      await ensureRealtimeNode();
       ensureKeyboardSource();
       setStatus(abBuild
         ? "Синтезатор готов (A/B: HEAD a99c8ec). Загрузите MIDI или включите MIDI-клавиатуру."
@@ -2299,33 +2372,31 @@
       return renderParams.ReverbWet;
     },
     renderChunk(srcName) {
-      const src = srcName === 'current' ? currentSource : keyboardSource;
-      if (!Module || !src) return 0;
+      // Realtime sources live on the audio thread and are intentionally not
+      // synchronously readable from this debug hook.
+      if (srcName !== 'current' || !Module || !currentSource) return 0;
       const n = 4096;
-      return Module._SourceGetUninterleavedSamples(src, scratchPtr, n, n);
+      return Module._SourceGetUninterleavedSamples(currentSource, scratchPtr, n, n);
     },
     playNote(note, vel, chan) {
-      if (!Module || !keyboardSource) return false;
+      if (!realtimeNode || !keyboardSource) return false;
       const c = chan === undefined ? 0 : chan;
-      Module._SourceSendMidiEvent(keyboardSource, 0xC0 | c, currentProgram, 0);
-      if (vel === 0) {
-        Module._SourceSendMidiEvent(keyboardSource, 0x80 | c, note, 0);
-      } else {
-        Module._SourceSendMidiEvent(keyboardSource, 0x90 | c, note, vel === undefined ? 100 : vel);
-      }
+      sendMidiEvent(0xC0 | c, currentProgram, 0);
+      if (vel === 0) sendMidiEvent(0x80 | c, note, 0);
+      else sendMidiEvent(0x90 | c, note, vel === undefined ? 100 : vel);
       return true;
     },
     releaseNote(note, chan) {
-      if (!Module || !keyboardSource) return false;
+      if (!realtimeNode || !keyboardSource) return false;
       const c = chan === undefined ? 0 : chan;
-      Module._SourceSendMidiEvent(keyboardSource, 0x80 | c, note, 0);
+      sendMidiEvent(0x80 | c, note, 0);
       return true;
     },
-    // Renders `blocks` chunks (4096 samples each) from the given source and
-    // returns output levels for automated playback checks.
+    // Offline-only diagnostic. Realtime PCM deliberately never crosses the
+    // AudioWorklet boundary just to satisfy a debug probe.
     outputStats(srcName, blocks) {
-      if (!Module) return null;
-      const src = srcName === 'current' ? currentSource : keyboardSource;
+      if (!Module || srcName !== 'current') return null;
+      const src = currentSource;
       if (!src) return null;
       const off = scratchPtr >> 2;
       const n = 4096;
