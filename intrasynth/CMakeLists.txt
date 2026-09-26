@@ -19,9 +19,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # "DEFAULT" (or unset) keeps the original per-platform flags.
 set(INTRA_SYNTH_SIMD "DEFAULT" CACHE STRING "INTRA_SIMD_SUPPORT override for the synth core")
 set(INTRA_SYNTH_ARCH "DEFAULT" CACHE STRING "Arch flags override for the synth core")
-option(INTRA_SIZE_OPT "Size-optimised build (-Oz on Emscripten, -Os native)" OFF)
+option(INTRA_SIZE_OPT "Aggressive feature/code pruning (does not select -Oz)" OFF)
+option(INTRA_SIZE_OZ "Use -Oz instead of canonical -Os (compiler choice only)" OFF)
 option(INTRA_SIZE_LTO "Use LTO in the size build" OFF)
-option(INTRA_SIZE_EMSMALLOC "Use emmalloc in the size build" OFF)
 option(INTRA_SIZE_OS "Use -Os instead of -Oz in the size build" OFF)
 option(INTRA_SIZE_HOT_FAST "Compile the render hot-loop files with -O3 in the size build" OFF)
 set(INTRA_SIZE_HOT_LEVEL "-Os" CACHE STRING "Optimisation level for the hot-loop files in the size build (-O2/-O3/-Os)")
@@ -36,7 +36,26 @@ option(INTRA_PIANO_ALL_TABLES "Compile per-instrument SF2-derived piano tables (
 # OFF (default) = минимальная сборка: ни виртуальной функции, ни экспорта с
 # телом — в бинарь не попадает ни байта. ON — канонический WASM (см.
 # scripts/build-wasm.sh), потому что UI без этих уровней не работает.
-option(INTRA_UI_METERS "Per-note envelope levels for the web UI indicators" OFF)
+option(INTRA_UI_METERS "Per-note envelope levels for the web UI indicators" ON)
+option(INTRA_RUNTIME_VELOCITY_MODULATORS "Compile switchable bank-style velocity modulators (also enabled by INTRA_MINEXE>0)" OFF)
+# Web UI note indicators are part of the canonical synth ABI.  Do not allow
+# diagnostic/min-size configurations to silently ship a WASM with a zero-level
+# SourceGetNoteLevels stub: the UI has a fallback animation, but production
+# builds must always expose the real per-note meter.
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(INTRA_UI_METERS ON CACHE BOOL "Per-note envelope levels for the web UI indicators" FORCE)
+endif()
+option(INTRA_PIANO_ONSET_CACHE "Cache/resample the 500 ms acoustic-piano region prefix" ON)
+set(INTRA_PIANO_ONSET_CACHE_MS "1000" CACHE STRING "Acoustic-piano region cache length in milliseconds")
+# Size-first profiles trade startup CPU for binary/RAM size.  The explicit
+# feature option remains available in ordinary Release builds, so a canonical
+# no-cache -Os build can be produced without switching to -Oz.
+if(INTRA_SIZE_OPT OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" OR INTRA_MINEXE_LEVEL GREATER 0)
+    set(INTRA_PIANO_ONSET_CACHE OFF CACHE BOOL "Cache/resample the acoustic-piano region prefix" FORCE)
+endif()
+# The explicit any-cost profile also drops UI-only note meters. MinSizeRel is
+# less aggressive: it disables the large PCM cache but keeps caller-selected
+# UI features unless the caller turns them off.
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(_synth_simd "INTRA_SIMD_SSE2")
@@ -73,31 +92,23 @@ else()
     endif()
     if(CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
         set(INTRA_SYNTH_BASE_FLAGS "-fno-exceptions -fno-rtti -ffast-math -msimd128 ${_synth_simd} ${_synth_arch}")
-        set(INTRA_SYNTH_LINK_FLAGS "-msimd128 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_SynthSetGuitarTweaks','_GetMidiInfoString','_malloc','_free']")
-        if(INTRA_SIZE_OPT)
-            set(_size_extra "")
-            if(INTRA_SIZE_LTO)
-                set(_size_extra "${_size_extra} -flto")
-            endif()
-            if(INTRA_SIZE_OS)
-                set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os ${_size_extra}")
-            else()
-                set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Oz ${_size_extra}")
-            endif()
-            if(INTRA_SIZE_LTO)
-                set(INTRA_SYNTH_LINK_FLAGS "${INTRA_SYNTH_LINK_FLAGS} -flto")
-            endif()
-            if(INTRA_SIZE_EMSMALLOC)
-                set(INTRA_SYNTH_LINK_FLAGS "${INTRA_SYNTH_LINK_FLAGS} -s MALLOC=emmalloc")
-            endif()
-        else()
-            # -Os is the base level: it is not meaningfully slower than -O3 on
-            # the synth kernels but produces a much smaller binary.
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
+        set(INTRA_SYNTH_LINK_FLAGS "-msimd128 -s MALLOC=emmalloc -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s FILESYSTEM=0 -s SUPPORT_LONGJMP=0 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_SynthSetGuitarTweaks','_GetMidiInfoString','_malloc','_free']")
+        # Compiler optimisation level is independent from feature pruning.
+        # Canonical web builds use -Os; -Oz is opt-in because it is much slower
+        # on this synth despite saving bytes.
+        set(_synth_opt_level "-Os")
+        if(INTRA_SIZE_OZ)
+            set(_synth_opt_level "-Oz")
         endif()
+        set(_size_extra "")
+        if(INTRA_SIZE_LTO)
+            set(_size_extra " -flto")
+            set(INTRA_SYNTH_LINK_FLAGS "${INTRA_SYNTH_LINK_FLAGS} -flto")
+        endif()
+        set(CMAKE_CXX_FLAGS_RELEASE "-DNDEBUG ${_synth_opt_level}${_size_extra}")
     else()
         set(INTRA_SYNTH_BASE_FLAGS "-g4 -fno-exceptions -fno-rtti -ffast-math ${_synth_simd} ${_synth_arch}")
-        set(INTRA_SYNTH_LINK_FLAGS "-g4 -s SAFE_HEAP=1 -s ASSERTIONS=2 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_SynthSetGuitarTweaks','_GetMidiInfoString','_malloc','_free']")
+        set(INTRA_SYNTH_LINK_FLAGS "-g4 -s SAFE_HEAP=1 -s ASSERTIONS=2 -s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s FILESYSTEM=0 -s SUPPORT_LONGJMP=0 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceCreateLive','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_SourceSendMidiEvent','_SourceSetParams','_SourceSetChannelMute','_SourceDrainMidiFeedback','_SourceGetNoteLevels','_SourceFastForward','_SynthSetGuitarTweaks','_GetMidiInfoString','_malloc','_free']")
     endif()
 endif()
 # The synth target re-runs project(), so it does not inherit the Intra
@@ -113,6 +124,14 @@ if(INTRA_PIANO_ALL_TABLES)
 endif()
 if(INTRA_UI_METERS)
     set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_UI_METERS")
+endif()
+if(INTRA_RUNTIME_VELOCITY_MODULATORS OR INTRA_MINEXE_LEVEL GREATER 0)
+    set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_RUNTIME_VELOCITY_MODULATORS=1")
+endif()
+if(INTRA_PIANO_ONSET_CACHE)
+    set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_PIANO_ONSET_CACHE=1 -DINTRA_PIANO_ONSET_CACHE_MS=${INTRA_PIANO_ONSET_CACHE_MS}")
+else()
+    set(INTRA_SYNTH_BASE_FLAGS "${INTRA_SYNTH_BASE_FLAGS} -DINTRA_PIANO_ONSET_CACHE=0")
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${_synth_warn_noise} ${INTRA_SYNTH_BASE_FLAGS} -include ${CMAKE_CURRENT_SOURCE_DIR}/shim/glue.h")
 
@@ -135,6 +154,10 @@ list(REMOVE_ITEM SYNTH_CORE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Intra/Synth/MusicSynthesizerCommon.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Intra/Synth/Octaves.cpp)
 
+# Native helpers/tests may use the reusable core archive. The Emscripten
+# executable already compiles SYNTH_CORE_SOURCES directly, so building the
+# same sources again as an unreferenced static library only doubles cold-build
+# work and does not contribute a byte to the WASM.
 add_library(IntraSynthCore STATIC ${SYNTH_CORE_SOURCES})
 
 # The render hot loops live in a handful of files. When size-matters builds are

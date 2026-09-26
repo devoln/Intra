@@ -31,7 +31,7 @@
 #include <stdio.h>
 #endif
 
-static inline auto randGen(Span<const float> periodicWave, float rate, float volume)
+static inline auto waveTableRandGen(Span<const float> periodicWave, float rate, float volume)
 {
 	return Random::FastUniform<unsigned>(
 		1436491347u ^ unsigned(periodicWave.Length()) ^ unsigned(rate*1537) ^ unsigned(volume * 349885300.0f)
@@ -51,7 +51,7 @@ WaveTableSampler::WaveTableSampler(Span<const float> periodicWave, float rate,
 	mVibratoValue(vibratoValue), mVibratoTremolo(vibratoTremolo),
 	mHasVibrato((vibratoValue != 0.0f || vibratoTremolo != 0.0f) && vibratoDeltaPhase != 0.0f), mEnvelope(envelope),
 	mExpAtten(ExponentAttenuator::FromFactorAndStep(volume, attenuationPerSample)),
-	mFragmentOffset(randGen(periodicWave, rate, volume)(mSampleFragmentLength)),
+	mFragmentOffset(waveTableRandGen(periodicWave, rate, volume)(mSampleFragmentLength)),
 	mRightFragmentOffset((unsigned(mFragmentOffset) + channelDeltaSamples) % mSampleFragmentLength)
 {
 	if(mHasVibrato && vibratoRampSamples > 0)

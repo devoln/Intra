@@ -10,7 +10,7 @@ using Intra::Audio::Synth::ExponentialAttenuate;
 // Mirrors WaveTableSampler::randGen (used by its constructor for the initial
 // phase). WaveFormSampler builds its fragment after the base constructor has
 // already run, so it recomputes the phase with the real fragment length here.
-static auto randGen(Span<const float> periodicWave, float rate, float volume)
+static auto waveFormRandGen(Span<const float> periodicWave, float rate, float volume)
 {
 	return Random::FastUniform<unsigned>(
 		1436491347u ^ unsigned(periodicWave.Length()) ^ unsigned(rate*1537) ^ unsigned(volume * 349885300.0f)
@@ -57,7 +57,7 @@ void WaveFormSampler::prepareInternalData(const void* params, WaveForm wave,
 	// The base constructor ran with a placeholder span, so recompute the phase
 	// offsets for the real fragment here. This matches WaveTableSampler's
 	// constructor (rate=1, volume=1); channelDeltaSamples is applied in the body.
-	mFragmentOffset = float(randGen(Span<const float>(mSampleFragmentStart, mSampleFragmentLength), 1, 1)(mSampleFragmentLength));
+	mFragmentOffset = float(waveFormRandGen(Span<const float>(mSampleFragmentStart, mSampleFragmentLength), 1, 1)(mSampleFragmentLength));
 	mRightFragmentOffset = unsigned(mFragmentOffset) % mSampleFragmentLength;
 }
 
@@ -97,8 +97,9 @@ WaveFormSampler::WaveFormSampler(const void* params, WaveForm wave,
 }
 
 Sampler& WaveInstrument::CreateSampler(float freq, float volume, unsigned sampleRate,
-	SamplerContainer& dst, uint16* oIndex) const
+	const NoteOnParams& noteParams, SamplerContainer& dst, uint16* oIndex) const
 {
+	(void)noteParams;
 	const float vibratoFreq = (VibratoFrequency < 0 ? -freq : 1) * VibratoFrequency;
 	WaveFormSampler& result = dst.Add<WaveFormSampler>(Wave, ExpCoeff,
 		volume*Scale, freq*FreqMultiplier, sampleRate,

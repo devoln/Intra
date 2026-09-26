@@ -145,23 +145,30 @@ elseif(MSVC)
 	
 endif()
 
-# Size-optimised builds: append -Oz (Emscripten) / -Os (native) as the LAST
-# -O flag so it wins over the -O2/-O3/-Ofast set above. Applies to every project
-# that includes this file (Intra library, demos).
-if(INTRA_SIZE_OPT)
-    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        set(_size_lto "")
-        if(INTRA_SIZE_LTO)
-            set(_size_lto " -flto")
-        endif()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Oz${_size_lto}")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Oz${_size_lto}")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Oz${_size_lto}")
-    else()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
-        set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
+# Emscripten optimisation level is independent from feature pruning.
+# Canonical WASM uses -Os everywhere; -Oz is an explicit compiler experiment
+# and must never be enabled implicitly by INTRA_MINEXE/INTRA_SIZE_OPT.
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(_intra_wasm_opt "-Os")
+    if(INTRA_SIZE_OZ)
+        set(_intra_wasm_opt "-Oz")
     endif()
+    set(_size_lto "")
+    if(INTRA_SIZE_LTO)
+        set(_size_lto " -flto")
+    endif()
+    # Canonical WASM is genuinely size-optimised.  Replace CMake/legacy
+    # Release optimisation flags instead of appending -Os after -O2/-O3;
+    # this keeps compile_commands/build.ninja unambiguous and prevents a
+    # future flag-order change from silently selecting the wrong level.
+    set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} ${_intra_wasm_opt}${_size_lto}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -ffast-math -DNDEBUG ${_intra_wasm_opt}${_size_lto}")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -ffast-math -DNDEBUG ${_intra_wasm_opt}${_size_lto}")
+elseif(INTRA_SIZE_OPT)
+    # Native legacy size profile remains -Os.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Os")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
 endif()
 
 function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
