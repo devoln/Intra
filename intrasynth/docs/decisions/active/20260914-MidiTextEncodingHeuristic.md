@@ -3,7 +3,6 @@ title: "Распознавание кодировки имён дорожек MI
 status: "active"
 created: 2026-09-14
 updated: 2026-09-14
-task: "docs/tasks/active/20260903-MidiTracksAndSampleTabs.md"
 tags: [web-ui, midi, encoding, mojibake]
 supersedes: []
 superseded_by: []

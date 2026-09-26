@@ -4,25 +4,30 @@
 // offline rendering. Realtime audio owns a second instance of the *same* WASM
 // binary here, on the Web Audio rendering thread. Only control/MIDI messages
 // cross the MessagePort; PCM never leaves the audio thread.
+//
+// Emscripten minifies the export names and inserts its own entries (memory, the
+// indirect-function table, __wasm_call_ctors) whose letters shift with the build
+// flags, so the mapping is resolved from the module itself instead of being
+// hard-coded per build. The synth C ABI follows __wasm_call_ctors in its
+// declaration order (see EmscriptenInterface.cpp).
+const C_ABI_ORDER = [
+  "createFile", "freeSource", "createLive", "sendMidi", "setParams",
+  "drainFeedback", "getNoteLevels", "setMute", "fastForward",
+  "setGuitarTweaks", "samplesLeft", "render", "midiInfo", "malloc", "free",
+];
 
-const ABI = Object.freeze({
-  memory: "e",
-  init: "f",
-  createFile: "g",
-  freeSource: "h",
-  createLive: "i",
-  sendMidi: "j",
-  setParams: "k",
-  drainFeedback: "l",
-  getNoteLevels: "m",
-  setMute: "n",
-  fastForward: "o",
-  setGuitarTweaks: "p",
-  samplesLeft: "q",
-  render: "r",
-  malloc: "t",
-  free: "u",
-});
+function resolveAbi(exports) {
+  const names = Object.keys(exports);
+  const memory = names.find((n) => exports[n] instanceof WebAssembly.Memory);
+  if (!memory) throw new Error("WASM module has no exported memory");
+  const funcs = names.filter((n) => typeof exports[n] === "function");
+  if (funcs.length < C_ABI_ORDER.length + 1) {
+    throw new Error("WASM module is missing synth ABI exports: " + funcs.join(","));
+  }
+  const abi = { memory, init: funcs[0] };
+  C_ABI_ORDER.forEach((key, i) => { abi[key] = funcs[i + 1]; });
+  return abi;
+}
 
 const MAX_RENDER_QUANTUM = 4096;
 const FEEDBACK_CAP = 64;
@@ -32,6 +37,7 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.wasm = null;
+    this.abi = null;
     this.memory = null;
     this.song = 0;
     this.keyboard = 0;
@@ -50,19 +56,20 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
       const imports = this.makeImports();
       const instance = new WebAssembly.Instance(module, imports);
       this.wasm = instance.exports;
-      this.memory = this.wasm[ABI.memory];
+      this.abi = resolveAbi(this.wasm);
+      this.memory = this.wasm[this.abi.memory];
       this.heapBuffer = null;
       this.heapU8View = null;
       this.heapF32View = null;
       this.refreshHeapViews();
-      this.wasm[ABI.init]();
+      this.wasm[this.abi.init]();
 
-      this.scratchPtr = this.wasm[ABI.malloc](MAX_RENDER_QUANTUM * 2 * 4);
-      this.paramsPtr = this.wasm[ABI.malloc](4);
-      this.feedbackPtr = this.wasm[ABI.malloc](FEEDBACK_CAP * 3);
-      this.levelsPtr = this.wasm[ABI.malloc](16);
-      this.guitarPtr = this.wasm[ABI.malloc](GUITAR_TWEAK_FLOATS * 4);
-      this.keyboard = this.wasm[ABI.createLive](sampleRate, 2);
+      this.scratchPtr = this.wasm[this.abi.malloc](MAX_RENDER_QUANTUM * 2 * 4);
+      this.paramsPtr = this.wasm[this.abi.malloc](4);
+      this.feedbackPtr = this.wasm[this.abi.malloc](FEEDBACK_CAP * 3);
+      this.levelsPtr = this.wasm[this.abi.malloc](16);
+      this.guitarPtr = this.wasm[this.abi.malloc](GUITAR_TWEAK_FLOATS * 4);
+      this.keyboard = this.wasm[this.abi.createLive](sampleRate, 2);
       this.applyParamsTo(this.keyboard);
 
       this.port.onmessage = (event) => this.onMessage(event.data || {});
@@ -75,9 +82,9 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
 
   makeImports() {
     return { a: {
-      // emscripten_resize_heap. In practice the current 226799-byte build starts
-      // with ~16 MiB and does not grow while creating the tested live/file
-      // sources, but keep the ABI complete for unusual MIDI/instrument mixes.
+      // emscripten_resize_heap. In practice the current build starts with
+      // ~16 MiB and does not grow while creating the tested live/file sources,
+      // but keep the ABI complete for unusual MIDI/instrument mixes.
       a: (requestedSize) => {
         if (!this.memory) return 0;
         const oldSize = this.memory.buffer.byteLength;
@@ -95,10 +102,14 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
         }
         return 0;
       },
-      b: () => { throw new Error("WASM abort"); },
-      // fd_write: production synth should not print from the realtime thread.
-      c: () => 0,
+      // _emscripten_memcpy_js: bulk copy inside wasm memory.
+      b: (dest, src, num) => { this.heapU8().copyWithin(dest, src, src + num); },
+      // abort / __abort_js.
+      c: () => { throw new Error("WASM abort"); },
+      // exit and fd_write: kept for builds that retain stdio; the production
+      // synth must not print from the realtime thread.
       d: (code) => { throw new Error("WASM exit " + code); },
+      e: () => 0,
     }};
   }
 
@@ -121,7 +132,7 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
   }
 
   freeSong() {
-    if (this.song) this.wasm[ABI.freeSource](this.song);
+    if (this.song) this.wasm[this.abi.freeSource](this.song);
     this.song = 0;
     this.endedReported = false;
   }
@@ -129,34 +140,34 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
   createSong(position = 0) {
     this.freeSong();
     if (!this.songBytes || !this.songBytes.byteLength) return;
-    const ptr = this.wasm[ABI.malloc](this.songBytes.byteLength);
+    const ptr = this.wasm[this.abi.malloc](this.songBytes.byteLength);
     this.heapU8().set(this.songBytes, ptr);
     try {
-      this.song = this.wasm[ABI.createFile](ptr, this.songBytes.byteLength, sampleRate, 2);
+      this.song = this.wasm[this.abi.createFile](ptr, this.songBytes.byteLength, sampleRate, 2);
     } finally {
-      this.wasm[ABI.free](ptr);
+      this.wasm[this.abi.free](ptr);
     }
     if (!this.song) throw new Error("Не удалось создать realtime MIDI source");
     this.applyParamsTo(this.song);
     this.applyTrackState();
-    if (position > 0) this.wasm[ABI.fastForward](this.song, position >>> 0);
+    if (position > 0) this.wasm[this.abi.fastForward](this.song, position >>> 0);
   }
 
   applyParamsTo(source) {
     if (!source) return;
     this.heapF32()[this.paramsPtr >> 2] = this.reverbWet;
-    this.wasm[ABI.setParams](source, this.paramsPtr);
+    this.wasm[this.abi.setParams](source, this.paramsPtr);
   }
 
   applyTrackState() {
     if (!this.song) return;
     for (const [chText, program] of Object.entries(this.trackOverrides)) {
-      this.wasm[ABI.sendMidi](this.song, 0xC0 | (+chText & 15), program & 255, 0);
+      this.wasm[this.abi.sendMidi](this.song, 0xC0 | (+chText & 15), program & 255, 0);
     }
     for (const [chText, value] of Object.entries(this.trackCC7)) {
-      this.wasm[ABI.sendMidi](this.song, 0xB0 | (+chText & 15), 0x07, value & 127);
+      this.wasm[this.abi.sendMidi](this.song, 0xB0 | (+chText & 15), 0x07, value & 127);
     }
-    this.wasm[ABI.setMute](this.song, this.muteMask >>> 0);
+    this.wasm[this.abi.setMute](this.song, this.muteMask >>> 0);
   }
 
   postMeterSnapshot(includeLevels) {
@@ -164,13 +175,13 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
       this.port.postMessage({ type: "meters", feedback: null, levels: null });
       return;
     }
-    const n = this.wasm[ABI.drainFeedback](this.song, this.feedbackPtr, FEEDBACK_CAP);
+    const n = this.wasm[this.abi.drainFeedback](this.song, this.feedbackPtr, FEEDBACK_CAP);
     const heap = this.heapU8();
     const feedback = n ? Array.from(heap.subarray(this.feedbackPtr, this.feedbackPtr + n * 3)) : null;
     let levels = null;
     if (includeLevels) {
       heap.fill(0xFF, this.levelsPtr, this.levelsPtr + 16);
-      this.wasm[ABI.getNoteLevels](this.song, this.levelsPtr);
+      this.wasm[this.abi.getNoteLevels](this.song, this.levelsPtr);
       levels = Array.from(heap.subarray(this.levelsPtr, this.levelsPtr + 16));
     }
     this.port.postMessage({ type: "meters", feedback, levels });
@@ -202,10 +213,10 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
           if (this.songBytes) this.createSong(message.position >>> 0);
           break;
         case "songMidi":
-          if (this.song) this.wasm[ABI.sendMidi](this.song, message.status & 255, message.data0 & 255, message.data1 & 255);
+          if (this.song) this.wasm[this.abi.sendMidi](this.song, message.status & 255, message.data0 & 255, message.data1 & 255);
           break;
         case "keyboardMidi":
-          if (this.keyboard) this.wasm[ABI.sendMidi](this.keyboard, message.status & 255, message.data0 & 255, message.data1 & 255);
+          if (this.keyboard) this.wasm[this.abi.sendMidi](this.keyboard, message.status & 255, message.data0 & 255, message.data1 & 255);
           break;
         case "params":
           this.reverbWet = +message.reverbWet || 0;
@@ -214,14 +225,14 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
           break;
         case "mute":
           this.muteMask = message.mask >>> 0;
-          if (this.song) this.wasm[ABI.setMute](this.song, this.muteMask);
+          if (this.song) this.wasm[this.abi.setMute](this.song, this.muteMask);
           break;
         case "guitarTweaks": {
           const values = message.values || [];
           const view = this.heapF32();
           const off = this.guitarPtr >> 2;
           for (let i = 0; i < GUITAR_TWEAK_FLOATS; i++) view[off + i] = +values[i] || 0;
-          this.wasm[ABI.setGuitarTweaks](this.guitarPtr);
+          this.wasm[this.abi.setGuitarTweaks](this.guitarPtr);
           break;
         }
         case "meters":
@@ -230,7 +241,7 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
         case "dispose":
           this.playing = false;
           this.freeSong();
-          if (this.keyboard) this.wasm[ABI.freeSource](this.keyboard);
+          if (this.keyboard) this.wasm[this.abi.freeSource](this.keyboard);
           this.keyboard = 0;
           this.disposed = true;
           break;
@@ -244,7 +255,7 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
     if (!source) return 0;
     const n = left.length;
     if (n > MAX_RENDER_QUANTUM) return 0;
-    const written = this.wasm[ABI.render](source, this.scratchPtr, n, n);
+    const written = this.wasm[this.abi.render](source, this.scratchPtr, n, n);
     const heap = this.heapF32();
     const off = this.scratchPtr >> 2;
     if (add) {
@@ -273,7 +284,7 @@ class IntraSynthProcessor extends AudioWorkletProcessor {
 
     if (this.playing && this.song) {
       const written = this.mixSource(this.song, left, right, false);
-      if (written === 0 && this.wasm[ABI.samplesLeft](this.song) === 0) {
+      if (written === 0 && this.wasm[this.abi.samplesLeft](this.song) === 0) {
         this.playing = false;
         if (!this.endedReported) {
           this.endedReported = true;

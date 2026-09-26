@@ -13,7 +13,6 @@ related_files:
   - web/generated/samples/manifest.json
 related_tasks:
   - 20260828-LoudnessBalanceFix
-  - 20260903-MidiTracksAndSampleTabs
 ---
 
 # 2026-09-04 (night) — EP2 got its sample beating + EGP C4 saw melts

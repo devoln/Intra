@@ -96,11 +96,27 @@ Temporary Items
 # `web/*.wasm` cannot accidentally be re-tracked. The final assembled
 # deploy bundle lives in `dist/`.
 #
-# See docs/decisions/active/20260820-WebBuildArtifactsLayout.md.
+# See intrasynth/docs/decisions/active/20260820-WebBuildArtifactsLayout.md.
 #
 /scripts/
 /web/generated/
 /dist/
+
+# The synth lives in intrasynth/ (on its way to its own repository); the
+# generated web artifacts and build scripts stay untracked there too.
+/intrasynth/scripts/
+/intrasynth/web/generated/
+/intrasynth/dist/
+
+# Generated sample files never live in the web/ root: the player sources
+# (index.html, synth.js) only read web/generated/samples/. Keep the flat
+# sample pattern ignored so a stray render cannot be committed by accident.
+/web/*_sample.wav
+/web/*_sample.flac
+/web/*_sample.mp3
+/intrasynth/web/*_sample.wav
+/intrasynth/web/*_sample.flac
+/intrasynth/web/*_sample.mp3
 
 # Temporary experiment output (build trees, probes, scratch) — never tracked.
 # Ad-hoc build trees and probe artifacts must live under .scratch/ or be

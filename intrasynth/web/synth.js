@@ -84,9 +84,6 @@
     tracksPanel: document.getElementById("tracksPanel"),
     tracksHint: document.getElementById("tracksHint"),
     tracks: document.getElementById("tracks"),
-    sampleTabs: document.getElementById("sampleTabs"),
-    sampleRows: document.getElementById("sampleRows"),
-    abGroups: document.getElementById("abGroups"),
   };
 
   // MIDI-клавиатура — независимый источник, работающий параллельно с песней.
@@ -99,14 +96,6 @@
   const pressedNotes = new Map(); // pointerId -> { note, channel } на экранном пианино
 
   let Module = null;
-  // РУЧКИ ЖИВОГО ЭКСПЕРИМЕНТА ГИТАР 29/30 (Update 125): отдельный скрипт
-  // guitar-tweaks.js строит панель слайдеров и ему нужен ТЕКУЩИЙ WASM-инстанс —
-  // сам модуль живёт в замыкании, поэтому отдаём его через этот хук. Стрелка
-  // захватывает переменную, так что возвращает и модуль после A/B-переключения.
-  window.__intraGuitarTweaks = {
-    getModule: () => Module,
-    pushRealtime: (values) => realtimePost({ type: "guitarTweaks", values }),
-  };
   let audioCtx = null;
   let realtimeNode = null;
   let realtimeConnected = false;
@@ -123,7 +112,7 @@
   // Realtime MIDI feedback and 16-channel note levels are owned by the
   // AudioWorklet and arrive as small control snapshots; no main-thread WASM
   // buffers are needed for meters anymore.
-  const renderParams = { ReverbWet: 0 };
+  const renderParams = { ReverbWet: 1 };
   let renderParamsGeneration = 0;
   // A/B: ?wasm=ref loads the last-commit baseline wasm (IntraSynth.ref.wasm).
   // Parsed synchronously so the toggle highlights the active build; switchWasmBuild()
@@ -1006,260 +995,6 @@
 
   const noteTestTimers = new Map();
 
-  // ---- Сырые семплы (вкладки по инструментам) ---------------------------
-  // Манифест из web/generated/samples/manifest.json: вкладка (инструмент) ->
-  // список { file, note, noteLabel, sample, ... }. Семплы прелодим в blob-URL
-  // при активации вкладки (fetch → ArrayBuffer → blob): когда сервер отвалится,
-  // <audio> продолжит играть из памяти. Длительность вытаскиваем из заголовка
-  // wav, чтобы тест-нота рядом держалась столько же, сколько семпл.
-  let sampleManifest = [];
-  let sampleTabIndex = 0;
-  const sampleDurations = {}; // tabDir -> { note: секунды }
-  const sampleBlobs = {};     // tabDir -> { file: blobURL }
-
-  // ---- A/B-рендеры (спойлер) --------------------------------------------
-  // Манифест web/generated/ab/manifest.json → dist/ab/manifest.json пишет
-  // intrasynth/tools/ab/render-ab.mjs. Имена файлов содержат хеш содержимого,
-  // поэтому URL меняется только у изменившегося рендера; превью отдаёт
-  // ab/*.wav с Cache-Control: immutable (scripts/serve.js) — неизменившиеся
-  // файлы браузер не перекачивает. Все <audio> создаются сразу с
-  // preload="auto" (и audio.load()), поэтому файлы грузятся даже при закрытом
-  // спойлере; сам манифест запрашиваем с cache: "no-cache", чтобы новый набор
-  // файлов был виден сразу.
-  async function loadAbManifest() {
-    let data = null;
-    try {
-      const res = await fetch("ab/manifest.json", { cache: "no-cache" });
-      if (res.ok) data = await res.json();
-    } catch (err) { /* dist без ab/ — оставляем пояснение ниже */ }
-    renderAbGroups(data);
-  }
-
-  function renderAbGroups(data) {
-    const box = els.abGroups;
-    if (!box) return;
-    box.innerHTML = "";
-    const groups = data && Array.isArray(data.groups) ? data.groups : [];
-    if (!groups.length) {
-      const row = document.createElement("div");
-      row.className = "debug-row";
-      const note = document.createElement("span");
-      note.className = "debug-note";
-      note.textContent = "пусто";
-      const src = document.createElement("span");
-      src.className = "debug-src";
-      src.innerHTML = "Каталог <code>ab/</code> не собран — запустите "
-        + "<code>node intrasynth/tools/ab/render-ab.mjs</code> и "
-        + "<code>node scripts/build-web.js</code>.";
-      row.appendChild(note);
-      row.appendChild(src);
-      box.appendChild(row);
-      return;
-    }
-    for (const g of groups) {
-      const head = document.createElement("div");
-      head.className = "ab-group";
-      head.textContent = g.title;
-      box.appendChild(head);
-      for (const it of g.items || []) {
-        const row = document.createElement("div");
-        row.className = "debug-row";
-        const note = document.createElement("span");
-        note.className = "debug-note";
-        note.textContent = it.label;
-        const src = document.createElement("span");
-        src.className = "debug-src";
-        // Update 127: объясняющий текст в строках A/B убран (владелец:
-        // «убери объясняющий текст из всех спойлеров») — остаётся размер сборки.
-        src.innerHTML = it.bytes ? (it.bytes / 1024).toFixed(0) + " КБ" : "";
-        const audio = document.createElement("audio");
-        audio.controls = true;
-        audio.preload = "auto";
-        audio.src = it.src;
-        row.appendChild(note);
-        row.appendChild(src);
-        row.appendChild(audio);
-        box.appendChild(row);
-        // element слушает спойлер: грузим сразу, он может быть закрыт.
-        audio.load();
-      }
-    }
-  }
-
-  // Запускаем сразу при разборе (скрипт подключён в конце <body>, так что
-  // #abGroups уже есть) и не ждём: спойлер может быть закрыт, а файлы всё
-  // равно должны загрузиться.
-  loadAbManifest();
-
-  async function loadSampleManifest() {
-    try {
-      const res = await fetch("samples/manifest.json");
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      sampleManifest = await res.json();
-    } catch (err) {
-      // dist без samples/ (не собраны) — оставляем пустую панель.
-      sampleManifest = [];
-    }
-    renderSampleTabs();
-    if (sampleManifest.length) switchSampleTab(0);
-    if (sampleManifest.length > 1) preloadAllSampleTabs();
-  }
-
-  // Update 74: до-качиваем ОСТАЛЬНЫЕ вкладки семплов в фоне — владелец:
-  // «делай все wav preloaded, лучше даже чтобы они загружались даже если
-  // спойлер не открывать». Идём ПО ОДНОЙ вкладке (внутри вкладки файлы
-  // качаются параллельно), чтобы не отбирать канал у первого экрана.
-  let samplePreloadAllDone = false;
-  async function preloadAllSampleTabs() {
-    if (samplePreloadAllDone) return;
-    samplePreloadAllDone = true;
-    for (let i = 0; i < sampleManifest.length; i++) {
-      if (i === sampleTabIndex) continue;
-      try { await preloadSamplesForTab(sampleManifest[i]); }
-      catch (err) { /* офлайн — не беда, вкладка дотянет при клике */ }
-    }
-  }
-
-  function renderSampleTabs() {
-    const tabs = els.sampleTabs;
-    tabs.innerHTML = "";
-    sampleManifest.forEach((inst, i) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "sample-tab";
-      b.textContent = inst.label;
-      b.addEventListener("click", () => switchSampleTab(i));
-      tabs.appendChild(b);
-    });
-  }
-
-  function sampleSrc(inst, file) {
-    return "samples/" + inst.dir + "/" + encodeURIComponent(file);
-  }
-
-  // Рисует строки семплов активной вкладки. <audio> сначала с preload="none"
-  // и сетевым src; preloadSamplesForTab затем подменяет их blob-URL.
-  const sampleAudioEls = {}; // tabDir -> { file: <audio> }
-  function renderSampleRows(inst) {
-    const rows = els.sampleRows;
-    rows.innerHTML = "";
-    const map = (sampleAudioEls[inst.dir] = {});
-    for (const f of inst.files) {
-      const row = document.createElement("div");
-      row.className = "debug-row";
-      const note = document.createElement("span");
-      note.className = "debug-note";
-      note.textContent = f.noteLabel;
-      const src = document.createElement("span");
-      src.className = "debug-src";
-      // Файл транспонирован на ноту подписи (как сделал бы SF2-плеер);
-      // sourcePitch — реальная высота исходной записи (из манифеста).
-      const orig = !f.sourcePitch || Math.abs(f.shiftSemis || 0) < 0.01
-        ? ""
-        : " (записан " + noteLabelFor(f.sourcePitch) + ")";
-      // Духовые вкладки — не сырые экстракты, а сухие рендеры банка: поля
-      // sample/sourcePitch у них отсутствуют.
-      const srcLabel = f.sample
-        ? "семпл <code>" + escapeHtml(f.sample) + "</code>" + escapeHtml(orig)
-        : "сухой рендер банка (FluidSynth, без реверба)";
-      src.innerHTML = srcLabel +
-        " · " + (f.ms >= 1000 ? (f.ms / 1000).toFixed(1) + " с" : f.ms + " мс");
-      // Update 74: если байты вкладки уже скачаны в blob (повторный заход на
-      // вкладку), сразу отдаём blob и preload="auto". Иначе повторный заход
-      // показывал ПУСТЫЕ плееры: renderSampleRows создаёт <audio> заново с
-      // сетевым src и preload="none", а preloadSamplesForTab уже находил файл
-      // в кеше (sampleBlobs) и пропускал его (`if (...) continue;`) — то есть
-      // подмена на blob для новых элементов не происходила никогда.
-      const cached = sampleBlobs[inst.dir] && sampleBlobs[inst.dir][f.file];
-      const audio = document.createElement("audio");
-      audio.controls = true;
-      audio.preload = cached ? "auto" : "none";
-      audio.src = cached || sampleSrc(inst, f.file);
-      map[f.file] = audio;
-      row.appendChild(note);
-      row.appendChild(src);
-      row.appendChild(audio);
-      rows.appendChild(row);
-    }
-  }
-
-  function noteLabelFor(note) {
-    const NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    return NAMES[note % 12] + (Math.floor(note / 12) - 1);
-  }
-
-  // boot() вызывает preloadSamples() при старте (старое имя, сохранено чтобы
-  // не трогать код запуска): загружаем манифест, рисуем вкладки и прелодим
-  // первую вкладку.
-  function preloadSamples() {
-    loadSampleManifest();
-  }
-
-  function switchSampleTab(i) {
-    const inst = sampleManifest[i];
-    if (!inst) return;
-    sampleTabIndex = i;
-    document.querySelectorAll(".sample-tab").forEach((b, bi) =>
-      b.classList.toggle("active", bi === i));
-    renderSampleRows(inst);
-    // Вкладка = инструмент: переключаем и синтезатор на тот же GM-инструмент,
-    // чтобы тест-ноты рядом играли его, а не что попало из селектора.
-    // Программу берём из манифеста (поле prog), а не из таблицы в коде: две
-    // правки подряд вкладки инструментов не переключали ровно потому, что
-    // таблицу забывали дополнить (Recorder/Ocarina, потом гитары 29/30).
-    const prog = inst.prog;
-    if (prog !== undefined && els.instrument) {
-      const opt = els.instrument.querySelector('option[value="' + prog + '"]');
-      if (opt) {
-        currentProgram = prog;
-        els.instrument.value = String(prog);
-        if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
-      }
-    }
-    preloadSamplesForTab(inst); // не ждём
-  }
-
-  async function preloadSamplesForTab(inst) {
-    const key = inst.dir;
-    if (!sampleDurations[key]) sampleDurations[key] = {};
-    if (!sampleBlobs[key]) sampleBlobs[key] = {};
-    const tasks = [];
-    for (const f of inst.files) {
-      if (sampleBlobs[key][f.file]) continue;
-      const src = sampleSrc(inst, f.file);
-      tasks.push(
-        fetch(src)
-          .then((r) => {
-            if (!r.ok) throw new Error("HTTP " + r.status);
-            return r.arrayBuffer();
-          })
-          .then((buf) => {
-            const dv = new DataView(buf);
-            const channels = dv.getUint16(22, true);
-            const rate = dv.getUint32(24, true);
-            const bits = dv.getUint16(34, true);
-            const dataSize = dv.getUint32(40, true);
-            if (rate && channels && bits && dataSize) {
-              sampleDurations[key][f.note] = dataSize / (rate * channels * bits / 8);
-            }
-            sampleBlobs[key][f.file] = URL.createObjectURL(new Blob([buf], { type: "audio/wav" }));
-            // Если вкладка всё ещё активна, подменяем сетевой src на blob-URL
-            // и разрешаем авто-прелоад (байты уже в памяти).
-            const active = sampleManifest[sampleTabIndex];
-            if (active && active.dir === key) {
-              const audio = (sampleAudioEls[key] || {})[f.file];
-              if (audio) {
-                audio.src = sampleBlobs[key][f.file];
-                audio.preload = "auto";
-              }
-            }
-          })
-          .catch(() => { /* сервер жив — остаёмся на сетевом src */ })
-      );
-    }
-    await Promise.all(tasks);
-  }
-
   function auditionTestNote(note) {
     if (!Module) return;
     if (!pianoSourceReady && !ensureKeyboardSource()) return;
@@ -1272,10 +1007,8 @@
     sendMidiEvent(0x90, note, 100);
     const oldTimer = noteTestTimers.get(note);
     if (oldTimer) clearTimeout(oldTimer);
-    // Держим ноту столько же, сколько звучит семпл рядом — A/B честный.
-    const active = sampleManifest[sampleTabIndex];
-    const dur = active ? (sampleDurations[active.dir] || {})[note] : undefined;
-    const holdMs = dur ? Math.round(dur * 1000) : 1400;
+    // Hold the note as long as the sample next to it — an honest a/b.
+    const holdMs = (window.__intraDebug && window.__intraDebug.holdMsFor(note)) || 1400;
     const timer = setTimeout(() => {
       if (keyboardSource) sendMidiEvent(0x80, note, 0);
       noteTestTimers.delete(note);
@@ -2173,6 +1906,7 @@
     }
     if (saved.volume) els.volume.value = String(Math.max(0, Math.min(2, saved.volume)));
     els.volLabel.textContent = Math.round(parseFloat(els.volume.value) * 100) + "%";
+    // Reverb defaults to 100% (index.html value); only a saved override moves it.
     if (Number.isFinite(saved.reverb)) {
       renderParams.ReverbWet = Math.max(0, Math.min(2, saved.reverb));
       els.reverb.value = String(renderParams.ReverbWet);
@@ -2181,8 +1915,6 @@
     if (typeof saved.pregen === "boolean") els.pregen.checked = saved.pregen;
     if (typeof saved.drums === "boolean") els.drumsCh.checked = saved.drums;
     els.instrument.disabled = els.drumsCh.checked;
-    const spoiler = document.getElementById("sampleSpoiler");
-    if (spoiler && typeof saved.spoiler === "boolean") spoiler.open = saved.spoiler;
   }
   function bindPersist(el, key, read) {
     if (!el) return;
@@ -2194,8 +1926,6 @@
   bindPersist(els.reverb, "reverb", (el) => parseFloat(el.value));
   bindPersist(els.pregen, "pregen", (el) => el.checked);
   bindPersist(els.drumsCh, "drums", (el) => el.checked);
-  const spoiler = document.getElementById("sampleSpoiler");
-  if (spoiler) spoiler.addEventListener("toggle", () => saveState({ spoiler: spoiler.open }));
   function updateAbHighlight() {
     document.querySelectorAll("[data-abbuild]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.abbuild === (abBuild ? "ref" : "cur"));
@@ -2287,19 +2017,9 @@
     swapping = false;
     updateAbHighlight();
   }
-  document.querySelectorAll("[data-abbuild]").forEach((btn) => {
-    const isActive = btn.dataset.abbuild === (abBuild ? "ref" : "cur");
-    btn.classList.toggle("active", isActive);
-    btn.addEventListener("click", () => {
-      const toRef = btn.dataset.abbuild === "ref";
-      if (toRef === abBuild) return;
-      switchWasmBuild(toRef);
-    });
-  });
 
   // ---- Boot --------------------------------------------------------------
   async function boot() {
-    preloadSamples(); // не ждём — идёт параллельно с загрузкой WASM
     buildInstrumentSelect();
     buildPiano();
     updateOctaveArrows();
@@ -2420,6 +2140,28 @@
       const rmsL = total ? Math.sqrt(sumL2 / total) : 0;
       const rmsR = total ? Math.sqrt(sumR2 / total) : 0;
       return { peakL, peakR, rmsL, rmsR, total, clipped };
+    },
+  };
+
+  // The optional debug module (web/debug.mjs) reaches the player through this
+  // small bridge; when the module is absent nothing here is used.
+  window.__intraHost = {
+    els,
+    sendMidiEvent,
+    getModule: () => Module,
+    isRefBuild: () => abBuild,
+    switchWasmBuild,
+    updateAbHighlight,
+    loadState,
+    saveState,
+    realtimePost,
+    setProgram(prog) {
+      if (prog === undefined || !els.instrument) return;
+      const opt = els.instrument.querySelector('option[value="' + prog + '"]');
+      if (!opt) return;
+      currentProgram = prog;
+      els.instrument.value = String(prog);
+      if (!els.drumsCh.checked) sendMidiEvent(0xC0 | liveChannel, currentProgram, 0);
     },
   };
 

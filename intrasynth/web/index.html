@@ -87,25 +87,6 @@
   }
   .hdr-player .hdr-icon:hover { background: #223052; }
   .hdr-player .hdr-icon svg { width: 15px; height: 15px; fill: currentColor; }
-  .ab-toggle {
-    display: inline-flex;
-    border: 1px solid var(--line);
-    border-radius: 7px;
-    overflow: hidden;
-    vertical-align: middle;
-  }
-  .ab-btn {
-    padding: 3px 8px;
-    font-size: 0.72rem;
-    line-height: 1.2;
-    background: var(--panel2);
-    color: var(--ink-dim);
-    border: none;
-    cursor: pointer;
-  }
-  .ab-btn + .ab-btn { border-left: 1px solid var(--line); }
-  .ab-btn:hover { background: #223052; color: var(--ink); }
-  .ab-btn.active { background: var(--accent); color: var(--accent-ink); }
   main {
     width: 100%;
     max-width: 880px;
@@ -495,20 +476,6 @@
   }
   .note-test-note:hover { background: #223052; border-color: var(--accent2); }
   .midi-status.on { color: var(--accent2); }
-  .debug-samples { padding: 0; overflow: hidden; }
-  .debug-samples > summary {
-    list-style: none;
-    cursor: pointer;
-    padding: 20px 22px;
-    user-select: none;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .debug-samples > summary::-webkit-details-marker { display: none; }
-  .debug-samples > summary:hover { background: rgba(76, 194, 255, 0.05); }
-  .debug-title { font-size: 0.95rem; font-weight: 600; }
-  .debug-row audio { height: 34px; }
   .tracks { display: flex; flex-direction: column; gap: 6px; }
   .track-row {
     display: flex;
@@ -608,60 +575,6 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
-  .sample-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 14px 22px 0;
-  }
-  .sample-tab {
-    padding: 4px 11px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    line-height: 1.3;
-    background: var(--panel2);
-    color: var(--muted);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-  }
-  .sample-tab:hover { background: #223052; color: var(--ink); }
-  .sample-tab.active { background: var(--accent2); color: #04101c; border-color: var(--accent2); }
-  .debug-rows { border-top: 1px solid var(--line); margin-top: 10px; }
-  .debug-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 22px;
-    flex-wrap: wrap;
-  }
-  .debug-row + .debug-row { border-top: 1px solid var(--line); }
-  .ab-group {
-    padding: 9px 12px 3px;
-    color: var(--muted);
-    font-size: 0.78rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .ab-group + .debug-row { border-top: 0; }
-  .debug-note {
-    min-width: 52px;
-    font-weight: 700;
-    color: var(--accent);
-    font-variant-numeric: tabular-nums;
-  }
-  .debug-src { color: var(--muted); font-size: 0.85rem; flex: 1; min-width: 150px; }
-  .debug-src code { color: var(--ink); }
-  .debug-row audio { height: 34px; }
-  /* Ручки живого эксперимента гитар 29/30 (Update 125) */
-  .gtweak-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2px 26px; margin-top: 10px; }
-  .gtweak-row { display: flex; align-items: center; gap: 10px; }
-  .gtweak-row label { color: var(--muted); font-size: 0.82rem; min-width: 128px; }
-  .gtweak-row input[type="range"] { flex: 1; min-width: 90px; }
-  .gtweak-row .gtweak-val { color: var(--accent); font-variant-numeric: tabular-nums; font-size: 0.82rem; min-width: 52px; text-align: right; }
-  .gtweak-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
-  .gtweak-head label { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.88rem; cursor: pointer; }
-  .gtweak-head input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--accent); cursor: pointer; }
-  .gtweak-head .btn-ghost { padding: 6px 12px; font-size: 0.85rem; }
 </style>
 </head>
 <body>
@@ -722,13 +635,13 @@
     <section class="panel" id="player">
       <div class="volrow">
         <label for="volume">Громкость</label>
-        <input type="range" id="volume" min="0" max="2" step="0.01" value="0.8" />
-        <span id="volLabel">80%</span>
+        <input type="range" id="volume" min="0" max="2" step="0.01" value="1" />
+        <span id="volLabel">100%</span>
       </div>
       <div class="fxrow">
         <label for="reverb">Реверб</label>
-        <input type="range" id="reverb" min="0" max="2" step="0.01" value="0" title="Реверберация зала (0 = выключена, без затрат CPU)" />
-        <span id="reverbLabel">0%</span>
+        <input type="range" id="reverb" min="0" max="2" step="0.01" value="1" title="Реверберация зала (0 = выключена, без затрат CPU)" />
+        <span id="reverbLabel">100%</span>
       </div>
       <label class="pregenrow" for="pregen">
         <input type="checkbox" id="pregen" />
@@ -771,135 +684,11 @@
       <span class="oct-label" id="octLabel"></span>
     </section>
 
-    <details class="panel debug-samples" id="guitarTweakSpoiler">
-      <summary>
-        <span class="eyebrow">Эксперимент</span>
-        <span class="debug-title">Ручки гитар 29 Overdriven / 30 Distortion</span>
-      </summary>
-      <div class="gtweak-head">
-        <label for="gt_enable"><input type="checkbox" id="gt_enable" /> Включить ручки</label>
-        <button class="btn-ghost" data-gtpreset="steel" type="button">Guitar steel (базис)</button>
-        <button class="btn-ghost" data-gtpreset="canon" type="button">Канон 29/30 (перегруз)</button>
-        <button class="btn-ghost" data-gtpreset="rock" type="button">Рок-драйв (широкий вход, мягкий клип)</button>
-        <button class="btn-ghost" data-gtpreset="shelf" type="button">Тембр после клипера (+18 дБ)</button>
-        <button class="btn-ghost" data-gtpreset="shelf9" type="button">Полка 9 дБ (если оглушает верх)</button>
-        <button class="btn-ghost" data-gtpreset="lowfric" type="button">Без трения струны</button>
-        <button class="btn-ghost" data-gtpreset="highfric" type="button">Трение вдвое</button>
-        <button class="btn-ghost" data-gtpreset="nostack" type="button">Без тембр-стека (прежняя окраска)</button>
-      </div>
-      <div class="gtweak-grid" id="gtweakGrid"></div>
-    </details>
-
-    <details class="panel debug-samples" id="sampleSpoiler">
-      <summary>
-        <span class="eyebrow">Отладка</span>
-        <span class="debug-title">Сырые сэмплы (из SF2) — без обработки FluidSynth</span>
-      </summary>
-      <div class="debug-row">
-        <span class="debug-note">A/B</span>
-        <span class="debug-src">Сборка синтезатора
-          <span class="ab-toggle">
-            <button class="ab-btn" data-abbuild="cur" title="Текущая рабочая сборка">текущая</button>
-            <button class="ab-btn" data-abbuild="ref" title="Последний коммит (a99c8ec)">коммит</button>
-          </span>
-        </span>
-      </div>
-      <div class="sample-tabs" id="sampleTabs"></div>
-      <div class="debug-rows" id="sampleRows"></div>
-    </details>
-
-    <details class="panel debug-samples" id="abSpoiler">
-      <summary>
-        <span class="eyebrow">Отладка</span>
-        <span class="debug-title">A/B-рендеры: наш · текущая / наш · предыдущая / банк — флейты и пан-флейта по нотам</span>
-      </summary>
-      <div class="debug-rows" id="abGroups"></div>
-    </details>
-
-    <details class="panel debug-samples" id="cheriladySpoiler">
-      <summary>
-        <span class="eyebrow">Отладка</span>
-        <span class="debug-title">cherilady-flute (первые 15 с): наш рендер против FluidSynth-банков — все без реверба/эффектов (+ PanFlute и Whistle внизу)</span>
-      </summary>
-      <div class="debug-rows">
-        <div class="debug-row">
-          <span class="debug-note">Наш · DLS</span>
-          <span class="debug-src">GM 73, профиль Apple DLS</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_15s.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Наш · Titanic</span>
-          <span class="debug-src">GM 43, профиль Titanic</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_titanic_15s.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Наш · Гибрид</span>
-          <span class="debug-src">GM 115, атака DLS + тело Titanic</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_ours_hybrid_15s.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк</span>
-          <span class="debug-src">FluidSynth + Titanic SF2, сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_titanic_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк</span>
-          <span class="debug-src">FluidSynth + FluidR3, сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_fluidr3_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк</span>
-          <span class="debug-src">FluidSynth + Apple DLS, сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/cherilady_appledls_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Наш · PanFlute</span>
-          <span class="debug-src">GM 75</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/panflute_ours_15s.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · PanFlute</span>
-          <span class="debug-src">Titanic SF2 (75), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/panflute_titanic_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · PanFlute</span>
-          <span class="debug-src">FluidR3 (75), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/panflute_fluidr3_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · PanFlute</span>
-          <span class="debug-src">Apple DLS (75), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/panflute_appledls_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Наш · Whistle</span>
-          <span class="debug-src">GM 78, профиль Apple DLS</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/whistle_ours_15s.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · Whistle</span>
-          <span class="debug-src">Titanic SF2 (78), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/whistle_titanic_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · Whistle</span>
-          <span class="debug-src">FluidR3 (78), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/whistle_fluidr3_15s_dry.wav"></audio>
-        </div>
-        <div class="debug-row">
-          <span class="debug-note">Банк · Whistle</span>
-          <span class="debug-src">Apple DLS (78), сухо</span>
-          <audio controls preload="none" src="samples/CheriladyFlute/whistle_appledls_15s_dry.wav"></audio>
-        </div>
-      </div>
-    </details>
-
   </main>
 
 
   <script src="IntraSynth.js"></script>
   <script src="synth.js"></script>
-  <script src="guitar-tweaks.js"></script>
+  <script type="module" src="debug.mjs"></script>
 </body>
 </html>

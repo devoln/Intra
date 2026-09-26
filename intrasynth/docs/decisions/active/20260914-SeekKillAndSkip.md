@@ -3,7 +3,6 @@ title: "Перемотка: гасим всё звучащее и пропуск
 status: "active"
 created: 2026-09-14
 updated: 2026-09-14
-task: "docs/tasks/active/20260903-MidiTracksAndSampleTabs.md"
 tags: [audio-engine, midi, seek, fastforward, wasm-size]
 supersedes:
   - 20260914-SeekReviveHeldNotes

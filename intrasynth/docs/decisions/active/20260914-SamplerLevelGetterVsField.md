@@ -3,7 +3,6 @@ title: "Уровень ноты и признаки семплера — вир�
 status: "active"
 created: 2026-09-14
 updated: 2026-09-14
-task: "docs/tasks/active/20260903-MidiTracksAndSampleTabs.md"
 tags: [audio-engine, sampler, wasm-size, virtual-dispatch, meters]
 supersedes: []
 superseded_by: []

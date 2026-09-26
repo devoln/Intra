@@ -3,7 +3,6 @@ title: "Дозвучивание удерживаемых нот при мгно
 status: "superseded"
 created: 2026-09-14
 updated: 2026-09-14
-task: "docs/tasks/active/20260903-MidiTracksAndSampleTabs.md"
 tags: [audio-engine, midi, seek, fastforward, wasm-size, pedal]
 supersedes: []
 superseded_by:

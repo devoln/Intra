@@ -18,7 +18,7 @@ related_files:
   - intrasynth/src/Intra/Synth/EmscriptenInterface.cpp
   - intrasynth/tools/ab/render-ab.mjs
   - intrasynth/tools/analysis/README.md
-  - web/guitar-tweaks.js
+  - web/debug.mjs
   - web/index.html
 related_tasks: []
 related_decisions: []
@@ -72,7 +72,7 @@ related_skills:
 - **`intrasynth/src/Intra/Synth/SpectralStringSampler.{h,cpp}`** — сам синтез (сумма мод, тракт
   усилителя, кабинет, тембр-стек). Затравка и закон потерь — `KarplusStrongSampler` (публичные
   `randGen`, `smoothFactor`, `generateExcitation`), то есть **та же струна, что у guitar steel 25**.
-- **`web/guitar-tweaks.js` + спойлер в `web/index.html`** — живые ручки ~20 чисел в рантайме
+- **`web/debug.mjs`** (опциональный модуль спойлеров) — живые ручки ~20 чисел в рантайме
   (`SynthSetGuitarTweaks`), плюс пресеты («Guitar steel (базис)», «Канон 29/30», «Без тембр-стека»,
   «Рок-драйв», «Тембр после клипера»).
 - **`intrasynth/tools/ab/render-ab.mjs`** — панель A/B: цепочки «наш 25 → ДО → текущая → кандидат →

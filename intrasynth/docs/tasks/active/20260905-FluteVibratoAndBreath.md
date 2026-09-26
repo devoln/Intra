@@ -15,7 +15,6 @@ related_files:
   - .gitignore
 related_tasks:
   - 20260904-EpBeatsAndEgSaw
-  - 20260903-MidiTracksAndSampleTabs
   - 20260828-LoudnessBalanceFix
 ---
 
