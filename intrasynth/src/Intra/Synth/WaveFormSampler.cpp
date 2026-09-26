@@ -7,7 +7,7 @@
 
 using Intra::Audio::Synth::ExponentialAttenuate;
 
-// Mirrors WaveTableSampler::randGen (used by its constructor for the initial
+// Mirrors WaveTableSampler::waveTableRandGen (used by its constructor for the initial
 // phase). WaveFormSampler builds its fragment after the base constructor has
 // already run, so it recomputes the phase with the real fragment length here.
 static auto waveFormRandGen(Span<const float> periodicWave, float rate, float volume)
@@ -72,12 +72,30 @@ void WaveFormSampler::preattenuateExponential(float expCoeff, unsigned sampleRat
 	mExpAtten.FactorStep = atten/startAtten;
 }
 
+// Base params for the placeholder fragment: the real fragment is built only in
+// the constructor body (see below), so the base starts on a single sample.
+static WaveTableSamplerParams waveFormBaseParams(unsigned sampleRate, float vibratoFrequency,
+	float vibratoValue, float vibratoDelay, float vibratoRamp, float vibratoJitter,
+	float vibratoJitterFrequency, const Envelope& envelope)
+{
+	VibratoParams vp;
+	vp.DeltaPhase = 2*float(Math::PI)*vibratoFrequency/float(sampleRate);
+	vp.Value = vibratoValue;
+	vp.DelaySamples = vibratoDelay*float(sampleRate);
+	vp.RampSamples = vibratoRamp*float(sampleRate);
+	vp.Jitter = vibratoJitter;
+	vp.JitterDeltaPhase = 2*float(Math::PI)*vibratoJitterFrequency/float(sampleRate);
+	return WaveTableSamplerParams::Make(1, 1, 1, 0, envelope, Utils::Optional<VibratoParams>(vp));
+}
+
 WaveFormSampler::WaveFormSampler(const void* params, WaveForm wave,
 	float expCoeff, float volume, float freq, unsigned sampleRate,
-	float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope):
+	float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope,
+	float vibratoDelay, float vibratoRamp, float vibratoJitter, float vibratoJitterFrequency):
 	WaveTableSampler(
 		Span<const float>(&sPlaceholderFragmentSample, 1),
-		1, 1, 1, 2*float(Math::PI)*vibratoFrequency/float(sampleRate), vibratoValue, envelope, 0),
+		waveFormBaseParams(sampleRate, vibratoFrequency, vibratoValue, vibratoDelay, vibratoRamp,
+			vibratoJitter, vibratoJitterFrequency, envelope)),
 	mRightSampleFragmentStartIndex(0), mSmoothingFactor(smoothingFactor)
 {
 	// Build the real fragment only after every member (including
@@ -103,7 +121,8 @@ Sampler& WaveInstrument::CreateSampler(float freq, float volume, unsigned sample
 	const float vibratoFreq = (VibratoFrequency < 0 ? -freq : 1) * VibratoFrequency;
 	WaveFormSampler& result = dst.Add<WaveFormSampler>(Wave, ExpCoeff,
 		volume*Scale, freq*FreqMultiplier, sampleRate,
-		vibratoFreq, VibratoValue, SmoothingFactor, Envelope(sampleRate));
+		vibratoFreq, VibratoValue, SmoothingFactor, Envelope(sampleRate),
+		VibratoDelay, VibratoRamp, VibratoJitter, VibratoJitterFrequency);
 	if(oIndex) *oIndex = uint16(dst.Length() - 1);
 	return result;
 }
@@ -113,7 +132,8 @@ WaveFormSampler WaveInstrument::operator()(float freq, float volume, unsigned sa
 	const float vibratoFreq = (VibratoFrequency < 0 ? -freq : 1) * VibratoFrequency;
 	return WaveFormSampler(Wave, ExpCoeff,
 		volume*Scale, freq*FreqMultiplier, sampleRate,
-		vibratoFreq, VibratoValue, SmoothingFactor, Envelope(sampleRate));
+		vibratoFreq, VibratoValue, SmoothingFactor, Envelope(sampleRate),
+		VibratoDelay, VibratoRamp, VibratoJitter, VibratoJitterFrequency);
 }
 
 static float smoothFilterBuffer(Span<float> dst, Span<const float> src, float prevSample, float smoothFactor, float attenuation)

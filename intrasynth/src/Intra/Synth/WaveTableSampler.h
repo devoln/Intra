@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 
-
 #include "Intra/Math/SineRange.h"
 
 #include "Intra/Range/Span.h"
 
 #include "Utils/FixedArray.h"
+#include "Utils/Optional.h"
 
 #include "Types.h"
 #include "Filter.h"
@@ -18,25 +18,19 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-/// Осциллятор модуляции с «дрожанием» (Update 66). Владелец: «а может оно быть
-/// другой формы, например, не синусом, а мягче?». Замер (широкая полоса
-/// 300-4000 Гц, 2 с сустейна): у банка модуляция НЕрегулярна — индекс
-/// тональности (когерентный пик / (rms·√2)) 0.66-0.70 против 1.00 у чистого
-/// синуса, а когерентная частота гуляет между блоками 2.7-6.1 Гц. Жёсткий
-/// синус фиксированной глубины читается как механическое качание и звучит
-/// ГЛУБЖЕ, чем такая же по rms нерегулярная модуляция. Здесь к несущей
-/// к несущей добавлено медленное «дрожание» ГЛУБИНЫ от (1−Jitter) до
-/// (1+Jitter) с частотой JitterFreq (по умолчанию 0.55 Гц — заведомо не
-/// кратная ни 4-6 Гц вибрато, ни чему-либо в спектре ноты). Дрожание
-/// считается фазовым аккумулятором со сглаженным треугольником: SineRange
-/// на такой частоте вырождается в линейный рост (Update 66b).
-/// При Jitter == 0 выход побитово прежний (множитель ровно 1).
+/// Modulation oscillator with depth wobble. A fixed-depth sine sounds deeper
+/// and more mechanical than the same rms depth reached by irregular
+/// modulation, so the carrier depth drifts between (1 - Jitter) and
+/// (1 + Jitter) at JitterFreq (0.55 Hz by default, deliberately unrelated to
+/// the 4-6 Hz vibrato and to anything in the note spectrum). The wobble is a
+/// phase accumulator with a smoothed triangle, not a second SineRange: at
+/// sub-Hz rates SineRange degenerates into a linear ramp.
+/// Jitter == 0 gives bit-identical output (the multiplier is exactly 1).
 struct WobbleOscillator
 {
 	Intra::SineRange<float> Carrier;
-	// Update 70: гармоники формы модуляции (см. Vibrato::Harm2). Строятся на
-	// ТОЙ ЖЕ фазе, что и несущая, поэтому форма модуляции становится
-	// «импульсной» (у банка 3-я и 5-я гармоники пан-флейты равны основной).
+	/// Harmonics of the modulation shape; they run on the same phase as the
+	/// carrier, so the shape becomes impulsive, like the bank's modulator.
 	Intra::SineRange<float> Carrier2;
 	Intra::SineRange<float> Carrier3;
 	Intra::SineRange<float> Carrier4;
@@ -45,16 +39,11 @@ struct WobbleOscillator
 	float Harmonic3 = 0;
 	float Harmonic4 = 0;
 	float Harmonic5 = 0;
-	// 1/(1 + h2 + h3 + h4 + h5) — форма остаётся в ±1, а RMS-глубину инструмент
-	// компенсирует множителем (1+Σh)/sqrt(1+Σh²) в Value/Tremolo.
+	/// 1/(1 + h2 + h3 + h4 + h5): keeps the shape within ±1, while the
+	/// instrument compensates the rms depth with (1+Σh)/sqrt(1+Σh²).
 	float Norm = 1;
-	// Update 66b: медленное «дрожание» глубины — фазовый аккумулятор, а НЕ
-	// второй SineRange. SineRange на 0.55 Гц вырождается (см. заголовок
-	// патча): 2·cos(dphi) округляется до ровно 2.0 и рекуррентность даёт
-	// линейный рост вместо синуса. Фаза копится в меньшем числе, поэтому
-	// точность не теряется никогда.
-	float WobblePhase = 0;  // рад, [0, 2π)
-	float WobbleStep = 0;   // рад/семпл
+	float WobblePhase = 0;  // radians, [0, 2π)
+	float WobbleStep = 0;   // radians/sample
 	float Value = 0;
 	float Jitter = 0;
 
@@ -79,11 +68,11 @@ struct WobbleOscillator
 		WobblePhase += WobbleStep;
 		if(WobblePhase >= twoPi) WobblePhase -= twoPi;
 		const float p = WobblePhase*(1.0f/float(PI));       // 0..2
-		const float t = p < 1.0f? p: 2.0f - p;              // 0..1 (треугольник)
-		const float w = ((3.0f - 2.0f*t)*t)*t*2.0f - 1.0f;  // сглаженный, ±1
+		const float t = p < 1.0f? p: 2.0f - p;              // 0..1 triangle
+		const float w = ((3.0f - 2.0f*t)*t)*t*2.0f - 1.0f;  // smoothed, ±1
 		float s = Carrier.Next();
-		// Update 70: при всех Harmonic_* == 0 ветви не исполняются, а Norm
-		// равен ровно 1 — выход побитово прежний.
+		// With all harmonics zero the branches are not taken and Norm is
+		// exactly 1, so the output is bit-identical to a plain sine.
 		if(Harmonic2 != 0) s += Harmonic2*Carrier2.Next();
 		if(Harmonic3 != 0) s += Harmonic3*Carrier3.Next();
 		if(Harmonic4 != 0) s += Harmonic4*Carrier4.Next();
@@ -92,15 +81,59 @@ struct WobbleOscillator
 	}
 };
 
-/// Класс, использующийся для синтеза большинства нот.
-/// В целях выжать максимальную производительность, он пытается выполнять синтез за один проход.
-/// В силу этого он берёт на себя довольно много ответственности и получился довольно сложным и громоздким.
-/// Это базовый класс, который использует только внешние волновые таблицы, и,
-/// соответственно, не выделяет внешней памяти, и не поддерживает изменение спектра со временем
+/// Vibrato of one layer, already scaled to the sample rate (the sampler never
+/// sees a rate): DeltaPhase = 2π·Frequency/sampleRate, delay/ramp in samples.
+/// Value is the relative read-rate deviation (FM), Tremolo the relative volume
+/// deviation of the same lfo (AM), Jitter the depth wobble, Harm2..5 the shape
+/// harmonics, BlockSamples the number of samples per lfo step (0 = the lfo is
+/// read once per sample).
+struct VibratoParams
+{
+	float DeltaPhase = 0;
+	float Value = 0;
+	float Tremolo = 0;
+	float DelaySamples = 0;
+	float RampSamples = 0;
+	float Jitter = 0;
+	float JitterDeltaPhase = 0;
+	float Harm2 = 0;
+	float Harm3 = 0;
+	float Harm4 = 0;
+	float Harm5 = 0;
+	unsigned BlockSamples = 0;
+};
+
+/// Everything one WaveTableSampler needs to start a note. Vibrato is absent in
+/// the common case, which keeps the constant-rate fast path.
+struct WaveTableSamplerParams
+{
+	float Rate = 1;
+	/// Per-sample attenuation factor (exp(-coefficient/sampleRate)).
+	float AttenuationPerSample = 0;
+	float Volume = 1;
+	size_t ChannelDeltaSamples = 0;
+	Envelope Envelope;
+	Utils::Optional<VibratoParams> Vibrato;
+
+	/// Builds the whole struct at once. Utils::Optional does not set its
+	/// "has value" flag in operator= (it is set by the constructors only), so
+	/// everything here must be constructed, never assigned field by field.
+	static WaveTableSamplerParams Make(float rate, float attenuationPerSample, float volume,
+		size_t channelDeltaSamples, const struct Envelope& envelope,
+		Utils::Optional<VibratoParams> vibrato = null)
+	{
+		return WaveTableSamplerParams{rate, attenuationPerSample, volume, channelDeltaSamples,
+			envelope, Move(vibrato)};
+	}
+};
+
+/// Base sampler for wave-table notes: it reads external tables only, allocates
+/// nothing of its own and keeps a fixed spectrum for the whole note, which is
+/// what lets it render in a single pass.
 class WaveTableSampler: public Sampler
 {
 protected:
-	//Указывает на актуальные данные семплов
+	/// Points at the currently used sample data.
 	const float* mSampleFragmentStart;
 	unsigned mSampleFragmentLength;
 
@@ -110,76 +143,68 @@ protected:
 	INTRA_FORCEINLINE Span<const float> SampleFragment(size_t startIndex, size_t maxCount) const
 	{return SampleFragment().Drop(startIndex).Take(maxCount);}
 
-	//Смещение левого канала относительно начала периода mSampleFragment
+	/// Left channel offset from the start of the mSampleFragment period.
 	float mFragmentOffset;
 
-	//Целая часть смещения правого канала относительно периода mRightSampleFragment
+	/// Integer part of the right channel offset from mRightSampleFragment.
 	unsigned mRightFragmentOffset;
 
-	//Скорость воспроизведения семпла mSampleFragment
+	/// Playback speed of mSampleFragment.
 	float mRate;
 
-	//Объединяет в себе все факторы, влияющие на громкость ноты, кроме Envelope, панорамы и реверберации.
-	//Factor - текущий множитель амплитуды для mSampleFragment.
-	//FactorStep - множитель, на который умножается амплитуда - либо каждый семпл,
-	//либо каждый проход по фрагменту - второй вариант встречается у наследника WaveFormSampler,
-	//который в некоторых случаях может заранее наложить экспоненциальное затухание на хранимые в нём семплы
+	/// Every volume factor except the envelope, pan and reverb. The exponent
+	/// attenuator mirrors what WaveFormSampler may bake into its own data.
 	ExponentAttenuator mExpAtten;
 
-	//Множители, на которые умножается каждый семпл при записи в соответствующий канал
+	/// Per-channel multipliers.
 	float mLeftMultiplier, mRightMultiplier;
 
-	//Осциллятор скорости воспроизведения, которая рассчитывается как mRate*(1 + mFreqOscillator.value).
-	//Обёртка с дрожанием глубины (Update 66), интерфейс Next() тот же.
+	/// Read-rate oscillator: speed is mRate*(1 + oscillator value).
 	WobbleOscillator mFreqOscillator;
 
-	// Амплитуда ЧМ (прежний vibratoValue) и амплитуда АМ того же LFO
-	// (Update 64c): осциллятор нормирован до ±1, поэтому масштабы вынесены
-	// сюда. Tremolo = 0 — поведение прежнее, байт-в-байт.
+	/// Amplitudes of the FM and AM of that lfo (the oscillator itself is
+	/// normalized to ±1). Tremolo == 0 keeps the previous behaviour.
 	float mVibratoValue = 0;
 	float mVibratoTremolo = 0;
 
-	//Вибрато включено (амплитуда и частота ненулевые) — рендер идёт через
-	//скалярное вибрато-ядро вместо SIMD-ядер с постоянной скоростью.
+	/// Vibrato with a non-zero depth runs through the scalar per-sample
+	/// kernel instead of the constant-rate SIMD kernels.
 	bool mHasVibrato = false;
 
-	// Задержка появления вибрато (в сэмплах от начала ноты) и длительность
-	// плавного входа (в сэмплах): глубина вибрато умножается на gate(t),
-	// линейно растущий от 0 до 1 на отрезке [Delay, Delay+Ramp]. При Ramp == 0
-	// вибрато включается мгновенно после Delay. Так флейта «дышит» не с первой
-	// миллисекунды атаки, а постепенно, как в живом исполнении.
+	/// Samples per lfo step. 0 is the per-sample path; N > 0 keeps the read
+	/// rate constant inside a block of N samples, so the constant-rate kernels
+	/// apply and the lfo is stepped once per block.
+	unsigned mVibratoBlock = 0;
+
+	/// Vibrato gate: its depth is multiplied by a ramp that grows from 0 to 1
+	/// over [Delay, Delay + Ramp], so a note does not start with full vibrato.
 	float mVibratoDelaySamples = 0;
 	float mVibratoRampSamples = 0;
 	unsigned mElapsedSamples = 0;
 
-	//Огибающая ноты, например ADSR. Не включает в себя экспоненциальное затухание, оно накладывается после этого.
+	/// Note envelope, e.g. ADSR; exponential attenuation is applied on top.
 	Envelope mEnvelope;
 
 public:
 	WaveTableSampler(decltype(nullptr)=nullptr) {}
 
-	WaveTableSampler(Span<const float> periodicWave, float rate, float expCoeff,
-		float volume, float vibratoDeltaPhase, float vibratoValue, const Envelope& envelope,
-		size_t channelDeltaSamples, float vibratoDelaySamples = 0, float vibratoRampSamples = 0,
-		float vibratoTremolo = 0, float vibratoJitter = 0, float vibratoJitterDeltaPhase = 0,
-		float vibratoHarm2 = 0, float vibratoHarm3 = 0,
-		float vibratoHarm4 = 0, float vibratoHarm5 = 0);
+	WaveTableSampler(Span<const float> periodicWave, const WaveTableSamplerParams& params);
 
-	// Текущее значение gate-множителя вибрато для сэмпла с индексом elapsed
-	// (0 до Delay, затем линейный вход до 1 за Ramp сэмплов).
-	INTRA_FORCEINLINE float VibratoGate() const
+	/// Current vibrato gate value for the sample with the given index.
+	INTRA_FORCEINLINE float VibratoGateAt(unsigned elapsed) const
 	{
 		if(mVibratoRampSamples > 0)
 		{
-			if(mElapsedSamples >= mVibratoDelaySamples)
+			if(elapsed >= mVibratoDelaySamples)
 			{
-				const float g = (mElapsedSamples - mVibratoDelaySamples)/mVibratoRampSamples;
+				const float g = (float(elapsed) - mVibratoDelaySamples)/mVibratoRampSamples;
 				return g < 1.0f ? g : 1.0f;
 			}
 			return 0;
 		}
-		return mElapsedSamples >= mVibratoDelaySamples ? 1.0f : 0.0f;
+		return elapsed >= mVibratoDelaySamples ? 1.0f : 0.0f;
 	}
+	INTRA_FORCEINLINE float VibratoGate() const {return VibratoGateAt(mElapsedSamples);}
 	INTRA_FORCEINLINE float VibratoGateStep() const
 	{
 		return mVibratoRampSamples > 0 ? 1.0f/mVibratoRampSamples : 0.0f;
@@ -191,8 +216,8 @@ public:
 
 	bool Generate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples) override;
 
-	// Прямой рендер, используемый вложенными семплерами (NoteSampler).
-	// GenerateMono возвращает необработанный остаток (nullptr, если буфер заполнен).
+	/// Direct rendering used by nested samplers (NoteSampler).
+	/// GenerateMono returns the untouched remainder (nullptr if the buffer is full).
 	Span<float> GenerateMono(Span<float> ioDst);
 	size_t GenerateStereo(Span<float> dstLeft, Span<float> dstRight);
 
@@ -213,12 +238,20 @@ public:
 	void NoteRelease() final {mEnvelope.StartLastSegment();}
 
 #ifdef INTRA_UI_METERS
-	/// Уровень огибающей ноты для индикатора в веб-UI (см. Sampler::GetLevel).
+	/// Note envelope level for the web-UI indicator (see Sampler::GetLevel).
 	float GetLevel() const override {return mEnvelope.CurrentSegment.Volume;}
 #endif
 
 private:
 	size_t renderDirect(Span<float> dstLeft, Span<float> dstRight);
+
+	/// Renders one envelope segment at a constant read rate. Both the plain
+	/// layers (rate for the whole segment) and the block vibrato (rate from the
+	/// lfo once per block) go through it, so kernel selection lives in one place
+	/// instead of a copy per branch. An empty dstRight means mono.
+	noinline size_t renderConstantRate(Span<float> dstLeft, Span<float> dstRight,
+		const EnvelopeSegment& segment, float& ioOffsetL, float& ioOffsetR,
+		size_t channelDelta);
 
 	void generateWithDefaultRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples);
 
@@ -244,59 +277,42 @@ struct WaveTableCache
 	WaveTableCache& operator=(WaveTableCache&&) = default;
 };
 
-/// Параметры вибрато для одной ноты. Value — относительное отклонение
-/// скорости чтения (как VibratoValue: 0.005 = ±0.5 % ≈ ±8.7 центов);
-/// Delay/Ramp — в секундах, плавное появление после атаки.
-/// Tremolo (Update 64) — ОДНОВРЕМЕННАЯ амплитудная модуляция того же LFO:
-/// относительное отклонение громкости (0.35 = ±35 % ≈ +2.6/−3.1 дБ). Владелец
-/// слышал вибрато флейт как «завывание привидения», а замер полосы h1 банка
-/// (.scratch/hvib.mjs) дал у флейты 43 когерентную АМ 2.7–3.4 дБ при том, что
-/// чистой ЧМ-линии там нет вовсе: у оригинала «дрожит» дыхание, а не высота.
-/// Дыхание — слой NoiseSampler, ему АМ и достаётся: у вейвтейбла вычислитель
-/// не тронут, поэтому тон остаётся РОВНЫМ (что владелец и просил).
+/// Vibrato of one note. Value is the relative read-rate deviation (0.005 ≈
+/// ±8.7 cents), Delay/Ramp are in seconds. Tremolo is a simultaneous amplitude
+/// modulation of the same lfo: what "breathes" in a flute is the breath (a
+/// NoiseSampler layer), while the table tone itself stays steady.
 struct Vibrato
 {
-	float Frequency = 0; // Гц
+	float Frequency = 0; // Hz
 	float Value = 0;
 	float Tremolo = 0;
-	float Delay = 0; // с
-	float Ramp = 0;  // с
-	/// Разброс ГЛУБИНЫ модуляции (Update 66): 0 — чистый синус, 0.5 — глубина
-	/// плавает ±50 % с частотой JitterFreq. У банка модуляция нерегулярна
-	/// (индекс тональности 0.66-0.70 против 1.0 у синуса).
+	float Delay = 0; // s
+	float Ramp = 0;  // s
+	/// Depth wobble: 0 is a pure sine, 0.5 drifts by ±50 % at JitterFreq.
 	float Jitter = 0;
-	float JitterFreq = 0.55f; // Гц
-	/// Update 70: доли 2..5-й гармоник ФОРМЫ модуляции (0 — чистый синус).
-	/// У банка модулятор не синус, и ВСЕ его линии — целые кратные основной
-	/// (C4: 4.04 Гц 0.145 + 12.11 0.152 + 20.19 0.128, то есть 1:1:0.9 по
-	/// амплитуде; C5: 5.55 + 11.02 + 22.04; C6: 8.50 + 17.08 — 2-я на −5.7 дБ).
-	/// Такая «импульсная» форма при той же основной частоте слышится как
-	/// заметно более частое тремоло: эффективная скорость (спектральный
-	/// центроид) у банка на C4-C6 ровно 10.3-12.6 Гц, а у чистого синуса
-	/// 4-8.6 Гц. Движок нормирует форму до ±1, поэтому задавший гармоники
-	/// инструмент должен домножить Value и Tremolo на
-	/// (1+Σh)/sqrt(1+Σh²): RMS-глубина тогда не меняется, растёт пик.
+	float JitterFreq = 0.55f; // Hz
+	/// Amplitudes of the 2nd..5th harmonics of the modulation shape (0 = pure
+	/// sine). The bank's modulator is impulsive, and an impulsive shape at the
+	/// same base rate reads as a much faster tremolo. The engine normalizes the
+	/// shape to ±1, so an instrument that sets harmonics must scale Value and
+	/// Tremolo by (1+Σh)/sqrt(1+Σh²) to keep the rms depth.
 	float Harm2 = 0;
 	float Harm3 = 0;
 	float Harm4 = 0;
 	float Harm5 = 0;
 };
 
-/// Общий LFO вибрато одной ноты (Update 59). Математика ровно та же, что у
-/// WaveTableSampler: SineRange с амплитудой Value, фазой 0 и шагом
-/// 2π·Frequency/sampleRate плюс gate(Delay/Ramp). Слой, стартующий вместе с
-/// телом ноты и получающий по одному вызову Next() на каждый выходной сэмпл,
-/// остаётся с ним В ФАЗЕ — поэтому юбки/дыхание/блум «дышат» вместе с тоном.
-/// До этого вибрато было только у вейвтейбла: жёсткие линии дыхания и блума
-/// бились с уходящим тоном (владелец слышал «гудение на C4, как будто насос
-/// работает, но с юбкой»), а сам тон стоял на месте — «не слышу вибрато».
+/// Shared vibrato lfo of one note (same math as WaveTableSampler: a SineRange
+/// gated by Delay/Ramp). A layer that starts with the note body and calls
+/// Next() once per output sample stays in phase with it, so skirts, breath and
+/// bloom breathe together with the tone instead of beating against it.
 struct VibratoLfo
 {
 	WobbleOscillator Oscillator;
 	float Value = 0;
 	float Tremolo = 0;
-	// Нормированное (±1) значение LFO текущего сэмпла с учётом гейта — его
-	// читает АМ-ветвь (NoiseSampler) сразу после Next().
+	/// Normalized (±1) lfo value of the current sample, gate included; the AM
+	/// branch (NoiseSampler) reads it right after Next().
 	float LastGated = 0;
 	float DelaySamples = 0;
 	float RampSamples = 0;
@@ -306,7 +322,7 @@ struct VibratoLfo
 	void Init(const Vibrato& v, unsigned sampleRate)
 	{
 		if((v.Value == 0.0f && v.Tremolo == 0.0f) || v.Frequency == 0.0f) return;
-		// Осциллятор нормирован до ±1: масштаб Value применяется в Next().
+		// The oscillator is normalized to ±1: Value is applied in Next().
 		Oscillator = WobbleOscillator(1.0f, 0.0f,
 			2.0f*float(PI)*v.Frequency/float(sampleRate), v.Jitter,
 			2.0f*float(PI)*v.JitterFreq/float(sampleRate),
@@ -332,8 +348,8 @@ struct VibratoLfo
 		return float(ElapsedSamples) >= DelaySamples ? 1.0f : 0.0f;
 	}
 
-	/// Относительное отклонение скорости на один сэмпл (0 = без вибрато).
-	/// Заодно кладёт нормированное (±1) значение LFO в LastGated для АМ-ветви.
+	/// Relative rate deviation of one sample (0 = no vibrato). Also stores the
+	/// normalized (±1) lfo value in LastGated for the AM branch.
 	INTRA_FORCEINLINE float Next()
 	{
 		LastGated = Oscillator.Next()*Gate();
@@ -351,19 +367,34 @@ struct WaveTableInstrument
 	float VibratoValue = 0;
 	EnvelopeFactory Envelope = EnvelopeFactory::Constant(1);
 
-	// Необязательный посегментный профиль вибрато: если задан, VibratoFrequency/
-	// VibratoValue игнорируются, а параметры считаются по частоте ноты
-	// (регистровая зависимость — флейта).
+	/// Optional per-segment vibrato profile: when set, VibratoFrequency and
+	/// VibratoValue are ignored and the vibrato is computed from the note
+	/// frequency (register-dependent vibrato, e.g. a flute).
 	Funal::CopyableDelegate<Vibrato(float freq)> VibratoProfile;
 
-	// Необязательный посегментный профиль огибающей по частоте ноты: если
-	// задан, Envelope перекрывается, а форма (длительности/уровни сегментов)
-	// считается по частоте — регистровая зависимость атаки/раздува
-	// (записанное начало ноты флейты).
+	/// Optional per-segment envelope profile: when set, Envelope is overridden
+	/// and the segment shape is computed from the note frequency.
 	Funal::CopyableDelegate<EnvelopeFactory(float freq)> EnvelopeProfile;
+
+	/// Vibrato appearance: delay, ramp, depth wobble and its rate. Defaults
+	/// keep the plain behaviour; VibratoProfile overrides them.
+	float VibratoDelay = 0;
+	float VibratoRamp = 0;
+	float VibratoJitter = 0;
+	float VibratoJitterFrequency = 0.55f;
+
+	/// Samples per lfo step (0 = per-sample path). Extension field: it is read
+	/// only by the block vibrato branch.
+	unsigned VibratoBlock = 0;
+
+	/// Read-rate multiplier: a detuned singer reads the same table faster, so
+	/// the detune is not quantized by the table's DFT grid. 1 (the default) is
+	/// an exact IEEE multiply, so other instruments render bit-identically.
+	float FreqScale = 1;
 
 	WaveTableSampler operator()(float freq, float volume, unsigned sampleRate) const;
 };
 
-/// Задача по генерации семплов, которая прибавляет суммирует сгенерированные значения в буфер указанного контекста.
+/// Task that generates samples and adds them to the buffer of the given context.
+
 INTRA_WARNING_POP

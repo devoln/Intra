@@ -93,6 +93,10 @@ noinline void AddSineHarmonicGauss(Span<float> dstAmpls, float ratio, float base
 }// Builds one wave table for a note of the given frequency from a single
 // harmonic set. Exposed so instruments can pick the harmonic profile per
 // register inside a custom WaveTableCache::Generator (e.g. Flute).
+// Table build kernel from a ready harmonic row (defined below, before CreateWaveTables). Called from here and from the profile decoder in InstrumentLibrary.cpp, so the build body exists once.
+noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float volumeScale,
+	size_t tableSize, float freq, unsigned sampleRate);
+
 noinline WaveTable BuildWaveTable(const HarmonicSet& set, size_t tableSize, float freq, unsigned sampleRate)
 {
 	WaveTable tbl;
@@ -113,38 +117,61 @@ noinline WaveTable BuildWaveTable(const HarmonicSet& set, size_t tableSize, floa
 	tbl.BaseLevelRatio = float(baseBin)/float(tableSize);
 	const float baseRatio = tbl.BaseLevelRatio;
 
+	// One shared kernel does the build. Without resonances the row goes in as is: the kernel computes amplSum exactly the same way (the sum of harmonic amplitudes below Nyquist).
+	if(set.Resonances.Empty())
+		return BuildWaveTableCore(set.Harmonics, set.VolumeScale, tableSize, freq, sampleRate);
+
+	// With resonances the row is edited first, and the same kernel builds the table.
 	Array<HarmonicDesc> finalHarmonics;
-	float amplSum = 0;
 	for(const auto& harm: set.Harmonics)
 	{
 		const float ifreq = harm.FreqMultiplier*freq;
 		if(ifreq > float(sampleRate)/2.0f) continue; // harmonics sorted by frequency
 
 		float amplitude = harm.Amplitude;
-		if(!set.Resonances.Empty())
+		float res = 0;
+		for(const auto& r: set.Resonances)
 		{
-			float res = 0;
-			for(const auto& r: set.Resonances)
-			{
-				// Нулевая ширина резонанса даёт деление на ноль (x = ifreq/0 -> inf,
-				// затем 0*exp(-inf)/0 -> NaN). Такие резонансы не имеют физического
-				// смысла и пропускаются — это также защищает от NaN при повреждении
-				// данных или при копировании без elision на -Oz/-Os сборках.
-				if(r.Width <= 0.0f) continue;
-				const float x = (ifreq - r.Frequency)/r.Width;
-				res += r.Amplitude*Math::Exp(-0.5f*x*x)/(2.507f*r.Width);
-			}
-			if(set.IsResonanceMultiplicative) amplitude *= res;
-			else amplitude += res;
+			// A zero resonance width divides by zero (x = ifreq/0 -> inf, then 0*exp(-inf)/0 -> NaN). Such resonances are meaningless and are skipped, which also guards against NaN from corrupted data.
+			if(r.Width <= 0.0f) continue;
+			const float x = (ifreq - r.Frequency)/r.Width;
+			res += r.Amplitude*Math::Exp(-0.5f*x*x)/(2.507f*r.Width);
 		}
+		if(set.IsResonanceMultiplicative) amplitude *= res;
+		else amplitude += res;
 		finalHarmonics.AddLast(HarmonicDesc{amplitude, harm.FreqMultiplier, harm.Bandwidth});
-		amplSum += amplitude;
+	}
+	return BuildWaveTableCore(Span<const HarmonicDesc>(finalHarmonics.Data(), finalHarmonics.Length()),
+		set.VolumeScale, tableSize, freq, sampleRate);
+}
+
+// Table build from a ready harmonic row: no resonances and no ownership. Needed where the profile is decoded on the stack (choir/voice region profiles in InstrumentLibrary.cpp): HarmsProfile used to hand out a HarmonicSet with two Arrays per anchor, pulling in destructors, allocations and inlined code. Basis quantisation and normalisation are exactly as in BuildWaveTable below, so the spectral shape and the level match it.
+noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float volumeScale,
+	size_t tableSize, float freq, unsigned sampleRate)
+{
+	WaveTable tbl;
+	tbl.BaseLevelLength = tableSize;
+	tbl.Data.Reserve(tableSize*2);
+	tbl.Data.SetCount(tableSize/2);
+	size_t baseBin = size_t(Math::Round(float(double(freq)*double(tableSize)/double(sampleRate))));
+	if(baseBin < 1) baseBin = 1;
+	tbl.BaseLevelRatio = float(baseBin)/float(tableSize);
+	const float baseRatio = tbl.BaseLevelRatio;
+
+	float amplSum = 0;
+	for(const auto& harm: harmonics)
+	{
+		const float ifreq = harm.FreqMultiplier*freq;
+		if(ifreq > float(sampleRate)/2.0f) continue; // harmonics sorted by frequency
+		amplSum += harm.Amplitude;
 	}
 	amplSum *= float(tableSize);
-	const float outputScale = set.VolumeScale;
-	for(const auto& h: finalHarmonics)
+	for(const auto& h: harmonics)
+	{
+		if(h.FreqMultiplier*freq > float(sampleRate)/2.0f) continue;
 		AddSineHarmonicGauss(tbl.Data.AsRange(), baseRatio*h.FreqMultiplier, baseRatio,
-			h.Amplitude*outputScale/amplSum, h.Bandwidth);
+			h.Amplitude*volumeScale/amplSum, h.Bandwidth);
+	}
 
 	ConvertAmplitudesToSamplesUnnormalized(tbl, false);
 	return tbl;
@@ -218,6 +245,8 @@ struct EnvelopeDesc
 	float Exp = 0;          // exponential decay coefficient (separate gain in JS)
 	bool Exponential = false;
 	bool StartsAtFull = false; // Volume[0] == 1 -> no attack ramp
+	// Attack delay (s), for notes that start with a consonant rather than a tone: in the bank's VoiceOohs the vowel only appears about 24 ms after note-on, and a broadband burst sounds before it (a separate attack layer, see kVoiceAttackDb). At zero it changes nothing for other instruments: the ADSR factory does not read the field, and MakeEnvelope without it builds the previous ADSR.
+	float Delay = 0;
 };
 
 noinline EnvelopeFactory MakeEnvelope(const EnvelopeDesc& e)
@@ -226,6 +255,12 @@ noinline EnvelopeFactory MakeEnvelope(const EnvelopeDesc& e)
 		e.StartsAtFull ? 0.0f : e.Attack,
 		e.Decay, e.Sustain, e.Release, e.Exponential);
 	if(e.StartsAtFull) f.StartVolume = 1.0f;
+	// Attack delay: the leading segment takes loudness from zero to 1/255 (-48 dB, where the exponential ramp starts) and the attack begins only after it. A linear ramp from zero would already be loud in the first milliseconds (at 53 it reached -6 dB by 20 ms while the bank was still -32 dB down), and the factory cannot build an exponential ramp from zero loudness (0*Pow(Inf, n) is NaN). The delay means a swell, so the attack is always exponential there, while the Exponential flag keeps controlling decay and release.
+	if(e.Delay > 0)
+	{
+		f.Segments[EnvelopeFactory::N - 5] = {false, 1.0f/255.0f, e.Delay};
+		f.Segments[EnvelopeFactory::N - 4].Exponential = true;
+	}
 	return f;
 }
 

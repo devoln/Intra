@@ -31,6 +31,36 @@
 #include <stdio.h>
 #endif
 
+// Phase step of the block vibrato: one Next() call must advance the phase by a
+// whole block of the per-sample path, otherwise the vibrato would slow down by
+// exactly the block length.
+static inline float vibratoBlockScale(unsigned blockSamples)
+{
+	return blockSamples > 1? float(blockSamples): 1.0f;
+}
+
+// Vibrato of a layer, already scaled to the sample rate. Absent (null) when
+// the layer has no vibrato at all, which keeps the constant-rate path.
+static Utils::Optional<VibratoParams> tableVibratoParams(const Vibrato& vib,
+	unsigned sampleRate, unsigned blockSamples)
+{
+	if(vib.Value == 0.0f && vib.Tremolo == 0.0f && vib.Frequency == 0.0f) return null;
+	VibratoParams vp;
+	vp.DeltaPhase = 2*float(PI)*Math::Max(vib.Frequency, 0.0f)/float(sampleRate);
+	vp.Value = vib.Value;
+	vp.Tremolo = vib.Tremolo;
+	vp.DelaySamples = vib.Delay*float(sampleRate);
+	vp.RampSamples = vib.Ramp*float(sampleRate);
+	vp.Jitter = vib.Jitter;
+	vp.JitterDeltaPhase = 2*float(PI)*vib.JitterFreq/float(sampleRate);
+	vp.Harm2 = vib.Harm2;
+	vp.Harm3 = vib.Harm3;
+	vp.Harm4 = vib.Harm4;
+	vp.Harm5 = vib.Harm5;
+	vp.BlockSamples = blockSamples;
+	return Utils::Optional<VibratoParams>(vp);
+}
+
 static inline auto waveTableRandGen(Span<const float> periodicWave, float rate, float volume)
 {
 	return Random::FastUniform<unsigned>(
@@ -38,32 +68,42 @@ static inline auto waveTableRandGen(Span<const float> periodicWave, float rate, 
 	);
 }
 
-WaveTableSampler::WaveTableSampler(Span<const float> periodicWave, float rate,
-	float attenuationPerSample, float volume, float vibratoDeltaPhase,
-	float vibratoValue, const Envelope& envelope, size_t channelDeltaSamples,
-	float vibratoDelaySamples, float vibratoRampSamples, float vibratoTremolo,
-	float vibratoJitter, float vibratoJitterDeltaPhase,
-	float vibratoHarm2, float vibratoHarm3, float vibratoHarm4, float vibratoHarm5):
-	mSampleFragmentStart(periodicWave.Data()), mSampleFragmentLength(unsigned(periodicWave.Length())),
-	mRate(rate), mLeftMultiplier(0.5f), mRightMultiplier(0.5f),
-	mFreqOscillator(1.0f, 0, vibratoDeltaPhase, vibratoJitter, vibratoJitterDeltaPhase,
-		vibratoHarm2, vibratoHarm3, vibratoHarm4, vibratoHarm5),
-	mVibratoValue(vibratoValue), mVibratoTremolo(vibratoTremolo),
-	mHasVibrato((vibratoValue != 0.0f || vibratoTremolo != 0.0f) && vibratoDeltaPhase != 0.0f), mEnvelope(envelope),
-	mExpAtten(ExponentAttenuator::FromFactorAndStep(volume, attenuationPerSample)),
-	mFragmentOffset(waveTableRandGen(periodicWave, rate, volume)(mSampleFragmentLength)),
-	mRightFragmentOffset((unsigned(mFragmentOffset) + channelDeltaSamples) % mSampleFragmentLength)
+WaveTableSampler::WaveTableSampler(Span<const float> periodicWave, const WaveTableSamplerParams& params):
+	mSampleFragmentStart(periodicWave.Data()),
+	mSampleFragmentLength(unsigned(periodicWave.Length())),
+	mFragmentOffset(0),
+	mRightFragmentOffset(0),
+	mRate(params.Rate),
+	mExpAtten(ExponentAttenuator::FromFactorAndStep(params.Volume, params.AttenuationPerSample)),
+	mLeftMultiplier(0.5f), mRightMultiplier(0.5f),
+	mFreqOscillator(1.0f, 0, 0, 0, 0),
+	mEnvelope(params.Envelope)
 {
-	if(mHasVibrato && vibratoRampSamples > 0)
+	const VibratoParams* vib = params.Vibrato != null? &params.Vibrato.Value(): nullptr;
+	if(vib != nullptr)
 	{
-		mVibratoDelaySamples = vibratoDelaySamples;
-		mVibratoRampSamples = vibratoRampSamples;
+		// A block lfo is stepped once per block, so its phase step covers the block.
+		mFreqOscillator = WobbleOscillator(1.0f, 0,
+			vib->DeltaPhase*vibratoBlockScale(vib->BlockSamples), vib->Jitter,
+			vib->JitterDeltaPhase*vibratoBlockScale(vib->BlockSamples),
+			vib->Harm2, vib->Harm3, vib->Harm4, vib->Harm5);
+		mVibratoValue = vib->Value;
+		mVibratoTremolo = vib->Tremolo;
+		mHasVibrato = (vib->Value != 0.0f || vib->Tremolo != 0.0f) && vib->DeltaPhase != 0.0f;
+		mVibratoBlock = vib->BlockSamples;
+		if(mHasVibrato && vib->RampSamples > 0)
+		{
+			mVibratoDelaySamples = vib->DelaySamples;
+			mVibratoRampSamples = vib->RampSamples;
+		}
+		else if(mHasVibrato && vib->DelaySamples > 0)
+		{
+			//Instant on after a silent delay, no ramp.
+			mVibratoDelaySamples = vib->DelaySamples;
+		}
 	}
-	else if(mHasVibrato && vibratoDelaySamples > 0)
-	{
-		// Мгновенное включение после паузы (без плавного входа).
-		mVibratoDelaySamples = vibratoDelaySamples;
-	}
+	mFragmentOffset = float(waveTableRandGen(periodicWave, params.Rate, params.Volume)(mSampleFragmentLength));
+	mRightFragmentOffset = (unsigned(mFragmentOffset) + unsigned(params.ChannelDeltaSamples)) % mSampleFragmentLength;
 }
 
 void WaveTableSampler::generateWithDefaultRate(SamplerTaskContainer& dstTasks, size_t offsetInSamples, size_t numSamples)
@@ -156,6 +196,65 @@ bool WaveTableSampler::Generate(SamplerTaskContainer& dstTasks, size_t offsetInS
 	return mEnvelope.CurrentSegment.SamplesLeft != 0;
 }
 
+// Block vibrato render, as the owner asked: the existing resampling split into blocks with a per-block rate.
+//
+// Inside a block the read rate is constant, so the layer renders with the same kernel as the plain layer (SIMD, four samples) while the LFO moves once per block. Envelopes still step per sample inside the block and advance one block step at its edge, so attack and decay match the per-segment path and only the read rate is quantised.
+//
+// A 5 Hz LFO on a 16-sample block (0.36 ms) is a pitch step two orders of magnitude below the audible threshold, and the vibrato layer then costs the same as the plain one.
+//
+// The same code serves the plain layer (block = the whole envelope segment, unchanged) and block vibrato.
+size_t WaveTableSampler::renderConstantRate(Span<float> dstLeft, Span<float> dstRight,
+	const EnvelopeSegment& segment, float& ioOffsetL, float& ioOffsetR, size_t channelDelta)
+{
+	const size_t n = dstLeft.Length();
+	if(n == 0 || mSampleFragmentLength == 0) return 0;
+	const bool stereo = !dstRight.Empty();
+	const bool blockVibrato = mHasVibrato && mVibratoBlock > 0;
+	// Without vibrato the rate is constant per segment, with vibrato per block.
+	const size_t blockLimit = blockVibrato? size_t(mVibratoBlock): n;
+	const Span<const float> src = SampleFragment();
+	float exp = segment.Exp.Factor;
+	const float expStep = segment.Exp.FactorStep;
+	float lin = segment.Linear.Factor;
+	const float linStep = segment.Linear.FactorStep;
+	size_t done = 0;
+	while(done < n)
+	{
+		const size_t block = Min<size_t>(blockLimit, n - done);
+		float rate = mRate, tremolo = 1.0f;
+		if(blockVibrato)
+		{
+			// The LFO runs once per block, while the vibrato delay and entry use the true sample number.
+			const float vibNorm = mFreqOscillator.Next()*
+				VibratoGateAt(mElapsedSamples + unsigned(done));
+			rate = mRate*(1.0f + mVibratoValue*vibNorm);
+			tremolo = 1.0f + mVibratoTremolo*vibNorm;
+		}
+		auto blockLeft = dstLeft.Drop(done).Take(block);
+		if(stereo)
+		{
+			auto blockRight = dstRight.Drop(done).Take(block);
+			SynthKernels::AddConstantRateStereo(blockLeft, blockRight, src, ioOffsetL, ioOffsetR,
+				rate, exp, expStep, lin, linStep,
+				mLeftMultiplier*tremolo, mRightMultiplier*tremolo, channelDelta);
+		}
+		else
+		{
+			// Without vibrato tremolo is exactly 1.0f, so the mono path is unchanged (it has no panorama).
+			SynthKernels::AddConstantRateMono(blockLeft, src, ioOffsetL, rate,
+				exp, expStep, lin, linStep, tremolo);
+		}
+		// Envelopes step over the block (exponentially for exp, linearly for lin); with one block per segment there is no step at all.
+		if(block < n)
+		{
+			exp *= PowInt(expStep, int(block));
+			lin += linStep*float(block);
+		}
+		done += block;
+	}
+	return done;
+}
+
 // Общий прямой рендер стерео/реверба (используется NoteSampler).
 // Прибавляет результат в dst (буферы предварительно занулены).
 // Возвращает число обработанных семплов.
@@ -191,12 +290,9 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight)
 		const float linStep = seg.Linear.FactorStep;
 		const Span<const float> src(frag, len);
 		auto dstLeftChunk = dstLeft.Drop(processed).Take(chunk);
-		const bool constantAmp = (expStep == 1.0f && linStep == 0.0f);
-		if(mHasVibrato)
+		if(mHasVibrato && mVibratoBlock == 0)
 		{
-			// Частотное вибрато: скорость чтения модулируется осциллятором
-			// (mRate*(1 + vib)); SIMD-ядра с постоянной скоростью неприменимы.
-			// VibGate — плавное появление вибрато после атаки (Delay+Ramp).
+			// Per-segment frequency vibrato: the read rate is modulated by the oscillator (mRate*(1 + vib)), so constant-rate kernels do not apply. VibGate is the gradual vibrato onset (delay plus ramp).
 			const float vibGate = VibratoGate();
 			const float vibGateStep = VibratoGateStep();
 			if(hasRight)
@@ -215,56 +311,13 @@ size_t WaveTableSampler::renderDirect(Span<float> dstLeft, Span<float> dstRight)
 					vibGate, vibGateStep, mVibratoValue, mVibratoTremolo);
 			}
 		}
-		else if(hasRight)
-		{
-			auto dstRightChunk = dstRight.Drop(processed).Take(chunk);
-			if(constantAmp)
-			{
-				// Sustain-сегмент: только интерполяция, без пошаговых огибающих.
-				const float amp = exp*lin;
-#if defined(__AVX2__) && !defined(INTRA_NO_SIMD_KERNELS)
-				SynthKernels::AddInterpolatedConstStereo8(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, amp*mLeftMultiplier, amp*mRightMultiplier,
-					channelDelta);
-#elif defined(__wasm_simd128__) && INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2 && !defined(INTRA_NO_SIMD_KERNELS)
-				SynthKernels::AddInterpolatedConstStereo4(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, amp*mLeftMultiplier, amp*mRightMultiplier,
-					channelDelta);
-#else
-				SynthKernels::AddInterpolatedConstStereo(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, amp*mLeftMultiplier, amp*mRightMultiplier,
-					channelDelta);
-#endif
-			}
-			else
-			{
-				// Общие огибающие для обоих каналов, одна интерполяция на канал.
-#if defined(__AVX2__) && !defined(INTRA_NO_SIMD_KERNELS)
-				SynthKernels::MultiplyAddLinearInterpolatedStereo8(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, exp, expStep, lin, linStep,
-					mLeftMultiplier, mRightMultiplier, channelDelta);
-#elif defined(__wasm_simd128__) && INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2 && !defined(INTRA_NO_SIMD_KERNELS)
-				SynthKernels::MultiplyAddLinearInterpolatedStereo4(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, exp, expStep, lin, linStep,
-					mLeftMultiplier, mRightMultiplier, channelDelta);
-#else
-				SynthKernels::MultiplyAddLinearInterpolatedStereo(dstLeftChunk, dstRightChunk, src,
-					leftOffset, rightOffset, mRate, exp, expStep, lin, linStep,
-					mLeftMultiplier, mRightMultiplier, channelDelta);
-#endif
-			}
-		}
-		else if(constantAmp)
-		{
-			SynthKernels::AddInterpolatedConst(dstLeftChunk, src, leftOffset, mRate,
-				exp*lin*mLeftMultiplier);
-		}
 		else
 		{
-			float constWrap = 1.0f;
-			SynthKernels::MultiplyAddLinearInterpolated(dstLeftChunk, src,
-				leftOffset, mRate, exp, expStep, constWrap, 1.0f,
-				lin*mLeftMultiplier, linStep*mLeftMultiplier);
+			// Shared constant-rate path: the plain layer uses the whole segment as one block, block vibrato uses mVibratoBlock.
+			Span<float> rightChunk;
+			if(hasRight) rightChunk = dstRight.Drop(processed).Take(chunk);
+			renderConstantRate(dstLeftChunk, rightChunk, seg,
+				leftOffset, rightOffset, channelDelta);
 		}
 
 		mFragmentOffset = leftOffset;
@@ -332,23 +385,18 @@ Span<float> WaveTableSampler::GenerateMono(Span<float> ioDst)
 		const float expStep = seg.Exp.FactorStep;
 		const float lin = seg.Linear.Factor;
 		const float linStep = seg.Linear.FactorStep;		const Span<const float> src(frag, len);
-		if(mHasVibrato)
+		if(mHasVibrato && mVibratoBlock == 0)
 		{
 			SynthKernels::MultiplyAddVibrato(ioDst.Drop(processed).Take(chunk), src,
 				offset, mRate, exp, expStep, lin, linStep, mFreqOscillator,
 				VibratoGate(), VibratoGateStep(), mVibratoValue, mVibratoTremolo);
 		}
-		else if(expStep == 1.0f && linStep == 0.0f)
-		{
-			// Sustain-сегмент: только интерполяция, без пошаговых огибающих.
-			SynthKernels::AddInterpolatedConst(ioDst.Drop(processed).Take(chunk), src,
-				offset, mRate, exp*lin);
-		}
 		else
 		{
-			float constWrap = 1.0f;
-			SynthKernels::MultiplyAddLinearInterpolated(ioDst.Drop(processed).Take(chunk), src,
-				offset, mRate, exp, expStep, constWrap, 1.0f, lin, linStep);
+			// As in renderDirect: the shared constant-rate path.
+			float unusedRightOffset = 0;
+			renderConstantRate(ioDst.Drop(processed).Take(chunk), Span<float>(), seg,
+				offset, unusedRightOffset, 0);
 		}
 
 		mFragmentOffset = offset;
@@ -375,24 +423,24 @@ WaveTableSampler WaveTableInstrument::operator()(float freq, float volume, unsig
 	const float ratio = freq / float(sampleRate);
 	const size_t level = table.NearestLevelForRatio(ratio);
 	const auto samples = table.LevelSamples(level);
-	// Регистровый профиль вибрато (если задан) перекрывает фиксированные
-	// VibratoFrequency/VibratoValue инструмента и добавляет задержку появления.
+	//A register-dependent vibrato profile overrides the fixed instrument values.
 	Vibrato vib;
 	if(VibratoProfile) vib = VibratoProfile(freq);
 	else
 	{
 		vib.Frequency = VibratoFrequency;
 		vib.Value = VibratoValue;
+		vib.Delay = VibratoDelay;
+		vib.Ramp = VibratoRamp;
+		vib.Jitter = VibratoJitter;
+		vib.JitterFreq = VibratoJitterFrequency;
 	}
 	EnvelopeFactory envelopeFactory = Envelope;
 	if(EnvelopeProfile) envelopeFactory = EnvelopeProfile(freq);
-	return WaveTableSampler(samples, ratio/table.LevelRatio(level),
-		Exp(-ExpCoeff/float(sampleRate)), volume*VolumeScale,
-		2*float(PI)*Math::Max(vib.Frequency, 0.0f)/float(sampleRate), vib.Value,
-		envelopeFactory(sampleRate), (sampleRate >> 7) % samples.Length(),
-		vib.Delay*float(sampleRate), vib.Ramp*float(sampleRate), vib.Tremolo,
-		vib.Jitter, 2*float(PI)*vib.JitterFreq/float(sampleRate),
-		vib.Harm2, vib.Harm3, vib.Harm4, vib.Harm5);
+	return WaveTableSampler(samples, WaveTableSamplerParams::Make(
+		ratio/table.LevelRatio(level)*FreqScale, Exp(-ExpCoeff/float(sampleRate)),
+		volume*VolumeScale, (sampleRate >> 7) % samples.Length(), envelopeFactory(sampleRate),
+		tableVibratoParams(vib, sampleRate, VibratoBlock)));
 }
 
 

@@ -45,10 +45,13 @@ class WaveFormSampler: public WaveTableSampler
 
 	INTRA_FORCEINLINE bool isExponentialPreattenuated() const { return !canDataMutate(); }
 
+	// The choir/voice ensemble vibrato gained delay, entry and jitter. WaveFormSampler had none of it: vibrato was an instant pure sine from the start of the note, which the owner heard as a mechanical tremolo in ChoirAahs. Zero defaults keep the previous behaviour.
 	WaveFormSampler(const void* params, WaveForm wave,
 		float attenuationPerSample, float volume,
 		float freq, unsigned sampleRate, float vibratoFrequency, float vibratoValue,
-		float smoothingFactor, const Envelope& envelope);
+		float smoothingFactor, const Envelope& envelope,
+		float vibratoDelay = 0, float vibratoRamp = 0,
+		float vibratoJitter = 0, float vibratoJitterFrequency = 0.55f);
 
 	//TODO: убрать
 	INTRA_FORCEINLINE bool OwnDataArray() const noexcept { return true; }
@@ -56,15 +59,19 @@ class WaveFormSampler: public WaveTableSampler
 
 public:
 	void MoveConstruct(void* dst) override { new(dst) WaveFormSampler(Cpp::Move(*this)); }
+
 	bool OwnExponentialAttenuatedDataArray() const noexcept override { return mSmoothingFactor == 0; }
 
 	template<typename F, typename = Meta::EnableIf<
 		Meta::IsCallable<F, Span<float>, float, float, unsigned>::_
 		>> INTRA_FORCEINLINE WaveFormSampler(const F& wave,
 			float expCoeff, float volume, float freq, unsigned sampleRate,
-			float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope = Envelope::Constant()):
+			float vibratoFrequency, float vibratoValue, float smoothingFactor, const Envelope& envelope = Envelope::Constant(),
+			float vibratoDelay = 0, float vibratoRamp = 0,
+			float vibratoJitter = 0, float vibratoJitterFrequency = 0.55f):
 		WaveFormSampler(&wave, WaveFormWrapper<F>, expCoeff, volume,
-			freq, sampleRate, vibratoFrequency, vibratoValue, smoothingFactor, envelope)
+			freq, sampleRate, vibratoFrequency, vibratoValue, smoothingFactor, envelope,
+			vibratoDelay, vibratoRamp, vibratoJitter, vibratoJitterFrequency)
 	{}
 
 
@@ -110,6 +117,11 @@ struct WaveInstrument: public Instrument
 	float VibratoFrequency = 0;
 	float VibratoValue = 0;
 	float SmoothingFactor = 0;
+	// Gradual vibrato onset (s) and depth jitter (0 = a pure sine as before), needed by the choir ensemble: an instant sine from note-on read as mechanical tremolo.
+	float VibratoDelay = 0;
+	float VibratoRamp = 0;
+	float VibratoJitter = 0;
+	float VibratoJitterFrequency = 0.55f;
 	EnvelopeFactory Envelope = EnvelopeFactory::Constant(1);
 
 	void MoveConstruct(void* dst) override {new(dst) WaveInstrument(*this);}

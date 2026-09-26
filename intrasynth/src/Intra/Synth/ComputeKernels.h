@@ -757,6 +757,56 @@ namespace SynthKernels
             }
         }
     }
+
+    /// Constant-read-rate kernels (stereo): picks the SIMD variant for the platform and applies the envelopes. Needed by the block vibrato: inside a block the read rate is constant, so the vibrato layer renders with the same kernels as the plain layer and the LFO is computed once per block. This is also the only place that picks a kernel; it used to be copied in two places in WaveTableSampler.
+    forceinline void AddConstantRateStereo(Span<float> dstL, Span<float> dstR,
+        Span<const float> src, float& ioOffsetL, float& ioOffsetR, float rate,
+        float exp, float expStep, float lin, float linStep,
+        float ampL, float ampR, size_t channelDelta)
+    {
+        if(expStep == 1.0f && linStep == 0.0f)
+        {
+            // Envelope plateau (sustain): only interpolation and a constant remain.
+            const float amp = exp*lin;
+#if defined(__AVX2__) && !defined(INTRA_NO_SIMD_KERNELS)
+            AddInterpolatedConstStereo8(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+                amp*ampL, amp*ampR, channelDelta);
+#elif defined(__wasm_simd128__) && INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2 && !defined(INTRA_NO_SIMD_KERNELS)
+            AddInterpolatedConstStereo4(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+                amp*ampL, amp*ampR, channelDelta);
+#else
+            AddInterpolatedConstStereo(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+                amp*ampL, amp*ampR, channelDelta);
+#endif
+            return;
+        }
+#if defined(__AVX2__) && !defined(INTRA_NO_SIMD_KERNELS)
+        MultiplyAddLinearInterpolatedStereo8(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+            exp, expStep, lin, linStep, ampL, ampR, channelDelta);
+#elif defined(__wasm_simd128__) && INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2 && !defined(INTRA_NO_SIMD_KERNELS)
+        MultiplyAddLinearInterpolatedStereo4(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+            exp, expStep, lin, linStep, ampL, ampR, channelDelta);
+#else
+        MultiplyAddLinearInterpolatedStereo(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+            exp, expStep, lin, linStep, ampL, ampR, channelDelta);
+#endif
+    }
+
+    /// Same for the mono output: the mono path has no SIMD kernels, so the block vibrato only saves computing the LFO per block instead of per sample.
+    forceinline void AddConstantRateMono(Span<float> dst, Span<const float> src,
+        float& ioOffset, float rate, float exp, float expStep,
+        float lin, float linStep, float amp)
+    {
+        if(expStep == 1.0f && linStep == 0.0f)
+        {
+            AddInterpolatedConst(dst, src, ioOffset, rate, exp*lin*amp);
+            return;
+        }
+        // constWrap == 1 matches the previous mono path (pre-decay is not doubled).
+        float constWrap = 1.0f;
+        MultiplyAddLinearInterpolated(dst, src, ioOffset, rate, exp, expStep,
+            constWrap, 1.0f, lin*amp, linStep*amp);
+    }
 }
 
 INTRA_WARNING_POP

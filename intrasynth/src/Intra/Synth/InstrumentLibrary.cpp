@@ -175,6 +175,474 @@ namespace
 		return s;
 	}
 
+	// regional harmonic profiles of the bank for the six sampled gm voices
+	// (50 SynthStrings1, 52 ChoirAahs, 53 VoiceOohs, 54 SynthVoice, 91 Pad4Choir,
+	// 94 Pad7Halo). The bank stores one sample per key range and plays it
+	// transposed inside that range, so the profile is stored per region, with
+	// boundaries taken from the bank itself (union of the key ranges sounding at
+	// velocity 100): 45 anchors instead of one per key.
+	//
+	// Anchor format, 24 bytes: h1..h16 are 8-bit log levels (step 0.376 dB, error
+	// below 0.2 dB), the tail h17..h48 is eight band averages. A band becomes a
+	// wide PADsynth partial, not noise, and between anchor points the level
+	// interpolates in log2(k) and stays flat above the last recorded band. The
+	// band count is read from the data (a zero code means "no band"), so there is
+	// no separate counter table. The profiles live in the wasm binary; the owner
+	// rejected shipping them as an external asset.
+	//
+	// One anchor decodes to partials on the stack, so no static objects and no
+	// per-anchor allocation. All six presets share one code path (see
+	// kVoicePresets and AddVoicePreset).
+	static constexpr size_t kProfileAnchorBytes = 24;
+	static constexpr size_t kProfileRegions = 49;
+	static constexpr size_t kProfileKeys = 37;
+	static constexpr size_t kProfileLead = 16;
+	static constexpr size_t kProfileBands = 8;
+	static constexpr size_t kProfileHarmonics = 48;
+	static constexpr size_t kProfilePresets = 7;
+	static constexpr size_t kProfileMaxPartials = kProfileHarmonics;
+	static constexpr float kProfileFloorDb = -96.0f;
+	static constexpr float kProfileStepDb = 96.0f/255.0f;
+	// Harmonic width: a line up to h8 (timbre and vowel are formants), BwHiCents from h28; 52 ChoirAahs uses b(k) = 52*k cents instead (see ProfileBandWidth and BwSlope).
+	// presets whose widths grow with the harmonic number (b(k) = BwSlope*k cents)
+	// instead of being constant: 52 keeps its v194 form, the owner's canon for it.
+	static const uint8 kVoiceWideWidth[kProfilePresets] = {0, 1, 0, 0, 0, 0, 0};
+	static constexpr float kProfileBwFrom = 8.0f;
+	static constexpr float kProfileBwTo = 28.0f;
+
+	inline float ProfileBandDb(uint8 code) {return kProfileFloorDb + kProfileStepDb*float(code);}
+
+	inline float ProfileBandWidth(float k, float bwHiCents, float bwSlope, bool wideK)
+	{
+		// Three width shapes. bwSlope > 0 with wideK gives b(k) = bwSlope*k cents,
+		// the growing width that the bank has (its sigma grows with k in hertz, so
+		// the width in cents is nearly constant); 52 ChoirAahs keeps that form from
+		// v194. bwSlope > 0 without wideK is a constant width in cents, fitted for
+		// 51 against the bank's median w-20 of 93 cents. bwSlope == 0 keeps the
+		// older growth from a line at h8 to bwHiCents at h28. The kernel stores the
+		// integral of a gaussian, so its peak falls as the width grows: an
+		// unbounded width ate the tail of the profile (h5 at -28 dB against the
+		// bank's -15).
+		if(bwSlope > 0) return wideK? bwSlope*k : bwSlope;
+		return bwHiCents*Math::Clamp((k - kProfileBwFrom)/(kProfileBwTo - kProfileBwFrom), 0.0f, 1.0f);
+	}
+
+	// Bank regions: start key of each region in preset order (see kVoicePresets) plus the region count per preset. The arrays are flat: a preset anchor = previous count sum + region number. Keys outside 48..84 clamp to the edge regions.
+	static const uint8 kVoiceRegionStarts[kProfileRegions] =
+	{
+		48, 49, 56, 64, 73, 81, 48, 50, 52, 53, 54, 56, 58, 59, 60, 62, 64, 65, 66, 68, 69, 70, 72, 74, 76, 78, 80, 48, 50, 54, 58, 62, 64, 71, 84, 48, 55, 67, 79, 48, 79, 82, 48, 75, 80, 48, 56, 68, 80,
+	};
+	static const uint8 kVoiceRegionCounts[kProfilePresets] =
+	{
+		6, 21, 8, 4, 3, 3, 4,
+	};
+
+	// The profile comes from a 2 s dry bank render and is averaged inside the bank region.
+	static const uint8 kVoiceProfiles[kProfileRegions][kProfileAnchorBytes] =
+	{
+		// SynthStrings1
+		{255, 229, 222, 215, 203, 197, 188, 185, 177, 172, 169, 165, 162, 157, 150, 148, 142, 132, 121, 111, 101, 90, 77, 63}, // 48-48  (root 21-108 sample)
+		{255, 228, 219, 206, 199, 193, 185, 179, 172, 168, 160, 155, 150, 145, 140, 134, 128, 117, 105, 93, 81, 70, 56, 41}, // 49-55  (root 21-108 sample)
+		{255, 230, 212, 204, 191, 184, 175, 168, 160, 150, 145, 135, 131, 125, 120, 113, 105, 93, 79, 65, 51, 37, 22, 3}, // 56-63  (root 21-108 sample)
+		{255, 246, 220, 209, 199, 185, 175, 163, 153, 143, 133, 124, 114, 107, 100, 87, 79, 63, 42, 22, 3, 0, 0, 0}, // 64-72  (root 21-108 sample)
+		{255, 227, 214, 205, 194, 184, 172, 157, 138, 121, 106, 91, 77, 67, 52, 44, 32, 14, 0, 0, 0, 0, 0, 0}, // 73-80  (root 21-108 sample)
+		{255, 230, 216, 209, 180, 154, 134, 115, 99, 87, 74, 63, 47, 32, 24, 15, 9, 2, 0, 0, 0, 0, 0, 0}, // 81-84  (root 21-108 sample)
+		// ChoirAahs
+		{214, 220, 237, 248, 215, 222, 202, 175, 161, 155, 144, 134, 141, 147, 147, 176, 178, 183, 176, 151, 127, 104, 112, 100}, // 48-49  (root 48-49 sample)
+		{214, 218, 247, 223, 220, 211, 173, 151, 137, 138, 132, 141, 145, 173, 185, 190, 188, 167, 141, 108, 101, 92, 95, 110}, // 50-51  (root 50-51 sample)
+		{214, 227, 253, 229, 223, 213, 176, 157, 147, 146, 136, 150, 163, 178, 187, 193, 192, 175, 147, 116, 107, 110, 108, 116}, // 52-52  (root 52-53 sample)
+		{214, 222, 232, 221, 207, 170, 153, 132, 129, 129, 127, 157, 173, 178, 183, 179, 160, 148, 119, 106, 106, 106, 98, 91}, // 53-53  (root 52-53 sample)
+		{214, 224, 234, 225, 204, 167, 151, 131, 128, 128, 137, 163, 176, 176, 179, 173, 152, 123, 94, 106, 102, 98, 92, 80}, // 54-55  (root 54-55 sample)
+		{214, 248, 226, 217, 183, 161, 141, 132, 131, 156, 179, 189, 181, 165, 155, 149, 138, 111, 117, 110, 102, 96, 84, 68}, // 56-57  (root 56-57 sample)
+		{214, 251, 230, 215, 187, 164, 149, 136, 135, 161, 181, 194, 186, 168, 154, 151, 138, 114, 120, 114, 105, 96, 78, 73}, // 58-58  (root 58-59 sample)
+		{214, 241, 217, 220, 170, 145, 149, 135, 181, 191, 183, 166, 161, 161, 121, 111, 115, 113, 107, 100, 93, 85, 66, 68}, // 59-59  (root 58-59 sample)
+		{214, 239, 213, 220, 168, 144, 147, 136, 181, 187, 179, 166, 163, 157, 116, 114, 114, 110, 103, 103, 92, 79, 86, 58}, // 60-61  (root 60-61 sample)
+		{214, 253, 239, 222, 169, 141, 161, 172, 196, 177, 177, 164, 139, 133, 119, 119, 125, 118, 115, 108, 86, 93, 78, 65}, // 62-63  (root 62-63 sample)
+		{214, 242, 229, 213, 162, 132, 159, 169, 183, 166, 166, 147, 130, 123, 111, 106, 116, 104, 103, 90, 92, 80, 64, 53}, // 64-64  (root 64-65 sample)
+		{214, 209, 197, 143, 131, 123, 149, 162, 144, 139, 126, 87, 68, 71, 90, 78, 88, 77, 69, 58, 61, 51, 35, 28}, // 65-65  (root 64-65 sample)
+		{214, 207, 199, 131, 128, 125, 145, 159, 144, 134, 103, 84, 83, 74, 82, 81, 83, 74, 71, 60, 45, 43, 34, 13}, // 66-67  (root 66-67 sample)
+		{214, 212, 202, 137, 127, 130, 150, 160, 148, 137, 106, 94, 94, 93, 96, 82, 78, 78, 59, 55, 51, 43, 23, 5}, // 68-68  (root 68-69 sample)
+		{214, 221, 155, 121, 141, 155, 138, 127, 114, 91, 81, 88, 87, 87, 96, 78, 72, 73, 54, 51, 48, 39, 18, 0}, // 69-69  (root 68-69 sample)
+		{214, 223, 140, 119, 141, 153, 136, 104, 87, 85, 73, 70, 80, 73, 64, 74, 56, 53, 41, 30, 26, 10, 0, 0}, // 70-71  (root 70-71 sample)
+		{214, 220, 140, 119, 142, 152, 133, 107, 87, 70, 86, 86, 59, 77, 89, 57, 52, 45, 38, 16, 4, 0, 0, 0}, // 72-73  (root 72-73 sample)
+		{214, 182, 122, 116, 119, 114, 97, 69, 55, 73, 67, 58, 54, 38, 27, 29, 13, 11, 0, 0, 0, 0, 0, 0}, // 74-75  (root 74-75 sample)
+		{214, 184, 121, 104, 126, 117, 102, 71, 67, 59, 47, 50, 43, 31, 19, 9, 8, 1, 0, 0, 0, 0, 0, 0}, // 76-77  (root 76-77 sample)
+		{214, 185, 123, 100, 126, 117, 102, 71, 57, 43, 38, 37, 29, 19, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 78-79  (root 78-96 sample)
+		{214, 185, 161, 146, 102, 89, 102, 72, 61, 36, 40, 42, 16, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // 80-84  (root 78-96 sample)
+		// VoiceOohs
+		{244, 225, 195, 154, 145, 150, 185, 133, 103, 99, 78, 83, 93, 97, 109, 120, 97, 91, 83, 51, 57, 92, 127, 130}, // 48-49  (root 0-49 sample)
+		{244, 246, 209, 175, 183, 168, 201, 150, 125, 129, 143, 172, 135, 129, 126, 135, 137, 124, 104, 146, 155, 137, 143, 146}, // 50-53  (root 50-53 sample)
+		{244, 198, 148, 139, 162, 131, 99, 94, 97, 123, 100, 128, 91, 90, 84, 106, 95, 87, 115, 117, 112, 95, 75, 52}, // 54-57  (root 54-57 sample)
+		{244, 186, 204, 140, 153, 118, 73, 132, 113, 128, 84, 107, 68, 95, 86, 95, 101, 112, 104, 106, 86, 65, 61, 69}, // 58-61  (root 58-61 sample)
+		{244, 192, 164, 129, 152, 143, 120, 140, 95, 114, 85, 87, 69, 85, 107, 96, 71, 83, 106, 107, 87, 66, 43, 34}, // 62-63  (root 62-93 sample)
+		{244, 191, 196, 126, 107, 139, 116, 136, 101, 115, 46, 95, 65, 84, 104, 80, 90, 102, 74, 36, 55, 48, 37, 39}, // 64-70  (root 62-93 sample)
+		{244, 199, 163, 122, 107, 139, 118, 136, 93, 59, 48, 84, 66, 82, 103, 78, 63, 74, 24, 16, 25, 2, 0, 0}, // 71-83  (root 62-93 sample)
+		{244, 194, 161, 121, 107, 141, 119, 137, 92, 56, 44, 83, 64, 78, 96, 66, 42, 0, 0, 0, 0, 0, 0, 0}, // 84-84  (root 62-93 sample)
+		// SynthVoice
+		{229, 249, 181, 128, 139, 106, 120, 139, 129, 113, 117, 116, 127, 133, 139, 139, 134, 131, 107, 92, 80, 74, 68, 77}, // 48-54  (root 43-54 sample)
+		{229, 195, 159, 108, 118, 105, 128, 125, 123, 102, 97, 84, 78, 73, 77, 64, 65, 66, 76, 62, 25, 13, 20, 2}, // 55-66  (root 55-66 sample)
+		{229, 234, 191, 157, 151, 127, 118, 135, 95, 88, 85, 93, 99, 92, 70, 52, 38, 35, 34, 16, 9, 2, 0, 0}, // 67-78  (root 67-78 sample)
+		{229, 230, 182, 120, 118, 105, 71, 65, 66, 45, 22, 20, 22, 12, 9, 10, 10, 5, 0, 0, 0, 0, 0, 0}, // 79-84  (root 79-127 sample)
+		// Pad4Choir
+		{255, 243, 226, 189, 158, 162, 139, 155, 154, 137, 154, 123, 98, 105, 116, 114, 117, 100, 80, 73, 61, 56, 44, 49}, // 48-78  (root 0-127 sample)
+		{255, 245, 192, 160, 152, 182, 139, 152, 130, 111, 103, 89, 82, 93, 82, 97, 86, 78, 62, 25, 0, 0, 0, 0}, // 79-81  (root 0-127 sample)
+		{255, 230, 179, 147, 146, 173, 131, 147, 121, 104, 97, 80, 74, 86, 79, 91, 79, 60, 0, 0, 0, 0, 0, 0}, // 82-84  (root 0-127 sample)
+		// Pad7Halo
+		{255, 242, 218, 221, 206, 207, 198, 187, 187, 187, 167, 173, 156, 156, 145, 148, 134, 122, 117, 109, 117, 132, 144, 129}, // 48-74  (root 0-74 sample)
+		{255, 231, 201, 206, 190, 192, 186, 169, 174, 172, 151, 160, 142, 142, 131, 133, 124, 121, 121, 115, 97, 0, 0, 0}, // 75-79  (root 75-79 sample)
+		{255, 217, 192, 190, 177, 176, 171, 153, 160, 155, 136, 145, 129, 130, 114, 116, 106, 97, 73, 0, 0, 0, 0, 0}, // 80-84  (root 80-85 sample)
+		// SynthStrings2: the average profile of the bank's own region.
+		{247, 252, 239, 225, 210, 213, 198, 194, 191, 186, 186, 181, 176, 170, 164, 161, 158, 142, 128, 106, 86, 67, 40, 49}, // 48-55  (root 0-55 sample)
+		{247, 247, 237, 214, 205, 200, 198, 179, 171, 163, 145, 155, 143, 134, 132, 126, 129, 104, 90, 76, 62, 28, 6, 4}, // 56-67  (root 56-67 sample)
+		{247, 228, 210, 192, 182, 180, 165, 148, 148, 133, 119, 114, 112, 98, 92, 89, 73, 48, 16, 0, 0, 0, 0, 0}, // 68-79  (root 68-79 sample)
+		{247, 231, 218, 197, 172, 162, 145, 133, 111, 97, 89, 61, 41, 33, 34, 41, 24, 10, 0, 0, 0, 0, 0, 0}, // 80-84  (root 80-127 sample)
+	};
+
+	// Decoder: a 24-byte anchor becomes partials (amplitude, k, bandwidth) for the table kernel. The scale is arbitrary (the kernel normalises by the amplitude sum), the shape is measured.
+	noinline size_t DecodeVoiceAnchor(const uint8* anchor, float bwHiCents, float bwSlope, bool wideK, HarmonicDesc* dst)
+	{
+		const float invLn2 = 1.0f/Math::Log(2.0f);
+		size_t n = 0;
+		for(size_t i = 0; i < kProfileLead; i++)
+		{
+			const float k = float(i + 1);
+			dst[n++] = HarmonicDesc{Math::Pow(10.0f, ProfileBandDb(anchor[i])/20.0f), k, ProfileBandWidth(k, bwHiCents, bwSlope, wideK)};
+		}
+		size_t bands = kProfileBands;
+		while(bands > 0 && anchor[kProfileLead + bands - 1] == 0) bands--;
+		if(!bands) return n;
+		// Band anchors are logarithmically uniform in harmonic number:
+		// p[b] = 16·(48/16)^(b/8), b = 0..8.
+		float logP[kProfileBands + 1];
+		for(size_t b = 0; b <= kProfileBands; b++)
+			logP[b] = Math::Log(float(kProfileLead)*Math::Pow(float(kProfileHarmonics)/float(kProfileLead),
+				float(b)/float(kProfileBands)))*invLn2;
+		for(size_t h = kProfileLead + 1; h <= kProfileHarmonics; h++)
+		{
+			const float k = float(h);
+			const float lh = Math::Log(k)*invLn2;
+			size_t b = 0;
+			while(b + 1 < kProfileBands && lh >= logP[b + 1]) b++;
+			const float u = Math::Clamp((lh - logP[b])/(logP[b + 1] - logP[b]), 0.0f, 1.0f);
+			const float dbLo = b < bands? ProfileBandDb(anchor[kProfileLead + b]): kProfileFloorDb;
+			const float dbHi = b + 1 < bands? ProfileBandDb(anchor[kProfileLead + b + 1]): dbLo;
+			const float db = dbLo + (dbHi - dbLo)*u;
+			if(db <= kProfileFloorDb) continue;
+			dst[n++] = HarmonicDesc{Math::Pow(10.0f, db/20.0f), k, ProfileBandWidth(k, bwHiCents, bwSlope, wideK)};
+		}
+		return n;
+	}
+
+	// Anchor of a played note: the bank region containing its key. A preset's offset in the flat table is the sum of the previous preset counts (six table builds per note, not per sample).
+	inline size_t VoiceAnchorIndex(size_t slot, float freq)
+	{
+		// 12 + 12*log2(f/261.63) is key minus 48: the regions cover keys 48..84, numbers 0..36.
+		const float x = Math::Log(freq/261.63f)/Math::Log(2.0f);
+		// Rounding matters: otherwise a note exactly on a region edge lands in the previous region through log error.
+		const int key = 48 + int(Math::Round(Math::Clamp(12.0f + 12.0f*x, 0.0f, float(kProfileKeys - 1))));
+		size_t base = 0;
+		for(size_t s = 0; s < slot; s++) base += kVoiceRegionCounts[s];
+		const size_t n = kVoiceRegionCounts[slot];
+		size_t r = 0;
+		while(r + 1 < n && key >= int(kVoiceRegionStarts[base + r + 1])) r++;
+		return base + r;
+	}
+
+	// Wide harmonics at fractional numbers k = 1.5, 2.5, ... (mechanism 1 below: a flat grid in the gaps between harmonics).
+	static constexpr float kAirFirstK = 1.5f;
+	static constexpr float kAirLastK = 47.5f;
+	static constexpr float kAirBwCents = 1200.0f;
+	// fuzzy copies of the body harmonics: same k, own width in cents and own
+	// weight. The energy then sits around the harmonics, as in the bank, and not
+	// on a flat grid in between, which the owner heard as literal noise. The
+	// kernel divides the line peak by its width, so a copy's amplitude is scaled
+	// by sigmaCopy/sigmaParent and its audible level equals Gain regardless of
+	// width. Cents 1200 is half a period of f0, which is what closes the dip
+	// between neighbouring harmonics.
+	struct AirCopy { float Cents, Gain; };
+	// the kernel divides a line's peak by its width, so a copy's amplitude is
+	// scaled by sigmaCopy/sigmaParent: its audible level is exactly Gain and does
+	// not depend on width. Cents 1200 is half a period of f0, which closes the dip
+	// between neighbouring harmonics.
+	static constexpr AirCopy kVoiceAirCopies[] = {
+		{  150.0f, 0.50f },   // -6 dB: shoulder at the line (gives w-20 of 90-140 cents)
+		{  450.0f, 0.16f },   // -16 dB: gap middle on low harmonics
+		{ 1200.0f, 0.05f },   // -26 dB: gap bottom (1200 cents = 0.5*f0)
+	};
+	// burst colouring by the vowel: every burst harmonic is multiplied by the
+	// note body spectrum, normalized to its maximum, mixed by kVowelMix. 1 is
+	// fully through the vowel (darker than the plain burst), 0 the plain one.
+	static constexpr float kVowelMix = 0.50f;
+	// upper limit of the air grid, per preset. The body ends at 48·f0 (6.3 kHz
+	// on C3) and the bank still has energy there (4.8-9.6 kHz at -90 dB against
+	// our -130 dB), which is why low notes sounded dull. The same fractional
+	// harmonics (k = 1.5, 2.5, ...) run up to kAirTopK, so the floor closes the
+	// gaps between harmonics and continues above the body. The only cost is
+	// building the table once per note.
+	// Air top per preset (kVoicePresets order); every preset that needs the floor runs up to Nyquist. Mechanism 2 adds three copies per body harmonic, so 192 entries fit in kAirCount.
+	static constexpr float kAirTopK = 200.0f;   // 200*f0 >= 24 kHz from f0 ~ 120 Hz
+		static constexpr size_t kAirCount = size_t(kAirTopK) + 8;   // array size, not harmonic count
+	static const float kVoiceAirTopK[kProfilePresets] = {kAirTopK, kAirTopK, kAirTopK, kAirTopK, kAirTopK, kAirTopK, kAirTopK};
+	// air level per preset, in dB below the preset volume; -120 means no air at
+	// all. Fitted band by band against the bank (the response is 1 dB per dB of
+	// air amplitude); 54, 91 and 94 also use the humps declared below (52 has no
+	// floor at all, see kVoiceAirMode).
+	static const float kVoiceAirDb[kProfilePresets] = {-52.0f, -12.0f, -36.7f, -34.3f, -29.0f, -26.3f, -31.0f};
+	// air mechanism per preset: 1 is a wide grid in the gaps between harmonics,
+	// 2 is blurred copies of the harmonics themselves (kVoiceAirCopies), 0 is no
+	// floor. 52 keeps 0: the owner's v194 has no floor at all and he chose it over
+	// every floored variant.
+static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
+	// Tilt of the air above kAirTiltHz, dB per octave, per preset (0 = flat
+	// floor). A flat floor would run to the Nyquist frequency, while the bank
+	// falls by 8-16 dB per octave above 4-6 kHz.
+	static constexpr float kAirTiltHz = 1600.0f;
+	// 20*log10(2) converts dB per octave into the exponent of two; without it the tilt weakened the top 6 times more than intended.
+	static constexpr float kAirDbPerLog2 = 6.0206f;
+	// per-preset tilt values: 50/52/91 fall by 8-10 dB per octave, 51 by 14,
+	// 54 by 9.5 below its top hump, 94 is flat because the bank's halo floor is
+	// flat up to 16 kHz.
+	static const float kVoiceAirTiltDb[kProfilePresets] = {10.0f, 8.0f, 7.5f, 9.5f, 8.0f, 0.0f, 14.0f};
+	// bottom of the air grid and its shape. The grid starts at 1.5·f0, so
+	// everything below that is empty, while the bank has noise from below the
+	// fundamental: kVoiceAirMinHz moves the start down (150 Hz), and
+	// kVoiceAirFormants gives the floor the shape of a vocal formant (see
+	// AirFormant) instead of a single slope. The shape is defined in hertz so it
+	// does not slide with the key.
+	struct AirFormant { float Hz, Width, Db; };
+	// formant humps of the floor: 54 has two (A and B), 91 one, 52 and 94 none.
+	// kVoiceAirFirst/Count select them per preset.
+	static const AirFormant kVoiceAirFormants[] = {
+		// At 54 two humps (the bank's 1.2-4.8 kHz middle is flat, not dipping), at 94 none (its floor is flat).
+		{ 2150.0f,  720.0f, 12.0f },   // 54 SynthVoice, hump A
+		{ 3400.0f, 1200.0f, 8.0f },   // 54 SynthVoice, hump B
+		{  900.0f,  800.0f, 4.0f },    // 91 Pad4Choir
+	};
+	// Hump 52 {3600, 2400, +4} was declared but never applied (kVoiceAirFirst[1] = 0, Count[1] = 0) and is gone: 52 has no floor hump.
+	static const uint8 kVoiceAirFirst[kProfilePresets] = {0, 0, 0, 0, 2, 0, 0};
+	static const uint8 kVoiceAirCount[kProfilePresets] = {0, 0, 0, 2, 1, 0, 0};
+	static const float kVoiceAirMinHz[kProfilePresets] = {0.0f, 0.0f, 0.0f, 150.0f, 150.0f, 150.0f, 0.0f};
+	// floor slope per key, dB per octave from C4. The bank's floor-to-h1 ratio
+	// depends strongly on the key (52 falls by 10 dB per octave, 54 rises by 12),
+	// while ours is constant, which is what made "the air disappears from G4".
+	static const float kVoiceAirKeyDbPerOct[kProfilePresets] = {0.0f, -2.0f, 5.7f, 7.7f, 12.4f, 9.6f, 0.0f};
+	// same slope for the keys above C4: the bank's dependence is not monotonic
+	// (94 peaks around C4/C5), and a single number made C5/C6 up to 20 dB louder
+	// than the bank.
+	static const float kVoiceAirKeyDbPerOctHi[kProfilePresets] = {0.0f, -2.0f, 5.7f, 10.7f, 6.5f, -0.8f, 0.0f};
+	// Calibration: the floor tracks the air level with a 1 dB/dB response; 53 needed -14.7 dB and 54 -21.4 dB.
+
+	// why fractional harmonics: the bank's floor between the harmonics is not a
+	// flat shelf, it decays outward from each line. A dense grid of lines with
+	// k = 1.5, 2.5, ... and a 1200 cent skirt reproduces that decay and keeps the
+	// level tied to the harmonic grid, so the shape does not slide with the key.
+	noinline WaveTable BuildVoiceTable(size_t slot, unsigned tableLength, float bwHiCents, float bwSlope,
+		float freq, unsigned sampleRate)
+	{
+	// table length per preset, in samples. A longer table means a finer dft grid
+	// (0.67 Hz instead of 2.69) and a slower repetition, at the price of a longer
+	// build; partial levels drift a little because the sum of skirts grows as
+	// sqrt(N), which is why the levels are re-fitted per preset.
+		HarmonicDesc a[kProfileMaxPartials + kAirCount];
+		size_t n = DecodeVoiceAnchor(kVoiceProfiles[VoiceAnchorIndex(slot, freq)], bwHiCents, bwSlope, kVoiceWideWidth[slot] != 0, a);
+		float volumeScale = 1.0f;
+		const float airDb = kVoiceAirDb[slot];   // air level of the preset
+		const uint8 airMode = kVoiceAirMode[slot];   // floor mechanism (0/1/2)
+		if(airMode != 0 && airDb > kProfileFloorDb)   // -96 dB and below means no air.
+		{
+			const float nyq = float(sampleRate)/2.0f;
+			float body = 0;
+			for(size_t i = 0; i < n; i++) if(a[i].FreqMultiplier*freq <= nyq) body += a[i].Amplitude;
+			const float invLn2 = 1.0f/Math::Log(2.0f);
+			// Floor level follows the key (kVoiceAirKeyDbPerOct).
+			const float keyOct = Math::Log(freq/261.63f)*invLn2;
+			// Two key tilts, below and above C4.
+			const float airKeySlope = keyOct >= 0.0f? kVoiceAirKeyDbPerOctHi[slot]: kVoiceAirKeyDbPerOct[slot];
+			const float airAmp = Math::Pow(10.0f, (airDb + airKeySlope*keyOct)/20.0f);
+			// Top tilt (kVoiceAirTiltDb) is set in hertz rather than by harmonic number: the bank's noise shape is the vowel shape, that is absolute. It combines with the formant humps and stays only where the top must fall.
+			const float airTilt = kVoiceAirTiltDb[slot];
+			// Air bottom in hertz (kVoiceAirMinHz). At 0 the grid starts at kAirFirstK (50/51/53, output unchanged); above 0 it starts at 0.5*f0 and only above the threshold, so the floor lives below the fundamental too, as in the bank.
+			const float airMinHz = kVoiceAirMinHz[slot];
+			// Floor shape as hertz humps (kVoiceAirFormants); count = 0 keeps the previous kAirTiltHz tilt.
+			const size_t fmFirst = kVoiceAirFirst[slot];
+			const size_t fmCount = kVoiceAirCount[slot];
+			// Floor shape in frequency (hertz humps plus top tilt), shared by both mechanisms below.
+			auto airShape = [&](float f)
+			{
+				float g = 1.0f;
+				if(fmCount > 0)
+				{
+					// A hump is added on top of the flat floor, so away from its humps the preset stays at level A instead of dropping to -inf.
+					for(size_t i = 0; i < fmCount; i++)
+					{
+						const AirFormant& fm = kVoiceAirFormants[fmFirst + i];
+						const float x = (f - fm.Hz)/fm.Width;
+						g = Math::Max(g, Math::Pow(10.0f, fm.Db/20.0f)/(1.0f + x*x));
+					}
+				}
+				// The top tilt applies to the humps too: at 54 the hump sits below the breakpoint and the roll-off above 4-6 kHz comes from it.
+				if(airTilt > 0 && f > kAirTiltHz)
+					g *= Math::Pow(2.0f, -airTilt*Math::Log(f/kAirTiltHz)*invLn2/kAirDbPerLog2);
+				return g;
+			};
+			float air = 0;
+			if(airMode == 1)
+			{
+				// Wide grid in the gaps between harmonics (k = 1.5, 2.5, ...) with the kAirBwCents skirt; 50/51/53 live here, calibrated to the bank bands and approved by ear.
+				const float kGridFirst = airMinHz > 0? kAirFirstK - 1.0f: kAirFirstK;
+				for(float k = kGridFirst; k <= kVoiceAirTopK[slot]; k += 1.0f)
+				{
+					const float f = k*freq;
+					if(f > nyq) break;
+					if(f < airMinHz) continue;
+					const float amp = airAmp*airShape(f);
+					a[n++] = HarmonicDesc{amp, k, kAirBwCents};
+					air += amp;
+				}
+			}
+			else
+			{
+		// the copies follow the body, so the array grows in this same loop.
+				const size_t bodyN = n;
+				for(size_t i = 0; i < bodyN; i++)
+				{
+					const float ki = a[i].FreqMultiplier;
+					const float f = ki*freq;
+					if(f > nyq) continue;
+					if(f < airMinHz) continue;
+					const float shapeG = airShape(f);
+			// the kernel stores the integral of a gaussian, so a line's peak falls
+			// as amp/sigma: the copy amplitude is scaled by sigmaCopy/sigmaParent
+			// to make its audible level equal to cp.Gain.
+					const float bwParent = Math::Max(a[i].Bandwidth, 30.0f);
+					const float sigmaParent = 0.5f*f*(Math::Pow2(bwParent/1200.0f) - 1.0f);
+					for(const AirCopy& cp: kVoiceAirCopies)
+					{
+						const float sigmaCopy = 0.5f*f*(Math::Pow2(cp.Cents/1200.0f) - 1.0f);
+						const float amp = airAmp*a[i].Amplitude*cp.Gain*(sigmaCopy/sigmaParent)*shapeG;
+						a[n++] = HarmonicDesc{amp, ki, cp.Cents};
+						air += amp;
+					}
+				}
+			}
+			if(air > 0 && body > 0) volumeScale = (body + air)/body;
+		}
+		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), volumeScale, tableLength, freq, sampleRate);
+	}
+
+	// the "tu" of 53 VoiceOohs: the burst is a separate layer, not a modification
+	// of the body. The body starts 12 ms late, the burst is a short broadband
+	// strike with its own envelope (kVoiceAttackEnv) and its own level per preset
+	// (kVoiceAttackDb, -120 = no layer). Its spectrum is the bank's burst:
+	// formants in hertz, a rolloff above kBurstHiHz and the vowel profile of the
+	// note on top, so it merges with the body instead of sounding like noise.
+	static constexpr float kBurstFirstK = 1.50f;
+	static constexpr float kBurstStepK = 1.0f;
+	static constexpr float kBurstMaxK = 95.5f;
+	static constexpr float kBurstBwCents = 1200.0f;
+	static constexpr size_t kBurstMaxHarmonics = 96;
+	// optional shift of the burst lines off the f0 grid (kBurstJitterK). Off in
+	// the canon: a measured test showed it does not remove the perceived click,
+	// only weakens the lines by 1-2 dB. 0 keeps the exact harmonic grid.
+	static constexpr float kBurstJitterK = 0.0f;
+	static constexpr unsigned kBurstJitterSeed = 0x9e3779b9u;
+	// Harmonic where the floor amplitude is full (see BuildVoiceBurstTable). The bottom taper accumulates through skirt tails, not separate lines; the tilt and its breakpoint are in hertz.
+	static constexpr float kBurstFullK = 3.0f;
+	// burst formants: centre in Hz, width in Hz, level in dB. The level of a
+	// harmonic is the maximum over the formants (lorentzian shape, longer tails
+	// than a gaussian, like a resonance), and above kBurstHiHz the whole thing
+	// falls as (kBurstHiHz/f)^kBurstHiExp. The shape is in hertz so it does not
+	// slide with the key.
+	struct BurstFormant { float Hz, Width, Db; };
+	static constexpr BurstFormant kBurstFormants[] = {
+		// The shape follows the measured bank burst bands (dB relative to 100-400): 400-800 +7.3/+2.9,
+		// 800-2000 +4.5/+2.8, 2000-4000 -3.3/+6.6, 4000-8000 -9.0/-7.5,
+		// 8000-16000 -38.9/-27.7; the bottom and middle are slightly reduced, keeping the top noise of a real /t/.
+		{ 500.0f, 700.0f, -13.0f },
+		{ 1300.0f, 1200.0f, -7.0f },
+		// Narrower formant and a darker top: the attack was 6.5 dB brighter than the bank at 4-8 kHz and is now level with it.
+		{ 3200.0f,  600.0f, 3.0f },
+		{ 7000.0f, 3000.0f, -13.0f },
+	};
+	// Top roll-off: above kBurstHiHz the amplitude falls as (kBurstHiHz/f)^kBurstHiExp.
+	static constexpr float kBurstHiHz = 4500.0f;
+	static constexpr float kBurstHiExp = 2.50f;
+	// burst level per preset, in dB relative to the preset volume (-120 = no
+	// layer, and then neither the table nor the layer is built).
+static const float kVoiceAttackDb[kProfilePresets] = {-120, -120, 16.5f, -120, -120, -120, -120};
+	// Consonant fade per key, dB per octave above C4 (0 = no fade). The bank loses
+	// its consonant somewhere between C4 and C5 and the note then starts with a
+	// rounded swell, so 53 fades it out there instead of cutting it at one key.
+static const float kVoiceAttackKeyDbPerOct[kProfilePresets] = {0.0f, 0.0f, -75.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+
+	// burst envelope: delay, attack, decay. A short attack with a delay puts the
+	// peak where the bank's consonant peak sits (2-4 ms), and the decay sets how
+	// long the consonant stays audible.
+
+	// the bank's consonant is noise coloured by formants, not a partial strike
+	// (flatness 0.31-0.38, no periodicity), and it starts with about 1.5 ms of
+	// silence. The envelope above and the darker formants below follow that
+	// measurement: the peak lands at 2.5 ms and the top above 5 kHz is at or
+	// below the bank's level.
+static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, false, false, 0.0010f};
+
+	// Consonant table: fractional harmonics of equal amplitude with a 1200-cent skirt. The kernel normalises by the amplitude sum, so the floor level is set by the layer amplitude and loudness (kVoiceAttackDb), not by the harmonic count.
+	noinline WaveTable BuildVoiceBurstTable(size_t slot, float freq, unsigned sampleRate)
+	{
+		// Body spectrum (same region, same vowel) colours the burst; only amplitudes are taken here, no width or tilt.
+		HarmonicDesc body[kProfileMaxPartials];
+		const size_t bodyN = DecodeVoiceAnchor(kVoiceProfiles[VoiceAnchorIndex(slot, freq)], 0.0f, 0.0f, false, body);
+		float vowelDb[kProfileHarmonics + 1];
+		for(size_t i = 0; i <= kProfileHarmonics; i++) vowelDb[i] = kProfileFloorDb;
+		const float invLn10 = 1.0f/Math::Log(10.0f);
+		for(size_t i = 0; i < bodyN; i++)
+		{
+			const size_t k = size_t(body[i].FreqMultiplier + 0.5f);
+			if(k >= 1 && k <= kProfileHarmonics) vowelDb[k] = 20.0f*Math::Log(body[i].Amplitude)*invLn10;
+		}
+		float vowelMax = kProfileFloorDb;
+		for(size_t i = 1; i <= kProfileHarmonics; i++) vowelMax = Math::Max(vowelMax, vowelDb[i]);
+		HarmonicDesc a[kBurstMaxHarmonics];
+		const float nyq = float(sampleRate)/2.0f;
+		size_t n = 0;
+		// Level of the consonant per key: dB-linear in log2(f), so neighbouring keys
+		// never step; above C4 the layer becomes the body's own delayed swell.
+		const float keyOct = Math::Log(freq/261.63f)*(1.0f/Math::Log(2.0f));
+		// The kernel normalises by the amplitude sum, so the fade is applied as its
+		// volume scale rather than as a per-partial multiplier, which cancels.
+		const float keyGain = keyOct > 0.0f? Math::Pow(10.0f, kVoiceAttackKeyDbPerOct[slot]*keyOct/20.0f): 1.0f;
+		Random::FastUniform<float> jitter(kBurstJitterSeed);
+		for(float k = kBurstFirstK; k <= kBurstMaxK; k += kBurstStepK)
+		{
+			// Line offset from the f0 grid (kBurstJitterK); at zero the expression is exactly k and the output is unchanged.
+			const float kj = kBurstJitterK > 0? k + kBurstJitterK*(jitter()*2.0f - 1.0f): k;
+			if(kj*freq > nyq) break;
+			// the low partials are tapered in: their skirts add up to a 200-400 Hz
+			// hump that the bank's consonant does not have.
+			const float taper = Math::Max(0.0f, kj >= kBurstFullK? 1.0f: (kj - kBurstFirstK)/(kBurstFullK - kBurstFirstK));
+			const float f = kj*freq;
+			float e = 0.0f;
+			for(const BurstFormant& fm : kBurstFormants)
+			{
+				const float x = (f - fm.Hz)/fm.Width;
+				e = Math::Max(e, Math::Pow(10.0f, fm.Db/20.0f)/(1.0f + x*x));
+			}
+			if(f > kBurstHiHz) e *= Math::Pow(kBurstHiHz/f, kBurstHiExp);
+			// Vowel colouring: the body profile interpolated by harmonic number (a dB profile sampled in dB); above the 48th the 48th level is used.
+			if(kVowelMix > 0 && vowelMax > kProfileFloorDb)
+			{
+				const float kc = Math::Min(kj, float(kProfileHarmonics));
+				const size_t k0 = size_t(kc) >= 1? size_t(kc): 1;
+				const size_t k1 = Math::Min(k0 + 1, kProfileHarmonics);
+				const float u = kc - float(k0);
+				const float db = vowelDb[k0] + (vowelDb[k1] - vowelDb[k0])*u;
+				e *= Math::Pow(Math::Max(Math::Pow(10.0f, (db - vowelMax)/20.0f), 0.001f), kVowelMix);
+			}
+			a[n++] = HarmonicDesc{taper*e, kj, kBurstBwCents};
+		}
+		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), keyGain, 16384, freq, sampleRate);
+	}
+
 	// Юбка гармоники (Update 51): у живых духовых гармоника — не линия, а
 	// горб резонанса трубы (Q≈3-5): в замере банка (.scratch/bins-near.mjs)
 	// вокруг КАЖДОЙ гармоники подъём на 8-15 дБ над подложкой, шириной
@@ -512,6 +980,194 @@ namespace
 		return vals[s] + (vals[s + 1] - vals[s])*u;
 	}
 
+	// ensemble of detuned singers. The bank plays a choir, not a periodic wave:
+	// each partial is 13-70 cents wide and the sustain breathes by 2-5 dB rms,
+	// while a single wave table has a 4 Hz wide line and a flat envelope. A
+	// singer is the same note table read at 2^(cents/1200) (WaveTableInstrument::
+	// FreqScale), which detunes the whole comb without the dft grid quantizing it
+	// (a baked detune would fall on the next bin, 35 cents on C3). The price is
+	// one interpolation per sample per singer instead of an additive oscillator.
+	// Weight is normalized against the reference of two singers at 0.7, so adding
+	// or removing singers does not change the preset level.
+	struct VoiceSpec
+	{
+		float Cents;   // detune from the note
+		float Weight;   // loudness share (1 = as the centre voice)
+		float VibratoHz;   // vibrato rate (0 = none)
+		float VibratoCents;   // vibrato depth
+		// start delay of the singer in seconds (0 = on note-on) and its own
+		// attack (0 = the preset one). A delayed singer enters through the
+		// envelope's leading segment, so the note body is not shifted.
+		float Delay;
+		// Own singer attack (s): 0 = as the preset. A short attack is needed where the entrance must be audible (52's body is 103 ms).
+		float Attack;
+	};
+
+	// each preset has its own singer set: the bank's roughness is 2.2 dB for the
+	// choir and 0.75 dB for "ooh", so one shared set gave the opposite.
+	static const VoiceSpec kvVoices[] = {       // 54 SynthVoice / 91 Pad4Choir
+		// 50 SynthStrings and 94 Pad7Halo have their own sets.
+		{-17.0f, 0.70f, 4.60f, 7.0f},
+		{ 17.0f, 0.70f, 5.20f, 7.0f}};
+	// 50 SynthStrings: an irregular spread with its own jitter rates. The owner
+	// heard two symmetric detunes as a single beating line, so the steps are
+	// irregular and each singer's depth wobbles at its own rate.
+	static const VoiceSpec kvStringVoices[] = {
+		{-17.6f, 0.62f, 1.75f, 3.5f},
+		{-11.5f, 0.62f, 2.03f, 3.0f},
+		{-2.7f, 0.62f, 2.28f, 3.8f},
+		{4.4f, 0.62f, 2.58f, 3.3f},
+		{12.7f, 0.62f, 2.85f, 3.5f}};
+	static const float kvStringJitterHz[] = {0.15f, 0.23f, 0.31f, 0.41f, 0.52f};
+	static const float kvStringJitterDepth[] = {0.60f, 0.50f, 0.44f, 0.52f, 0.62f};
+	// 52 ChoirAahs: a full choir (the owner's words). Nine singers, then five,
+	// then none, then three, then none again: a dense static spread of detunes
+	// beats periodically, and that beat pattern is what reads as "robot". What
+	// survives is the irregular-step form of 50/51 with its own jitter per singer,
+	// plus the time spread above, which makes the beat pattern non-stationary.
+	static const VoiceSpec kvHaloVoices[] = {
+		{-12.0f, 0.60f, 1.60f, 4.1f},
+		{ -8.0f, 0.60f, 1.85f, 4.9f},
+		{ -4.0f, 0.60f, 2.05f, 4.1f},
+		{  0.0f, 0.60f, 2.25f, 3.8f},
+		{  4.0f, 0.60f, 2.45f, 4.5f},
+		{  8.0f, 0.60f, 2.65f, 4.9f},
+		{ 12.0f, 0.60f, 2.90f, 4.1f}};
+	static const float kvHaloJitterHz[] = {0.13f, 0.19f, 0.26f, 0.34f, 0.40f, 0.46f, 0.52f};
+	static const float kvHaloJitterDepth[] = {0.58f, 0.52f, 0.46f, 0.42f, 0.49f, 0.55f, 0.61f};
+	// 53 VoiceOohs: the bank has almost no beating (0.75 dB) - one voice, one detuned copy next to the exact wavetable.
+	static const VoiceSpec kvOohVoices[] = {
+		{-3.0f, 0.45f, 4.90f, 3.0f}};
+	// 52 with three simultaneous singers: kept as history, the owner heard it as
+	// "noisy, robotic choir".
+	static const VoiceSpec kvSynthVoiceVoices[] = {
+		{-2.2f, 0.45f, 0.0f, 0.0f}};
+	// 91 Pad4Choir: an irregular set instead of the shared +-17 cent pair. Symmetric detunings always beat periodically with a single dominant, which the owner heard as a strange beating.
+	static const VoiceSpec kvPad4Voices[] = {
+		{-15.0f, 0.60f, 2.10f, 4.5f},
+		{ -5.0f, 0.60f, 2.55f, 5.0f},
+		{  4.5f, 0.60f, 2.95f, 4.5f},
+		{ 14.0f, 0.60f, 3.40f, 5.0f}};
+	static const float kvPad4JitterHz[] = {0.14f, 0.22f, 0.29f, 0.37f};
+	static const float kvPad4JitterDepth[] = {0.55f, 0.48f, 0.44f, 0.52f};
+	// A voice set is normalised to the reference two voices of 0.7 (sqrt(1+2*0.7^2) = 1.407), so adding or removing voices keeps the overall level and the instrument volume.
+	static constexpr float kvEnsembleRef = 1.407f;
+
+	// adds the detuned singers of a preset. The set is per preset, and the total
+	// level is normalized to the reference of two singers at 0.7, so the number
+	// of singers does not change the loudness. jitterHz/jitterDepth give each
+	// singer its own depth wobble rate; empty spans use the previous defaults.
+	constexpr unsigned kVibratoBlockSamples = 16;
+
+	noinline void AddVoiceTableEnsemble(MusicalInstrument& instr, WaveTableCache* tables,
+		Span<const VoiceSpec> voices, float volume, float expCoeff, const EnvelopeDesc& env,
+		Span<const float> jitterHz, Span<const float> jitterDepth)
+	{
+		float energy = 1.0f;
+		for(size_t v = 0; v < voices.Length(); v++) energy += voices[v].Weight*voices[v].Weight;
+		const float norm = kvEnsembleRef/Math::Sqrt(energy);
+		for(size_t v = 0; v < voices.Length(); v++)
+		{
+			// A singer's envelope may differ from the preset's in two numbers: start delay and attack length (see VoiceSpec).
+			EnvelopeDesc singerEnv = env;
+			if(voices[v].Delay > 0)
+			{
+				singerEnv.Delay = env.Delay + voices[v].Delay;
+				if(voices[v].Attack > 0) singerEnv.Attack = voices[v].Attack;
+			}
+			auto& wt = instr.WaveTables.EmplaceLast();
+			wt = Wt(tables, volume*norm*voices[v].Weight, expCoeff, singerEnv);
+			// Singer: same table, read rate *2^(cents/1200).
+			wt.FreqScale = Math::Pow(2.0f, voices[v].Cents/1200.0f);
+			wt.VibratoFrequency = voices[v].VibratoHz;
+			// 1 cent = 1/1731 of relative read-rate deviation.
+			wt.VibratoValue = voices[v].VibratoCents/1731.0f;
+			// A singer's vibrato fades in gradually (0.18 s delay, 0.5 s entry) and its depth breathes like a living voice; rate and depth jitter are per singer.
+			wt.VibratoDelay = 0.18f;
+			wt.VibratoRamp = 0.5f;
+			wt.VibratoJitter = jitterDepth.Empty()? 0.5f: jitterDepth[v];
+			wt.VibratoJitterFrequency = jitterHz.Empty()? 0.47f: jitterHz[v];
+			// Block vibrato kernel (see kVibratoBlockSamples).
+			wt.VibratoBlock = kVibratoBlockSamples;
+		}
+	}
+
+	// Parameters of the six choir/vocal presets, one table: preset data lives in WASM. Presets differ only in these four numbers, the profile data and the voice set.
+	struct VoicePresetSpec
+	{
+		const char* Name;
+		float BwHiCents;   // width of the upper harmonics (PADsynth), cents (BwSlope = 0)
+		float Volume;
+		float ExpCoeff;
+		EnvelopeDesc Env;
+		// b(k) = BwSlope*k cents instead of the BwHiCents formula. Appended at the end of the struct: aggregate initialisation binds values by position.
+		float BwSlope;
+		// Table length in samples (see BuildVoiceTable), also appended at the end for the same reason.
+		unsigned TableLength;
+	};
+	// 51 SynthStrings2 has its own voice set.
+	static const VoiceSpec kvSs2Voices[] = {
+		{-8.7f, 0.70f, 3.20f, 9.0f},
+		{8.7f, 0.70f, 4.10f, 9.0f}};
+
+	// envelope numbers per preset (attack, sustain, release) taken from the bank:
+	// 50/52 at 103-180 ms, 53 at 20 ms, 54 at 74 ms, 91 at 22 ms, 94 at 79 ms.
+	// Preset volume is calibrated so that the final instrument level matches the
+	// bank; it scales body and ensemble together.
+	static const VoicePresetSpec kVoicePresets[] =
+	{
+		// Volume renormalised for five voices instead of two (another incoherent sum), the preset's overall loudness unchanged.
+		{"SynthStrings", 70.0f, 0.1284f, 0.128f, {0.180f, 0, 1, 1.2f, 0, false, false}, 0.0f, 32768u},
+		// 52: the owner's v194 setting, restored by ear: the harmonic width grows to
+		// 52 cents at h28, no air floor and no singers - one table, as the bank's
+		// single-voice preset. The volume is the one fitted for this width.
+		{"ChoirAahs",    0.0f, 0.2674f, 0.000f, {0.103f, 0, 1, 1.2f, 0, false, false}, 52.0f, 32768u},
+		// 53: the body swells 10 ms late, so the consonant sounds alone first.
+		{"VoiceOohs",    60.0f, 0.0536f, 0.124f, {0.020f, 0, 1, 0.8f, 0, false, false, 0.012f}, 0.0f, 16384u},
+		// Volume and floor: the floor is raised 3.5 dB so the noise is back, and the level is rebalanced against the bank at C3/C4/C5.
+		{"SynthVoice",   70.0f, 0.0735f, 0.751f, {0.074f, 0, 1, 0.8f, 0, false, false}, 0.0f, 16384u},
+		// 91: attack shortened to 22 ms, the shortest of the voice group, because
+		// the bank starts this pad noticeably sharper.
+		{"Pad4Choir",    70.0f, 0.1265f, 0.022f, {0.022f, 0, 1, 1.5f, 0, false, false}, 0.0f, 16384u},
+		// Volume renormalised for seven voices instead of two; table length 16384 -> 32768 (twice finer DFT grid, twice rarer repeat).
+		{"Pad7Halo",     70.0f, 0.0795f, 0.462f, {0.079f, 0, 1, 1.5f, 0, false, false}, 0.0f, 32768u},
+		// GM 51 SynthStrings2 is a new preset (programme 51 used to go to Pad8Sweep). Envelope and ExpCoeff come from 50 SynthStrings: a plateau by 200-250 ms, then -1.1 dB/s. Volume calibrated against the bank at 51:48/60/72/84.
+		{"SynthStrings2", 0.0f, 0.0509f, 0.128f, {0.180f, 0, 1, 1.2f, 0, false, false}, 5.0f, 32768u},
+	};
+
+	// One preset: the table generator (region profile from kVoiceProfiles) plus an ensemble. Slot is the preset's index in kVoiceRegionCounts/kVoicePresets (same order).
+	noinline void AddVoicePreset(InstrumentLibrary& lib, size_t slot, Span<const VoiceSpec> voices,
+		Span<const float> jitterHz, Span<const float> jitterDepth)
+	{
+		const VoicePresetSpec& spec = kVoicePresets[slot];
+		auto& t = lib.Tables[spec.Name];
+		t.Generator = [slot](float freq, unsigned sampleRate) -> WaveTable
+		{
+			return BuildVoiceTable(slot, kVoicePresets[slot].TableLength, kVoicePresets[slot].BwHiCents,
+				kVoicePresets[slot].BwSlope, freq, sampleRate);
+		};
+		t.AllowMipmaps = false;
+		auto& instrument = lib.Instruments[spec.Name];
+		auto& wt = instrument.WaveTables.EmplaceLast();
+		wt = Wt(&t, spec.Volume, spec.ExpCoeff, spec.Env);
+		AddVoiceTableEnsemble(instrument, &t, voices, spec.Volume, spec.ExpCoeff, spec.Env,
+			jitterHz, jitterDepth);
+		// Consonant layer: one shared table for all presets (a flat bed without formants), used only by the preset with kVoiceAttackDb > -96; the others build neither the table nor the layer and keep their output unchanged.
+		const float attackDb = kVoiceAttackDb[slot];
+		if(attackDb > kProfileFloorDb)
+		{
+			auto& burst = lib.Tables["VoiceAttack"];
+			burst.Generator = [slot](float freq, unsigned sampleRate) -> WaveTable
+			{
+				return BuildVoiceBurstTable(slot, freq, sampleRate);
+			};
+			burst.AllowMipmaps = false;
+			// The layer ExpCoeff is 0 (it is not a preset decay): the layer dies with its own envelope, and the constant amplitude after the decay keeps it on the cheap SIMD kernel.
+			auto& layer = instrument.WaveTables.EmplaceLast();
+			layer = Wt(&burst, spec.Volume*Math::Pow(10.0f, attackDb/20.0f), 0, kVoiceAttackEnv);
+		}
+	}
+
 	// Один гармонический ряд вейвтаблицы. Num — uint8 (LTO и так всё сворачивает).
 	struct WtSeriesSpec
 	{
@@ -788,8 +1444,6 @@ InstrumentLibrary::InstrumentLibrary()
 	// Повторяющиеся наборы резонансов.
 	static const ResonanceDesc choirRes[] = {
 		{600, 100, 1.25f}, {900, 175, 1.95f}, {2200, 150, 3.5f}, {2600, 175, 4.4f}, {0, 2000, 7.5f}};
-	static const ResonanceDesc voiceRes[] = {
-		{600, 100, 1.25f}, {900, 230, 1.95f}, {2200, 840, 3.5f}, {2600, 175, 4.4f}, {0, 2000, 0.75f}};
 	static const ResonanceDesc padRes[] = {
 		{500, 140, 1}, {900, 540, 4}, {2100, 1400, 10}, {3700, 2100, 15}, {4700, 2800, 20}};
 	static const ResonanceDesc str3Res[] = {
@@ -2291,40 +2945,55 @@ InstrumentLibrary::InstrumentLibrary()
 		wt = Wt(&t, 0.2f, 5, {0.004f, 0.05f, 0.3f, 0.1f, 5, false, false});
 	}
 
+
+
+	// Choir/vocal profiles: begin. Six presets, one call each (see kVoicePresets). The data lives in WASM; the generator, ensemble and decoder code is shared and the anchor decoder comment explains it.
+	{
+		// The detuned voice set and the vibrato jitter are per preset; empty spans keep 0.47 Hz and 0.5.
+		struct PresetVoices
+		{
+			Span<const VoiceSpec> Voices;
+			Span<const float> JitterHz;
+			Span<const float> JitterDepth;
+		};
+		const PresetVoices voiceSets[] =
+		{
+			// 50 has its own set, 52 has no singers (one table), chosen by ear for pleasantness.
+			{SpanOf(kvStringVoices), SpanOf(kvStringJitterHz),      SpanOf(kvStringJitterDepth)},
+
+
+			// 52 has no singers (one exact table): its ensemble is what the owner
+			// rejected as "noisy, robotic"; the v194 canon he keeps is the plain table.
+			{Span<const VoiceSpec>(), Span<const float>(),         Span<const float>()},
+			{SpanOf(kvOohVoices),   Span<const float>(),           Span<const float>()},
+			{SpanOf(kvSynthVoiceVoices), Span<const float>(),      Span<const float>()},
+			{SpanOf(kvPad4Voices),  SpanOf(kvPad4JitterHz),        SpanOf(kvPad4JitterDepth)},
+			{SpanOf(kvHaloVoices),  SpanOf(kvHaloJitterHz),        SpanOf(kvHaloJitterDepth)},
+			{SpanOf(kvSs2Voices),   Span<const float>(),           Span<const float>()},
+		};
+		for(size_t i = 0; i < kProfilePresets; i++)
+			AddVoicePreset(*this, i, voiceSets[i].Voices, voiceSets[i].JitterHz, voiceSets[i].JitterDepth);
+	}
+	// GM 17 Percussive Organ used to share a table with SynthVoice; now SynthVoice has the measured bank spectrum and the organ keeps the previous smooth one (Series 1/k^2 + voiceRes).
+	{
+		static const ResonanceDesc percOrganRes[] = {
+			{600, 100, 1.25f}, {900, 230, 1.95f}, {2200, 840, 3.5f}, {2600, 175, 4.4f}, {0, 2000, 0.75f}};
+		auto& t = Tables["PercussiveOrgan"] = CreateWaveTables(
+			Sets(Res(Series(64, BW_40p40x, F_1overx2, F_x), SpanOf(percOrganRes), true)), 32768);
+		auto& wt = Instruments["PercussiveOrgan"].WaveTables.EmplaceLast();
+		wt = Wt(&t, 0.25f, 0, {0.008f, 0.2f, 0.6f, 0.05f, 0, true, false});
+	}
+	// Choir/vocal profiles: end.
+
 	// Прочие вейвтабличные инструменты — table-driven.
 	{
 		static const WtSpec specs[] =
 		{
-			{"ChoirAahs", nullptr, 16384, {
-				{64, BW_70p70x, F_1overx2, F_x, choirRes, 5, true},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.4f, 0, 0, 0, {0.1f, 0.1f, 0.7f, 0.4f, 0, false, false}},
 			{"ChoirA", nullptr, 16384, {
 				{100, BW_60p20x, A_0_8_0_8r_div_x2, F_x, choirRes, 5, false},
 				{0, F_1, F_1, F_1, nullptr, 0, false},
 				{0, F_1, F_1, F_1, nullptr, 0, false}},
 				0.4f, 0, 0, 0, {0.1f, 0.1f, 0.7f, 0.4f, 0, false, false}},
-			{"SynthVoice", nullptr, 32768, {
-				{64, BW_40p40x, F_1overx2, F_x, voiceRes, 5, true},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.2f, 0, 0, 0, {0.04f, 0, 1, 0.1f, 0, true, false}},
-			{"VoiceOohs", "SynthVoice", 0, {
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.25f, 0, 0, 0, {0.005f, 0.3f, 0.6f, 0.2f, 0, true, false}},
-			{"Pad4Choir", "SynthVoice", 0, {
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.65f, 0, 0, 0, {0.1f, 0.1f, 0.4f, 0.4f, 0, false, false}},
-			{"Pad7Halo", "SynthVoice", 0, {
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.6f, 0, 0, 0, {0.03f, 0.5f, 0.7f, 0.3f, 0, false, false}},
 			{"Pad8Sweep", nullptr, 32768, {
 				{100, BW_40p40x, F_1overx, F_x, padRes, 5, true},
 				{0, F_1, F_1, F_1, nullptr, 0, false},
@@ -2335,11 +3004,6 @@ InstrumentLibrary::InstrumentLibrary()
 				{0, F_1, F_1, F_1, nullptr, 0, false},
 				{0, F_1, F_1, F_1, nullptr, 0, false}},
 				0.15f, 0, 0, 0, {0.007f, 0, 1, 0.15f, 0, false, false}},
-			{"SynthStrings", "Pad8Sweep", 0, {
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.2f, 0, 0, 0, {0.3f, 0, 1, 0.2f, 0, false, false}},
 			{"SynthStrings3", nullptr, 32768, {
 				{100, BW_50p15x, A_0_8_0_1rSqrt_div_x2, F_x, str3Res, 7, false},
 				{0, F_1, F_1, F_1, nullptr, 0, false},
@@ -2375,11 +3039,6 @@ InstrumentLibrary::InstrumentLibrary()
 				{0, F_1, F_1, F_1, nullptr, 0, false},
 				{0, F_1, F_1, F_1, nullptr, 0, false}},
 				0.2f, 6, 0, 0, {0.02f, 0.2f, 0.3f, 0.07f, 6, false, false}},
-			{"PercussiveOrgan", "SynthVoice", 0, {
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false},
-				{0, F_1, F_1, F_1, nullptr, 0, false}},
-				0.25f, 0, 0, 0, {0.008f, 0.2f, 0.6f, 0.05f, 0, true, false}},
 			{"Violin", nullptr, 32768, {
 				{100, F_0_1, A_0_8_1_0_5r_div_x, F_x, violinRes, 6, true},
 				{100, F_1200, A_0_2_1_0_7r_div_x, F_x, violinRes, 6, true},
@@ -2685,11 +3344,12 @@ InstrumentLibrary::InstrumentLibrary()
 		{"Timpani", 6.4923766f},
 		{"StringEnsemble", 0.885255787f},
 		{"StringEnsemble2", 0.85068152f},
-		{"SynthStrings", 2.10827779f},
+		{"SynthStrings", 0.541988564f},
+		{"SynthStrings2", 0.581107629f},
 		{"Pad8Sweep", 0.951159042f},
-		{"ChoirAahs", 0.410166021f},
-		{"VoiceOohs", 0.875044174f},
-		{"SynthVoice", 0.807618388f},
+		{"ChoirAahs", 0.928544591f},
+		{"VoiceOohs", 1.463119199f},
+		{"SynthVoice", 0.818447646f},
 		{"OrchestraHit", 6.73203941f},
 		{"Trumpet", 0.2982267f},
 		{"TrumpetOld", 0.119836103f},
@@ -2717,9 +3377,9 @@ InstrumentLibrary::InstrumentLibrary()
 		{"BassLead", 0.237394204f},
 		{"NewAge", 0.594710379f},
 		{"Pad3Polysynth", 0.44645347f},
-		{"Pad4Choir", 0.858471492f},
+		{"Pad4Choir", 0.454688882f},
 		{"Pad5Bowed", 0.892858465f},
-		{"Pad7Halo", 0.312697938f},
+		{"Pad7Halo", 0.731739191f},
 		{"Fx1Rain", 0.423555829f},
 		{"Fx2SoundTrack", 4.43444022f},
 		{"Fx4Atmosphere", 0.140412232f},

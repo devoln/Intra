@@ -68,7 +68,8 @@ MidiInstrumentSet GetMapping()
 	instruments[48] = lib["StringEnsemble"];
 	instruments[49] = lib["StringEnsemble2"];
 	instruments[50] = lib["SynthStrings"];
-	instruments[51] = lib["Pad8Sweep"];
+	// GM 51 Synth Strings 2 is its own preset; programme 51 used to go to Pad8Sweep (89/93 keep it).
+	instruments[51] = lib["SynthStrings2"];
 	instruments[52] = lib["ChoirAahs"];
 	instruments[53] = lib["VoiceOohs"];
 	instruments[54] = lib["SynthVoice"];
