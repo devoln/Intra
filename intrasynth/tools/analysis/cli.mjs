@@ -9,6 +9,7 @@
 //   node intrasynth/tools/analysis/cli.mjs mod 75:60 [--band 0.2,15]
 //   node intrasynth/tools/analysis/cli.mjs bands 75:72 [--from 1.4] [--to 4.0]
 //   node intrasynth/tools/analysis/cli.mjs timbre 43:60 [--to 0.5] [--len 0.06] [--harm 6]
+//   node intrasynth/tools/analysis/cli.mjs cost 50:60 52:60 [--sec 3] [--chord 5] [--poly 16]
 //
 // prog:key — как везде: программа GM и MIDI-клавиша.
 // Update 74: `prog` — программа СИНТЕЗАТОРА, а НЕ пресет банка. Для банка
@@ -21,6 +22,7 @@
 // начала рендера: note-on стоит не на нуле, и окна «атаки» раньше читали
 // тишину до ноты (все окна выходили в полу шума). Если нужно от начала
 // рендера — `--noteon 0`.
+import path from "node:path";
 import { SR, renderPair, renderOurs, renderBank, DEFAULT_WASM_JS, DEFAULT_SF2, DEFAULT_NOTE_ON } from "./lib/render.mjs";
 import { fftInPlace, ifftInPlace, naiveDft, modPeaks, modCentroid, autocorrelation } from "./lib/fft.mjs";
 import { db, levelWindows, referenceLevel, detrend, envelope, bandpass, rms } from "./lib/dsp.mjs";
@@ -41,6 +43,118 @@ function parseArgs(argv) {
 }
 const pad = (s, n) => String(s).padStart(n);
 const f0of = (key) => 440 * Math.pow(2, (key - 69) / 12);
+
+// ---------------------------------------------------------------------------
+// `cost` measures the instrument cost in milliseconds.
+//
+// Three separate things that are easy to confuse, and all three matter:
+//
+// 1. Table build (cold note): additive presets build the table once per (region, frequency) and cache it, so the cost is cold note minus warm note. This is where a preset gets more expensive from a profile or wide air harmonics: the number of partials before the inverse FFT grows, not the playback cost. 2. NoteOn (warm note) creates the samplers: the wavetable layer plus a WaveFormSampler per ensemble singer. 3. Render reports milliseconds per second of sound (percent of realtime); it does not depend on the partial count, since a wavetable singer costs the same per sample as the layer alone.
+//
+// One WASM instance and the live source (_SourceCreateLive) rather than renderOurs: renderOurs starts a second instance, so the probe's handles and state never reach it.
+//
+// Usage: node intrasynth/tools/analysis/cli.mjs cost 50:60 52:60 [--wasm path]
+//         [--sec 3] [--chord 5] [--reps 7] [--json]
+async function costCommand(opts, notes) {
+  const wasmJs = opts.wasm || DEFAULT_WASM_JS;
+  const sec = Number(opts.sec || 3);
+  const reps = Number(opts.reps || 7);
+  const chordN = opts.chord ? Number(opts.chord) : 0;
+  // the path is resolved here: the import is relative to this file, the path is from the repository root
+  const { default: Factory } = await import(path.resolve(wasmJs));
+  const Module = await Factory();
+  const BLOCK = 256;
+  const src = Module._SourceCreateLive(SR, 2);
+  const ptr = Module._malloc(BLOCK * 2 * 4);
+  const drain = (blocks) => { for (let i = 0; i < blocks; i++) Module._SourceGetUninterleavedSamples(src, ptr, BLOCK, BLOCK); };
+  const ev = (s, d0, d1) => Module._SourceSendMidiEvent(src, s, d0, d1);
+  const med = (a) => { const b = [...a].sort((x, y) => x - y); return b[b.length >> 1]; };
+  const min = (a) => Math.min(...a);
+  const rows = [];
+  for (const note of notes) {
+    const [program, key] = note.split(":").map(Number);
+    ev(0xC0, program, 0);
+    ev(0x80, key, 0);
+    drain(8);
+    const cold = [], warm = [], chord = [];
+    for (let k = 0; k < reps; k++) {
+      ev(0x80, key, 0);
+      drain(6);
+      let t = performance.now();
+      ev(0x90, key, 90);
+      (k === 0 ? cold : warm).push(performance.now() - t);
+      drain(6);
+    }
+    // Render: the note already sounds and the table is cached, so this measures the per-sample cost only.
+    const blocks = Math.round(sec * SR / BLOCK);
+    const r = [];
+    for (let k = 0; k < 3; k++) {
+      ev(0x80, key, 0);
+      drain(6);
+      ev(0x90, key, 90);
+      drain(8);
+      const t = performance.now();
+      drain(blocks);
+      r.push(performance.now() - t);
+      ev(0x80, key, 0);
+      drain(6);
+    }
+    const renderMs = min(r);
+    // Polyphony: the same number of seconds, but with --poly notes at once. One voice is not enough to answer "is this expensive?" when a hand plays chords.
+    const poly = opts.poly ? Number(opts.poly) : 0;
+    let polyMs = null, polyPct = null;
+    if (poly > 1) {
+      const keys = Array.from({ length: poly }, (_, i) => key + (i % 12) + Math.floor(i / 12) * 12);
+      const pr = [];
+      for (let k = 0; k < 3; k++) {
+        for (const kk of keys) ev(0x80, kk, 0);
+        drain(8);
+        for (const kk of keys) ev(0x90, kk, 90);
+        drain(blocks);
+        const t = performance.now();
+        drain(blocks);
+        pr.push(performance.now() - t);
+        for (const kk of keys) ev(0x80, kk, 0);
+        drain(8);
+      }
+      polyMs = min(pr);
+      polyPct = polyMs / (sec * 1000) * 100;
+    }
+    if (chordN > 1) {
+      const keys = Array.from({ length: chordN }, (_, i) => key + i * 2);
+      for (let k = 0; k < 4; k++) {
+        for (const kk of keys) ev(0x80, kk, 0);
+        drain(8);
+        const t = performance.now();
+        for (const kk of keys) ev(0x90, kk, 90);
+        chord.push(performance.now() - t);
+        for (const kk of keys) ev(0x80, kk, 0);
+        drain(8);
+      }
+    }
+    rows.push({
+      note, program, key,
+      coldMs: cold[0],
+      warmMs: med(warm || [0]),
+      tableMs: cold[0] - med(warm || [0]),
+      renderMs, renderPct: renderMs / (sec * 1000) * 100,
+      chordMs: chord.length ? min(chord) : null,
+      chordPerNoteMs: chord.length ? min(chord) / chordN : null,
+      poly, polyMs, polyPct,
+      polyPerNotePct: polyPct !== null ? polyPct / poly : null,
+    });
+  }
+  Module._SourceFree(src);
+  if (opts.json) { console.log(JSON.stringify(rows, null, 2)); return; }
+  console.log(`--- цена, ${wasmJs} (${SR} Гц, блок ${BLOCK})`);
+  console.log("  нота   сборка таблицы   NoteOn(тёплая)   рендер: мс на " + sec + " с   % реалтайма"
+    + (chordN > 1 ? `   аккорд ${chordN} нот (на ноту)` : "")
+    + (rows[0].poly > 1 ? `   ${rows[0].poly} нот разом: % реалтайма (на ноту)` : ""));
+  for (const r of rows)
+    console.log(`  ${pad(r.note, 7)} ${pad(r.tableMs.toFixed(2), 8)} мс ${pad(r.warmMs.toFixed(2), 12)} мс ${pad(r.renderMs.toFixed(1), 15)} мс ${pad(r.renderPct.toFixed(2), 10)} %`
+      + (chordN > 1 ? `   ${r.chordMs.toFixed(2)} мс (${r.chordPerNoteMs.toFixed(2)})` : "")
+      + (r.polyMs !== null ? `   ${r.polyPct.toFixed(1)} % (${r.polyPerNotePct.toFixed(3)})` : ""));
+}
 
 function selftest() {
   let fail = 0;
@@ -116,11 +230,12 @@ async function main() {
   const wasmJs = opts.wasm || DEFAULT_WASM_JS;
   const noteOn = opts.noteon !== undefined ? Number(opts.noteon) : DEFAULT_NOTE_ON;
   if (cmd === "selftest") return selftest();
-  if (!["vib", "env", "attack", "mod", "trem", "period", "floor", "bands", "spec", "timbre", "pitch"].includes(cmd)) {
-    console.log("Команды: selftest | vib | env | attack | mod | trem | period | floor | bands | spec | timbre | pitch   (prog:key ...)");
+  if (!["vib", "env", "attack", "mod", "trem", "period", "floor", "bands", "spec", "timbre", "pitch", "cost"].includes(cmd)) {
+    console.log("Команды: selftest | vib | env | attack | mod | trem | period | floor | bands | spec | timbre | pitch | cost   (prog:key ...)");
     process.exit(2);
   }
   if (!notes.length) { console.log("Укажите ноты вида 75:60"); process.exit(2); }
+  if (cmd === "cost") return costCommand(opts, notes);
   for (const note of notes) {
     const [program, key] = note.split(":").map(Number);
     const pair = await renderPair({ program, key, wasmJs, sf2: opts.sf2 || DEFAULT_SF2 });

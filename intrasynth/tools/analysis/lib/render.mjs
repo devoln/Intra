@@ -7,7 +7,7 @@ import { execFileSync } from "node:child_process";
 
 export const SR = 44100;
 export const DEFAULT_SF2 = "/tmp/sf2extract/Titanic 200 GM-GS v1.2.sf2";
-export const DEFAULT_WASM_JS = "web/generated/IntraSynth.js";
+export const DEFAULT_WASM_JS = "intrasynth/web/generated/IntraSynth.js";
 export const DEFAULT_NOTE_ON = 0.2;
 
 /// Update 74: СООТВЕТСТВИЕ программы синтезатора программе БАНКА.
@@ -21,7 +21,7 @@ export const DEFAULT_NOTE_ON = 0.2;
 /// prog 73.
 ///
 /// Здесь то же соответствие задано в ОДНОМ месте, чтобы зонд, CLI и панель
-/// A/B никогда не расходились. Проверка: `samples/Flute/C4.wav` (prog 73)
+/// A/B никогда не расходились. Проверка: `samples/Flute/C4.flac` (prog 73)
 /// совпадает с `renderBank({program: 73})` по h2..h12 в пределах 0.5 дБ.
 export const BANK_PROGRAM = {
   43: 73,  // FluteClean  (Titanic «Flute»)

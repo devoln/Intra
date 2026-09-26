@@ -411,3 +411,80 @@ export function bandNoiseFloor(x, f0, {
     }),
   };
 }
+
+// ___________________________________________________________________________
+// Harmonic width (the u183-width probe moved into lib).
+//
+// The owner asked to measure the width of every harmonic and its distribution rather than a single fitter. Width here is in cents at -6 and -20 dB around the local peak k*f0, plus the share of energy within +-30 cents against +-0.45*f0 (how much of it is a line, not a hump). The result is the median over h2..h12, the single figure used to compare our instrument with the bank (52 ChoirAahs: 91 cents against the bank's 93).
+//
+// Why average over frames instead of one FFT: the skirt of a wide harmonic is a sum of narrow terms that interfere inside a single frame, so the width jumps from frame to frame. A 16384 window (2.69 Hz grid) with 50% overlap averages that out.
+export function harmonicWidths(x, f0, {
+  kmax = 12, sampleRate = 44100, fromSec = 1.4, toSec = 4.0, maxHz = 16000,
+} = {}) {
+  const N = 16384, hop = N >> 1;
+  const s0 = Math.round(fromSec * sampleRate), s1 = Math.min(x.length, Math.round(toSec * sampleRate));
+  if (s1 - s0 < N * 2) return { perHarmonic: [], medianW6: null, medianW20: null, medianLineDb: null };
+  const win = new Float64Array(N);
+  for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+  const acc = new Float64Array(N / 2);
+  let frames = 0;
+  for (let s = s0; s + N <= s1; s += hop) {
+    const re = new Float64Array(N), im = new Float64Array(N);
+    for (let i = 0; i < N; i++) re[i] = x[s + i] * win[i];
+    fftInPlace(re, im);
+    for (let k = 1; k < N / 2; k++) acc[k] += Math.hypot(re[k], im[k]);
+    frames++;
+  }
+  if (!frames) return { perHarmonic: [], medianW6: null, medianW20: null, medianLineDb: null };
+  for (let k = 1; k < acc.length; k++) acc[k] /= frames;
+  const binHz = sampleRate / N;
+
+  const width = (fc, dropDb) => {
+    const c = Math.max(2, Math.min(acc.length - 2, Math.round(fc / binHz)));
+    const half = Math.max(4, Math.round(0.35 * fc / binHz));
+    let bi = c, bv = 0;
+    for (let k = Math.max(1, c - half); k <= Math.min(acc.length - 2, c + half); k++)
+      if (acc[k] > bv) { bv = acc[k]; bi = k; }
+    const thr = bv * Math.pow(10, dropDb / 20);
+    let lo = bi, hi = bi;
+    while (lo > 1 && acc[lo] > thr) lo--;
+    while (hi < acc.length - 2 && acc[hi] > thr) hi++;
+    // Linear interpolation of the threshold crossing: without it the 2.69 Hz grid gives tens of cents of error on low harmonics.
+    const cross = (iIn, iOut) => {
+      const a = acc[iIn], b = acc[iOut];
+      const u = a === b ? 0.5 : (a - thr) / (a - b);
+      return (iIn + (iOut - iIn) * Math.max(0, Math.min(1, u))) * binHz;
+    };
+    const fLo = lo >= bi ? fc : cross(lo + 1, lo);
+    const fHi = hi <= bi ? fc : cross(hi - 1, hi);
+    const cents = Math.max(0, 1200 * Math.log2(Math.max(fHi, 1) / Math.max(fLo, 1)));
+    const energy = (mult) => {
+      const lo2 = Math.max(1, Math.ceil(fc / mult / binHz));
+      const hi2 = Math.min(acc.length - 1, Math.floor(fc * mult / binHz));
+      let e = 0;
+      for (let k = lo2; k <= hi2; k++) e += acc[k] * acc[k];
+      return e;
+    };
+    const eLine = energy(Math.pow(2, 30 / 1200)), eBand = energy(Math.pow(2, 450 / 1200));
+    return { cents, lineDb: 10 * Math.log10(Math.max(eLine, 1e-24) / Math.max(eBand, 1e-24)) };
+  };
+
+  const perHarmonic = [];
+  for (let k = 1; k <= kmax; k++) {
+    const fc = k * f0;
+    if (fc > maxHz || fc > sampleRate / 2 - 100) break;
+    perHarmonic.push({ k, hz: fc, w6: width(fc, -6).cents, w20: width(fc, -20).cents, lineDb: width(fc, -6).lineDb });
+  }
+  const median = (vals) => {
+    if (!vals.length) return null;
+    const a = vals.slice().sort((p, q) => p - q);
+    return a[Math.floor(a.length / 2)];
+  };
+  const audible = perHarmonic.filter((h) => h.k >= 2 && h.k <= 12);
+  return {
+    perHarmonic,
+    medianW6: median(audible.map((h) => h.w6)),
+    medianW20: median(audible.map((h) => h.w20)),
+    medianLineDb: median(audible.map((h) => h.lineDb)),
+  };
+}
