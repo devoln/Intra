@@ -104,7 +104,7 @@ Temporary Items
 
 # Temporary experiment output (build trees, probes, scratch) — never tracked.
 # Ad-hoc build trees and probe artifacts must live under .scratch/ or be
-# gitignored; see AGENTS.md.
+# gitignored.
 /.scratch/
 /build-*/
 /probe-tmp/
@@ -116,3 +116,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+# ChatGPT-local agent instructions. These are handoff/runtime metadata only; never track.
+/AGENTS.md
+/.agents/
+

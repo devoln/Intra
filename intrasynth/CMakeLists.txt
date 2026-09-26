@@ -158,7 +158,9 @@ list(REMOVE_ITEM SYNTH_CORE_SOURCES
 # executable already compiles SYNTH_CORE_SOURCES directly, so building the
 # same sources again as an unreferenced static library only doubles cold-build
 # work and does not contribute a byte to the WASM.
-add_library(IntraSynthCore STATIC ${SYNTH_CORE_SOURCES})
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    add_library(IntraSynthCore STATIC ${SYNTH_CORE_SOURCES})
+endif()
 
 # The render hot loops live in a handful of files. When size-matters builds are
 # enabled, we can keep everything else at -Os/-Oz but still compile these files
@@ -187,6 +189,11 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     add_executable(IntraSynth ${SYNTH_CORE_SOURCES})
+    # Native CMake unity build; batch size is tunable for the available CPU quota.
+    set(INTRA_SYNTH_UNITY_BATCH 8 CACHE STRING "Sources per IntraSynth unity TU; 0 disables unity")
+    if(INTRA_SYNTH_UNITY_BATCH GREATER 0)
+        set_target_properties(IntraSynth PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE ${INTRA_SYNTH_UNITY_BATCH})
+    endif()
     target_link_libraries(IntraSynth Intra)
     set_target_properties(IntraSynth PROPERTIES
         LINK_FLAGS "${INTRA_SYNTH_LINK_FLAGS}")

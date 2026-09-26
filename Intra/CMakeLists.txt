@@ -65,8 +65,40 @@ endif()
 endif()
 
 option(UNITY_BUILD "Use fast unity build." ON)
-if(UNITY_BUILD)
-enable_unity_build(Intra INTRA_SOURCES)
+
+# The web synth links only this small closure of Intra implementation files.
+# Keeping the source set explicit avoids compiling unrelated Image/Font/Data/
+# legacy synth/test code on every ephemeral WASM rebuild. Headers remain
+# available through include_directories and are not target source files.
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(INTRA_SOURCES
+        Audio/AudioProcessing.cpp
+        Audio/AudioSource.cpp
+        Audio/Midi/DeviceState.cpp
+        Audio/Midi/MidiFileParser.cpp
+        Audio/Midi/RawEvent.cpp
+        Audio/Midi/TrackCombiner.cpp
+        Audio/Midi/TrackParser.cpp
+        Audio/MusicNote.cpp
+        Audio/Resample.cpp
+        Audio/SampleConversion.cpp
+        Audio/Synth/ExponentialAttenuation.cpp
+        Hash/Murmur.cpp
+        Memory/Allocator/Global.cpp
+        Memory/Allocator/System.cpp
+        Range/Mutation/Transform.cpp
+        Utils/Debug.cpp
+    )
+    set(INTRA_HEADERS "")
+endif()
+
+# CMake has had native unity-build support since 3.16. Prefer it whenever
+# available; retain the historical generated Intra.UB.cc only as a fallback
+# for genuinely old CMake installations.
+set(_INTRA_LEGACY_UNITY OFF)
+if(UNITY_BUILD AND CMAKE_VERSION VERSION_LESS "3.16")
+    enable_unity_build(Intra INTRA_SOURCES)
+    set(_INTRA_LEGACY_UNITY ON)
 endif()
 
 # In size-optimised builds the whole library compiles at -Oz/-Os, which badly
@@ -79,6 +111,21 @@ if(BUILD_DYNAMIC_LIB)
 add_library(Intra SHARED ${INTRA_SOURCES} ${INTRA_HEADERS})
 else()
 add_library(Intra STATIC ${INTRA_SOURCES} ${INTRA_HEADERS})
+endif()
+
+# Four CPU-equivalents are available in the ChatGPT build container. With the
+# web source set reduced to 15 files, one Intra unity TU plus three synth unity
+# TUs keeps all CPUs busy without reparsing common headers.
+if(UNITY_BUILD AND NOT _INTRA_LEGACY_UNITY)
+    if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        # Only 15 implementation files remain in the web closure, so one TU is
+        # cheap and leaves the other CPU slots to the synth unity TUs.
+        set_target_properties(Intra PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 32)
+    else()
+        # Match the historical native all-in-one Intra.UB.cc behaviour while
+        # letting CMake own generation/dependencies.
+        set_target_properties(Intra PROPERTIES UNITY_BUILD ON UNITY_BUILD_BATCH_SIZE 10000)
+    endif()
 endif()
 
 # In size-optimised builds the whole library compiles at -Oz/-Os, which badly
