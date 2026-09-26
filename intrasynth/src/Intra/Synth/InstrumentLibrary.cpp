@@ -39,6 +39,7 @@ namespace
 	// записан ВЫШЕ определения.
 	noinline float MixParam(const float* xs, const float* vals, size_t n, float x);
 
+
 	// Формулы web-midisynth: один enum вместо десятков отдельных лямбд-функций.
 	// Параметры: x = 1..numHarmonics, r = случайное число [0;1).
 	enum HarmonicFunc : uint8
@@ -533,7 +534,7 @@ namespace
 	};
 }
 
-InstrumentLibrary::~InstrumentLibrary() {}
+InstrumentLibrary::~InstrumentLibrary() { delete HiHatCache; }
 
 InstrumentLibrary::InstrumentLibrary()
 {
@@ -554,14 +555,14 @@ InstrumentLibrary::InstrumentLibrary()
 	{
 		// Громкость 2026-08-28; без ADSR (AdditiveSampler сам гасит ноту).
 		auto& g = Instruments["AcousticPiano"];
-		g.GenericInstruments.EmplaceLast([](){
-				// Партиалы/атака/унисон (Detune 1.4) — из SF2-семпла.
+		g.DynamicGeneric = DynamicGenericInstrument([](){
+				// Партиалы/атака/унисон (Detune 1.4) — из reference bank-семпла.
 				return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 2.18524432f, 1.0f, 0, 0.0f, 0};
 			}());
 	}
 	{
 		auto& g = Instruments["BrightAcousticPiano"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// Ярче; BeatScale=0 (региональный профиль давал AM 15-40 дБ, 2026-08-29).
 			return AdditivePianoInstrument{0.25f, 40, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 2.28823171f, 1.0f, 0, 0.0f, 1};
 		}());
@@ -569,7 +570,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	{
 		auto& g = Instruments["ElectricGrandPiano"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// CP-80: BeatScale=0, TableId=XP50, Brightness 0.40 + DecayStiffness 0.02
 			// (калибровки 2026-08-31..09-04, см. ворклог).
 			return AdditivePianoInstrument{0.40f, 40, 0.42f, 0.8f, 0.02f, 2.5f, 2, 0.1f, 0.0f, 1.05803492f, 0.0f, PianoTableElectricGrand, 0.0f, 2};
@@ -578,23 +579,24 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	{
 		auto& g = Instruments["HonkyTonkPiano"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// Honky-tonk: BeatScale=1 (характер в басу G2/требли C5+, середина
 			// плоская), TableId=HonkyTonk (в Titanic алиасит acoustic, 2026-08-30).
-			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.4f, 0.0f, 1.88473372f, 1.0f, PianoTableHonkyTonk, 0.0f, 3};
+			// Generic velBrightness=0: velocity color идёт через прямой reference bank filter modulator.
+			return AdditivePianoInstrument{0.3f, 40, 0.9f, 1.0f, 0.0f, 9.0f, 3, 0.0f, 0.0f, 1.88473372f, 1.0f, PianoTableHonkyTonk, 0.0f, 3};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.5f, 0, false, true});
 	}
 	{
 		auto& g = Instruments["ElectricPiano1"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// Родс EVP73: BeatScale=0, TableId=EP1; VolumeScale откалиброван относительно AGP по Titanic.
 			return AdditivePianoInstrument{0.55f, 40, 0.42f, 0.7f, 0.0f, 0.8f, 2, 0.05f, 0.0f, 0.665196568f, 0.0f, PianoTableElectricPiano1, 0.0f, 4};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 1.0f, 0, false, true});
 	}	{
  		auto& g = Instruments["ElectricPiano2"];
- 		g.GenericInstruments.EmplaceLast([](){
+ 		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// DX7 EP2: TableId=EP2 из слышимого слоя "* Soft" (14 зон, 2026-09-04),
 			// 2 струны BeatCents=6.0 (биения ~2.2 Гц как в семпле); VolumeScale — линейная калибровка.
 			return AdditivePianoInstrument{0.6f, 40, 0.42f, 0.6f, 0.0f, 6.0f, 2, 0.05f, 0.0f, 1.5324983f, 1.0f, PianoTableElectricPiano2, 6.0f, 5};
@@ -603,7 +605,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	{
 		auto& g = Instruments["Harpsichord"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// Клавесин: TableId=Harpsichord 8'I (9 регионов), линейный VolumeScale.
 			return AdditivePianoInstrument{0.5f, 40, 0.4f, 1.6f, 0.012f, 0.0f, 1, 0.0f, 0.0f, 2.3850638f, 1.0f, PianoTableHarpsichord, 0.0f, 6};
 		}());
@@ -611,9 +613,10 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	{
 		auto& g = Instruments["Clavinet"];
-		g.GenericInstruments.EmplaceLast([](){
+		g.DynamicGeneric = DynamicGenericInstrument([](){
 			// Клавинет: TableId=Clavinet (11 регионов, короткие семплы), линейный VolumeScale.
-			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.2f, 0.0f, 2.45244909f, 1.0f, PianoTableClavinet, 0.0f, 7};
+			// Held-body в reference bank velocity-invariant; velocity меняет только releaseVolEnv.
+			return AdditivePianoInstrument{0.65f, 40, 0.4f, 2.8f, 0.015f, 0.6f, 2, 0.0f, 0.0f, 2.45244909f, 1.0f, PianoTableClavinet, 0.0f, 7};
 		}());
 		g.Envelope = MakeEnvelope({0, 0, 1, 0.15f, 0, false, true});
 	}
@@ -1212,9 +1215,9 @@ InstrumentLibrary::InstrumentLibrary()
 			});
 	}
 	{
-		// Флейта (GM 73) — регистровые профили по ЗОНАМ реального SF2-банка
+		// Флейта (GM 73) — регистровые профили по ЗОНАМ реального reference bank-банка
 		// (Titanic, Roland-сэмплы), обновлено 2026-09-06 по справедливому A/B
-		// СУХИХ рендеров (наш синтезатор против fluidsynth тех же банков без
+		// СУХИХ рендеров (наш синтезатор против reference renderer тех же банков без
 		// реверба/хоруса, cherilady-flute первые 15 с + 3-секундные ноты):
 		//   - C5/D5 (зона D5(R), ключи 72-75): совпадали по h3 (−1 дБ), но были
 		//     темнее банка на h4/h5 (наши −30/−23 против −24/−19 дБ) и ярче на
@@ -1271,7 +1274,7 @@ InstrumentLibrary::InstrumentLibrary()
 		// 0 → V1 за T1 (короткие ноты по-прежнему набирают громкость —
 		// артикуляция 16-х сохранена), затем экспоненциальный (линейный в дБ)
 		// V1 → 1 за T2 — «дыхание» в начале удержанной ноты. Сустейн 1
-		// (SF2-петля держится, пока нота нажата); релиз 0.10 с
+		// (reference bank-петля держится, пока нота нажата); релиз 0.10 с
 		// экспоненциальный, как раньше.
 		wt.EnvelopeProfile = [](float freq)
 		{
@@ -1348,7 +1351,7 @@ InstrumentLibrary::InstrumentLibrary()
 		// закрыты снизу → резонируют почти только по нечётным партиалам
 		// (полая нота). Физика (Fletcher, «Stopped-pipe wind instruments», 2005):
 		// струя даёт и заметные чётные партиалы, поэтому h2/h4 в банке не
-		// нулевые. Update 24: профиль перетюнен по ЧИСТЫМ замерам Titanic SF2
+		// нулевые. Update 24: профиль перетюнен по ЧИСТЫМ замерам Titanic reference bank
 		// (.scratch/panflute-probe.mjs, program 75, удержания 2 с, 0.6-2.0 с):
 		// у банка сильная h3 (−5..−7 дБ отн. h1 на C4-G4 — «полый» тембр
 		// остановленной трубы), выше по регистру тон чище (D5: h3 −15.5, G5:
@@ -1376,7 +1379,7 @@ InstrumentLibrary::InstrumentLibrary()
 		// опорном ключе зоны (60/67/74/79).
 		// Update 47: профили = рендер банка по L-каналу (.scratch/skirt-v47.mjs,
 		// пик гармоники отн. h1) в опорных клавишах ФАКТИЧЕСКИХ семплов
-		// (.scratch/oc-rec-sf2map.js): panflutea3la 0..70 (опоры 60/67/70),
+		// (.scratch/oc-rec-referencemap.js): panflutea3la 0..70 (опоры 60/67/70),
 		// panfluted4la 71..78 (72/74/78), panfluteg4la 79..108 (79 и 91).
 		// Прежние 4 «октавные» опоры мешали профили через границы семплов, а
 		// значения снимались усреднением L+R — гребёнка L+R занижает чётные
@@ -1830,7 +1833,7 @@ InstrumentLibrary::InstrumentLibrary()
 		// До Update 43 было 4 опорные точки с лог-интерполяцией — там, где банк
 		// уже переключился, тембр уезжал до 14 дБ (клавиши 70-73 и 78-80).
 		// Update 43c: зоны = фактические границы семплов банка
-		// (.scratch/oc-rec-sf2map.js): Recorder-D3 0..66, A4 67..69, B4 70..71,
+		// (.scratch/oc-rec-referencemap.js): Recorder-D3 0..66, A4 67..69, B4 70..71,
 		// C#5 72..73, D5 74..77, A5 78..80, A#5 81..105. Значения — рендер банка
 		// (L-канал) в нижней клавише зоны, дБ отн. h1. Прежние 4 опорные точки
 		// с лог-интерполяцией давали до 14 дБ ошибки там, где банк уже
@@ -2063,7 +2066,7 @@ InstrumentLibrary::InstrumentLibrary()
 	}
 	{
 		// Пикколо (GM 72) — отдельный инструмент, НЕ клон флейты. Замерено по
-		// семплам Roland "piccolo" (#956-959) из того же SF2: пронзительный
+		// семплам Roland "piccolo" (#956-959) из того же reference bank: пронзительный
 		// тембр с очень сильной 2-й гармоникой (h2 −4..−6 дБ отн. h1 на E5),
 		// на E6 тон чище (h2 −17, h3 −41), на верху снова яркий (D7: h2 −3).
 		// Три опорные точки E5/E6/D7, лог-интерполяция, вне диапазона —
@@ -2474,7 +2477,7 @@ InstrumentLibrary::InstrumentLibrary()
 				0.3f, 0, 0.5f, 0.003f, {0.02f, 0.07f, 0.92f, 0.23f, 0, false, false}},
 			// NB: "Flute" (GM 73) and "Recorder" (GM 74) are NOT registered here -
 			// they are defined by their own explicit blocks above (measured
-			// SF2-sample spectrum + breath-noise layer); a spec entry would ADD a
+			// reference bank-sample spectrum + breath-noise layer); a spec entry would ADD a
 			// second legacy wavetable layer on top of them.
 			{"Flute2", nullptr, 32768, {
 				{64, BW_3px, A_0_8_0_1rSqrt_pow, F_x, flute2Res, 2, false},
@@ -2628,11 +2631,18 @@ InstrumentLibrary::InstrumentLibrary()
 		g.GenericModifiers.EmplaceLast(ExpExpModifierFactory(0.00005f, 15));
 	}
 
-	// === Относительная калибровка громкости InstrumentLibrary по SF2 ===
-	// Таблица хранит измеренные масштабы относительно одного SF2-рендера и
-	// нормируется на AcousticPiano. Scale применяется после создания
-	// подсэмплеров, поэтому не меняет random seed или тембр. Aliases одной
-	// физической модели используют общий scale.
+	// === Относительная калибровка громкости InstrumentLibrary по Titanic ===
+	// reference renderer master gain (0.2/0.6/1.0) — произвольный запас headroom и не
+	// является свойством SoundFont. Поэтому таблица хранит измеренные масштабы
+	// относительно одного и того же Titanic-рендера, а ниже вся она нормируется
+	// на AcousticPiano. В результате AGP сохраняет принятую accepted piano reference
+	// абсолютную громкость, а отношения громкостей остальных инструментов к AGP
+	// повторяют Titanic независимо от reference renderer -g.
+	// Scale применяется один раз после создания подсэмплеров (MusicalInstrument),
+	// поэтому не меняет random seed/тембр и ничего не стоит в hot render-loop.
+	// Если несколько GM-программ грубо алиасят один внутренний инструмент,
+	// используется один scale этого физического инструмента (robust median по
+	// соответствующим программам), а не скрытая per-program gain-прослойка.
 	struct LoudnessCalibration { const char* Name; float Scale; };
 	static const LoudnessCalibration loudness[] =
 	{
@@ -2724,19 +2734,30 @@ InstrumentLibrary::InstrumentLibrary()
 		{"Applause", 3.57810666f},
 		{"Gunshot", 0.91503318f},
 	};
-	// Normalize the SF2 calibration table to AcousticPiano.
-	const float loudnessReferenceInv = 1.0f/0.274233091f;
+	// Absolute InstrumentLibrary loudness reference (owner rule, 2026-09-23):
+	// Titanic 200 GM-GS v1.2 rendered by reference renderer at -g 0.6, with
+	// reverb/chorus disabled.  The table already contains the final linear
+	// per-instrument multipliers for that reference, so apply each value once.
+	// Do NOT normalize the table back to AGP/accepted piano reference here: doing so would
+	// cancel AcousticPiano's absolute calibration and preserve the obsolete
+	// accepted piano reference loudness policy.
 	for(const auto& c: loudness)
 	{
 		auto found = Instruments.Find(c.Name);
-		if(!found.Empty()) found.First().Value.VolumeScale = c.Scale*loudnessReferenceInv;
+		if(!found.Empty()) found.First().Value.VolumeScale = c.Scale;
 	}
 
 	// === Ударные, которых нет в web-midisynth (остаются) ===
 
-	// Channel-10 shared drum models use the same SF2-relative normalization.
-	UniDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 44100, 0.111335589f);
-	ClosedHiHat = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 44100, 0.054962151f);
-	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 88200, 0.264330194f);
-	AcousticSnare = CachedDrumInstrument(SnarePhysicalModel(), 22000, 1.16524823f);
+	UniDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.342f, 0.00026f, 0.20f), 44100, 0.031433981f);
+	// One physical hi-hat simulation, cached once for the full open-hat second.
+	// Closed/pedal hats are a prefix view of the same waveform, not a second
+	// DrumPhysicalModel run. This preserves the physical source and cuts preload work.
+	HiHatCache = new CachedDrumInstrument(Generators::DrumPhysicalModel(2, 16, 16, 0.338f, 0.04928f, 0.10f), 44100, 0.014561101f);
+	ClosedHiHat = [this](float volume, unsigned sampleRate)
+	{ return HiHatCache->Truncated(volume, sampleRate, 11025); };
+	OpenHiHat = [this](float volume, unsigned sampleRate)
+	{ return (*HiHatCache)(volume, sampleRate); };
+	AcousticBassDrum = CachedDrumInstrument(Generators::DrumPhysicalModel(2, 8, 8, 0.092f, 0.0072f, 0.20f), 88200, 0.069988304f);
+	AcousticSnare = CachedDrumInstrument(SnarePhysicalModel(), 22000, 0.308226206f);
 }

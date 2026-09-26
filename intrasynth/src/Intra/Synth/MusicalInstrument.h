@@ -21,11 +21,15 @@ struct MusicalInstrument: public Instrument
 	// generators have been constructed, so it cannot affect random seeds,
 	// velocity-dependent timbre or other initialization state.
 	float VolumeScale = 1.0f;
-
+#ifdef INTRA_RUNTIME_VELOCITY_MODULATORS
+	// Optional bank-defined velocity modulator. Absent from the forced Titanic build.
+	VelocityModulator Velocity;
+#endif
 	Array<WaveInstrument> Waves;
 	Array<WaveTableInstrument> WaveTables;
 	WhiteNoiseInstrument WhiteNoise;
 	Array<GenericInstrument> GenericInstruments;
+	DynamicGenericInstrument DynamicGeneric;
 
 	ExponentAttenuatorFactory ExponentAttenuation;
 	EnvelopeFactory Envelope;
@@ -34,14 +38,22 @@ struct MusicalInstrument: public Instrument
 
 	void MoveConstruct(void* dst) override {new(dst) MusicalInstrument(Move(*this));}
 
+#ifdef INTRA_RUNTIME_VELOCITY_MODULATORS
+	NoteOnParams ResolveNoteOnParams(byte velocity) const override
+	{
+		return ResolveVelocityNoteOnParams(Velocity, velocity);
+	}
+#endif
+
 	Sampler& CreateSampler(float freq, float volume, unsigned sampleRate,
-		SamplerContainer& dst, uint16* oIndex = nullptr) const override;
+		const NoteOnParams& noteParams, SamplerContainer& dst, uint16* oIndex = nullptr) const override;
 
 	void PreloadTables(unsigned sampleRate) override;
 	void PreloadKey(float freq, unsigned sampleRate) override;
 
 private:
-	NoteSampler BuildNoteSampler(float freq, float volume, unsigned sampleRate) const;
+	NoteSampler BuildNoteSampler(float freq, float volume, unsigned sampleRate,
+		const NoteOnParams& noteParams) const;
 };
 
 INTRA_WARNING_POP

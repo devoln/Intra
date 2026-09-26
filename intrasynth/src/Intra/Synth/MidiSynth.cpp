@@ -37,6 +37,45 @@ using namespace Midi;
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+// Standard Kit (bank 128/program 0) loudness calibration against Titanic, dry
+// reference renderer gain 0.6.  The static table is measured at v=100 from isolated
+// strikes and stored in quarter-dB.  Sparse velocity-layer residuals mirror
+// only real Titanic reference bank zone boundaries; the common amplitude law stays v^2.
+static forceinline float TitanicStandardKitCorrection(byte note, byte velocity)
+{
+	static const signed char qdb35To81[] =
+	{
+		 10,   0,  14,   0,  26, -10,  46,   5,  46,  -4,  58,  37,
+		 63,  58,  18,  30, -29,  27,   0,  -5,  21,  42,  11,  16,
+		-30,  18,  19,   2,  18,  52,  20,  27,  36,  14,  -4, -40,
+		 16,  44, -31, -35,  24,  -4,  -7,  29,  38,  -7,  29
+	};
+	if(note < 35 || note > 81) return 1.0f;
+	int qdb = qdb35To81[note - 35];
+	switch(note)
+	{
+	case 37: if(velocity <= 85) qdb -= 17; break;
+	case 38:
+		if(velocity <= 71) qdb -= 13;
+		else if(velocity >= 106) qdb += 5;
+		break;
+	case 40:
+		if(velocity <= 71) qdb -= 23;
+		else if(velocity >= 106) qdb += 7;
+		break;
+	case 42:
+		if(velocity <= 84) qdb += 1;
+		else if(velocity >= 110) qdb -= 7;
+		break;
+	case 44: if(velocity <= 84) qdb += 5; break;
+	case 51: if(velocity <= 89) qdb -= 10; break;
+	case 57: if(velocity <= 89) qdb -= 3; break;
+	case 59: if(velocity <= 89) qdb -= 10; break;
+	default: break;
+	}
+	return Math::Exp(float(qdb)*0.02878231366f); // 10^(qdb/80), without generic powf
+}
+
 MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstrumentSet& instruments, float maxVolume,
 	BasicAudioSource::OnCloseResourceCallback onClose, unsigned sampleRate, bool stereo, bool reverb, bool live,
 	bool compress):
@@ -63,15 +102,18 @@ MidiSynth::MidiSynth(Midi::TrackCombiner music, double duration, const MidiInstr
 {
 	for(auto& p: mChannelProgramOverride) p = 0xFF;
 	for(auto& f: mChannelProgramForced) f = false;
-	for(auto& v: mLiveVolume) v = 127;
+	for(auto& v: mLiveVolume) v = 100;
 	for(auto& p: mLivePan) p = 64;
+#ifdef INTRA_UI_METERS
+	for(auto& n: mUiMeterNote) n = 0xFF;
+#endif
 }
 
 void MidiSynth::SetRenderParams(const RenderParams& params)
 {
 	RenderParams next = params;
 	next.ReverbWet = next.ReverbWet < 0.0f ? 0.0f :
-		(next.ReverbWet > 1.0f ? 1.0f : next.ReverbWet);
+		(next.ReverbWet > 2.0f ? 2.0f : next.ReverbWet);
 
 	// Do not retain old delay-line energy across an explicit off/on cycle.
 	// This runs only when the UI changes the mode, never in the audio loop.
@@ -205,11 +247,11 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 	if(mRenderParams.ReverbWet > 0.0f && mReverberator)
 		{
 			// Audibility budget (verified in-browser on a dense piano MIDI file):
-			// send = 3*wet (1.5x the mono sum at 100%), network volume 2.5 (tap
-			// energy grows super-linearly — 1 was inaudible on files, 3 was grainy),
-			// dry ducks at most -1 dB so the tail is not masked yet keeps its body.
+			// ReverbWet is the direct public control: 1.0 means UI 100%, 2.0 means
+			// UI 200%. Recalibrated so 1.0 has the strength of the old 0.4 setting
+			// and 2.0 the old 0.8 setting. There is no hidden UI-side remapping.
 			const float wet = mRenderParams.ReverbWet;
-			const float dryGain = 1.0f - 0.1f*wet;
+			const float dryGain = 1.0f - 0.04f*wet;
 			if(dryGain != 1.0f)
 			{
 				for(size_t i = 0; i < samplesBeforeNextEvent; i++)
@@ -219,7 +261,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 				}
 			}
 			mReverbChannelBuffer.SetCount(samplesBeforeNextEvent);
-			const float sendGain = 3.0f * wet;
+			const float sendGain = 1.2f * wet;
 			for(size_t i = 0; i < samplesBeforeNextEvent; i++)
 			{
 				const float dryL = frame.Channels[0][i];
@@ -269,7 +311,7 @@ size_t MidiSynth::GetUninterleavedSamplesAdd(Span<const Span<float>> outFloatCha
 		// браузерный мастер-компрессор web-версии. Старая нормализация по бегущему
 		// максимуму давала другой баланс громкостей. НО: он же вносит AM-искажения
 		// (побочные полосы f2-f1, "плато" затухания) — в Emscripten-порте отключён
-		// (compress=false): эталон звука там — SF2-семплы через fluidsynth, без
+		// (compress=false): эталон звука там — reference bank-семплы через reference renderer, без
 		// мастер-компрессора.
 		if(mCompress) mCompressor(dstLeftPart, dstRightPart);
 
@@ -295,17 +337,19 @@ size_t MidiSynth::GetUninterleavedSamples(Span<const Span<float>> outFloatChanne
 #ifdef INTRA_UI_METERS
 void MidiSynth::GetChannelNoteLevels(byte* dst)
 {
-	// На канал — один уровень (0 = канал молчит): берём самую громкую звучащую
-	// ноту канала. Номер ноты не отдаём — его UI уже знает из кольца фидбека
-	// (NoteOn), а здесь важна только громкость её огибающей.
-	for(size_t ch = 0; ch < 16; ch++) dst[ch] = 0;
+	// The web UI displays the latest NoteOn per channel. Meter exactly that note,
+	// not the loudest/oldest pedal tail on the same channel. If the displayed
+	// voice has already ended, return 0 and let the UI fallback finish/fade it.
+	float newestTime[16];
+	for(size_t ch = 0; ch < 16; ch++) { dst[ch] = 0; newestTime[ch] = -1.0e30f; }
 	for(auto samplers = mNoteSamplers.AsRange(); !samplers.Empty();)
 	{
 		auto& sampler = samplers.Next();
 		const auto& info = sampler.GetInfo<NoteInfo>();
-		if(info.Channel >= 16) continue;
-		const byte level = byte(Min(1.0f, Max(0.0f, sampler.GetLevel()))*127.0f + 0.5f);
-		dst[info.Channel] = Max(dst[info.Channel], level);
+		if(info.Channel >= 16 || info.NoteOctaveOrDrumId != mUiMeterNote[info.Channel] ||
+			info.Time < newestTime[info.Channel]) continue;
+		newestTime[info.Channel] = info.Time;
+		dst[info.Channel] = byte(Min(1.0f, Max(0.0f, sampler.GetLevel()))*127.0f + 0.5f);
 	}
 }
 #endif
@@ -320,21 +364,15 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	if(mSkippingEvents) return;
 	// Фидбек NoteOn для индикаторов дорожек (веб-UI).
 	PushFeedback(byte(0x90 | noteOn.Channel), noteOn.NoteOctaveOrDrumId, noteOn.Velocity);
-	// web-midisynth: volume = Math.exp(velocity/127 - 1) * instrument.Volume * (CC7/127).
-	// The old linear velocity*CC7/(127*127) crushed soft notes (velocity=1 was ~47x quieter
-	// than web), so soft piano melody notes disappeared under the sustained pads in layered
-	// files like Celine. Exponential curve reproduces web's per-note loudness exactly.
-	// Доля канала запекается в стартовую громкость (по CC7 канала из ЛЮБОГО
-	// источника: файл через IDevice, UI через SendMidiEvent), но не ниже 1/127:
-	// нота, родившаяся на нулевой дорожке, остаётся ЖИВОЙ (её текущую громкость
-	// несёт отдельный слой Sampler::ChannelGain, см. ChannelGainFor). Иначе CC7=0
-	// убивал бы ноту навсегда — «потом поднял громкость дорожки, а длинной ноты
-	// не слышно». Мьют дорожки — тот же слой (множитель 0), а не отмена ноты.
-	const byte bornCC7 = BornCC7For(mLiveVolume[noteOn.Channel]);
-	const float cc7 = float(bornCC7)/127.0f;
-	const float totalStartVolume = Math::Exp(float(noteOn.Velocity)/127.0f - 1.0f)
-		* cc7*cc7;
-	const float channelGain = ChannelGainFor(noteOn.Channel, bornCC7);
+#ifdef INTRA_UI_METERS
+	if(noteOn.Channel < 16) mUiMeterNote[noteOn.Channel] = noteOn.NoteOctaveOrDrumId;
+#endif
+	// Note-on noteParams are resolved by the selected instrument. MIDI velocity
+	// does not cross into the sampler API: the voice receives a ready linear
+	// note gain plus a dimensionless strike coordinate for timbral physics.
+	// Channel volume is a separate live outer gain and is therefore not baked
+	// into the note body. This is algebraically equivalent to the old born-CC7
+	// ratio path, including notes created while CC7=0.
 	const uint16 key = noteOn.Id();
 
 	auto found = mPlayingNoteMap.Find(key);
@@ -353,13 +391,33 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	{
 		auto instr = mInstruments.DrumInstruments[noteOn.NoteOctaveOrDrumId];
 		if(instr == nullptr) return;
+		const NoteOnParams noteParams = ResolveDefaultNoteOnParams(noteOn.Velocity);
+		const float velocity = float(noteOn.Velocity)*0.01f; // legacy key-36 extra factor only
 		NoteSampler note;
-		note.GenericSamplers.AddLast((*instr)(totalStartVolume, mSampleRate));
+		note.GenericSamplers.AddLast((*instr)(noteParams.Gain, mSampleRate));
+		// Titanic key 36 explicitly overrides the default 960 cB velocity->
+		// attenuation modulator with 1440 cB: one extra velocity factor on top
+		// of the common direct v^2 construction law.
+		const float kick36Velocity = noteOn.NoteOctaveOrDrumId == 36 ? velocity : 1.0f;
+		// Static Titanic per-key correction is valid only for the seven percussion
+		// models we actually implement. Unimplemented keys deliberately use the
+		// neutral bass-drum fallback at its own calibrated level instead of applying
+		// an unrelated key's correction (some exceed +15 dB).
+		const byte drumKey = noteOn.NoteOctaveOrDrumId;
+		const bool calibratedDrumKey = drumKey == 35 || drumKey == 36 || drumKey == 38 ||
+			drumKey == 40 || drumKey == 42 || drumKey == 44 || drumKey == 46;
+		// Keep the fallback deliberately quieter than the real kick. Its job is to
+		// make unsupported GM percussion unobtrusive, not to impersonate each key.
+		// 0.18 puts its early energy near the median of the unsupported Titanic keys
+		// while leaving plenty of reverb headroom in dense drum patterns.
+		const float drumStaticGain = calibratedDrumKey
+			? TitanicStandardKitCorrection(drumKey, noteOn.Velocity) : 0.18f;
+		note.MultiplyVolume(kick36Velocity*drumStaticGain);
 		auto& stored = mNoteSamplers.Add<NoteSampler>(Move(note));
 		const uint16 idx = uint16(mNoteSamplers.Length() - 1);
 		stored.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
-		stored.BornCC7 = bornCC7;
-		stored.ChannelGain = channelGain;
+		stored.OutputGain = ChannelOutputGain(noteOn.Channel);
+		stored.SetPruneGain(ChannelPruneGain(noteOn.Channel));
 		stored.SetRenderParams(mRenderParams);
 		mPlayingNoteMap[key] = idx;
 		return;
@@ -370,12 +428,12 @@ void MidiSynth::OnNoteOn(const Midi::NoteOn& noteOn)
 	auto instr = mInstruments.Instruments[instrument];
 	if(instr == nullptr) return;
 
+	const NoteOnParams noteParams = instr->ResolveNoteOnParams(noteOn.Velocity);
 	uint16 idx = 0;
-	Sampler& newSampler = instr->CreateSampler(noteOn.Frequency(), totalStartVolume, mSampleRate, mNoteSamplers, &idx);
+	Sampler& newSampler = instr->CreateSampler(noteOn.Frequency(), noteParams.Gain, mSampleRate, noteParams, mNoteSamplers, &idx);
 	newSampler.GetInfo<NoteInfo>() = NoteInfo{float(noteOn.Time), noteOn.Channel, noteOn.NoteOctaveOrDrumId, false, false};
-	newSampler.BornCC7 = bornCC7;
-	newSampler.ChannelGain = channelGain;
-	newSampler.SetVelocity(float(noteOn.Velocity) / 127.0f);
+	newSampler.OutputGain = ChannelOutputGain(noteOn.Channel);
+	newSampler.SetPruneGain(ChannelPruneGain(noteOn.Channel));
 	newSampler.SetPan(float(noteOn.Pan) / 64.0f);
 	newSampler.SetRenderParams(mRenderParams);
 	const float freqMult = pitchBendToFreqMultiplier(mMidiState.ChannelPitchBend[noteOn.Channel]);
@@ -546,11 +604,14 @@ float MidiSynth::pitchBendToFreqMultiplier(short relativePitchBend) const
 // применяет громкость канала один раз (см. комментарий там).
 void MidiSynth::UpdateChannelGain(byte channel)
 {
+	const float outputGain = ChannelOutputGain(channel);
+	const float pruneGain = ChannelPruneGain(channel);
 	for(auto notes = mNoteSamplers.AsRange(); !notes.Empty();)
 	{
 		auto& sampler = notes.Next();
 		if(sampler.GetInfo<NoteInfo>().Channel != channel) continue;
-		sampler.ChannelGain = ChannelGainFor(channel, sampler.BornCC7);
+		sampler.OutputGain = outputGain;
+		sampler.SetPruneGain(pruneGain);
 	}
 }
 

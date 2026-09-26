@@ -31,10 +31,9 @@ public:
 	/// Изменение должно происходить плавно, иначе будет щелчок.
 	virtual void SetPan(float newPan) {(void)newPan;}
 
-	/// Raw MIDI key velocity, normalized to [0; 1]. This is deliberately
-	/// separate from CC7/channel gain so timbre does not change when a track
-	/// fader moves after NoteOn.
-	virtual void SetVelocity(float velocity01) {(void)velocity01;}
+	/// Ready linear dynamic scale used only for irreversible pruning decisions.
+	/// Raw MIDI controllers never cross this interface.
+	virtual void SetPruneGain(float gain) {(void)gain;}
 
 	/// Pass source-level render parameters to note samplers. Master effects are
 	/// handled by MidiSynth; only note-local parameters are forwarded further.
@@ -58,19 +57,11 @@ public:
 	virtual float GetLevel() const {return 1.0f;}
 #endif
 
-	/// Живой множитель громкости канала для этой ноты: 1 — как родилась,
-	/// 0 — мьют дорожки, иначе CC7 канала, делённый на CC7 в момент рождения
-	/// (см. BornCC7). Громкость канала применяется СЛОЕМ поверх «запечённой» в
-	/// тело ноты громкости, поэтому нота, родившаяся при нулевой громкости
-	/// дорожки, остаётся живой и звучит, когда дорожку поднимут (раньше CC7
-	/// входил прямо в стартовую громкость, и такая нота молчала навсегда).
-	float ChannelGain = 1.0f;
+	/// Готовый линейный динамический множитель поверх тела ноты. Верхний MIDI-
+	/// слой переводит контроллеры в amplitude-domain; sampler не знает их номера
+	/// или диапазоны. 0 может временно замьютить ноту без остановки её состояния.
+	float OutputGain = 1.0f;
 
-
-	/// CC7 канала в момент создания ноты, но не менее 1: нота всегда рождается
-	/// живой (доля канала запекается в её стартовую громкость), а ChannelGain
-	/// потом пересчитывается от этого значения по абсолютной величине.
-	byte BornCC7 = 127;
 
 	/// Получить ссылку на метаинформацию о семплере, которую в него записывает синтезатор.
 	template<typename T> INTRA_FORCEINLINE Requires<

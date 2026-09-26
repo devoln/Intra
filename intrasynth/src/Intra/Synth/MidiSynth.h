@@ -65,7 +65,7 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	// Мьют дорожек веб-UI: битовая маска каналов (1 = замьючен). Мьют — слой
 	// микшера ПОВЕРХ MIDI-громкости: CC7 канала остаётся его настоящим
 	// состоянием (его меняет и сам файл, и ползунок UI), а мьют задаёт
-	// Sampler::ChannelGain = 0 звучащим нотам. Ноты при этом НЕ гасятся, поэтому
+	// Sampler::OutputGain = 0 звучащим нотам. Ноты при этом НЕ гасятся, поэтому
 	// снятие мьюта возвращает их в том же месте огибающей. Мьют через CC7=0 для
 	// этого не годится: файл сам присылает CC7 (например, tous les garçons — CC7
 	// по 7 каналам в начале) и отменял бы мьют.
@@ -82,6 +82,11 @@ class MidiSynth: public Audio::SeparateFloatAudioSource, public Audio::Midi::IDe
 	static constexpr size_t FEEDBACK_CAP = 64;
 	byte mFeedback[FEEDBACK_CAP][3];
 	size_t mFeedbackHead = 0, mFeedbackCount = 0;
+#ifdef INTRA_UI_METERS
+	// Note whose rectangle the web UI currently displays on each channel.
+	// SourceGetNoteLevels meters exactly this NoteOn, never an older pedal tail.
+	byte mUiMeterNote[16];
+#endif
 	void PushFeedback(byte status, byte d0, byte d1)
 	{
 		const size_t idx = (mFeedbackHead + mFeedbackCount) % FEEDBACK_CAP;
@@ -218,7 +223,7 @@ public:
 
 #ifdef INTRA_UI_METERS
 	/// Уровни нот каналов для индикаторов дорожек в веб-UI: 16 байт, на канал —
-	/// уровень огибающей самой громкой звучащей ноты (0 = канал молчит). Номер
+	/// уровень огибающей последней запущенной звучащей ноты (0 = канал молчит). Номер
 	/// ноты UI берёт из кольца фидбека (NoteOn), здесь нужна только громкость.
 	/// Дёргается из JS раз в ~200 мс — на семпл расходов нет.
 	void GetChannelNoteLevels(byte* dst);
@@ -254,20 +259,33 @@ public:
 	void SendMidiEvent(byte status, byte data0, byte data1);
 
 private:
-	/// Громкость канала как живой множитель для ноты: 0 — дорожка замьючена,
-	/// иначе CC7 канала относительно CC7 в момент рождения ноты (BornCC7).
-	float ChannelGainFor(byte channel, byte bornCC7) const
+	/// MIDI-контроллеры остаются на уровне MidiSynth. Ни sampler, ни voice
+	/// generator не знают номер CC, его диапазон или кривую. Нормировка на 100
+	/// сохраняет принятую калибровку: CC7=100 => gain 1.0.
+	static float ChannelVolumeToLinear(byte volume)
 	{
-		if((mChannelMuteMask >> channel) & 1) return 0.0f;
-		const float ratio = float(mLiveVolume[channel])/float(bornCC7);
-		return ratio*ratio;
+		const float x = float(volume)*0.01f;
+		return x*x;
 	}
 
-	/// CC7, с которым нота родится живой: 0 запрещён (нота, рождённая при
-	/// нулевой громкости дорожки, ждёт подъёма CC7 и звучит тогда).
-	static byte BornCC7For(byte volume) {return volume == 0 ? byte(1) : volume;}
+	float ChannelOutputGain(byte channel) const
+	{
+		return ((mChannelMuteMask >> channel) & 1) ? 0.0f : ChannelVolumeToLinear(mLiveVolume[channel]);
+	}
 
-	/// Пересчитывает живой множитель громкости у всех звучащих нот канала
+	/// Pruning sees only a ready linear dynamic scale. It may follow live channel
+	/// volume, but never below one quarter of the maximum possible linear gain.
+	/// This bounds the damage if a quiet track is raised after a long note has
+	/// already discarded inaudible tail state. Mute is deliberately ignored.
+	float ChannelPruneGain(byte channel) const
+	{
+		// Floor the controller coordinate first, then apply the same channel-volume
+		// law once. With the current square law this is ~6.4% of maximum amplitude,
+		// not 25%; it merely prevents CC7=0 from killing a note that may rise later.
+		return ChannelVolumeToLinear(Math::Max<byte>(mLiveVolume[channel], 32));
+	}
+
+	/// Пересчитывает готовый линейный множитель громкости у всех звучащих нот канала
 	/// (изменение CC7 файла/ползунка или мьюта). Само тело ноты не трогается —
 	/// меняется только слой поверх него, поэтому доигрывающие ноты слышат
 	/// изменение сразу, а их тембр остаётся тем, с каким они родились.

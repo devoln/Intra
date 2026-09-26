@@ -149,15 +149,18 @@ MidiInstrumentSet GetMapping()
 	instruments[126] = lib["Applause"];
 	instruments[127] = lib["Gunshot"];
 
-	// Ударные (channel 10), которых нет в web-midisynth, остаются.
-	Fill(result.DrumInstruments, &lib.UniDrum);
+	// Unimplemented GM percussion used to fall back to the long, bright UniDrum.
+	// Dense MIDI files can mistake that metallic tail for a hi-hat and overdrive
+	// the master reverb. A short bass-drum fallback is intentionally neutral and
+	// bounded; explicitly implemented Standard Kit keys below keep their models.
+	Fill(result.DrumInstruments, &lib.AcousticBassDrum);
 	result.DrumInstruments[35] = &lib.AcousticBassDrum;
 	result.DrumInstruments[36] = &lib.AcousticBassDrum;
 	result.DrumInstruments[38] = &lib.AcousticSnare;
 	result.DrumInstruments[40] = &lib.AcousticSnare;
 	result.DrumInstruments[42] = &lib.ClosedHiHat;
 	result.DrumInstruments[44] = &lib.ClosedHiHat;
-	result.DrumInstruments[46] = &lib.ClosedHiHat;
+	result.DrumInstruments[46] = &lib.OpenHiHat;
 
 	return result;
 }

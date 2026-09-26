@@ -114,7 +114,7 @@ struct WaveInstrument: public Instrument
 
 	void MoveConstruct(void* dst) override {new(dst) WaveInstrument(*this);}
 	Sampler& CreateSampler(float freq, float volume, unsigned sampleRate,
-		SamplerContainer& dst, uint16* oIndex = nullptr) const override;
+		const NoteOnParams& noteParams, SamplerContainer& dst, uint16* oIndex = nullptr) const override;
 
 	/// Временный call-интерфейс для вложенного использования в NoteSampler.
 	WaveFormSampler operator()(float freq, float volume, unsigned sampleRate) const;

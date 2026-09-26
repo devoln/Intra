@@ -56,6 +56,7 @@ struct CachedDrumInstrument
 	{Data.SetCountUninitialized(sampleCount);}
 
 	GenericSamplerRef operator()(float volume, unsigned sampleRate) const;
+	GenericSamplerRef Truncated(float volume, unsigned sampleRate, size_t sampleCount44100) const;
 
 	void Preload(unsigned sampleRate = 44100) const {operator()(1, sampleRate);}
 };

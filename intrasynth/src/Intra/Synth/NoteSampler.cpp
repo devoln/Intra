@@ -34,15 +34,15 @@ public:
 		const size_t n = NumSamples;
 		auto left = stc.Channels[0].Drop(OffsetInSamples).Take(n);
 		auto right = stc.Channels[1].Drop(OffsetInSamples).Take(n);
-		// Громкость канала (MIDI CC7/мьют дорожки) — живой слой поверх
-		// «запечённой» в тело ноты стартовой громкости. 1 — как родилась
+		// Готовый линейный output gain — живой слой поверх тела ноты.
+		// MIDI-контроллеры и их кривая остаются уровнем выше. 1 — быстрый путь
 		// (обычный путь, без лишних проходов); иначе нота рендерится в отдельный
 		// буфер, потому что буферы кадра общие для всех нот. При нуле сигнал в
 		// микс не попадает, но состояния (огибающие, затухания) идут своим
 		// ходом — голос завершается сам и оживает при снятии мьюта или подъёме
 		// громкости канала.
-		const float channelGain = SamplerPtr->ChannelGain;
-		if(channelGain == 1.0f)
+		const float outputGain = SamplerPtr->OutputGain;
+		if(outputGain == 1.0f)
 			SamplerPtr->GenerateStereo(left, right);
 		else
 		{
@@ -51,11 +51,11 @@ public:
 			FillZeros(scratchL);
 			FillZeros(scratchR);
 			SamplerPtr->GenerateStereo(scratchL, scratchR);
-			if(channelGain != 0.0f)
+			if(outputGain != 0.0f)
 				for(size_t i = 0; i < n; i++)
 				{
-					left[i] += scratchL[i]*channelGain;
-					right[i] += scratchR[i]*channelGain;
+					left[i] += scratchL[i]*outputGain;
+					right[i] += scratchR[i]*outputGain;
 				}
 		}
 		stc.UsedChannels |= LeftChannel | RightChannel;
@@ -373,9 +373,9 @@ void NoteSampler::SetPan(float pan)
 	Pan = pan;
 }
 
-void NoteSampler::SetVelocity(float velocity01)
+void NoteSampler::SetPruneGain(float gain)
 {
-	for(auto& sampler: GenericSamplers) sampler->SetVelocity(velocity01);
+	for(auto& sampler: GenericSamplers) sampler->SetPruneGain(gain);
 }
 
 void NoteSampler::MultiplyVolume(float volumeMultiplier)

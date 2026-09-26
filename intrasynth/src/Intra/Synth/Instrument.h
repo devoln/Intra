@@ -8,8 +8,13 @@ class Instrument
 public:
 	virtual ~Instrument() {}
 	virtual void MoveConstruct(void* dst) = 0;
+	virtual NoteOnParams ResolveNoteOnParams(byte velocity) const
+	{
+		return ResolveDefaultNoteOnParams(velocity);
+	}
+
 	virtual Sampler& CreateSampler(float freq, float volume, unsigned sampleRate,
-		SamplerContainer& dst, uint16* oIndex = nullptr) const = 0;
+		const NoteOnParams& noteParams, SamplerContainer& dst, uint16* oIndex = nullptr) const = 0;
 
 	/// Подготовить дорогие данные инструмента (волновые таблицы и т.п.)
 	/// заранее, вне аудио-колбэка. Вызывается при создании источника

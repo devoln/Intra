@@ -37,7 +37,7 @@ public:
 	void MultiplyPitch(float freqMultiplier) override;
 	void NoteRelease() override;
 	void SetPan(float pan) override;
-	void SetVelocity(float velocity01) override;
+	void SetPruneGain(float gain) override;
 	void MultiplyVolume(float volumeMultiplier) override;
 	void SetRenderParams(const RenderParams& params) override;
 

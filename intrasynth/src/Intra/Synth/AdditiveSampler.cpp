@@ -4,7 +4,7 @@
 #include "Container/Sequential/Array.h"
 
 #ifndef INTRA_PIANO_ONSET_CACHE_MS
-#define INTRA_PIANO_ONSET_CACHE_MS 500
+#define INTRA_PIANO_ONSET_CACHE_MS 1000
 #endif
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -15,30 +15,25 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 // acoustic sample table. Quarter-dB signed values, indexed by acoustic region.
 static const int8 gHonkyRegionGainQdb[25]  = {-28,-25,-23,-20,0,-22,-11,-8,-19,0,15,18,27,40,23,16,2,31,20,-14,-3,-3,-11,1,0};
 
-// Titanic velocity residual after the common SF2 (v/127)^2 law. Each pair
-// stores extra gain at velocity 50 and 85 in quarter-dB units; v115+ = 0.
+// Titanic body-level residuals after the common reference bank (v/127)^2 law.  Keep
+// these only for presets whose real reference bank velocity structure changes held-note
+// level/layers; Honky and Clavinet are handled by their direct provenance.
+// Each pair stores extra gain at velocity 50 and 85 in quarter-dB units.
 static const int8 gVel2Q50[7] = {13,14,13,11,14,12,11};
 static const int8 gVel2Q85[7] = {2,2,0,-3,3,1,1};
-static const int8 gVel3Q50[25] = {17,13,11,12,11,8,3,2,5,2,4,0,1,1,2,0,-2,-1,-3,-6,-10,-16,-20,-31,-28};
-static const int8 gVel3Q85[25] = {10,7,6,7,7,5,3,2,4,2,3,1,1,1,2,1,0,1,1,0,1,0,-1,-2,-4};
 static const int8 gVel4Q50[3] = {7,3,-2};
 static const int8 gVel4Q85[3] = {1,0,0};
 static const int8 gVel5Q50[14] = {27,25,30,37,31,24,30,31,28,31,31,31,33,29};
 static const int8 gVel5Q85[14] = {-1,1,2,5,-4,-3,-1,4,1,2,0,1,-3,0};
-static const int8 gVel7Q50[11] = {6,6,6,6,5,4,4,3,1,0,0};
-static const int8 gVel7Q85[11] = {4,4,3,4,3,3,2,2,1,0,0};
 
-static forceinline void PianoVelocityCalibrationQ(uint8 profile, uint8 region, int8& q50, int8& q85)
+static forceinline bool PianoVelocityCalibrationQ(uint8 profile, uint8 region, int8& q50, int8& q85)
 {
-	q50 = q85 = 0;
 	switch(profile)
 	{
-	case 2: q50=gVel2Q50[region]; q85=gVel2Q85[region]; break;
-	case 3: q50=gVel3Q50[region]; q85=gVel3Q85[region]; break;
-	case 4: q50=gVel4Q50[region]; q85=gVel4Q85[region]; break;
-	case 5: q50=gVel5Q50[region]; q85=gVel5Q85[region]; break;
-	case 7: q50=gVel7Q50[region]; q85=gVel7Q85[region]; break;
-	default: break; // Harpsichord already follows the common SF2 law.
+	case 2: q50=gVel2Q50[region]; q85=gVel2Q85[region]; return true;
+	case 4: q50=gVel4Q50[region]; q85=gVel4Q85[region]; return true;
+	case 5: q50=gVel5Q50[region]; q85=gVel5Q85[region]; return true;
+	default: return false;
 	}
 }
 
@@ -72,102 +67,92 @@ AdditiveSampler::~AdditiveSampler()
 {
 }
 
-void AdditiveSampler::SetVelocity(float velocity01)
+void AdditiveSampler::ConfigureStrike(float velocity01)
 {
 	velocity01 = Math::Clamp(velocity01, 0.0f, 1.0f);
-	// MidiSynth applies the common SF2-like v^2 loudness correction to every
-	// voice after construction.  Piano-specific work here is therefore only
-	// residual timbre/level behaviour that the common law cannot express.
-	if(mTableId == 0 && mVelocityProfile <= 1)
+	if(mStrikeProfile > 1)
 	{
-		const float v = 127.0f*velocity01;
-		// Harmonic-only upper-attack fit: the common transient residual weakens
-		// at low velocity.  One shared exponent replaces any velocity-zone table.
-		// Only the recorded upper-register transient has a velocity-dependent
-		// residual.  The root-75 sample transient selected by the common-residual
-		// fitter is essentially velocity-invariant from v57 through v100.
-		mAttackBoostVelocityScale = mRegionIndex >= 21
-			? Math::Pow(Math::Max(v, 1.0f)*0.01f, 0.25f) : 1.0f;
-		if(v <= 0.0f) mVolume = 0.0f;
-		else if(mVelocityProfile == 0 && mRegionIndex >= 21)
+		int8 q50, q85;
+		if(PianoVelocityCalibrationQ(mStrikeProfile, mRegionIndex, q50, q85))
 		{
-			// Smooth upper-register residual: four constants instead of a literal
-			// P1..P6 velocity-zone staircase. Gain@v100 and residual exponent are
-			// both linear in the physical Titanic source root (96..105).
-			const float rootOffset = Math::Clamp(float(mTable->Regions[mRegionIndex].RootKey) - 96.0f, 0.0f, 9.0f);
-			const float gain100Db = -6.2983701f + 0.2577147f*rootOffset;
-			const float exponentResidual = -0.5105314f - 0.1585468f*rootOffset;
-			mVolume *= Math::Pow(10.0f, gain100Db*(1.0f/20.0f))*Math::Pow(v*0.01f, exponentResidual);
+			// Common amplitude already arrives as one direct v^2 construction law.
+			// Only presets with real held-body level/layer changes get this residual.
+			const float v = 127.0f*velocity01;
+			float q = 0.0f;
+			if(v <= 50.0f) q = float(q50);
+			else if(v < 85.0f) q = float(q50) + (float(q85)-float(q50))*((v-50.0f)*(1.0f/35.0f));
+			else if(v < 115.0f) q = float(q85)*(1.0f - (v-85.0f)*(1.0f/30.0f));
+			// Titanic has real preset velocity-zone steps which the old 50->85
+			// interpolation smoothed away.  Keep them as one compact profile-level
+			// residual: quarter-dB units, fading to zero at v=85.  This matches the
+			// measured reference bank relative-level curve without another table or another pow.
+			if(mStrikeProfile == 2 && v >= 59.0f && v < 85.0f)
+				q -= 9.356f*(85.0f-v)*(1.0f/26.0f); // -2.339 dB at the v59 zone edge.
+			else if(mStrikeProfile == 5 && v >= 53.0f && v < 85.0f)
+				q -= 25.717f*(85.0f-v)*(1.0f/32.0f); // -6.429 dB at the v53 zone edge.
+			if(q != 0.0f) mVolume *= PianoQuarterDbGain(q);
 		}
 	}
-	if(mVelocityProfile > 1)
-	{
-		// Keep the accepted exp(v-1) velocity loudness law for every piano.
-		// Preset-specific SF2 velocity behaviour is only a residual correction.
-		int8 q50, q85; PianoVelocityCalibrationQ(mVelocityProfile, mRegionIndex, q50, q85);
-		const float v = 127.0f*velocity01;
-		float q = 0.0f;
-		if(v <= 50.0f) q = float(q50);
-		else if(v < 85.0f) q = float(q50) + (float(q85)-float(q50))*((v-50.0f)*(1.0f/35.0f));
-		else if(v < 115.0f) q = float(q85)*(1.0f - (v-85.0f)*(1.0f/30.0f));
-		// Titanic has real preset velocity-zone steps which the old 50->85
-		// interpolation smoothed away.  Keep them as one compact profile-level
-		// residual: quarter-dB units, fading to zero at v=85.  This matches the
-		// measured SF2 relative-level curve without another table or another pow.
-		if(mVelocityProfile == 2 && v >= 59.0f && v < 85.0f)
-			q -= 9.356f*(85.0f-v)*(1.0f/26.0f); // -2.339 dB at the v59 zone edge.
-		else if(mVelocityProfile == 5 && v >= 53.0f && v < 85.0f)
-			q -= 25.717f*(85.0f-v)*(1.0f/32.0f); // -6.429 dB at the v53 zone edge.
-		if(q != 0.0f) mVolume *= PianoQuarterDbGain(q);
-	}
-	if(!mVelocityFilterModel) return;
-	mVelocityFilterInPartials = false;
-	// Filter-domain handoff is a property of the SF2 velocity model, not of
+	if(!mStrikeFilterModel) return;
+	mStrikeFilterInPartials = false;
+	// Filter-domain handoff is a property of the reference bank velocity model, not of
 	// how much raw PCM happens to be cached.  Keep the accepted 200 ms point
 	// when the region cache window grows to 500 ms.
-	mVelocityFilterHandoffSamples = size_t(0.20f*float(mSampleRate));
+	mStrikeFilterHandoffSamples = size_t(0.20f*float(mSampleRate));
 
 	const int vel = int(velocity01*127.0f + 0.5f);
 	float cutoff;
-	if(vel <= 35) cutoff = 800.0f;
-	else if(vel <= 58) cutoff = 1000.0f;
-	else if(vel <= 76) cutoff = 1700.0f;
-	else if(vel <= 91) cutoff = 2700.0f;
-	else if(vel <= 105) cutoff = 3900.0f;
-	else cutoff = 19912.0f; // SF2 default initialFilterFc = 13500 cents.
-	mVelocityFilterBaseCutoff = cutoff;
-	mVelocityFilterCurrentCutoff = cutoff;
-	mVelocityModEnvCents = vel >= 106 ? -2000.0f : (vel >= 92 ? -1000.0f : 0.0f);
-	mVelocityModReleaseLevel = 0.0f;
-	mVelocityModReleaseSample = 0;
-	mVelocityModReleased = false;
-	mVelocityModNextUpdate = mVelocityModEnvCents != 0.0f
-		? size_t(0.04f*float(mSampleRate)) : mVelocityFilterHandoffSamples;
+	if(mStrikeProfile == 3)
+	{
+		// Titanic Honky Tonk has no velocity zones.  Its body timbre comes from
+		// one direct reference bank modulator: note-on velocity -> initialFilterFc, amount
+		// -6061 cents, negative/unipolar direction, on top of preset -386 cents.
+		const float cents = 13500.0f - 386.0f - 6061.0f*(1.0f - velocity01);
+		cutoff = 8.176f*Math::Pow(2.0f, cents*(1.0f/1200.0f));
+		mStrikeModEnvCents = 0.0f;
+	}
+	else
+	{
+		if(vel <= 35) cutoff = 800.0f;
+		else if(vel <= 58) cutoff = 1000.0f;
+		else if(vel <= 76) cutoff = 1700.0f;
+		else if(vel <= 91) cutoff = 2700.0f;
+		else if(vel <= 105) cutoff = 3900.0f;
+		else cutoff = 19912.0f; // reference bank default initialFilterFc = 13500 cents.
+		mStrikeModEnvCents = vel >= 106 ? -2000.0f : (vel >= 92 ? -1000.0f : 0.0f);
+	}
+	mStrikeFilterBaseCutoff = cutoff;
+	mStrikeFilterCurrentCutoff = cutoff;
+	mStrikeModReleaseLevel = 0.0f;
+	mStrikeModReleaseSample = 0;
+	mStrikeModReleased = false;
+	mStrikeModNextUpdate = mStrikeModEnvCents != 0.0f
+		? size_t(0.04f*float(mSampleRate)) : mStrikeFilterHandoffSamples;
 
 	mVelPrevSrcL = mVelPrevSrc2L = mVelPrevOutL = mVelPrevOut2L = 0.0f;
 	mVelPrevSrcR = mVelPrevSrc2R = mVelPrevOutR = mVelPrevOut2R = 0.0f;
-	SetVelocityFilterCutoff(cutoff);
+	SetStrikeFilterCutoff(cutoff);
 }
 
-void AdditiveSampler::SetVelocityFilterCutoff(float newCutoff)
+void AdditiveSampler::SetStrikeFilterCutoff(float newCutoff)
 {
 	newCutoff = Math::Clamp(newCutoff, 20.0f, 0.49f*float(mSampleRate));
-	mVelocityFilterCurrentCutoff = newCutoff;
+	mStrikeFilterCurrentCutoff = newCutoff;
 	if(newCutoff >= 0.49f*float(mSampleRate))
 	{
-		mVelocityFilterBypass = true;
+		mStrikeFilterBypass = true;
 		mVelA1 = mVelA2 = mVelB1 = mVelB2 = 0.0f; mVelC = 1.0f;
 		return;
 	}
-	mVelocityFilterBypass = false;
+	mStrikeFilterBypass = false;
 	PianoVelocityFilterCoeffs(mSampleRate, newCutoff, mVelC, mVelA1, mVelA2, mVelB1, mVelB2);
 }
 
-void AdditiveSampler::PromoteVelocityFilterToPartials()
+void AdditiveSampler::PromoteStrikeFilterToPartials()
 {
-	if(!mVelocityFilterModel || mVelocityFilterInPartials) return;
-	mVelocityFilterInPartials = true;
-	if(mVelocityFilterBypass) return;
+	if(!mStrikeFilterModel || mStrikeFilterInPartials) return;
+	mStrikeFilterInPartials = true;
+	if(mStrikeFilterBypass) return;
 	for(size_t p = 0; p < mCount; p++)
 	{
 		const float cw = Math::Clamp(0.5f*mK[p], -1.0f, 1.0f);
@@ -193,15 +178,15 @@ void AdditiveSampler::PromoteVelocityFilterToPartials()
 	}
 	// The filter is now represented by the carrier complex state. From here on
 	// sustain returns to the old SIMD path; no scalar IIR work per sample.
-	mVelocityFilterBypass = true;
-	mVelocityModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate));
+	mStrikeFilterBypass = true;
+	mStrikeModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate));
 }
 
 void AdditiveSampler::ApplyVelocityFilterCutoffRatio(float newCutoff)
 {
-	if(!mVelocityFilterInPartials) return;
+	if(!mStrikeFilterInPartials) return;
 	newCutoff = Math::Clamp(newCutoff, 20.0f, 0.49f*float(mSampleRate));
-	const float oldCutoff = Math::Clamp(mVelocityFilterCurrentCutoff, 20.0f, 0.49f*float(mSampleRate));
+	const float oldCutoff = Math::Clamp(mStrikeFilterCurrentCutoff, 20.0f, 0.49f*float(mSampleRate));
 	if(Math::Abs(newCutoff - oldCutoff) < 0.01f) return;
 	float oc,oa1,oa2,ob1,ob2,nc,na1,na2,nb1,nb2;
 	PianoVelocityFilterCoeffs(mSampleRate, oldCutoff, oc, oa1, oa2, ob1, ob2);
@@ -227,24 +212,24 @@ void AdditiveSampler::ApplyVelocityFilterCutoffRatio(float newCutoff)
 		const float x1 = mS1[p], x2 = mS2[p], x3 = mK[p]*x2 - x1;
 		mS1[p] = a*x1 + b*x2; mS2[p] = a*x2 + b*x3;
 	}
-	mVelocityFilterCurrentCutoff = newCutoff;
+	mStrikeFilterCurrentCutoff = newCutoff;
 }
 
-void AdditiveSampler::UpdateVelocityModEnvelope()
+void AdditiveSampler::UpdateStrikeModEnvelope()
 {
-	if(mVelocityModEnvCents == 0.0f) return;
+	if(mStrikeModEnvCents == 0.0f) return;
 	const float attackSamples = 7.000704f*float(mSampleRate); // attackModEnv = 3369 timecents.
 	float env;
-	if(mVelocityModReleased)
+	if(mStrikeModReleased)
 	{
-		const float rel = float(mRendered - mVelocityModReleaseSample)/float(mSampleRate); // releaseModEnv=0 => 1 s.
-		env = mVelocityModReleaseLevel*Math::Max(0.0f, 1.0f - rel);
+		const float rel = float(mRendered - mStrikeModReleaseSample)/float(mSampleRate); // releaseModEnv=0 => 1 s.
+		env = mStrikeModReleaseLevel*Math::Max(0.0f, 1.0f - rel);
 	}
 	else env = Math::Min(1.0f, float(mRendered)/attackSamples);
-	const float cutoff = mVelocityFilterBaseCutoff*Math::Pow(2.0f, mVelocityModEnvCents*env/1200.0f);
-	if(mVelocityFilterInPartials) ApplyVelocityFilterCutoffRatio(cutoff);
-	else SetVelocityFilterCutoff(cutoff);
-	mVelocityModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate)); // 25 Hz control rate; envelope itself is ~7 s.
+	const float cutoff = mStrikeFilterBaseCutoff*Math::Pow(2.0f, mStrikeModEnvCents*env/1200.0f);
+	if(mStrikeFilterInPartials) ApplyVelocityFilterCutoffRatio(cutoff);
+	else SetStrikeFilterCutoff(cutoff);
+	mStrikeModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate)); // 25 Hz control rate; envelope itself is ~7 s.
 }
 
 
@@ -316,6 +301,7 @@ void AdditiveSampler::SetHeldStringStateAt(size_t target)
 	}
 
 	mReleased = false;
+	mEnvelopeInState = false;
 	mDecayStarted = target >= mDecayOnsetSamples;
 	mSegSwitched = target >= mSegSamples;
 	mSegSwitched2 = target >= mSegSamples2;
@@ -342,20 +328,28 @@ float AdditiveSampler::GetLevel() const
 		const float* amp = mAmp.Data();
 		for(size_t p = 0; p < count; p++)
 		{
-			const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+			float a;
+			if(mEnvelopeInState)
+			{
+				const float cc = Math::Clamp(0.5f*mK[p], -1.0f, 1.0f);
+				const float ss = Math::Max(1e-12f, 1.0f - cc*cc);
+				const float b = mS2[p] - cc*mS1[p];
+				a = Math::Sqrt(mS1[p]*mS1[p] + b*b/ss);
+			}
+			else a = amp[p] < 0.0f ? -amp[p] : amp[p];
 			if(a > lvl) lvl = a;
 		}
 	}
-	// The previous meter forgot the common SF2 release envelope, so released
+	// The previous meter forgot the common reference bank release envelope, so released
 	// piano notes looked much louder/longer in the UI than in the audio.
-	if(mReleased && mSf2UniformRelease) lvl *= mSf2ReleaseGain;
+	if(mReleased && mUniformRelease) lvl *= mReleaseGain;
 	if(mEndSamples && mRendered + mFadeSamples >= mEndSamples)
 		lvl *= float(mEndSamples > mRendered ? mEndSamples - mRendered : size_t(0))/float(mFadeSamples);
 	return lvl > 1.0f ? 1.0f : lvl;
 }
 #endif
 
-struct PianoSf2CommonAmFit
+struct PianoCommonAmFit
 {
 	float FreqHz, Gain0, RelDecay, Phase;
 };
@@ -363,7 +357,7 @@ struct PianoSf2CommonAmFit
 // Common-AM fits accepted by the quality gate.  Roots 99+ were rejected: the
 // optimiser hit its 0.04 Hz lower bound and was fitting ordinary decay trend.
 // No per-partial beat parameters are stored.
-static const PianoSf2CommonAmFit gPianoSf2CommonAmFit[25] =
+static const PianoCommonAmFit gPianoCommonAmFit[25] =
 {
 	{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0},
 	{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0},
@@ -382,18 +376,18 @@ static const PianoSf2CommonAmFit gPianoSf2CommonAmFit[25] =
 };
 
 // Diagnostic v100 sweep-derived constant level residual per physical P1 region.
-static const float gPianoSf2CommonLevel[25] =
+static const float gPianoCommonLevel[25] =
 {
 	1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f,
 	1.0000000f, 1.0000000f, 1.0000000f, 1.0000000f, 0.9884750f, 0.8489246f, 0.9913867f, 1.0343440f,
-	1.0061266f, 0.6894692f, 0.7117317f, 0.7081260f, 0.6988234f, 1.0000000f, 1.0000000f, 1.0000000f,
-	1.0000000f
+	1.0061266f, 0.6894692f, 0.7117317f, 0.7081260f, 0.6988234f, 0.4842632f, 0.5293449f, 0.5786233f,
+	0.6324892f
 };
 
 static size_t PianoAcousticRegionForKey(float midi)
 {
 	// Exact Titanic Grand P1 key-zone upper bounds.  Region ownership follows
-	// the SF2 keyRange, not nearest-root distance.
+	// the reference bank keyRange, not nearest-root distance.
 	static const uint8 hi[25] =
 	{25,31,35,40,45,49,52,55,58,61,64,67,70,73,76,79,82,85,88,91,94,97,100,103,127};
 	const int key = Math::Clamp(int(midi + 0.5f), 0, 127);
@@ -405,9 +399,11 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	size_t maxPartials, float brightness, float scale, float decayScale,
 	float decayStiffness, float detuneCents,
 	int unisonVoices, float velBrightness, float trebleTilt, float volumeScale,
-	float beatScale, int tableId, float beatCents, uint8 velocityProfile)
+	float beatScale, int tableId, float beatCents, uint8 strikeProfile,
+	float strike, float pruneNoteGain)
 {
-	// Таблица коэффициентов: общая (acoustic) или per-instrument (SF2),
+	mPruneNoteGain = pruneNoteGain;
+	// Таблица коэффициентов: общая (acoustic) или per-instrument (reference bank),
 	// см. PianoGetTable в PianoRegions.h.
 	mTable = &PianoGetTable(tableId);
 	mTableId = uint8(tableId);
@@ -415,10 +411,10 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// Grand changes timbre with velocity by filtering that source; Bright keeps
 	// P1 open at every velocity.  Keep the source recipe/cache shared and move
 	// the program difference to the velocity/output layer.
-	const bool acousticProgram0 = velocityProfile == 0;
-	const bool sharedAcousticP1 = tableId == 0 && velocityProfile <= 1;
-	mVelocityProfile = velocityProfile;
-	mVelocityFilterModel = acousticProgram0;
+	const bool acousticProgram0 = strikeProfile == 0;
+	const bool sharedAcousticP1 = tableId == 0 && strikeProfile <= 1;
+	mStrikeProfile = strikeProfile;
+	mStrikeFilterModel = acousticProgram0 || strikeProfile == 3;
 
 	// Ближайший регион по MIDI-ноте (высота = равномерная темперация).
 	const float midi = 69.0f + 12.0f*Math::Log(freq/440.0f)/0.6931471805599453f;
@@ -435,13 +431,13 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 	mRegionIndex = uint8(best);
 	const PianoRegionData& region = mTable->Regions[best];
-	// Acoustic program 0 models a transposed physical SF2 source region. Every
+	// Acoustic program 0 models a transposed physical reference bank source region. Every
 	// source-time event (attack, DecayOnset and later segment boundaries) must
 	// scale by F0/freq so the complete note prefix can be shared as one region PCM.
 	const float sourceTimeScale = sharedAcousticP1 && freq > 1e-6f ? region.F0/freq : 1.0f;
-	const PianoSf2CommonAmFit& commonFit = gPianoSf2CommonAmFit[best < 25 ? best : 0];
-	const bool sf2CommonAm = acousticProgram0 && commonFit.Gain0 > 0.0f;
-	if(sf2CommonAm)
+	const PianoCommonAmFit& commonFit = gPianoCommonAmFit[best < 25 ? best : 0];
+	const bool commonAmFitOn = acousticProgram0 && commonFit.Gain0 > 0.0f;
+	if(commonAmFitOn)
 	{
 		mCommonAmOn = true;
 		mCommonAmFreqHz = commonFit.FreqHz;
@@ -465,7 +461,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		const int k = pp.K;
 		if(k <= 0) break;
 		const float fr = 0.95f + float(pp.FreqRatio)*(1.0f/327675.0f);
-		// A real SF2 region is one source sample whose spectrum is fixed before
+		// A real reference bank region is one source sample whose spectrum is fixed before
 		// transposition. For the shared acoustic-source path keep the same modal
 		// set across the whole region; transposition happens on the time axis.
 		const float spectrumFreq = sharedAcousticP1 ? region.F0 : freq;
@@ -474,7 +470,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		partials = i + 1;
 	}
 	// 2026-08-26: per-key unison spread. Расстройка по регионам подогнана к
-	// биениям, измеренным в сырых семплах SF2 (окна 100 мс, моно-сумма):
+	// биениям, измеренным в сырых семплах reference bank (окна 100 мс, моно-сумма):
 	//   root 43 (G2): h2 ~0.5 Гц  → ~4.0 цента
 	//   root 47 (B2): биений нет  → 0
 	//   root 51 (E3): h2 ~1.5 Гц  → ~7.0 цента
@@ -487,7 +483,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// Верхние партиалы в басе не бьются по построению (per-partial вес
 	// глубины ниже), поэтому «иииоуу» на длинных нотах исключено.
 	// Региональный профиль биений унисона — общий для всех пиано, измерен по
-	// семплам SF2 (2026-08-26, окна 100 мс, моно-сумма; повторно проверен
+	// семплам reference bank (2026-08-26, окна 100 мс, моно-сумма; повторно проверен
 	// 2026-08-29 — см. ворклог):
 	//   root 43 (G2): h2 ~0.5 Гц  → ~4.0 цента
 	//   root 47 (B2): биений нет  → 0
@@ -555,7 +551,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		voiceCents[0] = -0.6f*detuneCents;
 		voiceCents[1] = +0.6f*detuneCents;
 		voiceGain[0] = 1.0f;
-		// Глубина биений по клавишам (2026-08-26): у семплов SF2 середина
+		// Глубина биений по клавишам (2026-08-26): у семплов reference bank середина
 		// клавиатуры бьётся МЕЛКО (C5 h2 ~7 дБ, D#5 ~5 дБ, C4 ~4 дБ), требли
 		// — глубоко (C6+ 20-50 дБ), низ почти не бьётся. Плоский баланс
 		// 1.0/0.7 (провал 15 дБ) на C4-E5 давал «странный отзвук» — глубокую
@@ -610,7 +606,6 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mBeatE0.SetCount(count);
 	mBeatE1.SetCount(count);
 	mBeatR2.SetCount(count);
-	mStereoPartL.SetCount(count);
 	mStereoPartRA.SetCount(count);
 	mStereoPartRB.SetCount(count);
 	mAttackCoeff0.SetCount(count);
@@ -621,7 +616,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	for(size_t p = 0; p < count; p++)
 	{
 		mBeatStep[p] = 0.0f; mBeatPh[p] = 0.0f; mBeatR2[p] = 1.0f;
-		mStereoPartL[p] = 0.5f; mStereoPartRA[p] = 0.5f; mStereoPartRB[p] = 0.0f;
+		mStereoPartRA[p] = 1.0f; mStereoPartRB[p] = 0.0f;
 		mAttackCoeff0[p] = mAttackCoeff1[p] = mAttackCoeff2[p] = 0.0f;
 		mAttackEnv0[p] = mAttackEnv1[p] = 1.0f;
 	}
@@ -629,23 +624,24 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// весом w(k) в цикле лейнов (mBeatR2 = (1−(1−r)·w)²). r², а не r:
 	// огибающая E = sqrt(1 − (1−r²)·sin²) использует квадрат.
 	const float beatR = beatCollapse ? (1.0f - voiceGain[1])/(1.0f + voiceGain[1]) : 0.0f;
-	mBeatOn = beatCollapse && !sf2CommonAm && !acousticProgram0;
+	mBeatOn = beatCollapse && !commonAmFitOn && !acousticProgram0;
 	const float twoPi = 2.0f*float(Math::PI);
 	// Все lambda приходят из fitDecay для конкретного региона/партиала;
 	// глобальные поправки по высоте намеренно не применяются.
-	// Decay1/2 уже подогнаны к каждому SF2-семплу в PianoRegions.h;
+	// Decay1/2 уже подогнаны к каждому reference bank-семплу в PianoRegions.h;
 	// дополнительной октавной эвристики здесь быть не должно.
 	const float octCorr1 = 1.0f;
 	const float octCorr2 = 1.0f;
-	// Граница onset измерена для этого SF2-региона генератором таблицы;
+	// Граница onset измерена для этого reference bank-региона генератором таблицы;
 	// никаких дополнительных поправок по высоте здесь нет.
 	const float decayOnset = region.DecayOnset;
 	// cr/ci — компоненты a·sin(φ + dphi·t) = ci·cos(dphi·t) + cr·sin(dphi·t),
 	// dphis — фаза на сэмпл (для синтеза периода при нормировке).
 	FixedArray<float> crs(count), cis(count), dphis(count);
 	const float detuneRatio = Math::Pow(2.0f, 1.0f/1200.0f);
-	// velocity→яркость: громче играешь — ярче тембр (volume уже кодирует
-	// velocity: exp(vel/127 − 1), vel 60 → 0.59, vel 100 → 0.81, vel 127 → 1).
+	// Generic velocity->brightness remains only on presets whose reference bank really has
+	// velocity-dependent body timbre/layers. `volume` now carries the direct v^2
+	// construction law; Honky and Clavinet explicitly set velBrightness=0.
 	const float velF = Math::Clamp((volume - 0.55f)*2.0f, 0.0f, 1.0f);
 	const float effBright = brightness + velBrightness*velF;
 	const float tilt = 0.8f*Math::Max(0.0f, effBright - 0.25f);
@@ -725,27 +721,33 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 			// from the same two adjacent sine-recurrence states, so no second
 			// oscillator recurrence is needed.
 			const float gl = Math::Sqrt(0.5f/(1.0f + ratioRtoL*ratioRtoL));
-			const float gr = ratioRtoL*gl;
+			// Keep recurrence state in left-channel units.  The right-channel
+			// coefficients are normalized to that same state, removing one
+			// per-partial gain vector from every render path.
+			crs[o] *= gl;
+			cis[o] *= gl;
 			const float sd = Math::Sin(dphi);
 			if(Math::Abs(sd) > 1e-5f)
 			{
 				const float q = Math::Sin(phaseRminusL)/sd;
-				mStereoPartL[o] = gl;
-				mStereoPartRA[o] = gr*(Math::Cos(phaseRminusL) - Math::Cos(dphi)*q);
-				mStereoPartRB[o] = gr*q;
+				mStereoPartRA[o] = ratioRtoL*(Math::Cos(phaseRminusL) - Math::Cos(dphi)*q);
+				mStereoPartRB[o] = ratioRtoL*q;
 			}
-			else { mStereoPartL[o] = gl; mStereoPartRA[o] = gr; mStereoPartRB[o] = 0.0f; }
+			else { mStereoPartRA[o] = ratioRtoL; mStereoPartRB[o] = 0.0f; }
 			// The measured early-attack table is currently calibrated only for
 			// the acoustic piano table. Other additive instruments keep the
 			// accepted fast-onset trajectory (zero coefficients => multiplier 1).
-			if(tableId == 0 && region.RootKey <= 81)
+			if(tableId == 0)
 			{
-				const PianoAttackCoeff ac = PianoGetAttackCoeff(size_t(region.PartOffset) + p);
+				PianoAttackCoeff ac{0.0f, 0.0f, 0.0f};
+				if(region.RootKey <= 81) ac = PianoGetAttackCoeff(size_t(region.PartOffset) + p);
+				else if(acousticProgram0 && region.RootKey >= 96)
+					ac = PianoGetUpperAttackCoeff((size_t(region.RootKey) - 96)/3);
 				mAttackCoeff0[o] = ac.C0;
 				mAttackCoeff1[o] = ac.C1;
 				mAttackCoeff2[o] = ac.C2;
 			}
-			if(beatCollapse && !sf2CommonAm && !acousticProgram0)
+			if(beatCollapse && !commonAmFitOn && !acousticProgram0)
 			{
 				// Шаг фазы биения Δ = π·fk·(det1−det0)/sr (знак не важен: E
 				// зависит от cos²/sin²). Масштаб по партиале: fk ≈ k·f0, поэтому
@@ -927,7 +929,7 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	}
 	// Segment durations are shared by every calibrated piano table. Keeping
 	// them out of every region saves metadata without changing a single value.
-	// After the measured onset the source is a transposed SF2 sample: the whole
+	// After the measured onset the source is a transposed reference bank sample: the whole
 	// body time axis scales by F0/freq. Decay rates already scale by freq/F0,
 	// so scaling the segment boundaries too makes the body exactly compatible
 	// with constant-rate region-PCM resampling. The measured attack itself stays
@@ -936,11 +938,12 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	mSegSamples2 = measuredOnsetSamples + size_t((0.235f + 0.550f)*float(sampleRate)*sourceTimeScale + 0.5f);
 	mSegSamples3 = measuredOnsetSamples + size_t((0.235f + 0.550f + 0.900f)*float(sampleRate)*sourceTimeScale + 0.5f);
 	mRendered = 0;
+	mEnvelopeInState = false;
 	mDecayStarted = false;
 	mSegSwitched = false;
 	mSegSwitched2 = false;
 	mSegSwitched3 = false;
-	// Конец ноты на длине семпла (SF2 без лупа). Транспозиция: семпл,
+	// Конец ноты на длине семпла (reference bank без лупа). Транспозиция: семпл,
 	// сыгранный быстрее/медленнее, короче/длиннее в той же пропорции.
 	{
 		const float ratio = freq/region.F0;
@@ -955,63 +958,31 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	// Per-instrument калибровка громкости: множитель на выходе всей ноты
 	// (атака+сустейн+буферы). Отдельно от Scale — чтобы не трогать
 	// нормировку атаки (буфер контактной силы от Scale не зависит).
-	mVolume = volume*volumeScale*(acousticProgram0 ? gPianoSf2CommonLevel[best < 25 ? best : 0] : 1.0f);
-	// Mid-register transient residual for Titanic root 75. The regenerated
-	// per-partial attack table fixes spectral shape; this short common envelope
-	// restores the remaining 5-80 ms energy without touching sustain.
-	if(acousticProgram0 && region.RootKey == 75)
-	{
-		mAttackBoostPolyDepth = 0.40f;
-		mAttackBoostSamples = Math::Max(size_t(1), size_t(0.090f*float(sampleRate) + 0.5f));
-	}
-	// Compact upper-register attack residual, fitted only on harmonic-band energy
-	// of dry Titanic g=0.6. Full-band fitting is deliberately avoided here:
-	// low-velocity high notes expose recorded ~50/100-Hz sample hum that is not
-	// part of the physical string model. Depth/tau are physical source-region
-	// properties; one shared velocity exponent is applied in SetVelocity().
-	else if(acousticProgram0 && region.RootKey == 96)
-	{
-		// Root 96 has a short 40 ms pre-decay plateau rather than the 115 ms
-		// exponential transient of roots 99+.  A quartic taper is the smallest
-		// common-envelope fit that follows it without per-partial coefficients.
-		mAttackBoostPolyDepth = 1.2269134f;
-		mAttackBoostSamples = Math::Max(size_t(1), size_t(region.DecayOnset*float(sampleRate) + 0.5f));
-	}
-	else if(acousticProgram0 && region.RootKey >= 99)
-	{
-		float tau;
-		if(region.RootKey == 99) { mAttackBoostDepth = 18.0731969f; tau = 0.03146143f; }
-		else if(region.RootKey == 102) { mAttackBoostDepth = 10.3358593f; tau = 0.08746335f; }
-		else { mAttackBoostDepth = 11.5f; tau = 0.02544526f; } // root 105
-		mAttackBoostSamples = Math::Max(size_t(1), size_t(region.DecayOnset*float(sampleRate) + 0.5f));
-		mAttackBoostStep = Math::Exp(-1.0f/(tau*float(sampleRate)));
-		mAttackBoostEndExp = Math::Exp(-float(mAttackBoostSamples)/(tau*float(sampleRate)));
-		mAttackBoostExp = 1.0f;
-	}
+	mVolume = volume*volumeScale*(acousticProgram0 ? gPianoCommonLevel[best < 25 ? best : 0] : 1.0f);
 	mDone = false;
 	mReleased = false;
 	mReleasePending = false;
 	mReleaseAt = 0;
 	mSampleRate = sampleRate;
-	mSf2UniformRelease = sharedAcousticP1;
-	mSf2ReleaseGain = 1.0f;
-	mSf2ReleaseSamplesLeft = 0;
-	if(mSf2UniformRelease)
+	mUniformRelease = sharedAcousticP1;
+	mReleaseGain = 1.0f;
+	mReleaseSamplesLeft = 0;
+	if(mUniformRelease)
 	{
 		// Titanic P1: preset +702 tc + instrument -386 tc = +316 tc.
-		// FluidSynth's volEnv value itself ramps linearly 1 -> 0, but output
+		// reference renderer's volEnv value itself ramps linearly 1 -> 0, but output
 		// amplitude is cb2amp(960 * (1-volEnv)): exactly 96 dB of exponential
-		// attenuation over the release duration. Quantize duration to FluidSynth's
+		// attenuation over the release duration. Quantize duration to reference renderer's
 		// 64-sample renderer buffer count.
 		const float seconds = Math::Pow(2.0f, 316.0f/1200.0f);
 		const size_t buffers = 1 + size_t(seconds*float(sampleRate)/64.0f);
-		mSf2ReleaseSamples = Math::Max(size_t(1), buffers*size_t(64));
-		mSf2ReleaseStep = Math::Exp(-11.05240845f/float(mSf2ReleaseSamples)); // ln(10)*4.8
+		mReleaseSamples = Math::Max(size_t(1), buffers*size_t(64));
+		mReleaseStep = Math::Exp(-11.05240845f/float(mReleaseSamples)); // ln(10)*4.8
 	}
 	else
 	{
-		mSf2ReleaseSamples = 0;
-		mSf2ReleaseStep = 1.0f;
+		mReleaseSamples = 0;
+		mReleaseStep = 1.0f;
 	}
 
 	// Stereo ratio R/L is precomputed in the region table: the source values
@@ -1023,24 +994,25 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		mStereoGainL = inv;
 		mStereoGainR = ratio*inv;
 	}
+	ConfigureStrike(strike);
 }
 
 void AdditiveSampler::ApplyRelease()
 {
 	if(mReleased) return;
-	if(mVelocityModEnvCents != 0.0f)
+	if(mStrikeModEnvCents != 0.0f)
 	{
 		const float attackSamples = 7.000704f*float(mSampleRate);
-		mVelocityModReleaseLevel = Math::Min(1.0f, float(mRendered)/attackSamples);
-		mVelocityModReleaseSample = mRendered;
-		mVelocityModReleased = true;
-		mVelocityModNextUpdate = mRendered;
+		mStrikeModReleaseLevel = Math::Min(1.0f, float(mRendered)/attackSamples);
+		mStrikeModReleaseSample = mRendered;
+		mStrikeModReleased = true;
+		mStrikeModNextUpdate = mRendered;
 	}
 	mReleased = true;
-	if(mSf2UniformRelease)
+	if(mUniformRelease)
 	{
-		mSf2ReleaseGain = 1.0f;
-		mSf2ReleaseSamplesLeft = mSf2ReleaseSamples;
+		mReleaseGain = 1.0f;
+		mReleaseSamplesLeft = mReleaseSamples;
 		return;
 	}
 #ifdef INTRA_PROBE_NAN

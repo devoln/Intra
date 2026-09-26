@@ -1,6 +1,6 @@
 #pragma once
 
-// Experimental direct early-attack amplitude model, fitted to raw SF2 harmonic
+// Experimental direct early-attack amplitude model, fitted to raw reference bank harmonic
 // trajectories. Envelope multiplier before DecayOnset:
 //   1 + c0*(exp(-t/10ms)-exp(-T/10ms))
 //     + c1*(exp(-t/32ms)-exp(-T/32ms))
@@ -491,6 +491,24 @@ static const PianoAttackCoeffQ10 PianoAttackCoeffsQ10[473] = {
   {-4674, 9654, -14226},
   {6897, -7720, 8458},
 };
+
+
+// Upper-register common transient residuals folded into the same three-basis
+// attack envelope. Q9 is used because root 96 exceeds the Q10/int16 range.
+// One triple per source region; decoded once at NoteOn, with no render-time layer.
+static const PianoAttackCoeffQ10 PianoUpperAttackCoeffsQ9[4] = {
+  {2839, -13969, 32471}, // root 96
+  {112, 9261, -139},     // root 99
+  {-375, 1393, 5010},    // root 102
+  {1127, 5648, -990}     // root 105
+};
+
+static inline PianoAttackCoeff PianoGetUpperAttackCoeff(size_t upperRegion)
+{
+	const PianoAttackCoeffQ10 q = PianoUpperAttackCoeffsQ9[upperRegion];
+	const float s = 1.0f/512.0f;
+	return PianoAttackCoeff{float(q.C0)*s, float(q.C1)*s, float(q.C2)*s};
+}
 
 static inline PianoAttackCoeff PianoGetAttackCoeff(size_t row)
 {

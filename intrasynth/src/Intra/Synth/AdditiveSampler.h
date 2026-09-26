@@ -22,7 +22,7 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 ///   - Атака per-partial: фундаментал нарастает медленно (τ≈AttackT), верхние
 ///     обертоны быстрее (τ≈AttackT/k) — чёткий ударный транзиент;
 ///   - Унисон: 1-3 «струны» на ноту с расстройкой DetuneCents (биения);
-///   - Velocity→яркость: громче играешь — ярче тембр (слои SF2).
+///   - Velocity→яркость: громче играешь — ярче тембр (слои reference bank).
 ///
 /// Горячий цикл (шаблон ниже) инстанцируется в AdditiveSampler.cpp, который
 /// в size-сборках компилируется -O3 без LTO. По 4 партиалы за раз через
@@ -75,9 +75,9 @@ class AdditiveSampler: public IGenericSampler
 	// Accepted true-stereo fingerprint. One oscillator recurrence stays shared
 	// between channels; right-channel phase is reconstructed as a linear
 	// combination of the two adjacent sine recurrence states.
-	FixedArray<float> mStereoPartL, mStereoPartRA, mStereoPartRB;
+	FixedArray<float> mStereoPartRA, mStereoPartRB;
 	// Experimental early harmonic trajectory. Coefficients describe the raw
-	// SF2 amplitude before DecayOnset as three common exponential basis
+	// reference bank amplitude before DecayOnset as three common exponential basis
 	// functions; env0/env1 are block endpoints for cheap linear interpolation.
 	FixedArray<float> mAttackCoeff0, mAttackCoeff1, mAttackCoeff2;
 	FixedArray<float> mAttackEnv0, mAttackEnv1;
@@ -96,7 +96,7 @@ class AdditiveSampler: public IGenericSampler
 	// бьются, высокие (h4+) — нет, в басе мелко бьётся и h1. 1.0 = нет биений.
 	FixedArray<float> mBeatR2;
 	bool mBeatOn;
-	// Compact SF2-sample-level amplitude modulation fitted per physical region.
+	// Compact reference bank-sample-level amplitude modulation fitted per physical region.
 	// This is deliberately COMMON to the summed note, not a per-partial table.
 	// It replaces the old k*fBeat unison approximation only where the fitter has
 	// an identifiable region-level solution. Runtime cost: two slow evaluations
@@ -135,7 +135,7 @@ class AdditiveSampler: public IGenericSampler
 	// DecayOnset+SegT, λ2 → λ3 на DecayOnset+SegT+SegT2, λ3 → λ4 на
 	// DecayOnset+SegT+SegT2+SegT3 (границы — окна измерений, из таблицы).
 	size_t mDecayOnsetSamples;
-	// Raw-SF2 contact prelude: coherent modal string is revealed only after the
+	// Raw-reference bank contact prelude: coherent modal string is revealed only after the
 	// contact window. The string state itself is analytically fast-forwarded to
 	// this age, so hidden oscillators do not burn CPU sample-by-sample.
 	size_t mStringRevealSamples = 0;
@@ -149,10 +149,11 @@ class AdditiveSampler: public IGenericSampler
 	size_t mSegSamples3;
 	size_t mRendered;
 	bool mDecayStarted;
+	bool mEnvelopeInState = false;
 	bool mSegSwitched;
 	bool mSegSwitched2;
 	bool mSegSwitched3;
-	// Конец ноты: SF2 без лупа — fluidsynth играет семпл один раз, нота
+	// Конец ноты: reference bank без лупа — reference renderer играет семпл один раз, нота
 	// заканчивается на SampleLen региона (масштабировано транспозицией: семпл,
 	// сыгранный в 2 раза быстрее, в 2 раза короче). Перед концом — короткий
 	// фейд (иначе щелчок); после — тишина.
@@ -160,7 +161,7 @@ class AdditiveSampler: public IGenericSampler
 	size_t mFadeSamples;
 	// Стерео: панорамирование голосов унисона. При StereoPan > 0 голос 0
 	// (первая струна) панорамируется влево, голос 1 — вправо. Pan = 0
-	// означает моно (L=R). Измерено по разнице уровней L/R семплов SF2:
+	// означает моно (L=R). Измерено по разнице уровней L/R семплов reference bank:
 	// tanh(dB/6) даёт мягкую S-кривую в диапазоне [-1; +1].
 	float mStereoGainL;
 	float mStereoGainR;
@@ -173,76 +174,53 @@ class AdditiveSampler: public IGenericSampler
 
 	// Clavinova program 0 reuses the same raw stereo samples for all six
 	// velocity zones. Keep the raw source independent of velocity, then apply
-	// the SF2 velocity low-pass as an outer per-note layer. Coefficients use
+	// the reference bank velocity low-pass as an outer per-note layer. Coefficients use
 	// the same 2-pole Butterworth form as FilterCoeffs::Calculate.
-	bool mVelocityFilterModel = false;
-	bool mVelocityFilterBypass = true;
-	bool mVelocityFilterInPartials = false;
-	size_t mVelocityFilterHandoffSamples = 0;
+	bool mStrikeFilterModel = false;
+	bool mStrikeFilterBypass = true;
+	bool mStrikeFilterInPartials = false;
+	size_t mStrikeFilterHandoffSamples = 0;
 	float mVelA1 = 0, mVelA2 = 0, mVelB1 = 0, mVelB2 = 0, mVelC = 1;
 	float mVelPrevSrcL = 0, mVelPrevSrc2L = 0, mVelPrevOutL = 0, mVelPrevOut2L = 0;
 	float mVelPrevSrcR = 0, mVelPrevSrc2R = 0, mVelPrevOutR = 0, mVelPrevOut2R = 0;
-	// P1/P2 in the original SF2 also route the very slow modulation envelope
+	// P1/P2 in the original reference bank also route the very slow modulation envelope
 	// to filter cutoff. It is negligible inside the 200 ms PCM onset cache,
 	// then updated in the partial domain at a low control rate.
-	float mVelocityFilterBaseCutoff = 19912.0f;
-	float mVelocityFilterCurrentCutoff = 19912.0f;
-	float mVelocityModEnvCents = 0.0f;
-	float mVelocityModReleaseLevel = 0.0f;
-	size_t mVelocityModNextUpdate = 0;
-	size_t mVelocityModReleaseSample = 0;
-	bool mVelocityModReleased = false;
-
-	// Compact upper-register SF2 harmonic attack residual.  The packed modal
-	// state is measured at DecayOnset; roots 96+ need a hotter common transient
-	// before that point.  Region-level envelopes plus one shared velocity law
-	// reconstruct it without per-partial or velocity-zone tables.  Applied
-	// outside the raw onset cache so cache ON/OFF use the same envelope.
-	float mAttackBoostExp = 1.0f;
-	float mAttackBoostStep = 1.0f;
-	float mAttackBoostEndExp = 1.0f;
-	float mAttackBoostDepth = 0.0f;
-	float mAttackBoostPolyDepth = 0.0f;
-	float mAttackBoostVelocityScale = 1.0f;
-	size_t mAttackBoostSamples = 0;
-
-	INTRA_FORCEINLINE float StepAttackBoost(size_t t)
-	{
-		if(mAttackBoostSamples == 0 || t >= mAttackBoostSamples) return 1.0f;
-		if(mAttackBoostPolyDepth != 0.0f)
-		{
-			const float u = float(t)/float(mAttackBoostSamples);
-			const float u2 = u*u;
-			return 1.0f + mAttackBoostPolyDepth*mAttackBoostVelocityScale*(1.0f - u2*u2);
-		}
-		const float g = 1.0f + mAttackBoostDepth*mAttackBoostVelocityScale*(mAttackBoostExp - mAttackBoostEndExp);
-		mAttackBoostExp *= mAttackBoostStep;
-		if(mAttackBoostExp < mAttackBoostEndExp) mAttackBoostExp = mAttackBoostEndExp;
-		return g;
-	}
+	float mStrikeFilterBaseCutoff = 19912.0f;
+	float mStrikeFilterCurrentCutoff = 19912.0f;
+	float mStrikeModEnvCents = 0.0f;
+	float mStrikeModReleaseLevel = 0.0f;
+	size_t mStrikeModNextUpdate = 0;
+	size_t mStrikeModReleaseSample = 0;
+	bool mStrikeModReleased = false;
 
 	// Таблица партиал/регионов (PianoRegions.h): по умолчанию общая
-	// (acoustic), per-instrument SF2-таблицы — через PianoTableId.
+	// (acoustic), per-instrument reference bank-таблицы — через PianoTableId.
 	const PianoTable* mTable;
 	uint8 mTableId = 0; // compact preset/table selector for velocity calibration
-	uint8 mVelocityProfile = 0;
+	uint8 mStrikeProfile = 0;
 	uint8 mRegionIndex = 0;
 	// mDone = true когда нота полностью закончилась (mRendered >= mEndSamples):
 	// GenerateMono/GenerateStereo возвращают 0, и NoteSampler удаляет голос.
 	bool mDone;
-// mReleased = true после NoteRelease().  Для SF2-match acoustic P1
+// mReleased = true после NoteRelease().  Для reference bank-match acoustic P1
 // естественная траектория партиал продолжает идти как при удержании, а поверх
-// неё действует общий линейный volume-envelope release FluidSynth.
+// неё действует общий линейный volume-envelope release reference renderer.
 	bool mReleased;
-	bool mSf2UniformRelease = false;
-	float mSf2ReleaseGain = 1.0f;
-	float mSf2ReleaseStep = 1.0f;
-	size_t mSf2ReleaseSamples = 0;
-	size_t mSf2ReleaseSamplesLeft = 0;
+	bool mUniformRelease = false;
+	float mReleaseGain = 1.0f;
+	float mReleaseStep = 1.0f;
+	size_t mReleaseSamples = 0;
+	size_t mReleaseSamplesLeft = 0;
+	// Immutable note-on loudness plus live outer gain used only for
+	// irreversible pruning. MIDI controller semantics stay above this layer.
+	float mPruneNoteGain = 1.0f;
+	float mPruneDynamicGain = 1.0f;
+	INTRA_FORCEINLINE float PruneLoudnessGain() const {return mPruneNoteGain*mPruneDynamicGain;}
 
 	INTRA_FORCEINLINE float ApplyVelocityFilter(float x, bool right)
 	{
-		if(!mVelocityFilterModel || mVelocityFilterBypass) return x;
+		if(!mStrikeFilterModel || mStrikeFilterBypass) return x;
 		float &ps = right ? mVelPrevSrcR : mVelPrevSrcL;
 		float &ps2 = right ? mVelPrevSrc2R : mVelPrevSrc2L;
 		float &po = right ? mVelPrevOutR : mVelPrevOutL;
@@ -253,9 +231,10 @@ class AdditiveSampler: public IGenericSampler
 	}
 
 	void SetHeldStringStateAt(size_t target);
-	void PromoteVelocityFilterToPartials();
-	void UpdateVelocityModEnvelope();
-	void SetVelocityFilterCutoff(float newCutoff);
+	void ConfigureStrike(float strike);
+	void PromoteStrikeFilterToPartials();
+	void UpdateStrikeModEnvelope();
+	void SetStrikeFilterCutoff(float newCutoff);
 	void ApplyVelocityFilterCutoffRatio(float newCutoff);
 public:
 	static const size_t mBlockSize = 512;
@@ -281,7 +260,8 @@ public:
 		float decayStiffness, float detuneCents,
 		int unisonVoices, float velBrightness, float trebleTilt,
 		float volumeScale = 1.0f, float beatScale = 1.0f, int tableId = 0,
-		float beatCents = 0, uint8 velocityProfile = 0);
+		float beatCents = 0, uint8 strikeProfile = 0,
+		float strike = 1.0f, float pruneNoteGain = 1.0f);
 	~AdditiveSampler() override;
 
 	/// Рендерит numSamples отсчётов. Лямбда-sink — как у KS/SpectralString:
@@ -297,7 +277,6 @@ public:
 		float* amp = mAmp.Data();
 		float* dec = mDecay.Data();
 		float* atk = mAtk.Data();
-		const float* stereoL = mStereoPartL.Data();
 		const float* stereoRA = mStereoPartRA.Data();
 		const float* stereoRB = mStereoPartRB.Data();
 	const float volL = mVolume*mMidiPanGainL;
@@ -323,16 +302,15 @@ public:
 			{
 				const size_t t = start + i;
 				const float contact = 0.0f;
-				const float attackBoost = StepAttackBoost(t);
 				float releaseGain = 1.0f;
-				if(mReleased && mSf2UniformRelease)
+				if(mReleased && mUniformRelease)
 				{
-					releaseGain = mSf2ReleaseGain;
-					if(mSf2ReleaseSamplesLeft != 0)
-					{ mSf2ReleaseGain *= mSf2ReleaseStep; --mSf2ReleaseSamplesLeft; }
+					releaseGain = mReleaseGain;
+					if(mReleaseSamplesLeft != 0)
+					{ mReleaseGain *= mReleaseStep; --mReleaseSamplesLeft; }
 				}
-				sink(ApplyVelocityFilter(contact, false)*volL*releaseGain*attackBoost,
-					ApplyVelocityFilter(contact, true)*volR*releaseGain*attackBoost);
+				sink(ApplyVelocityFilter(contact, false)*volL*releaseGain,
+					ApplyVelocityFilter(contact, true)*volR*releaseGain);
 			}
 			numSamples -= pre;
 			if(mRendered == mStringRevealSamples) SetHeldStringStateAt(mRendered);
@@ -355,13 +333,13 @@ public:
 				commonAmStep = (b - a)*(1.0f/128.0f);
 				commonAm0 = a + commonAmStep*float(pos);
 			}
-			if(mVelocityFilterModel && !mVelocityFilterInPartials && mVelocityFilterHandoffSamples > mRendered)
-				n = Math::Min(n, mVelocityFilterHandoffSamples - mRendered);
+			if(mStrikeFilterModel && !mStrikeFilterInPartials && mStrikeFilterHandoffSamples > mRendered)
+				n = Math::Min(n, mStrikeFilterHandoffSamples - mRendered);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
 			// затем λ1 → λ2 на SegT, λ2 → λ3 на SegT2 (границы из таблицы).
 			// При release (демпфере) эти переключения пропускаются — dec[p]
 			// уже установлен на mDecayRelease в NoteRelease().
-			const bool naturalActive = !mReleased || mSf2UniformRelease;
+			const bool naturalActive = !mReleased || mUniformRelease;
 			if(naturalActive && !mDecayStarted && mRendered >= mDecayOnsetSamples)
 			{
 				float* dec1 = mDecay1.Data();
@@ -464,6 +442,14 @@ public:
 					bp[p] = ph1;
 				}
 			}
+
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2 && INTRA_MINEXE == 0 && !defined(__i386__) && !defined(_M_IX86)
+			if(!mBeatOn && blockStart >= mDecayOnsetSamples && !mEnvelopeInState)
+			{
+				for(size_t p = 0; p < count; p++) { s1[p] *= amp[p]; s2[p] *= amp[p]; }
+				mEnvelopeInState = true;
+			}
+#endif
 if(blockStart < mDecayOnsetSamples)
 			{
 	#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE2
@@ -483,7 +469,6 @@ if(blockStart < mDecayOnsetSamples)
 						const __m128 dv = _mm_loadu_ps(dec+p);
 						const __m128 ak = _mm_loadu_ps(atk+p);
 						const __m128 mv = _mm_sub_ps(dv, ak);
-						const __m128 glv = _mm_loadu_ps(stereoL+p);
 						const __m128 rav = _mm_loadu_ps(stereoRA+p);
 						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 						const __m128 b0 = _mm_loadu_ps(e0a + p);
@@ -497,7 +482,7 @@ if(blockStart < mDecayOnsetSamples)
 							const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, fi));
 							const __m128 ae = _mm_add_ps(a0, _mm_mul_ps(ad, afi));
 							const __m128 env = _mm_mul_ps(_mm_mul_ps(av, gv), ae);
-							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
+							const __m128 outL = _mm_mul_ps(s1v, env);
 							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
 							const __m128 outR = _mm_mul_ps(carrierR, env);
 							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
@@ -523,7 +508,6 @@ if(blockStart < mDecayOnsetSamples)
 						const __m128 dv = _mm_loadu_ps(dec+p);
 						const __m128 ak = _mm_loadu_ps(atk+p);
 						const __m128 mv = _mm_sub_ps(dv, ak);
-						const __m128 glv = _mm_loadu_ps(stereoL+p);
 						const __m128 rav = _mm_loadu_ps(stereoRA+p);
 						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 						const __m128 a0 = _mm_loadu_ps(mAttackEnv0.Data() + p);
@@ -534,7 +518,7 @@ if(blockStart < mDecayOnsetSamples)
 						{
 							const __m128 ae = _mm_add_ps(a0, _mm_mul_ps(ad, _mm_set1_ps((attackBase + float(i))*attackInvLen)));
 							const __m128 ave = _mm_mul_ps(av, ae);
-							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, ave), glv);
+							const __m128 outL = _mm_mul_ps(s1v, ave);
 							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
 							const __m128 outR = _mm_mul_ps(carrierR, ave);
 							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
@@ -563,13 +547,13 @@ if(blockStart < mDecayOnsetSamples)
 						float av = amp[p];
 						const float mv = dec[p] - atk[p];
 						const float ak = atk[p];
-						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float ra = stereoRA[p], rb = stereoRB[p];
 						const float b0 = e0a[p], bd = e1a[p] - b0;
 						const float a0 = mAttackEnv0[p], ad = mAttackEnv1[p] - a0;
 						for(size_t i = 0; i < n; i++)
 						{
 							const float env = av*(b0 + bd*(float(i)*invN))*(a0 + ad*((attackBase + float(i))*attackInvLen));
-							acc[4*i] += s1v*env*gl;
+							acc[4*i] += s1v*env;
 							accR[4*i] += (ra*s1v + rb*s2v)*env;
 							const float newS = kv*s2v - s1v;
 							s1v = s2v;
@@ -589,14 +573,14 @@ if(blockStart < mDecayOnsetSamples)
 						float av = amp[p];
 						const float mv = dec[p] - atk[p];
 						const float ak = atk[p];
-						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float ra = stereoRA[p], rb = stereoRB[p];
 						const float a0 = mAttackEnv0[p], ad = mAttackEnv1[p] - a0;
 						const float attackInvLen = 1.0f/float(mAttackInterpLen);
 						const float attackBase = float(mAttackInterpPos);
 						for(size_t i = 0; i < n; i++)
 						{
 							const float ae = a0 + ad*((attackBase + float(i))*attackInvLen);
-							acc[4*i] += s1v*av*ae*gl;
+							acc[4*i] += s1v*av*ae;
 							accR[4*i] += (ra*s1v + rb*s2v)*av*ae;
 							const float newS = kv*s2v - s1v;
 							s1v = s2v;
@@ -627,7 +611,6 @@ if(blockStart < mDecayOnsetSamples)
 						const __m128 dv = _mm_loadu_ps(dec+p);
 						const __m128 ak = _mm_loadu_ps(atk+p);
 						const __m128 mv = _mm_sub_ps(dv, ak);
-						const __m128 glv = _mm_loadu_ps(stereoL+p);
 						const __m128 rav = _mm_loadu_ps(stereoRA+p);
 						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 						const __m128 b0 = _mm_loadu_ps(e0a + p);
@@ -636,7 +619,7 @@ if(blockStart < mDecayOnsetSamples)
 						{
 							const __m128 gv = _mm_add_ps(b0, _mm_mul_ps(bd, _mm_set1_ps(float(i)*invN)));
 							const __m128 env = _mm_mul_ps(av, gv);
-							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, env), glv);
+							const __m128 outL = _mm_mul_ps(s1v, env);
 							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
 							const __m128 outR = _mm_mul_ps(carrierR, env);
 							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
@@ -653,27 +636,69 @@ if(blockStart < mDecayOnsetSamples)
 				}
 				else
 				{
+#if INTRA_MINEXE == 0 && !defined(__i386__) && !defined(_M_IX86)
+					// Sustain state already contains the modal envelope after DecayOnset.
+					// Two x4 groups share accumulator traffic while keeping only 12
+					// long-lived vectors: u1/u2, decay, k*decay and stereo RA/RB.
+					size_t p = 0;
+					for(; p + 8 <= count; p += 8)
+					{
+						__m128 u1a = _mm_loadu_ps(s1+p), u1b = _mm_loadu_ps(s1+p+4);
+						__m128 u2a = _mm_loadu_ps(s2+p), u2b = _mm_loadu_ps(s2+p+4);
+						const __m128 da = _mm_loadu_ps(dec+p), db = _mm_loadu_ps(dec+p+4);
+						const __m128 ka = _mm_loadu_ps(k+p), kb = _mm_loadu_ps(k+p+4);
+						const __m128 raa = _mm_loadu_ps(stereoRA+p), rab = _mm_loadu_ps(stereoRA+p+4);
+						const __m128 rba = _mm_loadu_ps(stereoRB+p), rbb = _mm_loadu_ps(stereoRB+p+4);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 sumL = _mm_add_ps(u1a, u1b);
+							const __m128 ca = _mm_add_ps(_mm_mul_ps(raa, u1a), _mm_mul_ps(rba, u2a));
+							const __m128 cb = _mm_add_ps(_mm_mul_ps(rab, u1b), _mm_mul_ps(rbb, u2b));
+							const __m128 n1a = _mm_mul_ps(da, u2a), n1b = _mm_mul_ps(db, u2b);
+							const __m128 n2a = _mm_mul_ps(da, _mm_sub_ps(_mm_mul_ps(ka, u2a), u1a));
+							const __m128 n2b = _mm_mul_ps(db, _mm_sub_ps(_mm_mul_ps(kb, u2b), u1b));
+							u1a = n1a; u2a = n2a; u1b = n1b; u2b = n2b;
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), sumL));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), _mm_add_ps(ca, cb)));
+						}
+						_mm_storeu_ps(s1+p, u1a); _mm_storeu_ps(s1+p+4, u1b);
+						_mm_storeu_ps(s2+p, u2a); _mm_storeu_ps(s2+p+4, u2b);
+					}
+					for(; p < count; p += 4)
+					{
+						__m128 u1 = _mm_loadu_ps(s1+p), u2 = _mm_loadu_ps(s2+p);
+						const __m128 dv = _mm_loadu_ps(dec+p);
+						const __m128 kv = _mm_loadu_ps(k+p);
+						const __m128 rav = _mm_loadu_ps(stereoRA+p), rbv = _mm_loadu_ps(stereoRB+p);
+						for(size_t i = 0; i < n; i++)
+						{
+							const __m128 outR = _mm_add_ps(_mm_mul_ps(rav, u1), _mm_mul_ps(rbv, u2));
+							const __m128 n1 = _mm_mul_ps(dv, u2);
+							const __m128 n2 = _mm_mul_ps(dv, _mm_sub_ps(_mm_mul_ps(kv, u2), u1));
+							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), u1));
+							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
+							u1 = n1; u2 = n2;
+						}
+						_mm_storeu_ps(s1+p, u1); _mm_storeu_ps(s2+p, u2);
+					}
+
+#else
 					for(size_t p = 0; p < count; p += 4)
 					{
 						__m128 s1v = _mm_loadu_ps(s1+p);
 						__m128 s2v = _mm_loadu_ps(s2+p);
-						__m128 kv  = _mm_loadu_ps(k+p);
-						__m128 av  = _mm_loadu_ps(amp+p);
-						const __m128 dv = _mm_loadu_ps(dec+p);
-						const __m128 ak = _mm_loadu_ps(atk+p);
-						const __m128 mv = _mm_sub_ps(dv, ak);
-						const __m128 glv = _mm_loadu_ps(stereoL+p);
+						const __m128 kv = _mm_loadu_ps(k+p);
+						__m128 av = _mm_loadu_ps(amp+p);
+						const __m128 mv = _mm_loadu_ps(dec+p);
 						const __m128 rav = _mm_loadu_ps(stereoRA+p);
 						const __m128 rbv = _mm_loadu_ps(stereoRB+p);
 						for(size_t i = 0; i < n; i++)
 						{
-							const __m128 outL = _mm_mul_ps(_mm_mul_ps(s1v, av), glv);
+							const __m128 outL = _mm_mul_ps(s1v, av);
 							const __m128 carrierR = _mm_add_ps(_mm_mul_ps(rav, s1v), _mm_mul_ps(rbv, s2v));
 							const __m128 outR = _mm_mul_ps(carrierR, av);
 							const __m128 newS = _mm_sub_ps(_mm_mul_ps(kv, s2v), s1v);
-							s1v = s2v;
-							s2v = newS;
-							av = _mm_add_ps(_mm_mul_ps(av, mv), ak);
+							s1v = s2v; s2v = newS; av = _mm_mul_ps(av, mv);
 							_mm_storeu_ps(acc + 4*i, _mm_add_ps(_mm_loadu_ps(acc + 4*i), outL));
 							_mm_storeu_ps(accR + 4*i, _mm_add_ps(_mm_loadu_ps(accR + 4*i), outR));
 						}
@@ -681,6 +706,7 @@ if(blockStart < mDecayOnsetSamples)
 						_mm_storeu_ps(s2+p, s2v);
 						_mm_storeu_ps(amp+p, av);
 					}
+#endif
 				}
 	#else
 				if(mBeatOn)
@@ -694,12 +720,12 @@ if(blockStart < mDecayOnsetSamples)
 						float av = amp[p];
 						const float mv = dec[p] - atk[p];
 						const float ak = atk[p];
-						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float ra = stereoRA[p], rb = stereoRB[p];
 						const float b0 = e0a[p], bd = e1a[p] - b0;
 						for(size_t i = 0; i < n; i++)
 						{
 							const float env = av*(b0 + bd*(float(i)*invN));
-							acc[4*i] += s1v*env*gl;
+							acc[4*i] += s1v*env;
 							accR[4*i] += (ra*s1v + rb*s2v)*env;
 							const float newS = kv*s2v - s1v;
 							s1v = s2v;
@@ -719,10 +745,10 @@ if(blockStart < mDecayOnsetSamples)
 						float av = amp[p];
 						const float mv = dec[p] - atk[p];
 						const float ak = atk[p];
-						const float gl = stereoL[p], ra = stereoRA[p], rb = stereoRB[p];
+						const float ra = stereoRA[p], rb = stereoRB[p];
 						for(size_t i = 0; i < n; i++)
 						{
-							acc[4*i] += s1v*av*gl;
+							acc[4*i] += s1v*av;
 							accR[4*i] += (ra*s1v + rb*s2v)*av;
 							const float newS = kv*s2v - s1v;
 							s1v = s2v;
@@ -766,7 +792,7 @@ if(blockStart < mDecayOnsetSamples)
 					s *= am; sr *= am;
 				}
 				// Конец региона: фейд на последних mFadeSamples, дальше тишина
-				// (как fluidsynth без лупа — нота заканчивается вместе с семплом).
+				// (как reference renderer без лупа — нота заканчивается вместе с семплом).
 				if(mEndSamples)
 				{
 					if(t >= mEndSamples) { s = 0.0f; sr = 0.0f; }
@@ -778,18 +804,17 @@ if(blockStart < mDecayOnsetSamples)
 				}
 				const float vl = ApplyVelocityFilter(s, false);
 				const float vr = ApplyVelocityFilter(sr, true);
-				const float attackBoost = StepAttackBoost(t);
 				float releaseGain = 1.0f;
-				if(mReleased && mSf2UniformRelease)
+				if(mReleased && mUniformRelease)
 				{
-					releaseGain = mSf2ReleaseGain;
-					if(mSf2ReleaseSamplesLeft != 0)
+					releaseGain = mReleaseGain;
+					if(mReleaseSamplesLeft != 0)
 					{
-						mSf2ReleaseGain *= mSf2ReleaseStep;
-						--mSf2ReleaseSamplesLeft;
+						mReleaseGain *= mReleaseStep;
+						--mReleaseSamplesLeft;
 					}
 				}
-				sink(vl*volL*releaseGain*attackBoost, vr*volR*releaseGain*attackBoost);
+				sink(vl*volL*releaseGain, vr*volR*releaseGain);
 			}
 			// After the attack every modal amplitude is monotonic. Once the
 			// highest SIMD group falls below the inaudible trim threshold it can never
@@ -801,15 +826,27 @@ if(blockStart < mDecayOnsetSamples)
 				mRendered >= mDecayOnsetSamples && mCount > 4)
 			{
 				size_t trimmed = mCount;
+				const float pruneGain = PruneLoudnessGain()*(mReleased && mUniformRelease ? mReleaseGain : 1.0f);
+				const float trimFloor = (mReleased && mUniformRelease) ? 1e-3f : 1e-4f;
+				const float gain2 = pruneGain*pruneGain, floor2 = trimFloor*trimFloor, stateFloor2 = floor2*(0.0625f*0.0625f);
 				while(trimmed > 4)
 				{
 					bool silent = true;
 					for(size_t q = trimmed - 4; q < trimmed; q++)
 					{
-						float a = amp[q] < 0.0f ? -amp[q] : amp[q];
-						if(mReleased && mSf2UniformRelease) a *= mSf2ReleaseGain;
-						const float trimFloor = (mReleased && mSf2UniformRelease) ? 1e-3f : 1e-4f;
-						if(a >= trimFloor) { silent = false; break; }
+						if(mEnvelopeInState)
+						{
+							const float c = Math::Clamp(0.5f*k[q], -1.0f, 1.0f);
+							const float ss = Math::Max(1e-12f, 1.0f - c*c);
+							const float b = s2[q] - c*s1[q];
+							const float env2TimesSs = s1[q]*s1[q]*ss + b*b;
+							if(env2TimesSs*gain2 >= stateFloor2*ss) { silent = false; break; }
+						}
+						else
+						{
+							const float a = amp[q] < 0.0f ? -amp[q] : amp[q];
+							if(a*pruneGain >= trimFloor) { silent = false; break; }
+						}
 					}
 					if(!silent) break;
 					trimmed -= 4;
@@ -817,41 +854,44 @@ if(blockStart < mDecayOnsetSamples)
 				mCount = trimmed;
 			}
 			// A raw cache builder must stay raw for the entire cached prefix. The old
-			// 160 ms cache ended before the 200 ms velocity-filter handoff; with a
+			// 160 ms cache ended before the 200 ms strike-filter handoff; with a
 			// 500 ms cache, promoting here would bake the builder velocity into PCM.
 			if(
-				mVelocityFilterModel && !mVelocityFilterInPartials &&
-				mRendered >= mVelocityFilterHandoffSamples)
-				PromoteVelocityFilterToPartials();
-			if(mVelocityModEnvCents != 0.0f && mRendered >= mVelocityModNextUpdate)
-				UpdateVelocityModEnvelope();
+				mStrikeFilterModel && !mStrikeFilterInPartials &&
+				mRendered >= mStrikeFilterHandoffSamples)
+				PromoteStrikeFilterToPartials();
+			if(mStrikeModEnvCents != 0.0f && mRendered >= mStrikeModNextUpdate)
+				UpdateStrikeModEnvelope();
 			numSamples -= n;
 		}
 		if(mEndSamples && mRendered >= mEndSamples) mDone = true;
-		else if(mReleased)
+		else if(mRendered >= mDecayOnsetSamples
+		)
 		{
-			if(mSf2UniformRelease)
-			{
-				// FluidSynth also retires voices once sample*envelope falls below its
-				// noise floor. Keep the old proven -60 dB modal gate instead of
-				// evaluating an inaudible full 1.2-second release tail.
-				float maxAmp = 0.0f;
-				for(size_t p = 0; p < mCount; p++)
-				{
-					const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
-					if(a > maxAmp) maxAmp = a;
-				}
-				if(mSf2ReleaseSamplesLeft == 0 || maxAmp*mSf2ReleaseGain < 1e-3f) mDone = true;
-			}
+			const float pruneGain = PruneLoudnessGain()*(mReleased && mUniformRelease ? mReleaseGain : 1.0f);
+			const float doneFloor = mReleased ? 1e-3f : 1e-4f;
+			if(mReleased && mUniformRelease && mReleaseSamplesLeft == 0) mDone = true;
 			else
 			{
-				float maxAmp = 0.0f;
-				for(size_t p = 0; p < count; p++)
+				const float gain2 = pruneGain*pruneGain, floor2 = doneFloor*doneFloor, stateFloor2 = floor2*(0.0625f*0.0625f);
+				bool audible = false;
+				for(size_t p = 0; p < mCount; p++)
 				{
-					const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
-					if(a > maxAmp) maxAmp = a;
+					if(mEnvelopeInState)
+					{
+						const float c = Math::Clamp(0.5f*k[p], -1.0f, 1.0f);
+						const float ss = Math::Max(1e-12f, 1.0f - c*c);
+						const float b = s2[p] - c*s1[p];
+						const float env2TimesSs = s1[p]*s1[p]*ss + b*b;
+						if(env2TimesSs*gain2 >= stateFloor2*ss) { audible = true; break; }
+					}
+					else
+					{
+						const float a = amp[p] < 0.0f ? -amp[p] : amp[p];
+						if(a*pruneGain >= doneFloor) { audible = true; break; }
+					}
 				}
-				if(maxAmp < 1e-3f) mDone = true;
+				if(!audible) mDone = true;
 			}
 		}
 	}
@@ -905,7 +945,7 @@ if(blockStart < mDecayOnsetSamples)
 		mMidiPanGainL = 1.0f - pan;
 		mMidiPanGainR = 1.0f + pan;
 	}
-	void SetVelocity(float velocity01) override;
+	void SetPruneGain(float gain) override {mPruneDynamicGain = gain;}
 	void ApplyRelease();
 
 };
@@ -936,7 +976,7 @@ struct AdditivePianoInstrument
 	/// note-on не вычисляет 10^(dB/20). Scale и тембральные параметры не трогает.
 	float VolumeScale = 1.0f;
 	/// BeatScale — per-instrument множитель регионального профиля биений
-	/// (лестница base в AdditiveSampler, измерена по семплам SF2 2026-08-26).
+	/// (лестница base в AdditiveSampler, измерена по семплам reference bank 2026-08-26).
 	/// 1 = полный профиль (эталон — AcousticPiano); 0 = региональная расстройка
 	/// отключена у инструмента (только его собственная DetuneCents). Wide-
 	/// detune пресеты (honky-tonk 9.0c) на регионе 51 давали ~45 центов и
@@ -944,7 +984,7 @@ struct AdditivePianoInstrument
 	float BeatScale = 1.0f;
 	/// TableId — таблица коэффициентов (PianoTableId в PianoRegions.h).
 	/// 0 = общая acoustic-таблица (по умолчанию). Honky-Tonk =
-	/// PianoTableHonkyTonk: его SF2-семплы — те же, что у acoustic (ворклог
+	/// PianoTableHonkyTonk: его reference bank-семплы — те же, что у acoustic (ворклог
 	/// 2026-08-30), поэтому под INTRA_PIANO_ALL_TABLES таблица алиасит
 	/// общую (0 лишних байт); без define все TableId резолвятся в общую.
 	int TableId = 0;
@@ -957,21 +997,21 @@ struct AdditivePianoInstrument
 	/// примерно постоянной скоростью ~2-3 Гц на C4-C5 (DX7/Rhodes тайны), а
 	/// не по лестнице струн рояля (2026-09-04, EP2).
 	float BeatCents = 0;
-	/// Explicit SF2 velocity/profile id. 0=Grand, 1=Bright, 2=ElectricGrand,
+	/// Explicit reference bank velocity/profile id. 0=Grand, 1=Bright, 2=ElectricGrand,
 	/// 3=Honky, 4=EP1, 5=EP2, 6=Harpsichord, 7=Clavinet.
-	uint8 VelocityProfile = 0;
+	uint8 StrikeProfile = 0;
 
-	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate) const
+	GenericSamplerRef operator()(float freq, float volume, unsigned sampleRate, const NoteOnParams& noteParams) const
 	{
 		return new AdditiveSampler(freq, volume, sampleRate,
 			MaxPartials, Brightness, Scale, DecayScale, DecayStiffness,
 			DetuneCents, UnisonVoices, VelBrightness, TrebleTilt, VolumeScale, BeatScale, TableId,
-			BeatCents, VelocityProfile);
+			BeatCents, StrikeProfile, noteParams.Strike, noteParams.Gain);
 	}
 };
 
 // Prebuild the canonical raw 500 ms region prefix outside the audio callback.
-// Repeated keys in the same SF2 region are no-ops after the first build.
+// Repeated keys in the same reference bank region are no-ops after the first build.
 INTRA_FORCEINLINE void PreloadAcousticPianoKey(float, unsigned) {}
 
 INTRA_WARNING_POP

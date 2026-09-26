@@ -3,6 +3,7 @@
 #include <Cpp/Warnings.h>
 #include <Utils/Span.h>
 #include <Funal/Delegate.h>
+#include <Math/Math.h>
 #include "Envelope.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -15,9 +16,92 @@ INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 // matches the wire layout.
 struct RenderParams
 {
-	float ReverbWet = 0.0f;   // 0..1, master effect amount; zero skips the effect
+	float ReverbWet = 0.0f;   // 0..2, direct UI/C++ amount; 1.0 = normal 100%, zero skips the effect
 };
 static_assert(sizeof(RenderParams) == 1*sizeof(float), "RenderParams ABI must stay a single float");
+
+// Note-on noteParams are resolved above the sampler layer. Raw MIDI velocity
+// stops here; samplers receive only a dimensionless strike coordinate and a
+// ready linear note gain.
+struct NoteOnParams
+{
+	float Strike = 1.0f;
+	float Gain = 1.0f;
+};
+
+// Current Titanic build: force the accepted v^2 law at compile time. This is
+// intentionally a separate fast path so the current WASM pays no descriptor,
+// switch or unused alternate-curve code. The optional runtime mode below keeps
+// a compact bank-style velocity modulator for future reference banks.
+INTRA_FORCEINLINE NoteOnParams ResolveForcedNoteOnParams(byte velocity)
+{
+	const float strike = float(velocity)*(1.0f/127.0f);
+	const float x = float(velocity)*0.01f;
+	return NoteOnParams{strike, (0.80848074f*x)*x};
+}
+
+#ifdef INTRA_RUNTIME_VELOCITY_MODULATORS
+// Compact velocity-only bank modulator. The source is implicitly note-on
+// velocity, so the redundant source index is omitted. Amount is signed 16-bit;
+// source flags pack curve/direction/polarity. Destination is kept separate so
+// a future bank importer can route the
+// same source law without changing the note/sampler API.
+enum class VelocityModCurve: byte {Linear, Concave, Convex, Switch, LegacySquare};
+enum class VelocityModDestination: byte {AttenuationCentibels, LinearGain};
+struct VelocityModulator
+{
+	int16 Amount = 960;
+	byte SourceFlags = byte(VelocityModCurve::LegacySquare);
+	VelocityModDestination Destination = VelocityModDestination::LinearGain;
+};
+static_assert(sizeof(VelocityModulator) == 4, "VelocityModulator must stay compact");
+
+INTRA_FORCEINLINE float VelocityCurveConcave(float x)
+{
+	if(x <= 0.0f) return 0.0f;
+	if(x >= 1.0f) return 1.0f;
+	return Math::Clamp(-0.1809560341f*Math::Log(1.0f - x), 0.0f, 1.0f);
+}
+INTRA_FORCEINLINE float VelocityCurveConvex(float x)
+{
+	if(x <= 0.0f) return 0.0f;
+	if(x >= 1.0f) return 1.0f;
+	return Math::Clamp(1.0f + 0.1809560341f*Math::Log(x), 0.0f, 1.0f);
+}
+
+INTRA_FORCEINLINE NoteOnParams ResolveVelocityNoteOnParams(const VelocityModulator& mod, byte velocity)
+{
+	const float strike = float(velocity)*(1.0f/127.0f);
+	const VelocityModCurve curve = VelocityModCurve(mod.SourceFlags & 7u);
+	if(curve == VelocityModCurve::LegacySquare) return ResolveForcedNoteOnParams(velocity);
+	const bool negative = (mod.SourceFlags & 8u) != 0;
+	const bool bipolar = (mod.SourceFlags & 16u) != 0;
+	const float pos = float(velocity)*(1.0f/128.0f);
+	float x = negative ? (127.0f/128.0f - pos) : pos;
+	if(bipolar) x = -1.0f + 2.0f*x;
+	if(curve == VelocityModCurve::Switch)
+		x = bipolar ? (x >= 0.0f ? 1.0f : -1.0f) : (x >= 0.5f ? 1.0f : 0.0f);
+	else if(curve != VelocityModCurve::Linear)
+	{
+		const float sign = x < 0.0f ? -1.0f : 1.0f;
+		const float a = Math::Clamp((x < 0.0f ? -x : x)*(128.0f/127.0f), 0.0f, 1.0f);
+		x = sign*(curve == VelocityModCurve::Concave ? VelocityCurveConcave(a) : VelocityCurveConvex(a));
+	}
+	const float value = float(mod.Amount)*x;
+	if(mod.Destination == VelocityModDestination::AttenuationCentibels)
+		return NoteOnParams{strike, Math::Exp(-0.01151292546f*value)};
+	return NoteOnParams{strike, value};
+}
+#endif
+
+INTRA_FORCEINLINE NoteOnParams ResolveDefaultNoteOnParams(byte velocity)
+{
+#ifdef INTRA_RUNTIME_VELOCITY_MODULATORS
+	return ResolveVelocityNoteOnParams(VelocityModulator{}, velocity);
+#else
+	return ResolveForcedNoteOnParams(velocity);
+#endif
+}
 
 struct RenderEnvelope
 {
@@ -70,9 +154,9 @@ public:
 	/// MIDI channel pan. Generic samplers that own a stereo image can apply it
 	/// as an outer balance layer; mono/irrelevant samplers keep the no-op.
 	virtual void SetPan(float newPan) {(void)newPan;}
-	/// Raw MIDI key velocity, normalized to [0; 1]. Sources that model
-	/// velocity-dependent timbre can keep it separate from channel volume.
-	virtual void SetVelocity(float velocity01) {(void)velocity01;}
+	/// Ready linear dynamic scale used only for irreversible pruning decisions.
+	/// The actual output gain is owned by the outer note sampler.
+	virtual void SetPruneGain(float gain) {(void)gain;}
 	/// Pass source-level render parameters to samplers that have a note-level
 	/// parameter (currently the measured piano stereo tilt). Master effects are
 	/// handled by MidiSynth and are ignored by these samplers.
@@ -128,6 +212,13 @@ typedef Funal::CopyableMutableDelegate<void(
 typedef Funal::CopyableDelegate<GenericSamplerRef(
 	float freq, float volume, unsigned sampleRate
 )> GenericInstrument;
+
+/// Generic note source which needs resolved note-on parameters at construction.
+/// This is the path for physical models whose timbre depends on strike; raw
+/// MIDI velocity never reaches the sampler object.
+typedef Funal::CopyableDelegate<GenericSamplerRef(
+	float freq, float volume, unsigned sampleRate, const NoteOnParams& noteParams
+)> DynamicGenericInstrument;
 
 /// Ударный инструмент - источник семплеров нот.
 typedef Funal::Delegate<GenericSamplerRef(

@@ -17,20 +17,27 @@ size_t RecordedSampler::operator()(Span<float> dst)
 
 GenericSamplerRef CachedDrumInstrument::operator()(float volume, unsigned sampleRate) const
 {
+	return Truncated(volume, sampleRate, SampleCount);
+}
+
+GenericSamplerRef CachedDrumInstrument::Truncated(float volume, unsigned sampleRate, size_t sampleCount44100) const
+{
 	if(SampleRate != sampleRate)
 	{
 		SampleRate = sampleRate;
-		// Масштабируем длину сэмпла под фактический sample rate, чтобы один и
-		// тот же удар звучал одинаково на любой частоте дискретизации.
-		const size_t targetCount = Math::Max(size_t(1),
+		// Always build the full physical source once. Shorter drum variants are
+		// prefix views of this shared cache and never rerun the source model.
+		const size_t fullCount = Math::Max(size_t(1),
 			size_t(double(SampleCount)*sampleRate/44100.0 + 0.5));
-		Data.SetCountUninitialized(targetCount);
+		Data.SetCountUninitialized(fullCount);
 		FillZeros(Data.AsRange());
 		DataSampler->GenerateMono(Data);
 		float u = 1;
 		LinearMultiply(Data.Tail(300), u, -0.00333f);
 	}
-	return new RecordedSampler{Data, volume*VolumeScale, 1};
+	const size_t targetCount = Math::Min(Data.Length(), Math::Max(size_t(1),
+		size_t(double(sampleCount44100)*sampleRate/44100.0 + 0.5)));
+	return new RecordedSampler{Data.AsRange().Take(targetCount), volume*VolumeScale, 1};
 }
 
 INTRA_WARNING_POP

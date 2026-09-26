@@ -44,7 +44,7 @@ static inline PianoPartial PianoDecodePartial(const uint8* p)
 }
 
 // 544 partials, 11 bytes each. Region offsets index into this array by row.
-// 2026-09-21: Amp + Decay1..4 remeasured jointly from one tracked SF2 partial
+// 2026-09-21: Amp + Decay1..4 remeasured jointly from one tracked reference bank partial
 // trajectory per harmonic. L/R are combined by energy; attack is excluded and
 // fitting begins at PianoRegionData::DecayOnset. This replaced the older p90/
 // independent-decay target after listening tests found cleaner long-note decay
@@ -428,7 +428,7 @@ static const uint8 PianoAllPartialsPacked[] = {
 
 // Accepted true-stereo fingerprint, 2 signed bytes per partial row:
 // R/L level in 0.25 dB steps, then R-L phase in pi/127 steps.
-// Measured from the same DecayOnset-aligned SF2 partial trajectories used by
+// Measured from the same DecayOnset-aligned reference bank partial trajectories used by
 // the sustain fitter. Invalid/too-weak partials fall back to centered in-phase.
 static const uint8 PianoStereoPacked[] = {
   0x00, 0x00, 0x02, 0x11, 0xf4, 0x07, 0xf5, 0x05, 0x03, 0xf2, 0xfd, 0x03, 0x03, 0xf9, 0xf9, 0x09, 0xfd, 0xe1, 0xdf, 0x0d,
@@ -504,7 +504,7 @@ static const PianoRegionData PianoSampleRegions[] = {
   {43, 36, 144, 97.999f, 0.018000f, 0.115f, 13.491f, 1.02093948f},
   {47, 34, 180, 123.471f, 0.018000f, 0.115f, 12.505f, 1.02093948f},
   // 2026-08-29: region-51 Loudness raised 0.2127->0.43 (was ~4-6 dB below
-  // neighbours 47/54 but SF2 D3_sample is NOT quiet -> artifact. Old 0.2127f.
+  // neighbours 47/54 but reference bank D3_sample is NOT quiet -> artifact. Old 0.2127f.
   {51, 38, 214, 155.563f, 0.036000f, 0.115f, 10.660f, 1.0f},
   {54, 31, 252, 184.997f, 0.036000f, 0.115f, 11.079f, 0.589521977f},
   {57, 33, 283, 220.000f, 0.022000f, 0.115f, 9.034f, 0.600482009f},
@@ -532,7 +532,7 @@ static const size_t PianoSampleRegionCount = sizeof(PianoSampleRegions)/sizeof(P
 
 // Decode one packed partial by row index from the given table. Lives at the
 // end of the region block so the packer passes it through verbatim.
-// ---- Per-instrument SF2-derived tables ----------------------------------
+// ---- Per-instrument reference bank-derived tables ----------------------------------
 // INTRA_PIANO_ALL_TABLES (CMake option, default OFF = minimal build) compiles
 // per-instrument coefficient tables; each instrument selects one via its
 // TableId (AdditivePianoInstrument). Without the define only the shared
@@ -572,7 +572,7 @@ static inline PianoPartial PianoGetPartial(const PianoTable& t, size_t row)
 static inline const PianoTable& PianoGetTable(int tableId)
 {
 #ifdef INTRA_PIANO_ALL_TABLES
-	// Honky-Tonk (prog 3): the Titanic SF2 preset reuses the SAME Clavinova
+	// Honky-Tonk (prog 3): the Titanic reference bank preset reuses the SAME Clavinova
 	// samples as the acoustic grand (instrument "ClavinovaGrand mono"),
 	// analysed 2026-08-30 — its character is the preset's detune, not new
 	// samples — so its table aliases the shared one (zero extra bytes).

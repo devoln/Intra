@@ -3,7 +3,8 @@
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
-NoteSampler MusicalInstrument::BuildNoteSampler(float freq, float volume, unsigned sampleRate) const
+NoteSampler MusicalInstrument::BuildNoteSampler(float freq, float volume, unsigned sampleRate,
+	const NoteOnParams& noteParams) const
 {
 	NoteSampler result;
 
@@ -11,6 +12,7 @@ NoteSampler MusicalInstrument::BuildNoteSampler(float freq, float volume, unsign
 	for(auto& wave: WaveTables) result.WaveTableSamplers.AddLast(wave(freq, volume, sampleRate));
 	if(WhiteNoise) result.WhiteNoiseSamplers.AddLast(WhiteNoise(freq, volume, sampleRate));
 	for(auto& instrument: GenericInstruments) result.GenericSamplers.AddLast(instrument(freq, volume, sampleRate));
+	if(DynamicGeneric) result.GenericSamplers.AddLast(DynamicGeneric(freq, volume, sampleRate, noteParams));
 
 	// Модификаторы создаём парами: экземпляр для левого канала и экземпляр для
 	// правого (см. NoteSampler::applyModifiersStereo). Обе копии рождаются из
@@ -34,9 +36,9 @@ NoteSampler MusicalInstrument::BuildNoteSampler(float freq, float volume, unsign
 }
 
 Sampler& MusicalInstrument::CreateSampler(float freq, float volume, unsigned sampleRate,
-	SamplerContainer& dst, uint16* oIndex) const
+	const NoteOnParams& noteParams, SamplerContainer& dst, uint16* oIndex) const
 {
-	auto& stored = dst.Add<NoteSampler>(BuildNoteSampler(freq, volume, sampleRate));
+	auto& stored = dst.Add<NoteSampler>(BuildNoteSampler(freq, volume, sampleRate, noteParams));
 	if(oIndex) *oIndex = uint16(dst.Length() - 1);
 	return stored;
 }

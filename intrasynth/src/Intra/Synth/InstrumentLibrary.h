@@ -35,7 +35,8 @@ struct InstrumentLibrary
 		return &found.First().Value;
 	}
 
-	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat, AcousticSnare;
+	GenericDrumInstrument UniDrum, AcousticBassDrum, ClosedHiHat, OpenHiHat, AcousticSnare;
+	CachedDrumInstrument* HiHatCache = nullptr;
 };
 
 
