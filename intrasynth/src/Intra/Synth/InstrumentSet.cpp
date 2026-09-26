@@ -1,5 +1,6 @@
 #include "InstrumentSet.h"
 #include "MusicalInstrument.h"
+#include "AdditiveSampler.h"
 #include "Audio/Midi/MidiFileParser.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -25,6 +26,9 @@ void MidiInstrumentSet::Preload(const Audio::Midi::MidiFileInfo& info, unsigned 
 			if(!usedKeys[key]) continue;
 			const float freq = Intra::Audio::MusicNote::BasicFrequencies[byte(key % 12)]
 				* 0.5f * float(1 << byte(key / 12));
+			// Acoustic program 0 has a shared physical reference bank source per region.
+			// Build its 500 ms raw PCM prefix here, outside the audio callback.
+			if(i == 0 || i == 1) PreloadAcousticPianoKey(freq, sampleRate);
 			instr->PreloadKey(freq, sampleRate);
 		}
 	}

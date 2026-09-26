@@ -62,9 +62,36 @@ static void PianoVelocityFilterCoeffs(unsigned sampleRate, float cutoff,
 }
 }
 
+#if INTRA_PIANO_ONSET_CACHE
+struct PianoOnsetCacheEntry
+{
+	unsigned SampleRate = 0;
+	float SourceFreq = 0.0f;  // Canonical reference bank root frequency for this region PCM.
+	float Dequant = 1.0f;
+	size_t Samples = 0;
+	bool Complete = false;
+	FixedArray<short> Pcm;
+	FixedArray<float> BuildPcm;
+};
+
+namespace
+{
+// Acoustic P1 is one physical sample per reference bank key region.  Cache the raw PCM
+// once per region, then pitch-shift it for every note selecting that region.
+// This replaces the old 128-note PCM cache: at 48 kHz / 500 ms the full
+// stereo cache is ~4.8 MiB for 25 regions instead of ~12.3 MiB for 128 notes.
+PianoOnsetCacheEntry gPianoOnsetCache[PianoSampleRegionCount];
+int gPianoCacheBuildRegion = -1;
+}
+
+static void EnsureAcousticPianoRegionCache(size_t regionIndex, unsigned sampleRate);
+#endif
 
 AdditiveSampler::~AdditiveSampler()
 {
+#if INTRA_PIANO_ONSET_CACHE
+	AbortOnsetCacheBuild();
+#endif
 }
 
 void AdditiveSampler::ConfigureStrike(float velocity01)
@@ -232,6 +259,50 @@ void AdditiveSampler::UpdateStrikeModEnvelope()
 	mStrikeModNextUpdate = mRendered + size_t(0.04f*float(mSampleRate)); // 25 Hz control rate; envelope itself is ~7 s.
 }
 
+#if INTRA_PIANO_ONSET_CACHE
+void AdditiveSampler::PublishOnsetCacheProgress()
+{
+	if(!mOnsetCacheBuilding || mOnsetCacheEntry == nullptr) return;
+	if(mRendered >= mOnsetCacheSamples)
+	{
+		auto& e = *mOnsetCacheEntry;
+		float peak = 0.0f;
+		for(size_t i = 0; i < e.BuildPcm.Length(); i++)
+		{
+			const float a = Math::Abs(e.BuildPcm[i]);
+			if(a > peak) peak = a;
+		}
+		e.Dequant = peak > 1e-20f ? peak*(1.0f/32767.0f) : 1.0f;
+		const float quant = 1.0f/e.Dequant;
+		e.Pcm.SetCount(e.BuildPcm.Length());
+		for(size_t i = 0; i < e.Samples; i++)
+		{
+			const float ql = e.BuildPcm[i]*quant, qr = e.BuildPcm[e.Samples + i]*quant;
+			const int il = Math::Clamp(int(ql + (ql >= 0.0f ? 0.5f : -0.5f)), -32767, 32767);
+			const int ir = Math::Clamp(int(qr + (qr >= 0.0f ? 0.5f : -0.5f)), -32767, 32767);
+			e.Pcm[2*i] = short(il); e.Pcm[2*i + 1] = short(ir);
+		}
+		e.BuildPcm = null;
+		e.Complete = true;
+		mOnsetCacheBuilding = false;
+		mOnsetCacheWriteL = mOnsetCacheWriteR = nullptr;
+		mOnsetCacheNextCheckpoint = 0;
+		return;
+	}
+	const size_t checkpointStep = Math::Max(size_t(1), size_t(0.032f*float(mSampleRate) + 0.5f));
+	const size_t nextGrid = ((mRendered/checkpointStep) + 1)*checkpointStep;
+	mOnsetCacheNextCheckpoint = Math::Min(mOnsetCacheSamples, nextGrid);
+}
+
+void AdditiveSampler::AbortOnsetCacheBuild()
+{
+	if(!mOnsetCacheBuilding) return;
+	if(mOnsetCacheEntry != nullptr) mOnsetCacheEntry->Complete = false;
+	mOnsetCacheBuilding = false;
+	mOnsetCacheWriteL = mOnsetCacheWriteR = nullptr;
+	mOnsetCacheNextCheckpoint = 0;
+}
+#endif
 
 void AdditiveSampler::SetHeldStringStateAt(size_t target)
 {
@@ -319,10 +390,194 @@ void AdditiveSampler::SetHeldStringStateAt(size_t target)
 	}
 }
 
+#if INTRA_PIANO_ONSET_CACHE
+void AdditiveSampler::SwitchCachedOnsetToLive()
+{
+	if(!mOnsetCachePlayback || mOnsetCacheEntry == nullptr) return;
+	const size_t target = mRendered;
+	const bool wasReleased = mReleased;
+	auto& e = *mOnsetCacheEntry;
+	mOnsetCachePlayback = false;
+	SetHeldStringStateAt(target);
+	mRendered = target;
+	if(wasReleased && mUniformRelease) mReleased = true;
+	if(target >= mStrikeFilterHandoffSamples) PromoteStrikeFilterToPartials();
+	if(mStrikeModEnvCents != 0.0f && target >= mStrikeModNextUpdate)
+		UpdateStrikeModEnvelope();
+	if(mEndSamples && mRendered >= mEndSamples) mDone = true;
+}
+
+void AdditiveSampler::StartCachedRelease()
+{
+	if(!mOnsetCachePlayback) return;
+	mReleasePending = false;
+	// reference bank P1 release is one scalar volume envelope. Apply it directly to the
+	// cached PCM instead of jumping every short NoteOff into the expensive
+	// additive generator. This is the same release curve as the live path.
+	if(mUniformRelease) ApplyRelease();
+	else { SwitchCachedOnsetToLive(); ApplyRelease(); }
+}
+
+bool AdditiveSampler::RenderCachedStereo(Span<float>& left, Span<float>& right)
+{
+	if(!mOnsetCachePlayback || mOnsetCacheEntry == nullptr) return false;
+	auto& e = *mOnsetCacheEntry;
+	if(mReleasePending && mRendered >= mReleaseAt)
+	{
+		StartCachedRelease();
+		if(!mOnsetCachePlayback) return false;
+	}
+	if(mStrikeModEnvCents != 0.0f && mRendered >= mStrikeModNextUpdate)
+		UpdateStrikeModEnvelope();
+
+	size_t cap = Math::Min(Math::Min(left.Length(), right.Length()), mBlockSize);
+	if(mReleasePending && mReleaseAt > mRendered)
+		cap = Math::Min(cap, mReleaseAt - mRendered);
+	if(mStrikeModEnvCents != 0.0f && mStrikeModNextUpdate > mRendered)
+		cap = Math::Min(cap, mStrikeModNextUpdate - mRendered);
+	if(cap == 0) return false;
+	const short* src = e.Pcm.Data();
+	const float dequant = e.Dequant;
+	const size_t len = e.Samples;
+	size_t index = mOnsetCacheReadIndex;
+	float frac = mOnsetCacheReadFrac;
+	const size_t rateInt = mOnsetCacheRateInt;
+	const float rateFrac = mOnsetCacheRateFrac;
+	const float volL = mVolume*mMidiPanGainL, volR = mVolume*mMidiPanGainR;
+	float* outL = left.Data();
+	float* outR = right.Data();
+	size_t n = 0;
+	const bool simpleCached = !mReleased;
+	const bool cachedFilterActive = mStrikeFilterModel && !mStrikeFilterBypass;
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+	const __m128 vDequant = _mm_set1_ps(dequant);
+	const __m128i vZeroI = _mm_setzero_si128();
+	auto decodePair = [&](size_t i)
+	{
+		int packed;
+		::memcpy(&packed, src + 2*i, sizeof(packed));
+		const __m128i r16 = _mm_cvtsi32_si128(packed);
+		const __m128i sign = _mm_cmpgt_epi16(vZeroI, r16);
+		const __m128i r32 = _mm_unpacklo_epi16(r16, sign);
+		return _mm_mul_ps(_mm_cvtepi32_ps(r32), vDequant);
+	};
+	__m128 vPs = _mm_set_ps(0.0f, 0.0f, mVelPrevSrcR, mVelPrevSrcL);
+	__m128 vPs2 = _mm_set_ps(0.0f, 0.0f, mVelPrevSrc2R, mVelPrevSrc2L);
+	__m128 vPo = _mm_set_ps(0.0f, 0.0f, mVelPrevOutR, mVelPrevOutL);
+	__m128 vPo2 = _mm_set_ps(0.0f, 0.0f, mVelPrevOut2R, mVelPrevOut2L);
+	const __m128 vC = _mm_set1_ps(mVelC), vA1 = _mm_set1_ps(mVelA1), vA2 = _mm_set1_ps(mVelA2);
+	const __m128 vB1 = _mm_set1_ps(mVelB1), vB2 = _mm_set1_ps(mVelB2);
+	auto filterPair = [&](__m128 x)
+	{
+		if(!cachedFilterActive) return x;
+		__m128 y = _mm_mul_ps(x, vC);
+		y = _mm_add_ps(y, _mm_mul_ps(vPs, vA1));
+		y = _mm_add_ps(y, _mm_mul_ps(vPs2, vA2));
+		y = _mm_add_ps(y, _mm_mul_ps(vPo, vB1));
+		y = _mm_add_ps(y, _mm_mul_ps(vPo2, vB2));
+		vPs2 = vPs; vPs = x; vPo2 = vPo; vPo = y;
+		return y;
+	};
+	auto emitPair = [&](size_t oi, __m128 x, float gain)
+	{
+		const __m128 y = filterPair(x);
+		outL[oi] += _mm_cvtss_f32(y)*volL*gain;
+		outR[oi] += _mm_cvtss_f32(_mm_shuffle_ps(y, y, _MM_SHUFFLE(1,1,1,1)))*volR*gain;
+	};
+#else
+	auto emitScalar = [&](size_t oi, float l, float r, float gain)
+	{
+		outL[oi] += ApplyVelocityFilter(l, false)*volL*gain;
+		outR[oi] += ApplyVelocityFilter(r, true)*volR*gain;
+	};
+#endif
+	if(simpleCached)
+	{
+		if(rateInt == 1 && rateFrac == 0.0f)
+		{
+			const size_t direct = Math::Min(cap, len - index);
+			for(; n < direct; n++, index++)
+			{
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+				emitPair(n, decodePair(index), 1.0f);
+#else
+				emitScalar(n, float(src[2*index])*dequant, float(src[2*index+1])*dequant, 1.0f);
+#endif
+			}
+		}
+		else for(; n < cap && index < len; n++)
+		{
+			const size_t j = index + 1 < len ? index + 1 : index;
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+			const __m128 a = decodePair(index), z = decodePair(j);
+			const __m128 x = _mm_add_ps(a, _mm_mul_ps(_mm_sub_ps(z, a), _mm_set1_ps(frac)));
+			emitPair(n, x, 1.0f);
+#else
+			const float l0=float(src[2*index]), r0=float(src[2*index+1]);
+			const float l1=float(src[2*j]), r1=float(src[2*j+1]);
+			emitScalar(n, (l0+(l1-l0)*frac)*dequant, (r0+(r1-r0)*frac)*dequant, 1.0f);
+#endif
+			index += rateInt; frac += rateFrac; if(frac >= 1.0f) { frac -= 1.0f; ++index; }
+		}
+	}
+	else
+	{
+		for(; n < cap && index < len; n++)
+		{
+			const size_t j = index + 1 < len ? index + 1 : index;
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+			const __m128 a = decodePair(index), z = decodePair(j);
+			const __m128 x = _mm_add_ps(a, _mm_mul_ps(_mm_sub_ps(z, a), _mm_set1_ps(frac)));
+#else
+			const float l0=float(src[2*index]), r0=float(src[2*index+1]);
+			const float l1=float(src[2*j]), r1=float(src[2*j+1]);
+#endif
+			float releaseGain = 1.0f;
+			if(mReleased && mUniformRelease)
+			{
+				releaseGain = mReleaseGain;
+				if(mReleaseSamplesLeft != 0) { mReleaseGain *= mReleaseStep; --mReleaseSamplesLeft; }
+			}
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+			emitPair(n, x, releaseGain);
+#else
+			emitScalar(n, (l0+(l1-l0)*frac)*dequant, (r0+(r1-r0)*frac)*dequant, releaseGain);
+#endif
+			index += rateInt; frac += rateFrac; if(frac >= 1.0f) { frac -= 1.0f; ++index; }
+		}
+	}
+#if INTRA_SIMD_SUPPORT >= INTRA_SIMD_SSE && INTRA_SIMD_SUPPORT <= INTRA_SIMD_AVX2
+	if(cachedFilterActive)
+	{
+		alignas(16) float a[4];
+		_mm_store_ps(a, vPs); mVelPrevSrcL=a[0]; mVelPrevSrcR=a[1];
+		_mm_store_ps(a, vPs2); mVelPrevSrc2L=a[0]; mVelPrevSrc2R=a[1];
+		_mm_store_ps(a, vPo); mVelPrevOutL=a[0]; mVelPrevOutR=a[1];
+		_mm_store_ps(a, vPo2); mVelPrevOut2L=a[0]; mVelPrevOut2R=a[1];
+	}
+#endif
+	mOnsetCacheReadIndex = index; mOnsetCacheReadFrac = frac; mRendered += n;
+	left = left.Drop(n); right = right.Drop(n);
+	if(mReleased && mUniformRelease &&
+		(mReleaseSamplesLeft == 0 || mReleaseGain*PruneLoudnessGain() < 1e-3f))
+	{
+		mDone = true; mOnsetCachePlayback = false; return n != 0;
+	}
+	if(mReleasePending && mRendered >= mReleaseAt) StartCachedRelease();
+	if(mStrikeModEnvCents != 0.0f && mRendered >= mStrikeModNextUpdate) UpdateStrikeModEnvelope();
+	if(n < cap || index >= len) SwitchCachedOnsetToLive();
+	return n != 0;
+}
+
+#endif
 #ifdef INTRA_UI_METERS
 float AdditiveSampler::GetLevel() const
 {
 	float lvl = 0.0f;
+#if INTRA_PIANO_ONSET_CACHE
+	if(mOnsetCachePlayback && mCount != 0) lvl = 1.0f;
+	else
+#endif
 	{
 		const size_t count = mCount;
 		const float* amp = mAmp.Data();
@@ -985,6 +1240,46 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 		mReleaseStep = 1.0f;
 	}
 
+#if INTRA_PIANO_ONSET_CACHE
+	if(sharedAcousticP1)
+	{
+		auto& ce = gPianoOnsetCache[best];
+		const bool cacheBuilder = gPianoCacheBuildRegion == int(best);
+		if(!cacheBuilder) EnsureAcousticPianoRegionCache(best, sampleRate);
+		if(cacheBuilder)
+		{
+			// The dedicated preloader always renders the canonical reference bank root pitch.
+			// Store a full 1000 ms source-time prefix starting at sample zero.
+			const size_t cacheSamples = size_t((float(INTRA_PIANO_ONSET_CACHE_MS)*0.001f)*float(sampleRate) + 0.5f);
+			const size_t wanted = Math::Min(mEndSamples ? mEndSamples : cacheSamples, cacheSamples);
+			ce.SampleRate = sampleRate; ce.SourceFreq = region.F0; ce.Samples = wanted; ce.Complete = false;
+			ce.Pcm = null;
+			ce.BuildPcm.SetCount(2*wanted);
+			mOnsetCacheEntry = &ce;
+			mOnsetCacheBuilding = wanted != 0;
+			mOnsetCacheWriteL = ce.BuildPcm.Data(); mOnsetCacheWriteR = mOnsetCacheWriteL + wanted;
+			mOnsetCacheSamples = wanted;
+			mOnsetCacheNextCheckpoint = Math::Min(wanted, Math::Max(size_t(1), size_t(0.032f*float(sampleRate) + 0.5f)));
+		}
+		else if(ce.SampleRate == sampleRate && ce.Complete && ce.Samples != 0)
+		{
+			mOnsetCacheEntry = &ce;
+			float cacheRate = ce.SourceFreq > 0.0f ? freq/ce.SourceFreq : 1.0f;
+			// Region F0 values are stored to 3 decimals. For a MIDI note exactly on
+			// the region root that rounding can leave <= 0.014 cent of spurious pitch
+			// shift, forcing linear interpolation for no audible benefit. Snap only
+			// this sub-1e-5 ratio error to unity; real transpositions remain untouched.
+			if(Math::Abs(cacheRate - 1.0f) < 1.0e-5f) cacheRate = 1.0f;
+			mOnsetCacheRateInt = size_t(cacheRate);
+			mOnsetCacheRateFrac = cacheRate - float(mOnsetCacheRateInt);
+			mOnsetCacheReadIndex = 0;
+			mOnsetCacheReadFrac = 0.0f;
+			mOnsetCacheSamples = cacheRate > 1e-6f
+				? size_t(float(ce.Samples)/cacheRate + 0.5f) : ce.Samples;
+			mOnsetCachePlayback = true;
+		}
+	}
+#endif
 	// Stereo ratio R/L is precomputed in the region table: the source values
 	// are fixed, so note-on must not evaluate 10^(dB/20). Keep L+R = 1 to
 	// preserve the previous linear-pan loudness.
@@ -997,6 +1292,39 @@ AdditiveSampler::AdditiveSampler(float freq, float volume, unsigned sampleRate,
 	ConfigureStrike(strike);
 }
 
+#if INTRA_PIANO_ONSET_CACHE
+static void EnsureAcousticPianoRegionCache(size_t regionIndex, unsigned sampleRate)
+{
+	if(regionIndex >= PianoSampleRegionCount) return;
+	auto& e = gPianoOnsetCache[regionIndex];
+	if(e.SampleRate == sampleRate && e.Complete)
+		return;
+	if(gPianoCacheBuildRegion >= 0) return;
+
+	const PianoRegionData& region = PianoSampleRegions[regionIndex];
+	gPianoCacheBuildRegion = int(regionIndex);
+	{
+		AdditiveSampler builder(region.F0, 1.0f, sampleRate,
+			40, 0.25f, 0.9f, 1.0f, 0.0f, 1.4f, 2, 0.0f, 0.0f, 1.59f, 1.0f, 0, 0.0f, 0);
+		float left[AdditiveSampler::mBlockSize], right[AdditiveSampler::mBlockSize];
+		while(!e.Complete)
+		{
+			for(size_t i = 0; i < AdditiveSampler::mBlockSize; i++) left[i] = right[i] = 0.0f;
+			builder.GenerateStereo(Span<float>(left, AdditiveSampler::mBlockSize),
+				Span<float>(right, AdditiveSampler::mBlockSize));
+		}
+	}
+	gPianoCacheBuildRegion = -1;
+}
+
+void PreloadAcousticPianoKey(float freq, unsigned sampleRate)
+{
+	const float midi = 69.0f + 12.0f*Math::Log(freq/440.0f)/0.6931471805599453f;
+	const size_t best = PianoAcousticRegionForKey(midi);
+	EnsureAcousticPianoRegionCache(best, sampleRate);
+}
+
+#endif
 void AdditiveSampler::ApplyRelease()
 {
 	if(mReleased) return;
@@ -1045,7 +1373,22 @@ void AdditiveSampler::NoteRelease()
 	// Publish the clean pre-release raw prefix, but never cache the damped tail.
 	// Warm playback reconstructs live state analytically before applying the
 	// normal damper, so short repeated notes still benefit from the cache.
+#if INTRA_PIANO_ONSET_CACHE
+	if(mOnsetCacheBuilding) AbortOnsetCacheBuild();
+#endif
 	const size_t freeWindow = size_t(0.035f*float(mSampleRate));
+#if INTRA_PIANO_ONSET_CACHE
+	if(mOnsetCachePlayback)
+	{
+		if(mRendered < freeWindow)
+		{
+			mReleasePending = true;
+			mReleaseAt = freeWindow;
+		}
+		else StartCachedRelease();
+		return;
+	}
+#endif
 	if(mRendered < freeWindow)
 	{
 		mReleasePending = true;
@@ -1084,6 +1427,12 @@ size_t AdditiveSampler::GenerateStereo(Span<float> ioDstLeft, Span<float> ioDstR
 	// Region cache starts at source sample zero, so there is no separate
 	// pre-cache live prefix. Keeping a second RenderInto lambda here would
 	// instantiate the full additive hot loop twice in WASM.
+#if INTRA_PIANO_ONSET_CACHE
+	while(mOnsetCachePlayback && !ioDstLeft.Empty())
+	{
+		if(!RenderCachedStereo(ioDstLeft, ioDstRight)) break;
+	}
+#endif
 	if(!ioDstLeft.Empty() && !mDone)
 	{
 		float* dstL = ioDstLeft.Data();

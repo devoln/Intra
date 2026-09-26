@@ -8,8 +8,15 @@
 #include "Types.h"
 #include "PianoRegions.h"
 
+#ifndef INTRA_PIANO_ONSET_CACHE
+#define INTRA_PIANO_ONSET_CACHE 1
+#endif
+
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+#if INTRA_PIANO_ONSET_CACHE
+struct PianoOnsetCacheEntry;
+#endif
 
 /// Аддитивный семплер: сумма N независимых SineRange-осцилляторов (рекурсия
 /// s2 = 2·cos(dphi)·s1 − s0, по 1 FMA на партиал на семпл). Партиалы берутся
@@ -194,6 +201,30 @@ class AdditiveSampler: public IGenericSampler
 	size_t mStrikeModReleaseSample = 0;
 	bool mStrikeModReleased = false;
 
+#if INTRA_PIANO_ONSET_CACHE
+	// Lazy raw-onset cache. The cache is deliberately before strike filter,
+	// MIDI pan and output gain, so one cached onset serves every velocity/CC7/
+	// CC10 combination. First use fills it while rendering; later notes read
+	// PCM and jump to a cached exact oscillator checkpoint at the handoff.
+	PianoOnsetCacheEntry* mOnsetCacheEntry = nullptr;
+	float* mOnsetCacheWriteL = nullptr;
+	float* mOnsetCacheWriteR = nullptr;
+	bool mOnsetCacheBuilding = false;
+	bool mOnsetCachePlayback = false;
+	// NoteOff inside the cache immediately jumps to the analytically reconstructed
+	// live generator state at the current note age.  Cache ON/OFF therefore use
+	// exactly the same release path; no cached-release approximation is kept.
+	size_t mOnsetCacheSamples = 0;
+	size_t mOnsetCacheNextCheckpoint = 0;
+	// Region PCM is stored at the canonical reference bank root pitch. Warm notes read it
+	// at freq/SourceFreq. Split integer+fraction position avoids a float->int
+	// conversion for every output sample (same idea as WaveTableSampler).
+	size_t mOnsetCacheReadIndex = 0;
+	float mOnsetCacheReadFrac = 0.0f;
+	size_t mOnsetCacheRateInt = 1;
+	float mOnsetCacheRateFrac = 0.0f;
+
+#endif
 	// Таблица партиал/регионов (PianoRegions.h): по умолчанию общая
 	// (acoustic), per-instrument reference bank-таблицы — через PianoTableId.
 	const PianoTable* mTable;
@@ -230,12 +261,27 @@ class AdditiveSampler: public IGenericSampler
 		return y;
 	}
 
+#if INTRA_PIANO_ONSET_CACHE
+	void PublishOnsetCacheProgress();
+#endif
+#if INTRA_PIANO_ONSET_CACHE
+	void AbortOnsetCacheBuild();
+#endif
+#if INTRA_PIANO_ONSET_CACHE
+	void SwitchCachedOnsetToLive();
+#endif
 	void SetHeldStringStateAt(size_t target);
 	void ConfigureStrike(float strike);
 	void PromoteStrikeFilterToPartials();
 	void UpdateStrikeModEnvelope();
 	void SetStrikeFilterCutoff(float newCutoff);
 	void ApplyVelocityFilterCutoffRatio(float newCutoff);
+#if INTRA_PIANO_ONSET_CACHE
+	void StartCachedRelease();
+#endif
+#if INTRA_PIANO_ONSET_CACHE
+	bool RenderCachedStereo(Span<float>& left, Span<float>& right);
+#endif
 public:
 	static const size_t mBlockSize = 512;
 
@@ -296,12 +342,20 @@ public:
 		if(mStringRevealSamples != 0 && mRendered < mStringRevealSamples)
 		{
 			size_t pre = Math::Min(numSamples, mStringRevealSamples - mRendered);
+#if INTRA_PIANO_ONSET_CACHE
+			if(mOnsetCacheBuilding && mOnsetCacheNextCheckpoint > mRendered)
+				pre = Math::Min(pre, mOnsetCacheNextCheckpoint - mRendered);
+#endif
 			const size_t start = mRendered;
 			mRendered += pre;
 			for(size_t i = 0; i < pre; i++)
 			{
 				const size_t t = start + i;
 				const float contact = 0.0f;
+#if INTRA_PIANO_ONSET_CACHE
+				if(mOnsetCacheBuilding && t < mOnsetCacheSamples)
+				{ mOnsetCacheWriteL[t] = contact; mOnsetCacheWriteR[t] = contact; }
+#endif
 				float releaseGain = 1.0f;
 				if(mReleased && mUniformRelease)
 				{
@@ -312,6 +366,9 @@ public:
 				sink(ApplyVelocityFilter(contact, false)*volL*releaseGain,
 					ApplyVelocityFilter(contact, true)*volR*releaseGain);
 			}
+#if INTRA_PIANO_ONSET_CACHE
+			PublishOnsetCacheProgress();
+#endif
 			numSamples -= pre;
 			if(mRendered == mStringRevealSamples) SetHeldStringStateAt(mRendered);
 			continue;
@@ -333,6 +390,10 @@ public:
 				commonAmStep = (b - a)*(1.0f/128.0f);
 				commonAm0 = a + commonAmStep*float(pos);
 			}
+#if INTRA_PIANO_ONSET_CACHE
+			if(mOnsetCacheBuilding && mOnsetCacheNextCheckpoint > mRendered)
+				n = Math::Min(n, mOnsetCacheNextCheckpoint - mRendered);
+#endif
 			if(mStrikeFilterModel && !mStrikeFilterInPartials && mStrikeFilterHandoffSamples > mRendered)
 				n = Math::Min(n, mStrikeFilterHandoffSamples - mRendered);
 			// Переключение на следующий сегмент затухания: старт на DecayOnset,
@@ -802,6 +863,10 @@ if(blockStart < mDecayOnsetSamples)
 						s *= f; sr *= f;
 					}
 				}
+#if INTRA_PIANO_ONSET_CACHE
+				if(mOnsetCacheBuilding && t < mOnsetCacheSamples)
+				{mOnsetCacheWriteL[t] = s; mOnsetCacheWriteR[t] = sr;}
+#endif
 				const float vl = ApplyVelocityFilter(s, false);
 				const float vr = ApplyVelocityFilter(sr, true);
 				float releaseGain = 1.0f;
@@ -816,6 +881,9 @@ if(blockStart < mDecayOnsetSamples)
 				}
 				sink(vl*volL*releaseGain, vr*volR*releaseGain);
 			}
+#if INTRA_PIANO_ONSET_CACHE
+			PublishOnsetCacheProgress();
+#endif
 			// After the attack every modal amplitude is monotonic. Once the
 			// highest SIMD group falls below the inaudible trim threshold it can never
 			// become audible again. Drop trailing groups permanently so long
@@ -823,6 +891,9 @@ if(blockStart < mDecayOnsetSamples)
 			// canonical cache builder untrimmed so every note starts from the same
 			// full physical source recipe.
 			if(
+#if INTRA_PIANO_ONSET_CACHE
+				!mOnsetCacheBuilding &&
+#endif
 				mRendered >= mDecayOnsetSamples && mCount > 4)
 			{
 				size_t trimmed = mCount;
@@ -857,6 +928,9 @@ if(blockStart < mDecayOnsetSamples)
 			// 160 ms cache ended before the 200 ms strike-filter handoff; with a
 			// 500 ms cache, promoting here would bake the builder velocity into PCM.
 			if(
+#if INTRA_PIANO_ONSET_CACHE
+				!mOnsetCacheBuilding &&
+#endif
 				mStrikeFilterModel && !mStrikeFilterInPartials &&
 				mRendered >= mStrikeFilterHandoffSamples)
 				PromoteStrikeFilterToPartials();
@@ -866,6 +940,9 @@ if(blockStart < mDecayOnsetSamples)
 		}
 		if(mEndSamples && mRendered >= mEndSamples) mDone = true;
 		else if(mRendered >= mDecayOnsetSamples
+#if INTRA_PIANO_ONSET_CACHE
+			&& !mOnsetCacheBuilding
+#endif
 		)
 		{
 			const float pruneGain = PruneLoudnessGain()*(mReleased && mUniformRelease ? mReleaseGain : 1.0f);
@@ -1012,6 +1089,10 @@ struct AdditivePianoInstrument
 
 // Prebuild the canonical raw 500 ms region prefix outside the audio callback.
 // Repeated keys in the same reference bank region are no-ops after the first build.
+#if INTRA_PIANO_ONSET_CACHE
+void PreloadAcousticPianoKey(float freq, unsigned sampleRate);
+#else
 INTRA_FORCEINLINE void PreloadAcousticPianoKey(float, unsigned) {}
+#endif
 
 INTRA_WARNING_POP
