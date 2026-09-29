@@ -23,6 +23,109 @@ namespace Intra { namespace Container {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
+// Type-erased cold-path relocation (mirrors dev-next LifeCycle + ArrayImpl):
+// trivially-relocatable types share ONE memmove implementation for every T,
+// non-trivially-relocatable types pass a tiny per-type move/destruct callback
+// into a shared loop. This kills the per-T template instantiation bloat of the
+// old Memory::MoveInitDelete<T> / Memory::Destruct<T> cold paths.
+namespace Z
+{
+	typedef void (*MoveRelocateFn)(void* dst, void* src);
+	typedef void (*DestructFn)(void* p);
+
+	// Raw byte relocation for trivially-relocatable T.
+	forceinline void RelocateBits(void* dst, const void* src, size_t bytes)
+	{C::memmove(dst, src, bytes);}
+
+	// Move-construct each src element into dst and destruct the source element.
+	forceinline void MoveRelocate(void* dst, void* src, size_t count, size_t elemSize, MoveRelocateFn fn)
+	{
+		auto* d = reinterpret_cast<char*>(dst);
+		auto* s = reinterpret_cast<char*>(src);
+		while(count--)
+		{
+			fn(d, s);
+			d += elemSize;
+			s += elemSize;
+		}
+	}
+
+	// Same, but walks from the last element backwards (for right-shifts).
+	forceinline void MoveRelocateBackward(void* dst, void* src, size_t count, size_t elemSize, MoveRelocateFn fn)
+	{
+		auto* d = reinterpret_cast<char*>(dst) + count*elemSize;
+		auto* s = reinterpret_cast<char*>(src) + count*elemSize;
+		while(count--)
+		{
+			d -= elemSize;
+			s -= elemSize;
+			fn(d, s);
+		}
+	}
+
+	forceinline void DestructErased(void* p, size_t count, size_t elemSize, DestructFn fn)
+	{
+		auto* b = reinterpret_cast<char*>(p);
+		while(count--)
+		{
+			fn(b);
+			b += elemSize;
+		}
+	}
+
+	// Per-type callbacks (tiny; the loops live in the shared functions above).
+	template<typename T> void MoveRelocateOne(void* dst, void* src)
+	{
+		new(dst) T(Cpp::Move(*reinterpret_cast<T*>(src)));
+		reinterpret_cast<T*>(src)->~T();
+	}
+	template<typename T> void DestructOne(void* p)
+	{
+		reinterpret_cast<T*>(p)->~T();
+	}
+
+	// Одна общая реализация реаллокации для любого T: type-erased по размеру
+	// элемента и колбэкам move/destruct (mirrors dev-next LifeCycle).
+	// moveFn==null => trivially-relocatable => memmove; dtorFn==null => тривиальный.
+	inline noinline void ResizeRaw(
+		void*& bufferBegin, void*& bufferEnd,
+		void*& rangeBegin, void*& rangeEnd,
+		size_t elemSize, MoveRelocateFn moveFn, DestructFn dtorFn,
+		size_t rightPartSize, size_t leftPartSize)
+	{
+		const size_t count = size_t(reinterpret_cast<char*>(rangeEnd) - reinterpret_cast<char*>(rangeBegin))/elemSize;
+
+		if(rightPartSize+leftPartSize==0)
+		{
+			if(dtorFn) DestructErased(rangeBegin, count, elemSize, dtorFn);
+			if(bufferBegin)
+				Memory::GlobalHeap.Free(bufferBegin, size_t(reinterpret_cast<char*>(bufferEnd) - reinterpret_cast<char*>(bufferBegin)));
+			bufferBegin = bufferEnd = rangeBegin = rangeEnd = nullptr;
+			return;
+		}
+
+		//Удаляем элементы, выходящие за границы массива
+		if(rightPartSize <= count && dtorFn)
+			DestructErased(reinterpret_cast<char*>(rangeBegin) + rightPartSize*elemSize, count-rightPartSize, elemSize, dtorFn);
+
+		size_t newBytes = (rightPartSize+leftPartSize)*elemSize;
+		void* newBuffer = Memory::GlobalHeap.Allocate(newBytes, INTRA_SOURCE_INFO);
+		void* newRangeBegin = reinterpret_cast<char*>(newBuffer) + leftPartSize*elemSize;
+
+		if(bufferBegin)
+		{
+			//Перемещаем элементы в новый участок памяти
+			if(moveFn) MoveRelocate(newRangeBegin, rangeBegin, count, elemSize, moveFn);
+			else RelocateBits(newRangeBegin, rangeBegin, count*elemSize);
+			Memory::GlobalHeap.Free(bufferBegin, size_t(reinterpret_cast<char*>(bufferEnd) - reinterpret_cast<char*>(bufferBegin)));
+		}
+		bufferBegin = newBuffer;
+		bufferEnd = reinterpret_cast<char*>(newBuffer) + newBytes;
+		rangeBegin = newRangeBegin;
+		rangeEnd = reinterpret_cast<char*>(newRangeBegin) + count*elemSize;
+	}
+}
+
 template<typename T> class Array
 {
 public:
@@ -271,8 +374,8 @@ public:
 			Span<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
 				Memory::GlobalHeap, newCapacity, INTRA_SOURCE_INFO);
 			Span<T> newRange = newBuffer.Drop(LeftSpace()).Take(Count()+valuesCount);
-			Memory::MoveInitDelete(newRange.Take(pos), range.Take(pos));
-			Memory::MoveInitDelete(newRange.Drop(pos+valuesCount), range.Drop(pos));
+			moveInitDelete(newRange.Take(pos), range.Take(pos));
+			moveInitDelete(newRange.Drop(pos+valuesCount), range.Drop(pos));
 			Memory::CopyInit(newRange.Drop(pos).Take(valuesCount), values);
 			Memory::FreeRangeUninitialized(Memory::GlobalHeap, buffer);
 			buffer = newBuffer;
@@ -284,12 +387,12 @@ public:
 		if(pos >= (Count() + valuesCount)/2 || LeftSpace() < valuesCount)
 		{
 			range.End += valuesCount;
-			Memory::MoveInitDeleteBackwards<T>(range.Drop(pos+valuesCount), range.Drop(pos).DropLast(valuesCount));
+			moveInitDeleteBackwards(range.Drop(pos+valuesCount), range.Drop(pos).DropLast(valuesCount));
 		}
 		else
 		{
 			range.Begin -= valuesCount;
-			Memory::MoveInitDelete<T>(range.Take(pos), range.Drop(valuesCount).Take(pos));
+			moveInitDelete(range.Take(pos), range.Drop(valuesCount).Take(pos));
 		}
 		Memory::CopyInit<T>(range.Drop(pos).Take(valuesCount), values);
 	}
@@ -339,31 +442,27 @@ public:
 	}
 
 	//! Установить новый размер буфера массива (не влезающие элементы удаляются).
-	void Resize(size_t rightPartSize, size_t leftPartSize=0)
+	//! Тонкая inline-обёртка: вся холодная логика в общей type-erased Z::ResizeRaw.
+	forceinline void Resize(size_t rightPartSize, size_t leftPartSize=0)
 	{
-		if(rightPartSize+leftPartSize==0) {*this = null; return;}
-
-		//Удаляем элементы, выходящие за границы массива
-		if(rightPartSize <= Count()) Memory::Destruct(range.Drop(rightPartSize));
-
-		size_t newCapacity = rightPartSize+leftPartSize;
-		Span<T> newBuffer = Memory::AllocateRangeUninitialized<T>(
-			Memory::GlobalHeap, newCapacity, INTRA_SOURCE_INFO);
-		Span<T> newRange = newBuffer.Drop(leftPartSize).Take(Count());
-
-		if(!buffer.Empty())
-		{
-			//Перемещаем элементы в новый участок памяти
-			Memory::MoveInitDelete<T>(newRange, range);
-			Memory::FreeRangeUninitialized(Memory::GlobalHeap, buffer);
-		}
-		buffer = newBuffer;
-		range = newRange;
+		void* bb = buffer.Begin;
+		void* be = buffer.End;
+		void* rb = range.Begin;
+		void* re = range.End;
+		Z::ResizeRaw(bb, be, rb, re, sizeof(T),
+			Meta::IsTriviallyRelocatable<T>::_? nullptr: &Z::MoveRelocateOne<T>,
+			Meta::IsTriviallyDestructible<T>::_? nullptr: &Z::DestructOne<T>,
+			rightPartSize, leftPartSize);
+		buffer.Begin = static_cast<T*>(bb);
+		buffer.End = static_cast<T*>(be);
+		range.Begin = static_cast<T*>(rb);
+		range.End = static_cast<T*>(re);
 	}
 
 	//! Убедиться, что буфер массива может вместить rightPart элементов при добавлении
 	//! их в конец и имеет leftSpace места для добавления в начало.
-	void Reserve(size_t rightPart, size_t leftSpace=0)
+	//! Инлайнится только проверка ёмкости; рост уходит в общую Z::ResizeRaw.
+	forceinline void Reserve(size_t rightPart, size_t leftSpace=0)
 	{
 		const size_t currentRightPartSize = size_t(buffer.End-range.Begin);
 		const size_t currentLeftSpace = LeftSpace();
@@ -385,7 +484,7 @@ public:
 	forceinline void Clear()
 	{
 		if(Empty()) return;
-		Memory::Destruct<T>(range);
+		destructRange(range);
 		range.End = range.Begin;
 	}
 
@@ -421,12 +520,12 @@ public:
 		// участков памяти вправо в ~2 раза медленнее, чем влево
 		if(index >= Count()/4) //Перемещаем правую часть влево
 		{
-			Memory::MoveInitDelete<T>({range.Begin+index, range.End-1}, {range.Begin+index+1, range.End});
+			moveInitDelete({range.Begin+index, range.End-1}, {range.Begin+index+1, range.End});
 			--range.End;
 		}
 		else //Перемещаем левую часть вправо
 		{
-			Memory::MoveInitDeleteBackwards<T>({range.Begin+1, range.Begin+index+1}, {range.Begin, range.Begin+index});
+			moveInitDeleteBackwards({range.Begin+1, range.Begin+index+1}, {range.Begin, range.Begin+index});
 			++range.Begin;
 		}
 	}
@@ -445,7 +544,7 @@ public:
 		INTRA_DEBUG_ASSERT(removeEnd <= Count());
 		if(removeEnd == removeStart) return;
 		const size_t elementsToRemove = removeEnd-removeStart;
-		Memory::Destruct<T>(range(removeStart, removeEnd));
+		destructRange(range(removeStart, removeEnd));
 
 		//Быстрые частные случаи
 		if(removeEnd == Count())
@@ -462,14 +561,14 @@ public:
 
 		if(removeStart + elementsToRemove/2 >= Count()/4)
 		{
-			Memory::MoveInitDelete<T>(
+			moveInitDelete(
 				range.Drop(removeStart).DropLast(elementsToRemove),
 				range.Drop(removeEnd));
 			range.End -= elementsToRemove;
 		}
 		else
 		{
-			Memory::MoveInitDeleteBackwards<T>(
+			moveInitDeleteBackwards(
 				range(elementsToRemove, removeEnd),
 				range.Take(removeStart));
 			range.Begin += elementsToRemove;
@@ -687,12 +786,40 @@ public:
 
 
 private:
+	// Type-erased relocation (mirrors dev-next LifeCycle): trivial types share
+	// one memmove; non-trivial types route through a tiny per-type callback
+	// into a single shared loop. Collapses the per-T
+	// Memory::MoveInitDelete<T> / Memory::Destruct<T> template bloat.
+	static forceinline void moveInitDelete(Span<T> dst, Span<T> src)
+	{
+		INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+		if(Meta::IsTriviallyRelocatable<T>::_)
+			Z::RelocateBits(dst.Begin, src.Begin, dst.Length()*sizeof(T));
+		else
+			Z::MoveRelocate(dst.Begin, src.Begin, dst.Length(), sizeof(T), &Z::MoveRelocateOne<T>);
+	}
+
+	static forceinline void moveInitDeleteBackwards(Span<T> dst, Span<T> src)
+	{
+		INTRA_DEBUG_ASSERT(dst.Length()==src.Length());
+		if(Meta::IsTriviallyRelocatable<T>::_)
+			Z::RelocateBits(dst.Begin, src.Begin, dst.Length()*sizeof(T));
+		else
+			Z::MoveRelocateBackward(dst.Begin, src.Begin, dst.Length(), sizeof(T), &Z::MoveRelocateOne<T>);
+	}
+
+	static forceinline void destructRange(Span<T> s)
+	{
+		if(!Meta::IsTriviallyDestructible<T>::_)
+			Z::DestructErased(s.Begin, s.Length(), sizeof(T), &Z::DestructOne<T>);
+	}
+
 	size_t setCountNotConstruct(size_t newCount)
 	{
 		const size_t oldCount = Count();
 		if(newCount <= oldCount)
 		{
-			Memory::Destruct<T>(range.Drop(newCount));
+			destructRange(range.Drop(newCount));
 			range.End = range.Begin + newCount;
 			return oldCount;
 		}

@@ -84,6 +84,7 @@
 
 
 #define forceinline __inline__ __attribute__((always_inline))
+#define noinline __attribute__((noinline))
 
 #endif
 
@@ -92,6 +93,8 @@
 
 
 #if defined(_MSC_VER) && !defined(__GNUC__)
+
+#define noinline __declspec(noinline)
 
 #if _MSC_VER >= 1910 //Visual Studio 2017
 #define INTRA_RANGE_FOR_DIFFERING_TYPES_SUPPORT
@@ -232,6 +235,10 @@
 
 #ifndef forceinline
 #define forceinline inline
+#endif
+
+#ifndef noinline
+#define noinline __attribute__((noinline))
 #endif
 
 #define INTRA_COMPILER_BARRIER _ReadWriteBarrier()

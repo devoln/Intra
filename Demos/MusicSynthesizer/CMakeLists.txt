@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 include(../../Configurations.cmake)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    set(COMMON_EMSCRIPTEN_PARAMETERS "-s NO_EXIT_RUNTIME=1 -s TOTAL_MEMORY=134217728 -s NO_FILESYSTEM=1 -s EXPORTED_RUNTIME_METHODS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\" -s EXPORTED_FUNCTIONS=\"['UTF8ToString', 'HEAPF32', '_free', '_malloc', 'HEAPU8']\"")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_EMSCRIPTEN_PARAMETERS}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_EMSCRIPTEN_PARAMETERS}")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${COMMON_EMSCRIPTEN_PARAMETERS}")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_EMSCRIPTEN_PARAMETERS}")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_EMSCRIPTEN_PARAMETERS}")
-endif()
-
 project(MusicSynthesizer)
 
 include_directories(../../Intra)
@@ -21,3 +12,8 @@ file(GLOB_RECURSE MUSIC_SYNTH_SOURCES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" *.c
 add_executable(MusicSynthesizer ${MUSIC_SYNTH_HEADERS} ${MUSIC_SYNTH_SOURCES})
 
 target_link_libraries(MusicSynthesizer Intra)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set_target_properties(MusicSynthesizer PROPERTIES
+        LINK_FLAGS "-s MODULARIZE=1 -s EXPORT_NAME=IntraMidiSynth -s ALLOW_MEMORY_GROWTH=1 -s EXPORTED_RUNTIME_METHODS=['UTF8ToString','HEAPF32','HEAPU8'] -s EXPORTED_FUNCTIONS=['_SourceCreateFromMidiFileData','_SourceFree','_SourceSamplesLeft','_SourceGetUninterleavedSamples','_GetMidiInfoString','_malloc','_free']")
+endif()

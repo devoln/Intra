@@ -600,7 +600,7 @@ private:
 		{
 			if(node->compareKeys(key, keyHash)) return node;
 			previous = node;
-			node = node->Down();
+			node = node->down;
 		}
 		return null;
 	}
