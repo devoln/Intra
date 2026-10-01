@@ -8,7 +8,8 @@
 #include <Container/Sequential/Array.h>
 
 #include <Math/Math.h>
-#include <Math/SineRange.h>
+
+#include "SteppedSineRange.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
 
@@ -17,7 +18,7 @@ struct Chorus
 	Array<float> DelayCircularBuffer;
 	size_t CircularBufferOffset;
 	float MainVolume, SecondaryVolume;
-	SineRange<float> Oscillator;
+	SteppedSineRange Oscillator;
 
 	Chorus(size_t maxDelaySamples, float delayFreqPerSample, float mainVolume=0.5f, float secondaryVolume=0.5f):
 		DelayCircularBuffer(maxDelaySamples), CircularBufferOffset(0),

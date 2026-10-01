@@ -282,7 +282,7 @@ namespace
 		{229, 249, 181, 128, 139, 106, 120, 139, 129, 113, 117, 116, 127, 133, 139, 139, 134, 131, 107, 92, 80, 74, 68, 77}, // 48-54  (root 43-54 sample)
 		{229, 195, 159, 108, 118, 105, 128, 125, 123, 102, 97, 84, 78, 73, 77, 64, 65, 66, 76, 62, 25, 13, 20, 2}, // 55-66  (root 55-66 sample)
 		{229, 234, 191, 157, 151, 127, 118, 135, 95, 88, 85, 93, 99, 92, 70, 52, 38, 35, 34, 16, 9, 2, 0, 0}, // 67-78  (root 67-78 sample)
-		{229, 230, 182, 120, 118, 105, 71, 65, 66, 45, 22, 20, 22, 12, 9, 10, 10, 5, 0, 0, 0, 0, 0, 0}, // 79-84  (root 79-127 sample)
+		{225, 234, 186, 120, 118, 105, 71, 65, 66, 45, 22, 20, 22, 12, 9, 10, 10, 5, 0, 0, 0, 0, 0, 0}, // 79-84  (root 79-127 sample)
 		// Pad4Choir
 		{255, 243, 226, 189, 158, 162, 139, 155, 154, 137, 154, 123, 98, 105, 116, 114, 117, 100, 80, 73, 61, 56, 44, 49}, // 48-78  (root 0-127 sample)
 		{255, 245, 192, 160, 152, 182, 139, 152, 130, 111, 103, 89, 82, 93, 82, 97, 86, 78, 62, 25, 0, 0, 0, 0}, // 79-81  (root 0-127 sample)
@@ -298,15 +298,68 @@ namespace
 		{247, 231, 218, 197, 172, 162, 145, 133, 111, 97, 89, 61, 41, 33, 34, 41, 24, 10, 0, 0, 0, 0, 0, 0}, // 80-84  (root 80-127 sample)
 	};
 
+	// Reference width of the kernel's line amplitudes: 80 in the old
+	// fundamental-relative scale = 2^(80/1200)−1. See lineAmpScale in
+	// DecodeVoiceAnchor: a line widened by the at-line convention is scaled by
+	// sigma(k)/sigmaRef so its MEASURED peak stays at the stored level.
+	static constexpr float kVoiceLineRefSigma = 0.047294f;
+
 	// Decoder: a 24-byte anchor becomes partials (amplitude, k, bandwidth) for the table kernel. The scale is arbitrary (the kernel normalises by the amplitude sum), the shape is measured.
-	noinline size_t DecodeVoiceAnchor(const uint8* anchor, float bwHiCents, float bwSlope, bool wideK, HarmonicDesc* dst)
+	noinline size_t DecodeVoiceAnchor(const uint8* anchor, float bwHiCents, float bwSlope, bool wideK,
+		float freq, float lineBwHz, float lineBwCents, HarmonicDesc* dst)
 	{
 		const float invLn2 = 1.0f/Math::Log(2.0f);
+		// Measured "floor" of the line width: an ensemble widens every harmonic.
+		// bwHz is absolute (constant hertz). bwCents is the width AT THE LINE
+		// (cents around k·f0), which is how the bank's own lines behave: their
+		// sigma grows in hertz with the harmonic, so the width in cents stays put
+		// (54 at C4: w-6 is 32-38 cents on h5..h12). The kernel's bandwidth is
+		// relative to the FUNDAMENTAL instead (sigma_Hz = 0.3536·(2^(bw/1200)−1)·f0,
+		// see AddSineHarmonicGauss), so a constant width in hertz is what the old
+		// formula gave: it measured 19 cents on h5 and 15 on h12, half the bank's.
+		// The 1/1.29 converts a width at the line into that fundamental-relative
+		// value; it is fitted from the kernel itself (0.8327·(2^(bw/1200)−1)·f0 is
+		// the −6 dB width the kernel produces, and the measured one came out 1.29
+		// times larger because of the neighbouring lines.
+		const float lineBwK = lineBwCents > 0? (Math::Pow2(lineBwCents/1200.0f) - 1.0f)/1.29f: 0.0f;
+		auto lineBw = [&](float k)
+		{
+			float bw = lineBwK > 0? 1200.0f*Math::Log(1.0f + lineBwK*k)*invLn2: 0.0f;
+			if(lineBwHz > 0)
+				bw = Math::Max(bw, 1200.0f*Math::Log(1.0f + lineBwHz/(k*freq))*invLn2);
+			return bw;
+		};
+		// The kernel's spectral peak of a line falls as 1/sigma, so a body line
+		// whose width the at-line convention WIDENED must carry sigma_k/sigmaRef
+		// times the stored amplitude, otherwise the measured peak sags with k and
+		// h1 (whose width shrank 4.4 Hz → 1.6 Hz at C4) jumps +8.8 dB over the
+		// whole profile. sigmaRef is the kernel's old constant width (80 in the
+		// fundamental-relative scale, i.e. 2^(80/1200)−1), so the lines 53 keeps
+		// (Hz width, untouched) hold their canon levels exactly. Only the lines
+		// whose width comes from the at-line convention are scaled: 52/51/91/94
+		// keep their own width scheme and their fitted profiles bit for bit.
+		// The exponent is 1/2, not 1: with the full 1/sigma the measured mid and
+		// high harmonics came out 6-11 dB BRIGHTER than the bank (the anchors were
+		// fitted against narrow lines, where the analysis window still resolves
+		// power and peak alike), and with 0 (the old convention) they come out
+		// 5-18 dB darker. Measurement sits between the two regimes, so the
+		// compensation is the geometric mean; the residual of 53/54 is in the log.
+		// Only when the at-line convention is actually in force (lineBwK > 0):
+		// 53's Hz minimum is its canon and must stay untouched (the scale there
+		// cut h8/h9 by 12 dB — the Hz width in cents falls with the key, so the
+		// scale became key dependent, and the profile suffered).
+		auto lineAmpScale = [&](float bw, float bwLine)
+		{
+			if(lineBwK <= 0.0f || bwLine <= 0.0f || bwLine < bw) return 1.0f;
+			return Math::Sqrt((Math::Pow2(bwLine/1200.0f) - 1.0f)/kVoiceLineRefSigma);
+		};
 		size_t n = 0;
 		for(size_t i = 0; i < kProfileLead; i++)
 		{
 			const float k = float(i + 1);
-			dst[n++] = HarmonicDesc{Math::Pow(10.0f, ProfileBandDb(anchor[i])/20.0f), k, ProfileBandWidth(k, bwHiCents, bwSlope, wideK)};
+			const float bwLine = lineBw(k);
+			const float bw = Math::Max(ProfileBandWidth(k, bwHiCents, bwSlope, wideK), bwLine);
+			dst[n++] = HarmonicDesc{Math::Pow(10.0f, ProfileBandDb(anchor[i])/20.0f)*lineAmpScale(bw, bwLine), k, bw};
 		}
 		size_t bands = kProfileBands;
 		while(bands > 0 && anchor[kProfileLead + bands - 1] == 0) bands--;
@@ -328,7 +381,9 @@ namespace
 			const float dbHi = b + 1 < bands? ProfileBandDb(anchor[kProfileLead + b + 1]): dbLo;
 			const float db = dbLo + (dbHi - dbLo)*u;
 			if(db <= kProfileFloorDb) continue;
-			dst[n++] = HarmonicDesc{Math::Pow(10.0f, db/20.0f), k, ProfileBandWidth(k, bwHiCents, bwSlope, wideK)};
+			const float bwLine = lineBw(k);
+			const float bw = Math::Max(ProfileBandWidth(k, bwHiCents, bwSlope, wideK), bwLine);
+			dst[n++] = HarmonicDesc{Math::Pow(10.0f, db/20.0f)*lineAmpScale(bw, bwLine), k, bw};
 		}
 		return n;
 	}
@@ -372,7 +427,13 @@ namespace
 	// burst colouring by the vowel: every burst harmonic is multiplied by the
 	// note body spectrum, normalized to its maximum, mixed by kVowelMix. 1 is
 	// fully through the vowel (darker than the plain burst), 0 the plain one.
-	static constexpr float kVowelMix = 0.50f;
+	// Update 221: 0.50 → 0. Окраска снята ЗАМЕРОМ: у 53:60 она добавляла
+	// +11.9 дБ в 400-800 и +8 дБ в 100-400 (сравнение сборок при 0.50, 0.25 и
+	// 0.0 в `.scratch/t-env.mjs`), то есть низ согласной был не её собственным,
+	// а рябью формант сустейновой гласной. Формантная форма согласной теперь
+	// в кило/дБ-узлах kBurstProfile (в герцах, как у шума банка) и от гласной
+	// не зависит — ровно так же, как в банке: там всплеск записан сэмплом.
+	static constexpr float kVowelMix = 0.0f;
 	// upper limit of the air grid, per preset. The body ends at 48·f0 (6.3 kHz
 	// on C3) and the bank still has energy there (4.8-9.6 kHz at -90 dB against
 	// our -130 dB), which is why low notes sounded dull. The same fractional
@@ -387,7 +448,29 @@ namespace
 	// all. Fitted band by band against the bank (the response is 1 dB per dB of
 	// air amplitude); 54, 91 and 94 also use the humps declared below (52 has no
 	// floor at all, see kVoiceAirMode).
-	static const float kVoiceAirDb[kProfilePresets] = {-52.0f, -12.0f, -36.7f, -34.3f, -29.0f, -26.3f, -31.0f};
+	// 53 (Update 215): -44.2 → -45.5. Замер ТОЛЬКО пола (`.scratch/floor-fit.mjs`,
+	// гармоники вырезаны ±25 Гц, абсолютные дБ) показал, что полка 53 была на
+	// 3…12 дБ громче банковской по всем полосам и клавишам: на C4 +4.5/+3.1/+1.3/
+	// +7.5/+4.0/+2.6/+1.7 (200-400…12800-16000), на C3 до +12.5. Это и есть «шум
+	// заглушает»: полка — независимый шум, а у банка в промежутках лежат его же
+	// юбки и дыхание, то есть энергия, которая движется вместе с голосом.
+	// Update 217: 53 −45.5 → −37.5 (+8 дБ). ГЛАВНАЯ находка шага: у банка 53 в
+	// пресете ДВА инструмента — гласная («Doo Vox», сэмпл doo* на клавишу) и
+	// ПОДЛОЖКА «Synth Vox» (сэмпл synvoxc5la, корень 72, клавиши 0..83, уровень
+	// пресета −10 дБ, две расстроенные копии −4/+5 центов с противоположными
+	// LFO). Мы держали только гласную, и это видно замером: полоса МЕЖДУ
+	// гармониками (`cli.mjs bands`, дБ отн. пика h1, сустейн) была на 8-17 дБ ниже
+	// банковской на всех клавишах и во всех полосах — 53:48 −72.2/−72.3/−73.7/
+	// −79.1/−80.2/−86.4 против −61.0/−59.2/−70.7/−71.3/−63.4/−78.5, 53:60 −72.1/
+	// −71.7/−73.5/−80.8/−81.9/−88.9 против −59.4/−61.9/−67.6/−71.2/−68.0/−84.6,
+	// 53:72 −72.9/−72.5/−74.7/−87.3/−93.0/−105.1 против −54.9/−66.4/−70.6/−75.0/
+	// −79.8/−88.7. Это и есть «C3 почти не слышно»: тело на месте, а подложки нет.
+	// 217: −45.5 → −40.0 после того, как линии таблицы 54 были расширены: ширина
+	// меняет сумму амплитуд таблицы, а вместе с ней и уровень полки относительно
+	// тела (6.5 дБ амплитуды полки дают ≈ 10 дБ в замере `bands`). Замер на
+	// −44.0 дал полку на 3-9 дБ НИЖЕ банка, на −37.5 — на 5-9 ВЫШЕ; −40.0 садится
+	// в середину.
+	static const float kVoiceAirDb[kProfilePresets] = {-52.0f, -12.0f, -40.0f, -40.3f, -29.0f, -26.3f, -31.0f};
 	// air mechanism per preset: 1 is a wide grid in the gaps between harmonics,
 	// 2 is blurred copies of the harmonics themselves (kVoiceAirCopies), 0 is no
 	// floor. 52 keeps 0: the owner's v194 has no floor at all and he chose it over
@@ -403,6 +486,13 @@ static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
 	// 54 by 9.5 below its top hump, 94 is flat because the bank's halo floor is
 	// flat up to 16 kHz.
 	static const float kVoiceAirTiltDb[kProfilePresets] = {10.0f, 8.0f, 7.5f, 9.5f, 8.0f, 0.0f, 14.0f};
+	// Update 214: крутизна ЭТОГО ЖЕ наклона растёт с клавишей, дБ/окт за октаву
+	// выше C4 (клампится одним октавом и четвертью вниз). Зачем: верх полки
+	// банка падает с клавишей (на C5 полоса 4.8-9.6 у нас была на 12.4 дБ
+	// горячее, на C6 на 10.2), а герцовый горб сам по себе с клавишей не
+	// поворачивается: у сэмпла полка — это его же шум, отыгранный быстрее.
+	// 53: +5.5 (замер `cli.mjs bands` на 48/60/72/84), у остальных 0.
+	static const float kVoiceAirTiltKeyDbPerOct[kProfilePresets] = {0.0f, 0.0f, 5.5f, 0.0f, 0.0f, 0.0f, 0.0f};
 	// bottom of the air grid and its shape. The grid starts at 1.5·f0, so
 	// everything below that is empty, while the bank has noise from below the
 	// fundamental: kVoiceAirMinHz moves the start down (150 Hz), and
@@ -417,34 +507,287 @@ static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
 		{ 2150.0f,  720.0f, 12.0f },   // 54 SynthVoice, hump A
 		{ 3400.0f, 1200.0f, 8.0f },   // 54 SynthVoice, hump B
 		{  900.0f,  800.0f, 4.0f },    // 91 Pad4Choir
+		// 53 VoiceOohs (замер 209, восстановлен в 214). Полка банка НЕ монотонна:
+		// на C4 2.4-4.8 кГц −71.2, а 4.8-9.6 −68.0, то есть верхняя полоса на 3 дБ
+		// ВЫШЕ соседней, а между 600 и 4800 Гц у него провал на 7-8 дБ против
+		// ровного наклона. Один широкий горб поднимал заодно 2.4-4.8, поэтому
+		// полка опущена на 6 дБ (до −42.7), а горбы узкие: 6.8 кГц возвращает верх,
+		// 0.5 кГц — низ, 12.5 кГц — полосу 9.6-16 кГц.
+		{ 6800.0f, 1500.0f, 16.0f },   // 53 VoiceOohs, верхний горб (4.8-9.6 кГц)
+		// Update 217: 0 → 5 дБ, частота 700 → 520 Гц. Замер `cli.mjs bands` дал
+		// полосу 400-600 на 11-18 дБ НИЖЕ банка — то есть в самом низу подложки
+		// у нас дыра, и никакая общая прибавка уровня её не закрывает (она
+		// поднимет и 1200-2400, где перебор всего 4 дБ).
+		{  520.0f,  700.0f,  5.0f },   // 53 VoiceOohs, нижний горб
+		// 11 → 8 дБ (217, после замера сборки с поднятой полкой): 9600-16000
+		// стало на 4-7 дБ ВЫШЕ банка. До правки эта полоса была на 9-16 дБ ниже.
+		{12500.0f, 4000.0f,  8.0f },   // 53 VoiceOohs, верхний горб (9.6-16 кГц)
 	};
 	// Hump 52 {3600, 2400, +4} was declared but never applied (kVoiceAirFirst[1] = 0, Count[1] = 0) and is gone: 52 has no floor hump.
-	static const uint8 kVoiceAirFirst[kProfilePresets] = {0, 0, 0, 0, 2, 0, 0};
-	static const uint8 kVoiceAirCount[kProfilePresets] = {0, 0, 0, 2, 1, 0, 0};
+	static const uint8 kVoiceAirFirst[kProfilePresets] = {0, 0, 3, 0, 2, 0, 0};
+	static const uint8 kVoiceAirCount[kProfilePresets] = {0, 0, 3, 2, 1, 0, 0};
 	static const float kVoiceAirMinHz[kProfilePresets] = {0.0f, 0.0f, 0.0f, 150.0f, 150.0f, 150.0f, 0.0f};
 	// floor slope per key, dB per octave from C4. The bank's floor-to-h1 ratio
 	// depends strongly on the key (52 falls by 10 dB per octave, 54 rises by 12),
 	// while ours is constant, which is what made "the air disappears from G4".
-	static const float kVoiceAirKeyDbPerOct[kProfilePresets] = {0.0f, -2.0f, 5.7f, 7.7f, 12.4f, 9.6f, 0.0f};
+	static const float kVoiceAirKeyDbPerOct[kProfilePresets] = {0.0f, -2.0f, 5.7f, -1.0f, 12.4f, 9.6f, 0.0f};
+	// 54 (Update 210): 10.7 → 16.7 (знак важен: вклад полки это slope*keyOct,
+	// а для C3 keyOct = −1, поэтому «поднять низ» = УМЕНЬШИТЬ этот наклон) — после снятия 6 дБ
+	// базы полка на C3 отошла на
+	// 10.3 дБ ниже банковской, на C5 на 6.2 (замер `cli.mjs snr`, окно 0.3-0.5 с).
 	// same slope for the keys above C4: the bank's dependence is not monotonic
 	// (94 peaks around C4/C5), and a single number made C5/C6 up to 20 dB louder
 	// than the bank.
-	static const float kVoiceAirKeyDbPerOctHi[kProfilePresets] = {0.0f, -2.0f, 5.7f, 10.7f, 6.5f, -0.8f, 0.0f};
+	static const float kVoiceAirKeyDbPerOctHi[kProfilePresets] = {0.0f, -2.0f, 5.7f, 13.0f, 6.5f, -0.8f, 0.0f};
 	// Calibration: the floor tracks the air level with a 1 dB/dB response; 53 needed -14.7 dB and 54 -21.4 dB.
+	// Update 210: 54 −34.3 → −40.3. Замер тона/шума (.scratch/snr54.mjs) дал, что наш шум на 6.3-7.2 дБ
+	// ГРОМЧЕ банковского во всех окнах (−34.2/−36.2/−40.7/−49.6 против −40.1/−42.2/−47.7/−50.2), то есть
+	// отношение тон/шум у нас падало до 18.8 дБ там, где у банка 31.1. Это и слышалось как «слишком тихо
+	// относительно шумового фона». 91 Pad4Choir в 210 не тронут (индекс 4 — его, и он вернулся к −29.0).
 
 	// why fractional harmonics: the bank's floor between the harmonics is not a
 	// flat shelf, it decays outward from each line. A dense grid of lines with
 	// k = 1.5, 2.5, ... and a 1200 cent skirt reproduces that decay and keeps the
 	// level tied to the harmonic grid, so the shape does not slide with the key.
+	// 54 SynthVoice, upper regions (keys >= G4): the baked h1..h3 core and its
+	// +-10 cent shoulders are near-degenerate lines, and the canonical phase
+	// fingerprint makes them beat deeply (wide-band AM well above the bank's).
+	// A second phase realization for that region brings the beating back into
+	// the bank's range without touching the spectrum; the lower regions keep the
+	// canonical fingerprint (salt 0).
+	static constexpr unsigned kVoiceUpperPhaseSalt = 65537u;
+
+	static const uint8 kVoiceOohOnsetProfiles[8][kProfileAnchorBytes] =
+	{
+		{255, 254, 207, 169, 148, 147, 147, 155, 159, 159, 157, 126, 122, 143, 143, 143, 136, 114, 125, 136, 136, 136, 136, 136}, // 48
+		{255, 238, 182, 152, 141, 152, 174, 171, 155, 162, 170, 170, 142, 141, 155, 155, 155, 155, 123, 125, 125, 125, 125, 125}, // 50
+		{255, 202, 157, 137, 150, 152, 174, 167, 156, 156, 159, 159, 153, 153, 153, 152, 152, 152, 125, 125, 135, 135, 143, 143}, // 54
+		{255, 184, 157, 174, 131, 135, 149, 139, 147, 147, 137, 121, 125, 125, 125, 123, 123, 123, 123, 123, 123, 122, 125, 125}, // 58
+		{255, 176, 194, 155, 130, 148, 148, 148, 142, 142, 125, 124, 129, 129, 129, 110, 110, 99, 99, 99, 119, 119, 127, 127}, // 62
+		{255, 190, 200, 171, 141, 127, 147, 149, 131, 148, 148, 98, 98, 117, 117, 121, 125, 125, 125, 125, 125, 121, 121, 121}, // 64
+		{255, 188, 188, 133, 110, 113, 110, 140, 128, 87, 74, 74, 79, 101, 101, 101, 101, 83, 83, 83, 83, 83, 64, 42}, // 71
+		{255, 196, 187, 123, 123, 136, 109, 144, 136, 102, 86, 86, 92, 113, 113, 113, 94, 86, 0, 0, 0, 0, 0, 0}, // 84
+	};
+	static const uint8 kOohOnsetStarts[] = {48, 50, 54, 58, 62, 64, 71, 84};
+	// Region index of 53's onset profile: the same keys as the body regions of the
+	// preset (kVoiceRegionStarts), clamped at both ends.
+	noinline size_t OohOnsetIndex(float freq)
+	{
+		const float midi = 69.0f + 12.0f*Math::Log(freq/440.0f)/Math::Log(2.0f);
+		const int key = int(midi + 0.5f);
+		size_t idx = 0;
+		for(size_t i = 0; i < SpanOf(kOohOnsetStarts).Length(); i++)
+			if(key >= int(kOohOnsetStarts[i])) idx = i;
+		return idx;
+	}
+
+	// ---- 54 SynthVoice: аддитивные ядра h1..h8 (см. VoiceCorePartial в WaveTableSampler.h).
+	// Замер банка (`.scratch/am54cores.mjs`, 8 клавиш): движение у него per-harmonic —
+	// на C4 глубина 4.3/3.7/4.7/3.0/2.9/1.9/1.6/2.1 дБ rms при 1.66/3.32/2.54/2.15/
+	// 5.86/2.05/2.34/5.18 Гц и произвольных фазах, на C5 — 3.9/4.0/2.8/1.7/1.6/1.6/
+	// 2.1/2.3 дБ при 1.66/3.81/6.84/3.03/9.18/2.15/3.91/3.91 Гц. Пара расстроенных
+	// чтений одной таблицы так не может: у всех её гармоник темп обязан быть k*d, а
+	// фаза в момент ноты — общая, и ухо слышит «глубокое ровное тремоло» (наша
+	// измеренная глубина 2.4-3.6 дБ при банковских 4.2-7.2 звучала ХУЖЕ банка).
+	// Поэтому ядра h1..h8 уходят из таблицы в отдельные синусы со своей АМ
+	// (kVoiceCoreTableSkip ниже), а таблица несёт остальное: h9+, юбки и воздух.
+	static constexpr size_t kVoiceCoreRegions = 4;
+	// Первая область 54 в kVoiceProfiles: SynthStrings1 6 + ChoirAahs 21 + VoiceOohs 8 = 35.
+	static constexpr size_t kVoiceCoreRegionBase = 35;
+	// Фазовые зёрна несущих: ядра не должны складываться в один импульс.
+	static const float kVoiceCoreCarrierPhase[kVoiceCoreMax] =
+		{0.82f, 2.95f, 5.31f, 1.83f, 4.17f, 3.39f, 0.44f, 5.98f};
+	// Глубина АМ (доля амплитуды, 1/255): m из rms огибающей замеренной
+	// гармоники (m = rms/6.142) С ПОПРАВКОЙ НА ВЫХОД (Update 214). Два шага
+	// замера здесь важны:
+	//  1) глубина банка — из fit-harmam (rms настоящей огибающей гармоники,
+	//     а не сумма линий модуляции);
+	//  2) поправка — из повторного fit-harmam уже по НАШЕМУ выходу: в полосе
+	//     гармоники всегда есть и статика (воздух, таблица), поэтому выход
+	//     выходит тише модели, и коэффициент rms_банк/rms_наш добирает это.
+	// Потолок 240 (m 0.94) — за ним у ядра начинается провал ниже −30 дБ,
+	// которого банк не показывает.
+	// 210 ошибочно уменьшил глубину ×0.6: причина «тихо относительно шума»
+	// была в полке (на 6 дБ громче банка), а окно 0.3-0.5 с короче периода
+	// нашей АМ (0.6 с) и читало её провал как «тише банка».
+	// Владелец после этого: «звук слишком ровный стал» — и замер это
+	// подтверждает: 54:60 h1 у нас 2.39 дБ rms против банковских 4.44.
+	static const uint8 kVoiceCoreDepth[kVoiceCoreRegions][kVoiceCoreMax] =
+	{
+		{122, 169, 175, 152, 116,  94,  64,  46},   // 51 (область 48-54)
+		{203, 153, 164, 161, 103,  61,  61,  57},   // 60 (55-66)
+		{181, 165, 120,  73,  45,  39,  36,  46},   // 72 (67-78)
+		{146, 153, 176, 168, 131,  70,  48,  60},   // 81 (79-84)
+	};
+	// Скорость АМ, шаг 0.05 Гц (0..12.75 Гц). Скорость и фаза — из сильнейшей
+	// линии модуляции каждой гармоники (fit-harmam, у 54:60 h2 это 5.60 Гц,
+	// а прежний прибор .scratch/am54cores.mjs брал 3.3). Смотри на «дружную
+	// качку»: если бы скорости росли как k, это была бы пара расстроенных
+	// чтений одной таблицы, а не восемь независимых источников.
+	static const uint8 kVoiceCoreRate[kVoiceCoreRegions][kVoiceCoreMax] =
+	{
+		{ 43,  39,  39,  39,  39,  41,  41,  43},   // 51
+		{ 32, 112,  62,  65,  67,  69, 116, 116},   // 60
+		{ 34,  78,  78,  78,  78,  67, 183,  80},   // 72
+		{129, 245,  62,  62,  62,  62,  62,  62},   // 81
+	};
+	// Фаза АМ, 1/256 оборота: ψ = π/2 − φ(0), то есть фаза линии модуляции В
+	// МОМЕНТ NOTE-ON. Именно она даёт входу ноты тот же рисунок, что у банка.
+	static const uint8 kVoiceCorePhase[kVoiceCoreRegions][kVoiceCoreMax] =
+	{
+		{187,  25,  26,  26,  27, 232, 235, 182},   // 51
+		{138, 249, 139,  27, 242, 240, 231, 235},   // 60
+		{204, 232, 234, 242, 250,  39,  50, 245},   // 72
+		{ 49,  77,  76,  75,  75,  76,  77,  78},   // 81
+	};
+
+	// ---- 53 VoiceOohs: те же ядра, но по СВОИМ восьми областям
+	// (kVoiceRegionStarts[27..34] = 48,50,54,58,62,64,71,84). Замер банка —
+	// `fit-harmam.mjs 53:48 53:51 … --bank --out .scratch/harmam53.json`.
+	// Почему 53 тоже переведён на ядра (жалоба 211: «Oohs C4 гудит неприятно, и
+	// никакого О-У не слышно за этим гудением»): в банке это СЭМПЛ, у него каждая
+	// гармоника дышит со своей скоростью (h1 2.5 Гц, h2/h3 1.18, h5..h8 4.2 Гц уже
+	// на C3) и со своей фазой, а таблица несла h1..h8 одной парой расстроенных
+	// чтений: движение выходило общим для всех гармоник и глубоко ровным — то же
+	// гудение, что у 54 до правки. Таблица остаётся с h9+, полкой и воздухом.
+	static constexpr size_t kVoiceOohCoreRegions = 8;
+	// Первая область 53 в kVoiceProfiles: SynthStrings1 6 + ChoirAahs 21 = 27.
+	static constexpr size_t kVoiceOohCoreRegionBase = 27;
+	// Глубина (m = rms/6.142), скорость (шаг 0.05 Гц) и фаза (1/256 оборота) — из
+	// fit-harmam. Скорости > 12.75 Гц (у банка на 77/84 есть линии 19.4 Гц)
+	// насыщаются на 255: это уже не «движение», а шероховатость, и в v1 глубина
+	// для них важнее точной скорости.
+	static const uint8 kVoiceOohCoreDepth[kVoiceOohCoreRegions][kVoiceCoreMax] =
+	{
+		{ 76, 142, 103,  86,  70, 119, 157, 173},   // 48 (48-49)
+		{ 72,  98,  97,  65,  37,  39,  42,  43},   // 51 (50-53)
+		{ 40,  47,  80,  70,  77,  83,  80,  70},   // 55 (54-57)
+		{108,  63,  28,  28,  28,  27,  23,  23},   // 59 (58-61)
+		{152,  59,  75,  59,  39,  40,  38,  34},   // 62 (62-63)
+		{169,  94,  42,  46,  45,  38,  33,  44},   // 67 (64-70)
+		{179,  71, 110,  92,  57,  54,  62,  68},   // 77 (71-83)
+		{179,  61,  89,  75,  47,  51,  55,  59},   // 84 (84+)
+	};
+	static const uint8 kVoiceOohCoreRate[kVoiceOohCoreRegions][kVoiceCoreMax] =
+	{
+		{ 50,  24,  24,  37,  84,  84,  84,  84},   // 48
+		{ 56,  47,  47,  24,  58,  71,  71,  71},   // 51
+		{ 43,  45,  69, 108,  93,  93,  93,  93},   // 55
+		{ 39,  19,  71,  71,  71,  71,  71,  71},   // 59
+		{ 22,  22,  47,  47,  47, 129, 129, 129},   // 62
+		{ 34,  34, 106, 106, 106, 106, 106, 255},   // 67
+		{ 65,  65, 129, 129, 129, 255, 255, 255},   // 77
+		{ 97,  97, 194, 194, 255,  58,  58, 250},   // 84
+	};
+	static const uint8 kVoiceOohCorePhase[kVoiceOohCoreRegions][kVoiceCoreMax] =
+	{
+		{ 99, 144, 145, 169,  86,  85,  84,  84},   // 48
+		{ 19, 214, 214,  41,  82,  84,  86,  86},   // 51
+		{ 26, 244,  16, 249,   9,   9,   9,  10},   // 55
+		{232,  73, 227, 226, 228, 230, 231, 229},   // 59
+		{ 98,  97, 232, 236, 236, 130, 134, 137},   // 62
+		{188, 188,  81,  82,  82,  82,  81, 121},   // 67
+		{  7,   7, 212, 213, 213, 247, 246, 247},   // 77
+		{104, 102, 149, 149, 191,  99,  91,  10},   // 84
+	};
+
+	// Ядра несут только те пресеты, у которых линии h1..h8 в таблице ПЛОСКИЕ
+	// (BwSlope = 0, потому ProfileBandWidth даёт им нулевую ширину): 53 и 54.
+	// У 52 (b = 52·k центов) и 51 (5 центов) своя ширина у каждой из h1..h8, и
+	// вынуть их из таблицы нельзя — вместе с ними ушла бы и ширина.
+	// Update 216: ядра ВЫКЛЮЧЕНЫ. Они были восемью ЧИСТЫМИ синусами с АМ, и
+	// замер ширины линий (`.scratch/vowel-widths.mjs`, harmonicWidths −6 дБ)
+	// показал, что это не тот сигнал, что в банке: у банка линия каждой
+	// гармоники РАЗМЫТА хором (53: ~7 Гц на любой гармонике, C3 h6 20 центов =
+	// 9 Гц; 54: 38-44 цента на h5..h12, то есть ±20 центов детюна), у чистого
+	// синуса ширина — ноль, и на слух это синтетический гудок, а не голос.
+	// Теперь h1..h8 несёт сама таблица с измеренной шириной (kVoiceLineBw*),
+	// как до правки 214, но уже с настоящей шириной линии.
+	inline bool VoiceHasCores(size_t slot) { (void)slot; return false; }
+
+	// Измеренная ширина линий сустейна банка, приложенная как МИНИМУМ к ширине
+	// линии таблицы. 53 держит ~7 Гц (абсолютная ширина, в герцах), 54 —
+	// 38 центов НА ЛИНИИ (детюн хора: у банка w-6 равен 32-38 центам на h5..h12
+	// и НЕ падает с номером гармоники). 0 = минимум не задан.
+	// Update 217: 80 → 38. Прежние 80 стояли в СТАРОЙ шкале ядра (ширина
+	// относительно основного тона = постоянная ширина в ГЕРЦАХ) и давали
+	// замеренные 19 центов на h5 и 15 на h12 при банковских 32-38 — вдвое уже,
+	// то есть синтетический гудок вместо хора (`.scratch/voice-width.mjs`).
+	static const float kVoiceLineBwHz[kProfilePresets] = {0.0f, 0.0f, 3.5f, 0.0f, 0.0f, 0.0f, 0.0f};
+	static const float kVoiceLineBwCents[kProfilePresets] = {0.0f, 0.0f, 0.0f, 38.0f, 0.0f, 0.0f, 0.0f};
+
+	// === Уровень ноты по клавише ===
+	// Владелец: «громкости нот у обоих падов не выровнены, где-то громко, где-то
+	// тихо; надо, чтобы каждая нота по громкости была как в сухом рендере
+	// Titanic с gain=0.6». Замер `.scratch/level-keys.mjs`: наш СУХОЙ выход
+	// против СУХОГО рендера банка (fluidsynth -g 0.6, -R 0 -C 0). Именно к этому
+	// уровню откалиброван остальной синтезатор — фортепиано (программа 0) на том
+	// же замере читается −0.9 дБ, 52 ChoirAahs +2.2 — а пады 53/54 стояли на
+	// −8.3 (по RMS сустейна −5.5…−10.6) и −9.1 (−2.9…−14.1): тише всего
+	// остального на 9-10 дБ И со ступеньками между областями профиля (у 53
+	// 5,7 → 10,3 дБ на границе C3/C4, у 54 6,7 → 13,3 на G#4 — это и есть
+	// «SV C5 тихая»). Причина: в `kVoicePresets`/`LoudnessCalibration` уровень
+	// задан ОДИН на весь пресет, а у банка на каждой области свой сэмпл.
+	//
+	// Таблица: дБ, которые надо ДОБАВИТЬ к таблице ноты. Update 221: узел на
+	// КАЖДУЮ клавишу (C2…C6, шаг 1 полутон) — MIDI-клавиши целые, интерполяция
+	// выключается, и каждая нота стоит ровно на своём замере. Значения сняты
+	// зондом `.scratch/level-keys-all.mjs` на каноне Update 220: разница наш−банк
+	// по RMS сустейна (0.8-4.0 с) на всех 49 клавишах, узел = старая
+	// интерполяция − разница. Остаток: разброс по клавишам ±0.8 дБ у 53
+	// (кроссфейды областей банка) и ±0.7 у 54.
+	static constexpr size_t kVoiceLevelNodes = 49;
+	static constexpr int kVoiceLevelFirstKey = 36;
+	static constexpr int kVoiceLevelStepSemis = 1;
+	static constexpr size_t kVoiceLevelRows = 2;
+	// 255 = пресет коррекции не имеет и строится байт в байт как раньше.
+	static const uint8 kVoiceLevelRow[kProfilePresets] = {255, 255, 0, 1, 255, 255, 255};
+	static const float kVoiceLevelDb[kVoiceLevelRows][kVoiceLevelNodes] =
+	{
+		// 53 VoiceOohs, клавиши 36…84 (C2…C6), один узел на клавишу.
+		{5.8f, 6.1f, 5.8f, 6.2f, 5.5f, 5.6f, 5.5f, 5.5f, 5.3f, 5.2f, 5.8f, 5.5f, 5.7f, 5.6f, 6.5f, 6.2f, 6.2f, 6.2f, 8.9f, 9.0f, 8.9f, 8.8f, 10.5f, 10.7f, 10.3f, 10.2f, 10.1f, 10.0f, 10.6f, 10.7f, 10.9f, 10.6f, 10.4f, 10.8f, 10.5f, 11.0f, 9.1f, 10.0f, 10.1f, 10.1f, 10.0f, 10.5f, 10.1f, 10.0f, 10.1f, 8.7f, 10.0f, 11.2f, 10.0f},
+		// 54 SynthVoice, клавиши 36…84 (C2…C6).
+		{3.2f, 3.2f, 3.4f, 3.4f, 2.9f, 3.3f, 3.1f, 10.1f, 10.2f, 8.6f, 8.8f, 8.0f, 8.4f, 7.7f, 7.6f, 7.9f, 8.5f, 7.7f, 8.4f, 8.6f, 7.9f, 7.5f, 8.3f, 8.5f, 6.7f, 8.2f, 7.7f, 7.0f, 7.3f, 9.2f, 9.1f, 12.5f, 13.3f, 12.2f, 12.5f, 12.2f, 11.4f, 11.7f, 11.1f, 11.6f, 11.4f, 11.7f, 10.8f, 14.2f, 13.4f, 13.8f, 13.4f, 13.9f, 14.1f},
+	};
+	inline float VoiceLevelDb(size_t slot, float freq)
+	{
+		const uint8 row = kVoiceLevelRow[slot];
+		if(row >= kVoiceLevelRows) return 0.0f;
+		const float key = 69.0f + 12.0f*Math::Log(freq/440.0f)/Math::Log(2.0f);
+		const float x = (key - float(kVoiceLevelFirstKey))/float(kVoiceLevelStepSemis);
+		if(x <= 0.0f) return kVoiceLevelDb[row][0];
+		if(x >= float(kVoiceLevelNodes - 1)) return kVoiceLevelDb[row][kVoiceLevelNodes - 1];
+		const size_t i = size_t(x);
+		const float u = x - float(i);
+		return kVoiceLevelDb[row][i] + (kVoiceLevelDb[row][i + 1] - kVoiceLevelDb[row][i])*u;
+	}
+
 	noinline WaveTable BuildVoiceTable(size_t slot, unsigned tableLength, float bwHiCents, float bwSlope,
-		float freq, unsigned sampleRate)
+		float freq, unsigned sampleRate, bool onset = false)
 	{
 	// table length per preset, in samples. A longer table means a finer dft grid
 	// (0.67 Hz instead of 2.69) and a slower repetition, at the price of a longer
 	// build; partial levels drift a little because the sum of skirts grows as
 	// sqrt(N), which is why the levels are re-fitted per preset.
 		HarmonicDesc a[kProfileMaxPartials + kAirCount];
-		size_t n = DecodeVoiceAnchor(kVoiceProfiles[VoiceAnchorIndex(slot, freq)], bwHiCents, bwSlope, kVoiceWideWidth[slot] != 0, a);
+		const size_t anchorIndex = VoiceAnchorIndex(slot, freq);
+		// The onset layer of 53 has its own measured profile (below), not the
+		// sustain one: the vowels differ, and that difference is the consonant.
+		const uint8* profile = kVoiceProfiles[anchorIndex];
+		if(onset) profile = kVoiceOohOnsetProfiles[OohOnsetIndex(freq)];
+		size_t n = DecodeVoiceAnchor(profile, bwHiCents, bwSlope, kVoiceWideWidth[slot] != 0, freq,
+			kVoiceLineBwHz[slot], kVoiceLineBwCents[slot], a);
+
+		// SynthVoice (54): Titanic keeps a narrow coherent core and a broad central
+		// skirt on h1..h3. The note's MOVEMENT is NOT baked into the table any
+		// more: measured with `fit-report` («движение по гармоникам») a near line
+		// that does not sit on the table's dft grid makes the table aperiodic, and
+		// the note then carries a broadband ripple at the TABLE REPEAT rate
+		// (2.69 Hz at 16384, 1.37 at 32768) whose depth reached 10.9 dB on h2/h3 -
+		// the ear hears exactly that as a deep regular tremolo. Movement comes from
+		// the detuned reads of the same table instead (see kvSynthVoiceVoices):
+		// those are grid-free, each harmonic then beats at k*f0*dCents/1731, and
+		// two incommensurate copies make the movement non-metronomic.
 		float volumeScale = 1.0f;
 		const float airDb = kVoiceAirDb[slot];   // air level of the preset
 		const uint8 airMode = kVoiceAirMode[slot];   // floor mechanism (0/1/2)
@@ -460,7 +803,11 @@ static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
 			const float airKeySlope = keyOct >= 0.0f? kVoiceAirKeyDbPerOctHi[slot]: kVoiceAirKeyDbPerOct[slot];
 			const float airAmp = Math::Pow(10.0f, (airDb + airKeySlope*keyOct)/20.0f);
 			// Top tilt (kVoiceAirTiltDb) is set in hertz rather than by harmonic number: the bank's noise shape is the vowel shape, that is absolute. It combines with the formant humps and stays only where the top must fall.
-			const float airTilt = kVoiceAirTiltDb[slot];
+			// The slope itself steepens with the key (kVoiceAirTiltKeyDbPerOct), which is
+			// what the bank's sampled floor does when it is played faster: its top drops
+			// while the humps stay where they are.
+			const float airTilt = kVoiceAirTiltDb[slot]
+				+ kVoiceAirTiltKeyDbPerOct[slot]*Math::Clamp(keyOct, -0.25f, 1.0f);
 			// Air bottom in hertz (kVoiceAirMinHz). At 0 the grid starts at kAirFirstK (50/51/53, output unchanged); above 0 it starts at 0.5*f0 and only above the threshold, so the floor lives below the fundamental too, as in the bank.
 			const float airMinHz = kVoiceAirMinHz[slot];
 			// Floor shape as hertz humps (kVoiceAirFormants); count = 0 keeps the previous kAirTiltHz tilt.
@@ -527,7 +874,31 @@ static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
 			}
 			if(air > 0 && body > 0) volumeScale = (body + air)/body;
 		}
-		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), volumeScale, tableLength, freq, sampleRate);
+		// 54 SynthVoice: ядра h1..h8 несёт аддитивный слой (BuildVoiceCores), поэтому
+		// в таблице их нет. В НОРМИРОВКЕ они остаются (extraAmplSum): kernel делит все
+		// линии на Σa, и без этого вынутое ядро подняло бы h9+ и юбки на Σядер/Σостатка.
+		// Юбки и воздух ядра (kVoiceAirCopies) остаются в таблице: у них своя ширина,
+		// и они не дают аддитивным линиям звучать голо.
+		float coreSum = 0;
+		if(VoiceHasCores(slot))
+		{
+			const float nyq = float(sampleRate)/2.0f;
+			for(size_t i = 0; i < n; i++)
+			{
+				if(a[i].FreqMultiplier > float(kVoiceCoreMax) || a[i].Bandwidth > 0.0f) continue;
+				if(a[i].FreqMultiplier*freq > nyq) continue;
+				coreSum += a[i].Amplitude;
+				a[i].Amplitude = 0.0f;
+			}
+		}
+		// Level of the note per key (see VoiceLevelDb): body, air and cores scale
+		// together — the measurement is the loudness of the whole note. Applied to
+		// the volume scale rather than to the line amplitudes because the kernel
+		// normalises by their sum.
+		const float levelDb = VoiceLevelDb(slot, freq);
+		if(levelDb != 0.0f) volumeScale *= Math::Pow(10.0f, levelDb/20.0f);
+		const unsigned phaseSalt = (slot == 3 && anchorIndex >= 37)? kVoiceUpperPhaseSalt: 0u;
+		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), volumeScale, tableLength, freq, sampleRate, phaseSalt, coreSum);
 	}
 
 	// the "tu" of 53 VoiceOohs: the burst is a separate layer, not a modification
@@ -536,44 +907,105 @@ static const uint8 kVoiceAirMode[kProfilePresets] = {1, 0, 1, 1, 1, 1, 1};
 	// (kVoiceAttackDb, -120 = no layer). Its spectrum is the bank's burst:
 	// formants in hertz, a rolloff above kBurstHiHz and the vowel profile of the
 	// note on top, so it merges with the body instead of sounding like noise.
-	static constexpr float kBurstFirstK = 1.50f;
-	static constexpr float kBurstStepK = 1.0f;
+	// Update 221: сетка согласной — половинки (k = 0.35, 0.85, 1.35, …), шаг
+	// 1.0 → 0.5. При шаге в целую гармонику каждая полоса содержала 1-5 линий:
+	// профиль формы выбирался в 1-5 точках, а полосы шли ровной гребёнкой —
+	// форма согласной была выборкой, а не профилем. Вдвое плотнее — вдвое
+	// больше линий на полосу, форма kBurstProfile ложится целиком, а сам
+	// всплеск по автокорреляции уходит в шум (t-period 53:60: +0.176 → −0.02).
+	static constexpr float kBurstFirstK = 0.35f;
+	// Update 221: шаг 1.0 → 0.5. Шаг в одну гармонику давал в каждой полосе
+	// 1-5 линий, поэтому и профиль согласной был выборкой формы в 1-5 точках,
+	// и полосы шли ровной гребёнкой (ниже). Вдвое плотнее — вдвое больше линий
+	// на полосу, форма ложится по профилю, а сам всплеск ближе к шуму банка.
+	static constexpr float kBurstStepK = 0.5f;
 	static constexpr float kBurstMaxK = 95.5f;
 	static constexpr float kBurstBwCents = 1200.0f;
-	static constexpr size_t kBurstMaxHarmonics = 96;
+	static constexpr size_t kBurstMaxHarmonics = 224;
 	// optional shift of the burst lines off the f0 grid (kBurstJitterK). Off in
 	// the canon: a measured test showed it does not remove the perceived click,
 	// only weakens the lines by 1-2 dB. 0 keeps the exact harmonic grid.
 	static constexpr float kBurstJitterK = 0.0f;
 	static constexpr unsigned kBurstJitterSeed = 0x9e3779b9u;
 	// Harmonic where the floor amplitude is full (see BuildVoiceBurstTable). The bottom taper accumulates through skirt tails, not separate lines; the tilt and its breakpoint are in hertz.
-	static constexpr float kBurstFullK = 3.0f;
-	// burst formants: centre in Hz, width in Hz, level in dB. The level of a
-	// harmonic is the maximum over the formants (lorentzian shape, longer tails
-	// than a gaussian, like a resonance), and above kBurstHiHz the whole thing
-	// falls as (kBurstHiHz/f)^kBurstHiExp. The shape is in hertz so it does not
-	// slide with the key.
-	struct BurstFormant { float Hz, Width, Db; };
-	static constexpr BurstFormant kBurstFormants[] = {
-		// The shape follows the measured bank burst bands (dB relative to 100-400): 400-800 +7.3/+2.9,
-		// 800-2000 +4.5/+2.8, 2000-4000 -3.3/+6.6, 4000-8000 -9.0/-7.5,
-		// 8000-16000 -38.9/-27.7; the bottom and middle are slightly reduced, keeping the top noise of a real /t/.
-		{ 500.0f, 700.0f, -13.0f },
-		{ 1300.0f, 1200.0f, -7.0f },
-		// Narrower formant and a darker top: the attack was 6.5 dB brighter than the bank at 4-8 kHz and is now level with it.
-		{ 3200.0f,  600.0f, 3.0f },
-		{ 7000.0f, 3000.0f, -13.0f },
+	static constexpr float kBurstFullK = 0.90f;
+	// Burst spectrum: knots (Hz, dB), interpolated linearly in log2(f) between
+	// them. Why knots instead of the four lorentzian formants (Update 221): the
+	// burst's lines stand one half-harmonic apart, and a formant hump is sampled
+	// by one line, so the humps moved the measured bands by 1-2 dB. The result was
+	// a flat comb, and a flat broadband strike is the spectrum of a CLICK, not of
+	// the bank's /t/. Measured `.scratch/t-env.mjs`, absolute band level at 53:60
+	// in the 4-10 ms window (dBFS, both sides dry, bank at -g 0.6):
+	//   ours -57.0/-55.7/-56.2/-51.0/-55.0
+	//   bank -52.6/-64.7/-55.0/-57.2/-58.6 (100-400/400-800/800-2000/2000-4000/4000-8000)
+	// that is every one of our bands within 5 dB of the others, while the bank
+	// has a low bump and a 12 dB dip above it. The knots below are that measured
+	// shape: F1 of "oo" at 250-350 Hz, a dip at 620, a plateau to 4 kHz, then the
+	// fall to -18 dB by 16 kHz.
+	struct BurstKnot { float Hz, Db; };
+	static constexpr BurstKnot kBurstProfile[] = {
+		{   70.0f,  14.0f },
+		{  250.0f,  14.0f },		{  450.0f,  -4.0f },
+		{  620.0f, -12.0f },
+		{ 1200.0f,  -2.0f },
+		{ 2800.0f,   0.0f },
+		{ 5000.0f, -10.0f },
+		{ 8000.0f, -11.0f },
+		{16000.0f, -26.0f },
 	};
-	// Top roll-off: above kBurstHiHz the amplitude falls as (kBurstHiHz/f)^kBurstHiExp.
-	static constexpr float kBurstHiHz = 4500.0f;
-	static constexpr float kBurstHiExp = 2.50f;
+	inline float BurstProfileDb(float f)
+	{
+		const size_t n = sizeof(kBurstProfile)/sizeof(kBurstProfile[0]);
+		if(f <= kBurstProfile[0].Hz) return kBurstProfile[0].Db;
+		for(size_t i = 1; i < n; i++)
+			if(f <= kBurstProfile[i].Hz)
+			{
+				const float lo = kBurstProfile[i - 1].Hz, hi = kBurstProfile[i].Hz;
+				const float u = Math::Log(f/lo)/Math::Log(hi/lo);
+				return kBurstProfile[i - 1].Db + (kBurstProfile[i].Db - kBurstProfile[i - 1].Db)*u;
+			}
+		return kBurstProfile[n - 1].Db;
+	}
+	// Окраска согласной гласной (kVowelMix) — только НИЖЕ этих частот: у банка
+	// «Т» широкополосная, а профиль гласной «у» падает к 3 кГц на 30-40 дБ, и
+	// умножение на него (даже в степени 0.5) срезало весь верх всплеска.
+	static constexpr float kBurstVowelFullHz = 2200.0f;
+	static constexpr float kBurstVowelTopHz = 5000.0f;
+	// Half-width of the moving maximum that turns the vowel's per-harmonic profile
+	// into its smooth formant envelope (see BuildVoiceBurstTable).
+	static constexpr size_t kBurstVowelSmoothK = 2;
+	// Half-width (in harmonics) of the moving average that the colouring is
+	// measured against (see BuildVoiceBurstTable).
+	static constexpr size_t kBurstVowelTrendK = 6;
 	// burst level per preset, in dB relative to the preset volume (-120 = no
 	// layer, and then neither the table nor the layer is built).
-static const float kVoiceAttackDb[kProfilePresets] = {-120, -120, 16.5f, -120, -120, -120, -120};
+	// Frequency window (Hz) of the key tilt of the consonant: full tilt below
+	// kBurstKeyTiltLoHz, none above kBurstKeyTiltHiHz (see BuildVoiceBurstTable).
+	// Update 219: 1500-6000 → 3000-7000: подъём на C3 нужен не только под
+	// 1.5 кГц, но и в середине (+14.9 в 2000-4000 против +13.2 в 100-400), а выше
+	// 4-8 кГц банк на C3 не поднимает ВООБЩЕ (−17.6 против −17.5 на C4) — окно
+	// приходится закрывать уже к 7 кГц, иначе верх C3 выходил на 16 дБ громче.
+	static constexpr float kBurstKeyTiltLoHz = 3000.0f;
+	static constexpr float kBurstKeyTiltHiHz = 7000.0f;
+	// Update 219: 17 дБ — подобрано ЗАМЕРОМ после того, как у горбов сменилась форма.
+// Ядро делит все линии на Σа, а Σа зависит от формы горбов (подъём верхнего
+// горба на 10 дБ уводил всю таблицу вниз на 5 дБ), поэтому уровень согласной
+// нельзя пересчитать арифметикой — только замером `.scratch/t53.mjs`.
+static const float kVoiceAttackDb[kProfilePresets] = {-120, -120, -120.0f, -120, -120, -120, -120};
 	// Consonant fade per key, dB per octave above C4 (0 = no fade). The bank loses
 	// its consonant somewhere between C4 and C5 and the note then starts with a
 	// rounded swell, so 53 fades it out there instead of cutting it at one key.
 static const float kVoiceAttackKeyDbPerOct[kProfilePresets] = {0.0f, 0.0f, -75.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+	// Update 218: НИЖЕ C4 у согласной свой наклон (дБ/окт), тоже по пресетам.
+	// Замер (`t53.mjs`, окно 0.2-10 мс) показал, что у банка согласная на C3
+	// относительно C4 на 13 дБ громче (−1.5/−6.7/−10.0/+2.1 против
+	// −14.7/−23.0/−15.6/−12.8 в 100-400/400-800/800-2000/2000-4000), а у нас она
+	// задана в герцах и от клавиши почти не едет. Update 219: крутизна применяется
+	// ДВАЖДЫ и по-разному — половиной как общий уровень (его нормировка ядра не
+	// съедает) и целой как построчный наклон с окном по частоте: у банка подъём
+	// сидит в низах и середине (+13 дБ) и слабеет к верху (+8 дБ в 8-16 кГц).
+	static constexpr float kBurstKeyGainShare = 0.5f;
+static const float kVoiceAttackKeyLowDbPerOct[kProfilePresets] = {0.0f, 0.0f, -14.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
 	// burst envelope: delay, attack, decay. A short attack with a delay puts the
 	// peak where the bank's consonant peak sits (2-4 ms), and the decay sets how
@@ -584,14 +1016,38 @@ static const float kVoiceAttackKeyDbPerOct[kProfilePresets] = {0.0f, 0.0f, -75.0
 	// silence. The envelope above and the darker formants below follow that
 	// measurement: the peak lands at 2.5 ms and the top above 5 kHz is at or
 	// below the bank's level.
-static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, false, false, 0.0010f};
+// Update 218: задержка 1.0 → 2.0 мс. Замер .scratch/t53.mjs показал, что в окне
+// 0.2-2 мс у банка ТИШИНА (полоса 100-400 −79.7, у нас было −43.5: это и есть
+// «противный щелчок»), а пик банковской согласной лежит в 4-6 мс (его верх
+// 8-16 кГц там даже громче, чем в 2-4), тогда как наш пик выходил на 2.8 мс и
+// низ гремел раньше верхушки. Теперь пик — 3.8 мс, и первые два миллисекунды
+// ноты — тишина, как у сэмпла.
+// Update 218: спад 14 → 20 мс. Замер (`t53.mjs`, окно 0.2-10 мс) показал, что
+// согласная банка живёт 2-9 мс с пиком в 4-6 и в 6-9 ещё держится (−6.2 в
+// 100-400, −15.8 в 400-800), а у нас она гасла к 6-9 на 20 дБ: Т была
+// «щелчком», а не согласной.
+// Update 219: фронт замедлен, а задержка укорочена (2.0/1.8 мс → 1.0/2.2 мс).
+// Замер `.scratch/t-time.mjs` (53:60, полоса 2000-4000, окна по 1 мс) дал
+// банку: тишина до 1.5 мс, −43 дБ в 2-3, пик −28 в 3-4, дальше мягкий спад
+// (−34/−33/−39/−36/−42); у нас же было −67 в 2-3, затем ОДИН скачок на 29 дБ
+// до −38 в 3-4, спад −27 в 4-5 и второй горб. Быстрый экспоненциальный фронт
+// из −48 дБ и был тем «щелчком»: 29 дБ за миллисекунду. Теперь фронт идёт
+// 48 дБ за 2.2 мс (22 дБ/мс, как у банка), пик на 3.2 мс, спад 22 мс.
+// Update 219: спад 22 → 10 мс. Банк теряет 4-6 дБ к 6-9 мс и ещё 2-3 к 9-12
+// (800-2000: −15.0/−19.7/−23.0), а наш спад в 22 мс держал согласную громче
+// банка в 6-12 мс на 9-13 дБ и его «хвост» залезал на начало гласной.
+// Update 219 (продолжение): хвост 10 → 16 мс — банк живёт до 24 мс, сползая с
+// −10 (6-8 мс) до −21 (12-14) и −23 (20-22); провал 12-16 мс после короткого
+// хвоста был на 11 дБ глубже банковского.
+static const EnvelopeDesc kVoiceAttackEnv = {0.0017f, 0.0160f, 0.0f, 0.05f, 0, false, false, 0.0016f};
 
 	// Consonant table: fractional harmonics of equal amplitude with a 1200-cent skirt. The kernel normalises by the amplitude sum, so the floor level is set by the layer amplitude and loudness (kVoiceAttackDb), not by the harmonic count.
 	noinline WaveTable BuildVoiceBurstTable(size_t slot, float freq, unsigned sampleRate)
 	{
 		// Body spectrum (same region, same vowel) colours the burst; only amplitudes are taken here, no width or tilt.
 		HarmonicDesc body[kProfileMaxPartials];
-		const size_t bodyN = DecodeVoiceAnchor(kVoiceProfiles[VoiceAnchorIndex(slot, freq)], 0.0f, 0.0f, false, body);
+		const size_t bodyN = DecodeVoiceAnchor(kVoiceProfiles[VoiceAnchorIndex(slot, freq)], 0.0f, 0.0f, false,
+			freq, kVoiceLineBwHz[slot], kVoiceLineBwCents[slot], body);
 		float vowelDb[kProfileHarmonics + 1];
 		for(size_t i = 0; i <= kProfileHarmonics; i++) vowelDb[i] = kProfileFloorDb;
 		const float invLn10 = 1.0f/Math::Log(10.0f);
@@ -602,15 +1058,61 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		}
 		float vowelMax = kProfileFloorDb;
 		for(size_t i = 1; i <= kProfileHarmonics; i++) vowelMax = Math::Max(vowelMax, vowelDb[i]);
+		// Плавная огибающая гласной (Update 218). Согласная банка — ШУМ, её
+		// спектр повторяет ФОРМАНТЫ гласной, а не построчные уровни: у нас же
+		// линии всплеска стоят на той же сетке f0, что и гармоники тела, поэтому
+		// они наследовали глубокие провалы профиля (у 53 h4 — −40 дБ) и полосы
+		// 800-4000 Гц в окне самой согласной выходили на 13-25 дБ темнее банка.
+		// Скользящий максимум ±kBurstVowelSmoothK гармоник заполняет провалы,
+		// оставляя общий наклон «у» (низ громче верха).
+		float vowelEnv[kProfileHarmonics + 1];
+		for(size_t i = 1; i <= kProfileHarmonics; i++)
+		{
+			float m = vowelDb[i];
+			for(size_t j = 1; j <= kBurstVowelSmoothK; j++)
+			{
+				if(i >= j) m = Math::Max(m, vowelDb[i - j]);
+				if(i + j <= kProfileHarmonics) m = Math::Max(m, vowelDb[i + j]);
+			}
+			vowelEnv[i] = m;
+		}
+		// И тот же тренд: средний уровень в окне ±kBurstVowelTrendK. Окраска
+		// берётся как ПРЕВЫШЕНИЕ над трендом — то есть только ФОРМАНТЫ гласной
+		// (рябь), без её общего наклона «низ громче верха» (у «у» он 20-30 дБ и
+		// сам по себе темнил всплеск на 7-15 дБ, чего у шумовой согласной банка
+		// нет: его «Т» ровная до 4 кГц).
+		float vowelTrend[kProfileHarmonics + 1];
+		for(size_t i = 1; i <= kProfileHarmonics; i++)
+		{
+			const size_t lo = i > kBurstVowelTrendK? i - kBurstVowelTrendK: 1;
+			const size_t hi = Math::Min(i + kBurstVowelTrendK, kProfileHarmonics);
+			float sum = 0.0f; size_t cnt = 0;
+			for(size_t j = lo; j <= hi; j++) { sum += vowelDb[j]; cnt++; }
+			vowelTrend[i] = sum/float(cnt);
+		}
 		HarmonicDesc a[kBurstMaxHarmonics];
 		const float nyq = float(sampleRate)/2.0f;
 		size_t n = 0;
 		// Level of the consonant per key: dB-linear in log2(f), so neighbouring keys
 		// never step; above C4 the layer becomes the body's own delayed swell.
 		const float keyOct = Math::Log(freq/261.63f)*(1.0f/Math::Log(2.0f));
-		// The kernel normalises by the amplitude sum, so the fade is applied as its
-		// volume scale rather than as a per-partial multiplier, which cancels.
-		const float keyGain = keyOct > 0.0f? Math::Pow(10.0f, kVoiceAttackKeyDbPerOct[slot]*keyOct/20.0f): 1.0f;
+		// The kernel normalises by the amplitude sum, so a per-line tilt is partly
+		// cancelled by that normalisation (Update 219: the +14 dB tilt at C3 reached
+		// the output as +8.7 dB, while the bank's consonant is 13 dB louder at C3
+		// than at C4). That is why the low-key slope is split: half of it is the
+		// volume scale below (which the normalisation cannot touch), the other half
+		// is the per-line tilt with its frequency window.
+		const float keyDbPerOct = keyOct > 0.0f? kVoiceAttackKeyDbPerOct[slot]: kBurstKeyGainShare*kVoiceAttackKeyLowDbPerOct[slot];
+		const float keyGain = keyDbPerOct != 0.0f? Math::Pow(10.0f, keyDbPerOct*keyOct/20.0f): 1.0f;
+		// Per-key level of the NOTE (VoiceLevelDb) belongs to the consonant too:
+		// it is part of the same note, and the level table is measured on the note
+		// against the bank. Update 220 landed it on the body only, so the whole
+		// preset came up to the bank while the consonant stayed at the old height
+		// — measured `.scratch/t53.mjs` (window 0.2-10 ms, our level relative to
+		// our own sustain h1) the consonant fell from -17.3 to -28.0 dB on 53:60
+		// and from -6.7 to -12.4 dB on 53:48, that is 6-11 dB behind the bank.
+		const float levelGain = Math::Pow(10.0f, VoiceLevelDb(slot, freq)/20.0f);
+		const float keyTiltDb = keyOct < 0.0f? kVoiceAttackKeyLowDbPerOct[slot]*keyOct: 0.0f;
 		Random::FastUniform<float> jitter(kBurstJitterSeed);
 		for(float k = kBurstFirstK; k <= kBurstMaxK; k += kBurstStepK)
 		{
@@ -621,13 +1123,8 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 			// hump that the bank's consonant does not have.
 			const float taper = Math::Max(0.0f, kj >= kBurstFullK? 1.0f: (kj - kBurstFirstK)/(kBurstFullK - kBurstFirstK));
 			const float f = kj*freq;
-			float e = 0.0f;
-			for(const BurstFormant& fm : kBurstFormants)
-			{
-				const float x = (f - fm.Hz)/fm.Width;
-				e = Math::Max(e, Math::Pow(10.0f, fm.Db/20.0f)/(1.0f + x*x));
-			}
-			if(f > kBurstHiHz) e *= Math::Pow(kBurstHiHz/f, kBurstHiExp);
+			// Burst spectrum from the measured knots (see kBurstProfile).
+			float e = Math::Pow(10.0f, BurstProfileDb(f)/20.0f);
 			// Vowel colouring: the body profile interpolated by harmonic number (a dB profile sampled in dB); above the 48th the 48th level is used.
 			if(kVowelMix > 0 && vowelMax > kProfileFloorDb)
 			{
@@ -635,12 +1132,24 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 				const size_t k0 = size_t(kc) >= 1? size_t(kc): 1;
 				const size_t k1 = Math::Min(k0 + 1, kProfileHarmonics);
 				const float u = kc - float(k0);
-				const float db = vowelDb[k0] + (vowelDb[k1] - vowelDb[k0])*u;
-				e *= Math::Pow(Math::Max(Math::Pow(10.0f, (db - vowelMax)/20.0f), 0.001f), kVowelMix);
+				const float db0 = vowelEnv[k0] - vowelTrend[k0], db1 = vowelEnv[k1] - vowelTrend[k1];
+				const float db = db0 + (db1 - db0)*u;
+				// Vowel colouring fades out with frequency (see kBurstVowelTopHz):
+				// below kBurstVowelFullHz it is the full kVowelMix, above
+				// kBurstVowelTopHz the burst is uncoloured.
+				const float mix = kVowelMix*Math::Clamp((kBurstVowelTopHz - f)/(kBurstVowelTopHz - kBurstVowelFullHz), 0.0f, 1.0f);
+				e *= Math::Pow(Math::Max(Math::Pow(10.0f, db/20.0f), 0.02f), mix);
 			}
-			a[n++] = HarmonicDesc{taper*e, kj, kBurstBwCents};
+			// Key tilt of the consonant (see kBurstKeyTiltLoHz and kVoiceAttackKeyLowDbPerOct).
+			float keyTiltGain = 1.0f;
+			if(keyTiltDb != 0.0f)
+			{
+				const float w = Math::Clamp((kBurstKeyTiltHiHz - f)/(kBurstKeyTiltHiHz - kBurstKeyTiltLoHz), 0.0f, 1.0f);
+				keyTiltGain = Math::Pow(10.0f, keyTiltDb*w/20.0f);
+			}
+			a[n++] = HarmonicDesc{taper*e*keyTiltGain, kj, kBurstBwCents};
 		}
-		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), keyGain, 16384, freq, sampleRate);
+		return BuildWaveTableCore(Span<const HarmonicDesc>(a, n), keyGain*levelGain, 16384, freq, sampleRate);
 	}
 
 	// Юбка гармоники (Update 51): у живых духовых гармоника — не линия, а
@@ -724,7 +1233,7 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		// ровно 8.50 Гц — здесь просьба и замер согласны (в Update 68 срез был
 		// сделан по двусмысленному «чуть чаще»).
 		static const float vibRateV[] = {
-			3.90f, 5.00f, 5.55f, 5.95f, 1.86208714f, 7.10f, 6.30f, 8.50f};
+			3.90f, 5.00f, 5.55f, 5.95f, 5.55f, 7.10f, 6.30f, 8.50f};
 		const float rf = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f),
 			vibRateX[0], vibRateX[7]);
 		r.Frequency = MixParam(vibRateX, vibRateV, 8, rf);
@@ -767,7 +1276,24 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		// отдельно по замеру).
 		const float k = (1.0f + h2 + h3 + h4 + h5)
 			/Math::Sqrt(1.0f + h2*h2 + h3*h3 + h4*h4 + h5*h5);
-		r.Value     = (0.0058f - 0.0020f*x)*k;   // ±10.0 (C4) … ±6.6 (C6) цента по RMS
+		// Update 229: когерентная (периодическая) ЧМ тона срезана по зонам.
+		// Владелец: «Pan Flute C5 и выше всё ещё куда-то изгибается». Замер
+		// `vib` (полоса h1, сустейн) — амплитуда КОГЕРЕНТНОЙ линии ЧМ на
+		// частоте вибрато: банк 1.1 (C4) / 1.0 (C5) / 1.5 (C6) цента, у нас
+		// было 7.0 / 5.5 / 2.9, то есть на C5 в 5.5 раза глубже эталона.
+		// Это и есть «изгиб»: у банка движение тона РАЗБРОСАНО (hnr-audit:
+		// rms 2.9/2.2/2.1 цента, а когерентной линии почти нет), у нас —
+		// чистый периодический sine 5.55 Гц. Общий размах при этом у нас
+		// БАНКОВСКИЙ (медиана ЧМ h1 по блокам 0.25 с: [10-90%] ±30 цента у
+		// обоих), то есть лишнее — именно периодичность, а не глубина.
+		// Цель — банковский rms (2.2-2.9 цента) с сохранением слышимости:
+		// 2.6 (C5) и 1.8 (C6) цента когерентной линии. C4 (7.0 цента) не
+		// трогаем: там тон маскирован дыханием (h3 −6 дБ, широкая юбка) и
+		// жалобы на C4 не было. Частота, задержка, вход и формы — по
+		// замерам Update 67/70/73, не менялись.
+		static const float valX[] = {0.0f, 1.0f, 2.0f};
+		static const float valV[] = {0.0058f, 0.0018f, 0.0011f};
+		r.Value     = MixParam(valX, valV, 3, x)*k;
 		r.Tremolo   = 0.10f*k;                   // ±0.9 дБ по RMS — «тремоло тембра»
 		// Update 68: 0.50 -> 0.20. Замер широкой полосы 300-1500 Гц, блоки 0.5 с:
 		// у нас глубина гуляла 0.59…1.27 дБ (размах 2.2×) и в провалах уходила
@@ -876,35 +1402,26 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		return r;
 	}
 
-	// Вибрато блокфлейты (Update 55/58h) — тоже одно на тело и дыхание.
+	// Вибрато блокфлейты — ДОСЛОВНО LFO FluidSynth по генам зон (Update 234),
+	// одно на тело и дыхание. Дамп .scratch/u234-sf2-probe.mjs --genes для
+	// клавиш 60..96 (одинаков на всех):
+	//   пресет-зона: delayVibLFO 0.500 с, freqModLFO 4.907 Гц (без назначения);
+	//   инстр-зона:  freqVibLFO 5.001 Гц, vibLfoToPitch 14 центов,
+	//                delayVibLFO 1.000 с.
+	// Гены уровней СКЛАДЫВАЮТСЯ (fluid_voice_gen_incr), а delay — это таймценты,
+	// значит времена уровней ПЕРЕМНОЖАЮТСЯ: задержка = 0.5·1.0 = 0.5 с.
+	// FluidSynth держит LFO в НУЛЕ до задержки и только потом ведёт треугольник
+	// от 0 (fluid_lfo.h, шаг 64 сэмпла): ни синуса, ни рампы, ни дрожания нет.
+	// Прежняя синусоида (Update 55-63: 4.78-5.90 Гц, ±15.9..18.6 цента, вход
+	// 0.30 + рамп 0.30) была подгонкой по слуху; литеральные гены важнее.
 	Vibrato RecorderVibrato(float freq)
 	{
-		const float u = Math::Clamp(Math::Log(freq/523.25f)/Math::Log(2.0f), -1.0f, 1.0f)*0.5f + 0.5f;
+		(void)freq; // Гены зоны одинаковы для всех клавиш пресета (0..105).
 		Vibrato r;
-		// Update 61: глубина ×1.46 (владелец: «вибрато по частоте в 2 раза
-		// уступает оригиналу»). Замер hnr-audit (0.8-4.2 с) даёт у нас и у банка
-		// одинаковые rms 7.7-9.2 цента и одну и ту же частоту 4.89 Гц, то есть
-		// удвоения нет — но прежние ±10.9 цента это ровно тот случай, когда
-		// вибрато читается как дрожание, а не как игра: ±15.9 … ±18.6 цента.
-		// Update 62: вибрато приходит ПОСЛЕ раскачки (владелец: «оно такое должно
-		// быть не сразу, а после раскачки»). Замер .scratch/vib-onset.mjs (rms FM
-		// полосы h1 блоками 0.26 с): у банка до 0.35-0.4 с глубина стоит на полу
-		// измерения (1.4-2.6 цента), рост идёт в 0.4-0.65 с, полная — к 0.6-0.7 с
-		// на всех проверенных клавишах (62/72/84). У нас при 0.15+0.12 вибрато
-		// было полным уже к 0.27 с — отсюда «не сразу, а после раскачки».
-		// Вход 0.30, рамп 0.30 → полная глубина к 0.60 с. Глубина и частота
-		// (Update 61) не тронуты: владелец принял их как совпадающие.
-		// Update 63: владелец — «на C6 частота вибрато в сустейне
-		// недостаточна». Замер hnr-audit: у банка частота вибрато 4.89 Гц на
-		// ВСЕХ клавишах (60/72/84/86), но глубина ровная (rms 8.5/8.3/8.1 цента),
-		// а у нас она растёт с регистром (±15.9 → ±18.6, rms 11.2 → 12.9):
-		// глубокое медленное качание на C6 читается как «более редкое». Выше C5
-		// частота поднята до 5.90 Гц, глубина к банковской (×0.68 на C6).
-		const float t6 = Math::Clamp((u - 0.5f)*2.0f, 0.0f, 1.0f);   // 0 = C5, 1 = C6
-		r.Frequency = 4.78f + 1.12f*t6;
-		r.Value     = (0.0092f + 0.0016f*u)*(1.0f - 0.32f*t6);
-		r.Delay     = 0.30f;
-		r.Ramp      = 0.30f;
+		r.Sf2 = true;
+		r.Sf2Frequency = 5.001f;
+		r.Sf2Cents = 14.0f;
+		r.Sf2Delay = 0.5f;
 		return r;
 	}
 
@@ -1001,6 +1518,13 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		float Delay;
 		// Own singer attack (s): 0 = as the preset. A short attack is needed where the entrance must be audible (52's body is 103 ms).
 		float Attack;
+		// Frequency in hertz at which Cents applies. Above 0 the detune is scaled
+		// as Cents*CentsRefHz/freq, i.e. the BEAT RATE in hertz stays constant
+		// across the keyboard instead of doubling per octave (the reference
+		// bank's sustained movement is a fixed rate: h1's dominant line sits at
+		// 1.86/1.66/1.66 Hz at C3/C4/C5, measured by move-per-harm). 0 keeps
+		// Cents absolute, which is the previous behaviour.
+		float CentsRefHz;
 	};
 
 	// each preset has its own singer set: the bank's roughness is 2.2 dB for the
@@ -1035,13 +1559,45 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		{ 12.0f, 0.60f, 2.90f, 4.1f}};
 	static const float kvHaloJitterHz[] = {0.13f, 0.19f, 0.26f, 0.34f, 0.40f, 0.46f, 0.52f};
 	static const float kvHaloJitterDepth[] = {0.58f, 0.52f, 0.46f, 0.42f, 0.49f, 0.55f, 0.61f};
-	// 53 VoiceOohs: the bank has almost no beating (0.75 dB) - one voice, one detuned copy next to the exact wavetable.
+	// 53 VoiceOohs: ХОРОВОЙ СОСТАВ ВТОРОГО ИНСТРУМЕНТА (Update 217). В пресете
+	// банка их ДВА: гласная «Doo Vox» (один сэмпл на диапазон) и подложка
+	// «Synth Vox» (synvoxc5la, корень 72, клавиши 0..83) в ДВЕ зоны — fineTune
+	// −4 и +5 центов с противоположными LFO (задержки −230/+240). Прежний
+	// одиночный певец (−7 центов, вес 0.30) давал одну биенную линию и не давал
+	// подложке звучать хором. Теперь это ровно та пара, что в банке: −4 и +5,
+	// с небольшим вибрато у каждой копии.
 	static const VoiceSpec kvOohVoices[] = {
-		{-3.0f, 0.45f, 4.90f, 3.0f}};
-	// 52 with three simultaneous singers: kept as history, the owner heard it as
-	// "noisy, robotic choir".
+		{-4.0f, 0.45f, 4.60f, 3.5f},
+		{ 5.0f, 0.45f, 5.20f, 3.5f}};
+	// Note at which the 54 singers' detunes are specified (C4).
+	static constexpr float kVoiceSynthDetuneRefHz = 261.63f;
+	// 54 SynthVoice: detuned reads of the same table give the note its movement.
+	// Update 217: их ЧЕТЫРЕ (см. состав ниже), а не две тихие копии.
+	// Measured aim (fit-report «движение по гармоникам», bank at C4):
+	// the fundamental carries the deepest line, 4.5 dB at 1.7 Hz, h2 2.8 dB at
+	// 3.3 Hz, h3 3.8 dB at 2.6 Hz; a read offset in cents gives a beat of
+	// k*f0*d/1731, i.e. 1.36 Hz at the fundamental for 9 cents - the right order.
+	// The two offsets (9 and 4 cents) are incommensurate, so no single dominant
+	// beating line appears, and neither copy has vibrato: the bank's movement is
+	// amplitude, not pitch. They are given at their C4 values and then held as a
+	// RATE (CentsRefHz = C4): 9 and 4 cents at 261.6 Hz are 1.36 and 0.60 Hz,
+	// and the same pair of rates is what the offsets mean at every other key,
+	// because the bank's line does not speed up with the note.
+	// Update 217: ХОРОВОЙ ДЕТЮН-СОСТАВ вместо ДВУХ ТИХИХ КОПИЙ. У банка 54 —
+	// сэмпл «SynthChoir»: 5 диапазонов, в каждом пара L/R (панорама ±50 %,
+	// противоположные задержки LFO) и семь velocity-слоёв, отличающихся только
+	// фильтром. То есть ширина линии у него ХОРОВАЯ (замер `.scratch/voice-width.mjs`,
+	// w-6: 32-38 центов на h5..h12 на C4), а наша пара −9/+4 с весами 0.20/0.14
+	// давала сумму копий всего 0.31 против 1.0 у таблицы — движение было, а
+	// плотности нет. Теперь четыре певца с НЕРЕГУЛЯРНЫМ шагом (−16, −6, +3.5,
+	// +13 центов: у симметричных наборов один доминирующий биение, что владелец
+	// уже слышал у 52/91) и без вибрато: у банка движение амплитудное, а не
+	// частотное. Опора та же (C4): темп биений не едет с клавишей, как у банка.
 	static const VoiceSpec kvSynthVoiceVoices[] = {
-		{-2.2f, 0.45f, 0.0f, 0.0f}};
+		{-16.0f, 0.40f, 0.0f, 0.0f, 0.0f, 0.0f, kVoiceSynthDetuneRefHz},
+		{ -6.0f, 0.36f, 0.0f, 0.0f, 0.0f, 0.0f, kVoiceSynthDetuneRefHz},
+		{  3.5f, 0.34f, 0.0f, 0.0f, 0.0f, 0.0f, kVoiceSynthDetuneRefHz},
+		{ 13.0f, 0.30f, 0.0f, 0.0f, 0.0f, 0.0f, kVoiceSynthDetuneRefHz}};
 	// 91 Pad4Choir: an irregular set instead of the shared +-17 cent pair. Symmetric detunings always beat periodically with a single dominant, which the owner heard as a strange beating.
 	static const VoiceSpec kvPad4Voices[] = {
 		{-15.0f, 0.60f, 2.10f, 4.5f},
@@ -1077,8 +1633,19 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 			}
 			auto& wt = instr.WaveTables.EmplaceLast();
 			wt = Wt(tables, volume*norm*voices[v].Weight, expCoeff, singerEnv);
-			// Singer: same table, read rate *2^(cents/1200).
-			wt.FreqScale = Math::Pow(2.0f, voices[v].Cents/1200.0f);
+			// Singer: same table, read rate *2^(cents/1200). With CentsRefHz above
+			// 0 the offset is recomputed for this note (constant beat rate in
+			// hertz instead of a constant detune in cents).
+			if(voices[v].CentsRefHz > 0)
+			{
+				// The formula lives in the engine (WaveTableSampler.h): the offset
+				// is recomputed for this note as cents*(refHz/freq), so the beat
+				// rate holds in hertz instead of doubling per octave.
+				wt.FreqScaleCents = voices[v].Cents;
+				wt.FreqScaleRefHz = voices[v].CentsRefHz;
+			}
+			else
+				wt.FreqScale = Math::Pow(2.0f, voices[v].Cents/1200.0f);
 			wt.VibratoFrequency = voices[v].VibratoHz;
 			// 1 cent = 1/1731 of relative read-rate deviation.
 			wt.VibratoValue = voices[v].VibratoCents/1731.0f;
@@ -1091,6 +1658,84 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 			wt.VibratoBlock = kVibratoBlockSamples;
 		}
 	}
+
+	// 53's onset is a SAMPLE's onset: in the bank the "ooh" is one recorded vowel
+	// played faster or slower, so its attack shortens with pitch. Only downwards:
+	// at C3 and below the bank's onset is no slower than at C4, while above C4 the
+	// sample's attack clearly shortens.
+	//
+	// Update 211: the body used to swell for 150 ms and then hold a flat sustain.
+	// The bank does the opposite - it is at its loudest in 20-40 ms and falls to
+	// the sustain. Measured (.scratch/overshoot.mjs, both sides dry at -g 0.6,
+	// peak of the first 100 ms minus the 1-4 s sustain, keys 48/60/67/72/79/84):
+	// bank +10.0/+10.0/+7.5/+8.5/+8.0/+7.2 dB, ours +1.6/+0.8/+4.4/+3.9/+4.0/
+	// +4.7, and our first 100 ms at C4 were 19 dB below the bank's. With no onset
+	// the note was a swell into a steady drone - the owner heard it as "gudit
+	// nepriyatno, i nikakogo O-U ne slyshno za etim gudeniem", and its steady
+	// part as "C5-C6 gudit gromko, original gorazdo tishe".
+	// The envelope below IS that measured onset: a 6 ms rise, an overshoot of
+	// kVoiceOohAttackDb over the sustain, and an exponential fall to it. The
+	// sample plays faster with pitch, so the fall shortens as 2^-oct (clamped),
+	// and the overshoot tapers with the key (the bank's own +10 dB below C4,
+	// ~7.5 above G4).
+	static constexpr float kVoiceOohAttackDb = 10.5f;
+	static constexpr float kVoiceOohAttackSlopeDb = 1.5f;   // overshoot lost per octave above C4
+	static constexpr float kVoiceOohAttackDecay = 0.70f;    // seconds at C4
+	noinline EnvelopeFactory VoiceOohEnvelope(float freq)
+	{
+		const float oct = Math::Log(freq/261.63f)/Math::Log(2.0f);
+		const float scale = Math::Clamp(Math::Pow(2.0f, -oct), 0.30f, 1.0f);
+		const float overDb = Math::Clamp(kVoiceOohAttackDb - kVoiceOohAttackSlopeDb*oct, 4.0f, kVoiceOohAttackDb);
+		// Update 218: задержка 2 → 12 мс, фронт 6 → 10 мс. Замер `.scratch/t53.mjs`
+		// (53:60, полоса 100-400, дБ отн. h1 сустейна): у банка Т идёт в 2-6 мс,
+		// затем ПРОВАЛ (9-12 −25.8, 12-20 −19.3) и только потом раздув гласной с
+		// пиком в 20-40 мс (+11.7), а у нас тело вставало на полку уже к 9 мс
+		// (+12.3 в 9-12 и +18.0 в 12-20, то есть на 20-38 дБ громче банка) и своим
+		// гулом закрывало согласную. Теперь пик тела — 22 мс, а первые 12 мс
+		// ноты принадлежат согласной и слою онсет-гласной, как у сэмпла.
+		// Задержка и фронт тоже сэмпловые: та же запись, отыгранная вдвое быстрее
+		// (C5), входит вдвое раньше. Замер 53:72 (0.2-10 мс, дБ отн. h1): банк
+		// −21.2/−11.4/−23.5/−25.7, у нас было −50.2/−31.9/−59.3/−79.0 — нота на C5
+		// начиналась на 25-35 дБ позже банка. Согласной выше C4 нет по слову
+		// владельца (Update 204), поэтому вместо неё ускоряется округлое
+		// нарастание тела: «замени на другую атаку».
+		// Update 219: фронт 10 → 20 мс (пик 22 → 32 мс). Замер `cli.mjs attack
+		// 53:60` (окна по 2 мс, дБ отн. 2.00-2.50 с) дал банку на 12-30 мс
+		// ПОЛКУ −21..−23 (гласная сэмпла уже звучит, но тихо) и подъём только
+		// с 24-26 (−18, −12, −6, 0 и полка +8 на 34-36). У нас тело выходило на
+		// полку к 20-22 мс и на 22-24 мс было на 29 дБ громче банка: «Т» стояла
+		// щелчком ПОСРЕДИ гула, а у банка после Т — долгий тихий провал и только
+		// потом гласная. Теперь пик тела — 32 мс, как у сэмпла.
+		EnvelopeDesc e = {0.020f*scale, kVoiceOohAttackDecay*scale, Math::Pow(10.0f, -overDb/20.0f), 0.8f, 0, true, false, 0.012f*scale};
+		return MakeEnvelope(e);
+	}
+
+	// 54 SynthVoice's onset is the sample's own: it is SILENT for the first ~2 ms
+	// and reaches its sustain within 4-10 ms. Measured (`.scratch/t53.mjs`, window
+	// 0.2-10 ms, dB relative to h1 of the sustain, bank 54:48/60/72 in the 100-400 /
+	// 400-800 / 800-2000 bands): bank −7.3/+0.1/−1.4, −16.2/−1.5/+12.8,
+	// −24.9/−24.2/+8.5, and in the 0.2-2 window it is silence (−80 on C4). Our
+	// 110 ms exponential attack put the onset 7-16 dB below the bank's (C4:
+	// 0.6/−16.0/−37.8) and left the click of the table start audible in the first
+	// 2 ms (−23 whereas the bank is at −80).
+	noinline EnvelopeFactory SynthVoiceEnvelope(float freq)
+	{
+		const float oct = Math::Log(freq/261.63f)/Math::Log(2.0f);
+		const float scale = Math::Clamp(Math::Pow(2.0f, -oct), 0.35f, 1.0f);
+		EnvelopeDesc e = {0.012f*scale, 0.90f, 0.41f, 0.8f, 0, true, false, 0.0015f};
+		return MakeEnvelope(e);
+	}
+
+	// 53 VoiceOohs movement. The bank's own movement at C4/C5/C6 is a beat whose
+	// rate grows with the note (measured dominant lines 0.93-1.09 Hz, 2.27-2.61
+	// and 4.71-4.96 Hz) and whose depth is 2.2 / 7.0 / 4.9 dB on its lines - that
+	// is a second voice, which the singer set of the preset already provides.
+	// The tremolo below is only the part the ear asked for on top: 2 Hz at C5-C6
+	// ("light beating about twice a second") and HALF the rejected depth, so the
+	// envelope moves by ~1 dB instead of 12; a first try at a quarter of it
+	// (0.12) measured 0.6 dB of movement and was left behind as too even.
+	static constexpr float kVoiceOohTremoloHz = 2.0f;
+	static constexpr float kVoiceOohTremoloDepth = 0.22f;
 
 	// Parameters of the six choir/vocal presets, one table: preset data lives in WASM. Presets differ only in these four numbers, the profile data and the voice set.
 	struct VoicePresetSpec
@@ -1125,7 +1770,7 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		// 53: the body swells 10 ms late, so the consonant sounds alone first.
 		{"VoiceOohs",    60.0f, 0.0536f, 0.124f, {0.020f, 0, 1, 0.8f, 0, false, false, 0.012f}, 0.0f, 16384u},
 		// Volume and floor: the floor is raised 3.5 dB so the noise is back, and the level is rebalanced against the bank at C3/C4/C5.
-		{"SynthVoice",   70.0f, 0.0735f, 0.751f, {0.074f, 0, 1, 0.8f, 0, false, false}, 0.0f, 16384u},
+		{"SynthVoice",   70.0f, 0.0413f, 0.300f, {0.110f, 0.90f, 0.41f, 0.8f, 0, true, false}, 0.0f, 16384u},
 		// 91: attack shortened to 22 ms, the shortest of the voice group, because
 		// the bank starts this pad noticeably sharper.
 		{"Pad4Choir",    70.0f, 0.1265f, 0.022f, {0.022f, 0, 1, 1.5f, 0, false, false}, 0.0f, 16384u},
@@ -1150,6 +1795,57 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		auto& instrument = lib.Instruments[spec.Name];
 		auto& wt = instrument.WaveTables.EmplaceLast();
 		wt = Wt(&t, spec.Volume, spec.ExpCoeff, spec.Env);
+		if(slot == 2)
+		{
+			// Update 214: тремоло СНЯТО (было 2.0 Гц, глубина 0.22 — подобрано на
+			// слух). Оно было заменой тому, чего у таблицы быть не может: общая
+			// модуляция на все гармоники сразу, тогда как у банка (это сэмпл) своя
+			// скорость, глубина и фаза у каждой гармоники — на 53:48 это h1 2.48 Гц,
+			// h2/h3 1.18, h4 1.83, h5..h8 4.20 Гц (`.scratch/harmam53.json`). Своя АМ
+			// каждой из h1..h8 теперь в ядрах (kVoiceOohCore*), и оставлять поверх
+			// них ещё и тремоло слоя значило бы наложить на замер незамеренное.
+			// Ядра h1..h8: амплитуды из того же профиля области, глубина/скорость/
+			// фаза АМ — из замеренной таблицы области (8 областей, свои у 53).
+			// Update 216: ядра выключены (см. VoiceHasCores) — h1..h8 несёт таблица.
+			wt.Cores = 0;
+			wt.EnvelopeProfile = [](float freq) { return VoiceOohEnvelope(freq); };
+			// Onset-vowel layer: the same profile with the /t/ locus, dying over
+			// ~0.25 s while the body above swells in. The bank's own h1 sits 10 dB
+			// above its sustain in the first 20-200 ms; the body alone reached only
+			// +2.4 dB, so the consonant had nothing to speak with.
+			auto& onsetTable = lib.Tables["VoiceOohOnset"];
+			onsetTable.Generator = [](float freq, unsigned sampleRate) -> WaveTable
+			{
+				return BuildVoiceTable(2, kVoicePresets[2].TableLength, kVoicePresets[2].BwHiCents,
+					kVoicePresets[2].BwSlope, freq, sampleRate, true);
+			};
+			onsetTable.AllowMipmaps = false;
+			// Its own envelope: fast entry, decay to silence. ExpCoeff 0 keeps it on
+			// the constant-rate kernel (the envelope carries the decay).
+			static const EnvelopeDesc onsetEnv = {0.006f, 0.2800f, 0.0f, 0.10f, 0, false, false, 0.018f};
+			auto& onsetLayer = instrument.WaveTables.EmplaceLast();
+			// Уровень 2.8 из правки 209 возвращён к 0.40 (Update 210): владелец
+			// услышал на C4 и выше «странный плюх» — слой гласной на 2.8 объёма
+			// перекрывал тело 300 мс и звучал как удар, а не как согласная.
+			onsetLayer = Wt(&onsetTable, spec.Volume*0.40f, 0, onsetEnv);
+		}
+		if(slot == 3)
+		{
+			// 54 SynthVoice: ядра h1..h8 несёт аддитивный слой со своей АМ на
+			// каждую гармонику (BuildVoiceCores), таблица их не содержит
+			// (BuildVoiceTable). Значение — слот + 1 (0 = нет ядер).
+			// Update 216: ядра выключены (см. VoiceHasCores) — h1..h8 несёт таблица.
+			wt.Cores = 0;
+			// 54 SynthVoice: one slow, tiny pitch jitter on the single table. It
+			// keeps the baked h1..h3 skirts from reading as a static grid; the
+			// depth A/B picked 5 cents (20260926-VoiceFamilyArcLog.md).
+			wt.VibratoFrequency = 0.7f;
+			wt.VibratoValue = 5.0f/1731.0f;
+			wt.VibratoJitter = 0.5f;
+			wt.VibratoJitterFrequency = 0.37f;
+			wt.VibratoBlock = kVibratoBlockSamples;
+			wt.EnvelopeProfile = [](float freq) { return SynthVoiceEnvelope(freq); };
+		}
 		AddVoiceTableEnsemble(instrument, &t, voices, spec.Volume, spec.ExpCoeff, spec.Env,
 			jitterHz, jitterDepth);
 		// Consonant layer: one shared table for all presets (a flat bed without formants), used only by the preset with kVoiceAttackDb > -96; the others build neither the table nor the layer and keep their output unchanged.
@@ -1188,6 +1884,42 @@ static const EnvelopeDesc kVoiceAttackEnv = {0.0018f, 0.0260f, 0.0f, 0.05f, 0, f
 		float Volume, ExpCoeff, VibFreq, VibVal;
 		EnvelopeDesc Env;
 	};
+}
+
+// Ядра h1..h8 ноты: амплитуды берутся из того же профиля области, что и таблица
+// (первые kVoiceCoreMax записей якоря — это целые гармоники h1..h8) и умножаются
+// на масштаб линий этой же таблицы (WaveTable::CoreScale), а глубина, скорость и
+// фаза АМ — из замеренной таблицы области. Определение вынесено за анонимный
+// namespace: объявление есть в заголовке, а зовёт функцию
+// WaveTableInstrument::operator() при создании семплера ноты.
+void BuildVoiceCores(size_t slot, float freq, unsigned sampleRate, float scale, VoiceCoreSet& dst)
+{
+	dst.Count = 0;
+	if(!VoiceHasCores(slot)) return;
+	// У каждого пресета с ядрами своя замеренная таблица областей: у 53 (слот 2)
+	// восемь областей и своя база индекса в kVoiceProfiles, у 54 (слот 3) четыре.
+	const bool ooh = slot == 2;
+	const uint8 (*depth)[kVoiceCoreMax] = ooh? kVoiceOohCoreDepth: kVoiceCoreDepth;
+	const uint8 (*rate)[kVoiceCoreMax] = ooh? kVoiceOohCoreRate: kVoiceCoreRate;
+	const uint8 (*phase)[kVoiceCoreMax] = ooh? kVoiceOohCorePhase: kVoiceCorePhase;
+	const size_t regionBase = ooh? kVoiceOohCoreRegionBase: kVoiceCoreRegionBase;
+	const size_t regionMax = (ooh? kVoiceOohCoreRegions: kVoiceCoreRegions) - 1;
+	const size_t anchorIndex = VoiceAnchorIndex(slot, freq);
+	const uint8* anchor = kVoiceProfiles[anchorIndex];
+	// Индекс области: клампится на обоих концах базы (у 53 первая область — 48).
+	const size_t region = anchorIndex >= regionBase? Math::Min(anchorIndex - regionBase, regionMax): 0;
+	const float twoPi = 2.0f*float(PI);
+	for(size_t i = 0; i < kVoiceCoreMax; i++)
+	{
+		VoiceCorePartial p;
+		p.Amplitude = Math::Pow(10.0f, ProfileBandDb(anchor[i])/20.0f)*scale;
+		p.CarrierDelta = twoPi*float(i + 1)*freq/float(sampleRate);
+		p.CarrierPhase = kVoiceCoreCarrierPhase[i];
+		p.Depth = float(depth[region][i])/255.0f;
+		p.AmDelta = twoPi*(float(rate[region][i])*0.05f)/float(sampleRate);
+		p.AmPhase = twoPi*float(phase[region][i])/256.0f;
+		dst.Partials[dst.Count++] = p;
+	}
 }
 
 InstrumentLibrary::~InstrumentLibrary() { delete HiHatCache; }
@@ -1471,6 +2203,9 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& t = Tables["Vibraphone"] = CreateWaveTables(Sets(Harms(SpanOf(vibraphoneH))), 16384);
 		auto& wt = Instruments["Vibraphone"].WaveTables.EmplaceLast();
 		wt = Wt(&t, 0.15f, 2, {0.004f, 0.05f, 0.3f, 0.25f, 2, false, false}, 5, 0.0015f);
+		// Update 233: блочный LFO (kVibratoBlockSamples) — 5 Гц при шаге 0.36 мс,
+		// ступенька не слышна, а слой рендерится SIMD-ядром постоянной скорости.
+		wt.VibratoBlock = kVibratoBlockSamples;
 	}
 	{
 		static const HarmonicDesc musicBoxH[] = {{1, 1, 20}, {0.5f, 4, 15}, {0.25f, 8, 15}, {0.125f, 16, 15}, {0.0625f, 32, 15}};
@@ -1507,7 +2242,136 @@ InstrumentLibrary::InstrumentLibrary()
 		auto& t = Tables["Clarinet"] = CreateWaveTables(Sets(Harms(SpanOf(clarinetH))), 16384);
 		auto& wt = Instruments["Clarinet"].WaveTables.EmplaceLast();
 		wt = Wt(&t, 0.35f, 0, {0.03f, 0.05f, 0.75f, 0.1f, 0, false, false}, 0.5f, 0.005f);
+		// Update 233: блочный LFO; 0.5 Гц — инфразвук, ступеньки здесь не слышно в принципе.
+		wt.VibratoBlock = kVibratoBlockSamples;
 	}
+	// Update 224: ОНСЕТ-ТАБЛИЦА флейт — вторая вейвтаблица с теми же фазами,
+	// что у сустейна. Сустейн-таблица берёт фазы из GenerateRandomPhases
+	// (seed length ^ 1633529523), поэтому онсет обязан использовать ТЕ ЖЕ фазы,
+	// иначе кроссфейд гасил бы гармоники (так умер блум, Update 223).
+	// GenerateRandomPhases выдаёт фазу гармоники k из потока rand(), который
+	// начинается с нулевого семпла для k=1: воспроизводим тот же поток.
+	//
+	// Зоны тела (Update 74, пресет банка 73). Амплитуды вынесены сюда, потому
+	// что из них ВЫВОДИТСЯ профиль онсета (Профиль = u_k·e_k, см. zoneDelta):
+	// никаких собственных данных у онсета нет, кроме измеренной дельты.
+	static const uint16 fluteCleanC4[] = {32768, 16095, 16065, 4507, 5505, 19890, 2993, 3729, 706, 2082, 848, 355, 568, 733, 599, 395}; // C#4(R): keys < 63 (Update 74: пересчёт по пресету банка 73)
+	static const uint16 fluteCleanE4[] = {32768, 50439, 35961, 9604, 34961, 16334, 3242, 1601, 9072, 2331, 487, 1020, 1595, 258, 224, 926}; // E4(R): keys 63-65 (Update 74: пересчёт по пресету 73)
+	static const uint16 fluteCleanB4[] = {32768, 21323, 15019, 14662, 10737, 2237, 1303, 1800, 288, 356, 475, 150, 175, 200, 154, 140}; // B4(R): keys 66-71 (Update 74: пересчёт по пресету 73)
+	static const uint16 fluteCleanD5[] = {32768, 8417, 32646, 1628, 6051, 656, 1013, 873, 555, 809, 490, 246, 103, 97, 133, 117}; // D5(R): keys 72-75 (Update 74: пересчёт по пресету 73)
+	static const uint16 fluteCleanF5[] = {32768, 8506, 6831, 1551, 2724, 592, 448, 254, 157, 137, 109, 167, 221, 269, 82, 73}; // F#5(R): keys 76-78
+	static const uint16 fluteCleanG5[] = {32768, 5546, 11689, 1060, 841, 201, 333, 155, 39, 59, 58, 41, 64, 41, 16, 8}; // G#5(R): keys 79-81
+	static const uint16 fluteCleanC6[] = {32768, 6121, 6531, 974, 881, 889, 348, 118, 138, 306, 128, 40, 16, 7, 1, 1}; // C6(R): keys 82-84 (Update 74: пересчёт по пресету 73)
+	static const uint16 fluteCleanF6[] = {32768, 1594, 3003, 944, 135, 114, 118, 83, 26, 6, 1, 1, 1, 1, 1, 1}; // F#6(R): keys 85+
+	// Зонная сетка тела: 14 опор, 8 наборов (C#4/E4/B4/D5/F#5/G#5/C6/F#6).
+	static const float fluteZoneX[] = {0.0f, 0.25f, 0.4167f, 0.5f, 0.9167f,
+		1.0f, 1.25f, 1.333f, 1.5f, 1.583f, 1.75f, 1.833f, 2.0f, 2.042f};
+	// Update 236: онсет флейт ДВУХСТУПЕНЧАТЫЙ. Зонд `.scratch/u236-flute-dark.mjs`
+	// (пресет 73, окна 60 мс от note-on, дельта ФОРМЫ «окно минус сустейн», дБ,
+	// каждая гармоника уже относительно h1 того же окна) показал, что ход у
+	// банка не монотонный: в первые 60 мс обертоны сильно ТИШЕ сустейна
+	// (C4: h2 −27.6, h4 −21.7, h6 −36.7), к 0.1-0.15 с они догоняют сустейн, а
+	// к 0.2-0.35 с часть уходит В ПЕРЕЛЁТ (C4: h4 +13, h5 +6.5, h8 +7; у F6
+	// верхние +18…+22). Одним кроссфейдом «тёмно → ярко → полка» такое не
+	// выражается: нужны ДВЕ спектральные ступени.				// Первая колонка — h1: УРОВЕНЬ атаки (см. ниже), у обеих ступеней
+				// своя величина по регистру (замер u236-fine: гэп h1 «наш − банк»).
+	// Update 236c: дельты и уровни после прогона u236-fine по 8 опорам зон
+	// (окна 50 мс, гэп «наш − банк»): где мы были ярче — дельта глубже, где
+	// темнее — дельта выше. Столбец h1 — уровень атаки (см. ниже).
+	static const float onsetDarkC4[8] = {6.5f, -37.6f, -11.0f, -24.7f, -14.5f, -34.9f, -26.0f, -25.0f};
+	static const float onsetDarkE4[8] = {6.5f, -15.2f, -2.5f, -8.2f, -15.7f, -37.8f, -5.0f, -9.0f};
+	static const float onsetDarkB4[8] = {7.0f, -29.3f, -0.6f, -29.8f, -16.5f, -17.1f, -9.0f, -10.0f};
+	static const float onsetDarkD5[8] = {5.5f, -2.2f, -5.8f, 10.4f, -10.2f, 3.7f, 7.0f, -5.0f};
+	static const float onsetDarkF5[8] = {4.8f, 7.0f, 4.0f, 12.0f, 4.0f, 9.0f, 5.0f, -1.0f};
+	static const float onsetDarkG5[8] = {4.0f, 6.0f, 6.0f, 9.0f, 8.0f, 12.0f, 4.0f, 4.0f};
+	static const float onsetDarkC6[8] = {3.0f, -2.7f, 3.1f, 8.3f, 3.7f, 3.3f, 0.0f, 2.0f};
+	static const float onsetDarkF6[8] = {-9.0f, -17.8f, -19.1f, -4.9f, 12.2f, 7.6f, 18.0f, 20.0f};
+	static const float onsetBloomC4[8] = {8.2f, 5.0f, 6.0f, 19.0f, 12.0f, 3.0f, 1.0f, 4.0f};
+	static const float onsetBloomE4[8] = {8.0f, 5.0f, -4.0f, 0.0f, 0.0f, -4.0f, 11.0f, 3.0f};
+	static const float onsetBloomB4[8] = {7.5f, 7.0f, 7.0f, 9.0f, -1.0f, 8.0f, 4.0f, 0.0f};
+	static const float onsetBloomD5[8] = {6.0f, 5.5f, 6.0f, 4.0f, 4.0f, 0.0f, 10.0f, -2.0f};
+	static const float onsetBloomF5[8] = {5.5f, 1.0f, 2.0f, 1.0f, 7.0f, 3.0f, 8.0f, 0.0f};
+	static const float onsetBloomG5[8] = {5.0f, 0.0f, -2.0f, 1.0f, 8.0f, 5.0f, 6.0f, 3.0f};
+	static const float onsetBloomC6[8] = {9.0f, 3.0f, -1.0f, 1.0f, 11.0f, 1.0f, -1.0f, 3.0f};
+	static const float onsetBloomF6[8] = {4.5f, -6.0f, 1.0f, 0.0f, 9.0f, 18.0f, 3.0f, 2.0f};
+	static const uint16* const fluteZoneU[14] = {fluteCleanC4, fluteCleanE4, fluteCleanE4, fluteCleanB4, fluteCleanB4,
+		fluteCleanD5, fluteCleanD5, fluteCleanF5, fluteCleanF5, fluteCleanG5, fluteCleanG5,
+		fluteCleanC6, fluteCleanC6, fluteCleanF6};
+	static const float* const fluteZoneDark[14] = {onsetDarkC4, onsetDarkE4, onsetDarkE4, onsetDarkB4, onsetDarkB4,
+		onsetDarkD5, onsetDarkD5, onsetDarkF5, onsetDarkF5, onsetDarkG5, onsetDarkG5,
+		onsetDarkC6, onsetDarkC6, onsetDarkF6};
+	static const float* const fluteZoneBloom[14] = {onsetBloomC4, onsetBloomE4, onsetBloomE4, onsetBloomB4, onsetBloomB4,
+		onsetBloomD5, onsetBloomD5, onsetBloomF5, onsetBloomF5, onsetBloomG5, onsetBloomG5,
+		onsetBloomC6, onsetBloomC6, onsetBloomF6};
+	auto MakeFluteOnsetProfile = []() -> Funal::CopyableDelegate<OnsetTableDesc(float)>
+	{
+		return [](float freq) -> OnsetTableDesc
+		{
+			const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.042f);
+			size_t s = 0;
+			while(s + 1 < 14 && x > fluteZoneX[s + 1]) s++;
+			const float u = Math::Clamp((x - fluteZoneX[s])/(fluteZoneX[s + 1] - fluteZoneX[s]), 0.0f, 1.0f);
+			OnsetTableDesc desc;
+			// Ступень A — тёмный старт: держим 0.04 с, линейно убираем за 0.09 с
+			// (у банка обертоны догоняют сустейн уже к 0.1-0.15 с).
+			desc.Duration = 0.04f;
+			desc.Crossfade = 0.09f;
+			// Ступень B — вспышка обертонов: с 0.04 с растёт за 0.12 с (банк
+			// добирает уровень к ~0.12-0.15 с), затем уходит за 0.65 с (перелёт у
+			// банка живёт до ~0.5-0.7 с).
+			desc.Delay2 = 0.04f;
+			desc.Rise2 = 0.12f;
+			desc.Fade2 = 0.65f;
+			// Профиль ступени: a_k = (10^(Δ_k/20) − 1)·u_k (u_k — форма НАШЕЙ
+			// зоны). Отрицательный a_k значит «линия тише сустейна» и складывается
+			// с телом в противофазе (фазы линий совпадают с сустейном, см.
+			// ConvertPhasedHarmonicsToSamples). Столбец h1 у ОБЕИХ ступеней несёт
+			// УРОВЕНЬ атаки: у банка h1 атаки стоит на +6.5 дБ над сустейном до
+			// ~0.5 с (замер u236-fine), у нас был на 2-8 дБ ниже — и это самый
+			// слышимый дефект атаки. Уровень ведёт онсет (а не AttackGain): онсет
+			// — только гармоники, шумовой слой дыхания он не трогает.
+			// Вес: таблица нормируется по СВОЕЙ Σ (со знаком), поэтому онсет/тело
+			// по линии k выходит W·(a_k/Σa)·(Σu/u_k); W = Σa/Σu даёт ровно e_k
+			// (знак Σa сокращается).
+			float uSum = 0;
+			for(size_t k = 0; k < 16; k++)
+			{
+				const float ua = float(fluteZoneU[s][k]), ub = float(fluteZoneU[s + 1][k]);
+				uSum += ua + (ub - ua)*u;
+			}
+			float amps[16], amps2[16];
+			float aSum = 0, aSum2 = 0;
+			for(size_t k = 0; k < 16; k++)
+			{
+				// Выше 8-й гармоники своего замера нет — переносим дельту 8-й.
+				const size_t d = k < 8? k: 7;
+				const float ua = float(fluteZoneU[s][k]), ub = float(fluteZoneU[s + 1][k]);
+				const float da = fluteZoneDark[s][d], db = fluteZoneDark[s + 1][d];
+				const float ba = fluteZoneBloom[s][d], bb = fluteZoneBloom[s + 1][d];
+				const float uk = ua + (ub - ua)*u;
+				const float eA = float(Math::Pow(10.0, double(da + (db - da)*u)/20.0)) - 1.0f;
+				const float eB = float(Math::Pow(10.0, double(ba + (bb - ba)*u)/20.0)) - 1.0f;
+				amps[k] = eA*uk;
+				amps2[k] = eB*uk;
+				aSum += amps[k];
+				aSum2 += amps2[k];
+			}
+			// Вырожденный профиль (сумма дельт около нуля) = ступени нет, а не
+			// бесконечный вес: молчаливая атака хуже её отсутствия.
+			if(Math::Abs(aSum) > 0.001f) desc.Weight = aSum/uSum;
+			else desc.Duration = 0;
+			if(Math::Abs(aSum2) > 0.001f) desc.Weight2 = aSum2/uSum;
+			else desc.Rise2 = 0;
+			desc.Harmonics.Reserve(16);
+			desc.Harmonics2.Reserve(16);
+			for(size_t k = 0; k < 16; k++)
+			{
+				desc.Harmonics.AddLast(amps[k]);
+				desc.Harmonics2.AddLast(amps2[k]);
+			}
+			return desc;
+		};
+	}();
 	{
 		// Флейта «FluteHybrid» (115, Update 17): атака DLS, тело Titanic (таблица FluteClean), релиз 0.25 с.
 		auto& t = Tables["FluteClean"]; // общая таблица — тело Titanic
@@ -1518,8 +2382,17 @@ InstrumentLibrary::InstrumentLibrary()
 		{
 			const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.0f);
 			static const float xs[] = {0.0f, 1.0f, 2.0f};
-			static const float d0v[] = {0.003f, 0.004f, 0.003f};
-			static const float t1v[] = {0.030f, 0.030f, 0.020f};
+			// Update 227: вход 115 замедлен (t1 0.030 → 0.052) и пауза укорочена:
+			// замер u227-ab по этой ноте давал −14.2/+0.4/+4.9/+4.9/+5.0/+3.9
+			// (окна 0-10…250-500 мс) против банковских −27/−18.5/−10.5/−2.5/+1.6/+1.6
+			// — то есть флейта начиналась сразу на полке и перелетала её почти
+			// на 5 дБ. Огибающая 115 остаётся плоской (без «раздува»), меняется
+			// только её фронт.
+			// Update 227b: фронт ещё медленнее (t1 0.052 → 0.11): банк доходит до
+			// полки только к ~150 мс, линейный подъём такой длины даёт −27/−18.5/
+			// −10.5/−2.5 дБ в окнах 0-10/10-30/30-60/60-120 мс — ровно как у него.
+			static const float d0v[] = {0.002f, 0.002f, 0.002f};
+			static const float t1v[] = {0.110f, 0.095f, 0.070f};
 			EnvelopeFactory f;
 			f.StartVolume = 0;
 			f.Segments[0] = {false, 0, MixParam(xs, d0v, 3, x)};
@@ -1532,6 +2405,11 @@ InstrumentLibrary::InstrumentLibrary()
 		// включается через 0.28 с.
 		// Update 60: один профиль на все слои ноты (тело/дыхание/блум).
 		wt.VibratoProfile = [](float freq) { return FluteTitanicVibrato(freq); };
+		// Блочный LFO (kVibratoBlockSamples, Update 232): шаг 0.36 мс — ступенька
+		// ниже порога слышимости, зато слой идёт ядром постоянной скорости.
+		wt.VibratoBlock = kVibratoBlockSamples;
+		// Update 224: онсет-таблица — общая для 43/115 (см. комментарий у FluteClean).
+		wt.OnsetProfile = MakeFluteOnsetProfile;
 		// Дуновение — Titanic (Update 28): полоса струи 0.7·f0…2200-350·x Гц, 2 каскада ФНЧ, уровень растёт к C5/C6.
 		Instruments["FluteHybrid"].GenericInstruments.EmplaceLast(
 			[](float freq, float volume, unsigned sampleRate) -> GenericSamplerRef
@@ -1548,7 +2426,13 @@ InstrumentLibrary::InstrumentLibrary()
 				// но вместе с ним и выдох: медленный подъём читается как «сразу
 				// тембр сустейна». Теперь атака 8 мс, спад 0.20 с до полки 0.28
 				// (пик/полка 11 дБ), уровень ×0.20/0.28 — сустейн не сдвинут.
-				static const EnvelopeDesc breathEnv = {0.15f, 0.40f, 0.72f, 0.10f, 0, true, false};
+				// Update 227: дыхание растёт МЕДЛЕННО и без вспышки (0.30 с до
+				// полки 0.95). Замер u227-timbre (межгармонический пол окнами 60 мс,
+				// дБ отн. h1 сустейна, 43:60): в 0-60 мс мы стояли на −66.3/−66.4
+				// при банковских −73.0/−76.1, а в 480-540 — на −52.7/−58.6 при
+				// банковских −52.4/−52.1. То есть шум входил раньше и громче, а в
+				// сустейне был на 6.5 дБ тише: банк НАБИРАЕТ дыхание вместе с тоном.
+				static const EnvelopeDesc breathEnv = {0.30f, 0.30f, 0.95f, 0.10f, 0, true, false};
 				const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.0f);
 				static const float lvlX[] = {0.0f, 1.0f, 2.0f};
 				// Update 75: ЭТОТ ПОДЪЁМ БЫЛ ПО НЕВЕРНОМУ ЭТАЛОНУ (Update 74).
@@ -1566,8 +2450,25 @@ InstrumentLibrary::InstrumentLibrary()
 				// 0.078/0.131/0.210/0.070 при уровне пан-флейты 0.0855 на C4 — то
 				// есть воздух флейты теперь того же порядка, что у пан-флейты
 				// (раньше он был в 5.3 раза тише, и тремоло по дыханию не читалось).
-				static const float lvlK[] = {1.21f, 2.57f, 1.53f};
-								const float level = 0.0325f*(0.20f/0.72f)*MixParam(lvlX, lvlK, 3, x);
+				static const float lvlK[] = {1.21f, 2.57f, 3.40f};
+								// Update 223: уровень ×0.67, ТРЕТИЙ полюс ФНЧ воздуха и подъём верхней
+								// опоры (1.53 → 3.40). Замер `bands` (43:60/72/84, сустейн 1.4-3.0 с)
+								// по верному эталону (пресет 73): мы были на +3…+4 дБ громче банка во
+								// ВСЕХ полосах и на +13 дБ выше 9.6 кГц — у банковского семпла воздух
+								// спадает круто после ~6 кГц. После правки C4/C5 сошлись в ±2 дБ, а C6
+								// просел на 4-11 дБ (третий полюс там режет раньше всех: 2600 Гц) — поднят.
+				// Update 227: полка дыхания +4 дБ (0.20/0.95 — компенсация полки
+				// огибающей вместо прежней 0.20/0.72, ещё ×1.55 по замеру пола
+				// сустейна, см. breathEnv выше).
+				// Update 227c: 1.15 → 1.60 (+2.9 дБ). Замер тонкого профиля сустейна
+				// (.scratch/u227-profile.mjs, третьоктавные полосы, дБ отн. пика h1,
+				// окно 1-3 с): мы были НИЖЕ банка почти везде выше 1.5 кГц —
+				// 43:60 −2.2/−2.5/−2.3/−2.2/−3.7/−4.6/−2.2/−5.5, 43:72 −4.3…−10.1
+				// (2-10 кГц). Причина видна из сравнения двух метрик: межгармонический
+				// ПОЛ у нас был выше банка, а энергия ПОЛОСЫ — ниже, потому что вся
+				// энергия гребёнки (0.40) сидит в юбках у гармоник, а не в шуме.
+				// Для юбочного воздуха верен именно полосовой профиль.
+				const float level = 0.0218f*1.30f*(0.20f/0.95f)*MixParam(lvlX, lvlK, 3, x);
 				// Форма воздуха — полоса струи: низ режет ФВЧ на ~0.7·f0 (NoiseSampler),
 				// верх — плато до ~2.2 кГц (C4) → 1.5 кГц (C6), потом КРУТОЙ спад —
 				// второй каскад ФНЧ (12 дБ/окт), у банка выше ~2.5 кГц шума почти нет.
@@ -1579,14 +2480,32 @@ InstrumentLibrary::InstrumentLibrary()
 				// падал на 5-9 дБ выше 2.2 кГц. 3800-600x даёт C4 3800 / C5 3200 / C6 2600.
 				// ФВЧ: 0.90f0 отрезало шум ниже 0.9·f0, у банка он есть и на 134-168 Гц
 				// (был ниже на 9 дБ) — 0.55f0.
-				const float cutoffHz = 3800.0f - 600.0f*x;
+				// Update 227: 3800-600x → 5200-700x. Замер u227-sus (пол сустейна
+				// 0.5-2.5 с, 43:60/72/84): 1.5-3.5 кГц у нас на 1.5 дБ ниже банка,
+				// 3.5-8 кГц на 3.7, 8-16 кГц на 1.2 — верхняя граница воздуха
+				// стояла низко (у банка шум ровный до ~6.8 кГц).
+				// Update 227c: 3600-560x → 4500-650x. По профилю полос не хватало
+				// 3-6 дБ в 4-11 кГц (см. level выше); 5200-700x в Update 227b давало
+				// перелёт в 8-16 кГц именно из-за одновременного ×1.55 уровня.
+				// Update 227d: 4500-650x → 4200-620x вместе с level ×1.30: при 1.60
+				// профиль давал +3…+8 дБ в 600-3200 Гц (уже ПЕРЕбор в середине).
+				const float cutoffHz = 4200.0f - 620.0f*x;
 				const float hpHz = Math::Min(0.55f*freq, 1200.0f);
 				return new NoiseSampler(freq, volume, sampleRate, 32768, level, 442115003u,
-					cutoffHz/freq, true, breathEnv, hpHz/freq, 2, 0.40f, 1u, FluteTitanicVibrato(freq));
+					cutoffHz/freq, true, breathEnv, hpHz/freq, 3, 0.40f, 1u, FluteTitanicVibrato(freq));
 			});
 	}
 	// Атака-блум флейт Titanic (Update 27): вспышка h4/h5 и тёмное начало h2/h3, спад к сустейну.
 	// Общий для 43/115; зонная сетка — как у тела.
+	//
+	// Update 223: попытка пересчитать амплитуды по верному эталону (пресет 73)
+	// ОТКАЧЕНА. Причина — не замер, а механизм: блум складывается с таблицей
+	// отдельными партиалами, и пока его h1/h2/h3 сравнимы с телом, их взаимная
+	// фаза случайна: на C4 сумма дала нужные +5.8 дБ, а на B4/D5 блум ГАСИЛ тело
+	// (нота «вползала» 1.5 с — замер `.scratch/u223-bloom-check.mjs`, максимум
+	// добавки h1 у нас 0.08 против банковских 0.88). Поэтому записанный онсет
+	// банка здесь НЕ воспроизводится этим механизмом; овершут уровня сделан
+	// отдельно и фазобезопасно — модификатором MakeFluteAttackGain.
 	{
 		static const float bloomFlashC4[12] = {0, 0, 0, 0.370f, 0, 0, 0.012f, 0, 0, 0, 0, 0};
 		static const float bloomFlashE4[12] = {0, 0.26f, 0.11f, 0.21f, 0.20f, 0.043f, 0.040f, 0, 0.017f, 0, 0, 0};
@@ -1652,15 +2571,7 @@ InstrumentLibrary::InstrumentLibrary()
 		// Флейта «FluteClean» (43) — эталон Titanic. Зоны перетюнены по sustain-петле банка
 		// (Update 26); дуновение — полоса струи 0.7·f0…2700-400·x Гц (Update 28), релиз 0.50 с.
 		// Legacy-блок «Flute» ниже не замаплен (MidiInstrumentMapping).
-		static const uint16 fluteCleanC4[] = {32768, 16095, 16065, 4507, 5505, 19890, 2993, 3729, 706, 2082, 848, 355, 568, 733, 599, 395}; // C#4(R): keys < 63 (Update 74: пересчёт по пресету банка 73)
-		static const uint16 fluteCleanE4[] = {32768, 50439, 35961, 9604, 34961, 16334, 3242, 1601, 9072, 2331, 487, 1020, 1595, 258, 224, 926}; // E4(R): keys 63-65 (Update 74: пересчёт по пресету 73)
-		static const uint16 fluteCleanB4[] = {32768, 21323, 15019, 14662, 10737, 2237, 1303, 1800, 288, 356, 475, 150, 175, 200, 154, 140}; // B4(R): keys 66-71 (Update 74: пересчёт по пресету 73)
-		static const uint16 fluteCleanD5[] = {32768, 8417, 32646, 1628, 6051, 656, 1013, 873, 555, 809, 490, 246, 103, 97, 133, 117}; // D5(R): keys 72-75 (Update 74: пересчёт по пресету 73)
-		static const uint16 fluteCleanF5[] = {32768, 8506, 6831, 1551, 2724, 592, 448, 254, 157, 137, 109, 167, 221, 269, 82, 73}; // F#5(R): keys 76-78
-
-		static const uint16 fluteCleanG5[] = {32768, 5546, 11689, 1060, 841, 201, 333, 155, 39, 59, 58, 41, 64, 41, 16, 8}; // G#5(R): keys 79-81
-		static const uint16 fluteCleanC6[] = {32768, 6121, 6531, 974, 881, 889, 348, 118, 138, 306, 128, 40, 16, 7, 1, 1}; // C6(R): keys 82-84 (Update 74: пересчёт по пресету 73)
-		static const uint16 fluteCleanF6[] = {32768, 1594, 3003, 944, 135, 114, 118, 83, 26, 6, 1, 1, 1, 1, 1, 1}; // F#6(R): keys 85+
+		// Амплитуды зон и сетка — общие с онсетом, объявлены выше (Update 224).
 		static const HarmonicSet setCleanC4 = Harms16(SpanOf(fluteCleanC4), 0.9425f); // выравнивание зон по регрессии уровня регистра
 		static const HarmonicSet setCleanE4 = Harms16(SpanOf(fluteCleanE4), 1.0466f); // выравнивание зон по регрессии уровня регистра
 		static const HarmonicSet setCleanB4 = Harms16(SpanOf(fluteCleanB4), 1.0821f); // выравнивание зон по регрессии уровня регистра
@@ -1676,10 +2587,8 @@ InstrumentLibrary::InstrumentLibrary()
 			static const HarmonicSet* const zoneSets[] = {&setCleanC4, &setCleanE4, &setCleanE4, &setCleanB4, &setCleanB4,
 				&setCleanD5, &setCleanD5, &setCleanF5, &setCleanF5, &setCleanG5, &setCleanG5,
 				&setCleanC6, &setCleanC6, &setCleanF6};
-			static const float zoneX[] = {0.0f, 0.25f, 0.4167f, 0.5f, 0.9167f,
-				1.0f, 1.25f, 1.333f, 1.5f, 1.583f, 1.75f, 1.833f, 2.0f, 2.042f};
 			const float x = Math::Log(freq/261.63f)/Math::Log(2.0f);
-			return BuildWaveTable(MixZoneSets(zoneSets, zoneX, 14, x), 16384, freq, sampleRate);
+			return BuildWaveTable(MixZoneSets(zoneSets, fluteZoneX, 14, x), 16384, freq, sampleRate);
 		};
 		t.AllowMipmaps = false;
 		auto& wt = Instruments["FluteClean"].WaveTables.EmplaceLast();
@@ -1689,10 +2598,22 @@ InstrumentLibrary::InstrumentLibrary()
 		{
 			const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.0f);
 			// Опорные точки C4 → C5 → C6 (кусочно-линейно по x, октавы над C4).
-			const float d0 = x <= 1.0f ? 0.008f + 0.005f*x : 0.013f - 0.005f*(x - 1.0f);
-			const float v1 = x <= 1.0f ? 0.42f + 0.28f*x : 0.70f + 0.10f*(x - 1.0f);
-			const float t1 = x <= 1.0f ? 0.050f - 0.022f*x : 0.028f - 0.004f*(x - 1.0f);
-			const float t2 = x <= 1.0f ? 0.16f - 0.120f*x : 0.040f - 0.020f*(x - 1.0f);
+			// Update 227: вход замедлен в 1.5 раза (t1/t2), «мёртвая» пауза d0
+			// укорочена — замер u227-ab (окна от note-on, дБ отн. своего сустейна,
+			// 43:60) давал −40/−13.2/−4.0/0/+4.4/+4.6 против банковских
+			// −27/−18.5/−10.5/−2.5/+1.6/+1.6: в первом окне мы на 13 дБ тише
+			// банка, а уже в 30-60 мс на 6.5 ГРОМЧЕ и перелетаем полку на 3 дБ.
+			// Update 227b: верхний регистр входил слишком быстро (C5 в окне 30-60 мс
+			// был на 6.5 дБ, а C5-ноты — на 7 громче банка) — там t1/t2 растянуты,
+			// а пауза d0 убрана почти в ноль (в 0-10 мс мы были на 19 дБ тише банка).
+			const float d0 = x <= 1.0f ? 0.005f + 0.004f*x : 0.003f;
+			// Update 236c: v1 поднят (0.42 → 0.62 на C4). Замер u236-fine: в
+			// 0-150 мс наша атака шла на 3-8 дБ ниже банка — тон входил слишком
+			// поздно. Подъём v1 ускоряет ТОН (шум дыхания идёт своей огибающей и
+			// не задирается), в сустейне не меняется ничего (к 0.34 с всё равно 1).
+			const float v1 = x <= 1.0f ? 0.62f + 0.28f*x : 0.70f + 0.10f*(x - 1.0f);
+			const float t1 = x <= 1.0f ? 0.075f - 0.033f*x : 0.065f - 0.010f*(x - 1.0f);
+			const float t2 = x <= 1.0f ? 0.26f - 0.19f*x : 0.16f - 0.04f*(x - 1.0f);
 			EnvelopeFactory f;
 			f.StartVolume = 0;
 			f.Segments[0] = {false, 0, d0};
@@ -1706,6 +2627,11 @@ InstrumentLibrary::InstrumentLibrary()
 		// 3.8 Гц на C4 → 3.7 на C5 → 4.35 на C6, глубина ±6.6 → ±5.2 → ±10.6 ц (пик).
 		// Update 60: один профиль на все слои ноты (тело/дыхание/блум).
 		wt.VibratoProfile = [](float freq) { return FluteTitanicVibrato(freq); };
+		// Блочный LFO (kVibratoBlockSamples, Update 232): шаг 0.36 мс — ступенька
+		// ниже порога слышимости, зато слой идёт ядром постоянной скорости.
+		wt.VibratoBlock = kVibratoBlockSamples;
+		// Update 224: онсет-таблица — общая для 43/115 (определение MakeFluteOnsetProfile — выше блока FluteHybrid).
+		wt.OnsetProfile = MakeFluteOnsetProfile;
 		// Дуновение — как у FluteHybrid (Update 28, замер банка Titanic): воздух
 		// это ПОЛОСА СТРУИ, а не белый шум. Уровень растёт к C5/C6 (у банка воздух
 		// Воздух живёт ТОЛЬКО в атаке (шифф ~25 мс, спад за ~0.3 с; в сустейне шума нет —
@@ -1734,7 +2660,13 @@ InstrumentLibrary::InstrumentLibrary()
 				// но вместе с ним и выдох: медленный подъём читается как «сразу
 				// тембр сустейна». Теперь атака 8 мс, спад 0.20 с до полки 0.28
 				// (пик/полка 11 дБ), уровень ×0.20/0.28 — сустейн не сдвинут.
-				static const EnvelopeDesc breathEnv = {0.15f, 0.40f, 0.72f, 0.10f, 0, true, false};
+				// Update 227: дыхание растёт МЕДЛЕННО и без вспышки (0.30 с до
+				// полки 0.95). Замер u227-timbre (межгармонический пол окнами 60 мс,
+				// дБ отн. h1 сустейна, 43:60): в 0-60 мс мы стояли на −66.3/−66.4
+				// при банковских −73.0/−76.1, а в 480-540 — на −52.7/−58.6 при
+				// банковских −52.4/−52.1. То есть шум входил раньше и громче, а в
+				// сустейне был на 6.5 дБ тише: банк НАБИРАЕТ дыхание вместе с тоном.
+				static const EnvelopeDesc breathEnv = {0.30f, 0.30f, 0.95f, 0.10f, 0, true, false};
 				const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.0f);
 				static const float lvlX[] = {0.0f, 1.0f, 2.0f};
 				// Update 75: ЭТОТ ПОДЪЁМ БЫЛ ПО НЕВЕРНОМУ ЭТАЛОНУ (Update 74).
@@ -1752,8 +2684,25 @@ InstrumentLibrary::InstrumentLibrary()
 				// 0.078/0.131/0.210/0.070 при уровне пан-флейты 0.0855 на C4 — то
 				// есть воздух флейты теперь того же порядка, что у пан-флейты
 				// (раньше он был в 5.3 раза тише, и тремоло по дыханию не читалось).
-				static const float lvlK[] = {1.21f, 2.57f, 1.53f};
-								const float level = 0.0325f*(0.20f/0.72f)*MixParam(lvlX, lvlK, 3, x);
+				static const float lvlK[] = {1.21f, 2.57f, 3.40f};
+								// Update 223: уровень ×0.67, ТРЕТИЙ полюс ФНЧ воздуха и подъём верхней
+								// опоры (1.53 → 3.40). Замер `bands` (43:60/72/84, сустейн 1.4-3.0 с)
+								// по верному эталону (пресет 73): мы были на +3…+4 дБ громче банка во
+								// ВСЕХ полосах и на +13 дБ выше 9.6 кГц — у банковского семпла воздух
+								// спадает круто после ~6 кГц. После правки C4/C5 сошлись в ±2 дБ, а C6
+								// просел на 4-11 дБ (третий полюс там режет раньше всех: 2600 Гц) — поднят.
+				// Update 227: полка дыхания +4 дБ (0.20/0.95 — компенсация полки
+				// огибающей вместо прежней 0.20/0.72, ещё ×1.55 по замеру пола
+				// сустейна, см. breathEnv выше).
+				// Update 227c: 1.15 → 1.60 (+2.9 дБ). Замер тонкого профиля сустейна
+				// (.scratch/u227-profile.mjs, третьоктавные полосы, дБ отн. пика h1,
+				// окно 1-3 с): мы были НИЖЕ банка почти везде выше 1.5 кГц —
+				// 43:60 −2.2/−2.5/−2.3/−2.2/−3.7/−4.6/−2.2/−5.5, 43:72 −4.3…−10.1
+				// (2-10 кГц). Причина видна из сравнения двух метрик: межгармонический
+				// ПОЛ у нас был выше банка, а энергия ПОЛОСЫ — ниже, потому что вся
+				// энергия гребёнки (0.40) сидит в юбках у гармоник, а не в шуме.
+				// Для юбочного воздуха верен именно полосовой профиль.
+				const float level = 0.0218f*1.30f*(0.20f/0.95f)*MixParam(lvlX, lvlK, 3, x);
 				// Форма воздуха — полоса струи: низ режет ФВЧ на ~0.7·f0 (NoiseSampler),
 				// верх — плато до ~2.2 кГц (C4) → 1.5 кГц (C6), потом КРУТОЙ спад —
 				// второй каскад ФНЧ (12 дБ/окт), у банка выше ~2.5 кГц шума почти нет.
@@ -1764,10 +2713,19 @@ InstrumentLibrary::InstrumentLibrary()
 				// падал на 5-9 дБ выше 2.2 кГц. 3800-600x даёт C4 3800 / C5 3200 / C6 2600.
 				// ФВЧ: 0.90f0 отрезало шум ниже 0.9·f0, у банка он есть и на 134-168 Гц
 				// (был ниже на 9 дБ) — 0.55f0.
-				const float cutoffHz = 3800.0f - 600.0f*x;
+				// Update 227: 3800-600x → 5200-700x. Замер u227-sus (пол сустейна
+				// 0.5-2.5 с, 43:60/72/84): 1.5-3.5 кГц у нас на 1.5 дБ ниже банка,
+				// 3.5-8 кГц на 3.7, 8-16 кГц на 1.2 — верхняя граница воздуха
+				// стояла низко (у банка шум ровный до ~6.8 кГц).
+				// Update 227c: 3600-560x → 4500-650x. По профилю полос не хватало
+				// 3-6 дБ в 4-11 кГц (см. level выше); 5200-700x в Update 227b давало
+				// перелёт в 8-16 кГц именно из-за одновременного ×1.55 уровня.
+				// Update 227d: 4500-650x → 4200-620x вместе с level ×1.30: при 1.60
+				// профиль давал +3…+8 дБ в 600-3200 Гц (уже ПЕРЕбор в середине).
+				const float cutoffHz = 4200.0f - 620.0f*x;
 				const float hpHz = Math::Min(0.55f*freq, 1200.0f);
 				return new NoiseSampler(freq, volume, sampleRate, 32768, level, 150000003u,
-					cutoffHz/freq, true, breathEnv, hpHz/freq, 2, 0.40f, 1u, FluteTitanicVibrato(freq));
+					cutoffHz/freq, true, breathEnv, hpHz/freq, 3, 0.40f, 1u, FluteTitanicVibrato(freq));
 			});
 		// «Открывающийся» срез атаки (то же, что у legacy «Flute»), но регистровый:
 		// C4..C#5 — как было (600 Гц → полный за ~35 мс, живой вход). C5+ — ТЁМНЫЙ
@@ -1794,6 +2752,49 @@ InstrumentLibrary::InstrumentLibrary()
 				};
 				return GenericModifier(CutoffFilter(alpha(c0), holdSamples, alpha(c0), openSamples, alpha(20000.0f)));
 			});
+	}
+	// Овершут уровня атаки флейт (Update 223). Применяется ПОСЛЕ микса голоса
+	// (GenericModifiers в NoteSampler), то есть масштабирует готовый сигнал —
+	// в отличие от блума он не может ни с чем сложиться в противофазе.
+	//
+	// Почему он нужен: пресет банка 73 играет семпл С НАЧАЛА, то есть первые
+	// 0.26-1.02 с ноты — ЗАПИСАННЫЙ онсет, и там h1 стоит на +4…+7.6 дБ ВЫШЕ
+	// сустейна (замер `.scratch/u223-flute-atk.json`, 9 клавиш, окна 50 мс).
+	// У нас эту прибавку несли огибающая тела и блум (Update 27), но огибающая
+	// даёт всего +1.3…+1.6 дБ и приходит «раздувом» к ~950 мс, а блум (партиалы
+	// с фиксированной фазой против тела со случайной) на B4/D5 тело ГАСИЛ —
+	// нота вползала 1.5 с (`.scratch/u223-bloom-check.mjs`).
+	//
+	// Update 224: основную прибавку несёт ОНСЕТ-ТАБЛИЦА (те же фазы, что у
+	// сустейна — кроссфейд меняет только спектр, см. WaveTableSamplerParams),
+	// а гейн остаётся довеском: у FluteClean 1.35 с входа (тело вступает
+	// медленно, таблицу онсета он не ждёт), полка 1.35 → 1.0 к 0.85 с; у
+	// FluteHybrid вход 1.0/1.15 (тело уже быстрое), дальше та же полка.
+	// Update 223 (история): гейн делал ВСЮ работу (пик 3.00 = +9.5 дБ) —
+	// рабочая, но спектрально глухая замена записанного онсета.
+	{
+		auto FluteAttackGain = [](const float* start, const float* first, const float* mid, float d0, float d1)
+		{
+			return [start, first, mid, d0, d1](float freq, float volume, unsigned sampleRate) -> GenericModifier
+			{
+				const float x = Math::Clamp(Math::Log(freq/261.63f)/Math::Log(2.0f), 0.0f, 2.0f);
+				static const float xs[] = {0.0f, 1.0f, 2.0f};
+				return AttackGainFactory(MixParam(xs, start, 3, x), MixParam(xs, first, 3, x),
+					MixParam(xs, mid, 3, x), 1.0f, d0, d1, 0.85f)(freq, volume, sampleRate);
+			};		};
+		// Update 224: довесок стал маленьким, потому что основную прибавку несёт
+		// онсет-таблица (в той же фазе, с измеренной формантой). Гейн добирает то,
+		// чего таблица не может: у записанного онсета h1 выходит на пик за
+		// 100-200 мс, а наша огибающая доходит до полки только к 210 мс (43) /
+		// 35 мс (115) — первая сотня миллисекунд отыгрывается этим множителем.
+		// Полка веса = 1.15 (43/115), спад к 1.0 к 1.13 с — у банка h1 остаётся
+		// на +4 дБ и на 500 мс, а онсет-таблица к тому времени уже отыграна.
+		static const float cleanHold[] = {1.15f, 1.15f, 1.15f};
+		static const float hybridHold[] = {0.95f, 1.00f, 1.15f};
+		Instruments["FluteClean"].GenericModifiers.EmplaceLast(
+			FluteAttackGain(cleanHold, cleanHold, cleanHold, 0.28f, 0.0f));
+		Instruments["FluteHybrid"].GenericModifiers.EmplaceLast(
+			FluteAttackGain(hybridHold, hybridHold, hybridHold, 0.04f, 0.20f));
 	}
 	{
 		// FluteDLS (GM 73): профиль GM-банка macOS gs_instruments.dls, 6 зон
@@ -2115,6 +3116,9 @@ InstrumentLibrary::InstrumentLibrary()
 		// Update 59: параметры вынесены в PanFluteVibrato — тот же LFO уходит и в
 		// слои дыхания/блума, иначе статичные юбки бьются с уходящим тоном.
 		wt.VibratoProfile = [](float freq) { return PanFluteVibrato(freq); };
+		// Блочный LFO (kVibratoBlockSamples, Update 232): шаг 0.36 мс — ступенька
+		// ниже порога слышимости, зато слой идёт ядром постоянной скорости.
+		wt.VibratoBlock = kVibratoBlockSamples;
 		// Update 40: атака по окнам банка (L-канал, 0-40/40-120/120-300 мс от
 		// note-on, дБ отн. сустейна; .scratch/pf-fit.mjs): C4 −19/−7/+3,
 		// G4 −17/−2/+4.5, D5 −39/−4/+3.5, G5 −25/+7/+3.4, C6 −14/+8/+4.8.
@@ -2220,8 +3224,26 @@ InstrumentLibrary::InstrumentLibrary()
 				splash[2] = MixParam(zoneX, splashA3, 4, x);
 				splash[3] = MixParam(zoneX, splashA4, 4, x);
 				splash[4] = MixParam(zoneX, splashA5, 4, x);
+				// Update 227b: ФРОНТ вспышки растёт с клавишей (у BloomSampler
+				// параметр — flashRiseSeconds, отдельной задержки нет). Замер
+				// u227-ab: банк в окнах 0-10/10-30 мс даёт −13.3/−11.2 (C4),
+				// −26.4/−22.1 (C5), −21.1/−7.4 (C6), а мы при фронте 6 мс были на
+				// −8.6/−7.7, −12.8/−12.4 и −5.1/−3.2 — до 16 дБ громче. У банка
+				// на верхних нотах атака РАСКРЫВАЕТСЯ ПОЗЖЕ (записано в семпле).
+				// (Update 227: первый заход правил swellMaxPartial — это count, а не
+				// время, и на звук не влиял вовсе.)
+				static const float splashRise[] = {0.006f, 0.014f, 0.028f, 0.030f};
+				// Update 235f: на верхней зоне пробовали РАННЮЮ КОРОТКУЮ вспышку
+				// (фронт 30 → 12 мс, τ 30 → 12) — замер u235-pf-atk: это починило
+				// 8-16 мс (C6 2-мс трасса с −16.8/−16.0/−14.0/−12.0 до −9.5/−8.3/
+				// −7.8/−9.1 при банковских −21.7/−13.9/−8.3/−3.3, включая попавший
+				// в цель провал на 14 мс), но убило h3/h4 в 30-60 мс: банк держит
+				// их на +13…+17 дБ выше своего сустейна (2600-3200: +14.5 в 30-36,
+				// +13.4 в 36-45), а короткая вспышка дала −7.0/−9.5/−15.7. То есть
+				// у банка вспышка РАННЯЯ, но НЕ короткая — отдельная ось, этим
+				// апдейтом не закрыта (эксперимент откачен).
 				return new BloomSampler(freq, volume, sampleRate, SpanOf(splash), 5,
-					SpanOf(splash), 0, 0.006f, 0.030f, 0.05f, 0.005f, 0.10f,
+					SpanOf(splash), 0, MixParam(zoneX, splashRise, 4, x), 0.030f, 0.05f, 0.005f, 0.10f,
 					PanFluteVibrato(freq));
 			});
 // Медленный овершут h1 (Update 42b). Банк: +2.1 дБ в окне 120-250 мс и
@@ -2236,9 +3258,21 @@ InstrumentLibrary::InstrumentLibrary()
 		// G4/D5 120-250 мс, G5 60-120 мс). v42c с плоскими 0.70/0.30 не читался.
 		// Update 58: C5-зона была пересвечена на входе (+5 дБ в 0-100 мс) и
 		// недобирала пик (−3 дБ в 100-500), C6 наоборот — недобирал атаку на
-		// 4-8 дБ во всей первой половине секунды. Пик сдвинут раньше и поднят.
-		static const float overA1[] = {1.05f, 0.70f, 1.15f, 1.55f};
-		static const float overRise[] = {0.30f, 0.16f, 0.10f, 0.05f};
+		// 4-8 дБ во всей первой половине секунды. Пик сдвинут раньше и поднят.				
+				static const float overA1[] = {1.05f, 0.70f, 1.15f, 1.55f};
+				static const float overRise[] = {0.30f, 0.16f, 0.10f, 0.022f};
+				// Update 235c: задержка вспышки по зонам (верхние ноты банка
+				// начинаются с дыхания, а тон приходит позже). Замер u235-pf-atk
+				// (C6, полоса 900-1400 = h1, дБ отн. своего сустейна):
+				//   банк  −33.2/−33.1/−33.3/−32.2/−27.2/−17.1/−10.7/−3.5/+2.7
+				//   наш   −30.3/−20.4/−14.4/−10.9/−8.2/−5.9/−3.9/−2.3/+0.6
+				// (окна 0-3/3-6/6-9/9-12/12-16/16-20/20-25/25-30/30-36 мс). Тона
+				// в первые 12 мс у банка нет вовсе, а у нас его поднимала именно
+				// эта вспышка (тело молчит до 22 мс, шумовые слои отпали абляциями:
+				// обнуление слоя N не сдвинуло полосы 500-1400 ни на дБ, задержка
+				// слоя W — на ~1 дБ). Фронт укорочен 50 → 22 мс, чтобы после
+				// задержки успеть к банковскому раздуву (полный к ~35 мс).
+				static const float overDelay[] = {0.0f, 0.0f, 0.006f, 0.012f};
 		// Update 58b: хвост овершута длиннее — на C5/C6 он был на 3-4 дБ ниже
 		// банка в 200-700 мс (замер bank-env).
 		static const float overTau[] = {0.50f, 0.40f, 0.62f, 0.58f};
@@ -2252,7 +3286,7 @@ InstrumentLibrary::InstrumentLibrary()
 				return new BloomSampler(freq, volume, sampleRate, SpanOf(over), 12,
 					SpanOf(over), 0, MixParam(zoneX, overRise, 4, x),
 					MixParam(zoneX, overTau, 4, x), 0.05f, 0.010f, 0.10f,
-					PanFluteVibrato(freq));
+					PanFluteVibrato(freq), MixParam(zoneX, overDelay, 4, x));
 			});
 		// Дыхание пан-флейты — ВОЗВРАЩЕНО (Update 42). Слушатель: «Дыхания тоже
 		// никакого нет, хотя, когда я говорил, что тембр похож, оно было!
@@ -2344,7 +3378,13 @@ InstrumentLibrary::InstrumentLibrary()
 				// Update 73: уровень воздуха оставлен (гребёнка после снижения
 				// 0.85 → 0.60 даёт в долинах +1.8 дБ, а опущенный ФНЧ столько же
 				// снимает — замер `bands` 75:60/75:72 держится в банковских ±3 дБ).
-				const float level = 0.045f*MixParam(lvlX, lvlK, 3, x);
+				// Update 227b: уровень поднят ×1.4 ТОЛЬКО в низкой зоне. Замер u227-sus
+				// (пол сустейна 0.5-2.5 с, дБ «наш − банк»): при ровном уровне +1.5 дБ
+				// выходило C4 −2.9/−5.0/−7.3/−6.2 (мало), а C6 +6.3/+7.7/+13.9/+16.5
+				// (много): у банка дыхание САМО падает с клавишей (C4 −56/−69/−91/−108,
+				// C6 −66/−73/−90/−109 по тем же полосам). Верх срезан.
+				static const float lvlKey[] = {1.80f, 1.20f, 0.54f};
+				const float level = 0.045f*MixParam(lvlX, lvlKey, 3, x);
 				// Update 44: вход 120 → 8 мс. Банк в первых 15 мс держит юбку на
 				// −23.9 дБ при h1 −38.7 (G5) и −26.2 при −22.0 (C4) — воздух
 				// слышен РАНЬШЕ тона; у нас же в 0-15 мс юбки не было вовсе.
@@ -2368,7 +3408,20 @@ InstrumentLibrary::InstrumentLibrary()
 				// Update 55b: спад замедлен (0.65/0.68/0.62/0.50 с), вход на G5+
 				// укорочен (у банка на C6 пик подложки уже в первом окне),
 				// полка поднята в средних зонах — по замеру v55.
-				static const float atkv[] = {0.045f, 0.040f, 0.014f};
+				// Update 235c: на верхних зонах фронт перенесён в ЗАПАЗДЫВАЮЩИЙ РАЗДУВ
+				// (adelv + MakeEnvelope; Delay = 0 сохраняет прежний ADSR бит-в-бит).
+				// Проба «задержать слой W» показала, что «бум» атаки в полосах
+				// ниже 1.8 кГц (на C6 +18.8 дБ к банку в 9-12 мс) — не W: при
+				// задержанном W эти полосы не сдвинулись ни на дБ. Это этот слой:
+				// у банка 420-900 на C6 идёт −30.8/−32.8/−31.3/−29.4/−28.8
+				// (окна 0-3…12-16 мс) и только потом раздувается до −16.0 (16-20)
+				// и −2.8 (25-30), а наш линейный фронт 14 мс успевал отдать
+				// −13…−7 дБ уже в 3-6 мс. Линейный фронт не годен: у него весь
+				// разгон приходится на первые миллисекунды; раздув идёт по
+				// 48·(u−1) дБ (−24 дБ на середине), то есть энергия копится
+				// к концу разгона.
+				static const float atkv[] = {0.045f, 0.030f, 0.024f};
+				static const float adelv[] = {0.0f, 0.005f, 0.010f};
 				// Update 56: на верхних зонах спад и полка подняты (было 0.50/0.19).
 				// Владелец: «в C6 у Pan Flute в оригинале атака вроде дольше, чем у
 				// нас. У нас очень быстро она затухает». Замер банка на C6 (ключ 84,
@@ -2389,7 +3442,7 @@ InstrumentLibrary::InstrumentLibrary()
 				static const float susv[] = {0.30f, 0.30f, 0.25f};
 				const EnvelopeDesc breathEnv = {MixParam(zoneX, atkv, 3, x),
 					MixParam(zoneX, decv, 3, x), MixParam(zoneX, susv, 3, x),
-					0.15f, 0, true, false};
+					0.15f, 0, true, false, MixParam(zoneX, adelv, 3, x)};
 				// Потолок ФНЧ 1.8 кГц: замер v43d — на G5/C6/D6 наши 3-6к и 6-12к
 				// были на 8-16 дБ громче банка (воздух банка режется круче выше 3 кГц).
 				// Update 47: полоса воздуха — АБСОЛЮТНАЯ (струйная полоса банка
@@ -2417,12 +3470,37 @@ InstrumentLibrary::InstrumentLibrary()
 				// 5.9 Гц живут в ПОЛОСАХ ДЫХАНИЯ (долины mag 1.5-2.8). То есть
 				// «вибрирует» воздух, а не высота тона. Общий LFO у тона и дыхания
 				// тащил за тоном всю гребёнку — это и есть «всё вибрирует».
-				const float hpHz = 420.0f;
+				// Update 227e: 420 → 700 Гц. Профиль полос (u227-profile) показывал у
+				// 75:60 лишние +9.6 дБ в полосе 504 Гц и +4.6 в 400 — это ровно тот
+				// пункт Task B («400-600 на +4.8 громче банка» в §42): полоса
+				// приходится на угол ФВЧ (420 Гц), то есть шум там ещ¸ не срезан,
+				// а гребёнка концентрирует его вокруг h2. Полосы выше 800 Гц при
+				// этом почти не трогаются (они выше угла).
+				const float hpHz = 700.0f;
 				// Update 73: 2000-2600 → 1600-2200 Гц. Замер `spec` (сустейн):
 				// у банка юбки падают от h4 к h8 на 17 дБ (C4 −42.2 → −59.1), у нас
 				// всего на 7 (−36.8 → −44.2) — верхняя граница воздуха стояла
 				// слишком высоко и не давала«грязноватого» спада выше 1.5 кГц.
-				const float cutoffHz = Math::Min(Math::Max(5.0f*freq, 1600.0f), 2200.0f);
+				// Update 227: потолок ФНЧ 2200 → 2800 Гц, гребёнка 0.60 → 0.42.
+				// Замер u227-sus (пол сустейна, дБ «наш − банк», 75:60/72/84):
+				// 1.5-3.5 кГц −4.9/+0.9/−0.5, 3.5-8 кГц −6.4/−7.1/−4.5, 8-16 кГц
+				// −7.5/−6.9/−8.9. То есть у банка воздух ШИРЕ и заходит выше
+				// 3 кГц, а наш к 2.2 кГц уже срезан; гребёнка 0.60 уводила всю
+				// энергию в юбки гармоник (их timbreTrack исключает), оставляя
+				// межгармонические долины пустыми.
+				// Update 227c: потолок 2500 → 3000 Гц — профиль сустейна (u227-profile,
+				// третьоктавы, дБ отн. h1) давал у 75:60 −3…−5 дБ выше 2.5 кГц.
+				// Update 228: полоса — ФИКСИРОВАННАЯ по абсолютной частоте, зонами
+				// (C4 2000, C5 2350, C6 2600 Гц). Замер пола сустейна (u228, 0.5-2.5 с,
+				// дБ «наш − банк», 75:60/72/84): 1.5-3.5к −5.0/−1.0/+4.0,
+				// 3.5-8к −8.1/+3.8/+7.4 — знак ошибки РАЗВЁРНУТ по регистру, а у
+				// банка полоса стоит на месте (0.6-3.5 кГц, Update 47/48): прежняя
+				// формула 5·f0 тянула её за нотой и на C4 обрезала раньше банка,
+				// а на C6 — позже. Промежуточная формула 4·f0 (C4 2000/C5 2093)
+				// пересветила C4 (+2…+6 в полосах 1.6-8 кГц профиля) и просадила
+				// C5 на −4.5 в 1.5-3.5к: зоны выставлены по замеру.
+				static const float cutv[] = {2000.0f, 2350.0f, 2600.0f};
+				const float cutoffHz = MixParam(zoneX, cutv, 3, x);
 				// Update 66: 5 полюсов ФНЧ и никакого LFO. Владелец: «дыхание
 				// очень сильное и низкое, напоминает белый шум при частоте
 				// дискретизации 8 кГц», «неприятная периодичность воздуха».
@@ -2438,8 +3516,16 @@ InstrumentLibrary::InstrumentLibrary()
 				// (floor для сверки не годится: при f0 = 523 Гц допуск 0.15·f
 				// исключает почти все бины выше 1 кГц и срезы выходят пустыми —
 				// ровно для этого и добавлена команда bands.)
-				return new NoiseSampler(freq, volume, sampleRate, 65536, level, 150000003u,
-					cutoffHz/freq, true, breathEnv, hpHz/freq, 5, 0.60f, 1u);
+				return new NoiseSampler(freq, volume, sampleRate, 65536, level, 150000003u,				// Update 227d: гребёнка 0.44 при ОДНОМ проходе и уровне ×1.2.
+				// Каскад двух гребёнок (combPasses 2, гребёнка 0.50, уровень ×1.35)
+				// измерен и ОТКЛОНЁН: он поднял середину (800 Гц…2 кГц с −7.6…−3.8
+				// до −4.9…−2.7), но полосу 504 Гц (h2 на C4) — с +8.2 до +14.4 дБ.
+				// Причина видна из арифметики гребёнки: |1+g·e^−jωT| даёт риппл
+				// шириной ±f0/2, то есть на 1/3-октавной сетке это не «юбки», а
+				// волна по спектру, а у банка юбки узкие (±20 Гц у линии) при
+				// ровном фоне (профиль полос банка плоский). Уровень 1.2 — середина
+				// между двумя измеренными состояниями.
+					cutoffHz/freq, true, breathEnv, hpHz/freq, 5, 0.44f, 1u);
 			});
 		// Слой W — «широкий вход» дыхания (Update 56). Владелец: «мне кажется,
 		// что как будто ширина юбки по мере атаки должна спадать, иначе слегка
@@ -2461,7 +3547,16 @@ InstrumentLibrary::InstrumentLibrary()
 				// в первых двух окнах, C5 −54/−55, C6 −47/−48.
 				// Update 56b: по замеру v56a Δ «наши−банк» на входе: C4 −0.3 дБ
 				// (уровень оставлен), C5 +3.8 (снято 3 дБ), C6 +4.3 (снято 4).
-				static const float wlvlK[] = {1.00f, 0.42f, 0.56f};
+				// Update 235b: уровень срезан на 8 дБ (1.00/0.42/0.56 → 0.40/0.17/0.22)
+				// и спад укорочен: с широким ФНЧ (5-10 кГц) прежний уровень давал
+				// на C4 +21..+22 дБ в 1.8-14 кГц в окнах 12-16 мс, а на C5/C6 общая
+				// огибающая (2-мс RMS) была на 8-12 дБ громче банка в 2-30 мс.
+				// Update 235d: уровень срезан в НИЖНИХ зонах (−5.2/−3.8 дБ): при
+				// широком ФНЧ (5-10 кГц) верх C4/C5 был пересвечен — замер
+				// u235-pf-atk 0-45 мс: C4 7.2-14 кГц +6…+22 дБ к банку, C5 3-4.5 кГц
+				// +9…+13, 7-11 кГц +9…+13. На C6 тот же слой был в ±3 дБ, поэтому
+				// его уровень (0.22) не тронут.
+				static const float wlvlK[] = {0.32f, 0.13f, 0.22f};
 				const float level = 0.20f*MixParam(zoneX, wlvlK, 3, x);
 				// Спад быстрый (100…300 мс) — «широкий» шум банка уходит раньше
 				// юбок. На верхних зонах он живёт дольше: банк на C6 держит пол
@@ -2469,12 +3564,70 @@ InstrumentLibrary::InstrumentLibrary()
 				// Update 56b: полка на C6 снята с 0.30 до 0.09 — замер v56a дал там
 				// +16 дБ на сустейне (широкий слой перекрывал узкий и снова давал
 				// ровный пол, то есть «шум»).
-				static const float wdecv[] = {0.10f, 0.10f, 0.30f};
-				static const float wsusv[] = {0.04f, 0.04f, 0.05f};
-				const EnvelopeDesc wideEnv = {0.006f, MixParam(zoneX, wdecv, 3, x),
+				// Update 235: слой перестроен из «широкого низа» в ЯРКИЙ ЗАПАЗДЫВАЮЩИЙ
+				// ЧИФФ. Замер u235-pf-atk (окна 3 мс, октавные полосы, Δ «наш − банк»
+				// по каждой полосе, нормировка — свой сустейн): в первых 16 мс мы
+				// были на +7…+29 дБ громче банка в низах (100-3600) — это был целиком
+				// этот слой (проба «уровень 0»: 75:84 B1 +18.5 → −2.0, B2 +7.0 → +1.4),
+				// — а в верхах (3.6-14 кГц) на −5…−19 дБ ТИШЕ в окнах 16-100 мс.
+				// У банка чифф ШИРОКОПОЛОСНЫЙ и растёт до пика к 20-60 мс (+20…+34 дБ
+				// над своим сустейном в 3.6-14 кГц), а у нас был всплеск низа на 0 мс.
+				// Причина низа: белый шум гребёнки имеет пик и на DC — гребёнка
+				// (задержка = период ноты) поднимает ВСЁ, что ниже f0, а ФВЧ 420 Гц
+				// второго порядка на C6 (f0 1046) почти не режет (замер: B1 100-420 Гц
+				// на +29.6 дБ к банку в окне 3-6 мс). Теперь ФВЧ едет за нотой
+				// (1.6·f0, 420…2400 Гц), ФНЧ поднят до 5-10 кГц (чифф банка доходит
+				// до 14 кГц), фронт 6 → 18 мс и спад удлинён (0.10 → 0.20/0.18 c),
+				// чтобы пик чиффа пришёлся на 20-60 мс, как у банка.
+				// Update 235c: фронт — не линейный разгон с нуля, а ЗАПАЗДЫВАЮЩИЙ
+				// РАЗДУВ (Delay + экспоненциальная атака, как у VoiceOohs).
+				// Линейный фронт 18 мс успевал отдать −16…−6 дБ уже в первые
+				// 3-12 мс, и полосы ниже 1.8 кГц у нас были на +7…+20 дБ громче
+				// банка, тогда как у банка чифф в них появляется только с 16-30 мс.
+				// Экспоненциальный раздув идёт по 48·(u−1) дБ (−24 дБ на
+				// середине), то есть энергия копится к КОНЦУ раздува.
+				// Update 235c (проба и откат): задержка+экспоненциальный раздув
+				// применялись и здесь, но абляция показала, что ВЕРХ (1.8-14 кГц)
+				// в первые 12 мс даёт именно этот слой: с задержкой 7.2-14 кГц
+				// на C6 падали с +6…+21 до −13…−38 дБ в 0-6 мс, а у банка там
+				// уже +7…+22 (замер u235-pf-atk). У банка наверху чифф РАННИЙ,
+				// поэтому фронт — прежний линейный, без задержки.
+				// Update 235d: спад удлинён (0.16 → 0.24) — у банка чифф наверху
+				// не гаснет, а РАСТЁТ до 60-80 мс (7200-14000 на C6: +25 в 16-20 мс,
+				// +34.9 в 20-25, +34.2 в 60-80), и в 60-110 мс нам не хватало 8-11 дБ.
+				static const float wdecv[] = {0.24f, 0.24f, 0.28f};
+				// Update 235e: ПОЛКА возвращена к u234. Уровень слоя срезан в 3-4 раза
+				// (атака), а полка была пропорциональна уровню — вместе с уровнем упал
+				// и «пол» сустейна: cli bands 75:60 дал 400-600 −67.2 при банковских
+				// −53.4 (в u234 было −48.3, то есть совпадало), 600-1200 −66.8 против
+				// −48.1. Пропорция восстановлена: level·0.128 = прежние
+				// (0.20·1.00)·0.04 = 0.008 (C4), (0.20·0.42)·0.04 (C5),
+				// (0.20·0.56)·0.05 (C6) — то есть атака тише на 10-11 дБ, а пол
+				// на месте. Замер u235-pf-atk: на C4 низ/середина атаки были
+				// +9.2/+4.9 (u234) → +4.1/+1.7 (u235b) — то, ради чего уровень
+				// и срезался; пол при этом терять не нужно.
+				static const float wsusv[] = {0.32f, 0.128f, 0.128f};
+				const EnvelopeDesc wideEnv = {0.018f, MixParam(zoneX, wdecv, 3, x),
 					MixParam(zoneX, wsusv, 3, x), 0.10f, 0, true, false};
-				const float hpHz = 420.0f;
-				const float cutoffHz = Math::Min(Math::Max(6.0f*freq, 2000.0f), 2600.0f);
+				const float hpHz = Math::Clamp(1.6f*freq, 420.0f, 2400.0f);
+				// Update 227: ранний «широкий» слой — ФНЧ 2600 → 3600 Гц, уровень
+				// оставлен 0.20 (проба 4200 Гц с уровнем ×1.25 измерена и
+				// ОТКЛОНЕНА). Замер u227-timbre (пол в окне 0-60 мс, 75:60):
+				// у нас −36.3/−47.2/−72.5/−97.1 против банковских −35.3/−46.0/−61.7/−89.9,
+				// то есть в атаке не хватало 10.8 дБ в полосе 3.5-8 кГц и 7.2 в
+				// 8-16 — у банка чифф ШИРОКОПОЛОСНЫЙ, а у нас только тональный
+				// всплеск h3/h4/h5.
+				// Update 228: слой НЕ тронут, но именно он — следующая ось: на C6 пол
+				// сустейна в 3.5-8к/8-16к всё ещё +6.6/+6.2 дБ к банку, а у слоя N
+				// полоса уже опущена до 2600 — значит верх C6 держит W (ФНЧ 3600,
+				// ФВЧ 420), а в окнах 0-10/10-30 мс C6 на 11.1/3.7 дБ громче банка,
+				// и это единственный слой с фронтом 6 мс.
+				// Update 235e: полоса — как в u234 (2-3.6 кГц). Расширение до 5-10 кГц
+				// (235b, ради «чиффа до 14 кГц») пересветило верх атаки: на C4
+				// 1800-3600/3600-7200/7200-14000 стали +17.0/+7.8/+22.4 против
+				// u234-овских +7.7/−7.0/+5.3, а пол 4.8-9.6 кГц — −75.9 против
+				// банковских −91.2 (в u234 было −90.9, то есть совпадало).
+				const float cutoffHz = Math::Min(Math::Max(6.0f*freq, 2000.0f), 3600.0f);
 				return new NoiseSampler(freq, volume, sampleRate, 32768, level, 150000009u,
 					cutoffHz/freq, true, wideEnv, hpHz/freq, 5, 0.35f, 1u);
 			});
@@ -2642,6 +3795,8 @@ InstrumentLibrary::InstrumentLibrary()
 		// Update 60: профиль вынесен в RecorderVibrato — тот же LFO уходит и в
 		// слой дыхания, иначе гребёнка юбок стоит на месте и бьётся с тоном.
 		wt.VibratoProfile = [](float freq) { return RecorderVibrato(freq); };
+		// Update 234: шаг SF2-вибрато задаёт сам LFO (64 сэмпла = буфер
+		// FluidSynth, см. tableVibratoParams) — kVibratoBlockSamples не нужен.
 		// Дыхание блокфлейты (переделано в Update 41). Прежний слой был
 		// коротким (15 мс) белым «пшиком»: за первые 15 мс после note-on он
 		// звучал на 27 дБ ГРОМЧЕ банка в 0.3-0.7 кГц, а дальше — на 5..20 дБ
@@ -2851,6 +4006,8 @@ InstrumentLibrary::InstrumentLibrary()
 		// −19.0/−18.5, затем подъём до +4.8 к 60-120 мс. Слушатель: «атака
 		// более заметная, у оригинала она плавнее».
 		wt = Wt(&t, 0.14f, 0, {0.07f, 0, 1, 0.04f, 0, true, false}, 5, 0.004f);
+		// Update 233: блочный LFO (5 Гц): ступенька 0.36 мс не слышна.
+		wt.VibratoBlock = kVibratoBlockSamples;
 		// Воздух свистка (переделано в Update 41). Прежний слой был белым
 		// (срез 30·f0 ≈ без фильтра) и плоским до 18 кГц, а по уровню — на
 		// 16..35 дБ ГРОМЧЕ банка в полосе 1.5-6 кГц; отсюда «свист ужасно
@@ -2966,6 +4123,8 @@ InstrumentLibrary::InstrumentLibrary()
 			// rejected as "noisy, robotic"; the v194 canon he keeps is the plain table.
 			{Span<const VoiceSpec>(), Span<const float>(),         Span<const float>()},
 			{SpanOf(kvOohVoices),   Span<const float>(),           Span<const float>()},
+			// 54 SynthVoice: movement from two detuned reads of the same table (the
+			// table itself stays aperiodic-free: no near lines off the dft grid).
 			{SpanOf(kvSynthVoiceVoices), Span<const float>(),      Span<const float>()},
 			{SpanOf(kvPad4Voices),  SpanOf(kvPad4JitterHz),        SpanOf(kvPad4JitterDepth)},
 			{SpanOf(kvHaloVoices),  SpanOf(kvHaloJitterHz),        SpanOf(kvHaloJitterDepth)},
@@ -3245,6 +4404,9 @@ InstrumentLibrary::InstrumentLibrary()
 			}
 			auto& wt = Instruments[sp.Name].WaveTables.EmplaceLast();
 			wt = Wt(t, sp.Volume, sp.ExpCoeff, sp.Env, sp.VibFreq, sp.VibVal);
+			// Update 233: блочное вибрато и у spec-инструментов (см. kVibratoBlockSamples):
+			// ступенька 0.36 мс на их ≤25 Гц неслышна, а слой идёт SIMD-ядром постоянной скорости.
+			if(sp.VibFreq > 0) wt.VibratoBlock = kVibratoBlockSamples;
 		}
 
 		// Инструменты с дополнительными модификаторами.
@@ -3348,8 +4510,18 @@ InstrumentLibrary::InstrumentLibrary()
 		{"SynthStrings2", 0.581107629f},
 		{"Pad8Sweep", 0.951159042f},
 		{"ChoirAahs", 0.928544591f},
-		{"VoiceOohs", 1.463119199f},
-		{"SynthVoice", 0.818447646f},
+		// 215: 2.092480 -> 1.320468 (-4 dB): замер cli.mjs snr дал наш тон сустейна на
+		// +5...+10 дБ громче банковского на всех клавишах (C3 +16, C4 +8.4, C5 +7.1,
+		// C6 +8.9), и жалоба «C5-C6 гудит громко, оригинал гораздо тише» — это он.
+		// Половина шага сейчас, остаток — по следующему замеру.
+		// 215: 2.092480 -> 1.046240 (-6 дБ суммарно): после шага −4 дБ тон сошёлся
+		// на C4 (+1.0 дБ), но остался +3…+6 на краях (C3 +6.3, C6 +5.2).
+		{"VoiceOohs", 0.294856f},   // Update 217: -5 дБ (подложка «Synth Vox» вернула телу пресета его место; замер `fit-report` на сборке с подложкой: 53 +8.8/+3.3/+4.5/+4.0 на C3..C6)
+		// 215: 1.832000 -> 1.156478 (−4 дБ): snr дал наш тон на +8…+11 дБ громче
+		// банка на C3/C4/C6 (C5 сошёлся), шум при этом в норме — правится громкость.
+		// 215: 1.832000 -> 0.920459 (−6 дБ суммарно): после −4 дБ тон остался
+		// +4…+5 на C3/C4/C6 (C5 −3 — своя ошибка полки, см. kVoiceAirKeyDbPerOctHi).
+		{"SynthVoice", 0.615631f},  // Update 217: -3.5 дБ (замер +5.0/+2.1 на C4/C5, см. ширину линий 54)
 		{"OrchestraHit", 6.73203941f},
 		{"Trumpet", 0.2982267f},
 		{"TrumpetOld", 0.119836103f},

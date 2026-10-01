@@ -759,6 +759,53 @@ namespace SynthKernels
     }
 
     /// Constant-read-rate kernels (stereo): picks the SIMD variant for the platform and applies the envelopes. Needed by the block vibrato: inside a block the read rate is constant, so the vibrato layer renders with the same kernels as the plain layer and the LFO is computed once per block. This is also the only place that picks a kernel; it used to be copied in two places in WaveTableSampler.
+    // Forward declaration: the weighted variant below falls back to it.
+    forceinline void AddConstantRateStereo(Span<float> dstL, Span<float> dstR,
+        Span<const float> src, float& ioOffsetL, float& ioOffsetR, float rate,
+        float exp, float expStep, float lin, float linStep,
+        float ampL, float ampR, size_t channelDelta);
+
+    forceinline void AddConstantRateStereoWeighted(Span<float> dstL, Span<float> dstR,
+        Span<const float> src, float& ioOffsetL, float& ioOffsetR, float rate,
+        float exp, float expStep, float lin, float linStep,
+        float ampL, float ampR, size_t channelDelta, float onsetWeight, const float* onsetSamples, size_t onsetLength)
+    {
+        if(onsetWeight == 0.0f || onsetSamples == nullptr || onsetLength == 0)
+        {
+            AddConstantRateStereo(dstL, dstR, src, ioOffsetL, ioOffsetR, rate,
+                exp, expStep, lin, linStep, ampL, ampR, channelDelta);
+            return;
+        }
+        const Span<const float> onset(onsetSamples, onsetLength);
+        const float w = onsetWeight;
+        for(size_t k = 0; k < dstL.Length(); k++)
+        {
+            // Тело: обычное ядро на один семпл (вес онсета редкий гость, SIMD
+            // тут не нужен — путь живёт только в первые ~0.6 с ноты).
+            const int li = int(ioOffsetL);
+            const float lf = ioOffsetL - float(li);
+            const size_t i = size_t(li);
+            const size_t j = i + 1 < src.Length() ? i + 1 : 0;
+            const float s = src[i] + (src[j] - src[i])*lf;
+            const size_t io = size_t(ioOffsetL) % onsetLength;
+            const size_t jo = io + 1 < onsetLength ? io + 1 : 0;
+            const float so = onset[io] + (onset[jo] - onset[io])*lf;
+            dstL[k] += (s + so*w)*exp*lin*ampL;
+            const size_t iR = size_t(ioOffsetR);
+            const float rf = ioOffsetR - float(iR);
+            const size_t i2 = iR;
+            const size_t j2 = i2 + 1 < src.Length() ? i2 + 1 : 0;
+            const float sR = src[i2] + (src[j2] - src[i2])*rf;
+            const size_t io2 = iR % onsetLength;
+            const size_t jo2 = io2 + 1 < onsetLength ? io2 + 1 : 0;
+            const float soR = onset[io2] + (onset[jo2] - onset[io2])*rf;
+            dstR[k] += (sR + soR*w)*exp*lin*ampR;
+            ioOffsetL += rate; if(ioOffsetL >= float(src.Length())) ioOffsetL -= float(src.Length());
+            ioOffsetR += rate; if(ioOffsetR >= float(src.Length())) ioOffsetR -= float(src.Length());
+            exp *= expStep; lin += linStep;
+        }
+    }
+
     forceinline void AddConstantRateStereo(Span<float> dstL, Span<float> dstR,
         Span<const float> src, float& ioOffsetL, float& ioOffsetR, float rate,
         float exp, float expStep, float lin, float linStep,
@@ -806,6 +853,95 @@ namespace SynthKernels
         float constWrap = 1.0f;
         MultiplyAddLinearInterpolated(dst, src, ioOffset, rate, exp, expStep,
             constWrap, 1.0f, lin*amp, linStep*amp);
+    }
+
+    /// ОНСЕТ: вторая таблица, читаемая с ТЕМ ЖЕ offset/rate, что и сустейн
+    /// (обе таблицы одной длины и с одинаковыми фазами линий, см.
+    /// OnsetTableDesc), с линейным весом onsetWeight. Один и тот же offset
+    /// гарантирует, что разность фаз гармоник не меняется со временем —
+    /// кроссфейд меняет только спектр, как огибающая. Вызывается вместе с
+    /// основным ядром, добавляя поверх него.
+    ///
+    /// offset — позиция тела ДО продвижения его основным ядром: ядро
+    /// повторяет траекторию тела (тот же ряд vib, то же приращение) в СВОЕЙ
+    /// локальной копии, а общую переменную не трогает. Продвижение общей
+    /// переменной вторым ядром сдвигало онсет относительно тела на длину
+    /// чанка за чанк — фаза суммы циклилась (скрежет и блуждающий тон,
+    /// Update 225).
+    template<typename SineRangeT>
+    forceinline void AddOnsetVibrato(Span<float> dst, Span<const float> onset,
+        float offset, float baseRate, float exp, float expStep,
+        float lin, float linStep, SineRangeT& vibrato,
+        float onsetWeight, float vibGate = 1.0f, float vibGateStep = 0.0f,
+        float vibValue = 1.0f, float tremolo = 0.0f)
+    {
+        const size_t len = onset.Length();
+        if(len == 0 || onsetWeight == 0.0f) return;
+        float gate = vibGate;
+        for(float& out: dst)
+        {
+            const float vib = vibrato.Next()*gate;
+            offset += baseRate*(1.0f + vibValue*vib);
+            if(offset >= float(len)) offset -= float(len);
+            const int ii = int(offset);
+            const float frac = offset - float(ii);
+            const size_t i = size_t(ii);
+            const size_t j = i + 1 < len ? i + 1 : 0;
+            const float s = onset[i] + (onset[j] - onset[i])*frac;
+            out += s*exp*lin*onsetWeight*(1.0f + tremolo*vib);
+            exp *= expStep;
+            lin += linStep;
+            if(gate < 1.0f)
+            {
+                gate += vibGateStep;
+                if(gate > 1.0f) gate = 1.0f;
+            }
+        }
+    }
+
+    /// Стерео-вариант онсета (позиции каналов с постоянным сдвигом, как у тела).
+    /// offsetL/offsetR — позиции тела ДО продвижения (см. AddOnsetVibrato):
+    /// траектория повторяется в локальных копиях, общие переменные не трогаются.
+    template<typename SineRangeT>
+    forceinline void AddOnsetVibratoStereo(Span<float> dstL, Span<float> dstR,
+        Span<const float> onset, float offsetL, float offsetR, float baseRate,
+        float exp, float expStep, float lin, float linStep, float ampL, float ampR,
+        SineRangeT& vibrato, float onsetWeight, float vibGate = 1.0f,
+        float vibGateStep = 0.0f, float vibValue = 1.0f, float tremolo = 0.0f)
+    {
+        const size_t len = onset.Length();
+        const size_t n = Min(dstL.Length(), dstR.Length());
+        if(len == 0 || n == 0 || onsetWeight == 0.0f) return;
+        float gate = vibGate;
+        for(size_t k = 0; k < n; k++)
+        {
+            const float vibNorm = vibrato.Next()*gate;
+            const float vib = baseRate*(1.0f + vibValue*vibNorm);
+            offsetL += vib;
+            if(offsetL >= float(len)) offsetL -= float(len);
+            offsetR += vib;
+            if(offsetR >= float(len)) offsetR -= float(len);
+            const int li = int(offsetL);
+            const float lf = offsetL - float(li);
+            const size_t i = size_t(li);
+            const size_t j = i + 1 < len ? i + 1 : 0;
+            const float sL = onset[i] + (onset[j] - onset[i])*lf;
+            const int ri = int(offsetR);
+            const float rf = offsetR - float(ri);
+            const size_t iR = size_t(ri);
+            const size_t jR = iR + 1 < len ? iR + 1 : 0;
+            const float sR = onset[iR] + (onset[jR] - onset[iR])*rf;
+            const float amp = exp*lin*onsetWeight*(1.0f + tremolo*vibNorm);
+            dstL[k] += sL*amp*ampL;
+            dstR[k] += sR*amp*ampR;
+            exp *= expStep;
+            lin += linStep;
+            if(gate < 1.0f)
+            {
+                gate += vibGateStep;
+                if(gate > 1.0f) gate = 1.0f;
+            }
+        }
     }
 }
 

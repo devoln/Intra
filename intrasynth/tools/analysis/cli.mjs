@@ -26,7 +26,7 @@ import path from "node:path";
 import { SR, renderPair, renderOurs, renderBank, DEFAULT_WASM_JS, DEFAULT_SF2, DEFAULT_NOTE_ON } from "./lib/render.mjs";
 import { fftInPlace, ifftInPlace, naiveDft, modPeaks, modCentroid, autocorrelation } from "./lib/fft.mjs";
 import { db, levelWindows, referenceLevel, detrend, envelope, bandpass, rms } from "./lib/dsp.mjs";
-import { audit, harmonicBands, tremorTrack, wideAmTrack, interHarmonicFloor, bandNoiseFloor, harmonicLevels, timbreTrack, pitchTrack } from "./lib/harmonics.mjs";
+import { audit, harmonicBands, tremorTrack, wideAmTrack, interHarmonicFloor, bandNoiseFloor, harmonicLevels, timbreTrack, pitchTrack, toneNoiseTrack, attackOvershoot } from "./lib/harmonics.mjs";
 
 function parseArgs(argv) {
   const opts = { _: [] };
@@ -230,8 +230,8 @@ async function main() {
   const wasmJs = opts.wasm || DEFAULT_WASM_JS;
   const noteOn = opts.noteon !== undefined ? Number(opts.noteon) : DEFAULT_NOTE_ON;
   if (cmd === "selftest") return selftest();
-  if (!["vib", "env", "attack", "mod", "trem", "period", "floor", "bands", "spec", "timbre", "pitch", "cost"].includes(cmd)) {
-    console.log("Команды: selftest | vib | env | attack | mod | trem | period | floor | bands | spec | timbre | pitch | cost   (prog:key ...)");
+  if (!["vib", "env", "attack", "mod", "trem", "period", "floor", "bands", "spec", "timbre", "pitch", "snr", "onset", "cost"].includes(cmd)) {
+    console.log("Команды: selftest | vib | env | attack | mod | trem | period | floor | bands | spec | timbre | pitch | snr | onset | cost   (prog:key ...)");
     process.exit(2);
   }
   if (!notes.length) { console.log("Укажите ноты вида 75:60"); process.exit(2); }
@@ -245,6 +245,27 @@ async function main() {
     if (pair.bank !== null && pair.bankProgram !== program)
       console.log(`(банк: программа синтезатора ${program} → пресет банка ${pair.bankProgram})`);
     if (cmd === "vib") {
+      // Update 234: --onset — оконный скан ПОЯВЛЕНИЯ вибрато (у LFO FluidSynth
+      // есть задержка, до неё выход ровно 0). Печатает h1 по окнам от note-on:
+      // так виден и момент выхода LFO из нуля, и его частота/глубина.
+      if (opts.onset) {
+        const winSec = Number(opts.win || 0.3), hopSec = Number(opts.hop || 0.15), toSec = Number(opts.to || 1.8);
+        const wins = {};
+        const names = [];
+        for (let t = 0; t + winSec <= toSec + 1e-9; t += hopSec) {
+          const name = t.toFixed(2);
+          wins[name] = [noteOn + t, noteOn + t + winSec];
+          names.push(name);
+        }
+        const show = (tag, x) => {
+          const w0 = audit(x, f0of(key), { kmax: 1, windows: wins })[0].windows;
+          console.log(`--- ${tag} вибрато h1 окнами ${winSec}с (шаг ${hopSec}с), секунды от note-on: ЧМ Гц/цента`);
+          console.log("  " + names.map((n) => `${n}:${w0[n] ? `${w0[n].fm.f.toFixed(1)}/${w0[n].fm.mag.toFixed(1)}` : "—"}`).join("  "));
+        };
+        show("наш ", pair.ours);
+        if (pair.bank && !opts["no-bank"]) show("банк", pair.bank);
+        continue;
+      }
       const kmax = Number(opts.harm || 6);
       const win = { early: [noteOn + 0.25, noteOn + 0.75], sustain: [noteOn + 1.5, noteOn + 4.2] };
       printVib(`наш  prog ${program} key ${key} (f0 ${f0of(key).toFixed(1)} Гц)`, audit(pair.ours, f0of(key), { kmax, windows: win }));
@@ -313,6 +334,42 @@ async function main() {
         if (!r) { console.log(`--- ${tag}: мало данных`); return; }
         console.log(`--- ${tag} гармоники ${(fromSec - noteOn).toFixed(1)}-${(toSec - noteOn).toFixed(1)} с от note-on, дБ отн. h1`);
         console.log("  " + r.db.map((v, i) => `h${i + 1} ${v.toFixed(1)}`).join(" | "));
+      };
+      show("наш ", pair.ours);
+      if (pair.bank && !opts["no-bank"]) show("банк", pair.bank);
+      continue;
+    }
+    if (cmd === "snr") {
+      // Тон против шума: СУММА энергии гармоник против СУММЫ энергии между ними
+      // (см. toneNoiseTrack). Отвечает на «слишком тихо относительно шумового
+      // фона» — вопрос, который ни `bands` (отн. пика h1), ни `movementByHarmonic`
+      // (с детрендом) не различают.
+      const rows_ = opts.windows
+        ? String(opts.windows).split(",").map((s) => s.split("-").map(Number))
+        : undefined;
+      const show = (tag, x) => {
+        const rows = toneNoiseTrack(x, f0of(key), { sampleRate: SR, noteOn, windows: rows_ });
+        console.log(`--- ${tag} тон/шум по окнам, абсолютные дБ (полоса до 12 кГц, усреднение кадров 50 %)`);
+        console.log("  окно,с         тон       шум     сумма   тон/шум");
+        for (const r of rows)
+          console.log(`  ${`${r.fromSec}-${r.toSec}`.padEnd(10)} ` + (r.frames
+            ? [r.toneDb, r.noiseDb, r.totalDb, r.snr].map((v) => v.toFixed(1).padStart(9)).join("")
+            : "—"));
+      };
+      show("наш ", pair.ours);
+      if (pair.bank && !opts["no-bank"]) show("банк", pair.bank);
+      continue;
+    }
+    if (cmd === "onset") {
+      // Перевес атаки над сустейном (Update 211, см. lib): по нему подбирается
+      // форма входа ноты — «гудит / нет гласной» это чаще про отсутствие входа,
+      // чем про тембр сустейна. Обе стороны меряются одним кодом.
+      const show = (tag, x) => {
+        const r = attackOvershoot(x, { sampleRate: SR, noteOn });
+        if (!r) { console.log(`--- ${tag}: мало данных`); return; }
+        console.log(`--- ${tag} сустейн 1-4 с ${r.sustainDb.toFixed(1)} дБ | `
+          + r.rows.map((v) => `${v.from}-${v.to}с ${v.db.toFixed(1)} (${v.overDb >= 0 ? "+" : ""}${v.overDb.toFixed(1)})`).join(" | ")
+          + ` | пик ${r.peakDb.toFixed(1)} на ${r.peakAt.toFixed(1)}с (${r.peakOverDb >= 0 ? "+" : ""}${r.peakOverDb.toFixed(1)} дБ)`);
       };
       show("наш ", pair.ours);
       if (pair.bank && !opts["no-bank"]) show("банк", pair.bank);

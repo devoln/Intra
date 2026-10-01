@@ -2,7 +2,7 @@
 // По-гармонический аудит ноты: чем и насколько «дышит» каждый партиал.
 // Это тот самый блок, которым Update 64 нашёл, что у флейты банка качается
 // АМПЛИТУДА (2.7-3.4 дБ), а не высота.
-import { analytic, modPeak, fftInPlace } from "./fft.mjs";
+import { analytic, modPeak, modPeaks, modCentroid, fftInPlace } from "./fft.mjs";
 import { bandpass, instFrequency, db, rms, detrend, envelope } from "./dsp.mjs";
 
 /// Полосы вокруг гармоник k·f0: {k, fc, halfWidth, lo, hi}.
@@ -486,5 +486,140 @@ export function harmonicWidths(x, f0, {
     medianW6: median(audible.map((h) => h.w6)),
     medianW20: median(audible.map((h) => h.w20)),
     medianLineDb: median(audible.map((h) => h.lineDb)),
+  };
+}
+
+/// Движение КАЖДОЙ гармоники отдельно (Update 206). Зачем: колонка «АМ
+/// 0.2-15 Гц» в отчёте фиттинга — сумма амплитуд ВСЕХ линий модуляции в
+/// полосе, и по ней нельзя отличить «одно тремоло на всю ноту» от «у каждой
+/// гармоники своя модуляция». А это разные механизмы: одну ноту целиком
+/// модулирует только LFO, а разные скорости у гармоник даёт (а) биение пары
+/// расстроенных копий одного тона — тогда скорость k-й гармоники растёт как
+/// k·Δf, или (б) независимые источники на гармонику (хорус/дыхание/луп),
+/// тогда скорости между собой не связаны.
+///
+/// Магнитуда гармоники берётся по ПИКУ в допуске вокруг k·f0 (тот же
+/// peakNearBin, что в `timbreTrack`), поэтому вибрато высоты в амплитуду не
+/// протекает (узкая полоса вокруг линии превращала бы ЧМ в АМ).
+/// ТОН И ШУМ ПО ОКНАМ (Update 210).
+///
+/// Зачем отдельная метрика. «Полка относительно пика h1» (`bandNoiseFloor`) и
+/// «глубина движения» (`movementByHarmonic` с детрендом 0.5 с) отвечают на другие
+/// вопросы, и обе могут дать «совпадает» там, где владелец слышит «слишком тихо
+/// относительно шумового фона»: первая нормируется на ПИК фундаментала (у наших
+/// узких линий он выше), вторая снимает медленную модуляцию. Здесь считается то,
+/// что слышит ухо: СУММА энергии гармоник против СУММЫ энергии промежутков между
+/// ними в той же полосе, по окнам от note-on, в абсолютных дБ (делитель — N² и
+/// число усреднённых кадров, поэтому числа сопоставимы между инструментами).
+///
+/// Замер 54 (Update 210, `.scratch/snr54.mjs`): наша полка была на 6.3-7.2 дБ
+/// громче банковской во всех окнах, а тон в окне 0.3-0.5 с — на 6.4 дБ тише
+/// банковского, из-за АМ ядер с размахом 17 дБ (детренд-метрика показывала при
+/// этом те же 9.8 дБ, что у банка).
+export function toneNoiseTrack(x, f0, {
+  sampleRate = 44100, N = 8192, noteOn = 0,
+  windows = [[0.3, 0.5], [0.5, 1.0], [1.0, 2.0], [2.0, 4.0]],
+  maxHz = 12000, tolRatio = 0.04, minTolHz = 30,
+} = {}) {
+  const win = new Float64Array(N);
+  for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
+  const rows = [];
+  for (const [a, b] of windows) {
+    const start = Math.max(0, Math.round((noteOn + a) * sampleRate));
+    const end = Math.min(x.length, Math.round((noteOn + b) * sampleRate));
+    if (end - start < N) {
+      rows.push({ fromSec: a, toSec: b, frames: 0, toneDb: null, noiseDb: null, totalDb: null, snr: null });
+      continue;
+    }
+    const acc = new Float64Array(N / 2);
+    let frames = 0;
+    for (let s = start; s + N <= end; s += N >> 1) {
+      const re = new Float64Array(N), im = new Float64Array(N);
+      for (let i = 0; i < N; i++) re[i] = x[s + i] * win[i];
+      fftInPlace(re, im);
+      for (let k = 1; k < N / 2; k++) acc[k] += re[k] * re[k] + im[k] * im[k];
+      frames++;
+    }
+    const binHz = sampleRate / N;
+    const hiBin = Math.min(acc.length - 1, Math.round(maxHz / binHz));
+    let tone = 0, noise = 0, total = 0;
+    for (let k = 1; k <= hiBin; k++) {
+      const f = k * binHz;
+      const hk = Math.round(f / f0);
+      const near = hk >= 1 && Math.abs(f - hk * f0) < Math.max(minTolHz, tolRatio * hk * f0);
+      total += acc[k];
+      if (near) tone += acc[k]; else noise += acc[k];
+    }
+    const ref = N * N * Math.max(1, frames);
+    const db = (v) => 10 * Math.log10(Math.max(v, 1e-30) / ref);
+    rows.push({
+      fromSec: a, toSec: b, frames,
+      toneDb: db(tone), noiseDb: db(noise), totalDb: db(total),
+      snr: 10 * Math.log10(Math.max(tone, 1e-30) / Math.max(noise, 1e-30)),
+    });
+  }
+  return rows;
+}
+
+export function movementByHarmonic(x, f0, {
+  sampleRate = 44100, kmax = 8, lenSec = 0.08, hopSec = 0.02,
+  fromSec = 0.8, toSec = 4.4, refFromSec = 1.4, refToSec = 4.0,
+  fLo = 0.3, fHi = 10,
+} = {}) {
+  const rows = timbreTrack(x, f0, { sampleRate, kmax, lenSec, hopSec, fromSec, toSec, refFromSec, refToSec });
+  if (!rows || rows.length < 32) return null;
+  const seriesRate = 1 / hopSec;
+  const out = [];
+  for (let k = 1; k <= kmax; k++) {
+    const series = Float64Array.from(rows.map((r) => r.h[k - 1]));
+    const det = detrend(series, seriesRate, 0.5);
+    const c = modCentroid(det, seriesRate, fLo, fHi);
+    const peaks = modPeaks(det, seriesRate, fLo, fHi, 2);
+    out.push({
+      k,
+      hz: k * f0,
+      rate: c ? c.f : null,
+      depth: c ? c.depthDb : null,
+      lines: peaks.map((p) => ({ f: p.f, db: p.mag })),
+    });
+  }
+  return { frames: rows.length, seriesRate, perHarmonic: out };
+}
+
+/// Перевес атаки над сустейном (Update 211). Владелец: «Oohs C4 гудит
+/// неприятно, и никакого О-У не слышно за этим гудением… C5-C6 гудит громко,
+/// оригинал гораздо тише». За этим стояло не только «нет входа», а именно
+/// СООТНОШЕНИЕ атаки и сустейна: у банка первые 100 мс стоят на 7-10 дБ ВЫШЕ
+/// полки 1-4 с, а у нас стояли на столько же НИЖЕ (медленный раздув тела),
+/// поэтому нота читалась не как спетый гласный, а как гудок с раздувом.
+/// Эта метрика и есть то, по чему подбирается форма входа: RMS по окнам от
+/// note-on (по умолчанию 0-0.1 и 0-0.4 с), сустейн 1-4 с и пик первых окон.
+/// Обе стороны меряются одним и тем же кодом, поэтому числа сравнимы.
+export function attackOvershoot(x, {
+  sampleRate = 44100, noteOn = 0,
+  sustain = [1.0, 4.0],
+  windows = [[0, 0.1], [0, 0.4]],
+  peakFrom = 0, peakTo = 0.6, peakStep = 0.1,
+} = {}) {
+  const seg = (a, b) => {
+    const i = Math.max(0, Math.round((noteOn + a) * sampleRate));
+    const j = Math.min(x.length, Math.round((noteOn + b) * sampleRate));
+    if (j - i < 16) return null;
+    let acc = 0;
+    for (let k = i; k < j; k++) acc += x[k] * x[k];
+    return db(Math.sqrt(acc / (j - i)));
+  };
+  const susDb = seg(sustain[0], sustain[1]);
+  if (susDb === null) return null;
+  const rows = windows.map(([a, b]) => ({ from: a, to: b, db: seg(a, b) })).filter((r) => r.db !== null);
+  let peakDb = null, peakAt = null;
+  for (let t = peakFrom; t + peakStep <= peakTo; t += peakStep) {
+    const v = seg(t, t + peakStep);
+    if (v !== null && (peakDb === null || v > peakDb)) { peakDb = v; peakAt = t; }
+  }
+  return {
+    sustainDb: susDb,
+    rows: rows.map((r) => ({ ...r, overDb: r.db - susDb })),
+    peakDb, peakAt, peakOverDb: peakDb === null ? null : peakDb - susDb,
   };
 }

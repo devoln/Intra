@@ -30,7 +30,7 @@
 // ОБЯЗАТЕЛЬНО перед первым запуском: `node intrasynth/tools/analysis/cli.mjs selftest`.
 import { SR, renderPair, DEFAULT_NOTE_ON, DEFAULT_SF2 } from "./lib/render.mjs";
 import { db } from "./lib/dsp.mjs";
-import { harmonicLevels, harmonicWidths, wideAmTrack } from "./lib/harmonics.mjs";
+import { harmonicLevels, harmonicWidths, wideAmTrack, movementByHarmonic } from "./lib/harmonics.mjs";
 import { autocorrelation, modPeaks, modCentroid } from "./lib/fft.mjs";
 import { envelope, detrend } from "./lib/dsp.mjs";
 
@@ -51,6 +51,10 @@ const wasmJs = opts.wasm || "intrasynth/web/generated/IntraSynth.js";
 const sf2 = opts.sf2 || DEFAULT_SF2;
 const NOTE_ON = Number(opts.noteon ?? DEFAULT_NOTE_ON);
 const FROM = Number(opts.from ?? 0.8), TO = Number(opts.to ?? 4.4);
+// Громкость банковского рендера. Синтезатор откалиброван по -g 0.6 (программа 0
+// читается в 0), поэтому колонка «уровень» для ПОДГОНКИ ГРОМКОСТИ считается
+// с `--bank-gain 0.6`; исторические числа лога мерились при 0.2 (см. lib/render.mjs).
+const BANK_GAIN = Number(opts["bank-gain"] ?? 0.2);
 const LAG = Number(opts.lag ?? 16384);
 const f0of = (key) => 440 * Math.pow(2, (key - 69) / 12);
 
@@ -99,7 +103,7 @@ for (const note of notes) {
     process.exit(1);
   }
   const f0 = f0of(key);
-  const pair = await renderPair({ program, key, wasmJs, sf2 });
+  const pair = await renderPair({ program, key, wasmJs, sf2, gain: BANK_GAIN });
   const bank = opts["no-bank"] ? null : pair.bank;
 
   const lvlO = rmsDb(pair.ours, NOTE_ON + FROM, NOTE_ON + TO);
@@ -128,6 +132,15 @@ for (const note of notes) {
   const wB = bank ? harmonicWidths(bank, f0, { kmax: 12, fromSec: NOTE_ON + 1.4, toSec: NOTE_ON + 4.0 }) : null;
   const mO = motion(pair.ours, NOTE_ON + 0.9, NOTE_ON + 4.5);
   const mB = bank ? motion(bank, NOTE_ON + 0.9, NOTE_ON + 4.5) : null;
+  // Движение КАЖДОЙ гармоники: колонка `АМ` выше — СУММА амплитуд всех линий
+  // в полосе, она не отличает «одно тремоло на ноту» от «у каждой гармоники
+  // своя модуляция». Здесь видно и то, и другое: скорость k-й гармоники,
+  // растущая как k, — это биение пары расстроенных копий (или луп сэмпла),
+  // не связанные между собой скорости — независимые источники на гармонику.
+  const mvOpts = { sampleRate: SR, kmax: 6, lenSec: 0.08, hopSec: 0.02,
+    fromSec: NOTE_ON + 0.8, toSec: NOTE_ON + 4.4, fLo: 0.3, fHi: 10 };
+  const mvO = movementByHarmonic(pair.ours, f0, mvOpts);
+  const mvB = bank ? movementByHarmonic(bank, f0, mvOpts) : null;
   const lO = loopness(pair.ours, NOTE_ON + 1.7, NOTE_ON + 4.2);
   const lB = bank ? loopness(bank, NOTE_ON + 1.7, NOTE_ON + 4.2) : null;
 
@@ -138,6 +151,7 @@ for (const note of notes) {
     widthOursCents: wO.medianW20, widthBankCents: wB ? wB.medianW20 : null,
     lineOursDb: wO.medianLineDb, lineBankDb: wB ? wB.medianLineDb : null,
     amOurs: mO, amBank: mB,
+    moveOurs: mvO ? mvO.perHarmonic : null, moveBank: mvB ? mvB.perHarmonic : null,
     loopOurs: lO, loopBank: lB,
   });
 }
@@ -147,8 +161,8 @@ if (opts.json) {
 } else {
   console.log(`отчёт фиттинга: ${wasmJs}`);
   console.log(`банк: ${sf2}; сустейн ${FROM}-${TO} с ОТ NOTE-ON (${NOTE_ON} с)`);
-  console.log("нота    уровень  профиль h2..h12   ширина w-20,цент   АМ 0.2-15 Гц        луп r@" + LAG);
-  console.log("        наш-банк  средн. / худшая   наш  /  банк      глубина  скорость наш   /  банк");
+  console.log("нота    уровень  профиль h2..h12   ширина w-20,цент   АМ ноты 0.2-15 Гц  луп r@" + LAG + ` (банк -g ${BANK_GAIN})`);
+  console.log("        наш-банк  средн. / худшая   наш  /  банк      СУММА линий, дБ / Гц  наш   /  банк");
   for (const r of rows) {
     const num = (v, d = 2) => (v === null || v === undefined ? "  —  " : pad(v.toFixed(d), 6));
     const am = (m) => (m.depthDb === null ? "   —   " : `${pad(m.depthDb.toFixed(2), 5)} ${pad(m.centroidHz.toFixed(2), 5)}`);
@@ -167,6 +181,17 @@ if (opts.json) {
     console.log(`  АМ наш  : ${pk(r.amOurs, 3)}   | банк: ${pk(r.amBank, 3)}`);
     console.log(`  луп наш : ${top(r.loopOurs)}   | банк: ${top(r.loopBank)}`);
     if (r.profileWorst) console.log(`  худшая гармоника: h${r.profileWorst.k} ${r.profileWorst.d >= 0 ? "+" : ""}${r.profileWorst.d.toFixed(1)} дБ`);
+    // Эквивалентная расстройка копий: k-я гармоника бьётся на k*f0*d/1731, значит
+    // d = rate*1731/(k*f0) центов. По ней видно ЗАКОН движения по клавишам: постоянные
+    // герцы (как у банка 54: 1.86/1.66/1.66 Гц на C3/C4/C5) дают d ~ 1/f, а фиксированные
+    // центы дают скорость, растущую с нотой. Именно так поймано, что у 54 расстройка была
+    // в центах, а у банка — в герцах (журнал, §26).
+    const f0 = 440 * Math.pow(2, (Number(String(r.note).split(":")[1]) - 69) / 12);
+    const hm = (arr, n) => (arr ? arr.slice(0, n)
+      .map((h) => `h${h.k} ${h.depth === null ? "—" : h.depth.toFixed(1)}@${h.rate === null ? "—" : h.rate.toFixed(2)}`
+        + (h.rate === null || !f0 ? "" : `=${(h.rate * 1731 / (h.k * f0)).toFixed(1)}ц`)).join("  ") : "—");
+    if (r.moveOurs || r.moveBank)
+      console.log(`  движение по гармоникам (0.3-10 Гц, окно 80 мс):\n    наш  ${hm(r.moveOurs, 6)}\n    банк ${hm(r.moveBank, 6)}`);
     if (r.widthOursCents !== null && r.widthBankCents !== null)
       console.log(`  ширина: наш ${r.widthOursCents.toFixed(0)} цент, банк ${r.widthBankCents.toFixed(0)}`
         + `, доля линии ${r.lineOursDb === null ? "—" : r.lineOursDb.toFixed(1)} / ${r.lineBankDb === null ? "—" : r.lineBankDb.toFixed(1)} дБ`);

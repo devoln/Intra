@@ -135,16 +135,22 @@ export function renderBank({ program, key, sampleRate = SR, sf2 = DEFAULT_SF2, n
   // FluidSynth master gain is deliberately low by default to leave polyphony
   // headroom.  It is NOT an SF2 instrument-level property.  Relative program
   // calibration must use ratios (program/AGP), where this gain cancels.
+  //
+  // ВАЖНО про АБСОЛЮТНЫЙ уровень (Update 220): синтезатор откалиброван по
+  // БАНКУ ПРИ -g 0.6, а не при 0.2. Проверка: программа 0 (фортепиано) на
+  // `.scratch/level-keys.mjs` читается -0.9 дБ при -g 0.6. Исторические числа
+  // в логе фитинга мерились при -g 0.2 и на 9.5 дБ ниже — при подгонке
+  // ГРОМКОСТИ (а не формы) всегда указывай gain: 0.6.
   execFileSync("fluidsynth", ["-ni", "-g", String(gain), "-r", String(sampleRate), "-F", wav, "-R", "0", "-C", "0", sf2, mid], { stdio: "ignore" });
   return readWavMono(wav);
 }
 
 /// Удобный «A/B»: возвращает { ours, bank } (bank — null, если рендер упал).
-export async function renderPair({ program, key, sampleRate = SR, wasmJs = DEFAULT_WASM_JS, sf2 = DEFAULT_SF2, noteOn, noteOff }) {
+export async function renderPair({ program, key, sampleRate = SR, wasmJs = DEFAULT_WASM_JS, sf2 = DEFAULT_SF2, noteOn, noteOff, gain }) {
   const ours = await renderOurs({ program, key, sampleRate, wasmJs, noteOn, noteOff });
   let bank = null;
   let bankProgram = bankProgramFor(program);
-  try { bank = renderBank({ program, key, sampleRate, sf2, noteOn, noteOff }); } catch { /* банка может не быть */ }
+  try { bank = renderBank({ program, key, sampleRate, sf2, noteOn, noteOff, gain }); } catch { /* банка может не быть */ }
   return { ours, bank, bankProgram };
 }
 

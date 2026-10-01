@@ -47,12 +47,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 endif()
 option(INTRA_PIANO_ONSET_CACHE "Cache/resample the 500 ms acoustic-piano region prefix" ON)
 set(INTRA_PIANO_ONSET_CACHE_MS "1000" CACHE STRING "Acoustic-piano region cache length in milliseconds")
-# Size-first profiles trade startup CPU for binary/RAM size.  The explicit
-# feature option remains available in ordinary Release builds, so a canonical
-# no-cache -Os build can be produced without switching to -Oz.
-if(INTRA_SIZE_OPT OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" OR INTRA_MINEXE_LEVEL GREATER 0)
-    set(INTRA_PIANO_ONSET_CACHE OFF CACHE BOOL "Cache/resample the acoustic-piano region prefix" FORCE)
-endif()
+# Update 215: выключение кэша — ТОЛЬКО явная опция сборки. Раньше его FORCE-ом
+# снимали все размерные профили (INTRA_SIZE_OPT, MinSizeRel, MINEXE>0), из-за
+# чего канонический -Os бинарь собирался без кэша и фортепиано рендерилось
+# заметно медленнее (замер cost 1:60: сборка таблицы 1.76 мс вместо холодной
+# ветки с кэшем). Хозяин: «Он всегда должен быть включён! Выключение — это
+# опция, не активная по умолчанию». Теперь ни один профиль кэш не трогает:
+# собирается он всегда, кроме сборки с явным -DINTRA_PIANO_ONSET_CACHE=OFF.
 # The explicit any-cost profile also drops UI-only note meters. MinSizeRel is
 # less aggressive: it disables the large PCM cache but keeps caller-selected
 # UI features unless the caller turns them off.

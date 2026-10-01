@@ -32,7 +32,7 @@ void ConvertAmplutudesToSamples(Span<float> inAmplitudesX2OutSamples, Span<float
 /// Как ConvertAmplutudesToSamples, но БЕЗ нормализации результата к пику 1.
 /// Используется для верного порта web-midisynth: там IFFT не нормализуется,
 /// а относительная громкость инструментов задаётся полем Volume.
-void ConvertAmplitudesToSamplesUnnormalized(Span<float> inAmplitudesX2OutSamples, Span<float> tempBuffer);
+void ConvertAmplitudesToSamplesUnnormalized(Span<float> inAmplitudesX2OutSamples, Span<float> tempBuffer, unsigned phaseSalt = 0);
 
 /// Принимает table, у которого Data содержит table.BaseLevelLength / 2 частот.
 /// После работы этой функции table содержит table.BaseLevelLength семплов, соответствующих этим частотам со случайными фазами.
@@ -40,7 +40,30 @@ void ConvertAmplitudesToSamplesUnnormalized(Span<float> inAmplitudesX2OutSamples
 void ConvertAmplitudesToSamples(WaveTable& table, float volume=1, bool genMipmaps=false);
 
 /// Как ConvertAmplitudesToSamples, но БЕЗ нормализации (порт web-midisynth).
-void ConvertAmplitudesToSamplesUnnormalized(WaveTable& table, bool genMipmaps=false);
+void ConvertAmplitudesToSamplesUnnormalized(WaveTable& table, bool genMipmaps=false, unsigned phaseSalt = 0);
+
+/// Фаза, которую GenerateRandomPhases выдаёт БИНУ bin при phaseSalt = 0 и
+/// базовом уровне tableSize (bin = 1 — первая линия над DC, ей достаётся
+/// первый вызов rand). Нужна второй таблице ноты (онсет флейт, Update 224):
+/// она строится с теми же фазами, что сустейн-таблица, иначе кроссфейд двух
+/// таблиц гасил бы гармоники (на этом умер блум, Update 223).
+/// ВАЖНО: фаза привязана к БИНУ, а не к номеру гармоники — у низких клавиш
+/// h1 стоит на десятках бинов, и подстановка «фазы по номеру гармоники»
+/// рассинхронизировала все линии (первая попытка Update 224).
+float SustainPhaseOfBin(size_t bin, size_t tableSize);
+
+/// Фазозакреплённый близнец ConvertAmplitudesToSamplesUnnormalized: строит
+/// таблицу из гармоник, фазы которых берутся из SustainPhaseOfBin (то есть
+/// ТЕ ЖЕ, что у сустейн-таблицы той же длины). Нормировка, сетка бинов и
+/// знак фазы — построчно как в BuildWaveTableCore (real = a·cos φ,
+/// imag = a·sin φ, зеркало спектра, тот же IFFT), поэтому относительная
+/// громкость этой таблицы и сустейна задаётся только отношением профилей,
+/// а кроссфейд меняет спектр, а не фазовые соотношения линий.
+/// baseRatio — позиция h1 на биновой сетке (как у BuildWaveTable);
+/// в inAmplitudesX2OutSamples.Length()/2 первых бинов лежит реальная часть
+/// спектра, tempBuffer — тот же размер для мнимой и для работы алгоритма.
+void ConvertPhasedHarmonicsToSamples(Span<float> inAmplitudesX2OutSamples, Span<float> tempBuffer,
+	float baseRatio, Span<const float> amplitudes);
 
 
 struct SineHarmonicWithBandwidthDesc

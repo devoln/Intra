@@ -44,7 +44,7 @@ const SUBSYSTEMS = [
   { name: "аддитив/PADsynth", files: ["intrasynth/src/Intra/Synth/AdditiveSampler.cpp", "intrasynth/src/Intra/Synth/AdditiveSampler.h"], why: "из профиля в таблицу, ширина b(k), нормировка" },
   { name: "вейвтейбл", files: ["intrasynth/src/Intra/Synth/WaveTableSampler.cpp", "intrasynth/src/Intra/Synth/WaveTableGeneration.cpp", "intrasynth/src/Intra/Synth/WaveTable.cpp"], why: "чтение таблицы, петли и их периодика" },
   { name: "волны и струны", files: ["intrasynth/src/Intra/Synth/WaveFormSampler.cpp", "intrasynth/src/Intra/Synth/SpectralStringSampler.cpp", "intrasynth/src/Intra/Synth/KarplusStrongSampler.cpp"], why: "формулы волн (согласные), модальные/спектральные струны" },
-  { name: "физические модели", files: ["intrasynth/src/Intra/Synth/DrumPhysicalModel.cpp", "intrasynth/src/Intra/Synth/ViolinPhysicalModel.h", "intrasynth/src/Intra/Synth/SnarePhysicalModel.h"], why: "барабаны, скрипка, малый барабан" },
+  { name: "физические модели", files: ["intrasynth/src/Intra/Synth/DrumPhysicalModel.cpp", "intrasynth/src/Intra/Synth/SnarePhysicalModel.h"], why: "барабаны, малый барабан (ViolinPhysicalModel удалён в Update 231 как мёртвый)" },
   { name: "фортепиано", files: ["intrasynth/src/Intra/Synth/PianoRegions.h", "intrasynth/src/Intra/Synth/PianoTablesExtra.h"], why: "сгенерированные таблицы регионов и партиалов" },
   { name: "MIDI и микшер", files: ["intrasynth/src/Intra/Synth/MidiSynth.cpp", "intrasynth/src/Intra/Synth/MusicSynthesizer.cpp", "intrasynth/src/Intra/Synth/MidiInstrumentMapping.cpp"], why: "программа → инструмент, полифония, эффекты" },
   { name: "мост в WASM", files: ["intrasynth/src/Intra/Synth/EmscriptenInterface.cpp"], why: "C-API: _SourceCreateLive, _SourceSendMidiEvent, отладочные SynthSet…" },

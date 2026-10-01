@@ -94,8 +94,13 @@ noinline void AddSineHarmonicGauss(Span<float> dstAmpls, float ratio, float base
 // harmonic set. Exposed so instruments can pick the harmonic profile per
 // register inside a custom WaveTableCache::Generator (e.g. Flute).
 // Table build kernel from a ready harmonic row (defined below, before CreateWaveTables). Called from here and from the profile decoder in InstrumentLibrary.cpp, so the build body exists once.
+// extraAmplSum — амплитудная сумма линий, которые в таблицу НЕ попадают, но в
+// нормировке участвовать обязаны. Нужна там, где часть обертонов строит не
+// таблица, а аддитивный слой (ядра h1..h8 у 54 SynthVoice, см. VoiceCoreLayer):
+// kernel делит все линии на Σa, поэтому вынутое ядро без этой добавки подняло бы
+// все оставшиеся обертоны на Σядер/Σостатка.
 noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float volumeScale,
-	size_t tableSize, float freq, unsigned sampleRate);
+	size_t tableSize, float freq, unsigned sampleRate, unsigned phaseSalt = 0, float extraAmplSum = 0);
 
 noinline WaveTable BuildWaveTable(const HarmonicSet& set, size_t tableSize, float freq, unsigned sampleRate)
 {
@@ -147,7 +152,7 @@ noinline WaveTable BuildWaveTable(const HarmonicSet& set, size_t tableSize, floa
 
 // Table build from a ready harmonic row: no resonances and no ownership. Needed where the profile is decoded on the stack (choir/voice region profiles in InstrumentLibrary.cpp): HarmsProfile used to hand out a HarmonicSet with two Arrays per anchor, pulling in destructors, allocations and inlined code. Basis quantisation and normalisation are exactly as in BuildWaveTable below, so the spectral shape and the level match it.
 noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float volumeScale,
-	size_t tableSize, float freq, unsigned sampleRate)
+	size_t tableSize, float freq, unsigned sampleRate, unsigned phaseSalt, float extraAmplSum)
 {
 	WaveTable tbl;
 	tbl.BaseLevelLength = tableSize;
@@ -158,7 +163,7 @@ noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float 
 	tbl.BaseLevelRatio = float(baseBin)/float(tableSize);
 	const float baseRatio = tbl.BaseLevelRatio;
 
-	float amplSum = 0;
+	float amplSum = extraAmplSum;
 	for(const auto& harm: harmonics)
 	{
 		const float ifreq = harm.FreqMultiplier*freq;
@@ -173,7 +178,13 @@ noinline WaveTable BuildWaveTableCore(Span<const HarmonicDesc> harmonics, float 
 			h.Amplitude*volumeScale/amplSum, h.Bandwidth);
 	}
 
-	ConvertAmplitudesToSamplesUnnormalized(tbl, false);
+	// Аддитивный масштаб линий этой таблицы: амплитуда, с которой гармоника
+	// звучит в семплах таблицы, если её внести как ОДИН бин
+	// (AddSineHarmonic: V = amplitude*N, а непарный бин даёт вдвое большую
+	// синусоиду). Инструмент, выносящий часть гармоник в отдельные синусы
+	// (VoiceCorePartial), берёт её отсюда, чтобы масштаб не подбирался вручную.
+	tbl.CoreScale = 2.0f*volumeScale*float(tableSize)/amplSum;
+	ConvertAmplitudesToSamplesUnnormalized(tbl, false, phaseSalt);
 	return tbl;
 }
 
@@ -368,7 +379,12 @@ public:
 		// bed). RBJ biquad HPF, Q = 0.75.
 		if(hpMultiplier > 0.0f)
 		{
-			const float fc = Math::Clamp(freq*hpMultiplier, 80.0f, 1200.0f);
+			// Update 235: потолок ФВЧ поднят 1200 → 2600 Гц. Слою-чиффу пан-флейты
+			// (слой W) коррер ФВЧ теперь задаётся как 1.6·f0 и на C6 равен 1674 Гц,
+			// а прежний потолок 1200 срезал его до 1200/1046 = 1.15·f0 — то есть на
+			// высоких нотах ФВЧ переставал ехать за нотой и пропускал под-f0 гул
+			// гребёнки (замер u235-pf-atk: 100-420 Гц на +29.6 дБ к банку).
+			const float fc = Math::Clamp(freq*hpMultiplier, 80.0f, 2600.0f);
 			const float w0 = 2.0f*float(Math::PI)*fc/float(sampleRate);
 			const float cosw = Math::Cos(w0), sinw = Math::Sin(w0);
 			const float q = 0.75f;
@@ -434,7 +450,15 @@ public:
 			// Starts at 0 and swells to 1 over Attack (the chiff burst), then
 			// decays to the Sustain air bed and holds; NoteRelease starts the
 			// release segment. Only meaningful with a non-zero Attack.
-			mEnv = EnvelopeFactory::ADSR(env.Attack, env.Decay, env.Sustain, env.Release, env.Exponential)(sampleRate);
+			// Update 235c: через MakeEnvelope, а не ADSR напрямую — при Delay == 0
+			// фабрика строит ровно тот же ADSR (бит-в-бит, как раньше), а при
+			// Delay > 0 добавляет ведущий линейный отрезок 0 → 1/255, после
+			// которого атака идёт ЭКСПОНЕНЦИАЛЬНО. Это нужно слою-чиффу
+			// пан-флейты: у банка чифф в полосах ниже 1.8 кГц появляется только
+			// с 16-30 мс и растёт раздувом, а линейный фронт 18 мс отдавал
+			// −16…−6 дБ уже в первые 3-12 мс (+7…+20 дБ к банку, замер
+			// u235-pf-atk).
+			mEnv = MakeEnvelope(env)(sampleRate);
 		}
 	}
 
@@ -494,9 +518,14 @@ public:
 // т.е. спектр плавно переходит атака(яркая/чистая) → сустейн(темнее).
 class BloomSampler: public IGenericSampler
 {
-	// Состояние SineRange-рекурсии: s_{n+1} = k·s_n − s_{n−1}, амплитуда уже
-	// внутри s1/s2 (как в AdditiveSampler). Первые mFlashCount партиал —
-	// вспышка, остальные — «всплытие».
+	// Состояние той же рекурсии, что в SineRange: s_{n+1} = k·s_n − s_{n−1},
+	// амплитуда уже внутри s1/s2 (как в AdditiveSampler). Годится ТОЛЬКО для
+	// аудио-частот (dphi² ≫ порога 2·cos(dphi)→2); для модуляции ниже ~3 Гц
+	// посэмпловая рекурсия не годится (даст линейный рамп) — там её шагают
+	// реже, раз в 16-64 сэмпла, с линейной интерполяцией (SteppedSineRange в
+	// Chorus.h), либо берут WobbleOscillator; сама рекурсия верна только на
+	// аудио-частотах (Intra/Math/SineRange.h).
+	// Первые mFlashCount партиал — вспышка, остальные — «всплытие».
 	Array<float> mS1, mS2, mK, mKSlope, mAmp, mHarm;
 	size_t mCount = 0;
 	size_t mFlashCount = 0;
@@ -513,7 +542,16 @@ class BloomSampler: public IGenericSampler
 	float mFlashDecay = 0;
 	float mSwell = 1;
 	float mSwellDecay = 0;
-	bool mFlashPeaked = false;
+	bool	mFlashPeaked = false;
+	// Задержка вспышки (Update 235c). У банка верхние ноты пан-флейты
+	// начинаются с ДЫХАНИЯ: замер u235-pf-atk (C6, полоса 900-1400 Гц, дБ отн.
+	// своего сустейна) — банк −33.2/−33.1/−33.3/−32.2/−27.2 (окна 0-3…
+	// 12-16 мс) и только потом раздув до −10.7 (20-25) и +2.7 (30-36), то есть
+	// тона в первые 12 мс практически нет, а вспышка овершута h1 успевала
+	// отдать −20 дБ уже к 4 мс и держала атаку «сразу плотной». С задержкой
+	// вспышка стоит на нуле, пока тон ещё не подошёл. 0 = прежнее поведение
+	// (все прочие вызовы BloomSampler).
+	int mFlashDelayLeft = 0;
 	// NoteRelease: быстрый фейд обеих огибающих (τ≈8 мс), чтобы стаккато не
 	// щёлкало по ещё живой вспышке.
 	float mReleaseStep = 0;
@@ -539,7 +577,8 @@ public:
 		Span<const float> flashAmps, size_t flashMaxPartial,
 		Span<const float> swellAmps, size_t swellMaxPartial,
 		float flashRiseSeconds, float flashTau, float swellTau,
-		float toneRiseSeconds, float scale, const Vibrato& vibrato = {})
+		float toneRiseSeconds, float scale, const Vibrato& vibrato = {},
+		float flashDelaySeconds = 0.0f)
 	{
 		mBaseStep = 2.0f*float(Math::PI)*freq/float(sampleRate);
 		// Блум — часть той же ноты, поэтому вибрато у него то же, что у тела:
@@ -563,6 +602,7 @@ public:
 		mSwellDecay = Math::Exp(-1.0f/(Math::Max(swellTau, 0.001f)*float(sampleRate)));
 		mGateStep = toneRiseSeconds > 0 ? 1.0f/(toneRiseSeconds*float(sampleRate)) : 1.0f;
 		mReleaseStep = Math::Exp(-1.0f/(0.008f*float(sampleRate)));
+		mFlashDelayLeft = int(Math::Max(flashDelaySeconds, 0.0f)*float(sampleRate) + 0.5f);
 	}
 
 	void MultiplyVolume(float volumeMultiplier) override {mVolume *= volumeMultiplier;}
@@ -579,6 +619,7 @@ public:
 		const size_t flashCount = mFlashCount;
 		const float vol = mVolume;
 		float gate = mGate, flash = mFlash, swell = mSwell;
+		int flashDelay = mFlashDelayLeft;
 		for(size_t i = 0; i < n; i++)
 		{
 			if(gate < 1.0f)
@@ -591,10 +632,15 @@ public:
 			// поднимало её линейно, и подъём (2.27e-4/семпл) выигрывал у спада
 			// (1.74e-4/семпл у flash≈1) — вспышка висела на ~1.0 всю ноту,
 			// давая устойчивый пересвет h4 на +10…13 дБ вместо короткого блума.
+			// Update 235c: задержка вспышки — см. mFlashDelayLeft.
 			if(!mFlashPeaked)
 			{
-				flash += mFlashRiseStep;
-				if(flash >= 1.0f) { flash = 1.0f; mFlashPeaked = true; }
+				if(flashDelay > 0) flashDelay--;
+				else
+				{
+					flash += mFlashRiseStep;
+					if(flash >= 1.0f) { flash = 1.0f; mFlashPeaked = true; }
+				}
 			}
 			else flash *= mFlashDecay;
 			swell *= mSwellDecay;
@@ -619,7 +665,7 @@ public:
 			}
 			ioDst[i] += s*vol;
 		}
-		mGate = gate; mFlash = flash; mSwell = swell;
+		mGate = gate; mFlash = flash; mSwell = swell; mFlashDelayLeft = flashDelay;
 		return mFlashPeaked && flash < 1e-4f && swell < 1e-4f ? 0 : n;
 	}
 
@@ -637,6 +683,7 @@ public:
 		const size_t flashCount = mFlashCount;
 		const float vol = mVolume*0.5f;
 		float gate = mGate, flash = mFlash, swell = mSwell;
+		int flashDelay = mFlashDelayLeft;
 		for(size_t i = 0; i < n; i++)
 		{
 			if(gate < 1.0f)
@@ -649,8 +696,12 @@ public:
 			// (см. комментарий в GenerateMono — без этого вспышка не гаснет).
 			if(!mFlashPeaked)
 			{
-				flash += mFlashRiseStep;
-				if(flash >= 1.0f) { flash = 1.0f; mFlashPeaked = true; }
+				if(flashDelay > 0) flashDelay--;
+				else
+				{
+					flash += mFlashRiseStep;
+					if(flash >= 1.0f) { flash = 1.0f; mFlashPeaked = true; }
+				}
 			}
 			else flash *= mFlashDecay;
 			swell *= mSwellDecay;
@@ -872,6 +923,81 @@ struct CutoffFactory
 		const float decaySamples = Math::Max(0.0f, Envelope.Decay*float(sampleRate));
 		return GenericModifier(CutoffFilter(
 			alpha(Cutoffs[0]), attackSamples, alpha(Cutoffs[1]), decaySamples, alpha(Cutoffs[2])));
+	}
+
+	INTRA_FORCEINLINE explicit operator bool() const {return false;}
+};
+
+// Time-varying BROADBAND GAIN ("overshoot envelope"), out *= g(t) with g
+// piecewise linear and starting at note-on.
+//
+// Unlike the filter helpers above this one only scales: the phase relations of
+// the harmonics are untouched, so no partial can cancel another one.  That is
+// exactly what the Titanic flute family needs: the bank's samples play a
+// RECORDED onset before the loop point, where h1 sits 4-8 dB ABOVE the sustain
+// for the first 0.1-0.5 s (measured, .scratch/u223-flute-atk.mjs).  Saying that
+// with extra partials (BloomSampler) failed: the bloom's sine partials have
+// fixed start phases while the body table uses random ones, so the sum was a
+// boost on one key and a cancellation on the next (.scratch/u223-bloom-check.mjs).
+class AttackGainFilter
+{
+	float mGain = 1;
+	float mDGain = 0;
+	float mEnds[4] = {1, 1, 1, 1};
+	float mDurations[4] = {0, 0, 0, 1};
+	size_t mSeg = 0;
+	size_t mSamplesLeft = 0;
+
+public:
+	// start → g1 за samples0 → g2 за samples1 → g3 за samples2; дальше g3.
+	AttackGainFilter(float startGain, float g1, float samples0, float g2, float samples1, float g3, float samples2)
+	{
+		mGain = startGain;
+		mEnds[0] = g1; mDurations[0] = samples0;
+		mEnds[1] = g2; mDurations[1] = samples1;
+		mEnds[2] = g3; mDurations[2] = samples2;
+		mEnds[3] = g3; mDurations[3] = 1; // полка: конец сегмента равен его началу
+	}
+
+	void operator()(Span<float> dst)
+	{
+		for(float& out: dst)
+		{
+			if(mSamplesLeft == 0)
+			{
+				if(mSeg >= 4)
+					mDGain = 0;
+				else
+				{
+					const float dur = mDurations[mSeg];
+					const float end = mEnds[mSeg];
+					mSeg++;
+					mSamplesLeft = size_t(dur);
+					mDGain = dur > 0 ? (end - mGain)/dur : 0;
+				}
+			}
+			out *= mGain;
+			mGain += mDGain;
+			if(mSamplesLeft > 0) mSamplesLeft--;
+		}
+	}
+};
+
+struct AttackGainFactory
+{
+	float Gains[4] = {1, 1, 1, 1};
+	float Durations[3] = {0, 0, 0};
+
+	AttackGainFactory(decltype(nullptr)=nullptr) {}
+	AttackGainFactory(float g0, float g1, float g2, float g3, float d0, float d1, float d2):
+		Gains{g0, g1, g2, g3}, Durations{d0, d1, d2} {}
+
+	GenericModifier operator()(float, float, unsigned sampleRate) const
+	{
+		return GenericModifier(AttackGainFilter(Gains[0], Gains[1],
+			Math::Max(0.0f, Durations[0]*float(sampleRate)), Gains[2],
+			Math::Max(0.0f, Durations[1]*float(sampleRate)), Gains[3],
+			Math::Max(0.0f, Durations[2]*float(sampleRate))));
 	}
 
 	INTRA_FORCEINLINE explicit operator bool() const {return false;}

@@ -1,4 +1,5 @@
 #include "WaveFormSampler.h"
+#include "Intra/Math/SineRange.h"
 
 #include "Generators.hh"
 #include "Generators/Square.h"
