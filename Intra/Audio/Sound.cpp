@@ -18,7 +18,14 @@
 #if(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_DirectSound)
 #include "detail/SoundDirectSound.hxx"
 #elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_OpenAL)
+#if defined(__APPLE__) && defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
 #include "detail/SoundOpenAL.hxx"
+#if defined(__APPLE__) && defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 #elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_ALSA)
 #include "detail/SoundALSA.hxx"
 #elif(INTRA_LIBRARY_SOUND == INTRA_LIBRARY_SOUND_WebAudio)

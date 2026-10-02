@@ -191,7 +191,9 @@ bool BasicSocket::waitInputMs(size_t milliseconds) const
 	fd_set set;
 	FD_ZERO(&set);
 	FD_SET(mHandle, &set);
-	timeval timeout = {long(milliseconds/1000), long(milliseconds % 1000 * 1000)};
+	timeval timeout;
+	timeout.tv_sec = static_cast<decltype(timeout.tv_sec)>(milliseconds/1000);
+	timeout.tv_usec = static_cast<decltype(timeout.tv_usec)>(milliseconds % 1000 * 1000);
 	return select(int(mHandle + 1), &set, null, null, &timeout) > 0;
 }
 

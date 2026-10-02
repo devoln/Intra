@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.16)
 
 project(Intra)
 
@@ -92,15 +92,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     set(INTRA_HEADERS "")
 endif()
 
-# CMake has had native unity-build support since 3.16. Prefer it whenever
-# available; retain the historical generated Intra.UB.cc only as a fallback
-# for genuinely old CMake installations.
-set(_INTRA_LEGACY_UNITY OFF)
-if(UNITY_BUILD AND CMAKE_VERSION VERSION_LESS "3.16")
-    enable_unity_build(Intra INTRA_SOURCES)
-    set(_INTRA_LEGACY_UNITY ON)
-endif()
-
 # In size-optimised builds the whole library compiles at -Oz/-Os, which badly
 # hurts library code that runs during a render: the wave-table FFT
 # (Audio/AudioProcessing.cpp) showed up as ~35% of render time at -Os native,
@@ -116,7 +107,7 @@ endif()
 # Four CPU-equivalents are available in the ChatGPT build container. With the
 # web source set reduced to 15 files, one Intra unity TU plus three synth unity
 # TUs keeps all CPUs busy without reparsing common headers.
-if(UNITY_BUILD AND NOT _INTRA_LEGACY_UNITY)
+if(UNITY_BUILD)
     if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         # Only 15 implementation files remain in the web closure, so one TU is
         # cheap and leaves the other CPU slots to the synth unity TUs.

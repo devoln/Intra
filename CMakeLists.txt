@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.16)
+project(Intra LANGUAGES CXX)
 
 # Shared size-profile switches must be defined before add_subdirectory(Intra),
 # otherwise the legacy Intra code-pruning level cannot affect libIntra.

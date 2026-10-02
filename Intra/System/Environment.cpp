@@ -193,6 +193,24 @@ static CSpan<StringView> getAndParseCommandLine()
 
 }}
 
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
+
+#include <crt_externs.h>
+
+namespace Intra { namespace System {
+
+static CSpan<StringView> getAndParseCommandLine()
+{
+	const int argc = *_NSGetArgc();
+	char** const argv = *_NSGetArgv();
+	static FixedArray<StringView> arguments;
+	arguments.SetCount(size_t(argc));
+	for(int i = 0; i < argc; ++i) arguments[size_t(i)] = StringView(argv[i]);
+	return arguments.AsConstRange();
+}
+
+}}
+
 #elif(defined(INTRA_PLATFORM_IS_UNIX))
 
 #include <sys/types.h>

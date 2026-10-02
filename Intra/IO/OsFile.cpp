@@ -88,8 +88,13 @@ OsFile::OsFile(StringView fileName, Mode mode, bool disableSystemBuffering, Erro
 #else
 	auto openFlags = (mMode == Mode::Read)? O_RDONLY: (mMode == Mode::Write? O_WRONLY: O_RDWR);
 	if(mMode != Mode::Read) openFlags |= O_CREAT;
+#if defined(O_DIRECT)
 	if(disableSystemBuffering) openFlags |= O_DIRECT;
+#endif
 	const int fd = open(mFullPath.CStr(), openFlags, 0664);
+#if defined(__APPLE__) && defined(F_NOCACHE)
+	if(fd != -1 && disableSystemBuffering) (void)fcntl(fd, F_NOCACHE, 1);
+#endif
 	if(fd != -1) mHandle = NativeHandle(size_t(fd));
 	else mHandle = null;
 #endif

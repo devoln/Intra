@@ -180,7 +180,8 @@ StringView GetStackTrace(Span<char>& dst, size_t framesToSkip, size_t maxFrames,
 
 }}
 
-#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD || \
+	INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
 #include <execinfo.h>
 
 #if defined(__GNUC__)// && !defined(__clang__)

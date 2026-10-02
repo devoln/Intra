@@ -74,6 +74,18 @@
 
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+
+#ifndef INTRA_PLATFORM_OS
+#if defined(__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__)
+#define INTRA_PLATFORM_OS INTRA_PLATFORM_OS_iOS
+#else
+#define INTRA_PLATFORM_OS INTRA_PLATFORM_OS_MacOS
+#endif
+#endif
+
+#endif
+
 #ifndef INTRA_PLATFORM_ARCH
 
 #if defined(WIN64) || defined(_WIN64)
@@ -155,6 +167,7 @@
 #endif
 
 #if(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Linux || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD ||\
+	INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS ||\
 	defined(unix) || defined(__unix) || defined(__unix__))
 #define INTRA_PLATFORM_IS_UNIX
 #endif

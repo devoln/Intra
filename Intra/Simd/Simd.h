@@ -230,6 +230,8 @@ namespace Intra { namespace Simd {
 
 #elif(defined(__ARM_NEON) || defined(__ARM_NEON__))
 
+#include <arm_neon.h>
+
 namespace Intra { namespace Simd {
 
 typedef uint32x2_t uint2;
@@ -284,6 +286,7 @@ forceinline int2 SetInt2(const int xy[2]) {return vld1_s32(xy);}
 forceinline int4 SetInt4(const int xyzw[4]) {return vld1q_s32(xyzw);}
 forceinline float2 SetFloat2(const float xy[2]) {return vld1_f32(xy);}
 forceinline float4 SetFloat4(const float xyzw[4]) {return vld1q_f32(xyzw);}
+forceinline float4 SetFloat4U(const float xyzw[4]) {return vld1q_f32(xyzw);}
 
 forceinline int2 SetInt2(int x, int y)
 {int xy[] = {x, y}; return SetInt2(xy);}
@@ -299,6 +302,7 @@ forceinline float4 SetFloat4(float x, float y, float z, float w)
 
 forceinline void Get(float* dst, float2arg v) {vst1_f32(dst, v);}
 forceinline void Get(float* dst, float4arg v) {vst1q_f32(dst, v);}
+forceinline void GetU(float* dst, float4arg v) {vst1q_f32(dst, v);}
 forceinline float GetX(float2arg v) {float dst[2]; Get(dst, v); return dst[0];}
 forceinline float GetX(float4arg v) {float dst[4]; Get(dst, v); return dst[0];}
 forceinline void Get(int* dst, int2arg v) {vst1_s32(dst, v);}
@@ -315,6 +319,8 @@ forceinline int2 Mul(int2arg a, int2arg b) {return vmul_s32(a, b);}
 forceinline int4 Mul(int4arg a, int4arg b) {return vmulq_s32(a, b);}
 forceinline float2 Mul(float2arg a, float2arg b) {return vmul_f32(a, b);}
 forceinline float4 Mul(float4arg a, float4arg b) {return vmulq_f32(a, b);}
+forceinline float4 Min(float4arg a, float4arg b) {return vminq_f32(a, b);}
+forceinline float4 Max(float4arg a, float4arg b) {return vmaxq_f32(a, b);}
 
 forceinline int2 Sub(int2arg a, int2arg b) {return vsub_s32(a, b);}
 forceinline int4 Sub(int4arg a, int4arg b) {return vsubq_s32(a, b);}

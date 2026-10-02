@@ -67,9 +67,9 @@ public:
 	enum {DATA_SIZE = 24};
 #endif
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS)
-	enum {DATA_SIZE = 44};
+	enum {DATA_SIZE = 80};
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
-	enum {DATA_SIZE = 44};
+	enum {DATA_SIZE = 80};
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_Windows)
 	enum {DATA_SIZE = sizeof(void*)};
 #else
