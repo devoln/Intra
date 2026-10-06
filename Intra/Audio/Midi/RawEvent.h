@@ -50,6 +50,18 @@ private:
 	String mData;
 };
 
+#if defined(__EMSCRIPTEN__) && defined(INTRA_WASM_VFE)
+}}}
+namespace Intra { namespace Range { namespace DP {
+
+template<> class [[clang::lto_visibility_public]]
+InputRangeInterface<Audio::Midi::RawEvent, true>:
+	public IInputEx<Audio::Midi::RawEvent> {};
+
+}}}
+namespace Intra { namespace Audio { namespace Midi {
+#endif
+
 class RawEventStream
 {
 	RawEvent mCurrentEvent;

@@ -56,20 +56,31 @@ RawEventStream MidiFileParser::NextTrackRawEventStream()
 TrackParser MidiFileParser::NextTrackParser()
 {return TrackParser(NextTrackRawEventStream());}
 
+static void addAllTracks(MidiFileParser& parser, TrackCombiner& combiner)
+{
+	while(parser.TracksLeft() > 0) combiner.AddTrack(parser.NextTrackParser());
+}
+
+static noinline void ReportParserError(InputStream& stream, ErrorStatus* status,
+	StringView message, Utils::SourceInfo source)
+{
+	stream = null;
+	if(status) status->Error(message, source);
+}
+
 MidiFileParser::MidiFileParser(InputStream stream, ErrorStatus& errStatus):
 	mMidiStream(Cpp::Move(stream)), mErrStatus(&errStatus)
 {
 	if(!StartsAdvanceWith(mMidiStream, "MThd"))
 	{
-		mMidiStream = null;
-		if(mErrStatus) mErrStatus->Error("Invalid MIDI file header!", INTRA_SOURCE_INFO);
+		ReportParserError(mMidiStream, mErrStatus, "Invalid MIDI file header!", INTRA_SOURCE_INFO);
 		return;
 	}
 	const uint chunkSize = mMidiStream.RawRead<uintBE>();
 	if(chunkSize != 6)
 	{
-		mMidiStream = null;
-		if(mErrStatus) mErrStatus->Error(String::Concat("Invalid MIDI file header chunk size: ", chunkSize), INTRA_SOURCE_INFO);
+		ReportParserError(mMidiStream, mErrStatus,
+			String::Concat("Invalid MIDI file header chunk size: ", chunkSize), INTRA_SOURCE_INFO);
 		return;
 	}
 	mHeaderType = mMidiStream.RawRead<shortBE>();
@@ -78,8 +89,8 @@ MidiFileParser::MidiFileParser(InputStream stream, ErrorStatus& errStatus):
 
 	if(mHeaderType > 2)
 	{
-		mMidiStream = null;
-		if(mErrStatus) mErrStatus->Error(String::Concat("Invalid MIDI file header type: ", mHeaderType), INTRA_SOURCE_INFO);
+		ReportParserError(mMidiStream, mErrStatus,
+			String::Concat("Invalid MIDI file header type: ", mHeaderType), INTRA_SOURCE_INFO);
 		return;
 	}
 }
@@ -89,8 +100,60 @@ TrackCombiner MidiFileParser::CreateSingleOrderedMessageStream(
 {
 	MidiFileParser parser(Cpp::Move(stream), status);
 	TrackCombiner result(parser.HeaderTimeFormat());
-	while(parser.TracksLeft() > 0) result.AddTrack(parser.NextTrackParser());
+	addAllTracks(parser, result);
 	return result;
+}
+
+
+MidiFileSummary::MidiFileSummary(InputStream stream, ErrorStatus& status)
+{
+	MidiFileParser parser(Cpp::Move(stream), status);
+	TrackCombiner combiner(parser.HeaderTimeFormat());
+	addAllTracks(parser, combiner);
+
+	TrackCount = ushort(parser.TrackCount());
+
+	struct CountingDevice: IDevice
+	{
+		size_t NoteCount = 0;
+		double Time = 0;
+		byte ActiveNotes[16][128]{};
+		bool ChannelIsUsed[16]{};
+
+		void OnNoteOn(const NoteOn& noteOn) final
+		{
+			ChannelIsUsed[noteOn.Channel] = true;
+			auto& state = ActiveNotes[noteOn.Channel][noteOn.NoteOctaveOrDrumId];
+			if((state & 2) != 0 && Math::Abs(Time - noteOn.Time) < 0.0001)
+				return;
+			Time = noteOn.Time;
+			NoteCount++;
+			state = byte(1 | (noteOn.TotalVolume() != 0 ? 2 : 0));
+		}
+
+		void OnNoteOff(const NoteOff& noteOff) final
+		{
+			Time = noteOff.Time;
+			auto& state = ActiveNotes[noteOff.Channel][noteOff.NoteOctaveOrDrumId];
+			if((state & 1) == 0) return;
+			state = 0;
+		}
+
+		void OnPitchBend(const PitchBend&) final {}
+
+		void OnAllNotesOff(byte channel) final
+		{
+			for(byte note = 0; note < 128; ++note)
+				ActiveNotes[channel][note] = 0;
+		}
+	} countingDevice;
+
+	combiner.ProcessAllEvents(countingDevice);
+
+	NoteCount = countingDevice.NoteCount;
+	Duration = countingDevice.Time;
+	ChannelsUsed = 0;
+	for(bool used: countingDevice.ChannelIsUsed) if(used) ChannelsUsed++;
 }
 
 
@@ -100,7 +163,7 @@ MidiFileInfo::MidiFileInfo(InputStream stream, ErrorStatus& status)
 	Format = byte(parser.Type());
 
 	TrackCombiner combiner(parser.HeaderTimeFormat());
-	while(parser.TracksLeft() > 0) combiner.AddTrack(parser.NextTrackParser());
+	addAllTracks(parser, combiner);
 
 	TrackCount = ushort(parser.TrackCount());
 

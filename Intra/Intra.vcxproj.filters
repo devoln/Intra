@@ -1214,9 +1214,6 @@
     <ClInclude Include="Random\FastUniformNoise.h">
       <Filter>Заголовочные файлы\Random</Filter>
     </ClInclude>
-    <ClInclude Include="Simd\Simd.h">
-      <Filter>Заголовочные файлы\Simd</Filter>
-    </ClInclude>
     <ClInclude Include="Concepts\Array.h">
       <Filter>Заголовочные файлы\Concepts</Filter>
     </ClInclude>

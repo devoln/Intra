@@ -449,6 +449,18 @@ template<typename I> struct GenericTextDeserializer
 		return *this;
 	}
 
+	//! Десериализация перечислений через их объявленный целочисленный тип.
+	template<typename T> forceinline Meta::EnableIf<
+		Meta::IsEnumType<T>::_,
+	GenericTextDeserializer&> operator>>(T& value)
+	{
+		typedef typename Meta::UnderlyingType<T>::Type Underlying;
+		Underlying rawValue{};
+		*this >> rawValue;
+		value = T(rawValue);
+		return *this;
+	}
+
 	//! Десериализация bool
 	forceinline GenericTextDeserializer& operator>>(bool& v)
 	{

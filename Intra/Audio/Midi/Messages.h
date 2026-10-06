@@ -45,7 +45,11 @@ struct PitchBend
 	short Pitch;
 };
 
+#if defined(__EMSCRIPTEN__) && defined(INTRA_WASM_VFE)
+class [[clang::lto_visibility_public]] IDevice
+#else
 class IDevice
+#endif
 {
 public:
 	virtual ~IDevice() {}

@@ -66,6 +66,17 @@ public:
 	static TrackCombiner CreateSingleOrderedMessageStream(InputStream stream, ErrorStatus& status);
 };
 
+// Compact metrics needed by browser playback and its MIDI information panel.
+struct MidiFileSummary
+{
+	explicit MidiFileSummary(InputStream stream, ErrorStatus& status);
+
+	ushort TrackCount;
+	ushort ChannelsUsed;
+	size_t NoteCount;
+	double Duration;
+};
+
 struct MidiFileInfo
 {
 	explicit MidiFileInfo(InputStream stream, ErrorStatus& status);

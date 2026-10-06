@@ -481,7 +481,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -517,7 +517,7 @@
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;INTRA_SIMD_SUPPORT=INTRA_SIMD_SSE2;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>INTRA_DBGHELP;INTRA_STL_INTERFACE;WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
@@ -1219,7 +1219,6 @@
     <ClInclude Include="Meta.hh" />
     <ClInclude Include="System.hh" />
     <ClInclude Include="Concurrency\Atomic.h" />
-    <ClInclude Include="Simd\Simd.h" />
     <ClInclude Include="System\DateTime.h" />
     <ClInclude Include="System\detail\Common.h" />
     <ClInclude Include="System\Environment.h" />

@@ -35,6 +35,11 @@ template<typename T> struct InputRangeInterface<T, false>: public IInput<T>
 	virtual size_t PopFirstN(size_t count) = 0;
 };
 
+#if defined(__EMSCRIPTEN__) && defined(INTRA_WASM_VFE)
+template<> class [[clang::lto_visibility_public]]
+InputRangeInterface<char, true>: public IInputEx<char> {};
+#endif
+
 template<typename T, typename R, typename PARENT, bool =
 	Meta::IsCopyAssignable<Meta::RemoveConstRef<T>>::_ &&
 	!Meta::IsAbstractClass<Meta::RemoveConstRef<T>>::_

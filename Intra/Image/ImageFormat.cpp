@@ -6,7 +6,7 @@ namespace Intra { namespace Image {
 
 using namespace Math;
 
-#pragma pack(push, 1)
+// Keep pointer fields naturally aligned; packed relocations are rejected by Mach-O linkers.
 struct FormatInfo
 {
 	ushort Type: 2; //0 - Invalid, 1 - normalized, 2 - floating point, 3 - integer
@@ -26,7 +26,6 @@ struct FormatInfo
 	ImageFormat::I BasicFormat;
 	const char* Name;
 };
-#pragma pack(pop)
 
 
 

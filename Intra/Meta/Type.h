@@ -206,7 +206,8 @@ template<typename T> struct IsSignedType: TypeFromValue<bool,
 > {};
 
 template<typename T> struct IsCharTypeExactly: TypeFromValue<bool,
-	TypeEquals<T, char>::_ || TypeEquals<T, wchar>::_ || TypeEquals<T, dchar>::_ || TypeEquals<T, wchar_t>::_
+	TypeEquals<T, char>::_ || TypeEquals<T, char8_t>::_ || TypeEquals<T, wchar>::_ ||
+	TypeEquals<T, dchar>::_ || TypeEquals<T, wchar_t>::_
 > {};
 
 template<typename T> struct IsCharType: IsCharTypeExactly<RemoveConstVolatile<T>> {};
@@ -296,6 +297,7 @@ template<typename T> struct IsAbstractClass: TypeFromValue<bool, __is_abstract(T
 template<typename T> struct IsUnion: TypeFromValue<bool, __is_union(T)> {};
 template<typename T> struct IsClass: TypeFromValue<bool, __is_class(T)> {};
 template<typename T> struct IsEnumType: TypeFromValue<bool, __is_enum(T)> {};
+template<typename T> struct UnderlyingType {typedef __underlying_type(T) Type;};
 template<typename T> struct IsEmptyClass: TypeFromValue<bool, __is_empty(T)> {};
 template<typename T> struct IsTriviallyDestructible: TypeFromValue<bool, __has_trivial_destructor(T)> {};
 template<class T, class From> struct IsInherited: TypeFromValue<bool, __is_base_of(From, T)> {};

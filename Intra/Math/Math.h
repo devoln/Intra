@@ -29,6 +29,8 @@ constexpr const double PI = 3.14159265358979323846;
 constexpr const double E = 2.71828182845904523536;
 constexpr const double SqrtPI = 1.77245385090551602729;
 constexpr const double SqrtE = 1.6487212707001;
+constexpr const double Ln2 = 0.693147180559945309417232121458176568;
+constexpr const double Ln10 = 2.3025850929940456840179914546843642;
 
 using Cpp::NaN;
 using Cpp::Infinity;
@@ -38,6 +40,7 @@ template<typename T> constexpr forceinline T Abs(T v) noexcept {return v >= 0? v
 
 template<typename T> constexpr forceinline T Min(const T& t1, const T& t2) noexcept {return t1 < t2? t1: t2;}
 template<typename T> constexpr forceinline T Max(const T& t1, const T& t2) noexcept {return t1 < t2? t2: t1;}
+constexpr forceinline bool IsFinite(double value) noexcept {return value > -double(Infinity) && value < double(Infinity);}
 
 template<typename T> constexpr int ISign(T x) noexcept {return (x > 0) - (x < 0);}
 template<typename T> constexpr T Sign(T x) noexcept {return T(ISign(x));}
@@ -462,6 +465,13 @@ inline float Pow(float v, float power) {return power == 0.0f? 1.0f: Exp(Log(v)*p
 inline double Pow(double v, double power) {return power == 0.0? 1.0: Exp(Log(v)*power);}
 
 #endif
+
+inline float Log2(float value) {return Log(value)*float(1/Ln2);}
+inline double Log2(double value) {return Log(value)*(1/Ln2);}
+inline real Log2(real value) {return Log(value)*real(1/Ln2);}
+inline float Log10(float value) {return Log(value)*float(1/Ln10);}
+inline double Log10(double value) {return Log(value)*(1/Ln10);}
+inline real Log10(real value) {return Log(value)*real(1/Ln10);}
 
 template<typename T> T PowInt(T x, int y)
 {

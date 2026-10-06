@@ -16,8 +16,6 @@
 
 #include "Math/Math.h"
 
-#include "Simd/Simd.h"
-
 #include "Range/Mutation/Copy.h"
 #include "Range/Mutation/Fill.h"
 #include "Range/Mutation/Transform.h"

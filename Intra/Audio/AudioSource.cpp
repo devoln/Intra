@@ -7,6 +7,7 @@ namespace Intra { namespace Audio {
 
 
 
+#if !defined(INTRA_WASM_UNINTERLEAVED_ONLY)
 size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<float> outFloats)
 {
 	if(mChannelCount == 1) return GetUninterleavedSamples({outFloats});
@@ -50,5 +51,6 @@ size_t SeparateFloatAudioSource::GetInterleavedSamples(Span<short> outShorts)
 	}
 	return totalSamplesRead;
 }
+#endif
 
 }}

@@ -226,6 +226,16 @@ GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 	return serializer;
 }
 
+//! Сериализация перечислений через их объявленный целочисленный тип.
+template<typename T, typename O> Meta::EnableIf<
+	Meta::IsEnumType<T>::_,
+GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T value)
+{
+	typedef typename Meta::UnderlyingType<T>::Type Underlying;
+	serializer.Output << Underlying(value);
+	return serializer;
+}
+
 //! Сериализация чисел с плавающей запятой
 template<typename T, typename O> Meta::EnableIf<
 	Meta::IsFloatType<T>::_,

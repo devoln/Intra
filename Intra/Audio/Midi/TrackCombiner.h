@@ -28,7 +28,13 @@ public:
 	double NextEventTime() const;
 
 private:
-	bool trackTimeComparer(const TrackParser& a, const TrackParser& b);
+	bool trackTimeComparer(const TrackParser& a, const TrackParser& b) const;
+	struct TrackTimeComparer
+	{
+		const TrackCombiner& Owner;
+		forceinline bool operator()(const TrackParser& a, const TrackParser& b) const
+		{return Owner.trackTimeComparer(a, b);}
+	};
 };
 
 }}}

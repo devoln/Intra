@@ -16,7 +16,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(ALL_WARNINGS "${ALL_WARNINGS} -Wno-invalid-utf8 -Wno-deprecated-builtins -Wno-deprecated-literal-operator -Wno-nan-infinity-disabled -Wno-deprecated-copy-with-user-provided-copy -Wno-nontrivial-memcall -Wno-deprecated-copy -Wno-unused-but-set-variable -Wno-enum-float-conversion -Wno-variadic-macro-arguments-omitted -Wno-implicit-int-float-conversion -Wno-implicit-const-int-float-conversion")
     endif()
-    set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++11 ${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
+    set(COMMON_PARAMETERS "${ALL_WARNINGS} -std=c++20 ${ADDITIONAL_COMPILER_PARAMETERS} -I Intra")
 
     if(${CMAKE_GENERATOR} MATCHES "Unix Makefiles" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} -pthread")
@@ -226,5 +226,4 @@ function(enable_unity_build UB_NAME SOURCE_VARIABLE_NAME)
   # Complement list of translation units with the name of ub
   set(${SOURCE_VARIABLE_NAME} ${${SOURCE_VARIABLE_NAME}} ${unit_build_file} PARENT_SCOPE)  
 endfunction(enable_unity_build)
-
 

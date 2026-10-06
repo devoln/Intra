@@ -18,11 +18,11 @@ namespace Intra { namespace Audio { namespace Midi {
 
 struct TrackParser
 {
-	InputRange<RawEvent> Events;
+	RawEventStream Events;
 	double Time = 0;
 	uint DelayTicksPassed = 0;
 
-	TrackParser(InputRange<RawEvent> events, double time=0);
+	TrackParser(RawEventStream events, double time=0);
 
 	TrackParser(const TrackParser&) = delete;
 	TrackParser& operator=(const TrackParser&) = delete;

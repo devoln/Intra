@@ -1,10 +1,9 @@
 #include "TrackCombiner.h"
 #include "Range/Mutation/Heap.h"
-#include "Funal/ObjectMethod.h"
 
 namespace Intra { namespace Audio { namespace Midi {
 
-bool TrackCombiner::trackTimeComparer(const TrackParser& a, const TrackParser& b)
+bool TrackCombiner::trackTimeComparer(const TrackParser& a, const TrackParser& b) const
 {
 	return a.NextEventTime(mState) > b.NextEventTime(mState);
 }
@@ -14,22 +13,26 @@ TrackCombiner::TrackCombiner(short headerTimeFormat):
 
 void TrackCombiner::AddTrack(TrackParser track)
 {
-	Range::HeapContainerPush(mTracks, Cpp::Move(track),
-		ObjectMethod(this, &TrackCombiner::trackTimeComparer));
+	const TrackTimeComparer comparer{*this};
+	mTracks.AddLast(Cpp::Move(track));
+	Intra::z_D::HeapPushCore(mTracks, mTracks.Length(), comparer);
 }
 
 void TrackCombiner::ProcessEvent(IDevice& device)
 {
-	auto& trackWithNearestEvent = Range::HeapPop(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
+	const TrackTimeComparer comparer{*this};
+	Cpp::Swap(mTracks.First(), mTracks.Last());
+	Intra::z_D::HeapOrderCore(mTracks, mTracks.Length() - 1, 0, comparer);
+	auto& trackWithNearestEvent = mTracks.Last();
 	const double prevTickDuration = mState.TickDuration;
 	trackWithNearestEvent.ProcessEvent(mState, device);
 	const double lastEventTime = trackWithNearestEvent.Time;
 	if(trackWithNearestEvent.Empty()) mTracks.RemoveLast();
-	else Range::HeapPush(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
+	else Intra::z_D::HeapPushCore(mTracks, mTracks.Length(), comparer);
 	if(mState.TickDuration != prevTickDuration)
 	{
 		for(auto& track: mTracks) track.OnTempoChange(lastEventTime, prevTickDuration);
-		Range::HeapBuild(mTracks, ObjectMethod(this, &TrackCombiner::trackTimeComparer));
+		Intra::z_D::HeapBuildCore(mTracks, mTracks.Length(), comparer);
 	}
 }
 

@@ -1,6 +1,7 @@
 ﻿#include "Audio/AudioProcessing.h"
 #include "Utils/Span.h"
 #include "Math/Math.h"
+#include "Simd/SimdVector.h"
 
 #include "Range/Mutation/Transform.h"
 
@@ -100,7 +101,12 @@ static void makeTransform(Span<cfloat> data, float phase)
 #endif
 
 // Принимает phase = -PI для прямого FFT и +PI для обратного.
-static void makeTransform(Span<float> real, Span<float> imag, float phase)
+#ifndef INTRA_AUDIO_FFT_SIMD
+#define INTRA_AUDIO_FFT_SIMD 1
+#endif
+
+template<bool UseVectorization>
+static void makeTransformImpl(Span<float> real, Span<float> imag, float phase)
 {
 	float nextSine = 0;
 	for(size_t i = 1; i < real.Length(); i <<= 1)
@@ -111,7 +117,55 @@ static void makeTransform(Span<float> real, Span<float> imag, float phase)
 		nextSine = Math::Sin(phase);
 		const float multReal = -2*Math::Sqr(nextSine);
 		float factorReal = 1, factorImag = 0;
-		for(size_t j = 0; j < i; j++) // iterations through groups with different transform factors
+		if constexpr(UseVectorization && INTRA_AUDIO_FFT_SIMD && INTRA_CONFIG_USE_VECTOR_EXTENSIONS && Config::TargetMaxSimdLength<float> >= 4)
+		{
+			size_t j = 0;
+			for(; j + 4 <= i; j += 4)
+			{
+				// Generate four adjacent twiddles from the same recurrence and
+				// reuse them across all blocks in this stage. No scratch array is
+				// allocated for the complete stage.
+				float factorsReal[4], factorsImag[4];
+				for(size_t lane = 0; lane < 4; ++lane)
+				{
+					factorsReal[lane] = factorReal;
+					factorsImag[lane] = factorImag;
+					const float oldFactorReal = factorReal;
+					factorReal = (multReal + 1)*factorReal - multImag*factorImag;
+					factorImag = (multReal + 1)*factorImag + multImag*oldFactorReal;
+				}
+				const SimdVector<float, 4> factorRe = SimdLoad<4>(factorsReal), factorIm = SimdLoad<4>(factorsImag);
+				for(size_t k = j; k < real.Length(); k += next)
+				{
+					const size_t match = k + i;
+					const auto aRe = SimdLoad<4>(real.Begin + k), aIm = SimdLoad<4>(imag.Begin + k);
+					const auto bRe = SimdLoad<4>(real.Begin + match), bIm = SimdLoad<4>(imag.Begin + match);
+					const auto productReal = bRe*factorRe - bIm*factorIm;
+					const auto productImag = bIm*factorRe + bRe*factorIm;
+					SimdStore(real.Begin + match, aRe - productReal);
+					SimdStore(imag.Begin + match, aIm - productImag);
+					SimdStore(real.Begin + k, aRe + productReal);
+					SimdStore(imag.Begin + k, aIm + productImag);
+				}
+			}
+			for(; j < i; ++j) // scalar tail for groups not filling a vector
+			{
+				for(size_t k = j; k < real.Length(); k += next)
+				{
+					const size_t match = k + i;
+					const float productReal = real[match] * factorReal - imag[match] * factorImag;
+					const float productImag = imag[match] * factorReal + real[match] * factorImag;
+					real[match] = real[k] - productReal;
+					imag[match] = imag[k] - productImag;
+					real[k] += productReal;
+					imag[k] += productImag;
+				}
+				const float oldFactorReal = factorReal;
+				factorReal = (multReal + 1)*factorReal - multImag*factorImag;
+				factorImag = (multReal + 1)*factorImag + multImag*oldFactorReal;
+			}
+		}
+		else for(size_t j = 0; j < i; ++j) // iterations through groups with different transform factors
 		{
 			for(size_t k = j; k < real.Length(); k += next) // iterations through pairs within group
 			{
@@ -129,6 +183,23 @@ static void makeTransform(Span<float> real, Span<float> imag, float phase)
 		}
 	}
 }
+
+// Keep short transforms on the original scalar loop. Vector setup pays off
+// only once each stage contains enough contiguous butterflies.
+static void makeTransform(Span<float> real, Span<float> imag, float phase)
+{
+	if constexpr(INTRA_AUDIO_FFT_SIMD && INTRA_CONFIG_USE_VECTOR_EXTENSIONS && Config::TargetMaxSimdLength<float> >= 4)
+	{
+		if(real.Length() >= 1024)
+		{
+			makeTransformImpl<true>(real, imag, phase);
+			return;
+		}
+	}
+	makeTransformImpl<false>(real, imag, phase);
+}
+
+#undef INTRA_AUDIO_FFT_SIMD
 
 #if(INTRA_DISABLED)
 

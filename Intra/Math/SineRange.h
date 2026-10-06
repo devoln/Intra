@@ -13,6 +13,8 @@ namespace Intra { namespace Range {
 
 template<typename T> struct SineRange
 {
+	// For small float phase steps, 2*cos(dphi) may round to 2 and the recurrence
+	// loses its curvature; control-rate consumers should advance in larger steps.
 	enum: bool {RangeIsInfinite = true};
 
 	SineRange(null_t=null):

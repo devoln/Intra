@@ -53,7 +53,10 @@ template<typename R, typename Char> forceinline Meta::EnableIf<
 	Meta::IsCharType<Char>::_,
 R&&> operator<<(R&& dst, Char ch)
 {
-	dst.Put(ch);
+	if constexpr(Meta::TypeEquals<Char, char8_t>::_ &&
+		Meta::TypeEquals<Concepts::ValueTypeOfAs<R>, char>::_)
+		dst.Put(static_cast<char>(ch));
+	else dst.Put(ch);
 	return Cpp::Forward<R>(dst);
 }
 

@@ -46,6 +46,7 @@ public:
 	}
 
 
+#if !defined(INTRA_WASM_UNINTERLEAVED_ONLY)
 	//! Загрузить следующие семплы в формате чередующихся short каналов.
 	//! @param[out] outShorts Куда загружаются семплы. outShorts.Count() означает, сколько их загружать.
 	//! @return Количество прочитанных семплов, то есть число прочитанных short'ов, делённое на ChannelCount.
@@ -55,6 +56,7 @@ public:
 	//! @param[out] outFloats Куда загружаются семплы. outFloats.Count() означает, сколько их загружать.
 	//! @return Количество прочитанных семплов, то есть число прочитанных float'ов, делённое на ChannelCount.
 	virtual size_t GetInterleavedSamples(Span<float> outFloats) = 0;
+#endif
 
 	//! Загрузить следующие семплы в формате чередующихся float каналов.
 	//! @param[out] outFloats Каналы, в которые загружаются семплы.
@@ -116,8 +118,10 @@ public:
 	SeparateFloatAudioSource& operator=(SeparateFloatAudioSource&&) = default;
 	SeparateFloatAudioSource& operator=(const SeparateFloatAudioSource&) = delete;
 
+#if !defined(INTRA_WASM_UNINTERLEAVED_ONLY)
 	size_t GetInterleavedSamples(Span<short> outShorts) override;
 	size_t GetInterleavedSamples(Span<float> outFloats) override;
+#endif
 };
 
 }}

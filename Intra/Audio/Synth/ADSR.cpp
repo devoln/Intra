@@ -1,8 +1,6 @@
 #include "ADSR.h"
 #include "Math/Math.h"
 
-#include "Simd/Simd.h"
-
 #include "Range/Mutation/Transform.h"
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
