@@ -716,8 +716,8 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<flo
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -726,9 +726,9 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src,
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -737,10 +737,10 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src,
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
-		*dst4.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
+		*dst4.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -749,11 +749,11 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1,
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
-		*dst4.Begin++ = *src.Begin++ / 32768.0f;
-		*dst5.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
+		*dst4.Begin++ = *src.Begin++ / 32768.f;
+		*dst5.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -762,12 +762,12 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1,
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
-		*dst4.Begin++ = *src.Begin++ / 32768.0f;
-		*dst5.Begin++ = *src.Begin++ / 32768.0f;
-		*dst6.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
+		*dst4.Begin++ = *src.Begin++ / 32768.f;
+		*dst5.Begin++ = *src.Begin++ / 32768.f;
+		*dst6.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -776,13 +776,13 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<flo
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
-		*dst4.Begin++ = *src.Begin++ / 32768.0f;
-		*dst5.Begin++ = *src.Begin++ / 32768.0f;
-		*dst6.Begin++ = *src.Begin++ / 32768.0f;
-		*dst7.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
+		*dst4.Begin++ = *src.Begin++ / 32768.f;
+		*dst5.Begin++ = *src.Begin++ / 32768.f;
+		*dst6.Begin++ = *src.Begin++ / 32768.f;
+		*dst7.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 
@@ -791,14 +791,14 @@ void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<float> dst1, Span<flo
 {
 	while(src.End != src.Begin)
 	{
-		*dst1.Begin++ = *src.Begin++ / 32768.0f;
-		*dst2.Begin++ = *src.Begin++ / 32768.0f;
-		*dst3.Begin++ = *src.Begin++ / 32768.0f;
-		*dst4.Begin++ = *src.Begin++ / 32768.0f;
-		*dst5.Begin++ = *src.Begin++ / 32768.0f;
-		*dst6.Begin++ = *src.Begin++ / 32768.0f;
-		*dst7.Begin++ = *src.Begin++ / 32768.0f;
-		*dst8.Begin++ = *src.Begin++ / 32768.0f;
+		*dst1.Begin++ = *src.Begin++ / 32768.f;
+		*dst2.Begin++ = *src.Begin++ / 32768.f;
+		*dst3.Begin++ = *src.Begin++ / 32768.f;
+		*dst4.Begin++ = *src.Begin++ / 32768.f;
+		*dst5.Begin++ = *src.Begin++ / 32768.f;
+		*dst6.Begin++ = *src.Begin++ / 32768.f;
+		*dst7.Begin++ = *src.Begin++ / 32768.f;
+		*dst8.Begin++ = *src.Begin++ / 32768.f;
 	}
 }
 #endif
@@ -809,7 +809,7 @@ static void genericDeinterleaveCastToFloats(CSpan<short> src, Span<Span<float>> 
 	auto dstsSpan = Range::Take(dsts, dst.CopyTo(dsts));
 	while(src.End != src.Begin)
 		for(auto& dsti: dstsSpan)
-			*dsti.Begin++ = *src.Begin++ / 32768.0f;
+			*dsti.Begin++ = *src.Begin++ / 32768.f;
 }
 
 void DeinterleaveShortsCastToFloats(CSpan<short> src, Span<Span<float>> dst)

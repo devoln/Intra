@@ -82,7 +82,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
         Audio/MusicNote.cpp
         Audio/Resample.cpp
         Audio/SampleConversion.cpp
-        Audio/Synth/ExponentialAttenuation.cpp
         Hash/Murmur.cpp
         Memory/Allocator/Global.cpp
         Memory/Allocator/System.cpp
@@ -98,12 +97,20 @@ endif()
 # and the MIDI parser lives here too. Allow overriding the library's own level
 # (e.g. -Os) while the synth's cold code stays at -Oz.
 option(BUILD_DYNAMIC_LIB "Build a dynamic library instead of static." OFF)
+option(INTRA_STL_EXACT_FLOAT_FORMATTING
+	"Enable C++20 charconv for exact float/double text serialization in selected native tools." OFF)
+if(INTRA_STL_EXACT_FLOAT_FORMATTING AND CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+	message(FATAL_ERROR "INTRA_STL_EXACT_FLOAT_FORMATTING is for native tools and must stay off in WebAssembly builds.")
+endif()
 if(BUILD_DYNAMIC_LIB)
 add_library(Intra SHARED ${INTRA_SOURCES} ${INTRA_HEADERS})
 else()
 add_library(Intra STATIC ${INTRA_SOURCES} ${INTRA_HEADERS})
 endif()
-
+if(INTRA_STL_EXACT_FLOAT_FORMATTING)
+	target_compile_features(Intra PUBLIC cxx_std_20)
+	target_compile_definitions(Intra PUBLIC INTRA_STL_EXACT_FLOAT_FORMATTING=1)
+endif()
 # Four CPU-equivalents are available in the ChatGPT build container. With the
 # web source set reduced to 15 files, one Intra unity TU plus three synth unity
 # TUs keeps all CPUs busy without reparsing common headers.

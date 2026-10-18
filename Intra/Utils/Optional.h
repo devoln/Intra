@@ -47,7 +47,11 @@ public:
 	Optional<T>& operator=(const T& rhs)
 	{
 		if(mNotNull) assign(rhs);
-		else new(&mVal) T(rhs);
+		else
+		{
+			new(&mVal) T(rhs);
+			mNotNull = true;
+		}
 		return *this;
 	}
 
@@ -62,7 +66,11 @@ public:
 	Optional<T>& operator=(T&& rhs)
 	{
 		if(mNotNull) assign(Cpp::Move(rhs));
-		else new(&mVal) T(Cpp::Move(rhs));
+		else
+		{
+			new(&mVal) T(Cpp::Move(rhs));
+			mNotNull = true;
+		}
 		return *this;
 	}
 

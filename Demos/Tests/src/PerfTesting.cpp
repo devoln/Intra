@@ -82,7 +82,7 @@ FormattedWriter& InitOutput()
 		(procInfo.BrandString)
 		(procInfo.CoreNumber)
 		(procInfo.LogicalProcessorNumber)
-		(double(procInfo.Frequency)/1000000.0, 1)
+		(double(procInfo.Frequency)/1000000., 1)
 		(double(memInfo.FreePhysicalMemory)/double(1 << 30), 2)
 		(double(memInfo.TotalPhysicalMemory)/double(1 << 30), 2)
 	);

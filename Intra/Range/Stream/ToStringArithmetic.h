@@ -157,7 +157,10 @@ template<typename R> Meta::EnableIf<
 
 	const ulong64 integralPart = ulong64(number);
 	real fractional = number - real(integralPart);
-	if(fractional > 0.99)
+	real minimumRemainingFraction = 0.5;
+	for(int i = 0; i < preciseness; i++)
+		minimumRemainingFraction *= 0.1;
+	if(fractional >= real(1)-minimumRemainingFraction)
 	{
 		ToString(dst, integralPart+1);
 		fractional = 0;
@@ -174,9 +177,10 @@ template<typename R> Meta::EnableIf<
 		fractional *= 10;
 		int digit = int(fractional);
 		fractional -= digit;
-		if(fractional>0.99) fractional=0, digit++;
 		dst.Put(char('0' + digit));
-	} while((fractional >= 0.01 || appendAllDigits) && --preciseness > 0);
+		minimumRemainingFraction *= 10;
+	} while((fractional >= minimumRemainingFraction || appendAllDigits) &&
+		--preciseness > 0);
 }
 
 template<typename R, typename X> Meta::EnableIf<

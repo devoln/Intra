@@ -62,7 +62,7 @@ template<typename T, typename C> Pair<T*> unguarded_partition(Span<T> range, C c
 		!comparer(*pfirst, *(pfirst - 1))) pfirst--;
 	while(pend < range.End &&
 		!comparer(*pend, *pfirst) &&
-		!comparer(*pfirst, *pend)) ++pend;
+		!comparer(*pfirst, *pend)) pend++;
 
 	T* gfirst = pend;
 	T* gend = pfirst;
@@ -70,7 +70,7 @@ template<typename T, typename C> Pair<T*> unguarded_partition(Span<T> range, C c
 	for(;;)
 	{
 		// partition
-		for(; gfirst<range.End; ++gfirst)
+		for(; gfirst<range.End; gfirst++)
 		{
 			if(comparer(*pfirst, *gfirst)) continue;
 			if(comparer(*gfirst, *pfirst)) break;
@@ -78,7 +78,7 @@ template<typename T, typename C> Pair<T*> unguarded_partition(Span<T> range, C c
 			Cpp::Swap(*(pend-1), *gfirst);
 		}
 
-		for(; range.Begin<gend; --gend)
+		for(; range.Begin<gend; gend--)
 		{
 			if(comparer(*(gend-1), *pfirst)) continue;
 			if(comparer(*pfirst, *(gend-1))) break;
@@ -93,7 +93,7 @@ template<typename T, typename C> Pair<T*> unguarded_partition(Span<T> range, C c
 		{
 			// no room at bottom, rotate pivot upward
 			if(pend!=gfirst) Cpp::Swap(*pfirst, *pend);
-			++pend;
+			pend++;
 			Cpp::Swap(*pfirst++, *gfirst++);
 			continue;
 		}

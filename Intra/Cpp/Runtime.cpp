@@ -378,7 +378,7 @@ void INTRA_CRTDECL _initterm(_PVFV* pfbegin, _PVFV* pfend)
 	while(pfbegin < pfend)
 	{
 		if(*pfbegin != null) (**pfbegin)();
-		++pfbegin;
+		pfbegin++;
 	}
 }
 

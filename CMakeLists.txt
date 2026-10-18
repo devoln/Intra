@@ -3,8 +3,7 @@ project(Intra LANGUAGES CXX)
 
 # Shared size-profile switches must be defined before add_subdirectory(Intra),
 # otherwise the legacy Intra code-pruning level cannot affect libIntra.
-option(INTRA_SIZE_OPT "Enable aggressive feature/code pruning (does not select -Oz)" OFF)
-option(INTRA_SIZE_OZ "Use -Oz instead of canonical -Os (compiler choice only)" OFF)
+option(INTRA_SIZE_OPT "Enable aggressive feature/code pruning (does not select the Release optimization level)" OFF)
 set(INTRA_MINEXE_LEVEL "0" CACHE STRING "Legacy Intra code-pruning level (0..3); INTRA_SIZE_OPT defaults it to 3")
 if(INTRA_SIZE_OPT AND INTRA_MINEXE_LEVEL STREQUAL "0")
     set(INTRA_MINEXE_LEVEL "3" CACHE STRING "Legacy Intra code-pruning level (0..3)" FORCE)

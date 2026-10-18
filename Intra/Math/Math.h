@@ -27,6 +27,7 @@ namespace Intra { namespace Math {
 
 constexpr const double PI = 3.14159265358979323846;
 constexpr const double E = 2.71828182845904523536;
+constexpr const double Sqrt2 = 1.4142135623730950488;
 constexpr const double SqrtPI = 1.77245385090551602729;
 constexpr const double SqrtE = 1.6487212707001;
 constexpr const double Ln2 = 0.693147180559945309417232121458176568;
@@ -420,10 +421,10 @@ inline float Exp(float x) {return float(Exp(double(x)));}
 inline float Mod(float x, float y) {return float(Mod(double(x), double(y)));}
 
 
-inline double Acos(double x) {return Atan(Sqrt(1.0 - x*x)/x);}
-inline float Acos(float x) {return Atan(Sqrt(1.0f - x*x)/x);}
-inline double Asin(double x) {return Atan(x/Sqrt(1.0 - x*x));}
-inline float Asin(float x) {return Atan(x/Sqrt(1.0f - x*x));}
+inline double Acos(double x) {return Atan(Sqrt(1. - x*x)/x);}
+inline float Acos(float x) {return Atan(Sqrt(1.f - x*x)/x);}
+inline double Asin(double x) {return Atan(x/Sqrt(1. - x*x));}
+inline float Asin(float x) {return Atan(x/Sqrt(1.f - x*x));}
 
 //forceinline double Tan(double x) {return Sin(x)/Cos(x);}
 //forceinline float Tan(float x) {return Sin(x)/Cos(x);}
@@ -457,12 +458,12 @@ inline float Asin(float x) {return Atan(x/Sqrt(1.0f - x*x));}
 }*/
 
 //! Логарифм для чисел, меньших 65535
-inline float Log(float x) {return float(FixedPointLog(uint(x * 65536)))/65536.0f;}
-inline double Log(double x) {return double(FixedPointLog(uint(x * 65536)))/65536.0;}
-inline real Log(real x) {return real(FixedPointLog(uint(x * 65536)))/65536.0;}
+inline float Log(float x) {return float(FixedPointLog(uint(x * 65536)))/65536.f;}
+inline double Log(double x) {return double(FixedPointLog(uint(x * 65536)))/65536.;}
+inline real Log(real x) {return real(FixedPointLog(uint(x * 65536)))/65536.;}
 
-inline float Pow(float v, float power) {return power == 0.0f? 1.0f: Exp(Log(v)*power);}
-inline double Pow(double v, double power) {return power == 0.0? 1.0: Exp(Log(v)*power);}
+inline float Pow(float v, float power) {return power == 0.f? 1.f: Exp(Log(v)*power);}
+inline double Pow(double v, double power) {return power == 0.? 1.: Exp(Log(v)*power);}
 
 #endif
 
@@ -487,7 +488,7 @@ template<typename T> forceinline T Pow2(T x) {return Exp(x*T(0.6931472));}
 
 template<typename T> T Erf1(T x)
 {
-	static const double P[] = {3.16112374387056560, 113.864154151050156, 377.485237685302021};
+	static const double P[] = {3.1611237438705656, 113.864154151050156, 377.485237685302021};
 	static const double Q[] = {23.6012909523441209, 244.024637934444173, 1282.61652607737228};
 	const T x2 = x*x;
 	T xnum = T(0.185777706184603153*x2);
@@ -503,7 +504,7 @@ template<typename T> T Erf1(T x)
 template<typename T> T Erfc2(T x)
 {
 	static const double P[] = {0.564188496988670089, 8.88314979438837594, 66.1191906371416295,
-		298.635138197400131, 881.952221241769090, 1712.04761263407058, 2051.07837782607147};
+		298.635138197400131, 881.95222124176909, 1712.04761263407058, 2051.07837782607147};
 	static const double Q[] = {15.7449261107098347, 117.693950891312499, 537.181101862009858,
 		1621.38957456669019, 3290.79923573345963, 4362.61909014324716, 3439.36767414372164};
 	T xnum = T(2.15311535474403846e-8 * x);
@@ -564,9 +565,9 @@ inline float FastSqrt(float x)
 inline float FastByteToNormalizedFloat(byte x)
 {
 	union {float f; uint i;} u;
-	u.f = 32768.0f;
+	u.f = 32768.f;
 	u.i |= x;
-	return (u.f - 32768.0f)*(256.0f/255.0f);
+	return (u.f - 32768.f)*(256.f/255.f);
 }
 
 
@@ -652,7 +653,7 @@ inline float frandom(int* seed = &g_frandomSeed)
 	union {float asFloat; uint asInt;};
 	*seed *= 16807;
 	asInt = ((((uint)*seed)>>9)|0x3f800000);
-	return asFloat-1.0f;
+	return asFloat-1.f;
 }
 #endif
 

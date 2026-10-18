@@ -93,7 +93,7 @@ static CSpan<StringView> getAndParseCommandLine()
 			if(state == InText)
 			{
 				auto wendPtr = wcmdptr-1;
-				if(wendPtr>wargStart && wendPtr[-1]=='"') --wendPtr;
+				if(wendPtr>wargStart && wendPtr[-1]=='"') wendPtr--;
 				if(wendPtr>wargStart) dstPtr += WideCharToMultiByte(CP_UTF8, 0,
 					wargStart, int(wendPtr - wargStart), dstPtr, int(len), null, null);
 				argOutput.Put(StringView(argStart, dstPtr));
@@ -110,7 +110,7 @@ static CSpan<StringView> getAndParseCommandLine()
 	if(state == InText)
 	{
 		auto wendPtr = wcmdptr;
-		if(wendPtr > wargStart && wendPtr[-1] == '"') --wendPtr;
+		if(wendPtr > wargStart && wendPtr[-1] == '"') wendPtr--;
 		if(wendPtr > wargStart) dstPtr += WideCharToMultiByte(CP_UTF8, 0,
 			wargStart, int(wendPtr - wargStart), dstPtr, int(len), null, null);
 		argOutput.Put(StringView(argStart, dstPtr));
@@ -205,7 +205,7 @@ static CSpan<StringView> getAndParseCommandLine()
 	char** const argv = *_NSGetArgv();
 	static FixedArray<StringView> arguments;
 	arguments.SetCount(size_t(argc));
-	for(int i = 0; i < argc; ++i) arguments[size_t(i)] = StringView(argv[i]);
+	for(int i = 0; i < argc; i++) arguments[size_t(i)] = StringView(argv[i]);
 	return arguments.AsConstRange();
 }
 

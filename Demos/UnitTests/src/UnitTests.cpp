@@ -24,6 +24,8 @@ INTRA_DISABLE_REDUNDANT_WARNINGS
 
 #include "Concurrency/Concurrency.h"
 
+void TestOptionalAssignments(IO::FormattedWriter& output);
+
 using namespace Intra;
 using namespace IO;
 
@@ -102,6 +104,7 @@ int main(int argc, const char* argv[])
 	}
 	TestGroup(&logger, output, "Text serialization", TestTextSerialization);
 	TestGroup(&logger, output, "Binary serialization", TestBinarySerialization);
+	TestGroup(&logger, output, "Optional assignments", TestOptionalAssignments);
 	TestGroup(&logger, output, "Sort algorithms", TestSort);
 #if !defined(INTRA_NO_CONCURRENCY) && INTRA_LIBRARY_THREAD != INTRA_LIBRARY_THREAD_None
 	if(TestGroup gr{&logger, output, "Concurrency"})

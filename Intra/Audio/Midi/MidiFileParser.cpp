@@ -143,7 +143,7 @@ MidiFileSummary::MidiFileSummary(InputStream stream, ErrorStatus& status)
 
 		void OnAllNotesOff(byte channel) final
 		{
-			for(byte note = 0; note < 128; ++note)
+			for(byte note = 0; note < 128; note++)
 				ActiveNotes[channel][note] = 0;
 		}
 	} countingDevice;

@@ -844,7 +844,6 @@
     <ClCompile Include="Audio\Sources\Wave.cpp" />
     <ClCompile Include="Audio\Synth\ADSR.cpp" />
     <ClCompile Include="Audio\Synth\Chorus.cpp" />
-    <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp" />
     <ClCompile Include="Audio\Synth\Generators\DrumPhysicalModel.cpp" />
     <ClCompile Include="Audio\Synth\Filter.cpp" />
     <ClCompile Include="Audio\Synth\InstrumentSet.cpp" />
@@ -950,7 +949,6 @@
     <ClInclude Include="Audio\Synth.hh" />
     <ClInclude Include="Audio\Synth\ADSR.h" />
     <ClInclude Include="Audio\Synth\Chorus.h" />
-    <ClInclude Include="Audio\Synth\ExponentialAttenuation.h" />
     <ClInclude Include="Audio\Synth\Generators.hh" />
     <ClInclude Include="Audio\Synth\InstrumentSet.h" />
     <ClInclude Include="Audio\Synth\RecordedSampler.h" />
@@ -962,7 +960,6 @@
     <ClInclude Include="Audio\Synth\Generators\Pulse.h" />
     <ClInclude Include="Audio\Synth\Generators\Sawtooth.h" />
     <ClInclude Include="Audio\Synth\Generators\Square.h" />
-    <ClInclude Include="Audio\Synth\Generators\ViolinPhysicalModel.h" />
     <ClInclude Include="Audio\Synth\Generators\WhiteNoise.h" />
     <ClInclude Include="Audio\Synth\Filter.h" />
     <ClInclude Include="Audio\Synth\Octaves.h" />

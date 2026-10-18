@@ -301,7 +301,7 @@ int stbtt_FindGlyphIndex(const stbtt_fontinfo* info, int unicode_codepoint)
 			start=ttUSHORT(data+search+searchRange*2+segcount*2+2);
 			end=ttUSHORT(data+search+searchRange*2);
 			if(unicode_codepoint>end) search+=searchRange*2;
-			--entrySelector;
+			entrySelector--;
 		}
 		search+=2;
 
@@ -923,7 +923,7 @@ static void stbtt__rasterize_sorted_edges(stbtt__bitmap* result, stbtt__edge* e,
                   p->next=z;
                }
             }
-            ++e;
+            e++;
          }
 
          // now process all active edges in XOR fashion
@@ -1051,7 +1051,7 @@ static Vec2* stbtt_FlattenCurves(stbtt_vertex* vertices, int num_verts, float ob
 			case STBTT_vmove:
 				// start the next contour
 				if(n>=0) (*contour_lengths)[n]=num_points-start;
-				++n;
+				n++;
 				start=num_points;
 
 				pos=vertices[i].pos;
@@ -1292,7 +1292,7 @@ static bool stbtt__matchpair(byte* fc, uint nm, byte* name, int nlen, int target
                   if(slen2==0) {if(matchlen==nlen) return true;}
                   else if(matchlen<nlen && name[matchlen]==' ')
                   {
-                     ++matchlen;
+                     matchlen++;
                      if(stbtt_CompareUTF8toUTF16_bigendian((char*)(name+matchlen), nlen-matchlen, (char*)(fc+stringOffset+off2), slen2)) return true;
                   }
                }

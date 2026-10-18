@@ -34,14 +34,6 @@ using uint64 = ulong64;
 using Cpp::Move;
 using Cpp::Forward;
 
-using namespace Math;
-
-namespace Math {
-constexpr const double Sqrt2 = 1.4142135623730950488;
-}
-}
-
-namespace Intra {
 // Portable SIMD's compiler and scalar-type primitives belong to the main
 // Intra core, so consumers do not need a second Core.h include root.
 #if defined(__GNUC__) || defined(__clang__)
@@ -216,12 +208,9 @@ template<typename T> constexpr T MaxStepInRange = [] {
 }();
 template<typename T> constexpr T IntegerRangeMax = [] {
 	if constexpr(CBasicIntegral<T>) return MaxValueOf<T>;
-	else if constexpr(CSame<T, float>) return T(16777216.0f);
-	else return T(9007199254740992.0);
+	else if constexpr(CSame<T, float>) return T(16777216.f);
+	else return T(9007199254740992.);
 }();
 }
 
 template<bool Cond, typename T = void> using Requires = Intra::Meta::EnableIf<Cond, T>;
-
-using namespace Intra;
-using namespace Intra::Range;

@@ -30,7 +30,7 @@ void TestArrayRangeStreams(FormattedWriter& output)
 	Span<char> buf = bufOnStack;
 	buf << "Мы пишем в сишный массив, как в поток." << '\r' << '\n' <<
 		"Парсим pi и прибавляем к нему 1: " <<
-		1.0f+Range::Parse<float>("3.1415926") << "\r\n" <<
+		1.f+Range::Parse<float>("3.1415926") << "\r\n" <<
 		"Далее записан массив: " << arrToFormat <<
 		"\r\nКвадраты элементов этого массива: " << Map(arrToFormat, Math::Sqr<int>) <<
 		"\r\nКвадраты элементов другого массива: " << Map(rawArr, Math::Sqr<int>);

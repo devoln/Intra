@@ -3,7 +3,6 @@
 #include "AttackDecayAttenuation.h"
 #include "AttenuatorPass.h"
 #include "DrumInstrument.h"
-#include "ExponentialAttenuation.h"
 #include "GeneratorSynth.h"
 #include "HighLowPass.h"
 #include "InstrumentLibrary.h"

@@ -22,6 +22,10 @@
 #include "Container/Sequential/String.h"
 #include "Container/Operations.hh"
 
+#if defined(INTRA_STL_EXACT_FLOAT_FORMATTING)
+#include <charconv>
+#endif
+
 
 
 namespace Intra { namespace Data {
@@ -48,18 +52,37 @@ template<typename I> struct GenericTextDeserializer
 
 	bool IgnoreField()
 	{
-		int counter=1;
-		Range::TakeRecursiveBlockAdvance(Input, counter, null,
-			Lang.StructInstanceOpen, Lang.StructInstanceClose, Lang.FieldSeparator,
-		CSpan<Pair<StringView, StringView>>{
-			{Lang.MultiLineCommentBegin, Lang.MultiLineCommentEnd},
-			{Lang.OneLineCommentBegin, "\n"},
-			{Lang.MultiLineStringBegin, Lang.MultiLineStringEnd},
-			{Lang.ArrayOpen, Lang.ArrayClose}
-		},
-		CSpan<Pair<StringView, StringView>>{});
-		INTRA_DEBUG_ASSERT(counter==0 || counter==1);
-		return counter==0;
+		int structDepth = 0, arrayDepth = 0;
+		while(!Input.Empty())
+		{
+			SkipAllSpacesAndComments();
+			if(Input.Empty()) break;
+			if(!Lang.StringQuote.Empty() && Range::ExpectAdvance(Input, Lang.StringQuote))
+			{
+				while(!Input.Empty())
+				{
+					if(Range::ExpectAdvance(Input, Lang.StringQuote)) break;
+					if(Input.First() == '\\')
+					{
+						Input.PopFirst();
+						if(!Input.Empty()) Input.PopFirst();
+					}
+					else Input.PopFirst();
+				}
+				continue;
+			}
+			if(structDepth == 0 && arrayDepth == 0)
+			{
+				if(!Lang.FieldSeparator.Empty() && Range::ExpectAdvance(Input, Lang.FieldSeparator)) return false;
+				if(!Lang.StructInstanceClose.Empty() && Range::ExpectAdvance(Input, Lang.StructInstanceClose)) return true;
+			}
+			if(!Lang.StructInstanceOpen.Empty() && Range::ExpectAdvance(Input, Lang.StructInstanceOpen)) structDepth++;
+			else if(!Lang.StructInstanceClose.Empty() && Range::ExpectAdvance(Input, Lang.StructInstanceClose)) structDepth--;
+			else if(!Lang.ArrayOpen.Empty() && Range::ExpectAdvance(Input, Lang.ArrayOpen)) arrayDepth++;
+			else if(!Lang.ArrayClose.Empty() && Range::ExpectAdvance(Input, Lang.ArrayClose)) arrayDepth--;
+			else Input.PopFirst();
+		}
+		return false;
 	}
 
 	bool IgnoreArrayElement()
@@ -436,6 +459,65 @@ template<typename I> struct GenericTextDeserializer
 		Meta::IsFloatType<T>::_,
 	GenericTextDeserializer&> operator>>(T& v)
 	{
+		#if defined(INTRA_STL_EXACT_FLOAT_FORMATTING)
+		if constexpr(Meta::TypeEquals<T, float>::_ || Meta::TypeEquals<T, double>::_)
+		{
+			SkipAllSpacesAndComments();
+			char token[128];
+			size_t tokenLength = 0;
+			size_t sourceLength = 0;
+			bool leadingPlus = false;
+			auto source = Input;
+			while(!source.Empty())
+			{
+				const char character = char(source.First());
+				const bool isDigit = character >= '0' && character <= '9';
+				const bool isLetter = (character >= 'a' && character <= 'z') ||
+					(character >= 'A' && character <= 'Z');
+				if(character == '+' && tokenLength == 0 && !leadingPlus)
+				{
+					leadingPlus = true;
+					source.PopFirst();
+					sourceLength++;
+					continue;
+				}
+				if(leadingPlus && tokenLength == 0 &&
+					(character == '+' || character == '-'))
+				{
+					Log += "Invalid sign sequence in floating-point number";
+					return *this;
+				}
+				if(!isDigit && !isLetter && character != '+' && character != '-' &&
+					character != '.' && character != char(Lang.DecimalSeparator)) break;
+				if(tokenLength == sizeof(token))
+				{
+					Log += "Floating-point token exceeds exact parser buffer";
+					return *this;
+				}
+				token[tokenLength++] = character == char(Lang.DecimalSeparator)?
+					'.': character;
+				source.PopFirst();
+				sourceLength++;
+			}
+			if(tokenLength == 0)
+			{
+				Log += "Expected a floating-point number";
+				return *this;
+			}
+
+			T parsed{};
+			const auto result = std::from_chars(token, token+tokenLength,
+				parsed, std::chars_format::general);
+			if(result.ec != std::errc{} || result.ptr != token+tokenLength)
+			{
+				Log += "Invalid or out-of-range floating-point number";
+				return *this;
+			}
+			for(size_t i = 0; i < sourceLength; i++) Input.PopFirst();
+			v = parsed;
+			return *this;
+		}
+		#endif
 		v = Range::ParseAdvance<T>(Input, Lang.DecimalSeparator);
 		return *this;
 	}

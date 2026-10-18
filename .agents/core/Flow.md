@@ -502,7 +502,6 @@ Recommended packaging model:
 Recommended structure:
 - `.agents/core/Flow.md`
 - `.agents/core/Personas.md`
-- `.agents/core/ResearchBase.md`
 - `.agents/skills/shared-*`
 - `.agents/skills/project-*`
 - `.agents/skills/stack-*`

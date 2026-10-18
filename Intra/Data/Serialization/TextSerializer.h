@@ -18,6 +18,10 @@
 #include "Range/Compositors/ZipKV.h"
 #include "Range/Mutation/ReplaceSubrange.h"
 
+#if defined(INTRA_STL_EXACT_FLOAT_FORMATTING)
+#include <charconv>
+#endif
+
 namespace Intra { namespace Data {
 
 INTRA_PUSH_DISABLE_REDUNDANT_WARNINGS
@@ -241,7 +245,23 @@ template<typename T, typename O> Meta::EnableIf<
 	Meta::IsFloatType<T>::_,
 GenericTextSerializer<O>&> operator<<(GenericTextSerializer<O>& serializer, T v)
 {
-	Range::ToString(serializer.Output, v, sizeof(T)<=4? 7: 15, serializer.Lang.DecimalSeparator);
+	#if defined(INTRA_STL_EXACT_FLOAT_FORMATTING)
+	if constexpr(Meta::TypeEquals<T, float>::_ || Meta::TypeEquals<T, double>::_)
+	{
+		char buffer[64];
+		const auto result = std::to_chars(buffer, buffer+sizeof(buffer), v,
+			std::chars_format::general);
+		if(result.ec == std::errc{})
+		{
+			for(const char* character = buffer; character != result.ptr &&
+				!Range::FullOrFalse(serializer.Output); character++)
+				serializer.Output.Put(*character == '.' ?
+					serializer.Lang.DecimalSeparator: *character);
+			return serializer;
+		}
+	}
+	#endif
+	Range::ToString(serializer.Output, v, sizeof(T)<=4? 7: 21, serializer.Lang.DecimalSeparator);
 	return serializer;
 }
 

@@ -126,7 +126,7 @@ static void makeTransformImpl(Span<float> real, Span<float> imag, float phase)
 				// reuse them across all blocks in this stage. No scratch array is
 				// allocated for the complete stage.
 				float factorsReal[4], factorsImag[4];
-				for(size_t lane = 0; lane < 4; ++lane)
+				for(size_t lane = 0; lane < 4; lane++)
 				{
 					factorsReal[lane] = factorReal;
 					factorsImag[lane] = factorImag;
@@ -148,7 +148,7 @@ static void makeTransformImpl(Span<float> real, Span<float> imag, float phase)
 					SimdStore(imag.Begin + k, aIm + productImag);
 				}
 			}
-			for(; j < i; ++j) // scalar tail for groups not filling a vector
+			for(; j < i; j++) // scalar tail for groups not filling a vector
 			{
 				for(size_t k = j; k < real.Length(); k += next)
 				{
@@ -165,7 +165,7 @@ static void makeTransformImpl(Span<float> real, Span<float> imag, float phase)
 				factorImag = (multReal + 1)*factorImag + multImag*oldFactorReal;
 			}
 		}
-		else for(size_t j = 0; j < i; ++j) // iterations through groups with different transform factors
+		else for(size_t j = 0; j < i; j++) // iterations through groups with different transform factors
 		{
 			for(size_t k = j; k < real.Length(); k += next) // iterations through pairs within group
 			{
@@ -215,7 +215,7 @@ bool InplaceInverseFFT(Span<cfloat> data)
 	INTRA_DEBUG_ASSERT(Math::IsPow2(data.Length()));
 	rearrangeData(data);
 	makeTransform(data, Math::PI);
-	Multiply(data.Reinterpret<float>(), 1.0f/data.Length());
+	Multiply(data.Reinterpret<float>(), 1.f/data.Length());
 }
 
 #endif
@@ -239,8 +239,8 @@ void InplaceInverseFFTNonNormalized(Span<float> real, Span<float> imag)
 void InplaceInverseFFT(Span<float> real, Span<float> imag)
 {
 	InplaceInverseFFTNonNormalized(real, imag);
-	Multiply(imag, 1.0f/float(real.Length()));
-	Multiply(real, 1.0f/float(real.Length()));
+	Multiply(imag, 1.f/float(real.Length()));
+	Multiply(real, 1.f/float(real.Length()));
 }
 
 

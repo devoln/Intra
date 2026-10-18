@@ -521,12 +521,12 @@ public:
 		if(index >= Count()/4) //Перемещаем правую часть влево
 		{
 			moveInitDelete({range.Begin+index, range.End-1}, {range.Begin+index+1, range.End});
-			--range.End;
+			range.End--;
 		}
 		else //Перемещаем левую часть вправо
 		{
 			moveInitDeleteBackwards({range.Begin+1, range.Begin+index+1}, {range.Begin, range.Begin+index});
-			++range.Begin;
+			range.Begin++;
 		}
 	}
 

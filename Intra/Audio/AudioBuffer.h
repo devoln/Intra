@@ -23,42 +23,42 @@ struct AudioBuffer
 	void ShiftSamples(intptr samplesToShift);
 	void Clear(size_t startSample=0, size_t sampleCount=Meta::NumericLimits<size_t>::Max());
 
-	template<typename T> void Fill(T callable, size_t startSample, size_t sampleCount, double t0=0.0)
+	template<typename T> void Fill(T callable, size_t startSample, size_t sampleCount, double t0=0.)
 	{
 		const size_t endSample = startSample+sampleCount;
 		if(endSample>Samples.Count()) Samples.SetCount(endSample);
-		double t = t0, dt = 1.0/SampleRate;
+		double t = t0, dt = 1./SampleRate;
 		for(size_t i = startSample; i<endSample; i++, t+=dt)
 			Samples[i] = callable(float(t));
 	}
 
 	template<typename T> void Operate(T callable, const AudioBuffer* rhs,
-		size_t startLhsSample, size_t startRhsSample, size_t sampleCount, double t0=0.0)
+		size_t startLhsSample, size_t startRhsSample, size_t sampleCount, double t0=0.)
 	{
 		const size_t endLhsSample = startLhsSample+sampleCount;
 		const intptr offset = intptr(startRhsSample-startLhsSample);
-		double t = t0, dt = 1.0/SampleRate;
+		double t = t0, dt = 1./SampleRate;
 		for(size_t i = startLhsSample; i<endLhsSample; i++, t+=dt)
 			Samples[i] = callable(float(t), Samples[i], rhs->Samples[size_t(intptr(i)+offset)]);
 	}
 
-	template<typename T> void Modify(T callable, size_t startSample, size_t sampleCount, double t0=0.0)
+	template<typename T> void Modify(T callable, size_t startSample, size_t sampleCount, double t0=0.)
 	{
 		const size_t endSample = startSample+sampleCount;
-		double t = t0, dt = 1.0/SampleRate;
+		double t = t0, dt = 1./SampleRate;
 		for(size_t i = startSample; i<endSample; i++)
 			Samples[i] = callable(float(t), Samples[i]), t+=dt;
 	}
 
 
 	void ModifyByFunction(float(*f)(float t, float sample, const void* params), const void* parameters,
-		size_t startSample, size_t sampleCount, double t0=0.0)
+		size_t startSample, size_t sampleCount, double t0=0.)
 	{
 		Modify([=](float t, float sample){return f(t, sample, parameters);}, startSample, sampleCount, t0);
 	}
 
 	void OperateByFunction(float(*f)(float t, float sample1, float sample2, const void* params), const void* parameters,
-		const AudioBuffer* rhs, size_t startLhsSample, size_t startRhsSample, size_t sampleCount, double t0=0.0)
+		const AudioBuffer* rhs, size_t startLhsSample, size_t startRhsSample, size_t sampleCount, double t0=0.)
 	{
 		Operate([f,parameters](float t, float sample1, float sample2)
 			{return f(t, sample1, sample2, parameters);},

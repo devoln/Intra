@@ -24,7 +24,7 @@ struct NoteOn
 	forceinline byte Octave() const {return byte(NoteOctaveOrDrumId / 12);}
 	forceinline ushort Id() const {return ushort((Channel << 8) | NoteOctaveOrDrumId);}
 	forceinline float Frequency() const {return MusicNote::BasicFrequencies[Note()]*0.5f*float(1 << Octave());}
-	forceinline float TotalVolume() const {return float(Volume*Velocity)/(127.0f*127.0f);}
+	forceinline float TotalVolume() const {return (Volume*Velocity)/(127*127.f);}
 
 };
 

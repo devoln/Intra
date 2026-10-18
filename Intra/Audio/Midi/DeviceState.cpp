@@ -15,9 +15,9 @@ DeviceState::DeviceState(short headerTimeFormat):
 	if(headerTimeFormat < 0)
 	{
 		const float framesPerSecond = (headerTimeFormat >> 8) == 29? 29.97f: float(headerTimeFormat >> 8);
-		TickDuration = 1.0f/framesPerSecond/float(headerTimeFormat & 0xFF);
+		TickDuration = 1.f/framesPerSecond/float(headerTimeFormat & 0xFF);
 	}
-	else TickDuration = 60.0f/120/float(headerTimeFormat);
+	else TickDuration = 60.f/120/float(headerTimeFormat);
 }
 
 }}}

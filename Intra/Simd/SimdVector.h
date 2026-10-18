@@ -151,9 +151,24 @@ true;
 false;
 #endif
 
+constexpr bool TargetHasWasmSimd128 =
+#ifdef __wasm_simd128__
+true;
+#else
+false;
+#endif
+
+constexpr bool TargetIsX86_32 =
+#if defined(__i386__) || defined(_M_IX86)
+true;
+#else
+false;
+#endif
+
 template<typename T> constexpr size_t TargetMaxSimdLength = (TargetHasAVX512F? 64:
 	(CBasicIntegral<T>? TargetHasAVX2: TargetHasAVX)? 32:
-	(TargetHasNEON || (CBasicIntegral<T>? TargetHasSSE: TargetHasSSE2))? 16: sizeof(T)) / sizeof(T);
+	(TargetHasNEON || TargetHasWasmSimd128 ||
+		(CBasicIntegral<T>? TargetHasSSE: (CSame<T, float>? TargetHasSSE: TargetHasSSE2)))? 16: sizeof(T)) / sizeof(T);
 }
 } INTRA_END
 
@@ -533,14 +548,19 @@ public:
 	template<CSameSize<V> V1> requires(alignof(V1) == alignof(V))
 	explicit INTRA_FORCEINLINE operator V1() const noexcept {return reinterpret_cast<V1&>(mV);}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0) noexcept requires(N == 2)
+
+	INTRA_FORCEINLINE SimdVector(T x0, T x1) noexcept requires(N == 2)
 	{
 		if constexpr(CSame<T, double>) mV = z_D::_mm_set_pd(x1, x0);
 		else if constexpr(CSameSize<T, int64>) mV = z_D::_mm_set_epi64x(int64(x1), int64(x0));
 		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0, T x2 = 0, T x3 = 0) noexcept requires(N == 4)
+	INTRA_FORCEINLINE SimdVector(T x0, T x1) noexcept requires(N == 4)
+		: SimdVector(x0, x1, T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2) noexcept requires(N == 4)
+		: SimdVector(x0, x1, x2, T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3) noexcept requires(N == 4)
 	{
 		if constexpr(CSame<T, float>) mV = z_D::_mm_set_ps(x3, x2, x1, x0);
 		else if constexpr(CSame<T, double>) mV = z_D::_mm256_set_pd(x3, x2, x1, x0);
@@ -549,7 +569,19 @@ public:
 		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0) noexcept requires(N == 8)
+	INTRA_FORCEINLINE SimdVector(T x0, T x1) noexcept requires(N == 8)
+		: SimdVector(x0, x1, T(0), T(0), T(0), T(0), T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2) noexcept requires(N == 8)
+		: SimdVector(x0, x1, x2, T(0), T(0), T(0), T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3) noexcept requires(N == 8)
+		: SimdVector(x0, x1, x2, x3, T(0), T(0), T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3, T x4) noexcept requires(N == 8)
+		: SimdVector(x0, x1, x2, x3, x4, T(0), T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3, T x4, T x5) noexcept requires(N == 8)
+		: SimdVector(x0, x1, x2, x3, x4, x5, T(0), T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3, T x4, T x5, T x6) noexcept requires(N == 8)
+		: SimdVector(x0, x1, x2, x3, x4, x5, x6, T(0)) {}
+	INTRA_FORCEINLINE SimdVector(T x0, T x1, T x2, T x3, T x4, T x5, T x6, T x7) noexcept requires(N == 8)
 	{
 		if constexpr(CSame<T, float>) mV = z_D::_mm256_set_ps(x7, x6, x5, x4, x3, x2, x1, x0);
 		else if constexpr(CSame<T, double>)
@@ -563,8 +595,8 @@ public:
 		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(
-		T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
+	INTRA_FORCEINLINE SimdVector(
+		T x0, T x1, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
 		T x8 = 0, T x9 = 0, T x10 = 0, T x11 = 0, T x12 = 0, T x13 = 0, T x14 = 0, T x15 = 0) noexcept requires(N == 16)
 	{
 		if constexpr(CSame<T, float>)
@@ -583,8 +615,8 @@ public:
 		else static_assert(CFalse<T>);
 	}
 
-	explicit INTRA_FORCEINLINE SimdVector(
-		T x0, T x1 = 0, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
+	INTRA_FORCEINLINE SimdVector(
+		T x0, T x1, T x2 = 0, T x3 = 0, T x4 = 0, T x5 = 0, T x6 = 0, T x7 = 0,
 		T x8 = 0, T x9 = 0, T x10 = 0, T x11 = 0, T x12 = 0, T x13 = 0, T x14 = 0, T x15 = 0,
 		T x16 = 0, T x17 = 0, T x18 = 0, T x19 = 0, T x20 = 0, T x21 = 0, T x22 = 0, T x23 = 0,
 		T x24 = 0, T x25 = 0, T x26 = 0, T x27 = 0, T x28 = 0, T x29 = 0, T x30 = 0, T x31 = 0) noexcept requires(N == 32)
@@ -1196,7 +1228,7 @@ INTRA_FORCEINLINE void SimdCopyBits(void* destination, const void* source, size_
 #else
 	byte* dst = static_cast<byte*>(destination);
 	const byte* src = static_cast<const byte*>(source);
-	for(size_t i = 0; i < size; ++i) dst[i] = src[i];
+	for(size_t i = 0; i < size; i++) dst[i] = src[i];
 #endif
 }
 }
@@ -1276,7 +1308,7 @@ INTRA_FORCEINLINE SimdVector<float, N> SimdGather(const float* base, SimdVector<
 	int32 scalarIndices[N];
 	float scalarValues[N];
 	SimdStore<int32, N>(scalarIndices, indices);
-	for(size_t i = 0; i < N; ++i) scalarValues[i] = base[scalarIndices[i]];
+	for(size_t i = 0; i < N; i++) scalarValues[i] = base[scalarIndices[i]];
 	return SimdLoad<N>(scalarValues);
 }
 

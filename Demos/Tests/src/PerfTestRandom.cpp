@@ -35,7 +35,7 @@ void RunRandomPerfTests(IO::FormattedWriter& logger)
 	for(int i=0; i<100000000; i++) g_A += float(mt19937())/float(mt19937.max());
 	double time2 = tim.GetElapsedSecondsAndReset();
 
-	for(int i=0; i<100000000; i++) g_A += float(rand())/32767.0f;
+	for(int i=0; i<100000000; i++) g_A += float(rand())/32767.f;
 	double time1 = tim.GetElapsedSecondsAndReset();
 
 	for(int i=0; i<100000000; i++) g_A += frandom();

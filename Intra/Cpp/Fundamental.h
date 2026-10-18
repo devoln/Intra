@@ -144,3 +144,17 @@ INTRA_WARNING_POP
 
 typedef Intra::intptr ptrdiff_t;
 typedef Intra::uintptr size_t;
+
+typedef Intra::sbyte int8_t;
+typedef Intra::byte uint8_t;
+typedef short int16_t;
+typedef unsigned short uint16_t;
+typedef int int32_t;
+typedef unsigned int uint32_t;
+#if defined(__INT64_TYPE__) && defined(__UINT64_TYPE__)
+typedef __INT64_TYPE__ int64_t;
+typedef __UINT64_TYPE__ uint64_t;
+#else
+typedef Intra::long64 int64_t;
+typedef Intra::ulong64 uint64_t;
+#endif

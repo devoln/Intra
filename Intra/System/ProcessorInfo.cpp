@@ -94,6 +94,44 @@ ProcessorInfo ProcessorInfo::Get()
 
 }}
 
+#elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_MacOS || INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_iOS)
+
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
+
+namespace Intra { namespace System {
+
+ProcessorInfo ProcessorInfo::Get()
+{
+	ProcessorInfo result;
+	int logicalProcessorNumber = 0, coreNumber = 0;
+	const long onlineProcessorCount = sysconf(_SC_NPROCESSORS_ONLN);
+	if(onlineProcessorCount > 0)
+		logicalProcessorNumber = int(onlineProcessorCount);
+	size_t valueSize = sizeof(int);
+	if(logicalProcessorNumber < 1)
+	{
+		if(sysctlbyname("hw.logicalcpu", &logicalProcessorNumber,
+			&valueSize, null, 0) != 0 || logicalProcessorNumber < 1)
+		{
+			valueSize = sizeof(int);
+			if(sysctlbyname("hw.ncpu", &logicalProcessorNumber,
+				&valueSize, null, 0) != 0 || logicalProcessorNumber < 1)
+				logicalProcessorNumber = 1;
+		}
+	}
+	valueSize = sizeof(int);
+	if(sysctlbyname("hw.physicalcpu", &coreNumber,
+		&valueSize, null, 0) != 0 || coreNumber < 1)
+		coreNumber = logicalProcessorNumber;
+	result.LogicalProcessorNumber = ushort(logicalProcessorNumber);
+	result.CoreNumber = ushort(coreNumber);
+	return result;
+}
+
+}}
+
 #elif(INTRA_PLATFORM_OS == INTRA_PLATFORM_OS_FreeBSD)
 
 #include <sys/types.h>

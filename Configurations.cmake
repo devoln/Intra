@@ -96,13 +96,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
     set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS}")
 	
     if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")
         set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -g4")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -s ASSERTIONS=2 -g4 -s DEMANGLE_SUPPORT=1")
-		set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} -O2")
-	else()
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+		set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS}")
+    else()
+		set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -ffast-math -Os -DNDEBUG")
 		set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -Os")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3")
 		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3 -g3")
@@ -129,7 +128,7 @@ elseif(MSVC)
         set(COMMON_PARAMETERS "${COMMON_PARAMETERS} ")
     endif()
 
-    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} /Ox /Ot /Oi /GT /GL /GF /Gy /MT /fp:fast")
+    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} /O1 /Os /DNDEBUG /Oi /GT /GL /GF /Gy /MT /fp:fast")
     set(CMAKE_CXX_FLAGS_MINSIZEREL "${COMMON_PARAMETERS} /O1 /Os /Oi /GT /GL /GF /GS- /Gy /MT /fp:fast")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${COMMON_PARAMETERS} /O3 /Ot /Oi /GT /GL /GF /Gy /MT /fp:fast /Zi /D_DEBUG")
     set(CMAKE_CXX_FLAGS_DEBUG "${COMMON_PARAMETERS} /Od /MDd /fp:fast /Zi /D_DEBUG /RTC1")
@@ -145,25 +144,11 @@ elseif(MSVC)
 	
 endif()
 
-# Emscripten optimisation level is independent from feature pruning.
-# Canonical WASM uses -Os everywhere; -Oz is an explicit compiler experiment
-# and must never be enabled implicitly by INTRA_MINEXE/INTRA_SIZE_OPT.
+# Emscripten Release uses the same fixed optimization profile as IntraSynth.
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    set(_intra_wasm_opt "-Os")
-    if(INTRA_SIZE_OZ)
-        set(_intra_wasm_opt "-Oz")
-    endif()
-    set(_size_lto "")
-    if(INTRA_SIZE_LTO)
-        set(_size_lto " -flto")
-    endif()
-    # Canonical WASM is genuinely size-optimised.  Replace CMake/legacy
-    # Release optimisation flags instead of appending -Os after -O2/-O3;
-    # this keeps compile_commands/build.ninja unambiguous and prevents a
-    # future flag-order change from silently selecting the wrong level.
-    set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS} ${_intra_wasm_opt}${_size_lto}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -ffast-math -DNDEBUG ${_intra_wasm_opt}${_size_lto}")
-    set(CMAKE_CXX_FLAGS_MINSIZEREL "${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -ffast-math -DNDEBUG ${_intra_wasm_opt}${_size_lto}")
+    set(CMAKE_CXX_FLAGS "${COMMON_PARAMETERS}")
+    set(CMAKE_CXX_FLAGS_RELEASE "${COMMON_PARAMETERS} ${COMMON_MINSIZE_OPTIMIZATIONS} -ffast-math ${INTRA_WASM_LIBRARY_RELEASE_FLAGS}")
+    set(CMAKE_CXX_FLAGS_MINSIZEREL "${COMMON_PARAMETERS} ${ALL_MINSIZE_OPTIMIZATIONS} -ffast-math ${INTRA_WASM_LIBRARY_RELEASE_FLAGS}")
 elseif(INTRA_SIZE_OPT)
     # Native legacy size profile remains -Os.
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Os")
@@ -172,8 +157,8 @@ elseif(INTRA_SIZE_OPT)
 endif()
 
 function(init_project_sources DIR HEADER_VARIABLE_NAME SOURCE_VARIABLE_NAME)
-  file(GLOB_RECURSE headers RELATIVE "${DIR}" *.h)
-  file(GLOB_RECURSE sources RELATIVE "${DIR}" *.cpp)
+  file(GLOB_RECURSE headers CONFIGURE_DEPENDS RELATIVE "${DIR}" *.h)
+  file(GLOB_RECURSE sources CONFIGURE_DEPENDS RELATIVE "${DIR}" *.cpp)
 
   foreach(_source IN ITEMS ${headers})
     get_filename_component(_source_path "${_source}" PATH)
@@ -226,4 +211,3 @@ function(enable_unity_build UB_NAME SOURCE_VARIABLE_NAME)
   # Complement list of translation units with the name of ub
   set(${SOURCE_VARIABLE_NAME} ${${SOURCE_VARIABLE_NAME}} ${unit_build_file} PARENT_SCOPE)  
 endfunction(enable_unity_build)
-

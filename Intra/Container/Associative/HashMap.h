@@ -527,7 +527,7 @@ public:
 			Node* node = get_bucket_head(i);
 			if(node==null)
 			{
-				++result.FreeBucketCount;
+				result.FreeBucketCount++;
 				continue;
 			}
 			num++;

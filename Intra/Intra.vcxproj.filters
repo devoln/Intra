@@ -384,9 +384,6 @@
     <ClCompile Include="Audio\Sound.cpp">
       <Filter>Файлы исходного кода\Audio</Filter>
     </ClCompile>
-    <ClCompile Include="Audio\Synth\ExponentialAttenuation.cpp">
-      <Filter>Файлы исходного кода\Audio\Synth</Filter>
-    </ClCompile>
     <ClCompile Include="Audio\Synth\PostEffects.cpp">
       <Filter>Файлы исходного кода\Audio\Synth</Filter>
     </ClCompile>
@@ -1295,9 +1292,6 @@
     <ClInclude Include="Audio\Synth.hh">
       <Filter>Заголовочные файлы\Audio</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\Synth\ExponentialAttenuation.h">
-      <Filter>Заголовочные файлы\Audio\Synth</Filter>
-    </ClInclude>
     <ClInclude Include="Audio\Synth\Generators.hh">
       <Filter>Заголовочные файлы\Audio\Synth</Filter>
     </ClInclude>
@@ -1308,9 +1302,6 @@
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\Generators\FunctionGenerator.h">
-      <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
-    </ClInclude>
-    <ClInclude Include="Audio\Synth\Generators\ViolinPhysicalModel.h">
       <Filter>Заголовочные файлы\Audio\Synth\Generators</Filter>
     </ClInclude>
     <ClInclude Include="Audio\Synth\Generators\WhiteNoise.h">

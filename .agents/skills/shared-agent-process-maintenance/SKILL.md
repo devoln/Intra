@@ -49,7 +49,7 @@ If a document mainly explains why the process exists or how it evolved, it is ma
 
 ## When to read deeper process docs
 
-Read `../../core/Flow.md` and `../../core/ResearchBase.md` only when:
+Read `../../core/Flow.md` only when:
 - evolving the process model itself;
 - resolving ambiguity between competing process rules;
 - deciding whether something belongs in a skill, template, or maintainer doc.
@@ -57,5 +57,4 @@ Read `../../core/Flow.md` and `../../core/ResearchBase.md` only when:
 ## References
 
 - `../../core/Flow.md`
-- `../../core/ResearchBase.md`
 - `../shared-decision-discipline/SKILL.md`
